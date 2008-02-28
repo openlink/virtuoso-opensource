@@ -288,7 +288,7 @@
   <!-- ====================================================================================== -->
   <xsl:template name="message_empty">
     <xsl:param name="count"/>
-    <xsl:if test="$count < messages/show_res">
+    <xsl:if test="$count < messages/show_res and $count < 10">
       <tr>
         <td colspan="8" height="24">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>

@@ -532,26 +532,30 @@ create procedure OMAIL.WA.omail_box(
   OMAIL.WA.getOrderDirection (_order, _direction);
 
   -- Check Params for illegal values---------------------------------------------------
-  if (OMAIL.WA.omail_check_folder_id(_domain_id,_user_id, get_keyword('folder_id',_params)) = 0) {
+  if (OMAIL.WA.omail_check_folder_id(_domain_id,_user_id, get_keyword ('folder_id',_params)) = 0)
+  {
     -- check FOLDER_ID
     OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,1100));
     return;
   }
 
-  if (not OMAIL.WA.omail_check_interval(get_keyword('skiped',_params),0,100000)) {
+  if (not OMAIL.WA.omail_check_interval(get_keyword ('skiped',_params),0,100000))
+  {
     -- check SKIPED
     OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,1101));
     return;
   }
 
-  if (not OMAIL.WA.omail_check_interval(get_keyword('order',_params),1,(length(_order)-1))) { -- check ORDER BY
+  if (not OMAIL.WA.omail_check_interval(get_keyword ('order',_params),1,(length (_order)-1)))
+  { -- check ORDER BY
     OMAIL.WA.omail_setparam('order',_params,get_keyword('msg_order',_settings)); -- get from settings
   } else if (get_keyword('order',_params) <> get_keyword('msg_order',_settings)) {
     OMAIL.WA.omail_setparam('msg_order',_settings,get_keyword('order',_params)); -- update new value in settings
     OMAIL.WA.omail_setparam('update_flag',_settings,1);
   }
 
-  if (not OMAIL.WA.omail_check_interval(get_keyword('direction',_params),1,(length(_direction)-1))) {
+  if (not OMAIL.WA.omail_check_interval(get_keyword ('direction',_params),1,(length (_direction)-1)))
+  {
     -- check ORDER WAY
     OMAIL.WA.omail_setparam('direction',_params,get_keyword('msg_direction',_settings));
   } else if (get_keyword('direction',_params) <> get_keyword('msg_direction',_settings)) {
@@ -559,7 +563,8 @@ create procedure OMAIL.WA.omail_box(
     OMAIL.WA.omail_setparam('update_flag',_settings,1);
   }
 
-  if (not OMAIL.WA.omail_check_interval(get_keyword('folder_view',_params),1,2)) { -- check Folder View
+  if (not OMAIL.WA.omail_check_interval(get_keyword ('folder_view',_params),1,2))
+  { -- check Folder View
     OMAIL.WA.omail_setparam('folder_view',_params,get_keyword('folder_view',_settings));
   } else if (get_keyword('folder_view',_params) <> get_keyword('folder_view',_settings)){
     OMAIL.WA.omail_setparam('folder_view',_settings,get_keyword('folder_view',_params));
@@ -567,9 +572,11 @@ create procedure OMAIL.WA.omail_box(
   }
 
   -- Form Action---------------------------------------------------------------------
-  if (_faction = 'move') { -- > 'move msg to folder'
+  if (_faction = 'move')
+  { -- > 'move msg to folder'
     _rs := OMAIL.WA.omail_move_msg(_domain_id,_user_id,params);
-    if (_rs = '1') {
+    if (_rs = '1')
+    {
       _bp := OMAIL.WA.omail_params2str(_pnames,_params,',');
       OMAIL.WA.utl_redirect_adv(sprintf('box.vsp?sid=%s&realm=%s&bp=%s',_sid,_realm,_bp),params);
       return;
@@ -578,14 +585,16 @@ create procedure OMAIL.WA.omail_box(
     OMAIL.WA.utl_redirect_adv(sprintf('box.vsp?sid=%s&realm=%s&bp=%s',_sid,_realm,_bp),params);
     return;
   }
-  if (_faction = 'delete') { -- > 'move msg to trash or delete if it's in trash'
+  if (_faction = 'delete')
+  { -- > 'move msg to trash or delete if it's in trash'
     OMAIL.WA.omail_delete_message(_domain_id,_user_id,params,_params);
     _bp := OMAIL.WA.omail_params2str(_pnames,_params,',');
 
     OMAIL.WA.utl_redirect_adv(sprintf('box.vsp?sid=%s&realm=%s&bp=%s',_sid,_realm,_bp),params);
     return;
   }
-  if (_faction = 'erase') { -- > 'unconditional delete'
+  if (_faction = 'erase')
+  { -- > 'unconditional delete'
     OMAIL.WA.omail_del_message(_domain_id,_user_id,cast(get_keyword('ch_msg',params) as integer));
     _bp := OMAIL.WA.omail_params2str(_pnames,_params,',');
     OMAIL.WA.utl_redirect_adv(sprintf('box.vsp?sid=%s&realm=%s&bp=%s',_sid,_realm,_bp),params);
@@ -1206,6 +1215,8 @@ create procedure OMAIL.WA.omail_del_message(
   DELETE
     from OMAIL.WA.MESSAGES
    where DOMAIN_ID = _domain_id and USER_ID = _user_id and MSG_ID = _msg_id;
+
+  commit work;
 }
 ;
 
@@ -2255,7 +2266,7 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('usr_sig_inc',_settings) = 0)
     OMAIL.WA.omail_setparam('usr_sig_txt', _settings, '');
 
-  if (OMAIL.WA.omail_getp('msg_result',_settings) <= 0)
+  if (cast (OMAIL.WA.omail_getp ('msg_result', _settings) as integer) <= 0)
     OMAIL.WA.omail_setparam('msg_result',_settings, 10);
 
   if (OMAIL.WA.omail_getp('msg_name', _settings) not in (0,1))
@@ -3271,7 +3282,8 @@ create procedure OMAIL.WA.omail_open_message(
   _realm     := get_keyword('realm',_params,'');
   _dload_url := sprintf('dload.vsp?sid=%s&realm=%s&dp=%s',_sid,_realm,'%d,%d');
 
-  if ((OMAIL.WA.omail_getp('re_mode',_params) = 1) or (OMAIL.WA.omail_getp('re_mode',_params) = 2)) {
+  if ((OMAIL.WA.omail_getp ('re_mode',_params) = 1) or (OMAIL.WA.omail_getp ('re_mode',_params) = 2))
+  {
     -- user make reply msg (1 - reply; 2 - reply to all)
     --
     _fields := OMAIL.WA.omail_get_message(_domain_id, _user_id, OMAIL.WA.omail_getp('re_msg_id', _params), 1);
@@ -3289,7 +3301,8 @@ create procedure OMAIL.WA.omail_open_message(
     _reAddress := OMAIL.WA.omail_address2xml('from', _from, 0) ||
                   OMAIL.WA.omail_address2xml('to', _to, 0) ||
                   OMAIL.WA.omail_address2xml('cc', _cc, 0);
-    if (OMAIL.WA.omail_getp('re_mode',_params) = 1) {
+    if (OMAIL.WA.omail_getp ('re_mode',_params) = 1)
+    {
       -- get TO or Reply-To
       if (trim(mail_header(get_keyword('header', _fields, ''), 'Reply-To')) <> '')
         _address := OMAIL.WA.omail_address2xml('to', trim(mail_header(get_keyword ('header', _fields, ''), 'Reply-To')), 0);
@@ -3333,7 +3346,8 @@ create procedure OMAIL.WA.omail_open_message(
     _body := OMAIL.WA.omail_getp('message',_fields);
     OMAIL.WA.omail_open_message_body_ind(_body);-- indent message text with '>'
 
-    if (OMAIL.WA.omail_getp('attached',_fields) > 0) {
+    if (OMAIL.WA.omail_getp ('attached',_fields) > 0)
+    {
       OMAIL.WA.omail_setparam('folder_id',_fields,130);
       _msg_id := OMAIL.WA.omail_save_msg(_domain_id,_user_id,_fields,0,_error);
       OMAIL.WA.omail_attachments_copy(_domain_id,_user_id,_msg_id,OMAIL.WA.omail_getp('re_msg_id',_params));
@@ -3401,7 +3415,8 @@ create procedure OMAIL.WA.omail_open_message(
       _displayName := coalesce((select U_FULL_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
 
     _addContact := '';
-    if (_domain_id = 1) {
+    if (_domain_id = 1)
+    {
     _ab_id := OMAIL.WA.check_app (_user_id, 'AddressBook');
     if (_ab_id <> 0)
       _addContact := AB.WA.ab_url (_ab_id);
@@ -3427,9 +3442,10 @@ create procedure OMAIL.WA.omail_open_message(
     _rs := sprintf('%s<displayName><![CDATA[%s]]></displayName>\n', _rs, _displayName);
     _rs := sprintf ('%s<addContact>%s</addContact>\n', _rs, OMAIL.WA.xml2string (_addContact));
 
-    if ((_type_id = 10110) and (OMAIL.WA.omail_getp('_html_parse',_params) <> 0)) {
+    if ((_type_id = 10110) and (OMAIL.WA.omail_getp ('_html_parse',_params) <> 0))
+    {
       -- html version
-      _body := xml_tree(_body, 2);
+      _body := xml_tree (_body, 2, '', 'UTF8');
       if (not isarray(_body))
         signal('9001', 'open_message error');
       _body := xml_tree_doc(_body);
@@ -3463,7 +3479,8 @@ create procedure OMAIL.WA.omail_open_message_body(
   _re_head := '';
 
   _body := cast(_body as varchar);
-  if (OMAIL.WA.omail_getp('re_mode',_params) = 1) { -- user make reply msg
+  if (OMAIL.WA.omail_getp ('re_mode',_params) = 1)
+  { -- user make reply msg
     _re_head := sprintf('%s\n\n\n----- Original Message ----- \n',_re_head);
     _re_head := sprintf('%sFrom: \n',_re_head);
     _re_head := sprintf('%sTo: \n',_re_head);
@@ -3472,7 +3489,8 @@ create procedure OMAIL.WA.omail_open_message_body(
     _body_lines := split_and_decode(_body,0,'\0\r\n');
     N := 0;
     _body := '';
-    while(N < length(_body_lines)){
+    while (N < length (_body_lines))
+    {
       _body := sprintf('%s\n&lt; %s',_body,aref(_body_lines,N));
       N := N + 1;
     }
@@ -3480,9 +3498,7 @@ create procedure OMAIL.WA.omail_open_message_body(
     open_message_images(_user_id,OMAIL.WA.omail_getp('_msg_id',_params),499,'dload.vsp?dp=%d,%d',_body);
   };
 
-  _body := sprintf('%s%s',_re_head,_body);
-  --_rs := sprintf('%s<type_id>%s</type_id>',_rs,_type_id);
-  _rs := sprintf('%s<mbody><![CDATA[%s]]></mbody>',_rs,_body);
+  _rs := sprintf ('%s<mbody><![CDATA[%s]]></mbody>',_rs, _re_head || _body);
  return _rs;
 }
 ;
@@ -3862,8 +3878,10 @@ create procedure OMAIL.WA.omail_receive_message(
   _tags          := '';
   _settings      := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
   if (cast(get_keyword ('spam', _settings, '0') as integer) > 0)
-    if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('to', _to, 2)) {
-      if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2)) {
+    if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('to', _to, 2))
+    {
+      if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2))
+      {
         _folder_id := 125;
       } else {
         if (OMAIL.WA.is_spam (_user_id, OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2), cast(get_keyword ('spam', _settings, '0') as integer)))
@@ -4566,10 +4584,12 @@ create procedure OMAIL.WA.omail_select_xml(in _descr any, in _values any)
   declare _value any;
 
   _rs := '';
-  for (_i := 0; _i < length(_descr); _i := _i + 1) {
+  for (_i := 0; _i < length (_descr); _i := _i + 1)
+  {
     _cell := lower (_descr[_i][0]);
     _value := _values[_i];
-    if (isnull(_value)) {
+    if (isnull (_value))
+    {
       if (_descr[_i][1] = 189)
         _value := 0;
               else
@@ -4595,11 +4615,13 @@ create procedure OMAIL.WA.omail_send_msg(
 {
   declare _sql_result1,_sql_result2,_xslt_url,_xslt_url2,_rs,_boundary,_body any;
 
-  declare exit handler for SQLSTATE '2E000' {
+  declare exit handler for SQLSTATE '2E000'
+  {
     _error := 1901;
     return;
   };
-  declare exit handler for SQLSTATE '08006'{
+  declare exit handler for SQLSTATE '08006'
+  {
     _error := 1902;
     return;
   };
@@ -4632,7 +4654,9 @@ create procedure OMAIL.WA.omail_send_msg(
 
   _sender      := cast(xslt(_xslt_url2, xml_tree_doc(xml_tree(concat('<fr>',_sql_result1,'</fr>')))) as varchar);
   _rec         := cast(xslt(_xslt_url2, xml_tree_doc(xml_tree(concat('<to>',_sql_result1,'</to>')))) as varchar);
-  if (not isnull(_skip)) {
+
+  if (not isnull (_skip))
+  {
     _rec := replace(_rec, sprintf('<%s>', _skip), '');
     _rec := trim(_rec);
     _rec := trim(_rec, ',');
@@ -4641,8 +4665,10 @@ create procedure OMAIL.WA.omail_send_msg(
   _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
   smtp_send(_smtp_server, _sender, _rec, _body);
 
-  if (_domain_id = 1) {
-    if (OMAIL.WA.omail_getp('scopy', _params) = '1') {
+  if (_domain_id = 1)
+  {
+    if (OMAIL.WA.omail_getp ('scopy', _params) = '1')
+    {
       -- move msg to Sent
       update OMAIL.WA.MESSAGES
          set FOLDER_ID = 120
@@ -4728,7 +4754,8 @@ create procedure OMAIL.WA.omail_set_mail(
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Form Action---------------------------------------------------------------------
-  if (get_keyword('fa_save.x',params,'') <> '') {
+  if (get_keyword ('fa_save.x',params,'') <> '')
+  {
     -- check params for illegal values---------------------------------------------------
 
     if (OMAIL.WA.omail_check_interval(get_keyword('msg_name',params), 0, 1))
@@ -4763,7 +4790,8 @@ create procedure OMAIL.WA.omail_set_mail(
     OMAIL.WA.omail_set_settings(_domain_id, _user_id, 'base_settings', _settings, get_keyword('domain_id', _user_info));
     commit work;
   }
-  if ((get_keyword ('fa_cancel.x',params,'') <> '') or (get_keyword ('fa_save.x',params,'') <> '')) {
+  if ((get_keyword ('fa_cancel.x',params,'') <> '') or (get_keyword ('fa_save.x',params,'') <> ''))
+  {
     OMAIL.WA.utl_doredirect(sprintf('box.vsp?sid=%s&realm=%s&bp=100',_sid,_realm));
     return;
   }
@@ -4801,7 +4829,8 @@ create procedure OMAIL.WA.omail_set_settings(
   if (OMAIL.WA.omail_getp('update_flag', settings) <> 1)
     return;
 
-  if (isnull(wa_id)) {
+  if (isnull (wa_id))
+  {
     OMAIL.WA.omail_set_settings_data(domain_id, user_id, keyword, settings);
     return;
   }
@@ -4825,8 +4854,10 @@ create procedure OMAIL.WA.omail_setparam(
 {
   declare N integer;
 
-  for (N := 0; N < length(_params); N := N + 2){
-    if (_params[N] = _name) {
+  for (N := 0; N < length (_params); N := N + 2)
+  {
+    if (_params[N] = _name)
+    {
       aset(_params,N+1,_value);
       return;
     }
@@ -4846,7 +4877,8 @@ create procedure OMAIL.WA.omail_smtp_message_deliver(
   _folder_id  := 100; -- Inbox
   _msg_source := -1;  -- SMTP
   _domain_id  := OMAIL.WA.domain_id(_recipient);
-  if (not isnull(_domain_id)) {
+  if (not isnull (_domain_id))
+  {
     _user_id   := OMAIL.WA.domain_owner_id(_domain_id);
     _domain_id := 1;  -- normal mail
   } else {
@@ -4855,6 +4887,7 @@ create procedure OMAIL.WA.omail_smtp_message_deliver(
       goto _end;
     _user_id   := OMAIL.WA.domain_owner_id(_domain_id);
   }
+  _source :=
   OMAIL.WA.omail_receive_message(_domain_id, _user_id, null, _source, null, _msg_source, _folder_id);
   return (1);
 
@@ -4948,14 +4981,16 @@ create procedure OMAIL.WA.omail_sql_exec(
   _sql_statm := concat(_sql_statm, ' FOR XML AUTO');
   exec(_sql_statm, _state, _msg, _sql_params, 1000, _descr, _rows);
 
-  if (_state <> '00000') {
+  if (_state <> '00000')
+  {
     signal(_state, _msg);
     return;
   }
 
   _rs := ' ';
   _len := length(_rows);
-  if (_skipped >= _len) {
+  if (_skipped >= _len)
+  {
     _skipped := floor((_len - 1) / _pageSize) * _pageSize;
     if (_skipped < 0)
       _skipped := 0;
@@ -4963,21 +4998,26 @@ create procedure OMAIL.WA.omail_sql_exec(
   _max := 1;
   _min := 1000000;
   _dict := dict_new();
-  for (_ind := 0; _ind < _len; _ind := _ind + 1) {
+  for (_ind := 0; _ind < _len; _ind := _ind + 1)
+  {
     if (_ind + 1 = _skipped)
       _rs := sprintf('%s<prev_msg>%d</prev_msg>\n', _rs, _rows[_ind][4]);
     if (_ind = (_skipped + _pageSize))
       _rs := sprintf('%s<next_msg>%d</next_msg>\n', _rs, _rows[_ind][4]);
-    if ((_ind >= _skipped) and  (_ind < (_skipped + _pageSize))) {
+    if ((_ind >= _skipped) and  (_ind < (_skipped + _pageSize)))
+    {
       _rs := sprintf('%s<message>\n',_rs);
       _rs := sprintf('%s<position>%d</position>\n%s\n', _rs, _ind+1, OMAIL.WA.omail_select_xml(_descr[0], _rows[_ind]));
       _rs := sprintf('%s</message>',_rs);
     }
-    if (_cloud) {
+    if (_cloud)
+    {
       _tags := OMAIL.WA.tags_select(_domain_id, _user_id, _rows[_ind][4]);
-      if (_tags <> '') {
+      if (_tags <> '')
+      {
         _tags := split_and_decode (_tags, 0, '\0\0,');
-        foreach (any _tag in _tags) do {
+        foreach (any _tag in _tags) do
+        {
           _object := dict_get(_dict, lcase(_tag), vector(lcase(_tag), 0));
           _object[1] := _object[1] + 1;
           if (_object[1] < _min)
@@ -4989,7 +5029,8 @@ create procedure OMAIL.WA.omail_sql_exec(
       }
     }
   }
-  if (_cloud) {
+  if (_cloud)
+  {
     _rs := _rs || '<ctags>';
     for (select p.* from OMAIL.WA.tagsDictionary2rs(p0)(_tag varchar, _cnt integer) p where p0 = _dict order by _tag) do
       _rs := _rs || sprintf('<ctag style="%V">%s</ctag>', ODS.WA.tag_style(_cnt, _min, _max), _tag);
@@ -5186,7 +5227,8 @@ create procedure OMAIL.WA.omail_export(
     http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
     http ('<rss version="2.0">\n');
     http ('<channel>\n');
-    for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do {
+    for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do
+    {
       http ('<title>');
         http_value (OMAIL.WA.utf2wide(OMAIL.WA.domain_name(_domain_id)));
       http ('</title>\n');
@@ -5209,7 +5251,8 @@ create procedure OMAIL.WA.omail_export(
         http_value (OMAIL.WA.omail_url(_domain_id));
       http ('</link>\n');
     }
-    foreach (any row in result) do {
+    foreach (any row in result) do
+    {
       http ('<item>\n');
         http ('<title>');
           http_value (OMAIL.WA.utf2wide(row[0]));
