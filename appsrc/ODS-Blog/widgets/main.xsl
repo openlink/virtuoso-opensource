@@ -876,9 +876,6 @@ else if (length (self.catid))
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
-        // WebDAV Object
-        var oWebDAV;
-
         function weblog2Init() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
@@ -893,31 +890,7 @@ else if (length (self.catid))
 		  useRDFB:<?V case when wa_check_package ('OAT') then 'true' else 'false' end ?>
         }
 	                     );
-          var options = { imagePath: '/ods/images/oat/',
-                          imageExt: 'png',
-                          path: '<?V '/DAV/home/' || self.user_name || '/' ?>'
-                        };
-          OAT.WebDav.init(options);
-          oWebDAV = OAT.WebDav;
         }
-
-        function davBrowseOpen (fld, fext)
-        {
-          var options = { mode: 'browser',
-                          onConfirmClick: function(path, fname) {$(fld).value = path + fname;},
-                          filetypes:[{ext:fext,label:" "}]
-                        };
-          oWebDAV.open(options);
-        }
-
-        function davBrowseSave (fld, f)
-        {
-          var options = { mode: 'browser',
-                          onConfirmClick: function(path, fname) {$(fld).value = path + f;}
-                        };
-          oWebDAV.open(options);
-        }
-
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, weblog2Init);
       </script>
       ]]>
@@ -8860,9 +8833,38 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:templates">
-      <script type="text/javascript">
+      <script type="text/javascript"><![CDATA[
+          var oWebDAV;
 	  def_btn = 'save_tmpl_changes';
-      </script>
+	  function weblog2DavInit ()
+	  {
+          var options = { imagePath: '/ods/images/oat/',
+                          imageExt: 'png',
+			  path: '<?V '/DAV/home/' || self.user_name || '/' ?>',
+			  user: '<?V self.user_name ?>',
+			  pass: '<?V (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.user_name) ?>'
+                        };
+          OAT.WebDav.init(options);
+          oWebDAV = OAT.WebDav;
+	  }
+        function davBrowseOpen (fld, fext)
+        {
+          var options = { mode: 'browser',
+                          onConfirmClick: function(path, fname) {$(fld).value = path + fname;},
+                          filetypes:[{ext:fext,label:" "}]
+                        };
+          oWebDAV.open(options);
+        }
+
+        function davBrowseSave (fld, f)
+        {
+          var options = { mode: 'browser',
+                          onConfirmClick: function(path, fname) {$(fld).value = path + f;}
+                        };
+          oWebDAV.open(options);
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, weblog2DavInit);
+	]]></script>
               <input type="hidden" name="page" >
               <xsl:attribute name="value"><xsl:apply-templates select="@page" mode="static_value"/></xsl:attribute>
               </input>
