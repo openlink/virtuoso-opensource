@@ -172,7 +172,6 @@ function init() {
   sr_cl.img.height = "16";
   $("sr_cl_div").appendChild(sr_cl.div);
 
-	OAT.WebDav.init({imageExt:"png"});
 	
 	/* qbe_unsupp */
 	dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
@@ -440,6 +439,8 @@ function init() {
     else
     	goptions.initial_screen = true;
   }
+
+  OAT.WebDav.init({imageExt:"png",silentStart:true,user:goptions.user,pass:goptions.pass});
 
   if (OAT.Browser.isIE) {
     tab.go (1); /* is 0-based index... */

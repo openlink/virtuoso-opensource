@@ -271,6 +271,17 @@ OAT.Anchor = {
 			break;
 			
 		}
+	},
+
+	close:function(elem, recursive) {
+		elem = $(elem);
+		if (elem.tagName=='BODY') return;
+		if (elem.className.match(/^oat_win.+_container$/)) {
+			OAT.Dom.hide(elem);
+			if (recursive) this.close(elem.parentNode);
+		} else {
+			this.close(elem.parentNode);
+		}
 	}
 }
 OAT.Loader.featureLoaded("anchor");
