@@ -67,8 +67,8 @@ typedef struct ap_bitarrays_s {
   int		apb_diffbits;	/*!< Number of bits of the checksum that are used only in one of bitarrays */
   int		apb_unusedbits; /*!< Number of bits of the checksum that are not used in any of bitarrays */
   int		apb_shift;	/*!< Right shift to get full index in arrayX and high bits of index in arrayY from a checksum */
-  uint		apb_maskYhi;	/*!< Mask to get high bits of index in arrayY from a checksum */
-  uint		apb_maskYlo;	/*!< Mask to get low bits of index in arrayY from a checksum (its shift is equal to apb_unusedbits) */
+  uint32	apb_maskYhi;	/*!< Mask to get high bits of index in arrayY from a checksum */
+  uint32	apb_maskYlo;	/*!< Mask to get low bits of index in arrayY from a checksum (its shift is equal to apb_unusedbits) */
   int		apb_arrays_ok;	/*!< Nonzero if arrayX and arrayY are filled by actual data, zero if only initialized by zeroes. */
 } ap_bitarrays_t;
 
@@ -376,7 +376,6 @@ ptrlong aps_calc_scale (ptrlong size)
 {
   ptrlong scale;
   scale = 1;
-  size;
   while (0 != size) { scale++; size = size >> 1; }
   scale += 3;
   if (scale < 8)
@@ -1197,7 +1196,6 @@ caddr_t appi_prepare_match_list (ap_proc_inst_t *appi, int collapse_flags)
       for (apa_ctr = 0; apa_ctr < apa_count; apa_ctr++)
 	{
 	  ap_arrow_t *apa = appi->appi_places [apa_ctr];
-	  caddr_t *hits = NULL;
 	  switch (apa->apa_is_markup)
 	    {
 	    case APA_PLAIN_WORD:
