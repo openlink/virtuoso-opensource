@@ -3,6 +3,15 @@ function dd(txt){
     console.debug(txt);
   }
 }
+function getMetaContents(metaKey)
+{   var m = document.getElementsByTagName('meta');
+    for(var i in m)
+    {  if(m[i].name == metaKey)
+         return m[i].content;
+    }
+    return false;
+}
+
 function eTarget(e)
 {
  if (!e) var e = window.event
@@ -367,6 +376,7 @@ ODS.session = function(customEndpoint){
   this.userIsDba     = false;
   this.connections   = false;
   this.connectionsId = false;
+  this.invitationsId = false;
 
   this.endpoint=ODS.Preferences.svcEndpoint;
   this.openId={server:false,
@@ -680,6 +690,48 @@ ODS.session = function(customEndpoint){
     }
   };
   
+  this.invitationAdd = function (invitationId)
+  {
+      self.invitationsId=self.arrAddElm(self.invitationsId,invitationId);
+  };
+
+  this.invitationRemove = function (invitationId)
+  {
+    self.invitationsId=self.arrRemoveElm(self.invitationsId,invitationId);
+  };
+  
+  this.arrAddElm = function (arr, elmId)
+  {
+    if(!arr)
+        arr=new Array();
+    else if( typeof(arr)!='object' ||
+            (typeof(arr)=='object' &&  typeof(arr.push)!='function')
+           ) return;
+
+    arr.push(elmId);
+    
+    return arr;
+  };
+  
+  this.arrRemoveElm = function (arr, elmId)
+  {
+    if( typeof(arr)!='object' ||
+       (typeof(arr)=='object' &&  typeof(arr.find)!='function')
+      ) return;
+      
+    var arrPos=arr.find(elmId);
+    
+    if(arrPos>-1)
+    {
+      var newArr = new Array();
+      newArr=newArr.concat(arr.slice(0,arrPos));
+      newArr=newArr.concat(arr.slice(arrPos+1,arr.length));
+
+      arr=newArr;
+    }
+    return arr;
+  };
+
 
 }
 
@@ -700,7 +752,7 @@ ODS.Nav = function(navOptions) {
     imagePath:ODS.Preferences.imagePath
   };
   this.ui={};
-//  this.defaultAction=false;
+  this.defaultAction=false;
 
   this.session= new ODS.session();
   this.profile={userName :false,
@@ -712,6 +764,7 @@ ODS.Nav = function(navOptions) {
 //                connTab      : false,
                 msgTab       : false,
                 show         : false,
+                dataspace    : {userName:false,userId:false},
                 set : function(profileId){ this.userName=false;
                                            this.userId = profileId;
                                            userFullName = false;
@@ -750,14 +803,14 @@ ODS.Nav = function(navOptions) {
                    self.createCookie('sid',self.session.sid,1);
                    self.userLogged=1;
                    self.session.usersGetInfo(self.session.userId,'fullName',function(xmlDoc){self.setLoggedUserInfo(xmlDoc);});
-                   self.initProfile();
+                   self.connectionsGet(self.session.userId,'fullName,photo,homeLocation,dataspace',function(xmlDocRet){self.updateConnectionsSession(xmlDocRet)});
+//                   self.initProfile();
                    self.initLeftBar();
                    self.initRightBar();
                    self.initAppMenu();
                    
                    self.connections.userId=self.session.userId;
                    
-    
                    OAT.Dimmer.hide();  
                    OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:1});
                  }
@@ -780,15 +833,16 @@ ODS.Nav = function(navOptions) {
                    if(typeof(event.retryLogIn)!='undefined' && event.retryLogIn==true)
                    {
                       self.wait('hide');
-                      if(!$('loginDiv'))
-                         self.logIn();
 
                       if(typeof(event.msg)!='undefined' && event.msg.length>0)
                          self.showLoginErr(event.msg);
                       else
                       self.showLoginErr();
 
+                      if(!$('loginDiv'))
                       self.logIn();
+
+//                      self.logIn();
                       return;
                    }else if(typeof(event.sessionEnd)!='undefined' && event.sessionEnd==true)                                                                                    
                    {
@@ -806,10 +860,14 @@ ODS.Nav = function(navOptions) {
                  {
                    self.showLoginThrobber('hide');
                    
+                  if(typeof(self.defaultAction)=='function')
+                  {
+                    self.defaultAction();
+                    self.defaultAction=false;
+                  };
 
                   if(document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1)
                   {
-                    
                     
                     var profileId=document.location.href.split('/')[5];
                     profileId=profileId.split('#')[0];
@@ -817,13 +875,30 @@ ODS.Nav = function(navOptions) {
                     var profileType=profileId.split('/')[4];
                    
                     self.profile.show=true; 
-                    if(!self.session.sid || 
-                       (self.session.sid && self.session.userName!=profileId))
+
+//                    if(!self.session.sid || 
+//                       (self.session.sid && self.session.userName!=profileId))
+
+                    if(self.session.sid && self.session.userName==self.profile.userName && self.session.userName==profileId)
                     {
+                       self.showProfile();
+                    }else
+                    {
+
+                       var metaProfileId=getMetaContents('dataspaceid'); 
+
+                       if(!metaProfileId)
                     self.profile.set('/'+profileId);
+                       else
+                       {
+                          self.profile.set(metaProfileId);
+                          self.profile.dataspace.userId=metaProfileId;
+                          self.profile.dataspace.userName=profileId;
+                       }
                     self.initProfile();
                     }
 
+                            
                     return;
                   }
 
@@ -885,6 +960,7 @@ ODS.Nav = function(navOptions) {
   OAT.MSG.attach(self,OAT.MSG.PROFILE_UPDATED,function(){if(self.profile.show)
                                                             self.showProfile();
                                                             self.profile.show=false;
+                                                            self.profile.ciMap.expandMap();
                                                         });
   
   OAT.MSG.attach(self,OAT.MSG.CONNECTIONS_UPDATED,function(){if(self.connections.show)
@@ -1428,6 +1504,13 @@ ODS.Nav = function(navOptions) {
               OAT.Dom.append([containerTab,divC]);
            }
         }       
+        if(messages.length==0)
+        {
+              var div=OAT.Dom.create('div',{overflow:'auto',width:'100%',height:'20px',paddingLeft:'10px', borderBottom:'1px dotted #DDDDDD'},'msg');
+              div.innerHTML='You have no messages.';
+              OAT.Dom.append([containerTab,div]);
+        }  
+        
   
         OAT.Dom.clear($('msgP1'));
         OAT.Dom.append([$('msgP1'),containerTab]);
@@ -1483,6 +1566,12 @@ ODS.Nav = function(navOptions) {
               
            }
         }       
+        if(messages.length==0)
+        {
+              var div=OAT.Dom.create('div',{overflow:'auto',width:'100%',height:'20px',paddingLeft:'10px', borderBottom:'1px dotted #DDDDDD'},'msg');
+              div.innerHTML='There are no messages in this folder.';
+              OAT.Dom.append([containerTab,div]);
+        }  
         
         OAT.Dom.clear($('msgP2'));
         OAT.Dom.append([$('msgP2'),containerTab]);
@@ -1548,6 +1637,12 @@ ODS.Nav = function(navOptions) {
            }
            
         }       
+        if(messages.length==0)
+        {
+              var div=OAT.Dom.create('div',{overflow:'auto',width:'100%',height:'20px',paddingLeft:'10px', borderBottom:'1px dotted #DDDDDD'},'msg');
+              div.innerHTML='There are no messages in this folder.';
+              OAT.Dom.append([containerTab,div]);
+        }  
         
         OAT.Dom.clear($('msgP3'));
         OAT.Dom.append([$('msgP3'),containerTab]);
@@ -1563,6 +1658,20 @@ ODS.Nav = function(navOptions) {
           var newDock=dock.addObject(1,container,{color:titleBGColor,title:'Conversation',titleColor:titleTxtColor});
           return newDock;
         }
+
+        var containerTab=OAT.Dom.create("div");
+        containerTab.id='notificationsTab';
+
+         if(1==1)
+        {
+              var div=OAT.Dom.create('div',{overflow:'auto',width:'100%',height:'20px',paddingLeft:'10px', borderBottom:'1px dotted #DDDDDD'},'msg');
+              div.innerHTML='There are no messages in this folder.';
+              OAT.Dom.append([containerTab,div]);
+        }  
+        OAT.Dom.clear($('msgP4'));
+        OAT.Dom.append([$('msgP4'),containerTab]);
+
+
       }
 
     	var conversationDock = false;
@@ -1603,12 +1712,24 @@ ODS.Nav = function(navOptions) {
           {
            if( connMenuItems.childNodes[i].innerHTML.indexOf('Invitations')!=-1)
               OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.invitationsGet('fullName,photo,home',self.renderInvitations)});
+           else if( connMenuItems.childNodes[i].innerHTML.indexOf('Find People')!=-1)
+              OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){
+                                                                                if($('search_lst_sort'))
+                                                                                   $('search_lst_sort').selectedIndex=0;
+                                                                                if($('search_focus_sel'))
+                                                                                   $('search_focus_sel').selectedIndex=1;
+                                                                                self.showSearch();                                                                             
+                                                                             });
            else
-              OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.connections.show=true;
+           {
+              OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){
+ 
+                                                                              self.connections.show=true;
                                                                           self.connections.userId=self.session.userId;
-                                                                          self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
+                                                                              self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface)
                                                                          });  
           }
+       }                                                                  
        }                                                                  
                                                                           
      
@@ -2150,8 +2271,9 @@ ODS.Nav = function(navOptions) {
                                                                  t=t.parentNode;
                                                               self.connectionSet(t.uid,1,function(){  
                                                                                             self.session.connectionAdd(t.uid,t.fullName);
+                                                                                            self.session.invitationAdd(t.uid);
                                                                                             self.connections.show=true;
-                                                                                            self.connectionsGet(self.session.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                            self.connectionsGet(self.session.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                                                          }
                                                                       )
                                                      });
@@ -2228,14 +2350,22 @@ ODS.Nav = function(navOptions) {
       $('ivitaitons_connection_country').innerHTML=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/home/country',{})[0]);
       $('ivitaitons_connection_conncount').innerHTML=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/connections/count',{})[0]);
 
+      $('invitations_C').visited=1;
       OAT.Event.attach($('ivitaitons_connection_acceptA'),"click",function(){self.connectionSet(invUserID,2,function(){self.invitationsGet('fullName,photo,home',self.renderInvitations);})} );  
       OAT.Event.attach($('ivitaitons_connection_rejectA'),"click",function(){self.connectionSet(invUserID,3,function(){self.invitationsGet('fullName,photo,home',self.renderInvitations);})} );  
 
       self.showInvitations();
     }else
     {
-      self.dimmerMsg('You have no new invitations.', function(){ self.connections.show=true;self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface); });
+      if(typeof($('invitations_C').visited)!='undefined' && $('invitations_C').visited==1)
+      {
+        $('invitations_C').visited=0;
+        self.connections.show=true;
+        self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
+      }else
+      self.dimmerMsg('You have no new invitations.', function(){ self.connections.show=true;self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface); });
     }
+
   }
   this.logIn= function ()
   {
@@ -2445,6 +2575,37 @@ ODS.Nav = function(navOptions) {
   
   }
 
+  this.updateConnectionsSession = function (xmlDoc)
+  {
+    var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
+    var invitations = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user/invited',{});
+
+    if(self.session.userId==self.connections.userId)
+       $('connectionsCountSpan').innerHTML='('+(connections.length-invitations.length)+')';
+ 
+    for(var i=0;i<connections.length;i++)
+    {
+      var conn=buildObjByChildNodes(connections[i]);
+      var arrPos = -1;
+      if(self.session.connectionsId)
+        arrPos=self.session.connectionsId.find(conn.uid);
+      
+      if(self.session.userId==self.connections.userId && arrPos==-1 )
+         self.session.connectionAdd(conn.uid,conn.fullName);
+
+      if(self.session.userId==self.connections.userId && typeof(conn.invited)!='undefined' && conn.invited==1)
+      {
+          var invPos=-1;
+          if(self.session.invitationsId)
+            invPos=self.session.invitationsId.find(conn.uid);
+
+          if(invPos==-1)
+            self.session.invitationAdd(conn.uid);
+      }
+
+    }    
+  }
+
 
   this.updateConnectionsInterface = function (xmlDoc)
   {
@@ -2498,6 +2659,8 @@ ODS.Nav = function(navOptions) {
 
 
           var elm=$('sendMsg_'+conn.uid);
+          if(self.session.sid)
+          {
           elm.uid=conn.uid;
           if(conn.uid==self.session.userId)
              OAT.Dom.unlink(elm);
@@ -2507,6 +2670,8 @@ ODS.Nav = function(navOptions) {
                                                      self.ui.newMsgWin(t,t.uid);
                                                     });
           };
+          }else
+            OAT.Dom.hide(elm);
           
           
           var elm=$('viewConnections_'+conn.uid);
@@ -2518,18 +2683,22 @@ ODS.Nav = function(navOptions) {
                                                    self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                  });  
 
-          var elm=$('doConnection_'+conn.uid);
-
           
+          var elm=$('doConnection_'+conn.uid);
           var elmParent=elm.parentNode;
 
           OAT.Dom.unlink(elm);
           
           var elm=OAT.Dom.create('a',{cursor:'pointer',textDecoration:'underline'});
+        
           elm.id="'doConnection_'+conn.uid";
           elm.uid=conn.uid;
           elm.fullName=conn.fullName;
           
+          if(self.session.sid)
+          {
+          
+            
           if(self.session.connectionsId && self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)=='undefined')
           {
              elm.innerHTML='Disconnect';
@@ -2538,7 +2707,7 @@ ODS.Nav = function(navOptions) {
                                                      self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
                                                                                            self.initProfile();
                                                                                            self.connections.show=true;
-                                                                                           self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                             self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                                                            
                                                                                           }
                                                                         )
@@ -2551,7 +2720,7 @@ ODS.Nav = function(navOptions) {
                                                      self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
                                                                                            self.initProfile();
                                                                                            self.connections.show=true;
-                                                                                           self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                             self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                                                           }
                                                                         )
                                                      });
@@ -2562,8 +2731,9 @@ ODS.Nav = function(navOptions) {
              OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);
                                                     self.connectionSet(t.uid,1,function(){  
                                                                                             self.session.connectionAdd(t.uid,t.fullName);
+                                                                                              self.session.invitationAdd(t.uid);
                                                                                             self.connections.show=true;
-                                                                                            self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                              self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                                                          }
                                                                       )
                                                      });
@@ -2571,6 +2741,34 @@ ODS.Nav = function(navOptions) {
           
 //          if(typeof(elmParent)!='undefined')
              OAT.Dom.append([elmParent,elm]);
+           }else
+           {
+            elm.innerHTML='Connect';
+            OAT.Dom.attach(elm,"click",function(e)
+                                       {var t=eTarget(e);
+                                        self.defaultAction=function()
+                                                           {self.connectionSet(t.uid,1,
+                                                                               function(xmlDoc){
+                                                                                                var msg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/connectionSet_response/message',{})[0]);
+                                                                                                if(msg && msg.length>0)
+                                                                                                   self.dimmerMsg(msg);
+                                                                                                else
+                                                                                                {
+                                                                                                  self.session.connectionAdd(t.uid);
+                                                                                                  self.session.invitationAdd(t.uid);
+                                                                                                };
+                                                                                                self.connections.show=true;
+                                                                                                self.connectionsGet(self.session.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
+                                                                                         }
+                                                                              )
+                                                           };
+                                          self.logIn();
+                                         });
+            OAT.Dom.append([elmParent,elm]);
+
+           }
+
+//            OAT.Dom.hide(elm);
 
         }
 
@@ -2646,6 +2844,7 @@ ODS.Nav = function(navOptions) {
        ciTab.add("ciT2","ciP2");
        ciTab.add("ciT3","ciP3");
        ciTab.add("ciT4","ciP4");
+       ciTab.add("ciT5","ciP5");
        ciTab.go(0);
        self.profile.ciTab=ciTab;
     }
@@ -2658,9 +2857,7 @@ ODS.Nav = function(navOptions) {
     self.profile.ciMap.centerAndZoom(0,0,8); /* africa, middle zoom */
     self.profile.ciMap.obj.addControl(new GSmallMapControl());
     self.profile.ciMap.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
-
-    
-    function expandMap()
+    self.profile.ciMap.expandMap = function()
     {
       self.profile.ciMap.obj.checkResize();
                                                if(self.profile.ciMap.homeLocation && self.profile.ciMap.workLocation)
@@ -2669,9 +2866,8 @@ ODS.Nav = function(navOptions) {
                                                   self.profile.ciMap.centerAndZoom(50,-10,3);
     }
     
-//    OAT.Event.attach('ciT4',"click",function(){expandMap();});  
 
-    setTimeout(function(){expandMap();},500);
+//    setTimeout(self.profile.ciMap.expandMap,500);
 
   }
   
@@ -2715,9 +2911,35 @@ ODS.Nav = function(navOptions) {
          OAT.Dom.attach(msgA,"click",function() {self.ui.newMsgWin(msgA,self.profile.userId);});
       }
 
+      
       var connA=$('profileConnAction');
-      if(self.session.userId==self.profile.userId)
+      if(!self.session.userId)
+      {
+        connA.innerHTML='Connect';
+        OAT.Dom.attach(connA,"click",
+                       function() {self.defaultAction=function(){self.connectionSet(self.profile.userId,1,
+                                                                                    function(xmlDoc)
+                                                                                    {
+                                                                                      var msg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/connectionSet_response/message',{})[0]);
+                                                                                      if(msg && msg.length>0)
+                                                                                         self.dimmerMsg(msg);
+                                                                                      else
+                                                                                      {
+                                                                                       self.session.connectionAdd(self.profile.userId);
+                                                                                       self.session.invitationAdd(self.profile.userId);
+                                                                                      };
+                                                                                      
+                                                                                      self.connections.show=true;
+                                                                                      self.connectionsGet(self.session.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
+
+                                                                                    }
+                                                                                   )
+                                                                };
+                                                 self.logIn();
+                                  });
+      }else if(self.session.userId==self.profile.userId || self.session.userId)
          OAT.Dom.hide(connA.parentNode);
+     
       else       
       {
          var connLi=connA.parentNode;
@@ -2726,8 +2948,13 @@ ODS.Nav = function(navOptions) {
          var connA=OAT.Dom.create('a',{cursor:'pointer'});
          connA.id="profileConnAction";
          
+         var doAppend=true;
          
-         if(self.session.connectionsId && self.session.connectionsId.find(self.profile.userId) > -1)
+         if(self.session.connectionsId)
+         {
+           if( self.session.connectionsId.find(self.profile.userId) > -1 && 
+              (!self.session.invitationsId || (self.session.invitationsId && self.session.invitationsId.find(self.profile.userId)<0))
+             )
          {
             connA.innerHTML='Disconnect';
             OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,0,function(){self.session.connectionRemove(self.profile.userId);
@@ -2735,17 +2962,30 @@ ODS.Nav = function(navOptions) {
                                                                                                         }
                                                                        )
                                                     });
-         }else if(self.session.connectionsId)
+           }else if(self.session.connectionsId.find(self.profile.userId) > -1 && self.session.invitationsId && self.session.invitationsId.find(self.profile.userId)>-1)
          {
-            connA.innerHTML='Connect';
-            OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,1,function(){//self.session.connectionAdd(self.profile.userId,self.profile.userFullName);
+              connA.innerHTML='Withdraw invitation';
+              OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,4,function(){self.session.connectionRemove(self.profile.userId);
+                                                                                                           self.session.invitationRemove(self.profile.userId);
                                                                                                          self.initProfile();
                                                                                                         }
                                                                        )
                                                     });
+           }else if(self.session.userId!=self.profile.userId)
+           {
+              connA.innerHTML='Connect';
+              OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,1,function(){self.session.connectionAdd(self.profile.userId);
+                                                                                                           self.session.invitationAdd(self.profile.userId);
+                                                                                                           self.initProfile();
          }
+                                                                         )
+                                                      });
+           }else
+            doAppend=false;
          
+           if(doAppend)
          OAT.Dom.append([connLi,connA]);
+      }
       }
       var browseDS=$('profileBrowseDS');
       if(browseDS && self.serverOptions.useRDFB==1)
@@ -2772,6 +3012,11 @@ ODS.Nav = function(navOptions) {
         OAT.Dom.attach(elm,"dblclick",function() {self.profile.show=true; self.profile.set(connId) ;self.initProfile();});
       };
 
+      function attachDblClick(elm, url)
+      {
+        OAT.Dom.attach(elm,"dblclick",function() {document.location.href=url;});
+      };
+
 
       var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
 
@@ -2789,7 +3034,6 @@ ODS.Nav = function(navOptions) {
 
         if(typeof(connObj.invited)=='undefined' || ( typeof(connObj.invited)!='undefined' && self.session.userId!=self.profile.userId))
         {
-           
            var connProfileObj={};
            connProfileObj[connObj.uid]=connObj.fullName;
 
@@ -2799,12 +3043,14 @@ ODS.Nav = function(navOptions) {
         var _divC=OAT.Dom.create('div',{cursor:'pointer'},'conn');
 
            _divC.id='connW_'+connObj.uid;
-           attachClick(_divC,connObj.uid);
+//           attachClick(_divC,connObj.uid);
+           attachDblClick(_divC,connObj.dataspace);
         
         var tnail=OAT.Dom.create('img',{width:'40px',height:'40px'});
            tnail.src= (connObj.photo.length>0 ? connObj.photo : 'images/missing_person_tnail.png'); // images/profile_small.png
         var _divCI=OAT.Dom.create('div',{},'conn_info');
         var cNameA=OAT.Dom.create('a',{cursor:'pointer'});
+           cNameA.href=self.odsLink(connObj.dataspace);
            cNameA.innerHTML=connObj.fullName;
        
         OAT.Dom.append([connTP,_divC],[_divC,tnail,_divCI],[_divCI,cNameA]);
@@ -3290,10 +3536,32 @@ ODS.Nav = function(navOptions) {
     else 
        OAT.Dom.hide($('groups_w'));
 
+    if(self.profile.userName)
     OAT.AJAX.GET(ODS.Preferences.activitiesEndpoint+self.profile.userName+'/0/', false , renderNewsFeedBlock, optionsGet);
+    else if(self.profile.dataspace.userName)
+    OAT.AJAX.GET(ODS.Preferences.activitiesEndpoint+self.profile.dataspace.userName+'/0/', false , renderNewsFeedBlock, optionsGet);
 
     self.session.usersGetInfo(self.profile.userId,'title,fullName,photo,home,homeLocation,business,businessLocation,im',function(xmlDoc3){renderContactInformationBlock(xmlDoc3);});
     self.session.usersGetInfo(self.profile.userId,'interests,music',function(xmlDoc3){renderPersonalInformationBlock(xmlDoc3);});
+
+     var graphIRI = false;
+     function RDFMInit ()
+     {
+       var head=document.getElementsByTagName("head")[0];
+       var cssNode = document.createElement('link');
+       var div = $("linkedDataC");
+       var r = new OAT.RDFMini(div,{showSearch:false});
+       cssNode.type = 'text/css';
+       cssNode.rel = 'stylesheet';
+       cssNode.href = "rdfm.css";
+       head.appendChild(cssNode);
+       if (graphIRI)
+        r.open(graphIRI);
+     }
+
+     var graphIRI = self.odsLink(userProfileDataspace);
+		 var fList = ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
+     OAT.Loader.loadFeatures(fList, RDFMInit);
 
 
      OAT.MSG.send(self,OAT.MSG.PROFILE_UPDATED,{});
@@ -3392,11 +3660,18 @@ ODS.Nav = function(navOptions) {
      iframe.src=(url);
      
   }
-  this.loadRDFB= function (url)
+  this.loadRDFB= function (url,useFrame)
   {
      if(typeof(url)=='undefined') return;
-     var rdfbUrl='/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+url)
+     if(url.indexOf(document.location.protocol+'//')<0)
+        var rdfbUrl='/rdfbrowser/index.html?uri='+encodeURIComponent(self.odsLink()+url);
+     else
+        var rdfbUrl='/rdfbrowser/index.html?uri='+encodeURIComponent(url);
+  
+     if(typeof(useFrame)!= 'undefined')
      self.loadVspx(rdfbUrl);
+     else
+      window.open(rdfbUrl);
      return;
   }
 
@@ -3831,6 +4106,9 @@ ODS.Nav = function(navOptions) {
 //                                               self.serverOptions.useRDFB=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/useRDFB',{})[0]);
                                                if(OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/useRDFB',{})[0])=='1')
                                                   self.serverOptions.useRDFB=1;
+                                               var googleKey=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/googleMpasKey',{})[0]);
+                                               if(googleKey!='')
+                                                  window._apiKey=googleKey;
                                             }
                                         };
                                           
@@ -3964,7 +4242,8 @@ ODS.Nav = function(navOptions) {
    
    attachPersonBox:function (elm, connObj)
    {
-      var connContent=OAT.Dom.create('div');
+ 
+      var connContent=OAT.Dom.create('div',{},'a_bubble conn_info_bubble');
       connContent.innerHTML=$('connection_info_bubble').innerHTML;
      
       var img=connContent.getElementsByTagName('img')[0];
@@ -3977,19 +4256,23 @@ ODS.Nav = function(navOptions) {
       var links=connContent.getElementsByTagName('a');
       
       if(typeof(links[0])!='undefined')         
-        OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+          links[0].href=self.odsLink(connObj.dataspace);
+      if(document.location.href==self.odsLink(connObj.dataspace))
+        OAT.Dom.attach(links[0],"click",function(e) {var t=eTarget(e);OAT.Anchor.close(t);self.profile.show=true; self.initProfile();});
+
+//        OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
 
       if(typeof(links[1])!='undefined')         
       {
-
+         links[1].uid=connObj.uid;
          if(self.session.sid && self.session.userId!=connObj.uid)
          {
-            links[1].uid=connObj.uid;
-
             if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)=='undefined')
             {
                links[1].innerHTML='Disconnect';
-               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
+               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);
+                                                            OAT.Anchor.close(t);
+                                                            self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
                                                                                                     self.initProfile();
                                                                                                    }
                                                                           )
@@ -3997,7 +4280,9 @@ ODS.Nav = function(navOptions) {
             }else if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)!='undefined' && connObj.invited==1)
             {
                links[1].innerHTML='Withdraw invitation';
-               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);
+               OAT.Dom.attach(links[1],"click",function(e) {
+                                                            var t=eTarget(e);
+                                                            OAT.Anchor.close(t);
                                                             self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
                                                                                                   self.initProfile();
                                                                                                  }
@@ -4010,7 +4295,33 @@ ODS.Nav = function(navOptions) {
                OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,1,function(){self.initProfile();})
                                                        });
             };
-         }else OAT.Dom.hide(links[1].parentNode);
+         }else if(!self.session.sid && self.session.userId!=connObj.uid)
+         {
+            links[1].innerHTML='Connect';
+            OAT.Dom.attach(links[1],"click",function(e)
+                                            {var t=eTarget(e);
+                                             OAT.Anchor.close(t); 
+                                             self.defaultAction=function()
+                                                                {self.connectionSet(t.uid,1,
+                                                                                    function(xmlDoc){
+                                                                                                     var msg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/connectionSet_response/message',{})[0]);
+                                                                                                     if(msg && msg.length>0)
+                                                                                                        self.dimmerMsg(msg);
+                                                                                                     else
+                                                                                                     {
+                                                                                                       self.session.connectionAdd(t.uid);
+                                                                                                       self.session.invitationAdd(t.uid);
+                                                                                                     };
+                                                                                                     
+                                                                                                     self.connections.show=true;
+                                                                                                     self.connectionsGet(self.session.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
+                                                                                                    }
+                                                                                   )
+                                                                };
+                                               self.logIn();
+                                            });
+         }else
+           OAT.Dom.hide(links[1].parentNode);
       }
 
 
@@ -4019,14 +4330,15 @@ ODS.Nav = function(navOptions) {
       if(typeof(links[2])!='undefined')         
       {
        links[2].uid=connObj.uid;
-       OAT.Event.attach(links[2],"click",function(e){
-                                                     var t=eTarget(e);
+       OAT.Event.attach(links[2],"click",function(e){var t=eTarget(e);
+                                                     OAT.Anchor.close(t);
                                                      self.connections.show=true;
                                                      self.connections.userId=t.uid;
-                                                     self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                     self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                     });  
 
       }
+
       if(typeof(links[3])!='undefined' && self.serverOptions.useRDFB==1)
       {
          links[3].href = '/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+connObj.dataspace);
@@ -4034,6 +4346,7 @@ ODS.Nav = function(navOptions) {
       }else OAT.Dom.hide(links[3].parentNode);
       
       
+      var winType=OAT.Dom.isIE() ? OAT.WinData.TYPE_RECT : OAT.WinData.TYPE_ROUND
       var obj = {
       	          title:connObj.fullName,
       	          content:connContent,
@@ -4042,10 +4355,12 @@ ODS.Nav = function(navOptions) {
       	          activation: "click",
       	          enabledButtons : "c",
       	          visibleButtons : "c",
-      	          type:OAT.WinData.TYPE_ROUND
+      	          type:winType
                 };
 
+
    OAT.Anchor.assign(elm,obj);
+
 
    }
 
@@ -4121,7 +4436,6 @@ ODS.Nav = function(navOptions) {
   };
  
   OAT.Event.attach($('vspxApp'),"load",function(){self.wait('hide');});  
-  OAT.Event.attach($('vspxApp'),"click",function(e){var t=eTarget(e);dd(t);});  
 
   OAT.Event.attach($('vspxApp'),"load",function(){
                                                    if(!self.session.sid)
@@ -4208,6 +4522,7 @@ ODS.Nav = function(navOptions) {
   this.initAppMenu();
   this.initSearch();
 
+  this.createCookie('interface','js',1);
 
 }  
 

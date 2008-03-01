@@ -100,7 +100,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 	  </table>
 	  <div class="fm">
 	      <fieldset>
-		  <label for="prj_url">URL</label>
+		  <label for="prj_url">URI</label>
 		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
 		  <br />
 		  <label for="prj_name">Made*</label>

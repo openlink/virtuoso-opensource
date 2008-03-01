@@ -11,31 +11,9 @@
   <title>ODS Navigation Framework</title>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
-
-<!--META START -->
-<!--
-<link rel="openid.server" title="OpenID Server" href="http://host:port/openid" />
-<link rel="meta" type="application/rdf+xml" title="SIOC" href="http://host:port/dataspace/person/{username}/sioc.rdf" />
-<link rel="meta" type="application/rdf+xml" title="FOAF" href="http://host:port/dataspace/person/{username}/foaf.rdf" />
-<link rel="meta" type="application/xml+apml" title="APML 0.6" href="http://host:port/dataspace/{username}/apml.xml" />
-<link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="http://host:port/feeds/people/{username}/friends" />
-<link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
-<link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
-<meta name="dc.language" content="en" scheme="rfc1766" />
-<meta name="dc.title" content="{username}'s ODS home" />
-<meta name="dc.creator" content="{username}" />
-<meta name="dc.description" content="{username}'s Dataspace" />
-<meta name="geo.position" content="0.000000;0.000000" />
-<meta name="ICBM" content="0.000000, 0.000000" />
-<meta http-equiv="X-XRDS-Location" content="http://host:port/dataspace/{username}/yadis.xrds" />
-<meta http-equiv="X-YADIS-Location" content="http://host:port/dataspace/{username}/yadis.xrds" />
--->
-<!--META END -->
-
-
+  <!-- #META# -->
   <script type="text/javascript">
 
-   
    //patch for recursive profile in iframe.
    if( (document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1) &&
        (window.parent.frames.length>0)
@@ -49,7 +27,7 @@
 
     var ODSInitArray = new Array();
 
-    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps","instant","anchor"];
+    var featureList = ["ajax2", "dimmer", "menu", "tab","gmaps","instant","anchor"];
     function init()
     {
 
@@ -137,7 +115,7 @@
   	                <li class="menu_separator"></li>
                     <li class="menu_item"><a href="javascript:void(0)">Invitations</a></li>
   	                <li class="menu_separator"></li>
-                    <li class="menu_item"><a href="javascript:nav.loadVspx(nav.expandURL(nav.ods+'search.vspx?page=2'))">Find People</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">Find People</a></li>
                   </ul>
                 </li>
               </ul> <!-- #connections-menu -->
@@ -216,13 +194,13 @@
                   <li><a href="javascript:void(0)" id="profileConnAction">Connection/Disconnect</a></li>
                   <li><a href="javascript:void(0)" id="profileSendMsg">Send a message</a></li>
                   <li><a href="javascript:void(0)" id="profileBrowseDS">Browse data space</a></li>
-                  <li><a href="javascript:void(0)" id="profileBrowseCG">Connection graph</a></li>
+                  <li><a href="javascript:void(0)" id="profileBrowseCG" style="display:none">Connection graph</a></li>
                 </ul>
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
-            <!-- Semantic Magic Widget -->
-            <div id="semantic_magic_w" class="widget semantic_magic_w">
-  	          <div class="w_title"><h3><a href="http://www.w3.org/2001/sw/" target="_blank"><img src="images/skin/default/sw-cube.png" alt="W3C Semantic Web Logo" class="w_title_img"/></a> Semantic Magic</h3></div>
+            <!-- Linked Data Widget -->
+            <!--div id="semantic_magic_w" class="widget semantic_magic_w">
+  	          <div class="w_title"><h3><a href="http://www.w3.org/2001/sw/" target="_blank"><img src="images/skin/default/sw-cube.png" alt="W3C Semantic Web Logo" class="w_title_img"/></a> Linked Data</h3></div>
               <div class="w_content">
                 <ul class="uris_ctr" id="sm_list">
                   <li><a href="/dataspace/person/{uname}#this" id="sm_personal">Personal URI</a></li>
@@ -232,8 +210,8 @@
                   <li><a href="/dataspace/person/{uname}#this" id="sm_dataspace">Data Space URI</a></li>
                   <li><a href="sn_user_export.vspx?ufid=124&ufname=tester1" id="sm_vcard">Card URI</a></li>
                 </ul>
-              </div> <!-- w_content -->
-            </div> <!-- semantic_magic_w -->
+              </div--> <!-- w_content -->
+            <!--/div--> <!-- semantic_magic_w -->
   	        <div id="ds_w" class="widget ds_w">
   	          <div class="w_title"><h3>Data Space</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div></div>
   	          <div class="w_content">
@@ -323,6 +301,7 @@
                   <li id="ciT2"><a href="javascript:void(0)">Business</a></li>
                   <li id="ciT3"><a href="javascript:void(0)">IM</a></li>
                   <li id="ciT4"><a href="javascript:void(0)">Personal Information</a></li>
+                  <li id="ciT5"><a href="javascript:void(0)">Linked Data</a></li>
                 </ul>
                 <div class="tab_deck">
                   <div id="ciPCtr" class="tab_page">
@@ -377,6 +356,12 @@
                   <h4>Other</h4>
                 </div>
               </div>
+                  <div id="ciP5" class="tab_page">
+                    <div class="sect">
+                      <div id="linkedDataC" style="height:300px;overflow:scroll"></div>
+                    </div>
+                  </div>
+
                 </div> <!-- .tab_deck -->                
               </div> <!-- .w_content -->
             </div> <!-- .widget -->
@@ -413,12 +398,14 @@
                     </div>
                     <div id="connectionsTemplate" style="display:none;">
                     <table border="0" cellspacing="0" width="98%">
-                    <tr><td class="image" style="width:150px;"><img src="#connImgSRC#" alt=""  class="" style="width:100px;height:125px;cursor:pointer"/></td>
+                    <tr><td class="image" style="width:150px;"><img src="#connImgSRC#" alt=""  class="" style="width:40px;cursor:pointer"/><br/><span style="cursor:pointer;text-decoration: underline;">#connProfileFullName#</span></td>
                         <td class="info">
+<!--
                          <table border="0" cellpadding="0" cellspacing="0" width="98%"><tr>
                           <td class="label name" style="width:100px">Name:</td>
-                          <td class="name" style="text-align:left; padding-left:5px"><span style="cursor:pointer">#connProfileFullName#</span> </td>
+                          <td class="name" style="text-align:left; padding-left:5px"> </td>
                          </tr></table>
+-->
                         </td>
                         <td class="actions" style="width:120px;text-align:left;">
                           <a id="#sendMsg#" style="cursor:pointer;text-decoration:underline;">Send Message</a><br>
@@ -484,32 +471,6 @@
                         <input type="text" id="search_textbox_searchC" /> <button id="search_button_searchC" onclick="this.callback()">Search</button><br/>
                         <a href="javascript:void(0)" onclick="this.callback();"id="advanced_search_searchC">Advanced search...</a><br/>
                       </div> <!-- .lt -->
-                      <!--div id="search_focus_window">
-                        <h3>Search focus <button>Reset</button></h3>
-                        <ul id="search_selector" style="" class="oat_tree" style="display:none">
-                          <li>People...
-                            <ul>
-                              <li><input type="checkbox" id="cb_13" /><label for="cb_13">My Connections</label></li>
-                              <li><input type="checkbox" id="cb_14" /><label for="cb_14">My Contacts</label></li>
-                            </ul>
-                          </li>
-                          <li><input type="checkbox" id="cb_2"/><label for="cb_2">Places</label></li>
-                          <li><input type="checkbox" id="cb_3"/><label for="cb_3">Photos</label></li>
-                          <li><input type="checkbox" id="cb_4"/><label for="cb_4">Things</label></li>
-                          <li>By Application...
-                            <ul>
-                              <li><input type="checkbox" id="cb_5" /><label for="cb_5">Weblog</label></li>
-                              <li><input type="checkbox" id="cb_6" /><label for="cb_6">Briefcase</label></li>
-                              <li><input type="checkbox" id="cb_7" /><label for="cb_7">Gallery</label></li>
-                              <li><input type="checkbox" id="cb_8" /><label for="cb_8">Calendar</label></li>
-                              <li><input type="checkbox" id="cb_9" /><label for="cb_9">Mail</label></li>
-                              <li><input type="checkbox" id="cb_10" /><label for="cb_10">Feeds</label></li>
-                              <li><input type="checkbox" id="cb_11" /><label for="cb_11">Polls</label></li>
-                              <li><input type="checkbox" id="cb_12" /><label for="cb_12">Addresses</label></li>
-                            </ul>
-                          </li>
-                        </ul>
-                      </div--> <!-- rt -->
                     </div> <!-- .search_params_box -->
          	          <div style="width:100%">
                     <ul class="tab_bar">

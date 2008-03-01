@@ -674,7 +674,7 @@
 				var graphIRI = "<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname) ?>";
 				var fList =
 				   ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
-                                OAT.Loader.loadFeatures(fList, RDFMInit);
+				ODSInitArray.push ( function () { OAT.Loader.loadFeatures(fList, RDFMInit); } );
 				]]></script>
 			    <table>
 				<tr>

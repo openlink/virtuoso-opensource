@@ -224,7 +224,8 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
     '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,
-    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'),
+--    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'), 
+    '/ods/index.vsp?uname=%U&utype=%U', vector( 'uname','type'), --this line is related to the new UI. without it will not work correct. Old UI will keep working as expected.
     NULL,
     NULL,
     2,

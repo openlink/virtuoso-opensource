@@ -1814,10 +1814,10 @@ create procedure INIT_SERVER_SETTINGS ()
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
 '<h3>
-Welcome to OpenLink Data Spaces (ODS), a distributed collaborative
-application platform that provides a "Linked Data Junction Box" for Web
-protocols accessible data across a myriad of data sources.
-</h3>
+Welcome to OpenLink Data Spaces (ODS)</h3>
+
+A distributed collaborative application platform that provides a "Linked Data Junction Box" for Web protocols accessible data across a myriad of data sources.
+
 <p>
 ODS provides a cost-effective route for creating and exploit presence on
 the emerging Web of Linked Data. It enables you to transparently mesh
@@ -3127,8 +3127,10 @@ create procedure WA_MAKE_NICK (in nick varchar)
   declare i int;
   if (strstr (nick, '@') is not null)
     {
-      nick := replace (nick, '@', '-nick-');
-      nick := replace (nick, '.', '-');
+      declare tmp varchar;
+      tmp := subseq (nick, 0, strchr (nick, '@'));
+      if (length (tmp))
+	nick := tmp;
       i := 0;
     }
   while (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
@@ -3173,22 +3175,29 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N 
 
 create procedure WA_USER_INFO_NICK_UPGRADE ()
 {
-  if (registry_get ('__WA_USER_INFO_NICK_UPGRADE') = 'done')
+  if (registry_get ('__WA_USER_INFO_NICK_UPGRADE') = 'done-1')
   return;
-  for select U_ID, U_NAME, WAUI_FIRST_NAME as fn, WAUI_LAST_NAME as ln
-    from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK is null do
+  for select U_ID, U_NAME, WAUI_FIRST_NAME as fn, WAUI_LAST_NAME as ln, WAUI_NICK as _WAUI_NICK
+    from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and (WAUI_NICK is null or WAUI_NICK like '%-nick-%') do
     {
       declare nick any;
       nick := null;
-      if (length(fn) and length (ln))
+      if (length (_WAUI_NICK))
+	{
+	  nick := replace (_WAUI_NICK, '-nick-', '@');
+	}
+      else if (length(fn) and length (ln))
+	{
         nick := fn||'.'||ln;
       if (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
 	nick := null;
+	}
       if (nick is null)
-	nick := WA_MAKE_NICK (U_NAME);
+	nick := U_NAME;
+      nick := WA_MAKE_NICK (nick);
       update WA_USER_INFO set WAUI_NICK = nick where WAUI_U_ID = U_ID;
     }
-  registry_set ('__WA_USER_INFO_NICK_UPGRADE', 'done');
+  registry_set ('__WA_USER_INFO_NICK_UPGRADE', 'done-1');
 }
 ;
 
@@ -3269,10 +3278,12 @@ wa_exec_no_error_log(
       WUR_LABEL varchar,
       WUR_PUBLIC int default 0,
       WUR_SEEALSO_IRI varchar,
+      WUR_P_IRI varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\',
       primary key (WUR_U_ID, WUR_SEEALSO_IRI)
       )'
 )
 ;
+wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\'');
 
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
@@ -6465,4 +6476,117 @@ create procedure ODS_USER_IDENTIY_URLS (in uname varchar)
 wa_exec_no_error(
   'alter type web_app drop method wa_notify_member_changed(account int, otype int, ntype int, odata any, ndata any) returns any'
 )
+;
+
+
+create procedure check_ODS_SiteFront_welcome_message()
+{
+  declare curr_val, obs_val any;
+  declare new_val varchar;
+
+  obs_val := '<h3>
+Welcome to OpenLink Data Spaces (ODS), a distributed collaborative
+application platform that provides a "Linked Data Junction Box" for Web
+protocols accessible data across a myriad of data sources.
+</h3>
+<p>
+ODS provides a cost-effective route for creating and exploit presence on
+the emerging Web of Linked Data. It enables you to transparently mesh
+data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
+Gallery, Calendars, Discussions, Content Managers, and Social Networks.
+</p>
+<p>
+ODS essentially provides distributed data across personal, group, and
+community data spaces that is grounded in Web Architecture. It makes
+extensive use of current and emerging standards across it''s core and
+within specific functionality realms.
+</p>
+<p>ODS Benefits include:</p>
+<ul>
+  <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>
+  <li>Powerful solution for meshing data from a myriad of data sources across Intranets, Extranets, and the Internet</li>
+  <li>Coherent integration of Blogs, Wikis, and similar systems (native and external) that expose structured Linked Data</li>
+  <li>Collaborative content authoring and data generation without any exposure to underlying complexities of such activities</li>
+</ul>
+';
+
+  new_val := '<h3>
+Welcome to OpenLink Data Spaces (ODS)</h3>
+
+A distributed collaborative application platform that provides a "Linked Data Junction Box" for Web protocols accessible data across a myriad of data sources.
+
+<p>
+ODS provides a cost-effective route for creating and exploit presence on
+the emerging Web of Linked Data. It enables you to transparently mesh
+data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
+Gallery, Calendars, Discussions, Content Managers, and Social Networks.
+</p>
+<p>
+ODS essentially provides distributed data across personal, group, and
+community data spaces that is grounded in Web Architecture. It makes
+extensive use of current and emerging standards across it''s core and
+within specific functionality realms.
+</p>
+<p>ODS Benefits include:</p>
+<ul>
+  <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>
+  <li>Powerful solution for meshing data from a myriad of data sources across Intranets, Extranets, and the Internet</li>
+  <li>Coherent integration of Blogs, Wikis, and similar systems (native and external) that expose structured Linked Data</li>
+  <li>Collaborative content authoring and data generation without any exposure to underlying complexities of such activities</li>
+</ul>
+';
+
+  obs_val := md5(obs_val);
+
+  select md5(replace(WS_WELCOME_MESSAGE,'\r\n','\n')) into curr_val from WA_SETTINGS where WS_WELCOME_MESSAGE is not null and trim (WS_WELCOME_MESSAGE) <> '';
+
+
+  if (length(curr_val) and obs_val = curr_val)
+  {
+
+    update WA_SETTINGS
+      set WS_WELCOME_MESSAGE = new_val;
+  };
+}
+;
+
+check_ODS_SiteFront_welcome_message()
+;
+
+create procedure ods_iri_qual (in cls varchar)
+{
+	declare p1, p2, p3, pos, tit, tmp, pref int;
+	p1 := coalesce (strrchr (cls, '#'), -1);
+	p2 := coalesce (strrchr (cls, '/'), -1);
+	p3 := coalesce (strrchr (cls, ':'), -1);
+	pos := __max (p1, p2, p3);
+	if (pos > 0)
+	  {
+	    tit := subseq (cls, pos + 1);
+            tmp := subseq (cls, 0, pos + 1);
+	    pref := RDFData_std_pref (tmp);
+	    if (pref is not null)
+	      tit := pref || ':' || tit;
+	    else
+              tit := cls;
+	  }
+	else
+	  tit := cls;
+   return tit;
+}
+;
+
+create procedure ods_iri_expand (in iri varchar)
+{
+  declare tmp, tit, pos, ns any;
+  pos := strrchr (iri, ':');
+  if (pos > 0)
+    {
+      tmp := subseq (iri, 0, pos);
+      tit := subseq (iri, pos + 1);
+      ns := RDFData_std_pref (tmp, 1);
+      return ns || tit;
+    }
+  return iri;
+}
 ;

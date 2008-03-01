@@ -777,7 +777,7 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
 };
 
-create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
+create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in pred varchar)
 {
   declare rel_iri, pers_iri any;
 
@@ -785,7 +785,10 @@ create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  na
   pers_iri := person_iri (iri);
   delete_quad_s_or_o (graph_iri, rel_iri, rel_iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, rdfs_iri ('seeAlso'), rel_iri);
+  if (0 = length (pred))
+    pred := rdfs_iri ('seeAlso');
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, pred, rel_iri);
   DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
 
@@ -1430,9 +1433,9 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_URL);
 		    }
-		  for select WUR_LABEL, WUR_SEEALSO_IRI from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = U_ID do
+		  for select WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = U_ID do
 		    {
-		      sioc_user_related (graph_iri, iri, WUR_LABEL, WUR_SEEALSO_IRI);
+		      sioc_user_related (graph_iri, iri, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI);
 		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
@@ -2069,7 +2072,7 @@ create trigger WA_USER_RELATED_RES_SIOC_I after insert on DB.DBA.WA_USER_RELATED
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUR_U_ID);
-  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI);
+  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI, N.WUR_P_IRI);
 };
 
 create trigger WA_USER_RELATED_RES_SIOC_U after update on DB.DBA.WA_USER_RELATED_RES referencing old as O, new as N
@@ -2084,7 +2087,7 @@ create trigger WA_USER_RELATED_RES_SIOC_U after update on DB.DBA.WA_USER_RELATED
   iri := user_iri (N.WUR_U_ID);
   opiri := O.WUR_SEEALSO_IRI;
   delete_quad_s_or_o (graph_iri, opiri, opiri);
-  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI);
+  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI, N.WUR_P_IRI);
 };
 
 create trigger WA_USER_RELATED_RES_SIOC_D after delete on DB.DBA.WA_USER_RELATED_RES referencing old as O
@@ -2829,6 +2832,21 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs [0] := qry;
   if (p <> 0) qrs [0] := null;
 
+  declare vars, cons, uname varchar;
+  declare ix int;
+  vars := '';
+  cons := '';
+  uname := u_name;
+  ix := 0;
+
+  for select distinct WUR_P_IRI as P_IRI from DB.DBA.WA_USER_RELATED_RES
+    where WUR_U_ID = (select U_ID from DB.DBA.SYS_USERS u where u.U_NAME = uname ) do
+    {
+      vars := vars || sprintf ( 'optional { ?person <%s> ?var%d } .\n' , P_IRI, ix);
+      cons := cons || sprintf (' ?person <%s> ?var%d . \n', P_IRI, ix );
+      ix := ix + 1;
+    }
+
   part := sprintf (
 	  ' CONSTRUCT {
 	    ?person foaf:openid ?oid .
@@ -2849,7 +2867,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
 	    ?person foaf:made ?made .
-	    ?made foaf:maker ?person .
+	    ?made foaf:maker ?person .'
+	    || cons ||
+	    '
 	   }
 	  WHERE
                 {
@@ -2873,6 +2893,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
 	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident } .
+	      '
+	      || vars ||
+	      '
 		    }
 	}
 	  }', graph, graph, u_name);
