@@ -21,6 +21,7 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
+ -
 -->
 <v:page name="sparql_create_page"
         decor="yacutia_decor.vspx"
@@ -40,6 +41,7 @@
       <v:variable name="vhost" default="null" type="varchar" persist="0" param-name="vhost"/>
       <v:variable name="lhost" default="null" type="varchar" persist="0" param-name="lhost"/>
       <v:variable name="lpath" default="null" type="varchar" persist="0" param-name="lpath"/>
+      <v:variable name="tab_idx" default="1" type="int" persist="session" />
     </vm:variables>
   <vm:menu>
    <vm:menuitem value="URL rewriting rules"/>
@@ -180,6 +182,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
   self.hh1.ufl_value := cast (control.te_rowset[10] as varchar);
   self.hc1.ufl_value := cast (control.te_rowset[9] as varchar);
   self.rc1.ufl_value := cast (control.te_rowset[8] as varchar);
+  self.set_spq ();
   self.hc1.vs_set_selected ();
   self.rc1.vs_set_selected ();
 }
@@ -235,6 +238,24 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 		  </v:template>
 	      </v:data-set>
 	  </table>
+	  <v:method name="set_spq" arglist=""><![CDATA[
+	   declare tmp, hf any;
+	   hf := rfc1808_parse_uri (self.dest1.ufl_value);
+	   tmp := split_and_decode (hf[4]);
+
+	   if (hf[2] = '/sparql' and get_keyword ('query', tmp) is not null)
+	     {
+	       self.spq1.ufl_value := get_keyword ('query', tmp);
+               self.sp_fmt.ufl_value := get_keyword ('format', tmp, '\x24accept');
+     	     }
+	      ]]></v:method>
+	  <v:method name="set_raw" arglist=""><![CDATA[
+	  if (length (self.spq1.ufl_value))
+	    {
+	      self.dest1.ufl_value := sprintf ('/sparql?query=%U', self.spq1.ufl_value);
+              self.dest1.ufl_value := self.dest1.ufl_value || sprintf ('&format=%U', self.sp_fmt.ufl_value);
+	    }
+	      ]]></v:method>
 	  <v:form name="fm1" type="simple" method="POST">
 	  <div class="fm">
 	      <fieldset>
@@ -266,8 +287,41 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 
 
 		  <hr/>
+		  <v:template type="simple" name="raw_tb" condition="self.tab_idx = 1">
+		      <v:after-data-bind><![CDATA[
+			  if (self.tab_idx = 2 and not self.vc_event.ve_is_post and self.dest1.ufl_value not like '/sparql\?%')
+			    {
+			      self.tab_idx := 1;
+			    }
+			  ]]></v:after-data-bind>
 		  <label for="dest1">Destination Path format</label>
 		  <v:text name="dest1" xhtml_id="dest1" error-glyph="*" value="" xhtml_size="110" default_value="--concat (rtrim (self.lpath, '/'), '/$1')"/>
+		      <v:button action="simple" name="raw_bt" value="SPARQL">
+			  <v:on-post><![CDATA[
+			      self.set_spq ();
+			      self.tab_idx := 2;
+			  ]]></v:on-post>
+		      </v:button>
+		  </v:template>
+		  <v:template type="simple" name="spb" condition="self.tab_idx = 2">
+		      <label>SPARQL Query</label>
+		      <v:textarea name="spq1" value="" xhtml_rows="10" xhtml_cols="100">
+		      </v:textarea>
+		      <v:button action="simple" name="sparql_bt" value="Format">
+			  <v:on-post><![CDATA[
+			      self.set_raw ();
+			      self.tab_idx := 1;
+			  ]]></v:on-post>
+		      </v:button>
+		      <br/>
+		      <label>SPARQL result Format</label>
+		      <v:select-list name="sp_fmt">
+			  <v:item name="Automatic" value="\x24accept"/>
+			  <v:item name="RDF/XML" value="application/rdf+xml"/>
+			  <v:item name="Turtle" value="text/rdf+n3"/>
+		      </v:select-list>
+		  <br />
+		  </v:template>
 		  <br />
 
 
@@ -305,6 +359,7 @@ self.rc1.ufl_value := 0;
 self.hc1.vs_set_selected ();
 self.rc1.vs_set_selected ();
 self.hh1.ufl_value := '';
+self.spq1.ufl_value := '';
 		      </v:on-post>
 		  </v:button>
 		  <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
@@ -327,6 +382,12 @@ declare exit handler for sqlstate '23000'
   self.vc_error_message := 'The values entered conflict with other URL rewriter. Please supply correct values.';
   return;
 };
+
+if (self.tab_idx = 2)
+  {
+    self.dest1.ufl_value := sprintf ('/sparql?query=%U', self.spq1.ufl_value);
+    self.dest1.ufl_value := self.dest1.ufl_value || sprintf ('&format=%U', self.sp_fmt.ufl_value);
+  }
 
 hh := trim (self.hh1.ufl_value);
 self.spat1.ufl_value := trim (self.spat1.ufl_value);
@@ -458,6 +519,7 @@ URL_REWRITE_UPDATE_VHOST (self.rulelist, self.lpath, self.vhost, self.lhost);
 
 self.spat1.ufl_value := '';
 self.dest1.ufl_value := '';
+self.spq1.ufl_value := '';
 self.pl1.ufl_value := '';
 self.ah1.ufl_value := '';
 self.hh1.ufl_value := '';
