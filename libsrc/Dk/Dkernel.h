@@ -70,13 +70,13 @@ struct dk_session_s
     char *		dks_out_buffer;
     int			dks_out_length;
     int			dks_out_fill;
-    int			dks_out_written;  /* Used by single-thread router */
+    int			dks_out_written;  /*!< Used by single-thread router */
 
-    struct scheduler_io_data_s *dks_client_data;	/* Used by scheduler */
-    void *		dks_object_data;  /* Used by Distributed Objects */
-    void *		dks_object_temp;  /* Used by Distributed Objects */
-    OFF_T		dks_bytes_sent;   /* Used by Administration server */
-    OFF_T		dks_bytes_received;/* Used by Administration server */
+    struct scheduler_io_data_s *dks_client_data;	/*!< Used by scheduler */
+    void *		dks_object_data;  /*!< Used by Distributed Objects */
+    void *		dks_object_temp;  /*!< Used by Distributed Objects */
+    OFF_T		dks_bytes_sent;   /*!< Used by Administration server */
+    OFF_T		dks_bytes_received;/*!< Used by Administration server */
 
 
     char *		dks_peer_name;
@@ -84,27 +84,27 @@ struct dk_session_s
     caddr_t *		dks_caller_id_opts;
 
     void *		dks_dbs_data;
-    void *		dks_write_temp;	/* Used by Distributed Objects */
+    void *		dks_write_temp;	/*!< Used by Distributed Objects */
 
     int			dks_n_threads;
     int			dks_to_close;
-    /* Is the next read known NOT to block */
+    /*! Is the next read known NOT to block */
     int			dks_is_read_select_ready;
-    /* max msecs to block on a read */
+    /*! max msecs to block on a read */
     timeout_t		dks_read_block_timeout;
-    /* Is this a client or server initiated session */
+    /*! Is this a client or server initiated session */
     int			dks_is_server;
-    /* time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
+    /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
     long		dks_last_used;
-    /* web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
+    /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
     void *		dks_ws_pending;
     int			dks_ws_status;
 
-    /* fixed server thread per client */
-    du_thread_t *	dks_fixed_thread; /* note: also used to pass the http ses for chunked write */
+    /*! fixed server thread per client */
+    du_thread_t *	dks_fixed_thread; /*!< note: also used to pass the http ses for chunked write */
     basket_t		dks_fixed_thread_reqs;
 
-    /* burst mode */
+    /*! burst mode */
     dks_thread_state_t  dks_thread_state;
     du_thread_t *	dks_waiting_http_recall_session;
     dk_hash_t *		dks_pending_futures;
