@@ -1568,6 +1568,14 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	    { /* accesses never more than 1 */
 	      if (*a1 > 1)
 		*u1 /= *a1;
+	      if (dfe->dfe_type == DFE_EXISTS)
+		{
+		  /* an exists never has arity > 1.  If 1, guess 0.5.  If over 1, scale between 0.5 and 1 */
+		  *a1 = *a1 < 1 ? *a1 / 2 
+		    : 0.99 - (1 / (2 * *a1));
+		}
+	      else
+		*a1 = 1; /*for scalar subq */
 	    }
 	}
       if (dfe->dfe_type == DFE_DT 

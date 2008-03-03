@@ -297,6 +297,8 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 {
   /* if the dfe is a cond known at compile time return DFE_TRUE or DFE_FALSE and if not known return the dfe */
   df_elt_t * op, * left, * right;
+  if (DFE_FALSE == dfe || DFE_TRUE == dfe)
+    return dfe;
   switch (dfe->dfe_type)
     {
     case DFE_BOP_PRED:
@@ -393,6 +395,16 @@ int32 sqlo_pick_mp_size = 0;
 #else
 #define SQLO_MP_SAMPLE
 #endif
+
+
+dk_set_t
+dfe_tables (df_elt_t * dfe)
+{
+  if (DFE_FALSE == dfe || DFE_TRUE == dfe)
+    return NULL;
+  return dfe->dfe_tables;
+}
+
 
 df_elt_t *
 sqlo_df (sqlo_t * so, ST * tree)
@@ -596,7 +608,19 @@ sqlo_df (sqlo_t * so, ST * tree)
 	  dfe->_.bin.op = (int) tree->type;
 	  dfe->_.bin.left = sqlo_df (so, tree->_.bin_exp.left);
 	  dfe->_.bin.right = sqlo_df (so, tree->_.bin_exp.right);
-	  dfe->dfe_tables = t_set_union (dfe->_.bin.left->dfe_tables, dfe->_.bin.right->dfe_tables);
+	  {
+	    df_elt_t * c1 = sqlo_const_cond (so, dfe->_.bin.left);
+	    df_elt_t * c2 = sqlo_const_cond (so, dfe->_.bin.right);
+	    if ((DFE_FALSE == c1 && DFE_FALSE == c2)
+		|| (DFE_TRUE == c1 && DFE_TRUE == c2))
+	      dfe = c1;
+	    else if (DFE_TRUE == c1)
+	      dfe = c2;
+	    else if (DFE_TRUE == c2)
+	      dfe = c1;
+	    if (DFE_FALSE != dfe && DFE_TRUE != dfe)
+	      dfe->dfe_tables = t_set_union (dfe_tables (c1), dfe_tables (c2));
+	  }
 	  return dfe;
 	}
 
@@ -640,10 +664,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    dfe->_.bin.op = (int) tree->type;
 	    dfe->_.bin.left = sqlo_df (so, tree->_.bin_exp.left);
 	    dfe->_.bin.right = sqlo_df (so, tree->_.bin_exp.right);
-	    if (dfe->_.bin.right)
-	      dfe->dfe_tables = t_set_union (dfe->_.bin.left->dfe_tables, dfe->_.bin.right->dfe_tables);
-	    else
-	      dfe->dfe_tables = dfe->_.bin.left->dfe_tables;
+	    dfe->dfe_tables = t_set_union (dfe_tables (dfe->_.bin.left), dfe_tables (dfe->_.bin.right));
 	  }
 	if (BOP_OR == tree->type)
 	  {
@@ -651,11 +672,13 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    df_elt_t * c2 = sqlo_const_cond (so, dfe->_.bin.right);
 	    if ((DFE_FALSE == c1 && DFE_FALSE == c2)
 		|| (DFE_TRUE == c1 && DFE_TRUE == c2))
-	      ;
+	      dfe = c1;
 	    else if (DFE_FALSE == c1)
 	      dfe = c2;
 	    else if (DFE_FALSE == c2)
 	      dfe = c1;
+	    if (DFE_FALSE != dfe && DFE_TRUE != dfe)
+	      dfe->dfe_tables = t_set_union (dfe_tables (c1), dfe_tables (c2));
 	  }
 	if (was_top)
 	  sqlo_push_pred (so, dfe);
@@ -1639,12 +1662,17 @@ dfe_reqd_placed (df_elt_t * dfe)
 }
 
 
+int32
+sqlo_pred_unit_key (df_elt_t * dfe)
+{
+  /* float collates like int32 */
+  return *(int32*)&dfe->dfe_unit;
+}
 
 
 void
 sqlo_pred_sort (sqlo_t * so, int op, df_elt_t ** terms)
 {
-  /* order preds by arity/unit for either and or or */
 }
 
 
@@ -3825,20 +3853,27 @@ sqlo_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, dk_set_t preds, float * fill
   dfe_unit_cost (fill_dfe, 1, fill_unit, fill_arity, ov);
 }
 
+
+int enable_hash_fill_preds = 1;
+
+
 void 
 sqlo_best_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, int remote, dk_set_t * org_preds, dk_set_t * post_preds, float * fill_unit, float * fill_arity, float * ov)
 {
-  float best;
+  float best, ov1 = 0, ov2 = 0;
   if (remote != RHJ_LOCAL)
     {
-      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, ov);
+      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, &ov1);
+      *fill_unit += ov1;
       return;
     }
-  sqlo_hash_filler (so, fill_dfe, NULL, fill_unit, fill_arity, ov);
+  sqlo_hash_filler (so, fill_dfe, NULL, fill_unit, fill_arity, &ov1);
   best = *fill_unit;
-  if (*org_preds)
+  if (enable_hash_fill_preds && *org_preds
+      && (sqlo_max_mp_size == 0 || (THR_TMP_POOL)->mp_bytes < sqlo_max_mp_size / 2))
     {
-      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, ov);
+      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, &ov2);
+      *fill_unit += ov2;
       if (*fill_unit < 0.7 * best)
 	{
 	  return;

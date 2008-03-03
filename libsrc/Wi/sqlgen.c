@@ -3409,9 +3409,6 @@ dfe_unit_col_loci (df_elt_t * dfe)
 	    col_dfe->dfe_locus = dfe->dfe_locus;
 	}
       END_DO_SET();
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.join_test);
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.after_join_test);
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.vdb_join_test);
       if (dfe->_.table.hash_filler)
 	{
 	  if (IS_BOX_POINTER (dfe->dfe_locus))
@@ -3421,6 +3418,9 @@ dfe_unit_col_loci (df_elt_t * dfe)
 	}
       if (HR_FILL == dfe->_.table.hash_role)
 	t_set_push (&dfe->dfe_sqlo->so_hash_fillers, (void*) dfe);
+      dfe_list_col_loci ((df_elt_t *)dfe->_.table.join_test);
+      dfe_list_col_loci ((df_elt_t *)dfe->_.table.after_join_test);
+      dfe_list_col_loci ((df_elt_t *)dfe->_.table.vdb_join_test);
       break;
     case DFE_EXISTS:
     case DFE_VALUE_SUBQ:
