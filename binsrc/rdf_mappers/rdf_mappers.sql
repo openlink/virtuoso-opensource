@@ -2244,6 +2244,44 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'))
 ;
 
+create procedure DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME(in elem varchar) returns varchar
+{
+    declare cur, result varchar;
+    declare i integer;
+    cur := DB.DBA.GET_XBRL_CANONICAL_NAME(elem);
+    cur := replace(cur, '_', ' ');
+    if (cur is not null)
+    {
+       result := chr(cur[0]);
+       for (i := 1; i < length(cur); i := i+1)
+       {
+           if  (chr(cur[i]) = upper(chr(cur[i])))
+           {
+               if (chr(cur[i - 1]) = upper(chr(cur[i - 1])) or chr(cur[i - 1]) = ' ')
+                   result := concat(result, chr(cur[i]));
+               else
+               {
+                   result := concat(result, ' ');
+                   result := concat(result, chr(cur[i]));
+               }
+           }
+           else
+               result := concat(result, chr(cur[i]));
+       }
+        return result;
+    }
+    else
+        return null;
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'))
+;
+
+
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('xbrl_rule1', 1, '/schemas/xbrl/(.*)', vector('path'), 1,
 '/sparql?query=DESCRIBE%%20%%3Chttp%%3A//demo.openlinksw.com/schemas/xbrl/%U%%3E%%20FROM%%20%%3Chttp%%3A//demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/%%3E',
 vector('path'), null, '(text/rdf.n3)|(application/rdf.xml)', 0, null);
@@ -2356,3 +2394,23 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
     }
   return 1;
 };
+
+create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns varchar
+{
+    declare cur, datatype varchar;
+    cur := 'http://demo.openlinksw.com/schemas/xbrl/' || elem;
+    datatype := (sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> select ?range from <http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property; rdfs:range ?range } );
+    datatype := subseq(datatype, strrchr(datatype, '#') + 1);
+    datatype := subseq(datatype, 0, strstr(datatype, 'ItemType'));
+    if (datatype = 'monetary')
+        return 'decimal';
+    else
+        return datatype;
+};
+
+grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'))
+;
+

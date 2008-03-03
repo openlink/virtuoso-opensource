@@ -158,6 +158,8 @@
 
   <xsl:template match="*">
     <xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
+    <xsl:variable name="canonical_datatype" select="virt:xbrl_canonical_datatype(local-name(.))" />
+    <xsl:variable name="canonicallabelname" select="virt:xbrl_canonical_label_name(local-name(.))" />
     <xsl:variable name="contextRef" select="@contextRef"/>
     <xsl:variable name="label" select="concat($ns, $canonicalname)"/>
     <xsl:variable name="dt"/>
@@ -165,17 +167,14 @@
       <rdf:Description rdf:ID="{$contextRef}">
         <xsl:element namespace="{$ns}" name="{$canonicalname}" >
                   <xsl:attribute name="rdf:datatype">
-                     <xsl:choose>
-                     <xsl:when test="@decimals">&xsd;decimal</xsl:when>
-                     <xsl:otherwise>&xsd;string</xsl:otherwise>
-                     </xsl:choose>
+                    <xsl:value-of select="concat('&xsd;', $canonical_datatype)"/>
                   </xsl:attribute>
             <xsl:value-of select="."/>
         </xsl:element>
       </rdf:Description>
       <rdf:Description rdf:about="{$label}">
         <rdfs:label>
-            <xsl:value-of select="$canonicalname"/>    
+            <xsl:value-of select="$canonicallabelname"/>
         </rdfs:label>
       </rdf:Description>
     </xsl:if>
