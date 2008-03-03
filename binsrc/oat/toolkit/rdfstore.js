@@ -139,11 +139,21 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		self.rebuild(true);
 	}
 		
+	this.enableAll = function() {
+		for (var i=0;i<self.items.length;i++)
+			self.enable(self.items[i].href);
+	}
+
 	this.disable = function(url) {
 		var index = self.findIndex(url);
 		if (index == -1) { return; }
 		self.items[index].enabled = false;
 		self.rebuild(true);
+	}
+
+	this.disableAll = function() {
+		for (var i=0;i<self.items.length;i++)
+			self.disable(self.items[i].href);
 	}
 
 	this.rebuild = function(complete) {

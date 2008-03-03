@@ -69,7 +69,7 @@ OAT.WebDav = {
 		if (dir.substring(newDir.length-1) != "/") { dir += "/"; } /* add trailing slash */
 		
 		var error = function(xhr) {
-			var p = prompt("Cannot change directory to "+dir+".\n Please specify other directory.",OAT.WebDav.options.pathFallback);
+			var p = prompt("Cannot change directory to "+dir+". It does not exist or you do not have sufficient privileges.\nPlease specify other directory.",OAT.WebDav.options.pathFallback);
 			if (!p) { return; }
 			OAT.WebDav.openDirectory(p);
 		} /* error callback */

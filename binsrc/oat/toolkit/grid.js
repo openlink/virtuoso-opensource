@@ -196,10 +196,14 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 			hide.href = "#";
 			hide.innerHTML = "visible columns";
 			self.div.appendChild(hide);
-			self.propPage = OAT.Dom.create("div",{position:"absolute",border:"2px solid #000",padding:"2px",backgroundColor:"#fff"});
-			self.propPage.style.paddingRight = "16px";
-			document.body.appendChild(self.propPage);
-			OAT.Instant.assign(self.propPage);
+			self.propPage = OAT.Dom.create("div",{padding:"5px"});
+			OAT.Anchor.assign(hide, {	title:"Visible columns",
+							content:self.propPage,
+							result_control:false,
+							activation:"click",
+							type:OAT.WinData.TYPE_RECT,
+							width:75
+				} );
 			var refresh = function() { self.propPage._Instant_hide(); }
 			var generatePair = function(index) {
 				var state = (self.header.cells[index].html.style.display != "none");
@@ -227,16 +231,11 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 				self.propPage.style.top = coords[1] + "px";
 				OAT.Dom.clear(self.propPage);
 				/* contents */
-				var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
-				close.innerHTML = "X";
-				OAT.Event.attach(close,"click",refresh);
-				self.propPage.appendChild(close);
 				var start = (self.autoNumber ? 1 : 0);
 				for (var i=start;i<self.header.cells.length;i++) {
 					var pair = generatePair(i);
 					self.propPage.appendChild(pair);
 				}
-				self.propPage._Instant_show();
 			} /* clickref */
 			OAT.Event.attach(hide,"click",clickRef);
 		} /* if allowHiding */
