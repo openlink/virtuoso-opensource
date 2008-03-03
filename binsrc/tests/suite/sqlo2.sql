@@ -1246,6 +1246,23 @@ echo both "or of known false in dt predf import\n";
 
 select top 2 * from t1order a where row_no is null or exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
 
+select count (*) from t1 where row_no = 111 or (row_no  is not null and (row_no is null or row_no = 222));
+select count (*) from t1 where row_no = 111 or (row_no  is null and (row_no is null or row_no = 222));
+
+
+-- hash fillers with hash joined existences 
+explain ('select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like ''1%'') option (order, hash)');
+select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
+echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
+echo both ": hash join with filter with hash filler with hashed exists\n";
+
+select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop);
+echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
+echo both ": verify above with ibid with loop\n";
+
+
+
+
 
 -- End of test
 --
