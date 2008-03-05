@@ -495,7 +495,7 @@ cfg_open_syslog (int level)
 		L_STYLE_GROUP | L_STYLE_TIME
 	  );
 #else
-      return 0;
+      return NULL;
 #endif
 }
 
