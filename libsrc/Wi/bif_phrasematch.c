@@ -548,7 +548,7 @@ void aps_load_phrases (query_instance_t *qst, ap_set_t *aps)
     {
       unsigned int32 chksum, idxX, idxY;
       /*unsigned int32 chk2, idxY2;*/
-      chksum = (uptrlong)(unbox (lc_nth_col (lc, 0)));
+      chksum = ((uptrlong)(unbox (lc_nth_col (lc, 0)))) & AP_PHRASE_CHKSUM_MASK;
       /* chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK; */
       idxX = AP_CHKSUM_TO_X (aps->aps_bitarrays, chksum);
       idxY = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chksum);
