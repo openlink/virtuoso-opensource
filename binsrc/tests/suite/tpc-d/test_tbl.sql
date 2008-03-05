@@ -204,3 +204,138 @@ create table OUT_Q22 (
 	NUMCUST		INTEGER,
 	TOTACCTBAL	DECIMAL (12,4)
 );
+
+create procedure cmp
+(in tbl1 varchar, in tbl2 varchar)
+{
+   declare meta any;
+   declare res1, res2 any;
+   declare res_tb1, res_tb2 any;
+   declare column1 any;
+   declare column2 any;
+   declare val1 any;
+   declare val2 any;
+   declare state, msg, err varchar;
+   declare col_name1, col_name2 varchar;
+   declare stm1, stm2 varchar;
+   declare idx1, len1 integer;
+   declare idx2, len2 integer;
+   declare col_type1, col_type2 integer;
+
+   tbl1 := complete_table_name (tbl1, 1);
+   tbl2 := complete_table_name (tbl2, 1);
+
+   stm1 := concat ('select \\COLUMN, COL_DTP from SYS_COLS where \\TABLE = \'', tbl1, '\' ORDER BY \\COLUMN');
+   stm2 := concat ('select \\COLUMN, COL_DTP from SYS_COLS where \\TABLE = \'', tbl2, '\' ORDER BY \\COLUMN');
+
+   exec (stm1, state, msg, vector (), 100, meta, res1);
+   exec (stm2, state, msg, vector (), 100, meta, res2);
+
+--   if (length (res1) <> length (res2))
+--     {
+--       signal ('00001', concat ('Tables have different number of columns ',
+--	  cast (length (res1) as varchar), ' ', cast (length (res2) as varchar) ), 'TBL_C');
+--       return 0;
+--     }
+
+   len1 := length (res1);
+   idx1 := 0;
+
+   while (idx1 < len1)
+     {
+	col_name1 := aref (aref (res1, idx1), 0);
+	col_name2 := aref (aref (res2, idx1), 0);
+	col_type1 := aref (aref (res1, idx1), 1);
+	col_type2 := aref (aref (res1, idx1), 1);
+
+        if (col_name1 <> col_name2)
+          return 0;
+
+--      if (col_type1 <> col_type2)
+--        return 0;
+
+	if (col_name1 = '_IDN')
+	  goto next;
+
+	stm1 := concat ('select ', col_name1, ' from ', tbl1);
+	stm2 := concat ('select ', col_name2, ' from ', tbl2);
+
+
+   	exec (stm1, state, msg, vector (), 100, meta, res_tb1);
+   	exec (stm2, state, msg, vector (), 100, meta, res_tb2);
+
+        if (length (res_tb1) <> length (res_tb2))
+	  {
+	    signal ('00002', concat ('Tables have different result set ',
+	       cast (length (res_tb1) as varchar), ' ', cast (length (res_tb2) as varchar) ), 'TBL_C');
+	    return 0;
+	  }
+
+	len2 := length (res_tb1);
+	idx2 := 0;
+
+	while (idx2 < len2)
+	  {
+
+	     val1 := aref (aref (res_tb1, idx2), 0);
+	     val2 := aref (aref (res_tb2, idx2), 0);
+
+--	     if (col_type1 = 182)
+	     if (__tag (val1) = 181  or __tag (val2) = 181 or __tag (val1) = 182 or __tag (val2) = 182)
+	       {
+		  val1 := trim (val1);
+		  val2 := trim (val2);
+	       }
+
+	     if (__tag (val1) <> __tag (val2))
+	       {
+		  if ((__tag (val1) = 181 or __tag (val1) = 182) and (__tag (val2) = 191))
+		    {
+		      val1 := cast (val1 as integer);
+		      val2 := floor (val2);
+		    }
+
+		  if ((__tag (val1) = 184) and (__tag (val2) = 181 or __tag (val2) = 191))
+		    {
+		      val1 := floor (val1);
+		      val2 := cast (val2 as integer);
+		    }
+	       }
+
+	     if (__tag (val1) = 219)
+	       {
+--		  val1 := cast (((val1 + 0.5) * 100) as integer) / 100;
+--		  val2 := cast (((val2 + 0.5) * 100) as integer) / 100;
+		  if (tbl2 = 'DB.DBA.OUT_Q15' and col_name1 = 'TOTAL_REVENUE')
+		    {
+		       val1 := floor (val1);
+		       val2 := floor (val2);
+	            }
+		  else
+		    {
+		       val1 := floor (val1 + 0.5);
+		       val2 := floor (val2 + 0.5);
+	            }
+	       }
+
+	     if (val1 <> val2)
+	       {
+	          signal ('00003', concat ('Tables have different values ',
+	            cast (val1 as varchar), ' ', cast (val2 as varchar) ), 'TBL_C');
+	          return 0;
+	       }
+
+	    idx2 := idx2 + 1;
+	  }
+
+next:
+	idx1 := idx1 + 1;
+     }
+
+--
+-- all is OK.
+--
+
+  return 1;
+}
+;

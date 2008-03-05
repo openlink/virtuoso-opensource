@@ -269,6 +269,20 @@ else
       LOG "***ABORTED: tpcd test -- load_query.sql"
       exit 1
   fi
+  RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < sql_rdf.sql
+
+  if test $STATUS -ne 0
+  then
+      LOG "***ABORTED: tpcd test -- sql_rdf.sql"
+      exit 1
+  fi
+  RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < Q_sparql_map_cmp.sql
+
+  if test $STATUS -ne 0
+  then
+      LOG "***ABORTED: tpcd test -- Q_sparql_map_cmp.sql"
+      exit 1
+  fi
 fi
 
 #
