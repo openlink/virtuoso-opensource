@@ -1272,7 +1272,7 @@ free_the_future:
 		}
 	    }
 
-	  if (future && !was_second && !client->dks_fixed_thread && future->rq_client != client)
+	  if (future && !client_freed && !was_second && !client->dks_fixed_thread && future->rq_client != client)
 	    {
 	      if (client->dks_thread_state == DKST_BURST)
 		{
