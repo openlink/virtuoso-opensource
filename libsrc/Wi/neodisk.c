@@ -635,7 +635,7 @@ long tc_cpt_unremap_dirty;
 
 
 void
-cpt_neodisk_page (void *key, void *value)
+cpt_neodisk_page (const void *key, void *value)
 {
   dp_addr_t logical = (dp_addr_t) (uptrlong) key;
   dp_addr_t physical = (dp_addr_t) (uptrlong) value;
@@ -746,7 +746,7 @@ dbs_buf_by_dp (dbe_storage_t * dbs, dp_addr_t dp)
 
 
 void
-cpt_unremap_page_in_ram (void *key, void *value)
+cpt_unremap_page_in_ram (const void *key, void *value)
 {
   dp_addr_t logical = (dp_addr_t) (uptrlong) key;
   dp_addr_t physical = (dp_addr_t) (uptrlong) value;
@@ -776,8 +776,7 @@ cpt_unremap_in_ram (void)
 {
   /* if happens to be any buffers in RAM that are checkpoint
      remapped and not mapped back. Return number */
-  maphash (cpt_unremap_page_in_ram,
-	   cpt_dbs->dbs_cpt_remap);
+  maphash (cpt_unremap_page_in_ram, cpt_dbs->dbs_cpt_remap);
 }
 
 
@@ -793,7 +792,7 @@ remap_t **mcp_remap_ptrs;
 
 
 void
-cpt_mark_unremap (void *key, void *value)
+cpt_mark_unremap (const void *key, void *value)
 {
   dp_addr_t logical = (dp_addr_t) (uptrlong) key;
   dp_addr_t physical = (dp_addr_t) (uptrlong) value;

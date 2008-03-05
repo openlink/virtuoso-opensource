@@ -711,8 +711,11 @@ return; /* !!! Stub for GPF in udttest.sql */
 
 #ifdef UDT_HASH_DEBUG
 static void
-dbg_udt_print_id_hash_entry (ptrlong id_pk, sql_class_t *cls)
+dbg_udt_print_id_hash_entry (const void *key, void *data)
 {
+  long id_pk = (long) (ptrlong) key;
+  sql_class_t * cls = (sql_class_t *) data;
+
   fprintf (stderr, "class [id:%ld] [%p] [%s] [%ld] lang:%d inst:%d def:%d mem:%d\n",
       (long) id_pk, cls, cls->scl_name, cls->scl_id,
       cls->scl_ext_lang, cls->scl_method_map ? 1 : 0, cls->scl_defined, cls->scl_mem_only);
@@ -738,7 +741,7 @@ dbg_udt_print_class_hash (dbe_schema_t *sc, char *msg, char *udt_name)
     }
   fprintf (stderr, "****** [%s]: %s *****\n", udt_name ? udt_name : "", msg);
   fprintf (stderr, "++++++ [%s]: %s +++++\n", udt_name ? udt_name : "", msg);
-  maphash ((maphash_func) dbg_udt_print_id_hash_entry, sc->sc_id_to_type);
+  maphash (dbg_udt_print_id_hash_entry, sc->sc_id_to_type);
   fprintf (stderr, "###### [%s]: %s #####\n", udt_name ? udt_name : "", msg);
 }
 #endif

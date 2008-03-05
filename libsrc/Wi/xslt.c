@@ -2599,7 +2599,7 @@ xslt_template_destroy (xslt_template_t *xst)
 }
 
 
-void xslt_release_named_mode (void *key, void *data)
+void xslt_release_named_mode (const void *key, void *data)
 {
   dk_free_tree ((caddr_t)data);
 }

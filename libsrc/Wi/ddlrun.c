@@ -2085,8 +2085,10 @@ ddl_fk_init (void)
 
 
 void
-sch_key_fill_sub (void *id, dbe_key_t * key)
+sch_key_fill_sub (const void *id, void * data)
 {
+  dbe_key_t *key = (dbe_key_t *) data;
+
   key_fill_supers (key, key);
 }
 
@@ -2095,7 +2097,7 @@ void
 sch_fill_key_subkey (dbe_schema_t * sc)
 {
   super_sub_schema = sc;
-  maphash ((maphash_func) sch_key_fill_sub, sc->sc_id_to_key);
+  maphash (sch_key_fill_sub, sc->sc_id_to_key);
 }
 
 

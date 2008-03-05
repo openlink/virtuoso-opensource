@@ -265,7 +265,7 @@ hosting_client_attach (client_connection_t *cli, hosting_version_t * ver, char *
 
 
 static void
-hosting_clear_attachment (void *k, void *data)
+hosting_clear_attachment (const void *k, void *data)
 {
   hosting_version_t *ver = (hosting_version_t *)k;
 

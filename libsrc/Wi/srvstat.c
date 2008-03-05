@@ -728,7 +728,7 @@ gen_lock_status (gen_lock_t * pl, char * indent, long id)
 
 
 void
-lock_status (void *key, void *value)
+lock_status (const void *key, void *value)
 {
   page_lock_t * pl = (page_lock_t*) value;
   if (pl->pl_page != (dp_addr_t) (ptrlong) key)
@@ -891,17 +891,21 @@ hic_status ()
 
 
 void
-key_status (long k_id, dbe_key_t * key)
+key_status (const void *k_id, void *k_key)
 {
+  dbe_key_t *key = (dbe_key_t *) k_key;
   if (strncmp (key->key_table->tb_name, "DB.DBA.SYS_", 11) == 0)
     return;
   if (!key->key_touch || !key->key_read)
     return;
   rep_printf ("%-18s %-19s %7ld %7ld %4ld%% %7ld %7ld %3ld%% %ld\n",
-      key->key_table->tb_name, key->key_name,
-      key->key_touch, key->key_read,
+      key->key_table->tb_name,
+      key->key_name,
+      key->key_touch,
+      key->key_read,
       (key->key_read * 100) / (key->key_touch + 1),
-      key->key_lock_set, key->key_lock_wait,
+      key->key_lock_set,
+      key->key_lock_wait,
       (key->key_lock_wait * 100) / (key->key_lock_set + 1),
       key->key_deadlocks);
 }
@@ -911,8 +915,7 @@ void
 key_stats (void)
 {
   rep_printf ("Index Usage:\nTable	      Index	       Touches   Reads %Miss   Locks   Waits   %W n-dead\n");
-  maphash ((maphash_func) key_status,
-      wi_inst.wi_schema->sc_id_to_key);
+  maphash (key_status, wi_inst.wi_schema->sc_id_to_key);
 }
 
 
