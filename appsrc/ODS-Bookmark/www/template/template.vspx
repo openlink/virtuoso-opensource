@@ -63,7 +63,8 @@
           // WebDAV
           var options = { imagePath: '/ods/images/oat/',
                           imageExt: 'png',
-                          path: '<?V '/DAV/home/' || self.ownerName || '/' ?>'
+			  path: '<?V '/DAV/home/' || self.ownerName || '/' ?>',
+			  user: '<?V self.ownerName ?>'
                         };
           OAT.WebDav.init(options);
           oWebDAV = OAT.WebDav;

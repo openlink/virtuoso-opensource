@@ -240,7 +240,8 @@
         // WebDAV
         var options = { imagePath: '/ods/images/oat/',
                         imageExt: 'png',
-                        path: '/DAV/home/<xsl:value-of select="//user_info/user_name" />/'
+			path: '/DAV/home/<xsl:value-of select="//user_info/user_name" />/',
+			user: '<xsl:value-of select="//user_info/user_name" />'
                       };
         OAT.WebDav.init(options);
         oWebDAV = OAT.WebDav;
