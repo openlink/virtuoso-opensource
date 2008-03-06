@@ -46,7 +46,7 @@ int sec_proc_check (query_t * proc, oid_t group, oid_t user);
 
 void sec_dd_grant (dbe_schema_t * sc, const char * object, const char * column,
     int is_grant, int op, oid_t grantee);
-void rds_dd_grant (char *object, int is_grant, oid_t grantee);
+void rds_dd_grant (const char *object, int is_grant, oid_t grantee);
 
 void sec_read_tables (void);
 

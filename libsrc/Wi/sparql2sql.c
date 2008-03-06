@@ -426,7 +426,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       if (safely_copy_all_vars)
         query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
       else
-        query->_.req_top.orig_retvals = t_box_copy (retvals);
+        query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
       if (0 == sparp->sparp_query_uses_aggregates)
     return;
       sparp_gp_localtrav_treelist (sparp, retvals,
@@ -480,7 +480,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       if (safely_copy_all_vars)
         query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
       else
-        query->_.req_top.orig_retvals = t_box_copy (retvals);
+        query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
     }
 /*  else if ((SPART **)COUNT_L == old_retvals)
     {
@@ -517,10 +517,7 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
 void
 sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
 {
-  sparp_env_t *env = sparp->sparp_env;
-  caddr_t retselid = query->_.req_top.retselid;
   SPART **retvals = query->_.req_top.retvals;
-  int ctr;
   caddr_t retvalmode_name, formatmode_name;
   if (0 == sparp->sparp_query_uses_aggregates)
     return;
@@ -558,7 +555,7 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
           int ctr;
           sparp_t *sub_sparp;
           sparp_gp_trav_suspend (sparp);
-          sub_sparp = t_box_copy ((caddr_t)sparp);
+          sub_sparp = (sparp_t *) t_box_copy ((box_t)sparp);
           sub_sparp->sparp_expr = curr->_.gp.subquery;
           sub_sparp->sparp_env = curr->_.gp.subquery->_.req_top.shared_spare;
           sparp_rewrite_all (sub_sparp, 1);
@@ -907,7 +904,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
     new_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI;
   new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | SPART_VARR_SPRINTFF;
   new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
-  new_rvr.rvrSprintffs = (caddr_t *)t_alloc_box (DV_ARRAY_OF_POINTER, new_rvr.rvrSprintffCount * sizeof(caddr_t));
+  new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (DV_ARRAY_OF_POINTER, new_rvr.rvrSprintffCount * sizeof(caddr_t));
   for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
     new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
   sparp_equiv_tighten (sparp, eq_l, &new_rvr, ~0);
@@ -1289,10 +1286,10 @@ sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state
           for (outer_gp_sts = sparp->sparp_stss+1; outer_gp_sts < sts_this; outer_gp_sts++)
             {
               SPART *outer_gp = outer_gp_sts->sts_env;
-	      sparp_equiv_t *topmost_eq = sparp_equiv_get (sparp, outer_gp, vname, SPARP_EQUIV_GET_NAMESAKES);
+	      sparp_equiv_t *topmost_eq = sparp_equiv_get (sparp, outer_gp, (SPART *)vname, SPARP_EQUIV_GET_NAMESAKES);
 	      if (NULL != topmost_eq)
 		{
-		  sparp_gp_add_chain_aliases (sparp, vname, eq, sts_this, outer_gp);
+		  sparp_gp_add_chain_aliases (sparp, (SPART *) vname, eq, sts_this, outer_gp);
 		  break;
 		}
             }
@@ -2651,7 +2648,7 @@ next_ctr:
           if (old == addon) /* Already here */
             goto skip_addon; /* see below */
     }
-      addon_superclasses = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), addon, uname_virtrdf_ns_uri_isSubclassOf);
+      addon_superclasses = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), (caddr_t) addon, (caddr_t) uname_virtrdf_ns_uri_isSubclassOf);
       cmpcount = BOX_ELEMENTS (addon_superclasses);
       for (ctr = 0; ctr < len; ctr++)
     {
@@ -2666,7 +2663,7 @@ next_ctr:
             }
         }
       dk_free_tree (addon_superclasses);
-      addon_subclasses = jso_triple_get_subjs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), uname_virtrdf_ns_uri_isSubclassOf, addon);
+      addon_subclasses = jso_triple_get_subjs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), (caddr_t) uname_virtrdf_ns_uri_isSubclassOf, (caddr_t) addon);
       cmpcount = BOX_ELEMENTS (addon_subclasses);
       for (ctr = 0; ctr < len; ctr++)
         {
@@ -2727,7 +2724,7 @@ next_isectctr:
           if (isect_classes [isectctr] == old) /* Found in isect */
             goto test_next_old; /* see below */
         }
-      old_superclasses = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), old, uname_virtrdf_ns_uri_isSubclassOf);
+      old_superclasses = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), (caddr_t) old, (caddr_t) uname_virtrdf_ns_uri_isSubclassOf);
       cmpcount = BOX_ELEMENTS (old_superclasses);
       for (isectctr = 0; isectctr < isect_count; isectctr++)
         {
@@ -2746,7 +2743,7 @@ next_isectctr:
         rvr->rvrIriClasses [ctr] = rvr->rvrIriClasses [len - 1];
       len--;
 /* Now we should add subclasses of \c old that are in the \c isect_classes */
-      old_subclasses = jso_triple_get_subjs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), uname_virtrdf_ns_uri_isSubclassOf, old);
+      old_subclasses = jso_triple_get_subjs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), (caddr_t) uname_virtrdf_ns_uri_isSubclassOf, (caddr_t) old);
       cmpcount = BOX_ELEMENTS (old_subclasses);
       for (cmpctr = 0; cmpctr < cmpcount; cmpctr++)
         {
@@ -3422,7 +3419,7 @@ sparp_check_field_mapping_of_cvalue (sparp_t *sparp, SPART *cvalue, rdf_val_rang
     {
       if (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions)
         {
-          if (!rvr_sprintffs_like (cvalue, qmv_or_fmt_rvr))
+          if (!rvr_sprintffs_like ((caddr_t) cvalue, qmv_or_fmt_rvr))
             return SSG_QM_NO_MATCH;
         }
       if (SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions)
@@ -3590,7 +3587,7 @@ field_sff_isects_qmv_sff: ;
           if (SSG_QM_NO_MATCH == chk_res)
         return SSG_QM_NO_MATCH;
             }
-      chk_res = sparp_check_field_mapping_of_cvalue (sparp, eff_val, qmv_or_fmt_rvr, rvr);
+      chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *) eff_val, qmv_or_fmt_rvr, rvr);
       return chk_res;
     }
   GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
@@ -5539,7 +5536,7 @@ sparp_collect_atable_uses (sparp_t *sparp, qm_atable_array_t qmatables, qm_atabl
         {
           ptrlong use_idx = ecm_add_name (ata->qmvaAlias, (void **)(&uses), use_count_ptr, sizeof (qm_atable_use_t));
           qm_atable_use_t *use = uses + use_idx;
-          use->qmatu_alias = ata->qmvaAlias;
+          use->qmatu_alias = (char *) ata->qmvaAlias;
           use->qmatu_ata = ata;
           use->qmatu_more = NULL;
         }
@@ -5835,7 +5832,7 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
                 {
                   SPART *dep_field = key_eq->e_vars[dep_ctr];
                   int dep_triple_idx, dep_field_tr_idx;
-                  SPART *dep_triple;
+          SPART *dep_triple = NULL;
                   quad_map_t *dep_qm;
                   qm_value_t *dep_qmv;
                   if (NULL == dep_field->_.var.tabid) /* The variable is not a field in a triple (const read, not gspo use) */
@@ -5931,7 +5928,7 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   if (safely_copy_retvals)
     sparp->sparp_expr->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, sparp->sparp_expr->_.req_top.pattern);
   else
-  sparp->sparp_expr->_.req_top.expanded_orig_retvals = t_box_copy (sparp->sparp_expr->_.req_top.retvals);
+    sparp->sparp_expr->_.req_top.expanded_orig_retvals = (SPART **) t_box_copy ((box_t) sparp->sparp_expr->_.req_top.retvals);
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */

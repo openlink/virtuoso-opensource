@@ -63,7 +63,8 @@ state_slot_t *
 ssl_use_stock  (comp_context_t * cc, state_slot_t * ssl)
 {
   cc = cc->cc_super_cc;
-  return ssl;
+
+#if 0
   if (!cc->cc_keep_ssl)
     cc->cc_keep_ssl = hash_table_allocate (11);
 
@@ -72,6 +73,8 @@ ssl_use_stock  (comp_context_t * cc, state_slot_t * ssl)
   if (SSL_VARIABLE == ssl->ssl_type
       && !gethash ((void*) ssl, cc->cc_keep_ssl))
     return ssl_get_stock (ssl->ssl_index);
+#endif
+
   return ssl;
 }
 

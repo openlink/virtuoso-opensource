@@ -362,7 +362,9 @@ f1_v_is_U:
         default: goto generic_tails; /* see below */
         }
     }
-  GPF_T; /* never reached */
+
+  /*NOTREACHED*/
+  GPF_T;
 
 f1_v_is_d:
 f1_v_is_u:
@@ -407,7 +409,9 @@ f1_v_is_u:
         default: goto generic_tails; /* see below */
         }
     }
-  GPF_T; /* never reached */
+
+  /*NOTREACHED*/
+  GPF_T;
 
 f1_v_is_s:
   if ('\0' == f1_tail[0])
@@ -803,7 +807,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
               if (!strcmp (res [res_ctr], f12))
                 goto skip_save_f12;
             }
-          res [res_count++] = f12;
+          res [res_count++] = (caddr_t) f12;
 skip_save_f12: ;
         }
     }

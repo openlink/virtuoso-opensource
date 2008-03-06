@@ -41,7 +41,7 @@ extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
 #define SPAR_GPT_ENV_PUSH	0x01	/* Environment should be pushed. */
 
 /*! Returns combination of SPAR_GPT_... bits */
-typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t **sts_this, void *common_env);
+typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 
 extern int sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
@@ -210,7 +210,7 @@ extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, 
 extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr);
 #define sparp_rvr_audit(sparp,rvr) dbg_sparp_rvr_audit (__FILE__, __LINE__, sparp, rvr)
 #else
-#define sparp_rvr_audit(sparp,rvr) 0
+#define sparp_rvr_audit(sparp,rvr)
 #endif
 
 /*! Creates a copy of given \c src (the structure plus member lists but not literals).

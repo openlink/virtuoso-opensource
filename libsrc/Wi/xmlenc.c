@@ -2335,9 +2335,9 @@ caddr_t bif_xenc_key_raw_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
   caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RAW_rand_create");
   int len = (int) bif_long_arg (qst, args, 1, "xenc_key_RAW_rand_create");
   xenc_key_t * k;
-  int rc, len_b64;
+  int rc;
   unsigned char buf[4096];
-  caddr_t key_data;
+  unsigned char * key_data;
 
   if (len < 1 || len > sizeof (buf))
     len = sizeof (buf);
@@ -2355,7 +2355,7 @@ caddr_t bif_xenc_key_raw_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
 
-  key_data = dk_alloc_box (len, DV_STRING);
+  key_data = (unsigned char *) dk_alloc_box (len, DV_STRING);
   memcpy (key_data, buf, len);
 
   k->ki.raw.k = key_data;

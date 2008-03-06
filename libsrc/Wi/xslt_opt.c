@@ -500,7 +500,7 @@ xst_rule_default_priority (xp_query_t * xqr)
 	  default: GPF_T; return 0;
 	}
     }
-  else
+
     return 0;
 }
 

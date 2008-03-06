@@ -730,8 +730,10 @@ uint32 ap_phrase_chksum (caddr_t ptext, encodedlang_handler_t *elh__UTF8, int *e
 #define AP_DELETE_IT ((void *)((ptrlong)0xDEADC0DE))
 
 static int
-ap_phrase_cmp (const ap_phrase_t *p1, const ap_phrase_t *p2)
+ap_phrase_cmp (const void *cp1, const void *cp2)
 {
+  const ap_phrase_t *p1 = (const ap_phrase_t *) cp1;
+  const ap_phrase_t *p2 = (const ap_phrase_t *) cp2;
   int res;
   if (p1->app_set->aps_id != p2->app_set->aps_id)
     return ((p1->app_set->aps_id > p2->app_set->aps_id) ? 1 : -1);

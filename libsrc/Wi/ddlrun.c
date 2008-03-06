@@ -2455,7 +2455,7 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   char *szTheTableName, *szTheIndexName;
   int atomic;
   caddr_t temp_tx_box;
-  caddr_t *repl;
+  caddr_t *repl = NULL;
 
   atomic = count_exceed (qi, table, MIN_FOR_ATOMIC, name);
   atomic_mode (qi, 1, atomic);
@@ -2647,7 +2647,7 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
 {
   caddr_t * arr = NULL;
   int atomic;
-  caddr_t *repl;
+  caddr_t *repl = NULL;
 
   /* commit, because it will clear up the lt_log */
   ddl_commit_trx (qi);
@@ -4201,7 +4201,7 @@ char *find_repl_account_in_src_text (char **src_text_ptr)
 caddr_t
 safe_blob_to_string (lock_trx_t * lt, caddr_t bhp, caddr_t *err_ret)
 {
-  caddr_t ret;
+  caddr_t ret = NULL;
   QR_RESET_CTX
   {
     ret = blob_to_string (lt, bhp);
@@ -4929,7 +4929,9 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     }
   return;
 
+#ifdef VIRT30_40
 skip_incomp:
+#endif
 #ifdef REPLICATION_SUPPORT2
    dk_free_box (r_text);
 #endif

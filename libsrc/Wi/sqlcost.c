@@ -1381,7 +1381,7 @@ sqlo_set_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret)
 {
   int inx;
   float csum = 0, asum = 0;
-  float a_t0, a_t1;
+  float a_t0 = 0, a_t1 = 0;
   DO_BOX (df_elt_t *, term, inx, dfe->_.qexp.terms)
     {
       float arity, unit;

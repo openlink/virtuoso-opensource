@@ -273,6 +273,8 @@ xp_first_step (XT * tree)
 	return tree;
       tree = tree->_.step.input;
     }
+
+  /*NOTREACHED*/
   return tree;
 }
 
@@ -1115,9 +1117,11 @@ void
 xp_init_filter (xpp_t *xpp, xp_ctx_t * start_ctx, xp_ret_t * xr)
 {
   char cn[30];
+#ifdef OLD_VXML_TABLES
   ST *where = NULL;
   ST *texp = t_stlist (9, TABLE_EXP, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL);
   ST *sel = t_stlist (5, SELECT_STMT, 0, t_list (0), NULL, texp);
+#endif
   memset (xr, 0, sizeof (xp_ret_t));
   sprintf (cn, "c__%d", start_ctx->xc_c_no);
   if (start_ctx->xc_is_generated)

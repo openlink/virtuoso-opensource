@@ -2526,14 +2526,14 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  it_map_t * itm = &it->it_maps[inx];
 	  int n = 0;
-	  it_cursor_t * cr, *cr2;
+	  it_cursor_t *cr;
 	  if (!itm->itm_dp_to_buf.ht_count)
 	    continue;
 	  printf ("tree %p: \n", (void *)it);
 	  DO_HT (void *, ignore, buffer_desc_t *, buf, &itm->itm_dp_to_buf)
 	    {
 	      printf (" \npage %ld:", (long) buf->bd_page);
-	      for (cr2 = buf->bd_registered; cr2; cr2 = cr2->itc_next_on_page)
+	      for (cr = buf->bd_registered; cr; cr = cr->itc_next_on_page)
 		{
 		  n++;
 		  if (n > 1000)
@@ -2543,9 +2543,9 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		}
 	      printf (" %d crsrs: ", n);
 	      n = 0;
-	      for (cr2 = buf->bd_registered; cr2; cr2 = cr2->itc_next_on_page)
+	      for (cr = buf->bd_registered; cr; cr = cr->itc_next_on_page)
 		{
-		  printf (" %p ", (void *)cr2);
+		  printf (" %p ", (void *)cr);
 		  if (n > 10)
 		    break;
 		  n++;
@@ -3054,7 +3054,7 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
-  dbe_key_t * key;
+  dbe_key_t * key = NULL;
   caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
   caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);

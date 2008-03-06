@@ -923,8 +923,12 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     if (outer->_.sif_saved_lexdepth == scn3_lexdepth)
       {
+#ifndef SCN3SPLIT
         spar_query_env_t sparqre;
+#endif
+
         BEGIN(SQL);
+
 #ifndef SCN3SPLIT
         scn3_sparp_inline_subselect (&sparqre, "\n)\n", outer);
         yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
@@ -942,8 +946,12 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     if (outer->_.sif_saved_lexdepth == scn3_lexdepth)
       {
+#ifndef SCN3SPLIT
         spar_query_env_t sparqre;
+#endif
+ 
         BEGIN(SQL);
+
 #ifndef SCN3SPLIT
         scn3_sparp_inline_subselect (&sparqre, "\n;\n", outer);
         yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);

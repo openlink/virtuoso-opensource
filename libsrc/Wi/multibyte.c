@@ -239,13 +239,13 @@ wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length)
 
 
 wchar_t *
-virt_wcschr (wchar_t *wcs, wchar_t wc)
+virt_wcschr (const wchar_t *wcs, wchar_t wc)
 {
   if (wcs)
     while (*wcs)
       {
 	if (*wcs == wc)
-	  return (wcs);
+	  return ((wchar_t *)wcs);
 	wcs++;
       }
   return NULL;
@@ -253,9 +253,9 @@ virt_wcschr (wchar_t *wcs, wchar_t wc)
 
 
 wchar_t *
-virt_wcsrchr (wchar_t *wcs, wchar_t wc)
+virt_wcsrchr (const wchar_t *wcs, wchar_t wc)
 {
-  wchar_t *wcs_end = wcs;
+  wchar_t *wcs_end = (wchar_t *)wcs;
   if (wcs && *wcs)
     {
       while (*wcs_end)
@@ -264,7 +264,7 @@ virt_wcsrchr (wchar_t *wcs, wchar_t wc)
       while (wcs_end >= wcs)
 	{
 	  if (*wcs == wc)
-	    return (wcs);
+	    return ((wchar_t *)wcs);
 	  wcs--;
 	}
     }
@@ -272,7 +272,7 @@ virt_wcsrchr (wchar_t *wcs, wchar_t wc)
 }
 
 size_t
-virt_wcslen (wchar_t *wcs)
+virt_wcslen (const wchar_t *wcs)
 {
   size_t len = 0;
   while (wcs && *wcs)
@@ -285,7 +285,7 @@ virt_wcslen (wchar_t *wcs)
 
 
 int
-virt_wcsncmp (wchar_t *from, wchar_t *to, size_t len)
+virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len)
 {
   while (from && *from && to && *to)
     {
@@ -309,15 +309,15 @@ virt_wcsncmp (wchar_t *from, wchar_t *to, size_t len)
 
 
 wchar_t *
-virt_wcsstr (wchar_t *wcs, wchar_t *wc)
+virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
   wchar_t *cp;
   wchar_t *ep;
 
   len = virt_wcslen (wc);
-  ep = wcs + virt_wcslen (wcs) - len;
-  for (cp = wcs; cp <= ep; cp++)
+  ep = (wchar_t *) wcs + virt_wcslen (wcs) - len;
+  for (cp = (wchar_t *) wcs; cp <= ep; cp++)
     if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
       return (wchar_t *) cp;
 

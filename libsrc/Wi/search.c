@@ -720,6 +720,8 @@ dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll)
       DB_BUF_TLEN (len, dv2[0], dv2);
       dv2 += len;
     }
+
+  /*NOTREACHED*/
   return DVC_LESS;
 }
 
@@ -745,7 +747,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
   dtp_t dtp2 = *dv2;
   int32 n1 = 0, n2 = 0;			/*not used before set */
   db_buf_t org_dv1 = dv1;
-  int64 ln1, ln2;
+  int64 ln1 = 0, ln2 = 0;
 
 
   if (dtp1 == dtp2)
@@ -1600,7 +1602,7 @@ int
 itc_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
   dp_addr_t leaf;
-  int res, pos, map_pos;
+  int res, pos, map_pos = 0;
   int just_landed_match = 0;
   dp_addr_t leaf_from, up;
 
@@ -2177,6 +2179,8 @@ pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 	}
       return res;
     }
+
+  /*NOTREACHED*/
   return DVC_MATCH;
 }
 
@@ -2310,6 +2314,8 @@ pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 	}
       return res;
     }
+
+  /*NOTREACHED*/
   return DVC_MATCH;
 }
 
@@ -2958,9 +2964,6 @@ itc_page_split_search_1 (it_cursor_t * it, buffer_desc_t * buf,
 	      below = guess;
 	    }
 	  break;
-	  it->itc_position = map->pm_entries[guess];
-	  *leaf_ret = 0;
-	  return res;
 
 	case DVC_GREATER:
 	  below = guess;
@@ -3081,8 +3084,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
   dp_addr_t leaf, rnd_leaf;
   int res;
   int ctr  = 0, leaf_ctr = 0, rows_per_bm;
-  dbe_table_t * tb = it->itc_insert_key->key_table;
-  int64 leaf_estimate = 0, tb_count;
+  int64 leaf_estimate = 0;
 
   it->itc_search_mode = SM_READ;
  start:

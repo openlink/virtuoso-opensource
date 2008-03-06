@@ -844,7 +844,7 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
   buffer_desc_t **bufs, **local_bufs = NULL;
   buffer_desc_t *buf;
   int inx, fill = 0;
-  size_t n;
+  size_t n = 0;
 
 
   mt_write_pending = 1;

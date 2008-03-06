@@ -1647,7 +1647,9 @@ ins_flag (comp_context_t * cc, caddr_t * stmt, int f_pos)
   if (0 == strcmp (stmt[f_pos], "replacing"))
     return INS_REPLACING;
   sqlc_new_error (cc, "42000", "SQ054", "Bad insert mode.");
-  /* no return */ return 0;
+
+  /*NOTREACHED*/
+  return 0;
 }
 
 
@@ -2070,7 +2072,9 @@ cd_strip_col_name (char *name)
 	return (box_dv_short_string (name));
       name = dot + 1;
     }
-  return NULL;			/*no return */
+
+  /*NOTREACHED*/
+  return NULL;
 }
 
 void
@@ -2080,7 +2084,7 @@ qr_describe_param_names (query_t * qr, stmt_compilation_t *sc, caddr_t *err_ret)
   dbe_schema_t *sch = isp_schema (NULL);
   code_vec_t vec;
   int found, n_actual, actual_inx, n_marker, marker_inx;
-  instruction_t *ins;
+  instruction_t *ins = NULL;
   state_slot_t **actual_params;
   param_desc_t **param_markers;
   char *proc_name, *full_name;

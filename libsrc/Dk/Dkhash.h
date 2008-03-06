@@ -37,8 +37,8 @@
  * item given the number
  */
 
-typedef void	(*maphash_func) (void *k, void *data);
-typedef void	(*maphash3_func) (void *k, void *data, void *env);
+typedef void	(*maphash_func) (const void *k, void *data);
+typedef void	(*maphash3_func) (const void *k, void *data, void *env);
 
 typedef struct hash_elt_s hash_elt_t;
 
@@ -164,7 +164,7 @@ extern int dk_hit_next (dk_hash_iterator_t *hit, void **key, void **data);
 extern void dk_hash_set_rehash (dk_hash_t *ht, uint32 ov_per_bucket);
 
 typedef int32 (* box_hash_func_t)(caddr_t);
-typedef int (*box_hash_cmp_func_t) (caddr_t, caddr_t);
+typedef int (*box_hash_cmp_func_t) (ccaddr_t, ccaddr_t);
 void dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp);
 #ifdef DEBUG /* These definitions are here because they need dk_hash_t, otherwise they would be placed into Dkbox.h */
 extern void dk_check_tree_iter (box_t box, box_t parent, dk_hash_t *known);

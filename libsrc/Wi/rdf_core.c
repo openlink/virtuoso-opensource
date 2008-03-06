@@ -132,8 +132,8 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
       if (NULL != problem)
         {
           err_ret[0] = srv_make_new_error ("42000", "SR577",
-            "The argument #%d (%.100s) of callback %.300s[] of %.100s() %.100s",
-            (param_type_iter - cbk_param_types) + 1, ssl->ssl_name,
+            "The argument #%ld (%.100s) of callback %.300s[] of %.100s() %.100s",
+            (long) (param_type_iter - cbk_param_types) + 1, ssl->ssl_name,
             full_name_ret[0], funname, problem );
 	  return;
 	}
@@ -170,7 +170,7 @@ tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names)
           continue;
         }
       sqlr_set_cbk_name_and_proc (tf->tf_qi->qi_client, cbk_names[ctr], tf_cbk_param_types[ctr], tf->tf_creator,
-        tf->tf_cbk_names + ctr, tf->tf_cbk_qrs + ctr, &err );
+        (caddr_t *) (tf->tf_cbk_names + ctr), tf->tf_cbk_qrs + ctr, &err );
       if (NULL != err)
         sqlr_resignal (err);
     }
@@ -225,7 +225,7 @@ tf_new_graph (triple_feed_t *tf)
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 2];
   void **params;
   caddr_t err = NULL;
-  BOX_AUTO (params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
   params[0] = &(tf->tf_graph_iid);
   params[1] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_GRAPH], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
@@ -243,7 +243,7 @@ tf_commit (triple_feed_t *tf)
   caddr_t err;
   if (NULL == tf->tf_cbk_names[TRIPLE_FEED_COMMIT])
     return;
-  BOX_AUTO (params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
   params[0] = &(tf->tf_graph_iid);
   params[1] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_COMMIT], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
@@ -747,7 +747,7 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
       rdf_dbg_printf (("\ntf_triple (%s)", o_uri));
     }
 #endif
-  BOX_AUTO (params, params_buf, sizeof (caddr_t) * 5, DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 5, DV_ARRAY_OF_POINTER);
   params[0] = &(tf->tf_graph_iid);
   params[1] = &s_uri;
   params[2] = &p_uri;
@@ -773,7 +773,7 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
     default:
       rdf_dbg_printf (("\ntf_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
     }
-  BOX_AUTO (params, params_buf, sizeof (caddr_t) * 7, DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 7, DV_ARRAY_OF_POINTER);
   params[0] = &(tf->tf_graph_iid);
   params[1] = &s_uri;
   params[2] = &p_uri;
@@ -915,7 +915,7 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
       COUNTOF__TRIPLE_FEED );
   res = rdf_load_turtle (str, base_uri, graph_uri, flags,
-    cbk_names, app_env,
+    (ccaddr_t *) cbk_names, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
   if (NULL != err)
     {
@@ -1883,7 +1883,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
           return box_copy_tree (hit[0]);
         }
     }
-  BOX_AUTO (params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
   res = NULL;
   params[0] = &(tf->tf_graph_uri);
   params[1] = &(tf->tf_app_env);

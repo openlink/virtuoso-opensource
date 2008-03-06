@@ -737,7 +737,6 @@ subq_handle_reset (query_instance_t * qi, int reset)
 	err = thr_get_error_code (qi->qi_thread);
 	return err;
       }
-      return err;
 
     default:
       GPF_T1 (" Bad subg reset code");
@@ -2019,8 +2018,9 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.compound_start)));
 	  break;
 	case INS_COMPOUND_END:
-	  break;
+#if 0
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.compound_start)));
+#endif
 	  break;
 	case INS_HANDLER:
 	  ins = INSTR_ADD_OFS (ins, ins->_.handler.label);
@@ -2047,6 +2047,8 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
 	  break;
 	}
     }
+
+  /*NOTREACHED*/
   return NULL;
 }
 
@@ -2252,7 +2254,9 @@ subq_comp_func (caddr_t * qst, void * _subp)
     default:
       GPF_T;			/*Bad subq predicate. */
     }
-  /* no return */ return 0;
+
+  /*NOTREACHED*/ 
+  return 0;
 }
 
 

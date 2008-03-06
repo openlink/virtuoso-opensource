@@ -2321,7 +2321,7 @@ sqlp_breakup (ST * sel)
   /* if the selection is a breakup list, put the component exps of the breakup list in the selection and save the breakup info in the top.
    * Check that lists are of equal length */
   static int breakup_alias_ctr = 0;
-  int inx, is_first = 1, brk_len;
+  int inx, is_first = 1, brk_len = 0;
   dk_set_t new_terms = NULL;
   dk_set_t * terms = (dk_set_t *) sel->_.select_stmt.selection;
   if (BOX_ELEMENTS (terms) < 2

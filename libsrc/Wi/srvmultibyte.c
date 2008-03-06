@@ -851,6 +851,8 @@ compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 
       inx++;
     }
+
+  /*NOTREACHED*/
   return DVC_LESS;
 }
 
@@ -1115,8 +1117,6 @@ strstr_utf8_with_collation (caddr_t dv1, long n1,
 	  n2inx+=rc2;
 	}
     }
-  /* keeps compiler happy */
+
   return 0;
 }
-
-

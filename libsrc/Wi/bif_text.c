@@ -384,12 +384,12 @@ bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* word batch, out firest d_id, out flag true if more than 1 left */
   d_id_t d_id_1;
   d_id_t d_id_2;
-  caddr_t * wb = (caddr_t *) bif_array_arg (qst, args, 0, "wb_all_done");
+  db_buf_t * wb = (db_buf_t *) bif_array_arg (qst, args, 0, "wb_all_done");
   int inx;
   int len = BOX_ELEMENTS (wb);
   for (inx = 0; inx < len; inx++)
     {
-      caddr_t wst = wb[inx];
+      db_buf_t wst = wb[inx];
       if (DV_STRINGP (wst))
 	{
 	  vt_word_string_ends (wst, &d_id_1, &d_id_2);

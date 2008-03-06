@@ -734,7 +734,6 @@ jmp:
 void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 {
   char buf [2000];
-  int this_lineno = scn3_lineno;
 #ifdef DEBUG
   int sm2, sm1, sp1;
   sp1 = yyssp[1];

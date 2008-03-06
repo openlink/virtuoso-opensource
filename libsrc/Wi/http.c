@@ -2018,7 +2018,7 @@ bif_http_sys_parse_ranges_header (caddr_t * qst, caddr_t * err_ret, state_slot_t
   const char *szMe = "http_sys_parse_ranges_header";
   query_instance_t *qi = (query_instance_t *)qst;
   char *if_range;
-  ws_connection_t *ws;
+  ws_connection_t *ws = NULL;
   caddr_t ranges = NULL;
 
   ptrlong length;
@@ -3461,7 +3461,7 @@ void
 ws_serve_connection (ws_connection_t * ws)
 {
   int n_consec = 0;
-  int try_pipeline;
+  int try_pipeline = 0;
   dk_session_t * volatile ses = ws->ws_session;
 
 #ifdef _SSL  
@@ -5925,7 +5925,7 @@ bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   CATCH_READ_FAIL (ses)
     {
       if (binary_mode)
-	session_buffered_read_n (ses, buff, sizeof (buff), pos_r);
+	session_buffered_read_n (ses, buff, sizeof (buff), (int *) pos_r);
       else if (0 == line_mode)
 	readed = dks_read_line (ses, buff, sizeof (buff));
       else
@@ -8635,7 +8635,7 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t * conn = (caddr_t *) bif_arg (qst, args, 0, "http_keep_session");
   long id = bif_long_arg (qst, args, 1, "http_keep_session");
-  dk_session_t * ses;
+  dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
   if (DV_CONNECTION == DV_TYPE_OF (conn))
@@ -8745,7 +8745,7 @@ box_tpcip_get_interfaces ()
   dk_set_t set = NULL;
 #ifdef SIOCGIFCONF
 #define MAX_IFS 32
-  struct ifreq ifreq, *ifrp;
+  struct ifreq *ifrp;
   struct ifconf ifc;
   char buf[sizeof(struct ifreq)*MAX_IFS];
 #endif
@@ -8775,7 +8775,7 @@ box_tpcip_get_interfaces ()
     }
 
   ifrp = ifc.ifc_req;
-  for (len = ifc.ifc_len; len > 0; /* len -= sizeof (ifreq) calculated bellow */)
+  for (len = ifc.ifc_len; len > 0; /* len -= sizeof (struct ifreq) calculated bellow */)
     {
       if (ifrp->ifr_addr.sa_family == AF_INET)
 	{
@@ -8789,7 +8789,7 @@ box_tpcip_get_interfaces ()
       len -= ifrp->ifr_addr.sa_len;
 #else      
       ifrp++;
-      len -= sizeof (ifreq);
+      len -= sizeof (struct ifreq);
 #endif      
     }
 #elif defined (SIO_GET_INTERFACE_LIST)
@@ -9457,7 +9457,7 @@ cli_check_ws_terminate (client_connection_t *cli)
 void
 soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * err, int soap_version, dk_set_t hdrs)
 {
-  caddr_t data, id, type;
+  caddr_t data, id = NULL, type = NULL;
   dk_set_t tlist = NULL;
   caddr_t * my_list = NULL;
   char *start_b = NULL;
@@ -9470,7 +9470,7 @@ soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * err, 
   char szType[1000];
   caddr_t **result = NULL;
   int inx = 0, inx1 = 0;
-  caddr_t my_ctype;
+  caddr_t my_ctype = NULL;
   caddr_t *part_attrs, *part_body;
   caddr_t *attrs = NULL, *parts = NULL;
   dk_set_t ret_attrs = NULL;
@@ -9585,7 +9585,7 @@ error:
 void
 soap_mime_tree (ws_connection_t * ws, dk_set_t * set, caddr_t * err, int soap_version)
 {
-  caddr_t data, id, type;
+  caddr_t data, id = NULL, type = NULL;
   caddr_t * params = ws->ws_params;
   char *start_b = ws_mime_header_field (ws->ws_lines, "Content-Type", "start", 0);
   int inx, len;

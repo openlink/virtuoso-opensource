@@ -2166,7 +2166,9 @@ partial_realize_condition (dk_session_t * ses, long cond, caddr_t value)
  * Globals used : disconnected
  */
 
-static dk_session_t * disconnected;
+#ifndef NO_THREAD
+static dk_session_t * disconnected = NULL;
+#endif
 
 static void
 is_this_disconnected (long cond, future_t * future)
@@ -3509,7 +3511,7 @@ timeout_round_loop ()
 {
   while (1)
     {
-      timeout_round (NULL);
+      timeout_round (PASS_G NULL);
       process_sleep (&atomic_timeout);
     }
 }

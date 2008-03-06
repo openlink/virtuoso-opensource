@@ -232,7 +232,7 @@ bm_insert (bitno_t bm_start, db_buf_t bm, short * bm_len_ret, bitno_t value, int
   dtp_t ext_auto[CE_MAX_LENGTH + 10]; /*margin for overflow */
   db_buf_t ext = ext_auto;
   db_buf_t ce = bm;
-  int new_ce_len =0, old_ce_len =0, ce_len;
+  int new_ce_len = 0, old_ce_len = 0, ce_len = 0;
   char ins_at_end = 0;
   while (ce < bm + bm_len)
     {
@@ -774,7 +774,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
   itc->itc_bm_split_left_side = &left_pl;
   itc->itc_bm_split_right_side = NULL;
   itc->itc_bp.bp_is_pos_valid = 0; /* reset the flag so itc_invalidate_bm_crs does not consider the value it itc_bp.bp_value to be deleted */
-  itc_invalidate_bm_crs (itc, buf, 1, &local_transits);
+  itc_invalidate_bm_crs (itc, buf, 1, (dk_set_t *) &local_transits);
   itc_page_leave (itc, buf);
   itc->itc_search_mode = SM_INSERT;
   IE_SET_FLAGS (&image[0], 0); /* can come from existing row, can have tail reserved etc.  Not valid in insert */
@@ -1601,7 +1601,6 @@ pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, i
 int64
 unbox_iri_int64 (caddr_t x)
 {
-  dtp_t x_dtp;
   if (!IS_BOX_POINTER (x))
     return ((int64)((ptrlong)x));
   if (DV_LONG_INT == box_tag (x))
@@ -1734,7 +1733,7 @@ itc_bm_land_seek (it_cursor_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start
    * if no upper limit and desc, go to highest bit.
    * ret dvc_greater to mean end of search, dvc_match to continue checking, dvc_less to get the next row
    */
-  int64 min, max;
+  int64 min = 0, max;
   search_spec_t * sp = itc->itc_bm_col_spec;
   if (!sp)
     {
@@ -2006,7 +2005,6 @@ itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   /* the idea is that the itc can land on a bm row that is locked amd while waiting the row can split.  If so, the itc has to restart the search cause it can't know which side it wants unless it is already landed
    * the itc_to_reset is set by itc_keep_together when inserting the right hand half of the split. */
-  int rc;
   itc->itc_to_reset = RWG_NO_WAIT;
   if (ITC_IS_LTRX (itc))
     itc_landed_lock_check (itc, buf_ret);

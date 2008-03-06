@@ -810,7 +810,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 
 
 int
-rdf_box_compare (caddr_t a1, caddr_t a2)
+rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 {
   /* this is cmp_boxes  where one or both arguments are dv_rdf 
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
@@ -835,7 +835,7 @@ rdf_box_compare (caddr_t a1, caddr_t a2)
   /* if stringg and non-string */
   if ((DV_STRING != data_dtp1) && !rb1->rb_chksum_tail)
     {
-      return cmp_boxes (data1, a2, NULL, NULL);
+      return cmp_boxes (data1, (caddr_t) a2, NULL, NULL);
     }
   if (DV_RDF == dtp2)
 	{
@@ -846,10 +846,10 @@ rdf_box_compare (caddr_t a1, caddr_t a2)
     {
       if (rb1->rb_chksum_tail)
         return DVC_LESS;
-      data2 = a2;
+      data2 = (caddr_t) a2;
       data_dtp2 = DV_TYPE_OF (a2);
       dtp2 = DV_RDF;
-      tmp_rb2.rb_box = a2;
+      tmp_rb2.rb_box = (caddr_t) a2;
       tmp_rb2.rb_is_outlined = 0;
       tmp_rb2.rb_is_complete = 1;
       tmp_rb2.rb_chksum_tail = 0;
@@ -949,7 +949,7 @@ rdf_box_hash (caddr_t box)
 }
 
 int
-rdf_box_hash_cmp (caddr_t a1, caddr_t a2)
+rdf_box_hash_cmp (ccaddr_t a1, ccaddr_t a2)
 {
   return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
 }
@@ -1107,7 +1107,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
       if (rbb->rbb_base.rb_chksum_tail)
 	ser_vec[5] = (caddr_t) rbb->rbb_chksum;
 
-      res = print_object_to_new_string (ser_vec, fun_name, err_ret);
+      res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret);
 
       if (subbox != rbb->rbb_base.rb_box)
         dk_free_box (subbox);
@@ -1138,7 +1138,7 @@ caddr_t
 bif_rdf_dist_deser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t ser = bif_arg (qst, args, 0, "__rdf_dist_deser_long");
-  caddr_t deser, val;
+  caddr_t deser;
   dtp_t ser_dtp = DV_TYPE_OF (ser);
   int ser_len;
   if (DV_STRING != ser_dtp)
@@ -1150,7 +1150,7 @@ bif_rdf_dist_deser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (deser))
     {
       caddr_t *vec = (caddr_t *)deser;
-      rdf_bigbox_t *rbb;
+      rdf_bigbox_t *rbb = NULL;
       int vec_elems = BOX_ELEMENTS (vec);
       switch (vec_elems)
         {
@@ -1184,7 +1184,7 @@ void
 rdf_box_init ()
 {
   dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 0);
-  PrpcSetWriter (DV_RDF, rb_serialize);
+  PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
   get_readtable ()[DV_RDF] = (macro_char_func) rb_deserialize;
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
   bif_define ("rdf_box", bif_rdf_box);

@@ -1370,7 +1370,7 @@ virtodbc__SQLSetConnectOption (
 	    if (unbox (tpd->dtrx_info) == unbox (info->d_trx_id))
 	      {
 		trx_i = info;
-		dbg_printf (("found transaction %ld\n", dk_set_length (trx_i->d_trx_hdbcs)));
+		dbg_printf (("found transaction %ld\n", (long) dk_set_length (trx_i->d_trx_hdbcs)));
 		break;
 	      }
 	  }

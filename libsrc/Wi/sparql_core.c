@@ -523,13 +523,13 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           SPART *new_precode = sparp_make_graph_precode ( sparp,
         spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
         NULL );
-          t_set_push (&(sparp->sparp_env->spare_default_graph_precodes), new_precode);
+              t_set_push ((dk_set_t *) &(sparp->sparp_env->spare_default_graph_precodes), new_precode);
           sparp->sparp_env->spare_default_graphs_locked = 1;
       return;
     }
   if (!strcmp (param, "input:named-graph-uri"))
     {
-      t_set_push (&(sparp->sparp_env->spare_named_graph_precodes),
+              t_set_push ((dk_set_t *) &(sparp->sparp_env->spare_named_graph_precodes),
         sparp_make_graph_precode (sparp,
           spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
           NULL ) );
@@ -975,7 +975,6 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
 {
   int lvar_blen, verb_qname_blen;
   caddr_t new_key;
-  dk_set_t *tail;
   spar_propvariable_t *curr_pv = NULL;
   const char *optext = ((_PLUS_GT == opcode) ? "+>" : "*>");
   caddr_t *spec_pred_names = jso_triple_get_objs (
@@ -1059,7 +1058,7 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
   END_DO_SET();
 
 not_found_in_local_set:
-  t_set_push (&(sparp->sparp_env->spare_propvar_sets->data), (void *) curr_pv);
+  t_set_push ((dk_set_t *)&(sparp->sparp_env->spare_propvar_sets->data), (void *) curr_pv);
 
 in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
@@ -1131,7 +1130,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
 }
 
 int
-sparp_gp_trav_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t **sts_this, void *common_env)
+sparp_gp_trav_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   switch (SPART_TYPE (curr))
     {
@@ -1345,7 +1344,7 @@ SPART *spar_make_variable (sparp_t *sparp, caddr_t name)
   sparp_env_t *env = sparp->sparp_env;
   SPART *res;
   int is_global = SPART_VARNAME_IS_GLOB(name);
-  caddr_t selid;
+  caddr_t selid = NULL;
 #ifdef DEBUG
   caddr_t rvr_list_test[] = {SPART_RVR_LIST_OF_NULLS};
   if (sizeof (rvr_list_test) != sizeof (rdf_val_range_t))
@@ -2080,7 +2079,9 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    }*/
 	  case SPAR_REQ_TOP:
 	    {
+#if 0
               int eq_count, eq_ctr;
+#endif
 	      sprintf (buf, "REQUEST TOP NODE (");
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->_.req_top.subtype), ses, 1);
@@ -2729,7 +2730,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   caddr_t sqlvals[SPART_TRIPLE_FIELDS_COUNT];
   caddr_t *sources_val = NULL;
   caddr_t storage_name = NULL;
-  caddr_t *res;
+  caddr_t *res = NULL;
   boxint flags = 0;
   switch (BOX_ELEMENTS (args))
     {
@@ -2832,14 +2833,13 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
                       {
                         qm_column_t *qmc = qmv->qmvColumns[col_ctr];
                         caddr_t *col_desc;
-                        caddr_t table_alias = qmc->qmvcAlias;
-                        caddr_t table_name;
-                        table_name = qmv->qmvTableName;
+                        caddr_t table_alias = (caddr_t) qmc->qmvcAlias;
+                        caddr_t table_name = (caddr_t) qmv->qmvTableName;
                         for (alias_ctr = alias_count; alias_ctr--; /* no step */)
                           {
                             if (strcmp (qmv->qmvATables[alias_ctr]->qmvaAlias, table_alias))
                               continue;
-                            table_name = qmv->qmvATables[alias_ctr]->qmvaTableName;
+                            table_name = (caddr_t) qmv->qmvATables[alias_ctr]->qmvaTableName;
                             break;
                           }
                         col_desc = (caddr_t *)list (4, box_copy (table_alias), box_copy (table_name), box_copy (qmc->qmvcColumnName), NULL);

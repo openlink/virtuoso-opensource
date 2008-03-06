@@ -612,7 +612,7 @@ node_print (data_source_t * node)
       while (*szPtr)
 	{
 	  int len = (int) strlen (szPtr);
-	  char save_c;
+	  char save_c = 0;
 	  if (len > EXPLAIN_LINE_MAX)
 	    {
 	      save_c = szPtr[EXPLAIN_LINE_MAX];

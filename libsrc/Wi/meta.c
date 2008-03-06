@@ -1392,14 +1392,14 @@ sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def)
 
 
 query_t *
-sch_proc_exact_def (dbe_schema_t * sc, caddr_t name)
+sch_proc_exact_def (dbe_schema_t * sc, const char * name)
 {
   return sch_proc_def (sc, name);
 }
 
 
 query_t *
-sch_module_def (dbe_schema_t * sc, caddr_t name)
+sch_module_def (dbe_schema_t * sc, const char * name)
 {
   if (!sc)
     GPF_T;

@@ -100,7 +100,7 @@ caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
 
 #define plh_free(pl) dk_free_box ((box_t) (pl))
-int plh_box_free (box_t plh);
+int plh_box_free (caddr_t plh);
 
 placeholder_t * plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf);
 placeholder_t * plh_copy (placeholder_t * pl);
@@ -485,8 +485,11 @@ dbe_key_t * sch_table_key (dbe_schema_t * sc, const char *table, const char *key
 
 struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
-struct query_s * sch_proc_exact_def (dbe_schema_t * sch, caddr_t name);
-struct query_s * sch_module_def (dbe_schema_t * sch, caddr_t name);
+struct query_s * sch_proc_exact_def (dbe_schema_t * sch, const char * name);
+struct query_s * sch_module_def (dbe_schema_t * sch, const char * name);
+#ifdef UNIVERSE
+extern void sch_set_remote_proc_def (caddr_t name, caddr_t proc);
+#endif
 #define IS_REMOTE_ROUTINE_QR(qr) ((qr) && (qr)->qr_is_remote_proc)
 void sch_set_proc_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
 void sch_set_module_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
@@ -864,7 +867,7 @@ void plugin_loader_init(void);
 /*  rdfbox.c */
 extern rdf_box_t * rb_allocate (void);
 extern int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
-extern int rdf_box_compare (caddr_t rb1, caddr_t rb2);
+extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
 
 /* bif_file.c */
 void init_file_acl_set (char *acl_string1, dk_set_t * acl_set_ptr);

@@ -988,9 +988,8 @@ pl_finalize_absent (page_lock_t * pl, it_cursor_t * itc)
 void
 pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 {
-  int change = PAGE_NOT_CHANGED, rc, dirty = 0, change_leaf_ptr = 0;
+  int change = PAGE_NOT_CHANGED, rc, change_leaf_ptr = 0;
   lock_trx_t *lt = itc->itc_ltrx;
-  dp_addr_t phys;
   buffer_desc_t *buf = NULL;
   if (DP_DELETED == pl->pl_page)
     {
@@ -1755,7 +1754,7 @@ lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
 {
   /* remove the rb entry to make aninsert irreversible in mid transaction */
   rb_entry_t * prev;
-  long rb_code, key_len;
+  long rb_code;
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;

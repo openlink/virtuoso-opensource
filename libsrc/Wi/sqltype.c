@@ -692,7 +692,9 @@ void
 udt_free_class_def (sql_class_t * udt)
 {
   udt_free_internals_of_class_def (udt);
-return; /* !!! Stub for GPF in udttest.sql */
+
+#if 0
+/* !!! Stub for GPF in udttest.sql */
   dk_free_box (udt->scl_name);
   dk_free_box (udt->scl_qualifier);
   dk_free_box (udt->scl_qualifier_name);
@@ -707,6 +709,9 @@ return; /* !!! Stub for GPF in udttest.sql */
   if (udt->scl_name_to_method)
     id_hash_free (udt->scl_name_to_method);
   dk_free_box (udt);
+#endif
+
+  return; 
 }
 
 #ifdef UDT_HASH_DEBUG
@@ -3789,7 +3794,6 @@ static caddr_t
 bif_udt_find_by_ext_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t ext_lang_name = bif_string_arg (qst, args, 0, "udt_find_by_ext_type");
-  query_instance_t *qi = (query_instance_t *) qst;
   dbe_schema_t *sc = isp_schema (qi->qi_space);
   long ext_lang = udt_ext_lang_by_name (ext_lang_name);
   dk_set_t list = NULL;

@@ -666,7 +666,9 @@ bop_to_dvc (int op)
     default:
       SQL_GPF_T(NULL);			/* Bad BOP predicate */
     }
-  return 0; /*no return */
+
+  /*NOTREACHED*/
+  return 0;
 }
 
 

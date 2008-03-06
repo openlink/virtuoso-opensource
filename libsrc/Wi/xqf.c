@@ -1376,7 +1376,7 @@ __do_smth_else_with_dates (caddr_t *n, const char *arg1, const char *arg2, const
   int type2 = (IS_BOX_POINTER (arg2))?box_tag (arg2):DV_LONG_INT;
   int type3 = (IS_BOX_POINTER (arg3))?box_tag (arg3):DV_LONG_INT;
   char dt[DT_LENGTH];
-  const char *pdf, *pdt;
+  const char *pdf = NULL, *pdt = NULL;
 
   if (DV_DATETIME != type1)
     sqlr_new_error ("42001", "XPQ??", "Incorrect 1'st argument type:%s in %s", dv_type_title (type1), where);

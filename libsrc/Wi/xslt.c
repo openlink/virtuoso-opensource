@@ -3617,7 +3617,7 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
         {
           caddr_t key = vect[itm_ctr * block_elts + key_ofs];
           dtp_t key_dtp = DV_TYPE_OF (key);
-          boxint key_val;
+          boxint key_val = 0;
           if (DV_LONG_INT == key_dtp)
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
@@ -3760,13 +3760,13 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
       caddr_t *vect_copy;
       int shift, offsets_count, itm_ctr, twobyte, max_twobyte;
       boxint minv = BOXINT_MAX, maxv = BOXINT_MIN;
-      boxint key_val;
+      boxint key_val = 0;
       src = (dsort_itm_t *) dk_alloc (vect_elems * sizeof (dsort_itm_t));
       for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
         {
           caddr_t *row = (caddr_t *)(vect[itm_ctr]);
-          caddr_t key;
-          dtp_t key_dtp;
+          caddr_t key = NULL;
+          dtp_t key_dtp = 0;
           if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
             {
               dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));

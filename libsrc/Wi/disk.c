@@ -954,7 +954,10 @@ bp_wait_flush (buffer_pool_t * bp)
   /* sleep until the backlog of buffers in async write is somewhat cleared.  Under 40% of last bucket in write queue */
   int limit = (bp->bp_n_bufs / BP_N_BUCKETS) / 3;
   int n = bp_n_being_written (bp);
-  int n_tries = 1, waited = 0, first_n = n;
+  int n_tries = 1, waited = 0;
+#ifdef DEBUG
+  int first_n = n;
+#endif
   limit = MAX (limit, n / 2);
   while (n > limit)
     {
@@ -1200,16 +1203,28 @@ buf_set_last (buffer_desc_t * buf)
 void 
 buf_recommend_reuse (buffer_desc_t * buf)
 {
-  /* Dirty write.  Should be inside the bp_mtx of the pool.
-   * Not dangerous since bp__first_free is always some buffer of the bp or NULL and likewise with bd_next.  The list can get screwed up, it is always popped a single unit at a time and if a member of the list gets reallocated by normal eans the list just breaks because the  bd_next of the allocated one will be reset.
-   * Pops from the list are serialized anyway and normal checks apply to the buffers, so even if they actually are not reusable no harm is done. */
+  /* 
+   *  Dirty write. 
+   *
+   *  Should be inside the bp_mtx of the pool. 
+   *  Not dangerous since bp__first_free is always some buffer of the bp 
+   *  or NULL and likewise with bd_next. The list can get screwed up, it 
+   *  is always popped a single unit at a time and if a member of the list 
+   *  gets reallocated by normal means the list just breaks because the 
+   *  bd_next of the allocated one will be reset. Pops from the list are 
+   *  serialized anyway and normal checks apply to the buffers, so even 
+   *  if they actually are not reusable no harm is done.
+   */
 
+#if 0
   /* this does not work.  Turned off until fixed. */
-  return;
   if (!BUF_AVAIL (buf))
     return;
   buf->bd_next = buf->bd_pool->bp_first_free;
   buf->bd_pool->bp_first_free = buf;
+#endif
+
+  return;
 }
 
 
@@ -1443,7 +1458,7 @@ buf_disk_read (buffer_desc_t * buf)
   OFF_T rc;
   dbe_storage_t * dbs = buf->bd_storage;
   short flags;
-  OFF_T off;
+  OFF_T off = 0;
   disk_reads++;
   if (!IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_read (): The buffer is not io-aligned");
@@ -1537,7 +1552,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   short flags;
   dbe_storage_t * dbs = buf->bd_storage;
   OFF_T rc;
-  OFF_T off;
+  OFF_T off = 0;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
   if (!IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_write (): The buffer is not io-aligned");

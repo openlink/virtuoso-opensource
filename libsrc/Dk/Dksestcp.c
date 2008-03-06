@@ -295,8 +295,12 @@ alldigits (char *string)
 extern int h_errno;
 #endif
 
+#if defined (WIN32)
+#define in_addr_t	unsigned long
+#endif
+
 #ifndef INADDR_NONE
-#define INADDR_NONE (-1)
+#define INADDR_NONE ((in_addr_t)(-1))
 #endif
 
 static int
@@ -308,7 +312,7 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
   unsigned short *p_port;	/* listening port number */
   int HostAndPort = 0;
   struct hostent *host = NULL;
-  unsigned int addr = INADDR_NONE;
+  in_addr_t addr = INADDR_NONE;
 #if defined (_REENTRANT)
   char buff[4096];
   int herrnop = 0;

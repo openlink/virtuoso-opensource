@@ -128,7 +128,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_new");
   caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_new");
   jso_class_descr_t *cd;
-  void *inst;
+  void *inst = NULL;
   jso_rtti_t *inst_rtti;
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   cd = gethash (jclass, jso_classes);
@@ -579,16 +579,16 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
 {
   caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, func_name);
   caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, func_name);
-  caddr_t jprop;
+  caddr_t jprop = NULL;
   ccaddr_t dt = NULL;
   caddr_t *retval;
   caddr_t old_fld_val = NULL;
   jso_class_descr_t *cd, *fld_type_cd;
   jso_field_descr_t fldd_for_array;
-  jso_field_descr_t *fldd;
+  jso_field_descr_t *fldd = NULL;
   void *inst;
   jso_rtti_t *inst_rtti;
-  void **fld_ptr;
+  void **fld_ptr = NULL;
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   cd = gethash (jclass, jso_classes);
   if (NULL == cd)
@@ -639,7 +639,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
     case JSO_CAT_ARRAY:
       {
         dtp_t jprop_dtp;
-        ptrlong idx;
+        ptrlong idx = 0;
         jprop = bif_arg (qst, args, 2, func_name);
         jprop_dtp = DV_TYPE_OF(jprop);
         if (IS_NUM_DTP(jprop_dtp))
@@ -729,7 +729,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
     {
       caddr_t arg = bif_arg (qst, args, 3, func_name);
       dtp_t arg_dtp = DV_TYPE_OF (arg);
-      caddr_t const_name, defarg = NULL;
+      caddr_t const_name = NULL, defarg = NULL;
       dtp_t defarg_dtp = 0;
       long arg_is_iri = ((BOX_ELEMENTS (args) > 4) ? bif_long_arg (qst, args, 4, func_name) : (DV_UNAME == DV_TYPE_OF (arg)));
       if ((DV_STRING == arg_dtp) || (DV_UNAME == arg_dtp))
@@ -1069,9 +1069,11 @@ bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_jso_dbg_dump_rtti (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+#ifdef DEBUG
   jso_rtti_t *rtti;
   jso_rtti_t *rtti_of_name;
   jso_rtti_t *rtti_of_self;
+#endif
   caddr_t res;
   sec_check_dba ((query_instance_t *)qst, "jso_dbg_dump_rtti");
 #ifdef DEBUG
@@ -1277,10 +1279,10 @@ bif_jso_make_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int argcount = BOX_ELEMENTS (args);
   caddr_t *longobj;
-  caddr_t strg, old_digest;
+  caddr_t strg = NULL, old_digest = NULL;
   unsigned char buf[30];
   unsigned char *buf_tail;
-  ptrlong dt_idx, lang_idx, obj_id;
+  ptrlong dt_idx = 0, lang_idx = 0, obj_id = 0;
   int strg_len;
   switch (argcount)
     {

@@ -552,7 +552,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    table_source_t * ts)
 {
   key_source_t * ks = iop->iop_ks;
-  int is_nulls = 0, rc, rc2;
+  int is_nulls = 0, rc = 0, rc2 = 0;
   int is_random = 0;
   caddr_t * qst = (caddr_t *) qi;
   it_cursor_t * itc = (it_cursor_t *) QST_GET (qst, iop->iop_itc);
@@ -805,7 +805,9 @@ inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
 	}
       END_DO_BOX;
     }
-  return 0; /*not done */
+
+  /*NOTREACHED*/
+  return 0;
 }
 
 

@@ -261,7 +261,6 @@ _num_add_int (numeric_t result, numeric_t n1, numeric_t n2, int scale_min)
   int sum_scale, sum_digits;
   char *n1ptr, *n2ptr, *sumptr;
   int carry, n1bytes, n2bytes;
-  int count;
 
   /* Prepare sum. */
   sum_scale = MAX (n1->n_scale, n2->n_scale);
@@ -1208,7 +1207,7 @@ _numeric_rc_clear (void *ptr)
 
 
 int
-numeric_hash_cmp (caddr_t n1, caddr_t n2)
+numeric_hash_cmp (ccaddr_t n1, ccaddr_t n2)
 {
   return 0 == numeric_compare ((numeric_t) n1, (numeric_t) n2);
 }

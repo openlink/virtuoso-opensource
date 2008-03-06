@@ -45,11 +45,11 @@ typedef struct wcharset_s {
 /* size_t virt_mbsrtowcs (wchar_t *dst, unsigned char **src, size_t len, virt_mbstate_t *ps);
 size_t virt_wcsrtombs (unsigned char *dst, wchar_t **src, size_t len, virt_mbstate_t *ps); */
 
-wchar_t *virt_wcschr (wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsrchr (wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsstr (wchar_t *__wcs, wchar_t *__wc);
-size_t virt_wcslen (wchar_t *__wcs);
-int virt_wcsncmp (wchar_t *from, wchar_t *to, size_t len);
+wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
+wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
+wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
+size_t virt_wcslen (const wchar_t *__wcs);
+int virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len);
 
 caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
 caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);

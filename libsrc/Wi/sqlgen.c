@@ -769,7 +769,6 @@ sqlg_inx_op_ks_out_cols (sqlo_t * so, key_source_t * ks, df_elt_t * ks_tb_dfe, d
 void
 sqlg_inx_op_ssls (sqlo_t * so, inx_op_t * iop)
 {
-  key_source_t * ks = iop->iop_ks;
   search_spec_t * sp = iop->iop_ks_full_spec.ksp_spec_array;
   while (sp->sp_next)
     sp = sp->sp_next;
@@ -930,7 +929,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
     }
   if (ts->ts_order_ks && ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_VACUUM))
     {
-      caddr_t res = sqlo_opt_value (ot->ot_opts, OPT_VACUUM);
+      sqlo_opt_value (ot->ot_opts, OPT_VACUUM);
       ts->ts_order_ks->ks_is_vacuum = 1;
     }
   return (data_source_t *) ts;
@@ -2240,11 +2239,11 @@ bitmap_index_box);
 	{
 	  state_slot_t * aggregate;
 	  gb_op_t *go;
-	  state_slot_t * arg;
-	  state_slot_t ** ua_arglist;
-	  state_slot_t ** acc_args;
+	  state_slot_t * arg = NULL;
+	  state_slot_t ** ua_arglist = NULL;
+	  state_slot_t ** acc_args = NULL;
 	  user_aggregate_t *ua = (user_aggregate_t *)(unbox_ptrlong (fref->_.fn_ref.user_aggr_addr));
-          int arglist_len;
+          int arglist_len = 0;
 	  if (AMMSC_USER != fref->_.fn_ref.fn_code)
 	    arg = scalar_exp_generate (sc, fref->_.fn_ref.fn_arg, &code);
 	  else
@@ -3375,7 +3374,7 @@ dfe_filler_outputs (df_elt_t * tb_dfe)
 void
 dfe_unit_col_loci (df_elt_t * dfe)
 {
-  df_elt_t * org_dfe;
+  df_elt_t * org_dfe = NULL;
   int inx;
   df_elt_t * col_dfe;
   caddr_t tmp[7];

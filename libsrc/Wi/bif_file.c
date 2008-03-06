@@ -2169,7 +2169,7 @@ uuid_str (char *p, int len)
   uuid_set (&u);
 
   snprintf (p, len, "%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-      u.time_low, u.time_mid, u.time_hi_and_version,
+      (unsigned long) u.time_low, u.time_mid, u.time_hi_and_version,
       u.clock_seq_hi_and_reserved, u.clock_seq_low,
       u.node[0], u.node[1], u.node[2], u.node[3], u.node[4], u.node[5]);
 }
@@ -3244,7 +3244,7 @@ static long
 mime_stream_get_line (dk_session_t * ses, long max_size, long *chars_read,
     char *_szDest, int max_len, char *c_before, char *c_after, size_t max_c_after)
 {
-  char c, *szDest = _szDest;
+  char c = 0, *szDest = _szDest;
   long line_len = 0;
   int cb_inx = 0, cb_len = (int) strlen (c_before);
 
@@ -4681,7 +4681,7 @@ dime_compose_2 (dk_session_t * ses, caddr_t msg, char *id, char *type,
 void
 soap_dime_tree (caddr_t body, dk_set_t * set, caddr_t * err)
 {
-  caddr_t data, id, type, opts;
+  caddr_t data = NULL, id = NULL, type = NULL, opts = NULL;
   uint32 len, dlen, ilen, tlen, opt_len, to_read, to_read_len, readed;
   int padl, inx, flag, tnf, ver;
   dk_session_t ses, *chunks = NULL;
@@ -4938,7 +4938,7 @@ bif_dime_compose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 dime_tree_1 (caddr_t body, dk_set_t * set, caddr_t * err)
 {
-  caddr_t data, id, type;
+  caddr_t data = NULL, id = NULL, type = NULL;
   uint32 len, dlen, ilen, tlen, to_read, to_read_len, readed;
   int padl, inx, flag, tnf;
   dk_session_t ses, *chunks = NULL;

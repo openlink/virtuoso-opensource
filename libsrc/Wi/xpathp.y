@@ -51,7 +51,7 @@
 #define YYDEBUG 1
 #endif
 
-#define xpyylex(lval_ptr, param) xpyylex_from_xpp_bufs ((lval_ptr), ((xpp_t *)(param)))
+#define xpyylex(lval_ptr, param) xpyylex_from_xpp_bufs ((caddr_t *)(lval_ptr), ((xpp_t *)(param)))
 
 #define bmk_offset xpp_curr_lexem_bmk.xplb_offset
 #define bmk_bufs_tail xpp_curr_lexem_bmk.xplb_lexem_bufs_tail

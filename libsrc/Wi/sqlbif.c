@@ -845,7 +845,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
     {
       state_slot_t *ssl = ha->ha_slots[inx];
       caddr_t v;
-      dtp_t dtp, target_dtp;
+      dtp_t dtp, target_dtp = 0;
 
       if (qst)
 	{
@@ -1626,7 +1626,7 @@ again:
 caddr_t
 bif_aref_set_0 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t *arr = bif_array_arg (qst, args, 0, "aref_set_0");
+  caddr_t *arr = (caddr_t *) bif_array_arg (qst, args, 0, "aref_set_0");
   caddr_t res;
   int inx, n_elems;
   dtp_t dtp;
@@ -1735,8 +1735,7 @@ bs:
 caddr_t
 bif_aset_zap_arg (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t *arr = bif_array_arg (qst, args, 0, "aset_zap_arg");
-  caddr_t res;
+  caddr_t *arr = (caddr_t *) bif_array_arg (qst, args, 0, "aset_zap_arg");
   int inx, n_elems;
   dtp_t dtp;
   int argcount = BOX_ELEMENTS (args);
@@ -1756,7 +1755,7 @@ again:
       inx, dv_type_title (dtp), dtp, n_elems );
   if (++idxctr < argcount-1)
     goto again; /* see above */
-  return (ptrlong)qst_swap_or_get_copy (qst, args[argcount-1], arr+inx);
+  return (caddr_t) (ptrlong) qst_swap_or_get_copy (qst, args[argcount-1], arr+inx);
 }
 
 
@@ -3243,7 +3242,7 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           sqlr_new_error ("22023", "SR536",
             "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
-            dv_type_title (str_dtp), str_dtp );
+	      dv_type_title (str_dtp), str_dtp);
         }
       goto format_mismatch;
     }
@@ -5076,8 +5075,8 @@ bif_max_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int notnull_found = 0;
   int inx;
-  caddr_t best;
-  collation_t * coll;
+  caddr_t best = NULL;
+  collation_t * coll = NULL;
   for (inx = 0; inx < BOX_ELEMENTS_INT (args); inx++)
     {
       caddr_t a = bif_arg (qst, args, inx, "__max_notnull");
@@ -5103,8 +5102,8 @@ bif_min_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int notnull_found = 0;
   int inx;
-  caddr_t best;
-  collation_t * coll;
+  caddr_t best = NULL;
+  collation_t * coll = NULL;
   for (inx = 0; inx < BOX_ELEMENTS_INT (args); inx++)
     {
       caddr_t a = bif_arg (qst, args, inx, "__min_notnull");
@@ -6251,7 +6250,7 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   dk_set_t res = NULL;
   sql_comp_t sc;
   caddr_t str;
-  caddr_t start_filename;
+  caddr_t start_filename = NULL;
   int has_useful_lexems;
   int start_lineno;
   int start_plineno;
@@ -6270,7 +6269,6 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
     {
       int lextype = -1;
       int trail_pline = -1;
-      long n_lexem = 0;
       caddr_t full_text, descr;
       size_t full_text_blen;
       scn3split_yy_reset ();
@@ -7377,7 +7375,7 @@ row_identity (db_buf_t row)
   dbe_key_t * key = key_id ? sch_id_to_key (sc, key_id) : NULL;
   dtp_t image[PAGE_DATA_SZ];
   db_buf_t res = &image[0];
-  int inx = 0, prev_end;
+  int inx = 0, prev_end = 0;
   caddr_t res_box;
 
   if (!key_id)
@@ -10042,7 +10040,7 @@ bif_proc_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   user_t *org_user = cli->cli_user;
   caddr_t org_qual = cli->cli_qualifier;
   query_t *proc_qr, *rdproc;
-  caddr_t err, tb_name;
+  caddr_t err, tb_name = NULL;
   local_cursor_t *lc;
   int is_trig = 0;
   /* Procedure's calls published for replication */
@@ -11249,7 +11247,7 @@ bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
   caddr_t tb_name = BOX_ELEMENTS (args) > 1 ? bif_string_arg (qst, args, 1, "busy_meter") : NULL;
   dbe_table_t * tb = NULL;
-  long * counts;
+  long * counts = NULL;
   
   if (tb_name)
     {

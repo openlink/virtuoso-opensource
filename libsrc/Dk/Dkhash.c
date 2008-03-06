@@ -501,8 +501,8 @@ DBG_NAME(clrhash) (DBG_PARAMS dk_hash_t *table)
 
 
 #define HQ_CYCLE(k, d, f) \
-  __k = k; \
-  __d = d; \
+  __k = (void *) k; \
+  __d = (void *) d; \
   if (data_in_store) \
     f (key_store, data_store); \
   else \
@@ -547,8 +547,8 @@ maphash (maphash_func func, dk_hash_t *table)
 
 
 #define HQ_CYCLE3(k, d, f, e) \
-  __k = k; \
-  __d = d; \
+  __k = (void *) k; \
+  __d = (void *) d; \
   if (data_in_store) \
     f (key_store, data_store, e); \
   else \
@@ -647,7 +647,7 @@ dk_hit_next (dk_hash_iterator_t *hit, void **key, void **data)
 start:
   if (elt)
     {
-      *key = elt->key;
+      *key = (void *) elt->key;
       *data = elt->data;
       hit->hit_elt = elt->next;
       return 1;

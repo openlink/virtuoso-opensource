@@ -997,7 +997,6 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   rdf_inf_pre_node_t * sas_s = NULL, * sas_o = NULL, * sas_p = NULL;
   caddr_t const_s = NULL, const_p = NULL, const_o = NULL;
   df_elt_t * g_dfe = NULL, * s_dfe = NULL, * p_dfe = NULL, * o_dfe = NULL;
-  state_slot_t * given_g = NULL, * given_s = NULL, * given_p = NULL, * given_o = NULL;
   if (!IS_TS (((table_source_t*)ts))
       && (qn_input_fn)hash_source_input != ts->src_input)
     return;

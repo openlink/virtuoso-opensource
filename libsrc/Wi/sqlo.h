@@ -365,7 +365,8 @@ struct sqlo_s
   id_hash_t *	so_df_private_elts;
   df_elt_t *	so_gen_pt;
 
-  int	so_is_top_and;
+  char	so_is_top_and;
+  char	so_in_cond_exp;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;

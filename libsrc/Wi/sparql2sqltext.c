@@ -1459,7 +1459,7 @@ ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 void
 ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
 {
-  caddr_t value;
+  caddr_t value = NULL;
   dtp_t value_dtp;
   caddr_t datatype = NULL;
   caddr_t language = NULL;
@@ -2211,7 +2211,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
   SPART *arg1 = tree->_.builtin.args[0];
   ssg_valmode_t arg1_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg1);
   int argctr;
-  ssg_valmode_t op_fmt;
+  ssg_valmode_t op_fmt = NULL;
   int arg1_restr_bits;
   switch (tree->_.builtin.btype)
     {
@@ -2524,7 +2524,7 @@ IN_op_fnt_found:
           }
         else if (SSG_VALMODE_SQLVAL == needed)
           {
-            const char *tmpl;
+            const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
             else if (SSG_VALMODE_LONG == arg1_native)
@@ -2537,7 +2537,7 @@ IN_op_fnt_found:
           }
         else if (SSG_VALMODE_LONG == needed)
           {
-            const char *tmpl;
+            const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfIidOfShortTmpl;
             else if (SSG_VALMODE_LONG == arg1_native)
@@ -2560,7 +2560,7 @@ IN_op_fnt_found:
       {
         if (SSG_VALMODE_SQLVAL == needed)
           {
-            const char *tmpl;
+            const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
             else if (SSG_VALMODE_LONG == arg1_native)
@@ -3286,7 +3286,7 @@ print_asname:
 void
 ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const char *asname)
 {
-  caddr_t e_varname, full_vname;
+  caddr_t e_varname = NULL, full_vname = NULL;
         if (NULL == tree->_.retval.vname)
           {
             e_varname = "tmp";

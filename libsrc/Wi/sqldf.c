@@ -297,7 +297,8 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 {
   /* if the dfe is a cond known at compile time return DFE_TRUE or DFE_FALSE and if not known return the dfe */
   df_elt_t * op, * left, * right;
-  if (DFE_FALSE == dfe || DFE_TRUE == dfe)
+  if (DFE_FALSE == dfe || DFE_TRUE == dfe
+      || so->so_in_cond_exp)
     return dfe;
   switch (dfe->dfe_type)
     {
@@ -489,7 +490,7 @@ sqlo_df (sqlo_t * so, ST * tree)
     case COMMA_EXP:
       {
 	df_elt_t * dfe;
-	int was_top;
+	int was_top, in_cond_exp = so->so_in_cond_exp;
 	id_hash_t *old_private_elts;
 	int inx;
 	dk_set_t set = NULL;
@@ -497,6 +498,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	dfe = sqlo_new_dfe (so, DFE_CONTROL_EXP, tree);
 	was_top = so->so_is_top_and;
 	so->so_is_top_and = 0;
+	so->so_in_cond_exp = 1;
 	dfe->_.control.private_elts = (id_hash_t **) t_box_copy ((caddr_t) tree->_.comma_exp.exps);
 
 	DO_BOX (ST *, elt, inx, tree->_.comma_exp.exps)
@@ -506,12 +508,13 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    so->so_df_private_elts = dfe->_.control.private_elts[inx] = sqlo_allocate_df_elts (101);
 	    elt_dfe = sqlo_df (so, elt);
 	    so->so_df_private_elts = old_private_elts;
-	    if (elt_dfe)
+	    if (elt_dfe && DFE_FALSE != elt_dfe)
 	      set = t_set_union (set, elt_dfe->dfe_tables);
 	  }
 	END_DO_BOX;
 	dfe->dfe_tables = set;
 	so->so_is_top_and = was_top;
+	so->so_in_cond_exp = in_cond_exp;
 	return dfe;
       }
     case COL_DOTTED:
@@ -2629,7 +2632,7 @@ sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * c
   col = pred->_.bin.right->_.call.args[0];
   if (DFE_COLUMN != col->dfe_type || DV_ANY != col->_.col.col->col_sqt.sqt_dtp)
     return 0;
-  BIN_OP (tree, BOP_LIKE, col->dfe_tree, t_box_dv_short_string (iri_like));
+  BIN_OP (tree, BOP_LIKE, col->dfe_tree, (ST *) t_box_dv_short_string (iri_like));
   dk_set_push (col_preds, sqlo_df (so, tree));
   return 1;
 }

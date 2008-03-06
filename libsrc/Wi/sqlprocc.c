@@ -160,7 +160,7 @@ sqlc_decl_variable_list_1 (sql_comp_t * sc, ST ** params, int is_arg_list, dk_se
   DO_BOX (ST *, decl, inx, params)
   {
     state_slot_t *var;
-    dk_set_t *compound_set;
+    dk_set_t *compound_set = NULL;
     if (!is_arg_list)
       {
 	if (!sc->sc_compound_scopes || !sc->sc_compound_scopes->data)

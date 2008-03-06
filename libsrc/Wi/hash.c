@@ -475,6 +475,8 @@ key_hash_utf8 (caddr_t _utf8, long _n, uint32 code, collation_t * collation)
       inx2++;
       inx1 += rc1;
     }
+
+  /*NOTREACHED*/
   return code;
 }
 
@@ -943,7 +945,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 	{
 	  int off, len;
 	  ITC_COL (itc, ha->ha_cols[inx], off, len);
-	  upd_col_copy (ha->ha_key, &ha->ha_key_cols[inx], hash_row, &v_fill, ROW_MAX_DATA,
+	  upd_col_copy (ha->ha_key, &ha->ha_key_cols[inx], hash_row, (int *) &v_fill, ROW_MAX_DATA,
 			&ha->ha_cols[inx], itc->itc_row_data, off, len);
 	  goto check_err;
 	}
@@ -954,11 +956,11 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 /*save_value:*/
       if (feed_temp_blobs)
 	row_set_col (hash_row, &ha->ha_key_cols[inx],
-	  value, &v_fill, ROW_MAX_DATA,
+	  value, (int *)&v_fill, ROW_MAX_DATA,
 	  tree->it_key, &err, itc, NULL, qst);
       else
 	row_set_col_temp (hash_row, &ha->ha_key_cols[inx],
-	  value, &v_fill, ROW_MAX_DATA,
+	  value, (int *)&v_fill, ROW_MAX_DATA,
 	  tree->it_key, &err, itc, NULL, qst);
 check_err:
       if (err)
@@ -1947,7 +1949,6 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
     any_passed = 1; /* if this is a 'get more' invocation of the node there must have been at least one match */
   for (;;)
     {
-      int pos = 0, rc;
       uint32 code = HC_INIT;
       if (qst_cont)
 	{
@@ -2445,7 +2446,6 @@ it_hi_bpages_read_ahead (query_instance_t * qi, index_tree_t * it)
 static void
 it_hi_set_page_lock (query_instance_t * qi, it_cursor_t *itc, dp_addr_t dp)
 {
-  dp_addr_t phys;
   buffer_desc_t *buf;
   page_lock_t *pl;
 

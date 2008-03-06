@@ -168,7 +168,7 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 		   int * any_blobs, dbe_key_t *row_key)
 {
   db_buf_t old_blob;
-  int old_off, old_len;
+  int old_off = 0, old_len = 0;
   int v_fill = new_tb->tb_primary_key->key_row_var_start;
   int nth_part = 0;
   char null_col_buffer[10];
@@ -534,7 +534,7 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
 void
 update_node_run_1 (update_node_t * upd, caddr_t * inst, caddr_t * state)
 {
-  int any_blob = 0, main_pos_in_image;
+  int any_blob = 0, main_pos_in_image = 0;
   caddr_t row_err = NULL;
   dk_set_t keys;
   dtp_t image[PAGE_SZ];

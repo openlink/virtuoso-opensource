@@ -465,6 +465,8 @@ tp_message_hook (void *queue_v)
 	      queue->mq_prepares, queue->mq_errors));
 #endif
     }
+
+  /*NOTREACHED*/
   return 0;
 }
 

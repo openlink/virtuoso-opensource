@@ -1115,13 +1115,13 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
                 "log_replay_text: conflict resolver returned %d (reject)",
 
                 retc);
-            /* NOTREACHED */
+	    break;
 
           case 5: /* ignore */
             lc_free(lc);
             dk_free_tree ((box_t) entry);
             return SQL_SUCCESS;
-            /* NOTREACHED */
+	    break;
 
           default:
             lc_free(lc);
@@ -1129,7 +1129,7 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
             return srv_make_new_error ("42000", "TR092",
                 "log_replay_text: conflict resolver returned %d (unknown)",
                 retc);
-            /* NOTREACHED */
+	    break;
         }
     }
 
@@ -1300,7 +1300,7 @@ try_again:
 	  (LOG_MTS_2PC_PREPARE == st_2pc))
 	{
 	  box_t recov_data = (box_t) read_object(in);
-	  int recovery_res;
+	  int recovery_res = 0;
 	  if (LOG_VIRT_2PC_PREPARE == st_2pc)
 	    recovery_res = virt_tp_recover (recov_data);
 	  else if (MSDTC_IS_LOADED)

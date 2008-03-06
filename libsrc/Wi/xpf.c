@@ -2427,7 +2427,7 @@ xpf_generate_id (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
       else if (XE_IS_PERSISTENT (xe))
 	{
 	  xper_entity_t *xpe = (xper_entity_t *)xe;
-	  sprintf (buffer, "id%lX", xpe->xper_pos);
+	  sprintf (buffer, "id%lX", (unsigned long) xpe->xper_pos);
 	  res = box_dv_short_string (buffer);
 	}
     }

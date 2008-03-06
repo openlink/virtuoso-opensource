@@ -340,7 +340,7 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 			"Argument 6 to pop3_get must be a vector");
     }
 
-  ses = pop3_get (addr, &err, user, pass, end_size, mode, &uidl_mes, in_uidl, qst);
+  ses = pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) &uidl_mes, in_uidl, qst);
 
   if (err)
     {

@@ -249,8 +249,10 @@ pg_check_map_1 (buffer_desc_t * buf)
 {
   page_map_t org_map;
   int org_free = buf->bd_content_map->pm_bytes_free;
+#if 0
   int pos, ctr = 0;
   db_buf_t page;
+#endif
   memcpy (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * buf->bd_content_map->pm_count);
   /* for debug, copy the entries, the whole struct may overflow addr space. */
   if (!buf->bd_is_write)
@@ -1029,7 +1031,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 {
   buffer_desc_t *buf = *buf_ret;
   page_map_t *map = buf->bd_content_map;
-  int  len, len_1, len_2 = 0;
+  int  len, len_1 = 0, len_2 = 0;
   int pos = it->itc_position, pos_after;
   db_buf_t page = buf->bd_buffer;
   long right_ins = SHORT_REF (page + DP_RIGHT_INSERTS);
@@ -1746,7 +1748,7 @@ delete_from_cursor:
       placeholder_t * pl = plh_landed_copy ((placeholder_t *)it, buf);
       itc_fix_leaf_ptr (it, buf);
       *buf_ret = itc_set_by_placeholder (it, pl);
-      itc_unregister_inner (pl, *buf_ret, 0);
+      itc_unregister_inner ((it_cursor_t *) pl, *buf_ret, 0);
       plh_free (pl);
     }
   return DVC_MATCH;
@@ -1812,7 +1814,7 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
   buffer_desc_t * volatile parent = parent2;
   int n_target_pages, pg_fill, n_del = 0, n_ins = 0, n_leaves = 0;
   int prev_ent = 0, org_count = parent->bd_content_map->pm_count;
-  int inx, first_after, first_lp_inx;
+  int inx, first_after, first_lp_inx = 0;
   target_pr = &pr[0];
   n_target_pages = 1;
   START_PAGE (target_pr);
@@ -2176,7 +2178,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 void 
 itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf)
 {
-  it_map_t * itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);
+  /*it_map_t * itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);*/
   if (buf->bd_registered 
       || itc->itc_pl
       || buf->bd_read_waiting || buf->bd_write_waiting)
@@ -2221,9 +2223,7 @@ void
 it_check_compact (index_tree_t * it, int age_limit)
 {
   int rc, inx;
-  void *dp;
   dk_hash_t * candidates = hash_table_allocate (101);
-  dk_hash_iterator_t hit;
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
       it_map_t * itm = &it->it_maps[inx];

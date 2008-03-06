@@ -336,7 +336,7 @@ void mime_c_compose (soap_call_ctx_t ctx, caddr_t * input)
 {
    static query_t * mime_call = NULL;
    local_cursor_t * lc = NULL;
-   caddr_t replay = NULL, arg, hdr, err = NULL;
+   caddr_t replay = NULL, arg = NULL, hdr = NULL, err = NULL;
 
    if (!mime_call)
      mime_call = sql_compile_static ("DB.DBA.WS_MIME_RESP_C (?)", bootstrap_cli, &err, SQLC_DEFAULT);
@@ -374,7 +374,7 @@ void mime_compose (ws_connection_t * ws, caddr_t * input)
 {
    static query_t * mime_call = NULL;
    local_cursor_t * lc = NULL;
-   caddr_t replay = NULL, arg, hdr, err = NULL;
+   caddr_t replay = NULL, arg = NULL, hdr = NULL, err = NULL;
 
    if (!mime_call)
      mime_call = sql_compile_static ("DB.DBA.WS_MIME_RESP (?)", ws->ws_cli, &err, SQLC_DEFAULT);
@@ -1036,7 +1036,7 @@ soap_box_xml_entity (caddr_t *entity, caddr_t *err_ret, dtp_t proposed_type, int
   dtp_t type;
   caddr_t ret = NULL;
   char *szTag = NULL, *szOpeningBrace;
-  const char *szEntityName = NULL, *szArrayType, *szType, *szNodeType = NULL, *szArraySize = NULL;
+  const char *szEntityName = NULL, *szArrayType = NULL, *szType = NULL, *szNodeType = NULL, *szArraySize = NULL;
   int inx, is_array = 1, ent_count = 0, ent_inx = 0;
   dk_set_t child_set = NULL;
   const char *szTypeBuffer = NULL;
@@ -4152,7 +4152,7 @@ bif_soap_box_xml_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int soap_version = 1;
   char *ret = NULL;
   dtp_t proposed_type = DV_TYPE_OF (value_for_type), dtp = DV_TYPE_OF (entity1);
-  caddr_t * entity;
+  caddr_t * entity = NULL;
 
   if (BOX_ELEMENTS (args) > 2)
     soap_version = (int) bif_long_arg (qst, args, 2, szMe);
@@ -5299,13 +5299,13 @@ soap_call_parse_reply (soap_call_ctx_t * ctx, caddr_t * qst, caddr_t * err, cadd
   caddr_t * volatile body = NULL;
   caddr_t * volatile header = NULL;
   caddr_t * volatile fault = NULL;
-  caddr_t * volatile xml_tree1;
+  caddr_t * volatile xml_tree1 = NULL;
   char encoding[1024];
-  char * ctype;
-  char * fault_code;
-  char * fault_str;
-  char * run_code;
-  caddr_t resp_body;
+  char * ctype = NULL;
+  char * fault_code = NULL;
+  char * fault_str = NULL;
+  char * run_code = NULL;
+  caddr_t resp_body = NULL;
   int dime_enc = 0;
   int mime_enc = 0;
 
@@ -8650,8 +8650,8 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	 { /* array */
 	   caddr_t a_min, a_max, a_type, a_name, a_ref;
 	   long n_min, n_max, inx = 0;
-	   caddr_t *elem_entity;
-	   caddr_t ret_elem;
+	   caddr_t *elem_entity = NULL;
+	   caddr_t ret_elem = NULL;
 	   const char *wsdl_type = NULL;
 
 	   e_ptr = xml_find_schema_child (e_ptr, "sequence", 0);
@@ -10034,7 +10034,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 		     {
 		       sql_class_t *fld_udt = NULL;
 		       sql_type_t *fld_sqt = NULL;
-		       caddr_t elem_name, elem_type, elem_form, elem_ns;
+		       caddr_t elem_name = NULL, elem_type = NULL, elem_form = NULL, elem_ns = NULL;
 		       caddr_t elem_entity = NULL;
 		       caddr_t elem_box_name = NULL;
 		       caddr_t a_nil, a_min, a_ref, a_max;
@@ -10206,7 +10206,7 @@ next_loop:
 	 { /* array */
 	   caddr_t a_min, a_max, a_type, a_name, a_ref = NULL;
 	   long n_min, n_max, inx = 0;
-	   caddr_t elem_entity, *e_ptr1 = e_ptr, wsdl_type, ref;
+	   caddr_t elem_entity = NULL, *e_ptr1 = e_ptr, wsdl_type = NULL, ref = NULL;
 	   char dim[1024];
 	   caddr_t elem_form;
 	   int elem_qual;
@@ -10779,7 +10779,7 @@ bif_soap_dt_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int is_elm = BOX_ELEMENTS(args) > 3 ? (int) bif_long_or_null_arg (qst, args, 3, "__soap_dt_define", &is_null) : 0;
   caddr_t udt_name = BOX_ELEMENTS(args) > 4 ? bif_string_or_null_arg (qst, args, 4, "__soap_dt_define") : NULL;
   caddr_t *place = (caddr_t*) id_hash_get (HT_SOAP(is_elm), (caddr_t) &dt);
-  caddr_t *udt_place;
+  caddr_t *udt_place = NULL;
   caddr_t * xml_tree = NULL, * xml_org_tree = NULL;
 
   if (DV_XML_ENTITY == DV_TYPE_OF(xe) && ARRAYP(xe->xte_current) && BOX_ELEMENTS(xe->xte_current) > 1)

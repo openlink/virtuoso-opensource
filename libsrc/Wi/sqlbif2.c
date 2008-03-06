@@ -479,8 +479,8 @@ bif_os_chown (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char buffer[255];
       struct passwd *u_info = NULL;
       struct group *g_info = NULL;
-      uid_t uid;
-      gid_t gid;
+      uid_t uid = -1;
+      gid_t gid = -1;
 
       mutex_enter (pwnam_mutex);
       u_info = getpwnam (user);

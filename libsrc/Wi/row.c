@@ -1026,9 +1026,9 @@ box_to_shorten_any (caddr_t data, caddr_t * err_ret)
     (BOX_SHORT_ANY_LIMIT < (data_len = box_length (data))) )
     {
       boxint tmp_buf [1+(BOX_SHORT_ANY_LIMIT + BOX_AUTO_OVERHEAD)/sizeof (boxint)];
-      caddr_t tmp, res;
+      caddr_t tmp;
       char *data_tail = data + data_len - 1;
-      boxint hi, lo = data_len;
+      boxint hi = 0, lo = data_len;
 #ifdef DOUBLE_ALIGN
       while (((ptrlong)data_tail) & (sizeof(boxint)-1)) { lo += data_tail[0]; hi += lo; data_tail--; }
       while (data_tail > data) { lo += ((boxint *)data_tail)[0]; hi += lo; data_tail -= sizeof(boxint); }

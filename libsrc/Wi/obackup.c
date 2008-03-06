@@ -455,8 +455,8 @@ ol_write_free_set (ol_backup_context_t * backup_ctx, dbe_storage_t * storage)
 {
   int res;
   dk_set_t cp_remap_pages = storage->dbs_cp_remap_pages;
-  buffer_desc_t * free_set_copy = 0;
-  buffer_desc_t * fs_cp, * fs_cp_prev = 0;
+  buffer_desc_t * free_set_copy = NULL;
+  buffer_desc_t * fs_cp = NULL, * fs_cp_prev = NULL;
   buffer_desc_t * free_set_buf = backup_ctx->octx_free_set;
   int inx, bit;
   dp_addr_t near_dp;
@@ -1062,7 +1062,6 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   FAILED
     {
       LOG_ERROR (ctx, ("Backup file [%s] writing error", ctx->octx_curr_file), error);
-      goto error;
     }
   db_backup_pages (ctx, 0, 0);
   CHECK_ERROR (ctx, error);
@@ -1120,7 +1119,7 @@ buffer_desc_t * read_free_set_from_disk ()
     {
       wi_database_t db;
       dp_addr_t free_set_start;
-      buffer_desc_t * free_set_ps = 0, *free_set_curr;
+      buffer_desc_t * free_set_ps = NULL, *free_set_curr = NULL;
       memcpy (&db, cfg_buf->bd_buffer, sizeof (wi_database_t));
       free_set_start = db.db_free_set;
       while (free_set_start)
@@ -1247,7 +1246,7 @@ bif_backup_online (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t file_prefix;
   long pages ;
   long timeout = 0;
-  long res;
+  long res = 0;
   caddr_t * backup_path_arr = backup_patha;
   ob_err_ctx_t e_ctx;
   memset (&e_ctx, 0, sizeof (ob_err_ctx_t));

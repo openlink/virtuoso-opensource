@@ -663,6 +663,8 @@ wp_proximity (db_buf_t p1, int l1, db_buf_t p2, int l2,
 	    }
 	}
     }
+
+  /*NOTREACHED*/
   return rel->wrl_score;
 }
 

@@ -801,7 +801,9 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 	  }
 	if (bh->bh_bytes_coming)
 	  {
+#ifndef NDEBUG
 	    long readbytes = MIN (bh->bh_bytes_coming, to_go);
+#endif
 	    int page_end = 0;
 #if 1
 	    int nin = 0, nout = 0, ncout = 0;
@@ -1900,7 +1902,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
     {
       int ret;
 	  rc = LTE_OK;
-      ret = itc_set_xper_col (row_itc, col, (xper_entity_t *)data, first_page, &replaced_version, &source_bh);
+      ret = itc_set_xper_col (row_itc, col, (xper_entity_t *)data, first_page, &replaced_version, (blob_handle_t **)&source_bh);
       if ('L' == ret)
         goto lte_not_ok;
       else if ('X' == ret)
@@ -3139,7 +3141,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
   int sizeof_symbol = SIZEOF_SYMBOL_FOR_BLOB_HANDLE_DTP (bh_dtp);
   blob_handle_t *bh = (blob_handle_t *) bhp;
   size_t bytes;
-  caddr_t out;
+  caddr_t out = NULL;
   long fill = 0;
   size_t pidx = from / PAGE_DATA_SZ;
   dk_set_t string_list = NULL;

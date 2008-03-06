@@ -568,7 +568,7 @@ set_success_info (sql_error_t * err, const char *state, char *virt_state, const 
 void
 set_data_truncated_success_info (cli_stmt_t *stmt, const char *virt_state, SQLUSMALLINT icol)
 {
-  char *base_col;
+  char *base_col = NULL;
   char icol_buf[30];
   char base_tbl_col[MAX_QUAL_NAME_LEN + MAX_NAME_LEN + 20];
   char buf[MAX_QUAL_NAME_LEN + MAX_NAME_LEN + 100];

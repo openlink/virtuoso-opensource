@@ -8496,8 +8496,8 @@ caddr_t xte_replace (xml_tree_ent_t *xte, caddr_t repl, int flags, xml_tree_doc_
       ptrlong old_begin_len = xte->xte_stack_top[0].xteb_child_no;
       ptrlong old_tail_ofs = old_begin_len + 1; /* Skip the item to replace */
       caddr_t repl_current = NULL; /* A temporary placeholder for the value of \c subtrees */
-      caddr_t *subtrees;
-      ptrlong subtrees_ctr;
+      caddr_t *subtrees = NULL;
+      ptrlong subtrees_ctr = 0;
       int might_concat_before;
       int might_concat_after;
       ptrlong new_children_no;

@@ -294,7 +294,7 @@ sqlc_new_temp (sql_comp_t * sc, const char *name, dtp_t dtp)
 }
 
 #define DEF_PRIVATE_ELTS \
-        id_hash_t *old_private_elts
+        id_hash_t *old_private_elts = NULL
 
 #define SET_PRIVATE_ELTS(sc,dfe,inx) \
         if ((sc)->sc_so && dfe && dfe->_.control.terms) \

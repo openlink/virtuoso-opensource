@@ -34,7 +34,7 @@
 #define DBG_MP_ALLOC_BOX(mp,len,tag) DBG_NAME(mp_alloc_box) (DBG_ARGS (mp), (len), (tag))
 #define DBG_T_ALLOC_BOX(len,tag) DBG_NAME(t_alloc_box) (DBG_ARGS (len), (tag))
 
-void mp_uname_free (void *k, void *data)
+void mp_uname_free (const void *k, void *data)
 {
 #ifdef DEBUG
   caddr_t box = k;
@@ -43,7 +43,7 @@ void mp_uname_free (void *k, void *data)
   if (data != (void *)qchk)
     GPF_T1 ("mp_uname_free(): bad checksum");
 #endif
-  dk_free_box (k);
+  dk_free_box ((box_t) k);
 }
 
 #ifdef LACERATED_POOL
