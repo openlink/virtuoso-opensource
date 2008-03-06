@@ -245,7 +245,7 @@ typedef unsigned char * db_buf_t;
 
 
 #define LONG_SET(p, l) \
-  *((int32*) (p)) = l
+  *((int32*) (p)) = (l)
 
 
 #define LONG_REF(p) \
@@ -270,16 +270,16 @@ typedef unsigned char * db_buf_t;
   (((int64) (UINT32PL(place)[0])) << 32 | UINT32PL(place)[1])
 
 #define INT64_SET(place, v) \
-  {((unsigned int32*)(place))[0] = v >> 32; \
-  ((unsigned int32*)(place))[1] = (int32)v; }
+  {((unsigned int32*)(place))[0] = (v) >> 32; \
+  ((unsigned int32*)(place))[1] = (int32)(v); }
 
 
 #define INT64_REF_NA(p) \
   (((int64)LONG_REF_NA (p)) << 32 | ((uint32)LONG_REF_NA (((caddr_t)p) + 4)))
 
 #define INT64_SET_NA(p, v) \
-  {LONG_SET_NA (p,  (v >> 32));				\
-    LONG_SET_NA (((caddr_t)p) + 4, 0xffffffff & v); }
+  {LONG_SET_NA ((p),  ((v) >> 32));				\
+    LONG_SET_NA (((caddr_t)(p)) + 4, 0xffffffff & (v)); }
 
 
 
@@ -296,8 +296,7 @@ typedef unsigned char * db_buf_t;
 #define IE_LEAF 4
 #define IE_LP_FIRST_KEY 8 /* first key on leaf pointer */
 #define IE_NEXT(ie)		(SHORT_REF (ie) & 0x3FFF)
-#define IE_SET_NEXT(ie, n) \
-  SHORT_SET (ie, (SHORT_REF (ie) & 0xc000) | n)
+#define IE_SET_NEXT(ie, n) 	SHORT_SET ((ie), (SHORT_REF (ie) & 0xc000) | (n))
 
 #ifdef LOW_ORDER_FIRST
 #define IE_FLAGS(ie)		(((dtp_t *) (ie))[1])
@@ -308,8 +307,8 @@ typedef unsigned char * db_buf_t;
 #else
 
 #define IE_FLAGS(ie)		(((dtp_t *) (ie))[0])
-#define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = f | (IE_FLAGS(ie) & 0x1f)
-#define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = f | IE_FLAGS(ie)
+#define IE_SET_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | (IE_FLAGS(ie) & 0x1f)
+#define IE_ADD_FLAGS(ie, f)	IE_FLAGS(ie) = (f) | IE_FLAGS(ie)
 #define IE_ISSET(ie, f) ((ie)[0] & (f))
 #endif
 
@@ -453,7 +452,7 @@ extern int c_use_o_direct;
 
 /* aligned temp buffers in case )_DIRECT wants aligned buffers */
 
-#define ALIGN_8K(p) ((void*) _RNDUP_PWR2 (((ptrlong)p), 8192))
+#define ALIGN_8K(p) ((void*) _RNDUP_PWR2 (((ptrlong)(p)), 8192))
 
 #define ALIGNED_PAGE_ZERO(n) \
   dtp_t n##a[2 * PAGE_SZ]; \
