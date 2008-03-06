@@ -75,7 +75,7 @@ typedef struct bm_pos_s
 #define IS_64_DTP(dtp) (DV_IRI_ID_8 == (dtp) || DV_INT64 == (dtp))
 
 #define CE_ROUND(n) \
-  ((n) & 0xffffffffffffe000)
+  ((n) & 0xffffffffffffe000LL)
 
 #define CL_SET_LEN(key, cl, row_data, new_len) \
 { \
@@ -89,8 +89,8 @@ typedef struct bm_pos_s
 #define BITS_IN_RANGE(b1, b2) \
   (b1 < b2 ? b2 - b1 < 0x10000000 : b1 - b2 < 0x10000000) 
 
-#define BITNO_MAX 0x7fffffffffffffff
-#define BITNO_MIN  0x8000000000000000
+#define BITNO_MAX 0x7fffffffffffffffLL
+#define BITNO_MIN  0x8000000000000000LL
 
 #define SA_REF(sa, n) \
   SHORT_REF_NA (((db_buf_t)sa) +  ((n)*2))

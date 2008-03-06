@@ -1130,7 +1130,7 @@ itc_init_bm_search (it_cursor_t * itc)
       /* range in desc order.  put the lower limit to minint of the right type and save the old one.  The lower limit remains minint but the bm row check will use the copy of the org here added as the last search spec. */
       caddr_t minint = (IS_64_DTP (bm_spec->sp_cl.cl_sqt.sqt_dtp)
 	|| DV_IRI_ID == bm_spec->sp_cl.cl_sqt.sqt_dtp)
-	? box_iri_int64 (BITNO_MIN, bm_spec->sp_cl.cl_sqt.sqt_dtp) : box_num (0x80000000);
+	? box_iri_int64 (BITNO_MIN, bm_spec->sp_cl.cl_sqt.sqt_dtp) : box_num (0x80000000LL);
       ITC_OWNS_PARAM (itc, minint);
       ITC_SEARCH_PARAM (itc, itc->itc_search_params[bm_spec->sp_min]);
       itc->itc_search_params[bm_spec->sp_min] = minint;

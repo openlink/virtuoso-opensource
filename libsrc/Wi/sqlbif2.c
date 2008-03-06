@@ -840,17 +840,16 @@ bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 boxint
 zorder_index (ptrlong x, ptrlong y)
 {
-  int64 res;
-  x = ((x & 0x00000000FFFF0000) << 16) | (x & 0x000000000000FFFF);
-  x = ((x & 0x0000FF00FF00FF00) <<  8) | (x & 0x000000FF00FF00FF);
-  x = ((x & 0x00F0F0F0F0F0F0F0) <<  4) | (x & 0x000F0F0F0F0F0F0F);
-  x = ((x & 0x0CCCCCCCCCCCCCCC) <<  2) | (x & 0x0333333333333333);
-  x = ((x & 0xAAAAAAAAAAAAAAAA) <<  1) | (x & 0x5555555555555555);
-  y = ((y & 0x00000000FFFF0000) << 16) | (y & 0x000000000000FFFF);
-  y = ((y & 0x0000FF00FF00FF00) <<  8) | (y & 0x000000FF00FF00FF);
-  y = ((y & 0x00F0F0F0F0F0F0F0) <<  4) | (y & 0x000F0F0F0F0F0F0F);
-  y = ((y & 0x0CCCCCCCCCCCCCCC) <<  2) | (y & 0x0333333333333333);
-  y = ((y & 0xAAAAAAAAAAAAAAAA) <<  1) | (y & 0x5555555555555555);
+  x = ((x & 0x00000000FFFF0000LL) << 16) | (x & 0x000000000000FFFFLL);
+  x = ((x & 0x0000FF00FF00FF00LL) <<  8) | (x & 0x000000FF00FF00FFLL);
+  x = ((x & 0x00F0F0F0F0F0F0F0LL) <<  4) | (x & 0x000F0F0F0F0F0F0FLL);
+  x = ((x & 0x0CCCCCCCCCCCCCCCLL) <<  2) | (x & 0x0333333333333333LL);
+  x = ((x & 0xAAAAAAAAAAAAAAAALL) <<  1) | (x & 0x5555555555555555LL);
+  y = ((y & 0x00000000FFFF0000LL) << 16) | (y & 0x000000000000FFFFLL);
+  y = ((y & 0x0000FF00FF00FF00LL) <<  8) | (y & 0x000000FF00FF00FFLL);
+  y = ((y & 0x00F0F0F0F0F0F0F0LL) <<  4) | (y & 0x000F0F0F0F0F0F0FLL);
+  y = ((y & 0x0CCCCCCCCCCCCCCCLL) <<  2) | (y & 0x0333333333333333LL);
+  y = ((y & 0xAAAAAAAAAAAAAAAALL) <<  1) | (y & 0x5555555555555555LL);
   return (y << 1) | x;
 }
 
