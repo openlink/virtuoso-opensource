@@ -81,6 +81,7 @@ static Attribute *hashtab[HASHSIZE];
 #define URLS        null
 #define URL         CheckUrl
 #define SCRIPT      CheckScript
+#undef ALIGN
 #define ALIGN       CheckAlign
 #define VALIGN      CheckValign
 #define COLOR       null
@@ -432,7 +433,7 @@ void DeclareLiteralAttrib(char *name)
 {
     Attribute *attrib = lookup(name);
 
-    if (attrib = null)
+    if (attrib == null)
         attrib = install(name, VERS_PROPRIETARY, null);
 
     attrib->literal = yes;

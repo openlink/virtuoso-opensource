@@ -205,7 +205,7 @@ static struct Flag
     {"gnu-emacs",       {(int *)&Emacs},            ParseBool},
 
   /* this must be the final entry */
-    {0,          0,             0}
+    {NULL,          {NULL},             NULL}
 };
 
 static unsigned hash(char *s)
