@@ -54,7 +54,7 @@
 
   if (length (uname))
   {
-    declare _visibility,_full_name, _country, _state, _city, _oid_url, _oid_server,_country_code varchar;
+    declare _visibility,_full_name, _country, _state, _city, _oid_url, _oid_server,_country_code,_nick varchar;
     declare  _lat, _lng real;
     declare uid integer;
     
@@ -65,8 +65,15 @@
                                          http_request_status ('HTTP/1.1 302 Found');
                                          http_header (concat (http_header_get (), 'Location: ',sprintf('/ods/index.html#msg=%U','The user '||uname||' does not exist.'),'\r\n'));
                                        };
-    select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER,U_ID
-      into _visibility, _lat, _lng, _country, _state, _city, _oid_url, _oid_server,uid
+    if (not exists (select 1 from SYS_USERS where U_NAME =  uname))
+      {
+        declare tmp any;
+        tmp := (select U_NAME from SYS_USERS join WA_USER_INFO on (U_ID = WAUI_U_ID) where WAUI_NICK = uname);
+        if (length (tmp))
+          uname := tmp;
+      } 
+    select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER,U_ID,WAUI_NICK
+      into _visibility, _lat, _lng, _country, _state, _city, _oid_url, _oid_server,uid, _nick
       from WA_USER_INFO, DB.DBA.SYS_USERS
      where WAUI_U_ID = U_ID and U_NAME =  uname;
      
@@ -87,8 +94,13 @@
     {
       http('  <link rel="openid.server" title="OpenID Server" href="'|| _oid_server ||'" />\r\n',resMeta);
       http('   <link rel="openid.delegate" title="OpenID URL" href="'|| _oid_url ||'" />\r\n',resMeta);
-    }else
+    }
+    else
+    {
+      if (_nick <> uname)
+        http('   <link rel="openid.delegate" title="OpenID URL" href="'|| server_dataspace||utype||_nick ||'" />\r\n',resMeta);
       http('  <link rel="openid.server" title="OpenID Server" href="'||server_root||'/openid" />\r\n',resMeta);
+    }
 --META openID end  
   
     http('  <link rel="meta" type="application/rdf+xml" title="SIOC" href="'||server_dataspace||uname||'/sioc.rdf" />\r\n',resMeta);
@@ -142,4 +154,3 @@ skip_meta:
   http (html_content);
 
 ?>   
-   

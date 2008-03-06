@@ -68,8 +68,10 @@
         self.fname_or_empty := self.fname;
 	
 	declare exit handler for not found{visib:='';};
-	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER
-	into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city, self.oid_url, self.oid_server
+	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY,
+		WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK, WAUI_IS_ORG
+		into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city,
+		self.oid_url, self.oid_server, self.fnick, self.u_is_org
 	from WA_USER_INFO, DB.DBA.SYS_USERS where
 		WAUI_U_ID = U_ID and U_NAME =  self.fname;
 	if (length (visib) < 16 or visib[16] <> ascii ('1'))
@@ -847,6 +849,7 @@
 <xsl:template name="vars">
     <v:variable name="u_id" type="int" default="null" persist="session" />
     <v:variable name="u_name" type="varchar" default="null" persist="session" />
+    <v:variable name="u_nick" type="varchar" default="null" persist="session" />
     <v:variable name="u_full_name" type="varchar" default="null" persist="session" />
     <v:variable name="u_e_mail" type="varchar" default="null" persist="session" />
     <v:variable name="url" type="varchar" default="'myhome.vspx?l=1'" persist="pagestate" param-name="URL" />
@@ -854,10 +857,12 @@
     <v:variable name="external_home_url" type="varchar" param-name="home_url" default="null" persist="session"/>
     <v:variable name="return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
+    <v:variable name="fnick" type="varchar" default="null" persist="pagestate" />
     <v:variable name="utype" type="varchar" default="null" persist="pagestate" param-name="utype" />
     <v:variable name="f_full_name" type="varchar" default="null" persist="pagestate" />
     <v:variable name="oid_server" type="varchar" default="null" persist="pagestate" />
     <v:variable name="oid_url" type="varchar" default="null" persist="pagestate" />
+    <v:variable name="u_is_org" type="int" default="0" persist="temp" />
 
     <v:variable name="e_lat" type="float" default="0" persist="temp" />
     <v:variable name="e_lng" type="float" default="0" persist="temp" />
@@ -2909,6 +2914,8 @@ if (i > 0)
     <meta name="dc.language" content="en" scheme="rfc1766" />
 
     <?vsp
+      if (self.utype not in ('person/', 'organization/'))
+        self.utype := case when self.u_is_org then 'organization/' else 'person/' end;
       if (length (self.oid_url) and length (self.oid_server))
         {
     ?>
@@ -2918,13 +2925,17 @@ if (i > 0)
         }
       else
         {
+          if (self.fnick <> self.fname)
+	    {
+	    ?>
+    <link rel="openid.delegate" title="OpenID URL" href="<?V wa_link (1, '/dataspace/'||self.utype||self.fnick) ?>" />
+	    <?vsp
+	    }
     ?>
     <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
     <?vsp
     	}
     declare yadis_url any;
-    if (self.utype not in ('person/', 'organization/'))
-      self.utype := '';
     ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.utype||self.fname||'/yadis.xrds') ?>" />
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname||'/yadis.xrds') ?>" />

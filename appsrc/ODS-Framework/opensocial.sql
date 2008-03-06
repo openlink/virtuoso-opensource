@@ -35,10 +35,11 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('os_rule_list_ot', 1, vector ('os_people'));
 DB.DBA.URLREWRITE_CREATE_RULELIST ('os_rule_list_act', 1, vector ('os_activities'));
 
 
-DB.DBA.VHOST_REMOVE (lpath=>'/feeds');
-DB.DBA.VHOST_REMOVE (lpath=>'/activities');
-DB.DBA.VHOST_DEFINE (lpath=>'/feeds', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
-DB.DBA.VHOST_DEFINE (lpath=>'/activities', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+-- moved to ods_define_common_vd
+--DB.DBA.VHOST_REMOVE (lpath=>'/feeds');
+--DB.DBA.VHOST_REMOVE (lpath=>'/activities');
+--DB.DBA.VHOST_DEFINE (lpath=>'/feeds', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
+--DB.DBA.VHOST_DEFINE (lpath=>'/activities', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
 
 
 create procedure is_visible (in flags varchar, in fld int, in mode int)

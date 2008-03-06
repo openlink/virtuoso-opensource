@@ -452,14 +452,16 @@ auth_failed1:;
              U_FULL_NAME, 
              U_E_MAIL, 
              U_GROUP, 
-             U_HOME
+	     U_HOME,
+	     WAUI_NICK
         into self.u_id, 
              self.u_name, 
              self.u_full_name, 
              self.u_e_mail, 
              self.u_group, 
-             self.u_home
-              from SYS_USERS
+	     self.u_home,
+	     self.u_nick
+        from SYS_USERS left join WA_USER_INFO on (U_ID = WAUI_U_ID)
 	      where U_NAME = connection_get ('vspx_user') with (prefetch 1);
 
 	   if (not length (self.u_full_name))

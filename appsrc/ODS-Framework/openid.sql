@@ -61,7 +61,8 @@ create procedure yadis (in uname varchar, in tp varchar := null)
     tp := '';
   url := db.dba.wa_link (1, '/dataspace/'||tp||uname);
   srv := db.dba.wa_link (1, '/openid');
-  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
+  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK
+    from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
     do
       {
 	if (length (WAUI_OPENID_URL) * length (WAUI_OPENID_SERVER))
@@ -69,6 +70,9 @@ create procedure yadis (in uname varchar, in tp varchar := null)
 	    url := WAUI_OPENID_URL;
 	    srv := WAUI_OPENID_SERVER;
 	  }
+	else if (uname <> WAUI_NICK)
+	  url := db.dba.wa_link (1, '/dataspace/'||tp||WAUI_NICK);
+
       }
   http ('<?xml version="1.0" encoding="UTF-8"?>\n');
   http ('<xrds:XRDS \n');

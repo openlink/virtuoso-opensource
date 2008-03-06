@@ -290,12 +290,12 @@ create procedure usersGetInfo (in sid varchar:='',in realm varchar :='wa',in use
           visibility_arr := DB.DBA.WA_USER_VISIBILITY(cursor_username);
 
           is_visible:=0;
+	  visibility_pos:=visibility_posinarr(metas[0][k][0]);
 
           if(isSessionValid(sid,'wa',logged_user_name))
           {
             is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id(logged_user_name), username2id(cursor_username));
  
-            visibility_pos:=visibility_posinarr(metas[0][k][0]);
           
             --3 private;2 friends;1 public
             if(visibility_pos>-1)
@@ -308,7 +308,7 @@ create procedure usersGetInfo (in sid varchar:='',in realm varchar :='wa',in use
               is_visible := 1;
           }else
           {
-               if (atoi(visibility_arr[visibility_pos]) = 1)  is_visible := 1;
+               if (visibility_pos = -1 or atoi(visibility_arr[visibility_pos]) = 1)  is_visible := 1;
           } 
           
           if(is_visible)

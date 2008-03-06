@@ -32,6 +32,7 @@
   <v:variable name="suser" type="varchar" default="null" param-name="ufname"/>
   <?vsp
     declare template, uname, src varchar;
+    declare tmp_uid int;
 
     http_rewrite ();
     commit work;
@@ -42,13 +43,20 @@
         goto default_template;
       }
 
+    {
+      whenever not found goto nf_user;
+      select U_ID into tmp_uid from SYS_USERS where U_NAME = self.suser;
+    }
+
+    if (0)
+      {
     declare exit handler for not found
       {
                 signal ('22023', sprintf ('The user "%s" does not exist.', self.suser));
             };
-    {
-      declare tmp_uid int;
-      select U_ID into tmp_uid from SYS_USERS where U_NAME=self.suser;
+        nf_user:
+	select U_NAME into tmp_uid from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK = self.suser;
+	self.suser := tmp_uid;
     }
 
 

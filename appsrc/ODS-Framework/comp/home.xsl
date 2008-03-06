@@ -46,17 +46,26 @@
     <v:before-data-bind>
       <![CDATA[
 
+          if (self.fname is null)
+            self.fname := self.u_name;
+
+	  {
+	    whenever not found goto nf_user;
+	    select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
+	  }
+
+	  if (0)
+	    {
+              declare tmp_uid varchar;
         declare exit handler for not found
         {
             signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
         };
-
-        if (self.fname is null)
-          self.fname := self.u_name;
-
-        select U_ID into self.ufid
-          from SYS_USERS
-	  where U_NAME = self.fname;
+	      nf_user:
+	      select U_NAME, U_ID into tmp_uid, self.ufid
+	        from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK = self.fname;
+	      self.fname := tmp_uid;
+	    }
 
 	if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
 	  {

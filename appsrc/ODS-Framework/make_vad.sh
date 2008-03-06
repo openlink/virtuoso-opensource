@@ -92,6 +92,10 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "/tests/"`; do
 	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
+      # Also reflect changes in oat
+      for i in `find ../../oat -name 'Entries' `; do
+	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+      done
       LANG=POSIX
       export LANG
 
@@ -101,7 +105,7 @@ VERSION_INIT()
 	  BASE=`cat version.base`
       fi
 
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=561 } { cnt = cnt + $1 } END { print cnt }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print cnt }'`
 
       VERSION=`expr $BASE + $VERSION`
       CURR_VERSION=$VERSION

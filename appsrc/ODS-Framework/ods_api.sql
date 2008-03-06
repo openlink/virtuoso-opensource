@@ -30,8 +30,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule1', 1,
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_svc_rule_list1', 1, vector ('ods_svc_rule1'));
 
-DB.DBA.VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services');
-DB.DBA.VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'))
+-- move into ods_define_common_vd
+--DB.DBA.VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services');
+--DB.DBA.VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'))
 ;
 
 
