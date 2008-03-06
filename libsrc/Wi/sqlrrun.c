@@ -199,11 +199,7 @@ int32 vdb_serialize_connect = 0;
 dk_mutex_t *vdb_connect_mtx = NULL;
 caddr_t *odbc_error_ex = NULL;
 char * vdb_odbc_error_file = NULL;
-
-
-
-
-
+char * vdb_trim_trailing_spaces = NULL;
 
 
 static caddr_t
