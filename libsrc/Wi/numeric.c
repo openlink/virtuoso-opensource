@@ -61,6 +61,15 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
 #endif
 
 #define NUM_SET_0(n)		*(int64*)n = 0
+#define NUM_SET_0_REST(n) {\
+    ((int64*)n)[1] = 0; \
+    ((int64*)n)[2] = 0; \
+    ((int64*)n)[3] = 0; \
+    ((int64*)n)[4] = 0; \
+    ((int64*)n)[5] = 0; \
+}
+
+
 #define NUM_SET_1(N)		memcpy (N, &_num_1, sizeof (_num_1))
 #define NUM_SET_10(N)		memcpy (N, &_num_10, sizeof (_num_10))
 
@@ -280,9 +289,7 @@ _num_add_int (numeric_t result, numeric_t n1, numeric_t n2, int scale_min)
   /* Zero extra digits made by scale_min. */
   if (scale_min > sum_scale)
     {
-      sumptr = sum->n_value + sum_scale + sum_digits;
-      for (count = scale_min - sum_scale; count > 0; count--)
-	*sumptr++ = 0;
+      NUM_SET_0_REST (sum);
     }
 
   /* Start with the fraction part.  Initialize the pointers. */
@@ -1339,8 +1346,8 @@ _numeric_inf (numeric_t n, int neg)
 num_static int
 _numeric_normalize (numeric_t n)
 {
-  int new_scale;
-  char *src;
+  int new_scale, scale;
+  char *src, *first_frac;
 
   /* This is inlined code for
    *   numeric_rescale (n, n, NUMERIC_MAX_PRECISION_INT, NUMERIC_MAX_SCALE_INT)
@@ -1386,9 +1393,12 @@ _numeric_normalize (numeric_t n)
   /* Check if we have to remove trailing zeroes. */
   if (n->n_scale)
     {
-      src = n->n_value + n->n_len + n->n_scale;
-      while (n->n_scale > 0 && *--src == 0)
-	n->n_scale--;
+      scale = n->n_scale;
+      first_frac = n->n_value + n->n_len;
+	src = n->n_value + n->n_len + scale - 1;
+      while (src >= first_frac  && *src == 0)
+	src--;
+      n->n_scale = (src - first_frac) + 1;
 /* IvAn/MinusZeroNormalization/000109 If n is negative, n_len is zero,
 n_scale is nonzero and all digits are zeroes, then it is -0 and
 n_neg MUST be set to 0.
@@ -2268,7 +2278,7 @@ numeric_add (numeric_t z, numeric_t x, numeric_t y)
 	_numeric_inf (z, y->n_neg);
       return NUMERIC_STS_SUCCESS;
     }
-  num_add (z, x, y, NUMERIC_MAX_SCALE_INT);
+  num_add (z, x, y, 0);
   return _numeric_normalize (z);
 }
 
