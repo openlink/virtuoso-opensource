@@ -1,3 +1,141 @@
+2008-03-06 16:46  source
+
+	* Updated version to 5.0.6-rc5
+
+2008-03-06 16:39  source
+
+	* Added missing global
+
+2008-03-06 15:24  source
+
+	* A top level numer add needs no scale greather than that of the more
+	  precise operand.
+	* Optimized handling of trailing zeros; detect them better in
+	  numeric_normalize
+
+2008-03-06 15:06  source
+
+	* Use wi.h instead of widd.h
+
+2008-03-06 15:05  source
+
+	* Fixed problems with macro argument expansion
+
+2008-03-06 15:04  source
+
+	* Fixed compiler warning about dangling else
+
+2008-03-06 15:03  source
+
+	* Fixed warnings on long constants
+
+2008-03-06 15:02  source
+
+	* Fixed column descriptor to use box_int on all members of struct
+
+2008-03-06 14:59  source
+
+	* Fixed bug adding extra attributes
+	* Fixed compiler warnings
+
+2008-03-06 14:58  source
+
+	* Fixed compiler warnings about const mismatch
+	* Fixed compiler warnings about missing cast
+	* Fixed compiler warnings about unused variables
+	* Fixed compiler warnings about possible uninitialized variables
+	* Fixed compiler warnings about printf format
+	* Fixed compiler warnings about unreachable code
+
+2008-03-05 16:11  source
+
+	* Fixed compiler warning
+
+2008-03-05 16:07  source
+
+	* Added tests for SPARLQ-BI queries on RDF Views on remote tables
+
+2008-03-05 16:05  source
+
+	* Added tests for SPARQL-BI over RDF views
+	* Added additional quap maps patterns
+	* Added ESWC demo
+	* Added cluster schema
+	* Added view creation
+
+2008-03-05 15:59  source
+
+	* Fixed check of session flags if client is freed, as they can contain
+	  garbage
+
+2008-03-05 15:58  source
+
+	* Fixed prototypes of maphash_func arg1 of maphash
+
+2008-03-05 15:57  source
+
+	* Fixed compatibility with old databases
+
+2008-03-03 14:13  source
+
+	* Merged from upstream project
+
+2008-03-03 14:10  source
+
+	* Existing preds have a card of less than one. If a hash filler has local
+	  ubq conds that also make hash fillers, then make it so the hash fillers
+	  get done inermost first, as seen in sqlgen diff.
+	* Added some more logic for conds known at compile time.
+	* Added cost of hash fillers if these involve other hash fillers
+	* Fixed try the hash filler preds biz if less than half pool left
+
+2008-03-03 14:04  source
+
+	* Added tests for nested hash fillers
+
+2008-03-03 14:03  source
+
+	* Added correct labels and datatypes
+
+2008-03-01 13:16  source
+
+	* Added mini-rdfb to profile
+	* Added unified UI for various predicates by user
+	* Added check ODS Site Front Welcome
+	* Added result message for invite action
+	* Added result message for connectionSet
+	* Added meta for user|organization profile in new UI
+	* Added intergrace connection when user is not logged in
+	* Fixed personbox gmap key retrieve
+	* Fixed dataspace/person|organization url rewrite rule for new UI
+	* Changed nick schema
+	* Removed the Linked Data widget
+	* Changed URL into URI in labels
+
+2008-03-01 13:09  source
+
+	* Fixed webdav is now moved into templates
+
+2008-03-01 13:07  source
+
+	* Fixed URL rewrite rules for adding sparql queries
+
+2008-03-01 13:01  source
+
+	* Fixed types in struct for Windows
+
+2008-03-01 12:59  source
+
+	* Fixed comments
+
+2008-03-01 12:58  source
+
+	* Merged from upstream project
+
+2008-02-28 21:35  source
+
+	* Updated version to 5.0.6-rc4
+
 2008-02-28 21:27  source
 
 	* Added result messages for connectionSet
