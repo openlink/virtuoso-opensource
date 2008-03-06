@@ -31,7 +31,7 @@
 #include <wchar.h>
 #endif
 
-#include "widd.h"
+#include "wi.h"
 
 caddr_t
 stmt_param_place_ptr (parm_binding_t * pb, int nth, cli_stmt_t * stmt,
