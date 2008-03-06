@@ -3553,7 +3553,9 @@ srv_global_init (char *mode)
   if (recover_file_prefix)
     {
       if (restore_from_files (recover_file_prefix) == -1)
+	{
 	call_exit (1);
+ 	}
       return;
     }
 
