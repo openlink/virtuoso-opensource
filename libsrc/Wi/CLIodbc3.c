@@ -1710,7 +1710,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 		{
 		  col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-		  if (COL_DESC_IS_EXTENDED (cd) && (unbox ((caddr_t) cd->cd_flags) & CDF_AUTOINCREMENT))
+		  if (COL_DESC_IS_EXTENDED (cd) && (unbox (cd->cd_flags) & CDF_AUTOINCREMENT))
 		    *((SQLINTEGER *) ValuePtr) = SQL_TRUE;
 		}
 	    }
@@ -2135,7 +2135,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
 	      type = (char *) DV_TYPE_TITLE (cd->cd_dtp);
 
-	      if (cd->cd_flags && CDF_XMLTYPE)
+	      if (unbox (cd->cd_flags) && CDF_XMLTYPE)
 		type = "XMLType";
 
 	      V_SET_ODBC_STR (type, ValuePtr, BufferLength, StringLengthPtr, &desc->d_stmt->stmt_error);

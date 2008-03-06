@@ -866,7 +866,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 		{
 		  col_desc_t *cd = (col_desc_t *) stmt->stmt_compilation->sc_columns[i];
 
-		  if (COL_DESC_IS_EXTENDED (cd) && (unbox ((caddr_t) cd->cd_flags) & CDF_KEY))
+		  if (COL_DESC_IS_EXTENDED (cd) && (unbox (cd->cd_flags) & CDF_KEY))
 		    {
 		      found_key = 1;
 		      break;

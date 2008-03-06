@@ -262,11 +262,11 @@ col_desc_t bm_info =
 {
   NULL,				/* name */
       DV_LONG_INT,		/* type */
-      0,			/* scale */
-      (caddr_t) 10,		/* precision */
-      1,			/* nullable */
-      0,			/* updatable */
-      0				/* searchable */
+  (caddr_t) (ptrlong) 0,	/* scale */
+  (caddr_t) (ptrlong) 10,	/* precision */
+  (caddr_t) (ptrlong) 1,	/* nullable */
+  (caddr_t) (ptrlong) 0,	/* updatable */
+  (caddr_t) (ptrlong) 0		/* searchable */
 };
 
 
@@ -395,7 +395,7 @@ virtodbc__SQLColAttributes (
 #endif
     case SQL_COLUMN_NULLABLE:
       if (pfDesc)
-	*pfDesc = cd->cd_nullable;
+	*pfDesc = unbox (cd->cd_nullable);
       break;
 
     case SQL_COLUMN_UNSIGNED:
@@ -410,12 +410,12 @@ virtodbc__SQLColAttributes (
 
     case SQL_COLUMN_UPDATABLE:
       if (pfDesc)
-	*pfDesc = cd->cd_updatable;
+	*pfDesc = unbox (cd->cd_updatable);
       break;
 
     case SQL_COLUMN_AUTO_INCREMENT:
       if (pfDesc)
-	*pfDesc = COL_DESC_IS_EXTENDED (cd) ? ((unbox ((caddr_t) cd->cd_flags) & CDF_AUTOINCREMENT) != 0) : 0;
+	*pfDesc = COL_DESC_IS_EXTENDED (cd) ? ((unbox (cd->cd_flags) & CDF_AUTOINCREMENT) != 0) : 0;
       break;
 
     case SQL_COLUMN_CASE_SENSITIVE:
@@ -483,7 +483,7 @@ virtodbc__SQLColAttributes (
 
     case SQL_COLUMN_KEY:
       if (pfDesc)
-	*pfDesc = COL_DESC_IS_EXTENDED (cd) ? (unbox ((caddr_t) cd->cd_flags) & CDF_KEY) : 0;
+	*pfDesc = COL_DESC_IS_EXTENDED (cd) ? (unbox (cd->cd_flags) & CDF_KEY) : 0;
       break;
 
 #if ODBCVER >= 0x0350
@@ -1075,7 +1075,7 @@ virtodbc__SQLDescribeCol (
     *pcbColDef = (UDWORD) unbox (cd->cd_precision);
 
   if (pfNullable)
-    *pfNullable = (SQLSMALLINT) cd->cd_nullable;
+    *pfNullable = (SQLSMALLINT) unbox (cd->cd_nullable);
 
   if (pfSqlType)
     {

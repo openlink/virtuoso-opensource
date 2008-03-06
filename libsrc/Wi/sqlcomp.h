@@ -117,15 +117,15 @@ typedef struct col_desc_s
     ptrlong		cd_dtp;
     caddr_t		cd_scale;
     caddr_t		cd_precision;
-    ptrlong		cd_nullable;
-    ptrlong		cd_updatable;
-    ptrlong		cd_searchable;
+    caddr_t		cd_nullable;
+    caddr_t		cd_updatable;
+    caddr_t		cd_searchable;
     /* Access the fileds below only if COL_DESC_IS_EXTENDED() is true. */
     char *		cd_base_catalog_name;
     char *		cd_base_column_name;
     char *		cd_base_schema_name;
     char *		cd_base_table_name;
-    ptrlong		cd_flags;
+    caddr_t		cd_flags;
   } col_desc_t;
 
 #define COL_DESC_IS_EXTENDED(col) \

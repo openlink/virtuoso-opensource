@@ -2269,7 +2269,7 @@ retry_dupe_check:
 	  if (sl->ssl_dtp == DV_XML_ENTITY)
 	    {
 	      dtp = DV_BLOB_WIDE;
-	      desc->cd_flags = CDF_XMLTYPE;
+	      desc->cd_flags = box_num (CDF_XMLTYPE);
 	    }
 	  if (cli && DV_INT64 == dtp && cli->cli_version < 3016)
 	    dtp = DV_NUMERIC;
@@ -2301,12 +2301,12 @@ retry_dupe_check:
 		  if (col->col_sqt.sqt_is_xml)
 		    flags |= CDF_XMLTYPE;
 		}
-	      desc->cd_updatable = 1;
-	      desc->cd_flags = flags;
+	      desc->cd_updatable = box_num (1);
+	      desc->cd_flags = box_num (flags);
 	    }
 	  /* not always, but still this is the best way */
-	  desc->cd_searchable = IS_BLOB_DTP (dtp) ? 0 : 1;
-	  desc->cd_nullable = sl->ssl_non_null ? 0 : 1;
+	  desc->cd_searchable = box_num (IS_BLOB_DTP (dtp) ? 0 : 1);
+	  desc->cd_nullable = box_num (sl->ssl_non_null ? 0 : 1);
 	  if (sl->ssl_prec)
 	    prec = sl->ssl_prec;
 	  if (desc->cd_dtp == DV_TIMESTAMP)
