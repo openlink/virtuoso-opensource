@@ -477,7 +477,7 @@ bif_aq_wait  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long wait = bif_long_arg (qst, args, 2, "aq_wait");
   caddr_t err = NULL;
   query_instance_t * qi = (query_instance_t *) qst;
-  caddr_t val;
+  caddr_t val = NULL;
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR568", "Function aq_wait() can not be used inside atomic section");
   if (lt_has_locks (qi->qi_trx))

@@ -629,7 +629,7 @@ itc_free (it_cursor_t * it)
 
 
 int
-plh_box_free (box_t pl)
+plh_box_free (caddr_t pl)
 {
   itc_unregister ((it_cursor_t *) pl);
   return 0;
