@@ -2420,7 +2420,7 @@
 	                      </v:before-render>
 	                    </v:radio-button>
 	                    <xsl:call-template name="nbsp"/>
-                      <b><vm:label for="i_source_2" value="--'URL'" /></b>
+                        <b><vm:label for="i_source_2" value="--'URI'" /></b>
                     </td>
                   </tr>
                   <tr>
@@ -2613,7 +2613,7 @@
                   <vm:if test="self.i_source = 2">
                     <tr>
 		                  <th width="30%">
-                        Select URL
+                          Select URI
                       </th>
                       <td>
                         <v:text name="f_uri" value="--''" xhtml_size="60" />
