@@ -460,7 +460,7 @@ xs_generate_component_names (vxml_parser_t * parser, const char* raw_name, int p
   int longname_matches_real_name = ((NULL == raw_name) ? 0 : 1);
   mem_pool_t* pool = parser->processor.sp_schema->pool;
   if (prefix_by_context)
-    xs_names_of_surrounding_type (parser, (NULL == raw_name), &longname_prefix, &qname_prefix);
+    xs_names_of_surrounding_type (parser, (NULL == raw_name), (char **) &longname_prefix, (char **) &qname_prefix);
 
   if (NULL != longname_prefix)
     {

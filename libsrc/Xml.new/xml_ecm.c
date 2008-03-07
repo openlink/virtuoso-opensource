@@ -769,7 +769,7 @@ dc_attr_dict_t *xmlparser_compile_dc_attr_dict (vxml_parser_t *parser, caddr_t s
 	      return NULL;
 	    }
 	}    
-      item_idx = ecm_add_name (src_item[0], &(res->dcad_items), &(res->dcad_count), sizeof (dc_attr_dict_item_t));
+      item_idx = ecm_add_name (src_item[0], (void **) &(res->dcad_items), &(res->dcad_count), sizeof (dc_attr_dict_item_t));
       if (ECM_MEM_UNIQ_ERROR == item_idx)
 	{
 	  dc_attr_dict_free (res);
@@ -949,7 +949,7 @@ int xmlparser_configure (vxml_parser_t *parser, caddr_t raw_args, struct vxml_pa
   size_t namelen, vallen;
   int fine_assignments = 0;
   dtd_param_descr_t *pd;
-  ptrlong idx, numvalue;
+  ptrlong idx = 0, numvalue = 0;
   dtd_config_t *cfg = &(dv->dv_init_config);
 
   for (idx = 0; idx < COUNTOF__dtd_param_descrs; idx++)

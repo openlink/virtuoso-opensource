@@ -556,9 +556,9 @@ static void
 normalize_name (buf_range_t * brp)
 {
   buf_ptr_t ptr = brp->beg;
-  char * tmp;
-  char * ep;
-  char c;
+  utf8char * tmp;
+  utf8char * ep;
+  utf8char c;
 
   while (ptr.buf != brp->end.buf || ptr.ptr < brp->end.ptr)
     {

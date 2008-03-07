@@ -1369,7 +1369,7 @@ void dtd_check_ids(vxml_parser_t* parser)
 	  ecm_refid_logitem_t* refid = (ecm_refid_logitem_t*) basket_get (&id->id_log);
 	  if (refid)
 	    {
-	      char* filename = ((NULL != refid->li_filename) ? refid->li_filename : parser->cfg.uri);
+	      const char* filename = ((NULL != refid->li_filename) ? refid->li_filename : parser->cfg.uri);
 	      ptrlong dupe_mode = parser->validator.dv_curr_config.dc_id_dupe | XCFG_NOLOGPLACE;
 	      ptrlong len = ECM_MESSAGE_LEN + strlen(*id_name) + ((NULL == filename) ? 0 : strlen (filename));
 	      if (refid->li_line_no < 0)

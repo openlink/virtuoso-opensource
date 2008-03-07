@@ -297,7 +297,7 @@ typedef struct dtd_validator_s dtd_validator_t;
 
 typedef struct ecm_refid_logitem_s
 {
-  caddr_t			li_filename; /* boxed string of URI */
+  ccaddr_t			li_filename; /* boxed string of URI */
   ptrlong			li_line_no;
 } ecm_refid_logitem_t;
 

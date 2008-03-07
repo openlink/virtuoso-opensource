@@ -2923,7 +2923,7 @@ end_of_fsa_for_parent:
       /* check attribute type and value, report errors */
       {
         size_t len = box_length (attr->ta_value) - 1;
-        unsigned char *tail = attr->ta_value;
+        unsigned char *tail = (unsigned char *) attr->ta_value;
         unsigned char *end = tail + len;
         int have_spaces = 0;
         while (tail < end)

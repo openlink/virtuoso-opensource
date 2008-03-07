@@ -84,7 +84,7 @@ struct xml_pos_s {
   int			line_num;	/*!< current line number */
   int			col_b_num;	/*!< current column byte offset */
   int			col_c_num;	/*!< current column char offset */
-  char *		origin_uri;	/*<! URI where visible data of this brick comes from or NULL for main text. xml_pos_s is not owner of this string */
+  const char *		origin_uri;	/*<! URI where visible data of this brick comes from or NULL for main text. xml_pos_s is not owner of this string */
   struct xml_def_4_entity_s *	origin_ent;	/*<! Entity where visible data of this brick comes from or NULL for main text. xml_pos_s is not owner of this def. */
 };
 typedef struct xml_pos_s xml_pos_t;
