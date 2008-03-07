@@ -209,7 +209,7 @@ typedef struct dc_attr_dict_item_s
   caddr_t dcad_attr_name;
   VXmlAttrParser dcad_handler;
   caddr_t *dcad_elements;
-  int dcad_elements_count;  
+  ptrlong dcad_elements_count;  
 }
 dc_attr_dict_item_t;
 
