@@ -2884,9 +2884,9 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   static char *szMe = "sprintf";
   dk_session_t *ses = strses_allocate ();
   char tmp[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
-  char format [100];
-  char * volatile ptr;
-  char * volatile start;
+  char format[100];
+  char *volatile ptr;
+  char *volatile start;
   char buf[100];
   char *bufptr;
   caddr_t str = bif_string_arg (qst, args, 0, szMe);
@@ -2898,291 +2898,281 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   *err_ret = NULL;
   QR_RESET_CTX
     {
-      while (!*err_ret && len && ptr && *ptr)
-	{
-	  start = strchr (ptr, '%');
-
-	  if (!start)
-	    { /* write the reminder */
-	      session_buffered_write (ses, ptr, len);
-	      ptr += len;
-	      len = 0;
-	    }
-	  else
-	    {
-	      if (start - ptr)
-		{ /* write the constant part before the % if any */
-		  session_buffered_write (ses, ptr, start - ptr);
-		  len -= (int) (start - ptr);
-		}
-	      ptr = start + 1;
-	      if (ptr && *ptr == '%') /* double % */
-		session_buffered_write_char (*ptr, ses);
-	      else
-		{ /* a real format specifier */
-		  if (arg_inx >= BOX_ELEMENTS_INT(args))
-		    sqlr_new_error ("22026", "SR352",
-			"Not enough arguments (only %lu) for sprintf to match format '%s'",
-			(unsigned long)BOX_ELEMENTS(args), str);
-		  arg_len = arg_prec = 0;
-		  /* skip the modifier */
-		  while (ptr && *ptr && strchr ("#0- +'", *ptr))
-		    ptr++;
-
-		  bufptr = buf;
-		  /* skip the width */
-		  while (ptr && *ptr && strchr ("0123456789", *ptr))
-		    {
-		      if (bufptr - buf < sizeof (buf))
-			*bufptr++ = *ptr;
-		      ptr++;
-		    }
-		  *bufptr = 0;
-		  arg_len = atoi (buf);
-
-		  /* skip the precision */
-		  if (ptr && *ptr == '.')
-		    {
-		      bufptr = buf;
-		      ptr++; /* skip the dot */
-		      while (ptr && *ptr && strchr ("0123456789", *ptr))
-			{
-			  if (bufptr - buf < sizeof (buf))
-			    *bufptr++ = *ptr;
-			  ptr++;
-			}
-		      *bufptr = 0;
-		      arg_prec = atoi (buf);
-		    }
-
-		  /* skip the size modifier */
-		  if (ptr && *ptr && strchr ("hlLq", *ptr))
-		    ptr++;
-
-		  if (!ptr || !*ptr || !strchr ("diouxXeEfgcsSIVU", *ptr))
-		    {
-		      sqlr_new_error ("22023", "SR031",
-			  "Invalid format string for sprintf at escape %d", arg_inx);
-		    }
-		  memset (format, 0, sizeof (format));
-		  memcpy (format, start, MIN (ptr - start + 1, sizeof (format) - 1));
-
-		  if (arg_len > SPRINTF_BUF_SPACE)
-		    {
-		      sqlr_new_error ("22026", "SR032",
-			  "sprintf escape %d (%s) exceeds the internal buffer of %d",
-			  arg_inx, format, SPRINTF_BUF_SPACE);
-		    }
-
-
-		  tmp[SPRINTF_BUF_SPACE] = '\0';
-		  switch (*ptr)
-		    {
-		      case 'd':
-		      case 'i':
-		      case 'o':
-		      case 'u':
-		      case 'x':
-		      case 'X':
-			  if (ptr[-1] == 'h')
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				format, (short) bif_long_arg (qst, args, arg_inx++, szMe));
-			  else if (ptr[-1] == 'l')
-#if SIZEOF_LONG == 4
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				      format, (int32) bif_long_arg (qst, args, arg_inx++, szMe));
-#else
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				format, bif_long_arg (qst, args, arg_inx++, szMe));
-#endif
-			  else
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				format, (int)bif_long_arg (qst, args, arg_inx++, szMe));
-			  break;
-
-		      case 'e':
-		      case 'E':
-		      case 'f':
-		      case 'g':
-			  if (ptr[-1] == 'L' || ptr[-1] == 'q')
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				format, (long double) bif_double_arg (qst, args, arg_inx++, szMe));
-			  else
-			    snprintf (tmp, SPRINTF_BUF_SPACE,
-				format, bif_double_arg (qst, args, arg_inx++, szMe));
-			  break;
-
-		      case 'c':
-			  snprintf (tmp, SPRINTF_BUF_SPACE,
-			      format, (int) bif_long_arg (qst, args, arg_inx++, szMe));
-			  break;
-
-		      case 's':
-			    {
-			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
-			      caddr_t narrow_arg = NULL;
-			      if (DV_WIDESTRINGP (arg))
-				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-			      else if (!arg)
-				arg = narrow_arg = box_dv_short_string ("(NULL)");
-			      if (arg_len || arg_prec)
-				{
-				  if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-				    {
-				      if (narrow_arg)
-					dk_free_box (narrow_arg);
-				      sqlr_new_error ("22026", "SR033",
-					  "The length of the data for sprintf argument %d exceed the maximum of %d",
-					  arg_inx - 1, SPRINTF_BUF_SPACE);
-				    }
-				  snprintf (tmp, SPRINTF_BUF_SPACE, format, arg);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				}
-			      else
-				{
-				  session_buffered_write (ses, arg, box_length (arg) - 1);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  goto get_next;
-				}
-			    }
-			  break;
-
-		      case 'S':
-			    {
-			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
-			      caddr_t narrow_arg = NULL;
-			      if (DV_WIDESTRINGP (arg))
-				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-			      else if (!arg)
-				arg = narrow_arg = box_dv_short_string ("(NULL)");
-			      if (arg_len || arg_prec)
-				{
-				  if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-				    {
-				      if (narrow_arg)
-					dk_free_box (narrow_arg);
-				      sqlr_new_error ("22026", "SR034",
-					  "The length of the data for sprintf argument %d exceed the maximum of %d",
-					  arg_inx - 1, SPRINTF_BUF_SPACE);
-				    }
-				  sprintf_escaped_str_literal (arg, tmp, NULL);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				}
-			      else
-				{
-				  sprintf_escaped_str_literal (arg, NULL, ses);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  goto get_next;
-				}
-			    }
-			  break;
-
-		      case 'I':
-			    {
-			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
-			      caddr_t narrow_arg = NULL;
-			      if (DV_WIDESTRINGP (arg))
-				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-			      else if (!arg)
-				arg = narrow_arg = box_dv_short_string ("(NULL)");
-			      if (arg_len || arg_prec)
-				{
-				  if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-				    {
-				      if (narrow_arg)
-					dk_free_box (narrow_arg);
-				      sqlr_new_error ("22026", "SR035",
-					  "The length of the data for sprintf argument %d exceed the maximum of %d",
-					  arg_inx - 1, SPRINTF_BUF_SPACE);
-				    }
-				  sprintf_escaped_id (arg, tmp, NULL);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				}
-			      else
-				{
-				  sprintf_escaped_id (arg, NULL, ses);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  goto get_next;
-				}
-			    }
-			  break;
-
-		      case 'U':
-			    {
-			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
-			      caddr_t narrow_arg = NULL;
-			      if (DV_WIDESTRINGP (arg))
-				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-			      else if (!arg)
-				arg = narrow_arg = box_dv_short_string ("(NULL)");
-			      if (arg_len || arg_prec)
-				{
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  sqlr_new_error ("22025", "SR036",
-				      "The URL escaping sprintf escape %d doesn't support modifiers",
-				      arg_inx - 1);
-				}
-			      else
-				{
-				  http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  goto get_next;
-				}
-			    }
-			  break;
-
-		      case 'V':
-			    {
-			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
-			      caddr_t narrow_arg = NULL;
-			      if (!arg)
-				arg = narrow_arg = box_dv_short_string ("(NULL)");
-			      if (arg_len || arg_prec)
-				{
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  sqlr_new_error ("22025", "SR037",
-				      "The HTTP escaping sprintf escape %d doesn't support modifiers",
-				      arg_inx - 1);
-				}
-			      else
-				{
-				  http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
-				  if (narrow_arg)
-				    dk_free_box (narrow_arg);
-				  goto get_next;
-				}
-			    }
-			  break;
-
-		      default:
-			  sqlr_new_error ("22023", "SR038", "Invalid format string for sprintf: '%.1000s'", str);
-		    }
-
-		  if (tmp[SPRINTF_BUF_SPACE]) /* Was: (strlen (tmp) > sizeof (tmp) - 1) */
-		    {
-		      GPF_T1 ("SQL sprintf buffer overflowed. "
-			  "sprintf of over 2000 characters caused this.");
-		    }
-		  session_buffered_write (ses, tmp, strlen (tmp));
-		}
-get_next:
-	      ptr++;
-	      len -= (int) (ptr - start);
-	    }
+    next_fragment:
+      start = strchr (ptr, '%');
+      if (!start)
+	{				/* write the reminder */
+	  session_buffered_write (ses, ptr, len);
+	  ptr += len;
+	  len = 0;
+	  goto format_string_completed;	/* see below */
 	}
+      if (start - ptr)
+	{				/* write the constant part before the % if any */
+	  session_buffered_write (ses, ptr, start - ptr);
+	  len -= (int) (start - ptr);
+	}
+      ptr = start + 1;
+      if (ptr && *ptr == '%')	/* double % */
+	{
+	  session_buffered_write_char (*ptr, ses);
+	  goto get_next_no_arg_inx_increment;	/* see below */
+	}
+      /* Now we know that we process a real format specifier */
+      if (arg_inx >= BOX_ELEMENTS_INT (args))
+	sqlr_new_error ("22026", "SR352",
+	    "Not enough arguments (only %lu) for sprintf to match format '%s'", (unsigned long) BOX_ELEMENTS (args), str);
+      arg_len = arg_prec = 0;
+      /* skip the modifier */
+      while (ptr && *ptr && strchr ("#0- +'", *ptr))
+	ptr++;
+
+      bufptr = buf;
+      /* skip the width */
+      while (ptr && *ptr && strchr ("0123456789", *ptr))
+	{
+	  if (bufptr - buf < sizeof (buf))
+	    *bufptr++ = *ptr;
+	  ptr++;
+	}
+      *bufptr = 0;
+      arg_len = atoi (buf);
+
+      /* skip the precision */
+      if (ptr && *ptr == '.')
+	{
+	  bufptr = buf;
+	  ptr++;			/* skip the dot */
+	  while (ptr && *ptr && strchr ("0123456789", *ptr))
+	    {
+	      if (bufptr - buf < sizeof (buf))
+		*bufptr++ = *ptr;
+	      ptr++;
+	    }
+	  *bufptr = 0;
+	  arg_prec = atoi (buf);
+	}
+
+      /* skip the size modifier */
+      if (ptr && *ptr && strchr ("hlLq", *ptr))
+	ptr++;
+
+      if (!ptr || !*ptr || !strchr ("diouxXeEfgcsSIVU", *ptr))
+	{
+	  sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
+	}
+      memset (format, 0, sizeof (format));
+      memcpy (format, start, MIN (ptr - start + 1, sizeof (format) - 1));
+
+      if (arg_len > SPRINTF_BUF_SPACE)
+	{
+	  sqlr_new_error ("22026", "SR032",
+	      "sprintf escape %d (%s) exceeds the internal buffer of %d", arg_inx, format, SPRINTF_BUF_SPACE);
+	}
+
+
+      tmp[SPRINTF_BUF_SPACE] = '\0';
+      switch (*ptr)
+	{
+	case 'd':
+	case 'i':
+	case 'o':
+	case 'u':
+	case 'x':
+	case 'X':
+	  if (ptr[-1] == 'h')
+	    snprintf (tmp, SPRINTF_BUF_SPACE, format, (short) bif_long_arg (qst, args, arg_inx, szMe));
+	  else if (ptr[-1] == 'l')
+#if SIZEOF_LONG == 4
+	    snprintf (tmp, SPRINTF_BUF_SPACE, format, (int32) bif_long_arg (qst, args, arg_inx, szMe));
+#else
+	    snprintf (tmp, SPRINTF_BUF_SPACE, format, bif_long_arg (qst, args, arg_inx, szMe));
+#endif
+	  else
+	    snprintf (tmp, SPRINTF_BUF_SPACE, format, (int) bif_long_arg (qst, args, arg_inx, szMe));
+	  break;
+	case 'e':
+	case 'E':
+	case 'f':
+	case 'g':
+	  {
+	    caddr_t arg = bif_arg (qst, args, arg_inx, szMe);
+	    if ((DV_NUMERIC == DV_TYPE_OF (arg)) && !arg_len && !arg_prec)
+	      {
+		caddr_t strg = box_cast_to (qst, arg, DV_NUMERIC, DV_SHORT_STRING,
+		    NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+		session_buffered_write (ses, strg, box_length (strg) - 1);
+		dk_free_box (strg);
+		goto get_next;
+	      }
+	    if (ptr[-1] == 'L' || ptr[-1] == 'q')
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, (long double) bif_double_arg (qst, args, arg_inx, szMe));
+	    else
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, bif_double_arg (qst, args, arg_inx, szMe));
+	    break;
+	  }
+	case 'c':
+	  snprintf (tmp, SPRINTF_BUF_SPACE, format, (int) bif_long_arg (qst, args, arg_inx, szMe));
+	  break;
+	case 's':
+	  {
+	    caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	    caddr_t narrow_arg = NULL;
+	    if (DV_WIDESTRINGP (arg))
+	      arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+	    else if (!arg)
+	      arg = narrow_arg = box_dv_short_string ("(NULL)");
+	    if (arg_len || arg_prec)
+	      {
+		if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+		  {
+		    if (narrow_arg)
+		      dk_free_box (narrow_arg);
+		    sqlr_new_error ("22026", "SR033",
+			"The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
+		  }
+		snprintf (tmp, SPRINTF_BUF_SPACE, format, arg);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+	      }
+	    else
+	      {
+		session_buffered_write (ses, arg, box_length (arg) - 1);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+		goto get_next;
+	      }
+	  }
+	  break;
+	case 'S':
+	  {
+	    caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	    caddr_t narrow_arg = NULL;
+	    if (DV_WIDESTRINGP (arg))
+	      arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+	    else if (!arg)
+	      arg = narrow_arg = box_dv_short_string ("(NULL)");
+	    if (arg_len || arg_prec)
+	      {
+		if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+		  {
+		    if (narrow_arg)
+		      dk_free_box (narrow_arg);
+		    sqlr_new_error ("22026", "SR034",
+			"The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
+		  }
+		sprintf_escaped_str_literal (arg, tmp, NULL);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+	      }
+	    else
+	      {
+		sprintf_escaped_str_literal (arg, NULL, ses);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+		goto get_next;
+	      }
+	  }
+	  break;
+	case 'I':
+	  {
+	    caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	    caddr_t narrow_arg = NULL;
+	    if (DV_WIDESTRINGP (arg))
+	      arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+	    else if (!arg)
+	      arg = narrow_arg = box_dv_short_string ("(NULL)");
+	    if (arg_len || arg_prec)
+	      {
+		if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+		  {
+		    if (narrow_arg)
+		      dk_free_box (narrow_arg);
+		    sqlr_new_error ("22026", "SR035",
+			"The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
+		  }
+		sprintf_escaped_id (arg, tmp, NULL);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+	      }
+	    else
+	      {
+		sprintf_escaped_id (arg, NULL, ses);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+		goto get_next;
+	      }
+	  }
+	  break;
+	case 'U':
+	  {
+	    caddr_t arg, narrow_arg;
+	    if (arg_len || arg_prec)
+	      sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d doesn't support modifiers", arg_inx);
+	    arg = bif_arg (qst, args, arg_inx, szMe);
+	    if (DV_NUMERIC == DV_TYPE_OF (arg))
+	      {
+		narrow_arg = box_cast_to (qst, arg, DV_NUMERIC, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+		session_buffered_write (ses, narrow_arg, box_length (narrow_arg) - 1);
+		dk_free_box (narrow_arg);
+		goto get_next;
+	      }
+	    arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	    narrow_arg = NULL;
+	    if (DV_WIDESTRINGP (arg))
+	      arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+	    else if (!arg)
+	      arg = narrow_arg = box_dv_short_string ("(NULL)");
+	    http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
+	    if (narrow_arg)
+	      dk_free_box (narrow_arg);
+	    goto get_next;
+	  }
+	  break;
+	case 'V':
+	  {
+	    caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	    caddr_t narrow_arg = NULL;
+	    if (!arg)
+	      arg = narrow_arg = box_dv_short_string ("(NULL)");
+	    if (arg_len || arg_prec)
+	      {
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+		sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d doesn't support modifiers", arg_inx);
+	      }
+	    else
+	      {
+		http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
+		if (narrow_arg)
+		  dk_free_box (narrow_arg);
+		goto get_next;
+	      }
+	  }
+	  break;
+
+	default:
+	  sqlr_new_error ("22023", "SR038", "Invalid format string for sprintf: '%.1000s'", str);
+	}
+
+      if (tmp[SPRINTF_BUF_SPACE])	/* Was: (strlen (tmp) > sizeof (tmp) - 1) */
+	{
+	  GPF_T1 ("SQL sprintf buffer overflowed. " "sprintf of over 2000 characters caused this.");
+	}
+      session_buffered_write (ses, tmp, strlen (tmp));
+    get_next:
+      arg_inx++;
+    get_next_no_arg_inx_increment:
+      ptr++;
+      len -= (int) (ptr - start);
+      if (!*err_ret && len && ptr && *ptr)
+	goto next_fragment;	/* see above */
+    format_string_completed:
+      ;
     }
   QR_RESET_CODE
     {
-      caddr_t err = thr_get_error_code (((query_instance_t *)qst)->qi_thread);
+      caddr_t err = thr_get_error_code (((query_instance_t *) qst)->qi_thread);
       POP_QR_RESET;
       strses_free (ses);
       sqlr_resignal (err);

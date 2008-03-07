@@ -402,7 +402,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_qm_sqlfunc_arg_commalist_opt
 %type <backstack> spar_qm_sqlfunc_arg_commalist
 %type <tree> spar_qm_sqlfunc_arg
-%type <tree> spar_qm_sql_in_out_inout
+%type <box> spar_qm_sql_in_out_inout
 %type <boxes> spar_qm_sqltype
 %type <tree> spar_qm_sqlcol
 %type <box> spar_qm_sql_id

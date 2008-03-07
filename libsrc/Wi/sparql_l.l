@@ -1,6 +1,7 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option nounput
 %{
 /*
  *  $Id$
@@ -135,6 +136,7 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
     return name; \
   }
 
+#if 0 /* correct and ready to use, but no longer unused */
 static void sparyyerror_if_long_lname (sparp_t *sparp, caddr_t box, const char *lex_type_descr)
 {
   size_t boxlen = box_length (box);
@@ -150,6 +152,7 @@ static void sparyyerror_if_long_lname (sparp_t *sparp, caddr_t box, const char *
     if (box_length (sparyylval.box) > MAX_XML_LNAME_LENGTH) \
       sparyyerror_if_long_lname (sparp, sparyylval.box, lex_type_descr); \
     save_str(sparyytext); return (name);
+#endif
 
 #define TOKBOX_L(n,name,lex_type_descr) { \
     sparyylval.box = t_box_dv_uname_string (sparyytext+n); \

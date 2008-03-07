@@ -1058,7 +1058,7 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
   END_DO_SET();
 
 not_found_in_local_set:
-  t_set_push ((dk_set_t *)&(sparp->sparp_env->spare_propvar_sets->data), (void *) curr_pv);
+  t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_propvar_sets->data)), (void *)curr_pv);
 
 in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
@@ -1307,10 +1307,7 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
           fld->_.var.tabid = key;
           fld->_.var.tr_idx = fctr;
           if (!(SPART_VARR_GLOBAL & fld->_.var.rvr.rvrRestrictions))
-            {
-              if (0 <= dk_set_position_of_string (env->spare_good_graph_varnames, fld->_.var.vname))
-                t_set_push (&(env->spare_good_graph_varnames), fld->_.var.vname);
-            }
+            t_set_push_new_string (&(env->spare_good_graph_varnames), fld->_.var.vname);
         }
       if ((env->spare_grab.rgc_all) && (SPART_TRIPLE_PREDICATE_IDX != fctr))
         {
@@ -2833,13 +2830,13 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
                       {
                         qm_column_t *qmc = qmv->qmvColumns[col_ctr];
                         caddr_t *col_desc;
-                        caddr_t table_alias = (caddr_t) qmc->qmvcAlias;
-                        caddr_t table_name = (caddr_t) qmv->qmvTableName;
+                        ccaddr_t table_alias = qmc->qmvcAlias;
+                        ccaddr_t table_name = qmv->qmvTableName;
                         for (alias_ctr = alias_count; alias_ctr--; /* no step */)
                           {
                             if (strcmp (qmv->qmvATables[alias_ctr]->qmvaAlias, table_alias))
                               continue;
-                            table_name = (caddr_t) qmv->qmvATables[alias_ctr]->qmvaTableName;
+                            table_name = qmv->qmvATables[alias_ctr]->qmvaTableName;
                             break;
                           }
                         col_desc = (caddr_t *)list (4, box_copy (table_alias), box_copy (table_name), box_copy (qmc->qmvcColumnName), NULL);
@@ -2908,6 +2905,13 @@ caddr_t
 bif_sparql_sql_cols_for_quad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_sparql_quad_maps_for_quad_impl (qst, err_ret, args, SQL_COLS_FOR_QUAD, "sparql_sql_cols_for_quad");
+}
+
+caddr_t
+bif_sprintff_is_proven_bijection (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t f = bif_string_or_uname_arg (qst, args, 0, "__sprintff_is_proven_bijection");
+  return box_num (sprintff_is_proven_bijection (f));
 }
 
 caddr_t
@@ -3134,6 +3138,7 @@ sparql_init (void)
   bif_define ("sparql_lex_analyze", bif_sparql_lex_analyze);
   bif_define ("sparql_quad_maps_for_quad", bif_sparql_quad_maps_for_quad);
   bif_define ("sparql_sql_cols_for_quad", bif_sparql_sql_cols_for_quad);
+  bif_define ("__sprintff_is_proven_bijection", bif_sprintff_is_proven_bijection);
   bif_define ("__sprintff_intersect", bif_sprintff_intersect);
   bif_define ("__sprintff_like", bif_sprintff_like);
 #ifdef DEBUG

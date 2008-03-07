@@ -170,6 +170,9 @@ extern ccaddr_t sparp_smallest_union_superdatatype (sparp_t *sparp, ccaddr_t dt_
 The function is not 100% accurate so its result may be a supertype of the actual largest intersect datatype. */
 extern ccaddr_t sparp_largest_intersect_superdatatype (sparp_t *sparp, ccaddr_t iri1, ccaddr_t iri2);
 
+/*! Checks whether the given sprintf format string is a bijection */
+extern int sprintff_is_proven_bijection (const char *sprintf_fmt);
+
 /*! Returns an sprintf format string such that any string that can be printed by both \c sprintf_fmt1 and \c sprintf_fmt2 can
 also be printed by the returned format.
 The returned value can be NULL if it's proven that no one string can be printed by both given formats.
@@ -186,7 +189,12 @@ extern caddr_t sprintff_from_strg (ccaddr_t strg, int use_mem_pool);
 
 /*! Changes fields \c rvrSprintffs and \c rvrSprintffCount of \c rvr by adding (up to) \c add_count elements of \c add_sffs */
 extern void sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sffs, ptrlong add_count);
+
+/*! Changes fields \c rvrSprintffs and \c rvrSprintffCount of \c rvr by deleting sffs not found in \c isect_count elements of \c isect_sffs */
 extern void sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_sffs, ptrlong isect_count);
+
+/*! Returns whether \c value matches one of formats of \c rvr (signals an error if \c SPART_VARR_SPRINTFF is nto set in \c rvr->rvrRestrictions ) */
+extern int rvr_sprintffs_like (caddr_t value, rdf_val_range_t *rvr);
 
 /*! Adds IRIs classes from \c add_classes into rvr->rvrIriClasses. \c add_count is the length of \c add_classes.
 Duplicates are not added, of course. */
@@ -195,6 +203,9 @@ extern void sparp_rvr_add_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, cca
 /*! Removes from \c rvr->rvrIriClasses all IRIs classes that are missing in \c isect_classes. \c isect_count is the length of \c isect_classes.
 Duplicates are not added, of course. */
 extern void sparp_rvr_intersect_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_classes, ptrlong isect_count);
+
+/*! Returns fixed string value of \c rvr if the restriction is fixed and the value is of string type; otherwise returns NULL */
+extern caddr_t rvr_string_fixedvalue (rdf_val_range_t *rvr);
 
 /*! Adds impossible values from \c add_cuts into \c rvr->rvrIriRedCuts. \c add_count is the length of \c add_cuts.
 Duplicates are not added, of course. */
@@ -209,8 +220,12 @@ extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, 
 #ifdef DEBUG
 extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr);
 #define sparp_rvr_audit(sparp,rvr) dbg_sparp_rvr_audit (__FILE__, __LINE__, sparp, rvr)
+extern void sparp_equiv_audit_all (sparp_t *sparp, int flags);
+extern void sparp_audit_mem (sparp_t *sparp);
 #else
-#define sparp_rvr_audit(sparp,rvr)
+#define sparp_rvr_audit(sparp,rvr) 0
+#define sparp_equiv_audit_all(sparp,flags)
+#define sparp_audit_mem(sparp)
 #endif
 
 /*! Creates a copy of given \c src (the structure plus member lists but not literals).

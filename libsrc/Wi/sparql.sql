@@ -5008,7 +5008,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   declare basetype, basetypeiri varchar;
   declare bij, deref integer;
   declare sffs, res any;
-  declare argctr, arglist_len, isnotnull, sff_ctr, sff_count integer;
+  declare argctr, arglist_len, isnotnull, sff_ctr, sff_count, bij_sff_count integer;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
@@ -5037,7 +5037,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   else /* arglist is 1 item long */
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision')))
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
       basetype := 'sql-' || basetype || '-uri';
       if (not (coalesce (arglist[0][3], 0)))
@@ -5089,6 +5089,24 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
     }
   else
     res := vector ();
+  if ((not bij) and __sprintff_is_proven_bijection (iritmpl))
+    bij := 1;
+  bij_sff_count := 0;
+  for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
+    {
+      declare sff varchar;
+      sff := sffs [sff_ctr];
+      sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
+      if ((not bij) and __sprintff_is_proven_bijection (sff))
+        bij_sff_count := bij_sff_count + 1;
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
+          `iri(?:sprintffsid)`
+            `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
+    }
+  if ((not bij) and (bij_sff_count = sff_count) and (bij_sff_count > 0))
+    bij := 1;
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
@@ -5124,17 +5142,6 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
               virtrdf:SPART_VARR_NOT_NULL .
           `iri(?:superformatsid)`
             rdf:_1 `iri(bif:concat (?:classiri, "-nullable"))` };
-    }
-  for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
-    {
-      declare sff varchar;
-      sff := sffs [sff_ctr];
-      sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
-      sparql define input:storage ""
-      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
-          `iri(?:sprintffsid)`
-            `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
     }
   return vector_concat (res, vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
@@ -5180,7 +5187,7 @@ fheaders is, say,
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision'*/)))
+      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision', */ 'numeric')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
       basetype := 'sql-' || basetype || '-uri-fn';
       if (coalesce (arglist[0][3], 0))
@@ -5746,7 +5753,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of double precision then 'doubleprecision'
         when 192 then 'varchar' -- actually character
         when __tag of datetime then 'datetime'
-        when __tag of numeric then 'doubleprecision' -- actually numeric
+        when __tag of numeric then 'numeric'
         else NULL end;
       if (coltype is null)
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
@@ -9866,7 +9873,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-01-23 0001'
+                virtrdf:version '2008-03-05 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

@@ -329,7 +329,7 @@ void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, 
 /*! A possible use of quad map as data source for a given triple */
 typedef struct qm_atable_use_s
 {
-  char *qmatu_alias;
+  const char *qmatu_alias;
   qm_atable_t *qmatu_ata;
   void *qmatu_more;
 } qm_atable_use_t;

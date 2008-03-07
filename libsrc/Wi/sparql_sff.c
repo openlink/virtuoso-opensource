@@ -33,6 +33,52 @@ extern "C" {
 }
 #endif
 
+int
+sprintff_is_proven_bijection (const char *f)
+{
+  const char *tail = f;
+  while ('\0' != tail[0])
+    {
+      char next;
+      char fmt_type;
+      if ('%' != tail[0])
+        {
+          tail += 1;
+          continue;
+        }
+      if ('%' == tail[1])
+        {
+          tail += 2;
+          continue;
+        }
+      tail++;
+      if (NULL == strchr ("Udusc", tail[0]))
+        return 0; /* Unknown format so the bijection is not proven */
+      fmt_type = tail[0];
+      tail++;
+      if ('c' == fmt_type)
+        continue;
+      if ('%' != tail[0])
+        next = tail[0];
+      else if ('%' == tail[1])
+        next = '%';
+      else
+        return 0; /* Can't read two concatenated formats if the first one is not '%c' */
+      switch (fmt_type)
+        {
+          case 'd': case 'u':
+            if (isdigit (next))
+              return 0;
+            continue;
+          case 'U':
+            if (NULL == strchr ("/?=#", next))
+              return 0;
+            continue;
+        }
+    }
+  return 1;
+}
+
 #define SFF_ISECT_OK 0		/*!< A nonempty intersection may exists */
 #define SFF_ISECT_DISJOIN -1	/*!< An intersection is empty */
 #define SFF_ISECT_DIFF_END -2	/*!< An intersection is empty and any backtracking on tails of these formats by skipping variables is useless due to difference in fixed chars after last vars */
@@ -781,7 +827,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
     {
       int newsize = res_buf_len ? res_buf_len : 1;
       do newsize *= 2; while (newsize < max_reslen);
-      res = sparp->sparp_sprintff_isect_buf = sparp->sparp_sprintff_isect_buf = (caddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      res = sparp->sparp_sprintff_isect_buf = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
       res_buf_len = newsize;
     }
 #ifdef DEBUG

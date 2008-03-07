@@ -55,6 +55,7 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   SPART **sub_gps = NULL;
   SPART **sub_expns = NULL;
   SPART *fields[2];
+  int tree_type;
   int sub_gp_count = 0, sub_expn_count = 0, ctr;
   int tree_cat = 0;
   int in_rescan = 0;
@@ -66,10 +67,12 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
 scan_for_children:
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     {
+      tree_type = SPAR_LIT;
       tree_cat = 2;
       goto cat_recognized;
     }
-  switch (tree->type)
+  tree_type = tree->type;
+  switch (tree_type)
     {
     case SPAR_LIT:
     case SPAR_QNAME:
@@ -1761,7 +1764,7 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
   END_DO_BOX_FAST;
 }
 
-static void
+void
 sparp_equiv_audit_gp (sparp_t *sparp, SPART *gp, int is_deprecated, sparp_equiv_t *chk_eq)
 {
   int gp_eq_ctr;
@@ -1781,7 +1784,7 @@ sparp_equiv_audit_gp (sparp_t *sparp, SPART *gp, int is_deprecated, sparp_equiv_
     spar_internal_error (sparp, "sparp_" "equiv_audit_gp(): no reference to chk_eq in gp");
 }
 
-static void
+void
 sparp_equiv_audit_all (sparp_t *sparp, int flags)
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
@@ -1875,7 +1878,7 @@ recv_of_subv_ok: ;
     }
 }
 
-static void
+void
 sparp_audit_mem (sparp_t *sparp)
 {
   t_check_tree (sparp->sparp_expr);
@@ -5928,7 +5931,7 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   if (safely_copy_retvals)
     sparp->sparp_expr->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, sparp->sparp_expr->_.req_top.pattern);
   else
-    sparp->sparp_expr->_.req_top.expanded_orig_retvals = (SPART **) t_box_copy ((box_t) sparp->sparp_expr->_.req_top.retvals);
+    sparp->sparp_expr->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(sparp->sparp_expr->_.req_top.retvals));
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
