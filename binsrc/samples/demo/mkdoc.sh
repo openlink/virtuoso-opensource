@@ -53,7 +53,7 @@ STICKER_FS="doc_vad_filesystem.xml"
 VAD_NAME="doc"
 VAD_NAME_DEVEL="$VAD_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_NAME"_dav.vad
-VERSION="1.1.16"
+VERSION="1.1.17"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 
 HOST_OS=`uname -s | grep WIN`
@@ -356,6 +356,8 @@ LOG "Directory init..."
 
   cp mksearch.sql vad/data/doc/code/.
   cp drop.sql vad/data/doc/code/.
+  cp doc_sql_rdf.sql vad/data/doc/code/.
+  cp -f $HOME/binsrc/dav/DET_RDFData.sql vad/data/doc/code/.
 }
 
 sticker_init() {
@@ -400,6 +402,8 @@ sticker_init() {
   echo "      registry_set('_doc_build_', '$PACKDATE');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/drop.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/mksearch.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/doc_sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/html',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/pdf');" >> $STICKER
