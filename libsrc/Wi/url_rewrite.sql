@@ -990,6 +990,9 @@ create procedure DB.DBA.HTTP_LOC_NEW_URL (in url any)
    else
       ret := 'http://';
 
+   if ("RIGHT" (host, 3) = ':80')
+     host := replace (host, ':80', '');
+
    ret := ret || host || url;
 
    return ret;
