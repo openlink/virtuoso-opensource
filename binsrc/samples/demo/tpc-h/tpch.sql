@@ -108,7 +108,7 @@ create procedure tpch_create_table ()
 
     DB.DBA.EXEC_STMT ('create table REGION (
 	    R_REGIONKEY	integer,
-	    R_NAME		character(25),
+	    R_NAME	character(225),
 	    R_COMMENT	varchar(152),
 	    primary key (R_REGIONKEY)
     )', 0)
@@ -626,7 +626,9 @@ create procedure fill_region(in n integer) {
 
 	declare namearray, regionarray integer;
 
-	namearray := vector ('AFRICA', 'AMERICA', 'ASIA', 'EUROPE', 'MIDDLE EAST');
+	namearray := vector ('http://dbpedia.org/resource/Africa', 'http://dbpedia.org/resource/America',
+			     'http://dbpedia.org/resource/Asia',   'http://dbpedia.org/resource/Europe',
+			     'http://dbpedia.org/resource/Middle_East');
 
 	_r_regionkey := 0;
 	while (_r_regionkey <= 4) {
@@ -1015,13 +1017,13 @@ order by ?l+>tpch:returnflag ?l+>tpch:linestatus
 --from <http://__URIQA__/tpch>
 --where {
 --  ?ps a tpch:partsupp; tpch:has_supplier ?supp; tpch:has_part ?part .
---  ?supp+>tpch:has_nation+>tpch:has_region tpch:name ''EUROPE'' .
+--  ?supp+>tpch:has_nation+>tpch:has_region tpch:name ''http://dbpedia.org/resource/Europe'' .
 --  ?part tpch:size 15 .
 --  ?ps tpch:supplycost ?minsc .
 --  { select ?part min(?ps+>tpch:supplycost) as ?minsc
 --    where {
 --        ?ps a tpch:partsupp; tpch:has_part ?part; tpch:has_supplier ?ms .
---        ?ms+>tpch:has_nation+>tpch:has_region tpch:name ''EUROPE'' .
+--        ?ms+>tpch:has_nation+>tpch:has_region tpch:name ''http://dbpedia.org/resource/Europe'' .
 --      } }
 --    filter (?part+>tpch:type like ''%BRASS'') }
 --order by
@@ -1091,7 +1093,7 @@ from <http://__URIQA__/tpch>
 where
   { ?li a tpch:lineitem ; tpch:has_order ?ord ; tpch:has_supplier ?supp .
     ?ord tpch:has_customer ?cust .
-    ?supp+>tpch:has_nation+>tpch:has_region tpch:name "ASIA" .
+    ?supp+>tpch:has_nation+>tpch:has_region tpch:name "http://dbpedia.org/resource/Asia" .
     filter ((?cust+>tpch:has_nation = ?supp+>tpch:has_nation) &&
       (?ord+>tpch:orderdate >= "1994-01-01"^^xsd:date) &&
       (?ord+>tpch:orderdate < bif:dateadd ("year", 1,"1994-01-01" ^^xsd:date)) ) }
@@ -1139,8 +1141,10 @@ where {
           ?cust tpch:has_nation ?custn .
           ?supp tpch:has_nation ?suppn .
           filter ((
-              (?custn+>tpch:name = "FRANCE" and ?suppn+>tpch:name = "GERMANY") ||
-              (?custn+>tpch:name = "GERMANY" and ?suppn+>tpch:name = "FRANCE") ) &&
+              (?custn+>tpch:name = "http://dbpedia.org/resource/France"
+		  and ?suppn+>tpch:name = "http://dbpedia.org/resource/Germany") ||
+              (?custn+>tpch:name = "http://dbpedia.org/resource/Germany"
+		  and ?suppn+>tpch:name = "http://dbpedia.org/resource/France") ) &&
             (?li+>tpch:shipdate >= "1995-01-01"^^xsd:date) &&
             (?li+>tpch:shipdate <= "1996-12-31"^^xsd:date) ) } } }
 order by
@@ -1161,7 +1165,7 @@ from <http://__URIQA__/tpch>
 where {
     { select
         ?o_year
-        sum (?volume * bif:equ (?nation, "BRAZIL")) as ?sum1
+        sum (?volume * bif:equ (?nation, "http://dbpedia.org/resource/Brazil")) as ?sum1
         sum (?volume) as ?sum2
       where {
           { select
@@ -1171,7 +1175,7 @@ where {
             where {
                 ?li a tpch:lineitem ; tpch:has_order ?ord ; tpch:has_part ?part .
                 ?li+>tpch:has_supplier tpch:has_nation ?n2 .
-                ?order+>tpch:has_customer+>tpch:has_nation+>tpch:has_region tpch:name "AMERICA" .
+                ?order+>tpch:has_customer+>tpch:has_nation+>tpch:has_region tpch:name "http://dbpedia.org/resource/America" .
                 ?part tpch:type "ECONOMY ANODIZED STEEL" .
                 filter ((?ord+>tpch:orderdate >= "1995-01-01"^^xsd:date) &&
                   (?ord+>tpch:orderdate <= "1996-12-31"^^xsd:date) ) } } } } }
@@ -1246,7 +1250,7 @@ order by
 --        where
 --          {
 --            ?thr_tps a tpch:partsupp .
---            ?thr_ps+>tpch:has_supplier+>tpch:has_nation tpch:name "GERMANY" .
+--            ?thr_ps+>tpch:has_supplier+>tpch:has_nation tpch:name "http://dbpedia.org/resource/Germany" .
 --          }
 --      }
 --      { select
@@ -1255,7 +1259,7 @@ order by
 --        where
 --          {
 --            ?bigps a tpch:partsupp .
---            ?bigps+>tpch:has_supplier+>tpch:has_nation tpch:name "GERMANY" .
+--            ?bigps+>tpch:has_supplier+>tpch:has_nation tpch:name "http://dbpedia.org/resource/Germany" .
 --          }
 --      }
 --    filter (?bigpsvalue > ?threshold)
@@ -1511,7 +1515,7 @@ where
 --        where
 --          {
 --            ?big_ps a tpch:partsupp ; tpch:has_supplier ?supp .
---            ?supp+>tpch:has_nation tpch:name "CANADA" .
+--            ?supp+>tpch:has_nation tpch:name "http://dbpedia.org/resource/Canada" .
 --              { select ?forest_part
 --                where { ?forest_part a tpch:part .
 --                    filter ( ?forest_part+>tpch:name like "forest%" ) }
@@ -1547,7 +1551,7 @@ where
 --      { select ?l1 ?ord ?supp (count(1)) as ?l2_cnt
 --        where {
 --            ?supp a tpch:supplier .
---            ?supp+>tpch:has_nation tpch:name "SAUDI ARABIA" .
+--            ?supp+>tpch:has_nation tpch:name "http://dbpedia.org/resource/Saudi_Arabia" .
 --            ?l1 a tpch:lineitem ; tpch:has_supplier ?supp ; tpch:has_order ?ord .
 --            ?ord tpch:orderstatus "F" .
 --            ?l2 a tpch:lineitem ; tpch:has_supplier ?supp2 ; tpch:has_order ?ord .
