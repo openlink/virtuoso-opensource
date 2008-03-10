@@ -21,7 +21,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	macwin:["drag","resize","simplefx"],
 	ghostdrag:"animation",
 	quickedit:"instant",
-	grid:"instant",
+	grid:["instant","anchor"],
 	combolist:"instant",
 	formobject:["drag","resize","datasource","tab","window"],
 	tab:"layers",
