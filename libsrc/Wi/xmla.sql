@@ -333,6 +333,11 @@ create procedure
 	dta := NULL;
 --	mxla_fk_pk_check_local (stmt, mdta, dta);
 	tree := sql_parse (stmt);
+	if (tree [0] = 609)
+	  {
+	    stmt := sprintf ('SELECT CAST (%s as VARCHAR)', stmt);
+	    tree := sql_parse (stmt);
+	  }
 	if (tree [0] <> 100)
 	   signal ('00004', 'Only select statements are supported via XML for Analysis provider');
 
