@@ -9507,14 +9507,43 @@ bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t xx = bif_string_or_null_arg (qst, args, 0, "deserialize");
+  query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t xx = bif_arg (qst, args, 0, "deserialize");
+  caddr_t tmp_xx, res;
   dtp_t dtp = DV_TYPE_OF (xx);
   if (dtp == DV_SHORT_STRING
     || dtp == DV_LONG_STRING)
-  {
     return (box_deserialize_string (xx, 0));
+  if (DV_DB_NULL == dtp)
+    return NEW_DB_NULL;
+  if (!IS_BLOB_HANDLE_DTP(dtp))
+    sqlr_new_error ("22023", "SR581", "deserialize() requires a blob or NULL or string argument");
+  if (((blob_handle_t *) xx)->bh_ask_from_client)
+    sqlr_new_error ("22023", "SR582", "Blob argument to deserialize () must be a non-interactive blob");
+  if (0 == (((blob_handle_t *) xx)->bh_length))
+    sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize () built-in function");
+  if (((blob_handle_t*)xx)->bh_length > 10000000)
+    sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize ()");
+#ifndef O12
+  if (use_temp && qi->qi_temp_isp)
+    tmp_xx = blob_to_string_isp (NULL, qi->qi_temp_isp, xx);
+  else
+#endif
+    tmp_xx = blob_to_string (qi->qi_trx, xx);
+  QR_RESET_CTX
+    {
+      res = box_deserialize_string (tmp_xx, 0);
   }
-  return (dk_alloc_box (0, DV_DB_NULL));
+  QR_RESET_CODE
+    {
+      caddr_t err = thr_get_error_code (THREAD_CURRENT_THREAD);
+      POP_QR_RESET;
+      dk_free_box (tmp_xx);
+      sqlr_resignal (err);
+    }
+  END_QR_RESET
+  dk_free_box (tmp_xx);
+  return res;
 }
 
 
