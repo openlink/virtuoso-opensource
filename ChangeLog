@@ -1,3 +1,226 @@
+2008-03-13 23:35  source
+
+	* Updated version to 5.0.6-rc7
+
+2008-03-13 23:33  source
+
+	* Fixed message when usability of component is deemed bad; details are
+	  in config.log
+
+2008-03-13 23:23  source
+
+	* Fixed checking Wand-config for proper flags to build ImageMagick plugin
+
+2008-03-13 22:32  source
+
+	* Fixed dependency check for rebuilding vad package
+
+2008-03-13 21:12  source
+
+	* Regenerated
+
+2008-03-13 21:06  source
+
+	* Moved phrasematch.sql to main engine directory
+
+2008-03-13 20:55  source
+
+	* Fix to use dynamic port for building vad package
+
+2008-03-13 20:50  source
+
+	* Fixed whitespace and code indentation
+
+2008-03-13 20:36  source
+
+	* Fixed url encoded body must not have spaces otherwise WS fails to get
+	  parameter value
+	* Changed the value for Copyright
+	* Fixed feeds URLs
+	* Moved phrasematch back into virtuoso executable
+	* Fixed IE 6.0 rendering problem
+	* Fixed whitespace and indentation
+	* Fixed /dataspace for open social feed
+
+2008-03-13 20:32  source
+
+	* Fixed bug with URIQA
+	* Fixed feed URLS
+
+2008-03-13 20:32  source
+
+	* Fixed showing icons for "Has Reminder" and "Has Attendees"
+	* Added sharing options for Tasks, Events and Notes
+	* Fixed IE 6.0 rendering problem
+
+2008-03-13 20:30  source
+
+	* Fixed IE 6.0 rendering problem
+
+2008-03-13 20:29  source
+
+	* Fixed delete post rdf data
+	* Fixed IE 6.0 rendering problem
+
+2008-03-13 20:28  source
+
+	* Fixed wrong title value in import
+	* Fixed IE 6.0 rendering problem
+
+2008-03-13 17:23  source
+
+	* Fixed printing (NULL) as a parameter value; this means value is empty
+
+2008-03-13 17:22  source
+
+	* Fixed missing globals
+
+2008-03-13 17:20  source
+
+	* Fixed support for 8-bit delimiters in bif_split_and_decode()
+
+2008-03-13 17:19  source
+
+	* Fixed JSON parser to pass the JSON checker test suite
+
+2008-03-13 17:08  source
+
+	* Fixed typo
+
+2008-03-13 14:20  source
+
+	* Fix for attempts to sponge on non-IRI values
+
+2008-03-13 14:17  source
+
+	* Fixed sponge with build-in metadata
+
+2008-03-13 14:16  source
+
+	* Fix for attempts to sponge on non-IRI values
+	* Fix for numeric in DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
+
+2008-03-13 14:15  source
+
+	* Added rudimentary support of procedure execution via XMLA
+
+2008-03-13 14:13  source
+
+	* Small cleanup
+
+2008-03-13 14:12  source
+
+	* Fixed bug making an in into an exists record
+
+2008-03-13 14:09  source
+
+	* Added bif_deserialize() extentions
+
+2008-03-13 14:08  source
+
+	* Added AP_LINK_DATA_LONG to support long data associated with phrases
+
+2008-03-13 14:07  source
+
+	* Fixed JSON parsing
+
+2008-03-13 14:04  source
+
+	* Regenerated stubs
+	* Reindented code
+
+2008-03-13 13:55  source
+
+	* ADded SPARUL loader
+
+2008-03-13 13:54  source
+
+	* Added SPARUL version of loaders
+
+2008-03-13 13:53  source
+
+	* Added vhost /tpch/linkeddata
+
+2008-03-13 13:52  source
+
+	* Changed default for syslog to disabled
+
+2008-03-13 13:52  source
+
+	* When 'USE QUAL' is executed, remember it for other operations
+
+2008-03-13 13:50  source
+
+	* Updated version
+
+2008-03-13 13:49  source
+
+	* Added Social Graph mapper
+
+2008-03-13 13:48  source
+
+	* Fixed docs
+
+2008-03-13 13:46  source
+
+	* Merged from upstream project
+
+2008-03-10 11:23  source
+
+	* Merged from upstream project
+
+2008-03-10 11:22  source
+
+	* Change country names into DBpedia URLs
+
+2008-03-10 11:20  source
+
+	* Added missing doc.owl
+
+2008-03-10 11:16  source
+
+	* Removed default port from host
+
+2008-03-07 19:03  source
+
+	* Updated version to 5.0.6-rc6
+
+2008-03-07 19:02  source
+
+	* Changed label from URL to URI
+
+2008-03-07 18:55  source
+
+	* Added TPC-H demo
+
+2008-03-07 18:54  source
+
+	* Added virtuoso documentation RDF views
+
+2008-03-07 18:44  source
+
+	* Added support for NUMERIC in RDF views
+	* Small bugfixes and cleanups
+
+2008-03-07 18:29  source
+
+	* Fixed compiler warnings
+
+2008-03-07 18:29  source
+
+	* Fixed problem with 64bit portability
+
+2008-03-06 23:30  source
+
+	* Fixed visibility when user is anonymous
+	* Use nick in openid url
+	* Fixed missing VDs
+	* Added OAT tree CVS entries to calculate framework version
+
+2008-03-06 23:28  source
+
+	* Initialize OAT.WebDav with user name so it don't ask for pass
+
 2008-03-06 16:46  source
 
 	* Updated version to 5.0.6-rc5
