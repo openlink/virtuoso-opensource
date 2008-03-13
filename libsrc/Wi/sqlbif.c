@@ -9784,7 +9784,7 @@ bif_txn_error (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_trx_no (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-#ifdef PAGE_TRACE
+  #ifdef PAGE_TRACE
   return (box_num (((query_instance_t *) qst)->qi_trx->lt_trx_no));
 #else
   return (box_num (-1));
@@ -9814,8 +9814,8 @@ bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-/* At this point we are sure that there are no operations waiting for something.
-So it is possible to wait for an icc mutex without the danger of deadlock. */
+      /* At this point we are sure that there are no operations waiting for something.
+         So it is possible to wait for an icc mutex without the danger of deadlock. */
       if (qi->qi_client->cli_icc_lock)
 	{
 	  icc_lock_t *cli_lock = qi->qi_client->cli_icc_lock;

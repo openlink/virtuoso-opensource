@@ -487,9 +487,6 @@ struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
 struct query_s * sch_proc_exact_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_module_def (dbe_schema_t * sch, const char * name);
-#ifdef UNIVERSE
-extern void sch_set_remote_proc_def (caddr_t name, caddr_t proc);
-#endif
 #define IS_REMOTE_ROUTINE_QR(qr) ((qr) && (qr)->qr_is_remote_proc)
 void sch_set_proc_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
 void sch_set_module_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
