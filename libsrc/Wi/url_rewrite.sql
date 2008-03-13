@@ -408,7 +408,7 @@ returns varchar
         val := '';
       --dbg_obj_print ('fmt=', cur);
       if (target_exp is null)
-        tmp := sprintf (cur, val);
+        tmp := sprintf (cur, coalesce (val, ''));
       else
         tmp := call (target_exp) (target_params[i], cur, val);
       long_path := concat (long_path, tmp);
