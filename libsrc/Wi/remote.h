@@ -134,7 +134,7 @@ typedef struct rcon_cache_s
 typedef struct _rstmtstruct  remote_stmt_t;
 #endif
 
-
+extern remote_ds_t * local_rds;
 
 #define IS_BLOB_SQL_TYPE(dt) (SQL_LONGVARCHAR == dt || SQL_LONGVARBINARY == dt || SQL_WLONGVARCHAR == dt)
 

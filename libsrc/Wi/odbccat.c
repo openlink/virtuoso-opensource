@@ -36,7 +36,7 @@
 #include "2pc.h"
 #endif
 
-
+unsigned long vdb_oracle_catalog_fix = 0;
 
 #define NO_VDB \
 	sqlr_new_error ("42000", "VD999", "This build does not include virtual database support."); \
