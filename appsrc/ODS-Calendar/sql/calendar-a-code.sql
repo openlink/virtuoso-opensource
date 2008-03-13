@@ -3570,7 +3570,7 @@ create procedure CAL.WA.events_forPeriod (
   declare dtWeekStarts varchar;
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
 
-  declare c0, c1, c6, c7 integer;
+  declare c0, c1, c6, c7, c8 integer;
   declare c2, c5 varchar;
   declare c3, c4 datetime;
   result_names (c0, c1, c2, c3, c4, c5, c6, c7);
@@ -3589,7 +3589,8 @@ create procedure CAL.WA.events_forPeriod (
                 a.E_EVENT_START,
                 a.E_EVENT_END,
                 a.E_REPEAT,
-                a.E_REMINDER
+                a.E_REMINDER,
+                a.E_ATTENDEES
            from CAL.WA.EVENTS a,
                 CAL..MY_CALENDARS b
           where b.domain_id = pDomainID
@@ -3607,7 +3608,8 @@ create procedure CAL.WA.events_forPeriod (
                 CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
               E_REPEAT,
               null,
-              E_REMINDER);
+              E_REMINDER,
+              E_ATTENDEES);
     }
   }
 
@@ -3618,7 +3620,8 @@ create procedure CAL.WA.events_forPeriod (
               a.E_EVENT_START,
               a.E_EVENT_END,
               a.E_REPEAT,
-              a.E_REMINDER
+              a.E_REMINDER,
+              a.E_ATTENDEES
          from CAL.WA.EVENTS a,
               CAL..MY_CALENDARS b
         where b.domain_id = pDomainID
@@ -3639,7 +3642,8 @@ create procedure CAL.WA.events_forPeriod (
               CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
             E_REPEAT,
             null,
-            E_REMINDER);
+            E_REMINDER,
+            E_ATTENDEES);
   }
 
   -- repeatable events
@@ -3654,7 +3658,8 @@ create procedure CAL.WA.events_forPeriod (
               a.E_REPEAT_PARAM3,
               a.E_REPEAT_UNTIL,
               a.E_REPEAT_EXCEPTIONS,
-              a.E_REMINDER
+              a.E_REMINDER,
+              a.E_ATTENDEES
          from CAL.WA.EVENTS a,
               CAL..MY_CALENDARS b
         where b.domain_id = pDomainID
@@ -3695,7 +3700,8 @@ create procedure CAL.WA.events_forPeriod (
                   CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), dtTimezone),
                 E_REPEAT,
                 dt_offset,
-                E_REMINDER);
+                E_REMINDER,
+                E_ATTENDEES);
       }
       dt := dateadd ('day', 1, dt);
     }
@@ -4033,6 +4039,7 @@ create procedure CAL.WA.search_sql (
        '       a.E_EVENT_END,                \n' ||
        '       a.E_REPEAT,                   \n' ||
        '       a.E_REMINDER,                 \n' ||
+       '       a.E_ATTENDEES,                \n' ||
        '       a.E_CREATED,                  \n' ||
        '       a.E_UPDATED                   \n' ||
        ' from  CAL.WA.EVENTS a,              \n' ||
