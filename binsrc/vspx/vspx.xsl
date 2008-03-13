@@ -5175,7 +5175,7 @@ create method vc_render_<xsl:value-of select="@name" />(inout control <xsl:value
   declare isql vspx_isql;
   declare inx, maxres, render_head int;
   declare stmt, stat, msg varchar;
-  declare h, mtd, dta any;
+  declare h, mtd, dta, qual any;
 
   isql := control.vc_parent.vc_parent;
 
@@ -5200,6 +5200,10 @@ create method vc_render_<xsl:value-of select="@name" />(inout control <xsl:value
   h := null;
   render_head := 0;
   mtd := isql.isql_current_meta;
+
+  qual := coalesce (connection_get ('vspx_isql_qual'), dbname ());
+  if (qual &lt;&gt; dbname ())
+    set_qualifier (qual);
 
   if (mtd = 0)
     {
@@ -5228,6 +5232,8 @@ create method vc_render_<xsl:value-of select="@name" />(inout control <xsl:value
 	  rollback work;
 	}
     }
+  if (qual &lt;&gt; dbname ())
+    connection_set ('vspx_isql_qual', dbname ());
   if (stat &lt;&gt; '00000')
     {
       isql.isql_current_state := vector (stat, msg);

@@ -2129,6 +2129,9 @@ text_split_complete:
       if (self.isql_chunked)
         {
           exec_metadata (parsed_text[i], err_sqlstate, err_msg, m_dta);
+	  if (err_sqlstate = '00000' and
+	    regexp_match ('^([[:space:]]*)[Uu][Ss][Ee]([[:space:]]*)([[:alnum:]]*)', parsed_text[i]) is not null)
+	    exec (parsed_text[i], err_sqlstate, err_msg);
 	}
       else
         exec ( parsed_text[i], err_sqlstate, err_msg, vector(), _maxres, m_dta, result);
