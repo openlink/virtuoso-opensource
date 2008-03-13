@@ -414,3 +414,22 @@ create procedure DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV()
 --DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV();
 
 drop procedure DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV;
+
+create procedure DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV2()
+{
+  declare urihost varchar;
+  sparql base <http://demo.openlinksw.com/schemas/doc#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/doc/sql/doc.owl")
+   into graph <http://demo.openlinksw.com/schemas/DocOntology/1.0/>;
+  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  if (urihost = 'demo.openlinksw.com')
+  {
+    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/doc');
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/doc', ppath=>'/DAV/VAD/demo/sql/doc.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/doc#');
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/doc#', ppath=>'/DAV/VAD/demo/sql/doc.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+  }
+};
+
+--DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV2();
+
+drop procedure DB.DBA.LOAD_DOC_ONTOLOGY_FROM_DAV2;
