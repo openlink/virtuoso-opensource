@@ -63,6 +63,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://socialgraph.apis.google.com/lookup?.*)|',
+            'URL', 'DB.DBA.RDF_LOAD_SOCIALGRAPH', null, 'SocialGraph');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('.+\.svg\$', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -136,6 +140,8 @@ EXEC_STMT(
     GM_XSLT varchar,
     primary key (GM_NAME)
 )
+;
+
 create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE)', 0)
 ;
 
@@ -541,6 +547,55 @@ create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
 }
 ;
 
+create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, inout	ses	any)
+{
+	tag := trim(tag, '\"');
+	if (not isarray (tree) or	isstring (tree))
+	{
+		tree := trim(tree, '\"');
+		if (left(tag,	7) = 'http://')
+			tag	:= 'Site';
+		http_value (tree, tag, ses);
+	}
+	else if (length (tree) > 1 and __tag (tree[0]) = 255)
+	{
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://')
+		{
+			http ('<Document>\n', ses);
+			http_value (tag, 'about', ses);
+		}
+		else
+			http (sprintf ('<%U>\n', tag), ses);
+		for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
+		{
+			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
+		}
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://')
+			http ('</Document>\n',	ses);
+		else
+			http (sprintf ('</%U>\n', tag),	ses);
+	}
+	else if (length (tree) > 0)
+	{
+		for (declare i,l int,	i := 0,	l := length	(tree);	i <	l; i :=	i +	1)
+		{
+			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i], tag,	ses);
+		}
+	}
+}
+;
+
+create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
+{
+  declare ses any;
+  ses := string_output ();
+  DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
+  ses := string_output_string (ses);  
+  ses := xtree_doc (ses);
+  return ses;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -782,6 +837,28 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/bugzilla2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare qr, path, hdr any;
+  declare tree, xt, xd, types any;
+  declare k, cnt, url varchar;
+  hdr := null;
+  declare exit handler for sqlstate '*'
+    {
+      --dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+  url := new_origin_uri;
+  cnt := http_get (url, hdr);
+  tree := json_parse (cnt);
+  xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/sg2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
