@@ -25,7 +25,6 @@ registry_set('_wa_path_', '/ods/');
 load  sn.sql;
 load  hosted_services.sql;
 load  registration_xml.sql;
-load  ../../tags/phrasematch.sql;
 load  tags.sql;
 load dashboard.sql;
 load wa_search_procs.sql;

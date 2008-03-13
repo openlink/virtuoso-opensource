@@ -81,7 +81,7 @@ create constructor method FacebookRestClient(
   self.api_key      := api_key;
   self.last_call_id := 0;
   self.server_addr  := get_facebook_url('api')||'/restserver.php';
-  self.debug_mode   := 0; --set this to 1 if you whant to see error xml on server console
+  self.debug_mode   := 0; --set this to 1 if you want to see error xml on server console
 
   return;
 }

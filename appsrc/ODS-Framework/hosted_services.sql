@@ -1804,12 +1804,12 @@ create procedure INIT_SERVER_SETTINGS ()
 	      'Enter your Member ID and Password',
 	      '',
 	     '',
-	      'Copyright &copy; 1999-2008 OpenLink Software',
+	     'Copyright &copy; 2000-2008 OpenLink Software',
 	      '',
 	      sys_stat ('st_host_name')
 	      );
     }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1999-2008 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 2000-2008 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
@@ -6404,7 +6404,7 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   -- common access point
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods',
-      ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'sfront.vspx');
+      ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'index.html');
 
   -- new interface
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users');
@@ -6419,7 +6419,7 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   -- gdata.sql
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace',
-      ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'sfront.vspx',is_brws=>0,
+      ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'index.html',is_brws=>0,
       opts=>vector ('url_rewrite', 'ods_rule_list1'));
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData',

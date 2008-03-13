@@ -259,7 +259,6 @@ directory_init() {
   cp *.sql vad/data/wa
   cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
   cp *.js vad/data/wa
-#  cp $HOME/binsrc/tags/phrasematch.sql vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
   cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
@@ -362,7 +361,6 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sn.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/hosted_services.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/registration_xml.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/phrasematch.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/tags.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/dashboard.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/wa_search_procs.sql', 1, 'report', 1);" >> $STICKER
@@ -383,13 +381,11 @@ sticker_init() {
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/afoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/sfoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER
-  echo "      vhost_remove (lpath=>'/ods');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/javascript/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/php/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/jsp/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ruby/users');" >> $STICKER
-  echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      vhost_define (lpath=>'/javascript/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.html');" >> $STICKER
   echo "      vhost_define (lpath=>'/php/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.php');" >> $STICKER

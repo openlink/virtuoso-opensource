@@ -273,16 +273,16 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apml', 1,
 
 -- A feed page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_html', 1,
-    '/dataspace/feed/([^/]*)', vector('fid'), 1,
-    '/enews2/news.vspx?feed=%U', vector('fid'),
+    '/dataspace/feed/([^/\\?]*)', vector('fid'), 1,
+    '/subscriptions/news.vspx?feed=%U', vector('fid'),
     NULL,
     NULL,
     2);
 
 -- Feed item page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
-    '/dataspace/feed/([^/]*)/([^/]*)', vector('fid', 'link'), 1,
-    '/enews2/news.vspx?feed=%U&link=%U', vector('fid', 'link'),
+    '/dataspace/feed/([^/]*)/([^/\\?]*)', vector('fid', 'link'), 1,
+    '/subscriptions/news.vspx?feed=%s&link=%s', vector('fid', 'link'),
     NULL,
     NULL,
     2);
@@ -290,14 +290,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html2', 1,
     '/dataspace/feed/([^/]*)/([^/\\?]*)\\?instance=([^&]*)', vector('fid', 'link', 'instance'), 1,
-    '/enews2/%U/news.vspx?feed=%U&link=%U', vector('instance', 'fid', 'link'),
+    '/enews2/%U/news.vspx?feed=%s&link=%s', vector('instance', 'fid', 'link'),
     NULL,
     NULL,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html3', 1,
+    '/dataspace/([^/]*)/subscriptions/([^/]*)/news.vspx', vector('uname', 'inst'), 1,
+    '/enews2/%U/news.vspx', vector('inst'),
+    'DB.DBA.ODS_ATOM_PAGE',
+    NULL,
+    2);
 
 -- A rule returning home page for a given instance.
--- NB: all instances have a <home url> execpt discussion
+-- NB: all instances have a <home url> except discussion
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
     '/dataspace/([^/]*)/(weblog|wiki|addressbook|socialnetwork|bookmark|briefcase|eCRM|calendar|community|subscriptions|photos|polls|mail|IM)/([^/\\?]+)',
     vector('ufname', 'app', 'inst'), 3,
@@ -504,14 +510,15 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_yadis',
 	  'ods_apml',
 	  'ods_feed_html',
-	  'ods_feed_item_html',
-	  'ods_feed_item_html2',
 	  'ods_inst_html',
 	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',
 	  'ods_wiki_item_html',
 	  'ods_wiki_atom_html',
+	  'ods_feed_item_html',
+	  'ods_feed_item_html2',
+	  'ods_feed_item_html3',
 	  'ods_photo_item_html',
 	  'ods_photo_gems_html',
 	  'ods_cal_item_html',

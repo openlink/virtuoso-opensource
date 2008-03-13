@@ -131,7 +131,7 @@
     http('  <meta http-equiv="X-YADIS-Location" content="'||server_dataspace||uname||'/yadis.xrds" />\r\n',resMeta);
 
     http('  <link rel="meta" type="application/xml+apml" title="APML 0.6" href="'||server_dataspace||uname||'/apml.xml" />\r\n',resMeta);
-    http('  <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="'||server_dataspace||'feeds/people/'||uname||'/friends" />\r\n',resMeta);
+    http('  <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="'||server_root||'/feeds/people/'||uname||'/friends" />\r\n',resMeta);
 
     http('  <meta name="dataspaceid" content="'||sprintf('%d',uid)||'" />\r\n',resMeta);
 
