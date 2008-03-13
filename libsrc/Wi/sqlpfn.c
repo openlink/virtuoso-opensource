@@ -2293,7 +2293,7 @@ ST * sqlp_foreach_statement (ST *data_type, caddr_t var, ST *arr, ST *body)
 ST *
 sqlp_add_top_1 (ST *select_stmt)
 {
-  if (/*0 && */!SEL_TOP (select_stmt))
+  if (0 && !SEL_TOP (select_stmt))
     {
       select_stmt->_.select_stmt.top = t_listst (6, SELECT_TOP,
 	  t_box_num (SEL_IS_DISTINCT (select_stmt) ? 1 : 0), /* preserve distinct */

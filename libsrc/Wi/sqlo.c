@@ -2348,6 +2348,15 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 
 
 void
+sqlo_exists_record_org (ST * tree, ST * cond)
+{
+  /* mark the added predicate for exists if it is a single equality */
+  if (BOP_EQ == cond->type)
+    tree->_.subq.org = cond;
+}
+
+
+void
 sqlo_subq_convert_to_exists (sqlo_t * so, ST ** tree_ret)
 {
   ST * tree = *tree_ret;
@@ -2420,12 +2429,14 @@ sqlo_subq_convert_to_exists (sqlo_t * so, ST ** tree_ret)
 				  BIN_OP (cond, tree->_.subq.cmp_op,
 				      tree->_.subq.left,
 				      (ST *) select->_.select_stmt.selection[0]);
+				  sqlo_exists_record_org (tree, cond);
 				}
 			    }
 
 			  if ((to_negate && !op_negate) ||
 			      (!to_negate && op_negate))
 			    cond = t_listst (3, BOP_NOT, cond, NULL);
+			  sqlo_exists_record_org (tree, cond);
 			  t_st_and (&texp->_.table_exp.where, cond);
 			  select->_.select_stmt.selection = t_list (1, t_box_num (1));
 			  select->_.select_stmt.top = NULL;
@@ -2458,6 +2469,7 @@ sqlo_subq_convert_to_exists (sqlo_t * so, ST ** tree_ret)
 
 		      if (to_negate)
 			cond = t_listst (3, BOP_NOT, cond, NULL);
+		      sqlo_exists_record_org (tree, cond);
 		      t_st_and (&texp->_.table_exp.having, cond);
 		      select->_.select_stmt.selection = t_list (1, t_box_num (1));
 		      tree->_.subq.left = NULL;

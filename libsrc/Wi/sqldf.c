@@ -479,6 +479,7 @@ sqlo_df (sqlo_t * so, ST * tree)
     case EXISTS_PRED:
       {
 	df_elt_t * dfe = sqlo_df (so, tree->_.subq.subq);
+	dfe->_.sub.org_in = tree->_.subq.org;
 	dfe->dfe_type = DFE_EXISTS;
 	if (so->so_is_top_and)
 	  sqlo_push_pred (so, dfe);
@@ -1727,6 +1728,7 @@ sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 	ot->ot_work_dfe->_.sub.in_arity = dfe_arity_with_supers (tb_dfe->dfe_prev);
 	copy = sqlo_layout (so, ot, SQLO_LAY_EXISTS, tb_dfe);
 	copy->dfe_type = DFE_EXISTS;
+	copy->_.sub.org_in = pred->_.sub.org_in;
 	return ((df_elt_t **) t_list (2, (ptrlong)DFE_PRED_BODY, copy));
       }
     case DFE_TEXT_PRED:
@@ -5225,6 +5227,7 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
   dfe_locus_copy (so, copy_super);
   copy_super->_.sub.ot = super->_.sub.ot;
   copy_super->dfe_tree = super->dfe_tree;
+  copy_super->_.sub.org_in = super->_.sub.org_in;
   copy_super->_.sub.after_join_test = dfe_pred_body_copy (so, super->_.sub.after_join_test, copy_super);
   copy_super->_.sub.vdb_join_test = dfe_pred_body_copy (so, super->_.sub.vdb_join_test, copy_super);
   copy_super->dfe_unit = super->dfe_unit;

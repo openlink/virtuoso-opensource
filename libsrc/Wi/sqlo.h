@@ -240,6 +240,7 @@ struct df_elt_s
       df_elt_t **	after_join_test;
       df_elt_t **	vdb_join_test; /* when join preds are not imported into the dt in vdb */
       df_elt_t **	invariant_test;
+      ST *		org_in; /* if in subnq, this is the pred that is the left and single col select */
       float 		in_arity;  /* estimate evaluation count of the dt's head node  */
       char	is_locus_first;
       char	is_contradiction;

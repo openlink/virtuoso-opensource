@@ -355,6 +355,7 @@ typedef struct sql_tree_s
 	    ST *	subq;
 	    ptrlong	cmp_op;
 	    ptrlong	flags;
+	    ST *	org; /* if rewritten, this is the original syntax */
 	  } subq;
 	struct
 	  {
@@ -758,8 +759,8 @@ extern long sqlp_bin_op_serial;
   BIN_OP (res, BOP_NOT, p, NULL)
 
 #define SUBQ_PRED(pred, left, subq, cmp_, flags) \
-  (ST *) t_list (5, \
-      (ptrlong) pred, (caddr_t) left, (ST *) subq, (ptrlong) cmp_, (ptrlong) flags)
+  (ST *) t_list (6, \
+		 (ptrlong) pred, (caddr_t) left, (ST *) subq, (ptrlong) cmp_, (ptrlong) flags, NULL)
 
 
 #define ARRAYP(a) \
