@@ -6559,7 +6559,7 @@ bif_split_and_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t arr = NULL;
   /*unsigned */ char *item = NULL;
   /* Vector and string boxes. */
-  char *ptr, *end_ptr, *item_start;
+  unsigned char *ptr, *end_ptr, *item_start;
 
   /* First determine from alt_seps string how we should act.
    I.e. what are the encoding/decoding escape-characters,
