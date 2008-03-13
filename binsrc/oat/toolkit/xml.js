@@ -148,6 +148,7 @@ OAT.Xml = {
 	getElementsByLocalName:function(elem,tagName) {
 		var result = [];
 		var elems = elem;
+		if (!elem) { return result; }
 		if (!(elems instanceof Array)) { elems = [elem]; }
 		for (var i=0;i<elems.length;i++) {
 			var all = elems[i].getElementsByTagName("*");

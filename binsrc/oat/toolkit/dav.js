@@ -346,18 +346,18 @@ OAT.WebDav = {
 
 		var user = OAT.Dom.create("input");
 	 	user.setAttribute("type","text");
-		user.id = "user";
+		user.id = "dav_user";
 		user.name = "user";
 		user.value = "demo";
 
 		var pass = OAT.Dom.create("input");
 	 	pass.setAttribute("type","password");
-		pass.id = "pass";
+		pass.id = "dav_pass";
 		pass.name = "pass";
 		pass.value = "demo";
 
 		var conntype = OAT.Dom.create("select");
-		conntype.id = "login_put_type";
+		conntype.id = "dav_login_put_type";
 		var conntype_basic = OAT.Dom.create("option");
 		conntype_basic.value = "0";
 		conntype_basic.innerHTML = "HTTP - Basic";
@@ -384,9 +384,9 @@ OAT.WebDav = {
 		var cdialog = new OAT.Dialog("Connection Setup",connectDiv,{width:400,modal:1,buttons:1});
 		cdialog.ok = function() {
 			with(OAT.WebDav.options) {
-				user = $v("user");
-				pass = $v("pass");
-				isDav = ($v("login_put_type") == "1");
+				user = $v("dav_user");
+				pass = $v("dav_pass");
+				isDav = ($v("dav_login_put_type") == "1");
 				path = "/DAV/home/" + user + "/";
 			}
 			cdialog.hide();
