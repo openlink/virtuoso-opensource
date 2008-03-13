@@ -5187,7 +5187,7 @@ fheaders is, say,
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision', */ 'numeric')))
+      if (not (basetype in ('integer', 'varchar', /* 'date', 'doubleprecision', */ 'numeric')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
       basetype := 'sql-' || basetype || '-uri-fn';
       if (coalesce (arglist[0][3], 0))
@@ -9873,7 +9873,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-03-05 0001'
+                virtrdf:version '2008-03-11 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
