@@ -49,9 +49,12 @@
   <xsl:template name="root_normal">
     <html>
       <head>
-        <base>
+        <xsl:element name="base">
           <xsl:attribute name="href"><xsl:value-of select="//user_info/base_path" /></xsl:attribute>
-        </base>
+          <xsl:comment>
+            <!--[if IE]></base><![endif]-->
+          </xsl:comment>
+        </xsl:element>
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
@@ -133,9 +136,12 @@
   <xsl:template name="root_popup">
     <html>
       <head>
-        <base>
+        <xsl:element name="base">
           <xsl:attribute name="href"><xsl:value-of select="//user_info/base_path" /></xsl:attribute>
-        </base>
+          <xsl:comment>
+            <!--[if IE]></base><![endif]-->
+          </xsl:comment>
+        </xsl:element>
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="css"/>
         <xsl:call-template name="javaScript"/>
@@ -159,9 +165,12 @@
   <xsl:template name="root_popup_box">
     <html>
       <head>
-        <base>
+        <xsl:element name="base">
           <xsl:attribute name="href"><xsl:value-of select="//user_info/base_path" /></xsl:attribute>
-        </base>
+          <xsl:comment>
+            <!--[if IE]></base><![endif]-->
+          </xsl:comment>
+        </xsl:element>
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
@@ -272,8 +281,6 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="header">
-    <form name="FS" action="search.vsp" method="get">
-      <xsl:call-template name="hid_sid"/>
       <div style="background-color: #fff;">
         <div style="float: left;">
           <xsl:call-template name="make_href">
@@ -283,6 +290,8 @@
           </xsl:call-template>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
+        <form name="FS" action="search.vsp" method="get">
+          <xsl:call-template name="hid_sid"/>
           <input type="text" name="q" value=""/>
           <input type="hidden" name="search.x" value="x"/>
           <input type="hidden" name="mode" value=""/>
@@ -298,9 +307,10 @@
             <xsl:with-param name="title">Advanced Search</xsl:with-param>
             <xsl:with-param name="label">Advanced</xsl:with-param>
           </xsl:call-template>
+        </form>
         </div>
-        <br style="clear: left;"/>
       </div>
+    <div style="clear: both;"></div>
       <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
         <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
           <xsl:value-of select="//user_info/banner" disable-output-escaping="yes" />
@@ -317,7 +327,6 @@
           </xsl:call-template>
       </div>
       </div>
-    </form>
   </xsl:template>
 
   <!-- ========================================================================== -->
