@@ -22,7 +22,8 @@
 --
 
   declare errorCount integer;
-  declare exit handler for SQLSTATE '40001' {
+  declare exit handler for SQLSTATE '40001'
+  {
     rollback work;
     if (errorCount > 5)
       resignal;
@@ -32,10 +33,11 @@
 
 _start:
   declare N, domain_id, account_id integer;
-  declare sid, S varchar;
+  declare sid, realm, S varchar;
   declare settings, requests, aSession any;
 
-  sid := get_keyword('sid', params, '');
+  sid := get_keyword('sid', params);
+  realm := get_keyword('sid', params);
 
   aSession := ENEWS.WA.session_restore (params);
   domain_id := cast(get_keyword('domain_id', aSession, '0') as integer);
@@ -46,25 +48,27 @@ _start:
     S := '?' || S;
 	http_rewrite ();
 	http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf('Location: %s%s\r\n', WS.WS.EXPAND_URL (http_path (), 'news.vspx'), S));
+  http_header (sprintf('Location: %s/%s%s\r\n', ENEWS.WA.domain_sioc_url (domain_id), 'news.vspx', S));
 	http_flush ();
 
 	commit work;
 
   settings := ENEWS.WA.settings(domain_id, account_id);
-  if ((cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1') or (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1')) {
-    if (get_keyword('sid', settings, '') <> sid) {
-
+  if ((cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1') or (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1'))
+  {
+    if (get_keyword('sid', settings, '') <> sid)
+    {
       ENEWS.WA.set_keyword('sid', settings, sid);
       insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(domain_id, account_id, serialize(settings));
     	commit work;
 
-      if (cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1') {
+      if (cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1')
+      {
         ENEWS.WA.feeds_queue_add (domain_id);
     	  commit work;
     	}
-
-      if (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1') {
+      if (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1')
+      {
         ENEWS.WA.blogs_queue_add (domain_id);
     	  commit work;
     	}

@@ -414,7 +414,7 @@
       </v:template>
 
       <div class="pane_main">
-        <div class="pane_left" style="width: <?V case when ENEWS.WA.settings_favourites(self.settings) then '20.3%' else '' end ?>">
+        <div class="pane_left" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 20.3%;' else '' end ?>">
                   <?vsp
               if (0)
               {
@@ -496,7 +496,7 @@
             }
           ?>
         </div>
-        <div class="pane_right" style="width: <?V case when ENEWS.WA.settings_favourites(self.settings) then '59.3%' else '' end ?>">
+        <div class="pane_right" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 59.3%;' else '' end ?>">
           <div class="pane_right_sub1">
           <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
             <v:before-data-bind>

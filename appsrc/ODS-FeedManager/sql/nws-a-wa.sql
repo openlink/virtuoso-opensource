@@ -172,6 +172,11 @@ ENEWS.WA.exec_no_error (
 ;
 
 ENEWS.WA.exec_no_error (
+  'alter type wa_eNews2 add overriding method wa_addition_urls () returns any'
+)
+;
+
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
 )
 ;
@@ -272,7 +277,6 @@ create method wa_front_page(inout stream any) for wa_eNews2
   sSid := (select VS_SID from VSPX_SESSION where VS_REALM = 'wa' and VS_UID = connection_get('vspx_user'));
   http_request_status ('HTTP/1.1 302 Found');
   http_header(sprintf('Location: %s?sid=%s&realm=%s\r\n', self.wa_home_url(), sSid, 'wa'));
-  return;
 }
 ;
 
@@ -296,7 +300,6 @@ create method wa_state_edit_form(inout stream any) for wa_eNews2
   } else {
     signal('42001', 'Not a owner');
   }
-  return;
 }
 ;
 
@@ -396,6 +399,16 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_eNews2
 }
 ;
 
+
+-------------------------------------------------------------------------------
+--
+create method wa_addition_urls () for wa_eNews2
+{
+  return vector (
+    vector (null, null, '/subscriptions', self.get_param ('host')||'www/', self.get_param ('isDAV'), 0, 'news.vspx', null, 'wa', null, 'dba', null, null, 0, null, null, null, 0)
+  );
+}
+;
 
 -------------------------------------------------------------------------------
 --

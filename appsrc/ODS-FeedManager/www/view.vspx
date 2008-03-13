@@ -158,6 +158,7 @@
             http('<div id="feed_gems">');
             http(replace(replace(gems, '<URL>', sprintf('%V', EFI_LINK)), '<TITLE>', sprintf('%V', EFI_TITLE)));
             http('</div');
+              http('<div style="clear: both;"></div>');
             http('<div id="feed_body">');
             xml_tree_doc_set_ns_output(description, 1);
             http_value(description);
@@ -309,6 +310,7 @@
             http('<div id="feed_gems">');
             http(replace(replace(gems, '<URL>', sprintf('%V', EFI_LINK)), '<TITLE>', sprintf('%V', EFI_TITLE)));
             http('</div');
+              http('<div style="clear: both;"></div>');
             http('<div id="feed_body">');
             xml_tree_doc_set_ns_output(description, 1);
             http_value(description);
@@ -375,6 +377,7 @@
             http('<div id="feed_gems">');
             http(replace(replace(gems, '<URL>', sprintf('%V', EFI_LINK)), '<TITLE>', sprintf('%V', EFI_TITLE)));
             http('</div');
+              http('<div style="clear: both;"></div>');
             http('<div id="feed_body">');
             http(ENEWS.WA.wide2utf(description));
             http('</div>');

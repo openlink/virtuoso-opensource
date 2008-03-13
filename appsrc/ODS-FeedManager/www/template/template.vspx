@@ -25,7 +25,7 @@
 
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
-    <base href="<?V ENEWS.WA.host_url () || http_path () ?>" />
+    <base href="<?V ENEWS.WA.host_url () || http_path () ?>" /><![CDATA[<!--[if IE]></base><![endif]-->]]>
     <?vsp
       declare domainName varchar;
 
