@@ -122,22 +122,17 @@ sqlo_new_locus (sqlo_t * so, remote_ds_t * rds)
   return loc;
 }
 
-
-#define NO_VDB GPF_T1 ("Virtual database not in build.")
+#define NO_VDB GPF_T1 ("This build does not include virtual database support.")
 
 void
-sqlo_table_new_locus (sqlo_t * so, df_elt_t * tb_dfe,
-		      remote_ds_t * rds,
-		      dk_set_t col_preds, dk_set_t * after_test, dk_set_t after_join_test, dk_set_t * vdb_join_test)
+sqlo_table_new_locus (sqlo_t * so, df_elt_t * tb_dfe, remote_ds_t * rds, dk_set_t col_preds, dk_set_t * after_test, dk_set_t after_join_test, dk_set_t * vdb_join_test)
 {
   NO_VDB;
 }
 
 
 void
-sqlo_table_locus (sqlo_t * so, df_elt_t * tb_dfe,
-		       dk_set_t col_preds, dk_set_t * after_test, dk_set_t after_join_test,
-		  dk_set_t * vdb_join_test)
+sqlo_table_locus (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t * after_test, dk_set_t after_join_test, dk_set_t * vdb_join_test)
 {
 }
 

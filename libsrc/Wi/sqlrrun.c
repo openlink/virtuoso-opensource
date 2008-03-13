@@ -62,14 +62,32 @@ id_hash_t *remote_dss;
 id_hash_t *remote_tables;
 id_hash_t *remote_procs;
 dk_mutex_t *r_mtx;
-long vdb_use_global_pool;
+
+caddr_t *odbc_error_ex = NULL;
+char *vdb_odbc_error_file = NULL;
+char *vdb_trim_trailing_spaces = NULL;
+dk_hash_t *vdb_clients;		/* those cli_connection_t's with owned caches of rds_connection_t's */
+dk_mutex_t *vdb_connect_mtx = NULL;
+int32 vdb_client_fixed_thread = 1;
+int32 vdb_serialize_connect = 0;
+int rc_max_stmts = 50;
+int remote_pk_not_unique = 0;
+int rst_alloc_count;
+int rst_free_count;
+long rds_active_cons_freed = 0;
+long rds_disconnect_timeout = 1000000; /* 1000 seconds */
 long reconnect_on_vdb_error = 1;
 long vdb_no_stmt_cache = 0;
-int remote_pk_not_unique = 0;
-long rds_disconnect_timeout = 1000000; /* 1000 seconds */
+long vdb_use_global_pool = 0;
+remote_ds_t *local_rds = NULL;
+
+void odbc_cat_init (void);
+
+
+
 
 remote_ds_t *
-find_remote_ds (char *name, int create)
+find_remote_ds (const char *name, int create)
 {
   return NULL;
 }
@@ -134,8 +152,7 @@ bif_remote_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-find_pass_through_function (remote_ds_t *rds, int do_mutex, char *ref_name,
-    char *q_def, char *o_def, caddr_t *found_remote)
+find_pass_through_function (remote_ds_t * rds, int do_mutex, char *ref_name, char *q_def, char *o_def, caddr_t * found_remote)
 {
   return NULL;
 }
@@ -161,7 +178,8 @@ find_remote_proc (char *name, int create)
 static caddr_t
 bif_proc_is_remote (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return (caddr_t) box_num(0);
+
+  return (caddr_t) box_num (0);
 }
 
 
@@ -186,32 +204,20 @@ bif_vdd_set_password (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-char * vdd_set_user_str = "update DB.DBA.SYS_DATA_SOURCE set DS_PWD = ? where DS_DSN = ?";
-
-#define OPL_DISCONNECT_MESSAGE "\\[OpenLink\\]\\[ODBC\\]OpenLink Communications.*"
-
-void odbc_cat_init (void);
-
-remote_ds_t * local_rds;
-dk_hash_t * vdb_clients; /* those cli_connection_t's with owned caches of rds_connection_t's */
-int32 vdb_client_fixed_thread = 1;
-int32 vdb_serialize_connect = 0;
-dk_mutex_t *vdb_connect_mtx = NULL;
-caddr_t *odbc_error_ex = NULL;
-char * vdb_odbc_error_file = NULL;
-char * vdb_trim_trailing_spaces = NULL;
 
 
 static caddr_t
 bif_vdd_measure_rpc_time (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-return NULL;
+  return NULL;
 }
+
+
 
 static caddr_t
 bif_vdd_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-return NULL;
+  return NULL;
 }
 
 
@@ -224,8 +230,13 @@ remote_init (void)
   bif_define_typed ("proc_is_remote", bif_proc_is_remote, &bt_integer);
   bif_define ("vdd_set_password", bif_vdd_set_password);
   bif_define_typed ("vdd_measure_rpc_time", bif_vdd_measure_rpc_time, &bt_float);
+
+
   odbc_cat_init ();
-  udt_ses_init();
+
+
+  udt_ses_init ();
+
   ddl_ensure_univ_tables ();
   {
     NEW_VARZ (remote_ds_t, rds);
@@ -241,12 +252,12 @@ remote_init (void)
 
 
 
-
+/*
+ *  Define because many funcs compare functions to this pointer. Saves ifdefs
+ */
 void
-remote_table_source_input (remote_table_source_t * rts, caddr_t * inst,
-    caddr_t * state)
+remote_table_source_input (remote_table_source_t * rts, caddr_t * inst, caddr_t * state)
 {
-  /* define because many funcs compare functions to this pointer.  Saves ifdefs */
   GPF_T;
 }
 

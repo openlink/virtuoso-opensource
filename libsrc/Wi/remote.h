@@ -42,6 +42,7 @@ typedef struct remote_ds_s
     resource_t *	rds_mts_connections;
 #endif
     char *		rds_quote;
+    short		rds_identifier_case;
     int			rds_correlation_name;
     char *		rds_dbms_name;
     long		rds_oj_capsbility;
@@ -134,42 +135,30 @@ typedef struct _rstmtstruct  remote_stmt_t;
 #endif
 
 
-caddr_t rds_get_info (remote_ds_t * rds, int finfo);
-
-remote_table_t * find_remote_table (char * name, int create);
-
-remote_ds_t * find_remote_ds (char *name, int create);
-remote_proc_t * find_remote_proc (char *name, int create);
-caddr_t find_pass_through_function (remote_ds_t *rds, int do_mutex,
-    char *ref_name, char *q_def, char *o_def, caddr_t *found_remote);
 
 #define IS_BLOB_SQL_TYPE(dt) (SQL_LONGVARCHAR == dt || SQL_LONGVARBINARY == dt || SQL_WLONGVARCHAR == dt)
 
 #define IS_STRING_SQL_TYPE(dt) \
   (SQL_CHAR == dt || SQL_VARCHAR == dt || SQL_BINARY == dt || SQL_VARBINARY == dt || SQL_WVARCHAR == dt || SQL_WCHAR == dt)
 
-
-
+/*
+ *  Prototypes
+ */
 caddr_t box_timestamp_struct (TIMESTAMP_STRUCT * par_ts);
 
-extern long reconnect_on_vdb_error;
+caddr_t find_pass_through_function (remote_ds_t * rds, int do_mutex, char *ref_name, char *q_def, char *o_def, caddr_t * found_remote);
 
+remote_ds_t *find_remote_ds (const char *name, int create);
+
+remote_proc_t *find_remote_proc (char *name, int create);
+
+remote_table_t *find_remote_table (char *name, int create);
+
+caddr_t rds_get_info (remote_ds_t * rds, int finfo);
 
 int vd_dv_to_sql_type (int dv);
 
+void sqlc_quote_dotted (char *text, size_t tlen, int *fill, char *name);
 
-void sqlc_quote_dotted (char *text, size_t tlen, int *fill, char *name);extern remote_ds_t * local_rds;
-
-
-
-extern void dbev_dsn_login (remote_ds_t * rds, client_connection_t * cli,
-    caddr_t * err_ret, caddr_t *puid, caddr_t *ppwd, caddr_t *pdsn);
-
-
-
-
-#define BIF_NO_VDB \
-  sqlr_new_error ("42000", "VD999", "The build does not include virtual database."); return NULL;
-
-
+extern void dbev_dsn_login (remote_ds_t * rds, client_connection_t * cli, caddr_t * err_ret, caddr_t * puid, caddr_t * ppwd, caddr_t * pdsn);
 #endif /* _REMOTE_H */
