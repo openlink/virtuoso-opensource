@@ -1663,3 +1663,7 @@ DB.DBA.VHOST_REMOVE (lpath=>'/tpch');
 DB.DBA.VHOST_DEFINE (lpath=>'/tpch', ppath=>'/DAV/home/demo/tpch/', vsp_user=>'dba', is_dav=>1,
           is_brws=>0, opts=>vector ('url_rewrite', 'tpch_rule_list1'));
 
+
+DB.DBA.VHOST_REMOVE (lpath=>'/tpch/linkeddata');
+DB.DBA.VHOST_DEFINE (lpath=>'/tpch/linkeddata', ppath=>'/DAV/home/demo/tpch/', vsp_user=>'dba', is_dav=>1,
+          is_brws=>1);
