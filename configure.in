@@ -884,7 +884,7 @@ main ()
  AC_DEFINE(_SSL, 1, [OpenSSL])
 ],
 [
- AC_MSG_ERROR([bad. Check the config.log for details])
+ AC_MSG_ERROR([bad. Check config.log for details])
 ])
 LIBS="$save_LIBS"
 CPPFLAGS="$save_CPPFLAGS"
@@ -912,7 +912,7 @@ AC_HELP_STRING([--disable-openldap], [disable the OpenLDAP support (default)])dn
 
 if test "x$with_ldap" != "xno"
 then
-    AC_MSG_CHECKING([if OpenLDAP lib usability])
+    AC_MSG_CHECKING([OpenLDAP library usability])
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
@@ -952,7 +952,7 @@ main ()
  AC_DEFINE(_LDAP, 1, [OpenLDAP])
 ],
 [
- AC_MSG_RESULT(bad)
+ AC_MSG_RESULT(bad. Check config.log for details)
  with_ldap="no"
 ])
     LIBS="$save_LIBS"
@@ -1069,7 +1069,7 @@ AC_HELP_STRING([--disable-php4], [disable PHP 4.x extension (default)])dnl
 
 if test "x$with_php4" != "xno" 
 then
-    AC_MSG_CHECKING([libphp4 lib usability])
+    AC_MSG_CHECKING([libphp4 library usability])
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
@@ -1104,7 +1104,7 @@ main ()
  with_php4="yes"
 ],
 [
- AC_MSG_RESULT(bad)
+ AC_MSG_RESULT([bad. Check config.log for details])
  with_php4="no"
 ])
     LIBS="$save_LIBS"
@@ -1139,7 +1139,7 @@ AC_HELP_STRING([--disable-php5], [disable PHP 5.x extension (default)])dnl
 
 if test "x$with_php5" != "xno" 
 then
-    AC_MSG_CHECKING([libphp5 lib usability])
+    AC_MSG_CHECKING([libphp5 library usability])
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
@@ -1174,7 +1174,7 @@ main ()
  with_php5="yes"
 ],
 [
- AC_MSG_RESULT(bad)
+ AC_MSG_RESULT([bad. Check config.log for details])
  with_php5="no"
 ])
     LIBS="$save_LIBS"
@@ -1305,7 +1305,7 @@ main ()
   AC_MSG_RESULT(good)
 ],
 [
-  AC_MSG_RESULT(bad)
+  AC_MSG_RESULT([bad. Check config.log for details])
   with_im="no"
   AC_MSG_WARN([The ImageMagick plugin will not be build])
 ])
@@ -1341,7 +1341,7 @@ AC_HELP_STRING([--disable-wbxml2], [disable the WBXML2 plugin])dnl
 
 if test "x$with_wbxml2" != "xno"
 then
-    AC_MSG_CHECKING([if WBXML2 lib usability])
+    AC_MSG_CHECKING([WBXML2 library usability])
     old_CFLAGS="$CFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
@@ -1377,7 +1377,7 @@ main ()
  AC_MSG_RESULT(good)
 ],
 [
- AC_MSG_RESULT(bad)
+ AC_MSG_RESULT([bad. Check config.log for details])
  with_wbxml2="no"
 ])
     CFLAGS="$old_CFLAGS"
@@ -1486,7 +1486,7 @@ if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
     CPPFLAGS="$CPPFLAGS $RUBY_CFLAGS" 
     LIBS="$LIBS $RUBY_LDFLAGS"
 
-    AC_MSG_CHECKING([if Ruby lib usability])
+    AC_MSG_CHECKING([Ruby library usability])
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -1501,7 +1501,7 @@ main ()
  AC_MSG_RESULT(good)
 ],
 [
- AC_MSG_RESULT(bad)
+ AC_MSG_RESULT([bad. Check config.log for details])
  with_ruby="no"
 ])
 
