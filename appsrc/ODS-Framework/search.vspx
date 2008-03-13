@@ -29,228 +29,228 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <vm:page>
- <vm:variable name="qry_tags" type="varchar" default="null" persist="temp" param-name="q_tags"/>
- <vm:variable name="qry_max_rows" type="int" default="100" persist="temp" param-name="r"/>
- <vm:variable name="newest" type="varchar" default="null" persist="temp" param-name="newest"/>
- <vm:variable name="qry_sort" type="int" default="0" persist="temp" param-name="s"/>
- <vm:variable name="qry" type="varchar" default="null" param-name="q"/>
- <vm:variable name="output" type="varchar" default="'html'" param-name="o"/>
- <vm:variable name="page" type="int" default="1" param-name="page"/>
- <vm:variable name="uids" type="any" default="null" persist="temp"/>
- <vm:variable name="gurl" type="any" default="null" persist="pagestate"/>
- <vm:variable name="q_sel" type="any" default="null" persist="temp"/>
- <vm:variable name="s_tag_is_qry" type="int" default="0" param-name="tag-is-qry"/>
- <vm:variable name="sapps" type="varchar" default="null" param-name="apps"/>
- <vm:variable name="author" type="varchar" default="null" param-name="author"/>
- <vm:variable name="sparql_rq" type="int" default="null" param-name="rq"/>
- <vm:variable name="sparql_rq_res_name" type="varchar" default="null" param-name="rq_res_name"/>
- <vm:variable name="on_type" type="varchar" default="null" param-name="ontype"/>
- <v:on-init>
-  <![CDATA[
-  declare pars any;
+  <vm:variable name="qry_tags" type="varchar" default="null" persist="temp" param-name="q_tags"/>
+  <vm:variable name="qry_max_rows" type="int" default="100" persist="temp" param-name="r"/>
+  <vm:variable name="newest" type="varchar" default="null" persist="temp" param-name="newest"/>
+  <vm:variable name="qry_sort" type="int" default="0" persist="temp" param-name="s"/>
+  <vm:variable name="qry" type="varchar" default="null" param-name="q"/>
+  <vm:variable name="output" type="varchar" default="'html'" param-name="o"/>
+  <vm:variable name="page" type="int" default="1" param-name="page"/>
+  <vm:variable name="uids" type="any" default="null" persist="temp"/>
+  <vm:variable name="gurl" type="any" default="null" persist="pagestate"/>
+  <vm:variable name="q_sel" type="any" default="null" persist="temp"/>
+  <vm:variable name="s_tag_is_qry" type="int" default="0" param-name="tag-is-qry"/>
+  <vm:variable name="sapps" type="varchar" default="null" param-name="apps"/>
+  <vm:variable name="author" type="varchar" default="null" param-name="author"/>
+  <vm:variable name="sparql_rq" type="int" default="null" param-name="rq"/>
+  <vm:variable name="sparql_rq_res_name" type="varchar" default="null" param-name="rq_res_name"/>
+  <vm:variable name="on_type" type="varchar" default="null" param-name="ontype"/>
+  <v:on-init>
+    <![CDATA[
+      declare pars any;
 
-  set isolation = 'uncommitted';
-  set http_charset='utf-8';
-  declare _cookie_vec any;
-  _cookie_vec := vsp_ua_get_cookie_vec(lines);
-  if (WA_IS_REGULAR_FEED ())
-    {
-  self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
-  self.realm := get_keyword('realm', params, 'wa');
-    }
-  pars := vector ();
+      set isolation = 'uncommitted';
+      set http_charset='utf-8';
+      declare _cookie_vec any;
+      _cookie_vec := vsp_ua_get_cookie_vec(lines);
+      if (WA_IS_REGULAR_FEED ())
+      {
+        self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
+        self.realm := get_keyword('realm', params, 'wa');
+      }
+      pars := vector ();
 
       if (get_keyword('uri', params) is not null or get_keyword('uri[]', params) is not null)
         self.page := 5;
 
-  if (self.ds_data is null)
-    {
-      self.ds_data := vector ();
-      self.ds_meta := vector ();
-      self.ds_rel_tags_data := vector ();
-      self.ds_rel_tags_meta := vector ();
-    }
+      if (self.ds_data is null)
+      {
+        self.ds_data := vector ();
+        self.ds_meta := vector ();
+        self.ds_rel_tags_data := vector ();
+        self.ds_rel_tags_meta := vector ();
+      }
       self.have_blog := case when DB.DBA.wa_vad_check ('blog2') is null then 0 else 1 end;
-  self.have_enews := case when DB.DBA.wa_vad_check ('enews2') is null then 0 else 1 end;
-  self.have_wiki := case when DB.DBA.wa_vad_check ('wiki') is null then 0 else 1 end;
-  self.have_omail := case when DB.DBA.wa_vad_check ('oMail') is null then 0 else 1 end;
-  self.have_bookmark := case when DB.DBA.wa_vad_check ('bookmark') is null then 0 else 1 end;
+      self.have_enews := case when DB.DBA.wa_vad_check ('enews2') is null then 0 else 1 end;
+      self.have_wiki := case when DB.DBA.wa_vad_check ('wiki') is null then 0 else 1 end;
+      self.have_omail := case when DB.DBA.wa_vad_check ('oMail') is null then 0 else 1 end;
+      self.have_bookmark := case when DB.DBA.wa_vad_check ('bookmark') is null then 0 else 1 end;
       self.have_polls := case when DB.DBA.wa_vad_check ('polls') is null then 0 else 1 end;
-  self.have_addressbook := case when DB.DBA.wa_vad_check ('addressbook') is null then 0 else 1 end;
+      self.have_addressbook := case when DB.DBA.wa_vad_check ('addressbook') is null then 0 else 1 end;
       self.have_calendar := case when DB.DBA.wa_vad_check ('calendar') is null then 0 else 1 end;
 
       if (not self.have_blog)
         self.srch_blogs.vc_add_attribute ('disabled', '1');
-  if (not self.have_enews)
-    self.srch_news.vc_add_attribute ('disabled', '1');
-  if (not self.have_wiki)
-    self.srch_wikis.vc_add_attribute ('disabled', '1');
-  if (not self.have_omail)
-    self.srch_omail.vc_add_attribute ('disabled', '1');
-  if (not self.have_bookmark)
-    self.srch_bookmark.vc_add_attribute ('disabled', '1');
+      if (not self.have_enews)
+        self.srch_news.vc_add_attribute ('disabled', '1');
+      if (not self.have_wiki)
+        self.srch_wikis.vc_add_attribute ('disabled', '1');
+      if (not self.have_omail)
+        self.srch_omail.vc_add_attribute ('disabled', '1');
+      if (not self.have_bookmark)
+        self.srch_bookmark.vc_add_attribute ('disabled', '1');
       if (not self.have_polls)
         self.srch_polls.vc_add_attribute ('disabled', '1');
-  if (not self.have_addressbook)
-    self.srch_addressbook.vc_add_attribute ('disabled', '1');
+      if (not self.have_addressbook)
+        self.srch_addressbook.vc_add_attribute ('disabled', '1');
       if (not self.have_calendar)
         self.srch_calendar.vc_add_attribute ('disabled', '1');
 
-  self.max_rows.ufl_value := '100';
-  ]]>
- </v:on-init>
- <v:after-data-bind>
-  <![CDATA[
-  if(self.on_type is not null)
-  {
-        if (self.on_type = 'Community') 
+      self.max_rows.ufl_value := '100';
+    ]]>
+  </v:on-init>
+  <v:after-data-bind>
+    <![CDATA[
+      if(self.on_type is not null)
+      {
+        if (self.on_type = 'Community')
           goto _skip;
 
-        self.srch_people.ufl_selected   := 0;
+        self.srch_people.ufl_selected      := 0;
         self.srch_apps.ufl_selected        := 0;
 
-        self.srch_blogs.ufl_selected    := 0;
-        self.srch_dav.ufl_selected      := 0;
-        self.srch_news.ufl_selected     := 0;
+        self.srch_blogs.ufl_selected       := 0;
+        self.srch_dav.ufl_selected         := 0;
+        self.srch_news.ufl_selected        := 0;
         self.srch_wikis.ufl_selected       := 0;
         self.srch_omail.ufl_selected       := 0;
-        self.srch_bookmark.ufl_selected := 0;
+        self.srch_bookmark.ufl_selected    := 0;
         self.srch_polls.ufl_selected       := 0;
         self.srch_addressbook.ufl_selected := 0;
         self.srch_calendar.ufl_selected    := 0;
         self.srch_nntp.ufl_selected        := 0;
 
-       if (self.on_type = 'oDrive')
-           self.srch_dav.ufl_selected := 1;
-       if (self.on_type = 'WEBLOG2')
-           self.srch_blogs.ufl_selected := 1;
-       if (self.on_type = 'oGallery')
-           self.srch_dav.ufl_selected := 1;
-       if (self.on_type = 'eNews2')
-           self.srch_news.ufl_selected := 1;
-       if (self.on_type = 'oWiki')
-           self.srch_wikis.ufl_selected := 1;
-       if (self.on_type = 'oMail')
-           self.srch_omail.ufl_selected := 1;
-       if (self.on_type = 'Bookmark')
-           self.srch_bookmark.ufl_selected := 1;
+        if (self.on_type = 'oDrive')
+          self.srch_dav.ufl_selected := 1;
+        if (self.on_type = 'WEBLOG2')
+          self.srch_blogs.ufl_selected := 1;
+        if (self.on_type = 'oGallery')
+          self.srch_dav.ufl_selected := 1;
+        if (self.on_type = 'eNews2')
+          self.srch_news.ufl_selected := 1;
+        if (self.on_type = 'oWiki')
+          self.srch_wikis.ufl_selected := 1;
+        if (self.on_type = 'oMail')
+          self.srch_omail.ufl_selected := 1;
+        if (self.on_type = 'Bookmark')
+          self.srch_bookmark.ufl_selected := 1;
         if (self.on_type = 'Polls')
           self.srch_polls.ufl_selected := 1;
-       if (self.on_type = 'AddressBook')
-           self.srch_addressbook.ufl_selected := 1;
+        if (self.on_type = 'AddressBook')
+          self.srch_addressbook.ufl_selected := 1;
         if (self.on_type = 'Calendar')
           self.srch_calendar.ufl_selected := 1;
-       if (self.on_type = 'discussion' or self.on_type='nntpf')
-           self.srch_nntp.ufl_selected := 1;
-           if (get_keyword ('date_d_after', e.ve_params, null) is not null)
-              self.date_d_after.ufl_value:=get_keyword ('date_d_after', e.ve_params);
-           if (get_keyword ('date_m_after', e.ve_params, null) is not null)
-              self.date_m_after.ufl_value:=get_keyword ('date_m_after', e.ve_params);
-           if (get_keyword ('date_y_after', e.ve_params, null) is not null)
-              self.date_y_after.ufl_value:=get_keyword ('date_y_after', e.ve_params);
-           if (get_keyword ('date_d_before', e.ve_params, null) is not null)
-              self.date_d_before.ufl_value:=get_keyword ('date_d_before', e.ve_params);
-           if (get_keyword ('date_m_before', e.ve_params, null) is not null)
-              self.date_m_before.ufl_value:=get_keyword ('date_m_before', e.ve_params);
-           if (get_keyword ('date_y_before', e.ve_params, null) is not null)
-              self.date_y_before.ufl_value:=get_keyword ('date_y_before', e.ve_params);
+        if (self.on_type = 'discussion' or self.on_type='nntpf')
+          self.srch_nntp.ufl_selected := 1;
+        if (get_keyword ('date_d_after', e.ve_params, null) is not null)
+          self.date_d_after.ufl_value:=get_keyword ('date_d_after', e.ve_params);
+        if (get_keyword ('date_m_after', e.ve_params, null) is not null)
+          self.date_m_after.ufl_value:=get_keyword ('date_m_after', e.ve_params);
+        if (get_keyword ('date_y_after', e.ve_params, null) is not null)
+          self.date_y_after.ufl_value:=get_keyword ('date_y_after', e.ve_params);
+        if (get_keyword ('date_d_before', e.ve_params, null) is not null)
+          self.date_d_before.ufl_value:=get_keyword ('date_d_before', e.ve_params);
+        if (get_keyword ('date_m_before', e.ve_params, null) is not null)
+          self.date_m_before.ufl_value:=get_keyword ('date_m_before', e.ve_params);
+        if (get_keyword ('date_y_before', e.ve_params, null) is not null)
+          self.date_y_before.ufl_value:=get_keyword ('date_y_before', e.ve_params);
 
-     _skip:;
-  }
-  
-  self.max_rows.ufl_value := cast (case self.qry_max_rows when 0 then 100 else self.qry_max_rows end as varchar);
-  self.max_rows.vc_data_bind (e);
+      _skip:;
+      }
 
-  if (length (get_keyword ('user_search', e.ve_params)) and not e.ve_is_post)
-    {
-      if (1 or self.us_first_name.ufl_value is null)
+      self.max_rows.ufl_value := cast (case self.qry_max_rows when 0 then 100 else self.qry_max_rows end as varchar);
+      self.max_rows.vc_data_bind (e);
+
+      if (length (get_keyword ('user_search', e.ve_params)) and not e.ve_is_post)
+      {
+        if (1 or self.us_first_name.ufl_value is null)
         {
           self.page := 2; -- users search page
-	  self.search_masks.vc_data_bind (e);
+          self.search_masks.vc_data_bind (e);
           self.tabTemplate.vc_data_bind (e);
         }
-      self.do_users_search (e);
-    }
+        self.do_users_search (e);
+      }
       else if (not (is_empty_or_null (self.qry) and is_empty_or_null (self.qry_tags)))
-    {
-      if (length (WA_SEARCH_CHECK_FT_QUERY (self.qry, 0)))
+      {
+        if (length (WA_SEARCH_CHECK_FT_QUERY (self.qry, 0)))
         {
-	  self.vc_is_valid := 0;
-	  self.vc_error_message := 'Invalid keyword string entered';
-	  return;
-	}
-    
-      self.expr.ufl_value := self.qry;
-      self.expr.vc_data_bind (e);
-
-      self.q_tags_expr.ufl_value := self.qry_tags;
-      self.q_tags_expr.vc_data_bind (e);
-
-      self.sort_by_date.ufl_selected := case self.qry_sort when 0 then 0 else 1 end;
-      self.sort_by_date.vc_data_bind (e);
-
-      if (not e.ve_is_post)
-	self.do_search (e);
-    }
-      else if (length (self.newest) > 0 and (self.newest in ('users','blogs','news','wiki','bookmarks','polls','addressbook','calendar')))
-    {
-      self.page := -1;
-      self.expr.ufl_value := self.qry;
-      self.q_tags_expr.ufl_value := self.qry_tags;
-      self.sort_by_date.ufl_selected := 1;
-      self.search_masks.vc_data_bind (e);
-      self.tabTemplate.vc_data_bind (e);
-
-      if (not e.ve_is_post)
-        self.do_search (e);
-    }
-  else if (self.on_type is not null and
-               ( length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)>0 OR
-             length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)>0
-           )
-          )
-  {
-      if (not e.ve_is_post)
-        self.do_search (e);
-  }
-  ]]>
- </v:after-data-bind>
-
- <v:method name="score_to_length" arglist="in s numeric">
-  <![CDATA[
-  s := s * self.score_ratio;
-  if (s > 300)
-    return 300;
-  if (s < 0)
-    return 0;
-  return s;
-  ]]>
- </v:method>
-
-    <!-- the fti_make_search_string make ANDs -->
-  <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any">
-    <![CDATA[
-      if (isarray (arr) and length (arr) = 3 and arr[0] = 1)
-        {
-          http ('/', ses);
-	  http (arr[2], ses);
+          self.vc_is_valid := 0;
+          self.vc_error_message := 'Invalid keyword string entered';
           return;
-	}
-      else if (not isarray (arr))
-        {
-          return;
-	}
-
-      foreach (any elm in arr) do
-        {
-          self.gdata_cat_str (elm, ses);
         }
-	return;
+
+        self.expr.ufl_value := self.qry;
+        self.expr.vc_data_bind (e);
+
+        self.q_tags_expr.ufl_value := self.qry_tags;
+        self.q_tags_expr.vc_data_bind (e);
+
+        self.sort_by_date.ufl_selected := case self.qry_sort when 0 then 0 else 1 end;
+        self.sort_by_date.vc_data_bind (e);
+
+        if (not e.ve_is_post)
+        self.do_search (e);
+      }
+      else if (length (self.newest) > 0 and (self.newest in ('users','blogs','news','wiki','bookmarks','polls','addressbook','calendar')))
+      {
+        self.page := -1;
+        self.expr.ufl_value := self.qry;
+        self.q_tags_expr.ufl_value := self.qry_tags;
+        self.sort_by_date.ufl_selected := 1;
+        self.search_masks.vc_data_bind (e);
+        self.tabTemplate.vc_data_bind (e);
+
+        if (not e.ve_is_post)
+          self.do_search (e);
+      }
+      else if (self.on_type is not null and
+               ( length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)>0 OR
+                 length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)>0
+               )
+              )
+      {
+        if (not e.ve_is_post)
+          self.do_search (e);
+      }
+    ]]>
+  </v:after-data-bind>
+
+  <v:method name="score_to_length" arglist="in s numeric">
+    <![CDATA[
+      s := s * self.score_ratio;
+      if (s > 300)
+        return 300;
+      if (s < 0)
+        return 0;
+      return s;
     ]]>
   </v:method>
 
- <v:method name="do_search" arglist="inout e vspx_event">
-  <![CDATA[
+  <!-- the fti_make_search_string make ANDs -->
+  <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any">
+    <![CDATA[
+      if (isarray (arr) and length (arr) = 3 and arr[0] = 1)
+      {
+        http ('/', ses);
+        http (arr[2], ses);
+        return;
+      }
+      else if (not isarray (arr))
+      {
+        return;
+      }
+
+      foreach (any elm in arr) do
+      {
+        self.gdata_cat_str (elm, ses);
+      }
+      return;
+    ]]>
+  </v:method>
+
+  <v:method name="do_search" arglist="inout e vspx_event">
+    <![CDATA[
   declare query varchar;
   declare res, meta, rel_tags_data, rel_tags_meta, tags_vector any;
 
@@ -261,20 +261,20 @@
   declare _max_rows integer;
   if (length (self.newest) > 0)
     {
-      self.srch_people.ufl_selected := 0;
-      self.srch_blogs.ufl_selected := 0;
-      self.srch_wikis.ufl_selected := 0;
-      self.srch_dav.ufl_selected := 0;
-      self.srch_news.ufl_selected := 0;
+      self.srch_people.ufl_selected      := 0;
+      self.srch_blogs.ufl_selected       := 0;
+      self.srch_wikis.ufl_selected       := 0;
+      self.srch_dav.ufl_selected         := 0;
+      self.srch_news.ufl_selected        := 0;
       self.srch_omail.ufl_selected       := 0;
-      self.srch_bookmark.ufl_selected := 0;
+      self.srch_bookmark.ufl_selected    := 0;
       self.srch_polls.ufl_selected       := 0;
       self.srch_addressbook.ufl_selected := 0;
       self.srch_calendar.ufl_selected    := 0;
       self.srch_nntp.ufl_selected        := 0;
-      
+
       self.sort_by_score.ufl_selected := 0;
-      self.sort_by_date.ufl_selected := 1;
+      self.sort_by_date.ufl_selected  := 1;
 
       if (self.newest = 'users')
         self.srch_people.ufl_selected := 1;
@@ -301,38 +301,38 @@
   if (length (self.sapps))
     {
       declare arr any;
-      
+
       arr := split_and_decode (self.sapps, 0, '\0\0,');
-      self.srch_people.ufl_selected := 0;
+      self.srch_people.ufl_selected      := 0;
       self.srch_apps.ufl_selected        := 0;
-      self.srch_blogs.ufl_selected := 0;
-      self.srch_dav.ufl_selected := 0;
-      self.srch_news.ufl_selected := 0;
+      self.srch_blogs.ufl_selected       := 0;
+      self.srch_dav.ufl_selected         := 0;
+      self.srch_news.ufl_selected        := 0;
       self.srch_wikis.ufl_selected       := 0;
       self.srch_omail.ufl_selected       := 0;
-      self.srch_bookmark.ufl_selected := 0;
+      self.srch_bookmark.ufl_selected    := 0;
       self.srch_polls.ufl_selected       := 0;
       self.srch_addressbook.ufl_selected := 0;
       self.srch_calendar.ufl_selected    := 0;
       self.srch_nntp.ufl_selected        := 0;
       foreach (any app in arr) do
-    {
-	   if (lower (app) = 'people')
-	     self.srch_people.ufl_selected := 1;
+      {
+       if (lower (app) = 'people')
+         self.srch_people.ufl_selected := 1;
        else if (lower (app) = 'apps')
          self.srch_apps.ufl_selected := 1;
-	   else if (lower (app) = 'weblog')
-	     self.srch_blogs.ufl_selected := 1;
-	   else if (lower (app) = 'dav')
-	     self.srch_dav.ufl_selected := 1;
+       else if (lower (app) = 'weblog')
+         self.srch_blogs.ufl_selected := 1;
+       else if (lower (app) = 'dav')
+         self.srch_dav.ufl_selected := 1;
        else if (lower (app) = 'feeds')
          self.srch_news.ufl_selected := 1;
        else if (lower (app) = 'wiki')
          self.srch_wikis.ufl_selected := 1;
-	   else if (lower (app) = 'mail')
-	     self.srch_omail.ufl_selected := 1;
-	   else if (lower (app) = 'bookmark')
-             self.srch_bookmark.ufl_selected := 1;
+       else if (lower (app) = 'mail')
+         self.srch_omail.ufl_selected := 1;
+       else if (lower (app) = 'bookmark')
+         self.srch_bookmark.ufl_selected := 1;
        else if (lower (app) = 'polls')
          self.srch_polls.ufl_selected := 1;
        else if (lower (app) = 'addressbook')
@@ -341,30 +341,30 @@
          self.srch_calendar.ufl_selected := 1;
        else if (lower (app) = 'discussion')
          self.srch_nntp.ufl_selected := 1;
-	}
+      }
     }
 
     {
-      if (self.srch_people.ufl_selected
-	    or self.srch_news.ufl_selected
-	    or self.srch_blogs.ufl_selected
-	    or self.srch_wikis.ufl_selected
-	    or self.srch_dav.ufl_selected
-	    or (
-	      self.srch_apps.ufl_selected
-	      and is_empty_or_null (self.q_tags_expr.ufl_value)
-	    )
-	    or (
-	      self.srch_omail.ufl_selected
-	      and is_empty_or_null (self.q_tags_expr.ufl_value)
-	    )
-           or self.srch_bookmark.ufl_selected
+     if (self.srch_people.ufl_selected
+         or self.srch_news.ufl_selected
+         or self.srch_blogs.ufl_selected
+         or self.srch_wikis.ufl_selected
+         or self.srch_dav.ufl_selected
+         or (
+             self.srch_apps.ufl_selected
+             and is_empty_or_null (self.q_tags_expr.ufl_value)
+            )
+         or (
+             self.srch_omail.ufl_selected
+             and is_empty_or_null (self.q_tags_expr.ufl_value)
+            )
+         or self.srch_bookmark.ufl_selected
          or self.srch_polls.ufl_selected
          or self.srch_addressbook.ufl_selected
          or self.srch_calendar.ufl_selected
          or self.srch_nntp.ufl_selected
-	 )
-	{
+        )
+     {
 
       declare _d_after,_d_before varchar;
       if(length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value))
@@ -376,99 +376,75 @@
         _d_after:=self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
       else
         _d_after:='';
-        
+
       declare newsgroups_vector,_tmp_params any;
 
       newsgroups_vector := vector();
 
       newsgroups_vector:=vector_concat(newsgroups_vector,self.availble_ngroups.ufl_value);
 
---      if(get_keyword ('availble_groups', params, NULL) is not null)
---      {
---        declare _again integer;
---        _again:=1;
---        
---        _tmp_params:=coalesce(params,vector());
---      
---        while(_again)
---        {
---          declare tmp_val varchar;
---          tmp_val:=get_keyword ('availble_groups', _tmp_params, null);
---          if(tmp_val is not null)
---          {
---           
---           newsgroups_vector:=vector_concat(newsgroups_vector,vector(tmp_val));
---           _tmp_params:=vector_concat(subseq( _tmp_params,0,position ( 'availble_groups', _tmp_params)-1),subseq( _tmp_params,position ( 'availble_groups', _tmp_params)+1));
---      
---           
---          }else
---           _again:=0;
---        }
---      }
-
-
-	  query := WA_SEARCH_CONSTRUCT_QUERY (
-		self.u_id,
-		charset_recode (self.expr.ufl_value, http_current_charset(), '_WIDE_'),
-		charset_recode (self.q_tags_expr.ufl_value, http_current_charset (), '_WIDE_'),
-		self.srch_people.ufl_selected,
+      query := WA_SEARCH_CONSTRUCT_QUERY (
+            self.u_id,
+            charset_recode (self.expr.ufl_value, http_current_charset(), '_WIDE_'),
+            charset_recode (self.q_tags_expr.ufl_value, http_current_charset (), '_WIDE_'),
+            self.srch_people.ufl_selected,
             self.srch_apps.ufl_selected,
-		self.srch_blogs.ufl_selected,
-		self.srch_dav.ufl_selected,
+            self.srch_blogs.ufl_selected,
+            self.srch_dav.ufl_selected,
             self.srch_news.ufl_selected,
             self.srch_wikis.ufl_selected,
-		self.srch_omail.ufl_selected,
-		self.srch_bookmark.ufl_selected,
+            self.srch_omail.ufl_selected,
+            self.srch_bookmark.ufl_selected,
             self.srch_polls.ufl_selected,
             self.srch_addressbook.ufl_selected,
             self.srch_calendar.ufl_selected,
             self.srch_nntp.ufl_selected,
-		self.sort_by_score.ufl_selected,
-		_max_rows,
-		self.s_tag_is_qry,
+            self.sort_by_score.ufl_selected,
+            _max_rows,
+            self.s_tag_is_qry,
             _d_before,
             _d_after,
             newsgroups_vector,
-		tags_vector
-		);
-      
-        }
+            tags_vector
+      );
+
+     }
     }
   if (query is not null and length(query)>0)
+  {
+    if (self.output <> 'html')
     {
-      if (self.output <> 'html')
-        {
-	  if (WA_IS_REGULAR_FEED ())
-	 connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
-      else
-            connection_set ('WA_SEARCH_PATH', wa_link (1));
-	}
-      else
-	 connection_set ('WA_SEARCH_PATH', '');
+     if (WA_IS_REGULAR_FEED ())
+         connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
+     else
+         connection_set ('WA_SEARCH_PATH', wa_link (1));
+    }
+    else
+    connection_set ('WA_SEARCH_PATH', '');
       --dbg_printf ('%s', query);
-      exec (query, NULL, NULL, vector (), 0, meta, res);
+    exec (query, NULL, NULL, vector (), 0, meta, res);
 
-      if (WA_IS_REGULAR_FEED ())
-      {
-        self.gurl := '';
-        self.q_sel := '';
+    if (WA_IS_REGULAR_FEED ())
+    {
+      self.gurl := '';
+      self.q_sel := '';
 
-	if (self.srch_people.ufl_selected)
-	  self.gurl := self.gurl || 'people,';
+      if (self.srch_people.ufl_selected)
+          self.gurl := self.gurl || 'people,';
       if (self.srch_apps.ufl_selected)
           self.gurl := self.gurl || 'apps,';
-	if (self.srch_blogs.ufl_selected)
-	  self.gurl := self.gurl || 'weblog,';
-	if (self.srch_dav.ufl_selected)
-	  self.gurl := self.gurl || 'dav,';
+      if (self.srch_blogs.ufl_selected)
+          self.gurl := self.gurl || 'weblog,';
+      if (self.srch_dav.ufl_selected)
+          self.gurl := self.gurl || 'dav,';
       if (self.srch_news.ufl_selected)
           self.gurl := self.gurl || 'feeds,';
       if (self.srch_wikis.ufl_selected)
           self.gurl := self.gurl || 'wiki,';
-	if (self.srch_omail.ufl_selected)
-	  self.gurl := self.gurl || 'mail,';
-	if (self.srch_bookmark.ufl_selected)
-	  self.gurl := self.gurl || 'bookmark,';
+      if (self.srch_omail.ufl_selected)
+          self.gurl := self.gurl || 'mail,';
+      if (self.srch_bookmark.ufl_selected)
+          self.gurl := self.gurl || 'bookmark,';
       if (self.srch_polls.ufl_selected)
           self.gurl := self.gurl || 'polls,';
       if (self.srch_addressbook.ufl_selected)
@@ -478,88 +454,88 @@
       if (self.srch_nntp.ufl_selected)
           self.gurl := self.gurl || 'discussion,';
 
-	self.gurl := rtrim (self.gurl, ',');
-        self.q_sel := self.gurl;
+      self.gurl := rtrim (self.gurl, ',');
+            self.q_sel := self.gurl;
 
-        if (self.gurl not like '%/')
-	  self.gurl := self.gurl || '/';
+      if (self.gurl not like '%/')
+          self.gurl := self.gurl || '/';
 
-        self.gurl := '/dataspace/GData/' || self.gurl;
+      self.gurl := '/dataspace/GData/' || self.gurl;
 
-	if (self.srch_people.ufl_selected and
-	    self.srch_news.ufl_selected and
-	    self.srch_blogs.ufl_selected and
-	    self.srch_wikis.ufl_selected and
-	    self.srch_dav.ufl_selected and
-	    self.srch_apps.ufl_selected and
-	    self.srch_omail.ufl_selected and
-	  self.srch_bookmark.ufl_selected and
+      if (self.srch_people.ufl_selected      and
+          self.srch_news.ufl_selected        and
+          self.srch_blogs.ufl_selected       and
+          self.srch_wikis.ufl_selected       and
+          self.srch_dav.ufl_selected         and
+          self.srch_apps.ufl_selected        and
+          self.srch_omail.ufl_selected       and
+          self.srch_bookmark.ufl_selected    and
           self.srch_polls.ufl_selected       and
           self.srch_addressbook.ufl_selected and
           self.srch_calendar.ufl_selected    and
           self.srch_nntp.ufl_selected
-	  )
-	 {
-	  self.gurl := '/dataspace/GData/';
-	 }
+         )
+      {
+         self.gurl := '/dataspace/GData/';
+      }
 
       self.page_url := sprintf ('search.vspx?q=%U&q_tags=%U&r=%d&s=%d&apps=%s',
-		  trim (coalesce (self.expr.ufl_value, '')),
-		  trim (coalesce (self.q_tags_expr.ufl_value, '')),
-		  case when _max_rows <= 0 then 100 else _max_rows end,
-		  case when is_empty_or_null (self.sort_by_score.ufl_selected) then 0 else 1 end,
-		  self.q_sel);
+      trim (coalesce (self.expr.ufl_value, '')),
+      trim (coalesce (self.q_tags_expr.ufl_value, '')),
+      case when _max_rows <= 0 then 100 else _max_rows end,
+      case when is_empty_or_null (self.sort_by_score.ufl_selected) then 0 else 1 end,
+      self.q_sel);
 
-       if (length (self.q_tags_expr.ufl_value))
-	  {
-	    declare arr, ses, tag_str, tmp_str any;
-	    ses := string_output ();
-	    tmp_str := self.q_tags_expr.ufl_value;
-	    if (self.s_tag_is_qry = 0)
-	      {
-	        tmp_str := FTI_MAKE_SEARCH_STRING (WS.WS.DAV_TAG_NORMALIZE (tmp_str));
-	      }
+      if (length (self.q_tags_expr.ufl_value))
+      {
+        declare arr, ses, tag_str, tmp_str any;
+        ses := string_output ();
+        tmp_str := self.q_tags_expr.ufl_value;
+        if (self.s_tag_is_qry = 0)
+          {
+            tmp_str := FTI_MAKE_SEARCH_STRING (WS.WS.DAV_TAG_NORMALIZE (tmp_str));
+          }
         arr := vt_parse ('[__lang "x-ViDoc"] ' || tmp_str);
-	    self.gdata_cat_str (arr, ses);
-	    tag_str := string_output_string (ses);
-	    self.gurl := self.gurl || '-' || tag_str;
-	  }
+        self.gdata_cat_str (arr, ses);
+        tag_str := string_output_string (ses);
+        self.gurl := self.gurl || '-' || tag_str;
+      }
 
       if (length (self.expr.ufl_value))
-	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.expr.ufl_value);
-      
-  }
-       else
-         {
-	   self.gurl := connection_get ('GData_URI');
-	 }
+          self.gurl := self.gurl || '?q=' || sprintf ('%U', self.expr.ufl_value);
 
-      if (length (res))
-        {
-	  self.plate_enabled := 1;
-	  self.search_results_plate.vc_data_bind (e);
-	  self.search_rss_plate.vc_data_bind (e);
-        }
-      else
-        {
-	  self.plate_enabled := 0;
-	  self.search_results_plate.vc_data_bind (e);
-	  self.search_rss_plate.vc_data_bind (e);
-	}
+    }
+    else
+    {
+     self.gurl := connection_get ('GData_URI');
+    }
+
+    if (length (res))
+    {
+      self.plate_enabled := 1;
+      self.search_results_plate.vc_data_bind (e);
+      self.search_rss_plate.vc_data_bind (e);
+    }
+    else
+    {
+      self.plate_enabled := 0;
+      self.search_results_plate.vc_data_bind (e);
+      self.search_rss_plate.vc_data_bind (e);
+    }
 
       self.ds_data := res;
       self.ds_meta := meta;
       self.dst.ds_rows_offs := 0;
       self.dst.vc_data_bind (e);
-    }
+  }
   else
-    {
-      self.plate_enabled := 0;
-      self.search_results_plate.vc_data_bind (e);
-      self.search_rss_plate.vc_data_bind (e);
-      res := vector ();
-      meta := vector ();
-    }
+  {
+    self.plate_enabled := 0;
+    self.search_results_plate.vc_data_bind (e);
+    self.search_rss_plate.vc_data_bind (e);
+    res := vector ();
+    meta := vector ();
+  }
   self.total := length (res);
   self.tag_with_expr_plate.vc_data_bind (e);
   self.ct1.vc_data_bind (e);
@@ -577,210 +553,210 @@
     self.ds_rel_tags.vc_enabled := 0;
   return;
   ]]>
- </v:method>
- <v:method name="do_users_search" arglist="inout e vspx_event">
-  <![CDATA[
-  declare query, _wai_name varchar;
-  declare meta, res, tags_vector, rel_tags_data, rel_tags_meta any;
-  declare _max_rows integer;
+  </v:method>
+  <v:method name="do_users_search" arglist="inout e vspx_event">
+    <![CDATA[
+      declare query, _wai_name varchar;
+      declare meta, res, tags_vector, rel_tags_data, rel_tags_meta any;
+      declare _max_rows integer;
 
-  _max_rows := cast (self.us_max_rows.ufl_value as integer);
+      _max_rows := cast (self.us_max_rows.ufl_value as integer);
 
-  self.plate_enabled := 0;
-  self.map_query := null;
-  self.search_results_map.vc_data_bind (e);
-  self.search_results_map_plate.vc_data_bind (e);
-
-  self.total := 0;
-  res := vector ();
-  meta := vector ();
-  self.tag_with_expr_plate.vc_data_bind (e);
-  self.search_results_plate.vc_data_bind (e);
-  self.ct1.vc_data_bind (e);
-
-  if (length (self.us_within_members.ufl_value))
-    _wai_name := (select WAI_NAME from WA_INSTANCE where WAI_ID = self.us_within_members.ufl_value);
-  else
-    _wai_name := '';
-
-  query := WA_SEARCH_CONTACTS (
-	_max_rows,
-	self.u_id,
-	charset_recode (self.us_keywords.ufl_value, http_current_charset(), '_WIDE_'),
-	charset_recode (self.us_tags.ufl_value, http_current_charset (), '_WIDE_'),
-	charset_recode (self.us_first_name.ufl_value, http_current_charset(), '_WIDE_'),
-	charset_recode (self.us_last_name.ufl_value, http_current_charset(), '_WIDE_'),
-        cast (self.us_within_friends.ufl_value as integer),
-	_wai_name,
-  case when length (self.us_dist_km.ufl_value) > 0
-           then cast (self.us_dist_km.ufl_value as real)
-          else null end,
-	cast (self.us_dist_kind.ufl_value as integer),
-  case when length (self.us_dist_pt_lat.ufl_value) > 0
-           then cast (self.us_dist_pt_lat.ufl_value as real)
-          else null end,
-  case when length (self.us_dist_pt_lng.ufl_value) > 0
-           then cast (self.us_dist_pt_lng.ufl_value as real)
-          else null end,
-  case when self.us_out_as.ufl_value = 'Map'
-           then 2
-       else cast (self.us_oby.ufl_value as integer)end,
-        self.u_name,
-        case when self.us_out_as.ufl_value = 'Map'
-         then 0
-       else 1 end,
-	tags_vector
-  );
-
-  if (query is not null)
-    {
-      if (self.output <> 'html')
-        {
-	  if (WA_IS_REGULAR_FEED ())
-	 connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
-      else
-            connection_set ('WA_SEARCH_PATH', wa_link (1));
-	}
-      else
-	 connection_set ('WA_SEARCH_PATH', '');
-
-      if (self.us_out_as.ufl_value = 'Map')
-        {
-          self.map_query := query;
-          self.search_results_map.vc_data_bind (e);
-          self.search_results_map_plate.vc_data_bind (e);
-          return;
-        }
-      exec (query, NULL, NULL, vector (), 0, meta, res);
-
-      declare params varchar;
-      params := '&us_out_as=Report';
-      if (length (self.us_first_name.ufl_value))
-        params := params || sprintf ('&us_first_name=%U', self.us_first_name.ufl_value);
-      if (length (self.us_last_name.ufl_value))
-        params := params || sprintf ('&us_last_name=%U', self.us_last_name.ufl_value);
-      if (length (self.us_keywords.ufl_value))
-        params := params || sprintf ('&us_keywords=%U', self.us_keywords.ufl_value);
-      if (length (self.us_tags.ufl_value))
-        params := params || sprintf ('&us_tags=%U', self.us_tags.ufl_value);
-      if (length (self.us_within_friends.ufl_value))
-        params := params || sprintf ('&us_within_friends=%U', self.us_within_friends.ufl_value);
-      if (length (self.us_within_members.ufl_value))
-        params := params || sprintf ('&us_within_members=%U', self.us_within_members.ufl_value);
-      if (length (self.us_dist_km.ufl_value))
-        params := params || sprintf ('&us_dist_km=%U', self.us_dist_km.ufl_value);
-      if (length (self.us_dist_kind.ufl_value))
-        params := params || sprintf ('&us_dist_kind=%U', self.us_dist_kind.ufl_value);
-      if (length (self.us_dist_pt_lat.ufl_value))
-        params := params || sprintf ('&us_dist_pt_lat=%U', self.us_dist_pt_lat.ufl_value);
-      if (length (self.us_dist_pt_lng.ufl_value))
-        params := params || sprintf ('&us_dist_pt_lng=%U', self.us_dist_pt_lng.ufl_value);
-      if (length (self.us_oby.ufl_value))
-        params := params || sprintf ('&us_oby=%U', self.us_oby.ufl_value);
-      if (length (self.us_out_as.ufl_value))
-        params := params || sprintf ('&us_out_as=%U', self.us_out_as.ufl_value);
-      if (length (self.us_max_rows.ufl_value))
-        params := params || sprintf ('&us_max_rows=%U', self.us_max_rows.ufl_value);
-
-      self.page_url := 'search.vspx?user_search=Search&page=2' || params;
-
-      if (length (res))
-        {
-          self.plate_enabled := 1;
-          self.search_results_plate.vc_data_bind (e);
-          self.search_rss_plate.vc_data_bind (e);
-
-        }
-
-      self.ds_data := res;
-      self.ds_meta := meta;
-      self.dst.ds_rows_offs := 0;
-      self.dst.vc_data_bind (e);
-    }
-  else
-    {
       self.plate_enabled := 0;
-      self.search_results_plate.vc_data_bind (e);
-      self.search_rss_plate.vc_data_bind (e);
+      self.map_query := null;
+      self.search_results_map.vc_data_bind (e);
+      self.search_results_map_plate.vc_data_bind (e);
+
+      self.total := 0;
       res := vector ();
       meta := vector ();
-    }
-      if (WA_IS_REGULAR_FEED ())
+      self.tag_with_expr_plate.vc_data_bind (e);
+      self.search_results_plate.vc_data_bind (e);
+      self.ct1.vc_data_bind (e);
+
+      if (length (self.us_within_members.ufl_value))
+        _wai_name := (select WAI_NAME from WA_INSTANCE where WAI_ID = self.us_within_members.ufl_value);
+      else
+        _wai_name := '';
+
+      query := WA_SEARCH_CONTACTS (
+      _max_rows,
+      self.u_id,
+      charset_recode (self.us_keywords.ufl_value, http_current_charset(), '_WIDE_'),
+      charset_recode (self.us_tags.ufl_value, http_current_charset (), '_WIDE_'),
+      charset_recode (self.us_first_name.ufl_value, http_current_charset(), '_WIDE_'),
+      charset_recode (self.us_last_name.ufl_value, http_current_charset(), '_WIDE_'),
+      cast (self.us_within_friends.ufl_value as integer),
+      _wai_name,
+      case when length (self.us_dist_km.ufl_value) > 0
+           then cast (self.us_dist_km.ufl_value as real)
+           else null end,
+      cast (self.us_dist_kind.ufl_value as integer),
+      case when length (self.us_dist_pt_lat.ufl_value) > 0
+           then cast (self.us_dist_pt_lat.ufl_value as real)
+           else null end,
+      case when length (self.us_dist_pt_lng.ufl_value) > 0
+           then cast (self.us_dist_pt_lng.ufl_value as real)
+           else null end,
+      case when self.us_out_as.ufl_value = 'Map'
+           then 2
+           else cast (self.us_oby.ufl_value as integer)end,
+      self.u_name,
+      case when self.us_out_as.ufl_value = 'Map'
+           then 0
+           else 1 end,
+      tags_vector
+      );
+
+      if (query is not null)
       {
-        self.gurl := '/dataspace/GData/users/';
-        if (length (self.us_tags.ufl_value))
-	  {
-	    declare arr, ses, tag_str any;
-	    ses := string_output ();
-	    arr := vt_parse (self.us_tags.ufl_value);
-	    self.gdata_cat_str (arr, ses);
-	    tag_str := string_output_string (ses);
-	    self.gurl := self.gurl || '-' || tag_str;
-	  }
-
-	if (length (self.us_keywords.ufl_value))
-	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.us_keywords.ufl_value);
-	}
+       if (self.output <> 'html')
+       {
+        if (WA_IS_REGULAR_FEED ())
+            connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
+        else
+            connection_set ('WA_SEARCH_PATH', wa_link (1));
+       }
        else
-         {
-	   self.gurl := connection_get ('GData_URI');
-	 }
-  self.search_rss_plate.vc_data_bind (e);
+        connection_set ('WA_SEARCH_PATH', '');
 
-  self.total := length (res);
-  self.tag_with_expr_plate.vc_data_bind (e);
-  self.ct1.vc_data_bind (e);
+       if (self.us_out_as.ufl_value = 'Map')
+       {
+         self.map_query := query;
+         self.search_results_map.vc_data_bind (e);
+         self.search_results_map_plate.vc_data_bind (e);
+         return;
+       }
+       exec (query, NULL, NULL, vector (), 0, meta, res);
 
-  WA_SEARCH_FILL_REL_TAGS (self.u_id, tags_vector, rel_tags_data, rel_tags_meta);
-  self.ds_rel_tags_data := rel_tags_data;
-  self.ds_rel_tags_meta := rel_tags_meta;
+          declare params varchar;
+          params := '&us_out_as=Report';
+          if (length (self.us_first_name.ufl_value))
+            params := params || sprintf ('&us_first_name=%U', self.us_first_name.ufl_value);
+          if (length (self.us_last_name.ufl_value))
+            params := params || sprintf ('&us_last_name=%U', self.us_last_name.ufl_value);
+          if (length (self.us_keywords.ufl_value))
+            params := params || sprintf ('&us_keywords=%U', self.us_keywords.ufl_value);
+          if (length (self.us_tags.ufl_value))
+            params := params || sprintf ('&us_tags=%U', self.us_tags.ufl_value);
+          if (length (self.us_within_friends.ufl_value))
+            params := params || sprintf ('&us_within_friends=%U', self.us_within_friends.ufl_value);
+          if (length (self.us_within_members.ufl_value))
+            params := params || sprintf ('&us_within_members=%U', self.us_within_members.ufl_value);
+          if (length (self.us_dist_km.ufl_value))
+            params := params || sprintf ('&us_dist_km=%U', self.us_dist_km.ufl_value);
+          if (length (self.us_dist_kind.ufl_value))
+            params := params || sprintf ('&us_dist_kind=%U', self.us_dist_kind.ufl_value);
+          if (length (self.us_dist_pt_lat.ufl_value))
+            params := params || sprintf ('&us_dist_pt_lat=%U', self.us_dist_pt_lat.ufl_value);
+          if (length (self.us_dist_pt_lng.ufl_value))
+            params := params || sprintf ('&us_dist_pt_lng=%U', self.us_dist_pt_lng.ufl_value);
+          if (length (self.us_oby.ufl_value))
+            params := params || sprintf ('&us_oby=%U', self.us_oby.ufl_value);
+          if (length (self.us_out_as.ufl_value))
+            params := params || sprintf ('&us_out_as=%U', self.us_out_as.ufl_value);
+          if (length (self.us_max_rows.ufl_value))
+            params := params || sprintf ('&us_max_rows=%U', self.us_max_rows.ufl_value);
 
-  if (length (rel_tags_data) > 0)
-    {
-      self.ds_rel_tags.vc_enabled := 1;
-      self.ds_rel_tags.vc_data_bind (e);
-    }
-  else
-    self.ds_rel_tags.vc_enabled := 0;
-  return;
-  ]]>
- </v:method>
- <v:method name="do_tag" arglist="inout e vspx_event">
-  <![CDATA[
-  declare pars any;
-  declare new_tag_expr nvarchar;
-  declare inx, len integer;
+          self.page_url := 'search.vspx?user_search=Search&page=2' || params;
 
-  pars := e.ve_params;
-  len := length (pars);
-  new_tag_expr := charset_recode (trim (self.tag_with_expr.ufl_value), http_current_charset (), '_WIDE_');
+          if (length (res))
+            {
+              self.plate_enabled := 1;
+              self.search_results_plate.vc_data_bind (e);
+              self.search_rss_plate.vc_data_bind (e);
 
-  for (inx := 0; inx < len; inx := inx + 2)
-    {
-      if (pars[inx] like 'tmplt4$%:sel1$%')
+            }
+
+          self.ds_data := res;
+          self.ds_meta := meta;
+          self.dst.ds_rows_offs := 0;
+          self.dst.vc_data_bind (e);
+      }
+      else
+      {
+        self.plate_enabled := 0;
+        self.search_results_plate.vc_data_bind (e);
+        self.search_rss_plate.vc_data_bind (e);
+        res := vector ();
+        meta := vector ();
+      }
+          if (WA_IS_REGULAR_FEED ())
+          {
+            self.gurl := '/dataspace/GData/users/';
+            if (length (self.us_tags.ufl_value))
+            {
+              declare arr, ses, tag_str any;
+              ses := string_output ();
+              arr := vt_parse (self.us_tags.ufl_value);
+              self.gdata_cat_str (arr, ses);
+              tag_str := string_output_string (ses);
+              self.gurl := self.gurl || '-' || tag_str;
+            }
+
+            if (length (self.us_keywords.ufl_value))
+              self.gurl := self.gurl || '?q=' || sprintf ('%U', self.us_keywords.ufl_value);
+          }
+          else
+          {
+           self.gurl := connection_get ('GData_URI');
+          }
+      self.search_rss_plate.vc_data_bind (e);
+
+      self.total := length (res);
+      self.tag_with_expr_plate.vc_data_bind (e);
+      self.ct1.vc_data_bind (e);
+
+      WA_SEARCH_FILL_REL_TAGS (self.u_id, tags_vector, rel_tags_data, rel_tags_meta);
+      self.ds_rel_tags_data := rel_tags_data;
+      self.ds_rel_tags_meta := rel_tags_meta;
+
+      if (length (rel_tags_data) > 0)
         {
-           declare arr, upd_pk any;
-           declare upd_type varchar;
-
-           arr := deserialize (decode_base64 (pars[inx+1]));
-           upd_type := arr[0];
-           upd_pk := arr[1];
-
-           WA_SEARCH_ADD_TAG (self.u_id, upd_type, upd_pk, new_tag_expr);
+          self.ds_rel_tags.vc_enabled := 1;
+          self.ds_rel_tags.vc_data_bind (e);
         }
-    }
-  ]]>
- </v:method>
+      else
+        self.ds_rel_tags.vc_enabled := 0;
+      return;
+    ]]>
+  </v:method>
+  <v:method name="do_tag" arglist="inout e vspx_event">
+    <![CDATA[
+      declare pars any;
+      declare new_tag_expr nvarchar;
+      declare inx, len integer;
 
- <vm:header>
-  <vm:title>Search</vm:title>
+      pars := e.ve_params;
+      len := length (pars);
+      new_tag_expr := charset_recode (trim (self.tag_with_expr.ufl_value), http_current_charset (), '_WIDE_');
+
+      for (inx := 0; inx < len; inx := inx + 2)
+      {
+        if (pars[inx] like 'tmplt4$%:sel1$%')
+        {
+          declare arr, upd_pk any;
+          declare upd_type varchar;
+
+          arr := deserialize (decode_base64 (pars[inx+1]));
+          upd_type := arr[0];
+          upd_pk := arr[1];
+
+          WA_SEARCH_ADD_TAG (self.u_id, upd_type, upd_pk, new_tag_expr);
+        }
+      }
+    ]]>
+  </v:method>
+
+  <vm:header>
+    <vm:title>Search</vm:title>
     <?vsp
       if (self.plate_enabled)
       {
     ?>
-    <link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="<?V self.page_url ?>&amp;o=xml" />
-    <link rel="alternate" type="application/atom+xml" title="Search RSS feed (Atom)" href="<?V self.page_url ?>&amp;o=atom" />
-    <link rel="meta" title="RDF" type="application/rdf+xml" href="<?V self.page_url ?>&amp;o=rdf" />
+        <link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="<?V self.page_url ?>&amp;o=xml" />
+        <link rel="alternate" type="application/atom+xml" title="Search RSS feed (Atom)" href="<?V self.page_url ?>&amp;o=atom" />
+        <link rel="meta" title="RDF" type="application/rdf+xml" href="<?V self.page_url ?>&amp;o=rdf" />
    <?vsp
      }
    ?>
@@ -795,107 +771,107 @@
    <?vsp
      }
    ?>
- </vm:header>
- <vm:pagewrapper>
- 
-  <vm:variable name="ds_data" type="any" default="null"/>
-  <vm:variable name="ds_meta" type="any" default="null"/>
-  <vm:variable name="ds_rel_tags_data" type="any" default="null"/>
-  <vm:variable name="ds_rel_tags_meta" type="any" default="null"/>
-  <vm:variable name="total" type="int" default="0" />
-  <vm:variable name="score_ratio" type="float" default="1" />
-  <vm:variable name="have_enews" type="int" default="0"/>
-  <vm:variable name="have_blog" type="int" default="0"/>
-  <vm:variable name="have_wiki" type="int" default="0"/>
-  <vm:variable name="have_omail" type="int" default="0"/>
-  <vm:variable name="have_bookmark" type="int" default="0"/>
+  </vm:header>
+  <vm:pagewrapper>
+
+   <vm:variable name="ds_data" type="any" default="null"/>
+   <vm:variable name="ds_meta" type="any" default="null"/>
+   <vm:variable name="ds_rel_tags_data" type="any" default="null"/>
+   <vm:variable name="ds_rel_tags_meta" type="any" default="null"/>
+   <vm:variable name="total" type="int" default="0" />
+   <vm:variable name="score_ratio" type="float" default="1" />
+   <vm:variable name="have_enews" type="int" default="0"/>
+   <vm:variable name="have_blog" type="int" default="0"/>
+   <vm:variable name="have_wiki" type="int" default="0"/>
+   <vm:variable name="have_omail" type="int" default="0"/>
+   <vm:variable name="have_bookmark" type="int" default="0"/>
    <vm:variable name="have_polls" type="int" default="0"/>
-  <vm:variable name="have_addressbook" type="int" default="0"/>
+   <vm:variable name="have_addressbook" type="int" default="0"/>
    <vm:variable name="have_calendar" type="int" default="0"/>
-  <vm:variable name="page_url" type="varchar" default="null"/>
-  <vm:variable name="plate_enabled" type="int" default="0"/>
-  <vm:variable name="tag_plate_enabled" type="int" default="0"/>
-  <vm:variable name="map_query" type="varchar" default="null" />
-  <vm:navigation-new on="site"/>
-  <vm:subnavigation-new on="site"/>
-  <vm:body>
+   <vm:variable name="page_url" type="varchar" default="null"/>
+   <vm:variable name="plate_enabled" type="int" default="0"/>
+   <vm:variable name="tag_plate_enabled" type="int" default="0"/>
+   <vm:variable name="map_query" type="varchar" default="null" />
+   <vm:navigation-new on="site"/>
+   <vm:subnavigation-new on="site"/>
+   <vm:body>
    <v:template name="search_results_map" type="simple" enabled="--length (self.map_query)">
-    <vm:oatmap-control
+     <vm:oatmap-control
        sql="self.map_query"
        baloon-inx="1"
        lat-inx="6"
        lng-inx="7"
        key-name-inx="8"
        key-val="self.u_id"
-             div_id="google_map"
-             zoom="0"
-             base_url="connection_get ('WA_SEARCH_PATH')" />
-    </v:template>
+       div_id="google_map"
+       zoom="0"
+       base_url="connection_get ('WA_SEARCH_PATH')" />
+   </v:template>
    <vm:login redirect="search.vspx"/>
    <v:form name="form1" type="simple" method="POST">
     <v:on-post>
      <![CDATA[
      if (e.ve_button = control)
-       {
-	 self.expr.ufl_value := '';
-	 self.plate_enabled := 0;
-       }
+     {
+        self.expr.ufl_value := '';
+        self.plate_enabled := 0;
+     }
      ]]>
     </v:on-post>
     <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-     <tr valign='top'>
-      <td>
-       <v:template name="tabTemplate" type="simple">
-       <table cellpadding="0" cellspacing="0" border="0" class="tabdeck">
-	<colgroup>
-	 <col/>
-	 <col/>
-	 <col/>
-	</colgroup>
-	<tr class="navtab_row">
-	<?vsp
-	{
-	   declare pg int;
-	   pg := self.page;
-	?>
- 	  <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" align="center" nowrap="1">
-	   <v:url name="b_url21" value="Free Text" format="%s" url="--sprintf('search.vspx?page=1&amp;l=1')"/>
-	  </td>
-	  <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" align="center">
-	   <v:url name="b_url12" value="Members" format="%s" url="--sprintf('search.vspx?page=2&amp;l=1')"/>
-	  </td>
-	  <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" align="center">
-	   <v:url name="b_url13" value="Network Affiliation" format="%s" url="-#-sprintf('search.vspx?page=3')"/>
-	  </td-->
-	  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" align="center">
-	   <v:url name="b_url14" value="SPARQL" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')"/>
-	  </td>
+      <tr valign='top'>
+       <td>
+         <v:template name="tabTemplate" type="simple">
+         <table cellpadding="0" cellspacing="0" border="0" class="tabdeck">
+           <colgroup>
+            <col/>
+            <col/>
+            <col/>
+           </colgroup>
+           <tr class="navtab_row">
+  <?vsp
+  {
+     declare pg int;
+     pg := self.page;
+  ?>
+     <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" align="center" nowrap="1">
+     <v:url name="b_url21" value="Free Text" format="%s" url="--sprintf('search.vspx?page=1&amp;l=1')"/>
+    </td>
+    <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" align="center">
+     <v:url name="b_url12" value="Members" format="%s" url="--sprintf('search.vspx?page=2&amp;l=1')"/>
+    </td>
+    <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" align="center">
+     <v:url name="b_url13" value="Network Affiliation" format="%s" url="-#-sprintf('search.vspx?page=3')"/>
+    </td-->
+    <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" align="center">
+     <v:url name="b_url14" value="SPARQL" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')"/>
+    </td>
     <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" align="center">
      <v:url name="b_url15" value="RDF&nbsp;Browser" format="%s" url="--sprintf('search.vspx?page=5&amp;l=1')"/>
     </td>
-	  <td class="page_tab_empty" align="center" width="100%">
-	    <table cellpadding="0" cellspacing="0">
-	      <tr>
-		<td width="100%" >
-		</td>
-	      </tr>
-	    </table>
-	  </td>
-	 <?vsp
-	 }
-	 ?>
-	</tr>
+    <td class="page_tab_empty" align="center" width="100%">
+      <table cellpadding="0" cellspacing="0">
+        <tr>
+    <td width="100%" >
+    </td>
+        </tr>
+      </table>
+    </td>
+   <?vsp
+   }
+   ?>
+  </tr>
        </table>
        </v:template>
        <table class="tab_page">
-	 <tr>
-	   <td valign="top">
+   <tr>
+     <td valign="top">
        <v:template name="search_masks" type="simple">
   <v:template name="keyword_search_mask" type="simple"  enabled="-- case self.page when 1 then 1 else 0 end">
-	 <table class="formdata">
-	  <tr>
-	    <td class="ctl_title">Keyword</td>
-	   <td align="left">
+    <table class="formdata">
+    <tr>
+      <td class="ctl_title">Keyword</td>
+     <td align="left">
             <v:text name="expr" value="" xhtml_class="textbox" xhtml_tabindex="1">
              <v:validator name="expr_validator" test="sql"
                message="Invalid keyword string entered"
@@ -903,121 +879,121 @@
              </v:validator>
             </v:text>
            </td>
-	  </tr>
+    </tr>
 <?vsp
-if(self.on_type = 'discussion' or self.on_type='nntpf')
+if (self.on_type = 'discussion' or self.on_type = 'nntpf')
 {
 ?>
     <tr>
       <td class="ctl_title">Date after</td>
       <td align="left">
         <v:text name="date_d_after" xhtml_size="--2" value="" /> -
-         <v:text name="date_m_after" xhtml_size="--2" value="" /> -
-         <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+        <v:text name="date_m_after" xhtml_size="--2" value="" /> -
+        <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
       </td>
     </tr>
     <tr>
       <td class="ctl_title">Date before</td>
       <td align="left">
-         <v:text name="date_d_before" xhtml_size="--2" value="" /> -
-         <v:text name="date_m_before" xhtml_size="--2" value="" /> -
-         <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+        <v:text name="date_d_before" xhtml_size="--2" value="" /> -
+        <v:text name="date_m_before" xhtml_size="--2" value="" /> -
+        <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
       </td>
     </tr>
     <tr>
       <td class="ctl_title">Newsgroups</td>
       <td align="left">
         <v:select-list name="availble_ngroups" xhtml_size="--5" multiple="1" value="">
-            <v:before-data-bind>
+          <v:before-data-bind>
             <![CDATA[
-                  declare grp_list any;
-                  
+                declare grp_list any;
+
                 grp_list:= vector();
-                  for (select NG_GROUP,NG_NAME from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null)) do
-                        grp_list := vector_concat (grp_list, vector (NG_NAME));
-                  
-                  if (length(grp_list))
-                  {
-                     control.vsl_items := grp_list;
-                     control.vsl_item_values := grp_list;
-                  }
-                  else
-                    control.vc_enabled:=0;
+                for (select NG_GROUP,NG_NAME from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null)) do
+                  grp_list := vector_concat (grp_list, vector (NG_NAME));
+
+                if (length(grp_list))
+                {
+                   control.vsl_items := grp_list;
+                   control.vsl_item_values := grp_list;
+                }
+                else
+                  control.vc_enabled:=0;
             ]]>
-            </v:before-data-bind>
-          </v:select-list>
+          </v:before-data-bind>
+        </v:select-list>
       </td>
     </tr>
 <?vsp
 }
 ?>
-	  <tr>
-	    <td class="ctl_title">Tags</td>
-	   <td align="left">
-            <v:text name="q_tags_expr" value="" xhtml_class="textbox" xhtml_tabindex="2">
+    <tr>
+      <td class="ctl_title">Tags</td>
+      <td align="left">
+        <v:text name="q_tags_expr" value="" xhtml_class="textbox" xhtml_tabindex="2">
           <v:validator name="q_tags_expr_validator" test="sql" message="Invalid tags string entered" expression="length (WA_SEARCH_CHECK_FT_QUERY (control.ufl_value, 1))" />
-            </v:text>
-           </td>
-	  </tr>
-	  <tr>
-	    <td class="ctl_title">Max results</td>
-	   <td align="left">
+        </v:text>
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_title">Max results</td>
+      <td align="left">
         <v:text name="max_rows" value="" xhtml_class="textbox" xhtml_tabindex="3" />
-	   </td>
-	  </tr>
-	  <tr>
-	    <td class="ctl_title">Sort by</td>
-	   <td align="left">
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_title">Sort by</td>
+      <td align="left">
         <v:radio-button name="sort_by_score" group-name="sort_by" value="relevance" initial-checked="1" xhtml_id="sort_by_score" />
-	     <label for="sort_by_score">Score</label>
-	     <v:radio-button name="sort_by_date" group-name="sort_by" value="date" xhtml_id="sort_by_date"/>
-	     <label for="sort_by_date">Date Modified</label>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td colspan="2" align="left">
-	    <table>
-	     <tr>
-               <th>Search in:</th>
-	       <td>
-		 <v:check-box name="srch_people" initial-checked="1" xhtml_tabindex="4" xhtml_id="srch_people"/>
-		 <label for="srch_people">People</label>
-	       </td>
-	       <td>
+        <label for="sort_by_score">Score</label>
+        <v:radio-button name="sort_by_date" group-name="sort_by" value="date" xhtml_id="sort_by_date"/>
+        <label for="sort_by_date">Date Modified</label>
+      </td>
+    </tr>
+    <tr>
+     <td colspan="2" align="left">
+      <table>
+       <tr>
+         <th>Search in:</th>
+         <td>
+           <v:check-box name="srch_people" initial-checked="1" xhtml_tabindex="4" xhtml_id="srch_people"/>
+           <label for="srch_people">People</label>
+         </td>
+         <td>
            <v:check-box name="srch_apps" initial-checked="1" xhtml_tabindex="9" xhtml_id="srch_apps"/>
            <label for="srch_apps">Application descriptions</label>
-	       </td>
-	       <td>
+         </td>
+         <td>
            <v:check-box name="srch_dav" initial-checked="1" xhtml_tabindex="8" xhtml_id="srch_dav"/>
            <label for="srch_dav">DAV</label>
-	       </td>
-	       <td>
+         </td>
+         <td>
            <v:check-box name="srch_blogs" initial-checked="--self.have_blog" xhtml_tabindex="6" xhtml_id="srch_blogs"/>
            <label for="srch_blogs">Weblog</label>
-	       </td>
-	       <td>
+         </td>
+         <td>
            <v:check-box name="srch_news" initial-checked="--self.have_enews" xhtml_tabindex="5" xhtml_id="srch_news"/>
            <label for="srch_news">Feeds</label>
-	       </td>
-	       <td>
+         </td>
+         <td>
            <v:check-box name="srch_wikis" initial-checked="--self.have_wiki" xhtml_tabindex="7" xhtml_id="srch_wikis"/>
            <label for="srch_wikis">Wiki</label>
-	       </td>
-	       <td>
-		 <v:check-box name="srch_omail" initial-checked="--self.have_omail" xhtml_tabindex="10" xhtml_id="srch_omail"/>
-		 <label for="srch_omail">Mail</label>
-	       </td>
-	       <td>
-		 <v:check-box name="srch_bookmark" initial-checked="--self.have_bookmark" xhtml_tabindex="10" xhtml_id="srch_bookmark"/>
-		 <label for="srch_bookmark">Bookmarks</label>
-	       </td>
+         </td>
+         <td>
+           <v:check-box name="srch_omail" initial-checked="--self.have_omail" xhtml_tabindex="10" xhtml_id="srch_omail"/>
+           <label for="srch_omail">Mail</label>
+         </td>
+         <td>
+           <v:check-box name="srch_bookmark" initial-checked="--self.have_bookmark" xhtml_tabindex="10" xhtml_id="srch_bookmark"/>
+           <label for="srch_bookmark">Bookmarks</label>
+         </td>
          <td>
            <v:check-box name="srch_polls" initial-checked="--self.have_polls" xhtml_tabindex="13" xhtml_id="srch_polls"/>
            <label for="srch_polls">Polls</label>
          </td>
          <td>
-     <v:check-box name="srch_addressbook" initial-checked="--self.have_addressbook" xhtml_tabindex="13" xhtml_id="srch_addressbook"/>
-     <label for="srch_addressbook">Address Book</label>
+           <v:check-box name="srch_addressbook" initial-checked="--self.have_addressbook" xhtml_tabindex="13" xhtml_id="srch_addressbook"/>
+           <label for="srch_addressbook">AddressBook</label>
          </td>
          <td>
            <v:check-box name="srch_calendar" initial-checked="--self.have_calendar" xhtml_tabindex="13" xhtml_id="srch_calendar"/>
@@ -1027,27 +1003,27 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
            <v:check-box name="srch_nntp" initial-checked="1" xhtml_tabindex="10" xhtml_id="srch_nntp"/>
            <label for="srch_nntp">Discussion</label>
          </td>
-	     </tr>
-	    </table>
-	   </td>
-	  </tr>
+       </tr>
+      </table>
+     </td>
+    </tr>
 
-	  <tr>
-	   <td><![CDATA[&nbsp;]]></td>
-	   <td>
-	    <span class="fm_ctl_btn">
-	     <v:button name="keyword_search" value="Search" action="simple">
-	      <v:on-post>
-	       <![CDATA[
+    <tr>
+     <td><![CDATA[&nbsp;]]></td>
+     <td>
+      <span class="fm_ctl_btn">
+       <v:button name="keyword_search" value="Search" action="simple">
+        <v:on-post>
+         <![CDATA[
          declare _date_before,_date_after varchar;
          _date_before:='';
          _date_after:='';
-         
-         
+
+
          _date_before := self.date_y_before.ufl_value||'-'||self.date_m_before.ufl_value||'-'||self.date_d_before.ufl_value;
          _date_after := self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
-         
-         
+
+
          if(length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value))
          {
          declare exit handler for sqlstate '*' { _date_after:='';
@@ -1065,94 +1041,94 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                                                };
           stringdate(_date_before);
          }
-         
 
 
-	       if ((not self.vc_is_valid) or
-                   ((self.expr.ufl_value is null or trim (self.expr.ufl_value) = '') and
+
+         if ((not self.vc_is_valid) or
+              ((self.expr.ufl_value is null or trim (self.expr.ufl_value) = '') and
                (self.q_tags_expr.ufl_value is null or trim (self.q_tags_expr.ufl_value) = '') and
                (length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)=0 and
                 length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)=0 ) and
                (length(self.availble_ngroups.ufl_value)=0)
               )
-                  )
-		 {
-		   self.ds_data := vector ();
-		   self.ds_meta := vector ();
-		   self.ds_rel_tags_data := vector ();
-		   self.ds_rel_tags_meta := vector ();
-		   self.max_rows.ufl_value := '100';
-		   self.sort_by_date.ufl_selected := 0;
-		   self.sort_by_score.ufl_selected := 1;
-		   self.plate_enabled := 0;
-		   self.total := 0;
-		   self.search_results_plate.vc_data_bind (e);
-		   self.search_rss_plate.vc_data_bind (e);
-		   self.tag_with_expr_plate.vc_data_bind (e);
-		 }
-	       else
-		 {
-		   if (is_empty_or_null (self.expr.ufl_value))
-		     {
-		       self.sort_by_date.ufl_selected := 1;
-		       self.sort_by_score.ufl_selected := 0;
-		     }
-		   self.do_search (e);
-		 }
-	       ]]>
-	      </v:on-post>
-	     </v:button>
-	    </span>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td colspan="2">
-	    <table>
-	     <v:data-set name="ds_rel_tags" data="--self.ds_rel_tags_data"
-	      meta="--self.ds_rel_tags_meta"
-	      nrows="10" scrollable="1"
-	      enabled="0">
-	      <v:template name="tmplt_rel_tags_head" type="simple">
-	       <caption>
-		<h2>Related tags</h2>
-	       </caption>
-	      </v:template>
-	      <v:template name="tmplt_rel_tags_rep" type="repeat">
-	       <v:template name="tmplt_rel_tags_browse" type="browse">
-		<tr>
-		 <td>
-		  <v:label name="rel_tag_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" />
-		 </td>
-		 <td>
-		  <v:label name="rel_tag_tags" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
-		 </td>
-		</tr>
-	       </v:template>
-	      </v:template>
-	     </v:data-set>
-	    </table>
-	   </td>
-	  </tr>
-	 </table>
-	</v:template>
+            )
+         {
+           self.ds_data := vector ();
+           self.ds_meta := vector ();
+           self.ds_rel_tags_data := vector ();
+           self.ds_rel_tags_meta := vector ();
+           self.max_rows.ufl_value := '100';
+           self.sort_by_date.ufl_selected := 0;
+           self.sort_by_score.ufl_selected := 1;
+           self.plate_enabled := 0;
+           self.total := 0;
+           self.search_results_plate.vc_data_bind (e);
+           self.search_rss_plate.vc_data_bind (e);
+           self.tag_with_expr_plate.vc_data_bind (e);
+         }
+         else
+         {
+           if (is_empty_or_null (self.expr.ufl_value))
+           {
+             self.sort_by_date.ufl_selected := 1;
+             self.sort_by_score.ufl_selected := 0;
+           }
+           self.do_search (e);
+         }
+         ]]>
+        </v:on-post>
+       </v:button>
+      </span>
+     </td>
+    </tr>
+    <tr>
+     <td colspan="2">
+      <table>
+       <v:data-set name="ds_rel_tags" data="--self.ds_rel_tags_data"
+        meta="--self.ds_rel_tags_meta"
+        nrows="10" scrollable="1"
+        enabled="0">
+        <v:template name="tmplt_rel_tags_head" type="simple">
+         <caption>
+    <h2>Related tags</h2>
+         </caption>
+        </v:template>
+        <v:template name="tmplt_rel_tags_rep" type="repeat">
+         <v:template name="tmplt_rel_tags_browse" type="browse">
+    <tr>
+     <td>
+      <v:label name="rel_tag_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" />
+     </td>
+     <td>
+      <v:label name="rel_tag_tags" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
+     </td>
+    </tr>
+         </v:template>
+        </v:template>
+       </v:data-set>
+      </table>
+     </td>
+    </tr>
+   </table>
+  </v:template>
 
   <v:template name="users_search_mask" type="simple" enabled="-- case self.page when 2 then 1 else 0 end">
-	 <table>
-	  <colgroup>
-	    <col span="1" width="20%" />
-	    <col span="1" width="10%" />
-	    <col span="1" width="20%" />
-	    <col span="1" width="70%" />
-	  </colgroup>
-	  <tr>
-	   <td class="ctl_title">First Name</td>
-	   <td align="left"><v:text name="us_first_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
-	   <td class="ctl_title">Last Name</td>
-	   <td align="left"><v:text name="us_last_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
-	  </tr>
-	  <tr>
-	   <td class="ctl_title">Keywords</td>
-	   <td align="left">
+  <table>
+    <colgroup>
+      <col span="1" width="20%" />
+      <col span="1" width="10%" />
+      <col span="1" width="20%" />
+      <col span="1" width="70%" />
+    </colgroup>
+    <tr>
+     <td class="ctl_title">First Name</td>
+     <td align="left"><v:text name="us_first_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
+     <td class="ctl_title">Last Name</td>
+     <td align="left"><v:text name="us_last_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
+    </tr>
+    <tr>
+     <td class="ctl_title">Keywords</td>
+     <td align="left">
             <v:text name="us_keywords" value="--get_keyword (control.vc_name, e.ve_params, '')" >
              <v:validator name="us_keywords_validator" test="sql"
                message="Invalid keyword string entered"
@@ -1160,8 +1136,8 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
              </v:validator>
             </v:text>
            </td>
-	   <td class="ctl_title">Tags</td>
-	   <td align="left">
+     <td class="ctl_title">Tags</td>
+     <td align="left">
             <v:text name="us_tags" value="--get_keyword (control.vc_name, e.ve_params, '')">
              <v:validator name="us_tags_validator" test="sql"
                message="Invalid tags string entered"
@@ -1169,38 +1145,38 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
              </v:validator>
             </v:text>
            </td>
-	  </tr>
-	  <tr>
-	    <td class="ctl_title">Within</td>
-	   <td align="left">
-	    <v:select-list name="us_within_friends" value="--get_keyword (control.vc_name, e.ve_params, '')" >
-	     <v:item name="All" value="0" />
-	     <v:item name="Friends" value="1" />
-	     <v:item name="Friends of Friends" value="2" />
-	    </v:select-list>
-	   </td>
-	   <td class="ctl_title">Within members of</td>
-	   <td align="left">
-	    <v:data-list name="us_within_members" value="--get_keyword (control.vc_name, e.ve_params, '')"
+    </tr>
+    <tr>
+      <td class="ctl_title">Within</td>
+     <td align="left">
+      <v:select-list name="us_within_friends" value="--get_keyword (control.vc_name, e.ve_params, '')" >
+       <v:item name="All" value="0" />
+       <v:item name="Friends" value="1" />
+       <v:item name="Friends of Friends" value="2" />
+      </v:select-list>
+     </td>
+     <td class="ctl_title">Within members of</td>
+     <td align="left">
+      <v:data-list name="us_within_members" value="--get_keyword (control.vc_name, e.ve_params, '')"
                    key-column="WAI_ID"
                    value-column="WAI_NAME_VAL"
                    sql="select top 1 '' as WAI_ID, '<All Instances>' as WAI_NAME_VAL from DB.DBA.SYS_USERS
-		   union all
-		 select top 100 WAI_ID, WAI_NAME from DB.DBA.WA_INSTANCE WAI
-		   where WAI.WAI_IS_PUBLIC > 0 OR (self.u_id <> http_nobody_uid () and exists
-		   (select 1 from DB.DBA.WA_MEMBER where WAM_INST = WAI.WAI_NAME and
-		   WAM_USER = self.u_id and WAM_MEMBER_TYPE >= 1 and (WAM_EXPIRES < now () or WAM_EXPIRES is null)))" >
-	    </v:data-list>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td class="ctl_title">Within Distance</td>
-	    <td align="left" colspan="3">
-	     <!--table>
-	      <tr>
-	       <td-->
-		<v:text name="us_dist_km" value="--get_keyword (control.vc_name, e.ve_params, '')" >
-		 <v:validator name="us_dist_km_validator" test="sql" message="Invalid value for distance">
+                        union all
+                        select top 100 WAI_ID, WAI_NAME from DB.DBA.WA_INSTANCE WAI
+                         where WAI.WAI_IS_PUBLIC > 0 OR (self.u_id <> http_nobody_uid () and exists
+                           (select 1 from DB.DBA.WA_MEMBER where WAM_INST = WAI.WAI_NAME and
+                            WAM_USER = self.u_id and WAM_MEMBER_TYPE >= 1 and (WAM_EXPIRES < now () or WAM_EXPIRES is null)))" >
+      </v:data-list>
+     </td>
+    </tr>
+    <tr>
+     <td class="ctl_title">Within Distance</td>
+      <td align="left" colspan="3">
+       <!--table>
+        <tr>
+         <td-->
+    <v:text name="us_dist_km" value="--get_keyword (control.vc_name, e.ve_params, '')" >
+     <v:validator name="us_dist_km_validator" test="sql" message="Invalid value for distance">
                    <![CDATA[
                      if (length (self.us_dist_km.ufl_value))
                        {
@@ -1214,36 +1190,36 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                    ]]>
                  </v:validator>
                 </v:text>
-		<v:select-list name="us_dist_kind" value="--get_keyword (control.vc_name, e.ve_params, '')" >
-		 <v:item name="km" value="0" />
-		 <v:item name="miles" value="1" />
-		</v:select-list>
-		of Lat:<![CDATA[&nbsp;]]>
-		<v:text name="us_dist_pt_lat" value="--get_keyword (control.vc_name, e.ve_params, '')" >
-		 <v:before-data-bind>
-		  <![CDATA[
-		   if (self.u_id is not null
-		       and (0 = length (self.us_dist_pt_lat.ufl_value))
-		       and (0 = length (self.us_dist_pt_lng.ufl_value))
-		       and self.page = 2)
-		     {
-		       declare lat, lng real;
-		       lat := lng := null;
-		       select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.u_id;
-		       if (lat is not null)
-			 {
-			   self.us_dist_pt_lat.ufl_value := sprintf ('%.6f', lat);
+    <v:select-list name="us_dist_kind" value="--get_keyword (control.vc_name, e.ve_params, '')" >
+     <v:item name="km" value="0" />
+     <v:item name="miles" value="1" />
+    </v:select-list>
+    of Lat:<![CDATA[&nbsp;]]>
+    <v:text name="us_dist_pt_lat" value="--get_keyword (control.vc_name, e.ve_params, '')" >
+     <v:before-data-bind>
+      <![CDATA[
+       if (self.u_id is not null
+           and (0 = length (self.us_dist_pt_lat.ufl_value))
+           and (0 = length (self.us_dist_pt_lng.ufl_value))
+           and self.page = 2)
+         {
+           declare lat, lng real;
+           lat := lng := null;
+           select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.u_id;
+           if (lat is not null)
+       {
+         self.us_dist_pt_lat.ufl_value := sprintf ('%.6f', lat);
  --                          self.us_dist_pt_lat.vc_data_bind (e);
-			 }
-		       if (lng is not null)
-			 {
-			   self.us_dist_pt_lng.ufl_value := sprintf ('%.6f', lng);
+       }
+           if (lng is not null)
+       {
+         self.us_dist_pt_lng.ufl_value := sprintf ('%.6f', lng);
  --                          self.us_dist_pt_lng.vc_data_bind (e);
-			 }
-		     }
-		  ]]>
-		 </v:before-data-bind>
-		 <v:validator name="us_dist_pt_lat_validator" test="sql" message="Invalid value for Latitude">
+       }
+         }
+      ]]>
+     </v:before-data-bind>
+     <v:validator name="us_dist_pt_lat_validator" test="sql" message="Invalid value for Latitude">
                    <![CDATA[
                      if (length (self.us_dist_pt_lat.ufl_value))
                        {
@@ -1256,40 +1232,40 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                      return 0;
                    ]]>
                  </v:validator>
-		</v:text>
-		Lng:<![CDATA[&nbsp;]]>
-		<v:text name="us_dist_pt_lng" value="--get_keyword (control.vc_name, e.ve_params, '')" >
-		 <v:validator name="us_dist_pt_lng_validator" test="sql" message="Invalid value for Longitude">
-                   <![CDATA[
-                     if (length (self.us_dist_pt_lng.ufl_value))
-                       {
-                         declare exit handler for sqlstate '*' { return 1; };
-                         declare dummy1 real;
-                         dummy1 :=cast (self.us_dist_pt_lng.ufl_value as real);
-                         if (dummy1 < -180 or dummy1 > 180)
-                           signal ('22023', 'out of range');
-                       }
-                     return 0;
-                   ]]>
-                 </v:validator>
-                </v:text>
-	    </td>
-	  </tr>
-	  <tr>
-	   <td class="ctl_title">Order by</td>
-	   <td align="left">
-	    <v:select-list name="us_oby" value="--get_keyword (control.vc_name, e.ve_params, '')">
-	      <v:item name="Name"      value="0" />
-	      <v:item name="Relevance" value="1" />
-	      <v:item name="Distance"  value="2" />
-	      <v:item name="Time"      value="3" />
-	    </v:select-list>
-	   </td>
-	   <td class="ctl_title">Output as</td>
-	   <td align="left">
-	    <v:select-list name="us_out_as" value="--get_keyword (control.vc_name, e.ve_params, '')">
+    </v:text>
+    Lng:<![CDATA[&nbsp;]]>
+    <v:text name="us_dist_pt_lng" value="--get_keyword (control.vc_name, e.ve_params, '')" >
+      <v:validator name="us_dist_pt_lng_validator" test="sql" message="Invalid value for Longitude">
+        <![CDATA[
+         if (length (self.us_dist_pt_lng.ufl_value))
+           {
+             declare exit handler for sqlstate '*' { return 1; };
+             declare dummy1 real;
+             dummy1 :=cast (self.us_dist_pt_lng.ufl_value as real);
+             if (dummy1 < -180 or dummy1 > 180)
+               signal ('22023', 'out of range');
+           }
+         return 0;
+        ]]>
+      </v:validator>
+    </v:text>
+    </td>
+    </tr>
+    <tr>
+     <td class="ctl_title">Order by</td>
+     <td align="left">
+      <v:select-list name="us_oby" value="--get_keyword (control.vc_name, e.ve_params, '')">
+        <v:item name="Name"      value="0" />
+        <v:item name="Relevance" value="1" />
+        <v:item name="Distance"  value="2" />
+        <v:item name="Time"      value="3" />
+      </v:select-list>
+     </td>
+     <td class="ctl_title">Output as</td>
+     <td align="left">
+      <v:select-list name="us_out_as" value="--get_keyword (control.vc_name, e.ve_params, '')">
               <v:before-data-bind>
-	      <![CDATA[
+        <![CDATA[
                 if (self.u_id is not null)
                   {
                     control.vsl_items := vector ('Report', 'Map');
@@ -1302,97 +1278,97 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                   }
               ]]>
               </v:before-data-bind>
-	    </v:select-list>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td class="ctl_title">Max rows</td>
-	   <td align="left">
-	    <v:text name="us_max_rows" value="--get_keyword (control.vc_name, e.ve_params, '100')" />
-	   </td>
-	  </tr>
-	  <tr>
-	   <td><![CDATA[&nbsp;]]></td>
-	   <td colspan="3">
-	    <span class="fm_ctl_btn">
-	     <v:button name="user_search" value="Search" action="simple">
-	      <v:on-post>
-	       <![CDATA[
-                 if (self.vc_is_valid)
-  		   self.do_users_search (e);
-	       ]]>
-	      </v:on-post>
-	     </v:button>
-	    </span>
-	   </td>
-	  </tr>
-	 </table>
-       </v:template>
+      </v:select-list>
+     </td>
+    </tr>
+    <tr>
+     <td class="ctl_title">Max rows</td>
+     <td align="left">
+      <v:text name="us_max_rows" value="--get_keyword (control.vc_name, e.ve_params, '100')" />
+     </td>
+    </tr>
+    <tr>
+     <td><![CDATA[&nbsp;]]></td>
+     <td colspan="3">
+      <span class="fm_ctl_btn">
+       <v:button name="user_search" value="Search" action="simple">
+        <v:on-post>
+           <![CDATA[
+             if (self.vc_is_valid)
+               self.do_users_search (e);
+           ]]>
+        </v:on-post>
+       </v:button>
+      </span>
+     </td>
+    </tr>
+   </table>
+   </v:template>
 
-	<v:template name="rdf_search_tmpl" type="simple" enabled="-- case self.page when 4 then 1 else 0 end">
-	  <table class="formdata">
-	    <tr>
-	      <td align="left" colspan="2">
-		<span class="ctl_title">Query</span><br/>
+  <v:template name="rdf_search_tmpl" type="simple" enabled="-- case self.page when 4 then 1 else 0 end">
+    <table class="formdata">
+      <tr>
+        <td align="left" colspan="2">
+    <span class="ctl_title">Query</span><br/>
 
-		<v:textarea name="sparql_text" xhtml_cols="100" xhtml_rows="15" xhtml_id="sparql_text">
-		  <v:after-data-bind><![CDATA[
-		    if (not e.ve_is_post and self.sparql_rq > 0)
-		      {
-		        declare pwd, ppath varchar;
-		        declare rc int;
-			pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.u_name);
-			rc := DAV_AUTHENTICATE (self.sparql_rq, 'R', '1__', self.u_name, pwd);
-			if (rc >= 0)
-			  {
-			    declare exit handler for not found;
-			    select blob_to_string (RES_CONTENT), RES_FULL_PATH into control.ufl_value, ppath
-			    from WS.WS.SYS_DAV_RES where RES_ID = self.sparql_rq;
+    <v:textarea name="sparql_text" xhtml_cols="100" xhtml_rows="15" xhtml_id="sparql_text">
+      <v:after-data-bind><![CDATA[
+        if (not e.ve_is_post and self.sparql_rq > 0)
+          {
+            declare pwd, ppath varchar;
+            declare rc int;
+      pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.u_name);
+      rc := DAV_AUTHENTICATE (self.sparql_rq, 'R', '1__', self.u_name, pwd);
+      if (rc >= 0)
+        {
+          declare exit handler for not found;
+          select blob_to_string (RES_CONTENT), RES_FULL_PATH into control.ufl_value, ppath
+          from WS.WS.SYS_DAV_RES where RES_ID = self.sparql_rq;
           if (ppath not like '/DAV/home/%/SPARQL/%')
-			      control.ufl_value := '';
-			  }
-		      }
-		      ]]></v:after-data-bind>
-		</v:textarea>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td colspan="2">
-		<span class="fm_ctl_btn">
-		    <v:button name="rdf_load" value="Load" action="simple">
-		      <v:on-post>
-			self.vc_redirect ('sparql_load.vspx');
-		      </v:on-post>
-		    </v:button>
+            control.ufl_value := '';
+        }
+          }
+          ]]></v:after-data-bind>
+    </v:textarea>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+    <span class="fm_ctl_btn">
+      <v:button name="rdf_load" value="Load" action="simple">
+        <v:on-post>
+          self.vc_redirect ('sparql_load.vspx');
+        </v:on-post>
+      </v:button>
       <v:template name="load_save" type="simple" condition="length (self.sid)">
-		    <v:button name="rdf_store" value="Store" action="simple">
-		      <v:on-post>
-			if (length (self.sparql_text.ufl_value))
-			  self.vc_redirect (sprintf ('sparql_save.vspx?qry=%U&amp;rq_res_name=%U', self.sparql_text.ufl_value, coalesce (self.sparql_rq_res_name, '')));
-		      </v:on-post>
-		    </v:button>
-		  </v:template>
-		  <v:button name="rdf_search" value="Search" action="simple"
-		    xhtml_onclick='--sprintf (&apos;javascript:callSparql("%s", "sparql_text", "rdf_result", "rdf_gem"); return false&apos;, sioc..get_graph ())'>
-		  </v:button>
-		</span>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td colspan="2"><![CDATA[&#160;]]></td>
-	    </tr>
-	    <tr>
-	      <td></td>
-	      <td id="rdf_gem"></td>
-	    </tr>
-	    <tr>
-	      <td></td>
-	      <td id="rdf_result">
-	      </td>
-	    </tr>
-	  </table>
-	</v:template>
-       </v:template>
+        <v:button name="rdf_store" value="Store" action="simple">
+          <v:on-post>
+      if (length (self.sparql_text.ufl_value))
+        self.vc_redirect (sprintf ('sparql_save.vspx?qry=%U&amp;rq_res_name=%U', self.sparql_text.ufl_value, coalesce (self.sparql_rq_res_name, '')));
+          </v:on-post>
+        </v:button>
+      </v:template>
+      <v:button name="rdf_search" value="Search" action="simple"
+        xhtml_onclick='--sprintf (&apos;javascript:callSparql("%s", "sparql_text", "rdf_result", "rdf_gem"); return false&apos;, sioc..get_graph ())'>
+      </v:button>
+    </span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2"><![CDATA[&#160;]]></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td id="rdf_gem"></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td id="rdf_result">
+        </td>
+      </tr>
+    </table>
+  </v:template>
+      </v:template>
       <v:template name="rdf_search_tmpl2" type="simple" condition="self.page = 5">
 	<!-- RDF search -->
 	<script type="text/javascript">
@@ -1432,42 +1408,42 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
      <tr>
       <td colspan="3" align="left">
        <v:template name="search_rss_plate" type="simple" enabled="--self.plate_enabled">
-	<v:url name="rss_url" value="search.vspx" url="--self.page_url || '&o=xml'"
-	      format="<image src=''images/orange-icon-16.gif'' border=''0'' alt=''rss'' title=''rss''/> RSS"/>
-	<v:url name="atom_url" value="search.vspx" url="--self.page_url || '&o=atom'"
-	      format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''atom'' title=''atom''/> Atom"/>
-	<v:url name="rdf_url" value="search.vspx" url="--self.page_url || '&o=rdf'"
-	      format="<image src=''images/rdf-icon-16.gif'' border=''0'' alt=''rdf'' title=''rdf''/> RDF"/>
-	<v:url name="xbel_url" value="search.vspx" url="--self.page_url || '&o=xbel'"
-	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''xbel'' title=''xbel''/> XBEL"/>
-	<v:url name="opensearch_url" value="search.vspx" url="--self.page_url || '&o=opensearch'"
-	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''rss'' title=''opensearch''/> OpenSearch"/>
-	<v:url name="gdata_url" value="search.vspx" url="--self.gurl"
-	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''GData''/> GData"/>
-	<?vsp
-	  if (self.u_id is not null and self.page = 2)
-	    {
-	      declare usrs, i, res any;
-	      res := self.ds_data;
-	      usrs := '';
-	      i := 0;
-	      foreach (any itm in res) do
-		{
-		  if (WA_USER_IS_FRIEND (self.u_id, itm[7]))
-		    usrs := usrs || ',' || cast (itm[7] as varchar);
-		  i := i + 1;
-		}
-	      self.uids := trim (usrs, ',');
-	    }
-	  if (self.u_id is not null and self.uids is not null)
-	    {
-	?>
-	    <a href="<?V sprintf ('sfoaf.xml?:uid=%d&:uids=%s', self.u_id, self.uids) ?>">
-	      <image src="images/foaf.gif" border="0" alt="foaf" title="foaf"/>
-	    </a>
+  <v:url name="rss_url" value="search.vspx" url="--self.page_url || '&o=xml'"
+        format="<image src=''images/orange-icon-16.gif'' border=''0'' alt=''rss'' title=''rss''/> RSS"/>
+  <v:url name="atom_url" value="search.vspx" url="--self.page_url || '&o=atom'"
+        format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''atom'' title=''atom''/> Atom"/>
+  <v:url name="rdf_url" value="search.vspx" url="--self.page_url || '&o=rdf'"
+        format="<image src=''images/rdf-icon-16.gif'' border=''0'' alt=''rdf'' title=''rdf''/> RDF"/>
+  <v:url name="xbel_url" value="search.vspx" url="--self.page_url || '&o=xbel'"
+    format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''xbel'' title=''xbel''/> XBEL"/>
+  <v:url name="opensearch_url" value="search.vspx" url="--self.page_url || '&o=opensearch'"
+    format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''rss'' title=''opensearch''/> OpenSearch"/>
+  <v:url name="gdata_url" value="search.vspx" url="--self.gurl"
+    format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''GData''/> GData"/>
+  <?vsp
+    if (self.u_id is not null and self.page = 2)
+      {
+        declare usrs, i, res any;
+        res := self.ds_data;
+        usrs := '';
+        i := 0;
+        foreach (any itm in res) do
+    {
+      if (WA_USER_IS_FRIEND (self.u_id, itm[7]))
+        usrs := usrs || ',' || cast (itm[7] as varchar);
+      i := i + 1;
+    }
+        self.uids := trim (usrs, ',');
+      }
+    if (self.u_id is not null and self.uids is not null)
+      {
+  ?>
+      <a href="<?V sprintf ('sfoaf.xml?:uid=%d&:uids=%s', self.u_id, self.uids) ?>">
+        <image src="images/foaf.gif" border="0" alt="foaf" title="foaf"/>
+      </a>
         <?vsp
-	    }
-	?>
+      }
+  ?>
        </v:template>
       </td>
      </tr>
@@ -1494,21 +1470,21 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
            <v:template name="tmplt7" type="if-not-exists">
             <tr>
                <td class="message" colspan="4">
-         	      No matches found in resources accessible for
-         	      <em><v:label name="no_match_user" value="--case when self.u_id is null then 'public' else self.u_name end" /></em></td></tr>
+                 No matches found in resources accessible for
+                 <em><v:label name="no_match_user" value="--case when self.u_id is null then 'public' else self.u_name end" /></em></td></tr>
            </v:template>
 
            <v:template name="tmplt4" type="browse">
             <tr>
              <td>
               <v:check-box
-         	      name="sel1"
-         	      value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-         	      initial-checked="1"
-         	      enabled="--case when (deserialize (decode_base64 ((control.vc_parent as vspx_row_template).te_rowset[1]))[0] in  ('APP', 'OMAIL')) then 0 else 1 end"/>
-              <v:label name="excerpt_lbl" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
-		    <br/>
-		    <small><i>Last change: <v:label name="dtim" value="--wa_abs_date ((control.vc_parent as vspx_row_template).te_rowset[3])" /></i></small>
+                 name="sel1"
+                 value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                 initial-checked="1"
+                 enabled="--case when (deserialize (decode_base64 ((control.vc_parent as vspx_row_template).te_rowset[1]))[0] in  ('APP', 'OMAIL')) then 0 else 1 end"/>
+        <v:label name="excerpt_lbl" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
+        <br/>
+        <small><i>Last change: <v:label name="dtim" value="--wa_abs_date ((control.vc_parent as vspx_row_template).te_rowset[3])" /></i></small>
              </td>
             </tr>
            </v:template>
@@ -1532,17 +1508,17 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
       <td>
        <v:template name="tag_with_expr_plate" type="simple" enabled="--case when self.total > 0 then 1 else 0 end">
         Tag checked items with (comma separated list)<![CDATA[&nbsp;]]>
-	<v:text name="tag_with_expr" value="" xhtml_class="textbox" />
-	<v:button name="tag_selected" value="Tag" action="simple">
-	 <v:on-post>
-	  <![CDATA[
-	    if (length (trim (self.tag_with_expr.ufl_value)) > 0)
-	      self.do_tag (e);
-	    self.tag_with_expr.ufl_value := '';
-	    self.tag_with_expr.vc_data_bind (e);
-	  ]]>
-	 </v:on-post>
-	</v:button>
+  <v:text name="tag_with_expr" value="" xhtml_class="textbox" />
+  <v:button name="tag_selected" value="Tag" action="simple">
+   <v:on-post>
+    <![CDATA[
+      if (length (trim (self.tag_with_expr.ufl_value)) > 0)
+        self.do_tag (e);
+      self.tag_with_expr.ufl_value := '';
+      self.tag_with_expr.vc_data_bind (e);
+    ]]>
+   </v:on-post>
+  </v:button>
        </v:template>
       </td>
      </tr>
@@ -1562,44 +1538,44 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
       http ('<title>');
       if (self.page = 2)
         http_value (
-		'Search for '
-		|| trim(coalesce (self.us_keywords.ufl_value, ''))
-		|| ' tags: '
-		|| trim (coalesce (self.us_tags.ufl_value, '')));
+    'Search for '
+    || trim(coalesce (self.us_keywords.ufl_value, ''))
+    || ' tags: '
+    || trim (coalesce (self.us_tags.ufl_value, '')));
       else
         http_value (
-		'Search for '
-		|| trim(coalesce (self.qry, self.expr.ufl_value, ''))
-		|| ' tags: '
-		|| trim (coalesce ( self.qry_tags, self.q_tags_expr.ufl_value, '')));
+    'Search for '
+    || trim(coalesce (self.qry, self.expr.ufl_value, ''))
+    || ' tags: '
+    || trim (coalesce ( self.qry_tags, self.q_tags_expr.ufl_value, '')));
       http ('</title>');
       http ('<link>');
         if (WA_IS_REGULAR_FEED ())
-	  {
+    {
       http (DB.DBA.WA_LINK (1)); http_value ('/' || self.page_url);
-	  }
-	else
-	  {
-	    http_value (connection_get ('GData_URI'), null);
-	  }
+    }
+  else
+    {
+      http_value (connection_get ('GData_URI'), null);
+    }
       http ('</link>');
       http ('<description>About ');
       if (self.page = 2)
         http (trim(coalesce (
-		self.us_keywords.ufl_value,
-		self.us_tags.ufl_value,
-		self.us_last_name.ufl_value,
-		self.us_first_name.ufl_value,
-		''),
-	''' "'));
+    self.us_keywords.ufl_value,
+    self.us_tags.ufl_value,
+    self.us_last_name.ufl_value,
+    self.us_first_name.ufl_value,
+    ''),
+  ''' "'));
       else
         http (trim(coalesce (
-		self.qry,
-		self.expr.ufl_value,
-		self.qry_tags,
-		self.q_tags_expr.ufl_value,
-		''),
-	''' "'));
+    self.qry,
+    self.expr.ufl_value,
+    self.qry_tags,
+    self.q_tags_expr.ufl_value,
+    ''),
+  ''' "'));
       http ('</description>');
 
       http ('<pubDate>');
@@ -1610,12 +1586,12 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
       if (self.u_id is not null)
       {
           http_value (wa_utf8_to_wide(self.u_full_name));
-	        http_value (sprintf ('<%s>', self.u_e_mail));
+          http_value (sprintf ('<%s>', self.u_e_mail));
       }else
       {
       http ('ODS Guest');
       }
-	    http ('</managingEditor>');
+      http ('</managingEditor>');
 
 
       http (sprintf ('<openSearch:totalResults>%d</openSearch:totalResults>\r\n', length (dta)));
@@ -1630,19 +1606,19 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
           item_title:=replace(item_title,'<br />','');
           item_title:=replace(item_title,'<br>','');
           item_title:=replace(item_title,'</span>','');
-	        http_value (trim(regexp_replace (item_title,'<[^>]*>',' ',1,null)), null);
+          http_value (trim(regexp_replace (item_title,'<[^>]*>',' ',1,null)), null);
           http ('</title>');
           http ('<description>');
-	  http_value (elm[0], null);
+    http_value (elm[0], null);
           http ('</description>');
           if (length (elm) > 4)
             {
               http (sprintf ('<link>%V</link>', elm[4]));
             }
           http ('<pubDate>');
-	  pdate := cast (elm[3] as datetime);
-	  if (pdate is null)
-	    pdate := now ();
+    pdate := cast (elm[3] as datetime);
+    if (pdate is null)
+      pdate := now ();
           http_value (soap_print_box (pdate, '', 1));
           http ('</pubDate>');
 
@@ -1669,15 +1645,15 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 
 
       if (self.page = 2)
-	qry :=
-	 WA_SEARCH_ADD_APATH (
-	  WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	   sprintf ('search.vspx?search_user=Search&page=2&us_out_as=Report&us_keywords={searchTerms}&us_max_rows={count}&o=xml'), self.u_id, '&'));
+  qry :=
+   WA_SEARCH_ADD_APATH (
+    WA_SEARCH_ADD_SID_IF_AVAILABLE (
+     sprintf ('search.vspx?search_user=Search&page=2&us_out_as=Report&us_keywords={searchTerms}&us_max_rows={count}&o=xml'), self.u_id, '&'));
       else
-	qry :=
-	 WA_SEARCH_ADD_APATH (
-	  WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	   sprintf ('search.vspx?q={searchTerms}&r={count}&apps=%s&o=xml', self.q_sel), self.u_id, '&'));
+  qry :=
+   WA_SEARCH_ADD_APATH (
+    WA_SEARCH_ADD_SID_IF_AVAILABLE (
+     sprintf ('search.vspx?q={searchTerms}&r={count}&apps=%s&o=xml', self.q_sel), self.u_id, '&'));
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
       http_rewrite ();
       http ('<?xml version="1.0" ?>');  ]]>
@@ -1688,12 +1664,12 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
   <LongName>ODS Search in <?V self.q_sel ?></LongName>
   <Description>Searches <?V self.q_sel ?> in the Dataspace</Description>
   <Tags><?V trim (case self.page
-		when 2 then coalesce (self.us_tags.ufl_value, '')
+    when 2 then coalesce (self.us_tags.ufl_value, '')
                 else coalesce (self.qry_tags, self.q_tags_expr.ufl_value)
                 end) ?></Tags>
   <Image><?V WA_SEARCH_ADD_APATH ('images/wa_thin400_2.gif') ?></Image>
   <SampleSearch><?V trim(case self.page
-		when 2 then coalesce (self.us_keywords.ufl_value, '')
+    when 2 then coalesce (self.us_keywords.ufl_value, '')
                 else coalesce (self.qry, self.expr.ufl_value)
                 end) ?></SampleSearch>
   <Developer>OpenLink Software</Developer>

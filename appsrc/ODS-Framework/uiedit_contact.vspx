@@ -122,7 +122,7 @@
                           xhtml_tabindex="5"/>
 		    <vm:u-prop-select name="sel_14" value="self.sav14" />
                 </td>
-              </tr>
+	      </tr>
 	      <tr><th colspan="2"><h4>Other Online Accounts</h4></th></tr>
 	      <tr>
 		  <th>Account Name</th>
@@ -215,7 +215,7 @@
                         -- change user_text data
                         declare _cdata long varchar;
                         _cdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
-                        WA_USER_TEXT_SET(self.u_id, _cdata);
+			WA_USER_TEXT_SET(self.u_id, _cdata);
 
 			declare pos, inx, val any;
 			pos := 0;

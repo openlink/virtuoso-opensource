@@ -202,56 +202,56 @@ WA_SET_HOME_URLS ();
 create procedure wa_app_to_type (in app varchar)
 {
   return get_keyword (lower (app), vector (
-	'weblog','WEBLOG2',
+	'weblog',        'WEBLOG2',
 	'subscriptions', 'eNews2',
-	'wiki','oWiki',
-	'briefcase','oDrive',
-	'mail','oMail',
-	'photos','oGallery',
-	'community','Community',
-	'bookmark','Bookmark',
-	'discussion','nntpf',
-	'polls','Polls',
-	'addressbook', 'AddressBook',
+	'wiki',          'oWiki',
+	'briefcase',     'oDrive',
+	'mail',          'oMail',
+	'photos',        'oGallery',
+	'community',     'Community',
+	'bookmark',      'Bookmark',
+	'discussion',    'nntpf',
+	'polls',         'Polls',
+	'addressbook',   'AddressBook',
 	'socialnetwork', 'AddressBook',
-	'calendar', 'Calendar'
+	'calendar',      'Calendar'
 	), app);
 };
 
 create procedure wa_type_to_app (in app varchar)
 {
   return get_keyword (app, vector (
-	'WEBLOG2', 'weblog',
+	'WEBLOG2',       'weblog',
 	'eNews2',        'subscriptions',
-	'oWiki',   'wiki',
-	'oDrive',  'briefcase',
-	'oMail',   'mail',
-	'oGallery','photos',
-	'Community','community',
-	'Bookmark','bookmark',
-	'nntpf',    'discussion',
-	'Polls',       'polls',
-	'AddressBook', 'addressbook',
+	'oWiki',         'wiki',
+	'oDrive',        'briefcase',
+	'oMail',         'mail',
+	'oGallery',      'photos',
+	'Community',     'community',
+	'Bookmark',      'bookmark',
+	'nntpf',         'discussion',
+	'Polls',         'polls',
+	'AddressBook',   'addressbook',
 	'SocialNetwork', 'socialnetwork',
-	'Calendar',    'calendar'
+	'Calendar',      'calendar'
 	), app);
 };
 
 create procedure wa_type_to_appg (in app varchar)
 {
   return get_keyword (app, vector (
-	'WEBLOG2', 'Weblogs',
-	'eNews2',  'Subscriptions',
-	'oWiki',   'Wikis',
-	'oDrive',  'Briefcases',
-	'oMail',   'Mailboxes',
-	'oGallery','Galleries',
-	'Community','Communities',
-	'Bookmark','Bookmarks',
-	'nntpf',   'Discussions',
-	'addressbook', 'AddressBooks',
+	'WEBLOG2',       'Weblogs',
+	'eNews2',        'Subscriptions',
+	'oWiki',         'Wikis',
+	'oDrive',        'Briefcases',
+	'oMail',         'Mailboxes',
+	'oGallery',      'Galleries',
+	'Community',     'Communities',
+	'Bookmark',      'Bookmarks',
+	'nntpf',         'Discussions',
+	'addressbook',   'AddressBooks',
 	'socialnetwork', 'AddressBooks',
-	'calendar', 'Calendar'
+	'calendar',      'Calendar'
 	), app);
 };
 
@@ -313,7 +313,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       else if (regexp_match ('text/rdf.n3', accept) is not null)
 	{
 	  has_accept := 1;
-	newres := pref || '.n3';
+	  newres := pref || '.n3';
 	}
       else if (
 	    regexp_match ('application/rdf.turtle', accept) is not null or
@@ -321,7 +321,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  )
 	{
 	  has_accept := 1;
-	newres := pref || '.ttl';
+	  newres := pref || '.ttl';
 	}
 
       len := length (path);
@@ -329,12 +329,12 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       if (path[len-1] not like '%.rdf' and path[len-1] not like '%.ttl')
 	{
 	  cn := newres;
-      if (path[len-1] = '')
+	  if (path[len-1] = '')
 	    {
 	      path[len-1] := newres;
 	      ppath := ppath || newres;
 	    }
-      else
+	  else
 	    {
 	      path := vector_concat (path, vector (newres));
 	      ppath := ppath || '/' || newres;
@@ -346,12 +346,12 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   if (ppath like '%/%.ttl')
     {
       ct := 'application/rdf+turtle';
-    sioc_fmt := 'TTL';
+      sioc_fmt := 'TTL';
     }
   else if (ppath like '%/%.n3')
     {
       ct := 'text/rdf+n3';
-    sioc_fmt := 'TTL';
+      sioc_fmt := 'TTL';
     }
 
   if (not has_accept)
@@ -410,7 +410,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	do_sioc := 1;
       if (app like 'about.%')
         is_foaf := 1;
-    app := 'users';
+      app := 'users';
     }
 
   if (uname = 'feed' or uname = 'discussion')
@@ -457,7 +457,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	 return '';
        }
      else
-     signal ('22023', sprintf ('Invalid application domain [%s].', app));
+       signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
 
   if (app = 'sparql' and length (inst) = 0)
@@ -470,7 +470,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   if (app <> 'users' and length (inst) and length (path) > 7)
     {
       if (path[7] like 'about.%')
-    do_rdf := 1;
+        do_rdf := 1;
       else if (path[7] like 'sioc.%')
 	do_sioc := 1;
       else if (length (path) > 8 and path[8] like 'sioc.%')
@@ -493,7 +493,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 
   -- user's about/sioc.rdf
   if (app = 'users' or (app is not null and (inst like 'about.%' or inst like 'sioc.%')))
-   {
+    {
       declare atype, foaf varchar;
 
       foaf := 'ufoaf.xml';
@@ -517,7 +517,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  return '';
 	}
       else
-      pars := vector (':sne', cast (id as varchar));
+	pars := vector (':sne', cast (id as varchar));
 
       -- old behaviour, should never come here
       signal ('22023', 'No such resource.');
@@ -538,7 +538,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
       WS.WS.GET (path, pars, lines);
       return null;
-   }
+    }
 
   pars := vector ();
 
@@ -587,7 +587,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	      return '';
 	    }
 	  else
-	  signal ('22023', 'No such application instance');
+	    signal ('22023', 'No such application instance');
 	};
       inst := replace (inst, '+', ' ');
       _inst := null;
@@ -596,7 +596,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       if (app in ('discussion', 'feed') and do_sioc)
 	{
 	  inst_type := app;
-	goto nntpf;
+	  goto nntpf;
 	}
       if (app in ('discussion', 'feed') and post is not null)
 	goto do_post;
@@ -643,7 +643,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 		  http (ses);
 		  return '';
 		}
-	    signal ('22023', 'Not implemented');
+	      signal ('22023', 'Not implemented');
 	    }
 
 	  hf := WS.WS.PARSE_URI (full_path);
@@ -659,7 +659,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  set http_charset='utf-8';
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  if (p_full_path like '/DAV/%')
-	  WS.WS.GET (path, pars, lines);
+	    WS.WS.GET (path, pars, lines);
 	  else
 	    WS.WS."DEFAULT" (path, pars, lines);
 	  return null;
@@ -679,7 +679,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	{
 	  do_post:
 	  if (_inst is not null)
-	  url := _inst.wa_post_url (vhost, lhost, inst, post);
+	    url := _inst.wa_post_url (vhost, lhost, inst, post);
 	  else if (__proc_exists ('sioc..'||app||'_post_url'))
 	    url := call ('sioc..'||app||'_post_url') (vhost, lhost, inst, post);
 	  if (url is null)
@@ -692,9 +692,9 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 		  http (ses);
 		  return '';
 		}
-	    signal ('22023', 'Not implemented');
+	      signal ('22023', 'Not implemented');
+	    }
 	}
-    }
     }
 redir:
   http_request_status ('HTTP/1.1 302 Found');

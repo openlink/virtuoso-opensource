@@ -354,7 +354,7 @@ create procedure S3_GET_DATA_FROM_XML (in table_name varchar, in column_name var
    dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
 
    temp := xpath_eval ('string (//' || temp || ')', data, 1);
---   dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
+-- dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
 
    if (temp = '') return NULL;
 
@@ -562,7 +562,7 @@ create procedure S3_INSERT_INTO_TABLE (in table_name varchar, inout all_data any
    val_st := trim (val_st, ',');
    val_st := val_st || ')';
 
-   stmt := stmt || ' values ' ||val_st;
+   stmt := stmt || ' values ' || val_st;
 
 	dbg_obj_print ('val_st ->', val_st);
 	dbg_obj_print ('stmt ->', stmt);
@@ -579,4 +579,8 @@ create procedure DB.DBA.S3_COL_CHECK (in tbl any, in col any)
     return 1;
 }
 ;
+
+-- Test:
+-- select string_to_file ('S3_SAVE', S3_SAVE_USER ('ztashev'), -2);
+-- select S3_RESTORE_USER (file_to_string ('S3_SAVE'));
 

@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC 
-  "-//W3C//DTD XHTML 1.0 Strict//EN" 
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
- <head>
-  <script type="text/javascript">
+  <head>
+    <script type="text/javascript">
       document.write('<base href="'+document.location.protocol+'//'+ document.location.host+'/ods/" /> <!--[if IE]></base><![endif]-->');
-  </script>
+    </script>
 
-  <title>ODS Navigation Framework</title>
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-  <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
-  <!-- #META# -->
-  <script type="text/javascript">
+    <title>ODS Navigation Framework</title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
+    <!-- #META# -->
+    <script type="text/javascript">
 
-   //patch for recursive profile in iframe.
+// patch for recursive profile in iframe.
 
-if ((document.location.href.indexOf ('/dataspace/person/') >- 1 || 
+if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
     document.location.href.indexOf ('/dataspace/organization/') >- 1) &&
     (window.parent.frames.length > 0))
-   {
-        if(window.parent.location.href==window.location.href)
-           window.parent.location.reload();
-        else
-           window.parent.location.href=window.location.href;
-   }
+  {
+    if (window.parent.location.href == window.location.href)
+      window.parent.location.reload ();
+    else
+      window.parent.location.href = window.location.href;
+  }
 
-    var ODSInitArray = new Array();
+  var ODSInitArray = new Array();
 
-    var featureList = ["ajax2", "dimmer", "menu", "tab","gmaps","instant","anchor"];
-    function init()
+  var featureList = ["ajax2", "dimmer", "menu", "tab","gmaps","instant","anchor"];
+
+  function init()
     {
-
 
       if (typeof ODSInitArray != 'undefined')
         {
@@ -42,98 +42,98 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
             }
             catch (err)
             {
-               alert ('Error in function call: ' + err.message.toString()); // XXX add error logging
+               alert ('Error in function call: ' + err.message.toString ()); // XXX add error logging
             }
         }
 
      }
 
-     function widgetToggle(elm)
+  function widgetToggle (elm)
     {
       var _divs=elm.parentNode.parentNode.parentNode.getElementsByTagName ('div');
-      for(var i=0;i<_divs.length;i++)
-      {
-          if(_divs[i].className=='w_content')
-          {
-             if(_divs[i].style.display=='none')
-                OAT.Dom.show(_divs[i]);
+      for (var i = 0; i < _divs.length; i++)
+        {
+          if (_divs[i].className == 'w_content')
+            {
+              if (_divs[i].style.display == 'none')
+                OAT.Dom.show (_divs[i]);
              else
-                OAT.Dom.hide(_divs[i]);
+                OAT.Dom.hide (_divs[i]);
           }
       }
      };
 
 
-  </script>
-  <script type="text/javascript" src="oat/loader.js"></script>
-  <script type="text/javascript" src="nav_framework.js"></script>
- </head>
- <body>
-
+    </script>
+    <script type="text/javascript" src="oat/loader.js"></script>
+    <script type="text/javascript" src="nav_framework.js"></script>
+  </head>
+  <body>
     <div id="PG">
       <div id="LT">
         <div id="ods_logo">
           <a href="/ods/index.html" class="img_anchor"><img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/></a>
-        </div><!-- #ods_logo -->
+        </div> <!-- #ods_logo -->
         <div id="SEARCH_C">
           <input id="search_textbox" type="text" size="10" value="" name="search_textbox"/>
           <img id="search_img" alt="search icon" src="images/search.png" onclick="this.callback()" />
         </div>
         <div id="APP_MENU_C" class="app_menu_c">
         </div> <!-- #APP_MENU_C -->
-  	  </div> <!-- #LT -->
+      </div> <!-- #LT -->
       <div id="RT">
         <div id="HD">
-  	      <div id="ODS_BAR">
-  	        <div class="button" id="profile_menu">
-  	        </div> <!-- .button -->
-  	        <div class="button" style="display:none">
+  	  <div id="ODS_BAR">
+  	    <div class="button" id="profile_menu">
+  	    </div> <!-- .button -->
+  	    <div class="button"  style="display:none">
               <ul class="menu" id="communities_menu">
-  	            <li>
-  	              <div class="menu_head">
+  	        <li>
+  	          <div class="menu_head">
                     <a href="javascript:void(0)">Communities</a>
                     <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
-  	              <ul class="menu_dd_1st_lvl" id="communities_menu_body">
+  	          <ul class="menu_dd_1st_lvl" id="communities_menu_body">
                   </ul>
                 </li>
               </ul>
-  	        </div> <!-- .button -->
+  	    </div> <!-- .button -->
 
             <div class="button" style="display:none">
               <ul class="menu" id="connections_menu">
-  	            <li>
-  	              <div class="menu_head">
+  	        <li>
+  	          <div class="menu_head">
                     <a href="javascript:void(0)">Connections <span class="indicator" id="connectionsCountSpan">(0)</span></a>
-  	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
+  	            <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
-  	              <ul class="menu_dd_1st_lvl" style="display: none;" id="connections_menu_items">
-  	                <li class="menu_item"><a href="javascript:void(0)">Online Now</a></li>  	              
-  	                <li class="menu_item"><a href="javascript:void(0)">Status Updates</a></li>
-  	                <li class="menu_separator"></li>
-  	                <li class="menu_item"><a href="javascript:void(0)">Recently Added</a></li>
+  	          <ul class="menu_dd_1st_lvl" style="display: none;" id="connections_menu_items">
+  	            <li class="menu_item"><a href="javascript:void(0)">Online Now</a></li>
+  	            <li class="menu_item"><a href="javascript:void(0)">Status Updates</a></li>
+  	            <li class="menu_separator"></li>
+  	            <li class="menu_item"><a href="javascript:void(0)">Recently Added</a></li>
                     <li class="menu_item"><a href="javascript:void(0)">Recently Updated</a></li>
                     <li class="menu_item"><a href="javascript:void(0)">All Connections</a></li>
-  	                <li class="menu_separator"></li>
+  	            <li class="menu_separator"></li>
                     <li class="menu_item"><a href="javascript:void(0)">Invitations</a></li>
-  	                <li class="menu_separator"></li>
+  	            <li class="menu_separator"></li>
                     <li class="menu_item"><a href="javascript:void(0)">Find People</a></li>
                   </ul>
                 </li>
               </ul> <!-- #connections-menu -->
-  	        </div> <!-- .button -->
+  	    </div> <!-- .button -->
+
             <div class="button" style="display:none">
               <ul class="menu" id="messages_menu">
                 <li>
-  	              <div class="menu_head">
+                  <div class="menu_head" >
                     <a href="javascript:void(0)">Messages <span class="indicator"  id="newMsgCountSpan">(2)</span></a>
-  	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
+  	            <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div> <!-- menu_head -->
-  	              <ul class="menu_dd_1st_lvl" id="messages_menu_items" style="display:none">
-  	                <li class="menu_item" id="mi_inbox"><a href="javascript:void(0)">Message Inbox</a></li>
+                  <ul class="menu_dd_1st_lvl" id="messages_menu_items" style="display:none">
+  	            <li class="menu_item" id="mi_inbox"><a href="javascript:void(0)">Message Inbox</a></li>
                     <li class="menu_item" id="mi_sent"><a href="javascript:void(0)">Sent Messages</a></li>
                     <li class="menu_item" id="mi_notification"><a href="javascript:void(0)">Notifications</a></li>
-  	                <li class="menu_separator"></li>
+  	            <li class="menu_separator"></li>
                     <li class="menu_item" id="mi_new_message"><a href="javascript:void(0)">New message</a></li>
                   </ul>
                 </li>
@@ -141,12 +141,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
             </div> <!-- .button -->
             <div id="ODS_BAR_RC">
             </div> <!-- ODS_BAR_RC -->
-  	      </div> <!-- ODS_BAR -->
+          </div> <!-- ODS_BAR -->
         </div> <!-- HD -->
-
-  	    <div id="APP">
-   	      <!-- Messages interface start-->
-  	      <div id="messages_div" style="display: none">
+        <div id="APP">
+        <!-- Messages interface start-->
+          <div id="messages_div" style="display: none">
             <div id="messages_tab_interface" >
               <div class="widget w_contact">
                 <div class="w_content">
@@ -175,15 +174,15 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div> <!-- widget -->
             </div> <!-- messages_tab_interface -->
   	  </div> <!-- messages_div -->
-   	      <!-- Messages interface end-->
-  	      
+        <!-- Messages interface end-->
+
           <iframe id="vspxApp" style="width:100%;height:500px;border:0px;display:none;"></iframe>
 
   	      <!-- Profile Page start-->
-  	      <div id="u_profile_l" style="display:none;">
-  	        <div id="user_info_w" class="widget user_info_w">
-  	          <div class="w_title" id="userProfilePhotoName"><h3></h3></div>
-  	          <div class="w_content">
+  	  <div id="u_profile_l" style="display:none;">
+  	    <div id="user_info_w" class="widget user_info_w">
+  	      <div class="w_title" id="userProfilePhotoName"><h3></h3></div>
+  	      <div class="w_content">
                 <div class="user_img_ctr">
                   <a href="javascript:void(0)">
                     <img id="userProfilePhotoImg" class="prof_photo" src="images/profile.png"/>
@@ -196,10 +195,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     </div>
                     <div class="gem">
                       <a href="javascript:void(0)" target="_blank"><img src="images/icons/sioc_button.png" alt="SIOC"/></a>
-                  </div>
+                    </div>
                     <div class="gem">
                       <a href="javascript:void(0)" target="_blank"><img src="images/icons/vcard.png" alt="VCARD"/></a>
-                </div>
+                    </div>
                   </div> <!-- prof_user_gems -->
                 </div> <!-- gems_ctr -->
                 <ul class="prof_user_commands" id="profile_user_actions" style="display:none;">
@@ -209,7 +208,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <li><a href="javascript:void(0)" id="profileBrowseCG" style="display:none">Connection graph</a></li>
                 </ul>
               </div> <!-- w_content -->
-  	        </div> <!-- .widget -->
+  	    </div> <!-- .widget -->
 
             <!-- Linked Data Widget -->
             <!--div id="semantic_magic_w" class="widget semantic_magic_w">
@@ -232,38 +231,38 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div--> <!-- w_content -->
             <!--/div--> <!-- semantic_magic_w -->
 
-  	        <div id="ds_w" class="widget ds_w">
+  	    <div id="ds_w" class="widget ds_w">
   	      <div class="w_title">
                 <h3>Data Space</h3>
 		<div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png" alt="settings" /> 
-		  <img src="images/skin/default/menu_dd_handle_close.png" 
-		       alt="Minimize" 
-		       class="w_toggle" 
+		  <img src="images/skin/default/settings_btn.png" alt="settings" />
+		  <img src="images/skin/default/menu_dd_handle_close.png"
+		       alt="Minimize"
+		       class="w_toggle"
 		       onclick="widgetToggle(this);"/>
 		</div> <!-- w_title_bar_btns -->
 	      </div> <!-- w_title -->
-  	          <div class="w_content">
+  	      <div class="w_content">
                 <ul class="ds_list" id="ds_list">
                 </ul> <!-- ds_list -->
                 <div class="cmd_ctr"><a href="javascript:void(0)">Browse</a></div>
               </div> <!-- w_content -->
-  	        </div> <!-- .widget -->
+            </div> <!-- .widget -->
 
             <!-- Connections -->
 
-  	        <div id="connections_w" class="widget connections_w">
+  	    <div id="connections_w" class="widget connections_w">
   	      <div class="w_title">
                 <h3 id="connPTitleTxt">Connections</h3>
                 <div class="w_title_bar_btns">
-                  <img src="images/skin/default/settings_btn.png" alt="settings" /> 
-                  <img src="images/skin/default/menu_dd_handle_close.png" 
-                       alt="Minimize" 
-                       class="w_toggle" 
+                  <img src="images/skin/default/settings_btn.png" alt="settings" />
+                  <img src="images/skin/default/menu_dd_handle_close.png"
+                       alt="Minimize"
+                       class="w_toggle"
                        onclick="widgetToggle(this);"/>
                 </div> <!-- w_title_bar_btns -->
 	      </div> <!-- w_title -->
-  	          <div class="w_content">
+  	      <div class="w_content">
 <!--
                 <ul class="tab_bar">
                   <li class="sel" id="connT1"><a href="javascript:void(0)">Thumbnails</a></li>
@@ -271,46 +270,47 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                 </ul>
 -->
                 <div class="tab_deck">
-                  <div  id="connPCtr" class="tab_page">
+                  <div id="connPCtr" class="tab_page">
                   </div>
                   <div class="tab_page" id="connP1">
                   </div> <!-- .tab_page -->
 <!--
-                  <div class="tab_page" id="connP2">
-                    <div id="connP2map" style="height: 200px;"> </div>
-                  </div>
+                <div class="tab_page" id="connP2">
+                  <div id="connP2map" style="height: 200px;"> </div>
+                </div>
 -->
                 </div> <!-- tab_deck -->
               </div> <!-- w_content -->
-  	        </div> <!-- .widget -->
+  	    </div> <!-- .widget -->
             <div id="groups_w" class="widget groups_w">
-  	          <div class="w_title">
+  	      <div class="w_title">
   	        <h3 id="discussionsTitleTxt">Discussion Groups ()</h3>
-  	          </div>
-  	          <div class="w_content" id="discussionsCtr">
+  	      </div>
+  	      <div class="w_content" id="discussionsCtr">
               </div> <!-- w_content -->
-  	        </div> <!-- .widget -->
-  	      </div> <!-- u_home_l -->
+  	    </div> <!-- .widget -->
+  	  </div> <!-- u_home_l -->
+
           <div id="u_profile_r" style="display:none;">
             <div id="notify" class="notify_w widget">
               <div class="w_title">
                 <h3>Activities</h3>
                 <div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png" 
-		       alt="settings" /> 
-		  <img src="images/skin/default/menu_dd_handle_close.png" 
-		       alt="Minimize" 
-		       class="w_toggle" 
+		  <img src="images/skin/default/settings_btn.png"
+		       alt="settings" />
+		  <img src="images/skin/default/menu_dd_handle_close.png"
+		       alt="Minimize"
+		       class="w_toggle"
 		       onclick="widgetToggle(this);"/>
 		</div> <!-- w_title_bar_btns -->
               </div>
               <div class="w_content" id="notify_content">
 <!--
-                <h3 class="date">Today</h3>
-                <ul class="msgs">
+                <h3 class="date" >Today</h3>
+                <ul class="msgs" >
                   <li>
-                    <img class="msg_icon person_tnail" 
-                         alt="Dipsy" 
+                    <img class="msg_icon person_tnail"
+                         alt="Dipsy"
                          src="images/people/dipsy.jpg"/>
                     <div class="msg">
                       <span class="time">20:30</span>
@@ -321,18 +321,18 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       </div>
                   </li>
                   <li>
-                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/> 
+                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/>
                     <div class="msg"><span class="time">22:20</span> Yrjana wrote a weblog article titled <a href="#">Eh Oh!</a></div>
                       <div class="msg_r">
                         <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
                       </div>
                   </li>
                   <li>
-                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/> 
+                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/>
                     <div class="msg"><span class="time">22:20</span> Yrjana published a feed <a href="#">Raw!</a></div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
+                    <div class="msg_r">
+                      <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                    </div>
                   </li>
                 </ul>
 -->
@@ -345,10 +345,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               <div class="w_title">
                 <h3>Contact Information</h3>
                 <div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png" alt="settings" /> 
-		  <img src="images/skin/default/menu_dd_handle_close.png" 
-		       alt="Minimize" 
-		       class="w_toggle" 
+		  <img src="images/skin/default/settings_btn.png" alt="settings" />
+		  <img src="images/skin/default/menu_dd_handle_close.png"
+		       alt="Minimize"
+		       class="w_toggle"
 		       onclick="widgetToggle(this);"/></div>
               </div>
               <div class="w_content">
@@ -371,8 +371,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                         <a class="email" id="ciP1email" href=""></a>
                         <div class="adr">
                           <div class="street-address" id="ciP1address"></div>
-                          <span class="locality" id="ciP1city">,</span> 
-                          <span class="region" id="ciP1state">,</span> 
+                          <span class="locality" id="ciP1city">,</span>
+                          <span class="region" id="ciP1state">,</span>
                           <span class="postal-code" id="ciP1zip"></span>
                           <span class="country-name" id="ciP1country"></span>
                         </div> <!-- adr -->
@@ -385,9 +385,9 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <div class="fn org" id="ciP2title"></div>
                       <div class="adr">
                         <div class="street-address" id="ciP2address"></div>
-                        <div><span class="locality" id="ciP2city">,</span> 
+                        <div><span class="locality" id="ciP2city">,</span>
                              <abbr class="region" id="ciP2state" title=""></abbr>
-                             <span class="postal-code" id="ciP2zip">,</span> 
+                             <span class="postal-code" id="ciP2zip">,</span>
                              <abbr class="country" id="ciP2country" title=""></abbr>
                         </div>
                       </div> <!-- .adr -->
@@ -400,25 +400,25 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     <em>AIM:</em> <br/>
                   </div>
                   <div id="ciP4" class="tab_page">
-                <div class="sect">
-                  <h4>Interests</h4>
-                  <p id="interestsCtr"></p>
-                </div>
-                <div class="sect">
-                  <h4>Music</h4>
-                  <p id="musicCtr"></p>
-                </div>
-                <div class="sect">
-                  <h4>Other</h4>
-                </div>
-              </div>
+                    <div class="sect">
+                      <h4>Interests</h4>
+                      <p id="interestsCtr"></p>
+                    </div>
+                    <div class="sect">
+                      <h4>Music</h4>
+                      <p id="musicCtr"></p>
+                    </div>
+                    <div class="sect">
+                      <h4>Other</h4>
+                    </div>
+                  </div>
                   <div id="ciP5" class="tab_page">
                     <div class="sect">
                       <div id="linkedDataC" style="height:300px;overflow:scroll"></div>
                     </div>
                   </div>
 
-                </div> <!-- .tab_deck -->                
+                </div> <!-- .tab_deck -->
               </div> <!-- .w_content -->
             </div> <!-- .widget -->
 
@@ -428,11 +428,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               <div class="w_title">
                 <h3>Locator</h3>
 		<div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png" 
-		       alt="settings" /> 
-		  <img src="images/skin/default/menu_dd_handle_close.png" 
-		       alt="Minimize" 
-		       class="w_toggle" 
+		  <img src="images/skin/default/settings_btn.png"
+		       alt="settings" />
+		  <img src="images/skin/default/menu_dd_handle_close.png"
+		       alt="Minimize"
+		       class="w_toggle"
 		       onclick="widgetToggle(this);"/>
 		</div--> <!-- w_title_bar_btns -->
               <!--</div>--> <!-- w_title -->
@@ -441,9 +441,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div>
             </div>
           </div--> <!-- #u_home_r -->
-          
-   	      <!-- Profile Page end-->
-   	      <!-- Connections Page start-->
+
+   	  <!-- Profile Page end-->
+          <!-- Connections Page start-->
+
           <div id="contacts_interface" style="display:none;">
             <div class="widget w_contact">
               <div class="w_content">
@@ -458,40 +459,40 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     &nbsp;&nbsp;Show&nbsp;
 		    <select id="connections_filter_select" onchange="dd('');">
                       <option value="0" selected="selected">All Friends</option>
-                         <option value="1">Recently Updated</option>
-                         <option value="3">Recently Added</option>
+                      <option value="1">Recently Updated</option>
+                      <option value="3">Recently Added</option>
                       <option value="5">Online Now</option>
 		    </select>
-                    
+
                     <div id="connections_list" style="text-align:center">
                     </div>
                     <div id="connectionsTemplate" style="display:none;">
-                    <table border="0" cellspacing="0" width="98%">
+                      <table border="0" cellspacing="0" width="98%">
                         <tr>
 			  <td class="image" style="width:150px;">
-			    <img src="#connImgSRC#" 
-				 alt=""  
-				 class="" 
+			    <img src="#connImgSRC#"
+				 alt=""
+				 class=""
 				 style="width:40px;cursor:pointer"/><br/>
 			    <span style="cursor:pointer;text-decoration: underline;">#connProfileFullName#</span>
 			  </td>
-                        <td class="info">
+                          <td class="info">
 <!--
                          <table border="0" cellpadding="0" cellspacing="0" width="98%"><tr>
                           <td class="label name" style="width:100px">Name:</td>
                           <td class="name" style="text-align:left; padding-left:5px"> </td>
                          </tr></table>
 -->
-                        </td>
-                        <td class="actions" style="width:120px;text-align:left;">
+                          </td>
+                          <td class="actions" style="width:120px;text-align:left;">
                             <a id="#sendMsg#" style="cursor:pointer;text-decoration:underline;">Send Message</a><br/>
                             <a id="#viewConnections#" style="cursor:pointer;text-decoration:underline;">View Connections</a><br/>
-                          <a id="#doConnection#" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
-                       </td>
+			    <a id="#doConnection#" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
+			  </td>
                         </tr>
 		      </table>
                     </div>
-                    
+
                   </div> <!-- tab_page -->
                   <div id="cisP2" class="tab_page">
                   </div> <!-- tab_page -->
@@ -501,47 +502,47 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
           </div>
 
 	  <!-- Connections Page end-->
-  	      <!-- Invitation Page start-->
+          <!-- Invitation Page start-->
 
           <div id="invitations_C" style="display:none;">
             <h1>
-	      <img src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to 
+	      <img src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to
 	      <span id="invitations_connection_full_name_1"></span>'s network</h1>
             <div class="profile">
               <img src="images/profile_small.png" width="105px" alt="" id="invitations_connection_photo" />
-		<p>This is a personal invitation from <span id="invitations_connection_full_name_2"></span>. 
+		<p>This is a personal invitation from <span id="invitations_connection_full_name_2"></span>.
 		  <!-- You currently have 2 degrees of separation. --></p>
-              <ul class="profile">
+		<ul class="profile">
                   <li>
-		    <span class="label">City</span> 
+		    <span class="label">City</span>
 		    <span class="value" id="invitations_connection_city">Amsterdam</span>
 		  </li>
                   <li>
-		    <span class="label">Country</span> 
+		    <span class="label">Country</span>
 		    <span class="value" id="invitations_connection_country">Netherlands</span>
 		  </li>
                   <li>
-		    <span class="label">Connections</span> 
+		    <span class="label">Connections</span>
 		    <span class="value" id="invitations_connection_conncount"></span>
 		  </li>
-<!--                <li><span class="label">Connection path</span> <span class="value"><a href="#">Kingsley</a>&gt;<a href="#">Yrjänä</a></span></li> -->
-                 
-              </ul>
+<!-- <li><span class="label">Connection path</span> <span class="value"><a href="#">Kingsley</a>&gt;<a href="#">Yrjänä</a></span></li> -->
+
+		</ul>
             </div>
             <div class="actions">
               <h2>What now?</h2>
-              <p>Have a look and decide if you want to connect with 
-		<span id="invitations_connection_full_name_3"></span>. 
+              <p>Have a look and decide if you want to connect with
+		<span id="invitations_connection_full_name_3"></span>.
 		People directly connected have access to more information about each other.</p>
               <ul>
                 <li>
-		  <a href="javascript:void(0)" 
-		     id="invitations_connection_profileA">View 
+		  <a href="javascript:void(0)"
+		     id="invitations_connection_profileA">View
 		    <span id="invitations_connection_full_name_4"></span>'s Profile
 		  </a>
 		</li>
                 <li>
-		  <a href="javascript:void(0)" id="invitations_connection_acceptA">Accept invitation and 
+		  <a href="javascript:void(0)" id="invitations_connection_acceptA">Accept invitation and
 		    add <span id="invitations_connection_full_name_5"></span> in your network.
 		  </a>
 		</li>
@@ -550,219 +551,219 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		</li>
               </ul>
               <p class="info">
-		<img class="" alt="info" src="images/info.png" /> It is usually a good idea to connect 
+		<img class="" alt="info" src="images/info.png" /> It is usually a good idea to connect
 		only with people you know and share interest with.</p>
-            </div>
+	    </div>
             <div class="explanation">
               <h2>Why this message?</h2>
-              <p>This message is part of myopenlink.net social network connection process and was sent 
-		because XXX found 
+              <p>This message is part of myopenlink.net social network connection process and was sent
+		because XXX found
 		<a href="javascript:void(0)" id="invitations_connection_ownprofileA">your profile</a>
-		and asked to connect with you directly. If you choose to ignore this message, the 
-		invitation will expire automatically within 7 days. During this period you can always 
-		accept or reject the invitation by signing in to myopenlink.net and navigating to the 
+		and asked to connect with you directly. If you choose to ignore this message, the
+		invitation will expire automatically within 7 days. During this period you can always
+		accept or reject the invitation by signing in to myopenlink.net and navigating to the
 		incoming invitations page.</p>
-              <p>If you choose to reject the invitation, you can also choose to block this user from 
+              <p>If you choose to reject the invitation, you can also choose to block this user from
 		sending any invitations to you in the future.</p>
-<!--             
+<!--
              <p>You may also turn off email notifications such as this by visiting your <a href="javascript:void(0)">profile settings</a></p>
 -->
             </div>
           </div>
 
   	  <!-- Invitation Page end-->
-  	      <!-- General search start-->
+  	  <!-- General search start-->
 
           <div id="generalSearch_C" style="display:none">
-                    <div class="app_cmd_row"/>
-                    <div class="search_params_box">
-                      <div class="lt">
-                        <h2>Search</h2>
-                <input type="text" id="search_textbox_searchC" /> 
+	    <div class="app_cmd_row"/>
+            <div class="search_params_box">
+              <div class="lt">
+                <h2>Search</h2>
+                <input type="text" id="search_textbox_searchC" />
 		<button id="search_button_searchC" onclick="this.callback()">Search</button><br/>
-                <a href="javascript:void(0)" 
+                <a href="javascript:void(0)"
 		   onclick="this.callback();"
 		   id="advanced_search_searchC">Advanced search...</a><br/>
-                      </div> <!-- .lt -->
-                    </div> <!-- .search_params_box -->
-         	          <div style="width:100%">
-                    <ul class="tab_bar">
-                      <li id="searcT1"><a href="javascript:void(0)">Listing</a></li>
-                      <li id="searcT2"><a href="javascript:void(0)">Map</a></li>
-                    </ul>
-                    <div id="searchPCtr" class="tab_page tab_deck"></div>
-                    <div id="searchP1" class="tab_page">
-                      <div id="search_lst" class="tab_page">
-                        <div class="paged_listing">
-                          <div class="search_lst_view_params">
-                            <label for="search_lst_sort" class="inline_select">View</label> 
-                            <select id="search_lst_sort">
-                              <option value="sort_order=desc">By Date, Newest First</option>
-                              <option value="sort_order=asc">By Date, Oldest First</option>
-                              <option value="sort_by_score=1&sort_order=asc">By Score, Ascending</option>
-                              <option value="sort_by_score=1&sort_order=desc">By Score, Descending</option>
-                            </select>
-                            <label for="search_focus_sel" class="inline_select">Focus on</label>
+              </div> <!-- .lt -->
+            </div> <!-- .search_params_box -->
+            <div style="width:100%">
+              <ul class="tab_bar">
+                <li id="searcT1"><a href="javascript:void(0)">Listing</a></li>
+                <li id="searcT2"><a href="javascript:void(0)">Map</a></li>
+              </ul>
+              <div id="searchPCtr" class="tab_page tab_deck"></div>
+              <div id="searchP1" class="tab_page">
+                <div id="search_lst" class="tab_page">
+                  <div class="paged_listing">
+                    <div class="search_lst_view_params">
+                      <label for="search_lst_sort" class="inline_select">View</label>
+                      <select id="search_lst_sort">
+                        <option value="sort_order=desc">By Date, Newest First</option>
+                        <option value="sort_order=asc">By Date, Oldest First</option>
+                        <option value="sort_by_score=1&sort_order=asc">By Score, Ascending</option>
+                        <option value="sort_by_score=1&sort_order=desc">By Score, Descending</option>
+                      </select>
+                      <label for="search_focus_sel" class="inline_select">Focus on</label>
                       <select id="search_focus_sel" onchange="this.callback()">
-                              <option value="on_all">Everything</option>
-                              <option value="on_people">People</option>
-                              <option value="on_wikis">Wikis</option>
-                              <option value="on_blogs">Weblogs</option>
-                              <option value="on_news">Feeds</option>
-                              <option value="on_bookmark">Bookmarks</option>
-                              <option value="on_omail">Mail</option>
-                              <option value="on_polls">Polls</option>
-                              <option value="on_addressbook">AddressBook</option>
-                              <option value="on_calendar">Calendar</option>
-                              <option value="on_nntp">Discussion</option>
-                              <option value="on_apps">Application descriptions</option>
-                              <option value="on_dav">DAV</option>
-                              <option value="on_advanced">Advanced...</option>
-                            </select>
-                      <a href="javascript: void(0)" 
-			 onclick="this.callback();" 
+                        <option value="on_all">Everything</option>
+                        <option value="on_people">People</option>
+                        <option value="on_wikis">Wikis</option>
+                        <option value="on_blogs">Weblogs</option>
+                        <option value="on_news">Feeds</option>
+                        <option value="on_bookmark">Bookmarks</option>
+                        <option value="on_omail">Mail</option>
+                        <option value="on_polls">Polls</option>
+                        <option value="on_addressbook">AddressBook</option>
+                        <option value="on_calendar">Calendar</option>
+                        <option value="on_nntp">Discussion</option>
+                        <option value="on_apps">Application descriptions</option>
+                        <option value="on_dav">DAV</option>
+                        <option value="on_advanced">Advanced...</option>
+                      </select>
+                      <a href="javascript: void(0)"
+			 onclick="this.callback();"
 			 id="toggleSelect">Toggle select</a> 
-                      <a href="javascript:void(0)" 
-			 onclick="this.callback();" 
+                      <a href="javascript:void(0)"
+			 onclick="this.callback();"
 			 id="tagSelectedToggle">Tag selected...</a> 
-                      <img src="images/icons/rss-icon-12.png" 
-			   alt="RSS" 
-			   id="searchPermalinkImg" 
+                      <img src="images/icons/rss-icon-12.png"
+			   alt="RSS"
+			   id="searchPermalinkImg"
 			   style="cursor:pointer"/> 
-		      <a href="javascript:void(0)" 
+		      <a href="javascript:void(0)"
 			 id="searchPermalinkA">Permalinks...</a>
-                          </div>
-                          <div class="pager" style="text-align:left;display:none;" id="search_focus_advanced">
-                      <input id="cb_people" 
-			     type="checkbox" 
-			     tabindex="4" 
-			     checked="checked" 
-			     value="on_people" 
+                    </div>
+                    <div class="pager" style="text-align:left;display:none;" id="search_focus_advanced">
+                      <input id="cb_people"
+			     type="checkbox"
+			     tabindex="4"
+			     checked="checked"
+			     value="on_people"
 			     name="cb_people"/><label for="cb_people">People</label>
-                      <input id="cb_apps" 
-			     type="checkbox" 
-			     tabindex="9" 
-			     checked="checked" 
-			     value="on_apps" 
+                      <input id="cb_apps"
+			     type="checkbox"
+			     tabindex="9"
+			     checked="checked"
+			     value="on_apps"
 			     name="cb_apps"/><label for="cb_apps">Application descriptions</label>
-                      <input id="cb_dav" 
-			     type="checkbox" 
-			     tabindex="8" 
-			     checked="checked" 
-			     value="on_dav" 
+                      <input id="cb_dav"
+			     type="checkbox"
+			     tabindex="8"
+			     checked="checked"
+			     value="on_dav"
 			     name="cb_dav"/><label for="cb_dav">DAV</label>
-                      <input id="cb_blogs" 
-			     type="checkbox" 
-			     tabindex="6" 
-			     checked="checked" 
-			     value="on_blogs" 
+                      <input id="cb_blogs"
+			     type="checkbox"
+			     tabindex="6"
+			     checked="checked"
+			     value="on_blogs"
 			     name="cb_blogs"/><label for="cb_blogs">Weblog</label>
-                      <input id="cb_news" 
-			     type="checkbox" 
-			     tabindex="5" 
-			     checked="checked" 
-			     value="on_news" 
+                      <input id="cb_news"
+			     type="checkbox"
+			     tabindex="5"
+			     checked="checked"
+			     value="on_news"
 			     name="cb_news"/><label for="cb_news">Feeds</label>
-                      <input id="cb_wikis" 
-			     type="checkbox" 
-			     tabindex="7" 
-			     checked="checked" 
-			     value="on_wikis" 
+                      <input id="cb_wikis"
+			     type="checkbox"
+			     tabindex="7"
+			     checked="checked"
+			     value="on_wikis"
 			     name="cb_wikis"/><label for="cb_wikis">Wiki</label>
-                      <input id="cb_omail" 
-			     type="checkbox" 
-			     tabindex="10" 
-			     checked="checked" 
-			     value="on_omail" 
+                      <input id="cb_omail"
+			     type="checkbox"
+			     tabindex="10"
+			     checked="checked"
+			     value="on_omail"
 			     name="cb_omail"/><label for="cb_omail">Mail</label>
-                      <input id="cb_bookmark" 
-			     type="checkbox" 
-			     tabindex="11" 
-			     checked="checked" 
-			     value="on_bookmark" 
+                      <input id="cb_bookmark"
+			     type="checkbox"
+			     tabindex="11"
+			     checked="checked"
+			     value="on_bookmark"
 			     name="cb_bookmark"/><label for="cb_bookmark">Bookmarks</label>
-                      <input id="cb_polls" 
-			     type="checkbox" 
-			     tabindex="13" 
-			     checked="checked" 
-			     value="on_polls" 
+                      <input id="cb_polls"
+			     type="checkbox"
+			     tabindex="13"
+			     checked="checked"
+			     value="on_polls"
 			     name="cb_polls"/><label for="cb_polls">Polls</label>
-                      <input id="cb_addressbook" 
-			     type="checkbox" 
-			     tabindex="14" 
-			     checked="checked" 
-			     value="on_addressbook" 
+                      <input id="cb_addressbook"
+			     type="checkbox"
+			     tabindex="14"
+			     checked="checked"
+			     value="on_addressbook"
 			     name="cb_addressbook"/><label for="cb_addressbook">AddressBook</label>
-                      <input id="cb_calendar" 
-			     type="checkbox" 
-			     tabindex="15" 
-			     checked="checked" 
-			     value="on_calendar" 
+                      <input id="cb_calendar"
+			     type="checkbox"
+			     tabindex="15"
+			     checked="checked"
+			     value="on_calendar"
 			     name="cb_calendar"/><label for="cb_calendar">Calendar</label>
-                      <input id="cb_nntp" 
-			     type="checkbox" 
-			     tabindex="12" 
-			     checked="checked" 
-			     value="on_nntp" 
+                      <input id="cb_nntp"
+			     type="checkbox"
+			     tabindex="12"
+			     checked="checked"
+			     value="on_nntp"
 			     name="cb_nntp"/><label for="cb_nntp">Discussion</label>
-                          </div>            
-                          <div class="pager" style="text-align:left;display:none;" id="do_tag_block">
-                      <input id="tagsInput" 
-			     type="text" 
-			     style="width: 200px;margin:2px 0px 0px 5px" 
+                    </div>
+                    <div class="pager" style="text-align:left;display:none;" id="do_tag_block">
+                      <input id="tagsInput"
+			     type="text"
+			     style="width: 200px;margin:2px 0px 0px 5px"
 			     onkeyup="this.doTagToggle()" onfocus="this.doTagToggle()" />
-                      <img title="Add Tag" 
-			   alt="Add Tag" 
-			   src="images/icons/add_16_gr.png" 
-			   style="vertical-align:text-bottom;border:0px;" 
+                      <img title="Add Tag"
+			   alt="Add Tag"
+			   src="images/icons/add_16_gr.png"
+			   style="vertical-align:text-bottom;border:0px;"
 			   onclick="this.callback()" id="do_tag"/>
                     </div>
-                    <div class="pager" 
-			 style="text-align:left;display:none;" 
+                    <div class="pager"
+			 style="text-align:left;display:none;"
 			 id="search_gems_block">
-                      <a rel="xml" 
+                      <a rel="xml"
 			 href="javascript:void(0)">
-			<img border="0" 
-			     title="rss" 
-			     alt="rss" 
+			<img border="0"
+			     title="rss"
+			     alt="rss"
 			     src="images/orange-icon-16.gif"/> RSS</a>
-                      <a rel="atom" 
+                      <a rel="atom"
 			 href="javascript:void(0)">
-			<img border="0" 
-			     title="atom" 
-			     alt="atom" 
+			<img border="0"
+			     title="atom"
+			     alt="atom"
 			     src="images/blue-icon-16.gif"/> Atom</a>
-                      <a rel="rdf" 
+                      <a rel="rdf"
 			 href="javascript:void(0)">
-			<img border="0" 
-			     title="rdf" 
-			     alt="rdf" 
+			<img border="0"
+			     title="rdf"
+			     alt="rdf"
 			     src="images/rdf-icon-16.gif"/> RDF</a>
                       <a rel="xbel" href="javascript:void(0)">
-			<img border="0" 
-			     title="xbel" 
-			     alt="xbel" 
+			<img border="0"
+			     title="xbel"
+			     alt="xbel"
 			     src="images/blue-icon-16.gif"/> XBEL</a>
-                      <a rel="opensearch" 
+                      <a rel="opensearch"
 			 href="javascript:void(0)">
-			<img border="0" 
-			     title="opensearch" 
-			     alt="rss" 
+			<img border="0"
+			     title="opensearch"
+			     alt="rss"
 			     src="images/blue-icon-16.gif"/> OpenSearch</a>
-                      <a rel="gdata" 
+                      <a rel="gdata"
 			 href="javascript:void(0)">
-			<img border="0" 
-			     title="GData" 
-			     alt="GData" 
+			<img border="0"
+			     title="GData"
+			     alt="GData"
 			     src="images/blue-icon-16.gif"/> GData</a>
                     </div> <!-- pager -->
-                          <div class="pager" id="top_pager">Results 0: 
-                            <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
-                            <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
-                            <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
-                            <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
-                          </div> <!-- pager -->
-                          <ul class="search_listing" id="search_listing">
+                    <div class="pager" id="top_pager">Results 0:
+                      <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
+                      <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
+                      <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
+                      <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
+                    </div> <!-- pager -->
+                    <ul class="search_listing" id="search_listing">
                       <li>
 			<div class="hit person"></div>
 		      </li>
@@ -792,7 +793,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                                   <h4><a href="#">ODS Menu Spec Revision 0.9</a></h4>
                                   <p class="excerpt">"ODS Menu system revision was needed to improve control flow and accessibility of the ODS system and to facilitate modern interface using AJAX techniques and the OpenLink Ajax Toolkit. The aims..." <a href="="#"">More...</a></p>
                                   <div class="props">
-                                    Updated <span class="date">Yesterday</span> by <a href="#">Yrjänä Rankka</a><br/>                        
+                                    Updated <span class="date">Yesterday</span> by <a href="#">Yrjänä Rankka</a><br/>
                                   </div>
                                 </div>
                               </div>
@@ -808,64 +809,64 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                                   <h4><a href="#">New OAT demo page</a></h4>
                                   <p class="excerpt">"All, See <a href="http://oat.openlinksw.com">OAT demo</a> and tell me what to do with it? I'm Uh-Ohing all over the place but it won't do me any..." <a href="="#"">More...</a></p>
                                   <div class="props">
-                                    Received <span class="date">Yesterday at 12:32</span>                      
+                                    Received <span class="date">Yesterday at 12:32</span>
                                   </div>
                                   <div class="cmds"><button>Reply</button><button>Forward</button></div>
                                 </div>
                               </div>
                             </li>
--->          
-                          </ul>
-                          <div class="pager" id="bottom_pager">Results 0: 
-                            <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
-                            <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
-                            <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
-                            <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
-                          </div> <!-- pager -->
-          
-                        </div>
-                      </div> <!-- .tab_page -->
-                      </div> <!-- .tab_page --> 
+-->
+                    </ul>
+                    <div class="pager" id="bottom_pager">Results 0:
+                      <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
+                      <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
+                      <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
+                      <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
+                    </div> <!-- pager -->
+
+                  </div>
+                </div> <!-- .tab_page -->
+              </div> <!-- .tab_page -->
               <div id="searchP2" class="tab_page">
 		<div id="searchMap"></div>
-                </div>          
+	      </div>
             </div> <!-- .tab_deck -->
-                    <div id="connectionsSearch_C" style="display:none;">
-                    <table>
-                        <colgroup>
-                          <col width="20%" span="1"/>
-                          <col width="10%" span="1"/>
-                          <col width="20%" span="1"/>
-                          <col width="70%" span="1"/>
-                        </colgroup>
+            <div id="connectionsSearch_C" style="display:none;">
+              <table>
+		<colgroup>
+                  <col width="20%" span="1"/>
+                  <col width="10%" span="1"/>
+                  <col width="20%" span="1"/>
+                  <col width="70%" span="1"/>
+		</colgroup>
 		<tbody>
 		  <tr>
-                         <td class="ctl_title">First Name</td>
-                         <td align="left"><input type="text" value="" name="us_first_name"/></td>
-                         <td class="ctl_title">Last Name</td>
-                         <td align="left"><input type="text" value="" name="us_last_name"/></td>
-                        </tr>
-                        <tr>
-                         <td class="ctl_title">Keywords</td>
-                         <td align="left">
-                                <input type="text" value="borislav" name="us_keywords"/>
-                               </td>
-                         <td class="ctl_title">Tags</td>
-                         <td align="left">
-                                <input type="text" value="" name="us_tags"/>
-                               </td>
-                        </tr>
-                        <tr>
-                          <td class="ctl_title">Within</td>
-                         <td align="left">
+                    <td class="ctl_title">First Name</td>
+                    <td align="left"><input type="text" value="" name="us_first_name"/></td>
+                    <td class="ctl_title">Last Name</td>
+                    <td align="left"><input type="text" value="" name="us_last_name"/></td>
+                  </tr>
+                  <tr>
+                    <td class="ctl_title">Keywords</td>
+                    <td align="left">
+                      <input type="text" value="borislav" name="us_keywords"/>
+                    </td>
+                    <td class="ctl_title">Tags</td>
+                    <td align="left">
+                      <input type="text" value="" name="us_tags"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="ctl_title">Within</td>
+                    <td align="left">
                       <select name="us_within_friends">
 			<option selected="selected" value="0">All</option>
 			<option value="1">Friends</option>
 			<option value="2">Friends of Friends</option>
 		      </select>
-                         </td>
-                         <td class="ctl_title">Within members of</td>
-                         <td align="left">
+                    </td>
+                    <td class="ctl_title">Within members of</td>
+                    <td align="left">
                       <select name="us_within_members">
 			<option selected="selected" value="">
 			  All Instances
@@ -896,60 +897,60 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 			<option value="22">org's Community</option>
 			<option value="23">org's Gallery</option>
 		      </select>
-                         </td>
-                        </tr>
-                        <tr>
-                         <td class="ctl_title">Within Distance</td>
-                          <td align="left" colspan="3">
-                        <input type="text" value="" name="us_dist_km"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="ctl_title">Within Distance</td>
+                    <td align="left" colspan="3">
+                      <input type="text" value="" name="us_dist_km"/>
                       <select name="us_dist_kind">
 			<option selected="selected" value="0">km</option>
 			<option value="1">miles</option>
 		      </select>
-                        of Lat: 
-                        <input type="text" value="" name="us_dist_pt_lat"/>
-                        Lng: 
-                        <input type="text" value="" name="us_dist_pt_lng"/>
-                        </td>
-                        </tr>
-                        <tr>
-                         <td class="ctl_title">Order by</td>
-                         <td align="left">
+                      of Lat: 
+                      <input type="text" value="" name="us_dist_pt_lat"/>
+                      Lng: 
+                      <input type="text" value="" name="us_dist_pt_lng"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="ctl_title">Order by</td>
+                    <td align="left">
                       <select name="us_oby">
 			<option selected="selected" value="0">Name</option>
 			<option value="1">Relevance</option>
 			<option value="2">Distance</option>
 			<option value="3">Time</option>
 		      </select>
-                         </td>
-                         <td class="ctl_title">Output as</td>
-                         <td align="left">
+                    </td>
+                    <td class="ctl_title">Output as</td>
+                    <td align="left">
                       <select name="us_out_as">
 			<option value="Report">Report</option>
 			<option selected="selected" value="Map">Map</option>
 		      </select>
-                         </td>
-                        </tr>
-                        <tr>
-                         <td class="ctl_title">Max rows</td>
-                         <td align="left">
-                          <input type="text" value="100" name="us_max_rows"/>
-                         </td>
-                        </tr>
-                        <tr>
-                         <td> </td>
-                         <td colspan="3">
-                          <span class="fm_ctl_btn">
-                           <input type="submit" value="Search" name="user_search"/>
-                          </span>
-                         </td>
-                        </tr>
-                       </tbody>
-                     </table>
-                    </div><!-- connectionsSearch_C -->   
-          </div><!-- generalSearch_C -->   
-	  
-  	      <!-- General search end-->
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="ctl_title">Max rows</td>
+                    <td align="left">
+                      <input type="text" value="100" name="us_max_rows"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td> </td>
+                    <td colspan="3">
+                      <span class="fm_ctl_btn">
+			<input type="submit" value="Search" name="user_search"/>
+                      </span>
+                    </td>
+                  </tr>
+		</tbody>
+              </table>
+            </div> <!-- connectionsSearch_C -->
+          </div> <!-- generalSearch_C -->
+
+  	<!-- General search end -->
 
         </div> <!-- #APP -->
         <div id="FT">
@@ -964,88 +965,88 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
     <div id="app_create_dialog" class="ods_dialog" style="display: none;">
       <div class="dlg_title"><h3>Blog Setup</h3></div>
       <div class="wizard">
-        <ul class="tab_bar">
-          <li class="sel">Information</li>
-          <li>Advanced</li>
-          <li>Finish Up</li>
-        </ul> <!-- wizard_tabbar -->
-        <div class="tab_deck">
-          <div class="wizard_page">
+	<ul class="tab_bar">
+	  <li class="sel">Information</li>
+	  <li>Advanced</li>
+	  <li>Finish Up</li>
+	</ul> <!-- wizard_tabbar -->
+	<div class="tab_deck">
+	  <div class="wizard_page">
             <h3>Information</h3>
             <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
             <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
-          </div><!-- wizard_page -->
-          <div class="wizard_page" style="display: none">
+	  </div><!-- wizard_page -->
+	  <div class="wizard_page" style="display: none">
             <h3>Advanced</h3>
             <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
             <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
-          </div><!-- wizard_page -->
-          <div class="wizard_page" style="display: none">
+	  </div><!-- wizard_page -->
+	  <div class="wizard_page" style="display: none">
             <h3>Finishing up</h3>
             <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
             <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
-          </div><!-- wizard_page -->
-        </div> <!-- .tab_deck --> 
-        <div class="wizard_btnbar">
-          <button>Back</button>
-          <button>Continue</button>
-          <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Cancel</button>
-          <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Finish</button>
-        </div> <!-- wizard_btnbar -->
+	  </div><!-- wizard_page -->
+	</div> <!-- .tab_deck -->
+	<div class="wizard_btnbar">
+	  <button>Back</button>
+	  <button>Continue</button>
+	  <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Cancel</button>
+	  <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Finish</button>
+	</div> <!-- wizard_btnbar -->
       </div> <!-- wizard -->
-    </div>    
+    </div>
     <div id="conn_del_confirm_dialog" class="ods_dialog" style="display: none;">
       <div class="dlg_title"><h3>Delete connection</h3></div>
       <div class="dlg_content">
-        <p class="dlg_msg">Are you sure you want to delete connection with Yrjana Rankka.</p>
-        <p class="dlg_explain">The user will not receive notification.</p>
+	<p class="dlg_msg">Are you sure you want to delete connection with Yrjana Rankka.</p>
+	<p class="dlg_explain">The user will not receive notification.</p>
 	<div class="dlg_btn_row">
 	  <button onclick="conn_del_dlg_hide()">Delete connection</button>
 	  <button onclick="conn_del_dlg_hide()">Cancel</button>
 	</div>
       </div> <!-- dlg_content -->
     </div> <!-- #conn_del_confirm_dialog -->
-    
+
     <div id="connection_info_bubble" class="a_bubble conn_info_bubble" style="display: none">
       <div class="lt">
-        <img src="people/kidehen_large.jpg" alt="Kingsley Idehen" />
+	<img src="people/kidehen_large.jpg" alt="Kingsley Idehen" />
       </div> <!-- .lt -->
       <div class="rt">
-        <ul class="menu">
+	<ul class="menu">
           <li><a href="javascript:void(0)">Profile</a></li>
           <li><a href="javascript:void(0)">Add Connection / Disconnect</a></li>
           <li><a href="javascript:void(0)">Connections</a></li>
           <li><a href="javascript:void(0)">Browse Data Space</a></li>
-        </ul>
+	</ul>
       </div> <!-- .rt -->
     </div>
-    
+
     <div id="a_tmpl_1" class="oat_anchor_bubble">
       <div class="oat_anchor_title_ctr">
-        <h2 class="oat_anchor_title_text_ctr"></h2>
-<!--
-        <img class="oat_a_max_btn" src="skin/i/maximize_b.png" alt="maximize"/>
-        <img class="oat_a_min_btn" src="skin/i/minimize_b.png" alt="minimize"/>
-        <img class="oat_a_close_btn" src="skin/i/close_b.png" alt="close"/>
--->
+	<h2 class="oat_anchor_title_text_ctr"></h2>
+	<!--
+            <img class="oat_a_max_btn" src="skin/i/maximize_b.png" alt="maximize"/>
+            <img class="oat_a_min_btn" src="skin/i/minimize_b.png" alt="minimize"/>
+            <img class="oat_a_close_btn" src="skin/i/close_b.png" alt="close"/>
+	    -->
       </div> <!-- .oat_anchor_title_ctr -->
       <div class="oat_anchor_content">
-      <!-- Add content here -->
+	<!-- Add content here -->
       </div> <!-- oat_anchor_content" -->
       <div class="oat_anchor_footer">
       </div> <!-- .oat_anchor_footer -->
     </div> <!-- #a_tmpl_1 -->
 
     <div id="login_page" style="display:none">
-    <span id="loginCloseBtn">X</span>
+      <span id="loginCloseBtn">X</span>
       <h1 class="page_title"><!--balek.zonk.net--></h1>
       <div id="id_col">
-        <div id="site_id">
+	<div id="site_id">
           <img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" />
-        </div>
+	</div>
       </div> <!-- id_col -->
       <div id="form_col">
-        <div id="login_form_ctr">
+	<div id="login_form_ctr">
           <h2>Please identify yourself</h2>
           <div id="login_form" style="padding: 10px 0px 0px 0px;">
             <ul class="tab_bar">
@@ -1060,54 +1061,48 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               <div id="loginPCtr"></div>
               <div id="loginP1" class="tab_page">
 		<label for="loginUserName">Member ID</label>
-		<input type="text" 
-		       name="loginUserName" 
-		       value="" 
+		<input type="text"
+		       name="loginUserName"
+		       value=""
 		       id="loginUserName"/><br />
 		<label for="loginUserPass">Password</label>
-		<input type="password" 
-		       name="loginUserPass" 
-		       value="" 
+		<input type="password"
+		       name="loginUserPass"
+		       value=""
 		       id="loginUserPass" /><br />
               </div>
-              <div id="loginP2" 
-		   class="tab_page" 
+              <div id="loginP2"
+		   class="tab_page"
 		   style="display:none">
-		<label for="loginOpenIdUrl">OpenID URL 
-		  <img src="images/login-bg.gif" 
+		<label for="loginOpenIdUrl">OpenID URL
+		  <img src="images/login-bg.gif"
 		       style="vertical-align:bottom;margin-left:5px;"/>
 		</label>
-		<input type="text" 
-		       name="loginOpenIdUrl" 
-		       value="" 
+		<input type="text"
+		       name="loginOpenIdUrl"
+		       value=""
 		       id="loginOpenIdUrl" /><br />
               </div>
             </div> <!-- tab_deck -->
             <div id="login_ctrls">
-              <input type="checkbox" 
-		     name="cb_remember_me" 
-		     value="1" 
-		     id="login_frm_cb_remember_me" 
+              <input type="checkbox"
+		     name="cb_remember_me"
+		     value="1"
+		     id="login_frm_cb_remember_me"
 		     checked="1"/>
 	      <label for="login_frm_cb_remember_me">Remember me</label><br />
               <input type="button" name="loginBtn" value="Login" id="loginBtn" />
               <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
-              <span id="loginThrobber" style="display:none">Logging in ... 
+              <span id="loginThrobber" style="display:none">Logging in ...
 		<img src="images/oat/throbber.gif"/>
 	      </span>
               <br/>
               <a id="loginForgot" style="display:none">Forgot your password?</a>
             </div>
           </div> <!-- login_form -->
-        </div> <!-- login_form_ctr -->
-       <div id="loginErrDiv"></div> 
+	</div> <!-- login_form_ctr -->
+	<div id="loginErrDiv"></div>
       </div> <!-- form_col -->
     </div> <!-- login_page -->
-
-
-
-
-
- </body>
+  </body>
 </html>
-

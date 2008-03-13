@@ -170,9 +170,9 @@ tmp := uuid ();
 	  goto _found;
 	}
       else if (length (dta) and length (dta[0]) > 2)
-    {
-      iri := dta[0][0];
-      name := dta[0][1];
+	{
+	  iri := dta[0][0];
+	  name := dta[0][1];
 	  descr := coalesce (dta[0][2], descr);
 	  goto _found;
 	}

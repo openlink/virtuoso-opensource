@@ -314,9 +314,9 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
        where WAI_NAME = WAM_INST
          and WAM_USER = uid
          and WAM_APP_TYPE = inst_type do
-      {
+    {
       ret := '';
-	inst := WAI_INST;
+    	inst := WAI_INST;
     	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_user_items'));
     	if (h)
     	  {
@@ -324,32 +324,32 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
     	  }
     	else
     	  {
-	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
-	if (h)
-	  {
-	    ret := call (h) (inst);
+    	    h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
+    	    if (h)
+    	      {
+    	        ret := call (h) (inst);
     	      }
     	  }
 	    if (length (ret))
 	      {
-		declare xp any;
-		ret := xtree_doc (ret);
+      		declare xp any;
+      		ret := xtree_doc (ret);
 
-		xp := xpath_eval ('//*[title]', ret, 0);
-		foreach (any ret1 in xp) do
-		  {
-		    title := substring (xpath_eval ('string(title/text())', ret1), 1, 1024);
-		    ts := xpath_eval ('string (dt/text())', ret1);
-		    author := xpath_eval ('string (from/text())', ret1);
-		    url := xpath_eval ('string (link/text())', ret1);
-		    uname := cast(xpath_eval ('string (uid/text())', ret1) as varchar);
-		    email := cast(xpath_eval ('string (email/text())', ret1) as varchar);
+      		xp := xpath_eval ('//*[title]', ret, 0);
+      		foreach (any ret1 in xp) do
+      		  {
+      		    title := substring (xpath_eval ('string(title/text())', ret1), 1, 1024);
+      		    ts := xpath_eval ('string (dt/text())', ret1);
+      		    author := xpath_eval ('string (from/text())', ret1);
+      		    url := xpath_eval ('string (link/text())', ret1);
+      		    uname := cast(xpath_eval ('string (uid/text())', ret1) as varchar);
+      		    email := cast(xpath_eval ('string (email/text())', ret1) as varchar);
 
-		    ts := cast (ts as datetime);
-		    result (WAM_INST, title, ts, author, url, uname, email);
-		  }
-	     }
-	  }
+      		    ts := cast (ts as datetime);
+      		    result (WAM_INST, title, ts, author, url, uname, email);
+		        }
+	      }
+    }
 };
 
 
@@ -447,7 +447,7 @@ create procedure wa_expand_url (in url varchar, in pars varchar)
   declare hf any;
   url := cast (url as varchar);
   hf := WS.WS.PARSE_URI (url);
-  
+
   if (pars is not null)
     pars := trim (pars, '&');
   if (hf[0] <> '' and hf[1] <> WA_GET_HOST ())

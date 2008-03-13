@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -40,41 +39,41 @@
       <vm:navigation2 on="sn_connections"/>
       <vm:rawheader caption="My Connections"/>
       <vm:body>
-	  <vm:login redirect="sn_connections.vspx"/>
-	      <v:local-variable name="lv1">
-		<v:after-data-bind>
+        <vm:login redirect="sn_connections.vspx"/>
+        <v:local-variable name="lv1">
+          <v:after-data-bind>
 
-		  whenever not found goto nf;
+  whenever not found goto nf;
 
-		  self.for_user := coalesce (self.fname, self.u_name);
-		  select sne_id into self.sne_id from sn_entity where sne_name = self.for_user;
-		  select count(*) into self.conn_num from sn_related where
-		  (snr_from = self.sne_id or snr_to = self.sne_id);
-		  nf:;
-		</v:after-data-bind>
-	      </v:local-variable>
+  self.for_user := coalesce (self.fname, self.u_name);
+  select sne_id into self.sne_id from sn_entity where sne_name = self.for_user;
+  select count(*) into self.conn_num from sn_related where
+    (snr_from = self.sne_id or snr_to = self.sne_id);
+   nf:;
+          </v:after-data-bind>
+        </v:local-variable>
         <div id="LT">
-	      <table class="listing">
-	    <v:data-set
-		name="ds_conn"
-                sql="select sne_name, sne_org_id, u_full_name, u_id 
-                       from sn_related, sn_entity, sys_users 
-                       where snr_to = sne_id and 
-                             snr_from = :uid and 
+	  <table class="listing">
+            <v:data-set
+                name="ds_conn"
+                sql="select sne_name, sne_org_id, u_full_name, u_id
+                       from sn_related, sn_entity, sys_users
+                       where snr_to = sne_id and
+                             snr_from = :uid and
                              sne_name = u_name
-                       union all 
-                         select sne_name, sne_org_id, u_full_name, u_id 
-                           from sn_related, sn_entity, sys_users 
-                           where snr_from = sne_id and 
-                                 snr_to = :uid and 
+                       union all
+                         select sne_name, sne_org_id, u_full_name, u_id
+                           from sn_related, sn_entity, sys_users
+                           where snr_from = sne_id and
+                                 snr_to = :uid and
                                  sne_name = u_name"
-		nrows="1000"
-		cursor-type="dynamic"
-		scrollable="1"
+                nrows="1000"
+                cursor-type="dynamic"
+                scrollable="1"
                 editable="1">
-		<v:param name="uid" value="--self.sne_id"/>
-		<v:template type="repeat" name="ds_conn_rep">
-		    <v:template name="ds_conn_no" type="if-not-exists">
+              <v:param name="uid" value="--self.sne_id"/>
+              <v:template type="repeat" name="ds_conn_rep">
+                <v:template name="ds_conn_no" type="if-not-exists">
                   <tr><td colspan="2">You have no connections. Why not <vm:url name="sn_send_new_inv_2" value="invite" url="sn_make_inv.vspx"/> some?</td></tr>
                 </v:template>
                 <v:template name="ds_conn_yes" type="if-exists">
@@ -82,27 +81,27 @@
                     <th>Name</th>
                     <th>Action</th>
                   </tr>
-		    </v:template>
-		    <v:template type="browse" name="ds_conn_brows">
-			<tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
-			    <td>
-                      <v:url name="l1" 
+                </v:template>
+                <v:template type="browse" name="ds_conn_brows">
+                  <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+                    <td>
+                      <v:url name="l1"
                              value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[0])"
                              url="--sprintf ('/dataspace/%s/%U#this', wa_identity_dstype((control.vc_parent as vspx_row_template).te_rowset[0]),(control.vc_parent as vspx_row_template).te_rowset[0])"/>
-			    </td>
-			    <td>
-                      <v:url name="u1" 
-                             value="vCard" 
+                    </td>
+                    <td>
+                      <v:url name="u1"
+                             value="vCard"
                              xhtml_title="Download vCard"
                              url="--sprintf ('sn_user_export.vspx?ufname=%U&amp;ufid=%d', (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[3])" />
-                      <v:url name="del2" 
-                             value="Delete" 
+                      <v:url name="del2"
+                             value="Delete"
                              xhtml_title="Delete contact"
-			        url="--sprintf ('sn_delete.vspx?sn=%s&amp;l=1', (control.vc_parent as vspx_row_template).te_rowset[0])"	/>
-			    </td>
-			</tr>
-		    </v:template>
-		</v:template>
+                             url="--sprintf ('sn_delete.vspx?sn=%s&amp;l=1', (control.vc_parent as vspx_row_template).te_rowset[0])"	/>
+                    </td>
+                  </tr>
+                </v:template>
+              </v:template>
 	    </v:data-set>
 	  </table>
         </div><!-- LT -->

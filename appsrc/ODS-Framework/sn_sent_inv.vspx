@@ -39,29 +39,29 @@
       <vm:navigation2 on="sn_sent_inv"/>
       <vm:rawheader caption="My Connections"/>
       <vm:body>
-	  <vm:login redirect="index.vspx"/>
+        <vm:login redirect="index.vspx"/>
         <div id="LT">
-	      <v:local-variable name="lv1">
-		<v:after-data-bind>
-		  select sne_id into self.sne_id from sn_entity where sne_name = self.u_name;
-		  select count(*) into self.conn_num from sn_invitation where
-		  	sni_from = self.sne_id and sni_status = 0;
-		</v:after-data-bind>
-	      </v:local-variable>
+          <v:local-variable name="lv1">
+            <v:after-data-bind>
+  select sne_id into self.sne_id from sn_entity where sne_name = self.u_name;
+  select count(*) into self.conn_num from sn_invitation where
+  sni_from = self.sne_id and sni_status = 0;
+            </v:after-data-bind>
+          </v:local-variable>
           <vm:if test="self.conn_num">
             <p>You have <v:label name="lnc1" value="--self.conn_num" format="%d"/> sent invitations pending acceptance.</p>
           </vm:if>
-	      <table class="listing">
-	    <v:data-set
-		name="ds_conn"
-		sql="select sni_to, sni_status from sn_invitation where sni_from = :uid and sni_status in (0, -1)"
-		nrows="1000"
-		cursor-type="dynamic"
-		scrollable="1"
+          <table class="listing">
+            <v:data-set
+              name="ds_conn"
+              sql="select sni_to, sni_status from sn_invitation where sni_from = :uid and sni_status in (0, -1)"
+              nrows="1000"
+              cursor-type="dynamic"
+              scrollable="1"
               editable="1">
-		<v:param name="uid" value="--self.sne_id"/>
-		<v:template type="repeat" name="ds_conn_rep">
-		    <v:template name="ds_conn_no" type="if-not-exists">
+              <v:param name="uid" value="--self.sne_id"/>
+              <v:template type="repeat" name="ds_conn_rep">
+                <v:template name="ds_conn_no" type="if-not-exists">
                   <tr><td colspan="2">No pending invitations</td></tr>
                 </v:template>
                 <v:template name="ds_conn_yes" type="if-exists">
@@ -70,53 +70,53 @@
                     <th>Status</th>
                     <th>Action</th>
 		  </tr>
-		    </v:template>
-		    <v:template type="browse" name="ds_conn_brows">
-			<tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
-			    <td>
-                      <v:label name="l1" 
+                </v:template>
+                <v:template type="browse" name="ds_conn_brows">
+                  <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+                    <td>
+                      <v:label name="l1"
                                value="--(control.vc_parent as vspx_row_template).te_rowset[0]" />
-			    </td>
-			    <td>
-                      <v:label name="l2" 
+                    </td>
+                    <td>
+                      <v:label name="l2"
                                value="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = 0 then 'pending' else 'rejected' end" />
-			    </td>
-			    <td>
-			      <v:button name="bt1" action="simple" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = 0 then 'Withdraw' else 'Remove' end">
-				<v:on-post>
+                    </td>
+                    <td>
+                      <v:button name="bt1" action="simple" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = 0 then 'Withdraw' else 'Remove' end">
+                        <v:on-post>
 <![CDATA[
 
-  delete from sn_invitation 
-    where sni_from = self.sne_id and 
+  delete from sn_invitation
+    where sni_from = self.sne_id and
           sni_to = (control.vc_parent as vspx_row_template).te_rowset[0];
 
-				  self.vc_data_bind (e);
+  self.vc_data_bind (e);
 
 ]]>
-				</v:on-post>
-			      </v:button>
-			    </td>
-			</tr>
-		    </v:template>
-		</v:template>
-	    </v:data-set>
-		  <tr>
-		    <td colspan="3">
-		      <span class="fm_ctl_btn">
-		      <v:button name="bt_conf3" value="Back" action="simple">
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </v:template>
+              </v:template>
+            </v:data-set>
+            <tr>
+              <td colspan="3">
+                <span class="fm_ctl_btn">
+                  <v:button name="bt_conf3" value="Back" action="simple">
                     <v:on-post>
 <![CDATA[
 
-			      self.vc_redirect ('sn_connections.vspx');
+  self.vc_redirect ('sn_connections.vspx');
 
 ]]>
                     </v:on-post>
-		      </v:button>
-		    </span>
-		    </td>
-		  </tr>
-	      </table>
-          </div>
+                  </v:button>
+                </span>
+              </td>
+            </tr>
+          </table>
+        </div>
         <div id="RT">
           <ul class="button_bar">
             <li>

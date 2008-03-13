@@ -25,18 +25,18 @@ create procedure WA_GET_EMAIL_TEMPLATE(in name varchar)
   declare ret any;
 
   if (http_map_get ('is_dav') = 0)
-    {
-      ret := file_to_string (http_root () || '/wa/tmpl/' || name);
-    }
+  {
+    ret := file_to_string (http_root () || '/wa/tmpl/' || name);
+  }
   else
-    {
-      ret := (select
-             coalesce(blob_to_string(RES_CONTENT), 'Not found...')
-           from
-             WS.WS.SYS_DAV_RES
+  {
+    ret := (select
+              coalesce(blob_to_string(RES_CONTENT), 'Not found...')
+            from
+              WS.WS.SYS_DAV_RES
            where
              RES_FULL_PATH = '/DAV/VAD/wa/tmpl/' || name );
-    }
+  }
   return ret;
 }
 ;
@@ -204,7 +204,7 @@ wa_add_col ('DB.DBA.WA_DOMAINS', 'WD_DOMAIN', 'varchar');
 wa_add_col ('DB.DBA.WA_DOMAINS', 'WD_MODEL', 'int');
 
 wa_exec_no_error_log(
-    'create table WA_MAP_HOSTS
+  'create table WA_MAP_HOSTS
     (
       WMH_HOST varchar,
       WMH_SVC  varchar,
@@ -509,11 +509,11 @@ wa_member_doinstcount()
 wa_exec_no_error_log(
 'create table WA_INVITATIONS
  (
-    WI_U_ID     int,		-- U_ID
-    WI_TO_MAIL  varchar,	-- email
-    WI_INSTANCE varchar,	-- WAI_NAME
-    WI_SID      varchar,	-- VS_SID
-    WI_STATUS   varchar,	-- pending, or rejected
+   WI_U_ID     int,		-- U_ID
+   WI_TO_MAIL  varchar,	-- email
+   WI_INSTANCE varchar,	-- WAI_NAME
+   WI_SID      varchar,	-- VS_SID
+   WI_STATUS   varchar,	-- pending, or rejected
    primary key (WI_U_ID, WI_TO_MAIL, WI_INSTANCE)
   )
 ');
@@ -524,27 +524,27 @@ wa_exec_no_error_log(
 
 
 wa_exec_no_error(
-  'create table WA_SETTINGS
-  (
-  WS_ID integer identity primary key,
-  WS_REGISTER int,
-  WS_MAIL_VERIFY int,
-  WS_VERIFY_TIP int,
-  WS_REGISTRATION_EMAIL_EXPIRY int default 24,
-  WS_JOIN_EXPIRY int default 72,
-  WS_DOMAINS varchar,
-  WS_SMTP varchar,
-  WS_USE_DEFAULT_SMTP integer,
-  WS_BRAND_NAME varchar,
-  WS_WEB_BANNER varchar,
-  WS_WEB_TITLE varchar,
-  WS_WEB_DESCRIPTION varchar,
-  WS_WELCOME_MESSAGE varchar,
+'create table WA_SETTINGS
+ (
+   WS_ID integer identity primary key,
+   WS_REGISTER int,
+   WS_MAIL_VERIFY int,
+   WS_VERIFY_TIP int,
+   WS_REGISTRATION_EMAIL_EXPIRY int default 24,
+   WS_JOIN_EXPIRY int default 72,
+   WS_DOMAINS varchar,
+   WS_SMTP varchar,
+   WS_USE_DEFAULT_SMTP integer,
+   WS_BRAND_NAME varchar,
+   WS_WEB_BANNER varchar,
+   WS_WEB_TITLE varchar,
+   WS_WEB_DESCRIPTION varchar,
+   WS_WELCOME_MESSAGE varchar,
    WS_WELCOME_MESSAGE2 varchar,
-  WS_COPYRIGHT varchar,
-  WS_DISCLAIMER varchar,
-  WS_DEFAULT_MAIL_DOMAIN varchar
-)
+   WS_COPYRIGHT varchar,
+   WS_DISCLAIMER varchar,
+   WS_DEFAULT_MAIL_DOMAIN varchar
+ )
 ')
 ;
 
@@ -833,7 +833,7 @@ create method wa_https_supported () for web_app
 create method wa_drop_instance () for web_app {
 
 /* XXX: old query
-  for (
+for (
 select
     HP_HOST as _host, HP_LISTEN_HOST as _lhost, HP_LPATH as _path, WAI_INST as _inst
   from
@@ -858,18 +858,18 @@ for select VH_HOST as _host, VH_LISTEN_HOST as _lhost, VH_LPATH as _path, WAI_IN
     -- Application additional URL
     if (not exists (select 1 from WA_INSTANCE where WAI_TYPE_NAME = _type and WAI_NAME <> self.wa_name))
     {
-    addons := inst.wa_addition_urls();
-    len := length(addons);
-    i := 0;
-    while (i < len)
-    {
-      cur_add_url := addons [i];
-      VHOST_REMOVE(
-        vhost=>_host,
-        lhost=>_lhost,
-        lpath=>cur_add_url[2]);
-      i := i + 1;
-    }
+      addons := inst.wa_addition_urls();
+      len := length(addons);
+      i := 0;
+      while (i < len)
+      {
+        cur_add_url := addons [i];
+        VHOST_REMOVE(
+          vhost=>_host,
+          lhost=>_lhost,
+          lpath=>cur_add_url[2]);
+        i := i + 1;
+      }
     }
     -- Instance additional URL
     addons := inst.wa_addition_instance_urls(_path);
@@ -1330,7 +1330,7 @@ wa_exec_no_error(
 
 create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
 
--- BEGIN Add activity 
+-- BEGIN Add activity
   declare _act,_inst_type varchar;
   declare _inst_id integer;
   _inst_id:=(select WAI_ID from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
@@ -1338,7 +1338,7 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
     _inst_type:=N.WAM_APP_TYPE;
   else
     _inst_type:=(select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
-    
+
 
   _act:=sprintf('<a href="http://%s">%s</a> added the <a href="http://%s" >%s</a> application.',WA_CNAME ()||WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_CNAME ()||WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
   OPEN_SOCIAL.DBA.add_ods_activity(N.WAM_USER,_inst_id,_act,'system','add','application',WA_APP_INSTANCE_DATASPACE(N.WAM_INST));
@@ -1365,22 +1365,23 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
 
   wa.wa_notify_member_changed(N.WAM_USER, null, N.WAM_MEMBER_TYPE, null, N.WAM_DATA, null, N.WAM_STATUS);
 
-  
-  
+
+
   return;
 }
 ;
 
--- zdravko
 create trigger WA_INSTANCE_I after insert on WA_INSTANCE
 {
   update DB.DBA.WA_MEMBER set WAM_IS_PUBLIC = WAI_IS_PUBLIC where WAM_INST = WAI_NAME;
   update DB.DBA.WA_MEMBER set WAM_MEMBERS_VISIBLE = WAI_MEMBERS_VISIBLE where WAM_INST = WAI_NAME;
   update WA_MEMBER set WAM_HOME_PAGE = wa_set_url_t (WAI_INST) where WAM_INST = WAI_NAME;
   update WA_MEMBER set WAM_APP_TYPE = wa_get_type_from_name (WAM_INST) where WAM_INST = WAI_NAME;
+
+
+
 }
 ;
--- zdravko
 
 create trigger WA_MEMBER_U after update on WA_MEMBER referencing old as O, new as N
 {
@@ -1392,17 +1393,16 @@ create trigger WA_MEMBER_U after update on WA_MEMBER referencing old as O, new a
 }
 ;
 
--- zdravko
 create trigger WA_INSTANCE_U after update on WA_INSTANCE referencing old as O, new as N
 {
   declare wa web_app;
 
   update DB.DBA.WA_MEMBER
      set WAM_IS_PUBLIC = N.WAI_IS_PUBLIC,
-      WAM_MEMBERS_VISIBLE = N.WAI_MEMBERS_VISIBLE,
-      WAM_HOME_PAGE = wa_set_url_t (N.WAI_INST),
-      WAM_APP_TYPE = wa_get_type_from_name (WAM_INST)
-      where WAM_INST = N.WAI_NAME;
+         WAM_MEMBERS_VISIBLE = N.WAI_MEMBERS_VISIBLE,
+         WAM_HOME_PAGE = wa_set_url_t (N.WAI_INST),
+         WAM_APP_TYPE = wa_get_type_from_name (WAM_INST)
+   where WAM_INST = N.WAI_NAME;
 
   if (
       (O.WAI_NAME <> N.WAI_NAME) or
@@ -1419,18 +1419,17 @@ create trigger WA_INSTANCE_U after update on WA_INSTANCE referencing old as O, n
 	    call (m) (wa, vector (O.WAI_NAME, O.WAI_IS_PUBLIC), vector (N.WAI_NAME, N.WAI_IS_PUBLIC));
   }
   if (O.WAI_NAME <> N.WAI_NAME)
-    {
-      wa := N.WAI_INST;
-      wa.wa_name := N.WAI_NAME;
+  {
+    wa := N.WAI_INST;
+    wa.wa_name := N.WAI_NAME;
 
-      set triggers off;
-      update WA_INSTANCE set WAI_INST = wa where WAI_NAME = N.WAI_NAME;
-      update WA_INVITATIONS set WI_INSTANCE = N.WAI_NAME where WI_INSTANCE = O.WAI_NAME;
-      set triggers on;
-    }
+    set triggers off;
+    update WA_INSTANCE set WAI_INST = wa where WAI_NAME = N.WAI_NAME;
+    update WA_INVITATIONS set WI_INSTANCE = N.WAI_NAME where WI_INSTANCE = O.WAI_NAME;
+    set triggers on;
+  }
 }
 ;
--- zdravko
 
 create trigger WA_MEMBER_D after delete on WA_MEMBER
 {
@@ -1439,7 +1438,7 @@ create trigger WA_MEMBER_D after delete on WA_MEMBER
     return;
   };
   select WAI_INST into wa from WA_INSTANCE where WAI_NAME = WAM_INST;
-  wa.wa_notify_member_changed(WAM_USER, WAM_MEMBER_TYPE, null, WAM_DATA, null, WAM_STATUS, null);
+  wa.wa_notify_member_changed (WAM_USER, WAM_MEMBER_TYPE, null, WAM_DATA, null, WAM_STATUS, null);
   return;
 }
 ;
@@ -1495,7 +1494,6 @@ create trigger WA_MEMBER_D_DOINSTCOUNT after delete on WA_MEMBER
 }
 ;
 
--- zdravko
 create procedure wa_check_package (in pname varchar) -- Duplicate conductor procedure
 {
 
@@ -1510,7 +1508,7 @@ create procedure wa_vad_check (in pname varchar)
 {
   declare nam varchar;
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
-  				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
+  				     'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery',
 				     'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion',
 				     'polls','Polls', 'addressbook','AddressBook', 'calendar','Calendar', 'IM', 'Instant Messenger'), null);
   if (nam is null)
@@ -1541,10 +1539,6 @@ insert soft WA_MEMBER_MODEL (WMM_ID, WMM_NAME) values (3, 'Approval Based')
 
 delete from WA_MEMBER_MODEL where WMM_NAME = 'Notify owner via E-mail'
 ;
-
--- zdravko
-
--- zdravko
 
 
 --insert soft WA_MEMBER_MODEL (WMM_ID, WMM_NAME) values (4, 'Notify owner via E-mail')
@@ -1635,9 +1629,9 @@ create procedure WA_CNAME ()
     ret := default_host;
   else
     {
-  ret := sys_stat ('st_host_name');
-  if (server_http_port () <> '80')
-    ret := ret ||':'|| server_http_port ();
+      ret := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+	ret := ret ||':'|| server_http_port ();
     }
   connection_set ('WA_CNAME', ret);
   return ret;
@@ -1766,49 +1760,49 @@ create procedure INIT_SERVER_SETTINGS ()
 
   cnt := (select count(*) from WA_SETTINGS);
   if (cnt > 1)
-    {
-      declare fr int;
+  {
+    declare fr int;
     fr := (select top 1 WS_ID from WA_SETTINGS order by WS_ID);
 
     delete from WA_SETTINGS where WS_ID > fr;
-    }
+  }
   else if (cnt = 0)
-    {
-      insert soft WA_SETTINGS
+  {
+    insert soft WA_SETTINGS
   	  (
   	   WS_REGISTER,
-	   WS_MAIL_VERIFY,
-	   WS_REGISTRATION_EMAIL_EXPIRY,
-	   WS_JOIN_EXPIRY,
-	   WS_USE_DEFAULT_SMTP,
-	   WS_MEMBER_MODEL,
-	   WS_WEB_BANNER,
-	   WS_WEB_TITLE,
-	   WS_WEB_DESCRIPTION,
-	   WS_WELCOME_MESSAGE,
+  	   WS_MAIL_VERIFY,
+  	   WS_REGISTRATION_EMAIL_EXPIRY,
+  	   WS_JOIN_EXPIRY,
+  	   WS_USE_DEFAULT_SMTP,
+  	   WS_MEMBER_MODEL,
+  	   WS_WEB_BANNER,
+  	   WS_WEB_TITLE,
+  	   WS_WEB_DESCRIPTION,
+  	   WS_WELCOME_MESSAGE,
   	   WS_WELCOME_MESSAGE2,
-	   WS_COPYRIGHT,
-	   WS_DISCLAIMER,
-	   WS_DEFAULT_MAIL_DOMAIN
-	  )
+  	   WS_COPYRIGHT,
+  	   WS_DISCLAIMER,
+  	   WS_DEFAULT_MAIL_DOMAIN
+  	  )
 	  values
 	    (
-	      1,
-	      0,
-	      24,
-	      72,
-	      0,
-	      0,
-	      'default',
-	      '',
-	      'Enter your Member ID and Password',
-	      '',
+	     1,
+	     0,
+	     24,
+	     72,
+	     0,
+	     0,
+	     'default',
+	     '',
+	     'Enter your Member ID and Password',
+	     '',
 	     '',
 	     'Copyright &copy; 2000-2008 OpenLink Software',
-	      '',
-	      sys_stat ('st_host_name')
-	      );
-    }
+	     '',
+	     sys_stat ('st_host_name')
+	    );
+  }
   update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 2000-2008 OpenLink Software';
 
   update WA_SETTINGS
@@ -3090,7 +3084,7 @@ wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_BLAT', 'REAL');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_BLNG', 'REAL');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_LATLNG_HBDEF', 'SMALLINT default 0');
 
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_JOIN_DATE', 'DATETIME','UPDATE DB.DBA.WA_USER_INFO SET WAUI_JOIN_DATE = now()');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_JOIN_DATE', 'DATETIME', 'UPDATE DB.DBA.WA_USER_INFO SET WAUI_JOIN_DATE = now()');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SITE_NAME', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTERESTS', 'LONG VARCHAR');
@@ -3100,8 +3094,8 @@ create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
   if (exists (select 1 from SYS_COLS where \COLUMN = 'WAUI_FOAF' and \TABLE = 'DB.DBA.WA_USER_INFO' and COL_DTP = 125))
     return;
-wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
-wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
+  wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
+  wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
 };
 
 WA_USER_INFO_WAUI_FOAF_UPGRADE ();
@@ -3176,7 +3170,7 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N 
 create procedure WA_USER_INFO_NICK_UPGRADE ()
 {
   if (registry_get ('__WA_USER_INFO_NICK_UPGRADE') = 'done-1')
-  return;
+    return;
   for select U_ID, U_NAME, WAUI_FIRST_NAME as fn, WAUI_LAST_NAME as ln, WAUI_NICK as _WAUI_NICK
     from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and (WAUI_NICK is null or WAUI_NICK like '%-nick-%') do
     {
@@ -3188,9 +3182,9 @@ create procedure WA_USER_INFO_NICK_UPGRADE ()
 	}
       else if (length(fn) and length (ln))
 	{
-        nick := fn||'.'||ln;
-      if (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
-	nick := null;
+          nick := fn||'.'||ln;
+          if (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
+	    nick := null;
 	}
       if (nick is null)
 	nick := U_NAME;
@@ -3889,7 +3883,7 @@ create procedure WA_TAG_PREPARE (inout tag varchar)
 	  t := replace(t, ' ', '_');
 	  t := replace(t, '.', '_');
 	  if (length (t))
-	  tag := tag || ', ' || t;
+ 	    tag := tag || ', ' || t;
 	}
       tag := trim (tag, ', ');
     }
@@ -4181,19 +4175,19 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
 
     if (_WAUI_LATLNG_HBDEF=0)
     {
-    if (atoi(visb[39]) = 3 or (atoi(visb[39]) = 2 and not(is_friend)))
-      {
-	  _WAUI_LAT := null;
-	  _WAUI_LNG := null;
-      }
-    else if (atoi(visb[39]) = 1 and umode = 1)
-      {
-	  _data := concat(_data, ' ', cast (_WAUI_LAT as varchar));
-	  _data := concat(_data, ' ', cast (_WAUI_LNG as varchar));
+       if (atoi(visb[39]) = 3 or (atoi(visb[39]) = 2 and not(is_friend)))
+       {
+         _WAUI_LAT := null;
+         _WAUI_LNG := null;
+       }
+       else if (atoi(visb[39]) = 1 and umode = 1)
+       {
+         _data := concat(_data, ' ', cast (_WAUI_LAT as varchar));
+         _data := concat(_data, ' ', cast (_WAUI_LNG as varchar));
        };
-       
+
     }else if(_WAUI_LATLNG_HBDEF=1)
-    {  
+    {
        if (atoi(visb[47]) = 3 or (atoi(visb[47]) = 2 and not(is_friend)))
        {
          _WAUI_BLAT := null;
@@ -4203,8 +4197,8 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
        {
          _data := concat(_data, ' ', cast (_WAUI_BLAT as varchar));
          _data := concat(_data, ' ', cast (_WAUI_BLNG as varchar));
-      }
-       
+       }
+
     };
 
     if (atoi(visb[48]) = 3 or (atoi(visb[48]) = 2 and not(is_friend)))
@@ -4395,7 +4389,6 @@ select
     and exists (select 1 from WA_USER_INFO where WAUI_U_ID = U_ID)
 ;
 
--- zdravko
 create procedure wa_app_menu_fill_names (in asid varchar, in arealm varchar, in user_id integer, in app_type varchar, in fname varchar default null)
 {
   declare item_name, url, ret varchar;
@@ -4576,12 +4569,12 @@ create procedure WA_APP_GET_OWNER (in inst_identity any)
 create procedure WA_USER_FULLNAME (in _identity any)
 {
   declare _u_full_name varchar;
-  
+
   if(isinteger(_identity))
     _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME)),'') from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
   else
     _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME)),_identity) from DB.DBA.WA_USER_INFO,DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and U_NAME=_identity);
-  
+
   return _u_full_name;
 }
 ;
@@ -4590,14 +4583,14 @@ create procedure WA_USER_FULLNAME (in _identity any)
 create procedure WA_APP_INSTANCE_DATASPACE (in inst_identity any)
 {
   declare inst_dataspace,_u_name,_inst_name,_inst_type varchar;
-  
+
   declare exit handler for sqlstate '*'{return '';};
-  
+
   if(isinteger(inst_identity))
     select U_NAME,WAM_INST,WAM_APP_TYPE into _u_name,_inst_name,_inst_type from WA_MEMBER,WA_INSTANCE,SYS_USERS where WAM_INST=WAI_NAME and WAI_ID =inst_identity and WAM_MEMBER_TYPE = 1 and WAM_USER=U_ID;
   else
     select U_NAME,WAM_INST,WAM_APP_TYPE into _u_name,_inst_name,_inst_type from WA_MEMBER,SYS_USERS where WAM_USER=U_ID and WAM_MEMBER_TYPE = 1 and WAM_INST=inst_identity;
-    
+
 
   inst_dataspace:=sprintf('/dataspace/%s/%s/%U',_u_name,wa_get_app_dataspace(_inst_type),_inst_name);
 
@@ -4607,7 +4600,7 @@ create procedure WA_APP_INSTANCE_DATASPACE (in inst_identity any)
 create procedure WA_USER_DATASPACE (in _identity any)
 {
   declare _u_name varchar;
-  
+
   if(isinteger(_identity))
     _u_name:=(select U_NAME from DB.DBA.SYS_USERS where U_ID=_identity);
   else
@@ -4615,7 +4608,7 @@ create procedure WA_USER_DATASPACE (in _identity any)
 
   declare _user_dataspace varchar;
   _user_dataspace:=sprintf('/dataspace/%s/%s#this',wa_identity_dstype(_identity),_u_name);
-  
+
   return _user_dataspace;
 }
 ;
@@ -4673,7 +4666,7 @@ create procedure WA_APP_INSTANCES_DATASPACE (in user_id integer, in app_type var
   {
     for select WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE from WA_MEMBER where WAM_USER = user_id and WAM_APP_TYPE like app_type order by WAM_INST do
     {
-      
+
       INST_OWNER:=WA_APP_GET_OWNER(WAM_INST);
       INST_DATASPACE:='/dataspace/'||INST_OWNER||'/'||app_dataspace||'/'||sprintf('%U',WAM_INST);
       result (WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE, INST_OWNER , INST_DATASPACE);
@@ -5183,7 +5176,7 @@ create procedure WA_SET_APP_URL
    declare vd_opts, h any;
    declare vd_user, vd_pp, vd_auth varchar;
 
---   dbg_obj_print ('WA_SET_APP_URL',app_id,lpath,prefix,domain,old_path,old_host,old_ip,silent);
+   --dbg_obj_print ('WA_SET_APP_URL',app_id,lpath,prefix,domain,old_path,old_host,old_ip,silent);
 
    if (domain is null)
      domain := '{Default Domain}';
@@ -5299,15 +5292,15 @@ create procedure WA_SET_APP_URL
        if (c_host = _vhost and lpath = '/')
          signal ('22023', 'The domain specified matches the host used to access the application configuration pages.');
 
--- checks if user's custom domain overwrites default URIQA host      
-      
+-- checks if user's custom domain overwrites default URIQA host
+
        declare uriqa_defaulthost,userdefined_host any;
        uriqa_defaulthost:=split_and_decode (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), 0, '\0\0:');
        userdefined_host:=split_and_decode (_vhost, 0, '\0\0:');
        if(uriqa_defaulthost[0]=userdefined_host[0])
        {
          signal ('22023', 'The domain specified as "My own domain" matches the default domain. Please use "Default domain".');
-        
+
        }
 
        if(locate('localhost',userdefined_host[0]))
@@ -5336,8 +5329,8 @@ create procedure WA_SET_APP_URL
        else
          _vhost := domain;
        declare exit handler for not found {
-           if (silent)
-             return;
+	   if (silent)
+	     return;
 	   rollback work;
 	   signal ('22023', sprintf ('No such wa domain %s', domain));
 	 };
@@ -5377,14 +5370,14 @@ create procedure WA_SET_APP_URL
    if (exists(select 1 from HTTP_PATH where HP_HOST= _vhost and HP_LISTEN_HOST= _lhost and HP_LPATH = lpath))
      {
        if (silent)
-	 return;
+	         return;
        signal ('42000', 'This site already exists');
      }
 
    declare _vhost_no_port any;
    _vhost_no_port:=split_and_decode (_vhost, 0, '\0\0:');
    _vhost_no_port:=_vhost_no_port[0];
-  
+
    if(_vhost_no_port<>_vhost)
    {
      if (exists(select 1 from HTTP_PATH where HP_HOST= _vhost_no_port and HP_LISTEN_HOST= _lhost and HP_LPATH = lpath))
@@ -5457,24 +5450,24 @@ create procedure WA_SET_APP_URL
   -- Check if its not already there
   if (not exists (select 1 from HTTP_PATH where HP_HOST = _vhost and HP_LISTEN_HOST = _lhost and HP_LPATH = lpath))
     {
-  VHOST_DEFINE (
-	  vhost=>_vhost,
-	  lhost=>_lhost,
-	  lpath=>lpath,
-	  ppath=>phys_path,
-	  is_dav=>vd_is_dav,
-	  is_brws=>vd_is_browse,
-	  vsp_user=>vd_user,
-	  ppr_fn=>vd_pp,
-	  auth_fn=>vd_auth,
-	  opts=>vd_opts,
-	  def_page=>def_page);
-  pos := strrchr (_vhost, ':');
-  -- no port info anymore in the vhost
-  if (pos is not null)
-    _vhost := subseq (_vhost, 0, pos);
-  insert replacing WA_VIRTUAL_HOSTS (VH_INST,VH_HOST,VH_LISTEN_HOST,VH_LPATH, VH_PAGE)
-      values (app_id, _vhost, _lhost, lpath, def_page);
+      VHOST_DEFINE (
+	      vhost=>_vhost,
+	      lhost=>_lhost,
+	      lpath=>lpath,
+	      ppath=>phys_path,
+	      is_dav=>vd_is_dav,
+	      is_brws=>vd_is_browse,
+	      vsp_user=>vd_user,
+	      ppr_fn=>vd_pp,
+	      auth_fn=>vd_auth,
+	      opts=>vd_opts,
+	      def_page=>def_page);
+      pos := strrchr (_vhost, ':');
+      -- no port info anymore in the vhost
+      if (pos is not null)
+	_vhost := subseq (_vhost, 0, pos);
+      insert replacing WA_VIRTUAL_HOSTS (VH_INST,VH_HOST,VH_LISTEN_HOST,VH_LPATH, VH_PAGE)
+	  values (app_id, _vhost, _lhost, lpath, def_page);
     }
   else if (not silent)
     {
@@ -5753,7 +5746,7 @@ create procedure WA_NEW_MAIL (in _uid varchar, in _msg any, in _domain varchar :
 	  if (length (procedure_cols (p_name)) = 3)
 	    rc := call (p_name) (_uid, _msg, _domain);
 	  else
-	  rc := call (p_name) (_uid, _msg);
+	    rc := call (p_name) (_uid, _msg);
 	  --dbg_printf ('Storing %s = %d', p_name, rc);
 	  if (rc = 1)
 	    return rc;
@@ -5906,9 +5899,10 @@ create procedure wa_make_url_from_vd (in host varchar, in lhost varchar, in path
   if (path like 'http://%')
     return rtrim(path, '/');
   else
-  return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
+    return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
 };
 
+-- NEW version of this procedure is stored in ods_api.sql and is called ODS_CREATE_NEW_APP_INST. The new version is exposed to SOAP.
 create procedure
 WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 0, in pub int := 1)
 {
@@ -5942,7 +5936,7 @@ wa_get_image_sizes(
   declare exit handler for sqlstate '*' {
     return vector(0,0);
   };
-  
+
   select blob_to_string (RES_CONTENT) into _content from WS.WS.SYS_DAV_RES where RES_ID= image_id;
 
   -- params: content, length of content, number of columns, number of rows
@@ -5964,11 +5958,11 @@ create procedure wa_make_thumbnail(
 
    declare image_name,rights varchar;
    declare curr_user_id, owner_id integer;
-   
+
    image_type:='';
-   
+
    curr_user_id:=-1;
-   
+
    whenever not found goto not_found;
    select U.U_ID
      into curr_user_id
@@ -5976,11 +5970,11 @@ create procedure wa_make_thumbnail(
    where S.VS_REALM = realm
      and S.VS_SID   = sid
      and S.VS_UID   = U.U_NAME;
-   
+
    not_found:
-   
+
    select RES_NAME,RES_OWNER,RES_PERMS,RES_TYPE into image_name,owner_id,rights,image_type from WS.WS.SYS_DAV_RES where RES_ID= image_id;
-   
+
    if(not(owner_id = curr_user_id or substring(rights,7,1) = '1')){
       return '';
    }
@@ -5989,11 +5983,11 @@ create procedure wa_make_thumbnail(
 
   select blob_to_string (RES_CONTENT)
     into _content
-    from WS.WS.SYS_DAV_RES 
+    from WS.WS.SYS_DAV_RES
    where RES_ID= image_id;
 
   if(length(_content) = 0){
-    return;  
+    return;
   }
 
   declare exit handler for sqlstate '*' {
@@ -6036,27 +6030,27 @@ return get_keyword(type_name,arr,'');
 create procedure wa_get_package_name (in type_name varchar)
 { declare arr any;
 -- arr is array of type key, value; key is WA_TYPE and value is the name(not file name) of the package that contains this type.
-  arr:=vector('Community', 'Community',   
+  arr:=vector('Community', 'Community',
 
-             'oDrive', 'oDrive',         
+             'oDrive', 'oDrive',
 
-             'WEBLOG2', 'blog2',         
+             'WEBLOG2', 'blog2',
 
-             'oGallery', 'oGallery',     
+             'oGallery', 'oGallery',
 
-             'eNews2', 'enews2',         
+             'eNews2', 'enews2',
 
-             'oWiki', 'wiki',            
+             'oWiki', 'wiki',
 
-             'oMail', 'oMail',           
+             'oMail', 'oMail',
 
-             'eCRM', 'eCRM',             
+             'eCRM', 'eCRM',
 
-             'Bookmark', 'bookmark',     
+             'Bookmark', 'bookmark',
 
-             'nntpf','Discussion',       
+             'nntpf','Discussion',
 
-             'Polls','Polls',            
+             'Polls','Polls',
 
              'AddressBook','AddressBook',
 
@@ -6064,7 +6058,7 @@ create procedure wa_get_package_name (in type_name varchar)
 
              'IM','IM');
 
-return get_keyword(type_name,arr,'');   
+return get_keyword(type_name,arr,'');
 
 
 }
@@ -6084,11 +6078,11 @@ for select WAT_NAME,WAT_TYPE from DB.DBA.WA_TYPES do
   {
     declare _inst db.dba.web_app;
     _inst:=__udt_instantiate_class (fix_identifier_case (WAT_TYPE), 0);
-    
+
     declare _options any;
     declare _url varchar;
     declare _show_logged,_show_not_logged integer;
-    
+
     _show_logged     :=0;
     _show_not_logged :=0;
 
@@ -6111,8 +6105,8 @@ for select WAT_NAME,WAT_TYPE from DB.DBA.WA_TYPES do
     {
       _show_logged     :=get_keyword('show_logged',_options,0);
       _show_not_logged :=get_keyword('show_not_logged',_options,0);
-    }      
-    
+    }
+
     res:=vector_concat(res,vector(vector('name',WAT_NAME,'url',_url,'show_logged',_show_logged,'show_not_logged',_show_not_logged)));
      _skip:;
   }
@@ -6130,13 +6124,13 @@ create procedure wa_get_user_sharedres_count
 
  shared_res_count:=0;
 
- for 
+ for
   select AI_PARENT_ID,AI_PARENT_TYPE
    from WS.WS.SYS_DAV_ACL_INVERSE
    join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
   where AI_FLAG = 'G'
         and GI_SUPER = user_id
- do       
+ do
  {
   if(AI_PARENT_TYPE='R')
      shared_res_count:=shared_res_count+1;
@@ -6144,7 +6138,7 @@ create procedure wa_get_user_sharedres_count
   {
     declare _ACL,_colACL any;
     declare _res_ACL_type integer;
-    
+
     _res_ACL_type:=0;
 
     declare exit handler for sqlstate '*' {goto _skip_currcol;};
@@ -6163,18 +6157,18 @@ create procedure wa_get_user_sharedres_count
 --    else
 --      shared_res_count:=shared_res_count+1;
 
-    _skip_currcol:;   
+    _skip_currcol:;
 
    }
 
  }
 
  return  shared_res_count;
- 
+
 }
 ;
 create procedure wa_get_col_allres_count
-( 
+(
   in _col_id integer
 )
 {  declare _res_count integer;
@@ -6186,15 +6180,15 @@ create procedure wa_get_col_allres_count
 
 skip_res_count:;
 
- for 
+ for
   select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id
- do       
+ do
  {
   _res_count:=_res_count+wa_get_col_allres_count(COL_ID);
  }
 
  return _res_count;
- 
+
 }
 ;
 
@@ -6224,7 +6218,7 @@ create procedure wa_identity_dstype (in _identity any)
 {
   declare dsname varchar;
   declare _is_org integer;
-  
+
   if(isinteger(_identity))
     _is_org:=(select WAUI_IS_ORG from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
   else
@@ -6354,7 +6348,7 @@ WA_UPGRADE_USER_SVC ()
 
 create procedure http_s ()
 {
-  
+
   if(is_https_ctx ())
      return 'https://';
   else
@@ -6369,7 +6363,7 @@ create procedure  file_dav_to_string (in file_path varchar, in dav_path varchar 
 
   if (dav_path='')
       dav_path:=file_path;
-  
+
   if (http_map_get ('is_dav') = 0)
     {
       ret := file_to_string (http_root () || file_path);
@@ -6387,12 +6381,12 @@ create procedure  file_dav_to_string (in file_path varchar, in dav_path varchar 
 
 create procedure  ods_bar_css (in img_path varchar) {
 
-  declare css_txt varchar;  
+  declare css_txt varchar;
 
   css_txt := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
                 from WS.WS.SYS_DAV_RES
                where RES_FULL_PATH = '/DAV/VAD/wa/ods-bar.css');
-  
+
   css_txt:=replace(css_txt,'"images/','"'||img_path);
 
   return css_txt;

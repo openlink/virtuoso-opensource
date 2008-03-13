@@ -50,11 +50,11 @@ FUNCTIONS
 */
 
 
-/* 
+/*
  * Util function
  * Puts a marker and adds the event handler to print the balloon on click.
 */
-function createMarker(point, icon, excerpt) 
+function createMarker(point, icon, excerpt)
 {
   var marker = new GMarker(point, icon);
 
@@ -66,7 +66,7 @@ function createMarker(point, icon, excerpt)
   return marker;
 }
 
-/* 
+/*
  * Util function
  * picks a marker icon based on the number of the points in the aggregation.
 */
@@ -78,7 +78,7 @@ function pickMarkerIcon (icons, count)
     return icons[0];
 }
 
-/* 
+/*
  * Util function
  * The ready handler for the http request to the ajax data server.
  * parses the incoming XML, puts the markers on the map and
@@ -86,7 +86,7 @@ function pickMarkerIcon (icons, count)
 */
 function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 {
-  try 
+  try
     {
       if (request.readyState == 4)
 	{
@@ -99,7 +99,7 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 	      var lng;
 	      var lat;
 	      var count;
-	      for (var i = 0; i < markers.length; i++) 
+	      for (var i = 0; i < markers.length; i++)
 		{
 		  lng = parseFloat (markers[i].getAttribute("lng"));
 		  lat = parseFloat (markers[i].getAttribute("lat"));
@@ -110,7 +110,7 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 		      if (max_bounds == null)
 			{
 			  max_bounds = new GBounds (lng,lat,lng,lat);
-	//		  alert ('NEW !minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX + 
+	//		  alert ('NEW !minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX +
 	//		      ' minY=' + max_bounds.minY + ' maxY=' + max_bounds.maxY);
 			}
 		      else
@@ -123,15 +123,15 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 			    max_bounds.minY = lat;
 			  else if (max_bounds.maxY < lat)
 			    max_bounds.maxY = lat;
-	//		  alert ('SET minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX + 
+	//		  alert ('SET minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX +
 	//		      ' minY=' + max_bounds.minY + ' maxY=' + max_bounds.maxY);
-			}   
+			}
 		    }
                   else
                     {
 		      map.addOverlay (createMarker(
-			 new GPoint(lng, lat), 
-			 pickMarkerIcon (icons, count), 
+			 new GPoint(lng, lat),
+			 pickMarkerIcon (icons, count),
 			 GXml.value (markers[i])
 		      ));
                     }
@@ -140,25 +140,25 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 		    {
 		      center = new GPoint (lng, lat);
 		    }
-		}	
-	      if (do_center == true && max_bounds != null)      
+		}
+	      if (do_center == true && max_bounds != null)
 		{
-	//	  alert ('minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX + 
+	//	  alert ('minX=' + max_bounds.minX + ' maxX=' + max_bounds.maxX +
 	//	      ' minY=' + max_bounds.minY + ' maxY=' + max_bounds.maxY);
-		  if (center == null)  
-		    center = new GPoint( 
-			(max_bounds.maxX - max_bounds.minX)/2, 
+		  if (center == null)
+		    center = new GPoint(
+			(max_bounds.maxX - max_bounds.minX)/2,
 			(max_bounds.maxY - max_bounds.minY)/2 );
 		  var delta = new GSize(max_bounds.maxX - max_bounds.minX, max_bounds.maxY - max_bounds.minY);
 		  var minZoom = map.spec.getLowestZoomLevel(center, delta, map.viewSize) + ADDITIONAL_ZOOM_LEVELS;
                   if (minZoom < MIN_ZOOM_LEVEL)
                     minZoom = MIN_ZOOM_LEVEL;
       if (custom_zoom_level<0){
-		  map.centerAndZoom(center, minZoom); 
+          map.centerAndZoom(center, minZoom);
       }else{
          if (custom_zoom_level<MIN_ZOOM_LEVEL) custom_zoom_level=MIN_ZOOM_LEVEL;
          if (custom_zoom_level>MAX_ZOOM_LEVEL) custom_zoom_level=MIN_ZOOM_LEVEL;
-         map.centerAndZoom(center, custom_zoom_level); 
+         map.centerAndZoom(center, custom_zoom_level);
       }
 
 //		  GEvent.addListener(map, "moveend", onMapMoved);
@@ -176,7 +176,7 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
     }
 }
 
-/* 
+/*
  * Util function
  * Calculates lat/lng out of screen pixels
  * Returns a GPoint
@@ -187,25 +187,25 @@ function getLatLongFromBitmapSize ( map, x, y )
   var bord = map.getBoundsLatLng();
   var zoom = map.getZoomLevel();
   var at = type.getBitmapCoordinate( bord.minY, bord.minX, zoom );
-  var offset = type.getLatLng( at.x + x, at.y + y, zoom ); 
+  var offset = type.getLatLng( at.x + x, at.y + y, zoom );
 /*  alert ('bord.minX=' + bord.minX + ' bord.minY=' + bord.minY + '\n' +
        "x=" + x + ' y=' + y + '\n' +
-  'at.x=' + at.x + ' at.y=' + at.y + '\n' + 
+  'at.x=' + at.x + ' at.y=' + at.y + '\n' +
   'offset.x=' + offset.x + ' offset.y=' + offset.y);*/
   return new GPoint (offset.x - bord.minX, Math.abs (offset.y - bord.minY));
 }
 
-/* 
+/*
  * Util function
  * Constructs the query URL to the ajax server, clears the map and sends the request
 */
-function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom_level) 
+function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom_level)
 {
-  try 
+  try
     {
       // center the map if it is the first call to the function
       var do_center = is_initial;
-      var bounds = map.getBoundsLatLng(); 
+      var bounds = map.getBoundsLatLng();
 
       var lat_min = bounds.minY;
       var lat_max = bounds.maxY;
@@ -217,17 +217,17 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom
       var lng_step = 0;
       if (is_initial == false)
         {
-	  // calculates the width and height of the icon in geo coordinates 
+	  // calculates the width and height of the icon in geo coordinates
 	  // and use that as a step for binding the points together server side
           var size = getLatLongFromBitmapSize (map, ICON_WIDTH, ICON_HEIGHT);
 	  lat_step = size.y;
 	  lng_step = size.x;
-          /*alert ('lat_min=' + lat_min + ' lat_max=' + lat_max + ' lat_step=' + lat_step + '\n' + 
+          /*alert ('lat_min=' + lat_min + ' lat_max=' + lat_max + ' lat_step=' + lat_step + '\n' +
           'lng_min=' + lng_min + ' lng_max=' + lng_max + ' lng_step=' + lng_step);*/
         }
 
-      var url = 
-	  ajax_server_url + 
+      var url =
+	  ajax_server_url +
 	  "?inst=" + inst +
 	  "&al=" + lat_min +
 	  "&ah=" + lat_max +
@@ -243,7 +243,7 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom
       };
 
       map.clearOverlays ();
-      request.send (null);	  
+      request.send (null);
     }
   catch (e)
     {
@@ -252,21 +252,21 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom
 }
 
 
-/* 
- * The Top level function : 
+/*
+ * The Top level function :
  * Inits the map into the given ID, sets the callbacks and
  * asks the ajax server for points
- * Params : 
+ * Params :
  *   div_id : the DIV to put the map in
  *   ajax_server_url : The url to ajax_server.vsp
  *   icon_base_url : The url to the icon(s)
  *   inst_id : the id of the search SQL stored in the ajax server search table
- *   
+ *
 */
 function initMap (div_id,ajax_server_url,icon_base_url,inst_id, custom_zoom_level)
 {
   if (typeof(custom_zoom_level)=='undefined') custom_zoom_level=-1;
- 
+
   var map = new GMap(document.getElementById(div_id));
   var infoOpened = false;
 
@@ -275,7 +275,7 @@ function initMap (div_id,ajax_server_url,icon_base_url,inst_id, custom_zoom_leve
   map.addControl(new GMapTypeControl());
 
   // start with all of the world centered on Burlington, MA
-  // needed so the ajax server can get all of the points and 
+  // needed so the ajax server can get all of the points and
   // autoscale correctly
   map.centerAndZoom (
       new GPoint (BURLINGTON_LNG, BURLINGTON_LAT), // on Burlington, MA
@@ -303,24 +303,24 @@ function initMap (div_id,ajax_server_url,icon_base_url,inst_id, custom_zoom_leve
   var onInfoWindowOpen = function ()
     {
       infoOpened = true;
-    };	
+    };
 
   // if no balloon redraw on move.
-  // note that we dont need the onZoom handler since the 
+  // note that we dont need the onZoom handler since the
   // gmaps will issue onMove even on zoom.
   var onMapMoved = function ()
     {
-      if( infoOpened == true ) 
+      if( infoOpened == true )
 	{
 	  infoOpened = false;
 	  return;
 	}
 
       FillIconList(map, ajax_server_url, icons, inst_id, false, null, custom_zoom_level);
-    }; 
+    };
 
   // init the map
   GEvent.addListener(map, "moveend", onMapMoved);
   FillIconList(map, ajax_server_url, icons, inst_id, true, custom_zoom_level);
-  GEvent.addListener(map, "infowindowopen", onInfoWindowOpen); 
+  GEvent.addListener(map, "infowindowopen", onInfoWindowOpen);
 }

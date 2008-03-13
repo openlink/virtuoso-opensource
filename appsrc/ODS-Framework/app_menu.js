@@ -66,9 +66,9 @@ function waLoadMenu (arr)
   return menu;
 }
 
-function mmLoadMenus() 
+function mmLoadMenus()
 {
-  if (window.app_menu_odrive) 
+  if (window.app_menu_odrive)
     return;
 
   window.app_menu_odrive = waLoadMenu (odrive_menu);
@@ -80,14 +80,14 @@ function mmLoadMenus()
   window.menu_main = waLoadMenu ([ "Main menu", null ]);
   window.app_menu_home = waLoadMenu (home_menu);
   window.menu_main.writeMenus();
- 
+
 }
 
 
-function mmFLoadMenus() 
+function mmFLoadMenus()
 {
 
-  if (window.fapp_menu_odrive) 
+  if (window.fapp_menu_odrive)
     return;
 
   window.fapp_menu_odrive = waLoadMenu (fodrive_menu);
@@ -98,5 +98,5 @@ function mmFLoadMenus()
   window.fapp_menu_gal = waLoadMenu (fgal_menu);
   window.menu_main = waLoadMenu ([ "Main menu", null ]);
   window.menu_main.writeMenus();
-} 
+}
 

@@ -70,7 +70,7 @@
                           xhtml_size="1" xhtml_MAXLENGTH="3" error-glyph="*">
 
                     <v:on-post><![CDATA[
-                  
+
                     if (self.vc_is_valid = 0 and e.ve_button = self.save1)
                       return;
 
@@ -80,14 +80,14 @@
                        )
                        {
                          if(control.ufl_value<>'N/A')
-                         { 
+                         {
                             self.vc_is_valid := 0;
                             self.vc_error_message := ' Instance maximum number is not correct.';
                             control.ufl_failed := 1;
                             return;
                          }
                        }
-                  
+
                     if (e.ve_button = self.save1)
                     {
                         update WA_TYPES
@@ -107,7 +107,7 @@
              </tr>
                </v:template>
            </v:template>
-         
+
            <v:template name="apps_footer" type="simple">
                <tr>
                  <td colspan="3" class="listing_col_action">
@@ -121,7 +121,7 @@
                        <v:on-post><![CDATA[
                          declare ds vspx_data_set;
                          declare rw vspx_row_template;
-                   
+
                          declare i int;
                          ds := self.wat;
                          i := 0;
@@ -137,7 +137,7 @@
                        <v:on-post><![CDATA[
                          declare ds vspx_data_set;
                          declare rw vspx_row_template;
-                   
+
                          declare i int;
                          ds := self.wat;
                          i := 0;

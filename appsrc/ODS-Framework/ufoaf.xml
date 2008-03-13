@@ -22,9 +22,9 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
-    xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     >
     <sql:header xmlns:sql='urn:schemas-openlink-com:xml-sql'>
@@ -59,43 +59,43 @@
 	    either (length (WAUI_YAHOO),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:yahooChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,13),1), WAUI_YAHOO,'')), NULL),
 
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1) * length (WAUI_PHOTO_URL), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:depiction', 
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1) * length (WAUI_PHOTO_URL),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:depiction',
 	    xmlattributes ( 'http://' || WA_CNAME () || WAUI_PHOTO_URL as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	       ),
 	    null),
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),  
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:birthday', substring (datestring(coalesce (WAUI_BIRTHDAY, now())), 6, 5)),
 	    null ),
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20),1) * length (WAUI_BORG_HOMEPAGE), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:workplaceHomepage', 
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20),1) * length (WAUI_BORG_HOMEPAGE),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:workplaceHomepage',
 	    xmlattributes ( WAUI_BORG_HOMEPAGE as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	       ),
 	    null),
-	    
+
 	    either (length (WAUI_INTERESTS),
-	    ( 
-	       select xmlagg (xmlelement ('http://xmlns.com/foaf/0.1/:interest', 
-		 xmlattributes ( interest as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))) 
-	       from WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_INTERESTS 
-	    )  
+	    (
+	       select xmlagg (xmlelement ('http://xmlns.com/foaf/0.1/:interest',
+		 xmlattributes ( interest as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')))
+	       from WA_USER_INTERESTS (txt) (interest varchar) P where txt = WAUI_INTERESTS
+	    )
 	    ,
 	    null),
-	    
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 18), 1) * (length(WAUI_HPHONE) + length (WAUI_HMOBILE) + length (WAUI_BPHONE)), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:phone', 
+
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 18), 1) * (length(WAUI_HPHONE) + length (WAUI_HMOBILE) + length (WAUI_BPHONE)),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:phone',
 		   xmlattributes (
-		   'tel:' || case 
-		      when length (WAUI_HPHONE) then WAUI_HPHONE 
-		      when length (WAUI_HMOBILE) then WAUI_HMOBILE 
-		      else  WAUI_BPHONE end 
+		   'tel:' || case
+		      when length (WAUI_HPHONE) then WAUI_HPHONE
+		      when length (WAUI_HMOBILE) then WAUI_HMOBILE
+		      else  WAUI_BPHONE end
 		      as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	        ),
 	    null),
-	    
+
 	    either ( equ(isnull (WAUI_LAT)+isnull(WAUI_LNG),0),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:based_near',
 	      xmlelement ('http://www.w3.org/2003/01/geo/wgs84_pos#:Point',
@@ -104,12 +104,12 @@
 	              sprintf ('%.06f', coalesce (case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end, 0)) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:long'
 		    ),
 		    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:label', 'Location')
-	         )), NULL), 
-	    
-	    either(length (WAUI_WEBPAGE), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:homepage',
+	         )), NULL),
+
+	    either(length (WAUI_WEBPAGE),
+		 xmlelement ('http://xmlns.com/foaf/0.1/:homepage',
 	          xmlattributes ( either( equ(WA_OPTION_IS_PUBLIC(u_name,7),1), WAUI_WEBPAGE,'') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')), null),
-            either (length (WAUI_HCOUNTRY) * equ(WA_OPTION_IS_PUBLIC (u_name, 15), 1),  
+            either (length (WAUI_HCOUNTRY) * equ(WA_OPTION_IS_PUBLIC (u_name, 15), 1),
 	    xmlelement ('http://www.w3.org/2001/vcard-rdf/3.0#:ADR', xmlattributes ('Resource' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:parseType'),
 	    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:label', 'Address'),
 	    xmlelement ('http://www.w3.org/2001/vcard-rdf/3.0#:Locality', WAUI_HCITY),
@@ -117,15 +117,15 @@
 	    xmlelement ('http://www.w3.org/2001/vcard-rdf/3.0#:Country', WAUI_HCOUNTRY)
 	      ), null),
 	    either (length (WAUI_RESUME) * equ(WA_OPTION_IS_PUBLIC (u_name, 34), 1),
-	      xmlelement ('http://purl.org/vocab/bio/0.1/:olb', WAUI_RESUME), null), 
-            either ( length (WA_USER_TAG_GET (u_name)), 
+	      xmlelement ('http://purl.org/vocab/bio/0.1/:olb', WAUI_RESUME), null),
+            either ( length (WA_USER_TAG_GET (u_name)),
 	    xmlelement ('http://purl.org/vocab/bio/0.1/:keywords', WA_USER_TAG_GET (U_NAME)), null) ,
 	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),
 	    xmlelement ('http://purl.org/vocab/bio/0.1/:event',
-	              xmlelement ('http://purl.org/vocab/bio/0.1/:Birth', 
+	              xmlelement ('http://purl.org/vocab/bio/0.1/:Birth',
                         xmlelement ('http://purl.org/dc/elements/1.1/:date', substring (datestring(WAUI_BIRTHDAY),1,10))
 		     )
-	     ), null)
+		   ), null)
 	    from sn_person, sys_users, WA_USER_INFO where sne_org_id = u_id and u_id = WAUI_U_ID
 	    and sne_id = :sne
 	    ]]></sql:sqlx>
@@ -133,15 +133,15 @@
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 	select xmlelement ('http://xmlns.com/foaf/0.1/:knows',
 	       xmlelement ('http://xmlns.com/foaf/0.1/:Person',
-                 xmlattributes ('http://'|| WA_CNAME ()|| '/dataspace/' || u_name || '#person' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
- 	                   either ( length (u_full_name) , 
+	       xmlattributes ('http://'|| WA_CNAME ()|| '/dataspace/' || u_name || '#person' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
+ 	                   either ( length (u_full_name) ,
 	                    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)), null),
 			    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
 
 			    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 			    	xmlattributes (
 			    	'http://'|| WA_CNAME ()|| '/dataspace/person/' || u_name || '/foaf.rdf'
-			    	as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
+				as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 
 			    ))
 			    from (
@@ -153,11 +153,11 @@
 			     ) sub
 	]]></sql:sqlx>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
-      select 
+	select
 	xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 	  xmlelement ('http://rdfs.org/sioc/ns#:Webservice',
 	xmlattributes ('http://'||WA_CNAME ()|| '/sparql/' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'))),
-	xmlelement ('http://xmlns.com/foaf/0.1/:holdsAccount', 
+	xmlelement ('http://xmlns.com/foaf/0.1/:holdsAccount',
 	xmlelement ('http://rdfs.org/sioc/ns#:User',
 	xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
 	xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
@@ -167,8 +167,8 @@
           from sn_entity, SYS_USERS where sne_name = U_NAME and sne_id = :sne
 	]]></sql:sqlx>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
-	  select 
-		xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
+	  select
+	     xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 	        xmlelement ('http://rdfs.org/sioc/types#:'||sioc..ods_sioc_type (WAI_TYPE_NAME),
 		   xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf ('/%U', wa_utf8_to_wide (WAI_NAME))  || '/sioc.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'))
 		)
@@ -176,9 +176,9 @@
 	]]></sql:sqlx>
   </foaf:Person>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
-	select 
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20), 1) * length (WAUI_BORG) * length (WAUI_BORG_HOMEPAGE), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:Organization', 
+	select
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20), 1) * length (WAUI_BORG) * length (WAUI_BORG_HOMEPAGE),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:Organization',
 	    xmlelement ('http://xmlns.com/foaf/0.1/:homepage', xmlattributes (WAUI_BORG_HOMEPAGE as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
 	        xmlelement ('http://purl.org/dc/elements/1.1/:title', WAUI_BORG)
 	       ), null)

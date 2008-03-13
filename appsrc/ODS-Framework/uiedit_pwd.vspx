@@ -39,7 +39,7 @@
         declare _secretq, _secreta varchar;
         SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER
           INTO _secretq, _secreta
-         FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+	  FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 	self.sioc_limit := coalesce (USER_GET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
 
          self.secretq := _secretq;

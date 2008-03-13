@@ -275,8 +275,8 @@
                             title="User"/>
                        <v:label name="label6"
                                 value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
-                                format="%s"/>
-                      </td>
+				format="%s"/>
+			    </td>
 			    <td>
 		       <v:check-box auto-submit="1" name="cbc" xhtml_id="--control.vc_get_name ()"
 			       initial-checked="--equ ((control.vc_parent as vspx_row_template).te_rowset[2], 0)"

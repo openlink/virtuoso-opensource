@@ -56,7 +56,7 @@
       <!--a href="ods_tutorial.html">Learn more about OpenLink Data Spaces</a-->
     </div>
   </xsl:template>
- 
+
   <xsl:template match="vm:dash-app-ads">
     <div class="widget w_dash_app_ads">
       <!-- add dismiss cookie/prefs check -->
@@ -68,29 +68,30 @@
      </vm:if>
      <vm:if test="wa_vad_check ('enews2') is not null">
        <div class="sf_blurb">
-        <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
+         <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
        </div>
      </vm:if>
      <vm:if test="wa_vad_check ('oDrive') is not null">
        <div class="sf_blurb">
-	 <vm:url
-	   value="-->
+   <vm:url
+     value="-->
 
 <!--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
-	   self.banner)"
-	   url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
+     self.banner)"
+     url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
        </div>
      </vm:if>
      <vm:if test="wa_vad_check ('wiki') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
+   <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
        </div>
      </vm:if>
      <vm:if test="wa_vad_check ('oMail') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Get your own ODS Webmail address!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
+   <vm:url value="Get your own ODS Webmail address!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
        </div>
      </vm:if -->
+
     </div>
   </xsl:template>
 
@@ -99,12 +100,12 @@
        declare active int;
        whenever not found goto nf;
        select top 1 nlog_count into active from wa_n_login;
-       nf:
+      nf:
     ?>
     <div class="widget w_activity">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
+          <img class="w_title_icon"
                src="images/icons/user_16.png"
                alt="ODS user icon" />
           <span class="w_title_text">Users <span class="usr_count"> active: <?V active ?></span></span>
@@ -117,29 +118,29 @@
       <div class="w_pane content_pane">
           <h3>Recently Signed In</h3>
           <ul class="w_act_lst">
-	<?vsp
+<?vsp
   for select top 3  nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc do
-	   {
-	      if (not length (u_full_name))
-	        u_full_name := null;
-	?>
+    {
+    if (not length (u_full_name))
+      u_full_name := null;
+?>
               <li><a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nu_name) ||'/'|| nu_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
-	<?vsp
-	   }
-	?>
+<?vsp
+    }
+?>
           <li/></ul>
           <h3>New Users</h3>
         <ul class="w_act_lst">
-	<?vsp
+<?vsp
   for select top 3  nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc do
-	   {
-	?>
-	      <li>
+    {
+?>
+        <li>
           <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
-	      </li>
-	<?vsp
-	   }
-	?>
+        </li>
+<?vsp
+    }
+?>
         <li/></ul>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
@@ -163,17 +164,17 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-      <ul>
-	<?vsp
-	for select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc do
-	{
-	?>
+        <ul>
+<?vsp
+  for select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc do
+  {
+?>
           <li><a href="&lt;?V wa_expand_url (wnb_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnb_title, 1, 55) ?></a></li>
-	<?vsp
-	}
-	?>
-      </ul>
-    </div>
+<?vsp
+  }
+?>
+        </ul>
+      </div>
       <div class="w_footer">
         <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
       </div>
@@ -196,18 +197,18 @@
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
-      <ul>
-	<?vsp
+        <ul>
+  <?vsp
   for select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
-	{
-	?>
-	  <li>
+  {
+  ?>
+    <li>
             <a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
           </li>
-	<?vsp
-	}
-	?>
-      </ul>
+  <?vsp
+  }
+  ?>
+        </ul>
       </div> <!-- w_pane content_pane -->
       <div class="w_footer">
         <a href="search.vspx?newest=news&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
@@ -219,7 +220,7 @@
     <div class="widget w_db_summary w_wiki_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
+          <img class="w_title_icon"
                src="images/icons/ods_wiki_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Wiki Activity</span>
@@ -230,25 +231,25 @@
           <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
-      <div class="w_pane content_pane"> 
-      <ul>
-	<?vsp
+      <div class="w_pane content_pane">
+        <ul>
+<?vsp
   for select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc do
-	{
-	?>
-	  <li>
+    {
+?>
+    <li>
             <a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;">
               <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
             </a>
           </li>
-	<?vsp
-	}
-	?>
-      </ul>
+<?vsp
+     }
+?>
+        </ul>
       </div> <!-- content_pane -->
       <div class="w_footer">
         <a href="search.vspx?newest=wiki&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
-    </div>
+      </div>
     </div> <!-- widget -->
   </xsl:template>
 
@@ -269,160 +270,157 @@
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="orderby_instance"
-                                   value="Instance"
+                     value="Instance"
                      url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword ('order_by', self.vc_event.ve_params,'')||
                         '&amp;order_way='||
-                        (case when get_keyword ('order_by', self.vc_event.ve_params,'') = 'instance' AND 
-                                   get_keyword ('order_way', self.vc_event.ve_params,'') = 'asc' 
+                        (case when get_keyword ('order_by', self.vc_event.ve_params,'') = 'instance' AND
+                                   get_keyword ('order_way', self.vc_event.ve_params,'') = 'asc'
                               then 'desc'
-                              when get_keyword ('order_by', self.vc_event.ve_params,'') = 'instance' AND 
-                                   get_keyword ('order_way', self.vc_event.ve_params,'') = 'desc' 
+                              when get_keyword ('order_by', self.vc_event.ve_params,'') = 'instance' AND
+                                   get_keyword ('order_way', self.vc_event.ve_params,'') = 'desc'
                               then 'asc'
-                              else 'asc' 
+                              else 'asc'
                         end) ||
                         '&amp;'|| http_request_get ('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="orderby_subject"
-                                   value="Subject"
+                     value="Subject"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params,'')||
                          '&amp;order_way='||
-                         (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'subject' AND 
-                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc' 
+                         (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'subject' AND
+                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc'
                                then 'desc'
-                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'subject' AND 
+                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'subject' AND
                                     get_keyword ('order_way', self.vc_event.ve_params, '') = 'desc' then 'asc'
-                               else 'asc' 
+                               else 'asc'
                          end) ||
                          '&amp;'|| http_request_get('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="orderby_creator"
-                                   value="Creator"
+                     value="Creator"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params, '')||
                          '&amp;order_way='||
-                         (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'creator' AND 
-                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc' 
+                         (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'creator' AND
+                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc'
                                then 'desc'
-                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'creator' AND 
-                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'desc' 
+                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'creator' AND
+                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'desc'
                                then 'asc'
-                               else 'asc' 
+                               else 'asc'
                          end) ||
                          '&amp;'||http_request_get ('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="orderby_date"
-                                   value="Date"
+                     value="Date"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params, '')||
                          '&amp;order_way='||
                          (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'date' AND
-                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc' 
+                                    get_keyword ('order_way', self.vc_event.ve_params, '') = 'asc'
                                then 'desc'
-                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'date' AND 
-                                    get_keyword ('order_way', self.vc_event.ve_params,'') = 'desc' 
+                               when get_keyword ('order_by', self.vc_event.ve_params, '') = 'date' AND
+                                    get_keyword ('order_way', self.vc_event.ve_params,'') = 'desc'
                                then 'asc'
-                               else 'asc' 
+                               else 'asc'
                          end) ||
                          '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-		    </tr>
-    <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">WEBLOG2</xsl:with-param>
-    <xsl:with-param name="order_by">ts</xsl:with-param>
-    <xsl:with-param name="order_way">desc</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
-      </div> <!-- content_pane --> 
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+      <xsl:with-param name="app">WEBLOG2</xsl:with-param>
+            <xsl:with-param name="order_by">ts</xsl:with-param>
+            <xsl:with-param name="order_way">desc</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- content_pane -->
     </div> <!-- widget -->
   </xsl:template>
 
   <xsl:template name="user-dashboard-item">
-      <xsl:processing-instruction name="vsp">
-		      {
-		      declare i int;
-		      for select top 10 inst_name, title, ts, author, url, uname, email from
-		         WA_USER_DASHBOARD_SP (uid, inst_type)
-	                           (inst_name varchar, 
-                                    title nvarchar, 
-                                    ts datetime, 
-                                    author 
-                                    nvarchar, 
-                                    url nvarchar, 
-                                    uname varchar, 
+    <xsl:processing-instruction name="vsp">
+      {
+  declare i int;
+        for select top 10 inst_name, title, ts, author, url, uname, email from
+        WA_USER_DASHBOARD_SP (uid, inst_type)
+                             (inst_name varchar,
+                                    title nvarchar,
+                                    ts datetime,
+                                    author
+                                    nvarchar,
+                                    url nvarchar,
+                                    uname varchar,
                                     email varchar)
-			 WA_USER_DASHBOARD where uid = self.u_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
-			 do
-			 {
-			   declare aurl, mboxid, clk any;
-			   aurl := '';
-			   clk := '';
-			   mboxid :=  wa_user_have_mailbox (self.u_name);
-			   if (length (uname))
+              WA_USER_DASHBOARD where uid = self.u_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
+  do
+          {
+            declare aurl, mboxid, clk any;
+            aurl := '';
+            clk := '';
+         mboxid :=  wa_user_have_mailbox (self.u_name);
+         if (length (uname))
            aurl := '/dataspace/'||wa_identity_dstype(uname)||'/' || uname ||'#this';
-			   else if (length (email) and mboxid is not null)
-			    {
-			      aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
-			      aurl := wa_expand_url (aurl, self.login_pars);
-			      clk := sprintf ('javascript: window.open ("%s", "", "width=800,height=500"); return false', aurl);
-			      aurl := '#';
-			    }
-			   else if (length (email))
-			     aurl := 'mailto:'||email;
+         else if (length (email) and mboxid is not null)
+          {
+            aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
+            aurl := wa_expand_url (aurl, self.login_pars);
+            clk := sprintf ('javascript: window.open ("%s", "", "width=800,height=500"); return false', aurl);
+            aurl := '#';
+          }
+         else if (length (email))
+           aurl := 'mailto:'||email;
 
-			   if (aurl = '#')
-			     ;
-			   else if (length (aurl))
-			     aurl := wa_expand_url (aurl, self.login_pars);
-			   else
-			     aurl := 'javascript:void (0)';
+         if (aurl = '#')
+           ;
+         else if (length (aurl))
+           aurl := wa_expand_url (aurl, self.login_pars);
+         else
+           aurl := 'javascript:void (0)';
 
-			   if (not length (author) and length (uname))
-			     author := uname;
+         if (not length (author) and length (uname))
+           author := uname;
 
-		     </xsl:processing-instruction>
+         </xsl:processing-instruction>
                       <tr align="left">
-			  <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 55) ?></a></td>
-			  <td nowrap="nowrap">
-			      <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
-			  </td>
-			  <td nowrap="nowrap"><?V wa_abs_date (ts) ?></td>
-		      </tr>
-		      <?vsp
-		          i := i + 1;
-		        }
-			if (not i)
-			  {
-			    ?>
-		       <tr align="left"><td colspan="3">no items</td></tr>
-			    <?vsp
-			  }
-		      }
-		      ?>
+        <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 55) ?></a></td>
+        <td nowrap="nowrap">
+            <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
+        </td>
+        <td nowrap="nowrap"><?V wa_abs_date (ts) ?></td>
+          </tr>
+          <?vsp
+              i := i + 1;
+            }
+      if (not i)
+        {
+          ?>
+           <tr align="left"><td colspan="3">no items</td></tr>
+          <?vsp
+        }
+          }
+          ?>
   </xsl:template>
 
-
-
   <xsl:template name="user-dashboard-item-extended">
-      <xsl:processing-instruction name="vsp">
+    <xsl:processing-instruction name="vsp">
       {
-
        declare order_by_str,order_way_str, prev_order_by_str varchar;
-       
+
        order_by_str      := get_keyword('order_by', self.vc_event.ve_params,'');
        order_way_str     := get_keyword('order_way', self.vc_event.ve_params,'');
        prev_order_by_str := get_keyword('fprev_order_way', self.vc_event.ve_params,'');
-       
+
        order_by_str:=( case when order_by_str='instance' then  'inst_name'
                             when order_by_str='subject' then  'title'
                             when order_by_str='creator' then  'author'
@@ -434,8 +432,8 @@
           order_way_str:='ASC';
           if(order_by_str='ts') order_way_str:='DESC';
        }
-       
-       
+
+
        declare q_str varchar;
 
        if(self.u_id>0 and self.topmenu_level='1'){
@@ -457,7 +455,7 @@
                  'where uid = '||cast(self.ufid as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
                  'order by '||order_by_str||' '||order_way_str;
        }else{
-       
+
        q_str := 'select distinct top 10 inst_name, title, ts, author, url, uname, email from '||
                 '  WA_COMMON_DASHBOARD_SP '||
                 '     (inst_type) '||
@@ -465,11 +463,11 @@
                 '  WA_USER_DASHBOARD '||
                 'where inst_type = \'<xsl:value-of select="$app"/>\' '||
                 'order by '||order_by_str||' '||order_way_str;
-       }       
+       }
 
        declare isDiscussions integer;
        isDiscussions:=0;
-       
+
        if('<xsl:value-of select="$app"/>'='Discussions'){
           isDiscussions:=1;
           q_str := 'select distinct top 10 '||
@@ -482,19 +480,19 @@
 
        }
 
-       
+
        declare state, msg, descs, rows any;
        state := '00000';
        exec (q_str, state, msg, vector (), 10, descs, rows);
-       
+
        if (state &lt;&gt; '00000')
          signal (state, msg);
-       
+
          declare i int;
          declare inst_name,inst_name_org,  uname, email varchar;
          declare title ,author,url nvarchar;
          declare ts datetime;
-        
+
          while (i &lt; length (rows))
          {
                inst_name:=rows[i][0];
@@ -504,9 +502,9 @@
                   inst_name := substring (rows[i][0], 1, 17)||'...';
                }else
                {
-               inst_name := rows[i][0];
+                  inst_name := rows[i][0];
                }
-                
+
                inst_name_org := rows[i][0];
 
                if (length(rows[i][1])>40)
@@ -514,7 +512,7 @@
                    title := substring (rows[i][1], 1, 37)||'...';
                }else
                {
-               title     := rows[i][1];
+                   title := rows[i][1];
                }
 
 
@@ -526,16 +524,16 @@
                   author := substring (rows[i][3], 1, 17)||'...';
                }else
                {
-               author    := rows[i][3];
+                  author := rows[i][3];
                }
-               
+
                url       := rows[i][4];
                uname     := rows[i][5];
                email     := rows[i][6];
-         
-         
 
-         
+
+
+
          declare aurl, mboxid, clk any;
          aurl := '';
          clk := '';
@@ -551,14 +549,14 @@
           }
          else if (length (email))
            aurl := 'mailto:'||email;
-      
+
          if (aurl = '#')
            ;
          else if (length (aurl))
            aurl := wa_expand_url (aurl, self.login_pars);
          else
            aurl := 'javascript:void (0)';
-      
+
          if (not length (author) and length (uname))
            author := uname;
 
@@ -571,33 +569,33 @@
          if(isDiscussions) inst_url_local := wa_expand_url (sprintf('/dataspace/discussion/%U',inst_name_org), self.login_pars);
 
          url:=cast(url as varchar);
-         
+
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';
          insttype_from_xsl:='<xsl:value-of select="$app"/>';
-         
 
-		  </xsl:processing-instruction>
+
+  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
             if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook' or insttype_from_xsl='Calendar' or insttype_from_xsl='Discussions')
             {
-       ?>       
+       ?>
 
         <td nowrap="nowrap">
        <?vsp
               if(inst_url_local <> 'not specified')
                  {
        ?>
-         
+
          <a href="&lt;?vsp http(inst_url_local); ?&gt;"> <?V wa_utf8_to_wide(inst_name) ?> </a>
-         
+
        <?vsp
                  }else http(inst_url_local);
        ?>
          </td>
        <?vsp
-            }     
+            }
        ?>
         <td nowrap="nowrap">
           <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V coalesce (title, '*no title*') ?></a>
@@ -606,15 +604,15 @@
         <?vsp
             if (clk<>'')
             {
-        ?>    
+        ?>
             <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
-        <?vsp 
+        <?vsp
             }else
             {
        ?>
             <?V coalesce (author, '~unknown~') ?>
        <?vsp
-            } 
+            }
         ?>
         </td>
         <td nowrap="nowrap"><?V wa_abs_date (ts) ?></td>
@@ -651,10 +649,10 @@
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="enews_orderby_instance"
-                                   value="Instance"
+                     value="Instance"
                      url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -664,7 +662,7 @@
             </th>
             <th>
               <v:url name="enews_orderby_subject"
-                                   value="Subject"
+                     value="Subject"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -674,7 +672,7 @@
             </th>
             <th>
               <v:url name="enews_orderby_creator"
-                                   value="Creator"
+                     value="Creator"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -684,7 +682,7 @@
             </th>
             <th>
               <v:url name="enews_orderby_date"
-                                   value="Date"
+                     value="Date"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -692,11 +690,11 @@
                                            '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-                      </tr>
-            <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">eNews2</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">eNews2</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- w_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -705,7 +703,7 @@
     <div class="widget w_app_summary w_mail_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
+          <img class="w_title_icon"
                src="images/icons/ods_mail_16.png"
                alt="ODS-Mail icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
@@ -717,10 +715,10 @@
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="omail_orderby_subject"
-                                   value="Subject"
+                     value="Subject"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -730,7 +728,7 @@
             </th>
             <th>
               <v:url name="omail_orderby_creator"
-                                   value="From"
+                     value="From"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -740,7 +738,7 @@
             </th>
             <th>
               <v:url name="omail_orderby_date"
-                                   value="Received"
+                     value="Received"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -748,11 +746,11 @@
                                            '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-                      </tr>
-		      <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">oMail</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">oMail</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- w_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -773,10 +771,10 @@
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="wiki_orderby_instance"
-                                   value="Instance"
+                     value="Instance"
                      url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -786,16 +784,16 @@
             </th>
             <th>
               <v:url name="wiki_orderby_subject"
-                                   value="Topic"
+                     value="Topic"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&amp;'||http_request_get('QUERY_STRING')"
-                             /></th>
+              /></th>
             <th>
               <v:url name="wiki_orderby_creator"
-                                   value="From"
+                     value="From"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -805,7 +803,7 @@
             </th>
             <th>
               <v:url name="wiki_orderby_date"
-                                   value="Opened"
+                     value="Opened"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -813,11 +811,11 @@
                                            '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-                      </tr>
-		    <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">oWiki</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">oWiki</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- content_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -826,7 +824,7 @@
     <div class="widget w_app_summary w_briefcase_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
+          <img class="w_title_icon"
                src="images/icons/ods_briefcase_16.png"
                alt="ODS-Briefcase icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
@@ -838,10 +836,10 @@
       </div>
       <div class="w_pane content_pane">
         <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="odrive_orderby_subject"
-                                   value="Resource"
+                     value="Resource"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -851,7 +849,7 @@
             </th>
             <th>
               <v:url name="odrive_orderby_creator"
-                                   value="Creator"
+                     value="Creator"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -861,7 +859,7 @@
             </th>
             <th>
               <v:url name="odrive_orderby_date"
-                                   value="Date"
+                     value="Date"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -869,11 +867,11 @@
                                            '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-                      </tr>
-		    <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">oDrive</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+      <xsl:with-param name="app">oDrive</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- w_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -895,53 +893,53 @@
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <table class="app_summary_listing">
-                      <tr>
+          <tr>
             <th>
               <v:url name="bmk_orderby_instance"
-                                   value="Instance"
+                     value="Instance"
                      url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
-                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
-                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
-                                                         else 'asc' end) ||
-                                           '&amp;'||http_request_get('QUERY_STRING')"
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                     when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                     else 'asc' end) ||
+                            '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="bmk_orderby_link"
-                                   value="Bookmark"
+                     value="Bookmark"
                      url="-- http_path()||'?order_by=link&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
-                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
-                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
-                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="bmk_orderby_creator"
-                                   value="Creator"
+                     value="Creator"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
-                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
-                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
-                                                         else 'asc' end) ||
-                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                      else 'asc' end) ||
+                             '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
             <th>
               <v:url name="bmk_orderby_date"
-                                   value="Date"
+                     value="Date"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
-                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
-                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
-                                                         else 'asc' end) ||
-                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                      else 'asc' end) ||
+                             '&amp;'||http_request_get('QUERY_STRING')"
               />
             </th>
-                      </tr>
-      <xsl:call-template name="user-dashboard-item-extended">
-        <xsl:with-param name="app">Bookmark</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
-      </div> <!-- content_pane --> 
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Bookmark</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- content_pane -->
     </div>
   </xsl:template> <!-- dash_bookmark_summary -->
 
@@ -962,13 +960,13 @@
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <table class="app_summary_listing">
-                      <tr>
-                        <th>Community name</th><th>Creator</th><th>Date</th>
-                      </tr>
-		    <xsl:call-template name="user-dashboard-item">
-			<xsl:with-param name="app">Community</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          <tr>
+            <th>Community name</th><th>Creator</th><th>Date</th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item">
+            <xsl:with-param name="app">Community</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div>
     </div>
   </xsl:template><!-- dash_community_summary -->
@@ -988,7 +986,7 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
           <tr>
             <th>
               <v:url name="ogallery_orderby_instance"
@@ -1012,7 +1010,7 @@
             </th>
             <th>
               <v:url name="ogallery_orderby_creator"
-                                   value="Creator"
+                     value="Creator"
                      url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -1022,7 +1020,7 @@
             </th>
             <th>
               <v:url name="ogallery_orderby_date"
-                                   value="Date"
+                     value="Date"
                      url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
@@ -1031,10 +1029,10 @@
               />
             </th>
           </tr>
-		    <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">oGallery</xsl:with-param>
-		    </xsl:call-template>
-                    </table>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">oGallery</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- w_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -1373,16 +1371,16 @@
     <div class="widget w_whats_new">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img src="images/icons/go_16.png" 
+          <img src="images/icons/go_16.png"
                alt="ODS generic widget icon"
-               width="16" 
+               width="16"
                height="16" />
           What's New
-     </div>
+        </div>
         <div class="w_title_btns_ctr">
           <a class="minimize_btn" href="#"><img src="images/w_btn_minimize.png" alt="minimize icon"/></a>
           <a class="close_btn" href="#"><img src="images/w_btn_close.png" alt="close icon"/></a>
-    </div>
+        </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
         <vm:welcome-message2 />
@@ -1592,10 +1590,10 @@
 
         select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
 
-	      if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
-	      {
-	        insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
-	      }
+        if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
+        {
+          insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
+        }
 
         self.visb := WA_USER_VISIBILITY(self.fname);
 
@@ -1607,9 +1605,9 @@
     <div class="widget w_my_profile">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img src="images/icons/user_16.png" 
+          <img src="images/icons/user_16.png"
                alt="ODS user icon"
-               width="16" 
+               width="16"
                height="16"/>
           My Profile
         </div>
@@ -1619,102 +1617,102 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-         <v:template name="my_user_details" type="simple" enabled="1">
+        <v:template name="my_user_details" type="simple" enabled="1">
           <table cellspacing="0" cellpadding="0">
-                    <tr>
-                      <td>
+            <tr>
+              <td>
 <?vsp
   if (length (self.arr[37])) {
-    self.photopath_size2 := subseq(self.arr[37], 
-                                   0, 
-                                   REGEXP_INSTR (self.arr[37], 
-                                                 '\..{3}\$')-1) || '_size2' || 
+    self.photopath_size2 := subseq(self.arr[37],
+                                   0,
+                                   REGEXP_INSTR (self.arr[37],
+                                                 '\..{3}\$')-1) || '_size2' ||
                                                  subseq (self.arr[37], REGEXP_INSTR (self.arr[37], '\..{3}\$')-1);
-                       ?>
+?>
                 <img src="&lt;?V self.photopath_size2 ?&gt;" width="115" border="1"/>
-                    <?vsp } ?>
-                      </td>
-                      <td>
+<?vsp } ?>
+              </td>
+              <td>
                 <table class="user_profile_data" cellspacing="0" cellpadding="0">
-                            <tr>
-                              <td></td>
-                              <th><v:label name="1user" value="User:"/></th>
-                              <td><v:label name="1user1" value="--coalesce(self.fname,'')"/></td>
-                            </tr>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1title" 
-                                 value="Title:" 
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1user" value="User:"/></th>
+                    <td><v:label name="1user1" value="--coalesce(self.fname,'')"/></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1title"
+                                 value="Title:"
                                  enabled="--case when coalesce(self.arr[0],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                              <td><v:label name="1title1" value="--coalesce(self.arr[0],'')"/></td>
-                            </tr>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1fname" 
-                                 value="First Name:" 
+                    <td><v:label name="1title1" value="--coalesce(self.arr[0],'')"/></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1fname"
+                                 value="First Name:"
                                  enabled="--case when coalesce(self.arr[1],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                              <td><v:label name="1fname1" value="--wa_wide_to_utf8 (coalesce(self.arr[1],''))" format="%s"/></td>
-                            </tr>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1lname" 
-                                 value="Last Name:" 
+                    <td><v:label name="1fname1" value="--wa_wide_to_utf8 (coalesce(self.arr[1],''))" format="%s"/></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1lname"
+                                 value="Last Name:"
                                  enabled="--case when coalesce(self.arr[2],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                              <td><v:label name="1lname1" value="--wa_wide_to_utf8 (coalesce(self.arr[2],''))" format="%s"/></td>
-                            </tr>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1ffname" 
-                                 value="Full Name:" 
+                    <td><v:label name="1lname1" value="--wa_wide_to_utf8 (coalesce(self.arr[2],''))" format="%s"/></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1ffname"
+                                 value="Full Name:"
                                  enabled="--case when coalesce(self.arr[3],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                              <td><v:label name="lffname1" value="--wa_wide_to_utf8 (coalesce(self.arr[3],''))" format="%s"/></td>
-                            </tr>
-          <?vsp
+                    <td><v:label name="lffname1" value="--wa_wide_to_utf8 (coalesce(self.arr[3],''))" format="%s"/></td>
+                  </tr>
+<?vsp
             if (length (self.arr[4]))
               {
-          ?>
-                            <tr>
-                              <td></td>
-                              <th><v:label name="1email" value="E-mail:" /></th>
-                    <td><v:url name="lemail1" 
+?>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1email" value="E-mail:" /></th>
+                    <td><v:url name="lemail1"
                                value="--coalesce(self.arr[4],'')"
-              url="--concat ('mailto:', self.arr[4])" /></td>
-          </tr>
-          <?vsp } ?>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1gender" 
-                                 value="Gender:" 
+                               url="--concat ('mailto:', self.arr[4])" /></td>
+                  </tr>
+         <?vsp } ?>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1gender"
+                                 value="Gender:"
                                  enabled="--case when coalesce(self.arr[5],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                              <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
-                            </tr>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1bdate" 
-                                 value="Birthday:" 
+                    <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1bdate"
+                                 value="Birthday:"
                                  enabled="--case when coalesce(self.arr[6],'') &lt;&gt; '' then 1 else 0 end"/></th>
-                    <td><v:label name="lbdate1" 
+                    <td><v:label name="lbdate1"
                                  value="--coalesce(self.arr[6],'')"/></td>
-                            </tr>
-          <?vsp
+                  </tr>
+         <?vsp
             if (length (self.arr[7]))
               {
-          ?>
-                            <tr>
-                              <td></td>
-                    <th><v:label name="1wpage" 
+         ?>
+                  <tr>
+                    <td></td>
+                    <th><v:label name="1wpage"
                                  value="Personal Webpage:" /></th>
-                    <td><v:url name="lwpage1" 
+                    <td><v:url name="lwpage1"
                                value="--coalesce(self.arr[7],'')"
-              url="--self.arr[7]"
+                               url="--self.arr[7]"
                                xhtml_target="_blank" /></td>
-                            </tr>
+                  </tr>
           <?vsp } ?>
+                </table>
+              </td>
+            </tr>
           </table>
-                      </td>
-                    </tr>
-                    </table>
-   </v:template>
+        </v:template>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
         <a href="&lt;?V wa_expand_url('/dataspace/'||wa_identity_dstype(self.u_name)||'/'|| self.u_name ||'#this', self.login_pars)?&gt;">View full profile...</a>
@@ -1728,9 +1726,9 @@
   declare has_blog_app int;
   has_blog_app := 0;
   if (wa_check_package('blog2') and
-      exists (select 1 from wa_member 
-                where WAM_APP_TYPE='WEBLOG2' and 
-                      WAM_MEMBER_TYPE=1 and 
+      exists (select 1 from wa_member
+                where WAM_APP_TYPE='WEBLOG2' and
+                      WAM_MEMBER_TYPE=1 and
                       WAM_USER=self.u_id))
     {
       has_blog_app := 1;
@@ -1765,12 +1763,12 @@
           </div>
         </div>
         <div class="w_pane content_pane">
-      <ul>
-        <xsl:call-template name="user-dashboard-my-item">
-          <xsl:with-param name="app">WEBLOG2</xsl:with-param>
-          <xsl:with-param name="noitems_msg">No posts</xsl:with-param>
-        </xsl:call-template>
-      </ul>
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">WEBLOG2</xsl:with-param>
+              <xsl:with-param name="noitems_msg">No posts</xsl:with-param>
+            </xsl:call-template>
+          </ul>
         </div> <!-- pane content_pane -->
         <div class="w_footer">
           <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
@@ -1782,7 +1780,7 @@
 <!--vm:url value="Start using Wiki" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" /-->
 
   <xsl:template match="vm:dash-my-wiki">
-      <?vsp
+<?vsp
   declare has_wiki_app int;
   has_wiki_app := 0;
   if (wa_check_package('wiki') and
@@ -1790,7 +1788,7 @@
         {
           has_wiki_app := 1;
         }
-      ?>
+?>
     <vm:if test="not has_wiki_app">
       <div class="app_ad">
         <a href="index_inst.vspx?&lt;?V 'wa_name=oWiki&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
@@ -1802,30 +1800,30 @@
           <a href="#">Dismiss</a>
         </div>
       </div>
-         </vm:if>
+    </vm:if>
     <vm:if test="has_wiki_app">
       <div class="widget w_my_wiki">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
-            <img class="w_title_icon" 
+            <img class="w_title_icon"
                  src="images/icons/ods_wiki_16.png"
-                 alt="ODS-Wiki icon" /> 
+                 alt="ODS-Wiki icon" />
             <span class="w_title_text">My Wiki</span>
-    </div>
+          </div>
         </div>
         <div class="pane content_pane">
-      <ul>
-        <xsl:call-template name="user-dashboard-my-item">
-          <xsl:with-param name="app">oWiki</xsl:with-param>
-          <xsl:with-param name="noitems_msg">No wiki articles</xsl:with-param>
-        </xsl:call-template>
-      </ul>
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">oWiki</xsl:with-param>
+              <xsl:with-param name="noitems_msg">No wiki articles</xsl:with-param>
+            </xsl:call-template>
+          </ul>
         </div> <!-- pane content_pane -->
         <div class="w_footer">
           <a href="search.vspx?newest=wiki&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
         </div> <!-- w_footer -->
       </div> <!-- widget -->
-         </vm:if>
+    </vm:if>
   </xsl:template>
 
   <!--vm:url value="Create your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" /-->
@@ -1836,8 +1834,8 @@
   declare has_news_app int;
   has_news_app := 0;
   if (wa_check_package('enews2') and
-      exists (select 1 from wa_member 
-                       where WAM_APP_TYPE='eNews2' and 
+      exists (select 1 from wa_member
+                       where WAM_APP_TYPE='eNews2' and
                              WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
     {
       has_news_app := 1;
@@ -1861,7 +1859,7 @@
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
                  src="images/icons/ods_feeds_16.png"
-                 alt="ODS-Feed Reader icon" /> 
+                 alt="ODS-Feed Reader icon" />
             <span class="w_title_text">My News</span>
           </div>
           <div class="w_title_btns_ctr">
@@ -1870,12 +1868,12 @@
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
-       <ul>
-        <xsl:call-template name="user-dashboard-my-item">
-          <xsl:with-param name="app">eNews2</xsl:with-param>
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">eNews2</xsl:with-param>
               <xsl:with-param name="noitems_msg">You Have No News</xsl:with-param>
-        </xsl:call-template>
-      </ul>
+            </xsl:call-template>
+          </ul>
         </div> <!-- content-pane -->
         <div class="w_footer">
           <a href="search.vspx?newest=news&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
@@ -1886,17 +1884,17 @@
 
   <xsl:template match="vm:dash-my-bookmarks">
 
-      <?vsp
+<?vsp
 
   declare has_bookmarks integer;
 
   has_bookmarks := 0;
 
-  if (wa_check_package ('bookmark') and 
-      exists (select 1 
-                from wa_member 
-                where WAM_APP_TYPE='Bookmark' and 
-                      WAM_MEMBER_TYPE = 1 and 
+  if (wa_check_package ('bookmark') and
+      exists (select 1
+                from wa_member
+                where WAM_APP_TYPE='Bookmark' and
+                      WAM_MEMBER_TYPE = 1 and
                       WAM_USER = self.u_id))
     has_bookmarks := 1;
 
@@ -1905,7 +1903,7 @@
       <div class="widget w_my_bookmarks">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
-            <img class="w_title_icon" 
+            <img class="w_title_icon"
                  src="images/icons/ods_bookmarks_16.png"
                  alt="ODS-Bookmarks icon"/>
             <span class="w_title_text">My Bookmarks</span>
@@ -1936,36 +1934,36 @@
     exec_result (dta);
   exec_close (h);
 
-  _inst_url := coalesce((select top 1 INST_URL 
-                           from WA_USER_APP_INSTANCES 
-                             where user_id = self.u_id and 
-                                   app_type = 'Bookmark'), 
+  _inst_url := coalesce((select top 1 INST_URL
+                           from WA_USER_APP_INSTANCES
+                             where user_id = self.u_id and
+                                   app_type = 'Bookmark'),
                         '#');
 
-  if (dta[0] = 0) 
-        {
-      http ('You have no shared bookmark (folder).');
-    } 
-  else 
+  if (dta[0] = 0)
     {
-      http (sprintf ('<a href="%s%s">You have (%d) shared bookmark%s (folder%s).</a>', 
-                     wa_expand_url (_inst_url, self.login_pars), 
-                     '&tab=shared', 
-                     dta[0], 
-                     case when dta[0] > 1 
-                       then 's' 
-                       else '' 
-                     end, 
-                     case when dta[0] > 1 
-                       then 's' 
-                       else '' 
+      http ('You have no shared bookmark (folder).');
+    }
+  else
+    {
+      http (sprintf ('<a href="%s%s">You have (%d) shared bookmark%s (folder%s).</a>',
+                     wa_expand_url (_inst_url, self.login_pars),
+                     '&tab=shared',
+                     dta[0],
+                     case when dta[0] > 1
+                       then 's'
+                       else ''
+                     end,
+                     case when dta[0] > 1
+                       then 's'
+                       else ''
                      end));
-        }
-      ?>
+    }
+?>
 
         </div> <!-- w_footer -->
       </div> <!-- widget -->
-         </vm:if>
+    </vm:if>
     <vm:if test="not has_bookmarks">
       <div class="app_ad">
         <a href="index_inst.vspx?&lt;?V 'wa_name=Bookmark&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
@@ -1975,7 +1973,7 @@
           <input type="checkbox" id="bookmarks_app_ad_nuke"/>
           <label for="bookmarks_app_ad_nuke">Do not show this next time</label>
           <a href="#">Dismiss</a>
-    </div>
+        </div>
       </div> <!-- app_ad -->
     </vm:if>
   </xsl:template>
@@ -2079,11 +2077,11 @@
     <v:variable name="base_url" type="varchar" default="''" persist="temp"/>
     <v:variable name="ufname" type="varchar" default="null" param-name="ufname"/>
     <v:variable name="uf_u_id" type="integer" default="null" persist="temp"/>
-   
+
     <v:on-init>
        self.base_url := HTTP_REQUESTED_URL ();
     </v:on-init>
- 
+
      <v:after-data-bind>
        declare id any;
        if (self.isowner)
@@ -2108,8 +2106,8 @@
     <div class="widget w_my_friends">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
-               src="images/icons/group_16.png" 
+          <img class="w_title_icon"
+               src="images/icons/group_16.png"
                alt="ODS Connections icon" />
           <span class="w_title_text">My Connections</span>
         </div>
@@ -2146,10 +2144,10 @@
               addr := addr || ', ' || WAUI_HSTATE;
                   if (length (WAUI_HCOUNTRY))
               addr := addr || '(' || WAUI_HCOUNTRY || ')';
-        
+
             if (not length (WAUI_PHOTO_URL))
                     WAUI_PHOTO_URL := 'images/icons/user_32.png';
-        
+
         ?>
             <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(sne_name)||'/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
             <img src="&lt;?V WAUI_PHOTO_URL ?&gt;" border="0" alt="Photo" width="32" hspace="3"/>
@@ -2158,7 +2156,7 @@
             <br/>
         <?vsp
             i := i + 1;
-            friends_id_str:=sprintf('%s,%d',friends_id_str,U_ID);
+            friends_id_str := sprintf ('%s,%d',friends_id_str,U_ID);
           }
           if (i = 0)
           {
@@ -2175,9 +2173,9 @@
                }
           }
           declare mapkey any;
-          
-          mapkey:=DB.DBA.WA_MAPS_GET_KEY();
-          if(self.u_name is not null and isstring (mapkey) and length (mapkey) > 0 and i > 0)
+
+          mapkey := DB.DBA.WA_MAPS_GET_KEY();
+          if (self.u_name is not null and isstring (mapkey) and length (mapkey) > 0 and i > 0)
           {
           friends_id_str:=subseq(friends_id_str,1);
 
@@ -2189,50 +2187,50 @@
               self.uf_u_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = self.ufname), self.u_id);
           ?>
           <br/>
-          <center>          
+          <center>
             <table cellspacing="0" cellpadding="0" border="1">
               <tr>
                 <td>
                    <div id="google_map" style="margins:1px; width: 380px;height: 320px;" />
-                  <vm:oatmap-control 
-	                    sql="sprintf ('select _LAT,_LNG,_KEY_VAL,EXCERPT from ( \n ' ||
-	                                  'select \n' ||
-                                      '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
-                                      '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
-	                                    '  WAUI_U_ID as _KEY_VAL, \n' ||
-	                                    '  WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', \n' ||
-	                                    '                                   WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT \n' ||
-	                                    'from  DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
-	                                  'where WAUI_U_ID = U_ID \n' ||
-	                                  '      and U_ID in (%s,%d)' ||
-	                                  ') tmp_tbl \n' ||
-	                                  'where _LAT is not null and _LNG is not null \n',
-	                                  coalesce (self.u_id, http_nobody_uid ()),friends_id_str,self.u_id)"
-	                      baloon-inx="4"
-	                      lat-inx="1"
-	                      lng-inx="2"
-	                      key-name-inx="3"
-	                      key-val="self.uf_u_id"
+                  <vm:oatmap-control
+                      sql="sprintf ('select _LAT,_LNG,_KEY_VAL,EXCERPT from ( \n ' ||
+                                    'select \n' ||
+                                    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
+                                    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
+                                    '  WAUI_U_ID as _KEY_VAL, \n' ||
+                                    '  WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', \n' ||
+                                    '                                   WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT \n' ||
+                                    'from  DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
+                                    'where WAUI_U_ID = U_ID \n' ||
+                                    '      and U_ID in (%s,%d)' ||
+                                    ') tmp_tbl \n' ||
+                                    'where _LAT is not null and _LNG is not null \n',
+                                    coalesce (self.u_id, http_nobody_uid ()),friends_id_str,self.u_id)"
+                        baloon-inx="4"
+                        lat-inx="1"
+                        lng-inx="2"
+                        key-name-inx="3"
+                        key-val="self.uf_u_id"
                         div_id="google_map"
                         zoom="0"
                         base_url="self.base_url"
                         mapservice_name="GOOGLE"
-                         />
+                   />
                 </td>
               </tr>
             </table>
-          </center>   
+          </center>
           <?vsp
           };
-	    }
-	  }
-	  ?>
+      }
+    }
+    ?>
       </div> <!-- content-pane -->
       <div class="w_footer">
         <vm:if test="self.isowner">
           <v:url name="search_users_fr" value="Search for Connections" url="search.vspx?page=2" render-only="1"/>
         </vm:if>
-    </div>
+      </div>
     </div> <!-- widget -->
   </xsl:template>
 
@@ -2242,7 +2240,7 @@
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
                src="images/icons/ods_community_16.png"
-               alt="ODS-Communities icon"/> 
+               alt="ODS-Communities icon"/>
           <span class="w_title_text">My Communities</span>
         </div>
         <div class="w_title_btns_ctr">
@@ -2251,32 +2249,32 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-      <?vsp
-        if (wa_check_package('Community'))
+<?vsp
+  if (wa_check_package('Community'))
+    {
+      if (exists (select 1 from wa_member where WAM_APP_TYPE='Community' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id))
         {
-          if(exists (select 1 from wa_member where WAM_APP_TYPE='Community' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
-
-          {
-              declare q_str, rc, dta, h any;
-              q_str:=sprintf('select top 10 WAM_INST,WAM_HOME_PAGE from wa_member
-                              where WAM_APP_TYPE=''Community''
-                              and WAM_MEMBER_TYPE=1
-                              and WAM_USER=%d',self.u_id);
-              rc := exec (q_str, null, null, vector (), 0, null, null, h);
+          declare q_str, rc, dta, h any;
+          q_str := sprintf ('select top 10 WAM_INST,WAM_HOME_PAGE from wa_member
+                             where WAM_APP_TYPE=''Community''
+                             and WAM_MEMBER_TYPE=1
+                             and WAM_USER=%d',self.u_id);
+          rc := exec (q_str, null, null, vector (), 0, null, null, h);
           http ('<ul>');
-              while (0 = exec_next (h, null, null, dta))
-              {
-                exec_result (dta);
+
+          while (0 = exec_next (h, null, null, dta))
+            {
+              exec_result (dta);
 --              http('<li><a href="'||dta[1]||'?'||subseq(self.login_pars,1)||'" >'||dta[0]||'</a></li>');
               http('<li><a href="'||wa_expand_url(sprintf('/dataspace/%s/community/%U',self.u_name,dta[0]),self.login_pars)||'" >'||dta[0]||'</a></li>');
-              }
-              exec_close (h);
+            }
+          exec_close (h);
           http('</ul>');
-          }else{
+        } else {
           http('<p>You are not part of any community. Why not start one yourself?</p>');
-          }
         }
-	    ?>
+    }
+?>
       </div> <!-- content-pane -->
       <div class="w_footer">
         <a href="&lt;?V wa_expand_url(sprintf('/dataspace/%s/community/',self.u_name),self.login_pars) ?&gt;">More&amp;#8230;</a>
@@ -2288,7 +2286,7 @@
     <div class="widget w_my_photos">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img class="w_title_icon" 
+          <img class="w_title_icon"
                src="images/icons/ods_gallery_16.png"
                width="16" height="16"
                alt="ods gallery icon"/>
@@ -2300,49 +2298,47 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-      <?vsp
-        if (wa_check_package('oGallery'))
+<?vsp
+  if (wa_check_package('oGallery'))
+    {
+      declare i,ii int;
+      declare ogallery_id varchar;
+      ogallery_id:='';
+      ogallery_id := coalesce ((select WAM_INST from wa_member
+                                  where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)
+                               ,'');
+      if (ogallery_id <> '')
         {
-         declare i,ii int;
-
-         declare ogallery_id varchar;
-         ogallery_id:='';
-
-         ogallery_id:=coalesce((select WAM_INST from wa_member
-                                where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)
-                                ,'');
-      if (ogallery_id <> '') 
-        {
-      ?>
-      <br/>
-      <table border="0" cellpadding="0" cellspacing="0" class="infoarea2">
-       <tr>
-         <?vsp
-              declare q_str, rc, dta, h, curr_davres any;
+?>
+        <br/>
+        <table border="0" cellpadding="0" cellspacing="0" class="infoarea2">
+          <tr>
+<?vsp
+  declare q_str, rc, dta, h, curr_davres any;
   declare _gallery_folder_name varchar;
 
-              curr_davres := '';
-  _gallery_folder_name:=coalesce(PHOTO.WA.get_gallery_folder_name(),'Gallery');
+  curr_davres := '';
+  _gallery_folder_name := coalesce (PHOTO.WA.get_gallery_folder_name (), 'Gallery');
 
   q_str := 'select distinct RES_FULL_PATH, RES_MOD_TIME, U_FULL_NAME, U_NAME, coalesce (text,RES_NAME) as res_comment,A.RES_ID
-                      from WS.WS.SYS_DAV_RES A
-                        LEFT JOIN WS.WS.SYS_DAV_COL B on A.RES_COL=B.COL_ID
-                        LEFT JOIN WS.WS.SYS_DAV_COL C on C.COL_ID=B.COL_PARENT
-                        LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
-                        LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
-                        LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
+              from WS.WS.SYS_DAV_RES A
+              LEFT JOIN WS.WS.SYS_DAV_COL B on A.RES_COL=B.COL_ID
+              LEFT JOIN WS.WS.SYS_DAV_COL C on C.COL_ID=B.COL_PARENT
+              LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
+              LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
+              LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
               where C.COL_NAME like '''||_gallery_folder_name||'%'' and D.COL_NAME='''||self.u_name||'''
-                      order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
+              order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
 
-              rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  rc := exec (q_str, null, null, vector (), 0, null, null, h);
 
-              while (0 = exec_next (h, null, null, dta) and ii<4 )
-              {
-                exec_result (dta);
+  while (0 = exec_next (h, null, null, dta) and ii<4 )
+    {
+      exec_result (dta);
 
-                  if (curr_davres <> dta[0]) 
-                    {
-                    curr_davres:=dta[0];
+      if (curr_davres <> dta[0])
+        {
+          curr_davres := dta[0];
 
           declare photo_href,gallery_davhome_foldername,_home_url,_inst_name,q_str varchar;
           declare gallery_path_arr any;
@@ -2353,10 +2349,10 @@
           if(locate(_gallery_folder_name,gallery_path_arr[4]))
           {
            gallery_davhome_foldername:='/'||gallery_path_arr[1]||'/'||gallery_path_arr[2]||'/'||gallery_path_arr[3]||'/'||gallery_path_arr[4]||'/';
-           
+
            q_str:='select HOME_URL,WAI_NAME from PHOTO.WA.SYS_INFO where HOME_PATH=\''||gallery_davhome_foldername||'\'';
 
-           
+
            declare state, msg, descs, rows any;
            state := '00000';
            exec (q_str, state, msg, vector (), 1, descs, rows);
@@ -2368,8 +2364,8 @@
            }
            else
                goto _skip;
-           
-                     
+
+
 --           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
            photo_href:= sprintf(' href="/dataspace/%s/photos/%U#/%s/%s" target="_blank" ',self.u_name,_inst_name, gallery_path_arr[5], gallery_path_arr[6]);
 
@@ -2378,7 +2374,7 @@
           _skip:;
 
           declare img_size_arr,new_img_size_arr any;
-          
+
           img_size_arr:=wa_get_image_sizes(dta[5]);
           new_img_size_arr:=vector(100,75);
           if(length(img_size_arr) and img_size_arr[0]<>0)
@@ -2398,16 +2394,16 @@
                            self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&amp;image_id='||cast(dta[5] as varchar)||'&amp;width='|| cast(new_img_size_arr[0] as varchar) ||'&amp;height='||cast(new_img_size_arr[1] as varchar)||'"' ||
                            ' width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" alt="'||gallery_path_arr[6]||'"/></a>';
 
-         ?>
+?>
 
             <td style="padding:5px;">
-          <table border="0" cellpadding="1" cellspacing="0">
-           <tr>
+              <table border="0" cellpadding="1" cellspacing="0">
+                <tr>
                   <td style="text-align:center;height:75px;">
                     <?vsp http(photo_href);?>
-             </td>
-           </tr>
-           <tr>
+                  </td>
+                </tr>
+                <tr>
                   <td>
                     <br/>
                     <p>
@@ -2417,33 +2413,32 @@
                       <br />
                       <?V wa_abs_date(dta[1])?>
                     </p>
-             </td>
-           </tr>
-          </table>
-         </td>
+                  </td>
+                </tr>
+              </table>
+            </td>
             <td><p></p></td>
-           <?vsp
-                   ii:=ii+1;
-               }
-               i:=i+1;
-             }
-              exec_close (h);
+<?vsp
+           ii := ii + 1;
+         }
+       i := i + 1;
+     }
+   exec_close (h);
 
-             if (not i)
-               {
-           ?>
-              <td>
-                <ul>
+  if (not i)
+  {
+?>
+            <td>
+              <ul>
                 <li>Your gallery is empty</li>
-                 </ul>
-              </td>
-           <?vsp
-             }
-           ?>
-
-       </tr>
-     </table>
-     <br/>
+              </ul>
+            </td>
+<?vsp
+  }
+?>
+          </tr>
+        </table>
+        <br/>
       </div>
       <div class="w_footer">
         <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1) ?&gt;">More&amp;#8230;</a>
@@ -2484,7 +2479,7 @@
         <?vsp
           }
         ?>
-        
+
       </div>
       <div class="w_footer">
         <v:url name="odsbar_myfacebook_link_2" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="More..." is-local="1"/>
@@ -2493,17 +2488,17 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-guestbook">
-    <vm:if test="wa_vad_check ('oMail') is not null and 
-                 exists (select 1 
-                           from wa_member 
-                           where WAM_APP_TYPE='oMail' and 
-                                 WAM_MEMBER_TYPE=1 and 
+    <vm:if test="wa_vad_check ('oMail') is not null and
+                 exists (select 1
+                           from wa_member
+                           where WAM_APP_TYPE='oMail' and
+                                 WAM_MEMBER_TYPE=1 and
                                  WAM_USER=self.u_id)">
       <div class="widget w_my_guestbook">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
-                 src="images/icons/group_16.png" 
+                 src="images/icons/group_16.png"
                  alt="ODS-Guestbook icon" />
             <span class="w_title_text">My Guestbook</span>
           </div>
@@ -2513,26 +2508,26 @@
           </div>
         </div>
         <div class="w_pane content_pane">
-        <ul>
-          <li>guestbook entry A - 1 day ago</li>
-          <li>guestbook entry B - 2 day ago</li>
-          <li>guestbook entry C - 3 day ago</li>
-        </ul>
-        <p align="center">
-        Add a comment
-        <br/>
-            <v:textarea name="comment" 
-                        default_value="" 
-                        value="-- control.ufl_value" 
-                        xhtml_cols="80" 
-                        xhtml_rows="5" 
+          <ul>
+            <li>guestbook entry A - 1 day ago</li>
+            <li>guestbook entry B - 2 day ago</li>
+            <li>guestbook entry C - 3 day ago</li>
+          </ul>
+          <p align="center">
+            Add a comment
+          <br/>
+            <v:textarea name="comment"
+                        default_value=""
+                        value="-- control.ufl_value"
+                        xhtml_cols="80"
+                        xhtml_rows="5"
                         xhtml_style="width:100%">
               <v:validator test="length" min="0" max="50" message="max 50 chars."/>
-           </v:textarea>
-                <v:button name="bt_add" action="simple" value="Add">
-                    <v:on-post>
-                    <![CDATA[
-                    
+            </v:textarea>
+            <v:button name="bt_add" action="simple" value="Add">
+              <v:on-post>
+                <![CDATA[
+
   declare msg_date any;
 --  msg_date := sprintf ('Date: %s\r\n', date_rfc1123 (now ()));
 --  declare _body varchar;
@@ -2561,54 +2556,54 @@
 --                                );
 
 
-                    ]]>
-                    </v:on-post>
-                </v:button>
-        </p>
+                ]]>
+              </v:on-post>
+            </v:button>
+          </p>
         </div> <!-- content_pane -->
       </div> <!-- widget -->
     </vm:if>
   </xsl:template>
 
-
   <xsl:template name="user-dashboard-my-item">
-      <xsl:processing-instruction name="vsp">
-        {
-        declare i int;
+    <xsl:processing-instruction name="vsp">
+{
+  declare i int;
 
-  for select top 10 inst_name, title, ts, author, url, uname, email 
+  for select top 10 inst_name, title, ts, author, url, uname, email
         from WA_USER_DASHBOARD_SP (uid, inst_type)
              (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) WA_USER_DASHBOARD
-            where uid = self.u_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
-        do
-        {
-           declare aurl, mboxid, clk any;
-           aurl := '';
-           clk := '';
-           mboxid :=  wa_user_have_mailbox (self.u_name);
+        where uid = self.u_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
+    do
+      {
+        declare aurl, mboxid, clk any;
 
-           if (length (uname))
+        aurl := '';
+        clk := '';
+        mboxid :=  wa_user_have_mailbox (self.u_name);
+
+        if (length (uname))
           aurl := '/dataspace/'|| wa_identity_dstype(uname) ||'/' || uname||'#this';
-           else if (length (email) and mboxid is not null)
-            {
-              aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
-              aurl := wa_expand_url (aurl, self.login_pars);
-              clk := sprintf ('javascript: window.open ("%s", "", "width=800,height=500"); return false', aurl);
-              aurl := '#';
-            }
-           else if (length (email))
-             aurl := 'mailto:'||email;
+        else if (length (email) and mboxid is not null)
+          {
+            aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
+            aurl := wa_expand_url (aurl, self.login_pars);
+            clk := sprintf ('javascript: window.open ("%s", "", "width=800,height=500"); return false', aurl);
+            aurl := '#';
+          }
+        else if (length (email))
+          aurl := 'mailto:'||email;
 
         if (aurl = '#'); -- (ghard) WTF!?
-           else if (length (aurl))
-             aurl := wa_expand_url (aurl, self.login_pars);
-           else
-             aurl := 'javascript:void (0)';
+        else if (length (aurl))
+          aurl := wa_expand_url (aurl, self.login_pars);
+        else
+          aurl := 'javascript:void (0)';
 
-           if (not length (author) and length (uname))
-             author := uname;
+        if (not length (author) and length (uname))
+          author := uname;
 
-         </xsl:processing-instruction>
+    </xsl:processing-instruction>
     <li>
       <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;">
         <?V substring (coalesce (title, '*no title*'), 1, 55) ?></a>
@@ -2617,22 +2612,22 @@
 -->
           - <?V wa_abs_date (ts) ?>
     </li>
-            <?vsp
-              i := i + 1;
-            }
-            if (not i)
-            {
-            ?>
-            <xsl:if test="$noitems_msg">
-              <li><xsl:value-of select="$noitems_msg"/></li>
-            </xsl:if>
-            <xsl:if test="not $noitems_msg">
-              <li>no items</li>
-            </xsl:if>
-       <?vsp
-            }
-        }
-       ?>
+<?vsp
+        i := i + 1;
+      }
+    if (not i)
+      {
+?>
+    <xsl:if test="$noitems_msg">
+      <li><xsl:value-of select="$noitems_msg"/></li>
+    </xsl:if>
+    <xsl:if test="not $noitems_msg">
+      <li>no items</li>
+    </xsl:if>
+<?vsp
+      }
+    }
+?>
   </xsl:template>
 
   <xsl:template match="vm:dash-my-mail">
@@ -2643,16 +2638,16 @@
   has_webmail := 0;
 
   if (wa_check_package('oMail') and
-      exists (select 1 
-                from wa_member 
-                where WAM_APP_TYPE='oMail' and 
-                      WAM_MEMBER_TYPE=1 and 
+      exists (select 1
+                from wa_member
+                where WAM_APP_TYPE='oMail' and
+                      WAM_MEMBER_TYPE=1 and
                       WAM_USER=self.u_id) )
     {
       has_webmail := 1;
     }
 ?>
-      <vm:if test="has_webmail">
+    <vm:if test="has_webmail">
       <div class="widget w_my_mail">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
@@ -2667,40 +2662,40 @@
           </div>
         </div>
         <div class="w_pane content_pane">
-      <?vsp
+<?vsp
 
-              declare q_str, rc, dta, h any;
-   
-  q_str := sprintf('select COUNT(*) as ALL_CNT, 
-                           SUM(either(MSTATUS,0,1)) as NEW_CNT 
-                      from OMAIL.WA.MESSAGES 
+  declare q_str, rc, dta, h any;
+
+  q_str := sprintf('select COUNT(*) as ALL_CNT,
+                           SUM(either(MSTATUS,0,1)) as NEW_CNT
+                      from OMAIL.WA.MESSAGES
                       where USER_ID = %d',
                    self.u_id);
 
-              rc := exec (q_str, null, null, vector (), 0, null, null, h);
-              while (0 = exec_next (h, null, null, dta))
-              {
-                exec_result (dta);
-              }
-              exec_close (h);
-              
-              declare _inst_url varchar;
-              _inst_url:='#';
+  rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  while (0 = exec_next (h, null, null, dta))
+    {
+      exec_result (dta);
+    }
+  exec_close (h);
 
-              select top 1 INST_URL into _inst_url
-              from WA_USER_APP_INSTANCES
-              where user_id = self.u_id and app_type = 'oMail';
-              
-              if (dta[1] is null or dta[1] = 0) 
-                http (sprintf ('<a href="%s">You have no new messages</a>',
-                               wa_expand_url (_inst_url, self.login_pars)));
-              else
-                http (sprintf ('<a href="%s"> You have %d new message%s. </a>',
-                             wa_expand_url (_inst_url, self.login_pars),
-                             dta[1],
-                             case when dta[1]<> 1 then 's' else '' end));
-         ?>
-        
+  declare _inst_url varchar;
+  _inst_url:='#';
+
+  select top 1 INST_URL into _inst_url
+    from WA_USER_APP_INSTANCES
+    where user_id = self.u_id and app_type = 'oMail';
+
+    if (dta[1] is null or dta[1] = 0)
+      http (sprintf ('<a href="%s">You have no new messages</a>',
+                     wa_expand_url (_inst_url, self.login_pars)));
+    else
+      http (sprintf ('<a href="%s"> You have %d new message%s. </a>',
+                     wa_expand_url (_inst_url, self.login_pars),
+                     dta[1],
+                     case when dta[1]<> 1 then 's' else '' end));
+?>
+
           <ul>
             <xsl:call-template name="user-dashboard-my-item">
               <xsl:with-param name="app">oMail</xsl:with-param>
@@ -2710,19 +2705,19 @@
 
         </div> <!-- content_pane -->
       </div> <!-- widget -->
-         </vm:if>
-      <vm:if test="not has_webmail">
-        <div class="app_ad">
+    </vm:if>
+    <vm:if test="not has_webmail">
+      <div class="app_ad">
         <a href="index_inst.vspx?&lt;?V 'wa_name=oMail&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
-            <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
-          </a>
-          <div class="app_ad_ft">
+          <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
+        </a>
+        <div class="app_ad_ft">
           <input type="checkbox" id="mail_app_ad_nuke"/>
           <label for="mail_app_ad_nuke">Do not show this next time</label>
-            <a href="#">Dismiss</a>
-          </div>
-        </div> <!-- app_ad -->
-         </vm:if>
+          <a href="#">Dismiss</a>
+        </div>
+      </div> <!-- app_ad -->
+    </vm:if>
   </xsl:template>
 
 
@@ -2777,7 +2772,7 @@
   while (0 = exec_next (h, null, null, dta))
     {
       exec_result (dta);
-      
+
 ?>
           <li>
              <a href="&lt;?V wa_expand_url (dta[4], self.login_pars) ?&gt;"><?V wa_utf8_to_wide (dta[1], 1, 55) ?></a>
@@ -2793,20 +2788,20 @@
 
   declare shared_res_count integer;
   shared_res_count:=wa_get_user_sharedres_count(self.u_id);
-   
+
   declare _inst_url varchar;
-  
+
   _inst_url:='#';
   declare exit handler for not found{_inst_url:='#';};
   select top 1 WAM_HOME_PAGE into _inst_url from WA_MEMBER
    where WAM_APP_TYPE='oDrive' and
          WAM_MEMBER_TYPE=1 and
          WAM_USER=self.u_id;
-  
+
   declare share_dir varchar;
   share_dir:='';
   share_dir:=coalesce(ODRIVE.WA.shared_name(),'');
-  
+
   if(length(share_dir))
   _inst_url:=sprintf('%s?dir=%U',_inst_url,share_dir);
 

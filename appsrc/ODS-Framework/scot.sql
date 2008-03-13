@@ -119,8 +119,8 @@ create procedure scot_tags_insert (in inst_id int, in post_iri any, in tags varc
       commit work;
       {
         declare exit handler for sqlstate '37000' { rollback work; return; };
-      tc_id := (select tcs_id from tag_coocurrence_stats where
-      contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
+        tc_id := (select tcs_id from tag_coocurrence_stats where
+          contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
       }
       if (tc_id is null)
 	{
@@ -140,11 +140,11 @@ create procedure scot_tags_insert (in inst_id int, in post_iri any, in tags varc
       commit work;
       declare continue handler for sqlstate '37000' { rollback work; goto next_tag; };
       {
-      for select tcs_id from tag_coocurrence_stats where contains (tcs_tags_stats, '"'||tag||'"') and tcs_inst_id = inst_id do
-	{
-	  insert soft tag_coocurrence (tc_inst_id, tc_id, tc_tag) values (inst_id, tcs_id, tag);
-	}
-    }
+        for select tcs_id from tag_coocurrence_stats where contains (tcs_tags_stats, '"'||tag||'"') and tcs_inst_id = inst_id do
+          {
+	    insert soft tag_coocurrence (tc_inst_id, tc_id, tc_tag) values (inst_id, tcs_id, tag);
+          }
+      }
 next_tag: ;
     }
 
@@ -184,8 +184,8 @@ create procedure scot_tags_delete (in inst_id int, in post_iri any, in tags varc
       commit work;
       {
         declare exit handler for sqlstate '37000' { rollback work; return; };
-      tc_id := (select tcs_id from tag_coocurrence_stats where
-      contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
+        tc_id := (select tcs_id from tag_coocurrence_stats where
+        contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
       }
       if (tc_id is not null)
 	{
@@ -331,7 +331,7 @@ create procedure scot_rdf_delete (in graph_iri varchar, in inst_id int, in only_
 	delete_quad_sp (sioc..get_graph (), iri, scot_iri ('ownAFrequency'));
       else
 	{
-	delete_quad_s_or_o (sioc..get_graph (), iri, iri);
+	  delete_quad_s_or_o (sioc..get_graph (), iri, iri);
 	  for select m_mid from moat.DBA.moat_meanings where m_tag = ts_tag do
 	    {
 	      meaning_iri := iri || sprintf ('/meaning/%d', m_mid);

@@ -47,12 +47,12 @@
       <xsl:if test="position() <= $nrows">
         <xsl:if test=" (position() mod 2)= 0">
            <xsl:apply-templates select=".">
-              <xsl:with-param name = "row_class" >listing_row_even</xsl:with-param> 
+              <xsl:with-param name = "row_class" >listing_row_even</xsl:with-param>
            </xsl:apply-templates>
-      </xsl:if>
+        </xsl:if>
         <xsl:if test=" (position() mod 2) > 0">
            <xsl:apply-templates select=".">
-            <xsl:with-param name = "row_class" >listing_row_odd</xsl:with-param> 
+            <xsl:with-param name = "row_class" >listing_row_odd</xsl:with-param>
            </xsl:apply-templates>
         </xsl:if>
       </xsl:if>
@@ -62,7 +62,7 @@
 </xsl:template>
 
 <xsl:template match="dash-row">
-  <tr>
+ <tr>
     <xsl:attribute name="class"><xsl:value-of select="$row_class"/></xsl:attribute>
     <td valign="top">
       <xsl:if test="@class = 'normal'">

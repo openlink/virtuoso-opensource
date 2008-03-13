@@ -42,13 +42,13 @@
           declare fontMinSize, fontMaxSize, fontSize, fontPercent float;
           declare tagStyle any;
 
-	tag := trim (tag, ' \r\n');
-	if (tag <> '')
-	{
+	  tag := trim (tag, ' \r\n');
+	  if (tag <> '')
+	    {
               tagStyle := ODS.WA.tag_style (tagCount, tagMinCount, tagMaxCount);
  	      http (sprintf ('<a href="javascript: doPostValueToSearch(\'%s\');" name="btn_%s" class="tag_link" style="%s">%s</a>', replace (tag, ' ', '_'), tag, tagStyle, tag));
-		http ('&nbsp; \n');
-	}
+	      http ('&nbsp; \n');
+	    }
 	]]>
       </v:method>
       <vm:login redirect="gtags.vspx"/>
@@ -57,7 +57,7 @@
 	 {
 	   var frm = document.forms["page_form"];
 	   frm.q_tags.value = value;
-	   frm.action="search.vspx";
+	   frm.action = "search.vspx";
 	   frm.submit ();
 	 }
 	function doPostValueToMe (value)
@@ -101,38 +101,38 @@
 	</tr>
 	<tr>
 	  <td>
-	     <div class="tag_cloud">
-	<?vsp
-	   declare ts_max, ts_size, latest_tag_id, style integer;
-	   declare cmax, cmin, delta int;
-	   declare perc float;
+	    <div class="tag_cloud">
+              <?vsp
+                declare ts_max, ts_size, latest_tag_id, style integer;
+                declare cmax, cmin, delta int;
+                declare perc float;
 
-	   delta := get_keyword('sel_tfs_id', self.vc_event.ve_params, '');
-	   if (delta = '')
-	     {
-	       latest_tag_id := wa_get_last_tf_id ();
+                delta := get_keyword('sel_tfs_id', self.vc_event.ve_params, '');
+                if (delta = '')
+                  {
+                    latest_tag_id := wa_get_last_tf_id ();
 
                     select max(TF_COUNT), min(TF_COUNT) into cmax, cmin from TF_REPORT;
 
                     declare i int;
                     i:=0;
-	       for (select top 100 TF_TAG, TF_COUNT from TF_REPORT where TF_ID = latest_tag_id order by TF_COUNT desc) do
-		 {
+                    for (select top 100 TF_TAG, TF_COUNT from TF_REPORT where TF_ID = latest_tag_id order by TF_COUNT desc) do
+                     {
                        self.print_tag (TF_TAG, TF_COUNT, cmin, cmax);
                        i:=i+1;
-		 }
+                     }
                      if(i<1)
                      http('There are currently no global tags defined in the system.');
-	     }
-	   else
-	     {
+                  }
+                else
+                  {
                     select max(TFD_DELTA), min(TFD_DELTA) into cmax, cmin from TF_REPORT_DELTA;
                     for (select top 100 TFD_TAG, TFD_DELTA from TF_REPORT_DELTA where TFD_ID = atoi (delta) order by TFD_DELTA desc) do
-	         {
+                      {
                         self.print_tag (TFD_TAG, TFD_DELTA, cmin, cmax);
-		 }
-	     }
-	?>
+                      }
+                  }
+              ?>
             </div>
 	  </td>
 	</tr>

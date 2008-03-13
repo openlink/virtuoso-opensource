@@ -23,24 +23,24 @@
  -
 -->
 <wahelp>
- 
+
   <help page="welcome">
     <title>Welcome to Virtuoso Web Applications</title>
-    <para>This is the Virtuoso Web Applications home page.  If site-wide registration 
-  is enabled you may register yourself and begin using web applications hosted here.  After 
+    <para>This is the Virtuoso Web Applications home page.  If site-wide registration
+  is enabled you may register yourself and begin using web applications hosted here.  After
   successful login you will be able to create your own application instances and join others.</para>
-  <para>Some public application instances are shown for you to view and join if the service policy permits.  
-  If you are looking for a particular service or service containing particular information you can 
+  <para>Some public application instances are shown for you to view and join if the service policy permits.
+  If you are looking for a particular service or service containing particular information you can
   enter specific criteria in the search box to find any relevant instance.</para>
 
   <sect><title>Registration</title>
-  <para>Before you can use this site you must have a suitable login.  If the policy of the site 
-  permits public registration then you may use the "Register" button to begin registration.  
-  For registration you will need an email address.  After providing some other details your 
+  <para>Before you can use this site you must have a suitable login.  If the policy of the site
+  permits public registration then you may use the "Register" button to begin registration.
+  For registration you will need an email address.  After providing some other details your
   email address may be used for verification or your details.</para>
   </sect>
   <sect><title>Login Problems</title>
-  <para>Use of in-correct login details will reveal a button "Forgot your password" that will 
+  <para>Use of in-correct login details will reveal a button "Forgot your password" that will
   lead you through your security question to the recovery of your password.</para>
   </sect>
 
@@ -51,22 +51,22 @@
     <para></para>
 
   <sect><title>Mail Server Settings</title>
-    <para>In order to send confirmation emails you must ensure that this server can 
-  send emails. The Virtuoso INI file may contain the setting for the 
-  <emphasis>"DefaultMailServer"</emphasis>, which can be used or overridden.  
-  This default mail setting is shown.  Use the checkbox to use the default or specify 
+    <para>In order to send confirmation emails you must ensure that this server can
+  send emails. The Virtuoso INI file may contain the setting for the
+  <emphasis>"DefaultMailServer"</emphasis>, which can be used or overridden.
+  This default mail setting is shown.  Use the checkbox to use the default or specify
   an alternative. </para>
-    <para>Emails regarding the default WA site will be sent to the Administrator 
-  (DAV); you must ensure the administrators email address is valid.  Use the 
-  <emphasis>Test</emphasis> button to send the Administrator a test mail.  
+    <para>Emails regarding the default WA site will be sent to the Administrator
+  (DAV); you must ensure the administrators email address is valid.  Use the
+  <emphasis>Test</emphasis> button to send the Administrator a test mail.
   You can change the Administrators email address from here.</para>
   </sect>
 
   <sect><title>System Mail Templates</title>
-  <para>These are the mails that the WA will send to its users in response 
-  to particular actions.  You must enable "verify registration by email" above 
+  <para>These are the mails that the WA will send to its users in response
+  to particular actions.  You must enable "verify registration by email" above
   before any emails will be sent.</para>
-  <para>The mails support some string-substitutions for personalized emails 
+  <para>The mails support some string-substitutions for personalized emails
   as follows:</para>
 
   <simplelist>
@@ -120,22 +120,22 @@
 
   <help page="inst">
     <title>Virtuoso Web Applications Management</title>
-    <para>This page will show you what application you own or are a member of, and also 
+    <para>This page will show you what application you own or are a member of, and also
   other public application instances that you may view or join.  </para>
-  <para>You may search for specific types of application instance or 
-  instances with particular information.  Depending on the policy of the service you 
+  <para>You may search for specific types of application instance or
+  instances with particular information.  Depending on the policy of the service you
   may be able to join.</para>
   <sect><title>User Profile</title>
-  <para>You may alter you personal or login details using the button 
+  <para>You may alter you personal or login details using the button
   provided.  You can also change your password.</para>
   </sect>
   <sect><title>Application Endpoint Administration</title>
-  <para>You may alter the host/domain settings of your applications to provide more 
-  convenient URLs to remember them by.  You can choose from the site registered domain 
+  <para>You may alter the host/domain settings of your applications to provide more
+  convenient URLs to remember them by.  You can choose from the site registered domain
   names or enter one based on your own Internet domain registration if you have one.</para>
   </sect>
   <sect><title>Applications</title>
-  <para>This section shows details of applications that are hosted on this site.  Click on one 
+  <para>This section shows details of applications that are hosted on this site.  Click on one
   to create your own application instance of such.  Then you can begin using it.</para>
   </sect>
   </help>
@@ -159,43 +159,43 @@
     <title>Creating a New Application Instance</title>
     <para>This page lets you create an instance of the select application type.</para>
   <sect><title>Instance Name</title>
-    <para>The new name of the instance you are creating.  This must be a 
+    <para>The new name of the instance you are creating.  This must be a
     site-wide unique name so your choice may have already been used.  By default your
-    username is appended to the service type name as a suggestion since username are 
+    username is appended to the service type name as a suggestion since username are
     also site-unique.</para>
   </sect>
   <sect><title>Instance Description</title>
-      <para>This can be any description that you wish to provide for your new instance.  
-    It should be as informative as possible especially if this instance is going to visible to the 
-    public.  This description may be used to provide the public with information about the 
+      <para>This can be any description that you wish to provide for your new instance.
+    It should be as informative as possible especially if this instance is going to visible to the
+    public.  This description may be used to provide the public with information about the
     nature of the instance.  It will also be used as search criteria.</para>
   </sect>
   <sect><title>Member Model</title>
-      <para>This setting refers to the way the public can interact with your 
+      <para>This setting refers to the way the public can interact with your
     new application instance.  The options are:</para>
     <simplelist>
-      <member><emphasis>Open</emphasis> - will allow any member to join your 
-    instance without requiring your consent or knowledge.  You will be able to see 
-    who is a member of instance at any time and revoke memberships but will not 
+      <member><emphasis>Open</emphasis> - will allow any member to join your
+    instance without requiring your consent or knowledge.  You will be able to see
+    who is a member of instance at any time and revoke memberships but will not
     receive any join notifications.</member>
       <member><emphasis>Closed</emphasis> - No one will be able to join your instance.</member>
-      <member><emphasis>Invitation Only</emphasis> - Only users specifically invited by 
-    you will be able to join the instance.  Invites are sent to a prospective users 
+      <member><emphasis>Invitation Only</emphasis> - Only users specifically invited by
+    you will be able to join the instance.  Invites are sent to a prospective users
     email address with a URL to proceed.</member>
-      <member><emphasis>Approval Based</emphasis> - Any user may request to 
-    join your instance.  A notification will be sent to your email address asking you to 
-    accept of reject the request of the user.  They will not be permitted to complete the 
+      <member><emphasis>Approval Based</emphasis> - Any user may request to
+    join your instance.  A notification will be sent to your email address asking you to
+    accept of reject the request of the user.  They will not be permitted to complete the
     join without your approval.</member>
   </simplelist>
   </sect>
   <sect><title>Is Public</title>
-      <para>This option defines whether the instance will be available for the public 
-    to view.  If this option is off then only logged-in members will be able to view the 
-    instance.  With this option disabled your application instance will not be listed on 
+      <para>This option defines whether the instance will be available for the public
+    to view.  If this option is off then only logged-in members will be able to view the
+    instance.  With this option disabled your application instance will not be listed on
     the Web Applications home page or be obtainable from a public initiated search.</para>
   </sect>
   <sect><title>Is Members Visible</title>
-      <para>This option restricts access further to "Is Public" but preventing your instance 
+      <para>This option restricts access further to "Is Public" but preventing your instance
     be searchable by its members.</para>
   </sect>
   </help>

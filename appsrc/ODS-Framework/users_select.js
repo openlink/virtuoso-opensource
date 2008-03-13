@@ -357,7 +357,7 @@ function addChecked (form, txt, selectionMsq)
     return;
 
   var openerForm=eval('window.opener.document.'+form.name);
-  
+
   var submitMode = false;
   if (form.elements['src'])
     if (form.elements['src'].value.indexOf('s') != -1)

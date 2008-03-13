@@ -1,24 +1,24 @@
 /*
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
  */
 
 html { padding: 0;margin: 0;}
@@ -41,9 +41,9 @@ h3 { font-size: 16px}
 th { text-align: left}
 td { text-align: left}
 
-#page { 
+#page {
   width: 100%;
-  float: left; 
+  float: left;
   clear: both;
   padding: 0;
   margin: 0}
@@ -133,9 +133,9 @@ h1.page_hd {
 
 /* Auxiliary pages with sidebar, app_my_inst, etc */
 
-#LT_SB { 
+#LT_SB {
   float: left; clear: left;
-  width: 200px; 
+  width: 200px;
   margin: 5px 5px 5px 2px;
   border: 1px solid #3ae}
 
@@ -150,7 +150,7 @@ a.ods_side_button {
 a.ods_side_button img {
   vertical-align: middle}
 
-ul.sb { 
+ul.sb {
   margin: 0; padding: 0;
   list-style-type: none;
   background-color: #ccc}
@@ -178,7 +178,7 @@ ul.button_bar {
   list-style-type: none;
   background-color: #6bc}
 
-ul.button_bar li:hover { 
+ul.button_bar li:hover {
   background-color: #8cf}
 
 ul.button_bar li a { }
@@ -281,16 +281,16 @@ div.w_footer a {
 div.w_footer a:hover {
   text-decoration: underline}
 
-div.w_resizer { 
-  float: right; 
+div.w_resizer {
+  float: right;
   clear: right;
   height: 16px;
   min-height: 16px;
-  width: 16px; 
+  width: 16px;
   background-color: red}
 
 div.widget div.content_pane p {
-  margin: 5px;} 
+  margin: 5px;}
 
 div.widget div.settings_pane { display: none;}
 
@@ -306,14 +306,14 @@ div.w_activity h3 {
   font-weight: normal;
   padding: 0;
   margin: 4px}
-div.w_activity ul { 
+div.w_activity ul {
   list-style-type: none;
   margin: 4px;
   padding: 0;}
 div.w_activity ul li a {
   color: inherit}
 
-/* Set to display: none if you don't want to display no of 
+/* Set to display: none if you don't want to display no of
    active users */
 
 div.w_activity .usr_count {
@@ -391,7 +391,7 @@ div.w_whats_new h3 {
   margin: 5px;}
 
 div.w_whats_new .content_pane p {
-  margin: 5px; 
+  margin: 5px;
   padding: 0;}
 
 div.w_whats_new .w_title_bar {
@@ -427,8 +427,8 @@ div.w_feed_reader {}
 div.w_feed_reader ul {
   margin: 3px;
   list-style-type: none}
-div.w_feed_reader ul li img { 
-border: 0}
+div.w_feed_reader ul li img {
+  border: 0}
 div.w_feed_reader div.footer {
   background-color: #77d}
 table.feed_table { }
@@ -452,13 +452,13 @@ div.w_my_news ul {
   margin: 3px;
   font-size: 8pt;
   list-style-type: none}
-div.w_my_news ul li img { 
+div.w_my_news ul li img {
   border: 0}
 div.w_my_news div.footer {
   background-color: #77d}
 table.feed_table {}
 
-table.feed_table img { vertical-align: middle; 
+table.feed_table img { vertical-align: middle;
   border: 0;
   padding: 0 3px 0 0}
 
@@ -491,13 +491,13 @@ div.w_my_mail p {
 /* My Profile */
 div.w_my_profile {
   background-color: #fff}
-div.w_my_profile table { 
+div.w_my_profile table {
   border: 0;
   margin: 8px;}
 div.w_my_profile th {
   font-size: 8pt;
   color: #777;
-  font-weight: normal} 
+  font-weight: normal}
 
 /* My Friends */
 div.w_my_friends {}
@@ -533,7 +533,7 @@ div.w_my_calendar ul {
 
 /* (transient) Message widget */
 
-div.w_message .content_pane { 
+div.w_message .content_pane {
   margin: 3px}
 div.w_message .content_pane h2 {
   font-size: 12pt}
@@ -552,7 +552,7 @@ div.app_ad a {
   margin: 0 0 0 0;}
 div.app_ad a img {}
 
-/* XXX app-ad dismiss functionality not 
+/* XXX app-ad dismiss functionality not
    implemented so footer is not displayed. */
 
 div.app_ad_ft {
@@ -567,7 +567,7 @@ div.app_ad_ft label {
 
 /* error dialog */
 
-div.error_dialog { 
+div.error_dialog {
   margin: 10px;
   border: 1px solid #444;}
 
@@ -605,13 +605,13 @@ div.error_dialog div.dialog_buttons {
   background-color: #d9e9f2;}
 #id_col { float: left; clear: left}
 #form_col { float: left; margin-bottom: 50px;}
-#login_form_ctr { 
+#login_form_ctr {
   margin: 20px;
   border: 2px solid #b6d4e3;
   background-color: #e0f0f9;
   background-image: url(images/ods_signin_container1.png)}
 #login_form { margin: 10px;width: 300px;}
-#login_page img.id_logo { 
+#login_page img.id_logo {
   margin: 50px 50px 50px 40px}
 #login_page h1 {
   margin-left: 50px}
@@ -624,17 +624,17 @@ div.error_dialog div.dialog_buttons {
   float: left;
   margin-bottom: 10px;
   margin-top: 4px}
-#login_form_username {  
+#login_form_username {
   display: block;
   width: 170px;
   float: left;
   margin-bottom: 10px}
-#login_form_password {  
+#login_form_password {
   display: block;
   width: 170px;
   float: left;
   margin-bottom: 10px}
-#open_id_url {  
+#open_id_url {
   display: block;
   width: 170px;
   float: left;
@@ -727,9 +727,9 @@ table.navtab_tabs_ctr {
 tr.navtab_row {
   background-color: #ddd}
 tr.navtab_row td {
-margin:0;padding:0;
-border-right: 1px solid #fff;}
-tr.navtab_row td a { 
+  margin:0;padding:0;
+  border-right: 1px solid #fff;}
+tr.navtab_row td a {
   display: block;
   margin: 0;
   padding: 4px;
@@ -752,7 +752,7 @@ a.tab {}
 
 #user_details { margin: 5px }
 
-a.profile_tab { 
+a.profile_tab {
   padding-right: 8px;
   color: #888;
   text-decoration: none}
@@ -784,13 +784,13 @@ div.user_map
 
 div.map_user_data
 {
-      width:200px;
-      overflow:hidden;
+  width:200px;
+  overflow:hidden;
 }
 
 div.google_map
 {
-     width: 800px;
+  width: 800px;
   height: 400px}
 
 /* Site settings pages

@@ -49,9 +49,9 @@
       <vm:ods-bar/>
       <vm:user-home-map />
       <vm:page-hd>
-			      <vm:condition test="owner">
+        <vm:condition test="owner">
           Your Profile
-			      </vm:condition>
+        </vm:condition>
         <vm:condition test="not-owner">
           User Profile: <vm:friends-name/>
         </vm:condition>
@@ -62,9 +62,9 @@
         <vm:notification />
         <vm:user-details />
         <vm:user-friends />
-			  <vm:condition test="exists-map-key">
+        <vm:condition test="exists-map-key">
           <div id="user_map" class="user_map"><span></span></div>
-			  </vm:condition>
+        </vm:condition>
       </div> <!-- LT -->
       <div id="RT">
         <ul class="button_bar">
@@ -74,10 +74,10 @@
 <!--
           <li><vm:geo-link /></li>
 -->
-			      <vm:condition test="owner">
+          <vm:condition test="owner">
             <li><img src="images/icons/edit_16.png" alt="Edit" />
               <vm:user-info-edit-link title="Edit your profile"/></li>
-			      </vm:condition>
+          </vm:condition>
           <vm:condition test="owner">
             <li>
               <img src="images/icons/contact.gif" alt="Contacts" />
@@ -102,16 +102,16 @@
         <a href="http://www.openlinksw.com/virtuoso">
           <img alt="Powered by OpenLink Virtuoso Universal Server" src="images/virt_power_no_border.png" border="0" />
         </a>
-		</div>
+      </div>
       <div id="FT_R">
         <!--<a href="aboutus.html">About Us</a> |-->
-	  <a href="faq.html">FAQ</a> |
-	  <a href="#">Privacy</a> |
+        <a href="faq.html">FAQ</a> |
+        <a href="#">Privacy</a> |
         <a href="rabuse.vspx">Report Abuse</a> <!-- |-->
         <!--<a href="#">Advertise</a> |-->
         <!--a href="#">Contact Us</a-->
-	    <div><vm:copyright /></div>
-	    <div><vm:disclaimer /></div>
+        <div><vm:copyright /></div>
+        <div><vm:disclaimer /></div>
       </div> <!-- FT_R -->
     </div> <!-- FT -->
   </vm:body>

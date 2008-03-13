@@ -218,10 +218,10 @@ create procedure role_iri (in _wai_id int, in _wam_member_id int, in _role varch
    where WAM_INST = WAI_NAME and WAI_ID = _wai_id and WAM_USER = _wam_member_id and U_ID = WAM_USER;
 
   if (isnull (_role)) {
-  _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = tp and WMT_ID = m_type);
+    _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = tp and WMT_ID = m_type);
 
-  if (_role is null and m_type = 1)
-    _role := 'owner';
+    if (_role is null and m_type = 1)
+      _role := 'owner';
   }
 
   tp := DB.DBA.wa_type_to_app (tp);
@@ -239,10 +239,10 @@ create procedure role_iri_by_name (in _wai_name varchar, in _wam_member_id int, 
       and WAM_USER = _wam_member_id and U_ID = WAM_USER;
 
   if (isnull (_role)) {
-  _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = tp and WMT_ID = m_type);
+    _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = tp and WMT_ID = m_type);
 
-  if (_role is null and m_type = 1)
-    _role := 'owner';
+    if (_role is null and m_type = 1)
+      _role := 'owner';
   }
 
   tp := DB.DBA.wa_type_to_app (tp);
@@ -394,7 +394,7 @@ create procedure ods_sioc_forum_type (in app varchar)
 	'oDrive',        'Container',
 	'oMail',         'Forum',
 	'oGallery',      'Container',
-	'Community','Community',
+	'Community',     'Community',
 	'Bookmark',      'Container',
 	'nntpf',         'Forum',
 	'Polls',         'Container',
@@ -447,7 +447,7 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
   if (length (full_name))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (u_e_mail))
-{
+    {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
@@ -530,7 +530,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   if (person_iri like '%/organization/%')
     DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
   else
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
+    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
     {
@@ -541,7 +541,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   delete_quad_sp (graph_iri, person_iri, foaf_iri ('name'));
   if (length (full_name))
     {
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
     }
   else
@@ -682,7 +682,7 @@ create procedure sioc_user_info (
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
   if (birthday is not null and wa_user_pub_info (flags, 6))
     {
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
       DB.DBA.RDF_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
@@ -714,7 +714,7 @@ create procedure sioc_user_info (
 	{
 	  if (length (interest))
 	    {
-	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
 	      if (length (label))
 		{
 		  DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
@@ -763,7 +763,7 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
   declare prj_iri, pers_iri any;
 
   if (piri is null)
-  prj_iri := person_prj_iri (iri, sprintf ('%U', nam));
+    prj_iri := person_prj_iri (iri, sprintf ('%U', nam));
   else
     prj_iri := piri;
   pers_iri := person_iri (iri);
@@ -852,7 +852,7 @@ create procedure sioc_forum (
   pers_iri := null;
   if (uname is not null)
     {
-    site_iri := user_space_iri (uname);
+      site_iri := user_space_iri (uname);
       uiri := user_obj_iri (uname);
       pers_iri := person_iri (uiri);
     }
@@ -863,14 +863,14 @@ create procedure sioc_forum (
   clazz := ods_sioc_forum_type (wai_type_name);
 
   -- we keep this until we verify subclassing work
-  --if (wai_type_name <> 'Community')
-  --  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
-  --if (clazz <> sioc_iri ('Container') and wai_type_name <> 'Community')
-  --  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
+  -- if (wai_type_name <> 'Community')
+  --   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
+  -- if (clazz <> sioc_iri ('Container') and wai_type_name <> 'Community')
+  --   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
   -- A given forum is a subclass of the sioc:Forum, based on sioc types module
-  --if (sub <> clazz or wai_type_name = 'Community')
+  -- if (sub <> clazz or wai_type_name = 'Community')
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
   ods_is_defined_by (graph_iri, iri);
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
@@ -879,7 +879,7 @@ create procedure sioc_forum (
     wai_description := wai_name;
 
     {
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), wai_description);
     }
   if (wai_type_name <> 'Community')
@@ -895,8 +895,8 @@ create procedure sioc_forum (
   -- ATOM
   if (clazz = ods_sioc_forum_type ('WEBLOG2'))
     {
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), wai_name);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), wai_name);
     }
   if (wai_type_name = 'AddressBook')
     {
@@ -1012,13 +1012,13 @@ create procedure ods_sioc_post (
 	      app := arr[1];
 	      if (arr[1] = 'photos')
 		do_exif := 1;
-              else if (arr[1] = 'bookmark')
-		{
-                  do_ann := 1;
-		  creator := arr[0];
-		}
-        else if (arr[1] <> 'socialnetwork')
-	        do_atom := 1;
+		else if (arr[1] = 'bookmark')
+		  {
+		    do_ann := 1;
+		    creator := arr[0];
+		  }
+	      else if (arr[1] <> 'socialnetwork')
+		do_atom := 1;
 	    }
 	  else if (forum_iri like graph_iri || '/discussion/%')
 	    {
@@ -1065,7 +1065,7 @@ create procedure ods_sioc_post (
       -- literal data
       if (title is not null and length (title))
 	{
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
+          DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), title);
         }
       if (ts is not null)
@@ -1111,27 +1111,27 @@ create procedure ods_sioc_post (
       if (do_atom)
         {
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Entry'));
-      if (forum_iri is not null)
+	  if (forum_iri is not null)
 	    {
 	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('source'), forum_iri);
 	      DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, atom_iri ('entry'), iri);
 	      DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, atom_iri ('contains'), iri);
 	    }
-      if (title is not null)
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), title);
-      if (cr_iri is not null)
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('author'), person_iri (cr_iri));
-      if (ts is not null)
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('published'), sioc_date (ts));
-      if (modf is not null)
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('updated'), sioc_date (modf));
-      if (link is not null)
-	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, link, rdf_iri ('type'), atom_iri ('Link'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('link'), link);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('LinkHref'), link);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('linkRel'), 'alternate');
-	}
+	  if (title is not null)
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), title);
+	  if (cr_iri is not null)
+	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('author'), person_iri (cr_iri));
+	  if (ts is not null)
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('published'), sioc_date (ts));
+	  if (modf is not null)
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('updated'), sioc_date (modf));
+	  if (link is not null)
+	    {
+	      DB.DBA.RDF_QUAD_URI (graph_iri, link, rdf_iri ('type'), atom_iri ('Link'));
+	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('link'), link);
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('LinkHref'), link);
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('linkRel'), 'alternate');
+	    }
         }
 
       if (content is not null and not do_exif)
@@ -1189,16 +1189,16 @@ create procedure make_exif_fld (in graph_iri any, in iri any, inout arr any, in 
 {
   declare r, n any;
   foreach (any u in arr) do
-{
-  if (u is not null)
     {
-	  n := udt_get (u, 'name');
-      r := udt_get (u, 'value');
-	  if (r is not null and upper (fld) = n)
+      if (u is not null)
 	{
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, exif_iri (fld), r);
+	  n := udt_get (u, 'name');
+	  r := udt_get (u, 'value');
+	  if (r is not null and upper (fld) = n)
+	    {
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, exif_iri (fld), r);
+	    }
 	}
-    }
     }
 };
 
@@ -1216,7 +1216,7 @@ create procedure ods_sioc_service (
     )
 {
   if (iri is null or forum_iri is null)
-      return;
+    return;
   ods_sioc_result (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Service'));
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_of'), forum_iri);
@@ -1338,10 +1338,10 @@ create procedure fill_ods_sioc (in doall int := 0)
       goto l0;
     };
     l0:
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri);
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri);
     commit work;
     set isolation='committed';
-  ods_graph_init ();
+    ods_graph_init ();
   }
 
   scot_tags_init ();
@@ -1443,7 +1443,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 
 
 	      for select WAI_NAME, WAI_TYPE_NAME, WAI_ID, WAM_USER
-		from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
+		    from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
 		   where WAM_USER = U_ID and WAM_INST = WAI_NAME and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
 		{
 		  declare riri, firi, _wai_type varchar;
@@ -1477,17 +1477,17 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    sas_iri := sas_iri || sprintf ('&login=%U', U_NAME);
 		  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
 		}
-		}
 	    }
+	}
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
 	{
 	  commit work;
 	  _u_name := U_NAME;
 	}
-	}
-    commit work;
     }
+    commit work;
+  }
 
   {
     declare _gi_super, _gi_sub any;
@@ -1524,7 +1524,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 	}
     }
     commit work;
-    }
+  }
 
   {
     declare _from, _to, _serial any;
@@ -1556,7 +1556,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 	}
     }
     commit work;
-    }
+  }
 
   {
     declare _wai_name varchar;
@@ -1591,13 +1591,13 @@ create procedure fill_ods_sioc (in doall int := 0)
 	}
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
-	    {
+	{
 	  commit work;
 	  _wai_name := WAI_NAME;
-	    }
 	}
-    commit work;
     }
+    commit work;
+  }
 
   if (doall)
     {
@@ -1615,10 +1615,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		registry_set (sprintf('__ods_%s_sioc_init', suffix), sioc_version);
 	      }
 	}
-  if (__proc_exists ('sioc..fill_ods_nntp_sioc'))
+      if (__proc_exists ('sioc..fill_ods_nntp_sioc'))
 	if (registry_get ('__ods_nntp_sioc_init') <> sioc_version)
 	  {
-    call ('sioc..fill_ods_nntp_sioc') (graph_iri, site_iri);
+	    call ('sioc..fill_ods_nntp_sioc') (graph_iri, site_iri);
 	    registry_set ('__ods_nntp_sioc_init', sioc_version);
 	  }
     }
@@ -1703,7 +1703,7 @@ create procedure delete_quad_so (in _g any, in _s any, in _o any)
 };
 
 create procedure delete_quad_sp (in _g any, in _s any, in _p any)
-	{
+{
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _p := DB.DBA.RDF_IID_OF_QNAME (_p);
@@ -1713,7 +1713,7 @@ create procedure delete_quad_sp (in _g any, in _s any, in _p any)
 };
 
 create procedure delete_quad_s_p_o (in _g any, in _s any, in _p any, in _o any)
-        {
+{
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _p := DB.DBA.RDF_IID_OF_QNAME (_p);
@@ -1766,7 +1766,8 @@ create procedure update_quad_p (in _g any, in _o any, in _n any)
 };
 
 create procedure sioc_log_message (in msg varchar)
-    {
+{
+--  dbg_obj_princ ('sioc_log_message: ', msg);
   if (0) log_message (msg);
 };
 
@@ -1779,7 +1780,7 @@ create trigger SYS_USERS_SIOC_I after insert on DB.DBA.SYS_USERS referencing new
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
-};
+  };
 
 --  dbg_obj_print ('row_cnt:',row_count(1), row_count());
   if (not row_count(1))
@@ -1792,7 +1793,7 @@ create trigger SYS_USERS_SIOC_I after insert on DB.DBA.SYS_USERS referencing new
   iri := user_obj_iri (N.U_NAME);
   delete_quad_s_or_o (graph_iri, iri, iri);
   if (N.U_IS_ROLE)
-{
+    {
       sioc_group (graph_iri, iri, N.U_NAME);
     }
   else
@@ -1808,7 +1809,7 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
-};
+  };
   graph_iri := get_graph ();
 
   if (N.U_ACCOUNT_DISABLED = 1) -- tdb erase
@@ -1816,7 +1817,7 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
   iri := user_obj_iri (N.U_NAME);
   oiri := user_obj_iri (O.U_NAME);
   if (N.U_IS_ROLE = 0)
-{
+    {
       delete_quad_sp (graph_iri, oiri, sioc_iri ('email'));
       delete_quad_sp (graph_iri, oiri, sioc_iri ('name'));
       delete_quad_sp (graph_iri, oiri, sioc_iri ('email_sha1'));
@@ -1832,7 +1833,7 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
 	}
 
       if (length (N.U_E_MAIL))
-    {
+	{
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
 
@@ -1840,8 +1841,8 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (N.U_E_MAIL));
 	  if (length (N.U_FULL_NAME))
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
-    }
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
+	}
     }
   return;
 };
@@ -1898,7 +1899,7 @@ create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referenci
 };
 
 create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referencing old as O, new as N
-    {
+{
   declare iri, graph_iri, u_site_iri, uname, niri, del_iri varchar;
   declare lat, lng real;
   declare exit handler for sqlstate '*' {
@@ -2108,7 +2109,7 @@ create trigger WA_USER_RELATED_RES_SIOC_D after delete on DB.DBA.WA_USER_RELATED
 
 -- DB.DBA.WA_MEMBER
 create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new as N
-	{
+{
   declare iri, graph_iri, riri, firi, site_iri, svc_iri varchar;
   --dbg_obj_print (current_proc_name (), N.WAM_INST, N.WAM_IS_PUBLIC);
   declare exit handler for sqlstate '*' {
@@ -2139,7 +2140,7 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
   do_social:
   firi := forum_iri (_wai_type, N.WAM_INST);
   if (iri is not null and riri is not null and firi is not null and ((N.WAM_IS_PUBLIC = 1) or (N.WAM_APP_TYPE = 'oDrive')))
-{
+    {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
@@ -2170,11 +2171,11 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
   graph_iri := get_graph ();
 
   if (O.WAM_MEMBER_TYPE = 1) -- instance drop
-	  {
+    {
       firi := forum_iri (O.WAM_APP_TYPE, O.WAM_INST);
 --      dbg_obj_print ('firi:',firi);
       delete_quad_s_or_o (graph_iri, firi, firi);
-	  }
+    }
 
   iri :=  user_iri (O.WAM_USER);
   riri := role_iri_by_name (O.WAM_INST, O.WAM_USER);
@@ -2197,7 +2198,7 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
-};
+  };
 
   graph_iri := get_graph ();
 
@@ -2232,33 +2233,33 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
   else
     {
       delete_quad_sp (graph_iri, oiri, sioc_iri ('id'));
-  delete_quad_sp (graph_iri, oiri, sioc_iri ('link'));
-  update_quad_s_o (graph_iri, oiri, iri);
+      delete_quad_sp (graph_iri, oiri, sioc_iri ('link'));
+      update_quad_s_o (graph_iri, oiri, iri);
       delete_quad_sp (graph_iri, oiri, cc_iri ('license'));
       cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
 
       for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC = 1) or (WAM_APP_TYPE = 'oDrive')) do
-{
-      declare _role varchar;
-      _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
+	{
+	  declare _role varchar;
+	  _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
 
-      if (_role is null and tp = 1)
-	_role := 'owner';
+	  if (_role is null and tp = 1)
+	    _role := 'owner';
 
-      riri := iri || '#' || _role;
-      oriri := oiri || '#' || _role;
-      update_quad_s_o (graph_iri, oriri, riri);
-    }
+	  riri := iri || '#' || _role;
+	  oriri := oiri || '#' || _role;
+	  update_quad_s_o (graph_iri, oriri, riri);
+	}
 
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), N.WAI_NAME);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
     }
 };
 
 
 -- DB.DBA.SYS_ROLE_GRANTS
 create trigger SYS_ROLE_GRANTS_SIOC_I after insert on DB.DBA.SYS_ROLE_GRANTS referencing new as N
-    {
+{
   declare iri, graph_iri, g_iri varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -2270,10 +2271,10 @@ create trigger SYS_ROLE_GRANTS_SIOC_I after insert on DB.DBA.SYS_ROLE_GRANTS ref
   iri := user_iri (N.GI_SUPER);
   g_iri := user_group_iri (N.GI_SUB);
   if (iri is not null and g_iri is not null)
-	  {
+    {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
-	  }
+    }
   return;
 };
 
@@ -2524,18 +2525,18 @@ create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf i
   set_user_id ('SPARQL');
   exec (qr, stat, msg, vector (), 0, metas, rset);
   if (stat = '00000')
-	      {
+    {
       ses := string_output ();
       DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
-	}
+    }
   else
     signal (stat, msg);
   return ses;
-    }
+}
 ;
 
 create procedure gen_cc_xml ()
-		  {
+{
   declare ses any;
   ses := string_output ();
   http ('<?xml version="1.0"?>\n', ses);
@@ -2632,11 +2633,11 @@ create procedure gen_cc_xml ()
   http ('  </cc:License>\n', ses);
   http ('</rdf:RDF>\n', ses);
   return xtree_doc (string_output_string (ses));
-		  }
+}
 ;
 
 create procedure sioct_n3 ()
-	{
+{
   declare ses any;
   ses := string_output ();
   http (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
@@ -2692,7 +2693,7 @@ create procedure sioct_n3 ()
   http ('<http://xmlns.com/foaf/0.1/Agent> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   http ('<http://xmlns.com/foaf/0.1/Document> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   return string_output_string (ses);
-	}
+}
 ;
 
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
@@ -2789,10 +2790,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:homepage ?homepage .
 	  }
 	  WHERE
-            	{
-		  graph <%s>
-		  {
-	{
+	  {
+	    graph <%s>
+	    {
+	      {
 	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
@@ -2822,7 +2823,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
 	      optional { ?person foaf:depiction ?depiction } .
 	      optional { ?person foaf:homepage ?homepage } .
-	}
+	      }
 	    }
 	  }',
 	  dociri, dociri, dociri, dociri,
@@ -2870,11 +2871,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?made foaf:maker ?person .'
 	    || cons ||
 	    '
-	   }
+	  }
 	  WHERE
-                {
-                  graph <%s>
-                  {
+	  {
+	    graph <%s>
+	    {
 	      {
 	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      foaf:openid ?oid .
@@ -2896,8 +2897,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      '
 	      || vars ||
 	      '
-		    }
-	}
+	      }
+	    }
 	  }', graph, graph, u_name);
 
   qry := decl || part;
@@ -2911,11 +2912,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?forum a ?forum_type .
 	    ?forum rdfs:label ?label .
 	    ?forum rdfs:seeAlso ?see_also .
-	       }
+	  }
 	  WHERE
-		    {
-		      graph <%s>
-		      {
+	  {
+	    graph <%s>
+	    {
 	      {
                 <%S> sioc:has_function ?function .
                 ?function sioc:has_scope ?forum .
@@ -2923,8 +2924,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		?forum foaf:maker ?maker .
 		optional { ?forum rdfs:label ?label . }
 		optional { ?forum rdfs:seeAlso ?see_also . }
-		    }
-	}
+	      }
+	    }
 	  }', graph, iri);
 
   qry := decl || part;
@@ -2940,11 +2941,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?child_forum sioc:has_parent ?forum .
 	    ?child_forum rdfs:label ?label .
 	    ?child_forum rdfs:seeAlso ?see_also .
-	       }
+	  }
 	  WHERE
-		    {
-		      graph <%s>
-		      {
+	  {
+	    graph <%s>
+	    {
 	      {
                 <%S> sioc:has_function ?function .
                 ?function sioc:has_scope ?forum .
@@ -2952,8 +2953,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		?child_forum a ?forum_type .
 		optional { ?child_forum rdfs:label ?label . }
 		optional { ?child_forum rdfs:seeAlso ?see_also . }
-                  }
-                }
+	      }
+	    }
 	  } LIMIT %d OFFSET %d', graph, iri, lim, offs);
 
   qry := decl || part;
@@ -2973,27 +2974,27 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	  ?child_forum sioc:container_of ?item1 .
 	  ?item1 a ?item_type1 .
 	  ?item1 rdfs:label ?label1 .
-	}
+	  }
 	  WHERE
-		  {
+	  {
 	    graph <%s>
 	    {
-    {
+	      {
 		<%S> sioc:owner_of ?container .
 		optional
 		{
 		  ?container sioc:container_of ?item .
 		  ?item a ?item_type .
 		  optional { ?item rdfs:label ?label . }
-	   	    } .
+		} .
 		optional
 		{
 		  ?container sioc:container_of ?child_forum .
 		  ?child_forum sioc:container_of ?item1 .
 		  ?item1 a ?item_type1 .
 		  optional { ?item1 rdfs:label ?label1 . }
-	   	    } .
-    }
+		} .
+	      }
 	    }
 	  } LIMIT %d OFFSET %d', iri, graph, iri, lim, offs);
 
@@ -3006,46 +3007,46 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   set_user_id ('dba');
   foreach (any q in qrs) do
     {
-  maxrows := 0;
-  state := '00000';
+      maxrows := 0;
+      state := '00000';
       if (q is not null)
 	{
-	  --dbg_printf ('%s', q);
+--	  dbg_printf ('%s', q);
 	  exec (q, state, msg, vector(), maxrows, metas, rset);
---  dbg_obj_print (msg);
-  if (state <> '00000')
-    signal (state, msg);
+--	  dbg_obj_print (msg);
+	  if (state <> '00000')
+	    signal (state, msg);
 	  if (fmt = 'rdf')
-{
+	    {
 	      if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
-    {
+		{
 		  triples := dict_list_keys (rset[0][0], 1);
 		  DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
-    }
-}
+		}
+	    }
 	  else
-{
+	    {
 	      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
 	    }
 	}
-}
+    }
 
   if (0)
     {
-  ss := string_output ();
-  rdf_head (ss);
-  http (sprintf ('<rdf:Description rdf:about="%s">', dociri), ss);
-  http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />',
-   dociri, coalesce (p, 0) + 1), ss);
-  http ('</rdf:Description>', ss);
-  rdf_tail (ss);
-  ss := string_output_string (ss);
-  sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, dociri, graph);
-  triples := dict_list_keys (sa_dict, 1);
-  if (fmt = 'rdf')
-    DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
-  else
-    DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s">', dociri), ss);
+      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />',
+       dociri, coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, dociri, graph);
+      triples := dict_list_keys (sa_dict, 1);
+      if (fmt = 'rdf')
+	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+      else
+	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
     }
 
   if (fmt = 'rdf')
@@ -3099,20 +3100,20 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
 	signal (stat, msg);
       ods_sioc_print_rset (iri, rset, ses, fmt, maybe_more);
     }
-      if (fmt = 'rdf')
+  if (fmt = 'rdf')
     rdf_tail (ses);
   return ses;
 }
 ;
 
 create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any, inout fmt any, inout maybe_more int)
-	{
+{
   declare triples any;
   declare this_iri, type_iri, label_iri, g_iri, dict, sa_iri any;
 
   triples := null;
-	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
-	    {
+  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+    {
       this_iri := iri_to_id (iri);
       type_iri := iri_to_id (sioc..rdf_iri ('type'));
       label_iri := iri_to_id (sioc..rdfs_iri ('label'));
@@ -3156,7 +3157,7 @@ create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any,
 };
 
 create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
-	{
+{
   declare graph, ses any;
   declare qrs, stat, msg, accept, pref any;
   declare rset, metas any;
@@ -3215,7 +3216,7 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
 
 	  ods_sioc_print_rset (iri, rset, ses, fmt, maybe_more);
 	}
-	}
+    }
   if (maybe_more)
     {
       declare ss, sa_dict any;
@@ -3293,7 +3294,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
     }
   else if (wai_name is null and inst_type is null and postid is null)
     {
-  iri := user_obj_iri (u_name);
+      iri := user_obj_iri (u_name);
       qry := 'sparql ' || fmt_decl ||
          ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
          ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
@@ -3324,7 +3325,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	}
       else if (kind = 1) -- FOAF
 	{
-  part := sprintf (
+	  part := sprintf (
 	  ' CONSTRUCT {
 	    ?person a foaf:Person .
 	    ?person foaf:nick "%s" .
@@ -3569,9 +3570,9 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		    }
 		    order by desc (?created) limit %d offset %d
 		', graph, wai_name, lim, offs);
-	  }
+	}
       else if (tp = 'community')
-	    {
+	{
 	  qry := sprintf ('sparql
 	      prefix sioc: <http://rdfs.org/sioc/ns#>
 	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -3579,18 +3580,18 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	      prefix dc: <http://purl.org/dc/elements/1.1/>
               prefix dct: <http://purl.org/dc/terms/>
 	      construct
-	      {
+	       {
 		    ?forum sioc:container_of ?post .
 		    ?post  sioc:has_container ?forum .
 		    ?forum sioc:has_part ?pforum .
 		    ?pforum sioc:part_of ?forum .
 		    ?post rdf:type ?post_tp .
 		    ?post rdfs:seeAlso ?post_see_also
-	  }
+	       }
 	      where
-	  {
-	    graph <%s>
-	    {
+		    {
+		      graph <%s>
+		      {
 			?pforum sioc:id "%s" .
 			?pforum sioc:part_of ?forum .
 			?post sioc:has_container ?forum .
@@ -3599,13 +3600,13 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			optional { ?post dct:created ?created } .
 			optional { ?post sioc:reply_of ?reply_of }
 			filter bif:isnull (?reply_of)
-	      }
-	    }
+		      }
+		    }
 		    order by desc (?created) limit %d offset %d
 		', graph, wai_name, lim, offs);
-	  }
+	}
       else
-	  {
+	{
 	  qry := sprintf ('sparql
 	      prefix sioc: <http://rdfs.org/sioc/ns#>
 	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -3614,14 +3615,14 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
               prefix dct: <http://purl.org/dc/terms/>
 	      prefix foaf: <http://xmlns.com/foaf/0.1/>
 	      construct
-	    {
+	       {
 		    ?forum sioc:container_of ?post .
 		    ?post  sioc:has_container ?forum .
 		    ?post rdf:type ?post_tp .
 		    ?post rdfs:seeAlso ?post_see_also
 	       }
 	      where
-	      {
+		    {
 		      graph <%s>
 		      {
 			?forum sioc:id "%s" .
@@ -3632,8 +3633,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			optional { ?post sioc:has_creator ?creator } .
 			optional { ?post sioc:reply_of ?reply_of }
 			filter bif:isnull (?reply_of)
-	      }
-	    }
+		      }
+		    }
 		    order by desc (?created) limit %d offset %d
 		', graph, wai_name, lim, offs);
 	}
@@ -3644,25 +3645,25 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 --      set_user_id ('dba');
 --      dbg_printf ('%s', qry);
       exec (qry, state, msg, vector(), maxrows, metas, rset);
-	  -- dbg_obj_print (msg);
+--      dbg_obj_print (msg);
       if (state = '00000')
-	    {
+	{
 	  triples := rset[0][0];
 	  rset := dict_list_keys (triples, 1);
 	  if (fmt = 'TTL')
 	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
-      else
+	  else
 	    DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
 	  -- seeAlso for the rest of posts
 	  if (length (rset) and fmt = 'RDF/XML')
-	{
+	    {
 	      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ses);
 	      http (sprintf
 	      	('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/sioc.rdf?p=%d" />',
 		    iri, coalesce (p, 0) + 1), ses);
 	      http ('</rdf:Description>', ses);
+	    }
         }
-    }
       if (fmt = 'RDF/XML')
         rdf_tail (ses);
       goto ret;
@@ -3677,7 +3678,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
         iri := feed_item_iri (atoi(wai_name), atoi(postid));
       else if (inst_type = 'discussion')
 	iri := nntp_post_iri (wai_name, postid);
-  else
+      else
         iri := post_iri (u_name, inst_type, wai_name, postid);
 --      dbg_obj_print (iri, md5(iri));
       qry := sprintf ('sparql ' || fmt_decl ||

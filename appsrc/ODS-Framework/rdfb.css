@@ -50,7 +50,7 @@ font-size: 9pt;
 color: #5e6166;
 }
 
-h1 { 
+h1 {
 margin-top: 5px;
 margin-left: 10px}
 
@@ -138,7 +138,7 @@ width: 100%;
 }
 
 
-#rdf_cache input, 
+#rdf_cache input,
 #rdf_cache h3 {
  display:none;
 }

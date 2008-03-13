@@ -36,17 +36,18 @@
       <vm:rawheader caption=""/>
       <vm:body default-input="username">
         <div id="login_page">
-                <h1 class="page_title">
-                  <?vsp
-                    declare copy varchar;
-                    copy := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
-                    if (copy = '' or copy is null)
-                      http(sys_stat ('st_host_name'));
-                    else
-                      http(copy);
-                  ?>
-                </h1>
-                 <vm:login/>
+          <h1 class="page_title">
+            <?vsp
+              declare copy varchar;
+              copy := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
+
+              if (copy = '' or copy is null)
+                http(sys_stat ('st_host_name'));
+              else
+                http(copy);
+            ?>
+          </h1>
+          <vm:login/>
         </div>
       </vm:body>
     </vm:pagewrapper>

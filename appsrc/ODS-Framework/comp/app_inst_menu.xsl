@@ -38,7 +38,7 @@
 			vector ('oWiki', 'wiki'),
 			vector ('eCRM', 'eCRM'),
 			vector ('Bookmark', 'bookmark')
-			
+
 			);
 
 			foreach (any app in arr) do

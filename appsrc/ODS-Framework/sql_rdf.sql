@@ -47,7 +47,7 @@ create procedure rdf_import (
       if (isstring (pFolder)) {
         pFolder := pFolder || 'Uploads/';
         DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
-  
+
         pFolder := pFolder || 'RDF/';
         DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
       }
@@ -111,7 +111,7 @@ create procedure rdf_import (
 }
 ;
 
--- 
+--
 --
 create procedure rdf_import_ext (
   in pSource varchar,
@@ -125,14 +125,14 @@ create procedure rdf_import_ext (
 {
   declare retValue, rc, user_id integer;
 	declare S, content, hdr any;
-	
+
   if (pSourceType not in ('string', 'URL'))
 	  signal ('ODS13', 'Content source must be \'string\' or \'URL\'');
   if ((pSourceType = 'string') and isnull (pSourceMimeType))
 	  signal ('ODS13', 'Mime Type must be set when content is string');
   if ((pSourceType = 'string') and isnull (pGraph))
 	  signal ('ODS13', 'Graph must be set when content is string');
-	  
+
   user_id := null;
   if (not isnull (pUser)) {
     user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = pUser and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pPassword);
@@ -147,7 +147,7 @@ create procedure rdf_import_ext (
       if (isstring (pFolder)) {
         pFolder := pFolder || 'Uploads/';
         DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
-  
+
         pFolder := pFolder || 'RDF/';
         DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
       }
@@ -165,28 +165,28 @@ create procedure rdf_import_ext (
     if (isnull (DAV_HIDE_ERROR (rc)))
   	  signal ('ODS12b', DAV_PERROR (rc));
   }
-  
+
   -- get count before
   retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
-  
+
   if (pSourceType = 'URL' and pSpongerMode) {
     exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pSource, pGraph));
-  } else { 
+  } else {
     if (pSourceType = 'URL') {
       commit work;
     	content := http_get (pSource, hdr, 'GET');
     	if (hdr[0] not like 'HTTP%200%')
     	  signal ('22023', hdr[0]);
-    	if (isnull (pSourceMimeType))  
-        pSourceMimeType := http_request_header (hdr, 'Content-Type');    	  
+    	if (isnull (pSourceMimeType))
+        pSourceMimeType := http_request_header (hdr, 'Content-Type');
     }	else {
     	content := pSource;
-    }  
-  
+    }
+
     if (pSourceMimeType in ('application/rdf+xml', 'application/foaf+xml')) {
       if (pSpongerMode) {
         declare xt any;
-  
+
         xt := xtree_doc (content);
         if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
           goto _sponger;
@@ -198,19 +198,19 @@ create procedure rdf_import_ext (
       DB.DBA.TTLP (content, pGraph, pGraph);
       goto _end;
     }
-  
+
   _sponger:;
     if (pSpongerMode) {
       declare aq, ps, xrc any;
-  
+
       aq := null;
       ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
       if (length (ps))
         aq := async_queue (1);
-  
+
       for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do {
         declare val_match, pcols, npars any;
-  
+
         if (RM_TYPE = 'MIME') {
           val_match := pSourceMimeType;
         } else {
@@ -219,11 +219,11 @@ create procedure rdf_import_ext (
         if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)	{
           if (__proc_exists (RM_HOOK) is null)
             goto _next_mapper;
-  
+
           declare exit handler for sqlstate '*' {
             goto _next_mapper;
           };
-  
+
           pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
           npars := 8;
           if (isarray (pcols))
@@ -241,7 +241,7 @@ create procedure rdf_import_ext (
     }
   }
 
-_end:;  
+_end:;
   -- get count after
   retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
   if (retValue <= 0) {
@@ -260,7 +260,7 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
   declare REPORT, stat, msg, sqltext varchar;
   declare metas, rowset any;
   if (fl)
-   result_names (REPORT);
+    result_names (REPORT);
   txt := '
     prefix sioc: <http://rdfs.org/sioc/ns#>
     prefix sioct: <http://rdfs.org/sioc/types#>
@@ -277,10 +277,10 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
     prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
     prefix calendar: <http://www.w3.org/2002/12/cal#>
 ' || txt;
-  -- dbg_printf ('%s', txt);
+  --dbg_printf ('%s', txt);
   -- string_to_file ('ods_sparql_qm_run.sql', '\nSPARQL ' || txt || '\n;\n', -1);
   sqltext := string_output_string (sparql_to_sql_text (txt));
-  --dump_large_text_impl (sqltext);
+  -- dump_large_text_impl (sqltext);
   stat := '00000';
   msg := '';
   rowset := null;
@@ -293,10 +293,10 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
     {
       result ('STATE=' || stat || ': ' || msg);
       if (193 = __tag (rowset))
-	{
-	  foreach (any r in rowset) do
-	    result (r[0] || ': ' || r[1]);
-	}
+      	{
+      	  foreach (any r in rowset) do
+      	    result (r[0] || ': ' || r[1]);
+      	}
     }
 }
 ;
@@ -428,9 +428,9 @@ create procedure ODS_RDF_VIEW_INIT_1 (in fl int := 0)
 --    DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
 
     sioc..ods_sioc_result ('Dropping old graph.');
-ODS_SPARQL_QM_RUN ('
+    ODS_SPARQL_QM_RUN ('
     drop quad map graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
-', 0, 0);
+    ', 0, 0);
 
     sioc..ods_sioc_result ('Old graph dropped.');
     commit work;
@@ -445,7 +445,7 @@ ODS_SPARQL_QM_RUN ('
 
     sioc..ods_sioc_result ('virtrdf:ODSDataspace storage dropped.');
 
-ODS_SPARQL_QM_RUN ('
+    ODS_SPARQL_QM_RUN ('
     drop quad storage virtrdf:ODS .
     ', 0, 0);
 
@@ -456,28 +456,28 @@ ODS_SPARQL_QM_RUN ('
     ', 1, fl);
     sioc..ods_sioc_result ('Creating IRI classes.');
 
-ODS_SPARQL_QM_RUN ('
+    ODS_SPARQL_QM_RUN ('
     create iri class sioc:proxy_iri "http://^{URIQADefaultHost}^/proxy/%U" (in url varchar not null) .
-create iri class sioc:default_site "http://^{URIQADefaultHost}^/dataspace%U" (in dummy varchar not null) .
-create iri class sioc:user_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
-create iri class foaf:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
-create iri class foaf:person_geo_iri "http://^{URIQADefaultHost}^/dataspace/%U#person_based" (in uname varchar not null) .
-create iri class sioc:user_group_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
-create iri class sioc:user_site_iri "http://^{URIQADefaultHost}^/dataspace/%U#site" (in uname varchar not null) .
-create iri class sioc:forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U"
-	( in uname varchar not null, in forum_type varchar not null, in forum_name varchar not null) .
-create iri class sioc:role_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U#%U"
-	(in uname varchar not null, in tp varchar not null, in inst varchar not null, in role_name varchar not null) .
+    create iri class sioc:default_site "http://^{URIQADefaultHost}^/dataspace%U" (in dummy varchar not null) .
+    create iri class sioc:user_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
+    create iri class foaf:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
+    create iri class foaf:person_geo_iri "http://^{URIQADefaultHost}^/dataspace/%U#person_based" (in uname varchar not null) .
+    create iri class sioc:user_group_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
+    create iri class sioc:user_site_iri "http://^{URIQADefaultHost}^/dataspace/%U#site" (in uname varchar not null) .
+    create iri class sioc:forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U"
+	    ( in uname varchar not null, in forum_type varchar not null, in forum_name varchar not null) .
+    create iri class sioc:role_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U#%U"
+	    (in uname varchar not null, in tp varchar not null, in inst varchar not null, in role_name varchar not null) .
     create iri class atom:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
     # Blog
-create iri class sioc:blog_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U"
-	( in uname varchar not null, in forum_name varchar not null) .
-create iri class sioc:blog_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U"
-	( in uname varchar not null, in forum_name varchar not null, in postid varchar not null) .
-create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U/%d"
-	( in uname varchar not null, in forum_name varchar not null, in postid varchar not null, in comment_id int not null) .
+    create iri class sioc:blog_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
+    create iri class sioc:blog_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U"
+	    ( in uname varchar not null, in forum_name varchar not null, in postid varchar not null) .
+    create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U/%d"
+	    ( in uname varchar not null, in forum_name varchar not null, in postid varchar not null, in comment_id int not null) .
     create iri class sioc:tag_iri "http://^{URIQADefaultHost}^/dataspace/%U/concept#%U"
-	(in uname varchar not null, in tag varchar not null) .
+	    (in uname varchar not null, in tag varchar not null) .
     create iri class sioc:blog_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog-text/%U/%U"
 	    ( in uname varchar not null, in forum_name varchar not null, in postid varchar not null) .
     #Feeds
@@ -487,14 +487,14 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
     create iri class sioc:feed_mgr_iri "http://^{URIQADefaultHost}^/dataspace/%U/subscriptions/%U" (in uname varchar not null, in inst_name varchar not null) .
     create iri class sioc:feed_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/subscriptions/%U/%d/%d"
 	    (in uname varchar not null, in inst_name varchar not null, in item_id integer not null, in comment_id integer not null) .
-    #Bookmark
+    # Bookmark
     create iri class sioc:bmk_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U/%d"
 	    (in uname varchar not null, in inst_name varchar not null, in bmk_id integer not null) .
     create iri class sioc:bmk_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U/%d/text"
 	    (in uname varchar not null, in inst_name varchar not null, in bmk_id integer not null) .
     create iri class sioc:bmk_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U"
 	    ( in uname varchar not null, in forum_name varchar not null) .
-    #Photo
+    # Photo
     create iri class sioc:photo_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/photos/%U"
 	    (in uname varchar not null, in inst_name varchar not null) .
     create iri class sioc:photo_post_iri "http://^{URIQADefaultHost}^%s"
@@ -520,7 +520,7 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
 	    (in uname varchar not null, in inst_name varchar not null, in topic_id varchar not null) .
     create iri class sioc:wiki_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/wiki/%U"
 	    ( in uname varchar not null, in forum_name varchar not null) .
-    #Calendar
+    # Calendar
     create iri class sioc:calendar_event_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U/%d"
 	    (in uname varchar not null, in inst_name varchar not null, in calendar_id integer not null) .
     create iri class sioc:calendar_event_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U/%d/text"
@@ -550,35 +550,35 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
 	    ( in group_name varchar not null, in message_id varchar not null) .
     create iri class sioc:nntp_role_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U#reader"
 	    ( in forum_name varchar not null) .
-', 1, fl);
+    ', 1, fl);
     sioc..ods_sioc_result ('IRI classes are created.');
 
     commit work;
     sioc..ods_sioc_result ('Creating the virtrdf:ODSDataspace storage.');
     ODS_CREATE_APP_RDF_VIEWS ();
-ODS_SPARQL_QM_RUN ('
+    ODS_SPARQL_QM_RUN ('
     alter quad storage virtrdf:DefaultQuadStorage
-    #  alter quad storage virtrdf:ODS
-  {
+    #alter quad storage virtrdf:ODS
+    {
 	create virtrdf:ODSDataspace as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") option (exclusive)
 	  {
 
-        # Default ODS Site
+	    # Default ODS Site
 
 	    sioc:default_site (DB.DBA.SIOC_SITE.WS_DUMMY) a sioc:Space ;
 	    sioc:link sioc:proxy_iri (WS_LINK) ;
- 	dc:title WS_WEB_TITLE .
+	    dc:title WS_WEB_TITLE .
 
-        # Forum
-        sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+	    # Forum
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioc:Container option (EXCLUSIVE);
-		sioc:id WAM_INST ;
+		    sioc:id WAM_INST ;
 		    sioc:type APP_TYPE option (EXCLUSIVE) ;
-		sioc:description WAI_DESCRIPTION ;
+		    sioc:description WAI_DESCRIPTION ;
 		    sioc:link sioc:proxy_iri (LINK) ;
 		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
 		    sioc:has_space sioc:user_site_iri (U_NAME)
-	.
+	    .
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioct:Weblog
 	            where (^{alias}^.WAM_APP_TYPE = ''WEBLOG2'') option (EXCLUSIVE) .
@@ -629,74 +629,74 @@ ODS_SPARQL_QM_RUN ('
 		    atom:link sioc:proxy_iri (LINK) ;
 		    atom:title WAM_INST .
 
-        # User
-        sioc:user_iri (DB.DBA.SIOC_USERS.U_NAME)
+	    # User
+	    sioc:user_iri (DB.DBA.SIOC_USERS.U_NAME)
 		    a sioc:User option (EXCLUSIVE);
-       	sioc:id U_NAME ;
-	sioc:name U_FULL_NAME ;
+		    sioc:id U_NAME ;
+		    sioc:name U_FULL_NAME ;
 		    sioc:email sioc:proxy_iri (E_MAIL) ;
-	sioc:email_sha1 E_MAIL_SHA1 ;
+		    sioc:email_sha1 E_MAIL_SHA1 ;
 		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
 		    sioc:account_of foaf:person_iri (U_NAME) .
 
-        # Usergroup
+	    # Usergroup
 	    sioc:user_iri (DB.DBA.SIOC_GROUPS.U_NAME) a sioc:Usergroup option (EXCLUSIVE);
-       	sioc:id U_NAME
-	#where (^{alias}^.U_IS_ROLE = 1) XXX
-	.
+		    sioc:id U_NAME
+		    #where (^{alias}^.U_IS_ROLE = 1) XXX
+	    .
 
-        # User Site
+	    # User Site
 	    sioc:user_site_iri (DB.DBA.SIOC_USERS.U_NAME) a sioc:Space option (EXCLUSIVE);
-	sioc:link sioc:user_iri (U_NAME)
-	.
+		    sioc:link sioc:user_iri (U_NAME)
+	    .
 
-	# Site - Forum relation
-	sioc:user_site_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME)
+	    # Site - Forum relation
+	    sioc:user_site_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME)
 		    sioc:space_of sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST)
-	.
+	    .
 
-	# Roles & Membership
-	sioc:role_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST, DB.DBA.SIOC_ROLES.WMT_NAME)
+	    # Roles & Membership
+	    sioc:role_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST, DB.DBA.SIOC_ROLES.WMT_NAME)
 		    sioc:has_scope sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST) .
 
-	sioc:forum_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST)
+	    sioc:forum_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST)
 		    sioc:scope_of  sioc:role_iri (U_NAME, APP_TYPE, WAM_INST, WMT_NAME) .
 
-	sioc:user_iri (DB.DBA.SIOC_ROLES.U_NAME)
+	    sioc:user_iri (DB.DBA.SIOC_ROLES.U_NAME)
 		    sioc:has_function sioc:role_iri (U_NAME, APP_TYPE, WAM_INST, WMT_NAME) .
 
 	    sioc:role_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST, DB.DBA.SIOC_ROLES.WMT_NAME)
 		    sioc:function_of sioc:user_iri (U_NAME) .
 
-	sioc:user_iri (DB.DBA.SIOC_ROLE_GRANTS.U_NAME)
+	    sioc:user_iri (DB.DBA.SIOC_ROLE_GRANTS.U_NAME)
 		    sioc:member_of sioc:user_group_iri (G_NAME) .
 
-	sioc:user_group_iri (DB.DBA.SIOC_ROLE_GRANTS.G_NAME)
+	    sioc:user_group_iri (DB.DBA.SIOC_ROLE_GRANTS.G_NAME)
 		    sioc:has_member sioc:user_iri (U_NAME) .
 
-	# Person
-	foaf:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a foaf:Person ;
+	    # Person
+	    foaf:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a foaf:Person ;
 		    foaf:mbox sioc:proxy_iri(E_MAIL) ;
-	foaf:mbox_sha1sum E_MAIL_SHA1 ;
+		    foaf:mbox_sha1sum E_MAIL_SHA1 ;
 		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
-	foaf:nick U_NAME ;
-	foaf:name U_FULL_NAME ;
-	foaf:holdsAccount sioc:user_iri (U_NAME) ;
-        foaf:firstName FIRST_NAME ;
-	foaf:family_name LAST_NAME ;
-	foaf:gender GENDER ;
-	foaf:icqChatID ICQ ;
-	foaf:msnChatID MSN ;
-	foaf:aimChatID AIM ;
-	foaf:yahooChatID YAHOO ;
-	foaf:birthday BIRTHDAY ;
-	foaf:organization ORG ;
-	foaf:phone PHONE ;
-	foaf:based_near foaf:person_geo_iri (U_NAME) .
+		    foaf:nick U_NAME ;
+		    foaf:name U_FULL_NAME ;
+		    foaf:holdsAccount sioc:user_iri (U_NAME) ;
+		    foaf:firstName FIRST_NAME ;
+		    foaf:family_name LAST_NAME ;
+		    foaf:gender GENDER ;
+		    foaf:icqChatID ICQ ;
+		    foaf:msnChatID MSN ;
+		    foaf:aimChatID AIM ;
+		    foaf:yahooChatID YAHOO ;
+		    foaf:birthday BIRTHDAY ;
+		    foaf:organization ORG ;
+		    foaf:phone PHONE ;
+		    foaf:based_near foaf:person_geo_iri (U_NAME) .
 
 	    foaf:person_geo_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a geo:Point option (EXCLUSIVE) ;
-        geo:lat LAT ;
-        geo:lng LNG .
+		    geo:lat LAT ;
+		    geo:lng LNG .
 
 	    # AtomOWL Person
 	    atom:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a atom:Person option (EXCLUSIVE) ;
@@ -704,19 +704,19 @@ ODS_SPARQL_QM_RUN ('
 		    atom:personEmail E_MAIL .
 
 
-        # Social Networking
+	    # Social Networking
 	    foaf:person_iri (DB.DBA.SIOC_KNOWS.FROM_NAME)
-	foaf:knows
+	    foaf:knows
 	    foaf:person_iri (TO_NAME).
 
 	    foaf:person_iri (DB.DBA.SIOC_KNOWS.TO_NAME)
-	foaf:knows
+	    foaf:knows
 	    foaf:person_iri (FROM_NAME).
 
 
-      }
-  } .
-', 1, fl);
+	  }
+      } .
+    ', 1, fl);
 
     sioc..ods_sioc_result ('The virtrdf:ODSDataspace storage is created.');
 }

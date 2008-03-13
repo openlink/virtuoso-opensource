@@ -64,7 +64,7 @@
         if (pos is not null)
 	  {
             declare real_uid varchar;
-          self._uname := subseq (tmp, pos + 1);
+	    self._uname := subseq (tmp, pos + 1);
 	    real_uid := (select U_NAME from SYS_USERS join WA_USER_INFO on (WAUI_U_ID = U_ID) where WAUI_NICK = self._uname);
 	    if (length (real_uid))
 	      self._uname := real_uid;

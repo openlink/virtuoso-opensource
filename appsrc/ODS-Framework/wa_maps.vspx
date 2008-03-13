@@ -65,14 +65,14 @@
                   ') tmp_tbl \n' ||
                   'where _LAT is not null and _LNG is not null \n',
                    coalesce (self.u_id, http_nobody_uid ()))"
-	baloon-inx="4"
-	lat-inx="1"
-	lng-inx="2"
-	key-name-inx="3"
-	key-val="self.uf_u_id"
-        div_id="google_map"
+    baloon-inx="4"
+    lat-inx="1"
+    lng-inx="2"
+    key-name-inx="3"
+    key-val="self.uf_u_id"
+    div_id="google_map"
     zoom="0"
-        base_url="self.base_url" />
+    base_url="self.base_url" />
    <vm:login redirect="wa_maps.vspx"/>
     <h1 class="page_title">Map of the users with public home addresses</h1>
     <table>

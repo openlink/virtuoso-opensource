@@ -57,7 +57,7 @@ then
     VOS=1
 fi
 
-if [ "z$SERVER" = "z" ]  
+if [ "z$SERVER" = "z" ]
 then
     if [ "x$HOST_OS" != "x" ]
     then
@@ -84,10 +84,10 @@ VERSION_INIT()
       then
 	  VERSION=`cat vad_version`
       else
-        LOG "The vad_version does not exist, please verify your checkout"	 
+        LOG "The vad_version does not exist, please verify your checkout"
 	exit 1
       fi
-  else  
+  else
       rm -f version.tmp
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "/tests/"`; do
 	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
@@ -131,7 +131,7 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "z$HOST_OS" != "z" ]
   then
       "$SERVER" +foreground &
   else
@@ -399,8 +399,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.\"RDFData_MAKE_DET_COL\" ('/DAV/VAD/wa/RDFData/', sioc..get_graph (), NULL);" >> $STICKER
   echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER
-  echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER 
-  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER 
+  echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER
+  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/opensocial.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api.sql', 1, 'report', 1);" >> $STICKER

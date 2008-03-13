@@ -30,65 +30,65 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
-    <v:variable persist="session" name="is_org" type="int" default="0"/>
-    <v:variable persist="0" name="utitle" type="varchar" default="''"/>
+  <v:variable persist="session" name="is_org" type="int" default="0"/>
+  <v:variable persist="0" name="utitle" type="varchar" default="''"/>
   <v:variable persist="0" name="nick" type="varchar" default="''"/>
-    <v:variable persist="0" name="ftname" type="varchar" default="''"/>
-    <v:variable persist="0" name="lname" type="varchar" default="''"/>
-    <v:variable persist="0" name="fullname" type="varchar" default="''"/>
-    <v:variable persist="0" name="gender" type="varchar" default="''"/>
-    <v:variable persist="0" name="bdate" type="datetime" default="null"/>
-    <v:variable persist="0" name="wpage" type="varchar" default="''"/>
-    <v:variable persist="0" name="efoaf" type="varchar" default="''"/>
-    <v:variable persist="0" name="msign" type="varchar" default="''"/>
-    <v:variable persist="0" name="summ" type="varchar" default="''"/>
-    <v:variable persist="0" name="email" type="varchar" default="''"/>
-    <v:variable persist="0" name="photo" type="varchar" default="''"/>
+  <v:variable persist="0" name="ftname" type="varchar" default="''"/>
+  <v:variable persist="0" name="lname" type="varchar" default="''"/>
+  <v:variable persist="0" name="fullname" type="varchar" default="''"/>
+  <v:variable persist="0" name="gender" type="varchar" default="''"/>
+  <v:variable persist="0" name="bdate" type="datetime" default="null"/>
+  <v:variable persist="0" name="wpage" type="varchar" default="''"/>
+  <v:variable persist="0" name="efoaf" type="varchar" default="''"/>
+  <v:variable persist="0" name="msign" type="varchar" default="''"/>
+  <v:variable persist="0" name="summ" type="varchar" default="''"/>
+  <v:variable persist="0" name="email" type="varchar" default="''"/>
+  <v:variable persist="0" name="photo" type="varchar" default="''"/>
 
-    <v:variable persist="0" name="audio" type="varchar" default="''"/>
-    <v:variable persist="0" name="books" type="varchar" default="''"/>
-    <v:variable persist="0" name="music" type="varchar" default="''"/>
-    <v:variable persist="0" name="movie" type="varchar" default="''"/>
-    <v:variable persist="0" name="issearch" type="int" default="1"/>
-    <v:variable persist="0" name="showactive" type="int" default="1"/>
-    <v:variable persist="0" name="interests" type="varchar" default="''"/>
-    <v:variable persist="0" name="appEnable" type="integer" default="0"/>
+  <v:variable persist="0" name="audio" type="varchar" default="''"/>
+  <v:variable persist="0" name="books" type="varchar" default="''"/>
+  <v:variable persist="0" name="music" type="varchar" default="''"/>
+  <v:variable persist="0" name="movie" type="varchar" default="''"/>
+  <v:variable persist="0" name="issearch" type="int" default="1"/>
+  <v:variable persist="0" name="showactive" type="int" default="1"/>
+  <v:variable persist="0" name="interests" type="varchar" default="''"/>
+  <v:variable persist="0" name="appEnable" type="integer" default="0"/>
 
-    <v:variable name="sav0" type="varchar" default="'1'" />
-    <v:variable name="sav1" type="varchar" default="'1'" />
-    <v:variable name="sav2" type="varchar" default="'1'" />
-    <v:variable name="sav3" type="varchar" default="'1'" />
-    <v:variable name="sav4" type="varchar" default="'1'" />
-    <v:variable name="sav5" type="varchar" default="'1'" />
-    <v:variable name="sav6" type="varchar" default="'1'" />
-    <v:variable name="sav7" type="varchar" default="'1'" />
-    <v:variable name="sav8" type="varchar" default="'1'" />
-    <v:variable name="sav9" type="varchar" default="'3'" />
-    <v:variable name="sav33" type="varchar" default="'1'" />
-    <v:variable name="sav37" type="varchar" default="'1'" />
+  <v:variable name="sav0" type="varchar" default="'1'" />
+  <v:variable name="sav1" type="varchar" default="'1'" />
+  <v:variable name="sav2" type="varchar" default="'1'" />
+  <v:variable name="sav3" type="varchar" default="'1'" />
+  <v:variable name="sav4" type="varchar" default="'1'" />
+  <v:variable name="sav5" type="varchar" default="'1'" />
+  <v:variable name="sav6" type="varchar" default="'1'" />
+  <v:variable name="sav7" type="varchar" default="'1'" />
+  <v:variable name="sav8" type="varchar" default="'1'" />
+  <v:variable name="sav9" type="varchar" default="'3'" />
+  <v:variable name="sav33" type="varchar" default="'1'" />
+  <v:variable name="sav37" type="varchar" default="'1'" />
 
-    <v:variable name="sav43" type="varchar" default="'1'" />
-    <v:variable name="sav44" type="varchar" default="'1'" />
-    <v:variable name="sav45" type="varchar" default="'1'" />
-    <v:variable name="sav46" type="varchar" default="'1'" />
-    <v:variable name="sav48" type="varchar" default="'1'" />
+  <v:variable name="sav43" type="varchar" default="'1'" />
+  <v:variable name="sav44" type="varchar" default="'1'" />
+  <v:variable name="sav45" type="varchar" default="'1'" />
+  <v:variable name="sav46" type="varchar" default="'1'" />
+  <v:variable name="sav48" type="varchar" default="'1'" />
 
-    <v:variable name="previe_path" type="varchar" default="''" />
+  <v:variable name="previe_path" type="varchar" default="''" />
 
-    <v:before-data-bind>
-      <![CDATA[
-        declare _utitle, _ftname, _lname, _fullname, _gender,_wpage,_efoaf, _email varchar;
-        declare _bdate datetime;
-        declare _msign, _sum long varchar;
+  <v:before-data-bind>
+    <![CDATA[
+      declare _utitle, _ftname, _lname, _fullname, _gender,_wpage,_efoaf, _email varchar;
+      declare _bdate datetime;
+      declare _msign, _sum long varchar;
 
-        declare _bresume long varchar;
+      declare _bresume long varchar;
 
-        SELECT WAUI_TITLE, WAUI_FIRST_NAME, WAUI_LAST_NAME,
-               WAUI_FULL_NAME, WAUI_GENDER, WAUI_BIRTHDAY,
-               WAUI_WEBPAGE, WAUI_FOAF,
-               WAUI_MSIGNATURE, WAUI_SUMMARY,
-	       U_E_MAIL, WAUI_PHOTO_URL,
-	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
+      SELECT WAUI_TITLE, WAUI_FIRST_NAME, WAUI_LAST_NAME,
+             WAUI_FULL_NAME, WAUI_GENDER, WAUI_BIRTHDAY,
+             WAUI_WEBPAGE, WAUI_FOAF,
+             WAUI_MSIGNATURE, WAUI_SUMMARY,
+             U_E_MAIL, WAUI_PHOTO_URL,
+             WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
              WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE, WAUI_NICK
         INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum, _email, self.photo,
 	     self.audio, self.books, self.music, self.movie, self.issearch,self.showactive, self.interests, self.is_org,
@@ -96,73 +96,72 @@
         FROM WA_USER_INFO, DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
-        self.utitle := _utitle;
-        self.email := _email;
-        self.ftname := wa_utf8_to_wide (_ftname);
-        self.lname := wa_utf8_to_wide (_lname);
-        self.fullname := wa_utf8_to_wide (_fullname);
-        self.gender := _gender;
-        self.bdate := _bdate;
-        self.wpage := _wpage;
-        self.efoaf := _efoaf;
-        self.msign := wa_utf8_to_wide (_msign);
-        self.summ := wa_utf8_to_wide (_sum);
+      self.utitle := _utitle;
+      self.email := _email;
+      self.ftname := wa_utf8_to_wide (_ftname);
+      self.lname := wa_utf8_to_wide (_lname);
+      self.fullname := wa_utf8_to_wide (_fullname);
+      self.gender := _gender;
+      self.bdate := _bdate;
+      self.wpage := _wpage;
+      self.efoaf := _efoaf;
+      self.msign := wa_utf8_to_wide (_msign);
+      self.summ := wa_utf8_to_wide (_sum);
 
-        declare tmp any;
-	tmp := WA_USER_VISIBILITY(self.u_name);
-	if (tmp is not null and length (tmp) >= 46 )
-	{
-	  self.sav0 := tmp[0];
-	  self.sav1 := tmp[1];
-	  self.sav2 := tmp[2];
-	  self.sav3 := tmp[3];
-	  self.sav4 := tmp[4];
-	  self.sav5 := tmp[5];
-	  self.sav6 := tmp[6];
-	  self.sav7 := tmp[7];
-	  self.sav8 := tmp[8];
---	  self.sav9 := 3; -- tmp[9] --this is public/friends/private for mail signature
-	  self.sav33 := tmp[33];
-	  self.sav37 := tmp[37];
+      declare tmp any;
+      tmp := WA_USER_VISIBILITY(self.u_name);
+      if (tmp is not null and length (tmp) >= 46 )
+      {
+        self.sav0 := tmp[0];
+        self.sav1 := tmp[1];
+        self.sav2 := tmp[2];
+        self.sav3 := tmp[3];
+        self.sav4 := tmp[4];
+        self.sav5 := tmp[5];
+        self.sav6 := tmp[6];
+        self.sav7 := tmp[7];
+        self.sav8 := tmp[8];
+        -- self.sav9 := 3; -- tmp[9] --this is public/friends/private for mail signature
+        self.sav33 := tmp[33];
+        self.sav37 := tmp[37];
 
-	  self.sav43 := tmp[43];
-	  self.sav44 := tmp[44];
-	  self.sav45 := tmp[45];
-	  self.sav46 := tmp[46];
-	  self.sav48 := tmp[48];
-	}
-      ]]>
-    </v:before-data-bind>
+        self.sav43 := tmp[43];
+        self.sav44 := tmp[44];
+        self.sav45 := tmp[45];
+        self.sav46 := tmp[46];
+        self.sav48 := tmp[48];
+      }
+    ]]>
+  </v:before-data-bind>
   <script type="text/javascript">
     <![CDATA[
-	var edited = <?V case when length (self.fullname) then 'true' else 'false' end ?>;
-	function fillFullName (f, fn, ln, flag)
-	{
-	  if (edited)
-	    {
-	      if (flag)
-	        edited = false;
-	      return;
-	    }
-	  if (f.value.length == 0 || (!edited && !flag))
-	    {
-	      f.value = fn.value + ' ' + ln.value;
-	    }
+      var edited = <?V case when length (self.fullname) then 'true' else 'false' end ?>;
+      function fillFullName (f, fn, ln, flag)
+      {
+        if (edited)
+        {
+          if (flag)
+            edited = false;
+          return;
         }
+        if (f.value.length == 0 || (!edited && !flag))
+        {
+          f.value = fn.value + ' ' + ln.value;
+        }
+      }
      ]]>
    </script>
 
-    <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
-    <v:text type="hidden" name="ppage" value="1"/>
-    <table  class="ctl_grp">
-
-              <tr>
-                <th><label for="labelww">Login name</label></th>
-                <td class="listing_col" nowrap="1">
-                  <v:label name="labelww" value="--self.u_name" format="%s"/>
-                </td>
-              </tr>
-              <tr>
+   <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
+     <v:text type="hidden" name="ppage" value="1"/>
+     <table  class="ctl_grp">
+        <tr>
+          <th><label for="labelww">Login name</label></th>
+          <td class="listing_col" nowrap="1">
+            <v:label name="labelww" value="--self.u_name" format="%s"/>
+          </td>
+        </tr>
+        <tr>
           <th><label for="labelwwn">Nick name</label></th>
           <td class="listing_col" nowrap="1">
 	      <v:text name="nickn" value="--self.nick" format="%s">
@@ -172,101 +171,101 @@
           </td>
         </tr>
         <tr>
-                <td class="listing_col" nowrap="1">
-		  <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);">
-			<v:after-data-bind>
-			    if (not e.ve_is_post)
-			      control.ufl_selected := self.is_org;
-			</v:after-data-bind>
-		  </v:check-box><![CDATA[&nbsp;]]>
-		  <label for="cb_org">Organization</label>
-                </td>
+          <td class="listing_col" nowrap="1">
+            <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);">
+              <v:after-data-bind>
+                if (not e.ve_is_post)
+                  control.ufl_selected := self.is_org;
+              </v:after-data-bind>
+            </v:check-box><![CDATA[&nbsp;]]>
+            <label for="cb_org">Organization</label>
+          </td>
         <th />
-              </tr>
-              <tr id="pers_2" class="initial_hidden">
-                <th><label for="regtitle">Title</label></th>
-                <td class="listing_col" nowrap="1">
-                  <v:select-list name="regtitle" xhtml_tabindex="1">
-                    <v:item name="" value=""/>
-                    <v:item name="Mr" value="Mr"/>
-                    <v:item name="Mrs" value="Mrs"/>
-                    <v:item name="Dr" value="Dr"/>
-                    <v:item name="Ms" value="Ms"/>
-                    <v:before-data-bind>
+      </tr>
+      <tr id="pers_2" class="initial_hidden">
+        <th><label for="regtitle">Title</label></th>
+        <td class="listing_col" nowrap="1">
+          <v:select-list name="regtitle" xhtml_tabindex="1">
+            <v:item name="" value=""/>
+            <v:item name="Mr" value="Mr"/>
+            <v:item name="Mrs" value="Mrs"/>
+            <v:item name="Dr" value="Dr"/>
+            <v:item name="Ms" value="Ms"/>
+            <v:before-data-bind>
               <![CDATA[
-                          control.ufl_value := self.utitle;
-                          control.vc_data_bound := 1;
+                control.ufl_value := self.utitle;
+                control.vc_data_bound := 1;
               ]]>
-                    </v:before-data-bind>
-                  </v:select-list>
-		  <vm:u-prop-select name="sel_0" value="self.sav0" />
-                </td>
-              </tr>
-              <tr id="pers_3" class="initial_hidden">
-                <th><label for="f_name">First Name</label></th>
-                <td class="listing_col" nowrap="1">
-		    <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide"
-			xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
-			>
+            </v:before-data-bind>
+          </v:select-list>
+          <vm:u-prop-select name="sel_0" value="self.sav0" />
+        </td>
+      </tr>
+      <tr id="pers_3" class="initial_hidden">
+        <th><label for="f_name">First Name</label></th>
+        <td class="listing_col" nowrap="1">
+          <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide"
+            xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
+          >
             <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
             <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
-                  </v:text>
-                  <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
-		  <vm:u-prop-select name="sel_1" value="self.sav1" />
-                </td>
-              </tr>
-              <tr id="pers_4" class="initial_hidden">
-                <th><label for="l_name">Last Name</label></th>
-                <td class="listing_col" nowrap="1">
-		    <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="3" fmt-function="wa_utf8_to_wide"
-			xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
-			>
-		      <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars"
-			  empty-allowed="1" name="vv_lname1"/>
-		      <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2"
-			  message="Last name cannot be longer then 50 chars"
-			  empty-allowed="1"/>
+          </v:text>
+          <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
+          <vm:u-prop-select name="sel_1" value="self.sav1" />
+        </td>
+      </tr>
+      <tr id="pers_4" class="initial_hidden">
+        <th><label for="l_name">Last Name</label></th>
+        <td class="listing_col" nowrap="1">
+          <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="3" fmt-function="wa_utf8_to_wide"
+            xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
+          >
+          <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars"
+        empty-allowed="1" name="vv_lname1"/>
+          <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2"
+        message="Last name cannot be longer then 50 chars"
+        empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="l_name" /></div>
-		  <vm:u-prop-select name="sel_2" value="self.sav2" />
+      <vm:u-prop-select name="sel_2" value="self.sav2" />
                 </td>
               </tr>
               <tr>
                 <th><label for="full_name">Full Name</label></th>
                 <td class="listing_col" nowrap="1">
-		    <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" xhtml_tabindex="4" fmt-function="wa_utf8_to_wide"
-			xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)"
-			>
-		      <v:validator test="length" min="0" max="100" name="vv_fulname1"
-			  message="Full name cannot be longer then 100 chars"
-			  empty-allowed="1" />
-		      <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2"
-			  message="Full name cannot be longer then 100 chars"
-			  empty-allowed="1"/>
+        <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" xhtml_tabindex="4" fmt-function="wa_utf8_to_wide"
+      xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)"
+      >
+          <v:validator test="length" min="0" max="100" name="vv_fulname1"
+        message="Full name cannot be longer then 100 chars"
+        empty-allowed="1" />
+          <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2"
+        message="Full name cannot be longer then 100 chars"
+        empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="full_name" /></div>
-		  <vm:u-prop-select name="sel_3" value="self.sav3" />
+      <vm:u-prop-select name="sel_3" value="self.sav3" />
                 </td>
               </tr>
               <tr>
-		  <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-		      <span class="explain"> (mandatory field)</span>
-		  </th>
+      <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+          <span class="explain"> (mandatory field)</span>
+      </th>
                 <td class="listing_col" nowrap="nowrap">
                   <v:text error-glyph="*" xhtml_id="regmail" name="regmail" value="--self.email" xhtml_style="width:216px" xhtml_tabindex="5">
                     <v:validator test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars" name="vv_email1"/>
                     <v:validator test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" name="vv_email2"/>
                   </v:text>
-    <script type="text/javascript"><![CDATA[
-    var focusItem = '<?V get_keyword('focus',self.vc_event.ve_params,'')?>'+'';
-    if(focusItem == 'email')
-    {
-      $('regmail').focus();
-    }
+                  <script type="text/javascript"><![CDATA[
+                    var focusItem = '<?V get_keyword('focus',self.vc_event.ve_params,'')?>'+'';
+                    if(focusItem == 'email')
+                    {
+                      $('regmail').focus();
+                    }
                     ]]>
                   </script>
                   <div style="display:inline; color:red;"><v:error-summary match="regmail" /></div>
-		  <vm:u-prop-select name="sel_4" value="self.sav4" />
+                  <vm:u-prop-select name="sel_4" value="self.sav4" />
                 </td>
               </tr>
               <tr id="pers_5" class="initial_hidden">
@@ -278,12 +277,12 @@
                     <v:item name="Female" value="female"/>
                     <v:before-data-bind>
                       <v:script><![CDATA[
-                          control.ufl_value := self.gender;
-                          control.vc_data_bound := 1;
+                        control.ufl_value := self.gender;
+                        control.vc_data_bound := 1;
                       ]]></v:script>
                     </v:before-data-bind>
                   </v:select-list>
-		  <vm:u-prop-select name="sel_5" value="self.sav5" />
+                  <vm:u-prop-select name="sel_5" value="self.sav5" />
                 </td>
               </tr>
               <tr  id="pers_6" class="initial_hidden">
@@ -293,49 +292,49 @@
                     <v:after-data-bind>
                       <![CDATA[
                         declare m, arr varchar;
-			declare ddd datetime;
-			declare i int;
+                        declare ddd datetime;
+                        declare i int;
 
                         ddd := self.bdate;
                         m := '';
                         if (ddd is not null and ddd <> 0)
                           m := dayofmonth(ddd);
-			control.ufl_value := m;
-			arr := make_array (32, 'any');
-			arr[0] := '';
-			for (i := 1; i <= 31; i := i + 1)
-		          {
-			    arr[i] := cast(i as varchar);
-			  }
-			control.vsl_items := arr;
-			control.vsl_item_values := arr;
-			control.vs_set_selected ();
+                        control.ufl_value := m;
+                        arr := make_array (32, 'any');
+                        arr[0] := '';
+                        for (i := 1; i <= 31; i := i + 1)
+                                {
+                            arr[i] := cast(i as varchar);
+                          }
+                        control.vsl_items := arr;
+                        control.vsl_item_values := arr;
+                        control.vs_set_selected ();
                       ]]>
                     </v:after-data-bind>
                   </v:select-list>
-		  -
+      -
                   <v:select-list xhtml_id="regbday" name="regbmonth" value="">
                     <v:before-data-bind>
                       <![CDATA[
                         declare m, arr, marr varchar;
                         declare ddd datetime;
-			declare i int;
+                        declare i int;
 
                         ddd := self.bdate;
                         m := '';
                         if (ddd is not null and ddd <> 0)
                           m := month(ddd);
                         control.ufl_value := m;
-			arr := make_array (13, 'any');
-			marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-			arr[0] := '';
-			for (i := 1; i <= 12; i := i + 1)
-		          {
-			    arr[i] := cast(i as varchar);
-			  }
-			control.vsl_items := marr;
-			control.vsl_item_values := arr;
-			control.vs_set_selected ();
+                        arr := make_array (13, 'any');
+                        marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+                        arr[0] := '';
+                        for (i := 1; i <= 12; i := i + 1)
+                                {
+                            arr[i] := cast(i as varchar);
+                          }
+                        control.vsl_items := marr;
+                        control.vsl_item_values := arr;
+                        control.vs_set_selected ();
                       ]]>
                     </v:before-data-bind>
                   </v:select-list>
@@ -345,28 +344,28 @@
                       <![CDATA[
                         declare m, arr varchar;
                         declare ddd datetime;
-			declare i, lim int;
+                        declare i, lim int;
 
                         ddd := self.bdate;
                         m := '';
                         if (ddd is not null and ddd <> 0)
                           m := year(ddd);
-			control.ufl_value := m;
+                        control.ufl_value := m;
 
-			lim := year (now()) - 4;
-			arr := make_array (lim - 1950 + 2, 'any');
-			arr[0] := '';
-			for (i := 1950; i <= lim; i := i + 1)
-		          {
-			    arr[i-1949] := cast(i as varchar);
-			  }
-			control.vsl_items := arr;
-			control.vsl_item_values := arr;
-			control.vs_set_selected ();
+                        lim := year (now()) - 4;
+                        arr := make_array (lim - 1950 + 2, 'any');
+                        arr[0] := '';
+                        for (i := 1950; i <= lim; i := i + 1)
+                                {
+                            arr[i-1949] := cast(i as varchar);
+                          }
+                        control.vsl_items := arr;
+                        control.vsl_item_values := arr;
+                        control.vs_set_selected ();
                       ]]>
                     </v:after-data-bind>
                   </v:select-list>
-		  <vm:u-prop-select name="sel_6" value="self.sav6" />
+                  <vm:u-prop-select name="sel_6" value="self.sav6" />
                 </td>
               </tr>
               <tr>
@@ -376,16 +375,16 @@
                     <v:validator test="regexp" regexp="^http://" message="Please include http://" empty-allowed="1" name="vv_w_page1" />
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="w_page" /></div>
-		  <vm:u-prop-select name="sel_7" value="self.sav7" />
+                  <vm:u-prop-select name="sel_7" value="self.sav7" />
                 </td>
               </tr>
               <tr>
-		  <th><label for="e_foaf">Other Identity URIs (synonyms)</label>
-		      <span class="explain">(one URL per line)</span>
-		  </th>
+                <th><label for="e_foaf">Other Identity URIs (synonyms)</label>
+                  <span class="explain">(one URL per line)</span>
+                </th>
                 <td class="listing_col" nowrap="1">
                   <v:textarea name="e_foaf" value="--self.efoaf" xhtml_cols="80" xhtml_rows="5" xhtml_tabindex="9" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_8" value="self.sav8" />
+                  <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
               <tr id="pers_8" class="initial_hidden">
@@ -393,157 +392,150 @@
                 <td class="listing_col" nowrap="1">
                   <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="10" fmt-function="wa_utf8_to_wide" error-glyph="*">
                     <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
-		  </v:textarea>
-      <v:text type="hidden" name="sel_9" value="3"/>
+                  </v:textarea>
+                  <v:text type="hidden" name="sel_9" value="3"/>
                 </td>
               </tr>
               <tr>
                 <th><label for="s_summ">Summary</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:textarea name="s_summ" value="--self.summ" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="11" fmt-function="wa_utf8_to_wide" error-glyph="*"/>
-		  <vm:u-prop-select name="sel_33" value="self.sav33" />
+                  <vm:u-prop-select name="sel_33" value="self.sav33" />
                 </td>
               </tr>
               <tr>
-		  <th><label for="s_tags">Tags</label>
-		      <span class="explain"> (comma separated list of keywords)</span>
-		  </th>
-                <td class="listing_col" nowrap="1">
+               <th><label for="s_tags">Tags</label>
+                 <span class="explain"> (comma separated list of keywords)</span>
+               </th>
+               <td class="listing_col" nowrap="1">
                  <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="12" xhtml_cols="50" xhtml_rows="5" />
                  <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800">
-			  <v:field name="s_tag"/>
-			</v:button>
-                </td>
-	      </tr>
-	      <tr>
-		  <th><label for="e_int" title="Free text">Interests</label>
-		      <span class="explain"> (one URL per line)</span>
-		  </th>
-		<td class="listing_col" nowrap="1">
-		    <table>
-			<tr>
-			    <td>
-		    <v:text type="hidden" name="e_int" xhtml_id="e_int"
-			value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
-		    <div id="interests_div">
-		    </div>
-		    <script type="text/javascript"><![CDATA[
-			ODSInitArray.push(interestsPrepare);
-			function interestsPrepare ()
-			{
+                   <v:field name="s_tag"/>
+                 </v:button>
+               </td>
+        </tr>
+        <tr>
+      <th><label for="e_int" title="Free text">Interests</label>
+          <span class="explain"> (one URL per line)</span>
+      </th>
+    <td class="listing_col" nowrap="1">
+        <table>
+      <tr>
+          <td>
+        <v:text type="hidden" name="e_int" xhtml_id="e_int"
+      value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
+        <div id="interests_div">
+        </div>
+        <script type="text/javascript"><![CDATA[
+      ODSInitArray.push(interestsPrepare);
+      function interestsPrepare ()
+      {
 
-			    OAT.Loader.loadFeatures(["grid"], function(){setTimeout(interestsPrepare1,60)});
-			}
-			function interestsPrepare1 ()
-			{
-			    OAT.Dom.clear($('interests_div'));
+          OAT.Loader.loadFeatures(["grid"], function(){setTimeout(interestsPrepare1,60)});
+      }
+      function interestsPrepare1 ()
+      {
+          OAT.Dom.clear($('interests_div'));
 
-			    var grid = new OAT.Grid("interests_div",0,0);
+          var grid = new OAT.Grid("interests_div",0,0);
                             var txt = document.getElementById ("e_int");
                             var arr = txt.value.split ("\n");
-			    grid.createHeader (["URI", "Label"]);
-			    for (i = 0; i < arr.length; i++)
-			      {
+          grid.createHeader (["URI", "Label"]);
+          for (i = 0; i < arr.length; i++)
+            {
                                 var row = arr[i].split(";");
-				if (row.length > 0 && row[0].length > 0)
-				  grid.createRow (row);
-			      }
-			}
-			]]></script>
-		</td>
-		<td nowrap="1">
-		      <v:button action="browse" name="interbt" value="Edit..." selector="edit_interests_popup.vspx"
-			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
-			>
-			  <v:field name="e_int"/>
-			</v:button>
-		  <vm:u-prop-select name="sel_48" value="self.sav48" />
-		</td>
-	      </tr>
-	</table>
-		</td>
-	      </tr>
-
-	      <tr id="pers_10" class="initial_hidden">
-		<th><label for="e_fbook" title="Free text">Favorite Books</label></th>
-		<td class="listing_col" nowrap="1">
+        if (row.length > 0 && row[0].length > 0)
+          grid.createRow (row);
+            }
+      }
+      ]]></script>
+    </td>
+    <td nowrap="1">
+          <v:button action="browse" name="interbt" value="Edit..." selector="edit_interests_popup.vspx"
+        child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
+      >
+        <v:field name="e_int"/>
+      </v:button>
+        <vm:u-prop-select name="sel_48" value="self.sav48" />
+    </td>
+      </tr>
+  </table>
+    </td>
+        </tr>
+              <tr id="pers_10" class="initial_hidden">
+                <th><label for="e_fbook" title="Free text">Favorite Books</label></th>
+                <td class="listing_col" nowrap="1">
                   <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="14" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_44" value="self.sav44" />
-		</td>
-	      </tr>
-	      <tr id="pers_11" class="initial_hidden">
-		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
-		<td class="listing_col" nowrap="1">
+                  <vm:u-prop-select name="sel_44" value="self.sav44" />
+                </td>
+              </tr>
+              <tr id="pers_11" class="initial_hidden">
+                <th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
+                <td class="listing_col" nowrap="1">
                   <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_45" value="self.sav45" />
-		</td>
-	      </tr>
-	      <tr id="pers_12" class="initial_hidden">
-		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
-		<td class="listing_col" nowrap="1">
+                  <vm:u-prop-select name="sel_45" value="self.sav45" />
+                </td>
+              </tr>
+              <tr id="pers_12" class="initial_hidden">
+                <th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
+                <td class="listing_col" nowrap="1">
                   <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_46" value="self.sav46" />
-		</td>
-	      </tr>
-
+                  <vm:u-prop-select name="sel_46" value="self.sav46" />
+                </td>
+              </tr>
               <tr>
                 <th><label for="up_photo">Upload Photo</label></th>
                 <td class="listing_col" nowrap="1">
                   <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17" onchange='getFileName(this.form, this, this.form.s_photo);' fmt-function="wa_utf8_to_wide" />
-         			<v:button name="bt_preview_1" value="Preview" action="simple">
-      			  <v:on-post>
-              <![CDATA[
-			          if (get_keyword ('up_photo', e.ve_params, '') <> '')
-			          {
-
-			            declare dir, p_path, p_ext any;
-			            dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+                   <v:button name="bt_preview_1" value="Preview" action="simple">
+                    <v:on-post>
+                    <![CDATA[
+                      if (get_keyword ('up_photo', e.ve_params, '') <> '')
+                      {
+                        declare dir, p_path, p_ext any;
+                         dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
 
 --                    declare _tmp_filedata any;
 --                    _tmp_filedata:=get_keyword('attr-up_photo',e.ve_params);
---			              p_ext := split_and_decode(get_keyword('filename',_tmp_filedata),0,'\0\0.');
+--                    p_ext := split_and_decode(get_keyword('filename',_tmp_filedata),0,'\0\0.');
 
-			            p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
-                    
-  		            p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
+                    p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
 
-    		            if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
-		                {
-          			  declare rc, pwd1 any;
-          			  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
-          			  rc := 0;
+                    p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
 
-			            rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+                    if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
+                    {
+                     declare rc, pwd1 any;
+                     pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+                     rc := 0;
+
+                     rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
                      rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
-		            if (rc < 0)
-		            {
-		                self.vc_is_valid := 0;
-		                self.vc_error_message := DAV_PERROR (rc);
-		            }else
-		              self.previe_path:=p_path;
+                     if (rc < 0)
+                     {
+                       self.vc_is_valid := 0;
+                       self.vc_error_message := DAV_PERROR (rc);
+                     } else
+                       self.previe_path:=p_path;
                     } else {
-		                 self.vc_is_valid := 0;
-		                 self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
-     			           self.previe_path:='';
-
-			              }
-
-
-			        }
-
+                      self.vc_is_valid := 0;
+                      self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
+                      self.previe_path:='';
+                    }
+                }
               ]]>
-      			  </v:on-post>
+              </v:on-post>
               </v:button>
                 <script type="text/javascript"><![CDATA[
                 var previeImgPath='<?Vself.previe_path?>';
-                
+
                 function dimmerPreviewInit()
-                {                
-                if(previeImgPath.length>0)
                 {
-                  OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
-                }
+                  if(previeImgPath.length>0)
+                  {
+                    OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
+                  }
                 }
                 ODSInitArray.push(dimmerPreviewInit);
 
@@ -583,7 +575,7 @@
                 <th><label for="s_photo">Photo</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="18" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_37" value="self.sav37" />
+                  <vm:u-prop-select name="sel_37" value="self.sav37" />
                 </td>
               </tr>
               <tr>
@@ -596,22 +588,22 @@
                 <th><label for="s_audio">Audio</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="20" fmt-function="wa_utf8_to_wide" />
-		  <vm:u-prop-select name="sel_43" value="self.sav43" />
+                  <vm:u-prop-select name="sel_43" value="self.sav43" />
                 </td>
               </tr>
               <tr>
-		  <th><label for="set_all">Set access for all fields as </label></th>
-		  <td class="ctrl">
-		      <v:select-list name="set_all4" value="0"
-			  xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
-			  <v:item name="*no change*"  value="0" />
-			  <v:item name="public"  value="1" />
-			  <v:item name="friends" value="2" />
-			  <v:item name="private" value="3" />
-		      </v:select-list>
+      <th><label for="set_all">Set access for all fields as </label></th>
+      <td class="ctrl">
+          <v:select-list name="set_all4" value="0"
+        xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+        <v:item name="*no change*"  value="0" />
+        <v:item name="public"  value="1" />
+        <v:item name="friends" value="2" />
+        <v:item name="private" value="3" />
+          </v:select-list>
                   </td>
               </tr>
-              <tr>
+        <tr>
           <th>
             <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
           </th>
@@ -630,46 +622,46 @@
               </v:before-data-bind>
             </v:select-list>
           </td>
-	      </tr>
+        </tr>
           <tr>
-                <td colspan="2">
-		    <v:check-box name="in_search" value="1" xhtml_id="in_search" >
-			<v:after-data-bind>
-			    if (not e.ve_is_post)
-			      control.ufl_selected := self.issearch;
-			</v:after-data-bind>
-		    </v:check-box>
-		    <label for="in_search">Include my profile in search results</label>
-                </td>
-	      </tr>
+            <td colspan="2">
+              <v:check-box name="in_search" value="1" xhtml_id="in_search" >
+                <v:after-data-bind>
+                  if (not e.ve_is_post)
+                    control.ufl_selected := self.issearch;
+                </v:after-data-bind>
+              </v:check-box>
+              <label for="in_search">Include my profile in search results</label>
+            </td>
+         </tr>
 
-              <tr>
+        <tr>
           <td colspan="2">
             <v:check-box name="show_active" value="--self.showactive" xhtml_id="show_active" >
              <v:after-data-bind>
               control.ufl_selected := self.showactive;
              </v:after-data-bind>
-            </v:check-box >
+            </v:check-box>
             <label for="show_active">Include in User active information</label>
           </td>
-	      </tr>
+        </tr>
         <tr>
-                <td colspan="2" class="ctrl">
-		      <span class="fm_ctl_btn">
-			<v:button name="bt_cncl_1" value="Cancel" action="simple">
-			  <v:on-post>
-			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
-			  </v:on-post>
-			</v:button>
+          <td colspan="2" class="ctrl">
+            <span class="fm_ctl_btn">
+            <v:button name="bt_cncl_1" value="Cancel" action="simple" >
+              <v:on-post>
+                self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+              </v:on-post>
+            </v:button>
             <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21" xhtml_id="user_sset_personal" xhtml_onclick="return mailIsValid() ? true : false ;">
-                    <v:on-post>
-                      <![CDATA[
+              <v:on-post>
+                <![CDATA[
 
-                        if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-                    	  {
-                          self.vc_error_message := 'This e-mail address is already registered.';
-                          self.vc_is_valid := 0;
-                    	  }
+                  if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+                  {
+                    self.vc_error_message := 'This e-mail address is already registered.';
+                    self.vc_is_valid := 0;
+                  }
 		  if (exists(select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
 		  {
 		    self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
@@ -678,176 +670,172 @@
                     self.vc_is_valid := 0;
                   }
 
-                        if(self.vc_is_valid = 0) return;
+                  if (self.vc_is_valid = 0) return;
 
-                        declare _arr any;
-                        _arr := WA_STR_PARAM(params,'sel_');
-                        WA_USER_VISIBILITY (self.u_name, _arr, 2);
+                  declare _arr any;
 
-                        declare tag varchar;
-                        declare tid integer;
+                  _arr := WA_STR_PARAM(params,'sel_');
+                  WA_USER_VISIBILITY (self.u_name, _arr, 2);
 
-                        tag := WA_TAG_PREPARE(self.s_tag.ufl_value);
-                        if (not WA_VALIDATE_TAGS(tag))
-                        {
-          		  self.vc_is_valid := 0;
-          		  self.vc_error_message := 'The Tags expression is not valid.';
-          		  return;
-          		};
-			-- public tags
-                        WA_USER_TAG_SET(http_nobody_uid(), self.u_id, tag);
+                  declare tag varchar;
+                  declare tid integer;
 
-                        declare dt datetime;
-                        if (self.regbyear.ufl_value is not null and
-                          self.regbmonth.ufl_value is not null and
-                          self.regbday.ufl_value is not null and
-                          self.regbyear.ufl_value <> '' and
-                          self.regbmonth.ufl_value <> '' and
-                          self.regbday.ufl_value <> '')
-			   {
-			     declare exit handler for sqlstate '*'
-			     {
-			       self.vc_is_valid := 0;
-			       self.vc_error_message :=
-			       sprintf ('An invalid date (%s-%s-%s) is specified',
-			       self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value
-				 );
-			       return;
-			     };
- 			     dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
-			   }
-			  else
-			    dt := null;
+                  tag := WA_TAG_PREPARE(self.s_tag.ufl_value);
+                  if (not WA_VALIDATE_TAGS(tag))
+                  {
+                    self.vc_is_valid := 0;
+                    self.vc_error_message := 'The Tags expression is not valid.';
+                    return;
+                  };
+                  -- public tags
+                  WA_USER_TAG_SET(http_nobody_uid(), self.u_id, tag);
 
-			  -- before to edit rest of fields, set the org flag
-			  self.is_org := self.cb_org.ufl_selected;
-			  update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
+                  declare dt datetime;
+                  if (self.regbyear.ufl_value is not null and
+                    self.regbmonth.ufl_value is not null and
+                    self.regbday.ufl_value is not null and
+                    self.regbyear.ufl_value <> '' and
+                    self.regbmonth.ufl_value <> '' and
+                    self.regbday.ufl_value <> '')
+                  {
+                    declare exit handler for sqlstate '*'
+                    {
+                      self.vc_is_valid := 0;
+                      self.vc_error_message :=
+                      sprintf ('An invalid date (%s-%s-%s) is specified',
+                        self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value
+                      );
+                      return;
+                    };
+                     dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
+                  }
+                  else
+                    dt := null;
 
-			  declare rc,rc_org, pwd1 any;
-			  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
-			  rc := 0;
-			  rc_org :=0;
+                  -- before to edit rest of fields, set the org flag
+                  self.is_org := self.cb_org.ufl_selected;
+                  update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
+
+                  declare rc,rc_org, pwd1 any;
+                  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+                  rc := 0;
+                  rc_org := 0;
 
 
-        declare p_ext any;
-        p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+                  declare p_ext any;
+                  p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
 
                   if(p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
-        {
+                  {
                     self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
                     self.vc_is_valid := 0;
                     self.previe_path:='';
+                  }
+                  if (self.vc_is_valid = 0) return;
 
-        }
-
-
-        if (self.vc_is_valid = 0) return;
-			  
-			  if (get_keyword ('up_photo', e.ve_params, '') <> '' OR  (self.previe_path<>'' and self.s_photo.ufl_value<>''))
-			  {
-			    declare dir, p_path, p_path_org any;
-			    dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
-			    p_path := case
-			      when self.s_photo.ufl_value not like '/%'
-			        then dir||self.s_photo.ufl_value
+                  if (get_keyword ('up_photo', e.ve_params, '') <> '' OR (self.previe_path<>'' and self.s_photo.ufl_value<>''))
+                  {
+                    declare dir, p_path, p_path_org any;
+                    dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+                    p_path := case
+                      when self.s_photo.ufl_value not like '/%'
+                        then dir||self.s_photo.ufl_value
                         else self.s_photo.ufl_value
-	                      end;
-			    p_path_org := case
-			                    when self.s_photo.ufl_value not like '/%'
-			                    then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
+                      end;
+                    p_path_org := case
+                      when self.s_photo.ufl_value not like '/%'
+                        then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
                         else subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-	                        end;
+                      end;
 
-			    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+                    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
 
-          if(get_keyword ('up_photo', e.ve_params, '') <> '')
-          {
+                    if (get_keyword ('up_photo', e.ve_params, '') <> '')
+                    {
                       rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
                       rc_org := DAV_RES_UPLOAD (p_path_org, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-          }else if(self.previe_path<>'' and self.s_photo.ufl_value<>'')
+                    } else if(self.previe_path<>'' and self.s_photo.ufl_value<>'')
+                    {
+                      rc := DB.DBA.DAV_COPY(self.previe_path, dir||self.s_photo.ufl_value,1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+                      self.previe_path := '';
+                    }
+
+          if (rc < 0 or rc_org < 0)
+            {
+              self.vc_is_valid := 0;
+              self.vc_error_message := DAV_PERROR (rc);
+            }
+
+          if (rc > 0 or rc_org >0)
           {
-	         rc:=DB.DBA.DAV_COPY(self.previe_path, dir||self.s_photo.ufl_value,1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-           self.previe_path:='';
-
-          }
-
-
-			    if (rc < 0 or rc_org < 0)
-			      {
-			        self.vc_is_valid := 0;
-			        self.vc_error_message := DAV_PERROR (rc);
-			      }
-
-			    if (rc > 0 or rc_org >0)
-			    {
-			        declare exit handler for sqlstate '*' {
- 			           sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
-				};
-			        declare img,thumb,thumb_size2 any;
-			        img := null; thumb := null; thumb_size2 := null;
-				select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = rc;
-				if (img is not null)
-				  thumb := WA_MAKE_THUMBNAIL (img);
+              declare exit handler for sqlstate '*' {
+                  sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
+        };
+              declare img,thumb,thumb_size2 any;
+              img := null; thumb := null; thumb_size2 := null;
+        select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = rc;
+        if (img is not null)
+          thumb := WA_MAKE_THUMBNAIL (img);
           thumb_size2 := WA_MAKE_THUMBNAIL (img, 115, 160);
-				if (thumb is not null)
-				  DAV_RES_UPLOAD (p_path, thumb,
-				    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-				if (thumb_size2 is not null){
-				  declare p_path_size2 any;
-			    p_path_size2 := case
-			                    when self.s_photo.ufl_value not like '/%'
-			                    then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-		                      else
-	                           subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-	                        end;
-				  DAV_RES_UPLOAD (p_path_size2, thumb_size2,
-				    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-			      }
+        if (thumb is not null)
+          DAV_RES_UPLOAD (p_path, thumb,
+            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+        if (thumb_size2 is not null){
+          declare p_path_size2 any;
+          p_path_size2 := case
+                          when self.s_photo.ufl_value not like '/%'
+                          then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
+                          else
+                             subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
+                          end;
+          DAV_RES_UPLOAD (p_path_size2, thumb_size2,
+            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+            }
         }
-			    WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
-		    }else
-		    {
+          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
+        }else
+        {
          if(get_keyword ('s_photo', e.ve_params, '') = '')
-          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
-		          }
+            WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
+        }
 
 
 
 
-			if (get_keyword ('up_audio', e.ve_params, '') <> '')
-			  {
-			    declare dir, p_path any;
-			    dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/media/';
-			    p_path := case
-			      when self.s_audio.ufl_value not like '/%'
-			        then dir||self.s_audio.ufl_value
-		              else
-	                        self.s_audio.ufl_value
-	                      end;
-			    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+      if (get_keyword ('up_audio', e.ve_params, '') <> '')
+        {
+          declare dir, p_path any;
+          dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/media/';
+          p_path := case
+            when self.s_audio.ufl_value not like '/%'
+              then dir||self.s_audio.ufl_value
+                  else
+                          self.s_audio.ufl_value
+                        end;
+          rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
           rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
-			    if (rc < 0)
-			      {
-			        self.vc_is_valid := 0;
-			        self.vc_error_message := DAV_PERROR (rc);
-			      }
+          if (rc < 0)
+            {
+              self.vc_is_valid := 0;
+              self.vc_error_message := DAV_PERROR (rc);
+            }
 
-			    WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
-		          }
+          WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
+              }
 
-			if (self.is_org)
+      if (self.is_org)
                           {
-			    dt := null;
-			    self.regtitle.ufl_value := null;
-			    self.f_name.ufl_value := null;
-			    self.l_name.ufl_value := null;
-			    self.regender.ufl_value := null;
-			    self.m_sign.ufl_value := null;
-			    self.e_fbook.ufl_value := null;
-			    self.e_fmusic.ufl_value := null;
-			    self.e_fmovie.ufl_value  := null;
-			  }
+          dt := null;
+          self.regtitle.ufl_value := null;
+          self.f_name.ufl_value := null;
+          self.l_name.ufl_value := null;
+          self.regender.ufl_value := null;
+          self.m_sign.ufl_value := null;
+          self.e_fbook.ufl_value := null;
+          self.e_fmusic.ufl_value := null;
+          self.e_fmovie.ufl_value  := null;
+        }
 
                         WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
                         WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.regtitle.ufl_value);
@@ -863,12 +851,12 @@
                         WA_USER_EDIT (self.u_name, 'E_MAIL', self.regmail.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
-			WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
 
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
+			WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
 			update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;
 
 
@@ -878,7 +866,7 @@
                         WA_USER_TEXT_SET(self.u_id, _pdata);
                       ]]>
                     </v:on-post>
-		</v:button>
+    </v:button>
    <script type="text/javascript"><![CDATA[
 
     function mailIsValid()
@@ -905,7 +893,7 @@
     }
    ]]></script>
 
-	    </span>
+      </span>
                 </td>
               </tr>
     </table>

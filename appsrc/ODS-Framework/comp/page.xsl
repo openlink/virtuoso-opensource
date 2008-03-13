@@ -49,7 +49,7 @@
 
     select top 1 WS_WEB_TITLE, WS_WEB_BANNER, WS_WELCOME_MESSAGE, WS_WELCOME_MESSAGE2, WS_COPYRIGHT, WS_DISCLAIMER
       into self.banner, self.web_banner, self.welcome_message, self.welcome_message2, self.copyright, self.disclaimer from WA_SETTINGS;
-    
+
     self.maps_key := WA_MAPS_GET_KEY ();
 
     if (__proc_exists ('IM AnnotateImageBlob', 2) is not null)
@@ -65,8 +65,8 @@
       {
         declare visib varchar;
         self.f_full_name := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.fname), self.fname);
-        self.fname_or_empty := self.fname;
-	
+	self.fname_or_empty := self.fname;
+
 	declare exit handler for not found{visib:='';};
 	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY,
 		WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK, WAUI_IS_ORG
@@ -90,32 +90,33 @@
       {
         declare pars, pos any;
         pars := self.vc_event.ve_params;
-	sid := get_keyword('sid', cookie_vec);
-	pos := position ('sid', pars);
-	if (pos > 0)
-	  {
-	    pars [pos] := sid;
-	    pos := position ('realm', pars);
-	    if (pos > 0)
-	      pars[pos] := 'wa';
-	  }
-	else
-      	  {
-	    pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
-	  }
+	      sid := get_keyword('sid', cookie_vec);
+	      pos := position ('sid', pars);
+	      if (pos > 0)
+	      {
+	        pars [pos] := sid;
+	        pos := position ('realm', pars);
+	        if (pos > 0)
+	          pars[pos] := 'wa';
+
+	      }
+	      else
+        {
+	        pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
+	      }
 
 
-	self.vc_event.ve_params := pars;
+  	    self.vc_event.ve_params := pars;
 
       }
 
-     if (self.template is not null)
-       {
-         declare t_src, dummy any;
-         dummy := 0;
-	 t_src := DB.DBA.vspx_src_get (self.template, dummy, 0);
-	 self.template_xml := xtree_doc (t_src);
-       }
+         if (self.template is not null)
+         {
+             declare t_src, dummy any;
+             dummy := 0;
+	           t_src := DB.DBA.vspx_src_get (self.template, dummy, 0);
+	           self.template_xml := xtree_doc (t_src);
+         }
 
 --         self.topmenu_level:=get_keyword('l',self.vc_event.ve_params,'0');
       self.st_host := WA_GET_HOST ();
@@ -179,12 +180,12 @@
 <xsl:template match="vm:banner">
   <div class="site_front_banner">
     <div class="site_front_banner_lt">
-      <a href="sfront.vspx&lt;?V concat ('?', trim (self.login_pars, '&amp;')) ?&gt;" 
+      <a href="sfront.vspx&lt;?V concat ('?', trim (self.login_pars, '&amp;')) ?&gt;"
          class="site_link">
-        <img src="images/&lt;?V self.web_banner ?&gt;" 
-             alt="OpenLink Data Spaces Framework" 
+        <img src="images/&lt;?V self.web_banner ?&gt;"
+             alt="OpenLink Data Spaces Framework"
              border="0" />
-    </a>
+      </a>
     </div>
     <div class="site_front_banner_rt">
       <vm:app-ad/>
@@ -204,15 +205,15 @@
 </xsl:template>
 
 <xsl:template match="vm:copyright">
-    <xsl:text disable-output-escaping="yes">
-           &lt;?vsp
-               http(coalesce (wa_utf8_to_wide (self.copyright),''));
-           ?&gt;
-    </xsl:text>
+  <xsl:text disable-output-escaping="yes">
+    &lt;?vsp
+      http (coalesce (wa_utf8_to_wide (self.copyright),''));
+    ?&gt;
+  </xsl:text>
 </xsl:template>
 
 <xsl:template match="vm:disclaimer">
-    <?V coalesce (wa_utf8_to_wide (self.disclaimer), '') ?>
+  <?V coalesce (wa_utf8_to_wide (self.disclaimer), '') ?>
 </xsl:template>
 
 <xsl:template match="vm:notification">
@@ -283,59 +284,59 @@
   DEFAULT USER HOME TEMPLATE,
   IF DEFAULT USER HOME IS CHANGED THIS SHOULD BE CHANGED TOO
 
-  XXX the view XHTML markup should be part of individual page templates sfront.vspx and 
+  XXX the view XHTML markup should be part of individual page templates sfront.vspx and
   myhome.vspx to make them properly templateable.
 -->
 
 <xsl:template match="vm:pagewrapper[vm:body]">
- <body>
-  <xsl:if test="@vm_onload">
+  <body>
+    <xsl:if test="@vm_onload">
       <xsl:attribute name="onload">
         <xsl:value-of select="@vm_onload" />
       </xsl:attribute>
-  </xsl:if>
-  <xsl:if test="@vm_onunload">
-   <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
-  </xsl:if>
-  <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
-    <v:form name="page_form" 
-            type="simple" 
-            method="POST" 
-            xhtml_enctype="multipart/form-data" 
+    </xsl:if>
+    <xsl:if test="@vm_onunload">
+      <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
+    </xsl:if>
+    <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
+    <v:form name="page_form"
+            type="simple"
+            method="POST"
+            xhtml_enctype="multipart/form-data"
             xhtml_onsubmit="sflag=true;">
       <div id="HD"><?V ' ' ?>
         <xsl:if test="not (@odsbar) or @odsbar != 'no'">
-        <vm:ods-bar/>
+          <vm:ods-bar/>
         </xsl:if>
 
         <!--xsl:if test="not (@banner) or @banner != 'no'">
-		  <vm:banner />
+          <vm:banner/>
         </xsl:if-->
 
       </div> <!-- HD -->
       <div id="MD">
-		  <vm:notification />
-		  <xsl:apply-templates select="vm:body|vm:body-wrapper"/>
+        <vm:notification />
+        <xsl:apply-templates select="vm:body|vm:body-wrapper"/>
       </div> <!-- MD -->
       <div id="FT">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
-            <img alt="Powered by OpenLink Virtuoso Universal Server" 
-                 src="images/virt_power_no_border.png" 
+            <img alt="Powered by OpenLink Virtuoso Universal Server"
+                 src="images/virt_power_no_border.png"
                  border="0" />
           </a>
-              </div>
+        </div>
         <div id="FT_R">
           <!--<a href="aboutus.html">About Us</a> |-->
-        <a href="faq.html">FAQ</a> |
-        <a href="privacy.html">Privacy</a> |
+          <a href="faq.html">FAQ</a> |
+          <a href="privacy.html">Privacy</a> |
           <a href="rabuse.vspx">Report Abuse</a> <!-- |-->
           <!--<a href="advertise.html">Advertise</a> |-->
           <!--<a href="contact.html">Contact Us</a>-->
-	    <div><vm:copyright /></div>
-	    <div><vm:disclaimer /></div>
+          <div><vm:copyright /></div>
+          <div><vm:disclaimer /></div>
         </div>
-      </div> <!-- FT -->
+      </div><!-- FT -->
     </v:form><font color="white">....</font>
   </body>
 </xsl:template>
@@ -634,25 +635,25 @@
       <vm:my-home-link><xsl:if test="@on = 'home'"><xsl:attribute name="class">sel</xsl:attribute></xsl:if>Profile</vm:my-home-link>
     </td>
   </v:template>
-	<?vsp
-	  if (self.fname is null or self.fname = self.u_name)
-	    {
-       	?>
-	<vm:applications_my_menu>
-	    <xsl:attribute name="level">1</xsl:attribute>
-	</vm:applications_my_menu>
-	<?vsp
-	    }
-	  else
-	    {
-	?>
-	<vm:applications_fmenu>
-	    <xsl:attribute name="level">1</xsl:attribute>
-	</vm:applications_fmenu>
-	<?vsp
-	    }
+  <?vsp
+  if (self.fname is null or self.fname = self.u_name)
+  {
+  ?>
+  <vm:applications_my_menu>
+    <xsl:attribute name="level">1</xsl:attribute>
+  </vm:applications_my_menu>
+  <?vsp
   }
-	?>
+  else
+  {
+  ?>
+  <vm:applications_fmenu>
+    <xsl:attribute name="level">1</xsl:attribute>
+  </vm:applications_fmenu>
+  <?vsp
+  }
+  }
+  ?>
   <td  class="filler">
   </td>
   <!-- EOF SECOND LEVEL -->
@@ -1537,7 +1538,7 @@ if (i > 0)
                   control.vc_parent.vc_error_message := 'Membership (Join) expiry time should be positive integer and greater then 0';
                   return;
                 }
-                
+
                 if(self.unique_mail.ufl_selected and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 0))
                 {
                   for select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp
@@ -1551,8 +1552,8 @@ if (i > 0)
                    i:=0;
                    account_notchanged:='';
                    accounts_reset:='';
-                   
-                   
+
+
                    for select U_ID,U_NAME,U_ACCOUNT_DISABLED from SYS_USERS where U_E_MAIL=_email order by U_LOGIN_TIME desc do
                    {
                      if(length(accounts_reset)=0)
@@ -1570,23 +1571,23 @@ if (i > 0)
                      }
                      i:=i+1;
                    }
-                   
+
                   declare admin_email_address,_subject,_msg varchar;
-                  
+
                   admin_email_address:=(select U_E_MAIL from SYS_USERS where U_ID = http_dav_uid ());
-                  
+
                   _subject:='Account e-mail address set to blank';
                   _msg:=sprintf('Your accounts - '||accounts_reset||' on '||WA_LINK(1,'/ods/')||' are using the same e-mail address - '||_email||'.\nDue to server administration - users with the same e-mail addresses are not allowed any more.\n\n'||
                                 _email||' is still valid e-mail address for account: '||account_notchanged||' .\n\nIn order to receive system notifications for the rest of the accounts please enter valid e-mail address.');
-               
+
                   declare exit handler for sqlstate '*' {goto _skip_mail;};
                   WA_SEND_MAIL (admin_email_address, _email ,_subject, _msg);
-                  
+
                   _skip_mail:;
-                  
+
                   }
                 }
-                
+
                 update WA_SETTINGS set
                   WS_REGISTER = self.ssetc1.ufl_selected,
                   WS_MAIL_VERIFY = self.ssetc2.ufl_selected,
@@ -1905,12 +1906,12 @@ if (i > 0)
                 }
                 update WA_SETTINGS
                    set WS_WEB_BANNER = banner,
-                  WS_WEB_TITLE = trim(self.t_title.ufl_value),
-                  WS_WEB_DESCRIPTION = trim(self.t_description.ufl_value),
-                  WS_WELCOME_MESSAGE = trim(self.t_welcome.ufl_value),
+                       WS_WEB_TITLE = trim(self.t_title.ufl_value),
+                       WS_WEB_DESCRIPTION = trim(self.t_description.ufl_value),
+                       WS_WELCOME_MESSAGE = trim(self.t_welcome.ufl_value),
                        WS_WELCOME_MESSAGE2 = trim(self.t_welcome2.ufl_value),
-                  WS_COPYRIGHT = trim(self.t_copy.ufl_value),
-                  WS_DISCLAIMER = trim(self.t_disclaimer.ufl_value);
+                       WS_COPYRIGHT = trim(self.t_copy.ufl_value),
+                       WS_DISCLAIMER = trim(self.t_disclaimer.ufl_value);
                 if (row_count() = 0)
                 {
                   insert into WA_SETTINGS (WS_WEB_BANNER, WS_WEB_TITLE, WS_WEB_DESCRIPTION, WS_WELCOME_MESSAGE, WS_WELCOME_MESSAGE2, WS_COPYRIGHT, WS_DISCLAIMER)
@@ -2305,8 +2306,8 @@ if (i > 0)
                           declare test varchar;
                           test := '';
 
-                                if (length (_lhost))
-                                  {
+			  if (length (_lhost))
+			    {
                               test := REGEXP_MATCH('[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?', _lhost);
                             }
                           if (test is not null)
@@ -2934,7 +2935,7 @@ if (i > 0)
     ?>
     <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
     <?vsp
-    	}
+        }
     declare yadis_url any;
     ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.utype||self.fname||'/yadis.xrds') ?>" />
@@ -2942,7 +2943,7 @@ if (i > 0)
     <link rel="meta" type="application/xml+apml" title="APML 0.6" href="<?V wa_link (1, '/dataspace/'||self.fname||'/apml.xml') ?>"/>
     <!--link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text-->
-    <link rel="alternate" type="application/atom+xml" title="Open Social Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>
 

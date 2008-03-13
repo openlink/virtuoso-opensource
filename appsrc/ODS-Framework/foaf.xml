@@ -23,19 +23,19 @@
  -
 -->
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:plan="http://usefulinc.com/ns/scutter/0.1#">
-    
+
     <sql:header xmlns:sql='urn:schemas-openlink-com:xml-sql'>
 	<sql:param name=":sne">-1</sql:param>
     </sql:header>
-    
+
     <foaf:Person>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 
-select 
-   xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)), 
+select
+   xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)),
    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
    xmlelement ('http://xmlns.com/foaf/0.1/:mbox', xmlattributes ('mailto:'||u_e_mail as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
-   xmlelement ('http://xmlns.com/foaf/0.1/:weblog', 
+   xmlelement ('http://xmlns.com/foaf/0.1/:weblog',
    xmlattributes (USER_GET_OPTION (u_name, 'URL') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
    from sn_person, sys_users where sne_org_id = u_id
    and sne_id = :sne
@@ -43,24 +43,24 @@ select
 
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 
-select xmlelement ('http://xmlns.com/foaf/0.1/:knows', 
-     xmlelement ('http://xmlns.com/foaf/0.1/:Person', 
-		    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)), 
+select xmlelement ('http://xmlns.com/foaf/0.1/:knows',
+     xmlelement ('http://xmlns.com/foaf/0.1/:Person',
+		    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)),
 		    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
-		    xmlelement ('http://xmlns.com/foaf/0.1/:mbox', 
+		    xmlelement ('http://xmlns.com/foaf/0.1/:mbox',
 		        xmlattributes ('mailto:'||u_e_mail as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
-		    xmlelement ('http://xmlns.com/foaf/0.1/:weblog', 
+		    xmlelement ('http://xmlns.com/foaf/0.1/:weblog',
 		        xmlattributes (coalesce (USER_GET_OPTION (u_name, 'URL'), '') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
-		    ) 
+		    )
 		    )
 		    from (
 		     select u_id,u_full_name,u_name,u_e_mail from sn_person, sn_related, sys_users where sne_org_id = u_id
 		     and sne_id = snr_to and snr_from = :sne
-		     union 
+		     union
 		     select u_id,u_full_name,u_name,u_e_mail from sn_person, sn_related, sys_users where sne_org_id = u_id
 		     and sne_id = snr_from and snr_to = :sne
 		     ) sub
 	]]></sql:sqlx>
 </foaf:Person>
-    
+
 </rdf:RDF>

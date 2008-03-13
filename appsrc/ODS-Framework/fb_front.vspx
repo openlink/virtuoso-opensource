@@ -52,7 +52,7 @@
         <![CDATA[
           declare _cookies any;
           _cookies:=vsp_ua_get_cookie_vec(lines);
-        
+
           declare _http_query_str varchar;
           _http_query_str:=http_request_get ('QUERY_STRING');
           if (locate('auth_token',_http_query_str)>0)
@@ -66,9 +66,9 @@
                  _http_query_str:=subseq(_http_query_str,0,_start-1)||subseq(_http_query_str,_end-1);
               else
                  _http_query_str:=subseq(_http_query_str,0,_start-1);
-                
+
             }
-            
+
             _http_query_str:=replace(_http_query_str,'auth_token','false_auth_token');
           }
           if(_http_query_str is not null and length(_http_query_str)>0)
@@ -83,27 +83,27 @@
 
             }else
                params:=vector_concat(params, vector('_http_query_str',_http_query_str));
-          } 
+          }
 
-          
+
           self._ods_login_params:='';
           if(length(self.sid)>0)
             self._ods_login_params:='sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
 
           declare _user_name varchar;
           declare _user_id integer;
-          declare contatcst_import_res any;            
+          declare contatcst_import_res any;
 
-          
+
           _user_name:=null;
           _user_id:=null;
-          
+
           if (length(self.sid)>0)
           {
               declare exit handler for not found {_user_name:=null;_user_id:=null;};
               select VS_UID,U_ID into _user_name,_user_id from DB.DBA.VSPX_SESSION, DB.DBA.SYS_USERS where VS_UID=U_NAME and VS_SID=self.sid;
-          }     
-            
+          }
+
           self._ods_u_name:=_user_name;
 
           declare _ods_fb_id,_fb_user_assocexist integer;
@@ -113,33 +113,33 @@
             declare exit handler for not found {_ods_fb_id:=null;};
             select WAUI_FACEBOOK_ID into _ods_fb_id from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id;
           }
-          
-          
+
+
           declare fb_dba_options any;
           if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
              self._fb_isset:=1;
              self._fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
           }
-          else 
+          else
              self._fb_isset:=0;
-         
+
 
           self._dhtml:=vector();
           self.syncdata_arr:=vector();
-          
+
           declare _html,_src,_fb_user_fullname varchar;
           _fb_user_fullname:='';
 
           if(self._fb_isset)
           {
-            
+
             declare _fb_user integer;
-            
+
             if(length(_cookies)>0)
             { declare _cfb_id integer;
               declare _cfb_session varchar;
-              
+
               _cfb_id:=0;
               _cfb_session:='';
 
@@ -151,16 +151,16 @@
                self._fb.set_user(_cfb_id,_cfb_session,now());
                _fb_user :=_cfb_id;
                goto skip_login;
-                
+
               }
 
             }
-            
-            
+
+
             _fb_user := self._fb.require_login(0);
-            
+
 skip_login:;
-           
+
             _fb_user_assocexist:=0;
             if(_fb_user is not null and _fb_user>0
                and
@@ -172,8 +172,8 @@ skip_login:;
 
 
             -- change login when ODS user is logged but the facebook user that is associated is not the same as the one that is currently logged in.
-           
-            
+
+
             self._fb_usernotcorrespond:=0;
 --            if(_ods_fb_id is not null and _ods_fb_id>0 and _fb_user>0 and _ods_fb_id<>_fb_user)
 
@@ -192,7 +192,7 @@ skip_login:;
 --              _fb_user := self._fb.require_login(1);
               self._fb_usernotcorrespond:=1;
             }
-            
+
               declare _exp varchar;
               _exp:=cast (dateadd('hour',1,now()) as varchar);
 
@@ -208,39 +208,39 @@ skip_login:;
                                   sprintf ('Set-Cookie: fb_user=%d;%s path=/\r\n'||'Set-Cookie: fb_session=%s;%s path=/\r\n', self._fb._user,_exp,self._fb.api_client.session_key,_exp)
                                  )
                          );
-            } 
+            }
 
             declare _assoc_action varchar;
-            
+
             _assoc_action:=get_keyword('assoc', params,null);
 
             if(_assoc_action is not null)
             {
-            
+
                if (_fb_user<>0 and _user_name is not null)
                {
                  if(_assoc_action='assoc')
-               update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=_fb_user where WAUI_U_ID=_user_id;
-               
+                    update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=_fb_user where WAUI_U_ID=_user_id;
+
                  if(_assoc_action='unassoc')
                     update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=null where WAUI_U_ID=_user_id;
                }
             }
 
 
-            
-            
+
+
             -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has connected his ods user to facebook user
             if(_fb_user<>0 and _user_name is null)
             {
               declare exit handler for not found {_user_name:=null;_user_id:=null;};
               select WAUI_U_ID,U_NAME into _user_id,_user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and WAUI_FACEBOOK_ID=_fb_user;
-        
+
               if( _user_id is not null)
               {
                  declare _sid varchar;
                  _sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-                 
+
                  insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
                                           values ('wa', _sid, _user_name,
                                                   serialize (vector ('vspx_user', _user_name)),
@@ -250,7 +250,7 @@ skip_login:;
                  return;
               }
             }
-            
+
             declare _are_assoc int;
             _are_assoc:=0;
 
@@ -260,20 +260,20 @@ skip_login:;
             if(_fb_user<>0)
             {
               declare _res any;
-            
-            
+
+
               _res:=self._fb.api_client.users_getInfo(cast(_fb_user as varchar),'name,pic,affiliations,activities,interests,work_history');
-            
+
               if(_res is not null)
               {
                 _src:=cast(xpath_eval('/users_getInfo_response/user/pic',_res) as varchar);
-                
+
                 declare networks any;
                 declare networks_str varchar;
                 networks_str:='';
-                
+
                 networks:=xpath_eval('//users_getInfo_response/user/affiliations/affiliation',_res,0);
-                
+
                 if(isarray(networks))
                 {
                   declare i integer;
@@ -281,14 +281,14 @@ skip_login:;
                   networks_str:='';
                   while(i<length(networks))
                   {
-                   if(i<(length(networks)-1)) 
+                   if(i<(length(networks)-1))
                       networks_str:=networks_str||cast(xpath_eval('string(name)',networks[i]) as varchar)||',';
                    else
                       networks_str:=networks_str||cast(xpath_eval('string(name)',networks[i]) as varchar);
-                      
+
                    i:=i+1;
                   }
-                 
+
                 }
                 if(length(networks_str)=0)
                    networks_str:='&nbsp';
@@ -309,24 +309,29 @@ skip_login:;
                        '<tr><td style="width:80px;padding-right: 5px;color: #808080">Position:</td><td>'||cast(xpath_eval('string(/users_getInfo_response/user/work_history/work_info[1]/position)',_res) as varchar)||'</td></tr>'||
                        '</tr></table></td>'||
                        '</tr></table>';
-            
-                 _fb_user_fullname:=cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar);
+
+                _fb_user_fullname:=cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar);
 
                 self._fb_u_name:=_fb_user_fullname;
 
 
               }else
                 _html:='Hello, user:'||cast(_fb_user as varchar)||'<br/>';
-            
 
-            
+
+--              declare fbf_cid,fbf_profile_uri varchar;
+--              fbf_cid:=cast(_fb_user as varchar);
+--              fbf_profile_uri:='http://www.facebook.com/profile.php?id='||fbf_cid;
+
+--              dbg_obj_print(DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,self._fb,fbf_cid,1));
+
               self._dhtml:=vector_concat(self._dhtml,vector('user',_html));
-            
+
               _res:=self._fb.api_client.friends_get();
-            
-            
+
+
               if(isarray(_res) and length(_res)>0)
-              { 
+              {
 
                 declare ff_ids varchar;
                 ff_ids:='';
@@ -335,21 +340,21 @@ skip_login:;
                 _html:='';
                 while(i<length(_res))
                 {
-                 if(i<(length(_res)-1)) 
+                 if(i<(length(_res)-1))
                     ff_ids:=ff_ids||_res[i]||',';
                  else
                     ff_ids:=ff_ids||_res[i];
-                    
+
                  i:=i+1;
                 }
-                self._dhtml:=vector_concat(self._dhtml,vector('fbf_jsarrstr',ff_ids));            
-            
+                self._dhtml:=vector_concat(self._dhtml,vector('fbf_jsarrstr',ff_ids));
+
                 _res:=self._fb.api_client.users_getInfo(ff_ids,'name,pic_small');
-            
+
                  if(_res is not null)
                  {
                  _html:='<div class="doc">';
-            
+
                   _res:=xpath_eval('/users_getInfo_response/user',_res,0);
                   if(_res is not null and length(_res)>0)
                   {
@@ -359,7 +364,7 @@ skip_login:;
                       _src:=xpath_eval('string(pic_small)',_res[i]);
                       if(length(_src)=0)
                         _src:=self.odsbar_ods_gpath ||'images/t_default.jpg';
-            
+
                       _html:=_html|| '<div style="float:left;width:160px;padding:5px;border-right:1px dotted #888888;text-align:center">'||
                                       '<img src="'||_src||'" >'||
                                       '<br/>'||
@@ -376,28 +381,28 @@ skip_login:;
                   }
                   _html:=_html||'</div>';
                  }
-                
-                
+
+
               }else
                 _html:='You have no Facebook friends.';
-             
-              
+
+
               self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
-            
-              
+
+
 
               if(get_keyword('import', params,'')='create_import')
               {
-                 declare _inst_id integer; 
-                 
+                 declare _inst_id integer;
+
                  _inst_id:=DB.DBA.ODS_CREATE_NEW_APP_INST ('AddressBook', _user_name||'\'s AddressBook', _user_name);
-                 
+
                  sync_fbf_odsab(self._fb,_user_id,_fb_user);
               }
 
               if(get_keyword('import', params,'')='import')
                  sync_fbf_odsab(self._fb,_user_id,_fb_user);
-                 
+
               self._sync:=0;
               if(get_keyword('import', params,'')='update')
               {
@@ -405,7 +410,7 @@ skip_login:;
                  declare syncdata_jsarrstr varchar;
                  syncdata_jsarrstr:='';
                  syncdata_jsarrstr:=get_syncdata_arr(self._fb,_user_id,1);
-                 
+
                  if(length(syncdata_jsarrstr))
                   self._dhtml:=vector_concat(self._dhtml,vector('syncdata_jsarrstr',syncdata_jsarrstr));
 
@@ -423,22 +428,22 @@ skip_login:;
 
               contatcst_import_res:=sync_fbf_odsab(self._fb,_user_id,_fb_user,0,1);
               self.syncdata_arr:=vector_concat(vector(_fb_user),contatcst_import_res);
-             
+
             }
-             
+
 
             _html:='';
 
 
             if(_user_id is null or _fb_user is null or _fb_user=0)
             {
-            if(_user_id is not null)
-               _html:=_html||'You are logged as ODS user: '||_user_name||'.';
-            else
-               _html:=_html||'You are not logged as ODS user!';
+               if(_user_id is not null)
+                  _html:=_html||'You are logged as ODS user: '||_user_name||'.';
+               else
+                  _html:=_html||'You are not logged as ODS user!';
 
-            if(_fb_user<>0)   
-               _html:=_html||'<br/><br/>You are logged as Facebook user: '||_fb_user_fullname||'.';
+               if(_fb_user<>0)
+                  _html:=_html||'<br/><br/>You are logged as Facebook user: '||_fb_user_fullname||'.';
 
                _html:=_html||'<br/>';
             }
@@ -446,7 +451,7 @@ skip_login:;
             if(_user_id is not null and _fb_user>0 and _are_assoc=0)
             {
                _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not <a id="a_assoc_1" style="text-decoration: underline;cursor: pointer;">connected</a>.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to connect them?</a>';
-           
+
             }else if(_user_id is not null and _fb_user<>0 and _are_assoc=1)
                _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are <a id="a_assoc_2" style="text-decoration: underline;cursor: pointer;">connected</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Disconnect?</a>';
             else if(_user_id is not null and _fb_user=0)
@@ -462,32 +467,31 @@ skip_login:;
               if(isarray(contatcst_import_res))
                  dataspace_url:=sprintf('%s/%U',dataspace_url,(select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID=contatcst_import_res[4]));
 
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook') and _user_id is not null)
-               _html:=_html||'<br/><br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=create_import',self._ods_login_params)||'">Create ODS addressbook and import Facebook contacts.</a>';
-            
---               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('index_inst.vspx?wa_name=AddressBook',self._ods_login_params)||'">Create ODS addressbook if you want to import Facebook contacts.</a>';
+              if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook') and _user_id is not null)
+                 _html:=_html||'<br/><br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=create_import',self._ods_login_params)||'">Create ODS addressbook and import Facebook contacts.</a>';
 
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[3]=0)
+
+              if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[3]=0)
                  _html:=_html||'<br/><br/>You have no Facebook contacts that may be imported to ODS AddressBook.';
 
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
-              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contact'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
+              if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
+                _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contact'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
                               ' that may be imported to your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',self._ods_login_params)||'">Import</a>';
 
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
-              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+              if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
+                _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
                               ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
 
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
-              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+              if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
+                _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
                               ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
             }
-            
+
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
-          
+
 
             declare validate_by_fields any;
-          
+
             _html:='';
             _html:=sprintf('var validateObj={};');
             validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = _user_id), vector());
@@ -496,13 +500,13 @@ skip_login:;
             {
                for (i := 0; i < length (validate_by_fields); i := i + 2)
                    _html:=sprintf('%s\nvalidateObj[''%s'']=%s ;',_html,validate_by_fields[i],coalesce(validate_by_fields[i+1],0));
-            
-            }
-            
-            self._dhtml:=vector_concat(self._dhtml,vector('validation_obj',_html));
-          
 
-         } 
+            }
+
+            self._dhtml:=vector_concat(self._dhtml,vector('validation_obj',_html));
+
+
+         }
         ]]>
         </v:before-data-bind>
         <v:login/>
@@ -533,7 +537,7 @@ function fbInitPrepare()
   ods_bar_state_set('min');
   OAT.Preferences.imagePath='./images/oat/';
   if(typeof(fbInit)!='undefined')
-  OAT.Loader.loadFeatures(["dock","animation","ajax2","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
+     OAT.Loader.loadFeatures(["dock","animation","ajax2","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
   return;
 }
 
@@ -556,14 +560,14 @@ function dockAdd(win_title,custom_colsize)
   subDiv.setAttribute('id','dockwin_'+counter+'_sub');
 
 	var color = colors[counter % colors.length];
-	
+
 	var win = dock.addObject(counter % dock.columns.length,container,{color:color,title:win_title,titleColor:"#000"});
   win.id='dockwin_'+counter;
   win.div.id='dockwin_'+counter;
 
   var col_px = Math.floor(OAT.Dom.getViewport()[0]*usableViewRatio/dock.columns.length);
   if(col_px<docColumnMinSize) col_px=docColumnMinSize;
-  
+
   if(typeof(custom_colsize)!='undefined' && custom_colsize>10)
      dock.columns[counter % dock.columns.length].style.width=custom_colsize+'px';
   else
@@ -584,21 +588,21 @@ function assignPopup(element,textContent)
 	popup.innerHTML = textContent;
 	OAT.Dom.hide(popup);
 	document.body.appendChild(popup);
-	
+
 	var a1 = new OAT.AnimationOpacity(popup,{opacity:1});
 	var a2 = new OAT.AnimationOpacity(popup,{opacity:0});
-	
+
 	OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,function(){ /* hide after opacity gets to 0 */
 		OAT.Dom.hide(popup);
 	});
-	
+
 	OAT.Event.attach(elm,"mouseover",function(event) { /* start displaying on mouseover */
 		a2.stop();
-		
+
 		var position = OAT.Event.position(event);
 		popup.style.left = position[0]+"px";
 		popup.style.top = (position[1]+10)+"px";
-		
+
 		OAT.Dom.show(popup);
 		a1.start();
 	});
@@ -624,8 +628,8 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
       data=data+'&usemapping=1&'+
   	            'mapping='+mappingStr;
 
-   	       
-  
+
+
   var options = {
   	auth:OAT.AJAX.AUTH_BASIC,
   	onerror:function(request) { dd(request.getStatus()); }
@@ -635,7 +639,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
                                        var res_code_xml = OAT.Xml.xpath(xmlDoc, '//res_code', {});
                                        if(res_code_xml.length)
                                           var res_code = OAT.Xml.textValue(res_code_xml[0]);
-                                      
+
                                        if(res_code==0)
                                        {
                                           var i=5;
@@ -646,7 +650,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
                                                                     dockObj.dock.removeObject(dockObj);
                                                                   i--;
                                                                 }, 1000);
-                                       
+
                                        }
                                        else
                                        {
@@ -677,7 +681,7 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,validationStr,t
   	       'usevalidation=1&'+
   	       'validation='+validationStr;
   	       ;
-  
+
   var options = {
   	auth:OAT.AJAX.AUTH_BASIC,
   	onerror:function(request) { dd(request.getStatus()); }
@@ -687,7 +691,7 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,validationStr,t
                                        var res_code_xml = OAT.Xml.xpath(xmlDoc, '//res_code', {});
                                        if(res_code_xml.length)
                                           var res_code = OAT.Xml.textValue(res_code_xml[0]);
-                                      
+
                                        if(res_code==0)
                                        {
                                          ajaxSuccCallCount=ajaxSuccCallCount+1;
@@ -723,7 +727,7 @@ function derefFBP(fbCID)
   	       'fb_userid=<?V(case when self._fb is not null then self._fb._user else '' end)?>&'+
   	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID;
-  
+
   var options = {
   	auth:OAT.AJAX.AUTH_BASIC,
   	onerror:function(request) { dd(request.getStatus()); }
@@ -733,15 +737,15 @@ function derefFBP(fbCID)
                                        var res_code_xml = OAT.Xml.xpath(xmlDoc, '//res_code', {});
                                        if(res_code_xml.length)
                                           var res_code = OAT.Xml.textValue(res_code_xml[0]);
-                                      
+
                                        if(res_code==1)
                                        {
-                                          
+
 
                                           var resCallback = function(_xmlTxt) {
                                               _xmlTxt=_xmlTxt.substring(_xmlTxt.indexOf('<results '),_xmlTxt.length);
                                               _xmlTxt=_xmlTxt.substring(0,_xmlTxt.indexOf('</sparql>'));
-                                              
+
                                               _xml=OAT.Xml.createXmlDoc(_xmlTxt);
 
                                               var nsObj = {};
@@ -772,8 +776,8 @@ function derefFBP(fbCID)
                                                   var _td1=OAT.Dom.create("td",{border:'1px solid',background: _bgc});
                                                   var _td2=OAT.Dom.create("td",{border:'1px solid',background: _bgc});
                                                   var _td3=OAT.Dom.create("td",{border:'1px solid',background: _bgc});
-                                                  
-                                                  
+
+
                                                   OAT.Dom.append([_tb,_tr],[_tr,_td1,_td2,_td3],
                                                                  [_td1,constructElm(OAT.Xml.textValue(resultArrayS[i]))],
                                                                  [_td2,constructElm(OAT.Xml.textValue(resultArrayP[i]))],
@@ -781,11 +785,11 @@ function derefFBP(fbCID)
                                                                 )
                                                 }
                                               }
-                                          
+
                                           var rdfDiv=OAT.Dom.create('div');
                                           rdfDiv.id='resdiv_'+fbCID;
 
-                                          OAT.Dom.append([rdfDiv,_t]); 
+                                          OAT.Dom.append([rdfDiv,_t]);
 
                                           var optObj = {
                                           	href: '/sparql/',
@@ -799,11 +803,11 @@ function derefFBP(fbCID)
                                           var rdfObj=$('rdf_'+fbCID);
                                           if(rdfObj)
                                           {
-                                          rdfObj.style.cursor='pointer';
-                                          OAT.Anchor.assign(rdfObj,optObj);
+                                            rdfObj.style.cursor='pointer';
+                                            OAT.Anchor.assign(rdfObj,optObj);
                                           }
 
-                                          }  
+                                          }
                                           function simpleUri(uri)
                                           {
                                   					var idx = Math.max(uri.lastIndexOf("/"),uri.lastIndexOf("#"),uri.lastIndexOf(":"));
@@ -813,10 +817,10 @@ function derefFBP(fbCID)
                                   						var idx2 = Math.max(value.lastIndexOf("#"));
                                   						var simple = uri.substring(idx1+1,idx2);
                                   					}
-                                  					
+
                                   					return simple;
                                           }
-                                          
+
                                           function constructElm(txt)
                                           {
                                             var simple=simpleUri(txt);
@@ -830,7 +834,7 @@ function derefFBP(fbCID)
                                             }else
                                               return OAT.Dom.text(simple);
                                           }
-                                          
+
                                           function buildRequest (opts) {
                                           		var paramsObj = {};
                                           		paramsObj["query"] = opts.query;
@@ -838,7 +842,7 @@ function derefFBP(fbCID)
                                           		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
                                           		if (opts.limit) { paramsObj["maxrows"] = opts.limit; }
                                           		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
-                                          
+
                                           		var arr = [];
                                           		for (var p in paramsObj) {
                                           			arr.push(p+"="+encodeURIComponent(paramsObj[p]));
@@ -930,9 +934,9 @@ function genAbFieldsCb(cbId,defSelection)
   OAT.Dom.option('Business - Job Title','P_B_JOB',cb);
   OAT.Dom.option('Business - Mail','P_B_MAIL',cb);
   OAT.Dom.option('Business - Web address','P_B_WEB',cb);
-  
+
   cb.value=defSelection;
-  
+
   OAT.Dom.append([_tr,_td1],[_td1,_label],[_tr,_td2],[_td2,cb])
   return _tr
 }
@@ -943,18 +947,18 @@ function getCustomMapping(mappingDockId)
   var mappingDock=$(mappingDockId);
   if($(mappingDock.id+'_body')!=false)
      mappingDock=$(mappingDock.id+'_body');
-  
+
   var _selectArr=mappingDock.getElementsByTagName("select")
-  
+
   for (var i=0;i<_selectArr.length;i++)
   {
    if(_selectArr[i].id!='')
    {
       if(resStr.length==0)
         resStr=_selectArr[i].id+','+_selectArr[i].value;
-      else  
+      else
         resStr=resStr+';'+_selectArr[i].id+','+_selectArr[i].value;
-      
+
    }
   }
 
@@ -968,7 +972,7 @@ function getCustomValidation(validationDockId)
   var validationDock=$(validationDockId);
   if($(validationDock.id+'_body')!=false)
      validationDock=$(validationDock.id+'_body');
-  
+
   var inputCtrls=validationDock.getElementsByTagName('input');
   for (var i=0;i<inputCtrls.length;i++)
   {
@@ -976,10 +980,10 @@ function getCustomValidation(validationDockId)
       {
         if(resStr.length==0)
            resStr=inputCtrls[i].value+','+(inputCtrls[i].checked ? 1 : 0);
-        else  
+        else
            resStr=resStr+';'+inputCtrls[i].value+','+(inputCtrls[i].checked ? 1 : 0);
       }
-    
+
   }
  return resStr;
 
@@ -988,20 +992,20 @@ function getCustomValidation(validationDockId)
 function inverseSelected(parentDiv)
 {
   if(typeof(parentDiv)=='undefined') return;
-  
+
   var inputCtrls=parentDiv.getElementsByTagName('input');
-  
+
   for(var i=0; i<inputCtrls.length;i++)
   {
     if(inputCtrls[i].type=='checkbox')
        inputCtrls[i].checked= inputCtrls[i].checked ? false : true;
-  } 
+  }
 }
 
 ]]>
 </script>
 
-<v:template type='simple' enabled='--case when self._fb_isset=1 and self._fb_usernotcorrespond=0  and self._sync=0 then 1 else 0 end'> 
+<v:template type='simple' enabled='--case when self._fb_isset=1 and self._fb_usernotcorrespond=0  and self._sync=0 then 1 else 0 end'>
 <script type="text/javascript">
 <![CDATA[
 
@@ -1010,7 +1014,7 @@ function fbInit()
 {
 
  dock = new OAT.Dock('fbDock',3);
- 
+
  var user_win=dockAdd('Facebook User Info');
  var friends_win=dockAdd('User Facebook Friends Info');
  var ods_win=dockAdd('ODS User Info');
@@ -1027,13 +1031,13 @@ function fbInit()
 
 
  derefFBP(<?Vself._fb._user?>);
- 
- 
- fbfStr='<?vsp http(get_keyword('fbf_jsarrstr',self._dhtml,'')); ?>';
+
+
+fbfStr='<?vsp http(get_keyword('fbf_jsarrstr',self._dhtml,'')); ?>';
 
  var fbfArr=fbfStr.split(',');
- 
- 
+
+
  for(var i=0;i<fbfArr.length;i++)
  {
    derefFBP(fbfArr[i]);
@@ -1066,17 +1070,17 @@ function fbInit()
 // dd('<?Vself.syncdata_arr[4]?>'); //total contacts count
 // dd('<?Vself.syncdata_arr[5]?>'); //addressbook instance id
 
- 
+
  dock = new OAT.Dock('fbDock',2);
 
  var win_info=dockAdd('Action');
 
  win_mapping=dockAdd('Set default mapping',460);
  createMappingDock(win_mapping);
- 
+
  win_mapping.state=0;
  win_mapping.actualizeState();
- 
+
  OAT.Dom.unlink(win_mapping.close.firstChild);
 
  $(win_info.id+'_body').innerHTML='<?vsp http('<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx',self._ods_login_params)||'">Back to ODS - Facebook</a> | '); ?>' +
@@ -1111,7 +1115,7 @@ function createSyncstatusDock(dockWinObj)
   _progressBar.id=dockWinObj.id+'_progress';
   var _bar=OAT.Dom.create('div',{height:'20px',width:'200px',padding:'0px',border:'1px solid',textAlign:'left',margin:'0 auto'});
   _bar.id=dockWinObj.id+'_bar';
-  
+
   OAT.Dom.append([_bar,_progressBar]);
 
   var _counterTxtDiv =OAT.Dom.create('div',{padding:'10px 0px'});
@@ -1129,8 +1133,8 @@ function createMappingDock(dockWinObj)
   _parent_div.style.width='100%';
   var _table=OAT.Dom.create("table");
   _table.style.width='100%';
-  var _tbody = OAT.Dom.create("tbody");  
-  
+  var _tbody = OAT.Dom.create("tbody");
+
   var _tr=OAT.Dom.create("tr");
   var _th1=OAT.Dom.create("td",{textAlign:'right',fontWeight:'bold',fontSize:'12px'});
   _th1.innerHTML='Facebook Contact Property';
@@ -1145,27 +1149,27 @@ function createMappingDock(dockWinObj)
   OAT.Dom.attach(_close,"click",function(){win_mapping.state=0;win_mapping.actualizeState();});
 
 
-  
+
   OAT.Dom.append([_tbody, genAbFieldsCb('name','P_FULL_NAME'),
-                               genAbFieldsCb('first_name','P_FIRST_NAME'),
-                               genAbFieldsCb('last_name','P_LAST_NAME'),
-                               genAbFieldsCb('sex','P_GENDER'),
-                               genAbFieldsCb('birthday','P_BIRTHDAY'),
-                          genAbFieldsCb('hometown_location/city','P_H_CITY'),                  
-                          genAbFieldsCb('hometown_location/state','P_H_STATE'),                
-                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),              
+                          genAbFieldsCb('first_name','P_FIRST_NAME'),
+                          genAbFieldsCb('last_name','P_LAST_NAME'),
+                          genAbFieldsCb('sex','P_GENDER'),
+                          genAbFieldsCb('birthday','P_BIRTHDAY'),
+                          genAbFieldsCb('hometown_location/city','P_H_CITY'),
+                          genAbFieldsCb('hometown_location/state','P_H_STATE'),
+                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),
                           genAbFieldsCb('hometown_location/zip','P_H_CODE'),
-                               genAbFieldsCb('work_info/location/city','P_B_CITY'),
-                               genAbFieldsCb('work_info/location/state','P_B_STATE'),
-                               genAbFieldsCb('work_info/location/country','P_B_COUNTRY'),
+                          genAbFieldsCb('work_info/location/city','P_B_CITY'),
+                          genAbFieldsCb('work_info/location/state','P_B_STATE'),
+                          genAbFieldsCb('work_info/location/country','P_B_COUNTRY'),
                           genAbFieldsCb('work_info/company_name','P_B_ORGANIZATION'),
                           genAbFieldsCb('work_info/position','P_B_JOB'),
-                          genAbFieldsCb('current_location/city','skip'),                  
-                          genAbFieldsCb('current_location/state','skip'),                
-                          genAbFieldsCb('current_location/country','skip'),              
+                          genAbFieldsCb('current_location/city','skip'),
+                          genAbFieldsCb('current_location/state','skip'),
+                          genAbFieldsCb('current_location/country','skip'),
                           genAbFieldsCb('current_location/zip','skip'),
                           genAbFieldsCb('timezone','skip')
-                 ]);           
+                 ]);
 
   OAT.Dom.append([_table,_tbody]);
 
@@ -1178,7 +1182,7 @@ function createValidationDock(dockWinObj)
   _parent_div.style.textAlign='center';
   _parent_div.style.width='100%';
 
- 
+
  var _table=$('validationFieldsTbl');
 
 var inputCtrls=_table.getElementsByTagName('input');
@@ -1191,14 +1195,14 @@ for (var i=0;i<inputCtrls.length;i++)
         else
            inputCtrls[i].checked=false;
     }
-  
+
 }
 
   var toggleSelect=OAT.Dom.create('div');
   var toggleSelectCB=OAT.Dom.create('input');
   toggleSelectCB.type='checkbox';
   OAT.Dom.attach(toggleSelectCB,"click",function(){inverseSelected($('validationFieldsTbl'));});
-  
+
   OAT.Dom.append([toggleSelect,toggleSelectCB,OAT.Dom.text(' Toggle select')]);
 
 
@@ -1220,9 +1224,9 @@ function UpdateAll(abID,dockObj)
   ajaxSuccCallCount=0;
   var totalCount=<?Vself.syncdata_arr[3]?>;
   var _pbUnit=Math.floor(OAT.Dom.getWH($(dockObj.id+'_bar'))[0]/totalCount);
-  
 
-  var mappingStr='';  
+
+  var mappingStr='';
   mappingStr=getCustomMapping(dockObj.mappingDockId);
   var validationStr='';
   validationStr=getCustomValidation(dockObj.validationId);
@@ -1261,18 +1265,18 @@ function fbInit()
                                   '<a href="javascript:void(0)" onclick="OAT.Dom.show($(\'mappingDiv\'));">Set Default Mapping</a>';
 
  var mappingWin=new OAT.Window({resize:0,min:0,max:0,close:1,move:1,x:130,y:70,width:460,height:575,title:'Set Default Mapping',imagePath:'./images/oat/'}, OAT.WindowData.TYPE_AUTO); //imagePath:'/samples/wa/oat/images/'
- 
+
  mappingWin.div.style.zIndex = 1001;
  mappingWin.div.id = "mappingDiv";
  mappingWin.onclose=function(){OAT.Dom.hide(this.div);};
  mappingWin.content.style.zIndex = 1002;
  mappingWin.content.style.textAlign='center';
  mappingWin.content.id= "mappingDivContent";
- 
- 
+
+
   var _table=OAT.Dom.create("table");
   _table.style.width='100%';
-   var _tbody = OAT.Dom.create("tbody");  
+   var _tbody = OAT.Dom.create("tbody");
 
   var _tr=OAT.Dom.create("tr");
   var _th1=OAT.Dom.create("td",{textAlign:'right',fontWeight:'bold',fontSize:'12px'});
@@ -1286,49 +1290,49 @@ function fbInit()
                           genAbFieldsCb('last_name','P_LAST_NAME'),
                           genAbFieldsCb('sex','P_GENDER'),
                           genAbFieldsCb('birthday','P_BIRTHDAY'),
-                          genAbFieldsCb('hometown_location/city','P_H_CITY'),                  
-                          genAbFieldsCb('hometown_location/state','P_H_STATE'),                
-                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),              
+                          genAbFieldsCb('hometown_location/city','P_H_CITY'),
+                          genAbFieldsCb('hometown_location/state','P_H_STATE'),
+                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),
                           genAbFieldsCb('hometown_location/zip','P_H_CODE'),
                           genAbFieldsCb('work_info/location/city','P_B_CITY'),
                           genAbFieldsCb('work_info/location/state','P_B_STATE'),
                           genAbFieldsCb('work_info/location/country','P_B_COUNTRY'),
                           genAbFieldsCb('work_info/company_name','P_B_ORGANIZATION'),
                           genAbFieldsCb('work_info/position','P_B_JOB'),
-                          genAbFieldsCb('current_location/city','skip'),                  
-                          genAbFieldsCb('current_location/state','skip'),                
-                          genAbFieldsCb('current_location/country','skip'),              
+                          genAbFieldsCb('current_location/city','skip'),
+                          genAbFieldsCb('current_location/state','skip'),
+                          genAbFieldsCb('current_location/country','skip'),
                           genAbFieldsCb('current_location/zip','skip'),
                           genAbFieldsCb('timezone','skip')
-                 ]);           
- 
+                 ]);
+
   OAT.Dom.append([_table,_tbody]);
 
   var _close=OAT.Dom.create("input",{width:'60px'});
- _close.type='button';
- _close.value="Set";
- OAT.Dom.attach(_close,"click",function(){OAT.Dom.hide($('mappingDiv'));});
- 
+  _close.type='button';
+  _close.value="Set";
+  OAT.Dom.attach(_close,"click",function(){OAT.Dom.hide($('mappingDiv'));});
+
   OAT.Dom.append([mappingWin.content,_table,_close]);
 
  $('fbDock').appendChild(mappingWin.div);
- 
+
  OAT.Dom.hide(mappingWin.div);
 
  var manualMappingWin=new OAT.Window({resize:0,min:0,max:0,close:1,move:1,x:130,y:70,width:460,height:575,title:'Set Manual Mapping',imagePath:'./images/oat/'}, OAT.WindowData.TYPE_AUTO); //imagePath:'./images/oat/'
- 
+
  manualMappingWin.div.style.zIndex = 1003;
  manualMappingWin.div.id = "manualMappingDiv";
  manualMappingWin.onclose=function(){OAT.Dom.hide(this.div);};
  manualMappingWin.content.style.zIndex = 1004;
  manualMappingWin.content.style.textAlign='center';
  manualMappingWin.content.id= "manualMappingDivContent";
- 
+
   var _table=OAT.Dom.create("table");
   _table.style.width='100%';
-  var _tbody = OAT.Dom.create("tbody");  
+  var _tbody = OAT.Dom.create("tbody");
 
-  
+
   var _tr=OAT.Dom.create("tr");
   var _th1=OAT.Dom.create("td",{textAlign:'right',fontWeight:'bold',fontSize:'12px'});
   _th1.innerHTML='Facebook Contact Property';
@@ -1338,48 +1342,48 @@ function fbInit()
   OAT.Dom.append([_tbody,_tr],[_tr, _th1,_th2]);
 
   OAT.Dom.append([_tbody, genAbFieldsCb('name','P_FULL_NAME'),
-                              genAbFieldsCb('first_name','P_FIRST_NAME'),
-                              genAbFieldsCb('last_name','P_LAST_NAME'),
-                              genAbFieldsCb('sex','P_GENDER'),
-                              genAbFieldsCb('birthday','P_BIRTHDAY'),
-                          genAbFieldsCb('hometown_location/city','P_H_CITY'),                  
-                          genAbFieldsCb('hometown_location/state','P_H_STATE'),                
-                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),              
+                          genAbFieldsCb('first_name','P_FIRST_NAME'),
+                          genAbFieldsCb('last_name','P_LAST_NAME'),
+                          genAbFieldsCb('sex','P_GENDER'),
+                          genAbFieldsCb('birthday','P_BIRTHDAY'),
+                          genAbFieldsCb('hometown_location/city','P_H_CITY'),
+                          genAbFieldsCb('hometown_location/state','P_H_STATE'),
+                          genAbFieldsCb('hometown_location/country','P_H_COUNTRY'),
                           genAbFieldsCb('hometown_location/zip','P_H_CODE'),
-                              genAbFieldsCb('work_info/location/city','P_B_CITY'),
-                              genAbFieldsCb('work_info/location/state','P_B_STATE'),
-                              genAbFieldsCb('work_info/location/country','P_B_COUNTRY'),
+                          genAbFieldsCb('work_info/location/city','P_B_CITY'),
+                          genAbFieldsCb('work_info/location/state','P_B_STATE'),
+                          genAbFieldsCb('work_info/location/country','P_B_COUNTRY'),
                           genAbFieldsCb('work_info/company_name','P_B_ORGANIZATION'),
-                              genAbFieldsCb('work_info/position','P_B_JOB'),
-                          genAbFieldsCb('current_location/city','skip'),                  
-                          genAbFieldsCb('current_location/state','skip'),                
-                          genAbFieldsCb('current_location/country','skip'),              
+                          genAbFieldsCb('work_info/position','P_B_JOB'),
+                          genAbFieldsCb('current_location/city','skip'),
+                          genAbFieldsCb('current_location/state','skip'),
+                          genAbFieldsCb('current_location/country','skip'),
                           genAbFieldsCb('current_location/zip','skip'),
                           genAbFieldsCb('timezone','skip')
-                ]);           
- 
+                 ]);
+
   OAT.Dom.append([_table,_tbody]);
 
   var _close=OAT.Dom.create("input",{width:'60px'});
   _close.type='button';
   _close.value="Ok";
   _close.c_ods_cid=0;
-  _close.id='manualMappingOK'; 
+  _close.id='manualMappingOK';
   OAT.Dom.attach(_close,"click",function(e){OAT.Dom.hide($('manualMappingDiv'));
-                                           
+
                                            if(OAT.Browser.isIE)
                                               var _elm=e.srcElement;
                                            else
                                               var _elm=this;
                                            ajaxUpdate(_elm.odsab_instid,parseInt(_elm.c_ods_cid),_elm.fb_id,_elm.dock_obj,getCustomMapping('manualMappingDivContent'));
-                                           
+
                                          });
- 
+
 
   OAT.Dom.append([manualMappingWin.content ,_table,_close]);
 
- 
- 
+
+
  $('fbDock').appendChild(manualMappingWin.div);
 
  OAT.Dom.hide(manualMappingWin.div);
@@ -1397,10 +1401,10 @@ function createImportObjDock(_syncData)
    var _dock_obj=dockAdd('Facebook contact <a href="'+_syncData.fb_href+'" target="_blank">'+_syncData._name+'</a>');
 
    var _parent_div=$(_dock_obj.id+'_body')
- 
+
   _parent_div.appendChild(OAT.Dom.text('ODS contacts:'));
 
-   _parent_div.appendChild(OAT.Dom.create("br"));
+  _parent_div.appendChild(OAT.Dom.create("br"));
 
   var d_ods_cid=0;
   for(var ii=0;ii < _syncData.ods_contacts.length;ii++)
@@ -1409,7 +1413,7 @@ function createImportObjDock(_syncData)
    OAT.Dom.append([_parent_div,_radio]);
    _radio.value=_syncData.ods_contacts[ii].ods_cid;
 
-             
+
    OAT.Dom.attach(_radio,"click",function(e){if(OAT.Browser.isIE)
                                                 var _objval=e.srcElement.value;
                                              else
@@ -1419,7 +1423,7 @@ function createImportObjDock(_syncData)
                                             });
 
    if(ii==0)
-   { 
+   {
     _radio.checked=true;
     d_ods_cid=_syncData.ods_contacts[ii].ods_cid;
    }
@@ -1438,9 +1442,9 @@ function createImportObjDock(_syncData)
 
   }
 
-    
-                                              
-   
+
+
+
   var _table=OAT.Dom.create("table",{textAlign:'left',padding:'5px',margin: '5px 0px'});
   var _tbody=OAT.Dom.create("tbody");
   var _tr=OAT.Dom.create('tr');
@@ -1459,11 +1463,11 @@ function createImportObjDock(_syncData)
                                                OAT.Dom.show($('manualMappingDiv'));
                                              })
   _td2.appendChild(_cbutton.div);
-  
+
   OAT.Dom.append([_table,_tbody],[_tbody,_tr],[_tr,_td1,_td2])
-  
+
   OAT.Dom.append([_parent_div,_table,OAT.Dom.create('br')]);
-  
+
 
 
 
@@ -1476,12 +1480,12 @@ function createImportObjDock(_syncData)
 //   _def_button.id=_dock_obj.id+'_defsyncbtn';
 //   _def_button.c_ods_cid=d_ods_cid;
 //
-//   OAT.Dom.attach(_def_button,"click",function(e){if(OAT.Browser.isIE) 
+//   OAT.Dom.attach(_def_button,"click",function(e){if(OAT.Browser.isIE)
 //                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
 //                                                  else
 //                                                     var _c_ods_cid = this.c_ods_cid;
 //                                                  ajaxUpdate(_syncData.odsab_instid,parseInt(_c_ods_cid),_syncData.fb_id,_dock_obj,getCustomMapping('mappingDivContent'));});
-//   
+//
 //  _btnDiv.appendChild(_def_button);
 //  _btnDiv.appendChild(OAT.Dom.create("br"));
 
@@ -1493,18 +1497,18 @@ function createImportObjDock(_syncData)
 //   _button.id=_dock_obj.id+'_syncbtn';
 //   _button.c_ods_cid=d_ods_cid;
 //
-//   OAT.Dom.attach(_button,"click",function(e){if(OAT.Browser.isIE) 
+//   OAT.Dom.attach(_button,"click",function(e){if(OAT.Browser.isIE)
 //                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
 //                                                  else
 //                                                     var _c_ods_cid = this.c_ods_cid;
-//                                                     
+//
 //                                               $('manualMappingOK').odsab_instid=_syncData.odsab_instid;
 //                                               $('manualMappingOK').c_ods_cid=parseInt(_c_ods_cid);
 //                                               $('manualMappingOK').fb_id=_syncData.fb_id;
 //                                               $('manualMappingOK').dock_obj=_dock_obj;
 //                                               OAT.Dom.show($('manualMappingDiv'));
 //                                              });
-//   
+//
 //  _btnDiv.appendChild(_button);
 //  _btnDiv.appendChild(OAT.Dom.create("br"));
 
@@ -1516,10 +1520,10 @@ function createImportObjDock(_syncData)
 //   _cancel.id=_dock_obj.id+'_cancelbtn';
 
 //   OAT.Dom.attach(_cancel,"click",function(){_dock_obj.dock.removeObject(_dock_obj);});
-    
+
 //  _btnDiv.appendChild(_cancel);
 //  _parent_div.appendChild(_btnDiv);
-  
+
   return;
 }
 
@@ -1541,7 +1545,7 @@ function createImportObjDock(_syncData)
  ?>
 
  <div style="padding:10px;">The current ODS Dataspace already has an ODS user, which is connected with the Facebook user <?Vself._fb_u_name?>.<br/> Please <a href="<?Vself._fb.get_login_url(self._fb.current_url(), self._fb.in_frame(),1)?>">login </a> as different Facebook user, or register a new one in order to connect it with the ODS user <?Vself._ods_u_name?>.</div>
- 
+
 </v:template>
 
 <table cellspacing="0" style="display:none;" id="validationFieldsTbl">

@@ -422,11 +422,12 @@
           </v:template>
         </v:template>
         <v:template name="template3" type="simple">
-	    <tr>
+
+   <tr>
 		<td colspan="4" class="ctrl">
 		    <vm:ds-navigation data-set="ds_members" />
 		</td>
-	    </tr>
+    </tr>
         </v:template>
     </v:data-set>
     </table>
@@ -605,16 +606,16 @@
     ]]>
   </v:method>
 
-  
+
   <v:before-data-bind>
     <![CDATA[
-    
+
       self.str_alreadymembers:='';
       for (select U_NAME from DB.DBA.WA_MEMBER,DB.DBA.SYS_USERS where U_ID = WAM_USER and WAM_STATUS <> 1  and WAM_INST = self.iname) do
       {
         self.str_alreadymembers:=self.str_alreadymembers||','||U_NAME;
       };
-    
+
       self.str_alreadyinlist :=  '';
 
       declare exit handler for not found { goto _end; };
@@ -641,7 +642,7 @@
           self.delete_member(replace(self.vc_page.vc_event.ve_params[N], 'delete_', ''), 1);
         }
       }
-      
+
     _end:;
     ]]>
 
@@ -674,17 +675,17 @@
                 {
                      member_type_options:=member_type_options||sprintf('<option value="%d" >%s</option>',WMT_ID,WMT_NAME);
                 };
-              
+
                 declare N integer;
                 declare _U_NAME,_U_FULL_NAME varchar;
 
                 N := 0;
                 _U_NAME:='';
                 _U_FULL_NAME:='';
-                
+
                 for (N := 0; N < length(self.d_added); N := N + 1)
                 {
-                  
+
                   _U_NAME:=self.d_added[N][0];
                   _U_FULL_NAME:=self.d_added[N][1];
 
@@ -716,41 +717,41 @@
       <?vsp
         if (length(self.str_alreadyinlist)>0)
         {
-      ?>     
+      ?>
         <div style="color:red;">You have selected users that were already in the list:<?Vself.str_alreadyinlist?></div>
       <?vsp
         }
-      ?>     
+      ?>
       <div class="new-form-footer">
 
       <v:button name="btn_invite" action="simple" value="Invite member(s)" xhtml_class="form-button" enabled="--length(self.d_added)">
         <v:on-post>
           <![CDATA[
-        
+
             self.current_member_model := (select WAI_MEMBER_MODEL from WA_INSTANCE where WAI_ID = self.iid);
-                                     
+
 --            self.current_member_model := 4;
-                                                 
+
             -- check if user exists
             declare _u_id, _u_name any;
             declare model_type integer;
             declare N integer;
-            
-        
+
+
             for (N := 0; N < length(self.d_added); N := N + 1)
             {
-              
+
               _u_name :=self.d_added[N][0];
 
               model_type := cast(get_keyword('membership_type_'||_u_name, self.vc_page.vc_event.ve_params, -1) as integer);
 
-              
+
               if( model_type < 1) {
                 self.vc_is_valid := 0;
                 self.vc_error_message := 'Incorrect Membership type';
                 goto nextcycle;
               }
-              
+
 
               if(_u_name is null or _u_name = '') {
                 self.vc_is_valid := 0;
@@ -772,14 +773,14 @@
 --                        return 0;
                         goto nextcycle;
             }
-              
+
               if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 2))
               {
                 self.vc_error_message := 'User is already member of application';
                 self.vc_is_valid := 0;
 --                return;
                 goto nextcycle;
-        
+
               }
               if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 4))
               {
@@ -825,7 +826,7 @@
  --                  return;
                    goto nextcycle;
                  };
-                
+
                 if (self.current_member_model = 2)
                 {
                   insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
@@ -837,11 +838,11 @@
                     values(_u_id, self.iname, model_type, 2);
                 }
               }
-        
+
              nextcycle:;
             }
-        
-            
+
+
             -- refresh dataset
             self.dss_members.ds_parameters := null;
             self.dss_members.vc_data_bind (e);
@@ -850,7 +851,7 @@
             self.d_added:=vector();
             self.btn_invite.vc_data_bind (e);
             self.btn_invite_cancel.vc_data_bind (e);
-            
+
         ]]>
         </v:on-post>
       </v:button>
@@ -867,7 +868,7 @@
    </td>
   </tr>
 
-  
+
 
       </table>
       <vm:variable name="current_member_model" type="int" default="0" persist="0"/>

@@ -27,7 +27,7 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <v:method name="ldap2_value" arglist="inout data any">
     <![CDATA[
@@ -76,36 +76,36 @@
 	  ]]>
 	</v:method>
 
-	<v:variable name="title_" type="varchar" default="null" />
-	<v:variable name="name_" type="varchar" default="null" />
-	<v:variable name="firstName" type="varchar" default="null" />
-	<v:variable name="family_name" type="varchar" default="null" />
-	<v:variable name="mbox" type="varchar" default="null" />
-	<v:variable name="gender_" type="varchar" default="null" />
-	<v:variable name="birthday" type="varchar" default="null" />
-	<v:variable name="lat_" type="varchar" default="null" />
-	<v:variable name="lng_" type="varchar" default="null" />
-	<v:variable name="icqChatID" type="varchar" default="null" />
-	<v:variable name="msnChatID" type="varchar" default="null" />
-	<v:variable name="aimChatID" type="varchar" default="null" />
-	<v:variable name="yahooChatID" type="varchar" default="null" />
-	<v:variable name="workplaceHomepage" type="varchar" default="null" />
-	<v:variable name="homepage" type="varchar" default="null" />
-	<v:variable name="phone" type="varchar" default="null" />
-	<v:variable name="show_data" type="int" default="0" />
-	<v:variable name="ab_domain" type="int" default="null" />
+  <v:variable name="title_" type="varchar" default="null" />
+  <v:variable name="name_" type="varchar" default="null" />
+  <v:variable name="firstName" type="varchar" default="null" />
+  <v:variable name="family_name" type="varchar" default="null" />
+  <v:variable name="mbox" type="varchar" default="null" />
+  <v:variable name="gender_" type="varchar" default="null" />
+  <v:variable name="birthday" type="varchar" default="null" />
+  <v:variable name="lat_" type="varchar" default="null" />
+  <v:variable name="lng_" type="varchar" default="null" />
+  <v:variable name="icqChatID" type="varchar" default="null" />
+  <v:variable name="msnChatID" type="varchar" default="null" />
+  <v:variable name="aimChatID" type="varchar" default="null" />
+  <v:variable name="yahooChatID" type="varchar" default="null" />
+  <v:variable name="workplaceHomepage" type="varchar" default="null" />
+  <v:variable name="homepage" type="varchar" default="null" />
+  <v:variable name="phone" type="varchar" default="null" />
+  <v:variable name="show_data" type="int" default="0" />
+  <v:variable name="ab_domain" type="int" default="null" />
 
   <v:variable name="i_source" type="any" default="-1" />
   <v:variable name="i_lName" type="varchar" default="''" />
 
-	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=8">
-	    <v:before-data-bind>
-		self.ab_domain := (select top 1 WAI_ID from WA_MEMBER, WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = self.u_id and WAM_APP_TYPE = 'AddressBook' and WAM_MEMBER_TYPE = 1);
-	    </v:before-data-bind>
-	    <input type="hidden" name="page" value="8"/>
+  <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=8">
+    <v:before-data-bind>
+      self.ab_domain := (select top 1 WAI_ID from WA_MEMBER, WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = self.u_id and WAM_APP_TYPE = 'AddressBook' and WAM_MEMBER_TYPE = 1);
+    </v:before-data-bind>
+    <input type="hidden" name="page" value="8"/>
 
-	    <div>
-		<fieldset>
+    <div>
+      <fieldset>
         <table cellspacing="0">
           <tr>
             <td nowrap="nowrap">
@@ -146,10 +146,10 @@
           </tr>
         </table>
         <br/>
-		    <v:button action="simple" name="bt_imp" value="Import" enabled="--equ(self.show_data, 0)">
-			<v:on-post><![CDATA[
-			    self.show_data := 0;
-			    commit work;
+        <v:button action="simple" name="bt_imp" value="Import" enabled="--equ (self.show_data, 0)">
+          <v:on-post><![CDATA[
+            self.show_data := 0;
+            commit work;
 
             if (self.i_source_0.ufl_selected)
             {
@@ -158,18 +158,18 @@
               self.i_source := 0;
               url := self.foaf_url.ufl_value;
 
-			    declare exit handler for sqlstate '*'
-			    {
-			      self.vc_is_valid := 0;
-			      self.vc_error_message := 'Invalid FOAF URL.';
-			    };
+              declare exit handler for sqlstate '*'
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'Invalid FOAF URL.';
+              };
 
               exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', url), null, null, vector (), 0);
 
-			    for select * from
-			     (sparql
-			      prefix foaf: <http://xmlns.com/foaf/0.1/>
- 			      prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+              for select * from
+                 (sparql
+                  prefix foaf: <http://xmlns.com/foaf/0.1/>
+                  prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   select ?title
                          ?name
                          ?firstName
@@ -189,60 +189,60 @@
                          ?phone
                    where {graph ?:url
                            {
-			        [] a foaf:PersonalProfileDocument ;
-				foaf:primaryTopic ?person .
-				optional { ?person foaf:name ?name } .
-				optional { ?person foaf:title ?title } .
-				optional { ?person foaf:nick ?nick } .
-				optional { ?person foaf:firstName ?firstName } .
-				optional { ?person foaf:givenname ?givenname } .
-				optional { ?person foaf:family_name ?family_name } .
-				optional { ?person foaf:mbox ?mbox } .
-				optional { ?person foaf:gender ?gender } .
-				optional { ?person foaf:birthday ?birthday } .
-				optional { ?person foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
-				optional { ?person foaf:icqChatID ?icqChatID } .
-				optional { ?person foaf:msnChatID ?msnChatID } .
-				optional { ?person foaf:aimChatID ?aimChatID } .
-				optional { ?person foaf:yahooChatID ?yahooChatID } .
-				optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-				optional { ?person foaf:homepage ?homepage } .
-				optional { ?person foaf:phone ?phone } .
+                             [] a foaf:PersonalProfileDocument ;
+                             foaf:primaryTopic ?person .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:title ?title } .
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:firstName ?firstName } .
+                             optional { ?person foaf:givenname ?givenname } .
+                             optional { ?person foaf:family_name ?family_name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                             optional { ?person foaf:gender ?gender } .
+                             optional { ?person foaf:birthday ?birthday } .
+                             optional { ?person foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
+                             optional { ?person foaf:icqChatID ?icqChatID } .
+                             optional { ?person foaf:msnChatID ?msnChatID } .
+                             optional { ?person foaf:aimChatID ?aimChatID } .
+                             optional { ?person foaf:yahooChatID ?yahooChatID } .
+                             optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
+                             optional { ?person foaf:homepage ?homepage } .
+                             optional { ?person foaf:phone ?phone } .
                            }
                          }
                  ) sub
-			     do
-			      {
+              do
+              {
                 self.title_ := self.check_title (title);
-      				self.name_ := name;
-			        self.firstName := coalesce (firstName, givenname);
-				self.family_name := family_name;
-				if (mbox like 'mailto:%')
-				  mbox := substring (mbox, 8, length (mbox));
-				self.mbox := mbox;
-				self.gender_ := gender;
-				self.birthday := birthday;
-				self.lat_ := lat;
-				self.lng_ := lng;
-				self.icqChatID := icqChatID;
-				self.msnChatID := msnChatID;
-				self.aimChatID := aimChatID;
-				self.yahooChatID := yahooChatID;
-				self.workplaceHomepage := workplaceHomepage;
-				self.homepage := homepage;
-				if (phone like 'tel:%')
-				  phone := substring (phone, 5, length (phone));
-				self.phone := phone;
+                self.name_ := name;
+                self.firstName := coalesce (firstName, givenname);
+                self.family_name := family_name;
+                if (mbox like 'mailto:%')
+                  mbox := substring (mbox, 8, length (mbox));
+                self.mbox := mbox;
+                self.gender_ := gender;
+                self.birthday := birthday;
+                self.lat_ := lat;
+                self.lng_ := lng;
+                self.icqChatID := icqChatID;
+                self.msnChatID := msnChatID;
+                self.aimChatID := aimChatID;
+                self.yahooChatID := yahooChatID;
+                self.workplaceHomepage := workplaceHomepage;
+                self.homepage := homepage;
+                if (phone like 'tel:%')
+                  phone := substring (phone, 5, length (phone));
+                self.phone := phone;
 
-				self.show_data := 1;
+                self.show_data := 1;
 
                 goto _exit1;
-			      }
+              }
             _exit1:;
-			    if (self.show_data = 0)
-                              {
-			        self.vc_is_valid := 0;
-				self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
+              if (self.show_data = 0)
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
               } else {
                 control.vc_data_bind (e);
               }
@@ -305,7 +305,7 @@
                     self.show_data := 1;
 
                     goto _exit2;
-			      }
+                  }
                 }
               }
             _exit2:;
@@ -314,136 +314,136 @@
                 self.vc_is_valid := 0;
                 self.vc_error_message := 'The specified LDAP server doesn\'t contains personal data.';
               } else {
-			      control.vc_data_bind (e);
+                control.vc_data_bind (e);
               }
             }
-			    ]]></v:on-post>
-		    </v:button>
-		</fieldset>
-	    </div>
-	    <v:template name="res_tmpl1" type="simple" condition="self.show_data">
-		<div>Please confirm importing of the following data in your personal profile.
-		    The corresponding existing data will be replaced.
-		</div>
-		<table>
-		    <v:template type="simple" condition="length (self.title_)">
-		    <tr>
-			<td>Title</td>
-			<td><?V self.title_ ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.firstName)">
-		    <tr>
-			<td>First Name</td>
+          ]]></v:on-post>
+        </v:button>
+      </fieldset>
+    </div>
+    <v:template name="res_tmpl1" type="simple" condition="self.show_data">
+      <div>Please confirm importing of the following data in your personal profile.
+        The corresponding existing data will be replaced.
+      </div>
+      <table>
+        <v:template type="simple" condition="length (self.title_)">
+          <tr>
+            <td>Title</td>
+            <td><?V self.title_ ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.firstName)">
+          <tr>
+            <td>First Name</td>
             <td><?V wa_utf8_to_wide (self.firstName) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.family_name)">
-		    <tr>
-			<td>Family Name</td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.family_name)">
+          <tr>
+            <td>Family Name</td>
             <td><?V wa_utf8_to_wide (self.family_name) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.mbox)">
-		    <tr>
-			<td>E-mail</td>
-			<td><?V self.mbox ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.gender_)">
-		    <tr>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.mbox)">
+          <tr>
+            <td>E-mail</td>
+            <td><?V self.mbox ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.gender_)">
+          <tr>
             <td>Gender</td>
-			<td><?V self.gender_ ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.birthday)">
-		    <tr>
-			<td>Birthday</td>
-			<td><?V self.birthday ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.lng_)">
-		    <tr>
-			<td>Geo position</td>
-			<td><?V self.lat_ ?>;<?V self.lng_ ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.icqChatID)">
-		    <tr>
-			<td>ICQ</td>
+            <td><?V self.gender_ ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.birthday)">
+          <tr>
+            <td>Birthday</td>
+            <td><?V self.birthday ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.lng_)">
+          <tr>
+            <td>Geo position</td>
+            <td><?V self.lat_ ?>;<?V self.lng_ ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.icqChatID)">
+          <tr>
+            <td>ICQ</td>
             <td><?V wa_utf8_to_wide (self.icqChatID) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.msnChatID)">
-		    <tr>
-			<td>MSN</td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.msnChatID)">
+          <tr>
+            <td>MSN</td>
             <td><?V wa_utf8_to_wide (self.msnChatID) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.aimChatID)">
-		    <tr>
-			<td>AIM</td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.aimChatID)">
+          <tr>
+            <td>AIM</td>
             <td><?V wa_utf8_to_wide (self.aimChatID) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.yahooChatID)">
-		    <tr>
-			<td>Yahoo</td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.yahooChatID)">
+          <tr>
+            <td>Yahoo</td>
             <td><?V wa_utf8_to_wide (self.yahooChatID) ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.workplaceHomepage)">
-		    <tr>
-			<td>Workplace Homepage</td>
-			<td><?V self.workplaceHomepage ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.homepage)">
-		    <tr>
-			<td>Homepage</td>
-			<td><?V self.homepage ?></td>
-		    </tr>
-		</v:template>
-		    <v:template type="simple" condition="length (self.phone)">
-		    <tr>
-			<td>Phone</td>
-			<td><?V self.phone ?></td>
-		    </tr>
-		</v:template>
-	       </table>
-		<v:button action="simple" name="bt_imp2" value="Save">
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.workplaceHomepage)">
+          <tr>
+            <td>Workplace Homepage</td>
+            <td><?V self.workplaceHomepage ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.homepage)">
+          <tr>
+            <td>Homepage</td>
+            <td><?V self.homepage ?></td>
+          </tr>
+        </v:template>
+        <v:template type="simple" condition="length (self.phone)">
+          <tr>
+            <td>Phone</td>
+            <td><?V self.phone ?></td>
+          </tr>
+        </v:template>
+      </table>
+      <v:button action="simple" name="bt_imp2" value="Save">
         <v:on-post>
           <![CDATA[
-			--WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
-                        WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.title_);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.firstName);
-                        WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.family_name);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.name_);
-                        WA_USER_EDIT (self.u_name, 'E_MAIL', self.mbox);
-                        WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.gender_);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.foaf_url.ufl_value);
-			WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.homepage);
+            --WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
+            WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.title_);
+            WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.firstName);
+            WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.family_name);
+            WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.name_);
+            WA_USER_EDIT (self.u_name, 'E_MAIL', self.mbox);
+            WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.gender_);
+            WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.foaf_url.ufl_value);
+            WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.homepage);
 
-                        WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.icqChatID);
-                        WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.aimChatID);
-                        WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.yahooChatID);
-			WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.msnChatID);
+            WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.icqChatID);
+            WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.aimChatID);
+            WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.yahooChatID);
+            WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.msnChatID);
 
-                        WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.workplaceHomepage);
-                        WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.phone);
-                        WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.lat_);
-			WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.lng_);
+            WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.workplaceHomepage);
+            WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.phone);
+            WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.lat_);
+            WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.lng_);
 
-			commit work;
-			self.vc_redirect ('uiedit.vspx?page=8');
+            commit work;
+            self.vc_redirect ('uiedit.vspx?page=8');
           ]]>
         </v:on-post>
-		</v:button>
-		<v:button action="simple" name="bt_imp3" value="Cancel">
-		    <v:on-post><![CDATA[
-			self.vc_redirect ('uiedit.vspx?page=8');
-			]]></v:on-post>
-		</v:button>
-	    </v:template>
-	</v:form>
+      </v:button>
+      <v:button action="simple" name="bt_imp3" value="Cancel">
+        <v:on-post><![CDATA[
+          self.vc_redirect ('uiedit.vspx?page=8');
+        ]]></v:on-post>
+      </v:button>
+    </v:template>
+  </v:form>
 </v:page>

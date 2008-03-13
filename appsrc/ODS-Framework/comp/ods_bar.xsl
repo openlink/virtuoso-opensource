@@ -50,61 +50,58 @@
     <v:variable name="odsbar_inout_arr" type="any" default="''" />
     <v:variable name="odsbar_return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="odsbar_current_url" type="varchar" default="''"/>
-      <xsl:processing-instruction name="vsp">
+    <xsl:processing-instruction name="vsp">
 
-          self.odsbar_show_signin:='<xsl:value-of select="@show_signin"/>';
+  self.odsbar_show_signin:='<xsl:value-of select="@show_signin"/>';
 
   if (length(self.odsbar_show_signin)=0) self.odsbar_show_signin:='true';
 
-          self.odsbar_inout_arr:=vector('app_type','<xsl:value-of select="@app_type"/>');
+  self.odsbar_inout_arr:=vector('app_type','<xsl:value-of select="@app_type"/>');
 
   if (get_keyword ('app_type', self.odsbar_inout_arr) is NULL or
       length (get_keyword ('app_type', self.odsbar_inout_arr)) = 0)
     {
-           self.odsbar_inout_arr:=vector('app_type',get_keyword('app_type',self.vc_event.ve_params));
-          };
+      self.odsbar_inout_arr := vector ('app_type', get_keyword ('app_type', self.vc_event.ve_params));
+    };
 
 
-         if(get_keyword('logout',self.vc_event.ve_params)='true' and length(self.sid)>0)
-         {
-                     delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = self.sid;
-                     self.sid := null;
+  if (get_keyword ('logout', self.vc_event.ve_params) = 'true' and length (self.sid) > 0)
+    {
+      delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = self.sid;
 
-                     declare _params any;
-                     _params:=self.vc_event.ve_params;
+      self.sid := null;
+
+      declare _params any;
+      _params := self.vc_event.ve_params;
       _params := vector_concat (subseq (_params, 0, position ('sid', _params) - 1),
                                 subseq (_params, position ('sid', _params) + 1));
 
-                     self.vc_event.ve_params:=_params;
+      self.vc_event.ve_params := _params;
 
-                     connection_set ('vspx_user','');
+      connection_set ('vspx_user','');
 
-                     declare redirect_url varchar;
+      declare redirect_url varchar;
       if (length (self.odsbar_return_url))
         redirect_url := self.odsbar_return_url;
       else
-                     redirect_url:=self.odsbar_ods_gpath||'sfront.vspx';
-                     http_rewrite ();
-                     http_request_status ('HTTP/1.1 302 Found');
-                     http_header (concat (http_header_get (), 'Location: ',redirect_url,'\r\n'));
-                     self.vc_redirect (redirect_url);
+        redirect_url := self.odsbar_ods_gpath || 'sfront.vspx';
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (concat (http_header_get (), 'Location: ', redirect_url, '\r\n'));
+      self.vc_redirect (redirect_url);
+    };
 
-         };
-
-
-
-
-      </xsl:processing-instruction>
+    </xsl:processing-instruction>
 
     <v:on-init>
 
-     <![CDATA[
+<![CDATA[
 
-         declare vsp2vspx_user varchar;
+  declare vsp2vspx_user varchar;
 
-         vsp2vspx_user:='';
+  vsp2vspx_user := '';
 
-     	   whenever not found goto nf_uid;
+  whenever not found goto nf_uid;
 
   select VS_UID
     into vsp2vspx_user
@@ -112,45 +109,45 @@
     where VS_REALM = get_keyword ('realm', self.vc_event.ve_params) and
           VS_SID = get_keyword ('sid', self.vc_event.ve_params);
 
-    	   nf_uid:;
+ nf_uid:;
 
   if (length (self.sid) = 0 and
       length (get_keyword ('sid', self.vc_event.ve_params)) > 0 and
       length (vsp2vspx_user) > 0)
-         {
-           self.sid:=get_keyword('sid',self.vc_event.ve_params);
+    {
+      self.sid := get_keyword ('sid', self.vc_event.ve_params);
       self.realm := coalesce(get_keyword ('realm', self.vc_event.ve_params),'wa');
-           connection_set ('vspx_user',vsp2vspx_user);
+      connection_set ('vspx_user', vsp2vspx_user);
 
-         };
+    };
 
 
      declare _preserv_urlhost integer;
      _preserv_urlhost:=1;
-     
+
      if( _preserv_urlhost )
      {
-	 declare vh, lh, hf any;
-	 vh := http_map_get ('vhost');
-	 lh := http_map_get ('lhost');
-	 hf := http_request_header (self.vc_event.ve_lines, 'Host');
+        declare vh, lh, hf any;
+        vh := http_map_get ('vhost');
+        lh := http_map_get ('lhost');
+        hf := http_request_header (self.vc_event.ve_lines, 'Host');
 
 	-- The below is wrong, the request can be to default http port 80 ,
 	-- therefore mixing the default http & server port is bad idea
         -- if(strchr (hf, ':') is null)
         --   hf:=hf||':'|| server_http_port ();
-           
-	 if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+
+        if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
         {
           self.odsbar_ods_gpath := http_s() || hf || '/ods/';
           self.odsbar_dataspace_path :=http_s() || hf || '/dataspace/';
         }
-	 else
+        else
         {
-           self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
+          self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
           self.odsbar_dataspace_path :=WA_LINK(1, '/dataspace/');
         }
-                
+
      }else
      {
        self.odsbar_ods_gpath := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
@@ -164,8 +161,8 @@
            self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
            self.odsbar_dataspace_path :=WA_LINK(1, '/dataspace/');
        }
-     }        
-   
+     }
+
      declare _url any;
      _url:=split_and_decode(self.vc_event.ve_lines[0],0,'\0\0 ');
      if(length(_url)>1)
@@ -175,18 +172,18 @@
 
      if(get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'')
         self.odsbar_current_url:=http_path()||'?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'');
-     ]]>
+]]>
 
     </v:on-init>
     <v:before-data-bind>
 
-     <![CDATA[
+<![CDATA[
 
 --          if (registry_get ('wa_home_link')<>0)
 --              self.odsbar_ods_gpath:=registry_get ('wa_home_link');
 
-         if(length(self.sid))
-         {
+  if (length (self.sid))
+    {
 
       self.odsbar_loginparams:='sid='||coalesce(self.sid,'')||'&realm='||coalesce(self.realm,'wa');
 
@@ -208,10 +205,10 @@
              VSPX_SESSION
         where U_NAME = VS_UID and
               VS_SID = self.sid;
-nf_uid2:;      
-         }
+nf_uid2:;
+    }
 
-     ]]>
+]]>
 
     </v:before-data-bind>
 
@@ -221,7 +218,7 @@ nf_uid2:;
 <?vsp http(ods_bar_css(self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
-<script  type="text/javascript">
+<script type="text/javascript">
 
 var _head=document.getElementsByTagName('head')[0];
 
@@ -248,23 +245,23 @@ function loadCSS(cssContainer)
   if(cssObj!='undefined' && cssObj.innerHTML.length)
   {
     var cssNode = document.createElement('style');
- cssNode.type = 'text/css';
+    cssNode.type = 'text/css';
     if(cssNode.styleSheet)
     {// IE
       cssNode.styleSheet.cssText = cssObj.innerHTML;
     }else
     {
-    cssNode.textContent =cssObj.innerHTML;
+      cssNode.textContent =cssObj.innerHTML;
     };
 
 
-_head.appendChild(cssNode);
+    _head.appendChild(cssNode);
   }
   else if(cssUrl.length)
   {
     var cssNode = document.createElement('link');
- cssNode.type = 'text/css';
- cssNode.rel = 'stylesheet';
+    cssNode.type = 'text/css';
+    cssNode.rel = 'stylesheet';
     cssNode.href = cssUrl;
 
 //   synch get of .css field by url ... if you want to control behaviour of ods-bar depending on load time.
@@ -286,8 +283,8 @@ _head.appendChild(cssNode);
 //    httpReq.onreadystatechange = function() {cssNode.textContent=httpReq.responseText;};
 //    httpReq.send(null);
 
- _head.appendChild(cssNode);
-}
+    _head.appendChild(cssNode);
+  }
   return;
 }
 
@@ -299,21 +296,21 @@ if(odsbarCSSloaded==0)
 
 }
 
-    var ODSInitArray = new Array();
-    
-  window._apiKey='<?U WA_MAPS_GET_KEY () ?>'; //Google maps key needed before OAT load
-  window.YMAPPID ='<?U WA_MAPS_GET_KEY ('YAHOO') ?>'; //Yahoo maps key needed before OAT load
+var ODSInitArray = new Array();
+
+window._apiKey='<?U WA_MAPS_GET_KEY () ?>'; //Google maps key needed before OAT load
+window.YMAPPID ='<?U WA_MAPS_GET_KEY ('YAHOO') ?>'; //Yahoo maps key needed before OAT load
 
 if (typeof (OAT) == 'undefined')
 {
   var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
   var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat/";
-  
-  
+
+
   var featureList = ["dom"];
 
-    var script = document.createElement("script");
-    script.src = '<?V self.odsbar_ods_gpath ?>oat/loader.js';
+  var script = document.createElement("script");
+  script.src = '<?V self.odsbar_ods_gpath ?>oat/loader.js';
 //  alert ("OAT loader path: "+script.src);
   _head.appendChild(script);
 }
@@ -321,67 +318,68 @@ if (typeof (OAT) == 'undefined')
   function init()
     {
 
-   OAT.Loader.loadFeatures(["ajax","xml"],function(){}); 
-    
+      OAT.Loader.loadFeatures(["ajax","xml"],function(){});
+
       OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat/";
       OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
-      
+
       OAT.Style.include('winrect.css');
 
-                                     
-   if (typeof ODSInitArray != 'undefined')
-   {
-      for (var i = 0; i < ODSInitArray.length; i++)
-          try 
-          {
-              ODSInitArray[i]();
-          }
-          catch (err)
-          {
+
+      if (typeof ODSInitArray != 'undefined')
+        {
+          for (var i = 0; i < ODSInitArray.length; i++)
+            try
+              {
+                ODSInitArray[i]();
+              }
+            catch (err)
+              {
                 alert ('Error in function call: ' + err.message.toString()); // XXX add error logging
-          }
-   }
+              }
+        }
 
-}
-
-
-
-function submitenter(fld, btn, e)
-{
-  var keycode;
-
-  if (fld == null || fld.form == null)
-    return true;
-
-  if (window.event)
-    keycode = window.event.keyCode;
-  else if (e)
-    keycode = e.which;
-  else
-    return true;
-
-  if (keycode == 13)
-    {
-      doPost (fld.form.name, btn);
-      return false;
     }
-  else
-    return true;
-}
 
-function getUrlOnEnter(e)
-{
-  var keycode;
 
-  if (window.event)
-    keycode = window.event.keyCode;
-  else if (e)
-    keycode = e.which;
-  else
-    return true;
 
-  if (keycode == 13)
+  function submitenter(fld, btn, e)
     {
+      var keycode;
+
+      if (fld == null || fld.form == null)
+      return true;
+
+      if (window.event)
+        keycode = window.event.keyCode;
+      else if (e)
+        keycode = e.which;
+      else
+        return true;
+
+      if (keycode == 13)
+        {
+          doPost (fld.form.name, btn);
+          return false;
+        }
+      else
+        return true;
+    }
+
+  function getUrlOnEnter(e)
+    {
+      var keycode;
+
+      if (window.event)
+        keycode = window.event.keyCode;
+      else if (e)
+        keycode = e.which;
+      else
+        return true;
+
+
+      if (keycode == 13)
+        {
 
 //        alert('<?V sprintf('%ssearch.vspx',self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value);
           document.location.href =
@@ -390,11 +388,11 @@ function getUrlOnEnter(e)
             '<?vsp http(case when coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null then '&amp;ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) else '' end);?>'
             ;
 
-      return false;
+          return false;
+        }
+      else
+        return true;
     }
-  else
-    return true;
-}
 
 
 </script>
@@ -409,7 +407,7 @@ function getUrlOnEnter(e)
            value="Sign In"
            url="--self.odsbar_ods_gpath||'login.vspx'||(case when length(self.odsbar_current_url)>0 then sprintf('?URL=%U',self.odsbar_current_url) else '' end)"
            is-local="1"/>
-      |
+    |
     <v:template name="odsbar_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
     <v:url name="odsbar_odsregister_button"
            value="Sign Up"
@@ -421,7 +419,7 @@ function getUrlOnEnter(e)
             Sign Up
     </v:template>
 
-     </div>
+  </div>
 
   <div id="HD_ODS_BAR" style="display:none;">
     <div id="ods_bar">
@@ -438,7 +436,7 @@ function getUrlOnEnter(e)
           <img id="ods_bar_toggle_full"
                src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_l.png"
                alt="maximized bar icon"/>
-       </a>
+        </a>
         <img id="ods_bar_toggle_min_spacer"
              src="<?V self.odsbar_ods_gpath ?>images/odsbar_spacer.png"
              style="display: none; width:0px; height:1px;"
@@ -446,7 +444,7 @@ function getUrlOnEnter(e)
       </div> <!-- ods_bar_handle -->
       <div id="ods_bar_content">
         <div id="ods_bar_top">
-        <vm:odsbar_navigation_level1/>
+          <vm:odsbar_navigation_level1/>
           <div id="ods_bar_top_cmds">
 
             <vm:if test = " length (self.sid) > 0 "> <!-- user is logged on -->
@@ -454,22 +452,22 @@ function getUrlOnEnter(e)
                      url="--self.odsbar_ods_gpath||'app_settings.vspx'"
                      value="Settings"
                      is-local="1"/>
-         </vm:if>
+            </vm:if>
 
             <!-- Site admin settings link -->
 
-         <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
-         |
+            <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
+              |
               <v:url name="site_settings_lnk"
                      value="Site Settings"
                      url="--self.odsbar_ods_gpath||'site_settings.vspx'"
                      render-only="1"
                      is-local="1"/>
-         </vm:if>
+            </vm:if>
 
-         <vm:if test=" length (self.sid) ">
-         |
-         </vm:if>
+            <vm:if test=" length (self.sid) ">
+              |
+            </vm:if>
 
             <v:url name="odsbar_help_button"
                    value="Help"
@@ -477,13 +475,13 @@ function getUrlOnEnter(e)
                    xhtml_target="_blank"
                    is-local="1"/>
 
-         <vm:if test=" length (self.sid) = 0 ">
-          |
+            <vm:if test=" length (self.sid) = 0 ">
+              |
               <v:url name="odsbar_login_button"
                      value="Sign In"
                      url="--self.odsbar_ods_gpath||'login.vspx'||(case when length(self.odsbar_current_url)>0 then sprintf('?URL=%U',self.odsbar_current_url) else '' end)"
                      is-local="1"/>
-          |
+              |
               <v:template name="ods_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
               <v:url name="ods_barregister_button"
                      value="Sign Up"
@@ -494,9 +492,8 @@ function getUrlOnEnter(e)
                   Sign Up
               </v:template>
 
-         </vm:if>
-
-         <vm:if test=" length (self.sid) > 0 ">
+            </vm:if>
+            <vm:if test=" length (self.sid) > 0 ">
               <img class="ods_bar_inline_icon"
                    style="float:none"
                    src="<?V self.odsbar_ods_gpath ?>images/lock.png"
@@ -510,20 +507,20 @@ function getUrlOnEnter(e)
                      format="%s"
                      xhtml_class="user_profile_lnk"/>
 
-          <v:url name="odsbar_logout_url"
+              <v:url name="odsbar_logout_url"
                      value="Logout"
-                    url="?logout=true"
+                     url="?logout=true"
                      xhtml_title="Logout"
                      xhtml_class="logout_lnk"
                      is-local="1"/>
-         </vm:if>
+            </vm:if>
           </div><!-- ods_bar_top_cmds -->
         </div> <!-- ods_bar_top -->
         <vm:odsbar_navigation_level2/>
       </div> <!-- ods_bar_content -->
       <div id="ods_bar_bot">
         <div id="ods_bar_home_path">
-       <?vsp
+<?vsp
          declare curr_location varchar;
          curr_location:='';
 
@@ -549,7 +546,7 @@ function getUrlOnEnter(e)
 
         declare _http_path varchar;
         _http_path:=http_path ();
-        
+
         if(locate('/gtags.vspx',_http_path))
             curr_location:=curr_location||'Tags > ';
         if(locate('/app_settings.vspx',_http_path))
@@ -668,21 +665,21 @@ function getUrlOnEnter(e)
       </vm:if>
        </div>
      </div>
-  </div><!-- HD-ODS-BAR -->
+ </div><!-- HD-ODS-BAR -->
  </div>
 
 <![CDATA[ <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
 
 <script  type="text/javascript">
 
-var userIsLogged;
-userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
+  var userIsLogged;
+  userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
 
-var notLoggedShowSignIn;
-notLoggedShowSignIn=<?V case when self.odsbar_show_signin='true' then '1' else '0' end ?>;
+  var notLoggedShowSignIn;
+  notLoggedShowSignIn=<?V case when self.odsbar_show_signin='true' then '1' else '0' end ?>;
 
-var notLoggedShowOdsBar
-notLoggedShowOdsBar=<?V case when
+  var notLoggedShowOdsBar
+  notLoggedShowOdsBar = <?V case when
                                    locate ('/samples/wa/', http_physical_path ()) or
                                    locate ('/DAV/VAD/wa/', http_physical_path ()) or
                                    locate ('/DAV/VAD/wiki/', http_physical_path ())
@@ -690,69 +687,70 @@ notLoggedShowOdsBar=<?V case when
                                  else '0'
                             end ?>;
 
-function applyTransparentImg(parent_elm)
-{
+  function applyTransparentImg(parent_elm)
+    {
 
-      if (OAT.Dom.isIE()==false) return;
+      if (OAT.Dom.isIE() == false) return;
 
         var img_elements = parent_elm.getElementsByTagName('IMG');
 
-      for (var i=0;i<img_elements.length;i++)
-      {
-        var img_elm=img_elements[i];
-       	var path = img_elm.src;
+        for (var i=0; i < img_elements.length; i++)
+          {
+            var img_elm = img_elements[i];
+       	    var path = img_elm.src;
 
-    		if (img_elements[i].src.toLowerCase().indexOf(".png")>0 )
-    		{
-          var tmp_img_obj=document.createElement("img");
-          tmp_img_obj.src=img_elm.src;
+    		if (img_elements[i].src.toLowerCase().indexOf(".png") > 0)
+              {
+                var tmp_img_obj = document.createElement("img");
+                tmp_img_obj.src = img_elm.src;
 
-          img_elm.src='<?V self.odsbar_ods_gpath ?>images/odsbar_spacer.png';
+                img_elm.src='<?V self.odsbar_ods_gpath ?>images/odsbar_spacer.png';
 
-          img_elm.style.height=tmp_img_obj.height;
-          img_elm.style.width=tmp_img_obj.width;
+                img_elm.style.height=tmp_img_obj.height;
+                img_elm.style.width=tmp_img_obj.width;
                 img_elm.style.filter =
                   "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='scale')";
-        }
-      }
+              }
+          }
 
- return;
-}
-
-function create_cookie (name, value, days)
-{
-  if (days)
-    {
-      var date = new Date ();
-      date.setTime (date.getTime () + (days*24*60*60*1000));
-      var expires = "; expires=" + date.toGMTString ();
+        return;
     }
-  else var expires = "";
 
-  document.cookie = name + "=" + value + expires + "; path=/";
-}
-
-function read_cookie (name)
-{
-  var name_eq = name + "=";
-  var ca = document.cookie.split (';');
-  for (var i=0; i < ca.length; i++)
+  function create_cookie (name, value, days)
     {
-      var c = ca[i];
+      if (days)
+        {
+          var date = new Date ();
+          date.setTime (date.getTime () + (days*24*60*60*1000));
+          var expires = "; expires=" + date.toGMTString ();
+        }
+      else var expires = "";
+
+      document.cookie = name + "=" + value + expires + "; path=/";
+    }
+
+  function read_cookie (name)
+    {
+      var name_eq = name + "=";
+      var ca = document.cookie.split (';');
+
+      for (var i=0; i < ca.length; i++)
+        {
+          var c = ca[i];
 
           while (c.charAt (0) == ' ')
             c = c.substring (1, c.length);
 
           if (c.indexOf (name_eq) == 0)
             return c.substring (name_eq.length, c.length);
+        }
+      return null;
     }
-  return null;
-}
 
 function ods_bar_state_set (state)
-{
-  if(state=='half')
   {
+    if (state == 'half')
+      {
         OAT.Dom.show('ods_bar_toggle_half');
         OAT.Dom.hide('ods_bar_toggle_min');
         OAT.Dom.hide('ods_bar_toggle_full');
@@ -760,12 +758,12 @@ function ods_bar_state_set (state)
         OAT.Dom.hide('ods_bar_toggle_min_spacer');
         OAT.Dom.show('ods_bar_top');
 //        OAT.Dom.detach ($('ods_bar'),'click', ods_bar_state_toggle);
-    create_cookie ('odsbar_state', 'half', 7);
-    return;
-  }
+        create_cookie ('odsbar_state', 'half', 7);
+        return;
+      }
 
-  if(state=='full')
-  {
+    if (state == 'full')
+      {
         OAT.Dom.show('ods_bar_toggle_full');
         OAT.Dom.hide('ods_bar_toggle_min');
         OAT.Dom.hide('ods_bar_toggle_half');
@@ -773,26 +771,26 @@ function ods_bar_state_set (state)
         OAT.Dom.show('ods_bar_second_lvl');
         OAT.Dom.show('ods_bar_bot');
 //        OAT.Dom.detach ($('ods_bar'),'click', ods_bar_state_toggle);
-    create_cookie ('odsbar_state', 'full', 7);
-    return;
-  }
+        create_cookie ('odsbar_state', 'full', 7);
+        return;
+      }
 
-  if(state=='min')
-  {
-    var dx;
+    if (state == 'min')
+      {
+        var dx;
 
-    if(OAT.Dom.isIE)
-    {
+        if (OAT.Dom.isIE)
+          {
             dx = document.body.offsetWidth - 16 - OAT.Dom.getWH('ods_bar_toggle_min_spacer')[0];
           }
         else
-    {
+          {
             dx = window.innerWidth - 26 - OAT.Dom.getWH('ods_bar_toggle_min_spacer')[0];
-    }
-    
+          }
+
         OAT.Dom.resizeBy('ods_bar_toggle_min_spacer', dx , 0);
         OAT.Dom.show('ods_bar_toggle_min_spacer');
-   
+
         OAT.Dom.show('ods_bar_toggle_min');
         OAT.Dom.hide('ods_bar_toggle_half');
         OAT.Dom.hide('ods_bar_toggle_full');
@@ -802,33 +800,33 @@ function ods_bar_state_set (state)
         OAT.Dom.hide('ods_bar_r');
         OAT.Dom.hide('ods_bar_bot');
 //        OAT.Dom.attach ($('ods_bar'),'click', ods_bar_state_toggle);
-    create_cookie ('odsbar_state', 'min', 7);
-   
-    return;
-  }
+        create_cookie ('odsbar_state', 'min', 7);
 
-}
+        return;
+      }
+
+  }
 
   function ods_bar_state_toggle()
-{
+    {
       if ($('ods_bar_toggle_min').style.display != 'none')
-  {
+        {
           ods_bar_state_set('half')
-    return;
-  }
+          return;
+        }
 
       if ($('ods_bar_toggle_half').style.display != 'none')
-  {
+        {
           ods_bar_state_set('full')
-    return;
-  }
+          return;
+        }
 
       if ($('ods_bar_toggle_full').style.display != 'none')
-  {
+        {
           ods_bar_state_set('min')
-    return;
-  }
-}
+          return;
+        }
+    }
 
 var OATWaitCount = 0;
 var inFrame=0;
@@ -841,13 +839,13 @@ if(top.location.href!=window.location.href)
    create_cookie ('interface', 'vspx', 1);
 }
 
-function odsbarSafeInit()
-{
+  function odsbarSafeInit()
+    {
       if(inFrame)
       {
          return;
       }
-      
+
       if (typeof (OAT) != 'undefined')
         {
           ods_bar_state_set (read_cookie ('odsbar_state'));
@@ -862,8 +860,8 @@ function odsbarSafeInit()
               if (notLoggedShowSignIn != 0)
                 {
                   OAT.Dom.show('ods_bar_odslogin');
-          };
-        }
+                };
+            }
         }
       else
         {
@@ -872,10 +870,10 @@ function odsbarSafeInit()
           if (OATWaitCount > 100)
             return; // alert('ods_bar.xsl: OAT is taking too long to initialize - page navigation disabled.');
           else
-     setTimeout(odsbarSafeInit,200);
+            setTimeout(odsbarSafeInit, 200);
 
-  }
-}
+        }
+    }
 odsbarSafeInit();
 
 //function odsbarSafeShow()
@@ -938,8 +936,8 @@ odsbarSafeInit();
                    xhtml_alt="home"
                    url="--self.odsbar_ods_gpath||'myhome.vspx'" />
       </li>
-        </v:template>
-        <v:template name="odsbar_ops_home" type="simple" condition="length(self.odsbar_u_name)=0">
+    </v:template>
+    <v:template name="odsbar_ops_home" type="simple" condition="length(self.odsbar_u_name)=0">
       <li class="home_lnk">
         <v:button name="odsbar_opshome_navbtn"
                   value="--self.odsbar_ods_gpath||'images/odslogosml.png'"
@@ -949,10 +947,10 @@ odsbarSafeInit();
                   xhtml_alt="ODS Home"
                   url="--self.odsbar_ods_gpath||'sfront.vspx'" />
       </li>
-        </v:template>
-         <vm:odsbar_applications_menu/>
-         <vm:odsbar_links_menu/>
-         <li class="<?V case when locate('search.vspx',http_path ()) then 'sel' else '' end ?>">
+    </v:template>
+    <vm:odsbar_applications_menu/>
+    <vm:odsbar_links_menu/>
+    <li class="<?V case when locate('search.vspx',http_path ()) then 'sel' else '' end ?>">
 <?vsp
 declare _search_link varchar;
 _search_link:=self.odsbar_ods_gpath||'search.vspx';
@@ -969,21 +967,21 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
       <a href="<?V_search_link?>">
         <img class="tab_img" src="<?V self.odsbar_ods_gpath ?>images/search.png" alt="search icon"/>
       </a>
-         </li>
-         <li>
+    </li>
+    <li>
       <v:text xhtml_size="10"
         xhtml_id="odsbar_search_text"
         name="odsbar_search_text"
         value=""
         xhtml_class="textbox"
         xhtml_onkeypress="return getUrlOnEnter(event)" />
-         </li>
-        </ul>
+    </li>
+  </ul>
 </xsl:template>
 
 
 <xsl:template match="vm:odsbar_applications_menu">
-  <?vsp
+<?vsp
 
     {
 
@@ -1015,44 +1013,43 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                                vector ('Polls','Polls','polls'),
                                vector ('AddressBook','AddressBook','addressbook'),
                                vector ('Calendar','Calendar','calendar')
-                              );
+                        );
 
       declare arr_url any;
-      arr_url := vector ('_nntpf',rtrim (self.odsbar_ods_gpath,'/ods/') || '/dataspace/discussion'
+      arr_url := vector ('_nntpf', rtrim (self.odsbar_ods_gpath,'/ods/') || '/dataspace/discussion'
                            --packagename, fullurl - uses even url of type key1,key1value,
-                          --                                             key2,key2value
-                         );
-      if (length(self.sid)=0) arr :=arr_notlogged;
+                           --                                             key2,key2value
+                          );
+      if (length (self.sid) = 0) arr := arr_notlogged;
       arr := ODS.WA.wa_order_vector (arr);
 
       foreach (any app in arr) do
-        {
-         if (wa_check_package (app[1]))
-         {
-          declare apptype_showtab int;
-  
+      {
+          if (wa_check_package (app[1]))
+            {
+              declare apptype_showtab int;
+
               declare exit handler for not found
                 {
-              apptype_showtab:=1;
-          };
+                  apptype_showtab := 1;
+                };
 
-          select WAT_MAXINST into apptype_showtab from WA_TYPES where WAT_NAME=app[0] ;
-          
-          if( apptype_showtab is null) apptype_showtab:=1;
+              select WAT_MAXINST into apptype_showtab from WA_TYPES where WAT_NAME=app[0] ;
 
-          if(apptype_showtab<>0)
-          {
+              if (apptype_showtab is null) apptype_showtab := 1;
 
-          declare url_value varchar;
-          url_value:='';
+              if (apptype_showtab <> 0)
+                {
 
+                 declare url_value varchar;
+                 url_value:='';
 
-          if(get_keyword(app[0],arr_url) is not null)
-          {
-            url_value:=get_keyword(app[0],arr_url);
+                 if (get_keyword(app[0],arr_url) is not null)
+                   {
+                     url_value := get_keyword(app[0],arr_url);
                    }
                  else if (length (self.sid) > 0)
-          {
+                   {
                      url_value := sprintf ('%s%V/%s',
                                            self.odsbar_dataspace_path,
                                            coalesce (self.odsbar_fname, self.odsbar_u_name),
@@ -1061,40 +1058,40 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 
                    }
                  else
-          {
+                   {
                      url_value := sprintf ('%sall/%s',
                                            self.odsbar_dataspace_path,
                                            app[2]
                                            );
-          }
+                   }
 
-          declare url_class varchar;
-          url_class:='';
+                 declare url_class varchar;
+                 url_class:='';
 
                  if (self.odsbar_app_type = app[0] and
                      get_keyword ('app_type', self.odsbar_inout_arr) is null)
                    {
-              url_class := 'sel';
+                     url_class:='sel';
                      self.odsbar_app_dataspace:=app[2];
                    }
                  else if (get_keyword ('app_type', self.odsbar_inout_arr) is not null and
                           get_keyword('app_type',self.odsbar_inout_arr) = app[0])
-            {
-              url_class := 'sel';
+                   {
+                     url_class:='sel';
                      self.odsbar_app_dataspace:=app[2];
-            }
-    ?>
-        <li class="<?V url_class ?>">
+                   }
+?>
+                 <li class="<?V url_class ?>">
                 <v:url name="slice1"
                        url="--url_value"
-              value="--WA_GET_APP_NAME (app[0])"
-              render-only="1"
+                       value="--WA_GET_APP_NAME (app[0])"
+                       render-only="1"
                        is-local="1"/>
-        </li>
+              </li>
 <?vsp
-         }
+           }
         }
-      }
+    }
 
     declare arr_custom_app any;
     arr_custom_app:=wa_get_custom_app_options();
@@ -1120,15 +1117,15 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                        render-only="1"
                        is-local="1"/>
              </li>
-    
-    
+
+
     <?vsp
          }
     }
-    
-      }
+
+}
 ?>
- </xsl:template>
+</xsl:template>
 
 
 <xsl:template match="vm:odsbar_links_menu">
@@ -1243,8 +1240,8 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
         if(length(self.odsbar_fname)>0 and self.odsbar_fname<>coalesce(self.odsbar_u_name,''))
         {
            q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, U_NAME '||
-                       ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
-                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.odsbar_fname,self.odsbar_app_type);
+                          ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
+                          ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.odsbar_fname,self.odsbar_app_type);
         }else if(length(self.odsbar_u_name)>0)
         {
            q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, U_NAME'||
@@ -1292,10 +1289,10 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 
         if (length(rows) > 4 )
         {
-          
+
 ?>
        <li><a href="<?vsp http(wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.odsbar_app_type), self.odsbar_loginparams)); ?>">more...</a></li>
-     
+
 <?vsp
         }
 

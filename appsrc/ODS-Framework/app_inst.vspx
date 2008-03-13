@@ -24,10 +24,10 @@
 -->
 <v:page name="ods-app-instances-page"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
-  xmlns:v="http://www.openlinksw.com/vspx/"
-  style="index.xsl"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <vm:page>
   <vm:header>
     <vm:title>Applications</vm:title>
@@ -51,10 +51,10 @@
 
 	 if (length (self.fname))
 	   {
-    declare exit handler for not found
-    {
+      declare exit handler for not found
+	    {
 	     signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
-    };
+	    };
 
 	    select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
 	   }
@@ -78,15 +78,15 @@
 
    declare firstcolumn_wide integer;
    firstcolumn_wide:=5;
-   
+
    if ( ( length (self.sid) and self.u_name <> self.fname )
          or
         (length (self.sid) = 0)
       )
    {
      firstcolumn_wide:=25;
-   } 
-   
+   }
+
 
    ?>
    <td width="<?Vcast(firstcolumn_wide as varchar)||'%'?>" valign="top">
@@ -104,12 +104,12 @@
                        ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
                        ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.fname,self.app_type);
         }else
-          {
+        {
         q_str:=sprintf('select distinct top 11  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
                        ' from WA_MEMBER, WA_INSTANCE '||
                        ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.app_type);
         }
-        
+
 
         declare INST_URL,INST_NAME,INST_OWNER varchar;
 
@@ -117,17 +117,17 @@
         while (0 = exec_next (h, null, null, dta))
         {
           exec_result (dta);
-          
+
           INST_URL:=coalesce(dta[1],'javascript:void(0)');
-          
+
           INST_NAME:=coalesce(dta[0],'');
 
           INST_OWNER:=WA_APP_GET_OWNER(dta[0]);
-          
+
           declare dataspace_url varchar;
 
           dataspace_url:=sprintf('/dataspace/%U/%s/%s',INST_OWNER,wa_get_app_dataspace(self.app_type),INST_NAME);
-          
+
       ?>
       <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
         <td nowrap="nowrap">
@@ -156,13 +156,13 @@
 <?vsp
             goto end_for;
 	         }
-          
+
 
           }
 
-end_for:	  
+end_for:
           exec_close (h);
-        
+
           if (i = 0 and length (self.fname))
           {
       ?>
@@ -192,7 +192,7 @@ end_for:
      </table>
     </td>
     <td width="<?Vcast((100-firstcolumn_wide) as varchar)||'%'?>">
-         <?vsp
+            <?vsp
             if (self.app_type = 'WEBLOG2')
               {
             ?>
@@ -234,7 +234,7 @@ end_for:
             ?>
             <vm:dash-ogallery-summary/>
             <?vsp
-           }
+              }
             else if (self.app_type = 'Polls')
               {
             ?>
@@ -265,7 +265,7 @@ end_for:
             <vm:dash-discussions-summary/>
             <?vsp
               }
-         ?>
+            ?>
         </td>
       </tr>
     </table>

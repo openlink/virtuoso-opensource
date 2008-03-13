@@ -26,16 +26,16 @@
     <sql:param name=":r">-1</sql:param>
 </sql:header>
 <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
-    select 
-    	xmlelement ('rule-set', 
+    select
+    	xmlelement ('rule-set',
 		xmlattributes (
-			trs_name as name, 
-			trs_is_public as shared, 
-			'http://www.openlinksw.com/tags/rule-set' as xmlns), 
+			trs_name as name,
+			trs_is_public as shared,
+			'http://www.openlinksw.com/tags/rule-set' as xmlns),
 			(select xmlagg (
-				xmlelement ('rule', 
-					xmlelement ('pattern', rs_query), 
-					xmlelement ('is-phrase', rs_is_phrase), 
-					xmlelement ('tags', rs_tag))) from tag_rules where rs_trs = trs_id)) 
+				xmlelement ('rule',
+					xmlelement ('pattern', rs_query),
+					xmlelement ('is-phrase', rs_is_phrase),
+					xmlelement ('tags', rs_tag))) from tag_rules where rs_trs = trs_id))
     from tag_rule_set where trs_id = :r
 ]]></sql:sqlx>

@@ -1,18 +1,20 @@
 
--- ODS API 
+-- ODS API
 -- Contains 2 procedures accessible by SOAP
 --  ODS_CREATE_USER                       -- Automatic creation of new user without going trough web registration procedure.
 --  in _username varchar,                -- login for user to create
 --  in _passwd varchar,                  -- password for created user
---  in _email varchar,                   -- email address for user 
+--  in _email varchar,                   -- email address for user
 --  in _host varchar := '',              -- desired domain for which user will be created, if not supplied URIQA default host will be taken
 --  in _creator_username varchar :='',   -- if registration for domain is prohibited authentication of administrator of the domain is required in order to authorize account create
---  in _creator_passwd varchar :=''      -- password for authorized administrator;
--- 
+--  in _creator_passwd varchar :=''      -- password for authorized administrator
+--  in _is_searchable integer := 0       -- optional value to determine if new user data is searchable
+--  in _show_activity integer := 0       -- optional value to determine if new user is shown on activity dashboard on ODS home page
+--
 --  result is INTEGER (created user id) if successful, otherwise varchar - ERROR MESSAGE;
 --
 --  ODS_CREATE_NEW_APP_INST        -- creates instance of determined type for given user
---  in app_type varchar,          -- VALID WA_TYPE of application to create 
+--  in app_type varchar,          -- VALID WA_TYPE of application to create
 --  in inst_name varchar,         -- desired name for the instance
 --  in owner varchar,             -- username of the owner of the instance
 --  in model int := 0,            -- refers to Membership model (Open,Closed,Invitation only,Approval based
@@ -99,14 +101,14 @@ create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_
       uri := elm;
       if (0 = position (uri, vec))
         {
-      if (exists (select 1 from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post and m_uri = uri))
-	{
-          http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', uri), ses);
-	  vec := vector_concat (vec, vector (uri));
-	}
-      else
-        http (sprintf ('{ "uri": { "value":"%s", "checked":false } }, ', uri), ses);
-    }
+	  if (exists (select 1 from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post and m_uri = uri))
+	    {
+	      http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', uri), ses);
+	      vec := vector_concat (vec, vector (uri));
+	    }
+	  else
+	    http (sprintf ('{ "uri": { "value":"%s", "checked":false } }, ', uri), ses);
+        }
     }
   for select m_uri from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post
     and 0 = position (m_uri, vec) do
@@ -223,12 +225,12 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
 
    _username := trim(_username);
 
- 
+
   if(length(_host)=0)
   {
     _host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   }
-  
+
   _arr := split_and_decode (_host, 0, '\0\0:');
   if (length (_arr) > 1)
     {
@@ -248,9 +250,9 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
   {
     _err:='Given domain is incorrect.';
     goto report_err;
-    
+
   }
-  
+
    dom_reg := null;
    whenever not found goto nfd;
      select WD_MODEL into dom_reg from WA_DOMAINS where WD_HOST = vhost and
@@ -275,7 +277,7 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
            }
        }
    }
-   
+
 
    declare uid int;
    declare exit handler for sqlstate '*'
@@ -306,7 +308,7 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
    update SYS_USERS set U_ACCOUNT_DISABLED = _mail_verify_on where U_ID = uid;
    DAV_MAKE_DIR ('/DAV/home/', http_dav_uid (), http_admin_gid (), '110100100R');
    DAV_MAKE_DIR ('/DAV/home/' || _username || '/', uid, http_nogroup_gid (), '110100100R');
- 
+
    WA_USER_SET_INFO(_username, '', '');
    WA_USER_TEXT_SET(uid, _username||' '||_email);
    wa_reg_register (uid, _username);
@@ -357,7 +359,7 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
     if (_mail_verify_on)
     {
         -- create session
-        declare sid any;  
+        declare sid any;
         sid := md5 (concat (datestring (now ()), cast(randomize(999999) as varchar), wa_link(), '/register.vspx'));
         declare _expire integer;
         _expire:=24;
@@ -407,11 +409,11 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
            rollback work;
            goto report_err;
          };
-         
+
          smtp_send(_smtp_server, _sender_address, _email, msg);
        }
     }
-    return uid;  
+    return uid;
 
 report_err:;
 
@@ -434,21 +436,21 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
   _err:='';
 
   -- check for correct instance name
-  
+
   if ( length(coalesce(inst_name, ''))<1 or length(coalesce(inst_name, ''))>55)
   {
        _err:='Instance name should not be empty and not longer than 55 characters;';
        goto report_err;
   }
-   
+
 
   --check for existing instance with the same name
    if (exists(select 1 from WA_INSTANCE where WAI_NAME = inst_name))
    {
        _err:='Instance with name - '||inst_name||' already exists;';
        goto report_err;
-   } 
-   
+   }
+
   --check that user is correct/exists
    {
     declare exit handler for not found
@@ -456,13 +458,13 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
             _err:='User - '||owner||' does not exists;';
             goto report_err;
            };
-    
+
     select U_ID into _u_id from SYS_USERS where U_NAME=owner;
    }
 
 
   --check for correct/installed application_type
-  {        
+  {
    declare exit handler for not found
           {
            _err:='Application type - '||app_type||' does not exists; ';
@@ -478,7 +480,7 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
 
   h := udt_implements_method (inst, 'wa_new_inst');
 
- 
+
   if (h<>0)
   {
     {
@@ -491,7 +493,7 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
      id := call (h) (inst, owner);
     }
 
-   
+
     if(id<>0){
       update WA_INSTANCE
              set WAI_MEMBER_MODEL = model,
@@ -504,18 +506,18 @@ ODS_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner var
     {
        _err:='Cannot update properties for '|| inst_name ||' of type '|| app_type ||' for '||owner||';';
        goto report_err;
-    }  
+    }
   }else
   {
     _err:='Application type '|| app_type ||' do not support wa_new_inst() method;';
     goto report_err;
   }
-  
+
  return id;
 
 
 report_err:;
- 
+
  return _err;
 };
 
@@ -527,7 +529,7 @@ ODS_DELETE_USER(in _username varchar, in _delDAV integer := 1, in _auth_username
 {
   declare _err varchar;
   _err:='';
-  
+
   if(web_user_password_check(_auth_username,_auth_passwd)=0
      or
      not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
@@ -547,7 +549,7 @@ ODS_DELETE_USER(in _username varchar, in _delDAV integer := 1, in _auth_username
   return 1;
 
 report_err:;
- 
+
  return _err;
 
 };
@@ -562,17 +564,17 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
   declare _u_name,_err varchar;
   declare _u_id integer;
   _err:='';
- 
+
   {
   declare exit handler for not found{ _err:='Given user name is not ODS user name.';
                                       goto report_err;
                                     };
   select U_NAME,U_ID into _u_name,_u_id from DB.DBA.SYS_USERS,WA_USER_INFO where U_ID=WAUI_U_ID and U_NAME= _username;
-  }   
-  
+  }
+
   declare _auth integer;
   _auth:=0;
-  
+
   if(is_http_ctx())
   {
       if(http_map_get('mounted')='/SOAP/')
@@ -581,7 +583,7 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
         {
           _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
           _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
-          
+
             if(web_user_password_check(_auth_username,_auth_passwd)=0
                or
                not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
@@ -600,20 +602,20 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
              _err := 'Authentication is incorrect.';
              goto report_err;
           }
-         
+
           connection_set('odsapi_auth_username',_auth_username);
           connection_set('odsapi_auth_userpass',_auth_passwd);
           connection_set('odsapi_deldav',_delDAV);
         }
       }
-        
-      _auth:=1;        
-  }else 
+
+      _auth:=1;
+  }else
       _auth:=1;
 
   if(_auth)
-  { 
-   
+  {
+
 
     {
     declare _sne_id integer;
@@ -643,7 +645,7 @@ skip_sn:;
     delete from "DB"."DBA"."WA_USER_INFO"  where "WAUI_U_ID" = _u_id;
 
     if(_delDAV)
-    {  
+    {
       _p_res:=ODS_DELETE_USER_DAV(_u_name);
       if(_p_res<>1)
          {
@@ -651,13 +653,13 @@ skip_sn:;
            goto report_err;
          }
     }
-  
+
   }
-  
+
  return 1;
 
 report_err:;
- 
+
  return _err;
 
 }
@@ -670,7 +672,7 @@ ODS_DELETE_USER_INSTANCES(in _user_id integer)
   declare _err varchar;
   _err:='';
 
-  
+
   if (is_http_ctx())
   {
     if(http_map_get('mounted')='/SOAP/')
@@ -678,7 +680,7 @@ ODS_DELETE_USER_INSTANCES(in _user_id integer)
      declare _auth_username,_auth_passwd varchar;
      _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
      _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
-     
+
        if(web_user_password_check(_auth_username,_auth_passwd)=0
           or
           not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
@@ -689,7 +691,7 @@ ODS_DELETE_USER_INSTANCES(in _user_id integer)
        }
     }
   }
- 
+
   for select WAI_INST from DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER where WAI_NAME=WAM_INST and WAM_USER=_user_id do
   {
      declare h, id any;
@@ -702,10 +704,10 @@ ODS_DELETE_USER_INSTANCES(in _user_id integer)
      commit work;
      id := call (h) (WAI_INST);
   }
- 
+
  return 1;
 report_err:;
- 
+
  return _err;
 
 }
@@ -724,7 +726,7 @@ ODS_DELETE_USER_DAV(in _user_name varchar)
      declare _auth_username,_auth_passwd varchar;
      _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
      _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
-     
+
        if(web_user_password_check(_auth_username,_auth_passwd)=0
           or
           not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
@@ -735,13 +737,13 @@ ODS_DELETE_USER_DAV(in _user_name varchar)
        }
     }
   }
- 
-   
+
+
   declare _davadmin, _davadminpwd, _user_homepath varchar;
   _davadmin := 'dav';
   _davadminpwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
   _user_homepath := '/DAV/home/'||_user_name||'/';
-  
+
   declare rc integer;
   rc := DB.DBA.DAV_DELETE (_user_homepath, 0, _davadmin, _davadminpwd);
 
@@ -750,11 +752,11 @@ ODS_DELETE_USER_DAV(in _user_name varchar)
     _err:='DAV resource delete failed with code: '||cast(rc as varchar);
     goto report_err;
   }
-  
+
   return 1;
 
 report_err:;
- 
+
  return _err;
 
 }

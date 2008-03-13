@@ -39,9 +39,9 @@
           from WA_INSTANCE
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
-	  self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
+          self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
 
-          self.ihome := self.inst.wa_home_url();
+        self.ihome := self.inst.wa_home_url();
         if (self.wa_type in ('oMail'))
         {
           declare tmp varchar;
@@ -134,41 +134,42 @@
         <vm:login redirect="index.vspx"/>
         <div class="box">
           <v:form type="simple" method="POST" name="eform1">
-	     <table  class="ctl_grp">
-	       <vm:instance-settings edit="yes"/>
-	       <tr>
-		 <td colspan="2">
-	    <span class="fm_ctl_btn">
-            <v:button action="simple" name="cancel1" value="Cancel" >
-              <v:on-post>
-                <![CDATA[
-                  http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                ]]>
-              </v:on-post>
-            </v:button>
-            <v:button action="simple" name="accept1" value="Save" >
-              <v:on-post>
-                <![CDATA[
-                  declare freeze varchar;
-                  freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
-                  if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
-                  {
-                    self.vc_error_message := 'Application is frozen';
-                    self.vc_is_valid := 0;
-                    goto err;
-                  }
+            <table  class="ctl_grp">
+              <vm:instance-settings edit="yes" />
+              <tr>
+                 <td colspan="2">
+                  <span class="fm_ctl_btn">
+                    <v:button action="simple" name="cancel1" value="Cancel">
+                      <v:on-post>
+                        <![CDATA[
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header (sprintf ('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="accept1" value="Save" >
+                      <v:on-post>
+                        <![CDATA[
+                          declare freeze varchar;
 
-                  declare inst web_app;
+                          freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
+                          if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                          {
+                            self.vc_error_message := 'Application is frozen';
+                            self.vc_is_valid := 0;
+                            goto err;
+                          }
 
-		  inst := self.inst;
-		  -- We don't edit the instance name
+                          declare inst web_app;
+
+                          inst := self.inst;
+                          -- We don't edit the instance name
                           self.iname1.ufl_value := trim (self.iname1.ufl_value);
-                          
-		  if (self.wa_type = 'oMail')
-		    {
-		      inst.wa_name := concat(self.iname1.ufl_value, '@', self.idomain1.ufl_value);
-		    }
+
+                          if (self.wa_type = 'oMail')
+                          {
+                            inst.wa_name := concat(self.iname1.ufl_value, '@', self.idomain1.ufl_value);
+                          }
                           else if (self.wa_type = 'oWiki')
                           {
                             declare _instance_name varchar;
@@ -191,63 +192,65 @@
                             }
                             --inst.wa_name := self.iname1.ufl_value;
                           }
-		  else if (self.wa_type = 'IM')
-		    {
-		      declare _inst_name varchar;
-          self.iname2.ufl_value := trim (self.iname2.ufl_value);
-          _inst_name := coalesce(self.iname2.ufl_value, '');
-          if (isnull (regexp_match ('^[A-Za-z0-9_]+\$', _inst_name)))
-            {
-              self.vc_error_message := 'IM instance must be single word without special characters';
-              self.vc_is_valid := 0;
-              self.iname2.ufl_failed := 1;
-              return;
-            }
-		      inst.wa_name := concat(self.u_name, '@', self.idomain2.ufl_value, '/',self.iname2.ufl_value);
-		    }
-		  else
-		    {
-                    		    --inst.wa_name := self.iname1.ufl_value;
-                    		    ;
-		    }
-                  inst.wa_member_model := atoi(self.imodel1.ufl_value);
-                  if (self.wa_type not in ('oMail', 'IM'))
-                  {
-                    self.is_public := self.is_public1.ufl_selected;
-                  }
-                  if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
-                  {
-                    self.is_visible := self.is_visible1.ufl_selected;
-                  }
+                          else if (self.wa_type = 'IM')
+                          {
+                            declare _inst_name varchar;
 
-		  declare exit handler for sqlstate '23000'
-		  {
-		    rollback work;
-		    self.vc_is_valid := 0;
-		    self.vc_error_message := 'An instance with same name already exists, please specify unique instance name.';
-		    return;
-		  };
+                            self.iname2.ufl_value := trim (self.iname2.ufl_value);
+                            _inst_name := coalesce(self.iname2.ufl_value, '');
+                            if (isnull (regexp_match ('^[A-Za-z0-9_]+\$', _inst_name)))
+                            {
+                              self.vc_error_message := 'IM instance must be single word without special characters';
+                              self.vc_is_valid := 0;
+                              self.iname2.ufl_failed := 1;
+                              return;
+                            }
+                            inst.wa_name := concat(self.u_name, '@', self.idomain2.ufl_value, '/',self.iname2.ufl_value);
+                          }
+                          else
+                          {
+                            --inst.wa_name := self.iname1.ufl_value;
+                            ;
+                          }
+                          inst.wa_member_model := atoi(self.imodel1.ufl_value);
+                          if (self.wa_type not in ('oMail', 'IM'))
+                          {
+                            self.is_public := self.is_public1.ufl_selected;
+                          }
+                          if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
+                          {
+                            self.is_visible := self.is_visible1.ufl_selected;
+                          }
 
-                  update WA_INSTANCE
-                     set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
-                         WAI_IS_PUBLIC = self.is_public,
-                         WAI_MEMBERS_VISIBLE = self.is_visible,
-                         WAI_INST = inst,
-                         WAI_NAME = inst.wa_name,
-			 WAI_DESCRIPTION = self.idesc1.ufl_value,
-			 WAI_LICENSE = self.ilic1.ufl_value
-                  where WAI_ID = self.iid;
-                  commit work;
-                  err:;
-                  http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                ]]>
-              </v:on-post>
-	    </v:button>
-	  </span>
-	</td>
-      </tr>
-	</table>
+                          declare exit handler for sqlstate '23000'
+                          {
+                            rollback work;
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'An instance with same name already exists, please specify unique instance name.';
+                            return;
+                          };
+
+                          update WA_INSTANCE
+                             set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
+                                 WAI_IS_PUBLIC = self.is_public,
+                                 WAI_MEMBERS_VISIBLE = self.is_visible,
+                                 WAI_INST = inst,
+                                 WAI_NAME = inst.wa_name,
+                                   WAI_DESCRIPTION = self.idesc1.ufl_value,
+                                  WAI_LICENSE = self.ilic1.ufl_value
+                           where WAI_ID = self.iid;
+                          commit work;
+
+                        err:;
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header (sprintf ('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </span>
+                 </td>
+              </tr>
+            </table>
           </v:form>
         </div>
       </vm:body>

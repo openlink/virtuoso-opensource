@@ -4,7 +4,7 @@ body {
   width: 100%;
   font-family: "Gill Sans", Arial, Helvetica, sans-serif;
   font-size: 9pt;
-  background-color: #fff; 
+  background-color: #fff;
   text-align: center;
   color: #233}
 
@@ -61,7 +61,7 @@ img {
 #APP {
   float: left;
   width: 100%;}
-  
+
 #ODS_BAR {
 	background-color: #369;
 	background-image: url(../i/skin/navlv1default.png);
@@ -80,7 +80,7 @@ img {
 #ODS_BAR a:hover {
   text-decoration: underline}
 
-#ODS_BAR div.button { 
+#ODS_BAR div.button {
   float: left}
 
 #ODS_BAR ul.menu {
@@ -88,13 +88,13 @@ img {
 	padding: 0;
 	float: left;
 	margin-top: 0px;
-}  
+}
 
 #ODS_BAR ul.menu a {
 	text-decoration: none;
 	color: #eef;
 }
-  
+
 #ODS_BAR ul.menu li ul {
 	list-style-type: none;
 	padding: 0;
@@ -120,16 +120,16 @@ span.indicator {
   padding: 0;
   margin-left: 4px}
 
-#APP_MENU { 
+#APP_MENU {
 }
 
 #DS_APP_MENU {
 }
-  
+
 #LT .app_menu li {
   width: 100%;
   margin: 2px}
-  
+
 #LT .app_menu a {
   display: block;
   width: 100%;
@@ -138,7 +138,7 @@ span.indicator {
 
 #LT .app_menu a:hover {
   background-color: #aef}
-  
+
 #LT .app_menu_t a {
 	color: #003366;
 	text-decoration: none
@@ -159,7 +159,7 @@ span.indicator {
   float: left;
   clear: both;
   width: 100%;
-}  
+}
 #FT img {
   margin-top: 3px;
   /* border: 1px solid #336;*/
@@ -285,10 +285,10 @@ img.person_tnail {
 .notify_w ul.msgs li div.msg {
 	float: left;
 }
-.notify_w .w_content .msg_r { 
+.notify_w .w_content .msg_r {
 	float: left;
 }
-.notify_w .w_content .msg_r { 
+.notify_w .w_content .msg_r {
 	float: right;
 }
 div.notify_w h3.date {
@@ -391,7 +391,7 @@ div.gem .gem_r {
 	font-family: Arial, Helvetica, sans-serif;
 	margin: 1px;
 	height: 13px;}
-	
+
 .prof_user_gems {
 	display: block;
 	margin-left: 14px;
@@ -402,7 +402,7 @@ div.gem .gem_r {
 	color: #000000;
 	display: block;
 	float: left;}
-	
+
 .prof_user_gems .gem {
 	float: left;
 	margin: 1px;
@@ -419,19 +419,19 @@ ul.prof_user_commands {
 	border: 1px solid #333;
 	float: left;
 	clear: both;}
-	
+
 ul.prof_user_commands li {
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: #666666;}
-	
+
 ul.prof_user_commands a {
 	text-decoration: none;
 	color: #006699;
 	width: 99%;
 	display: block;
 	margin: 2px;}
-	
+
 ul.prof_user_commands a:hover {
 	background-color: #aaeeff;
 }
@@ -481,7 +481,7 @@ ul.tab_bar .tab_selected {
 	margin-right: 8px;
 	margin-top: 8px;
 }
-	
+
 .tab_deck {
 	border: 1px solid #333;
 	border-top: none;
@@ -534,12 +534,12 @@ ul.tab_bar .tab_selected {
 	float: left;
 	margin: 4px;
 }
-.panelbar_option { 
-	height: 22px; 
-	color: #eef; 
+.panelbar_option {
+	height: 22px;
+	color: #eef;
 	background-color: #336699;
 }
-.panelbar_option:hover  { 
+.panelbar_option:hover  {
 	cursor: pointer;
 }
 #APPS_DS_PB {
@@ -596,7 +596,7 @@ div.dlg_title {
   padding: 0;
   background-color: #355;
   width: 100%}
-  
+
 div.dlg_title h3 {
   margin: 0;
   padding: 0;
@@ -661,7 +661,7 @@ ul.tab_bar li a {
 	margin-right: 8px;
 	margin-top: 8px;
 }
-	
+
 div.tab_deck {
 	border: 1px solid #333;
 	border-top: none;
@@ -723,7 +723,7 @@ div.conn_info_bubble div.rt {
 
 div.conn_info_bubble ul.menu a {
   color: #0066CC;}
-  
+
 /* Login */
 
 #login_page { float: left; clear: both;
@@ -733,13 +733,13 @@ div.conn_info_bubble ul.menu a {
   text-align: left;}
 #id_col { float: left; clear: left}
 #form_col { float: left; margin-bottom: 50px;}
-#login_form_ctr { 
+#login_form_ctr {
   margin: 20px;
   border: 2px solid #b6d4e3;
   background-color: #e0f0f9;
   background-image: url(images/ods_signin_container1.png)}
 #login_form { margin: 10px;width: 300px;}
-#login_page img.id_logo { 
+#login_page img.id_logo {
   margin: 50px 50px 50px 40px}
 #login_page h1 {
   margin-left: 50px;
@@ -754,17 +754,17 @@ div.conn_info_bubble ul.menu a {
   float: left;
   margin: 4px 0 10px 4px}
 #login_page .tab_bar li a img { margin: 0 3px 0 0; padding: 0; vertical-align: middle}
-#login_form_username {  
+#login_form_username {
   display: block;
   width: 170px;
   float: left;
   margin-bottom: 10px}
-#login_form_password {  
+#login_form_password {
   display: block;
   width: 170px;
   float: left;
   margin-bottom: 10px}
-#open_id_url {  
+#open_id_url {
   display: block;
   width: 170px;
   float: left;
@@ -842,18 +842,18 @@ p.login_frm_guide span.openid_client_name { font-weight: bold; }
 
 /* Error page */
 
-#err_page { 
+#err_page {
   float: left; clear: both;
   width: 100%;
   color: #5f6366;
   background-color: #d9e9f2;
 }
-#err_page .id_col { 
+#err_page .id_col {
   float: left; clear: left;
 }
 #err_page .form_col { float: left; margin-bottom: 50px; width: 350px;}
 
-#err_page img.id_logo { 
+#err_page img.id_logo {
   margin: 50px 50px 50px 40px}
 #err_page h1 {
   margin-left: 50px}

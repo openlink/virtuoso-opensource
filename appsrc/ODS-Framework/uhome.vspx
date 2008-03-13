@@ -50,14 +50,14 @@
 
     if (0)
       {
-    declare exit handler for not found
-      {
+        declare exit handler for not found
+            {
                 signal ('22023', sprintf ('The user "%s" does not exist.', self.suser));
             };
         nf_user:
 	select U_NAME into tmp_uid from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK = self.suser;
 	self.suser := tmp_uid;
-    }
+      }
 
 
 

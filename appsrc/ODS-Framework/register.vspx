@@ -40,13 +40,13 @@
             <table>
               <tr>
                 <td id="RB" valign="top">
-                  <vm:register-form/>                
+                  <vm:register-form/>
                 </td>
               </tr>
             </table>
         </div>
         </div>
-      </vm:body>          
+      </vm:body>
     </vm:pagewrapper>
   </vm:page>
 </v:page>

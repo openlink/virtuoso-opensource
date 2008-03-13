@@ -250,7 +250,7 @@
               <br/>
               </v:check-box>
               <label for="set_hlatlng_def">Default map location</label>
-			
+
 		      </td>
 		    </tr>
 		    <tr>

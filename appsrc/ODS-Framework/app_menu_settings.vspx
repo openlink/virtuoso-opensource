@@ -40,51 +40,51 @@
       <vm:navigation on="settings"/>
       <vm:rawheader caption="Application menu settings"/>
       <vm:body>
-	  <vm:login redirect="index.vspx"/>
-	  <table class="listing" rules="groups">
-	      <colgroup>
-		  <col/>
-		  <col/>
+  	    <vm:login redirect="index.vspx"/>
+  	    <table class="listing" rules="groups">
+  	      <colgroup>
   		      <col/>
-	      </colgroup>
-	      <tr class="listing_header_row">
+  		      <col/>
+  		      <col/>
+  	      </colgroup>
+  	      <tr class="listing_header_row">
   		      <th width="10%" nowrap="nowrap">Menu Item</th>
   		      <th width="25%" nowrap="nowrap">Label</th>
   		      <th>Order</th>
-	      </tr>
+  	      </tr>
   	      <v:data-set name="wat" sql="select 'Profile' as WAT_NAME, -2 as WAT_DEFAULT, -2 as WAT_USER from WA_SETTINGS union all select 'Tags' as WAT_NAME, -1 as WAT_DEFAULT, -1 as WAT_USER from WA_SETTINGS union all select rs.* from ODS.WA.wa_order_rs (rs0) (WAT_NAME varchar, WAT_DEFAULT integer, WAT_USER integer) rs where rs0 = ODS.WA.ods_apps () order by WAT_USER, WAT_DEFAULT"
   		                scrollable="1"
   		                editable="1"
   		                nrows="0">
-		  <v:template name="maps_rep" type="repeat">
+  		      <v:template name="maps_rep" type="repeat">
   		        <v:template name="maps_browse" type="browse">
-			  <?vsp
-			     if (control.te_ctr = 0)
-			       {
-			  ?>
+   			        <?vsp
+    			        if (control.te_ctr = 0)
+    			        {
+    			      ?>
     			      <tr>
     			        <th colspan="3">General</th>
     			      </tr>
-			  <?vsp
-			       }
-			  ?>
-			  <?vsp
-			     if (control.te_ctr = 2)
-			       {
-			  ?>
+    			      <?vsp
+    			        }
+    			      ?>
+    			      <?vsp
+    			        if (control.te_ctr = 2)
+    			        {
+          			?>
        			    <tr>
        			      <th colspan="3">Applications</th>
        			    </tr>
-			  <?vsp
-			       }
-			  ?>
-			  <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-			      <td>
-				<v:label name="la1" value="--wa_type_to_appg((control.vc_parent as vspx_row_template).te_rowset[0])"/>
-			      </td>
-			      <td>
-				  <v:text name="txt2"
-				      value="--wa_get_app_name ((control.vc_parent as vspx_row_template).te_rowset[0])"
+        			  <?vsp
+  			          }
+  			        ?>
+  			        <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+    	            <td>
+  				          <v:label name="la1" value="--wa_type_to_appg((control.vc_parent as vspx_row_template).te_rowset[0])"/>
+    			        </td>
+  			        <td>
+        				  <v:text name="txt2"
+        				          value="--wa_get_app_name ((control.vc_parent as vspx_row_template).te_rowset[0])"
         				          xhtml_size="50"
         				          cvt-function="trim"
         				          fmt-function="trim"
@@ -92,30 +92,30 @@
       				      <v:validator name="txt2len" min="1" max="20" message="The application label cannot be empty or longer than 20 characters" test="length"/>
       				      <v:on-post>
       				        <![CDATA[
-					  if (self.vc_is_valid = 0 and e.ve_button = self.save1)
-					    return;
+            					  if (self.vc_is_valid = 0 and e.ve_button = self.save1)
+            					    return;
 
-					  if (length (trim (control.ufl_value)) = 0 and e.ve_button = self.save1)
-					    {
-					      self.vc_is_valid := 0;
-					      self.vc_error_message := 'The application label cannot be empty or longer than 20 characters';
-					      control.ufl_failed := 1;
-					      return;
-					    }
+            					  if (length (trim (control.ufl_value)) = 0 and e.ve_button = self.save1)
+            					  {
+            					    self.vc_is_valid := 0;
+            					    self.vc_error_message := 'The application label cannot be empty or longer than 20 characters';
+            					    control.ufl_failed := 1;
+            					    return;
+            					  }
 
-					  if (e.ve_button = self.save1)
-					    {
+            					  if (e.ve_button = self.save1)
+            					  {
             					    registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0], control.ufl_value);
-					    }
-					  else if (e.ve_button = self.cancel1)
-					    {
+            					  }
+            					  else if (e.ve_button = self.cancel1)
+            					  {
             					    registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0], '');
-					      self.vc_is_valid := 1;
-					    }
+           					      self.vc_is_valid := 1;
+            					  }
       				        ]]>
       				      </v:on-post>
-				  </v:text>
-			      </td>
+      				    </v:text>
+  			        </td>
   			        <td>
     			        <?vsp
     			          if (control.te_ctr >= 2)
@@ -161,66 +161,66 @@
     			          }
           			  ?>
   			        </td>
-			  </tr>
-		      </v:template>
-		  </v:template>
+  			      </tr>
+  		      </v:template>
+  		    </v:template>
 
-		  <v:template name="maps_footer" type="simple">
-		      <tr>
-			  <td colspan="3" class="listing_col_action">
-			      <vm:ds-navigation data-set="wat" type="set" />
-			  </td>
-		      </tr>
-		      <tr>
-			  <td colspan="3" class="listing_col_action">
-			      <span class="fm_ctl_btn">
-			      <v:button name="cancel1" value="Set Default" action="simple">
+  		    <v:template name="maps_footer" type="simple">
+    		    <tr>
+    			    <td colspan="3" class="listing_col_action">
+    			      <vm:ds-navigation data-set="wat" type="set" />
+    			    </td>
+            </tr>
+            <tr>
+      			  <td colspan="3" class="listing_col_action">
+      		      <span class="fm_ctl_btn">
+      			      <v:button name="cancel1" value="Set Default" action="simple">
       	    			  <v:on-post>
       	    			    <![CDATA[
-				      declare ds vspx_data_set;
-				      declare rw vspx_row_template;
+          				      declare ds vspx_data_set;
+          				      declare rw vspx_row_template;
 
-				      declare i int;
-				      ds := self.wat;
-				      i := 0;
-				      while ((rw := ds.ds_iterate_rows (i)) is not null)
-				        {
-				           rw.vc_focus := 1;
-					   rw.vc_set_childs_focus (1, e);
-					   rw.vc_post (e);
-					}
+          				      declare i int;
+          				      ds := self.wat;
+          				      i := 0;
+          				      while ((rw := ds.ds_iterate_rows (i)) is not null)
+          				      {
+          				        rw.vc_focus := 1;
+          					      rw.vc_set_childs_focus (1, e);
+          					      rw.vc_post (e);
+          					    }
           					    if (self.vc_is_valid)
                           self.vc_redirect ('app_menu_settings.vspx');
           				    ]]>
           				  </v:on-post>
-			      </v:button>
-			      <v:button name="save1" value="Save" action="simple">
+          			  </v:button>
+          			  <v:button name="save1" value="Save" action="simple">
           				  <v:on-post>
           				    <![CDATA[
-				      declare ds vspx_data_set;
-				      declare rw vspx_row_template;
+          				      declare ds vspx_data_set;
+          				      declare rw vspx_row_template;
 
-				      declare i int;
-				      ds := self.wat;
-				      i := 0;
-				      while ((rw := ds.ds_iterate_rows (i)) is not null)
-				        {
-				           rw.vc_focus := 1;
-					   rw.vc_set_childs_focus (1, e);
-					   rw.vc_post (e);
-					}
+          				      declare i int;
+          				      ds := self.wat;
+          				      i := 0;
+          				      while ((rw := ds.ds_iterate_rows (i)) is not null)
+          				      {
+          				        rw.vc_focus := 1;
+          					      rw.vc_set_childs_focus (1, e);
+          					      rw.vc_post (e);
+          					    }
           					    if (self.vc_is_valid)
                           self.vc_redirect ('app_menu_settings.vspx');
       				        ]]>
       				      </v:on-post>
-			      </v:button>
-			  </span>
-		          </td>
-		      </tr>
-		  </v:template>
-	      </v:data-set>
-	  </table>
-      </vm:body>
-    </vm:pagewrapper>
-  </vm:page>
+      			      </v:button>
+      			    </span>
+              </td>
+            </tr>
+          </v:template>
+        </v:data-set>
+      </table>
+    </vm:body>
+  </vm:pagewrapper>
+</vm:page>
 </v:page>

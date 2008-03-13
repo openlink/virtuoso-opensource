@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="dav_browser" style="index.xsl"
-      fast-render="1" 
+      fast-render="1"
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
       xmlns:v="http://www.openlinksw.com/vspx/"
       xmlns:xhtml="http://www.w3.org/1999/xhtml"

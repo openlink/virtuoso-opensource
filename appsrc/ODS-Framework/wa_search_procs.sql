@@ -118,10 +118,10 @@ returns varchar
           url := sprintf('/dataspace/%U/%s/%U',_U_NAME,db.dba.wa_get_app_dataspace(INST_TYPE),_INST_NAME );
           amp := '?';
         }
-      
+
       if (url like 'javascript:%')
-	url := '#';
-	      
+	      url := '#';
+
       declare _sid varchar;
       _sid := coalesce(connection_get ('wa_sid'),'');
 
@@ -136,32 +136,32 @@ returns varchar
       }
       else
       {res := res || sprintf (
-          '<a href="%s"><img src="%s" alt="%s" border="0" title="%s" /></a>',
+             '<a href="%s"><img src="%s" alt="%s" border="0" title="%s" /></a>',
              DB.DBA.WA_SEARCH_ADD_APATH (DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (url, _user_id, amp)),
              DB.DBA.WA_SEARCH_ADD_APATH (icon),
-          INST_TYPE, WA_GET_APP_NAME (INST_TYPE));
-    }
+             INST_TYPE, WA_GET_APP_NAME (INST_TYPE));
+      }
     }
 
   if (res <> '')
     res := res || ' ';
-    
+
 
   if (_user_id <> http_nobody_uid () and _user_id <> _WAUT_USER_ID
        --and _WAUT_USER_ID <> http_dav_uid () and _WAUT_USER_ID <> 0
        and (not WA_USER_IS_FRIEND (_user_id, _WAUT_USER_ID)))
     {
-      
+
        if( connection_get ('wa_sid') is not NULL and length(connection_get ('wa_sid'))>0)
        {
              res := res || sprintf ('<a href="%s" rel="invite#%d%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
 	           DB.DBA.WA_SEARCH_ADD_APATH (
 	             DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	      sprintf ('sn_make_inv.vspx?fmail=%U', _U_E_MAIL),
-	      _user_id, '&')),
+	               sprintf ('sn_make_inv.vspx?fmail=%U', _U_E_MAIL),
+	               _user_id, '&')),
 	               _WAUT_USER_ID,DB.DBA.WA_USER_FULLNAME(_WAUT_USER_ID),
 	               DB.DBA.WA_SEARCH_ADD_APATH (sprintf ('images/icons/add_user_%d.png', case when for_search_result then 16 else 24 end)));
-       
+
        }else{
              res := res || sprintf ('<a href="%s" rel="invite#%d#%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
 	           DB.DBA.WA_SEARCH_ADD_APATH (
@@ -340,8 +340,8 @@ create procedure WA_SEARCH_PROCESS_PARAMS (in nqry nvarchar, in ntags_list nvarc
       declare new_tv any;
       if (tag_is_qry = 0)
 	{
-      tags_str := WS.WS.DAV_TAG_NORMALIZE (tags_list);
-      tags_str := FTI_MAKE_SEARCH_STRING (tags_str);
+	  tags_str := WS.WS.DAV_TAG_NORMALIZE (tags_list);
+	  tags_str := FTI_MAKE_SEARCH_STRING (tags_str);
         }
       else
 	tags_str := tags_list;
@@ -458,7 +458,7 @@ create function WA_SEARCH_NNTP_GET_EXCERPT_HTML (in url varchar, in title varcha
   post_id:= split_and_decode(url,0,'\0\0=')[1];
   post_id:=split_and_decode(post_id,0)[0];
   post_id:=decode_base64(post_id);
-  
+
   url:=sprintf('/dataspace/discussion/%U/%U',group_id,post_id);
 
   _from := substring (_from, 8, length (_from));
@@ -521,10 +521,10 @@ create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
         ret := ret ||' OR ';
 
         ret := ret || sprintf (' ?wai_id = "%S" ', newsgroups[i]);
-	 } 
+	 }
    ret := ret ||	' ) ' ;
 	}
-	
+
 
 	if (length (tags_str))
 	  ret := ret || sprintf (' filter bif:contains ( ?tags, ''("^UID%d" OR "^UID%d") and %S'') ',
@@ -567,8 +567,8 @@ create function WA_SEARCH_BLOG_GET_EXCERPT_HTML (in _current_user_id integer,
      from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = _B_BLOG_ID;
 
   select U_NAME into _BI_OWNER_UNAME from DB.DBA.SYS_USERS where U_ID=_BI_OWNER;
-  
---  _single_post_view_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (
+
+--  _single_post_view_url := DB.DBA.WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (
 --	sprintf (\'%s?id=%s\', _BI_HOME, _B_POST_ID),
 --	_current_user_id,
 --        \'&\'));
@@ -577,7 +577,7 @@ create function WA_SEARCH_BLOG_GET_EXCERPT_HTML (in _current_user_id integer,
 	sprintf (\'/dataspace/%s/weblog/%s/%s\',_BI_OWNER_UNAME, _BI_WAI_NAME, _B_POST_ID),
 	_current_user_id,
         \'&\'));
-        
+
 --  _blog_front_page_url := DB.DBA.WA_SEARCH_ADD_APATH (DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (_BI_HOME, _current_user_id));
   _blog_front_page_url := DB.DBA.WA_SEARCH_ADD_APATH (DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf(\'/dataspace/%s/weblog/%s\',_BI_OWNER_UNAME, _BI_WAI_NAME), _current_user_id));
 
@@ -738,7 +738,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
 
 --  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, \'home\', \'/wiki/main\');
    home_path :=sprintf(\'/dataspace/%s/wiki\',_U_NAME);
-  
+
 --  _WIKI_PATH := sprintf (\'%s/%s/%s\', home_path, _ClusterName, _LocalName);
   _WIKI_PATH := sprintf (\'%s/%U/%s\', home_path, _ClusterName, _LocalName);
 --  _WIKI_INSTANCE_PATH := sprintf (\'%s/%s\', home_path, _ClusterName);
@@ -747,16 +747,16 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   res := sprintf (\'<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>\',
                   DB.DBA.WA_SEARCH_ADD_APATH (\'images/icons/ods_wiki_16.png\'),
                   DB.DBA.WA_SEARCH_ADD_APATH (DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, \'#\'), _current_user_id)),
-		coalesce (_TitleText, N\'#No Title#\'),
+                  coalesce (_TitleText, N\'#No Title#\'),
                   DB.DBA.WA_SEARCH_ADD_APATH (DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, \'#\'), _current_user_id)),
-		coalesce (_ClusterName, \'#No Title#\'),
+                  coalesce (_ClusterName, \'#No Title#\'),
                   DB.DBA.WA_SEARCH_ADD_APATH (
                   DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'/dataspace/%s/%U#this\', DB.DBA.wa_identity_dstype(_U_NAME),_U_NAME), _current_user_id, \'&\')),
-           coalesce (_WAUI_FULL_NAME, \'#No Name#\'));
+                  coalesce (_WAUI_FULL_NAME, \'#No Name#\'));
 
   _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, \'\'));
   if (not isblob (_content))
-    _content := cast (_content as varchar);
+      _content := cast (_content as varchar);
   _content := subseq (_content, 0, 200000);
   res := res || \'<br />\' || left (search_excerpt (words, _content), 900) || \'</span>\';
 
@@ -1015,14 +1015,14 @@ returns integer
 
 create function WA_SEARCH_APP_GET_EXCERPT_HTML (
         in current_user_id integer,
-	in words any,
-	in _WAI_NAME varchar,
-	in _WAI_DESCRIPTION varchar,
-	in _WAI_TYPE_NAME varchar,
+	      in words any,
+	      in _WAI_NAME varchar,
+	      in _WAI_DESCRIPTION varchar,
+	      in _WAI_TYPE_NAME varchar,
         in _WAI_HOME_URL varchar,
         in _WAI_ID integer) returns varchar
 {
-  
+
   declare dataspace_url varchar;
   dataspace_url:='/dataspace/'||WA_APP_GET_OWNER(_WAI_NAME)||'/'||wa_get_app_dataspace(_WAI_TYPE_NAME)||'/'||sprintf('%U',_WAI_NAME);
   declare res varchar;
@@ -1227,26 +1227,26 @@ create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer
 
 wa_exec_no_error('
 create function WA_SEARCH_BMK_GET_EXCERPT_HTML (
-    			in _current_user_id integer,
-    			in _BD_BOOKMARK_ID int,
-			in _BD_DOMAIN_ID int,
-			in _BD_NAME varchar,
-			in _BD_DESCRIPTION varchar,
-			in words any) returns varchar
+  in _current_user_id integer,
+  in _BD_BOOKMARK_ID int,
+	in _BD_DOMAIN_ID int,
+	in _BD_NAME varchar,
+	in _BD_DESCRIPTION varchar,
+	in words any) returns varchar
 {
   declare url varchar;
   declare res varchar;
 
   select B_URI into url from BMK.WA.BOOKMARK where B_ID = _BD_BOOKMARK_ID;
 
-      res := sprintf (''<span><img src="%s" /> <a href="%s" target="_blank">%s</a> %s '',
+  res := sprintf (''<span><img src="%s" /> <a href="%s" target="_blank">%s</a> %s '',
   DB.DBA.WA_SEARCH_ADD_APATH (''images/icons/web_16.png''), url, _BD_NAME, _BD_NAME);
 
   res := res ||
          ''<br />'' ||
          left ( search_excerpt ( words, subseq (coalesce (_BD_DESCRIPTION, ''''), 0, 200000)), 900) ||
          ''</span>'';
-   return res;
+  return res;
 }')
 ;
 
@@ -1554,12 +1554,12 @@ create procedure WA_SEARCH_CONSTRUCT_QUERY (
   in search_addressbook integer,
   in search_calendar integer,
   in search_nntp integer,
-	in sort_by_score integer,
-        in max_rows integer,
-        in tag_is_qry int,
-        in date_before varchar,
-        in date_after varchar,
-        in newsgroups any,
+  in sort_by_score integer,
+  in max_rows integer,
+  in tag_is_qry int,
+  in date_before varchar,
+  in date_after varchar,
+  in newsgroups any,
   out tags_vector any,
   in sort_order varchar := 'desc')
 returns varchar
@@ -2114,18 +2114,18 @@ create function WA_SEARCH_CONTACTS (
   ret := WA_SEARCH_USER_BASE (max_rows, current_user_id, str, tags_str, _words_vector);
 
   ret := sprintf (
-	 'select top %d \n' ||
+   'select top %d \n' ||
    '  DB.DBA.WA_SEARCH_USER_GET_EXCERPT_HTML (%d, %s, WAUT_U_ID, WAUT_TEXT, WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL, %d) AS EXCERPT, \n' ||
-	 '  encode_base64 (serialize (vector (''USER'', WAUT_U_ID))) as TAG_TABLE_FK, \n' ||
-	 '  _SCORE, \n' ||
-	 '  U_LOGIN_TIME as _DATE, \n' ||
+   '  encode_base64 (serialize (vector (''USER'', WAUT_U_ID))) as TAG_TABLE_FK, \n' ||
+   '  _SCORE, \n' ||
+   '  U_LOGIN_TIME as _DATE, \n' ||
    '  DB.DBA.WA_SEARCH_ADD_APATH ( \n' ||
    '                       DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE ( \n' ||
    '                       sprintf (''/dataspace/%%s/%%U#this'',DB.DBA.wa_identity_dstype(U_NAME), U_NAME), %d, ''&'')) as _URL, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
-	 '  WAUI_U_ID as _KEY_VAL \n' ||
-	 ' from \n(\n%s\n) qry, DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS, DB.DBA.sn_person \n' ||
+   '  WAUI_U_ID as _KEY_VAL \n' ||
+   ' from \n(\n%s\n) qry, DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS, DB.DBA.sn_person \n' ||
          ' where \n' ||
          '  WAUT_U_ID = WAUI_U_ID  and WAUI_SEARCHABLE = 1\n' ||
          '  and U_NAME = sne_name\n' ||

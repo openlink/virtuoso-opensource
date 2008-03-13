@@ -214,7 +214,7 @@
 		           from WA_COUNTRY where WC_NAME = control.ufl_value;
 		         nflat:;
 		       }
-		       
+
 		     control.vs_set_selected ();
 		       ]]></v:after-data-bind>
                   </v:data-list>
@@ -348,7 +348,7 @@
                      </v:check-box>
                      <label for="set_blatlng_def">Default map location</label>
 
-                    
+
                     </td>
                   </tr>
                   <tr>
@@ -570,8 +570,7 @@
                         _bdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
                         WA_USER_TEXT_SET(self.u_id, _bdata);
 
-
-			                  self.vc_redirect ('uiedit.vspx?page=4');
+		        self.vc_redirect ('uiedit.vspx?page=4');
                       ]]>
                     </v:on-post>
 		</v:button>

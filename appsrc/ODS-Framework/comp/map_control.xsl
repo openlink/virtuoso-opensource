@@ -76,7 +76,7 @@
       );
     commit work;
   ?&gt;
-  
+
   <![CDATA[
   <script
        type="text/javascript" >
@@ -93,25 +93,25 @@
   </script>
   ]]>
  </xsl:template>
- 
+
 <xsl:template match="vm:oatmap-control">
 
 &lt;?vsp
 
   declare rendered_javascript any;
   rendered_javascript:=string_output();
-  
+
   declare _lat_inx,_lng_inx,_key_name_inx,_baloon_inx,_zoom integer;
   _lat_inx:=<xsl:value-of select="@lat-inx" />;
   _lng_inx:=<xsl:value-of select="@lng-inx" />;
   _key_name_inx:=<xsl:value-of select="@key-name-inx" />;
   _baloon_inx:=<xsl:value-of select="@baloon-inx" />;
   _zoom:=<xsl:value-of select="@zoom" />;
-  
+
   declare _sql,_key_val varchar;
   _sql:=<xsl:value-of select="@sql" />;
   _key_val:='<xsl:value-of select="@key-val" />';
-  
+
   declare group_inx integer;
   group_inx:=1;
 
@@ -125,9 +125,9 @@
   center_lng := NULL;
 
   declare hndl, row any;
-   
+
   http('var markersArr = [];var user_dshtml='''';\r\n',rendered_javascript);
-  
+
 
   exec (_sql, NULL, NULL, vector (), 0, NULL, NULL, hndl);
   declare _idx integer;
@@ -150,23 +150,23 @@
           center_lat := _lat;
           center_lng := _lng;
       }
-      
+
       http (sprintf('user_dshtml=''%s'';',replace(_baloon_col,'''','`')),rendered_javascript);
       http (sprintf('commonMapObj.addMarker(%d,%s,%s,''%s'',%s,%s,ref(commonMapObj,user_dshtml));',group_inx,_lat,_lng,markericon_path,markericon_width,markericon_height),rendered_javascript);
       http (sprintf('markersArr.push([%s,%s]);\r\n',_lat,_lng),rendered_javascript);
-      
+
       _idx:=_idx+1;
   }
   exec_close (hndl);
 
   if(_zoom=0){
       if(_idx>0)
-      http ('commonMapObj.optimalPosition(markersArr);\r\n',rendered_javascript);
+        http ('commonMapObj.optimalPosition(markersArr);\r\n',rendered_javascript);
 
   }else{
       http (sprintf('commonMapObj.centerAndZoom(%s,%s,%d);\r\n',center_lat,center_lng,_zoom),rendered_javascript);
   }
-  
+
 
 ?&gt;
 <![CDATA[
@@ -202,9 +202,9 @@ function ref(_map,user_dshtml){
 }
 
 function mapInit(){
-     
+
     if (window._apiKey=='0' && window.YMAPPID!='0')
-    {    
+    {
         var defaultMapType='yahoo';
         var alternativeMapType='google';
     }else
@@ -212,20 +212,20 @@ function mapInit(){
         var defaultMapType='google';
         var alternativeMapType='yahoo';
     }
-    
+
     var containerDiv=$(']]><xsl:value-of select="@div_id" /><![CDATA[');
-     
+
     if(containerDiv)
      {
 
-     var changeMapServiceTo='<?V get_keyword('switchmapto', self.vc_event.ve_params,'') ?>';
-     
-     var providerType=OAT.MapData.TYPE_G;
-     if(changeMapServiceTo=='yahoo' && window.YMAPPID!=0){
-         providerType=OAT.MapData.TYPE_Y;
-     };
-      
-     
+      var changeMapServiceTo='<?V get_keyword('switchmapto', self.vc_event.ve_params,'') ?>';
+
+      var providerType=OAT.MapData.TYPE_G;
+      if(changeMapServiceTo=='yahoo' && window.YMAPPID!=0){
+          providerType=OAT.MapData.TYPE_Y;
+      };
+
+
       var mapOptObj = {
 	                     fix:OAT.MapData.FIX_ROUND1,
 	                     fixDistance:20,
@@ -240,44 +240,44 @@ function mapInit(){
      }else{
         return;  //        alert('Please define a div container for the map control.');
      };
-  
+
       var mappingServiceSwitch=OAT.Dom.create("a");
-  
+
 
       var hrefParams = '';
-      
+
       if(window._apiKey!='0' && window.YMAPPID!='0')
       {
           var pArr=OAT.Dom.uriParams();
           if(typeof(pArr.switchmapto)!='undefined')
-          { 
+          {
              if(changeMapServiceTo==defaultMapType || changeMapServiceTo=='')
                 pArr.switchmapto = alternativeMapType;
              else
                 pArr.switchmapto = defaultMapType;
           }else
             pArr['switchmapto'] = alternativeMapType;
-            
+
           var i=0;
           for(p in pArr)
-          {    
+          {
             hrefParams += i==0 ? '?'+p+'='+pArr[p] : '&'+p+'='+pArr[p];
             i++;
           }
 
          mappingServiceSwitch.href = document.location.protocol+'//'+document.location.host+document.location.pathname+hrefParams;
-      
+
          if(changeMapServiceTo=='yahoo')
-         mappingServiceSwitch.innerHTML='Use Google Mapping Service';
+            mappingServiceSwitch.innerHTML='Use Google Mapping Service';
          else if( changeMapServiceTo!='yahoo' && window.YMAPPID!=0)
-         mappingServiceSwitch.innerHTML='Use Yahoo Mapping Service';
-      
+            mappingServiceSwitch.innerHTML='Use Yahoo Mapping Service';
+
          OAT.Dom.append([containerDiv.parentNode,mappingServiceSwitch])
-  
+
+      }
+
 }
 
-}  
-  
 function getParameters() {
 
    var params = new Array();
@@ -307,15 +307,15 @@ function getNonLoginParamsStr()
 {
   var allParams = new Array;
   allParams = getParameters();
-  
+
   var nonLoginParams = '';
-  
+
   if(allParams!= null && allParams.length > 0 )
   {
      for(var i = 0 ; i < allParams.length ; i++)
      {
-        if( allParams[i].indexOf('sid')==-1 && 
-            allParams[i].indexOf('realm')==-1 && 
+        if( allParams[i].indexOf('sid')==-1 &&
+            allParams[i].indexOf('realm')==-1 &&
             allParams[i].indexOf('switchmapto')==-1 )
         {
            if(nonLoginParams.length==0)
@@ -326,14 +326,14 @@ function getNonLoginParamsStr()
              nonLoginParams=nonLoginParams+'&'+allParams[i];
            }
         }
-     }      
-     
+     }
+
      return nonLoginParams;
-      
+
   }
-  
-  return null;  
-}  
+
+  return null;
+}
 
 
 function dd(txt){
@@ -346,5 +346,5 @@ function dd(txt){
 ]]>
 </xsl:template>
 
- 
+
 </xsl:stylesheet>

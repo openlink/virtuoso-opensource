@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="foaf-import-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -49,23 +49,23 @@
 		  scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_svc is not null)
-	  {
+{
   delete from WA_USER_SVC where US_ID = self.del_svc and US_U_ID = self.u_id;
-	  }
+}
 		  </v:before-data-bind>
-	     
+
 		  <v:template name="svc_rep" type="repeat">
 		      <v:template name="svc_brows" type="browse">
-              <v:after-data-bind>
+			  <v:after-data-bind>
 if (not e.ve_is_post and control.te_rowset[0] = self.edit_svc)
 {
   self.svc_name.ufl_value := control.te_rowset[1];
   self.svc_url.ufl_value := control.te_rowset[2];
   self.svc_keys.ufl_value := control.te_rowset[3];
-                }
-              </v:after-data-bind>
+}
+	                  </v:after-data-bind>
 			  <tr class="<?V case when self.edit_svc = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-          <td>
+			      <td>
 				  <v:url name="ur3"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;,
 				      get_keyword ((control.vc_parent as vspx_row_template).te_rowset[1], self.names))'
@@ -74,30 +74,30 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_svc)
 				      xhtml_title="Edit"
 				      xhtml_alt="Edit"
 				      />
-          </td>
-          <td>
+			      </td>
+			      <td>
 				  <v:label name="la2" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[2], '')"/>
 
-          </td>
-          <td>
+			      </td>
+			      <td>
 				  <v:url name="ur4" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf ('uiedit.vspx?page=6&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />
-          </td>
-        </tr>
+			      </td>
+			  </tr>
 		      </v:template>
 		  </v:template>
 
 		  <v:template name="svc_footer" type="simple">
-        <tr>
+		      <tr>
 			  <td colspan="3" class="listing_col_action">
 			      <vm:ds-navigation data-set="svc" type="set" />
-          </td>
-        </tr>
-            </v:template>
+			  </td>
+		      </tr>
+		  </v:template>
 	      </v:data-set>
 	  </table>
 	  <div class="fm">
@@ -153,21 +153,21 @@ control.vs_set_selected ();
 		  <label for="svc_keys">Keys</label>
 		  <v:textarea name="svc_keys" value="" xhtml_id="svc_keys" xhtml_rows="5" xhtml_cols="50"
 		      default_value="key=\nsecret=\nsession="/>
-	<?vsp if (__proc_exists ('DB.DBA.FB_SIG') is not null) { ?>
+		  <?vsp if (__proc_exists ('DB.DBA.FB_SIG') is not null) { ?>
 		  <v:browse-button name="fbt1" value="Get FaceBook session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
-        <?vsp } ?>
+		  <?vsp } ?>
 		  <br />
-		      <span class="fm_ctl_btn">
+	      <span class="fm_ctl_btn">
 		  <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_svc),0)">
-			  <v:on-post>
+		      <v:on-post>
 self.svc_name.ufl_value := null;
 self.svc_url.ufl_value := null;
 self.svc_keys.ufl_value := null;
 self.edit_svc := null;
 self.save2.vc_data_bind (e);
 control.vc_enabled := 0;
-			  </v:on-post>
-			</v:button>
+		      </v:on-post>
+		  </v:button>
 		  <v:button name="save2" value="--case when self.edit_svc is null then 'Add' else 'Update' end" action="simple">
 		      <v:on-post><![CDATA[
 declare v any;
@@ -205,9 +205,9 @@ self.svc_keys.ufl_value := null;
 control.vc_data_bind (e);
 self.svc.vc_data_bind (e);
 ]]></v:on-post>
-            </v:button>
-	  </span>
+		  </v:button>
+	      </span>
 	  </fieldset>
       </div>
-    </v:form>
+	</v:form>
 </v:page>

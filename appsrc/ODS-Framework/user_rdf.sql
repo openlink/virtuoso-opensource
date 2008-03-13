@@ -250,23 +250,23 @@ ODS_SPARQL_QM_RUN (
 	rdfs:isDefinedBy ods:defined_by (users.U_NAME, users.CLS, users.U_NAME, users.OBJ_IRI) ;
         sioc:account_of ods:person (users.U_NAME) .
 
-	    ods:person (person.U_NAME) a foaf:Person ;
-        foaf:nick person.U_NAME ;
-	      foaf:name person.U_FULL_NAME ;
+	ods:person (person.U_NAME) a foaf:Person ;
+	    foaf:nick person.U_NAME ;
+	    foaf:name person.U_FULL_NAME ;
 	    rdfs:label person.LABEL ;
-	      foaf:mbox ods:mbox (person.E_MAIL) ;
-        foaf:mbox_sha1sum person.E_MAIL_SHA1 ;
-        foaf:holdsAccount ods:user (person.U_NAME) ;
-        foaf:firstName person.FIRST_NAME ;
-        foaf:family_name person.LAST_NAME ;
-        foaf:gender person.GENDER ;
-        foaf:icqChatID person.ICQ ;
-        foaf:msnChatID person.MSN ;
-        foaf:aimChatID person.AIM ;
-        foaf:yahooChatID person.YAHOO ;
-        foaf:birthday person.BIRTHDAY ;
-        foaf:organization person.ORG ;
-        foaf:phone ods:phone (person.PHONE) ;
+	    foaf:mbox ods:mbox (person.E_MAIL) ;
+	    foaf:mbox_sha1sum person.E_MAIL_SHA1 ;
+	    foaf:holdsAccount ods:user (person.U_NAME) ;
+	    foaf:firstName person.FIRST_NAME ;
+	    foaf:family_name person.LAST_NAME ;
+	    foaf:gender person.GENDER ;
+	    foaf:icqChatID person.ICQ ;
+	    foaf:msnChatID person.MSN ;
+	    foaf:aimChatID person.AIM ;
+	    foaf:yahooChatID person.YAHOO ;
+	    foaf:birthday person.BIRTHDAY ;
+	    foaf:organization person.ORG ;
+	    foaf:phone ods:phone (person.PHONE) ;
 	    foaf:based_near ods:geo_point (person.U_NAME) ;
  	    rdfs:isDefinedBy ods:defined_by (person.U_NAME, person.CLS, person.U_FULL_NAME, person.OBJ_IRI)
 	    .
@@ -310,17 +310,17 @@ ODS_SPARQL_QM_RUN (
       ods:forum (forums.U_NAME, forums.APP_TYPE, forums.WAM_INST)
         sioc:id forums.WAM_INST ;
         rdfs:label forums.WAM_INST ;
-	      sioc:type forums.APP_TYPE ;
+        sioc:type forums.APP_TYPE ;
         sioc:description forums.WAI_DESCRIPTION ;
         sioc:link ods:proxy (forums.LINK) ;
         sioc:has_space ods:site (forums.U_NAME) ;
 	rdfs:isDefinedBy ods:defined_by (forums.U_NAME, forums.CLS, forums.WAM_INST, forums.OBJ_IRI) .
 
-  } .
+      } .
 
     } . '
   , 1, fl)
-;
+  ;
   DB.DBA.ODS_GET_APP_USER_RDF_VIEW_QM (fl);
   sioc..ods_sioc_result ('The RDF view is created.');
 };

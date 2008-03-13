@@ -22,15 +22,15 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+  <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
     xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
-  <xsl:template match="vm:instance-settings">
+    <xsl:template match="vm:instance-settings">
 
       <tr>
         <th><label for="ianame1"><?V self.instance_descr ?>:</label>
-            <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
+          <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
         </th>
         <td colspan="2">
           <xsl:if test="@readonly">
@@ -44,11 +44,11 @@
               {
             ?>
             <v:text xhtml_id="ianame1" error-glyph="*" name="iname1" value="--self.iname" xhtml_style="width:250px" fmt-function="wa_utf8_to_wide">
-		<v:on-post>
-		  self.iname := control.ufl_value;
-		</v:on-post>
-	      </v:text>
-              <?vsp
+              <v:on-post>
+                self.iname := control.ufl_value;
+              </v:on-post>
+            </v:text>
+            <?vsp
               }
             ?>
 
@@ -61,14 +61,14 @@
               }
             ?>
             <?vsp
-                if (self.wa_type = 'oMail')
-                {
-              ?>
-              @
-              <v:data-list name="idomain1" xhtml_id="idomain1" value="--self.wa_domain" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." enabled="--equ (self.wa_type, 'oMail')"/>
-              <?vsp
-                }
-              ?>
+              if (self.wa_type = 'oMail')
+              {
+            ?>
+            @
+            <v:data-list name="idomain1" xhtml_id="idomain1" value="--self.wa_domain" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." enabled="--equ (self.wa_type, 'oMail')"/>
+            <?vsp
+              }
+            ?>
             <?vsp
               if (self.wa_type = 'IM')
               {
@@ -101,69 +101,69 @@
           </xsl:if>
         </td>
       </tr>
-  
-       <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
- 
-      <tr  style="vertical-align : baseline;">
-       <th>
-       Your <?V self.instance_descr?> will be accessible by this URL: <br/>
-       </th>
-       <td>
-       <?vsp
-        declare domain any;
-        domain:=null;
-        domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-            if ((domain is null or length(domain)=0) and is_http_ctx ()) {
-            declare lines any;
-            lines := http_request_header ();
-            if (isarray (lines))
-                domain := http_request_header (lines, 'Host', null, null);
-        };
-       ?>
-       http://<?V domain||self.ihome?>
-       </td>
-       <td align="right">
+
       <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
-       <?vsp
+
+      <tr  style="vertical-align : baseline;">
+        <th>
+          Your <?V self.instance_descr?> will be accessible by this URL: <br/>
+        </th>
+        <td>
+          <?vsp
+            declare domain any;
+            domain:=null;
+            domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+            if ((domain is null or length(domain)=0) and is_http_ctx ()) {
+              declare lines any;
+              lines := http_request_header ();
+              if (isarray (lines))
+                domain := http_request_header (lines, 'Host', null, null);
+            };
+          ?>
+          http://<?V domain||self.ihome?>
+        </td>
+        <td align="right">
+          <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
+            <?vsp
               if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community', 'oGallery')) {
-       ?>
-        <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
-       <?vsp
-         };
-       ?>
-       </xsl:if>
-       </td>
+            ?>
+            <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
+            <?vsp
+              };
+            ?>
+          </xsl:if>
+        </td>
       </tr>
-      </xsl:if>
-      <?vsp
+    </xsl:if>
+    <?vsp
       if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery')) {
-      ?>
-      <xsl:if test="not (@edit = 'yes')">
-        <tr>
+    ?>
+    <xsl:if test="not (@edit = 'yes')">
+      <tr>
         <td></td>
         <td colspan="2">
-         <div id="change_defurl" style="display:none;">
-          <table><tr>
-          <td>
-            <xsl:if test="@readonly">
-              <?V self.ihome ?>
-            </xsl:if>
-            <xsl:if test="not @readonly">
-              <v:text name="sub_domain" error-glyph="*" value="" />.
-              <v:data-list name="main_domain" key-column="WD_DOMAIN" value-column="WD_DOMAIN"
-                  sql="select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST)
-                       union select '\173Default Domain\175' from WA_SETTINGS"
-                  xhtml_onchange='toggleControl (this, "\173Default Domain\175", this.form["sub_domain"])' >
-                <v:after-data-bind><![CDATA[
-                  control.vs_set_selected ();
+          <div id="change_defurl" style="display:none;">
+            <table><tr>
+              <td>
+                <xsl:if test="@readonly">
+                  <?V self.ihome ?>
+                </xsl:if>
+                <xsl:if test="not @readonly">
+                  <v:text name="sub_domain" error-glyph="*" value="" />.
+                  <v:data-list name="main_domain" key-column="WD_DOMAIN" value-column="WD_DOMAIN"
+                    sql="select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST)
+                      union select '\173Default Domain\175' from WA_SETTINGS"
+                      xhtml_onchange='toggleControl (this, "\173Default Domain\175", this.form["sub_domain"])' >
+                  <v:after-data-bind><![CDATA[
+                    control.vs_set_selected ();
                   ]]></v:after-data-bind>
                   <v:before-render><![CDATA[
                     if (control.ufl_value is null) {
                       control.ufl_value := '{Default Domain}';
-	              control.vs_set_selected ();
+                      control.vs_set_selected ();
                     }
-                  if (control.ufl_value = '{Default Domain}')
-                  self.sub_domain.vc_add_attribute ('disabled', '1');
+                    if (control.ufl_value = '{Default Domain}')
+                      self.sub_domain.vc_add_attribute ('disabled', '1');
                   ]]></v:before-render>
                 </v:data-list>
                 <v:text xhtml_id="ihome1" error-glyph="*" name="ihome1" value="--self.ihome" xhtml_style="width:250px">
@@ -175,10 +175,10 @@
               </xsl:if>
             </td>
           </tr></table>
-          </div>
-            
-            </td>
-          </tr>
+        </div>
+
+      </td>
+    </tr>
         </xsl:if>
          <?vsp
            }
@@ -216,10 +216,10 @@
               <th><label for="idesc1"><?vsp http(self.instance_descr); ?> description</label></th>
               <td>
                 <v:text xhtml_id="idesc1" error-glyph="*" name="idesc1" value="--self.idesc" xhtml_style="width:250px" fmt-function="wa_utf8_to_wide">
-		<v:on-post>
-		  self.idesc := control.ufl_value;
-		</v:on-post>
-	      </v:text>
+                 <v:on-post>
+                   self.idesc := control.ufl_value;
+                 </v:on-post>
+        </v:text>
               </td>
             </tr>
             <xsl:if test="not @edit">
@@ -233,29 +233,29 @@
               <td>
                 <v:select-list xhtml_id="itempl_c1" xhtml_style="width: 155px" name="itempl_c1">
                   <v:before-data-bind>
-                    
+
                     if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
-                  
+
                     declare res_names_arr, res_path_arr any;
-                    
-                    
+
+
                     res_names_arr:=vector();
                     res_path_arr:=vector();
-                    
-                    for select res_name, res_path 
+
+                    for select res_name, res_path
                         from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
                         where option_type = 'TEMPLATE_LIST'
                     do{
                        res_names_arr:=vector_concat(res_names_arr,vector(res_name));
                        res_path_arr:=vector_concat(res_path_arr,vector(res_path));
-                      } 
+                      }
                        control.vsl_items:=res_names_arr;
                        control.vsl_item_values:=res_path_arr;
-                   
+
                     }
                     control.ufl_value := self.itemplate;
-                  
-                  
+
+
                   </v:before-data-bind>
                 </v:select-list>
               </td>
@@ -269,14 +269,14 @@
 
                   <tr>
                     <td>
-          	           <v:radio-button name="ilogo_use_combo" value="--'logo_use_combo'" initial-checked="1" xhtml_id="ilogo_use_combo"/>
-          	           <label for="ilogo_use_combo">Use <?vsp http(self.instance_descr); ?> Logo</label>
+                       <v:radio-button name="ilogo_use_combo" value="--'logo_use_combo'" initial-checked="1" xhtml_id="ilogo_use_combo"/>
+                       <label for="ilogo_use_combo">Use <?vsp http(self.instance_descr); ?> Logo</label>
                     </td>
                     <td>
-          	           <v:radio-button name="ilogo_use_upload" value="--'logo_use_upload'" xhtml_id="ilogo_use_upload"/>
-          	           <label for="ilogo_use_upload">Upload User Supplied Logo</label>
+                       <v:radio-button name="ilogo_use_upload" value="--'logo_use_upload'" xhtml_id="ilogo_use_upload"/>
+                       <label for="ilogo_use_upload">Upload User Supplied Logo</label>
                        <v:check-box name="ilogo_isdav_cb" value="1" xhtml_id="ilogo_isdav_cb" initial-checked="1" xhtml_onclick="divs_switch(this.checked,\'logodav_div\',\'logofs_div\')" />
-                       
+
                        <label for="ilogo_isdav_cb"><strong>WebDAV</strong></label>
                    </td>
                   </tr>
@@ -287,31 +287,31 @@
 
                        <v:select-list xhtml_id="ilogo_c1" name="ilogo_c1" xhtml_style="width: 155px">
                          <v:before-data-bind>
-                           
+
                            if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
-                         
+
                            declare res_names_arr, res_path_arr any;
-                           
-                           
+
+
                            res_names_arr:=vector();
                            res_path_arr:=vector();
-                           
-                           for select res_name, res_path 
+
+                           for select res_name, res_path
                                from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
                                where option_type = 'INSTANCE_LOGOS'
                            do{
                               res_names_arr:=vector_concat(res_names_arr,vector(res_name));
                               res_path_arr:=vector_concat(res_path_arr,vector(res_path));
-                             } 
+                             }
                               control.vsl_items:=res_names_arr;
                               control.vsl_item_values:=res_path_arr;
-                          
+
                            }
                          </v:before-data-bind>
                        </v:select-list>
-                       
-                       
-                       
+
+
+
                     </td>
                     <td style=" padding: 0px 0px 0px 5px;">
                        <div id="logofs_div" style="display:none;">
@@ -354,7 +354,7 @@
                       {
                         document.getElementById('logodav_div').style.display='none';
                         document.getElementById('logofs_div').style.display='block';
-                        
+
                       }
                       </script>
 
@@ -372,12 +372,12 @@
                   <v:radio-group name="welcome_group">
                   <tr>
                     <td>
-          	         <v:radio-button name="iwelcome_use_combo" value="--'welcome_use_combo'" initial-checked="1" xhtml_id="iwelcome_use_combo" />
-          	         <label for="iwelcome_use_combo">Use <?vsp http(self.instance_descr); ?> Photo</label>
+                     <v:radio-button name="iwelcome_use_combo" value="--'welcome_use_combo'" initial-checked="1" xhtml_id="iwelcome_use_combo" />
+                     <label for="iwelcome_use_combo">Use <?vsp http(self.instance_descr); ?> Photo</label>
                     </td>
                     <td>
-          	          <v:radio-button name="iwelcome_use_upload" value="--'welcome_use_upload'" xhtml_id="iwelcome_use_upload"/>
-          	          <label for="ilogo_use_upload">Upload User Supplied Photo</label>
+                      <v:radio-button name="iwelcome_use_upload" value="--'welcome_use_upload'" xhtml_id="iwelcome_use_upload"/>
+                      <label for="ilogo_use_upload">Upload User Supplied Photo</label>
                       <v:check-box name="iwelcome_isdav_cb" value="1" xhtml_id="iwelcome_isdav_cb" initial-checked="1" xhtml_onclick="divs_switch(this.checked,\'welcomedav_div\',\'welcomefs_div\')"/>
                       <label for="iwelcome_isdav_cb"><strong>WebDAV</strong></label>
                    </td>
@@ -387,29 +387,29 @@
                     <td>
                        <v:select-list xhtml_id="iwelcome_c1" name="iwelcome_c1" xhtml_style="width: 155px">
                          <v:before-data-bind>
-                           
+
                            if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
-                         
+
                            declare res_names_arr, res_path_arr any;
-                           
-                           
+
+
                            res_names_arr:=vector();
                            res_path_arr:=vector();
-                           
-                           for select res_name, res_path 
+
+                           for select res_name, res_path
                                from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
                                where option_type = 'WELCOME_PHOTOS'
                            do{
                               res_names_arr:=vector_concat(res_names_arr,vector(res_name));
                               res_path_arr:=vector_concat(res_path_arr,vector(res_path));
-                             } 
+                             }
                               control.vsl_items:=res_names_arr;
                               control.vsl_item_values:=res_path_arr;
-                          
+
                            }
                          </v:before-data-bind>
                        </v:select-list>
-                       
+
                     </td>
                     <td style=" padding: 0px 0px 0px 5px;">
                        <div id="welcomefs_div" style="display:none;">
@@ -454,7 +454,7 @@
                       {
                         document.getElementById('welcomefs_div').style.display='none';
                         document.getElementById('welcomefs_div').style.display='block';
-                        
+
                       }
                       </script>
                     </td>
@@ -537,23 +537,23 @@
             </tr>
             <tr>
               <th><label for="ilic1">CC License</label></th>
-	      <td id="if_opt">
-		  <v:data-list name="ilic1" xhtml_id="ilic1" value="--coalesce (self.ilic, '')"
-		      list-document="--sioc.DBA.gen_cc_xml ()"
-		      list-match="'declare namespace cc=&quot;http://web.resource.org/cc/&quot;; //cc:License'"
-		      list-value-path="'declare namespace rdf=&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#&quot;; @rdf:about'"
-		      list-key-path="'declare namespace rdfs=&quot;http://www.w3.org/2000/01/rdf-schema#&quot;; rdfs:label/text()'"		      >
-		      <v:after-data-bind>
-			  declare itm, itmv any;
+        <td id="if_opt">
+      <v:data-list name="ilic1" xhtml_id="ilic1" value="--coalesce (self.ilic, '')"
+          list-document="--sioc.DBA.gen_cc_xml ()"
+          list-match="'declare namespace cc=&quot;http://web.resource.org/cc/&quot;; //cc:License'"
+          list-value-path="'declare namespace rdf=&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#&quot;; @rdf:about'"
+          list-key-path="'declare namespace rdfs=&quot;http://www.w3.org/2000/01/rdf-schema#&quot;; rdfs:label/text()'"          >
+          <v:after-data-bind>
+        declare itm, itmv any;
                           itm := control.vsl_items;
-			  itmv := control.vsl_item_values;
-			  itm := vector_concat (vector ('N/A'), itm);
-			  itmv := vector_concat (vector (''), itmv);
-			  control.vsl_items := itm;
-			  control.vsl_item_values := itmv;
-			  control.vs_set_selected ();
-		      </v:after-data-bind>
-		  </v:data-list>
+        itmv := control.vsl_item_values;
+        itm := vector_concat (vector ('N/A'), itm);
+        itmv := vector_concat (vector (''), itmv);
+        control.vsl_items := itm;
+        control.vsl_item_values := itmv;
+        control.vs_set_selected ();
+          </v:after-data-bind>
+      </v:data-list>
               </td>
             </tr>
           </v:template>
@@ -565,7 +565,7 @@
       <xsl:if test="not @edit">
       <tr>
        <td colspan="3">
-	 <span class="fm_ctl_btn">
+         <span class="fm_ctl_btn">
           <v:button action="simple" name="adv" value="-- case when self.switch_adv then 'Simple' else 'Advanced' end">
             <v:on-post>
               <v:script>
@@ -578,11 +578,11 @@
 
 
                  self.vc_data_bind(e);
-                 
+
                  self.is_public1.ufl_selected := self.is_public;
                  self.is_visible1.ufl_selected := self.is_visible;
 
-          
+
                  self.ilogo_isdav_cb.ufl_selected := 1;
                  self.iwelcome_isdav_cb.ufl_selected := 1;
 
@@ -597,8 +597,8 @@
                ]]>
              </v:script>
            </v:on-post>
-	  </v:button>
-	 </span>
+          </v:button>
+         </span>
         </td>
       </tr>
      </xsl:if>

@@ -69,12 +69,12 @@
              <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
               <td>
                 <v:url name="ddd" value="--''" format="%s" url="#">
-                  <v:after-data-bind>
-                      <![CDATA[
+                   <v:after-data-bind>
+                    <![CDATA[
                       control.vu_url := SIOC..forum_iri ((control.vc_parent as vspx_row_template).te_rowset[4], (control.vc_parent as vspx_row_template).te_rowset[3]) || sprintf ('?sid=%s&realm=%s', self.sid, self.realm);
                       control.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
-                      ]]>
-                  </v:after-data-bind>
+                    ]]>
+                   </v:after-data-bind>
                 </v:url>
               </td>
               <td>
@@ -429,7 +429,7 @@ function selectAllCheckboxes (form, btn, txt)
           </vm:template>
         </vm:template>
     </v:data-set>
-    </table>
+   </table>
    <div class="fm_ctl_btn">
        <v:button name="freeze_btn" value="Freeze Selected" action="simple">
 	   <v:on-post><![CDATA[
@@ -472,7 +472,7 @@ function selectAllCheckboxes (form, btn, txt)
     <v:variable name="apps_ids" type="varchar" default="null" param-name="apps"/>
     <v:variable name="apps" type="any" default="null" />
     <v:after-data-bind>
-        <![CDATA[
+	<![CDATA[
 	  declare apps, v, i any;
 	  v := null;
 	  if (self.apps_ids is not null)
@@ -490,7 +490,7 @@ function selectAllCheckboxes (form, btn, txt)
           if (length (self.inst_name) = 0 and self.apps_ids is null)
             control.vc_enabled := 0;
           else
-            control.vc_enabled := 1;
+	    control.vc_enabled := 1;
           self.apps := v;
         ]]>
     </v:after-data-bind>
@@ -602,10 +602,10 @@ function selectAllCheckboxes (form, btn, txt)
 
 		  if (length (self.inst_name))
                     {
-                  update DB.DBA.WA_INSTANCE set
-                    WAI_IS_FROZEN = 1,
-                    WAI_FREEZE_REDIRECT = banner
-                    where WAI_NAME = self.inst_name;
+		      update DB.DBA.WA_INSTANCE set
+			WAI_IS_FROZEN = 1,
+			WAI_FREEZE_REDIRECT = banner
+			where WAI_NAME = self.inst_name;
 		    }
 		  else if (length (self.apps))
 		    {

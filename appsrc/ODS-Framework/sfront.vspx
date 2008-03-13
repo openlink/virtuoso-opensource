@@ -36,18 +36,18 @@
     </vm:header>
     <vm:pagewrapper>
       <vm:body>
-       <vm:login redirect="sfront.vspx"/>
-	    <vm:dash-user-activity range="5"/>
+        <vm:login redirect="sfront.vspx"/>
+        <vm:dash-user-activity range="5"/>
         <vm:dash-welcome />
-     <vm:if test="wa_vad_check ('blog2') is not null">
-	      <vm:dash-new-blogs />
-	  </vm:if>
-	  <vm:if test="wa_vad_check ('enews2') is not null">
-	      <vm:dash-new-news />
-	  </vm:if>
-	  <vm:if test="wa_vad_check ('wiki') is not null">
-	      <vm:dash-new-wiki />
-	  </vm:if>
+        <vm:if test="wa_vad_check ('blog2') is not null">
+          <vm:dash-new-blogs />
+        </vm:if>
+        <vm:if test="wa_vad_check ('enews2') is not null">
+	  <vm:dash-new-news />
+        </vm:if>
+        <vm:if test="wa_vad_check ('wiki') is not null">
+          <vm:dash-new-wiki />
+        </vm:if>
       </vm:body>
     </vm:pagewrapper>
   </vm:page>

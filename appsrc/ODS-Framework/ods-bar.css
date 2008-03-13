@@ -1,5 +1,5 @@
 
-#ods_bar { 
+#ods_bar {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -13,7 +13,7 @@
 #ods_bar ul {
   list-style-type: none}
 
-#ods_bar ul li { 
+#ods_bar ul li {
   display: inline}
 
 #ods_bar a {
@@ -78,12 +78,12 @@
   color: #fff;
   background: #0075A8 url("images/navlv1default.png")}
 
-#ods_bar_first_lvl li { 
+#ods_bar_first_lvl li {
   padding: 0;
   padding-left: 4px;
   margin: 0}
 
-#ods_bar_first_lvl li a { 
+#ods_bar_first_lvl li a {
   margin-top: 0px;
   padding: 6px 3px 6px 3px;
   vertical-align: middle;
@@ -102,7 +102,7 @@
   width: 100%;
   height: 20px;
   float: left; clear: left;
-  margin: 0;padding: 0;
+  margin: 0; padding: 0;
   padding-top: 4px;
   background: #ddeff9 url("images/navlv2default.png")}
 

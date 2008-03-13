@@ -1,23 +1,23 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
+ *
 */
 
 var setupWin;
@@ -45,7 +45,7 @@ function cbSuccess (url, idserver, oid_ret, sig, nam, mail) {
 
     // and now try to close whatever it was
 //    try {
-//	    if (setupWin) 
+//	    if (setupWin)
 //		setupWin.close();
 //    } catch (ex) { }
 
@@ -101,7 +101,7 @@ function setPaths (image_path, helper_path)
   if (image_path != null)
     imagePath = image_path;
   if (helper_path != null)
-    helperPath = helper_path; 
+    helperPath = helper_path;
 }
 
 function setImage (img)
@@ -149,7 +149,7 @@ function onClickVerify (e) {
 
     var client_url = ue.value;
 
-	var opts = { 
+	var opts = {
 	    'client_url': client_url,
 	    'on_success': cbSuccess,
 	    'on_error': cbError,
@@ -164,7 +164,7 @@ function onClickVerify (e) {
     OpenID_verify(opts);
 
     setImage ('wait_16.gif');
-    
+
     return stopEvent(e);
 }
 
@@ -209,7 +209,7 @@ function _OpenID_iframe_include (uri) {
     //se.contentWindow.location = uri;
     window.open (uri, "OpenID_window", "");
 }
- 
+
 
 // returns whether the browser is able to do the client-side version of OpenID
 function OpenID_capable () {
@@ -218,7 +218,7 @@ function OpenID_capable () {
 
 
 // args is object with keys:
-//       client_url:   the HTML URL the client provided. is just 
+//       client_url:   the HTML URL the client provided. is just
 //                     sent as-is to the helper URL on the server.
 //       helper_url:   the URL of the helper on the server
 //       on_success:   (canonical_identity_url, id_server, oid_ret, sig)
@@ -254,7 +254,7 @@ function OpenID_verify (arg_hargs) {
         if (xtr.status == 200) {
 	    try {
 		(hargs.on_debug||nf)("responseText = [" + xtr.responseText + "]");
-	
+
 		try {
 		    eval("var helperRes = " + xtr.responseText + ";\n");
 		} catch (ex) {
@@ -279,11 +279,11 @@ function OpenID_verify (arg_hargs) {
 	    } catch (ex) {
 		(hargs.on_error||nf)("iframe_exception", "Error loading remote iframe: " + ex);
 	    }
-	    
+
         } else {
 	    (hargs.on_error||nf)("helper_not_200", "Didn't get status code 200 contacting helper.  Got: " + xtr.status);
 	}
-	
+
 
     };
 

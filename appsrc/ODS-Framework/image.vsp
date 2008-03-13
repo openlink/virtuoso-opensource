@@ -24,7 +24,7 @@
     declare image,image_type any;
     declare image_id varchar;
     declare sid,realm varchar;
-    
+
     declare width,height integer;
 
     sid := get_keyword('sid',params,'');

@@ -229,7 +229,7 @@ create procedure serialize_act (in _u_id int, in act_id int, inout ses any)
       http (sprintf ('<link rel="edit" type="application/atom+xml" href="%V"/>\n', url), ses);
       http (sprintf ('<received>%s</received>\n', DB.DBA.date_iso8601 (now ())), ses);
       if (length (WA_ACTIVITY_TYPE))
-      http (sprintf ('<dc:type xmlns:dc="http://purl.org/dc/elements/1.1">%s</dc:type>\n', WA_ACTIVITY_TYPE), ses);
+	http (sprintf ('<dc:type xmlns:dc="http://purl.org/dc/elements/1.1">%s</dc:type>\n', WA_ACTIVITY_TYPE), ses);
       http ('</entry>\n', ses);
     }
 }
@@ -338,10 +338,10 @@ create procedure activities (in userID varchar, in sourceID varchar := null, in 
       }
       else
       {
-      for select WA_ID from DB.DBA.WA_ACTIVITIES where WA_U_ID = _u_id and WA_SRC_ID = sourceID do
-	{
-	  serialize_act (_u_id, WA_ID, ses);
-	}
+        for select WA_ID from DB.DBA.WA_ACTIVITIES where WA_U_ID = _u_id and WA_SRC_ID = sourceID do
+        {
+	       serialize_act (_u_id, WA_ID, ses);
+	      }
 	    }
       feed_tail (ses);
     }
@@ -364,12 +364,12 @@ create procedure add_ods_activity (
        in objTYPE varchar := null,
        in objURI varchar := null)
 {
-    
+
     declare actID integer;
     actID:=0;
-    
+
     declare exit handler for sqlstate '*' {goto _err;};
-    
+
     if(isstring(userID))
       userID:=(select U_ID from DB.DBA.SYS_USERS where U_NAME=userID);
     else if(isinteger(userID))
@@ -382,7 +382,7 @@ create procedure add_ods_activity (
     else if(isinteger(sourceID))
     {
       if(sourceID>0)
-      sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_ID=sourceID);
+         sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_ID=sourceID);
     }else
       goto _err;
 
@@ -391,12 +391,12 @@ create procedure add_ods_activity (
 
     insert into DB.DBA.WA_ACTIVITIES (WA_U_ID, WA_SRC_ID, WA_ACTIVITY,WA_ACTIVITY_TYPE,WA_ACTIVITY_ACTION,WA_OBJ_TYPE,WA_OBJ_URI)
          values (userID, sourceID, act, actTYPE, actACTION, objTYPE, objURI);
-         
-         
+
+
 	  actID := identity_value ();
 
   return actID;
-  
+
 _err:
   return 0;
 }
@@ -406,21 +406,21 @@ _err:
 create trigger sn_related_opensocial_I after insert on DB.DBA.sn_related referencing new as N
 {
   declare _from_uid, _to_uid integer;
-  
- 
+
+
   _from_uid := (select sne_org_id from DB.DBA.sn_entity where sne_id=N.snr_from);
   _to_uid   := (select sne_org_id from DB.DBA.sn_entity where sne_id=N.snr_to);
-  
+
   if(_from_uid is not null and _to_uid is not null)
   {
       declare exit handler for sqlstate '*' {
 --        log_message (__SQL_MESSAGE);
         return;
       };
- 
- 
+
+
    declare _act,_inst_type varchar;
-  
+
   _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are now connected.',
                   DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid),
                   DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid));
@@ -436,7 +436,7 @@ create trigger sn_related_opensocial_I after insert on DB.DBA.sn_related referen
 
   }
 
-  
+
   return;
 }
 ;
@@ -444,21 +444,21 @@ create trigger sn_related_opensocial_I after insert on DB.DBA.sn_related referen
 create trigger sn_related_opensocial_D after delete on DB.DBA.sn_related referencing old as O
 {
   declare _from_uid, _to_uid integer;
-  
- 
+
+
   _from_uid := (select sne_org_id from DB.DBA.sn_entity where sne_id=O.snr_from);
   _to_uid   := (select sne_org_id from DB.DBA.sn_entity where sne_id=O.snr_to);
-  
+
   if(_from_uid is not null and _to_uid is not null)
   {
       declare exit handler for sqlstate '*' {
 --        log_message (__SQL_MESSAGE);
         return;
       };
- 
- 
+
+
    declare _act,_inst_type varchar;
-  
+
   _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are not connected any more.',
                   DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid),
                   DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid));
@@ -474,7 +474,7 @@ create trigger sn_related_opensocial_D after delete on DB.DBA.sn_related referen
 
   }
 
-  
+
   return;
 }
 ;

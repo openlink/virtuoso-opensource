@@ -1,4 +1,4 @@
-<?vsp 
+<?vsp
 http_header ('Content-Type: application/xrds+xml; charset=UTF-8\r\n');
 OPENID..yadis ({?'uname'}, {?'type'});
 ?>

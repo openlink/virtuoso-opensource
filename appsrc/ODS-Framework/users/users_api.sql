@@ -640,24 +640,24 @@ create procedure ODS_CREATE_DSN ()
 	_pass := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
 
   if ((sys_stat('st_build_opsys_id') = 'Win32') and (sys_stat('st_has_vdb') = 1)) {
-	_driver := null;
-	foreach (varchar _drv in sql_get_installed_drivers ()) do {
-		if (upper(_drv) like 'OPENLINK VIRTUOSO%' or upper(_drv) like 'VIRTUOSO%') {
-			_driver := _drv;
-			goto _exit;
-		}
-	}
-_exit:;
+  	_driver := null;
+  	foreach (varchar _drv in sql_get_installed_drivers ()) do {
+  		if (upper(_drv) like 'OPENLINK VIRTUOSO%' or upper(_drv) like 'VIRTUOSO%') {
+  			_driver := _drv;
+  			goto _exit;
+  		}
+  	}
+  _exit:;
     if (not isnull (_driver)) {
-  	_attrib := '';
-  	_attrib := _attrib || 'DSN=' || _dsn || ';';
-  	_attrib := _attrib || 'Address=' || _address || ';';
-  	_attrib := _attrib || 'UserID=' || _user || ';';
-  	_attrib := _attrib || 'Password=' || _pass || ';';
-  	_attrib := _attrib || 'Description=Local Virtuoso Demo DSN for ODS Users;';
+    	_attrib := '';
+    	_attrib := _attrib || 'DSN=' || _dsn || ';';
+    	_attrib := _attrib || 'Address=' || _address || ';';
+    	_attrib := _attrib || 'UserID=' || _user || ';';
+    	_attrib := _attrib || 'Password=' || _pass || ';';
+    	_attrib := _attrib || 'Description=Local Virtuoso Demo DSN for ODS Users;';
 
-  	sql_config_data_sources(_driver, 'system', _attrib);
-  }
+    	sql_config_data_sources(_driver, 'system', _attrib);
+    }
   }
 
   -- create PHP dsn file

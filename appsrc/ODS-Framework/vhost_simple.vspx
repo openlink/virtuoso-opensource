@@ -193,7 +193,7 @@
               dns_host := sys_stat('st_host_name');
               dns_host := 'http://' || dns_host || ':' ||
               cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'ServerPort');
-              
+
               select WAI_INST into inst from WA_INSTANCE where WAI_NAME=cast(self.vd.ds_current_row.te_rowset[0] as varchar);
               dns_host := dns_host || rtrim(inst.wa_home_url(), '/');
               http(sprintf(' (%s)', dns_host));
@@ -338,9 +338,9 @@
             domain  := get_keyword ('l_domain1', e.ve_params);
 
             commit work;
-          
+
           -- dbg_obj_print('prefix',prefix,'domain',domain);
-       
+
           if(domain='{Default Domain}') prefix:=null;
 
           declare exit handler for sqlstate '*'

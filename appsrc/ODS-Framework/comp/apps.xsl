@@ -36,7 +36,7 @@
          where WAT_NAME <> \'WA\'
            and (
                 WAT_MAXINST is null
-                 or
+                or
                 WAT_MAXINST > (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME and WMIC_UID = ?)
                )
       ]]>

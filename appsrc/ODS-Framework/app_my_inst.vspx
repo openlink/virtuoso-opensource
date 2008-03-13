@@ -43,9 +43,9 @@
     if ( not length(self.sid)
          and (self.app_type='oMail' or self.app_type='oDrive')
        )
-	  {
+    {
       signal ('22023', sprintf ('You are not allowed to view personal information when not signed in.', self.fname));
-	  };
+    };
 
 
 	 if (not length (self.fname) and length (self.sid))
@@ -57,8 +57,8 @@
 	    {
 	     signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
 	    };
-	    
-	     select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
+
+	    select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
 	   }
 	]]>
       </v:before-data-bind>
@@ -68,74 +68,74 @@
         <ul class="sb app_cmds_sb">
           <vm:if test="length (self.sid)">
             <li>
-              <v:url xhtml_class="ods_side_button" 
-                     url="services.vspx" 
-                     name="my_app" 
+              <v:url xhtml_class="ods_side_button"
+                     url="services.vspx"
+                     name="my_app"
                      value='<img src="images/icons/apps_16.png" border="0" /> Manage Applications' />
             </li>
           </vm:if>
         </ul>
       <vm:if test="self.app_type<>'nntpf' and self.app_type<>'discussion'">
         <ul class="sb app_cmds_sb">
-	<?vsp
-          
+<?vsp
+
           declare usr_instnum,apptype_instnum int;
 
           declare exit handler for not found {
               apptype_instnum:=0;
           };
 
-          select WAT_MAXINST 
-            into apptype_instnum 
-            from WA_TYPES 
+          select WAT_MAXINST
+            into apptype_instnum
+            from WA_TYPES
             where WAT_NAME = self.app_type;
 
-          if (apptype_instnum is null) 
+          if (apptype_instnum is null)
             apptype_instnum := 999999; -- XXX Magic number???
 
-          declare exit handler for not found 
+          declare exit handler for not found
             {
-              usr_instnum:=0;
-          };
-          
-          select WMIC_INSTCOUNT 
-            into usr_instnum 
-            from WA_MEMBER_INSTCOUNT 
-            where WMIC_TYPE_NAME = self.app_type and 
+              usr_instnum := 0;
+            };
+
+          select WMIC_INSTCOUNT
+            into usr_instnum
+            from WA_MEMBER_INSTCOUNT
+            where WMIC_TYPE_NAME = self.app_type and
                   WMIC_UID=self.u_id;
-          
-	  if (
+
+          if (
                (
-	         (length (self.sid) and (self.u_name = self.fname or 0 = length (self.fname)))
-	       or
-	       (length (self.sid) = 0 and 0 = length (self.fname))
-	     )
-	       and
+                 (length (self.sid) and (self.u_name = self.fname or 0 = length (self.fname)))
+                 or
+                 (length (self.sid) = 0 and 0 = length (self.fname))
+               )
+               and
                apptype_instnum<>0
                and
                apptype_instnum>usr_instnum
-	     )
-	    {
-        ?>
+             )
+          {
+?>
               <li>
                 <a class="ods_side_button" href="<?V 'index_inst.vspx?wa_name=' || self.app_type || self.login_pars || case when self.topmenu_level='1' then '&l=1' else '' end ?>">
-                  <img src="images/icons/new_16.png" border="0" />Create New</a>
+                  <img src="images/icons/new_16.png" border="0" /> Create New</a>
               </li>
-	<?vsp
-	    }
-            
+<?vsp
+            }
+
 ?>
 
-        </ul> <!-- app_cmds_sb --> 
-        <ul class="sb app_insts_sb">            
-            
+        </ul> <!-- app_cmds_sb -->
+        <ul class="sb app_insts_sb">
+
 <?vsp
 
-	  declare i int;
+    declare i int;
 
 	  for select * from WA_USER_APP_INSTANCES_DATASPACE sub
-                where user_id = self.u_id and 
-                      app_type = self.app_type and 
+                where user_id = self.u_id and
+                      app_type = self.app_type and
                       fname = self.fname do
 	    {
         declare dataspace_url varchar;
@@ -144,13 +144,13 @@
         dataspace_url:=sprintf('%s%U/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME);
 
 --        dataspace_url:=INST_DATASPACE;
-	?>
+?>
 	      <li>
                 <a class="ods_side_button" href="<?vsp http(wa_expand_url (dataspace_url, self.login_pars)); ?>">
                   <img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?>
                 </a>
               </li>
-	<?vsp
+<?vsp
 	    i := i + 1;
 	    if (i>=10)
 	    {
@@ -162,8 +162,8 @@
 <?vsp
         goto end_for;
 	    }
-	    }
-end_for:	  
+	  }
+end_for:
 	?>
         </ul>
       </vm:if>
@@ -174,50 +174,50 @@ end_for:
       </vm:if>
       </div> <!-- LT_SB -->
       <div id="RT">
-      <?vsp
-      if (self.u_id = self.ufid)
-        {
-	  if (self.app_type = 'WEBLOG2')
+<?vsp
+  if (self.u_id = self.ufid)
+    {
+      if (self.app_type = 'WEBLOG2')
 	    {
-	  ?>
-	  <vm:dash-blog-summary/>
-	  <?vsp
-	    }
-	  else if (self.app_type = 'eNews2')
+?>
+        <vm:dash-blog-summary/>
+<?vsp
+      }
+      else if (self.app_type = 'eNews2')
 	    {
-	  ?>
-	  <vm:dash-enews-summary/>
-	  <?vsp
+?>
+	      <vm:dash-enews-summary/>
+<?vsp
 	    }
-	  else if (self.app_type = 'oMail')
+	    else if (self.app_type = 'oMail')
 	    {
-	  ?>
-	  <vm:dash-omail-summary/>
-	  <?vsp
+?>
+	      <vm:dash-omail-summary/>
+<?vsp
 	    }
-	  else if (self.app_type = 'oWiki')
+	    else if (self.app_type = 'oWiki')
 	    {
-	  ?>
-	  <vm:dash-wiki-summary/>
-	  <?vsp
+?>
+        <vm:dash-wiki-summary/>
+<?vsp
 	    }
-	  else if (self.app_type = 'Bookmark')
+	    else if (self.app_type = 'Bookmark')
 	    {
-	  ?>
-	  <vm:dash-bookmark-summary/>
-	  <?vsp
+?>
+	      <vm:dash-bookmark-summary/>
+<?vsp
 	    }
-	  else if (self.app_type = 'oDrive')
+	    else if (self.app_type = 'oDrive')
 	    {
-	  ?>
-	  <vm:dash-odrive-summary/>
-	  <?vsp
+?>
+	      <vm:dash-odrive-summary/>
+<?vsp
 	    }
-    else if (self.app_type = 'oGallery')
+      else if (self.app_type = 'oGallery')
       {
-    ?>
-    <vm:dash-ogallery-summary/>
-    <?vsp
+?>
+        <vm:dash-ogallery-summary/>
+<?vsp
       }
       else if (self.app_type = 'Polls')
       {
@@ -250,7 +250,7 @@ end_for:
 <?vsp
       }
 	}
-      ?>
+?>
       </div> <!-- RT -->
     </vm:body>
   </vm:pagewrapper>

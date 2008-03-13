@@ -37,7 +37,7 @@
         if (self.instance_descr is null)
           self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
         self.wa_type := self.wa_name;
-        
+
         if (self.wa_type in ('oDrive', 'oMail', 'IM'))
         {
           self.imodel := 1;
@@ -74,7 +74,7 @@
         self.domains := xml_tree_doc(self.domains);
       ]]>
     </v:on-init>
-    
+
     <v:method name="create_new_app" arglist="inout control vspx_button, inout e vspx_event">
     <![CDATA[
       declare _len any;
@@ -114,31 +114,30 @@
             self.ihome1.ufl_failed := 1;
             return;
           }
-	  if (self.wa_type = 'WEBLOG2')
-	    {
-             connection_set('blog2_home', ihome);
-            }
-	  else if(self.wa_type = 'Community')
-	    {
-             connection_set('community_customendpoint', ihome);
-            }
-	  else if(self.wa_type = 'oGallery')
-	    {
+	        if (self.wa_type = 'WEBLOG2')
+	        {
+            connection_set('blog2_home', ihome);
+          }
+	        else if (self.wa_type = 'Community')
+	        {
+            connection_set('community_customendpoint', ihome);
+          }
+	        else if (self.wa_type = 'oGallery')
+	        {
              connection_set('ogallery_customendpoint', ihome);
-        }
+          }
         } else {
-	  if (self.wa_type = 'WEBLOG2')
-	    {
-             connection_set('blog2_home', null);
-
-            }
-	  else if (self.wa_type = 'Community')
-	    {
-             connection_set('community_customendpoint', null);
-            }
-	  else if (self.wa_type = 'oGallery')
-	    {
-             connection_set('ogallery_customendpoint', ihome);
+	        if (self.wa_type = 'WEBLOG2')
+	        {
+            connection_set('blog2_home', null);
+          }
+	        else if (self.wa_type = 'Community')
+	        {
+            connection_set('community_customendpoint', null);
+          }
+	        else if (self.wa_type = 'oGallery')
+	        {
+            connection_set('ogallery_customendpoint', ihome);
           }
         }
       }
@@ -147,12 +146,12 @@
         declare _instance_name varchar;
         _instance_name := coalesce(self.iname1.ufl_value, '');
         if (regexp_match ('[A-Za-z0-9_]+', _instance_name) <> _instance_name)
-          {
-            self.vc_error_message := 'Wiki instance must be single word without special characters';
-            self.vc_is_valid := 0;
-            self.iname1.ufl_failed := 1;
-            return;
-          }
+        {
+          self.vc_error_message := 'Wiki instance must be single word without special characters';
+          self.vc_is_valid := 0;
+          self.iname1.ufl_failed := 1;
+          return;
+        }
         connection_set('wiki_home', ihome);
       }
       else if (self.wa_type = 'IM')
@@ -161,12 +160,12 @@
         self.iname2.ufl_value := trim (self.iname2.ufl_value);
         _instance_name := coalesce(self.iname2.ufl_value, '');
         if (isnull (regexp_match ('^[A-Za-z0-9_]+\$', _instance_name)))
-          {
-            self.vc_error_message := 'IM instance must be single word without special characters';
-            self.vc_is_valid := 0;
-            self.iname2.ufl_failed := 1;
-            return;
-          }
+        {
+          self.vc_error_message := 'IM instance must be single word without special characters';
+          self.vc_is_valid := 0;
+          self.iname2.ufl_failed := 1;
+          return;
+        }
       }
       _len := length(coalesce(self.iname1.ufl_value, ''));
       if (self.wa_type = 'IM')
@@ -180,7 +179,7 @@
       }
 
       if (self.switch_adv=0)
-        {
+      {
         self.idesc1.ufl_value := self.idesc;
         self.imodel1.ufl_value := cast(self.imodel as varchar);
         _len := length(coalesce(self.idesc, ''));
@@ -242,9 +241,9 @@
 
       if (self.wa_type='Community' and cast(self.switch_adv as integer))
       {
-        if(self.logo_group.ufl_value='logo_use_combo')
+        if (self.logo_group.ufl_value='logo_use_combo')
         {
-              logo_ext := subseq(self.ilogo_c1.ufl_Value,strrchr(self.ilogo_c1.ufl_Value,'.'));
+          logo_ext := subseq(self.ilogo_c1.ufl_Value,strrchr(self.ilogo_c1.ufl_Value,'.'));
         } else {
           if (self.ilogo_isdav_cb.ufl_selected)
           {
@@ -256,7 +255,7 @@
             } else {
               logo_ext := subseq(self.t_ilogopath_dav.ufl_value,strrchr(self.t_ilogopath_dav.ufl_value,'.'));
             }
-            if(lower(logo_ext) not in ('.jpg','.gif','.png'))
+            if (lower(logo_ext) not in ('.jpg','.gif','.png'))
             {
               self.vc_error_message := 'The type of resource that you have selected for your community logo is invalid. Please use JPG,GIF or PNG';
               self.vc_is_valid := 0;
@@ -268,27 +267,24 @@
               self.vc_error_message := 'The path to resource that you have selected for your community logo is invalid.';
               self.vc_is_valid := 0;
               return;
-
-            }else{
+            } else {
               declare _filename varchar;
 
               _filename:=get_keyword('filename',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params,''),'');
               logo_ext := subseq(_filename,strrchr(_filename,'.'));
             }
-            if(lower(logo_ext) not in ('.jpg','.gif','.png'))
+            if (lower(logo_ext) not in ('.jpg','.gif','.png'))
             {
               self.vc_error_message := 'The type of resource that you have selected for your community logo is invalid. Please use JPG,GIF or PNG';
               self.vc_is_valid := 0;
               return;
             }
           }
-
         }
 
-
-        if(self.welcome_group.ufl_value='welcome_use_combo')
+        if (self.welcome_group.ufl_value='welcome_use_combo')
         {
-            welcome_ext := subseq(self.iwelcome_c1.ufl_value,strrchr(self.iwelcome_c1.ufl_value,'.'));
+          welcome_ext := subseq(self.iwelcome_c1.ufl_value,strrchr(self.iwelcome_c1.ufl_value,'.'));
         } else {
           if (self.iwelcome_isdav_cb.ufl_selected)
           {
@@ -300,7 +296,7 @@
             } else {
               welcome_ext := subseq(self.t_iwelcomepath_dav.ufl_value,strrchr(self.t_iwelcomepath_dav.ufl_value,'.'));
             }
-            if(lower(welcome_ext) not in ('.jpg','.gif','.png'))
+            if (lower(welcome_ext) not in ('.jpg','.gif','.png'))
             {
               self.vc_error_message := 'The type of resource that you have selected for you community welcome image is invalid. Please use JPG,GIF or PNG';
               self.vc_is_valid := 0;
@@ -312,14 +308,13 @@
               self.vc_error_message := 'The path to resource that you have selected for your community welcome image is invalid.';
               self.vc_is_valid := 0;
               return;
-
-            }else{
+            } else {
               declare _filename varchar;
 
               _filename:=get_keyword('filename',get_keyword('attr-t_iwelcomepath_fs',self.vc_event.ve_params,''),'');
               welcome_ext := subseq(_filename,strrchr(_filename,'.'));
             }
-            if(lower(welcome_ext) not in ('.jpg','.gif','.png'))
+            if (lower(welcome_ext) not in ('.jpg','.gif','.png'))
             {
               self.vc_error_message := 'The type of resource that you have selected for your community welcome image is invalid. Please use JPG,GIF or PNG';
               self.vc_is_valid := 0;
@@ -340,7 +335,7 @@
       h := udt_implements_method (self.inst, 'wa_new_inst');
       declare exit handler for sqlstate '*'
       {
-        self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+        self.vc_error_message := WA_RETRIEVE_MESSAGE (concat (__SQL_STATE, ' ', __SQL_MESSAGE));
         self.vc_is_valid := 0;
         rollback work;
         return;
@@ -360,45 +355,45 @@
              WAI_IS_PUBLIC = self.is_public,
              WAI_MEMBERS_VISIBLE = self.is_visible,
              WAI_NAME = self.inst.wa_name,
-	     WAI_DESCRIPTION = self.idesc1.ufl_value,
-	     WAI_LICENSE = self.ilic1.ufl_value
-       where WAI_ID = id;
-       -- VD creation
+	           WAI_DESCRIPTION = self.idesc1.ufl_value,
+	           WAI_LICENSE = self.ilic1.ufl_value
+             where WAI_ID = id;
+      -- VD creation
+      {
+	      declare silent int;
+        declare lpath, default_lpath varchar;
+	      silent := 1;
+	      if (self.main_domain.ufl_value <> '{Default Domain}')
+	        silent := 0;
+        declare exit handler for sqlstate '*'
         {
-	  declare silent int;
-          declare lpath, default_lpath varchar;
-	  silent := 1;
-	  if (self.main_domain.ufl_value <> '{Default Domain}')
-	    silent := 0;
-          declare exit handler for sqlstate '*'
-          {
-            rollback work;
-            self.vc_is_valid := 0;
-            self.vc_error_message := __SQL_MESSAGE;
-            return;
-          };
-          default_lpath := self.ihome;
-	  lpath := self.ihome1.ufl_value;
+          rollback work;
+          self.vc_is_valid := 0;
+          self.vc_error_message := __SQL_MESSAGE;
+          return;
+    	  };
+        default_lpath := self.ihome;
+    	  lpath := self.ihome1.ufl_value;
 
-	  -- these two cases currently needs instance id in the URL
-	  if (lpath is null)
-	    {
-		if (self.wa_type = 'eNews2')
-		{
-		  lpath := sprintf('/enews2/%d', id);
-		}
-		else if (self.wa_type = 'Bookmark')
-		{
-		  lpath := sprintf('/bookmark/%d', id);
-		}
-		else if (self.wa_type = 'oMail')
-		{
-		  lpath := sprintf('/oMail');
-		}
-		else if (self.wa_type = 'oDrive')
-		{
-		  lpath := sprintf('/odrive/%d', id);
-		}
+    	  -- these two cases currently needs instance id in the URL
+    	  if (lpath is null)
+        {
+      		if (self.wa_type = 'eNews2')
+      		{
+      		  lpath := sprintf('/enews2/%d', id);
+      		}
+      		else if (self.wa_type = 'Bookmark')
+      		{
+      		  lpath := sprintf('/bookmark/%d', id);
+      		}
+      		else if (self.wa_type = 'oMail')
+      		{
+      		  lpath := sprintf('/oMail');
+      		}
+      		else if (self.wa_type = 'oDrive')
+      		{
+      		  lpath := sprintf('/odrive/%d', id);
+      		}
       		else if (self.wa_type = 'Calendar')
       		{
       		  lpath := sprintf('/calendar/%d', id);
@@ -411,20 +406,19 @@
       		{
       		  lpath := sprintf('/addressbook/%d', id);
       		}
-	    }
-	  if (default_lpath is null)
-            default_lpath := lpath;
-
-	  if (lpath is not null)
-	    WA_SET_APP_URL (id, lpath, self.sub_domain.ufl_value, self.main_domain.ufl_value, null, null, null, silent);
-          if (default_lpath is not null)
-	    WA_SET_APP_URL (id, default_lpath, null, wa_default_domain (), null, null, null, 1);
         }
+    	  if (default_lpath is null)
+          default_lpath := lpath;
+
+    	  if (lpath is not null)
+    	    WA_SET_APP_URL (id, lpath, self.sub_domain.ufl_value, self.main_domain.ufl_value, null, null, null, silent);
+          if (default_lpath is not null)
+    	    WA_SET_APP_URL (id, default_lpath, null, wa_default_domain (), null, null, null, 1);
+      }
       commit work;
 
-      if(self.wa_type='Community' and cast(self.switch_adv as integer))
+      if (self.wa_type='Community' and cast(self.switch_adv as integer))
       {
-
         declare new_inst_upload_path varchar;
         declare logo_res_type,welcome_res_type varchar;
 
@@ -438,48 +432,48 @@
         DB.DBA.DAV_DELETE (new_inst_upload_path||'community_logo_img'||logo_ext, 0, 'dav', 'dav');
         DB.DBA.DAV_DELETE (new_inst_upload_path||'community_welcome_img'||logo_ext, 0, 'dav', 'dav');
 
-        if(self.logo_group.ufl_value='logo_use_combo')
+        if (self.logo_group.ufl_value='logo_use_combo')
         {
-           YACUTIA_DAV_COPY(self.ilogo_c1.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
-        }else{
+          YACUTIA_DAV_COPY(self.ilogo_c1.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
+        } else {
           if (self.ilogo_isdav_cb.ufl_selected)
           {
-              YACUTIA_DAV_COPY(self.t_ilogopath_dav.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
+            YACUTIA_DAV_COPY(self.t_ilogopath_dav.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
           } else {
-           logo_res_type := get_keyword('Content-Type',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params));
-              YACUTIA_DAV_RES_UPLOAD(new_inst_upload_path||'community_logo_img'||logo_ext,self.t_ilogopath_fs.ufl_value,logo_res_type,'110100100R','dav','dav');
+            logo_res_type := get_keyword('Content-Type',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params));
+            YACUTIA_DAV_RES_UPLOAD(new_inst_upload_path||'community_logo_img'||logo_ext,self.t_ilogopath_fs.ufl_value,logo_res_type,'110100100R','dav','dav');
           }
         }
 
-        if(self.welcome_group.ufl_value='welcome_use_combo')
+        if (self.welcome_group.ufl_value='welcome_use_combo')
         {
            YACUTIA_DAV_COPY(self.iwelcome_c1.ufl_Value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110100100R','dav','dav');
         } else {
           if (self.iwelcome_isdav_cb.ufl_selected)
           {
-              YACUTIA_DAV_COPY(self.t_iwelcomepath_dav.ufl_value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110100100R','dav','dav');
+             YACUTIA_DAV_COPY(self.t_iwelcomepath_dav.ufl_value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110100100R','dav','dav');
           } else {
             welcome_res_type := get_keyword('Content-Type',get_keyword('attr-t_iwelcomepath_fs',self.vc_event.ve_params));
-              YACUTIA_DAV_RES_UPLOAD (new_inst_upload_path||'community_welcome_img'||welcome_ext,self.t_iwelcomepath_fs.ufl_value,welcome_res_type,'110100100R','dav','dav');
+            YACUTIA_DAV_RES_UPLOAD (new_inst_upload_path||'community_welcome_img'||welcome_ext,self.t_iwelcomepath_fs.ufl_value,welcome_res_type,'110100100R','dav','dav');
           }
         }
 
-        if (udt_implements_method (self.inst, 'apply_custom_settings')<>0)
+        if (udt_implements_method (self.inst, 'apply_custom_settings') <> 0)
         {
-         declare h_comm any;
-   
-         -- create new instance
-         h_comm := udt_implements_method (self.inst, 'apply_custom_settings');
-         declare exit handler for sqlstate '*'
-         {
-           self.vc_error_message := WA_RETRIEVE_MESSAGE (concat (__SQL_STATE, ' ', __SQL_MESSAGE));
-           self.vc_is_valid := 0;
-           rollback work;
-           return;
-         };
-         call (h_comm) (self.inst, self.itempl_c1.ufl_value,new_inst_upload_path||'community_logo_img'||logo_ext,new_inst_upload_path||'community_welcome_img'||welcome_ext);
-      }
+           declare h_comm any;
+
+           -- create new instance
+           h_comm := udt_implements_method (self.inst, 'apply_custom_settings');
+           declare exit handler for sqlstate '*'
+           {
+             self.vc_error_message := WA_RETRIEVE_MESSAGE (concat (__SQL_STATE, ' ', __SQL_MESSAGE));
+             self.vc_is_valid := 0;
+             rollback work;
+             return;
+           };
+           call (h_comm) (self.inst, self.itempl_c1.ufl_value,new_inst_upload_path||'community_logo_img'||logo_ext,new_inst_upload_path||'community_welcome_img'||welcome_ext);
         }
+      }
 
       return self.inst.wa_home_url ();
     ]]>
@@ -516,52 +510,52 @@
         <vm:login redirect="index.vspx"/>
         <div id="container">
           <div id="main">
-	    <div class="box">
-	      <v:local-variable name="dummy">
-		<v:before-data-bind><![CDATA[
-     if((exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
-                and ( WAT_MAXINST=0 or WAT_MAXINST <= (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID =self.u_id))))
+	          <div class="box">
+      	      <v:local-variable name="dummy">
+           		  <v:before-data-bind><![CDATA[
+                  if ((exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
+                      and ( WAT_MAXINST=0 or WAT_MAXINST <= (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID =self.u_id))))
                       or  self.wa_name='Discussion'
-       )
-     {
-        self.maxinstexceeded:=1;
+                     )
+                  {
+                    self.maxinstexceeded:=1;
                   } else {
-        self.maxinstexceeded:=0;
+                    self.maxinstexceeded:=0;
                   }
 
-		 if (self.promo = 'promo')
-		   {
+            		  if (self.promo = 'promo')
+           		    {
            		      self.wa_cnt := (select count(1)
            		                        from WA_MEMBER
            		                       where WAM_APP_TYPE = self.wa_name and WAM_USER = self.u_id and WAM_MEMBER_TYPE = 1);
-		    self.wa_desc := case self.wa_type
-		 		   when 'WEBLOG2' then 'Weblog'
-		 		   when 'eNews2' then 'Feed Manager'
-		 		   when 'oDrive' then 'Briefcase'
-		 		   when 'Bookmark' then 'Bookmarks'
-		 		   when 'IM' then 'Instant Messenger'
+           		      self.wa_desc := case self.wa_type
+                            		 		  when 'WEBLOG2' then 'Weblog'
+                          		 		    when 'eNews2' then 'Feed Manager'
+                          		 		    when 'oDrive' then 'Briefcase'
+                          		 		    when 'Bookmark' then 'Bookmarks'
+                          		 		    when 'IM' then 'Instant Messenger'
                           				    else self.wa_type
                           				  end;
-		    if (self.wa_cnt = 0)
-		      self.promo := '';
-		    }
-		  ]]></v:before-data-bind>
-	      </v:local-variable>
-	      <v:form type="simple" method="POST" name="aform1">
-	   <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1 and self.wa_name<>'Discussion'">
-	         <div style="padding:10px">You have reached the maximum number of <?V WA_GET_MFORM_APP_NAME(self.wa_name) ?> per user. You are not allowed to create new instance of <?V WA_GET_APP_NAME(self.wa_name) ?>. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
-	   </v:template>
-	   <v:template type="simple" condition="self.maxinstexceeded = 1 and self.wa_name='Discussion'">
-	         <div style="padding:10px">You are not allowed to perform this operation. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
-	   </v:template>
-	   
-	   <v:template name="maxinst_notexceed" type="simple" condition="self.maxinstexceeded = 0">
-	      <v:template name="app_cr" type="simple" condition="self.promo = ''">
-                  <v:before-data-bind>
-                    <![CDATA[
-		    if (not e.ve_is_post)
-		      {
-                        declare _cnt, _iname, _ihome, _cnt2, _domain, app_suff any;
+            		    if (self.wa_cnt = 0)
+            		      self.promo := '';
+            		  }
+      		      ]]></v:before-data-bind>
+      	      </v:local-variable>
+	            <v:form type="simple" method="POST" name="aform1">
+	              <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1 and self.wa_name<>'Discussion'">
+	                <div style="padding:10px">You have reached the maximum number of <?V WA_GET_MFORM_APP_NAME(self.wa_name) ?> per user. You are not allowed to create new instance of <?V WA_GET_APP_NAME(self.wa_name) ?>. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
+	              </v:template>
+	              <v:template type="simple" condition="self.maxinstexceeded = 1 and self.wa_name='Discussion'">
+	                <div style="padding:10px">You are not allowed to perform this operation. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
+	              </v:template>
+
+          	    <v:template name="maxinst_notexceed" type="simple" condition="self.maxinstexceeded = 0">
+          	      <v:template name="app_cr" type="simple" condition="self.promo = ''">
+                    <v:before-data-bind>
+                      <![CDATA[
+                       if (not e.ve_is_post)
+          		         {
+                         declare _cnt, _iname, _ihome, _cnt2, _domain, app_suff any;
                          _cnt := (select count(*)
                                     from WA_INSTANCE, WA_MEMBER, SYS_USERS
                                    where WAI_TYPE_NAME = self.wa_name
@@ -570,125 +564,125 @@
                                      and WAM_USER = U_ID
                                      and U_NAME = self.u_name);
 
-		      app_suff := WA_GET_APP_NAME (self.wa_type);
+		                     app_suff := WA_GET_APP_NAME (self.wa_type);
 
-                      if (self.wa_type = 'oMail')
-                      {
-                        _domain := xpath_eval ('/domains/domain', self.domains, 0);
-                        _iname := sprintf('%s@%s', self.u_name, cast(_domain[0] as varchar));
-                        while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
-                        {
-                          _iname := sprintf('%s_%d@%s', self.u_name, _cnt, cast(_domain[0] as varchar));
-                          _cnt := _cnt + 1;
-                        }
-                        self.iname := substring(_iname,1,strchr(_iname,'@'));
-                        self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
-                      }
-                      else if (self.wa_type = 'IM')
-                      {
-                        app_suff := 'im';
-                        _domain := xpath_eval ('/domains/domain', self.domains, 0);
-                        _iname := sprintf('%s@%s/%s', self.u_name, cast(_domain[0] as varchar), app_suff);
-                        while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
-                        {
-                          _iname := sprintf('%s@%s/%s%d', self.u_name, cast(_domain[0] as varchar), app_suff, _cnt);
-                          _cnt := _cnt + 1;
-                        }
-                        self.iname := subseq(_iname, strstr(_iname, '/')+1);
-                        self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
+                         if (self.wa_type = 'oMail')
+                         {
+                           _domain := xpath_eval ('/domains/domain', self.domains, 0);
+                           _iname := sprintf('%s@%s', self.u_name, cast(_domain[0] as varchar));
+                           while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
+                           {
+                             _iname := sprintf('%s_%d@%s', self.u_name, _cnt, cast(_domain[0] as varchar));
+                             _cnt := _cnt + 1;
+                           }
+                           self.iname := substring(_iname,1,strchr(_iname,'@'));
+                           self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
+                         }
+                         else if (self.wa_type = 'IM')
+                         {
+                           app_suff := 'im';
+                           _domain := xpath_eval ('/domains/domain', self.domains, 0);
+                           _iname := sprintf('%s@%s/%s', self.u_name, cast(_domain[0] as varchar), app_suff);
+                           while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
+                           {
+                             _iname := sprintf('%s@%s/%s%d', self.u_name, cast(_domain[0] as varchar), app_suff, _cnt);
+                             _cnt := _cnt + 1;
+                           }
+                           self.iname := subseq(_iname, strstr(_iname, '/')+1);
+                           self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
                          } else {
-		        if (self.wa_type = 'oWiki')
-			  _iname := sprintf ('%s%s', self.u_first_name, app_suff);
-			else
-			  _iname := sprintf ('%s\'s %s', self.u_first_name, app_suff);
-                        while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
-                        {
-                          _cnt := _cnt + 1;
-		          if (self.wa_type = 'oWiki')
+                           if (self.wa_type = 'oWiki')
+                             _iname := sprintf ('%s%s', self.u_first_name, app_suff);
+                           else
+                             _iname := sprintf ('%s\'s %s', self.u_first_name, app_suff);
+                           while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
+                           {
+                             _cnt := _cnt + 1;
+                             if (self.wa_type = 'oWiki')
                              {
-			    _iname := sprintf ('%s%s%d', self.u_first_name, app_suff, _cnt);
+                               _iname := sprintf ('%s%s%d', self.u_first_name, app_suff, _cnt);
                              }
                              else if (self.wa_type = 'IM')
                              {
-                  _iname := sprintf ('%s%d', self.u_first_name, _cnt);
+                               _iname := sprintf ('%s%d', self.u_first_name, _cnt);
                              } else {
-		            _iname := sprintf ('%s\'s %s (%d)', self.u_first_name, app_suff, _cnt);
-                        }
-                        }
-                        self.iname := _iname;
-                        self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
-                        if (self.wa_type = 'WEBLOG2')
-                        {
-                          _cnt2 := 0;
-                          _ihome := sprintf('%s%s', '/weblog/', self.u_name);
-                          while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
-                          {
-                            _cnt2 := _cnt2 + 1;
-                            _ihome := sprintf('%s%s%d', '/weblog/', self.u_name, _cnt2);
-                          }
-                          self.ihome := _ihome;
-                        }
-                        else if (self.wa_type = 'oGallery')
-                        {
-                          _cnt2 := 0;
-                          _ihome := sprintf('%s%s', '/photos/', self.u_name);
-                          while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
-                          {
-                            _cnt2 := _cnt2 + 1;
-                            _ihome := sprintf('%s%s%d', '/photos/', self.u_name, _cnt2);
-                          }
-                          self.ihome := _ihome;
-                        }
-                        else if (self.wa_type = 'Community')
-                        {
-                          declare state, message, meta, result any;
-                          declare sql_q varchar;
+                               _iname := sprintf ('%s\'s %s (%d)', self.u_first_name, app_suff, _cnt);
+                             }
+                           }
+                           self.iname := _iname;
+                           self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
+                           if (self.wa_type = 'WEBLOG2')
+                           {
+                             _cnt2 := 0;
+                             _ihome := sprintf('%s%s', '/weblog/', self.u_name);
+                             while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
+                             {
+                               _cnt2 := _cnt2 + 1;
+                               _ihome := sprintf('%s%s%d', '/weblog/', self.u_name, _cnt2);
+                             }
+                             self.ihome := _ihome;
+                           }
+                           else if (self.wa_type = 'oGallery')
+                           {
+                             _cnt2 := 0;
+                             _ihome := sprintf('%s%s', '/photos/', self.u_name);
+                             while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
+                             {
+                               _cnt2 := _cnt2 + 1;
+                               _ihome := sprintf('%s%s%d', '/photos/', self.u_name, _cnt2);
+                             }
+                             self.ihome := _ihome;
+                           }
+                           else if (self.wa_type = 'Community')
+                           {
+                             declare state, message, meta, result any;
+                             declare sql_q varchar;
 
-                          _cnt2 := 0;
-                          state := '00000';
+                             _cnt2 := 0;
+                             state := '00000';
 
-                          sql_q:=sprintf('select count(1) from ODS.COMMUNITY.SYS_COMMUNITY_INFO, DB..SYS_USERS  where CI_OWNER=U_ID and U_NAME = ''%s''',self.u_name);
-                          exec(sql_q, state, message, vector(), 0, meta, result);
+                             sql_q := sprintf ('select count(1) from ODS.COMMUNITY.SYS_COMMUNITY_INFO, DB..SYS_USERS  where CI_OWNER=U_ID and U_NAME = ''%s''',self.u_name);
+                             exec(sql_q, state, message, vector(), 0, meta, result);
 
                              if (state <> '00000' )
                                signal (state, 'Community module integrity error '||message);
 
-                          _cnt2 := coalesce(result[0][0],0);
-                          _ihome := sprintf('/community/%s_community_%d', self.u_name, _cnt2);
-                          self.ihome := _ihome;
-                        }
-                        else if (self.wa_type = 'oWiki')
-                        {
-                          _cnt2 := 0;
-                          _ihome := sprintf('/%U/%U', self.u_name, 'wiki');
-                          while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
-                          {
-                            _cnt2 := _cnt2 + 1;
-			    _ihome := sprintf('/%U/wiki/%d', self.u_name, _cnt2);
-                          }
-                          self.ihome := _ihome;
-                        }
-                      }
-		      }
+                             _cnt2 := coalesce(result[0][0],0);
+                             _ihome := sprintf('/community/%s_community_%d', self.u_name, _cnt2);
+                             self.ihome := _ihome;
+                           }
+                           else if (self.wa_type = 'oWiki')
+                           {
+                             _cnt2 := 0;
+                             _ihome := sprintf('/%U/%U', self.u_name, 'wiki');
+                             while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
+                             {
+                               _cnt2 := _cnt2 + 1;
+  		 	                      _ihome := sprintf('/%U/wiki/%d', self.u_name, _cnt2);
+                             }
+                             self.ihome := _ihome;
+                           }
+                         }
+  		                 }
                     ]]>
-		  </v:before-data-bind>
-		   <table  class="ctl_grp" >
-                <vm:instance-settings />
-                <v:after-data-bind>
-                  <![CDATA[
-                    if (self.inst is null)
-                    {
-                      declare ty varchar;
-                      declare ins any;
-                      whenever not found goto ef;
-                      select WAT_TYPE into ty from WA_TYPES where WAT_NAME = self.wa_name;
-                      self.inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
-                      return;
-                      ef:
-                      signal ('22023', 'No application type supplied.');
-                    }
-                  ]]>
-		</v:after-data-bind>
+		                </v:before-data-bind>
+		                <table  class="ctl_grp" >
+                    <vm:instance-settings />
+                    <v:after-data-bind>
+                      <![CDATA[
+                        if (self.inst is null)
+                        {
+                          declare ty varchar;
+                          declare ins any;
+                          whenever not found goto ef;
+                          select WAT_TYPE into ty from WA_TYPES where WAT_NAME = self.wa_name;
+                          self.inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
+                          return;
+                          ef:
+                          signal ('22023', 'No application type supplied.');
+                        }
+                      ]]>
+    		            </v:after-data-bind>
 		<tr><td colspan="3">
 		<span class="fm_ctl_btn">
                 <v:button action="simple" name="cancel1" value="Cancel" >

@@ -571,30 +571,30 @@ function ufProfileCallback(obj) {
       //copyList('pf_homeCountry', 'pf_businessCountry');
 
       // personal
-      fieldUpdate(user, 'mail', 'pf_mail');
-      fieldUpdate(user, 'title', 'pf_title');
-      fieldUpdate(user, 'firstName', 'pf_firstName');
-      fieldUpdate(user, 'lastName', 'pf_lastName');
-      fieldUpdate(user, 'fullName', 'pf_fullName');
+      fieldUpdate(user, 'mail',                   'pf_mail');
+      fieldUpdate(user, 'title',                  'pf_title');
+      fieldUpdate(user, 'firstName',              'pf_firstName');
+      fieldUpdate(user, 'lastName',               'pf_lastName');
+      fieldUpdate(user, 'fullName',               'pf_fullName');
       fieldUpdate(user, 'gender',                 'pf_gender');
       fieldUpdate(user, 'birthdayDay',            'pf_birthdayDay');
       fieldUpdate(user, 'birthdayMonth',          'pf_birthdayMonth');
       fieldUpdate(user, 'birthdayYear',           'pf_birthdayYear');
 
       // contact
-      fieldUpdate(user, 'icq', 'pf_icq');
-      fieldUpdate(user, 'skype', 'pf_skype');
-      fieldUpdate(user, 'yahoo', 'pf_yahoo');
-      fieldUpdate(user, 'aim', 'pf_aim');
-      fieldUpdate(user, 'msn', 'pf_msn');
+      fieldUpdate(user, 'icq',                    'pf_icq');
+      fieldUpdate(user, 'skype',                  'pf_skype');
+      fieldUpdate(user, 'yahoo',                  'pf_yahoo');
+      fieldUpdate(user, 'aim',                    'pf_aim');
+      fieldUpdate(user, 'msn',                    'pf_msn');
 
       // home
-      fieldUpdate(user, 'homeCountry', 'pf_homeCountry');
-      updateState('pf_homeCountry', 'pf_homeState', tagValue(user, 'homeState'));
-      fieldUpdate(user, 'homeCity', 'pf_homeCity');
-      fieldUpdate(user, 'homeCode', 'pf_homeCode');
-      fieldUpdate(user, 'homeAddress1', 'pf_homeAddress1');
-      fieldUpdate(user, 'homeAddress2', 'pf_homeAddress2');
+      fieldUpdate(user, 'homeCountry',            'pf_homeCountry');
+      updateState('pf_homeCountry',               'pf_homeState', tagValue(user, 'homeState'));
+      fieldUpdate(user, 'homeCity',               'pf_homeCity');
+      fieldUpdate(user, 'homeCode',               'pf_homeCode');
+      fieldUpdate(user, 'homeAddress1',           'pf_homeAddress1');
+      fieldUpdate(user, 'homeAddress2',           'pf_homeAddress2');
       fieldUpdate(user, 'homeTimeZone',           'pf_homeTimeZone');
       fieldUpdate(user, 'homeLatitude',           'pf_homeLatitude');
       fieldUpdate(user, 'homeLongitude',          'pf_homeLongitude');
@@ -603,16 +603,16 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
 
       // business
-      fieldUpdate(user, 'businessIndustry', 'pf_businessIndustry');
-      fieldUpdate(user, 'businessOrganization', 'pf_businessOrganization');
+      fieldUpdate(user, 'businessIndustry',       'pf_businessIndustry');
+      fieldUpdate(user, 'businessOrganization',   'pf_businessOrganization');
       fieldUpdate(user, 'businessHomePage',       'pf_businessHomePage');
-      fieldUpdate(user, 'businessJob', 'pf_businessJob');
-      fieldUpdate(user, 'businessCountry', 'pf_businessCountry');
-      updateState('pf_businessCountry', 'pf_businessState', tagValue(user, 'businessState'));
-      fieldUpdate(user, 'businessCity', 'pf_businessCity');
-      fieldUpdate(user, 'businessCode', 'pf_businessCode');
-      fieldUpdate(user, 'businessAddress1', 'pf_businessAddress1');
-      fieldUpdate(user, 'businessAddress2', 'pf_businessAddress2');
+      fieldUpdate(user, 'businessJob',            'pf_businessJob');
+      fieldUpdate(user, 'businessCountry',        'pf_businessCountry');
+      updateState('pf_businessCountry',           'pf_businessState', tagValue(user, 'businessState'));
+      fieldUpdate(user, 'businessCity',           'pf_businessCity');
+      fieldUpdate(user, 'businessCode',           'pf_businessCode');
+      fieldUpdate(user, 'businessAddress1',       'pf_businessAddress1');
+      fieldUpdate(user, 'businessAddress2',       'pf_businessAddress2');
       fieldUpdate(user, 'businessTimeZone',       'pf_businessTimeZone');
       fieldUpdate(user, 'businessLatitude',       'pf_businessLatitude');
       fieldUpdate(user, 'businessLongitude',      'pf_businessLongitude');

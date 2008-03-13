@@ -529,43 +529,43 @@
   </vm:if>
   <vm:if test="(self.v_mode in ('LDAP/add', 'LDAP/edit')) and (self.v_step = '2')">
     <div style="height: 400px; overflow: auto;">
-    <table id="ldap" class="listing" cellspacing="0">
-      <tr class="listing_header_row">
-        <th>LDAP Property</th>
-        <th>User Property</th>
-        <th>Sample Data (based on first record)</th>
-      </tr>
-      <?vsp
-        declare N, M integer;
-        declare data any;
+      <table id="ldap" class="listing" cellspacing="0">
+        <tr class="listing_header_row">
+          <th>LDAP Property</th>
+          <th>User Property</th>
+          <th>Sample Data (based on first record)</th>
+        </tr>
+        <?vsp
+          declare N, M integer;
+          declare data any;
 
           self.v_fields := LDAP..contact_fields ();
-        for (N := 0; N < length (self.v_data); N := N + 2) {
-  	      if (self.v_data [N] = 'entry') {
-  	        data := self.v_data [N+1];
-  	        for (M := 0; M < length (data); M := M + 2) {
-  	  ?>
-  	  <tr>
-  	    <td>
-  		    <?V data[M] ?>
-  		  </td>
-  		  <td class="listing_col" nowrap="1">
-  		    <?vsp
-  		      self.render_select (data[M]);
-  		    ?>
-  		  </td>
-  		  <td>
-  		    <?V substring (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end, 1, 50) ?>
-  		  </td>
-      </tr>
-  	  <?vsp
-            }
-            goto _end;
-  	      }
-        }
-      _end:;
-      ?>
-    </table>
+          for (N := 0; N < length (self.v_data); N := N + 2) {
+    	      if (self.v_data [N] = 'entry') {
+    	        data := self.v_data [N+1];
+    	        for (M := 0; M < length (data); M := M + 2) {
+    	  ?>
+    	  <tr>
+    	    <td>
+    		    <?V data[M] ?>
+    		  </td>
+    		  <td class="listing_col" nowrap="1">
+    		    <?vsp
+    		      self.render_select (data[M]);
+    		    ?>
+    		  </td>
+    		  <td>
+    		    <?V substring (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end, 1, 50) ?>
+    		  </td>
+        </tr>
+    	  <?vsp
+              }
+              goto _end;
+    	      }
+          }
+        _end:;
+        ?>
+      </table>
     </div>
     <div class="new-form-footer">
       <v:button action="simple" value="Save" xhtml_class="form-button">
@@ -579,7 +579,7 @@
             for (N := 0; N < length (params); N := N + 2)
               if (params[N] like 'sel_%') {
                 if (params[N+1] <> 'skip') {
-                self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
+                  self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
                 } else {
                   self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), ''));
                 }

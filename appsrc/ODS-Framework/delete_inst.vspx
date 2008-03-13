@@ -36,10 +36,10 @@
         declare apps, v, i any;
         if (self.iid is not null)
           {
-        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME into
-        self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type from
-        DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
-        self.instance_descr := self.idesc;
+	    select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME into
+	    self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type from
+	    DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
+	    self.instance_descr := self.idesc;
 	    self.ihome := self.inst.wa_home_url();
 	  }
 	v := null;
@@ -130,7 +130,7 @@
                       <![CDATA[
                         declare inst web_app;
                         declare h, id any;
-                        declare freeze varchar;
+			declare freeze varchar;
 
 			if (self.apps is null)
 			  self.apps := vector (self.iid);
@@ -143,22 +143,22 @@
 			    };
                             select WAI_IS_FROZEN, WAI_INST into freeze, inst from DB.DBA.WA_INSTANCE where WAI_ID = iid;
 
-                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
-                        {
-                          self.vc_error_message := 'Application is frozen';
-                          self.vc_is_valid := 0;
+			    if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+			    {
+			      self.vc_error_message := 'Application is frozen';
+			      self.vc_is_valid := 0;
 			      goto done;
-                        }
-                        h := udt_implements_method(inst, 'wa_drop_instance');
-                        declare exit handler for sqlstate '*'
-                        {
-                          self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
-                          self.vc_is_valid := 0;
-                          rollback work;
-                          return;
-                        };
-                        commit work;
-                        id := call (h) (inst);
+			    }
+			    h := udt_implements_method(inst, 'wa_drop_instance');
+			    declare exit handler for sqlstate '*'
+			    {
+			      self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+			      self.vc_is_valid := 0;
+			      rollback work;
+			      return;
+			    };
+			    commit work;
+			    id := call (h) (inst);
 			  }
                         done:;
                         if (self.redir = 'security')

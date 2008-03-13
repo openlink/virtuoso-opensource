@@ -69,7 +69,7 @@ create procedure DB.DBA.ODS_ITEM_PAGE (in par varchar, in fmt varchar, in val va
   if (par = 'inst')
     {
       if (length (val))
-	val := split_and_decode (val)[0];
+        val := split_and_decode (val)[0];
       ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
     }
   else -- item
@@ -131,7 +131,7 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
       signal ('22023', sprintf ('The resource %d doesn''t exists', id));
     };
   id := atoi(ltrim(val, '/'));
-  
+
   if (par = 'uname' or par='inst')
     {
       ret := sprintf (fmt, val);
@@ -224,7 +224,7 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
     '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,
---    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'), 
+--    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'),
     '/ods/index.vsp?uname=%U&utype=%U', vector( 'uname','type'), --this line is related to the new UI. without it will not work correct. Old UI will keep working as expected.
     NULL,
     NULL,
@@ -499,10 +499,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
     null,
     2);
 
--- All rules are processed in the order bellow.
+-- All rules are processed in the order below.
 -- Every rule will be tried and last matching rule will win
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
-    	vector(
+   	vector(
 	  'ods_person_html',
 	  'ods_person_yadis',
 	  'ods_apps_html',

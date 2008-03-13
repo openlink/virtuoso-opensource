@@ -134,85 +134,85 @@ function selectAllCheckboxes (form, btn)
         <vm:login redirect="index.vspx"/>
 
 	<div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
-        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td class="tab_deck">
-                  <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-		    <tr class="navtab_row">
-		      <?vsp
-		      {
-		         declare pg int;
-		         declare btn varchar;
-			 pg := atoi (get_keyword('page', self.vc_event.ve_params, '1'));
-			 btn := case pg
-			 	when 1 then 'user_sset_personal'
-			 	when 2 then 'user_sset_concatc'
-			 	when 3 then 'user_sset_home'
-			 	when 4 then 'user_sset_buss'
-				when 5 then 'user_sset'
-				when 6 then 'web_services_set_button'
-				else '' end;
-		      ?>
-		      <script type="text/javascript">
-			def_btn = '<?V btn ?>';
-		      </script>
+    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+    <tr valign='top'>
+      <td>
+        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+          <tr>
+            <td class="tab_deck">
+              <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
+                <colgroup>
+                  <col/>
+                  <col/>
+                  <col/>
+                  <col/>
+                  <col/>
+                  <col/>
+                </colgroup>
+        		    <tr class="navtab_row">
+        		      <?vsp
+        		      {
+        		         declare pg int;
+        		         declare btn varchar;
+              			 pg := atoi (get_keyword('page', self.vc_event.ve_params, '1'));
+              			 btn := case pg
+              			 	when 1 then 'user_sset_personal'
+              			 	when 2 then 'user_sset_concatc'
+              			 	when 3 then 'user_sset_home'
+              			 	when 4 then 'user_sset_buss'
+              				when 5 then 'user_sset'
+              				when 6 then 'web_services_set_button'
+              				else '' end;
+        		      ?>
+        		      <script type="text/javascript">
+        			      def_btn = '<?V btn ?>';
+        		      </script>
 
-			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
-                          <v:url name="b_url21" 
-                                 value="Personal" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=1')" 
+            			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
+                          <v:url name="b_url21"
+                                 value="Personal"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=1')"
                                  xhtml_class="tab"/>
-                        </td>
-			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" 
+                  </td>
+			            <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>"
                             align="center">
-                          <v:url name="b_url12" 
-                                 value="Contact" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=2')" 
+                          <v:url name="b_url12"
+                                 value="Contact"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=2')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?> initial_hidden"
+			            <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?> initial_hidden"
                             align="center" id="pers_1">
-                          <v:url name="b_url13" 
-                                 value="Home" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=3')" 
+                          <v:url name="b_url13"
+                                 value="Home"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=3')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
-                          <v:url name="b_url14" 
-                                 value="Business" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=4')" 
+			            <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
+                          <v:url name="b_url14"
+                                 value="Business"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=4')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>">
-                          <v:url name="b_url15" 
-                                 value="Security" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=5')" 
+			            <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>">
+                          <v:url name="b_url15"
+                                 value="Security"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=5')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url16" 
-                                 value="Associations &amp; Web Services" 
-                                 format="%s" 
-                                 url="--sprintf('uiedit.vspx?page=6')" 
+			            <td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url16"
+                                 value="Associations &amp; Web Services"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=6')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+			            <td class="<?V case when pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url17"
                                  value="Made"
                                  format="%s"
@@ -232,26 +232,26 @@ function selectAllCheckboxes (form, btn)
                                  url="--sprintf('uiedit.vspx?page=10')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+			            <td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url value="Import"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=8')"
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+			            <td class="<?V case when pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url value="LDAP Servers"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=7')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                  <td class="page_tab_empty" align="center" width="100%">
+                     <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="100%" >
+                          </td>
+                        </tr>
+                     </table>
+                  </td>
 		      <?vsp
 		      }
 		      ?>
@@ -260,34 +260,33 @@ function selectAllCheckboxes (form, btn)
                  <table class="tab_page">
                     <tr>
                       <td valign="top" class="tab_page">
-                        <v:template name="template1" 
-                                    type="simple" 
+                        <v:template name="template1"
+                                    type="simple"
                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params, '1'), '1')">
                           <v:include url="uiedit_personal.vspx"/>
                         </v:template>
-                        <v:template name="template2" 
-                                    type="simple" 
+                        <v:template name="template2"
+                                    type="simple"
                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params),'2')">
                           <v:include url="uiedit_contact.vspx"/>
                         </v:template>
-                        <v:template name="template3" 
-                                    type="simple" 
+                        <v:template name="template3"
+                                    type="simple"
                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '3')">
                           <v:include url="uiedit_home.vspx"/>
                         </v:template>
-                         <v:template name="template4" 
-                                     type="simple" 
+                        <v:template name="template4"
+                                     type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '4')">
                           <v:include url="uiedit_buss.vspx"/>
                         </v:template>
-                         <v:template name="template5" 
-                                     type="simple" 
+                        <v:template name="template5"
+                                     type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '5')">
                           <v:include url="uiedit_pwd.vspx"/>
-
                         </v:template>
-                         <v:template name="template6" 
-                                     type="simple" 
+                        <v:template name="template6"
+                                     type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
                           <v:include url="uiedit_svc.vspx"/>
                         </v:template>

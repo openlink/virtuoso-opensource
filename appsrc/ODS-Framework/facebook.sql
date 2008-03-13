@@ -66,7 +66,7 @@ create type DB.DBA.FacebookRestClient as (
   method profile_getFBML(uid integer) returns any,
   method fbml_refreshImgSrc(_url varchar) returns any,
   method fbml_refreshRefUrl(_url varchar) returns any,
-  method fbml_setRefHandle(_handle varchar,fbml varchar) returns any  
+  method fbml_setRefHandle(_handle varchar,fbml varchar) returns any
 ;
 
 create constructor method FacebookRestClient(
@@ -99,13 +99,13 @@ create method auth_getSession(
     {
        self.session_key := cast(xpath_eval('/auth_getSession_response/session_key',_result) as varchar);
        _user:=cast(xpath_eval('/auth_getSession_response/uid',_result) as integer);
-       
+
        if (cast(xpath_eval('/auth_getSession_response/secret',_result) as varchar) is not null) {
          -- desktop apps have a special secret
          self.secret := cast(xpath_eval('/auth_getSession_response/secret',_result) as varchar);
        }
        return vector(self.session_key,_user);
-    }else            
+    }else
        return null;
 }
 ;
@@ -119,7 +119,7 @@ create method call_method(
 {
   declare _result any;
   declare res_xml varchar;
-  
+
     res_xml := self.post_request(method, params);
 --    dbg_obj_print(res_xml);
     _result:=xtree_doc(res_xml);
@@ -128,13 +128,13 @@ create method call_method(
     if(xpath_eval('/error_response',_result) is not null )
     {
 --       dbg_obj_print(cast(xpath_eval('/error_response/error_code',_result) as varchar));
-       
+
        if(self.debug_mode=1)
        {
           dbg_obj_print('Facebook REST API returns ERROR XML');
           dbg_obj_print(res_xml);
        }
-       
+
        return null;
     }
 
@@ -154,21 +154,21 @@ create method post_request(
 
     params := vector_concat(params,vector('method',method));
     params := vector_concat(params,vector('api_key',self.api_key)); --'ad77de6d743402ddb9f9a52ca9321bd0'
-    
+
     if(method<>'facebook.auth.getSession')
     {
       if(get_keyword('call_id',params,null) is not null)
-         params := vector_concat(params,vector('call_id',cast(msec_time()+1 as varchar))); 
+         params := vector_concat(params,vector('call_id',cast(msec_time()+1 as varchar)));
       else
-         params := vector_concat(params,vector('call_id',cast(msec_time() as varchar))); 
-      
-      
+         params := vector_concat(params,vector('call_id',cast(msec_time() as varchar)));
+
+
       params := vector_concat(params,vector('session_key',self.session_key)); --'a8c8361138addd75ca7dc340-663197781'
-      
-    } 
-    
+
+    }
+
     if (get_keyword('v',params,null) is null) {
-        params := vector_concat(params,vector('v','1.0')); 
+        params := vector_concat(params,vector('v','1.0'));
     }
 
     params := vector_concat(params,vector('sig',self.generate_sig(params, self.secret))); --'e54f374e470893968b6c9457e69c6f7a'
@@ -217,7 +217,7 @@ for DB.DBA.FacebookRestClient
 
     declare params_key any;
     params_key:=vector();
-   
+
     declare i,l integer;
 
     i := 0;
@@ -231,9 +231,9 @@ for DB.DBA.FacebookRestClient
       _val := params_array[i+1];
 --      if (_val is not null)
 --          _val := trim (_val);
-      
+
       params_key:=vector_concat(params_key,vector(_key));
-    
+
       i := i + 2;
     }
     ;
@@ -251,10 +251,10 @@ for DB.DBA.FacebookRestClient
      _val := get_keyword(_key,params_array);
      if (_val is not null)
          _val := trim (cast(_val as varchar));
-     
-     
+
+
      str := str || _key || '=' || _val;
-   
+
      i := i + 1;
    }
    ;
@@ -267,13 +267,13 @@ for DB.DBA.FacebookRestClient
 
 --  /**
 --   * Returns events according to the filters specified.
---   * @param int uid Optional: User associated with events.  
+--   * @param int uid Optional: User associated with events.
 --   *   A null parameter will default to the session user.
 --   * @param array eids Optional: Filter by these event ids.
 --   *   A null parameter will get all events for the user.
---   * @param int start_time Optional: Filter with this UTC as lower bound.  
+--   * @param int start_time Optional: Filter with this UTC as lower bound.
 --   *   A null or zero parameter indicates no lower bound.
---   * @param int end_time Optional: Filter with this UTC as upper bound. 
+--   * @param int end_time Optional: Filter with this UTC as upper bound.
 --   *   A null or zero parameter indicates no upper bound.
 --   * @param string rsvp_status Optional: Only show events where the given uid
 --   *   has this rsvp status.  This only works if you have specified a value for
@@ -288,12 +288,12 @@ create method events_get(
       in end_time integer :=0,
       in rsvp_status varchar :=''
 )
-  for DB.DBA.FacebookRestClient    
+  for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.events.get',
         vector('uid' , uid,
                'eids', eids,
-               'start_time', start_time, 
+               'start_time', start_time,
                'end_time', end_time,
                'rsvp_status', rsvp_status));
  }
@@ -302,7 +302,7 @@ create method events_get(
 create method events_get(
       in uid integer
 )
-  for DB.DBA.FacebookRestClient    
+  for DB.DBA.FacebookRestClient
 {
     return self.events_get( uid,'',0,0,'');
 }
@@ -317,7 +317,7 @@ create method events_get(
 create method events_getMembers(
        in eid integer
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.events.getMembers',vector('eid' , eid));
 }
@@ -333,7 +333,7 @@ for DB.DBA.FacebookRestClient
 create method fql_query(
        in _query varchar
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.fql.query',vector('query' , _query));
 }
@@ -341,7 +341,7 @@ for DB.DBA.FacebookRestClient
 
 create method feed_publishStoryToUser(
               in title        varchar,
-              in body         varchar, 
+              in body         varchar,
               in image_1      varchar :=null,
               in image_1_link varchar :=null,
               in image_2      varchar :=null,
@@ -352,7 +352,7 @@ create method feed_publishStoryToUser(
               in image_4_link varchar :=null,
               in priority     integer :=1
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.feed.publishStoryToUser',
                             vector('title'       ,title,
@@ -373,15 +373,15 @@ create method feed_publishStoryToUser(
               in title        varchar,
               in body         varchar
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.feed_publishStoryToUser(title,body, null,null,null,null,null,null,null,null,1);
 }
 ;
-                                         
+
 create method feed_publishActionOfUser(
               in title        varchar,
-              in body         varchar, 
+              in body         varchar,
               in image_1      varchar :=null,
               in image_1_link varchar :=null,
               in image_2      varchar :=null,
@@ -392,7 +392,7 @@ create method feed_publishActionOfUser(
               in image_4_link varchar :=null,
               in priority     integer :=1
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.feed.publishActionOfUser',
                             vector('title'       ,title,
@@ -413,7 +413,7 @@ create method feed_publishActionOfUser(
               in title        varchar,
               in body         varchar
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.feed_publishActionOfUser(title,body, null,null,null,null,null,null,null,null,1);
 }
@@ -425,14 +425,14 @@ for DB.DBA.FacebookRestClient
 --   * @return array of friends
 --   */
 create method friends_getAppUsers()
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.friends.getAppUsers', vector());
 }
 ;
 --  /**
 --   * Returns groups according to the filters specified.
---   * @param int uid Optional: User associated with groups.  
+--   * @param int uid Optional: User associated with groups.
 --   *  A null parameter will default to the session user.
 --   * @param array gids Optional: group ids to query.
 --   *   A null parameter will get all groups for the user.
@@ -442,7 +442,7 @@ create method groups_get(
        in uid integer,
        in gids any
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.groups.get',vector('uid', uid,'gids',gids));
 }
@@ -451,26 +451,26 @@ for DB.DBA.FacebookRestClient
 --  /**
 --   * Returns the membership list of a group
 --   * @param int gid : Group id
---   * @return assoc array of four membership lists, with keys 
+--   * @return assoc array of four membership lists, with keys
 --   *  'members', 'admins', 'officers', and 'not_replied'
 --   */
 create method groups_getMembers(
          in gid integer
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.groups.getMembers',vector('gid', gid));
 }
 ;
 --  /**
 --   * Returns the outstanding notifications for the session user.
---   * @return assoc array of 
---   *  notification count objects for 'messages', 'pokes' and 'shares', 
+--   * @return assoc array of
+--   *  notification count objects for 'messages', 'pokes' and 'shares',
 --   *  a uid list of 'friend_requests', a gid list of 'group_invites',
 --   *  and an eid list of 'event_invites'
 --   */
 create method notifications_get()
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
    return self.call_method('facebook.notifications.get', vector());
  }
@@ -484,7 +484,7 @@ create method notifications_send(
        in notification varchar,
        in email varchar :=null
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.notifications.send',vector('to_ids',to_ids, 'notification', notification, 'email', email));
 }
@@ -507,7 +507,7 @@ create method notifications_sendRequest(
        in content varchar,
        in image varchar,
        in invite integer)
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.notifications.sendRequest',
                              vector('to_ids', to_ids, 'type', type, 'content', content, 'image', image, 'invite', invite));
@@ -516,10 +516,10 @@ for DB.DBA.FacebookRestClient
 --  /**
 --   * Returns photos according to the filters specified.
 --   * @param int subj_id Optional: Filter by uid of user tagged in the photos.
---   * @param int aid Optional: Filter by an album, as returned by 
+--   * @param int aid Optional: Filter by an album, as returned by
 --   *  photos_getAlbums.
---   * @param array pids Optional: Restrict to a list of pids 
---   * Note that at least one of these parameters needs to be specified, or an 
+--   * @param array pids Optional: Restrict to a list of pids
+--   * Note that at least one of these parameters needs to be specified, or an
 --   * error is returned.
 --   * @return array of photo objects.
 --   */
@@ -528,7 +528,7 @@ create method photos_get(
          in aid integer,
          in pids any
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.photos.get',vector('subj_id', subj_id, 'aid', aid, 'pids', pids));
 }
@@ -546,7 +546,7 @@ create method photos_getAlbums(
               in uid integer,
               in aids integer
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.photos.getAlbums', vector('uid' , uid, 'aids' , aids));
 }
@@ -561,7 +561,7 @@ for DB.DBA.FacebookRestClient
 create method photos_getTags(
        in pids any
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.photos.getTags', vector('pids' , pids));
 }
@@ -569,7 +569,7 @@ for DB.DBA.FacebookRestClient
 
 --  /**
 --   * Returns the requested info fields for the requested set of users
---   * @param array uids an array of user ids 
+--   * @param array uids an array of user ids
 --   * @param array fields an array of strings describing the info fields desired
 --   * @return array of users
 --   */
@@ -577,15 +577,15 @@ create method users_getInfo(
               in uids any,
               in fields any
 )
-for DB.DBA.FacebookRestClient    
+for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.users.getInfo', vector('uids' , uids, 'fields' , fields));
 }
 ;
 
---  /** 
---   * Returns whether or not the user corresponding to the current session object has the app installed 
---   * @return boolean 
+--  /**
+--   * Returns whether or not the user corresponding to the current session object has the app installed
+--   * @return boolean
 --   */
 create method users_isAppAdded()
 for DB.DBA.FacebookRestClient
@@ -609,8 +609,8 @@ for DB.DBA.FacebookRestClient
          return self.added;
       }
 
-    }  
-    
+    }
+
     return 0;
 }
 ;
@@ -622,7 +622,7 @@ for DB.DBA.FacebookRestClient
 --   * @param array uids2: array of ids (id_A, id_B,...) of SAME length X
 --   * @return array of uid pairs with bool, true if pair are friends, e.g.
 --   *   array( 0 => array('uid1' => id_1, 'uid2' => id_A, 'are_friends' => 1),
---   *          1 => array('uid1' => id_2, 'uid2' => id_B, 'are_friends' => 0) 
+--   *          1 => array('uid1' => id_2, 'uid2' => id_B, 'are_friends' => 0)
 --   *         ...)
 --   */
 create method friends_areFriends(
@@ -633,7 +633,7 @@ for DB.DBA.FacebookRestClient
     return self.call_method('facebook.friends.areFriends',
         vector('uids1',uids1, 'uids2', uids2));
 }
-;  
+;
 --  /**
 --   * Returns the friends of the current session user.
 --   * @return array of friends
@@ -652,7 +652,7 @@ for DB.DBA.FacebookRestClient
       if(_xmle is not null)
       {
          _xmle:=xpath_eval('/friends_get_response/uid',_xmle,0);
-         
+
          if(length(_xmle)>0)
             friends_num:=length(_xmle);
          friends_arr:=vector();
@@ -662,19 +662,19 @@ for DB.DBA.FacebookRestClient
            friends_arr:=vector_concat(friends_arr,vector(cast(_xmle[i] as varchar)));
            i := i + 1;
          }
-         
+
          if(length(friends_arr)>0)
             return friends_arr;
-      }    
+      }
     }
-      
+
      return self.call_method('facebook.friends.get', vector());
 }
 ;
 
 --  /**
 --   * Sets the FBML for the profile of the user attached to this session
---   * @param   string   markup     The FBML that describes the profile presence of this app for the user 
+--   * @param   string   markup     The FBML that describes the profile presence of this app for the user
 --   * @return  array    A list of strings describing any compile errors for the submitted FBML
 --   */
 create method profile_setFBML(
@@ -709,7 +709,7 @@ create method fbml_refreshRefUrl(
        in _url varchar
 )
 for DB.DBA.FacebookRestClient
-{  
+{
     return self.call_method('facebook.fbml.refreshRefUrl', vector('url', _url));
 }
 ;
@@ -719,7 +719,7 @@ create method fbml_setRefHandle(
        in fbml varchar
 )
 for DB.DBA.FacebookRestClient
-{  
+{
     return self.call_method('facebook.fbml.setRefHandle', vector('handle' , _handle, 'fbml' , fbml));
 }
 ;
@@ -735,7 +735,7 @@ create type DB.DBA.Facebook as (
   _user        integer,
   _params      any,
   _lines       any
-  
+
 )
 self as ref
   constructor method Facebook(api_key varchar,secret varchar,_params any, _lines any),
@@ -791,30 +791,30 @@ for DB.DBA.Facebook
     declare expires_str varchar;
     if(expires is null)
        expires:=now();
-    
+
     if(expires='0')
        expires:=dateadd ('hour', 168, now());
-       
+
     if(isstring(expires) and expires='0')
          expires:=dateadd ('day', 15, now());
     else expires:=now();
 
-    
+
     expires_str := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, expires)));
-    
+
     declare _COOKIE any;
     _COOKIE:=_get_cookie_vec (self._lines);
-    
-    if (self.in_fb_canvas()=0 AND 
+
+    if (self.in_fb_canvas()=0 AND
         (get_keyword(self.api_key || '_user',_COOKIE, null) is null OR get_keyword(self.api_key || '_user',_COOKIE, null) <> cast(_user as varchar))
        )
     {
       declare cookies any;
-      
+
       cookies := vector();
       cookies := vector_concat(cookies,vector('user',_user));
       cookies := vector_concat(cookies,vector('session_key',session_key));
-      
+
       declare sig any;
       sig := self.api_client.generate_sig(cookies, self.secret);
 
@@ -829,14 +829,14 @@ for DB.DBA.Facebook
         _val := cookies[i+1];
         if (_val is not null)
             _val := trim (cast(_val as varchar));
-        
+
         cookie_str := sprintf ('Set-Cookie: %s=%s;%s path=/\r\n', _key,_val, expires_str);
         http_header (cookie_str);
-      
+
         i := i + 2;
       }
 
-      
+
       cookie_str := sprintf ('Set-Cookie: %s=%s;%s path=/\r\n', self.api_key,sig, expires_str);
       http_header (cookie_str);
     }
@@ -854,9 +854,9 @@ for DB.DBA.Facebook
     if (self.fb_params is  null) {
        self.fb_params := self.get_valid_fb_params(self._params, 48*3600, 'fb_sig');
     }
-    
+
     declare _cookies,_session any;
-    
+
     _cookies := self.get_valid_fb_params(_get_cookie_vec(self._lines), null, self.api_key);
 
 
@@ -864,18 +864,18 @@ for DB.DBA.Facebook
           and
           _cookies is not null)
     {
-     self.fb_params:= _cookies;  
-      
+     self.fb_params:= _cookies;
+
   --       self := udt_set(self,'fb_params',_cookies);
     }
-    
+
     if(get_keyword('auth_token',self._params,null) is not null)
        _session := self.do_get_session(get_keyword('auth_token',self._params)); --do_get_session sets self._user along the session
     else
        _session:=null;
 
-    
-    
+
+
     if (self.fb_params is not null) {
       -- If we got any fb_params passed in at all, then either:
       --  - they included an fb_user / fb_session_key, which we should assume to be correct
@@ -887,10 +887,10 @@ for DB.DBA.Facebook
       declare session_key varchar;
       declare _user integer;
       declare expires datetime;
-      
-      
+
+
 --      dbg_obj_print('self.fb_params',self.fb_params);
-      
+
       _user       := coalesce( self._user,get_keyword('user',self.fb_params,null)); --if do_get_session have already succeeded to set _user no need to look for it in fb_params
       session_key := coalesce(_session,get_keyword('session_key',self.fb_params, ''));
       expires     := get_keyword('expires',self.fb_params, now());
@@ -924,13 +924,13 @@ for DB.DBA.Facebook
     declare prefix varchar;
     declare prefix_len integer;
     declare fb_params any;
-    
+
     prefix := namespace || '_';
     prefix_len := length(prefix);
 
 
     fb_params := vector();
-    
+
     declare i,l integer;
     i := 0;
     l := length (params);
@@ -948,7 +948,7 @@ for DB.DBA.Facebook
 
       i := i + 2;
     }
-    
+
 --    if (timeout is not null and
 --        (get_keyword('time',fb_params) is null or now() - get_keyword('time',fb_params) > timeout)
 --       ) {
@@ -958,7 +958,7 @@ for DB.DBA.Facebook
     if (get_keyword(namespace,params) is null OR self.verify_signature(fb_params, get_keyword(namespace,params))=0) {
       return vector();
     }
-    
+
     if(length(fb_params)=0)
        return null;
     else
@@ -996,41 +996,41 @@ for DB.DBA.Facebook
 {
 
     declare auth_res any;
-    
+
     declare exit handler for sqlstate '*' { if(self.api_client.debug_mode=1)
                                             {
                                                dbg_obj_print('--REST CLIENT ERR--');
-                                            dbg_obj_print(__SQL_STATE);
-                                            dbg_obj_print(__SQL_MESSAGE);
-                                            dbg_obj_print('-------------------');
+                                               dbg_obj_print(__SQL_STATE);
+                                               dbg_obj_print(__SQL_MESSAGE);
+                                               dbg_obj_print('-------------------');
                                             };
                                             return null;
                                           };
     auth_res:='';
     auth_res:=self.api_client.auth_getSession(auth_token);
-    
+
     if(auth_res is not null)
     {
 --      if( auth_res[1] is not null and auth_res[0] is not null and locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
       if( auth_res[1] is not null and auth_res[0] is not null)
       {
-          
+
           self._user:=auth_res[1];
 --          if(not locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
 --          {
 --            dbg_obj_print('2',self.api_client.auth_getSession(auth_token));
 --            dbg_obj_print(auth_res[0]);
 --            dbg_obj_print(split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||cast(auth_res[1] as varchar));
---            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||cast(auth_res[1] as varchar);            
---            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||split_and_decode(auth_res[0],0,'\0\0-')[1];            
+--            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||cast(auth_res[1] as varchar);
+--            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||split_and_decode(auth_res[0],0,'\0\0-')[1];
 --          }
-      return auth_res[0];
-          
+          return auth_res[0];
+
       }
 --      else self.redirect(self.get_login_url(self.current_url(), self.in_frame(),0)); --this action is due to facebook issue(facebook site generates invalid auth token in some cases)
     }
     return '';
- 
+
 
 }
 ;
@@ -1068,7 +1068,7 @@ for DB.DBA.Facebook
     add_url:=get_facebook_url()||'/add.php?api_key='||self.api_key;
     if(_next is not null)
        add_url:=add_url||'&next=' || sprintf('%U',_next);
-    
+
     return add_url;
  }
 ;
@@ -1088,7 +1088,7 @@ for DB.DBA.Facebook
        login_url:=login_url||'&canvas';
     if(skipcookie=1)
        login_url:=login_url||'&skipcookie';
-       
+
     return login_url;
 }
 ;
@@ -1099,7 +1099,7 @@ create method require_login(
 for DB.DBA.Facebook
 {
     declare _user any;
- 
+
     if(relog=1)
     {
       if(self._user > 0)
@@ -1107,9 +1107,9 @@ for DB.DBA.Facebook
          self._user:=0;
          self.api_client:=udt_set(self.api_client,'session_key','');
       }
-      
+
       self.redirect(self.get_login_url(self.current_url(), self.in_frame(),1));
-    
+
     }
     _user:=null;
     _user:=self.get_loggedin_user();
@@ -1126,7 +1126,7 @@ for DB.DBA.Facebook
 {
 
     if(get_keyword('in_canvas',self.fb_params,null) is not null
-       and 
+       and
        get_keyword('in_iframe',self.fb_params,null) is not null)
     {
     return 1;
@@ -1149,8 +1149,7 @@ for DB.DBA.Facebook
     _sid   :=get_keyword('sid',self._params,null);
     _realm := get_keyword('realm',self._params,null);
     _http_query_str := get_keyword('_http_query_str',self._params,null);
-      
---    dbg_obj_print('_http_query_str in UDT',_http_query_str);
+
 
     if(_http_query_str is not null and length(_http_query_str)>0)
     {
@@ -1161,7 +1160,7 @@ for DB.DBA.Facebook
 --      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?sid='||_sid||'&realm='||coalesce(_realm,'wa');
       return '?sid='||_sid||'&realm='||coalesce(_realm,'wa');
     }
-    
+
 --    return 'http://' || http_request_header(self._lines,'Host') || http_path();
 
     return '';
@@ -1196,7 +1195,7 @@ _get_cookie_vec (in lines any)
       _key := trim (cast(cookie_vec[i] as varchar));
       _val := cookie_vec[i+1];
       if (_val is not null)
-        _val := trim (cast(_val as varchar));
+          _val := trim (cast(_val as varchar));
       aset (cookie_vec, i, _key);
       aset (cookie_vec, i + 1, _val);
       i := i + 2;
@@ -1209,16 +1208,16 @@ create procedure
 _get_ods_fb_settings (out fb_settings any)
 {
    fb_settings := null;
-   
+
    declare dba_options,fb_dba_options any;
-   
+
    dba_options:='';
    declare exit handler for sqlstate '*' {return 0;};
-     
+
    dba_options:= (select US_KEY from WA_USER_SVC where US_U_ID =0 and US_SVC='FBKey');
 --   select deserialize (blob_to_string(U_OPTS)) into dba_options from SYS_USERS where U_NAME = 'dba';
 
-   
+
 
    if(length(dba_options) >0)
    {
@@ -1226,7 +1225,7 @@ _get_ods_fb_settings (out fb_settings any)
      fb_dba_options:=replace(fb_dba_options,'\n','&');
      fb_dba_options:=split_and_decode(fb_dba_options);
    };
-   
+
    if(length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
    {
       fb_settings:=vector(trim(get_keyword('key',fb_dba_options)),trim(get_keyword('secret',fb_dba_options)));
@@ -1246,22 +1245,22 @@ create procedure valid_abid_by_fbid (
 {
     declare valid_id_arr any;
     valid_id_arr:=null;
-    
+
     declare exit handler for not found{valid_id_arr:=null;};
     declare qry,state, msg, maxrows, metas, rset any;
-    
+
     rset := null;
     maxrows := 0;
     state := '00000';
     msg := '';
 
     declare validate_by_fields any;
-    
+
     if(validation_arr is null)
        validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = logged_odsuser_id), vector());
     else
       validate_by_fields:=validation_arr;
-    
+
     declare full_name,first_name,last_name varchar;
     full_name  := trim(xpath_eval('string(name)',fbf_data));
     first_name := trim(xpath_eval('string(first_name)',fbf_data));
@@ -1292,42 +1291,42 @@ create procedure valid_abid_by_fbid (
              validation_sql:=validation_sql||sprintf(' AND (P_LAST_NAME=''%s'' OR P_MIDDLE_NAME=''%s'') ',last_name,last_name);
           if(_key='P_LAST_NAME'  and length(last_name)>0 )
              validation_sql:=validation_sql||sprintf(' AND P_LAST_NAME=''%s'' ',last_name);
-          
+
           _tmpval:=trim(xpath_eval('string(sex)',fbf_data));
           if(_key='P_GENDER' and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_GENDER=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(hometown_location/city)',fbf_data));
           if(_key='P_H_CITY'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_H_CITY=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(hometown_location/state)',fbf_data));
           if(_key='P_H_STATE'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_H_STATE=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(hometown_location/country)',fbf_data));
           if(_key='P_H_COUNTRY'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_H_COUNTRY=''%s'' ',_tmpval);
           _tmpval:=trim(xpath_eval('string(hometown_location/zip)',fbf_data));
           if(_key='P_H_CODE'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_H_CODE=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/city)',fbf_data));
           if(_key='P_B_CITY'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_B_CITY=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/state)',fbf_data));
           if(_key='P_B_STATE'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_B_STATE=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/country)',fbf_data));
           if(_key='P_B_COUNTRY'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_B_COUNTRY=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/company_name)',fbf_data));
           if(_key='P_B_ORGANIZATION'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_B_ORGANIZATION=''%s'' ',_tmpval);
-          
+
           _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/position)',fbf_data));
           if(_key='P_B_JOB'  and _tmpval<>'')
              validation_sql:=validation_sql||sprintf(' AND P_B_JOB=''%s'' ',_tmpval);
@@ -1342,7 +1341,7 @@ create procedure valid_abid_by_fbid (
              if(_arr is not null and length(_arr)>0)
              {
                 _arr[0]:=split_and_decode(_arr[0],0,'\0\0 ');
-             
+
              if(length(_arr)=1)
                 _date_str:=sprintf('stringdate(''1970-%d-%s'')',_get_monhtbyname(trim(_arr[0][0])),trim(_arr[0][1]));
              else
@@ -1353,15 +1352,15 @@ create procedure valid_abid_by_fbid (
                validation_sql:=validation_sql||sprintf(' AND P_BIRTHDAY=%s ',_date_str);
              }
           }
-             
+
         }
 
       }
-  
+
    }
 
     if(validation_sql is null or validation_sql='')
-    {   
+    {
        qry:=sprintf('select P_ID from AB.WA.PERSONS '||
                     'where P_DOMAIN_ID=%d '||
                     '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
@@ -1374,9 +1373,9 @@ create procedure valid_abid_by_fbid (
        qry:=sprintf('select P_ID from AB.WA.PERSONS '||
                     'where P_DOMAIN_ID=%d %s',
                     ab_domain_id,validation_sql);
-    
+
     }
-    
+
 
 
     exec (qry, state, msg, vector(), maxrows, metas, rset);
@@ -1392,7 +1391,7 @@ create procedure valid_abid_by_fbid (
 
 
     return valid_id_arr;
-    
+
 }
 ;
 
@@ -1444,17 +1443,17 @@ declare _res any;
   declare i integer;
 
   if(isarray(_res) and length(_res)>0)
-  { 
+  {
     declare ff_ids varchar;
     ff_ids:='';
     i:=0;
     while(i<length(_res))
     {
-     if(i<(length(_res)-1)) 
+     if(i<(length(_res)-1))
         ff_ids:=ff_ids||_res[i]||',';
      else
         ff_ids:=ff_ids||_res[i];
-        
+
      i:=i+1;
     }
 
@@ -1476,16 +1475,16 @@ declare _res any;
         full_name  := trim(xpath_eval('string(name)',_res[i]));
         first_name := trim(xpath_eval('string(first_name)',_res[i]));
         last_name  := trim(xpath_eval('string(last_name)',_res[i]));
-        
+
         if(ab_domain_id>0)
         {
-          
+
           declare valid_abid_arr any;
           valid_abid_arr:=valid_abid_by_fbid(ods_uid,_res[i],ab_domain_id);
-          
+
           declare _p_id integer;
-              _p_id:=-1;
-          
+          _p_id:=-1;
+
           if(valid_abid_arr is not null)
           _p_id:=valid_abid_arr[0];
 
@@ -1498,7 +1497,7 @@ declare _res any;
 
             goto _skip_parseandupdate;
           }
-          
+
           declare _col, _val any;
           declare _tmpval varchar;
           _col    :=vector();
@@ -1516,7 +1515,7 @@ declare _res any;
              _col:=vector_concat(_col,vector('P_FIRST_NAME'));
              _val:=vector_concat(_val,vector(first_name));
           }
-          
+
           if(last_name<>'')
           {
              _col:=vector_concat(_col,vector('P_LAST_NAME'));
@@ -1529,7 +1528,7 @@ declare _res any;
              _col:=vector_concat(_col,vector('P_GENDER'));
              _val:=vector_concat(_val,vector(_tmpval));
           }
-          
+
           _tmpval:=trim(xpath_eval('string(birthday)',_res[i]));
           if(_tmpval<>'')
           {
@@ -1547,7 +1546,7 @@ declare _res any;
 
              _val:=vector_concat(_val,vector(_date));
           }
-          
+
           _tmpval:=trim(xpath_eval('string(hometown_location/city)',_res[i]));
           if(_tmpval<>'')
           {
@@ -1613,7 +1612,7 @@ declare _res any;
              _col:=vector_concat(_col,vector('P_B_JOB'));
              _val:=vector_concat(_val,vector(_tmpval));
           }
-          
+
           if(trim(coalesce(full_name,first_name||' '||last_name))<>'')
           {
             if(_p_id=-1)
@@ -1628,30 +1627,30 @@ declare _res any;
                  _res_stat[1]:=_res_stat[1]+1;
                }
             }
-            
+
             if(_p_id<>-1 and _update_odsab=1)
             {
                AB.WA.contact_update3 (_p_id,ab_domain_id,_col,_val,'');
                _res_stat[2]:=_res_stat[2]+1;
             }
-            
+
           }
 
         }
-_skip_parseandupdate:;  
+_skip_parseandupdate:;
 
         i := i + 1;
-        
+
       }
     }
-  }      
+  }
 
 
 _res_stat[3]:=i;
 
 if(_res_stat[1]=0)
    _res_stat[0]:=1;
-   
+
 return _res_stat;
 }
 ;
@@ -1660,7 +1659,7 @@ create procedure _get_monhtbyname(in monthname varchar)
 {
   declare months_arr any;
   months_arr:=vector('January','February','March','April','May','June','July','August','September','October','November','December');
-  
+
   return position(monthname, months_arr);
 
 }
@@ -1702,22 +1701,22 @@ declare _res any;
   declare i integer;
 
   if(isarray(_res) and length(_res)>0)
-  { 
+  {
     declare ff_ids varchar;
     ff_ids:='';
     i:=0;
     while(i<length(_res))
     {
-     if(i<(length(_res)-1)) 
+     if(i<(length(_res)-1))
         ff_ids:=ff_ids||_res[i]||',';
      else
         ff_ids:=ff_ids||_res[i];
-        
+
      i:=i+1;
     }
 
     _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history,hometown_location,timezone');
-                                                 
+
   }else
     return 'REST API error';
 
@@ -1738,14 +1737,14 @@ declare _res any;
         full_name  := trim(xpath_eval('string(name)',_res[i]));
         first_name := trim(xpath_eval('string(first_name)',_res[i]));
         last_name  := trim(xpath_eval('string(last_name)',_res[i]));
-        
+
         if(ab_domain_id>0)
         {
-          
+
           declare addressbook_cid_arr any;
           declare addressbook_cid_sqlstr varchar;
           addressbook_cid_sqlstr:='';
-          
+
           addressbook_cid_arr:=valid_abid_by_fbid(ods_uid,_res[i],ab_domain_id);
 
 --          dbg_obj_print(addressbook_cid_arr);
@@ -1757,23 +1756,23 @@ declare _res any;
               declare m integer;
               declare _tmp_str varchar;
               _tmp_str:='';
-              
+
               for(m:=0; m<length(addressbook_cid_arr); m:=m+1)
               {
                   if(m=0)
                      _tmp_str:=sprintf('%d',addressbook_cid_arr[m]);
                   else
                      _tmp_str:=sprintf('%s,%d',_tmp_str,addressbook_cid_arr[m]);
-                  
+
               }
                 addressbook_cid_sqlstr:=sprintf(' in  (%s)',_tmp_str);
-            
+
             }
-          
+
           }
-          
+
           declare qry,state, msg, maxrows, metas, rset any;
-          
+
           rset := null;
           maxrows := 0;
           state := '00000';
@@ -1798,12 +1797,12 @@ declare _res any;
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)
           {
-            if(i>0) http ('\r\n,', _res_str);  
+            if(i>0) http ('\r\n,', _res_str);
             if(simple=1)
             http ('{fb_id:'||cast(uid as varchar)||',', _res_str);
             else
             http ('{_name:"'||full_name||'",fb_id:'||cast(uid as varchar)||',fb_href:"http://www.facebook.com/profile.php?id='||cast(uid as varchar)||'",odsab_instid:'||cast(ab_domain_id as varchar)||',ods_contacts:new Array(', _res_str);
-            
+
             declare k integer;
             k:=0;
             if(simple)
@@ -1811,28 +1810,28 @@ declare _res any;
              http ('ods_cid:'||cast(rset[k][0] as varchar)||'}', _res_str);
             }else
             {
-            while (k < length(rset))
-            {
+             while (k < length(rset))
+             {
 	             http ('{ods_cid:'||cast(rset[k][0] as varchar)||',ods_name:"'||cast(rset[k][1] as varchar)||'",ods_href:"'||sprintf('/dataspace/%U/addressbook/%U/%d',WA_APP_GET_OWNER(rset[k][2]),replace (AB.WA.domain_name (rset[k][2]), '+', '%2B'),rset[k][3])||'"}', _res_str);
-	            if(k < length(rset)-1)
-	               http (',', _res_str);  
-	            
-	            k:=k+1;
-	          }
-            http (')}', _res_str);
+	             if(k < length(rset)-1)
+	                http (',', _res_str);
+
+	             k:=k+1;
+	           }
+             http (')}', _res_str);
             }
 
 	        }
         }
         i := i + 1;
-        
+
       }
     }
 
    http (')', _res_str);
 
-  }      
-   
+  }
+
 return string_output_string(_res_str);
 }
 ;
@@ -1849,10 +1848,10 @@ create procedure DB.DBA.fbf_rdf_load_fql (
   declare url,  q, own  varchar;
 
   SPARQL CLEAR GRAPH <graph_iri>;
-  
-  
+
+
   own := fb_uid;
-  
+
   q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
 --  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
     ret := fb_obj.api_client.fql_query(q);
@@ -1865,7 +1864,7 @@ create procedure DB.DBA.fbf_rdf_load_fql (
 --   dbg_printf ('%s', xd);
    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   }
-  
+
   q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album WHERE owner = %s', own);
   ret := fb_obj.api_client.fql_query(q);
   if(ret is not null)
@@ -1900,7 +1899,7 @@ create procedure DB.DBA.fbf_rdf_load_fql (
 --      dbg_printf ('%s', xd);
         DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
      };
-     
+
      q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
      ret := fb_obj.api_client.fql_query(q);
 --     dbg_printf ('%s', ret);

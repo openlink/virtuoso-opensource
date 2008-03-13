@@ -43,8 +43,8 @@
     <v:variable name="sne_id" type="int" default="0" />
     <v:variable name="notags" type="integer" default="0"/>
     <v:local-variable name="lvsn">
-    <v:before-data-bind>
-      <![CDATA[
+      <v:before-data-bind>
+        <![CDATA[
 
           if (self.fname is null)
             self.fname := self.u_name;
@@ -57,44 +57,44 @@
 	  if (0)
 	    {
               declare tmp_uid varchar;
-        declare exit handler for not found
-        {
-            signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
-        };
+	      declare exit handler for not found
+	      {
+	        signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
+	      };
 	      nf_user:
 	      select U_NAME, U_ID into tmp_uid, self.ufid
 	        from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK = self.fname;
 	      self.fname := tmp_uid;
 	    }
 
-	if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
-	  {
-	    insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
-	  }
+	  if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
+	    {
+	      insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
+	    }
 
-        self.visb := WA_USER_VISIBILITY(self.fname);
+          self.visb := WA_USER_VISIBILITY(self.fname);
 
-        if ( self.ufid = self.u_id)
-          self.isowner := 1; --user is the owner of the page.
+          if (self.ufid = self.u_id)
+            self.isowner := 1; --user is the owner of the page.
 
-        self.arr := WA_GET_USER_INFO (self.u_id, self.ufid, self.visb, self.isowner);
+	  self.arr := WA_GET_USER_INFO (self.u_id, self.ufid, self.visb, self.isowner);
           self.is_org := self.arr[49];
-      ]]>
-    </v:before-data-bind>
+        ]]>
+      </v:before-data-bind>
       <v:after-data-bind>
         <![CDATA[
 
-	declare id any;
-	if (self.isowner)
-	  id := self.u_name;
-	else
-	  id := self.fname;
-	self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
+          declare id any;
+          if (self.isowner)
+            id := self.u_name;
+          else
+            id := self.fname;
+          self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
 
-	if (not length (self.friends_name))
-	  self.friends_name := id;
+          if (not length (self.friends_name))
+            self.friends_name := id;
 
-        select sne_id into self.sne_id from sn_entity where sne_name = id;
+          select sne_id into self.sne_id from sn_entity where sne_name = id;
         ]]>
       </v:after-data-bind>
     </v:local-variable>
@@ -159,12 +159,12 @@
 
   <xsl:template match="vm:add-to-friends">
       <?vsp if (not (self.isowner = 1) and
-                not exists (select 1 
-                              from SN_FRENDS 
-                              where FROM_U_NAME = self.u_name and 
-                                    TO_U_NAME = self.fname) and 
-                not exists (select 1 from SN_FRENDS 
-                              where FROM_U_NAME = self.fname and 
+                not exists (select 1
+                              from SN_FRENDS
+                              where FROM_U_NAME = self.u_name and
+                                    TO_U_NAME = self.fname) and
+                not exists (select 1 from SN_FRENDS
+                              where FROM_U_NAME = self.fname and
                                     TO_U_NAME = self.u_name)) {
       ?>
 	<v:label name="laddtof" value="Do you know this person?" render-only="1"/>
@@ -189,12 +189,12 @@
   </xsl:template>
 
   <xsl:template match="vm:user-details">
-   <v:template name="user_details" type="simple" enabled="1">
-    <?vsp
+    <v:template name="user_details" type="simple" enabled="1">
+<?vsp
     {
       declare pg any;
       pg := atoi(get_keyword('page', control.vc_page.vc_event.ve_params, '1'));
-    ?>
+?>
             <table cellpadding='10' cellspacing='0' border='0' width='100%' id="user_details" class="tab_deck">
               <tr>
                 <td class="tab_deck">
@@ -209,30 +209,30 @@
                     <tr class="navtab_row">
                       <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url21" value="--case when self.is_org then 'Organization' else 'Personal' end"
-                               format="%s" 
-                               url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)" 
+                               format="%s"
+                               url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)"
                                xhtml_class="tab"/>
                       </td>
                       <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url12" 
-                               value="Contact" 
-                               format="%s" 
-                               url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)" 
+                        <v:url name="b_url12"
+                               value="Contact"
+                               format="%s"
+                               url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)"
                                xhtml_class="tab"/>
                       </td>
                       <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url13" 
-                               value="Home" 
-                               format="%s" 
-                               url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)" 
+                        <v:url name="b_url13"
+                               value="Home"
+                               format="%s"
+                               url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)"
 			       xhtml_class="tab"
 			       enabled="--equ (self.is_org, 0)"/>
                       </td>
                       <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url14" 
-                               value="Business" 
-                               format="%s" 
-                               url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)" 
+                        <v:url name="b_url14"
+                               value="Business"
+                               format="%s"
+                               url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)"
                                xhtml_class="tab"/>
                         </td>
                       <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
@@ -245,7 +245,7 @@
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
                             <tr>
-                              <td width="100%" >
+                              <td width="100%">
                               </td>
                             </tr>
                           </table>
@@ -329,8 +329,8 @@
 					  ?>
 					  <a href="<?V Y ?>" target="_blank"><?V Y ?></a>
 					  <?vsp
-					   }
-					  }
+				       }
+				    }
 				  ?>
 			      </td>
                             </tr>
@@ -343,10 +343,10 @@
                             </v:template>
                             <v:template name="usummary" type="simple" enabled="--case when coalesce(self.arr[33],'') <> '' then 1 else 0 end">
                             <?vsp
-                            
+
                             ?>
                             <tr>
-                              <th><v:label name="1sum" value="Summary:"/></th>
+                              <th>  <v:label name="1sum" value="Summary:"/></th>
                               <td><pre><v:label name="lsum1" value="--coalesce(self.arr[33],'')"/></pre></td>
                             </tr>
                             </v:template>
@@ -703,7 +703,7 @@
    <?vsp
     }
    ?>
-   </v:template>
+    </v:template>
   </xsl:template>
 
 
@@ -784,9 +784,9 @@
 
   <xsl:template match="vm:user-friends">
     <div class="contacts_ctr">
-	  <h2>Contacts</h2>
+      <h2>Contacts</h2>
 	<ul>
-	  <?vsp
+<?vsp
 	  {
 	  declare sneid, for_user any;
 	  sneid := self.sne_id;
@@ -855,39 +855,39 @@
 	sql="sprintf ('\n' ||
 	   'select _LAT,_LNG,_KEY_VAL,EXCERPT \n' ||
 	   'from ( \n' ||
-	   'select \n' ||
-     '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
-     '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
-	   '  WAUI_U_ID as _KEY_VAL, \n' ||
-	   '  WA_SEARCH_USER_GET_EXCERPT_HTML (\n' ||
-	   '    %d, \n' ||
-	   '    vector (), \n' ||
-	   '    WAUI_U_ID, \n' ||
-	   '    '''', \n' ||
-	   '    WAUI_FULL_NAME, \n' ||
-	   '    U_NAME, \n' ||
-	   '    WAUI_PHOTO_URL, \n' ||
-	   '    U_E_MAIL) as EXCERPT \n' ||
-	   'from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
-	   'where \n' ||
-	   ' WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID ' ||
-           ' and (exists (select 1 from (\n' ||
-           '   select 1 as x from DB.DBA.sn_related, DB.DBA.sn_entity sne_from, DB.DBA.sn_entity sne_to \n' ||
-           '     where \n' ||
-           '       snr_to = sne_to.sne_id and snr_from = sne_from.sne_id and \n' ||
-           '       sne_from.sne_name = U_NAME and sne_to.sne_name = ''%S'' \n' ||
-           '   union all \n' ||
-           '   select 1 as x from DB.DBA.sn_related, DB.DBA.sn_entity sne_from, DB.DBA.sn_entity sne_to \n' ||
-           '     where \n' ||
-           '       snr_to = sne_to.sne_id and snr_from = sne_from.sne_id and \n' ||
-           '       sne_to.sne_name = U_NAME and sne_from.sne_name = ''%S'' \n' ||
-     '       and sne_to.sne_name <> sne_from.sne_name\n' ||
-     '   union all \n' ||
-     '   select 1 as x from WA_USER_TAG where contains (\n' ||
-     '      WAUTG_TAGS, \n' ||
-     '      sprintf (''[__lang &quot;x-any&quot; __enc &quot;UTF-8&quot;] (%S) AND (&quot;^UID%%d&quot;) AND (&quot;^TID%%d&quot;)'', \n' ||
-     '          http_nobody_uid (), U_ID) \n' ||
-     '      ) \n' ||
+	   '      select \n' ||
+     '        case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
+     '        case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
+	   '        WAUI_U_ID as _KEY_VAL, \n' ||
+	   '        WA_SEARCH_USER_GET_EXCERPT_HTML (\n' ||
+	   '          %d, \n' ||
+	   '          vector (), \n' ||
+	   '          WAUI_U_ID, \n' ||
+	   '          '''', \n' ||
+	   '          WAUI_FULL_NAME, \n' ||
+	   '          U_NAME, \n' ||
+	   '          WAUI_PHOTO_URL, \n' ||
+	   '          U_E_MAIL) as EXCERPT \n' ||
+	   '      from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
+	   '      where \n' ||
+	   '         WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID ' ||
+     '         and (exists (select 1 from (\n' ||
+     '              select 1 as x from DB.DBA.sn_related, DB.DBA.sn_entity sne_from, DB.DBA.sn_entity sne_to \n' ||
+     '                where \n' ||
+     '                  snr_to = sne_to.sne_id and snr_from = sne_from.sne_id and \n' ||
+     '                  sne_from.sne_name = U_NAME and sne_to.sne_name = ''%S'' \n' ||
+     '              union all \n' ||
+     '              select 1 as x from DB.DBA.sn_related, DB.DBA.sn_entity sne_from, DB.DBA.sn_entity sne_to \n' ||
+     '                where \n' ||
+     '                  snr_to = sne_to.sne_id and snr_from = sne_from.sne_id and \n' ||
+     '                  sne_to.sne_name = U_NAME and sne_from.sne_name = ''%S'' \n' ||
+     '                  and sne_to.sne_name <> sne_from.sne_name\n' ||
+     '              union all \n' ||
+     '              select 1 as x from WA_USER_TAG where contains (\n' ||
+     '                 WAUTG_TAGS, \n' ||
+     '                 sprintf (''[__lang &quot;x-any&quot; __enc &quot;UTF-8&quot;] (%S) AND (&quot;^UID%%d&quot;) AND (&quot;^TID%%d&quot;)'', \n' ||
+     '                     http_nobody_uid (), U_ID) \n' ||
+     '                 ) \n' ||
      '             ) x) or WAUI_U_ID = %d)\n' ||
      '     ) _tmp_tbl\n' ||
      '     where _LAT is not null and _LNG is not null \n',

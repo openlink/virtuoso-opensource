@@ -22,9 +22,9 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
-    xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:dc="http://purl.org/dc/elements/1.1/">
     <sql:header xmlns:sql='urn:schemas-openlink-com:xml-sql'>
 	<sql:param name=":uid">-1</sql:param>
@@ -45,42 +45,42 @@
             xmlelement ('http://xmlns.com/foaf/0.1/:aimChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,12),1), WAUI_AIM,'')),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:yahooChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,13),1), WAUI_YAHOO,'')),
 
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:img', 
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:img',
 	         xmlattributes (WA_XPATH_EXPAND_URL (WAUI_PHOTO_URL) as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	       ),
 	    null),
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),  
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:birthday', substring (datestring(coalesce (WAUI_BIRTHDAY, now())), 6, 5)),
 	    null ),
-	    
+
 	    either ( length (WA_USER_TAG_GET (u_name)),
-	    ( 
-	       select xmlagg (xmlelement ('http://xmlns.com/foaf/0.1/:interest', 
-	         xmlelement ('http://www.w3.org/1999/02/22-rdf-syntax-ns#:Description', 
+	    (
+	       select xmlagg (xmlelement ('http://xmlns.com/foaf/0.1/:interest',
+	         xmlelement ('http://www.w3.org/1999/02/22-rdf-syntax-ns#:Description',
 	           xmlattributes (U_TAG as 'http://www.w3.org/2000/01/rdf-schema#:label'))
-		)) 
-	       from WA_USER_TAG_GET_P (uname) (U_TAG varchar) P where uname = u_name 
-	    )  
+		))
+	       from WA_USER_TAG_GET_P (uname) (U_TAG varchar) P where uname = u_name
+	    )
 	    ,
 	    null),
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20), 1), 
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20), 1),
 	    xmlelement ('http://xmlns.com/foaf/0.1/:organization', WAUI_BORG),
 	    null),
-	    
-	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 18), 1), 
-	    xmlelement ('http://xmlns.com/foaf/0.1/:phone', 
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 18), 1),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:phone',
 		   xmlattributes (
-		   'tel:' || case 
-		      when length (WAUI_HPHONE) then WAUI_HPHONE 
-		      when length (WAUI_HMOBILE) then WAUI_HMOBILE 
-		      else  WAUI_BPHONE end 
+		   'tel:' || case
+		      when length (WAUI_HPHONE) then WAUI_HPHONE
+		      when length (WAUI_HMOBILE) then WAUI_HMOBILE
+		      else  WAUI_BPHONE end
 		      as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	        ),
 	    null),
-	    
+
 	    xmlelement ('http://xmlns.com/foaf/0.1/:homepage',
 	    xmlattributes ( either( equ(WA_OPTION_IS_PUBLIC(u_name,7),1), WAUI_WEBPAGE,'') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 	    from sys_users, WA_USER_INFO where u_id = WAUI_U_ID
@@ -93,7 +93,7 @@
 			    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)),
 			    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name))
 			    ))
-			    from WA_SEARCH_FOAF (uid, uids) (u_name varchar, u_full_name varchar) P 
+			    from WA_SEARCH_FOAF (uid, uids) (u_name varchar, u_full_name varchar) P
 			      where uid = :uid and uids = :uids
 	]]></sql:sqlx>
   </foaf:Person>

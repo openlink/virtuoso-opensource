@@ -28,12 +28,12 @@ function toggleControl (ctr1, val, ctr2)
 
   if (ctr1 && ctr1.value == val)
     {
-      ctr2.disabled = true; 
-    } 
+      ctr2.disabled = true;
+    }
   else
     {
-      ctr2.disabled = false; 
-    }  
+      ctr2.disabled = false;
+    }
 }
 
 function setSelectLists (val, form, pref)
@@ -47,8 +47,8 @@ function setSelectLists (val, form, pref)
       if (contr != null && contr.type == "select-one" && contr.name.indexOf (pref) != -1)
         {
           contr.value = val;
-        }   
-    } 
+        }
+    }
 }
 
 function submitenter(fld, btn, e)
@@ -58,11 +58,11 @@ function submitenter(fld, btn, e)
   if (fld == null || fld.form == null)
     return true;
 
-  if (window.event) 
+  if (window.event)
     keycode = window.event.keyCode;
-  else if (e) 
+  else if (e)
     keycode = e.which;
-  else 
+  else
     return true;
 
   if (keycode == 13)
@@ -89,46 +89,46 @@ function checkPageLeave (form)
       if (form.elements[i] != null)
         {
           var ctrl = form.elements[i];
- 
+
           if(typeof(ctrl.type)!='undefined')
           {
-          if (ctrl.type.indexOf ('select') != -1)
+            if (ctrl.type.indexOf ('select') != -1)
             {
-              var j, selections = 0;
-    	  for (j = 0; j < ctrl.length; j ++)
-    	    {
-                  var opt = ctrl.options[j];
-    	      if (opt.defaultSelected == true)
-    		selections ++;
-                  if (opt.defaultSelected != opt.selected)
-                    {
-                      dirty = true;
-                    }
+                var j, selections = 0;
+    	          for (j = 0; j < ctrl.length; j ++)
+    	            {
+                     var opt = ctrl.options[j];
+    	               if (opt.defaultSelected == true)
+    		                   selections ++;
+                     if (opt.defaultSelected != opt.selected)
+                            {
+                              dirty = true;
+                            }
+                  }
+    	          if (selections == 0 && ctrl.selectedIndex == 0)
+    	            dirty = false;
+    	          if (dirty == true)
+    	          {
+    	            //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
+    	            break;
+    	          }
             }
-    	  if (selections == 0 && ctrl.selectedIndex == 0)
-    	    dirty = false;
-    	  if (dirty == true)
-    	    {
-    	      //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
-    	      break;
-    	    }
-            }
-          else if ((ctrl.type.indexOf ('text') != -1 || ctrl.type == 'password') && ctrl.defaultValue != ctrl.value)
-            {
-    	      //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
-              dirty = true;
-       	      break;
-            }
-          else if ((ctrl.type == 'checkbox' || ctrl.type == 'radio') &&
-    	  ctrl.defaultChecked != ctrl.checked
-    	)
-            {
-    	  //alert (ctrl.name+' value=['+ctrl.checked+'] default=['+ctrl.defaultChecked+']');
-              dirty = true;
-              break;
-            }
+            else if ((ctrl.type.indexOf ('text') != -1 || ctrl.type == 'password') && ctrl.defaultValue != ctrl.value)
+              {
+    	        //alert (ctrl.name+' value=['+ctrl.value+'] default=['+ctrl.defaultValue+']');
+                dirty = true;
+       	        break;
+              }
+            else if ((ctrl.type == 'checkbox' || ctrl.type == 'radio') &&
+    	                ctrl.defaultChecked != ctrl.checked
+    	              )
+              {
+    	           //alert (ctrl.name+' value=['+ctrl.checked+'] default=['+ctrl.defaultChecked+']');
+                dirty = true;
+                break;
+              }
+          }
         }
-    }
     }
 
   dirty_force_global=document.getElementById('dirty_force_global');
@@ -142,7 +142,7 @@ function checkPageLeave (form)
     dirty_force_global = false ;
     dirty = true;
   };
-    
+
   if (dirty == true)
     {
       ret =
@@ -198,7 +198,7 @@ function submenuShowHide ()
     {
       submenu_div.style.display='none';
       document.getElementById('myods_cell').className=' ';
-    } 
+    }
 }
 
 function divShowHide ( divname, div_action)
@@ -212,7 +212,7 @@ function divShowHide ( divname, div_action)
   else
     {
       _div.style.display='none';
-    } 
+    }
 }
 
 function divs_switch ( showhide, divname_a, divname_b)
@@ -253,8 +253,8 @@ function callSparql (graph, qry_id, res_id, rdf_gem)
   var format = 'text/html';
   var callback = function(data,xmlhttp)
      {
-       div.innerHTML = data; 
-       gem.innerHTML = '<a href="' + endpoint + 'query='+ encodeURIComponent (qry) + '&format=' + 
+       div.innerHTML = data;
+       gem.innerHTML = '<a href="' + endpoint + 'query='+ encodeURIComponent (qry) + '&format=' +
 	  encodeURIComponent('application/sparql-results+xml') +
           '&default-graph-uri='+encodeURIComponent (graph) +
           '"><img src="images/orange-icon-16.gif" border="0" hspace="3"> XML</a>';
@@ -263,7 +263,7 @@ function callSparql (graph, qry_id, res_id, rdf_gem)
      {
        var body = 'query='+encodeURIComponent (qry)+'&format='+ encodeURIComponent('text/html') +
           '&default-graph-uri='+encodeURIComponent (graph);
-       return body; 
+       return body;
      }
   OAT.Ajax.errorRef = function(status,response,xmlhttp)
   {

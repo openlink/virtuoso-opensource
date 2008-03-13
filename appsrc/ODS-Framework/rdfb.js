@@ -38,7 +38,7 @@ var Search = {
 		var q = $v("search_query");
 		if (!q) { return; }
 		var dsn = [];
-		
+
 		/*
 		for (var i=0;i<rdfb.store.items.length;i++) {
 			var item = rdfb.store.items[i];
@@ -46,13 +46,13 @@ var Search = {
 			if (item.href.match(/^http/i)) { dsn.push(item.href); }
 		}
 		*/
-				
+
 		if (dsn.length || defaultGraph) { dsn.unshift(defaultGraph); }
-		for (var i=0;i<dsn.length;i++) { 
+		for (var i=0;i<dsn.length;i++) {
 			dsn[i] = (i ? " FROM NAMED " : " FROM ") + "<"+dsn[i]+"> ";
 		}
 		var text = Search.template.replace(/{dsn}/,dsn.join("")).replace(/{query}/,q);
-		rdfb.store.clear(); 
+		rdfb.store.clear();
 		rdfb.store.removeAllFilters();
 		rdfb.store.addSPARQL(text);
 	}
@@ -69,7 +69,7 @@ var IO = {
 		};
 		OAT.WebDav.saveDialog(options);
 	},
-	
+
 	doLoadWQX:function(filename,ignoreCredentials) {
 		var callback = function(xmlDoc) { rdfb.fromXML(xmlDoc); }
 		var o = {
@@ -118,16 +118,16 @@ function RDFBInit() {
 	/* xslt path */
 	OAT.Preferences.xsltPath = '/ods/oat/xslt/'
 	$("options_xslt").value = OAT.Preferences.xsltPath;
-	
+
 	/* ajax http errors */
 	$("options_http").checked = (OAT.Preferences.httpError == 1 ? true : false);
 	OAT.AJAX.httpError = OAT.Preferences.httpError;
 	OAT.Dom.attach("options_http","change",function(){OAT.AJAX.httpError = ($("options_http").checked ? 1 : 0);});
 
 OAT.Dereference = {
-	go:function(url,callback,optObj) 
+	go:function(url,callback,optObj)
 	     {
-	       if (url.match(/^http/i)) 
+	       if (url.match(/^http/i))
 		 { /* Virtuoso proxy: */
 		   var r = url.match(/^http:\/\/([^@\/]+@)?(.*)/);
 		   var user = (r[1] ? r[1].substring(0,r[1].length-1) : false);
@@ -138,26 +138,26 @@ OAT.Dereference = {
 		   else
 		     {
 		       encoded = "/proxy?url="+encoded+"&force=rdf";
-		       if (user) 
-			 { 
-			   encoded += "&login="+encodeURIComponent(user); 
+		       if (user)
+			 {
+			   encoded += "&login="+encodeURIComponent(user);
 			 }
-		       if (url.match(/\.n3$/)) 
-			 { 
-			   encoded += "&output-format=n3"; 
+		       if (url.match(/\.n3$/))
+			 {
+			   encoded += "&output-format=n3";
 			 }
 		     }
-		 } 
-	       else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) 
+		 }
+	       else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i))
 		 { /* Virtuoso proxy: */
 		   var encoded = encodeURIComponent(url);
 		   encoded = "/proxy?url="+encoded+"&force=rdf";
-		   if (url.match(/\.n3$/)) 
-		     { 
-		       encoded += "&output-format=n3"; 
+		   if (url.match(/\.n3$/))
+		     {
+		       encoded += "&output-format=n3";
 		     }
-		 } 
-	       else 
+		 }
+	       else
 		 {
 		   var encoded = url;
 		 }
@@ -199,13 +199,13 @@ OAT.Dereference = {
 			path:"/DAV/home/"+http_cred.user+"/"
 		}
 		OAT.WebDav.init(o);
-		// also look for default graph 
+		// also look for default graph
 		var ref = function(xmlDoc) {
 			var nodes = OAT.Xml.getElementsByLocalName(xmlDoc.documentElement,"DefaultGraph");
 			if (nodes && nodes.length) { defaultGraph = OAT.Xml.textValue(nodes[0]); }
 		}
 		OAT.AJAX.GET("/sparql?ini",null,ref,{type:OAT.AJAX.TYPE_XML,onerror:function(){}});
-	} 
+	}
 	dialogs.connection.cancel = function() {
 		dialogs.connection.hide();
 		// init with default options
@@ -242,14 +242,14 @@ OAT.Dereference = {
 	rdfb.addTab("images","Images",{});
 	rdfb.addTab("tagcloud","Tag Cloud",{});
 	rdfb.addTab("fresnel","Fresnel",{defaultURL:""});
-	
+
 	/* search */
 	OAT.Event.attach("search_btn","click",Search.go);
 	OAT.Event.attach("search_query","keypress",function(event) {
 		if (event.keyCode == 13) { Search.go(); }
 	});
-	
-	
+
+
 	/* history */
 	if (window.location.href.match(/history/)) {
 		var hs = OAT.Dom.create("select");
@@ -266,7 +266,7 @@ OAT.Dereference = {
 			if (hs.value != "") { rdfb.store.url.value = hs.value; }
 		});
 	}
-	
+
 	var historyRef = function() {
 		var ch = $("options_history");
 		if (ch.checked) {
@@ -280,7 +280,7 @@ OAT.Dereference = {
 		}
 	}
 	OAT.Event.attach("options_history","change",historyRef);
-	
+
 	/* load */
         /*
 	var obj = OAT.Dom.uriParams();

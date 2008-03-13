@@ -219,7 +219,7 @@ create procedure associate
 
   if (length (session_type) = 0)
     {
-  http (sprintf ('mac_key:%s\x0A', ss_key_data), ses);
+      http (sprintf ('mac_key:%s\x0A', ss_key_data), ses);
     }
   else if (session_type = 'DH-SHA1')
     {
@@ -246,7 +246,7 @@ create procedure associate
       if (decode_base64 (sec)[0] > 127)
 	sha1_sec := xenc_sha1_digest ('\x0'||decode_base64 (sec));
       else
-      sha1_sec := xenc_sha1_digest (decode_base64 (sec));
+	sha1_sec := xenc_sha1_digest (decode_base64 (sec));
 --      dbg_obj_print ('sha1_sec=',sha1_sec);
 
       bin_key := substring (decode_base64 (ss_key_data), 1, 20);
@@ -255,8 +255,11 @@ create procedure associate
 --      dbg_obj_print (ss_key, bin_key);
       xenc_key_RAW_read (ss_key, bin_key);
       update SERVER_SESSIONS set SS_KEY = bin_key, SS_KEY_TYPE = 'RAW' where SS_HANDLE = assoc_handle;
-      --dbg_obj_print (sha1_sec, bin_key);
+--      dbg_obj_print (sha1_sec, bin_key);
       enc_sec := xenc_xor (sha1_sec, bin_key);
+--      dbg_obj_print ('enc_sec=',enc_sec);
+--      dbg_obj_print ('bin_key=',bin_key);
+--      dbg_obj_print ('================');
 
       if (decode_base64 (pub)[0] > 127)
 	{
@@ -285,7 +288,7 @@ create procedure associate
 	  else
             g := aref(decode_base64(dh_gen), 0);
 	  xenc_key_DH_create (dh_key, g, p);
-    }
+	}
       pub := xenc_DH_get_params (dh_key, 3);
       sec := xenc_DH_compute_key (dh_key, dh_consumer_public);
 --      dbg_obj_print ('================');
@@ -293,7 +296,7 @@ create procedure associate
 
       if (decode_base64 (sec)[0] > 127)
 	sha256_sec := xenc_sha256_digest ('\x0'||decode_base64 (sec));
-  else
+      else
 	sha256_sec := xenc_sha256_digest (decode_base64 (sec));
 --      dbg_obj_print ('sha1_sec=',sha1_sec);
 
@@ -448,15 +451,15 @@ create procedure checkid_immediate
 
 	  if (not xenc_key_exists (ss_key))
 	    {
-	  xenc_key_3DES_rand_create (ss_key);
+	      xenc_key_3DES_rand_create (ss_key);
 	    }
 	  ss_key_data := xenc_key_serialize (ss_key);
 	  --set_user_id ('dba');
 	  if (not exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
 	    {
-	  insert into SERVER_SESSIONS (SS_HANDLE, SS_KEY_NAME, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
-	      values (assoc_handle, ss_key, ss_key_data, '3DES', dateadd ('hour', 1, now()));
-	}
+	      insert into SERVER_SESSIONS (SS_HANDLE, SS_KEY_NAME, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+		  values (assoc_handle, ss_key, ss_key_data, '3DES', dateadd ('hour', 1, now()));
+	    }
 	}
 
       rhf := WS.WS.PARSE_URI (return_to);
@@ -511,13 +514,13 @@ create procedure checkid_immediate
 
 
       if (user <> 'OpenID')
-      set_user_id ('OpenID');
+        set_user_id ('OpenID');
 
 --      dbg_obj_print (ss_key, string_output_string (ses));
       if (algo = 'HMAC-SHA256')
 	signature := xenc_hmac_sha256_digest (string_output_string (ses), ss_key);
       else
-      signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
+	signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
 --      dbg_obj_print (signature);
       if (length (assoc_handle) = 0)
 	assoc_handle := '';
@@ -679,7 +682,7 @@ create procedure check_authentication
   if (algo = 'HMAC-SHA256')
     signature := xenc_hmac_sha256_digest (string_output_string (ses), ss_key);
   else
-  signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
+    signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
 
   if (signature = sig)
     http ('mode:id_res\x0Ais_valid:true\x0A');
