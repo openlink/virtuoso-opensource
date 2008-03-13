@@ -1261,25 +1261,33 @@ AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
 
 if test "x$with_im" != "xno"
 then
-    AC_MSG_CHECKING([if ImageMagick lib usability])
+    AC_PATH_PROG(IM_CONFIG, Wand-config, notfound, ["$with_im/bin:$PATH"])
+
+    if test "x$IM_CONFIG" = "xnotfound"
+    then
+       AC_MSG_WARN([The ImageMagick plugin will not be build])
+       with_im=no
+    fi
+fi
+
+if test "x$with_im" != "xno"
+then
+    AC_MSG_CHECKING([ImageMagick library usability])
+
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
-    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-    case "$with_im" in
-	yes) 
-	   IM_CFLAGS=""
-	   IM_LDFLAGS="`Magick-config --libs`"
-	   ;;
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-	*) 
-	   IM_CFLAGS="-I$with_im/include"
-	   IM_LDFLAGS="-L$with_im/lib `$with_im/bin/Magick-config --libs`"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib" 
-	   export LD_LIBRARY_PATH
-	   ;;
-    esac
-    CPPFLAGS="$CPPFLAGS $IM_CFLAGS" 
-    LIBS="$LIBS $IM_LDFLAGS"
+    IM_CPPFLAGS=`"$IM_CONFIG" --cppflags`
+    IM_LDFLAGS=`"$IM_CONFIG" --ldflags`
+    IM_LIBS=`"$IM_CONFIG" --libs`
+
+    CPPFLAGS="$CPPFLAGS $IM_CPPFLAGS" 
+    LIBS="$LIBS $IM_LDFLAGS $IM_LIBS"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib" 
+    export LD_LIBRARY_PATH
+
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -1294,20 +1302,23 @@ main ()
   return 0;  
 }],
 [
- AC_MSG_RESULT(good)
+  AC_MSG_RESULT(good)
 ],
 [
- AC_MSG_RESULT(bad)
- with_im="no"
+  AC_MSG_RESULT(bad)
+  with_im="no"
+  AC_MSG_WARN([The ImageMagick plugin will not be build])
 ])
+
     LIBS="$save_LIBS"
     CPPFLAGS="$save_CPPFLAGS"
-    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
-    export LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
 fi
+
 AM_CONDITIONAL(WITH_IM, test "x$with_im" != "xno" )
-AC_SUBST(IM_CFLAGS)
+AC_SUBST(IM_CPPFLAGS)
 AC_SUBST(IM_LDFLAGS)
+AC_SUBST(IM_LIBS)
 
 
 ##########################################################################
