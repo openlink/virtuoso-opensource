@@ -3097,6 +3097,26 @@ create procedure AB.WA.import_vcard (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.import_title (
+  in title varchar)
+{
+  declare M integer;
+  declare V any;
+
+  V := vector ('Mr', 'Mrs', 'Dr', 'Ms', 'Sir');
+  for (M := 0; M < length (V); M := M + 1)
+  {
+    if (lcase (title) like (lcase (V[M])|| '%'))
+    {
+      return V[M];
+    }
+  }
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_foaf (
   inout domain_id integer,
   inout content any,
@@ -3270,6 +3290,10 @@ create procedure AB.WA.import_foaf (
             {
               tmp2 := replace (tmp2, 'mailto:', '');
             }
+        if (tmp = 'P_TITLE')
+        {
+          tmp2 := AB.WA.import_title (tmp2);
+        }
             if (tmp <> '')
             {
               pFields := vector_concat (pFields, vector (tmp));
@@ -3490,6 +3514,10 @@ create procedure AB.WA.import_csv (
                    tmp2 := AB.WA.dt_reformat (tmp2);
                  }
                }
+              if (tmp = 'P_TITLE')
+              {
+                tmp2 := AB.WA.import_title (tmp2);
+              }
               if (tmp <> '')
               {
                  pFields := vector_concat (pFields, vector (tmp));

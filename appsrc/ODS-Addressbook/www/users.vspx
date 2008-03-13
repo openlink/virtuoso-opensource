@@ -47,7 +47,7 @@
     <![CDATA[
       if (columnName = '')
         return;
-      self.ds.vc_reset();
+      self.ds_users.vc_reset ();
       if (self.v_order = columnName) {
         self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
       } else {
@@ -137,7 +137,8 @@
           </v:on-post>
         </v:button>
       </div>
-      <v:data-source name="dsrc" expression-type="sql" nrows="--AB.WA.settings_rows(AB.WA.settings(self.account_id))" initial-offset="0">
+
+      <v:data-source name="dsrc_users" expression-type="sql" nrows="0" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
             declare user_sql, group_sql varchar;
@@ -152,12 +153,14 @@
             self.v_mask := replace(self.v_mask, '%%', '%');
 
             group_sql := '';
-            if (self.v_mode = 's') {
+            if (self.v_mode = 's')
+            {
               user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where upper(U_NAME) like upper(\'%s\') and G_GRANTEE_ID = %d and G_GRANTER_ID = U_ID', self.v_mask, self.account_id);
             } else {
               user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6) and (U_ID<>%d))', self.v_mask, self.account_id);
             }
-            if (user_sql = '') {
+            if (user_sql = '')
+            {
               control.ds_sql := group_sql;
             } else if (group_sql = '') {
               control.ds_sql := user_sql;
@@ -165,12 +168,18 @@
               control.ds_sql := concat('select U_TYPE, U_NAME, U_FULL_NAME from (', user_sql, ' union ' , group_sql, ') x ');
             }
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+            control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>
+        <v:after-data-bind>
+          control.ds_make_statistic ();
+        </v:after-data-bind>
       </v:data-source>
-      <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
-        <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+
+      <v:data-set name="ds_users" data-source="self.dsrc_users" scrollable="1">
+
+        <v:template name="ds_users_header" type="simple" name-to-remove="table" set-to-remove="bottom">
           <table id="users" class="grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
@@ -202,17 +211,9 @@
           </table>
         </v:template>
 
-        <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+        <v:template name="ds_users_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
-          <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-            <table>
-              <tr align="center">
-                <?vsp http(sprintf('<td colspan="%d">No records</td>', either(equ(self.v_mode,''),4,3))); ?>
-              </tr>
-            </table>
-          </v:template>
-
-          <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+          <v:template name="ds_users_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
               <tr>
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
@@ -254,12 +255,12 @@
 
         </v:template>
 
-        <v:template type="simple" name-to-remove="table" set-to-remove="top">
+        <v:template name="ds_users_footer" type="simple" name-to-remove="table" set-to-remove="top">
           <table>
-            <tr align="center">
-              <?vsp http(sprintf('<td colspan="%d">', either(equ(self.v_mode,''),4,3))); ?>
-                <vm:ds-navigation data-set="ds"/>
-              <?vsp http('</td>'); ?>
+            <tr>
+              <td align="center" colspan="<?V case when self.v_mode = '' then '4' else '3' end ?>">
+                <vm:ds-navigation data-set="ds_users"/>
+              </td>
             </tr>
           </table>
         </v:template>

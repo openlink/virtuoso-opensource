@@ -238,16 +238,18 @@
     &lt;?vsp
       {
         declare n_start, n_end, n_total integer;
+        declare ds vspx_data_set;
 
-        if (isnull (control.ds_data_source))
+        ds := self.vc_find_descendant_control ('<xsl:value-of select="@data-set" />');
+        if (isnull (ds.ds_data_source))
         {
-          n_total := control.ds_rows_total;
-          n_start := control.ds_rows_offs + 1;
-          n_end   := n_start + control.ds_nrows - 1;
+          n_total := ds.ds_rows_total;
+          n_start := ds.ds_rows_offs + 1;
+          n_end   := n_start + ds.ds_nrows - 1;
         } else {
-          n_total := control.ds_data_source.ds_total_rows;
-          n_start := control.ds_data_source.ds_rows_offs + 1;
-          n_end   := n_start + control.ds_data_source.ds_rows_fetched - 1;
+          n_total := ds.ds_data_source.ds_total_rows;
+          n_start := ds.ds_data_source.ds_rows_offs + 1;
+          n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
         }
         if (n_end > n_total)
           n_end := n_total;
@@ -266,6 +268,7 @@
 
         if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
         {
+          if (n_total)
           http (' | ');
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;

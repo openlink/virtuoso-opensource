@@ -417,7 +417,8 @@ create procedure contact_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
     if (not DB.DBA.is_empty_or_null (yahoo))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
-    if (not DB.DBA.is_empty_or_null (birthday)) {
+  		if (not DB.DBA.is_empty_or_null (birthday))
+  		{
       temp_iri := iri || '#event';
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring (coalesce (birthday, now())), 6, 5));
       DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), bio_iri ('Birth'));
