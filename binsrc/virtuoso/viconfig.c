@@ -562,7 +562,7 @@ cfg_setup (void)
     c_error_log_level = LOG_NOTICE;
 
   if (cfg_getlong (pconfig, section, "Syslog", &c_syslog) == -1)
-    c_syslog = 1;
+    c_syslog = 0;
 
   if (c_file_extend < DP_INSERT_RESERVE + 5)
     c_file_extend = DP_INSERT_RESERVE + 5;
