@@ -993,3 +993,22 @@ DB.DBA.LOAD_TUTNW_ONTOLOGY_FROM_DAV()
 
 drop procedure DB.DBA.LOAD_TUTNW_ONTOLOGY_FROM_DAV
 ;
+
+create procedure DB.DBA.LOAD_TUTNW_ONTOLOGY_FROM_DAV2()
+{
+  declare urihost varchar;
+  sparql base <http://demo.openlinksw.com/schemas/tutorial/northwind#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/tutorial/rdfview/rd_v_1/rd_v_1.owl")
+   into graph <http://demo.openlinksw.com/schemas/TutorialNorthwindOntology/1.0/>;
+  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  if (urihost = 'demo.openlinksw.com')
+  {
+    DB.DBA.VHOST_REMOVE (lpath=>'/tutorial/northwind#');
+    DB.DBA.VHOST_DEFINE (lpath=>'/tutorial/northwind#', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/rd_v_1.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+  }
+}
+;
+
+--DB.DBA.LOAD_TUTNW_ONTOLOGY_FROM_DAV2();
+
+drop procedure DB.DBA.LOAD_TUTNW_ONTOLOGY_FROM_DAV2
+;
