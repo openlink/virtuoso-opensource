@@ -582,9 +582,9 @@ SQL_FILES_1		+= \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl \
+	$(srcdir)/phrasematch.sql \
 	$(srcdir)/hosting.sql
 
-#	$(top_srcdir)/binsrc/tags/phrasematch.sql
 
 SQL_FILES_AUTO		= \
 	$(srcdir)/autoexec.sql
