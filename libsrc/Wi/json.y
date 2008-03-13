@@ -49,7 +49,6 @@ int json_line;
 %token ARR_END
 %token COLON
 %token COMMA
-%token LEXICAL_ERROR
 
 %token <box> STRING
 %token <box> NUMBER
@@ -69,7 +68,9 @@ int json_line;
 
 %%
 
-jsondoc	: object { json_tree = $$; }
+jsondoc
+	: object { json_tree = $1; }
+	| array { json_tree = $1; }
 	;
 
 object	: OBJ_BEGIN members_opt OBJ_END { 

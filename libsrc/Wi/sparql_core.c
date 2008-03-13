@@ -374,9 +374,9 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int
 	{
 	case '\\':
           {
-	    const char *bs_src		= "abfnrtv\\\'\"uU";
-	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\"\0\0";
-            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\6\012";
+	    const char *bs_src		= "abfnrtv/\\\'\"uU";
+	    const char *bs_trans	= "\a\b\f\n\r\t\v/\\\'\"\0\0";
+            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
 	    const char *hit = strchr (bs_src, src_tail[1]);
 	    char bs_len, bs_tran;
 	    const char *nextchr;

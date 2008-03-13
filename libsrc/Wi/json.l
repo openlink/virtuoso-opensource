@@ -55,30 +55,30 @@ HEX             ([0-9A-Fa-f])
 <INITIAL>"]"	{ return ARR_END; } 
 <INITIAL>":"	{ return COLON; }
 <INITIAL>","	{ return COMMA; }
-<INITIAL>"\""	{ BEGIN(STRLIT); }
+<INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
-<INITIAL>"\""[^\\\"\n\r]*"\"" 	{ 
+<INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{ 
                    jsonyylval.box = t_box_dv_short_nchars (jsonyytext+1, strlen (jsonyytext)-2);
 		   return STRING;
 		}
 
-<STRLIT>"\"" 	{ 
+<STRLIT>[^\\\"\n\r\t]*"\"" 	{ 
 		   BEGIN(INITIAL); 
                    jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
 		   return STRING;
 		}
 
-<STRLIT>"\\"([\\\"nrt]|(u{HEX}{HEX}{HEX}{HEX})) { yymore (); }
-<STRLIT>[^\\\"\n]* { yymore (); }
-<STRLIT>[\n]	{ json_line++; }
-
+<STRLIT>"\\"([\\\"bfnrt/]|(u{HEX}{HEX}{HEX}{HEX})) { yymore (); }
+<STRLIT>[^\\\"\n\r\t]* { yymore (); }
+<STRLIT>[\n\r]	{ jsonyyerror ("line break is not allowed in JSON strings"); }
+<STRLIT>"\t"	{ jsonyyerror ("tab character is not allowed in JSON strings"); }
 <STRLIT>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
 
 <INITIAL>true	{ return TRUE_L; }
 <INITIAL>false	{ return FALSE_L; }
 <INITIAL>null	{ return NULL_L; }
 
-<INITIAL>[0-9]+	{
+<INITIAL>"-"?(([1-9][0-9]*)|"0")	{
 		  caddr_t err = NULL;
                   int64 n = safe_atoi (jsonyytext, &err);
 		  if (err)
@@ -89,8 +89,8 @@ HEX             ([0-9A-Fa-f])
                   jsonyylval.box = t_box_num_and_zero (n); 
 		  return NUMBER;
 		}
-<INITIAL>[0-9]+("."[0-9]*)* |
-<INITIAL>"."[0-9]+ {
+<INITIAL>"-"?[0-9]+"."[0-9]* |
+<INITIAL>"-"?"."[0-9]+ {
   numeric_t num = t_numeric_allocate ();
   int rc = numeric_from_string (num, jsonyytext);
   if (NUMERIC_STS_SUCCESS == rc)
@@ -102,16 +102,19 @@ HEX             ([0-9A-Fa-f])
   return NUMBER;
 }
 
-<INITIAL>[0-9]+[eE][+-]?[0-9]+	|
-<INITIAL>[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
-<INITIAL>"."[0-9]+[eE][+-]?[0-9]+	{
+<INITIAL>"-"?[0-9]+[eE][+-]?[0-9]+	|
+<INITIAL>"-"?[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
+<INITIAL>"-"?"."[0-9]+[eE][+-]?[0-9]+	{
   jsonyylval.box = t_box_double (atof (jsonyytext));
   return NUMBER;
 }
 
+<INITIAL>[+-]?[0-9.eE+-]+ { jsonyyerror ("syntax error in number"); }
+
 <INITIAL>[ \r\t]+
+<INITIAL>"#"([^\n]*)[\n]   { json_line++; }
 <INITIAL>[\n]   { json_line++; }
-<INITIAL>.	{ return LEXICAL_ERROR; }
+<INITIAL>.	{ jsonyyerror ("character outside string"); }
 
 
 %%
