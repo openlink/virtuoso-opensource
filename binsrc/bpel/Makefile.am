@@ -42,7 +42,7 @@ CLEANFILES =  \
 	bpel_dav.vad \
 	bpel_filesystem.vad
 
-bpel_dav.vad bpel_filesystem.vad: make_vad.sh bpel_ddl.sql bpel_intrp.sql bpel_eng.sql bpelcomp.xsl bpelexpn.xsl
+bpel_dav.vad bpel_filesystem.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost ./make_vad.sh
 
 clean-local:

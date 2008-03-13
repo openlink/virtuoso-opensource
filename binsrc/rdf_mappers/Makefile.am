@@ -38,7 +38,7 @@ CLEANFILES = \
 	virtuoso.pxa \
 	virtuoso.tdb
 
-rdf_mappers_dav.vad: make_vad.sh
+rdf_mappers_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:

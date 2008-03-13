@@ -24,7 +24,7 @@ TOP=@TOP@
 nodist_vad_DATA	= syncml_dav.vad
 noinst_SCRIPTS	= make_vad.sh
 
-syncml_dav.vad: make_vad.sh $(EXTRA_DIST)
+syncml_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 
