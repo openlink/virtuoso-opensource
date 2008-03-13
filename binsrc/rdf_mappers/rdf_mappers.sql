@@ -140,8 +140,6 @@ EXEC_STMT(
     GM_XSLT varchar,
     primary key (GM_NAME)
 )
-;
-
 create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE)', 0)
 ;
 
