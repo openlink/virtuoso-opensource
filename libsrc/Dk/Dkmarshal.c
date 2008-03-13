@@ -52,8 +52,8 @@
 # include <rpc/xdr.h>
 #endif
 
-static macro_char_func readtable[256];
-static ses_write_func writetable[256];
+macro_char_func readtable[256];
+ses_write_func writetable[256];
 
 #if 1
 /*** INLINE THIS ! */
