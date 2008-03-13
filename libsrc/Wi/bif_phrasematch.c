@@ -108,7 +108,7 @@ typedef struct ap_phrase_s {
   ap_set_t *	app_set;	/*!< Pointer to the phrase set mentioned in AP_APS_ID */
   caddr_t	app_text;	/*!< Text of the phrase in UTF-8, as in AP_TEXT */
   /* nothing for AP_PARSED_TEXT for a while */
-  caddr_t	app_link_data;	/*!< Deserialized content of AP_LINK_DATA */
+  caddr_t	app_link_data;	/*!< Deserialized content of AP_LINK_DATA / AP_LINK_DATA_LONG */
 } ap_phrase_t;
 
 /* Internal structures of the annotation phrase processor */
@@ -749,9 +749,53 @@ ap_phrase_cmp (const void *cp1, const void *cp2)
   return 0;
 }
 
-static query_t *ap_insert__qr = NULL;
-static const char *ap_insert__text = /* note that there's no AP_PARSED_TEXT for a while */
-  "insert replacing DB.DBA.SYS_ANN_PHRASE (AP_APS_ID, AP_CHKSUM, AP_TEXT, AP_LINK_DATA) values (?, ?, ?, ?)";
+#define BOX_SERIALIZATION_IS_TOO_LONG 0x7fffffff
+#define BOX_SERIALIZATION_IMPOSSIBLE -1
+extern void *writetable[256];
+
+int box_serialization_length_est (caddr_t box, int threshold)
+{
+  dtp_t box_dtp;
+  int len;
+  box_dtp = DV_TYPE_OF (box);
+  switch (box_dtp)
+    {
+    case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL: case DV_XTREE_HEAD: case DV_XTREE_NODE:
+    {
+      int total = 5;
+      int ctr;
+      DO_BOX_FAST (caddr_t, itm, ctr, box)
+        {
+          int itm_len = box_serialization_length_est (itm, threshold - total);
+          if ((BOX_SERIALIZATION_IS_TOO_LONG == itm_len) || (BOX_SERIALIZATION_IMPOSSIBLE == itm_len))
+            return itm_len;
+          total += itm_len;
+          if (total > threshold)
+            return BOX_SERIALIZATION_IS_TOO_LONG;
+        }
+      END_DO_BOX_FAST;
+      return total;
+    }
+    case DV_LONG_INT: case DV_STRING: case DV_UNAME: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_DB_NULL:
+    case DV_SHORT_CONT_STRING: case DV_LONG_CONT_STRING:
+      len = (IS_BOX_POINTER (box) ? (5 + box_length (box)) : 5);
+      if (len > threshold)
+        return BOX_SERIALIZATION_IS_TOO_LONG;
+      return len;
+    default:
+      if (NULL == writetable[box_dtp])
+        return BOX_SERIALIZATION_IMPOSSIBLE;
+    }
+  return BOX_SERIALIZATION_IS_TOO_LONG;
+}
+
+static query_t *ap_insert_short__qr = NULL;
+static const char *ap_insert_short__text = /* note that there's no AP_PARSED_TEXT for a while */
+  "insert replacing DB.DBA.SYS_ANN_PHRASE (AP_APS_ID, AP_CHKSUM, AP_TEXT, AP_LINK_DATA, AP_LINK_DATA_LONG) values (?, ?, ?, ?, NULL)";
+
+static query_t *ap_insert_ext__qr = NULL;
+static const char *ap_insert_ext__text = /* note that there's no AP_PARSED_TEXT for a while */
+  "insert replacing DB.DBA.SYS_ANN_PHRASE (AP_APS_ID, AP_CHKSUM, AP_TEXT, AP_LINK_DATA, AP_LINK_DATA_LONG) values (?, ?, ?, NULL,  serialize (?))";
 
 static query_t *ap_delete1__qr = NULL;
 static const char *ap_delete1__text =
@@ -836,13 +880,19 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
         }
       else
         {
+          int est_len = box_serialization_length_est (ap->app_link_data, 2000);
+          query_t *ins_qr;
           /*uptrlong chk2, idxY2;*/
           /* chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK;
           idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2); */
 	  aps->aps_bitarrays.apb_arrayX[idxX >> 5] |= (1 << (idxX & 0x1F));
 	  aps->aps_bitarrays.apb_arrayY[idxY >> 5] |= (1 << (idxY & 0x1F));
 	  /*aps->aps_bitarrays.apb_arrayY[idxY2 >> 5] |= (1 << (idxY2 & 0x1F));*/
-          err = qr_quick_exec (ap_insert__qr, qst->qi_client, "", NULL, 4,
+          ins_qr = (
+            ((BOX_SERIALIZATION_IS_TOO_LONG == est_len) ||
+              (BOX_SERIALIZATION_IMPOSSIBLE == est_len) ) ?
+            ap_insert_ext__qr : ap_insert_short__qr );
+          err = qr_quick_exec (ins_qr, qst->qi_client, "", NULL, 4,
 			":0", (ptrlong) ap->app_set->aps_id, QRP_INT,
 			":1", (ptrlong) ap->app_chksum, QRP_INT,
 			":2", (ptrlong) ap->app_text, QRP_STR,
@@ -1016,7 +1066,8 @@ ap_hit_cmp (const void *pp1, const void *pp2)
 
 static query_t *app_find_by_hit__qr = NULL;
 static const char *app_find_by_hit__text =
-  "select AP_TEXT, AP_LINK_DATA from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = ? and AP_CHKSUM = ?";
+  "select AP_TEXT, case (isnull (AP_LINK_DATA_LONG)) when 0 then deserialize (AP_LINK_DATA_LONG) else AP_LINK_DATA end \
+from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = ? and AP_CHKSUM = ?";
 
 /*! This converts revlists into arrays, sort hits by checksums and extracts phrase data. */
 void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
@@ -1638,13 +1689,14 @@ void ap_global_init (query_instance_t *qst)
 {
   caddr_t err, maxval;
   local_cursor_t *lc;
-  sql_compile_many (9, 1,
+  sql_compile_many (10, 1,
     apc_select_by_id__text		, &apc_select_by_id__qr			,
     apc_select_max_id__text		, &apc_select_max_id__qr		,
     aps_select_by_id__text		, &aps_select_by_id__qr			,
     aps_select_max_id__text		, &aps_select_max_id__qr		,
     ap_select_chksum_and_aps_id__text	, &ap_select_chksum_and_aps_id__qr	,
-    ap_insert__text			, &ap_insert__qr			,
+    ap_insert_short__text		, &ap_insert_short__qr			,
+    ap_insert_ext__text			, &ap_insert_ext__qr			,
     ap_delete1__text			, &ap_delete1__qr			,
     ap_find_bitX_sample__text		, &ap_find_bitX_sample__qr		,
     app_find_by_hit__text		, &app_find_by_hit__qr		,
