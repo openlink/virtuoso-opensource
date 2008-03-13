@@ -1193,8 +1193,8 @@ iSPARQL.QBE = function () {
 	var qbe_graph_label = OAT.Dom.create("label");
 	qbe_graph_label["htmlFor"] = "qbe_graph";
 
-	qbe_graph_label.innerHTML = 'Data Source URI';
-	qbe_graph_label.title = 'RDF Data Source URI';
+	qbe_graph_label.innerHTML = 'Data Source (URL):';
+	qbe_graph_label.title = 'RDF Data Source (URL):';
 
 	var qbe_datasource_cnt = OAT.Dom.create("sub");
 	qbe_datasource_cnt.id = "qbe_datasource_cnt";

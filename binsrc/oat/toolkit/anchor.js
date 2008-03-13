@@ -211,6 +211,7 @@ OAT.Anchor = {
 			}
 			options.anchorTo(pos[0],pos[1]);
 			win.show();
+			options.anchorTo(pos[0],pos[1]); /* after adding arrows, window can be shifted a bit */
 		}
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;

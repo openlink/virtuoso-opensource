@@ -731,11 +731,23 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	this.patchAnchor = function(column) {
 		var a = OAT.Dom.create("a");
 		var v = self.grid.rows[self.grid.rows.length-1].cells[column].value;
-		var uri = v.innerHTML;
+		var uri = decodeURIComponent(v.innerHTML);
 		a.innerHTML = (self.select.value == "0" ? self.parent.store.simplify(uri) : uri);
+		a.href = v.innerHTML;
 		OAT.Dom.clear(v);
 		v.appendChild(a);		
 		self.parent.processLink(a,uri);
+	}
+	
+	this.patchEmbedded = function(column) {
+		var v = self.grid.rows[self.grid.rows.length-1].cells[column].value;
+		var all = v.getElementsByTagName("a");
+		var uris = [];
+		for (var i=0;i<all.length;i++) { uris.push(all[i]); }
+		for (var i=0;i<uris.length;i++) {
+			var uri = uris[i];
+			self.parent.processLink(uri,uri.href);
+		}
 	}
 	
 	this.reset = function() {
@@ -791,10 +803,10 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 				self.grid.createRow(triple);
 				for (var j=0;j<triple.length;j++) {
 					var str = triple[j];
-					/* if j = 0, we are subject, so simplify */
-					if (str.match(/^(http|urn|doi)/i) || j == 0) { 
-						self.patchAnchor(j+1);
-					}
+					/* if j = 0, we are subject, so simplify & attach a++ */
+					if (j == 0 || str.match(/^(http|urn|doi)/i)) { self.patchAnchor(j+1); }
+					/* if j = 2, we are object, find embedded hrefs and process */
+					if (j == 2 && str.match(/href/)) { self.patchEmbedded(j+1); }
 				}
 			} /* if in current page */
 		} /* for all triples */

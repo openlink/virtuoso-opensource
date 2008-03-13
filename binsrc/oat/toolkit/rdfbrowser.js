@@ -235,8 +235,8 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.btnStart = self.throbberReplace(self.store.div,false);
 		
 		var h = OAT.Dom.create("h3");
-		h.innerHTML = "Data Source URI";
-		h.title = "RDF Data Source URI";
+		h.innerHTML = "Data Source (URL):";
+		h.title = "RDF Data Source (URL):";
 		OAT.Dom.append([self.cacheDiv,h,url,btn1,OAT.Dom.text(" "),self.store.div]);
 		OAT.Dom.attach(url,"keypress",function(event) {
 			if (event.keyCode == 13) { self.store.loadFromInput(); }
