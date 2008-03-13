@@ -582,8 +582,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 <SPARQL>['']['']['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SSSQ); BEGIN_INNER; }
 <SPARQL>[""][""][""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DDDQ); BEGIN_INNER; }
-<SPARQL_SSSQ>['']['']['']	{ sparyylval.box = spar_strliteral (sparp, sparyytext, 1, '\''); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DDDQ>[""][""][""]	{ sparyylval.box = spar_strliteral (sparp, sparyytext, 1, '\"'); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SSSQ>['']['']['']	{ sparyylval.box = spar_strliteral (sparp, sparyytext, 1, 0); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DDDQ>[""][""][""]	{ sparyylval.box = spar_strliteral (sparp, sparyytext, 1, 0); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SSSQ>(([''](['']?))?{S_NL})		{ sparp->sparp_lexlineno++; yymore(); }
 <SPARQL_DDDQ>(([""]([""]?))?{S_NL})		{ sparp->sparp_lexlineno++; yymore(); }
 <SPARQL_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -598,8 +598,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 <SPARQL>['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SQ); BEGIN_INNER; }
 <SPARQL>[""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DQ); BEGIN_INNER; }
-<SPARQL_SQ>['']		{ sparyylval.box = spar_strliteral (sparp, sparyytext, 0, '\''); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DQ>[""]		{ sparyylval.box = spar_strliteral (sparp, sparyytext, 0, '\"'); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SQ>['']		{ sparyylval.box = spar_strliteral (sparp, sparyytext, 0, 0); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DQ>[""]		{ sparyylval.box = spar_strliteral (sparp, sparyytext, 0, 0); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SQ>{S_NL}	{ sparyyerror ("End-of-line in a short single-quoted string"); yymore(); }
 <SPARQL_DQ>{S_NL}	{ sparyyerror ("End-of-line in a short double-quoted string"); yymore(); }
 <SPARQL_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }

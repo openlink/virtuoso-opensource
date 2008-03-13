@@ -34,6 +34,7 @@ caddr_t *json_tree;
 caddr_t json_str;
 int jsonyydebug;
 int jsonyylex (void);
+int json_line;
 %}
 
 %union {
@@ -59,17 +60,19 @@ int jsonyylex (void);
 %type <box> object
 %type <list> jsondoc 
 %type <set> members
+%type <set> members_opt
 %type <set> pair
 %type <box> value
 %type <box> array
 %type <set> value_list
+%type <set> value_list_opt
 
 %%
 
 jsondoc	: object { json_tree = $$; }
 	;
 
-object	: OBJ_BEGIN members OBJ_END { 
+object	: OBJ_BEGIN members_opt OBJ_END { 
        					$$ = (caddr_t)t_list_to_array (
 						t_NCONC (
 						/* header */
@@ -82,25 +85,40 @@ object	: OBJ_BEGIN members OBJ_END {
 				    }
      	;
 
-members : pair 		    { $$ = $1; }
-	| pair COMMA members  { $$ = t_NCONC ($1, $3); }
+members_opt
+	: /* empty */ { $$ = NULL; }
+	| members
 	;
 
-pair	: STRING COLON value  { 
+members : pair 		    { $$ = $1; }
+	| members COMMA pair  { $$ = t_NCONC ($1, $3); }
+	| members COMMA error { jsonyyerror ("pair of field name and value is expected after ','"); }
+	;
+
+pair	
+	: STRING COLON value {
      		dk_set_t set = NULL;
 		t_set_push (&set, $3);
 		t_set_push (&set, $1);
-		$$ = set;
-    	 }
+		$$ = set; }
+	| STRING COLON error { jsonyyerror ("value is expected after ':'"); }
+	| STRING error { jsonyyerror ("colon is expected after field name"); }
 	;
 
 
-array	: ARR_BEGIN ARR_END { $$ = (caddr_t)t_list (0); }
-      	| ARR_BEGIN value_list ARR_END { $$ = (caddr_t)t_list_to_array ($2);}
+array	
+      	: ARR_BEGIN value_list_opt ARR_END { $$ = (caddr_t)t_list_to_array ($2);}
 	;
 
-value_list: value { $$ = t_CONS ($1, NULL); }
-	| value COMMA value_list { $$ = t_NCONC (t_CONS($1, NULL), $3); }
+value_list_opt
+	: /* empty */ { $$ = NULL; }
+	| value_list
+	;
+
+value_list
+	: value { $$ = t_CONS ($1, NULL); }
+	| value_list COMMA value { $$ = t_NCONC ($1, t_CONS($3, NULL)); }
+	| value_list COMMA error { jsonyyerror ("array member is expected after ','"); }
 	;	   
 
 
@@ -121,7 +139,7 @@ value	: STRING  { $$ = $1; }
 void 
 jsonyyerror_impl(const char *s) 
 {
-  sqlr_new_error("37000", "JSON1", "Parse failed");
+  sqlr_new_error ("37000", "JSON1", "JSON parser failed: %.200s at line %d", s, json_line);
 }
 
 int

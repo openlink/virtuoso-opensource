@@ -1,5 +1,6 @@
 %option 8bit
 %option never-interactive
+%option nounput
 %{
 /*
  *  json.l 
@@ -37,10 +38,12 @@ int jsonyy_string_input (char *buf, int max);
 #define YY_INPUT(buf, res, max) \
   res = jsonyy_string_input (buf, max);
 #define jsonyyerror(str) jsonyyerror_impl(str)
+
+extern caddr_t spar_strliteral (struct sparp_s *sparp, const char *strg, int strg_is_long, int is_json);
+extern int json_line;
 %}
 
 %x STRLIT
-%x STRESC
 
 HEX             ([0-9A-Fa-f])
 
@@ -54,19 +57,22 @@ HEX             ([0-9A-Fa-f])
 <INITIAL>","	{ return COMMA; }
 <INITIAL>"\""	{ BEGIN(STRLIT); }
 
-<STRLIT>"\"" 	{ 
-		   BEGIN(INITIAL); 
-                   jsonyylval.box = t_box_dv_short_nchars (jsonyytext, strlen (jsonyytext)-1);
+<INITIAL>"\""[^\\\"\n\r]*"\"" 	{ 
+                   jsonyylval.box = t_box_dv_short_nchars (jsonyytext+1, strlen (jsonyytext)-2);
 		   return STRING;
 		}
 
-<STRLIT>"\\"	{ yymore (); BEGIN(STRESC); }
-<STRLIT>[^\\\"]* { yymore (); }
+<STRLIT>"\"" 	{ 
+		   BEGIN(INITIAL); 
+                   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
+		   return STRING;
+		}
 
-<STRESC>[\\\"nrt]    {  yymore (); BEGIN (STRLIT); }
-<STRESC>u{HEX}{HEX}{HEX}{HEX}   {  yymore (); BEGIN (STRLIT); }
-<STRESC>.	{ return LEXICAL_ERROR; }
+<STRLIT>"\\"([\\\"nrt]|(u{HEX}{HEX}{HEX}{HEX})) { yymore (); }
+<STRLIT>[^\\\"\n]* { yymore (); }
+<STRLIT>[\n]	{ json_line++; }
 
+<STRLIT>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
 
 <INITIAL>true	{ return TRUE_L; }
 <INITIAL>false	{ return FALSE_L; }
@@ -103,7 +109,8 @@ HEX             ([0-9A-Fa-f])
   return NUMBER;
 }
 
-<INITIAL>[ \n\r\t]* 
+<INITIAL>[ \r\t]+
+<INITIAL>[\n]   { json_line++; }
 <INITIAL>.	{ return LEXICAL_ERROR; }
 
 
@@ -111,6 +118,7 @@ HEX             ([0-9A-Fa-f])
 
 void jsonyy_reset (void)
 {
+  json_line = 1;
   jsonyyrestart (NULL);
   BEGIN INITIAL;
 }

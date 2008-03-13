@@ -31,6 +31,7 @@ extern caddr_t *json_tree;
 extern int jsonyydebug;
 extern void jsonyy_string_input_init (char * str);
 dk_mutex_t *json_parse_mtx = NULL;
+extern int json_line;
 
 static
 caddr_t
@@ -38,6 +39,7 @@ bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_arg (qst, args, 0, "json_parse");
   caddr_t tree = NULL;
+  caddr_t err = NULL;
   if (!json_parse_mtx)
     json_parse_mtx = mutex_allocate ();
   mutex_enter (json_parse_mtx);
@@ -52,6 +54,7 @@ bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
+      err = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       tree = NULL;
       /*no POP_QR_RESET*/;
@@ -60,7 +63,7 @@ bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   MP_DONE();
   mutex_leave (json_parse_mtx);
   if (!tree)
-    sqlr_new_error ("37000", "JSON2", "Failed to parse JSON document");
+    sqlr_resignal (err);
   return tree;
 }
 

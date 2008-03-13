@@ -48,6 +48,8 @@ const char *spartlist_impl_file="???";
 int spartlist_impl_line;
 #endif
 
+extern void jsonyyerror_impl(const char *s);
+
 SPART*
 spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
 {
@@ -356,7 +358,7 @@ sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref)
     return ref;
 }
 
-caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, char delimiter)
+caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int is_json)
 {
   caddr_t tmp_buf;
   caddr_t res;
@@ -431,6 +433,9 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, cha
 
 err:
   dk_free_box (tmp_buf);
+  if (is_json)
+    jsonyyerror_impl (err_msg);
+  else
   sparyyerror_impl (sparp, NULL, err_msg);
   return NULL;
 }
