@@ -294,6 +294,7 @@ create trigger SYS_BLOGS_SIOC_U after update on BLOG..SYS_BLOGS order 10 referen
     }
 
   cr_iri := user_iri (N.B_USER_ID);
+  if (not is_http_ctx ()) -- otherwise done in SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES trigger
   delete_quad_s_or_o (graph_iri, iri, iri);
   links :=
       (select DB.DBA.VECTOR_AGG (vector (PL_TITLE,PL_LINK)) from BLOG..BLOG_POST_LINKS

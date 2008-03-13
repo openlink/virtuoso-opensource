@@ -3513,7 +3513,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 {
   declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type, _wai_name any;
   declare ver int;
-  declare post_iri varchar;
+  declare post_iri, graph_iri varchar;
   declare inst_id, auto_tag int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3524,10 +3524,14 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
   select coalesce (U_FULL_NAME, U_NAME), U_NAME into author, authorid from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
   nf:
 
+  post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
+
   if (is_http_ctx () and  upper(http_current_charset ()) = 'UTF-8')
     {
       xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
 
+      graph_iri := sioc..get_graph ();
+      sioc.DBA.delete_quad_s_or_o (graph_iri, post_iri, post_iri);
       RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
       BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
@@ -3588,7 +3592,6 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       set triggers on;
     }
 
-  post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
 
   update BLOG.DBA.SYS_BLOG_INFO set
 	BI_LAST_UPDATE = now (),
