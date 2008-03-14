@@ -1862,7 +1862,8 @@ create procedure POLLS.WA.dt_reformat(
   in pOutFormat varchar := 'm.d.Y')
 {
   return POLLS.WA.dt_format(POLLS.WA.dt_deformat(pString, pInFormat), pOutFormat);
-};
+}
+;
 
 -----------------------------------------------------------------------------------------
 --
@@ -2432,8 +2433,8 @@ create procedure POLLS.WA.poll_enable_edit (
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
-    if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, P_DATE_END))
+  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+    if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, now ()))
       return 1;
 
   return 0;
@@ -2450,7 +2451,7 @@ create procedure POLLS.WA.poll_enable_delete (
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  if (exists (select 1 from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id))
     return 1;
 
   return 0;
@@ -2467,7 +2468,7 @@ create procedure POLLS.WA.poll_enable_activate (
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
     if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START))
       return 1;
 
@@ -2485,7 +2486,7 @@ create procedure POLLS.WA.poll_enable_close (
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
     if (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END))
       return 1;
 
@@ -2503,9 +2504,8 @@ create procedure POLLS.WA.poll_enable_clear (
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
-    if (P_VOTES > 0)
-      if (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END))
+  for (select P_VOTES, P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+    if ((P_VOTES > 0) and (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END)))
         return 1;
 
   return 0;
@@ -2592,7 +2592,8 @@ create procedure POLLS.WA.question_update (
   in qType varchar,
   in answer any)
 {
-  if (id <= 0) {
+  if (id <= 0)
+  {
     insert into POLLS.WA.QUESTION (Q_POLL_ID, Q_NUMBER, Q_TEXT, Q_DESCRIPTION, Q_REQUIRED, Q_TYPE, Q_ANSWER)
       values (poll_id, seqNo, text, description, required, qType, answer);
   } else {

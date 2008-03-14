@@ -35,7 +35,8 @@
       self.pPoll := get_keyword ('id', params, '');
       if (self.pPoll <> '') {
         self.v_id := cast (self.pPoll as integer);
-        if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id)) {
+        if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id))
+        {
           self.v_step := '';
           self.pAction := 'edit';
         } else if (POLLS.WA.poll_enable_vote (self.v_id)) {
@@ -578,7 +579,8 @@
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
-                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id)) {
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id))
+                          {
                             http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
                           } else {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));
@@ -753,7 +755,8 @@
 
                   self.v_questions := vector ();
                   self.v_deleted := vector ();
-                  for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_NUMBER) do {
+                  for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_NUMBER) do
+                  {
                     V := vector ('$id', Q_ID, '$number', coalesce (Q_NUMBER, 1), '$text', Q_TEXT, '$required', Q_REQUIRED, '$type', Q_TYPE);
                     P := deserialize (Q_ANSWER);
                     for (N := 0; N < length (P); N := N + 2)
@@ -1005,7 +1008,8 @@
                     <![CDATA[
                       declare tmp, params any;
 
-                      declare exit handler for SQLSTATE '*' {
+                      declare exit handler for SQLSTATE '*'
+                      {
                         if (__SQL_STATE = 'TEST') {
                           self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
                           self.vc_is_valid := 0;
@@ -1027,10 +1031,14 @@
                       self.v_vote_result_opened := cast(get_keyword ('p_vote_result_opened', params, '0') as integer);
                       self.v_date_start := trim(self.p_date_start.ufl_value);
                       if (get_keyword ('p_date_start_mode', self.vc_page.vc_event.ve_params, '0') <> '0')
-                        POLLS.WA.test(self.v_date_start, vector('name', 'Vote opening date', 'class', 'date2', 'type', 'date'));
+                      {
+                        POLLS.WA.test(self.v_date_start, vector('name', 'Poll starting date', 'class', 'date', 'type', 'date', 'canEmpty', 0));
+                      }
                       self.v_date_end := trim(self.p_date_end.ufl_value);
                       if (get_keyword ('p_date_end_mode', self.vc_page.vc_event.ve_params, '0') <> '0')
-                        POLLS.WA.test(self.v_date_end, vector('name', 'Vote opening date', 'class', 'date2', 'type', 'date'));
+                      {
+                        POLLS.WA.test(self.v_date_end, vector('name', 'Poll closing date', 'class', 'date', 'type', 'date', 'canEmpty', 0));
+                      }
 
                       self.v_number := 1;
                       if (self.v_mode = 'S')
@@ -1371,12 +1379,12 @@
                       {
                         self.v_date_start := null;
                       } else {
-                        self.v_date_start := POLLS.WA.dt_deformat (self.v_date_start);
+                        self.v_date_start := POLLS.WA.dt_deformat (self.v_date_start, 'Y-M-D');
                       }
                       if (self.v_date_end_mode = 0) {
                         self.v_date_end := null;
                       } else {
-                        self.v_date_end := POLLS.WA.dt_deformat (self.v_date_end);
+                        self.v_date_end := POLLS.WA.dt_deformat (self.v_date_end, 'Y-M-D');
                       }
                       self.v_id := POLLS.WA.poll_update (self.v_id,
                                                          self.domain_id,
@@ -1535,12 +1543,12 @@
                     range_end := cast (get_keyword ('range_end', answers, '0') as float);
                     range_decimals := cast (get_keyword ('range_decimals', answers, '0') as integer);
 
-                    http (sprintf ('<p class="vote-question">%d. %s? ', Q_NUMBER, Q_TEXT));
+                    http (sprintf ('<p class="vote-question">%d. %s? ', coalesce (Q_NUMBER, 1), Q_TEXT));
                     http (sprintf ('<input name="answer_%d" value="" onblur="javascript: checkRange (this);" size="7"/> <i style="font-size: 0.8em"> (Number in range [%d, %d])</i>', Q_ID, range_start, range_end));
                     http ('</p>');
                   }
                   if (Q_TYPE = 'M')
-                    http (sprintf ('<p class="vote-question">%d. %s?</p>', Q_NUMBER, Q_TEXT));
+                    http (sprintf ('<p class="vote-question">%d. %s?</p>', coalesce (Q_NUMBER, 1), Q_TEXT));
 
 
                   http ('<p class="vote-answer">');
