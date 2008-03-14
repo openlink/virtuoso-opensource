@@ -1,42 +1,11 @@
 use DB;
 
-create procedure DB.DBA.SPARQL_DOC_RUN (in txt varchar)
-{
-  declare REPORT, stat, msg, sqltext varchar;
-  declare metas, rowset any;
-  result_names (REPORT);
-  sqltext := string_output_string (sparql_to_sql_text (txt));
-  stat := '00000';
-  msg := '';
-  rowset := null;
-  exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  result ('STATE=' || stat || ': ' || msg);
-  if (__tag(rowset) = 193)
-  {
-    foreach (any r in rowset) do
-      result (r[0] || ': ' || r[1]);
-  }
-}
-;
-
-DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"')
-;
-
+--GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_RES" TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_COL" TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_PROP" TO "SPARQL";
 GRANT SELECT ON "DB"."DBA"."SYS_USERS" TO "SPARQL";
 GRANT SELECT ON "DB"."DBA"."document_search" TO "SPARQL";
-
-DB.DBA.SPARQL_DOC_RUN ('
-drop quad map graph iri("http://^{URIQADefaultHost}^/Doc") .
-')
-;
-
-DB.DBA.SPARQL_DOC_RUN ('
-drop quad map virtrdf:Doc .
-')
-;
 
 create function DB.DBA.DOC_ID_TO_IRI(in _prefix varchar,in _id varchar)
 {
@@ -109,7 +78,29 @@ grant execute on DB.DBA.COL_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.PROP_IRI to "SPARQL";
 grant execute on DB.DBA.PROP_IRI_INVERSE to "SPARQL";
 
-DB.DBA.SPARQL_DOC_RUN ('
+SPARQL
+prefix doc: <http://demo.openlinksw.com/schemas/doc#>
+prefix bibo: <http://purl.org/ontology/bibo/>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+drop quad map graph iri("http://^{URIQADefaultHost}^/Doc") .
+;
+
+SPARQL
+prefix doc: <http://demo.openlinksw.com/schemas/doc#>
+prefix bibo: <http://purl.org/ontology/bibo/>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+drop quad map virtrdf:Doc .
+;
+
+SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
 prefix bibo: <http://purl.org/ontology/bibo/>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
@@ -122,9 +113,9 @@ create iri class doc:Collection "http://^{URIQADefaultHost}^/Doc/Collection/%d/%
 create iri class doc:Property "http://^{URIQADefaultHost}^/Doc/Property/%U/%d#this" (in prop_name varchar not null, in prop_id integer not null) .
 create iri class doc:Search "http://^{URIQADefaultHost}^/Doc/Search/%U/%d#this" (in prop_name varchar not null, in prop_id integer not null) .
 create iri class doc:DocPath "http://^{URIQADefaultHost}^%U#this" (in prop_name varchar not null) .
-');
+;
 
-DB.DBA.SPARQL_DOC_RUN ('
+SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
 prefix bibo: <http://purl.org/ontology/bibo/>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
@@ -135,43 +126,21 @@ prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class doc:file_iri using
     function DB.DBA.FILE_IRI (in customer_id integer) returns varchar,
     function DB.DBA.FILE_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_DOC_RUN ('
-prefix doc: <http://demo.openlinksw.com/schemas/doc#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class doc:collection_iri using
     function DB.DBA.COL_IRI (in customer_id integer) returns varchar,
     function DB.DBA.COL_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_DOC_RUN ('
-prefix doc: <http://demo.openlinksw.com/schemas/doc#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class doc:property_iri using
     function DB.DBA.PROP_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.PROP_IRI_INVERSE (in customer_iri varchar) returns varchar.
-');
+;
 
-
-DB.DBA.SPARQL_DOC_RUN ('
+SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
 prefix bibo: <http://purl.org/ontology/bibo/>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 alter quad storage virtrdf:DefaultQuadStorage
 from WS.WS.SYS_DAV_RES as resources text literal RES_CONTENT
@@ -180,7 +149,7 @@ from WS.WS.SYS_DAV_PROP as properties
 from DB.DBA.SYS_USERS as users
 from DB.DBA.document_search as docs
 where (^{collections.}^.COL_ID = ^{resources.}^.RES_COL)
-where (^{resources.}^.RES_FULL_PATH LIKE  \'/DAV/VAD/doc/html/\x25\')
+where (^{resources.}^.RES_FULL_PATH LIKE  '/DAV/VAD/doc/html/x25')
 where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties.}^.PROP_PARENT_ID = ^{collections.}^.COL_ID))
 {
         create virtrdf:Doc as graph iri ("http://^{URIQADefaultHost}^/Doc") option (exclusive)
@@ -255,10 +224,12 @@ where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties
                         doc:belongs_to_file doc:File(docs.d_res_id, resources.RES_NAME)
                                 where (^{docs.}^.d_res_id = ^{resources.}^.RES_ID)
                                 as virtrdf:Search-d_res_id .
-        }
-}
-')
+        } .
+} .
 ;
+
+delete from db.dba.url_rewrite_rule_list where urrl_list like 'doc_%';
+delete from db.dba.url_rewrite_rule where urr_rule like 'doc_%';
 
 create procedure doc_rdf_doc (in path varchar)
 {

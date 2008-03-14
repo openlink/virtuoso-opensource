@@ -1,33 +1,12 @@
 use DB;
 
-create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
-{
-  declare REPORT, stat, msg, sqltext varchar;
-  declare metas, rowset any;
-  result_names (REPORT);
-  sqltext := string_output_string (sparql_to_sql_text (txt));
-  stat := '00000';
-  msg := '';
-  rowset := null;
-  exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  --result ('STATE=' || stat || ': ' || msg);
-  --if (__tag(rowset) = 193)
-  --{
-  --  foreach (any r in rowset) do
-  --    result (r[0] || ': ' || r[1]);
-  --}
-}
-;
-
-DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"')
-;
-
 DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'')
 ;
 
 DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'')
 ;
 
+--GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
@@ -38,16 +17,6 @@ GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
-
-DB.DBA.SPARQL_NW_RUN ('
-drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
-')
-;
-
-DB.DBA.SPARQL_NW_RUN ('
-drop quad map virtrdf:NorthwindDemo .
-')
-;
 
 create function DB.DBA.NORTHWIND_ID_TO_IRI(in _prefix varchar,in _id varchar)
 {
@@ -276,13 +245,39 @@ grant execute on DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.CATEGORYPHOTO_IRI to "SPARQL";
 grant execute on DB.DBA.CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
 
-DB.DBA.SPARQL_NW_RUN ('
+SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
+;
+
+SPARQL
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+drop quad map virtrdf:NorthwindDemo .
+;
+
+SPARQL
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
 create iri class northwind:Category "http://^{URIQADefaultHost}^/Northwind/Category/%d#this" (in category_id integer not null) .
 create iri class northwind:Shipper "http://^{URIQADefaultHost}^/Northwind/Shipper/%d#this" (in shipper_id integer not null) .
 create iri class northwind:Supplier "http://^{URIQADefaultHost}^/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
@@ -298,188 +293,72 @@ create iri class northwind:Flag "http://^{URIQADefaultHost}^%U#this" (in flag_pa
 create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
-');
+;
 
-DB.DBA.SPARQL_NW_RUN ('
+SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
 create iri class northwind:category_iri using
     function DB.DBA.CATEGORY_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.CATEGORY_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
+    function DB.DBA.CATEGORY_IRI_INVERSE (in customer_iri varchar) returns integer .
 create iri class northwind:shipper_iri using
     function DB.DBA.SHIPPER_IRI (in customer_id integer) returns varchar,
     function DB.DBA.SHIPPER_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:supplier_iri using
     function DB.DBA.SUPPLIER_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.SUPPLIER_IRI_INVERSE (in customer_iri varchar) returns varchar.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:product_iri using
     function DB.DBA.PRODUCT_IRI (in customer_id integer) returns varchar,
     function DB.DBA.PRODUCT_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:customer_iri using
     function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:employee_iri using
     function DB.DBA.EMPLOYEE_IRI (in customer_id integer) returns varchar,
     function DB.DBA.EMPLOYEE_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:order_iri using
     function DB.DBA.ORDER_IRI (in customer_id integer) returns varchar,
     function DB.DBA.ORDER_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:customercontact_iri using
     function DB.DBA.CUSTOMERCONTACT_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customer_iri varchar) returns varchar.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:orderline_iri using
     function DB.DBA.ORDERLINE_IRI (in customer_id integer, in customer_id2 integer) returns varchar,
     function DB.DBA.ORDERLINE_IRI_INV_1 (in customer_iri varchar) returns integer,
     function DB.DBA.ORDERLINE_IRI_INV_2 (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:province_iri using
     function DB.DBA.PROVINCE_IRI (in customer_id varchar, in customer_id2 varchar) returns varchar,
     function DB.DBA.PROVINCE_IRI_INV_1 (in customer_iri varchar) returns varchar,
     function DB.DBA.PROVINCE_IRI_INV_2 (in customer_iri varchar) returns varchar.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:country_iri using
     function DB.DBA.COUNTRY_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.COUNTRY_IRI_INVERSE (in customer_iri varchar) returns varchar.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:employeephoto_iri using
     function DB.DBA.EMPLOYEEPHOTO_IRI (in customer_id integer) returns varchar,
     function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
-');
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:categoryphoto_iri using
     function DB.DBA.CATEGORYPHOTO_IRI (in customer_id integer) returns varchar,
     function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
-')
-;
-
-DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class northwind:flag_iri using
     function DB.DBA.FLAG_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.FLAG_IRI_INVERSE (in customer_iri varchar) returns varchar.
-')
 ;
 
-DB.DBA.SPARQL_NW_RUN ('
+SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
 alter quad storage virtrdf:DefaultQuadStorage
 from Demo.demo.Products as products
 from Demo.demo.Suppliers as suppliers
@@ -814,10 +693,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         northwind:is_province_of
                 northwind:Country (countries.Name) where  (^{countries.}^.Code = ^{provinces.}^.CountryCode) as virtrdf:Province-country_of .
-        }
-}
-')
+        }.
+}.
 ;
+
+delete from db.dba.url_rewrite_rule_list where urrl_list like 'demo_nw%';
+delete from db.dba.url_rewrite_rule where urr_rule like 'demo_nw%';
 
 create procedure demo_nw_rdf_doc (in path varchar)
 {
@@ -917,7 +798,7 @@ create procedure DB.DBA.NORTHWIND_DET_REF (in par varchar, in fmt varchar, in va
 }
 ;
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('northwind_rdf', 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('demo_nw_rdf', 1,
     '/Northwind/(.*)', vector('path'), 1, 
     '/Northwind/data/rdf/%U', vector('path'),
     'DB.DBA.NORTHWIND_DET_REF',
@@ -947,7 +828,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
                 'demo_nw_rule2',
                 'demo_nw_rule3',
                 'demo_nw_rule4',
-                'northwind_rdf'
+                'demo_nw_rdf'
           ));
 
 
