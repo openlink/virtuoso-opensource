@@ -67,7 +67,7 @@
     </para>
   </xsl:template>
 
-  <!--Tim: handle links -->
+  <!-- handle links -->
 
   <xsl:template match="xhtml:a[normalize-space(text())='?']" />
 
@@ -168,6 +168,18 @@
     <entry>
       <xsl:apply-templates />
     </entry>
+  </xsl:template>
+
+  <xsl:template match="xhtml:tt">
+    <computeroutput>
+      <xsl:apply-templates />
+    </computeroutput>
+  </xsl:template>
+
+  <xsl:template match="xhtml:blockquote">
+    <blockquote>
+      <xsl:apply-templates />
+    </blockquote>
   </xsl:template>
 
   <xsl:template match="xhtml:*">
