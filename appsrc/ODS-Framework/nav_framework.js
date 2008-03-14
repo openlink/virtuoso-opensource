@@ -964,8 +964,15 @@ ODS.Nav = function (navOptions)
 
 			// XXX
 
-			if (document.location.href.indexOf ('/dataspace/person/') >- 1 ||
-			    document.location.href.indexOf ('/dataspace/organization/') >- 1)
+			var q_pos = document.location.href.indexOf ('?');
+			var pos1 = document.location.href.indexOf ('/dataspace/person/');
+ 			var pos2 = document.location.href.indexOf ('/dataspace/organization/');
+			if (q_pos > -1 && pos1 > q_pos) 
+			    pos1 = -1;
+			if (q_pos > -1 && pos2 > q_pos) 
+			    pos2 = -1;
+
+			if (pos1 > -1 || pos2 > -1)
 			    {
 
 				var profileId = document.location.href.split ('/')[5];
