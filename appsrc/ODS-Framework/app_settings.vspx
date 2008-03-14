@@ -120,7 +120,15 @@
 	  </td>
 	</tr>
 	<tr>
-	  <td colspan="2">
+	  <td>
+
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl6" value="Content Hyperlinking" url="--sprintf('url_rule.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Define rules for automatic hyperlinking of the application content.
+	    </div>
+	  </td>
+	  <td>
     <?vsp
 	 if (wa_user_is_dba (self.u_name, self.u_group))
 	   {

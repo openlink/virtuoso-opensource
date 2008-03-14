@@ -761,3 +761,49 @@ report_err:;
 
 }
 ;
+
+create procedure ODS..openid_url_set (in uid int, in url varchar)
+{
+  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate any;
+
+  declare exit handler for sqlstate '*'
+    {
+      return 'Invalid OpenID URL.';
+    };
+
+  oi_ident := url;
+again:
+  hdr := null;
+  cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+  if (hdr [0] like 'HTTP/1._ 30_ %')
+    {
+      declare loc any;
+      loc := http_request_header (hdr, 'Location', null, null);
+      url := WS.WS.EXPAND_URL (url, loc);
+      oi_ident := url;
+      goto again;
+    }
+  xt := xtree_doc (cnt, 2);
+  oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+  oi2_srv := cast (xpath_eval ('//link[@rel="openid2.provider"]/@href', xt) as varchar);
+  oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+  if (oi2_srv is not null)
+    oi_srv := oi2_srv;
+
+  if (oi_srv is null)
+    return 'Cannot locate OpenID server.';
+
+  if (oi_delegate is not null)
+    oi_ident := oi_delegate;
+
+  if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID <> uid))
+    return 'This OpenID identity is already registered.';
+
+  update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL = oi_ident, WAUI_OPENID_SERVER = oi_srv
+   where WAUI_U_ID = uid;
+  -- success
+  return null;
+}
+;
+

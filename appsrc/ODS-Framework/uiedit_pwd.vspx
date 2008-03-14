@@ -32,16 +32,24 @@
 
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
     <v:variable persist="0" name="secreta" type="varchar" default="''"/>
+    <v:variable persist="0" name="oid_urlv" type="varchar" default="''"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
+    <v:variable persist="0" name="no_pwd" type="int" default="0"/>
 
     <v:before-data-bind>
       <![CDATA[
-        declare _secretq, _secreta varchar;
-        SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER
-          INTO _secretq, _secreta
+        declare _secretq, _secreta, pwd, node_id, tmp varchar;
+        SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER, pwd_magic_calc (U_NAME, U_PASSWORD, 1), WAUI_OPENID_URL
+          INTO _secretq, _secreta, pwd, self.oid_urlv
 	  FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 	self.sioc_limit := coalesce (USER_GET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
 
+	tmp := uuid ();
+	node_id := subseq (tmp, strrchr (tmp, '-'));
+	if (pwd like '%'||node_id and regexp_match ('[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', pwd) is not null)
+	  self.no_pwd := 1;
+        else
+	  self.no_pwd := 0;
          self.secretq := _secretq;
          self.secreta := _secreta;
       ]]>
@@ -55,12 +63,14 @@
                   <h3>Password Settings</h3>
                 </td>
               </tr>
+	      <?vsp if (not self.no_pwd) { ?>
               <tr>
                 <th><label for="opwd1">Old password</label></th>
                 <td>
                   <v:text xhtml_id="opwd1" name="opwd1" value="" type="password" error-glyph="*"/>
                 </td>
               </tr>
+              <?vsp } ?>
               <tr>
                 <th><label for="npwd1">New password</label></th>
                 <td>
@@ -92,7 +102,7 @@
 				from SYS_USERS where U_NAME = self.u_name and U_IS_ROLE = 0;
 
 
-			if (not pwd_match)
+			if (not pwd_match and not self.no_pwd)
 			  {
 			    self.opwd1.vc_error_message :=
 			      sprintf ('The old password for "%s" was not correct.', self.u_name);
@@ -115,7 +125,13 @@
 
                         if (self.npwd1.ufl_value = self.npwd2.ufl_value and length (self.npwd1.ufl_value))
                         {
+			  if (self.no_pwd)
+			    {
+			      self.opwd1.ufl_value := (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1)
+			    	FROM DB.DBA.SYS_USERS where U_NAME = self.u_name);
+			    }
 			  USER_CHANGE_PASSWORD (self.u_name, self.opwd1.ufl_value, self.npwd1.ufl_value);
+			    self.opwd1.ufl_value := '';
 			  self.msg_msg := 'The password was changed successfully';
 			  self.pwd_msg.vc_data_bind (e);
                         }
@@ -135,6 +151,45 @@
                     </v:on-post>
                   </v:button>
 		 </span>
+                </td>
+              </tr>
+
+              <tr>
+                <td colspan="2" align="left">
+                  <h3>OpenID</h3>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="oid_url1">OpenID URL</label></th>
+                <td nowrap="nowrap">
+                  <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100">
+                  </v:text>
+                  <div style="display:inline; color:red;"><v:error-summary match="oid_url1" /></div>
+                </td>
+              </tr>
+              <tr>
+		<td colspan="2" class="ctrl">
+		  <span class="fm_ctl_btn">
+                  <v:button name="bt_set6" value="Save OpenID" action="simple">
+                    <v:on-post><![CDATA[
+
+			if (self.vc_is_valid = 0) return;
+
+			declare err any;
+			err := ODS..openid_url_set (self.u_id, self.oid_url1.ufl_value);
+
+			if (err is not null)
+			  {
+                            self.vc_is_valid := 0;
+			    self.vc_error_message := err;
+			    return;
+			  }
+
+			self.vc_redirect ('uiedit.vspx?page=5');
+                      ]]>
+                    </v:on-post>
+		</v:button>
+	    </span>
                 </td>
               </tr>
 

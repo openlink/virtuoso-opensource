@@ -1810,20 +1810,18 @@ create procedure INIT_SERVER_SETTINGS ()
 '<h3>
 Welcome to OpenLink Data Spaces (ODS)</h3>
 
-A distributed collaborative application platform that provides a "Linked Data Junction Box" for Web protocols accessible data across a myriad of data sources.
+<p>A distributed collaborative application platform that provides a "Linked Data Junction Box" for Web protocols accessible data across a myriad of data sources.</p>
 
-<p>
-ODS provides a cost-effective route for creating and exploit presence on
+<p>ODS provides a cost-effective route for creating and exploit presence on
 the emerging Web of Linked Data. It enables you to transparently mesh
 data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
-Gallery, Calendars, Discussions, Content Managers, and Social Networks.
-</p>
-<p>
-ODS essentially provides distributed data across personal, group, and
+Gallery, Calendars, Discussions, Content Managers, and Social Networks.</p>
+
+<p>ODS essentially provides distributed data across personal, group, and
 community data spaces that is grounded in Web Architecture. It makes
 extensive use of current and emerging standards across it''s core and
-within specific functionality realms.
-</p>
+within specific functionality realms.</p>
+
 <p>ODS Benefits include:</p>
 <ul>
   <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>

@@ -103,7 +103,7 @@
 			        return;
 			      r := control.vc_parent;
 			      o := r.te_ctr + self.tm.ds_rows_offs;
-			      dt := self.trs_data;
+			      dt := self.tm_data;
 			      dt[o][0] := trim((r.vc_find_control ('mu1') as vspx_field).ufl_value);
 			      ]]></v:on-post>
 			  </v:button>

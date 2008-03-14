@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Content Hyperlinking Rules</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <v:variable name="aps_id" type="int" default="null" />
+      <v:variable name="edit_id" type="varchar" default="null" param-name="edit" />
+      <v:variable name="del_id" type="varchar" default="null" param-name="del" />
+      <v:variable name="chksum" type="int" default="null" param-name="ck" />
+      <v:variable name="pg" type="int" default="1" param-name="pg" />
+
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="services"/>
+      <vm:rawheader caption="Content Hyperlinking Rules"/>
+      <vm:body>
+	<vm:login redirect="index.vspx"/>
+	<v:before-data-bind><![CDATA[
+	  if (self.aps_id is null)
+	    {
+              declare ap_name varchar;
+	      ap_name := sprintf ('Hyperlinking-%d', self.u_id);
+              self.aps_id := (select APS_ID from SYS_ANN_PHRASE_SET where APS_OWNER_UID =
+	        self.u_id and APS_NAME = ap_name);
+              if (self.aps_id is null)
+                {
+		  declare c_id, s_id int;
+		  c_id := ANN_GETID ('C');
+		  s_id := ANN_GETID ('S');
+		  ANN_PHRASE_CLASS_ADD_INT (c_id, ap_name, self.u_id, http_nogroup_gid (), null, null);
+		  ANN_PHRASE_SET_ADD_INT (s_id, ap_name, self.u_id, http_nogroup_gid (), c_id, 'x-any', null, 100000, 1);
+		  self.aps_id := s_id;
+  		}
+            }
+	  ]]></v:before-data-bind>
+        <div class="box">
+          <p>
+          </p>
+          <div>
+	    <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data">
+	      <v:template type="simple" name="tm1" enabled="--equ (self.pg, 1)">
+	  <table class="listing" rules="groups">
+	      <colgroup>
+		  <col/>
+		  <col/>
+		  <col/>
+	      </colgroup>
+	      <tr class="listing_header_row">
+		  <th>Phrase</th>
+		  <th>URI</th>
+		  <th>Action</th>
+	      </tr>
+	      <v:data-set name="dset"
+		  sql="select AP_TEXT, AP_LINK_DATA, AP_CHKSUM from SYS_ANN_PHRASE where AP_APS_ID = :self.aps_id"
+		  scrollable="1" editable="1" nrows="1000">
+		  <v:before-data-bind>
+if (not e.ve_is_post and self.del_id is not null)
+{
+  delete from SYS_ANN_PHRASE where AP_APS_ID = self.aps_id and AP_TEXT = self.del_id and AP_CHKSUM = self.chksum;
+}
+		  </v:before-data-bind>
+
+		  <v:template name="dst_rep" type="repeat">
+		      <v:template name="dset_brows" type="browse">
+			  <v:after-data-bind>
+if (not e.ve_is_post and control.te_rowset[0] = self.edit_id and self.chksum = control.te_rowset[2])
+{
+  self.a_pat.ufl_value := control.te_rowset[0];
+  self.a_url.ufl_value := control.te_rowset[1];
+}
+	                  </v:after-data-bind>
+			  <tr class="<?V case when self.edit_id = control.te_rowset[0] and self.chksum = control.te_rowset[2] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			      <td>
+				  <v:url name="dset_ur1"
+				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[0])'
+				      format="%s"
+				      url="--sprintf ('url_rule.vspx?page=11&amp;edit=%U&amp;ck=%d', (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[2])"
+				      xhtml_title="Edit"
+				      xhtml_alt="Edit"
+				      />
+			      </td>
+			      <td>
+				  <v:label name="lr1" value="--ods_iri_qual ((control.vc_parent as vspx_row_template).te_rowset[1])"/>
+			      </td>
+			      <td>
+				  <v:url name="dset_ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+				      format="%s"
+				      url="--sprintf ('url_rule.vspx?page=11&amp;del=%U&amp;ck=%d', (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[2])"
+				      xhtml_title="Delete"
+				      xhtml_alt="Delete"
+				      />
+			      </td>
+			  </tr>
+		      </v:template>
+		  </v:template>
+
+		  <v:template name="dset_footer" type="simple">
+		      <tr>
+			  <td colspan="3" class="listing_col_action">
+			      <vm:ds-navigation data-set="dset" type="set" />
+			  </td>
+		      </tr>
+		  </v:template>
+	      </v:data-set>
+	  </table>
+	  <div class="fm">
+	      <fieldset>
+	      <v:form name="addf" type="simple" method="POST">
+		  <label for="a_pat">Phrase</label><br/>
+		  <v:text name="a_pat" value="" xhtml_id="a_pat" xhtml_size="50" error-glyph="*">
+		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Pattern can not be empty"/>
+		  </v:text>
+		  <br/>
+		  <label for="a_url">URI</label><br/>
+		  <v:text name="a_url" value="" xhtml_id="a_url" xhtml_size="100"/>
+		  <br />
+	      <span class="fm_ctl_btn">
+		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_id),0)">
+		      <v:on-post>
+self.a_pat.ufl_value := null;
+self.a_url.ufl_value := null;
+self.edit_id := null;
+self.save1.vc_data_bind (e);
+control.vc_enabled := 0;
+		      </v:on-post>
+		  </v:button>
+		  <v:button name="save1" value="--case when self.edit_id is null then 'Add' else 'Update' end" action="simple">
+		      <v:on-post><![CDATA[
+declare url, pat varchar;
+if (not self.vc_is_valid)
+  return;
+
+url := self.a_url.ufl_value;
+pat := self.a_pat.ufl_value;
+if (not length (url))
+  {
+    self.vc_is_valid := 0;
+    self.vc_error_message := 'The URI cannot be empty';
+    return;
+  }
+ap_add_phrases (self.aps_id, vector (vector (pat, url)));
+self.edit_id := null;
+self.a_pat.ufl_value := null;
+self.a_url.ufl_value := null;
+control.vc_data_bind (e);
+self.cancel1.vc_data_bind (e);
+self.dset.vc_data_bind (e);
+]]></v:on-post>
+		  </v:button>
+	      </span>
+	    </v:form>
+	    <v:form name="impf" type="simple" method="POST">
+	      <span class="fm_ctl_btn">
+		    <v:button name="import1" value="Import from MOAT" action="simple">
+		      <v:on-post><![CDATA[
+self.pg := 2;
+self.tm1.vc_enabled := 0;
+self.tm2.vc_enabled := 1;
+			]]></v:on-post>
+		    </v:button>
+	      </span>
+	    </v:form>
+	  </fieldset>
+      </div>
+    </v:template>
+    <v:template type="simple" name="tm2" enabled="--equ (self.pg, 2)">
+      <div>
+	<div>Please confirm selection of meanings to import as a content annotation rules</div>
+	  <table class="listing" rules="groups">
+	      <colgroup>
+		  <col/>
+		  <col/>
+	      </colgroup>
+	      <tr class="listing_header_row">
+		  <th>Phrase</th>
+		  <th>URI</th>
+	      </tr>
+      <?vsp
+        declare arr any;
+	for select rs_query, mu_url
+	 from tag_rules, tag_rule_set, moat.DBA.moat_user_meanings
+	 where rs_trs = trs_id and mu_trs_id = trs_id and mu_tag = rs_tag and trs_owner = self.u_id do
+	 {
+      ?>
+      <tr>
+	<td>
+	  <input type="checkbox" name="cb_<?V rs_query ?>" value="<?V mu_url ?>" checked="checked" />
+	  <?V rs_query ?></td>
+	<td><?V mu_url ?></td>
+      </tr>
+      <?vsp
+         }
+      ?>
+    	   </table>
+	    <v:form name="impf2" type="simple" method="POST">
+	      <span class="fm_ctl_btn">
+		    <v:button name="cancel2" value="Cancel" action="simple">
+		      <v:on-post><![CDATA[
+self.pg := 1;
+self.tm1.vc_data_bind (e);
+self.tm2.vc_enabled := 0;
+			]]></v:on-post>
+		    </v:button>
+		    <v:button name="import2" value="Import" action="simple">
+		      <v:on-post><![CDATA[
+declare arr, val, i, len, url any;
+
+arr := vector ();
+len := length (params);
+for (i := 0; i < len; i := i + 4)
+  {
+    if (params[i] like 'cb_%')
+      {
+        val := subseq (params[i], 3);
+        url := params[i + 1];
+        arr := vector_concat (arr, vector (vector (val, url)));
+      }
+  }
+ap_add_phrases (self.aps_id, arr);
+self.pg := 1;
+self.tm1.vc_data_bind (e);
+self.tm2.vc_enabled := 0;
+			]]></v:on-post>
+		    </v:button>
+	      </span>
+	    </v:form>
+	  </div>
+    </v:template>
+	</v:form>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>
+

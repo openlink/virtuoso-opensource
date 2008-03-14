@@ -589,6 +589,8 @@ if (typeof (OAT) == 'undefined')
             curr_location:=curr_location||settings_url||'Content Tagging Settings > ';
         if(locate('/add_rule.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Content Tagging Settings > New Rule> ';
+        if(locate('/url_rule.vspx',_http_path))
+            curr_location:=curr_location||settings_url||'Content Hyperlinking Settings > ';
 
         if(locate('/user_template.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Home Page Template Selection > ';
