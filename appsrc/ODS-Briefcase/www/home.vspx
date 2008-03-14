@@ -88,13 +88,14 @@
           if ((self.command_mode = 5) and (get_keyword('dav_destination', self.vc_page.vc_event.ve_params, '') = '1'))
           {
             -- RDF Triple Store
-
             declare pos integer;
-            declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_graph any;
+            declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_base, rdf_graph any;
 
+            rdf_graph := trim(get_keyword('dav_name_rdf', self.vc_page.vc_event.ve_params));
             if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '0')
             {
               dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', self.vc_page.vc_event.ve_params));
+              rdf_base := rdf_graph;
               if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
               {
                 rdf_data := http_get(dav_filename);
@@ -102,21 +103,26 @@
                 pos := position ('dav_file', params);
                 rdf_data := aref_set_0 (params, pos);
               }
-            } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
+            }
+            else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1')
+            {
               dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
+              rdf_base := dav_filename;
               rdf_data := http_get(dav_filename);
             }
-            rdf_graph := trim(get_keyword('dav_name_rdf', self.vc_page.vc_event.ve_params));
             {
-              declare continue handler for SQLSTATE '*' {
+              declare continue handler for SQLSTATE '*'
+              {
                 is_ttl := 0;
               };
               is_ttl := 1;
               DB.DBA.RDF_TTL2HASH (rdf_data, rdf_graph, rdf_graph);
             }
-            if (not is_ttl) {
+            if (not is_ttl)
+            {
               {
-                declare continue handler for SQLSTATE '*' {
+                declare continue handler for SQLSTATE '*'
+              {
                   is_xml := 0;
                 };
                 is_xml := 1;
@@ -126,13 +132,16 @@
             if (is_xml = 0 and is_ttl = 0)
               signal ('TEST', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.<>');
 
+            declare continue handler for SQLSTATE '*'
+            {
+              signal('TEST', 'Bad RDF data!<>');
+            };
             if (is_ttl)
             {
-              retValue := DB.DBA.TTLP (rdf_data, '', rdf_graph);
+              retValue := DB.DBA.TTLP (rdf_data, rdf_base, rdf_graph);
             } else {
-              retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, '', rdf_graph);
+              retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, rdf_base, rdf_graph);
             }
-
           } else {
             -- WebDAV
 
