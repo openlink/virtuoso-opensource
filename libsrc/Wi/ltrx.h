@@ -333,8 +333,6 @@ typedef struct page_lock_s
 #define PL_FREE		0
 #define PL_EXCLUSIVE	1
 #define PL_SHARED	2
-#define PL_SNAPSHOT	3  /* Only appears in itc_lock_mode when the trx is
-			      it TM_SNAPSHOT mode and no locks are used. */
 #define RL_FOLLOW	8
 #define PL_PAGE_LOCK	16
 #define PL_FINALIZE	32
