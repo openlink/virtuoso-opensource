@@ -91,15 +91,11 @@
   </xsl:template>
 
   <xsl:template match="xhtml:strong|xhtml:b|xhtml:i|xhtml:u">
-    <emphasis>
-      <xsl:apply-templates />
-    </emphasis>
+    <emphasis> <xsl:apply-templates /></emphasis>
   </xsl:template>
 
   <xsl:template match="xhtml:em">
-    <emphasis>
-      <xsl:apply-templates />
-    </emphasis>
+    <emphasis><xsl:apply-templates /></emphasis>
   </xsl:template>
 
   <xsl:template match="xhtml:h1|xhtml:h2|xhtml:h3|xhtml:h4|xhtml:h5">
