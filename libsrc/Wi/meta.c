@@ -1820,7 +1820,7 @@ isp_read_schema (lock_trx_t * lt)
 	wcharset_t *wcharset;
 	int inx;
 
-	if (DV_STRINGP (cs_aliases))
+	if (DV_STRINGP (cs_aliases) || (DV_BIN == DV_TYPE_OF (cs_aliases)))
 	  {
 	    cs_aliases_array = (caddr_t *) box_deserialize_string (cs_aliases, 0);
 	  }

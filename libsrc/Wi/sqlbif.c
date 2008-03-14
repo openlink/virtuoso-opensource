@@ -8459,7 +8459,7 @@ bif_blob_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return (strses_string ( (dk_session_t *) bh));
     }
   else if (dtp == DV_BIN) /* needed for blob_to_string over blobs */
-    return box_bin_string ((db_buf_t) bh, box_length ((caddr_t) bh) + 1, DV_LONG_STRING);
+    return box_varchar_string ((db_buf_t) bh, box_length ((caddr_t) bh), DV_LONG_STRING);
 #ifdef BIF_XML
   else if (DV_XML_ENTITY == dtp)
     {
@@ -8543,6 +8543,8 @@ bif_blob_to_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	sqlr_resignal (STRSES_LENGTH_ERROR ("blob_to_string_output"));
       return (strses_string ( (dk_session_t *) bh));
     }
+  else if (dtp == DV_BIN) /* needed for blob_to_string over blobs */
+    return box_varchar_string ((db_buf_t) bh, box_length ((caddr_t) bh), DV_LONG_STRING);
 #ifdef BIF_XML
   if (DV_XML_ENTITY == dtp)
     {
@@ -9511,8 +9513,7 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t xx = bif_arg (qst, args, 0, "deserialize");
   caddr_t tmp_xx, res;
   dtp_t dtp = DV_TYPE_OF (xx);
-  if (dtp == DV_SHORT_STRING
-    || dtp == DV_LONG_STRING)
+  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_BIN)
     return (box_deserialize_string (xx, 0));
   if (DV_DB_NULL == dtp)
     return NEW_DB_NULL;

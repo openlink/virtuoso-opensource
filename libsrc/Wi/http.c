@@ -4071,7 +4071,7 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t dtp = DV_TYPE_OF (string);
 
   /* IO_SECT (qst); */
-  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
+  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING || dtp == DV_BIN)
     session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
   else if (dtp == DV_BLOB_HANDLE)
     {
