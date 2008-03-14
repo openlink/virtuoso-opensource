@@ -851,17 +851,17 @@
                     <td>
                         <?vsp
                           declare id, feed_id integer;
-                          declare title, href, appIri varchar;
+                          declare title, href, onclick, appIri varchar;
                           
                           id := (control as vspx_row_template).te_column_value('EFI_ID');
                           title := (control as vspx_row_template).te_column_value('EFI_TITLE');
-                          href := sprintf('javascript: loadIFrame(\'%d\', \'%d\', \'%d\', null, \'%s\');', id, self.domain_id, self.account_id, ENEWS.WA.node_type (self.fNode));
-                          
+                          href := SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id);
+                          onclick := sprintf ('javascript: loadIFrame(\'%d\', \'%d\', \'%d\', null, \'%s\'); return false;', id, self.domain_id, self.account_id, ENEWS.WA.node_type (self.fNode));
                           appIri := '';
                           if (ENEWS.WA.node_type (self.fNode) in ('c', 'f', 's'))
-                            appIri := sprintf (' about="%U"', SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id));
+                            appIri := sprintf (' about="%U"', href);
                           
-                          http (sprintf ('<a id="feed_%d" href="%s" title="%s" class="%s %s" %s>%s</a>', id, href, title, 'app', self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG')), appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
+                          http (sprintf ('<a id="feed_%d" href="%s" onclick="%s" title="%s" class="%s %s" %s>%s</a>', id, href, onclick, title, 'app', self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG')), appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
                         ?>
                     </td>
                       <v:template type="simple" enabled="--case when (ENEWS.WA.node_type (self.fNode) = 'f') then 1 else 0 end">
