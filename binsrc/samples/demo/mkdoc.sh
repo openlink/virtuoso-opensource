@@ -53,7 +53,7 @@ STICKER_FS="doc_vad_filesystem.xml"
 VAD_NAME="doc"
 VAD_NAME_DEVEL="$VAD_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_NAME"_dav.vad
-VERSION="1.1.17"
+VERSION="1.1.18"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 
 HOST_OS=`uname -s | grep WIN`
