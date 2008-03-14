@@ -32,6 +32,7 @@ OAT.Xml = {
 			ie: text
 			safari: .nodeValue of first child
 		*/
+		if (!elem) { return; }
 		if (document.implementation && document.implementation.createDocument) {				
 			var result = elem.textContent;
 			/* safari hack */
@@ -49,6 +50,7 @@ OAT.Xml = {
 	},
 	
 	localName:function(elem) {
+		if (!elem) { return; }
 		if (OAT.Browser.isIE) {
 			return elem.baseName;
 		} else {
@@ -160,6 +162,7 @@ OAT.Xml = {
 	
 	childElements:function(elem) {
 		var result = [];
+		if (!elem) { return result; }
 		var all = elem.getElementsByTagName("*");
 		for (var i=0;i<all.length;i++) {
 			if (all[i].parentNode == elem) { result.push(all[i]); }
@@ -177,6 +180,7 @@ OAT.Xml = {
 	
 	getLocalAttributes:function(elm) {
 		var obj = {};
+		if(!elm) { return obj; }
 		for (var i=0;i<elm.attributes.length;i++) {
 			var att = elm.attributes[i];
 			var ln = att.localName;
