@@ -3403,6 +3403,70 @@ BLOG2_UPDATE_TEXT_TITLE_INT ()
 BLOG2_UPDATE_TEXT_TITLE_INT ()
 ;
 
+create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varchar)
+{
+  declare ap_set_ids any;
+  declare res_out, script_out, match_list any;
+  declare m_apc, m_aps, m_app, m_apa, m_apa_w, m_aph any;
+  declare apa_w_ctr, apa_w_count integer;
+  declare app_ctr, app_count integer;
+  declare prev_end integer;
+
+  ap_set_ids := (select vector (APS_ID) from DB.DBA.SYS_ANN_PHRASE_SET where
+  	APS_OWNER_UID = ap_uid and APS_NAME = sprintf ('Hyperlinking-%d', ap_uid));
+
+  if (not length (ap_set_ids))
+    return source_UTF8;
+
+  match_list := ap_build_match_list ( ap_set_ids, source_UTF8, 'x-any', 1, 3);
+  m_apc   := aref_set_0 (match_list, 0);
+  m_app   := aref_set_0 (match_list, 2);
+  m_apa   := aref_set_0 (match_list, 3);
+  m_apa_w := aref_set_0 (match_list, 4);
+  apa_w_count := length (m_apa_w);
+  app_count := length (m_app);
+  if (0 = app_count)
+    {
+      return source_UTF8;
+    }
+  res_out := string_output ();
+  for (apa_w_ctr := 0; apa_w_ctr < apa_w_count; apa_w_ctr := apa_w_ctr + 1)
+    {
+      declare apa_idx integer;
+      declare apa any;
+      apa_idx := m_apa_w [apa_w_ctr];
+      apa := aref_set_0 (m_apa, apa_idx);
+      if (6 = length (apa))
+        {
+          declare apa_beg, apa_end, apa_hpctr, apa_hpcount, add_href integer;
+          declare arr, dta any;
+	  declare probe varchar;
+
+          apa_beg := apa [1];
+	  apa_end := apa [2];
+	  apa_hpcount := length (apa[5]);
+	  http (subseq (source_UTF8, prev_end, apa_beg), res_out);
+          probe := subseq (source_UTF8, apa_end, apa_end+4);
+	  if (lower (probe) = '</a>')
+	    add_href := 0;
+	  else
+	    add_href := 1;
+
+	  if (add_href)
+	    {
+	      arr := m_app[apa[5][0]];
+	      dta := arr [3];
+	      http (sprintf ('<a href="%s">', dta), res_out);
+	    }
+	  http (subseq (source_UTF8, apa_beg, apa_end), res_out);
+	  if (add_href) http ('</a>', res_out);
+          prev_end := apa_end;
+        }
+    }
+  http (subseq (source_UTF8, prev_end), res_out);
+  return string_output_string (res_out);
+}
+;
 
 create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_BLOGS order 1 referencing new as N
 {
@@ -3446,6 +3510,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
     is_act := 1;
 
   ss := string_output_string (ss);
+  ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
 
   title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
   enc_type := null;
@@ -3547,6 +3612,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	is_act := 1;
 
       ss := string_output_string (ss);
+      ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
       enc_type := null;
