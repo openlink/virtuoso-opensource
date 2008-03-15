@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2008 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -46,9 +46,12 @@ WARNING="${B}* WARNING *${N}"
 #  Functions
 # ----------------------------------------------------------------------
 CHECK() {
+    cmd=$1
+    shift
+
     for PROG in $*
     do
-	VERSION=`$PROG --version 2>/dev/null | head -1`
+	VERSION=`$PROG $cmd 2>/dev/null | head -1`
 	if test \! -z "$VERSION"
 	then
 	    echo "Using $VERSION"
@@ -91,11 +94,18 @@ RUN() {
 echo
 echo "${B}Checking build environment${N} ..."
 
-CHECK libtoolize glibtoolize; LIBTOOLIZE=$USE_PROG
-CHECK aclocal
-CHECK autoheader
-CHECK automake
-CHECK autoconf
+CHECK --version aclocal
+CHECK --version autoconf
+CHECK --version autoheader
+CHECK --version automake
+CHECK --version libtoolize glibtoolize; LIBTOOLIZE=$USE_PROG
+
+CHECK --version bison
+CHECK --version flex
+CHECK --version gawk
+CHECK --version gperf
+
+CHECK version openssl
 
 if test "$DIE" -eq 1
 then
