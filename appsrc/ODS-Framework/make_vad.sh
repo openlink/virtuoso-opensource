@@ -470,7 +470,7 @@ CaseMode             = 2
 DisableMtWrite       = 0
 MaxStaticCursorRows  = 5000
 AllowOSCalls         = 0
-DirsAllowed          = $HOME
+DirsAllowed          = /
 CallstackOnException = 1
 
 ;

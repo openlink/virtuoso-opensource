@@ -664,7 +664,7 @@ wa_exec_no_error_log(
 )
 ;
 
-wa_exec_no_error('drop table WA_MESSAGESES')
+wa_exec_no_error('drop table WA_MESSAGES')
 ;
 
 wa_exec_no_error('create table WA_MESSAGES (

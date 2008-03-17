@@ -515,7 +515,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), full_name);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (link, '/sioc.rdf'));
+  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (link, '/sioc.rdf'));
 
   if (length (u_e_mail))
     {
@@ -526,7 +526,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   -- FOAF
   person_iri := person_iri (iri);
   ods_is_defined_by (graph_iri, person_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
+  --DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
   if (person_iri like '%/organization/%')
     DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
   else
@@ -889,7 +889,7 @@ create procedure sioc_forum (
     }
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
 --  DB.DBA.RDF_QUAD_URI (graph_iri, concat (iri, '/sioc.rdf'), rdf_iri ('type'), sub);
 
   -- ATOM
@@ -981,7 +981,7 @@ create procedure ods_sioc_post (
       --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
 
       --if (maker is null)
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+      --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
       ods_is_defined_by (graph_iri, iri);
 
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), md5 (iri));
@@ -1299,9 +1299,9 @@ create procedure fill_ods_sioc_online (in doall int := 0, in iri_result int := 1
     result_names (res_iri);
   connection_set ('iri_result', iri_result);
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (sioc_iri (''));
-  DB.DBA.TTLP (sioct_n3 (), '', sioc_iri (''));
+  DB.DBA.TTLP (sioct_n3 (), '', get_graph() || '/inf');
   fill_ods_sioc (doall);
-  DB.DBA.RDFS_RULE_SET (get_graph (), sioc_iri (''));
+  DB.DBA.RDFS_RULE_SET (get_graph (), get_graph() || '/inf');
   DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
   registry_set ('__ods_sioc_version', ods_current_ver ());
   exec ('checkpoint');
@@ -2696,6 +2696,25 @@ create procedure sioct_n3 ()
 }
 ;
 
+create procedure std_pref_declare ()
+{
+  return
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+   	 ' prefix sioct: <http://rdfs.org/sioc/types#> \n' ||
+         ' prefix dc: <http://purl.org/dc/elements/1.1/> \n'||
+         ' prefix dct: <http://purl.org/dc/terms/> \n'||
+         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
+         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
+	 ' prefix owl: <http://www.w3.org/2002/07/owl#> \n' ||
+	 ' prefix wiki: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#> \n' ||
+	 ' prefix bm: <http://www.w3.org/2002/01/bookmark#> \n' ||
+	 ' prefix vcal: <http://www.w3.org/2002/12/cal#> \n' ||
+         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ;
+};
+
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare state, decl, qry, qrs, msg, maxrows, metas, rset, graph, iri, accept, part any;
@@ -2738,18 +2757,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs := make_array (5, 'any');
   iri := user_obj_iri (u_name);
 
-  decl := 'sparql ' ||
+  decl := 'sparql '
          --' define input:inference <' || graph || '>' ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
-         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
-         ' prefix dct: <http://purl.org/dc/terms/> '||
-         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
-         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
-	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
-         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ;
+	  || std_pref_declare ();
 
   part := sprintf (
 	  ' CONSTRUCT {

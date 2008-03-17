@@ -807,3 +807,126 @@ again:
 }
 ;
 
+
+create procedure search_compose_qry (in q any, in pars varchar)
+{
+  declare ses any;
+  declare arr any;
+  declare tp varchar;
+  declare qr varchar;
+  declare node, tmp, graph varchar;
+  declare all_cnt int;
+
+  arr := split_and_decode (pars, 0, '\0\0,');
+  ses := string_output ();
+  graph := sioc..get_graph ();
+
+  http ('sparql ', ses);
+  http ('define input:inference <' || graph || '> \n', ses);
+  http (sioc.DBA.std_pref_declare (), ses);
+  http (sprintf ('\n construct { ?x ?y ?z } \n from <%s> where { \n', graph), ses);
+
+  all_cnt := 1;
+  qr := DB.DBA.FTI_MAKE_SEARCH_STRING (q);
+
+  node := '{ ?x ?y ?z ; a %s . ?z bif:contains \'%S\' } \n union \n';
+  foreach (any app in arr) do
+    {
+       if (lower (app) = 'people')
+	 http (sprintf (node, 'sioc:User', qr), ses);
+       else if (lower (app) = 'apps')
+	 http (sprintf (node, 'sioc:Container', qr), ses);
+       else if (lower (app) = 'weblog')
+	 http (sprintf (node, 'sioct:BlogPost', qr), ses);
+       else if (lower (app) = 'dav')
+	 http (sprintf (node, 'foaf:Document', qr), ses);
+       else if (lower (app) = 'feeds')
+	 http (sprintf (node, 'atom:Entry', qr), ses);
+       else if (lower (app) = 'wiki')
+	 http (sprintf (node, 'wiki:Article', qr), ses);
+       else if (lower (app) = 'mail')
+	 http (sprintf (node, 'sioct:MailMessage', qr), ses);
+       else if (lower (app) = 'bookmark')
+	 http (sprintf (node, 'bm:Bookmark', qr), ses);
+       else if (lower (app) = 'polls')
+	 http (sprintf (node, 'sioct:Poll', qr), ses);
+       else if (lower (app) = 'addressbook')
+	 http (sprintf (node, 'vcard:vCard', qr), ses);
+       else if (lower (app) = 'calendar')
+	 {
+	   http (sprintf (node, 'vcal:todo', qr), ses);
+	   http (sprintf (node, 'vcal:vevent', qr), ses);
+	 }
+       else if (lower (app) = 'discussion')
+	 http (sprintf (node, 'sioct:BoardPost', qr), ses);
+       all_cnt := 0;
+    }
+
+  if (all_cnt)
+    {
+      http (sprintf (' ?x ?y ?z . ?z bif:contains \'%S\' ', qr), ses);
+      tmp := ses;
+    }
+  else
+    tmp := subseq (ses, 0, length (ses) - 9);
+
+  return string_output_string (tmp) || '\n }';
+}
+;
+
+
+create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any, in nrows int)
+{
+  declare qr, ses, stat, msg, metas, rset any;
+  declare accept, fmt varchar;
+
+  set http_charset='utf-8';
+  declare exit handler for sqlstate '*'
+    {
+      stat := __SQL_STATE;
+      msg := __SQL_MESSAGE;
+      goto reporterr;
+    };
+
+  qr := search_compose_qry (q, pars);
+--  dbg_printf ('%s', qr);
+  stat := '00000';
+  if (nrows is null or nrows < 0)
+    nrows := 0;
+  exec (qr, stat, msg, vector (), 0, metas, rset);
+  if (stat <> '00000')
+    {
+reporterr:
+      http_status_set (500);
+      return ('Error: %V', msg);
+    }
+  accept := http_request_header (lines, 'Accept');
+  if (not isstring (accept))
+    accept := '';
+  if (strstr (accept, 'application/rdf+xml') is not null)
+    fmt := 'rdf';
+  else if (strstr (accept, 'text/rdf+n3') is not null)
+    fmt := 'n3';
+  else
+    signal ('22023', 'Content type is not supported');
+  ses := string_output ();
+  if (fmt = 'rdf')
+    sioc..rdf_head (ses);
+  if (fmt = 'rdf')
+    {
+      declare triples any;
+      if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+	{
+	  triples := dict_list_keys (rset[0][0], 1);
+	  DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	}
+    }
+  else
+    {
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+    }
+  if (fmt = 'rdf')
+    sioc..rdf_tail (ses);
+  return ses;
+}
+;
