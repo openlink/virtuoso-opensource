@@ -268,28 +268,28 @@ directory_init() {
   cp $HOME/binsrc/oat/images/markers/*.png vad/data/wa/images/oat/markers/.
   cp $HOME/binsrc/oat/styles/*.css vad/data/wa/oat/styles/.
   cp $HOME/binsrc/oat/xslt/*.xsl vad/data/wa/oat/xslt/.
-#  cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
-#  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
-#  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
-#  cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
-#  cp $HOME/binsrc/oat/toolkit/xml.js vad/data/wa/oat/.
-  #cp images/dav_browser/*.gif vad/data/wa/images/dav_browser
-  #cp images/dav_browser/*.jpg vad/data/wa/images/dav_browser
+# cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
+# cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
+# cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
+# cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
+# cp $HOME/binsrc/oat/toolkit/xml.js vad/data/wa/oat/.
+# cp images/dav_browser/*.gif vad/data/wa/images/dav_browser
+# cp images/dav_browser/*.jpg vad/data/wa/images/dav_browser
   cp images/dav_browser/*.png vad/data/wa/images/dav_browser
   cp images/*.gif vad/data/wa/images
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
   cp images/app_ads/*.jpg vad/data/wa/images/app_ads
-  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
+# cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp icons/*.gif vad/data/wa/images/icons
-  #cp icons/*.jpg vad/data/wa/images/icons
+# cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons
-  cp images/skin/default/*.jpg vad/data/wa/images/skin/default
+# cp images/skin/default/*.jpg vad/data/wa/images/skin/default
   cp images/skin/default/*.png vad/data/wa/images/skin/default
   cp images/skin/pager/*.png vad/data/wa/images/skin/pager
-  #cp buttons/*.gif vad/data/wa/images/buttons
-  #cp buttons/*.jpg vad/data/wa/images/buttons
-  #cp buttons/*.png vad/data/wa/images/buttons
+# cp buttons/*.gif vad/data/wa/images/buttons
+# cp buttons/*.jpg vad/data/wa/images/buttons
+# cp buttons/*.png vad/data/wa/images/buttons
   cp comp/*.xml vad/data/wa/comp
   cp tmpl/* vad/data/wa/tmpl
   cat home.vspx | sed -e "s/home\.xsl/\/DAV\/VAD\/wa\/home\.xsl/g" >  vad/data/wa/templates/default/home.vspx
