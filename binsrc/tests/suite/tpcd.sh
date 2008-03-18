@@ -105,6 +105,9 @@ then
     LOG "***ABORTED: tpcd.sh: tpc-d/Q.sql"
     exit 1
 fi
+
+if test -n "$TEST_SPARQL"
+then
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/sql_rdf.sql
 if test $STATUS -ne 0
 then
@@ -128,6 +131,15 @@ if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
+fi
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
+    exit 1
+fi
+else
+echo ***SKIPPED: SPARQL tests of RDF Views and materialized quads; can be enabled if TEST_SPARQL is set to nonempty string.
 fi
 
 LOG
