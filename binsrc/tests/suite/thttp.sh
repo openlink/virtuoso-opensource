@@ -825,6 +825,7 @@ case $1 in
    fi
    cd ..
 
+   DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/');"   
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"   
   if [ "x$HOST_OS" = "x" -a "x$NO_PERF" = "x" ]
   then
