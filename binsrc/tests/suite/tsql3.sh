@@ -220,6 +220,13 @@ then
     fi
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfhi.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf using hash trdfhi.sql"
+    exit 1
+fi
+
 SHUTDOWN_SERVER
 
 if [ "x$SQLOPTIMIZE" = "x" ]
