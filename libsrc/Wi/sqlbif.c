@@ -11490,6 +11490,15 @@ bif_hic_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_hic_set_memcache_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long new_size = bif_long_arg (qst, args, 0, "hic_set_memcache_size");
+  long old_size = hi_end_memcache_size;
+  if (new_size >= 0 && QI_IS_DBA (qst))
+    hi_end_memcache_size = new_size;
+  return box_num (old_size);
+}
 
 caddr_t
 bif_bit_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -12907,6 +12916,7 @@ sql_bif_init (void)
 #endif
   bif_define ("sqlo_enable", bif_sqlo);
   bif_define ("hic_clear", bif_hic_clear);
+  bif_define ("hic_set_memcache_size", bif_hic_set_memcache_size);
 
   bif_define ("icc_try_lock", bif_icc_try_lock);
   bif_define ("icc_lock_at_commit", bif_icc_lock_at_commit);
