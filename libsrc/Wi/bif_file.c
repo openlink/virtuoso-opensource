@@ -118,9 +118,9 @@ virt_strerror (int eno)
 #ifdef HAVE_STRERROR_R
   static char buf[BUFSIZ];
 #ifdef STRERROR_R_CHAR_P
-  if (0 == strerror_r (eno, buf, sizeof (buf)))
-#else
   if (NULL != strerror_r (eno, buf, sizeof (buf)))
+#else
+  if (0 == strerror_r (eno, buf, sizeof (buf)))
 #endif
     return &(buf[0]);
   else
