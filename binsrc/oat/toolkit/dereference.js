@@ -12,6 +12,19 @@
 */
 
 OAT.Dereference = {
+	pragmas:{},
+
+	setPragmas:function(pragmaObj) {
+		for (var p in pragmaObj) { 
+			if(pragmaObj[p]) { this.pragmas[p] = pragmaObj[p]; } 
+			else { delete(this.pragmas[p]); } 
+		}
+	},
+
+	clearPragmas:function(pragmaObj) {
+		this.pragmas = {};
+	},
+
 	go:function(url,callback,optObj) {
 		if (url.match(/^http/i)) { /* Virtuoso proxy: */
 			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
@@ -21,11 +34,13 @@ OAT.Dereference = {
 			if (user) { encoded += "&login="+encodeURIComponent(user); }
 			if (url.match(/\.n3$/)) { encoded += "&output-format=n3"; }
 			if (url.match(/\.ttl$/)) { encoded += "&output-format=ttl"; }
+			for (var p in this.pragmas) { encoded += "&" + p + "=" + this.pragmas[p]; }
 		} else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) { /* Virtuoso proxy: */
 			var encoded = encodeURIComponent(url);
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 			if (url.match(/\.n3$/)) { encoded += "&output-format=n3"; }
 			if (url.match(/\.ttl$/)) { encoded += "&output-format=ttl"; }
+			for (var p in this.pragmas) { encoded += "&" + p + "=" + this.pragmas[p]; }
 		} else {
 			var encoded = url;
 		}
