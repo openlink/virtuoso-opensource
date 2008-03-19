@@ -172,6 +172,11 @@
         }
     self.atomver := get_keyword ('AtomFeedVer', self.opts, '0.3');
     self.blog_iri := sprintf ('http://%s/dataspace/%U/weblog/%U', self.chost, self.owner_name, self.inst_name);
+    if (ODS.DBA.search_do_rdf (self.qry, null, self.vc_event.ve_lines, 100, self.blog_iri))
+      {
+        self.vc_enabled := 0;
+	return;
+      }
       ]]>
     </v:on-init>
     <v:after-data-bind>
