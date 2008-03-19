@@ -2181,6 +2181,31 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
 }
 ;
 
+-- checks if x is less than y
+create procedure VAD.DBA.VER_LT (in x varchar, in y varchar)
+{
+  declare xx, yy any;
+  if (x is null)
+    return 0;
+  if (length (x) = 0 and length (y) > 0)
+    return 1;
+  xx := split_and_decode (x, 0, '\0\0.');
+  yy := split_and_decode (y, 0, '\0\0.');
+  if (length (xx) > length (yy))
+    return 0;
+  if (length (xx) < length (yy))
+    return 1;
+  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
+    {
+      declare xi, yi int;
+      xi := atoi (xx[i]);
+      yi := atoi (yy[i]);
+      if (xi < yi)
+	return 1;
+    }
+  return 0;
+}
+;
 
 create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 {
@@ -2236,7 +2261,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 	     }
 
 	   -- Only upgrade if package exists in database with older version
-	   if (pver > ver and isdav = pisdav)
+	   if (VAD.DBA.VER_LT (ver, pver) and isdav = pisdav)
 	     {
 	       log_message ('Installing '||pfull||' version '||pver|| ' '||case when isdav then '(DAV)' else '' end);
 	       vad_install (vaddir||f);
