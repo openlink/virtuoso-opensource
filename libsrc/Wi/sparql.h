@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- *  
-*/
+ */
+
 #ifndef __SPARQL_H
 #define __SPARQL_H
 
@@ -536,7 +536,7 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
 
-extern caddr_t spar_strliteral_impl (sparp_t *sparp, const char *sparyytext, int strg_is_long, int is_json);
+extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg_is_long, int is_json);
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
