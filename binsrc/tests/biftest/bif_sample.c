@@ -221,7 +221,7 @@ static caddr_t
 bif_need_to_know (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   unsigned inx;
-  caddr_t uid = (caddr_t) bif_long_arg (qst, args, 0, "need_to_know");
+  int uid = (int) bif_long_arg (qst, args, 0, "need_to_know");
   ST *tree = (ST *) bif_array_arg (qst, args, 1, "need_to_know");
   if (ST_P (tree, SELECT_STMT))
     {
@@ -241,7 +241,7 @@ bif_need_to_know (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      else
 		corr_name = tref->_.table.name;
 	      if (strstr (tref->_.table.name, "REPORT"))
-		nk_test_add (texp, corr_name, (int) uid);
+		nk_test_add (texp, corr_name, uid);
 	    }
 	}
     }
