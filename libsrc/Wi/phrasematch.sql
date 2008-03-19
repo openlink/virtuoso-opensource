@@ -28,23 +28,7 @@ create procedure AP_EXEC_NO_ERROR (in expr varchar)
 }
 ;
 
-create procedure AP_ADD_COL (in tbl varchar, in col varchar, in coltype varchar) {
- if ( exists(
-           select
-             top 1 1
-           from
-             DB.DBA.SYS_COLS
-           where
-             upper("TABLE") = upper(tbl) and
-             upper("COLUMN") = upper(col)
-          )
-    ) return;
-  exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
-}
-;
-
-
-AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_CLASS
+create table DB.DBA.SYS_ANN_PHRASE_CLASS
 (
   APC_ID integer not null primary key,
   APC_NAME varchar(255) unique,		-- unique name for use in API/UI
@@ -52,10 +36,10 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_CLASS
   APC_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   APC_CALLBACK varchar,
   APC_APP_ENV any
-  )')
+  )
 ;
 
-AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_SET
+create table DB.DBA.SYS_ANN_PHRASE_SET
 (
   APS_ID integer not null primary key,
   APS_NAME varchar(255) unique,		-- unique name for use in API/UI
@@ -66,33 +50,37 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_SET
   APS_APP_ENV any,
   APS_SIZE any,				-- approximate number of phrases in set (actual or estimate for future)
   APS_LOAD_AT_BOOT integer not null	-- flags whether phrases should be loaded at boot time.
-  )')
+  )
 ;
 
-AP_ADD_COL ('DB.DBA.SYS_ANN_PHRASE_SET', 'APS_LOAD_AT_BOOT', 'integer not null')
+alter table DB.DBA.SYS_ANN_PHRASE_SET add APS_LOAD_AT_BOOT integer not null
 ;
 
-AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE
+create table DB.DBA.SYS_ANN_PHRASE
 (
   AP_APS_ID integer not null,		-- references SYS_ANN_PHRASE_SET (APS_ID),
   AP_CHKSUM integer,			-- prased phrase checksum
   AP_TEXT varchar,			-- original text
   AP_LINK_DATA any,			-- Associated data about links etc.
+  AP_LINK_DATA_LONG long varchar,	-- Same as AP_LINK_DATA but for long content, one of two is always NULL
   primary key (AP_APS_ID, AP_CHKSUM, AP_TEXT)
-  )')
+  )
 ;
 
-AP_EXEC_NO_ERROR('create table DB.DBA.SYS_ANN_AD_ACCOUNT (
+alter table DB.DBA.SYS_ANN_PHRASE add AP_LINK_DATA_LONG long varchar
+;
+
+create table DB.DBA.SYS_ANN_AD_ACCOUNT (
   AAA_ID integer not null primary key,
   AAA_NAME varchar(255) unique,		-- unique name for use in API/UI
   AAA_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
   AAA_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   AAA_DETAILS long xml,			-- any details, e.g., in RDF
   AAA_APP_ENV any
-  )')
+  )
 ;
 
-AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_LINK (
+create table DB.DBA.SYS_ANN_LINK (
   AL_ID integer primary key,
   AL_OWNER_UID integer,			-- references SYS_USERS (U_ID), NULL if the record writeable for any reader; always readable for public
   AL_URI varchar,			-- URI template for A HREF
@@ -101,10 +89,10 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_LINK (
   AL_TAGS any,				-- tags to add or remove
   AL_CALLBACK varchar,
   AL_APP_ENV any
-  )')
+  )
 ;
 
-AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_AD_RULE (
+create table DB.DBA.SYS_ANN_AD_RULE (
   AAR_AAA_ID integer not null,		-- advertizer who pays for the ad
   AAR_APS_ID integer not null,		-- phrase set
   AAR_AP_CHKSUM integer not null,	-- phrase checksum
@@ -112,7 +100,35 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_AD_RULE (
   AAR_AL_ID integer not null,		-- references SYS_ANN_LINK (AL_ID)
   AAR_APP_ENV any,
   primary key (AAR_AAA_ID, AAR_APS_ID, AAR_AP_CHKSUM, AAR_TEXT, AAR_AL_ID)
-  )')
+  )
+;
+
+delete from SYS_TRIGGERS where T_NAME in (
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_I'),
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_U'),
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_BD'),
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_I'),
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_U'),
+  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_BD') )
+;
+
+delete from SYS_PROCEDURES where P_NAME in (
+  fix_identifier_case ('DB.DBA.AP_EXEC_NO_ERROR'),
+  fix_identifier_case ('DB.DBA.ANN_BOOT'),
+  fix_identifier_case ('DB.DBA.ANN_ZAP'),
+  fix_identifier_case ('DB.DBA.ANN_AUTHENTICATE'),
+  fix_identifier_case ('DB.DBA.ANN_GETID'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_ADD'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_ADD_INT'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_DEL'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_ADD'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_ADD_INT'),
+  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_DEL'),
+  fix_identifier_case ('DB.DBA.ANN_LINK_ADD'),
+  fix_identifier_case ('DB.DBA.ANN_LINK_MODIFY'),
+  fix_identifier_case ('DB.DBA.ANN_LINK_DEL'),
+  fix_identifier_case ('DB.DBA.ANN_AD_RULE_ADD'),
+  fix_identifier_case ('DB.DBA.ANN_AD_RULE_DEL') )
 ;
 
 create trigger SYS_ANN_PHRASE_CLASS_I after insert on DB.DBA.SYS_ANN_PHRASE_CLASS referencing new as N
@@ -568,6 +584,33 @@ phrase_done:
   delete from DB.DBA.SYS_ANN_AD_RULE where (AAR_AAA_ID = _aaa_id) and (AAR_APS_ID = _aps_id) and (AAR_AP_CHKSUM = _ap_chksum) and (AAR_TEXT = _text) and (AAR_AL_ID = _al_id);
   commit work;
   return res;
+}
+;
+
+create procedure DB.DBA.ANN_ZAP ()
+{
+  declare _aps_id, _prev_aps_id integer;
+  declare _text, _prev_text varchar;
+  whenever not found goto phrase_nf;
+  _prev_aps_id := -1;
+  _prev_text := '';
+
+next_phrase:
+  select AP_APS_ID, AP_TEXT into _aps_id, _text from DB.DBA.SYS_ANN_PHRASE;
+  if ((_aps_id = _prev_aps_id) and (_text = _prev_text))
+    signal ('OBLOM', sprintf ('Unable to remove phrase ''%s'' of set %d', _text, _aps_id));
+  ap_add_phrases (_aps_id, vector (vector (_text)));
+  _prev_aps_id := _aps_id;
+  _prev_text := _text;
+  goto next_phrase;
+
+phrase_nf:
+  delete from DB.DBA.SYS_ANN_AD_RULE;
+  delete from DB.DBA.SYS_ANN_LINK;
+  delete from DB.DBA.SYS_ANN_AD_ACCOUNT;
+  delete from DB.DBA.SYS_ANN_PHRASE_SET;
+  delete from DB.DBA.SYS_ANN_PHRASE_CLASS;
+  commit work;
 }
 ;
 
