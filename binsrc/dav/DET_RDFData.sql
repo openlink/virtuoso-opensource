@@ -592,7 +592,9 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
     {
       declare lpath varchar;
       lpath := http_path ();
-      if (lpath like '%.ttl' or lpath like '%.n3')
+      if (lpath like '%.rdf')
+	type := 'application/rdf+xml';
+      else
         type := 'text/rdf+n3';
     }
   iri := id_to_iri (id [4]);
