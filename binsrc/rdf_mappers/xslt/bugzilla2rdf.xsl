@@ -32,6 +32,7 @@
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:bugzilla="http://www.openlinksw.com/schemas/bugzilla#"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
@@ -41,43 +42,119 @@
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="bugzilla/bug">
-      <foaf:Document rdf:about="{$base}">
-      <xsl:apply-templates select="bug_id"/>
-	  <xsl:apply-templates select="reporter"/>
-	  <xsl:apply-templates select="short_desc"/>
-	  <xsl:apply-templates select="long_desc"/>
-	  <xsl:apply-templates select="creation_ts"/>	  
-      </foaf:Document>
+	<wf:Task rdf:about="{$base}">
+	    <xsl:apply-templates select="*"/>
+	</wf:Task>
   </xsl:template>
-  <xsl:template match="bug_id">
-      <dc:title>
+    <xsl:template match="version">
+	<bugzilla:version>
 	  <xsl:value-of select="."/>
-      </dc:title>
+	</bugzilla:version>
   </xsl:template>  
-  <xsl:template match="short_desc">
-      <dc:subject>
+    <xsl:template match="delta_ts">
+	<bugzilla:delta>
 	  <xsl:value-of select="."/>
-      </dc:subject>
+	</bugzilla:delta>
   </xsl:template>
-  <xsl:template match="long_desc">
-      <dc:description>
-	  <xsl:value-of select="thetext"/>
-      </dc:description>
+    <xsl:template match="bug_status">
+	<bugzilla:state>
+	    <xsl:value-of select="."/>
+	</bugzilla:state>
+    </xsl:template> 
+    <xsl:template match="rep_platform">
+	<bugzilla:reporterPlatform>
+	    <xsl:value-of select="."/>
+	</bugzilla:reporterPlatform>
+    </xsl:template> 
+    <xsl:template match="assigned_to">
+	<bugzilla:assignee>
+	    <xsl:value-of select="."/>
+	</bugzilla:assignee>
   </xsl:template>
   <xsl:template match="reporter">
-      <dc:creator>
+	<bugzilla:reporter>
+	    <xsl:value-of select="."/>
+	</bugzilla:reporter>
+    </xsl:template> 
+    <xsl:template match="product">
+	<bugzilla:product>
 	  <xsl:value-of select="."/>
-      </dc:creator>
+	</bugzilla:product>
+    </xsl:template> 
+    <xsl:template match="component">
+	<bugzilla:component>
+	    <xsl:value-of select="."/>
+	</bugzilla:component>
   </xsl:template>
   <xsl:template match="creation_ts">
-      <dcterms:issued>
+	<bugzilla:created>
+	    <xsl:value-of select="."/>
+	</bugzilla:created>
+    </xsl:template>
+    <xsl:template match="target_milestone">
+	<bugzilla:target_milestone>
+	    <xsl:value-of select="."/>
+	</bugzilla:target_milestone>
+    </xsl:template> 
+    <xsl:template match="bug_severity">
+	<bugzilla:bug_severity>
 	  <xsl:value-of select="."/>
-      </dcterms:issued>
+	</bugzilla:bug_severity>
+    </xsl:template> 
+    <xsl:template match="op_sys">
+	<bugzilla:operationSystem>
+	    <xsl:value-of select="."/>
+	</bugzilla:operationSystem>
+    </xsl:template> 
+    <xsl:template match="estimated_time">
+	<bugzilla:estimatedTime>
+	    <xsl:value-of select="."/>
+	</bugzilla:estimatedTime>
+    </xsl:template> 
+    <xsl:template match="remaining_time">
+	<bugzilla:remainingTime>
+	    <xsl:value-of select="."/>
+	</bugzilla:remainingTime>
+    </xsl:template> 
+    <xsl:template match="everconfirmed">
+	<bugzilla:everConfirmed>
+	    <xsl:value-of select="."/>
+	</bugzilla:everConfirmed>
+    </xsl:template> 
+    <xsl:template match="cclist_accessible">
+	<bugzilla:ccListAccessible>
+	    <xsl:value-of select="."/>
+	</bugzilla:ccListAccessible>
+    </xsl:template> 
+    <xsl:template match="reporter_accessible">
+	<bugzilla:reporterAccessible>
+	    <xsl:value-of select="."/>
+	</bugzilla:reporterAccessible>
+    </xsl:template> 
+    <xsl:template match="priority">
+	<bugzilla:priority>
+	    <xsl:value-of select="."/>
+	</bugzilla:priority>
+    </xsl:template> 
+    <xsl:template match="short_desc">
+	<bugzilla:shortDescription>
+	    <xsl:value-of select="."/>
+	</bugzilla:shortDescription>
   </xsl:template>
   <xsl:template match="delta_ts">
-      <dcterms:modified>
+	<bugzilla:modified>
+	    <xsl:value-of select="."/>
+	</bugzilla:modified>
+    </xsl:template>
+    <xsl:template match="bug_id">
+	<dc:title>
 	  <xsl:value-of select="."/>
-      </dcterms:modified>
+	</dc:title>
+    </xsl:template>  
+    <xsl:template match="long_desc">
+	<dc:description>
+	    <xsl:value-of select="thetext"/>
+	</dc:description>
   </xsl:template>
   <xsl:template match="*|text()"/>
 </xsl:stylesheet>
