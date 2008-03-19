@@ -395,7 +395,7 @@
                       <tr align="left">
         <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 55) ?></a></td>
         <td nowrap="nowrap">
-            <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
+            <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V wa_utf8_to_wide (coalesce (author, '~unknown~')) ?></a>
         </td>
         <td nowrap="nowrap"><?V wa_abs_date (ts) ?></td>
           </tr>
@@ -605,7 +605,7 @@
             if (clk<>'')
             {
         ?>
-            <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
+            <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V wa_utf8_to_wide (coalesce (author, '~unknown~')) ?></a>
         <?vsp
             }else
             {
@@ -2608,7 +2608,7 @@
       <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;">
         <?V substring (coalesce (title, '*no title*'), 1, 55) ?></a>
 <!--
-                 <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;">&lt;?V coalesce (author, '~unknown~') ?></a>
+                 <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;">&lt;?V wa_utf8_to_wide (coalesce (author, '~unknown~')) ?></a>
 -->
           - <?V wa_abs_date (ts) ?>
     </li>

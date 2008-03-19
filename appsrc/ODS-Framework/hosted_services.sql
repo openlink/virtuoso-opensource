@@ -6391,6 +6391,20 @@ create procedure  ods_bar_css (in img_path varchar) {
 }
 ;
 
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
+    1,
+    '/~(.*)',
+    vector('uname'),
+    1,
+    '/DAV/home/%s',
+    vector('uname'),
+    null, null, 2, null
+    );
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule'));
+
+
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
 {
   -- common access point
@@ -6430,6 +6444,38 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/activities');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/activities',
       ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+
+  if (not (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/')))
+    {
+      DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/');
+      DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/',
+	  ppath=>'/', is_dav=>0, def_page=>'index.html',
+	  opts=>vector ('url_rewrite', 'ods_user_home_rulelist', 'url_rewrite_keep_lpath', 1));
+    }
+  else
+    {
+      declare h_opts, do_upd any;
+      h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH where
+      	HP_LPATH = '/' and HP_HOST = _host and HP_LISTEN_HOST = _lhost);
+      do_upd := 0;
+      if (not isarray (h_opts))
+	{
+          h_opts := vector ('url_rewrite', 'ods_user_home_rulelist', 'url_rewrite_keep_lpath', 1);
+	  do_upd := 1;
+	}
+      else if (not position ('url_rewrite', h_opts))
+	{
+          h_opts := vector_concat (h_opts, vector ('url_rewrite', 'ods_user_home_rulelist', 'url_rewrite_keep_lpath', 1));
+	  do_upd := 1;
+	}
+      if (do_upd)
+	{
+	  update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts)
+	      where HP_LPATH = '/' and HP_HOST = _host and HP_LISTEN_HOST = _lhost;
+	  DB.DBA.VHOST_MAP_RELOAD (_host, _lhost, '/');
+	}
+    }
+
   return;
 }
 ;

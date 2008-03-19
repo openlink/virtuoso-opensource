@@ -455,13 +455,17 @@ DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241
     location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).n3', 'text/rdf+n3', 0.80,
     location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).turtle', 'text/turtle', 0.70,
+    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).ttl', 'text/rdf+ttl', 0.70,
+    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
 
 -- RDF data rules - these was returning 303
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/([^\\?]*)', vector('path'), 1,
     '/ods/data/rdf/%U', vector('path'),
     'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)',
     2,
     null);
 
@@ -470,7 +474,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
     '/ods/data/rdf/%U.%U?page=%U', vector('path', '*accept*', 'page'),
     'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)',
     2,
     null);
 

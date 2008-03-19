@@ -141,8 +141,7 @@
         declare dataspace_url varchar;
 
 
-        dataspace_url:=sprintf('%s%U/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME);
-
+        dataspace_url:=sprintf('%s%U/%s/%s', self.odsbar_dataspace_path, INST_OWNER, self.odsbar_app_dataspace, replace (sprintf('%U', INST_NAME), '/', '%2f'));
 --        dataspace_url:=INST_DATASPACE;
 ?>
 	      <li>

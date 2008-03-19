@@ -98,15 +98,9 @@
 
       self.max_rows.ufl_value := '100';
 
-      declare ac varchar;
-      ac := http_request_header (self.vc_event.ve_lines, 'Accept');
-      if (not isstring (ac))
-	ac := '';
-      if (strstr (ac, 'application/rdf+xml') is not null or strstr (ac, 'text/rdf+n3') is not null)
+      if (ODS.DBA.search_do_rdf (self.qry, self.sapps, self.vc_event.ve_lines, self.qry_max_rows))
 	{
 	  self.vc_enabled := 0;
-	  http_rewrite ();
-	  http (ODS.DBA.search_do_rdf (self.qry, self.sapps, self.vc_event.ve_lines, self.qry_max_rows));
 	  return;
 	}
     ]]>
@@ -265,7 +259,6 @@
     <![CDATA[
   declare query varchar;
   declare res, meta, rel_tags_data, rel_tags_meta, tags_vector any;
-  -- dbg_obj_print ('do_search');
   tags_vector := vector ();
 
   query := null;

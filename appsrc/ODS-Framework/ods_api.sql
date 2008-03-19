@@ -807,6 +807,27 @@ again:
 }
 ;
 
+create procedure search_compose_inst_qry (in q any, in iri varchar)
+{
+  declare ses any;
+  declare qr varchar;
+  declare node, graph varchar;
+
+  ses := string_output ();
+  graph := sioc..get_graph ();
+
+  http ('sparql ', ses);
+  --http ('define input:inference <' || graph || '> \n', ses);
+  http (sioc.DBA.std_pref_declare (), ses);
+  http (sprintf ('\n construct { ?x ?y ?z } \n from <%s> where { \n', graph), ses);
+
+  qr := DB.DBA.FTI_MAKE_SEARCH_STRING (q);
+
+  node := sprintf (' ?x ?y ?z ; sioc:has_container <%S> . ?z bif:contains \'%S\' ', iri, qr);
+  http (node, ses);
+  http ('\n }', ses);
+  return string_output_string (ses);
+};
 
 create procedure search_compose_qry (in q any, in pars varchar)
 {
@@ -875,10 +896,16 @@ create procedure search_compose_qry (in q any, in pars varchar)
 ;
 
 
-create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any, in nrows int)
+create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any, in nrows int, in iri varchar := null)
 {
   declare qr, ses, stat, msg, metas, rset any;
   declare accept, fmt varchar;
+
+  accept := http_request_header (lines, 'Accept');
+  if (not isstring (accept))
+    accept := '';
+  if (regexp_match ('(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)', accept) is null)
+    return 0;
 
   set http_charset='utf-8';
   declare exit handler for sqlstate '*'
@@ -888,7 +915,10 @@ create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any,
       goto reporterr;
     };
 
+  if (iri is null)
   qr := search_compose_qry (q, pars);
+  else
+    qr := search_compose_inst_qry (q, iri);
 --  dbg_printf ('%s', qr);
   stat := '00000';
   if (nrows is null or nrows < 0)
@@ -898,11 +928,8 @@ create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any,
     {
 reporterr:
       http_status_set (500);
-      return ('Error: %V', msg);
+      http ('Error: %V', msg);
     }
-  accept := http_request_header (lines, 'Accept');
-  if (not isstring (accept))
-    accept := '';
   if (strstr (accept, 'application/rdf+xml') is not null)
     fmt := 'rdf';
   else if (strstr (accept, 'text/rdf+n3') is not null)
@@ -927,6 +954,12 @@ reporterr:
     }
   if (fmt = 'rdf')
     sioc..rdf_tail (ses);
-  return ses;
+  if (fmt = 'n3')
+    http_header ('Content-Type: text/rdf+n3\r\n');
+  else
+    http_header ('Content-Type: application/rdf+xml\r\n');
+  http_rewrite ();
+  http (ses);
+  return 1;
 }
 ;
