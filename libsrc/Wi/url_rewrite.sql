@@ -1142,7 +1142,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare top_rulelist_iri varchar;
   declare rule_iri, in_path, qstr varchar;
   declare target_vhost_pkey, hf, accept any;
-  declare result, http_redir, http_tcn_code, tcn_rc int;
+  declare result, http_redir, http_tcn_code, tcn_rc, keep_lpath int;
   declare http_headers, http_tcn_headers varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
@@ -1153,9 +1153,11 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
     in_path := '/';
   accept := null;
   qstr := null;
+  keep_lpath := 0;
 
   if (is_http_ctx ())
     {
+      keep_lpath := http_map_get ('url_rewrite_keep_lpath');
       lines := http_request_header ();
       if (length (lines))
 	{
@@ -1255,7 +1257,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  full_path := hf[2];
 	  pars := split_and_decode (hf[4]);
 	  p_full_path := http_physical_path_resolve (full_path, 1);
-	  http_internal_redirect (full_path, p_full_path, long_url);
+	  http_internal_redirect (full_path, p_full_path, long_url, keep_lpath);
 	  pars := vector_concat (params, pars);
 	  http_set_params (pars);
         }

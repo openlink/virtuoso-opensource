@@ -2518,6 +2518,12 @@ error_end:
       ws->ws_try_pipeline = 0;
       ws_strses_reply (ws, NULL);
     }
+ 
+  /* an initial lookup in FS directory would set method in error if it's not a POST, GET or HEAD 
+     thus after we re-map, we need to set to unknown so DAV can process it
+   */ 
+  if (WM_ERROR == ws->ws_method && IS_DAV_DOMAIN(ws, ""))
+    ws->ws_method = WM_UNKNOWN;
   return retc;
 #endif
 }
@@ -4453,6 +4459,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   caddr_t new_phy_path = NULL, new_url = NULL;
   caddr_t * parr;
   ws_connection_t * ws = qi->qi_client->cli_ws;
+  int keep_lpath = 0;
 
   if (NULL == ws)
     sqlr_new_error ("42000", "HT067",
@@ -4460,11 +4467,17 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 
   ws = qi->qi_client->cli_ws;
 
+  if (BOX_ELEMENTS (args) > 3)
+    keep_lpath = (int) bif_long_arg (qst, args, 3, "http_internal_redirect");
+
+  if (!keep_lpath)
+    {
   dk_free_tree (ws->ws_path_string);
   dk_free_tree (ws->ws_path);
   ws->ws_path_string = box_copy (new_path);
   parr = (caddr_t *) http_path_to_array (new_path, 1);
   ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
+    }
 
   if (BOX_ELEMENTS (args) > 1)
     new_phy_path = bif_string_or_null_arg (qst, args, 1, "http_internal_redirect");
@@ -4481,7 +4494,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 #endif  
   if (BOX_ELEMENTS (args) > 2)
     new_url = bif_string_or_null_arg (qst, args, 2, "http_internal_redirect");
-  if (NULL != new_url && NULL != ws->ws_lines && BOX_ELEMENTS (ws->ws_lines) > 0)
+  if (!keep_lpath && NULL != new_url && NULL != ws->ws_lines && BOX_ELEMENTS (ws->ws_lines) > 0)
     {
       caddr_t * lines = ws->ws_lines;
       caddr_t new_req = dk_alloc_box (box_length (new_url) + strlen (ws->ws_method_name) + strlen (ws->ws_proto) + 4,
@@ -6947,6 +6960,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_executable = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite"))
 		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite_keep_lpath"))
+		map->hm_url_rewrite_keep_lpath = unbox (opts[i+1]);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -7595,6 +7610,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_executable);
   else if (!strcmp (member, "url_rewrite"))
     res = box_copy_tree ((box_t) map->hm_url_rewrite_rule);
+  else if (!strcmp (member, "url_rewrite_keep_lpath"))
+    res = box_num (map->hm_url_rewrite_keep_lpath);
   else if (!strcmp (member, "noinherit"))
     res = box_num (map->hm_no_inherit);
   return res;

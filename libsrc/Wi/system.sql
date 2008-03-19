@@ -360,6 +360,8 @@ skip_auth:;
               if (isinteger (rc))
                 if (rc < 0)
 		  signal ('42000', concat ('Error on reading DAV resource with path equal to "', path, '"'));
+	      if (__tag (content) = 222)
+		content := cast (content as varchar);
 	      return content;
             }
 	  signal ('42000', concat ('The table ', table_name, ' doesn''t have row with ',

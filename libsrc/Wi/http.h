@@ -77,6 +77,7 @@ typedef struct ws_http_map_s
     int		hm_executable;
     caddr_t 	hm_htkey;
     caddr_t     hm_url_rewrite_rule;
+    int		hm_url_rewrite_keep_lpath;
   } ws_http_map_t;
 #endif
 
