@@ -955,13 +955,13 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 	value = QST_GET (qst, ssl);
 /*save_value:*/
       if (feed_temp_blobs)
-	row_set_col (hash_row, &ha->ha_key_cols[inx],
+	row_set_col_1 (hash_row, &ha->ha_key_cols[inx],
 	  value, (int *)&v_fill, ROW_MAX_DATA,
-	  tree->it_key, &err, itc, NULL, qst);
+	  tree->it_key, &err, itc, NULL, qst, (HA_DISTINCT == ha->ha_op));
       else
 	row_set_col_temp (hash_row, &ha->ha_key_cols[inx],
 	  value, (int *)&v_fill, ROW_MAX_DATA,
-	  tree->it_key, &err, itc, NULL, qst);
+	  tree->it_key, &err, itc, NULL, qst, (HA_DISTINCT == ha->ha_op));
 check_err:
       if (err)
 	sqlr_resignal (err);
@@ -1866,7 +1866,7 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
       if (ssl)
 	{
 	  row_set_col_temp (row, &ha->ha_key_cols[inx], QST_GET (qst, ssl), &v_fill, ROW_MAX_DATA,
-		       ha->ha_key, &err, ins_itc, NULL, qst);
+		       ha->ha_key, &err, ins_itc, NULL, qst, 0);
 	}
       else
 	{

@@ -167,7 +167,7 @@ itc_box_row (it_cursor_t * itc, db_buf_t page)
 
 
 caddr_t
-blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc)
+blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc, dtp_t col_dtp)
 {
   if (IS_BLOB_DTP (*xx))
     {
@@ -178,10 +178,19 @@ blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc)
     }
   else if (DV_LONG_STRING == *xx)
     {
+      caddr_t box;
       /* the length is data + 1 since includes the tag byte in front */
-      caddr_t box = dk_alloc_box (len, DV_LONG_STRING);
+      if (col_dtp != DV_BLOB_BIN)
+	{
+	  box = dk_alloc_box (len, DV_LONG_STRING);
       memcpy (box, xx + 1, len - 1);
       box[len - 1] = 0;
+	}
+      else
+	{
+	  box = dk_alloc_box (len - 1, DV_BIN);
+	  memcpy (box, xx + 1, len - 1);
+	}
       return box;
     }
   else if (DV_LONG_WIDE == *xx || DV_WIDE == *xx)
@@ -275,6 +284,7 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
   db_buf_t xx;
   int len, off;
   caddr_t str;
+  dtp_t col_dtp;
   if (!cl)
     cl = itc_col_loc (it, page, col);
   if (!cl)
@@ -293,6 +303,7 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
     }
   ITC_COL (it, (*cl), off, len);
   xx = page + it->itc_position + IE_FIRST_KEY + off;
+  col_dtp = cl->cl_sqt.sqt_dtp;
   switch (cl->cl_sqt.sqt_dtp)
     {
     case DV_SHORT_INT:
@@ -364,7 +375,7 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
 
     case DV_BLOB:
       {
-	caddr_t bh = blob_ref_check (xx, len, it);
+	caddr_t bh = blob_ref_check (xx, len, it, col_dtp);
 #ifdef BIF_XML
 	if (DV_BLOB_XPER_HANDLE == DV_TYPE_OF (bh))
 	  {
@@ -389,11 +400,11 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
       }
     case DV_BLOB_BIN:
     case DV_BLOB_WIDE:
-      return (blob_ref_check (xx, len, it));
+      return (blob_ref_check (xx, len, it, col_dtp));
 #ifdef BIF_XML
     case DV_BLOB_XPER:
       {
-	caddr_t bh = blob_ref_check (xx, len, it);
+	caddr_t bh = blob_ref_check (xx, len, it, col_dtp);
 	caddr_t val = (caddr_t) xper_entity (NULL, bh, NULL, 0, itc_box_base_uri_column (it, page, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
 	dk_free_box (bh);
 	return val;
@@ -607,11 +618,13 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
   int32 len, off;
   iri_id_t ln1;
   dtp_t * row = it->itc_row_data, *xx;
+  dtp_t col_dtp;
   if ((row[cl->cl_null_flag] & cl->cl_null_mask))
     {
       qst_set_bin_string (qst, target, (db_buf_t) "", 0, DV_DB_NULL);
       return;
     }
+  col_dtp = cl->cl_sqt.sqt_dtp;
   switch (cl->cl_sqt.sqt_dtp)
     {
     case DV_SHORT_INT:
@@ -685,7 +698,7 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
     case DV_BLOB:
       VL;
       {
-	caddr_t bh = blob_ref_check (xx, len, it);
+	caddr_t bh = blob_ref_check (xx, len, it, col_dtp);
 #ifdef BIF_XML
 	if (DV_BLOB_XPER_HANDLE == DV_TYPE_OF (bh))
 	  {
@@ -719,7 +732,7 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
     case DV_BLOB_WIDE:
       VL;
       {
-	caddr_t bh = blob_ref_check (xx, len, it);
+	caddr_t bh = blob_ref_check (xx, len, it, col_dtp);
 	qst_set (qst, target, bh);
 	return;
       }
@@ -728,7 +741,7 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
     case DV_BLOB_XPER:
       VL;
       {
-	caddr_t bh = blob_ref_check (xx, len, it);
+	caddr_t bh = blob_ref_check (xx, len, it, col_dtp);
 	caddr_t val = (caddr_t) xper_entity (
 	  (query_instance_t *) QST_INSTANCE (qst),
 	  bh, NULL, 0, itc_box_base_uri_column_impl (it, it->itc_row_key, row, cl->cl_col_id), NULL /* no enc */, server_default_lh, NULL /* DTD config */, 1 );
@@ -1146,6 +1159,15 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
 	     dbe_key_t * key,
 	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst)
 {
+  row_set_col_1 (row, cl, data, v_fill, max, key, err_ret, ins_itc, old_blob, qst, 0);
+}
+
+
+void
+row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
+	     dbe_key_t * key,
+	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst, int allow_shorten_any)
+{
   boxint lv;
   caddr_t str;
   int pos = cl->cl_pos, len;
@@ -1328,6 +1350,9 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
       }
 
     case DV_ANY:
+      if (allow_shorten_any)
+	str = box_to_shorten_any (data, err_ret);
+      else
       str = box_to_any (data, err_ret);
       if (err_ret && *err_ret)
 	return;
@@ -1725,7 +1750,7 @@ null_as_blob_from_client:
     {
       blob_handle_t *data_bh = (blob_handle_t *)(data);
       caddr_t tmp_null = dk_alloc_box (0, DV_DB_NULL);
-      row_set_col (row, cl, tmp_null, v_fill, max, key, err_ret, ins_itc, &row[pos], qst);
+      row_set_col_1 (row, cl, tmp_null, v_fill, max, key, err_ret, ins_itc, &row[pos], qst, allow_shorten_any);
       data_bh->bh_page = data_bh->bh_current_page = 0;
       dk_free_box (tmp_null);
    }
@@ -1736,7 +1761,8 @@ null_as_blob_from_client:
 void
 row_set_col_temp (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
 		  dbe_key_t * key,
-		  caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst)
+		  caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst,
+		  int allow_shorten_any)
 {
   /* as if row_set_col but store a blob handle by reference, no copy */
   if (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp))
@@ -1793,13 +1819,13 @@ row_set_col_temp (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, 
 		row[*v_fill] = cl2.cl_sqt.sqt_dtp;
 		(*v_fill)++;
 	      }
-	    row_set_col (row, &cl2, data, v_fill, max, key, err_ret, ins_itc, old_blob, qst);
+	    row_set_col_1 (row, &cl2, data, v_fill, max, key, err_ret, ins_itc, old_blob, qst, allow_shorten_any);
 	    break;
 	  }
 	}
     }
   else
-    row_set_col (row, cl, data, v_fill, max, key, err_ret, ins_itc, old_blob, qst);
+    row_set_col_1 (row, cl, data, v_fill, max, key, err_ret, ins_itc, old_blob, qst, allow_shorten_any);
 }
 
 

@@ -908,9 +908,14 @@ extern void qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin);
 void row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
 	     dbe_key_t * key,
 	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst);
+
+void row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
+	     dbe_key_t * key,
+	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst, int allow_shorten_any);
+
 void row_set_col_temp (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int max,
 		       dbe_key_t * key, caddr_t * err_ret, it_cursor_t * ins_itc,
-		       db_buf_t old_blob, caddr_t *qst);
+		       db_buf_t old_blob, caddr_t *qst, int allow_shorten_any);
 caddr_t row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
     oid_t col_id, dbe_key_t *key, caddr_t *qst);
 
