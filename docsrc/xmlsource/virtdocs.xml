@@ -188,6 +188,7 @@
 <!ENTITY http_rewrite				SYSTEM	"funcref/http_rewrite.xml">
 <!ENTITY http_root				SYSTEM	"funcref/http_root.xml">
 <!ENTITY http_value				SYSTEM	"funcref/http_value.xml">
+<!ENTITY urlrewrite_create_regex_rule		SYSTEM	"funcref/urlrewrite_create_regex_rule.xml">
 <!ENTITY http_url				SYSTEM	"funcref/http_url.xml">
 <!ENTITY http_xslt				SYSTEM	"funcref/http_xslt.xml">
 <!ENTITY import_clr				SYSTEM	"funcref/import_clr.xml">

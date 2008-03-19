@@ -127,7 +127,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &http_get; &http_header; &http_header_get; &http_kill; &http_listen_host; &http_map_table;
 &http_map_get; &http_param; &http_path; &http_pending_req; &http_physical_path; &http_proxy;
 &http_request_header; &http_request_header_full; &http_request_status; &http_request_get; &http_rewrite; &http_root; &http_value;
-&http_url; &http_xslt;
+&http_url; &http_xslt; &urlrewrite_create_regex_rule;
 
 &identity_value; &import_clr; &import_jar; &initcap; &internal_to_sql_type; &internal_type;
 &internal_type_name; &isarray; &isblob; &isbinary; &isdouble; &isentity;
