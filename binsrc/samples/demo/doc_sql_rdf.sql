@@ -149,7 +149,7 @@ from WS.WS.SYS_DAV_PROP as properties
 from DB.DBA.SYS_USERS as users
 from DB.DBA.document_search as docs
 where (^{collections.}^.COL_ID = ^{resources.}^.RES_COL)
-where (^{resources.}^.RES_FULL_PATH LIKE  '/DAV/VAD/doc/html/x25')
+where (^{resources.}^.RES_FULL_PATH LIKE  '/DAV/VAD/doc/html/%')
 where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties.}^.PROP_PARENT_ID = ^{collections.}^.COL_ID))
 {
         create virtrdf:Doc as graph iri ("http://^{URIQADefaultHost}^/Doc") option (exclusive)
@@ -167,8 +167,8 @@ where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties
                         doc:collection doc:Collection(resources.RES_COL, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
                                 as virtrdf:File-RES_COL ;
-                        #doc:content resources.RES_CONTENT
-                        #        as virtrdf:File-RES_CONTENT ;
+                        doc:content resources.RES_CONTENT
+                                as virtrdf:File-RES_CONTENT ;
                         doc:type resources.RES_TYPE
                                 as virtrdf:File-RES_TYPE ;
                         bibo:presentedAt resources.RES_CR_TIME
