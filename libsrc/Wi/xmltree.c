@@ -9585,7 +9585,7 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         case DT_TYPE_TIME: return uname_xmlschema_ns_uri_hash_time;
         default : return uname_xmlschema_ns_uri_hash_dateTime;
         }
-    case DV_STRING:
+    case DV_STRING: case DV_BLOB_HANDLE:
       if (1 < BOX_ELEMENTS (args))
         {
           caddr_t dflt = bif_arg (qst, args, 1, "__xsd_type");

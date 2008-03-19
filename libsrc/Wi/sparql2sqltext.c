@@ -1612,7 +1612,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
     {
       int col_count = (IS_BOX_POINTER (native) ? BOX_ELEMENTS (qmv->qmvColumns) : 1);
       int col_ctr;
-      if ((1 == col_count) || (needed != native) || !IS_BOX_POINTER (asname))
+      if ((1 == col_count) || (needed != native) || ((NULL != asname) && !IS_BOX_POINTER (asname)))
         {
           if (0 == col_count)
             rv->_.retval.vname = NULL;
@@ -4631,13 +4631,13 @@ ssg_collect_aliases_tables_and_conds (
 }
 
 static void
-ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
+ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
 {
-  caddr_t tabid = trees[0]->_.triple.tabid;
+  caddr_t tabid = tree_sets[0][0]->_.triple.tabid;
   caddr_t sub_tabid = t_box_sprintf (100, "%s-int", tabid);
                 int save_where_l_printed;
                 const char *save_where_l_text;
-                int tree_ctr, fld_ctr;
+  int tree_set_ctr, tree_ctr, fld_ctr;
                 dk_set_t colcodes = NULL;
                 dk_set_t ata_aliases = NULL;
                 dk_set_t ata_tables = NULL;
@@ -4645,10 +4645,10 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, i
                 dk_set_t printed_row_filters = NULL;
                 s_node_t *ata_tables_tail;
                 ssg->ssg_indent++;
-                ssg_puts (" (SELECT");
+  for (tree_set_ctr = 0; tree_set_ctr < tree_set_count; tree_set_ctr++)
                 for (tree_ctr = 0; tree_ctr < tree_count; tree_ctr++)
                   {
-      SPART *tree = trees[tree_ctr];
+      SPART *tree = tree_sets[tree_set_ctr][tree_ctr];
       triple_case_t **tc_list = tree->_.triple.tc_list;
       quad_map_t *qm = tc_list[0]->tc_qm;
                     for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
@@ -4674,6 +4674,8 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, i
                           continue;
                         if (NULL != colcodes)
                           ssg_puts (", ");                        
+          else
+            ssg_puts (" (SELECT");
                         ssg_print_tr_field_expn (ssg, qmv, sub_tabid, fmt, asname);
           t_set_push (&colcodes, (caddr_t)colcode);
                       }
@@ -4739,10 +4741,11 @@ from_printed:
                   }
                 END_DO_SET()
                 printed_row_filters = queued_row_filters;
+  for (tree_set_ctr = 0; tree_set_ctr < tree_set_count; tree_set_ctr++)
                 for (tree_ctr = 0; tree_ctr < tree_count; tree_ctr++)
                   {
                     int condctr;
-      SPART *tree = trees[tree_ctr];
+      SPART *tree = tree_sets[tree_set_ctr][tree_ctr];
       triple_case_t **tc_list = tree->_.triple.tc_list;
       quad_map_t *qm = tc_list[0]->tc_qm;
                     ccaddr_t *conds = qm->qmConds;
@@ -4816,7 +4819,7 @@ ft_arg1_is_patched:
           ssg_puts (")");
         }
       if ((0 == tree_ctr) || !inside_breakup)
-        ssg_print_all_table_fld_restrictions (ssg, qm, sub_tabid, tree, fld_restrictions_bitmask, 0);
+        ssg_print_all_table_fld_restrictions (ssg, qm, sub_tabid, tree, (inside_breakup ? fld_restrictions_bitmask : ~0), 0);
                     DO_BOX_FAST (caddr_t, c, condctr, conds)
                       {
                         if (0 > dk_set_position_of_string (printed_row_filters, c))
@@ -4864,7 +4867,7 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
     (NULL == strstr (qm->qmTableName, "DB.DBA.RDF_QUAD")) )	/* something otherwise unusual */
     {
       if (1 == pass)
-        ssg_print_fake_self_join_subexp (ssg, gp, trees, tree_count, 0 /* = not iside breakup */, ~0);
+        ssg_print_fake_self_join_subexp (ssg, gp, &trees, 1, tree_count, 0 /* = not iside breakup */, ~0);
       /* if (2 == pass) then there's nothing to do, all filters reside in the subquery and printed by pass 1 */
       return;
               }
@@ -4994,21 +4997,52 @@ ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int 
 {
   SPART *first_mcase = gp->_.gp.members [first_mcase_idx];
   SPART **first_mcase_triples = first_mcase->_.gp.members;
-  int tc, triples_count = BOX_ELEMENTS (first_mcase_triples);
-  SPART ***all_triples_of_mcases = (SPART ***)t_alloc_box (triples_count * sizeof (SPART **), DV_ARRAY_OF_POINTER);
+  int left_tc, tc, triples_count = BOX_ELEMENTS (first_mcase_triples), selected_triples_count;
+  SPART ***all_triples_of_mcases = (SPART ***)t_alloc (triples_count * sizeof (SPART **));
+  SPART ***selected_triples_of_mcases = (SPART ***)t_alloc (triples_count * sizeof (SPART **));
   int breakup_ctr, equiv_ctr, filter_ctr;
-  ptrlong *common_fld_restrictions_bitmasks = (ptrlong *)t_alloc_box (triples_count * sizeof(int), DV_ARRAY_OF_LONG);
+  int *common_fld_restrictions_bitmasks = (int *)t_alloc (triples_count * sizeof(int));
+  int *leftmost_tc_of_tabid_reuses = (int *)t_alloc (triples_count * sizeof(int));
   int save_where_l_printed;
   const char *save_where_l_text;
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (first_mcase))
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_breakup(): the member is not a SPAR_GP");
 #endif
+
+  for (tc = triples_count; tc--; /* no step */)
+    {
+      common_fld_restrictions_bitmasks[tc] = ~0;
+      all_triples_of_mcases[tc] = (SPART **)t_alloc ((1 + breakup_shift) * sizeof (SPART *));
+      leftmost_tc_of_tabid_reuses[tc] = -1;
+    }
+  for (breakup_ctr = 0; breakup_ctr <= /* not '<' */ breakup_shift; breakup_ctr++)
+    {
+      SPART *mcase = gp->_.gp.members [first_mcase_idx + breakup_ctr];
+      for (tc = 0; tc < triples_count; tc++)
+        {
+          SPART *mcase_triple = mcase->_.gp.members [tc];
+          all_triples_of_mcases[tc][breakup_ctr] = mcase_triple;
+        }
+    }
+  for (left_tc = 0; left_tc < triples_count; left_tc++)
+    {
+      caddr_t left_tc_tabid;
+      if (0 <= leftmost_tc_of_tabid_reuses[left_tc])
+        continue; /* nothing to do because it is set already */
+      leftmost_tc_of_tabid_reuses[left_tc] = left_tc; /* This one is the leftmost of many dupe tabids */
+      left_tc_tabid = all_triples_of_mcases[left_tc][0]->_.triple.tabid;
+      for (tc = left_tc+1; tc < triples_count; tc++)
+        {
+          caddr_t tc_tabid = all_triples_of_mcases[tc][0]->_.triple.tabid;
+          if (!strcmp (left_tc_tabid, tc_tabid))
+            leftmost_tc_of_tabid_reuses[tc] = left_tc;
+        }
+    }
   for (tc = triples_count; tc--; /* no step */)
     {
       quad_map_t *first_mcase_qm = first_mcase_triples[tc]->_.triple.tc_list[0]->tc_qm;
-      common_fld_restrictions_bitmasks[tc] = ~0;
-      all_triples_of_mcases[tc] = (SPART **)t_alloc_box ((1 + breakup_shift) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+      int leftmost_tc = leftmost_tc_of_tabid_reuses[tc];
       for (breakup_ctr = 1; breakup_ctr <= /* not '<' */ breakup_shift; breakup_ctr++)
         {
           int fld_ctr;
@@ -5019,7 +5053,7 @@ ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int 
             {
               qm_value_t *first_mcase_qmv, *mcase_qmv;
               SPART *first_mcase_fld, *mcase_fld;
-              if (! (common_fld_restrictions_bitmasks[tc] & (1 << fld_ctr)))
+              if (! (common_fld_restrictions_bitmasks[leftmost_tc] & (1 << fld_ctr)))
                 continue; /* It's not common already, no need to check */
               if (SPARP_FIELD_CONST_OF_QM (mcase_qm, fld_ctr) !=
                   SPARP_FIELD_CONST_OF_QM (first_mcase_qm, fld_ctr) )
@@ -5051,7 +5085,7 @@ No changes, just continue. */
               continue;
 
 fld_restrictions_may_vary:
-              common_fld_restrictions_bitmasks[tc] &= ~(1 << fld_ctr);
+              common_fld_restrictions_bitmasks[leftmost_tc] &= ~(1 << fld_ctr);
             }
         }
     }
@@ -5085,7 +5119,8 @@ fld_restrictions_may_vary:
       for (tc = triples_count; tc--; /* no step */)
         {
           SPART *mcase_triple = mcase->_.gp.members [tc];
-          ssg_print_all_table_fld_restrictions (ssg, mcase_triple->_.triple.tc_list[0]->tc_qm, mcase_triple->_.triple.tabid, mcase_triple, ~(common_fld_restrictions_bitmasks[tc]), 1);
+          int leftmost_tc = leftmost_tc_of_tabid_reuses[tc];
+          ssg_print_all_table_fld_restrictions (ssg, mcase_triple->_.triple.tc_list[0]->tc_qm, mcase_triple->_.triple.tabid, mcase_triple, ~(common_fld_restrictions_bitmasks[leftmost_tc]), 1);
         }
       ssg->ssg_where_l_printed = save_where_l_printed;
       ssg->ssg_where_l_text = save_where_l_text;
@@ -5096,24 +5131,23 @@ fld_restrictions_may_vary:
   ssg_newline (0);
   ssg_puts ("FROM");
   ssg->ssg_indent++;
-  for (tc = 0; tc < triples_count; tc++)
-    { int prev_tc;
-      caddr_t tc_tabid = all_triples_of_mcases[tc][0]->_.triple.tabid;
-      /* The following loop checks for self-joins that could form self-join on PK if found outside the breakup. */
-      /* !!!TBD: More accurate support of self-joins, incl. their recognition during making breakup groups,
-         in order to prevent interference of breakup and self-join-on-pk optimizations. */
-      for (prev_tc = 0; prev_tc < tc; prev_tc++)
-        {
-          caddr_t prev_tc_tabid = all_triples_of_mcases[prev_tc][0]->_.triple.tabid;
-          if (!strcmp (prev_tc_tabid, tc_tabid))
-            goto table_list_done;
-        }
-      if (0 != tc)
+  for (left_tc = 0; left_tc < triples_count; left_tc++)
+    {
+      if (left_tc != leftmost_tc_of_tabid_reuses[left_tc])
+        continue;
+      if (0 != left_tc)
         {
           ssg_puts (", /* table list of next triple starts here */ ");
           ssg_newline (0);
         }
-    ssg_print_fake_self_join_subexp (ssg, first_mcase, all_triples_of_mcases[tc], 1 + breakup_shift, 1 /* = inside breakup */, common_fld_restrictions_bitmasks[tc]);
+      selected_triples_count = 0;
+      for (tc = left_tc; tc < triples_count; tc++)
+        {
+          if (left_tc != leftmost_tc_of_tabid_reuses[tc])
+            continue;
+          selected_triples_of_mcases [selected_triples_count++] = all_triples_of_mcases[tc];
+        }
+      ssg_print_fake_self_join_subexp (ssg, first_mcase, selected_triples_of_mcases, selected_triples_count, 1 + breakup_shift, 1 /* = inside breakup */, common_fld_restrictions_bitmasks[left_tc]);
 table_list_done: ;
     }
   ssg->ssg_indent--;
@@ -5185,6 +5219,11 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
                 goto breakup_group_complete; /* see below */
               for (bt_ctr = tabids_count; bt_ctr--; /* no step */)
                 {
+#ifdef DEBUG
+                  printf ("ssg_print_union() checks breakup in %s from %d to %d incl, bt_ctr %d: first %s next %s.\n",
+                    gp->_.gp.selid, memb_ctr, memb_ctr + breakup_shift + 1,
+                    bt_ctr, first_breakup_tabids [bt_ctr], next_breakup_tabids [bt_ctr] );
+#endif
                   if (strcmp (first_breakup_tabids [bt_ctr], next_breakup_tabids [bt_ctr]))
                     goto breakup_group_complete; /* see below */
                 }
@@ -5192,6 +5231,13 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
             }
         }
 breakup_group_complete:
+#ifdef DEBUG
+  if (0 != breakup_shift)
+    {
+      printf ("ssg_print_union() has found breakup in %s from %d to %d incl.\n",
+        gp->_.gp.selid, memb_ctr, memb_ctr + breakup_shift);
+    }
+#endif
           ssg_newline (0);
           if (memb_ctr > 0)
             ssg_puts ("UNION ALL ");

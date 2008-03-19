@@ -5348,7 +5348,10 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
 int
 sparp_calc_importance_of_eq (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  int res = 16 * eq->e_subquery_uses + 4 * eq->e_gspo_uses + 2 * eq->e_const_reads + 2 * BOX_ELEMENTS_0 (eq->e_receiver_idxs);
+  int res = 16 * eq->e_subquery_uses +
+    4 * eq->e_gspo_uses +
+    2 * eq->e_const_reads +
+    2 * BOX_ELEMENTS_0 (eq->e_receiver_idxs);
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
     res *= 4;
   if (SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions)
@@ -5700,11 +5703,11 @@ sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_trip
     {
       SPART * gp_triple = gp->_.gp.members[triple_ctr];
       if (SPAR_TRIPLE != gp_triple->type)
-        return 0;
+        return NULL;
       if (1 != BOX_ELEMENTS (gp_triple->_.triple.tc_list))
-        return 0;
+        return NULL;
       if (gp_triple->_.triple.ft_type)
-        return 0; /* TBD: support of free-text indexing in breakup */
+        return NULL; /* TBD: support of free-text indexing in breakup */
     }
   for (triple_ctr = 0; triple_ctr < triples_count; triple_ctr++)
     {
@@ -5714,14 +5717,15 @@ sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_trip
   return t_revlist_to_array (res);
 }
 
-void
+int
 sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
 {
   SPART *base = curr->_.gp.members[base_idx];
   /*SPART **base_filters = base->_.gp.filters; !!!TBD: check for fitlers that may restrict the search by idex */
   SPART **base_triples = base->_.gp.members;
   int bt_ctr, base_triples_count = BOX_ELEMENTS (base_triples);
-  int dep_idx, memb_count;
+  int dep_idx, memb_count, breakup_shift = 0, breakup_unictr = -1;
+  int base_should_change_tabid = 0;
   memb_count = BOX_ELEMENTS_0 (curr->_.gp.members);
   for (dep_idx = base_idx + 1; /* breakup optimization is symmetrical so the case of two triples should be considered only once, not base_triple...dep then dep...base_triple */
     dep_idx < memb_count; dep_idx++)
@@ -5730,6 +5734,8 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
       SPART **dep_triples;
       if (NULL == sparp_gp_may_reuse_tabids_in_union (sparp, dep, base_triples_count))
         continue;
+      if (dep_idx == base_idx + 1)
+        base_should_change_tabid = 1; /* There's a danger of tabid collision so printer will treat base and dep as breakup even if it is not true */
       dep_triples = dep->_.gp.members;
       for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
         {
@@ -5747,23 +5753,57 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
         }
       /* At this point all checks of dep are passed, can adjust selids and tabids */
       sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+      if (0 == breakup_shift)
+        breakup_unictr = sparp->sparp_unictr++;
       for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
         {
           SPART *base_triple = base_triples[bt_ctr];
           SPART *dep_triple = dep_triples[bt_ctr];
-          sparp_set_triple_selid_and_tabid (sparp, dep_triple, dep->_.gp.selid, base_triple->_.triple.tabid);
+          caddr_t new_base_tabid;
+          if (0 == breakup_shift)
+            {
+              new_base_tabid = t_box_sprintf (200, "%s-b%d", base_triple->_.triple.tabid, breakup_unictr);
+              sparp_set_triple_selid_and_tabid (sparp, base_triple, base->_.gp.selid, new_base_tabid);
+              base_should_change_tabid = 0;
         }
-      if (dep_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
+          else
+            new_base_tabid = base_triple->_.triple.tabid;
+          sparp_set_triple_selid_and_tabid (sparp, dep_triple, dep->_.gp.selid, new_base_tabid);
+        }
+      if (dep_idx > (base_idx + 1 + breakup_shift)) /* Adjustment to keep reused tabids together. */
         {
           int swap_ctr;
-          for (swap_ctr = dep_idx; swap_ctr > base_idx; swap_ctr--)
+          for (swap_ctr = dep_idx; swap_ctr > (base_idx + 1 + breakup_shift); swap_ctr--)
             curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
-          curr->_.gp.members[base_idx + 1] = dep;
+          curr->_.gp.members[base_idx + 1 + breakup_shift] = dep;
         }
+      breakup_shift++;
       sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
 
 next_dep: ;
     }
+#ifdef DEBUG
+  if (0 != breakup_shift)
+    {
+      printf ("sparp_try_reuse_tabid_in_union() has found breakup in %s from %d to %d incl.\n",
+        curr->_.gp.selid, base_idx, base_idx + breakup_shift);
+    }
+#endif
+  if (base_should_change_tabid)
+    { /* We rename tabids in base to brevent occasional recognition of breakup in printer */
+      breakup_unictr = sparp->sparp_unictr++;
+      for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
+        {
+          SPART *base_triple = base_triples[bt_ctr];
+          if (0 == breakup_shift)
+            {
+              caddr_t new_base_tabid;
+              new_base_tabid = t_box_sprintf (200, "%s-u%d", base_triple->_.triple.tabid, breakup_unictr);
+              sparp_set_triple_selid_and_tabid (sparp, base_triple, base->_.gp.selid, new_base_tabid);
+            }
+        }
+    }
+  return breakup_shift;
 }
 
 
@@ -5809,12 +5849,12 @@ sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_ma
 }
 
 
-void
+int
 sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
 {
   SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
   quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
-          int key_field_idx;
+  int key_field_idx, join_offset = 0;
           for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
             {
               SPART *key_field = base->_.triple.tr_fields[key_field_idx];
@@ -5856,7 +5896,7 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
               sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                     spar_internal_error (sparp, "sparp_" "gp_trav_reuse_tabids(): dep_field not found in members");
             }
-                  if (dep_triple_idx < base_idx) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
+          if (dep_triple_idx <= (base_idx + join_offset)) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
                     continue;
                   if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
                     continue;
@@ -5873,16 +5913,17 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
                   /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
           sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                   sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
-                  if (dep_triple_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
+          if (dep_triple_idx > (base_idx + join_offset + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
                     {
                       int swap_ctr;
-              for (swap_ctr = dep_triple_idx; swap_ctr > base_idx; swap_ctr--)
+              for (swap_ctr = dep_triple_idx; swap_ctr > (base_idx + join_offset + 1); swap_ctr--)
                 curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
-                      curr->_.gp.members[base_idx + 1] = dep_triple;
+              curr->_.gp.members[base_idx + join_offset + 1] = dep_triple;
                     }
           sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                 }
             }
+  return join_offset;
 }
 
 
@@ -5897,20 +5938,24 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
     case UNION_L:
       DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
         {
+          int breakup_offset;
           if (NULL == sparp_gp_may_reuse_tabids_in_union (sparp, base, -1))
             continue;
-          sparp_try_reuse_tabid_in_union (sparp, curr, base_idx);
+          breakup_offset = sparp_try_reuse_tabid_in_union (sparp, curr, base_idx);
+          base_idx += breakup_offset;
         }
       END_DO_BOX_FAST;
       break;
     case 0: case WHERE_L:
       DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
         {
+          int join_offset;
           if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
             continue;
           if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
             continue;
-          sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
+          join_offset = sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
+          base_idx += join_offset;
         }
       END_DO_BOX_FAST;
       break;
