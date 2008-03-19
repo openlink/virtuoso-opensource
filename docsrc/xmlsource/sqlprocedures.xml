@@ -990,6 +990,31 @@ of triggers or for debugging triggers.
 			</tip>
 		</sect2>
 	</sect1>
+<sect1 id="EXECSQLPROCSELECT">
+		<title>Execute Stored Procedures via SELECT statement</title>
+<para>Stored SQL Procedures can be executed via SELECT statement:</para>
+<programlisting>
+SELECT PROCEDURE_NAME (parameter , parameter...);
+</programlisting>
+<para>For ex.:</para>
+<programlisting><![CDATA[
+create procedure mytest ( in ss varchar)
+{
+  return concat('My simple test with ', ss);
+}
+;
+
+
+SQL> select mytest('Virtuoso');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+My simple test with Virtuoso
+
+1 Rows. -- 0 msec.
+]]></programlisting>
+</sect1>
 
 	&createassembly;
 	&createexthostproc;
