@@ -110,6 +110,66 @@
 								<div id="qbe_orderby_grid"></div>
 							</div>
 
+							<fieldset style="float:right;" class="derefOpts">
+								<legend>Data dereferencing options:</legend>
+								<button id="cachingSchemes">
+									Caching Schemes<br/>
+									<span id="cachingSchemesTitle">Automatic</span>
+								</button>
+								<div id="cachingSchemesWin" class="derefOptsWinContent">
+									<select id="cachingSchemesCtl">
+										<option value="get::soft">Automatic</option>
+										<option value="get::replacing">None</option>
+									</select>
+								</div>
+								<button id="pathTravSchemes">
+									Path Traversal Schemes<br/>
+									<span id="pathTravSchemesTitle">Follow all Properties</span>
+								</button>
+								<div id="pathTravSchemesWin" class="derefOptsWinContent" style="text-align:left;">
+									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball" checked="checked"/> <label for="pathTravSchemesGraball">Follow all Properties</label><br/>
+									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso">Follow Properties</label> <br/>
+										<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 40px;">
+										</select><br/><br/>
+									<div style="text-align:center;width:100%;">
+										<input type="button" value="Save" id="pathTravSchemesSave"/>
+									</div>
+								</div>
+								<button id="nodesRetrieved">
+									Nodes Retrieved<br/>
+									<span id="nodesRetrievedTitle">Default</span>
+								</button>
+								<div id="nodesRetrievedWin" class="derefOptsWinContent">
+									<select id="nodesRetrievedCtl">
+										<option value="">Default</option>
+										<option value="100">Max 100</option>
+										<option value="200">Max 200</option>
+										<option value="300">Max 300</option>
+										<option value="400">Max 400</option>
+										<option value="500">Max 500</option>
+									</select>
+								</div>
+								<button id="nodesCrawled">
+									Nodes Crawled<br/>
+									<span id="nodesCrawledTitle">Default</span>
+								</button>
+								<div id="nodesCrawledWin" class="derefOptsWinContent">
+									<select id="nodesCrawledCtl">
+										<option value="">Default</option>
+										<option value="1">Max 1</option>
+										<option value="2">Max 2</option>
+										<option value="3">Max 3</option>
+										<option value="4">Max 4</option>
+										<option value="5">Max 5</option>
+										<option value="6">Max 6</option>
+										<option value="7">Max 7</option>
+										<option value="8">Max 8</option>
+										<option value="9">Max 9</option>
+										<option value="10">Max 10</option>
+									</select>
+								</div>
+							</fieldset>
+
 							<div> <!-- options -->
 								<label for="qbe_maxrows">Max Rows:</label>
 								<select id="qbe_maxrows">
@@ -134,23 +194,11 @@
 								</select>
 							</div>
 
-							<div>
-								<label for="qbe_sponge">Data dereferencing options:</label>
-								<select id="qbe_sponge">
-									<option value="">Use Local Data Only</option>
-									<option value="soft" selected="selected">Follow Links missing from Local Storage</option>
-									<option value="grab-all">Follow Remote Links (1 degree)</option>
-									<option value="grab-seealso">Follow Remote Links &amp; Their Related Links (&gt;= 2 degrees)</option>
-									<option value="grab-everything">Follow every Link</option>
-								</select>
-								<input type="button" value="Use Query & Close" id="qbe_return_btn">
-							</div>
-
 							<div> <!-- endpoint -->
 								<label for="qbe_service_div">Endpoint:</label>
 								<div id="qbe_service_div"></div>
 							</div>
-							<div id="qbe_resizer_area"></div>
+							<div id="qbe_resizer_area" style=""></div>
 						</div>
 					</div>
 					<div id="qbe_props">

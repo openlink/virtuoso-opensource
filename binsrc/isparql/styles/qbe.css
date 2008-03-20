@@ -53,7 +53,9 @@
   width: 10px;
   height: 10px;
   z-index: 100;
-  font-size: 1px}
+  font-size: 1px;
+  clear: both;
+}
 
 #qbe_parent {
   width: 100%;

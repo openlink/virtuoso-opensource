@@ -861,6 +861,62 @@ iSPARQL.Advanced = function () {
   self.service.img.height = "16";
   $("adv_service_div").appendChild(self.service.div);
 	
+	/* Data Retrieval Options */
+	OAT.Event.attach($("cachingSchemesCtl"),'change', function(event) {
+		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
+		$("cachingSchemesTitle").innerHTML = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].text;
+		// = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].value;
+	});
+	OAT.Event.attach($("pathTravSchemesSave"),'click', function(event) {
+		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
+		if ($("pathTravSchemesGraball").checked) {
+			$("pathTravSchemesTitle").innerHTML = 'Follow all Properties';
+			// = 'grab-all';
+			return;
+		} else {
+			$("pathTravSchemesTitle").innerHTML = 'Follow Properties';
+			var out = new Array();
+			var preds = $("pathTravSchemesPreds").options;
+			for (var i=0;i<preds.length; i++) {
+				var p = preds[i];
+				if (p.selected) { 
+					var v = "<" + p.value + ">";
+					out.push(v);
+				}
+			}
+			// = out;
+		}		
+	});
+	OAT.Event.attach($("nodesCrawledCtl"),'change', function(event) {
+		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
+		$("nodesCrawledTitle").innerHTML = $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].text;
+		//  = $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].value;
+	});
+	OAT.Event.attach($("nodesRetrievedCtl"),'change', function(event) {
+		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
+		$("nodesRetrievedTitle").innerHTML = $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].text;
+		//  = $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].value;
+	});
+	var prefs = {	title:"Caching Schemes",
+			content:$('cachingSchemesWin'),
+			status:"",
+			width:200,
+			result_control:false,
+			activation:"click",
+			type:OAT.WinData.TYPE_RECT
+	}
+	OAT.Anchor.assign("cachingSchemes",prefs);
+	prefs.title = "Nodes Retrieved";
+	prefs.content = $('nodesRetrievedWin');
+	OAT.Anchor.assign("nodesRetrieved",prefs);
+	prefs.title = "Nodes Crawled";
+	prefs.content = $('nodesCrawledWin');
+	OAT.Anchor.assign("nodesCrawled",prefs);
+	prefs.title = "Path Traversal Schemes";
+	prefs.status = "Select more with Ctrl click";
+	prefs.content = $('pathTravSchemesWin');
+	OAT.Anchor.assign("pathTravSchemes",prefs);
+
 }
 
 iSPARQL.Common = {

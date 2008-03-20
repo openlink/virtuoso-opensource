@@ -34,7 +34,29 @@ ul, li {
 	/*position: absolute;
   top: 23px; */
   width: 100%;
-  background: #e8f3f6}
+  background: #e8f3f6;
+}
+
+fieldset.derefOpts div {
+	display: none;
+}
+
+div.derefOptsWinContent {
+	text-align: center;
+	width: 100%;
+	padding: 10px;
+}
+
+fieldset.derefOpts button {
+	font-weight: bold;
+	cursor: hand;
+	cursor: pointer;
+}
+
+fieldset.derefOpts button span {
+	font-weight: normal;
+}
+
 
 /*
 #r_hack {

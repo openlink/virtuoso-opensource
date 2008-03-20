@@ -10,300 +10,166 @@
 var G_INCOMPAT = false;
 function GScript(src)
 {
-//    document.write('<' + 'script src="' + src + '"' +' type="text/javascript"><' + '/script>');
+//    document.write('<' + 'script src="' + src + '"' + ' type="text/javascript"><' + '/script>');
 	var h = document.getElementsByTagName("head")[0];
 	var s = document.createElement("script");
 	s.setAttribute("src",src);
 	h.appendChild(s);
 }
-function GBrowserIsCompatible()
+
+function GBrowserIsCompatible(setBodyClass)
 {
     if (G_INCOMPAT) return false;
     if (!window.RegExp) return false;
-    var AGENTS = ["opera","msie","safari","firefox","netscape","mozilla"];
+
+    var AGENTS = ["opera", "msie", "safari", "firefox", "netscape", "mozilla"];
     var agent = navigator.userAgent.toLowerCase();
-    for (var i = 0;
-    i < AGENTS.length;
-    i++)
-    {
+    for (var i = 0; i < AGENTS.length; i++) {
         var agentStr = AGENTS[i];
-        if (agent.indexOf(agentStr) != -1)
-        {
+		if (agent.indexOf(agentStr) != -1) {
+		    if (setBodyClass && document.body) {
+				document.body.className = agentStr;
+	    	}
             var versionExpr = new RegExp(agentStr + "[ \/]?([0-9]+(\.[0-9]+)?)");
             var version = 0;
-            if (versionExpr.exec(agent) != null)
-            {
-                version = parseFloat(RegExp.$1);
                 
-            }
+			if (versionExpr.exec(agent) != null) { version = parseFloat(RegExp.$1); }
             if (agentStr == "opera") return version >= 7;
             if (agentStr == "safari") return version >= 125;
-            if (agentStr == "msie") return (version >= 5.5 &&agent.indexOf("powerpc") == -1);
+			if (agentStr == "msie")	return (version >= 5.5 && agent.indexOf("powerpc") == -1);
             if (agentStr == "netscape") return version > 7;
-            
+			if (agentStr == "firefox") return version >= 0.8;
         }
-        
     }
-    return document.getElementById;
-    
+    return !!document.getElementById;
 }
+
 function GLoad()
 {
-    if (!true)
-    {
+    GAddMessages( {
+  160: '\x3cH1\x3eServer Error\x3c/H1\x3eThe server encountered a temporary error and could not complete your request.\x3cp\x3ePlease try again in a minute or so.\x3c/p\x3e', 1415: '.', 1416: ',', 1547: 'mi', 1616: 'km', 10018: 'Loading...', 10021: 'Zoom In', 10022: 'Zoom Out', 10029: 'Return to the last result', 10049: 'Map', 10050: 'Satellite', 10093: 'Terms of Use', 10109: 'm', 10110: 'ft', 10111: 'Map', 10112: 'Sat', 10116: 'Hybrid', 10117: 'Hyb', 10120: 'We are sorry, but we don\x27t have maps at this zoom level for this region.\x3cp\x3eTry zooming out for a broader look.\x3c/p\x3e', 10121: 'We are sorry, but we don\x27t have imagery at this zoom level for this region.\x3cp\x3eTry zooming out for a broader look.\x3c/p\x3e', 10507: 'Pan left', 10508: 'Pan right', 10509: 'Pan up', 10510: 'Pan down', 10511: 'Show street map', 10512: 'Show satellite imagery', 10513: 'Show imagery with street names', 10806: 'Click to see this area on Google Maps', 10807: 'Traffic', 10808: 'Show Traffic', 10809: 'Hide Traffic', 10985: 'Zoom in', 10986: 'Zoom out', 11047: 'Center map here', 11089: '\x3ca href\x3d\x22javascript:void(0);\x22\x3eZoom In\x3c/a\x3e to see traffic for this region', 11259: 'Full-screen', 11751: 'Show street map with terrain', 11752: 'Style:', 11757: 'Change map style', 11758: 'Terrain', 11759: 'Ter', 11794: 'Show labels', 11303: 'Street View Help', 11274: 'To use street view, you need Adobe Flash Player version %1$d or newer.', 11382: 'Get the latest Flash Player.', 11314: 'We\x27re sorry, street view is currently unavailable due to high demand.\x3cbr\x3ePlease try again later!', 1559: 'N', 1560: 'S', 1561: 'W', 1562: 'E', 1608: 'NW', 1591: 'NE', 1605: 'SW', 1606: 'SE', 11907: 'This image is no longer available', 10041: 'Help', 0:''}
+    );
+
+    if (!true) {
         G_INCOMPAT = true;
-        alert("The Google Maps API key used on this web site was registered for a different web site. You can generate a new key for this web site at http://www.google.com/apis/maps/.");
+		alert
+	    	("The Google Maps API key used on this web site was registered for a different web site. You can generate a new key for this web site at http://code.google.com/apis/maps/.");
         return;
-        
     }
-	GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.61&","http://mt1.google.com/mt?n=404&v=w2.61&","http://mt2.google.com/mt?n=404&v=w2.61&","http://mt3.google.com/mt?n=404&v=w2.61&"], ["http://kh0.google.com/kh?n=404&v=20&","http://kh1.google.com/kh?n=404&v=20&","http://kh2.google.com/kh?n=404&v=20&","http://kh3.google.com/kh?n=404&v=20&"], ["http://mt0.google.com/mt?n=404&v=w2t.61&","http://mt1.google.com/mt?n=404&v=w2t.61&","http://mt2.google.com/mt?n=404&v=w2t.61&","http://mt3.google.com/mt?n=404&v=w2t.61&"],window._apiKey,"","",false,"G");
-	if (window.GJsLoaderInit) {
-	        GJsLoaderInit("http://www.google.com/mapfiles/81/maps2" +".api/main.js","http://maps.google.com/maps?file=msgs_%1$s");
         
+    GLoadApi(["http://mt0.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt1.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt2.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt3.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26"],["http://kh0.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh1.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh2.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh3.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26"],["http://mt0.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt1.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt2.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt3.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26"],window._apiKey, "", "", true, "G", {
+  public_api:true}
+	     ,
+	     ["http://mt0.google.com/mt?n\x3d404\x26v\x3dapp.64\x26hl\x3den\x26",
+	      "http://mt1.google.com/mt?n\x3d404\x26v\x3dapp.64\x26hl\x3den\x26",
+	      "http://mt2.google.com/mt?n\x3d404\x26v\x3dapp.64\x26hl\x3den\x26",
+	      "http://mt3.google.com/mt?n\x3d404\x26v\x3dapp.64\x26hl\x3den\x26"]);
+    if (window.GJsLoaderInit) {
+	GJsLoaderInit
+	    ("http://maps.google.com/intl/en_ALL/mapfiles/102/maps2" + ".api/main.js");
     }
 }
+
 function GUnload()
 {
-    if (window.GUnloadApi)
-    { GUnloadApi();  }
-    
+    if (window.GUnloadApi) {
+	GUnloadApi();
+    }
 }
-var _mF = [ true,true,true,true,true,400,200,true,false,false,100,4096,"bounds.txt","cities.txt" ];
+
+var _mIsRtl = false;
+var _mF = [,, false, true, true, 100, 4096, "bounds_cippppt.txt",
+     "cities_cippppt.txt", "local/add/flagStreetView", true, true, 400,
+     true, true,, true,, true,
+     "/maps/c/ui/HovercardLauncher/dommanifest.js",, true, true, false,
+     false, true, true, false, true, true, true, true, true, true, true,
+     true, true, false, "", 0, true, true, true, false,, true, true,, true,
+     "", false, "107485602240773805043.00043dadc95ca3874f1fa", false,
+     "US,AU,NZ", false, 1000, 40, "http://cbk0.google.com", false, false,
+     "iw,ar", false, false];
 var _mHost = "http://maps.google.com";
 var _mUri = "/maps";
 var _mDomain = "google.com";
-var _mStaticPath = "http://www.google.com/intl/en_ALL/mapfiles/";
-var _mTermsUrl = "http://www.google.com/intl/en_ALL/help/terms_local.html";
-var _mTerms = "Terms of Use";
-var _mMapMode = "Map";
-var _mMapModeShort = "Map";
-var _mMapError = "We are sorry, but we don\'t have maps at this zoom level for this region.\x3cp\x3eTry zooming out for a broader look.\x3c/p\x3e";
-var _mSatelliteMode = "Satellite";
-var _mSatelliteModeShort = "Sat";
-var _mSatelliteError = "We are sorry, but we don\'t have imagery at this zoom level for this region.\x3cp\x3eTry zooming out for a broader look.\x3c/p\x3e";
-var _mHybridMode = "Hybrid";
-var _mHybridModeShort = "Hyb";
+var _mStaticPath = "http://maps.google.com/intl/en_ALL/mapfiles/";
+var _mJavascriptVersion = "103";
+var _mTermsUrl = "http://www.google.com/intl/en_ALL/help/terms_maps.html";
+var _mHL = "en";
+var _mGL = "";
 var _mTrafficEnableApi = true;
 var _mTrafficTileServerUrlBase = "http://www.google.com/mapstt";
-var _mTraffic = "Traffic";
-var _mTrafficShow = "Show Traffic";
-var _mTrafficHide = "Hide Traffic";
-var _mCityblock = "Street View";
-var _mCityblockHelp = "Street View Help";
-var _mCityblockHide = "Hide Street View";
-var _mCityblockLatestFlashUrl = "http://maps.google.com/local_url?q\x3dhttp://www.adobe.com/shockwave/download/download.cgi%3FP1_Prod_Version%3DShockwaveFlash\x26dq\x3d\x26file\x3dapi\x26v\x3d2.x";
-var _mCityblockNew = "New!";
-var _mCityblockRequiresFlash8 = "To use street view, you need Adobe Flash Player version 9 or newer.";
-var _mCityblockShow = "Show Street View";
-var _mCityblockTooltip = "Drag me onto a blue outlined street.\x3cbr/\x3eYou can also just click on a blue outlined street.";
-var _mGetLatestFlash = "Get the latest Flash Player.";
-var _mCityblockBack = "Back to street view";
-var _mCityblockUsing = "Using Street View";
-var _mCityblockHow = "In certain locations, you can view and navigate within street-level imagery. Here\'s how:";
-var _mCityblockBlueOutlines = "Blue outlines show roads where street view is available.";
-var _mCityblockIcon = "This icon shows where you are on the map. The green arrow points in the direction you\'re looking. You can drag the icon to navigate to a different location. You can also just click on a blue outlined road to go there.";
-var _mCityblockNavigate = "Drag the street view to look around 360\x26deg;. Use the arrow buttons to navigate down the street. You can also use the arrow keys on the keyboard.";
-var _mCityblockUnavailable = "We\'re sorry, street view is currently unavailable due to high demand.\x3cbr/\x3ePlease try again later!";
+var _mCityblockLatestFlashUrl = "http://maps.google.com/local_url?q=http://www.adobe.com/shockwave/download/download.cgi%3FP1_Prod_Version%3DShockwaveFlash&amp;dq=&amp;file=api&amp;v=2&amp;key=ABQIAAAAzr2EBOXUKnm_jVnk0OJI7xSosDVG8KKPE1-m51RBrvYughuyMxQ-i1QfUnH94QxWIa6N4U6MouMmBA&amp;s=ANYYN7manSNIV_th6k0SFvGB4jz36is1Gg";
 var _mCityblockLogUsage = true;
-var _mCityblockApproxAddress = "Address is approximate";
-var _mJavascriptVersion = "81";
+var _mCityblockInfowindowLogUsage = false;
+var _mSavedLocationsLogUsage = true;
+var _mWizActions = { hyphenSep: 1, breakSep: 2, dir: 3, searchNear: 6, savePlace:9 };
 var _mIdcRouterPath = "/maps/mpl/router";
 var _mIdcRelayPath = "/maps/mpl/relay";
-var _mIdcMaxLatencyMs = 100;
-var _mIdcMaxPacketSize = 4095;
 var _mIGoogleUseXSS = false;
-var _mIGoogleServerTrustedUrl = "";
-var _mIGoogleServerUntrustedUrl = "http://gmodules.com";
-var _mIGoogleEt = "Q4qbBQZr";
+var _mIGoogleServerUntrustedUrl = "http://maps.gmodules.com";
+var _mIGoogleEt = "6PlFHAMJ";
 var _mMplGGeoXml = 100;
 var _mMplGPoly = 1000;
-var _mMplMapViews = 1000;
+var _mMplMapViews = 100;
 var _mMplGeocoding = 100;
-var _mWizActions = { breakSep: 2,dir: 3,searchNear: 6 };
-var _mLoadingMessage = 'Loading...';
-var _mTimeoutMessage = '\x3cH1\x3eServer Error\x3c/H1\x3eThe server encountered a temporary error and could not complete your request.\x3cp\x3ePlease try again in a minute or so.\x3c/p\x3e';
-var _mSatelliteToken = "fzwq2gmylADNuC1J74FuxLDDDUIORWAkkCAcqw";
-var _mZoomIn = "Zoom In";
-var _mZoomOut = "Zoom Out";
-var _mZoomSet = "Click to set zoom level";
-var _mZoomDrag = "Drag to zoom";
-var _mPanWest = "Pan left";
-var _mPanEast = "Pan right";
-var _mPanNorth = "Pan up";
-var _mPanSouth = "Pan down";
-var _mLastResult = "Return to the last result";
-var _mMapCopy = "Map data &#169;2007 ";
-var _mSatelliteCopy = "Imagery &#169;2007 ";
-var _mGoogleCopy = "&#169;2007 Google";
-var _mKilometers = "km";
-var _mMiles = "mi";
-var _mMeters = "m";
-var _mFeet = "ft";
+var _mMplDirections = 100;
+var _mMplEnableGoogleLinks = true;
+var _mIGoogleServerTrustedUrl = "";
+var _mIGoogleEt = "6PlFHAMJ";
+var _mIGoogleUseXSS = false;
+var _mMMEnableAddContent = true;
+var _mMSEnablePublicView = true;
+var _mSatelliteToken = "fzwq1JrJtfSm1b7oZd-1MP-VzpmfHbTbQ0bPsw";
+var _mMapCopy = "Map data \x26#169;2008 ";
+var _mSatelliteCopy = "Imagery \x26#169;2008 ";
+var _mGoogleCopy = "\x26#169;2008 Google";
 var _mPreferMetric = false;
 var _mPanelWidth = 20;
-var _mIwButtonFullSize = "Full-screen";
-var _mTabBasics = "Address";
-var _mTabDetails = "Details";
-var _mDecimalPoint = '.';
-var _mThousandsSeparator = ',';
-var _mUsePrintLink = 'To see all the details that are visible on the screen,use the \"Print\" link next to the map.';
-var _mPrintSorry = '';
 var _mMapPrintUrl = 'http://www.google.com/mapprint';
-var _mPrint = 'Print';
-var _mAutocompleteFrom = 'from';
-var _mAutocompleteTo = 'to';
-var _mAutocompleteNearRe = '^(?:(?:.*?)\\s+)(?:(?:in|near|around|close to):?\\s+)(.+)$';
+var _mAutocompleteEnabled = true;
 var _mSvgEnabled = true;
 var _mSvgForced = false;
-var _mStreetMapAlt = 'Show street map';
-var _mSatelliteMapAlt = 'Show satellite imagery';
-var _mHybridMapAlt = 'Show imagery with street names';
-var _mSeeOnGoogleMaps = "Click to see this area on Google Maps";
 var _mLogInfoWinExp = true;
 var _mLogPanZoomClks = false;
 var _mLogWizard = true;
 var _mLogLimitExceeded = true;
 var _mLogPrefs = true;
-var _mMSHelpMarker = 'Click to place me on the map';
-var _mMSHelpLine = 'Click to start drawing a line';
-var _mMSHelpPolygon = 'Click to start drawing a shape';
-var _mMSPlainTextWarning = 'Converting to plain text will lose some formatting. Continue?';
-var _mCancel = 'Cancel';
-var _mDone = 'OK';
-var _mTitle = 'Title';
-var _mDescription = 'Description';
-var _mRichText = 'Rich text';
+var _mMMLogMyMapViewpoints = true;
+var _mCalPopupMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var _mCalPopupDaysOfWeek =["S", "M", "T", "W", "T", "F", "S"];
+var _mSXBmwAssistUrl = '';
+var _mSXCarEnabled = true;
+var _mSXServices = { car_bmw_at: {type: 1, make: "11390", account: "11032", system: "BMW Assist", link: "11086", group: "11383", name:"11395"}
+, car_bmw_ca: {type: 1, make: "11390", account: "11032", system: "BMW Assist", link: "11086", group: "11383", name:"BMW Canada"}
+, car_bmw_de: {type: 1, make: "11390", account: "11032", system: "BMW Assist", link: "11086", group: "11383", name:"11385"}
+, car_bmw_it: {type: 1, make: "11390", account: "11032", system: "BMW Assist", link: "11086", group: "11383", name:"11387"}
+, car_bmw_gb: {type: 1, make: "11390", account: "11032", system: "BMW Assist", link: "11086", group: "11383", name:"11386"}
+, car_mercedes_us: {type: 1, make: "11391", account: "11388", system: "Mercedes-Benz Search\x26amp;Send powered by Tele Aid", link:"11394"}
+, pnd_tomtom: {type: 2, make: "TomTom", system: "TomTom", link:"http://www.tomtom.com/page/tomtom-on-google-maps"}
+};
+var _mSXPhoneEnabled = false;
 var _mMSMarker = 'Placemark';
 var _mMSLine = 'Line';
-var _mMSLineColor = 'Line color';
-var _mMSWidthPixels = 'Width (pixels)';
-var _mMSLineOpacity = 'Line opacity';
-var _mMSDeletePoint = 'Delete this point';
-var _mMSContinueLine = 'Continue this line';
-var _mMSAddPoint = 'Add a point';
 var _mMSPolygon = 'Shape';
-var _mMSFillColor = 'Fill color';
-var _mMSFillOpacity = 'Fill opacity';
-var _mMSErrorCreating = 'Error creating map';
-var _mMSSavedTo = 'Saved to %1$s';
-var _mMSErrorSaving = 'Error saving placemark';
-var _mMSSaving = 'Saving...';
-var _mUntitled = 'Untitled';
-var _mMSToolPointerTip = 'Select/edit map features';
-var _mMSToolMarkerTip = 'Add a placemark';
-var _mMSToolLineTip = 'Draw a line';
-var _mMSToolPolygonTip = 'Draw a shape';
-var _mMSToolImageTip = 'Add an image';
-var _mMSSaveNow = 'Save';
-var _mMSSaved = 'Saved';
 var _mMSImage = 'Image';
-var _mMSPromptImage = 'Please enter the URL to an image';
-var _mMSUnsavedWarning = 'If you continue, you will lose unsaved changes.';
-var _mMSEdit = 'Edit';
-var _mMSDelete = 'Delete';
-var _mMSCHDragLine = 'Drag to reposition this line';
-var _mMSCHDragPolygon = 'Drag to reposition this shape';
-var _mMSCHMovePoint = 'Drag to move this point';
-var _mMSCHAddPoint = 'Drag to move this point';
-var _mMSCHEndPolygon = 'Double-click to end this shape.';
-var _mMSCHContPolygon = 'Click to continue drawing a shape';
-var _mMSCHEndLine = 'Double-click to end this line';
-var _mMSCHContLine = 'Click to continue drawing a line';
-var _mMSCHMoveMarker = 'Drag to move this placemark';
-var _mPlainText = 'Plain text';
-var _mEditHTML = 'Edit HTML';
-var _mMSHCSelectText = 'First select the text that you want to make into a link.';
-var _mMSHCEnterUrl = 'Enter a URL';
-var _mMSHCHuge = 'Huge';
-var _mMSHCLarge = 'Large';
-var _mMSHCNormal = 'Normal';
-var _mMSHCSmall = 'Small';
-var _mMSHCBold = 'Bold';
-var _mMSHCItalic = 'Italic';
-var _mMSHCUnderline = 'Underline';
-var _mMSHCFont = 'Font';
-var _mMSHCSize = 'Size';
-var _mMSHCTextColor = 'Text Color';
-var _mMSHCHighlightColor = 'Highlight Color';
-var _mMSHCRemoveFormatting = 'Remove Formatting';
-var _mMSHCLink = 'Link';
-var _mMSHCNumberedList = 'Numbered List';
-var _mMSHCBulletedList = 'Bulleted List';
-var _mMSHCIndentLess = 'Indent Less';
-var _mMSHCIndentMore = 'Indent More';
-var _mMSHCAlignLeft = 'Align Left';
-var _mMSHCAlignCenter = 'Align Center';
-var _mMSHCAlignRight = 'Align Right';
-var _mMSHCInsertImage = 'Insert Image';
-var _mMSHCFontNormal = 'Normal';
-var _mMSHCFontTimes = 'Times New Roman';
-var _mMSHCFontArial = 'Arial';
-var _mMSHCFontCourier = 'Courier New';
-var _mMSHCFontGeorgia = 'Georgia';
-var _mMSHCFontTrebuchet = 'Trebuchet';
-var _mMSHCFontVerdana = 'Verdana';
-var _mMSDeleteMarkerConfirm = 'Are you sure you want to delete this placemark?';
-var _mMSDeleteLineConfirm = 'Are you sure you want to delete this line?';
-var _mMSDeletePolygonConfirm = 'Are you sure you want to delete this shape?';
-var _mMSAbandonChangesConfirm = 'Are you sure you want to abandon unsaved changes to your map?';
-var _mMSColor = 'Color';
-var _mMSOpacity = 'Opacity';
-var _mMSPolygonIsFilled = 'Filled?';
-var _mMSAdvanced = 'Advanced';
-var _mMSBasic = 'Basic';
-var _mMSLineWidthPixels = 'Line width (pixels)';
-var _mMSProperties = 'Properties';
-var _mMSMapNotExist = 'This map does not exist.';
-var _mMSEditTitle = 'Edit title/settings';
-var _mMSNew = 'Create new map';
-var _mMSMyMaps = 'My Maps';
-var _mMSNoContact = 'Unable to contact server.';
-var _mMSLastSaved = 'Last saved at %1$s';
-var _mMSEditLineStyle = 'Edit line style';
-var _mMSConvertToShape = 'Convert to filled shape';
-var _mMSEditShapeStyle = 'Edit shape style';
-var _mMSPhoto = 'Photo';
-var _mMSDescriptionTooLong = 'Maximum character length exceeded.';
-var _mYouAreNoLongerSignedIn = 'You are no longer signed in to your Google Account.';
-var _mPleaseSignIn = 'Please sign in';
-var _mMSLogInToSaveMap = 'To save your map, please sign in as %1$s';
-var _mTechnicalDifficulties = 'Sorry, we\'re having technical difficulties.\x3cbr /\x3e(Error code %1$d)';
-var _mUnableToSave = 'Unable to save.';
-var _mViewOnly = 'View only';
-var _mMSPublic = 'Public';
-var _mMSUnlisted = 'Unlisted';
-var _mMSIncludeInSearchResults = 'Public maps are included in search results.';
-var _mMSPublicUnlistedExplainTxt = 'Learn more';
-var _mMSPublicUnlistedExplainHref = 'http://maps.google.com/help/maps/userguide/index.html#public';
-var _mMSCollaborate = 'Collaborate';
-var _mMSInvite = 'Invite collaborators';
-var _mMSSeparateEmails = 'Separate email addresses with commas';
-var _mMSAllowAnyoneEdit = 'Allow anyone to collaborate';
-var _mMSInvitePeople = 'Invite these people';
-var _mMSCollaborators = 'Collaborators';
-var _mMSCanInviteOthers = 'Collaborators can invite more people.';
-var _mMSTurnOff = 'Turn off';
-var _mMSRemoveCollaborator = 'Remove';
-var _mMSEmailCollaborators = 'Email collaborators';
-var _mMenuZoomIn = 'Zoom in';
-var _mMenuZoomOut = 'Zoom out';
-var _mMenuCenterMap = 'Center map here';
-var _mMSClearSearchResults = 'Clear search results';
-var _mMSSaveToMyMaps = 'Save to My Maps';
-var _mMenuAddDestination = 'Add a destination';
-var _mMenuRemoveDestination = 'Remove this destination';
-var _mTransitV2 = true;
-var _mDirectionsDragging = false;
-var _mMMSignInToView = '\x3ca href\x3d\"%1$s\"\x3eSign in\x3c/a\x3e to view my existing bookmarks';
+var _mDirectionsDragging = true;
 var _mDirectionsEnableApi = true;
+var _mAdSenseForMapsEnable = "true";
+var _mAdSenseForMapsFeedUrl = "http://pagead2.googlesyndication.com/afmaps/ads";
+var _mSesameLearnMoreUrl = "http://maps.google.com/support/bin/answer.py?answer\x3d68474\x26hl\x3den#modify";
+var _mSesameSurveyLink = "Help improve this feature: \x3ca id\x3dssl\x3etake our survey\x3c/a\x3e.";
+var _mSesameSurveyUrls =
+    ["https://survey.google.com/wix/p1899602.aspx",
+     "https://survey.google.com/wix/p1899218.aspx",
+     "https://survey.google.com/wix/p1899850.aspx",
+     "https://survey.google.com/wix/p1899628.aspx"];
+var _mSesameMoveLearnMoreUrl = "http://maps.google.com/support/bin/answer.py?answer\x3d68474\x26hl\x3den#modify";
+var _mReviewsWidgetUrl = "/reviews/scripts/annotations_bootstrap.js?hl\x3den\x26amp;gl\x3d";
 
 function GLoadMapsScript()
 {
-    if (GBrowserIsCompatible())
-    {
-        
+    if (GBrowserIsCompatible()) {
     }
-    
 }
+
 GLoadMapsScript();
 OAT.Loader.featureLoaded("gmaps");
