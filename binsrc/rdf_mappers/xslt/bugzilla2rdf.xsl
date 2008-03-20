@@ -55,6 +55,9 @@
 	<bugzilla:delta>
 	  <xsl:value-of select="."/>
 	</bugzilla:delta>
+        <bugzilla:modified>
+	    <xsl:value-of select="."/>
+	</bugzilla:modified>
   </xsl:template>
     <xsl:template match="bug_status">
 	<bugzilla:state>
@@ -101,6 +104,11 @@
 	  <xsl:value-of select="."/>
 	</bugzilla:bug_severity>
     </xsl:template> 
+    <xsl:template match="bug_file_loc">
+	<bugzilla:bug_file_loc>
+	    <xsl:value-of select="."/>
+	</bugzilla:bug_file_loc>
+    </xsl:template>
     <xsl:template match="op_sys">
 	<bugzilla:operationSystem>
 	    <xsl:value-of select="."/>
@@ -140,21 +148,6 @@
 	<bugzilla:shortDescription>
 	    <xsl:value-of select="."/>
 	</bugzilla:shortDescription>
-  </xsl:template>
-  <xsl:template match="delta_ts">
-	<bugzilla:modified>
-	    <xsl:value-of select="."/>
-	</bugzilla:modified>
-    </xsl:template>
-    <xsl:template match="bug_id">
-	<dc:title>
-	  <xsl:value-of select="."/>
-	</dc:title>
-    </xsl:template>  
-    <xsl:template match="long_desc">
-	<dc:description>
-	    <xsl:value-of select="thetext"/>
-	</dc:description>
   </xsl:template>
   <xsl:template match="*|text()"/>
 </xsl:stylesheet>
