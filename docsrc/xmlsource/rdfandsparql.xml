@@ -940,6 +940,15 @@ sparql
   load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <A-Named-Graph>
 ;
 ]]></programlisting>
+
+<para>In case of huge RDF data ( for ex. 600 million triples ) loaded in the Virtuoso sever in a single graph,
+the fastest operation to drop the graph is:</para>
+<programlisting><![CDATA[
+sparql clear graph <graph-iri>;
+]]></programlisting>
+<para>The operation may be accelerated using log_enable (0) or even log_enable (2),
+with log_enable(1) after the operation.
+</para>
       </sect2>
    <sect2 id="rdfsparulexamples"><title>More Detailed Examples</title>
 <para>Adding triples to graph</para>
@@ -4462,11 +4471,11 @@ for all cores.</para>
 	<para>With GET Methods you can get the triples which are saved.</para>
         <para><emphasis>Examples:</emphasis></para>
         <para><emphasis>Example 1:</emphasis></para>
-        <para>Create a DAV collection and not to request for authentication set RW permissions for public. For ex. the collection path could be /DAV/xx </para>
+        <para>Create a DAV collection xx for user demo with password demo.</para>
         <para>Execute the following command:</para>
 <programlisting><![CDATA[
 curl -i -d "INSERT {<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
-<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}"
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}" -u "demo:demo"
 -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
 ]]></programlisting>
         <para>The response should be:</para>
