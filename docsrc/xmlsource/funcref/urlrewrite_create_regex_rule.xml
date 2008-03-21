@@ -55,40 +55,40 @@
   </refsect1>
   <refsect1 id="params_urlrewrite_create_regex_rule">
     <title>Parameters</title>
-    <refsect2><title>rule_iri</title>
+    <refsect2><title><parameter>rule_iri</parameter></title>
       <para>The rule's name / identifier</para>
     </refsect2>
-    <refsect2><title>allow_update</title>
+    <refsect2><title><parameter>allow_update</parameter></title>
       <para>Indicates whether the rule can be updated. 1 indicates yes; 0 indicates no. The update is subject to the following rules:</para>
       <para>If the given rule_iri is already in use as a rule list identifier, an error is signaled.</para>
       <para>If the given rule_iri is already in use as a rule identifier and allow_update for the existing rule is zero, an error is signalled.</para>
       <para>If the given rule_iri is already in use as a rule identifier and allow_update for the existing rule is non-zero, the existing rule is updated.</para>
     </refsect2>
-    <refsect2><title>nice_match</title>
+    <refsect2><title><parameter>nice_match</parameter></title>
       <para>A regex match expression to parse the URL into a vector of occurrences.</para>
     </refsect2>
-    <refsect2><title>nice_params</title>
+    <refsect2><title><parameter>nice_params</parameter></title>
       <para>A vector of the names of the parsed parameters. The length of the vector should be equal to the number of '(...)' specifiers in the format string.</para>
     </refsect2>
-    <refsect2><title>nice_min_params</title>
+    <refsect2><title><parameter>nice_min_params</parameter></title>
       <para>Used to specify the minimum number of sprintf format patterns to be matched in order to trigger the given rule. It only affects sprintf rules and has no effect for regex rules.</para>
     </refsect2>
-    <refsect2><title>target_compose</title>
+    <refsect2><title><parameter>target_compose</parameter></title>
       <para>A regex compose expression for the URL of the destination page.</para>
     </refsect2>
-    <refsect2><title>target_params</title>
+    <refsect2><title><parameter>target_params</parameter></title>
       <para>A vector of names of parameters that should be passed to the compose expression (target_compose) as $1, $2 and so on.</para>
     </refsect2>
-    <refsect2><title>target_expn</title>
+    <refsect2><title><parameter>target_expn</parameter></title>
       <para>Optional SQL text that should be executed instead of a regex compose call.</para>
     </refsect2>
-    <refsect2><title>accept_pattern</title>
+    <refsect2><title><parameter>accept_pattern</parameter></title>
       <para>A regex expression to match the HTTP Accept header</para>
     </refsect2>
-    <refsect2><title>do_not_continue</title>
+    <refsect2><title><parameter>do_not_continue</parameter></title>
       <para>If the given rule satisfies the match conditions, 1 signifies do not try the next rule from same rule list, and 0 signifies try the next rule.</para>
     </refsect2>
-    <refsect2><title>http_redirect_code</title>
+    <refsect2><title><parameter>http_redirect_code</parameter></title>
       <para>NULL or the integer values 301, 302, 303, or 406, are currently allowed. If a 3xx redirect code is given, an HTTP redirect response will be sent back to client. If NULL is specified, the server will process the redirect internally.</para>
     </refsect2>
   </refsect1>

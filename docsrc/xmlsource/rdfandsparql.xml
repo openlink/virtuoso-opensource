@@ -4376,8 +4376,21 @@ Done
 	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a RDF proxy service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target.  In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
     </para>
     <para>
-	Virtuoso reserves the path '/proxy/' for RDF proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP requests on port 8080 then client applications should use the 'service endpoint' string equal to 'http://example.com:8080/proxy/'.
+	Virtuoso reserves the path '/proxy/rdf/' for RDF proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP requests on port 8080 then client applications should use the 'service endpoint' string equal to 'http://example.com:8080/proxy/rdf/'.
     </para>
+    <para>
+	The old pattern '/proxy/' for RDF proxy service is deprecated.
+    </para>
+    <para><emphasis>Note:</emphasis>In order the RDF proxy service to work correctly, you need to enable SPARQL_UPDATE for SPARQL user using Conductor UI:
+    </para>
+<itemizedlist>
+  <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
+  <listitem>Login as dba user</listitem>
+  <listitem>Go to System Admin->User Accounts->Roles</listitem>
+  <listitem>Click the link "Edit" for "SPARQL_UPDATE</listitem>
+  <listitem>Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.</listitem>
+  <listitem>Click the button "Update".</listitem>
+</itemizedlist>
     <para>
 	The RDF proxy service takes following URL parameters:
     </para>
@@ -4392,7 +4405,7 @@ Done
     </para>
     <para>Example: rdf file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
-Access the url: http://host:port/proxy?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
+Access the url: http://host:port/proxy/rdf/?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
 ]]></programlisting>
 <para>As result will be shown the rdf file content. Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
 <para>Enter for Default Graph URI the url of the rdf file:  http://www.w3.org/People/Berners-Lee/card</para>
