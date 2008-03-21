@@ -1406,7 +1406,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!DV_STRINGP (string) && !DV_WIDESTRINGP (string) &&
       !IS_BLOB_HANDLE (string) && string_dtp != DV_C_STRING
-      && string_dtp != DV_STRING_SESSION)
+      && string_dtp != DV_STRING_SESSION && string_dtp != DV_BIN)
     sqlr_new_error ("22023", "FA022",
 	"Function string_to_file needs a string or blob or string_output as argument 2,"
 	"not an arg of type %s (%d)", dv_type_title (string_dtp), string_dtp);
@@ -1522,7 +1522,10 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      len = box_length (string) - 1;
+      if (string_dtp != DV_BIN)
+        len = box_length (string) - 1;
+      else
+	len = box_length (string);
       if (rc == -1 || (len && write (fd, string, len) != len))
 	{
 	  saved_errno = errno;
