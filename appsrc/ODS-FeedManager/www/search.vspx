@@ -258,8 +258,10 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
+      {
         self.do_search (e);
+      }
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Search results</vm:pagetitle>

@@ -6720,10 +6720,9 @@ create procedure ENEWS.WA.news_comment_get_mess_attachments (inout _data any, in
   while (1 = 1)
   {
       line := ses_read_line (data, 0);
-
       if (line is null or isstring (line) = 0)
       {
-       if (_all = vector ())
+      if (length (_all) = 0)
          {
             _all := vector_concat (_all, vector (string_output_string (outp)));
          }

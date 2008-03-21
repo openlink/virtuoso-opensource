@@ -54,15 +54,18 @@
   <vm:pagetitle>Discussion page</vm:pagetitle>
       <vm:popup_page_wrapper>
         <vm:variables>
-          <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
+      <v:variable persist="0" name="v_mode" type="varchar" default="'show'" param-name="mode" />
           <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
-          <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
-          <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
           <v:variable persist="0" name="v_pid" type="integer"/>
-      <v:variable persist="temp" name="openid_sig" type="varchar" default="null" param-name="oid_sig"/>
-      <v:variable persist="temp" name="openid_key" type="varchar" default="null" param-name="oid_key"/>
+      <v:variable persist="0" name="openid_identity" type="varchar" default="null" param-name="openid.identity" />
+      <v:variable persist="0" name="openid_sig" type="varchar" default="null" param-name="openid.sig" />
+      <v:variable persist="0" name="openid_key" type="varchar" default="null" param-name="openid.assoc_handle" />
+      <v:variable persist="0" name="openid_mail" type="varchar" default="null" param-name="openid.sreg.email" />
+      <v:variable persist="0" name="openid_name" type="varchar" default="null" param-name="openid.sreg.fullname" />
         </vm:variables>
     <vm:pagebody>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
           <div class="new-form-header">
         Discussion
           </div>
@@ -128,7 +131,7 @@
 	                         d_name := parsed_message[idx];
 	                           comment:=comment||sprintf ('Download attachment : <a target="_BLANK" href="%senews2/%d/attachment.vsp?id=%d&part=%i&fn=%s">%s</a><br/>',
                                                         WA_LINK(1,'/'),
-                                                        self.v_did,
+                                                        self.domain_id,
                                                         id,
                                                         idx,
                                                         d_name,
@@ -137,7 +140,7 @@
 	                         {
 	                           comment:=comment||sprintf ('<img alt="attachment" src="%senews2/%d/attachment.vsp?id=%d&part=%i&fn=%s" />',
                                                        WA_LINK(1,'/'),
-                                                       self.v_did,
+                                                       self.domain_id,
                                                        id,
                                                        idx,
                                                        d_name);
@@ -217,7 +220,11 @@
                           <v:label for="f_name" value="Name" />
                         </th>
                         <td>
-                      <v:text name="f_name" xhtml_id="f_name" value="--ENEWS.WA.account_fullName (self.v_aid)" xhtml_class="textbox" xhtml_size="50" />
+                      <v:text name="f_name" xhtml_id="f_name" value="--coalesce (self.openid_name, ENEWS.WA.account_fullName (self.account_id))" xhtml_class="textbox"  xhtml_style="width: 300px;" >
+		                    <v:before-render>
+			                    control.ufl_value := ENEWS.WA.utf2wide (control.ufl_value);
+		                    </v:before-render>
+                      </v:text>
                         </td>
                       </tr>
                       <tr>
@@ -225,26 +232,122 @@
                           <v:label for="f_mail" value="E-Mail" />
                         </th>
                         <td>
-                      <v:text name="f_mail" xhtml_id="f_mail" value="--ENEWS.WA.account_mail(self.v_aid)" xhtml_class="textbox" xhtml_size="50" />
+                      <v:text name="f_mail" xhtml_id="f_mail" value="--coalesce (self.openid_mail, ENEWS.WA.account_mail (self.account_id))" xhtml_class="textbox"  xhtml_style="width: 300px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                      <v:label for="openid_url" value="Web Site" />
-		      <span id='img'>
-		        <img src="<?V case when length (self.openid_sig) then 'image/login-bg.gif' else '' end ?>"
-			     width="16"
-			     height="16"
-			     hspace="1"
-			     style="<?V case when length (self.openid_sig) then '' else 'display: none;' end ?>" />
-		      </span>
+                      <v:label for="openid_url" value="OpenID" />
                     </th>
                     <td>
+		                  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig">
+  		                  <v:on-init>
+  		                    <![CDATA[
+  		                      if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'id_res')
+  		                      {
+                              declare rc int;
+                      			  declare k any;
+
+                      			  k := (select SS_KEY from OPENID..SERVER_SESSIONS where SS_HANDLE = self.openid_key);
+                      			  rc := openid..check_signature (http_request_get ('QUERY_STRING') || sprintf ('&mac_key=%U', cast (k as varchar)));
+                      			  if (rc = 0)
+                      			  {
+                      			    self.openid_sig := null;
+                      			    self.vc_error_message := 'The OpenID identity verification failed.';
+                      			    self.vc_is_valid := 0;
+                      			    return;
+                      			  }
+                      			  self.openid_key := cast (k as varchar);
+                              self.openid_sig := http_request_get ('QUERY_STRING');
+                      			}
+                      		  if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'cancel')
+                      		  {
+                      			  self.openid_sig := null;
+                      			  self.vc_error_message := 'The OpenID identity verification failed.';
+                      			  self.vc_is_valid := 0;
+                      			}
+                      		]]>
+                        </v:on-init>
+                 		  </v:text>
    		      <v:text name="oid_key" value="--self.openid_key" type="hidden" xhtml_id="oid_key" />
-		      <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig" />
-		      <v:text name="openid_url" xhtml_id="openid_url" value="" xhtml_size="50" xhtml_class="textbox" />
-		      <input type='button' value='Verify' id='verify_button' onclick="javascript: onClickVerify(event);" class="button" />
-                      <span id='msg'></span>
+		                  <v:text name="openid_url" value="--self.openid_identity" xhtml_id="openid_url" xhtml_class="openID" xhtml_style="width: 282px;" />
+		                  <v:button value='Verify' xhtml_id='verify_button' xhtml_class="button" action="simple">
+		                    <v:on-post>
+		                      <![CDATA[
+                            declare url, ret, cnt, oi_srv, oi_delegate, oi_ident, this_page, xt, hdr, host, oi_mode any;
+                            declare setup_url, oi_handle, trust_root, oi_sig, oi_signed, oi_key varchar;
+                            declare ses, flds, check_immediate any;
+
+                            host := http_request_header (lines, 'Host');
+
+                            this_page := 'http://' || host || http_path () || sprintf ('?fid=%d&mode=reply', self.v_fid);
+                            trust_root := 'http://' || host;
+                            oi_ident := self.openid_url.ufl_value;
+                            if (oi_ident is not null)
+                            {
+                              url := trim(oi_ident);
+                              declare exit handler for sqlstate '*'
+                              {
+                                 self.vc_error_message := 'The URL cannot be retrieved';
+                                 self.vc_is_valid := 0;
+                                  return;
+                              };
+                              if (not length (url) or url not like 'http%://%')
+                              {
+                                self.vc_is_valid := 0;
+                                self.vc_error_message := 'Invalid URL';
+                                return;
+                              }
+                            again:
+                              hdr := null;
+                              cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+
+                              if (hdr [0] like 'HTTP/1._ 30_ %')
+                              {
+                                declare loc any;
+                           	    loc := http_request_header (hdr, 'Location', null, null);
+                           	    url := WS.WS.EXPAND_URL (url, loc);
+                                oi_ident := url;
+                           	    goto again;
+                              }
+
+                              xt := xtree_doc (cnt, 2);
+
+                              oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+                              oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+                              if (oi_srv is null)
+                              {
+                                self.vc_is_valid := 0;
+                                self.vc_error_message := 'The OpenID server cannot be located';
+                                return;
+                              }
+
+                              if (oi_delegate is not null)
+                                oi_ident := oi_delegate;
+
+                              oi_handle := null;
+                              oi_key := '';
+                              check_immediate := sprintf ('%s?openid.mode=associate', oi_srv);
+                              cnt := http_client (url=>check_immediate);
+                              cnt := split_and_decode (cnt, 0, '\0\0\x0A:');
+                              oi_handle := get_keyword ('assoc_handle', cnt, null);
+                              oi_key := get_keyword ('mac_key', cnt, '');
+
+                              insert into OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+                              	values (oi_handle, oi_key, 'RAW', dateadd ('hour', 1, now()));
+                              self.openid_key := oi_key;
+
+                              check_immediate := sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',	oi_srv, oi_ident, this_page, trust_root);
+                              if (length (oi_handle))
+                                check_immediate := check_immediate || sprintf ('&openid.assoc_handle=%U', oi_handle);
+
+                              check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U', 'email,fullname');
+                              self.vc_redirect (check_immediate);
+                            }
+                          ]]>
+                        </v:on-post>
+                      </v:button>
                     </td>
                   </tr>
                   <tr>
@@ -291,17 +394,17 @@
                             if (isnull(self.v_pid))
                             {
                                   -- get root comment;
-                                  self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                              self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
                               if (isnull(self.v_pid))
                               {
-                                ENEWS.WA.nntp_root (self.v_did, self.v_fid);
-                                self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                                ENEWS.WA.nntp_root (self.domain_id, self.v_fid);
+                                self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.domain_id and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
                               }
                                 }
 
-                                ENEWS.WA.nntp_update_item (self.v_did, self.v_fid);
+                            ENEWS.WA.nntp_update_item (self.domain_id, self.v_fid);
                             insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE, EFIC_OPENID_SIG)
-                              values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
+                              values (self.v_pid, self.domain_id, self.v_fid, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
 
                                 self.v_mode := 'show';
                                 self.vc_data_bind(e);

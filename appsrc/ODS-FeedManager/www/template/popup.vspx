@@ -27,10 +27,9 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <script type="text/javascript" language="JavaScript" src="js/enews.js" />
-    <?vsp http('</script>'); ?>
-    <script type="text/javascript" language="JavaScript" src="js/openid.js" />
-    <?vsp http('</script>'); ?>
+    <![CDATA[
+      <script type="text/javascript" language="JavaScript" src="js/enews.js"></script>
+    ]]>
     <title></title>
   </head>
   <body>

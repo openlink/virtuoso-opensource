@@ -258,7 +258,7 @@
               -- Discussion
             if (ENEWS.WA.discussion_check ())
             if (ENEWS.WA.conversation_enable(domain_id))
-                  cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Discussion', 'Discussion');
+                  cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, EFI_ID, 'Discussion', 'Discussion');
 
             -- Annotation
             if (account_id >= 0)

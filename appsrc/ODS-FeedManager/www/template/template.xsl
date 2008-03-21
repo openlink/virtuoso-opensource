@@ -321,8 +321,28 @@
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
       {
+        declare n_start, n_end, n_total integer;
+        declare ds vspx_data_set;
+
+        ds := self.vc_find_descendant_control ('<xsl:value-of select="@data-set" />');
+        if (isnull (ds.ds_data_source))
+        {
+          n_total := ds.ds_rows_total;
+          n_start := ds.ds_rows_offs + 1;
+          n_end   := n_start + ds.ds_nrows - 1;
+        } else {
+          n_total := ds.ds_data_source.ds_total_rows;
+          n_start := ds.ds_data_source.ds_rows_offs + 1;
+          n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
+        }
+        if (n_end > n_total)
+          n_end := n_total;
+
+        if (n_total)
+          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+
         declare _prev, _next, _last, _first vspx_button;
-  	    declare d_prev, d_next, d_last, d_first int;
+        declare d_prev, d_next, d_last, d_first integer;
 
   	    d_prev := d_next := d_last := d_first := 0;
   	    _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
@@ -330,7 +350,10 @@
   	    _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
   	    _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
+        {
+          if (n_total)
+            http (' | ');
         if (_first is not null and not _first.vc_enabled)
     	    d_first := 1;
 
@@ -344,36 +367,26 @@
     	    d_last := 1;
         }
     ?&gt;
-    <xsl:if test="not(@type) or @type = 'set'">
     <?vsp
       if (d_first)
-        http ('<img src="image/first_16.gif" alt="First" title="First" border="0" /> First');
+        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
     ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" xhtml_title="First" text="&amp;nbsp;First"/>
-    </xsl:if>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
     <?vsp
-      if (d_first or _first.vc_enabled)
-        http ('&nbsp;');
       if (d_prev)
-        http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" /> Previous');
+        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" xhtml_title="Previous" text="&amp;nbsp;Previous"/>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
     <?vsp
-      if (d_prev or _prev.vc_enabled)
-        http ('&nbsp;');
       if (d_next)
-        http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" /> Next');
+        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" xhtml_title="Next" text="&amp;nbsp;Next"/>
-    <xsl:if test="not(@type) or @type = 'set'">
+    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
     <?vsp
-      if (d_next or _next.vc_enabled)
-        http ('&nbsp;');
       if (d_last)
-        http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" /> Last');
+        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
     ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" xhtml_title="Last" text="&amp;nbsp;Last"/>
-    </xsl:if>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
     <?vsp
       }
     ?>

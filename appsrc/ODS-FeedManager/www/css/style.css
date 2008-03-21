@@ -29,8 +29,10 @@ body
   font-size: 9pt;
 }
 
-a {
-  text-decoration: none}
+a
+{
+  text-decoration: none
+}
 
 a:active
 {
@@ -49,26 +51,31 @@ a:hover
 
 /* Header */
 
-#HD {
+#HD
+{
   width: 100%;
   margin: 0;
   padding: 0;
   float: left;
   clear: both;
-  background-color: #fff}
+  background-color: #fff;
+}
 
-div.app_page_hdr {
+div.app_page_hdr
+{
   height: 60px;
   width: 100%;
   padding: 0 10px 0 0;
   margin: 0;
   float: left;
   clear: both;
-  text-align: right}
+  text-align: right;
+}
 
 img.hdr_img { float: left;}
 
-div.app_hdr_cmds_ctr {
+div.app_hdr_cmds_ctr
+{
   margin-top: 10px;
   float: right;
   clear: right;
@@ -1166,6 +1173,11 @@ div.comment-button
   margin: 1px;
   padding-top: 5px;
   border-top: 1px #cccccc solid;
+}
+
+input.openID {
+  background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
+  padding-left: 18px;
 }
 
 /* Popup Calendar */
