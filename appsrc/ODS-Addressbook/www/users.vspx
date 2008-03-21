@@ -147,7 +147,8 @@
                              when '1' then self.v_value || '%'
                              when '2' then '%' || self.v_value || '%'
                              when '3' then '%' || self.v_value
-                             else self.v_value end;
+                             else self.v_value
+                           end;
             if (self.v_mask = '')
               self.v_mask := '%';
             self.v_mask := replace(self.v_mask, '%%', '%');
@@ -168,7 +169,7 @@
               control.ds_sql := concat('select U_TYPE, U_NAME, U_FULL_NAME from (', user_sql, ' union ' , group_sql, ') x ');
             }
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
-            control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
+            control.ds_nrows := AB.WA.settings_rows (self.settings);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>

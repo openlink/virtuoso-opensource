@@ -185,15 +185,7 @@
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-              <v:button action="simple" style="url" value="Preferences" xhtml_title="Preferences">
-                <v:on-post>
-                  <![CDATA[
-                    self.abAction := 'settings';
-                    self.abSubAction := '';
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
+              <v:url url="home.vspx?action=settings" value="Preferences" xhtml_title="Preferences"/>
           |
         </v:template>
         <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>

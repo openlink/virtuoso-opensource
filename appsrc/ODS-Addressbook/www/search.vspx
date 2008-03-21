@@ -59,7 +59,8 @@
       self.update_params();
 
       AB.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         AB.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         AB.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
         AB.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
@@ -72,7 +73,8 @@
       self.ds_tags := vector ();
 
       AB.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         AB.WA.xml_set('expression', data, self.v_expression);
         AB.WA.xml_set('tags', data, self.v_tags);
         if ((self.v_own = 1) and (self.v_category > 0))
@@ -103,18 +105,22 @@
       sqlParams := vector();
       sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
       exec(sql, state, msg, sqlParams, 0, meta, result);
-      if (state = '00000') {
+      if (state = '00000')
+      {
         self.ds_data := result;
         self.ds_meta := meta;
 
-        if (self.f_cloud.ufl_selected = 1) {
+        if (self.f_cloud.ufl_selected = 1)
+        {
           declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
-          for (N := 0; N < length(self.ds_data); N := N + 1) {
+          for (N := 0; N < length(self.ds_data); N := N + 1)
+          {
             tags := split_and_decode (self.ds_data[N][3], 0, '\0\0,');
-            foreach (any tag in tags) do {
+            foreach (any tag in tags) do
+            {
               tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
               tag_object[1] := tag_object[1] + 1;
               dict_put(tags_dict, lcase(tag), tag_object);
@@ -169,7 +175,8 @@
 
   <v:on-init>
     <![CDATA[
-      if (self.ds_data is null) {
+      if (self.ds_data is null)
+      {
         self.ds_data := vector ();
         self.ds_meta := vector ();
         self.ds_tags := vector ();
@@ -178,8 +185,10 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+      if (not e.ve_is_post or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
+      {
         self.do_search (e);
+      }
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Search results</vm:pagetitle>

@@ -312,10 +312,10 @@
       AddressBook
     </vm:header>
     <vm:variables>
+      <v:variable persist="0" name="abAction" type="varchar" param-name="action" default="'browse'" />
+      <v:variable persist="0" name="abSubAction" type="varchar" default="''" />
       <v:variable persist="0" name="abSelected" type="any" default="null" />
       <v:variable persist="0" name="abScope" type="varchar" default="'MyContacts'" />
-      <v:variable persist="0" name="abAction" type="varchar" default="'browse'" />
-      <v:variable persist="0" name="abSubAction" type="varchar" default="''" />
       <v:variable persist="0" name="abValue" type="varchar" default="null" />
       <v:variable persist="temp" name="abContact" type="any" default="''" />
 
@@ -2966,7 +2966,7 @@
                       ?>
               		  </td>
               		  <td>
-                        <?V CAL.WA.utf2wide (self.i_Items[N][2]) ?>
+                        <?V AB.WA.utf2wide (self.i_Items[N][2]) ?>
               		  </td>
               		  <td>
                       <?V self.i_Items[N][3] ?>
@@ -3530,13 +3530,11 @@
       </vm:if>
 
       <vm:if test="self.abAction = 'settings'">
-        <div class="new-form-header" style="margin-top: 6px;">
-          Preferences
-        </div>
-        <table width="100%" class="new-form-body" cellspacing="0">
-          <tr style="min-height: 200px;">
-            <td width="1%" valign="top" style="padding-right: 5px; border-right: solid 1px; border-color: #7f94a5;">
-              <v:button action="simple" value="Settings" xhtml_class="button" xhtml_style="width: 200px;">
+        <table id="MTB">
+          <tr>
+            <td id="LC">
+              <div class="lc lc_close">
+                <v:button action="simple" style="url" value="Settings" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
                     self.abSubAction := '';
@@ -3544,8 +3542,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <br />
-              <v:button action="simple" value="Categories" xhtml_class="button" xhtml_style="width: 200px;">
+                <v:button action="simple" style="url" value="Categories" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
                     self.abSubAction := 'categoriesBrowse';
@@ -3554,7 +3551,7 @@
                 </v:on-post>
               </v:button>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-              <v:button action="simple" value="Back" xhtml_class="button" xhtml_style="width: 200px;">
+                <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -3563,13 +3560,15 @@
                   ]]>
                 </v:on-post>
               </v:button>
+              </div>
             </td>
-            <td valign="top" style="padding-left: 5px;">
+            <td id="RC">
               <vm:if test="self.abSubAction =''">
-                <div class="new-form-header" style="margin-top: 6px;">
-                  Settings
+                <div class="new-form-header">
+                  Preferences: Settings
       </div>
-                <table class="form-body" cellspacing="0">
+                <div class="new-form-body">
+                  <table cellspacing="0">
                   <tr>
                     <th width="30%">
                       <v:label for="f_chars" value="Contact name display"/>
@@ -3634,6 +3633,7 @@
                     </td>
                   </tr>
                 </table>
+                </div>
                 <div class="new-form-footer">
                   <v:button action="simple" value="Save" xhtml_class="form-button">
                     <v:on-post>
@@ -3690,6 +3690,9 @@
                 </div>
               </vm:if>
               <vm:if test="self.abSubAction = 'categoriesBrowse'">
+                <div class="new-form-header">
+                  Preferences: Categories
+                </div>
                 <v:button value="--'New Category'" action="simple" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
@@ -3805,7 +3808,8 @@
                 <div class="new-form-header">
                   <v:label value="--case when self.abSubAction = 'categoryCreate' then 'Create category' else 'Update category' end"/>
                 </div>
-                <table class="new-form-body" cellspacing="0">
+                <div class="new-form-body">
+                  <table class="form-body" cellspacing="0">
                   <tr>
                     <th width="30%">
                       Name
@@ -3815,6 +3819,7 @@
                     </td>
                   </tr>
                 </table>
+                </div>
                 <div class="new-form-footer">
                   <v:button action="simple" value="--case when self.abSubAction = 'categoryCreate' then 'Create' else 'Update' end" name="s1u_save" xhtml_class="form-button">
                     <v:on-post>

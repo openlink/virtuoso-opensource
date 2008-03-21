@@ -28,7 +28,8 @@
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
 
-      if (self.v_order = columnName and self.v_direction = 'desc') {
+      if (self.v_order = columnName and self.v_direction = 'desc')
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
       } else if (self.v_order = columnName and self.v_direction = 'asc') {
@@ -48,7 +49,8 @@
       if (columnName = '')
         return;
       self.ds.vc_reset();
-      if (self.v_order = columnName) {
+      if (self.v_order = columnName)
+      {
         self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
       } else {
         self.v_direction := 'asc';
@@ -76,7 +78,8 @@
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
 
-      if (not (self.account_role in ('public', 'guest'))) {
+      if (not (self.account_role in ('public', 'guest')))
+      {
       self.v_own := self.f_own.ufl_selected;
       self.v_shared := self.f_shared.ufl_selected;
       }
@@ -87,7 +90,8 @@
     <![CDATA[
       declare tmp any;
 
-      declare exit handler for SQLSTATE '*' {
+      declare exit handler for SQLSTATE '*'
+      {
         if (__SQL_STATE = 'TEST') {
           self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
        		self.vc_is_valid := 0;
@@ -99,7 +103,8 @@
       self.update_params();
 
       BMK.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
           BMK.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         BMK.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
         BMK.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
@@ -131,8 +136,10 @@
       self.ds_data := vector ();
       self.ds_meta := vector ();
       self.ds_tags := vector ();
-      if (length(xpath_eval('//entry', data, 0)) = 0) {
-        if (e.ve_is_post or (self.v_mode = 'simple')) {
+      if (length(xpath_eval('//entry', data, 0)) = 0)
+      {
+        if (e.ve_is_post or (self.v_mode = 'simple'))
+        {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
@@ -150,11 +157,13 @@
       sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
-      if (state = '00000') {
+      if (state = '00000')
+      {
         self.ds_data := result;
         self.ds_meta := meta;
 
-        if (self.f_cloud.ufl_selected = 1) {
+        if (self.f_cloud.ufl_selected = 1)
+        {
           declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
@@ -171,7 +180,8 @@
 
           maxCnt := 1;
           minCnt := 1000000;
-          for (select p.* from BMK.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
+          for (select p.* from BMK.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+          {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
             if (cnt > maxCnt)
               maxCnt := cnt;
@@ -206,7 +216,8 @@
           tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if ((cast(self.v_shared as integer) = 1) and (self.v_grants <> ''))
           tmp := concat(tmp, sprintf('&%sgrants=%U', prefix, self.v_grants));
-      if (mode = 'export') {
+      if (mode = 'export')
+      {
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -221,7 +232,8 @@
 
   <v:on-init>
     <![CDATA[
-      if (self.ds_data is null) {
+      if (self.ds_data is null)
+      {
         self.ds_data := vector ();
         self.ds_meta := vector ();
         self.ds_tags := vector ();
@@ -230,8 +242,10 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
+      {
         self.do_search (e);
+      }
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Search results</vm:pagetitle>
@@ -279,7 +293,8 @@
           self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
           self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
           self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
-          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '') {
+          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '')
+          {
             if (is_empty_or_null(self.v_tags))
               self.v_tags := '';
             self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
@@ -290,7 +305,8 @@
           self.v_folder_id := cast(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)) as integer);
 
           -- options
-          if (not (self.account_role in ('public', 'guest'))) {
+          if (not (self.account_role in ('public', 'guest')))
+          {
           self.v_own := self.f_own.ufl_selected;
           self.v_shared := self.f_shared.ufl_selected;
             self.v_grants := trim(get_keyword('f_grants', self.vc_page.vc_event.ve_params, get_keyword('grants', self.vc_page.vc_event.ve_params, self.v_grants)));
@@ -305,7 +321,8 @@
       </v:before-data-bind>
       <v:on-post>
         <![CDATA[
-          if (e.ve_button = control) {
+          if (e.ve_button = control)
+          {
             self.a_keywords.ufl_value := '';
             self.f_expression.ufl_value := '';
             self.ds_data := vector ();
@@ -351,7 +368,10 @@
         <tr>
           <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
-        	  	<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="--BMK.WA.settings_rows(self.account_id)" scrollable="1">
+              <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
+                <v:before-data-bind>
+                  control.ds_nrows := BMK.WA.settings_rows (self.account_id);
+                </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">

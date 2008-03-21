@@ -119,6 +119,66 @@ a:hover
   background-color: #b0cde4;
 }
 
+.lc
+{
+  font-size: 12px;
+  background-color: #EFEFEF;
+  border: 1px solid #7f94a5;
+  padding: 5px;
+  margin: 0 0.5em 0.5em 0.5em;
+  width: auto;
+}
+
+.lc_none
+{
+  margin: 0 0.5em 0.5em 0.5em;
+  width: auto;
+}
+
+.lc_closer
+{
+  margin-top: -0.5em;
+  z-index: 1;
+}
+
+.lc_noborder
+{
+  border-top: 0;
+}
+
+.lc a.gems2, .lc div
+{
+  display: block;
+  padding: 3px;
+  margin: 3px;
+}
+
+.lc a.gems2
+{
+  text-decoration: none;
+}
+
+.lc a:hover
+{
+  color: blue;
+  background: #99b3c5;
+}
+
+.lc a.gems2
+{
+  color: black;
+  font-weight: bold;
+  background: #b0cde4;
+}
+
+.lc_head
+{
+  -moz-user-select: none;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+}
+
 a.gems
 {
   display: block;

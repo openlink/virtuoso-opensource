@@ -168,6 +168,9 @@
             control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>
+        <v:after-data-bind>
+          control.ds_make_statistic ();
+        </v:after-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
