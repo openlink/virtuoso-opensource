@@ -34,11 +34,18 @@ POLLS.WA.uninstall ()
 
 VHOST_REMOVE (lpath => '/polls');
 
+-- NNTP
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_I');
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_U');
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.POLLS_NEWS_MSG_D');
+DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (\'POLLS\')');
+
 -- Tables
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.ANSWER');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.VOTE');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.QUESTION');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.ANNOTATIONS');
+POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.POLL_COMMENT');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.POLL');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.TAGS');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.SETTINGS');

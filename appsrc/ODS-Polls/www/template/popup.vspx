@@ -27,8 +27,9 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <script type="text/javascript" language="JavaScript" src="js/polls.js" />
-    <?vsp http('</script>'); ?>
+    <![CDATA[
+      <script type="text/javascript" language="JavaScript" src="js/polls.js"></script>
+    ]]>
     <title></title>
   </head>
   <body>
@@ -53,7 +54,7 @@
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
-          self.settings := POLLS.WA.settings (self.account_id);
+          self.settings := POLLS.WA.settings (self.domain_id);
         ]]>
       </v:on-init>
 

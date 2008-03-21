@@ -490,7 +490,7 @@
         </div>
         <div class="polls_right">
           <v:template type="simple" enabled="--case when (self.pAction = 'browse') then 1 else 0 end">
-            <v:data-source name="dsrc" expression-type="sql" nrows="--POLLS.WA.settings_rows(self.account_id)" initial-offset="0">
+            <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
                 <![CDATA[
                   declare data any;
@@ -506,10 +506,14 @@
                   if (not is_empty_or_null (self.pTag))
                     POLLS.WA.xml_set('tags', data, self.pTag);
 
+                  control.ds_nrows := POLLS.WA.settings_rows (self.settings);
                   control.ds_parameters := vector ();
                   control.ds_sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
                 ]]>
               </v:before-data-bind>
+              <v:after-data-bind>
+                control.ds_make_statistic ();
+              </v:after-data-bind>
             </v:data-source>
 
             <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
@@ -605,8 +609,8 @@
                           if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id) = 1)
                             actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
 
-                          if (POLLS.WA.poll_enable_delete (self.domain_id, self.account_role, id))
-                            actions := actions || either(equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%d\'); " title="Delete %s" class="link_ed">delete</a>', id, title);
+                          if (POLLS.WA.discussion_check () and POLLS.WA.conversation_enable (self.domain_id))
+                            actions := actions || either (equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open(\'%s\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="Discussion %s" class="link_ed">discussion</a>', POLLS.WA.url_fix (sprintf ('conversation.vspx?id=%d', id), self.sid, self.realm), title);
 
                           http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
                           http (actions);

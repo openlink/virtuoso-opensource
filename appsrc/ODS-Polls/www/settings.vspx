@@ -26,11 +26,22 @@
   <vm:pagetitle>Preferences</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
+    <vm:variables>
+      <v:variable name="v_conversation" persist="0" type="varchar" default="null"/>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+    </vm:variables>
     <vm:pagebody>
-      <div class="new-form-header" style="margin-top: 6px;">
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+      <div class="new-form-header">
         Preferences
       </div>
-      <div class="new-form-body">
+      <div id="p" class="c1">
+        <div class="tabs">
+          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
+          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Discussion" />
+        </div>
+        <div class="contents">
+          <div id="p_content_0" class="tabContent">
         <table class="form-body" cellspacing="0">
           <tr>
             <th width="30%">
@@ -97,11 +108,61 @@
           </tr>
         </table>
       </div>
+          <div id="p_content_1" class="tabContent" style="display: none;">
+            <table class="form-body" cellspacing="0">
+              <v:template type="simple" enabled="--either (equ (POLLS.WA.discussion_check (), 1), 0, 1)">
+                <tr>
+                  <td class="error_text" colspan="2">
+                    <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                  </td>
+                </tr>
+              </v:template>
+              <tr>
+                <th width="30%">&nbsp;</th>
+                <td>
+                  <?vsp
+                    declare S, T varchar;
+
+                    S := '';
+          				  if (not POLLS.WA.discussion_check ())
+          				    S := 'disabled="disabled"';
+                    T := '';
+          				  if (cast(get_keyword ('conv', self.settings, '0') as integer) = 1)
+          				    T := 'checked';
+                    http (sprintf ('<input type="checkbox" name="f_conv" value="1" %s %s />', T, S));
+                  ?>
+          				<vm:label for="f_conv" value="Enable discussions on this instance" />
+                </td>
+              </tr>
+              <tr>
+                <th width="30%">&nbsp;</th>
+                <td>
+                  <?vsp
+                    declare S, T varchar;
+
+                    S := '';
+          				  if (not POLLS.WA.discussion_check ())
+          				    S := 'disabled="disabled"';
+                    T := '';
+          				  if (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1)
+          				    T := 'checked';
+                    http (sprintf ('<input type="checkbox" name="f_conv_init" value="1" %s %s />', T, S));
+                  ?>
+          				<vm:label for="f_conv_init" value="Initialize the news group with existing posts" />
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
       <div class="new-form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
               declare rows, chars any;
+              declare conv, f_conv, f_conv_init, params any;
+
+              params := self.vc_page.vc_event.ve_params;
 
               declare exit handler for SQLSTATE '*'
               {
@@ -116,21 +177,34 @@
 
               rows := trim(self.f_rows.ufl_value);
               chars := trim(self.f_chars.ufl_value);
-              if (get_keyword ('r_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+              if (get_keyword ('r_chars', params, '-1') = '0')
                 chars := '0';
 
               POLLS.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
               POLLS.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
+              conv := cast (get_keyword ('conv', self.settings, '0') as integer);
+              f_conv := cast (get_keyword ('f_conv', params, '0') as integer);
+              f_conv_init := cast (get_keyword ('f_conv_init', params, '0') as integer);
+
               self.settings := POLLS.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := POLLS.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := POLLS.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
               self.settings := POLLS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+              self.settings := POLLS.WA.set_keyword ('conv', self.settings, f_conv);
+              self.settings := POLLS.WA.set_keyword ('conv_init', self.settings, f_conv_init);
 
-              insert replacing POLLS.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+              insert replacing POLLS.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (self.domain_id, self.account_id, serialize(self.settings));
               commit work;
 
               POLLS.WA.domain_gems_create(self.domain_id, self.account_id);
+
+          		if (POLLS.WA.discussion_check ())
+          		{
+    					  POLLS.WA.nntp_update (self.domain_id, null, null, conv, f_conv);
+         				if (f_conv and f_conv_init)
+    					    POLLS.WA.nntp_fill (self.domain_id);
+    					}
 
               self.vc_redirect('polls.vspx');
             ]]>
@@ -139,7 +213,7 @@
         <v:button action="simple" value="Clear" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
-              delete from POLLS.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+              delete from POLLS.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
 
               self.vc_redirect('settings.vspx');
             ]]>

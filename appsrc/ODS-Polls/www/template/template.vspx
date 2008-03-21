@@ -68,6 +68,7 @@
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
+          showTab('p', 2, 0);
           showTab('s', 2, 0);
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
@@ -101,7 +102,7 @@
           self.accountName := get_keyword('user_name', aSessInfo, '');
           self.owner_id := POLLS.WA.domain_owner_id (self.domain_id);
           self.ownerName := POLLS.WA.domain_owner_name (self.domain_id);
-          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), POLLS.WA.settings (self.account_id));
+          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), POLLS.WA.settings (self.domain_id));
         ]]>
       </v:on-init>
 

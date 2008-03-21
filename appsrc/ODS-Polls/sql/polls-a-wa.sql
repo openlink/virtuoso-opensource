@@ -395,6 +395,7 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_pol
 
   POLLS.WA.domain_gems_delete (domainID, ownerID, 'Polls', oldValues[0] || '_Gems');
   POLLS.WA.domain_gems_create (domainID, ownerID);
+  POLLS.WA.nntp_update (domainID, POLLS.WA.domain_nntp_name2 (oldValues[0], POLLS.WA.account_name (ownerID)), POLLS.WA.domain_nntp_name2 (newValues[0], POLLS.WA.account_name (ownerID)));
 
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }

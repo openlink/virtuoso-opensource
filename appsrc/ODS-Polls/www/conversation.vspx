@@ -1,0 +1,437 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="discussion" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:method name="getTitle" arglist="">
+    <![CDATA[
+      declare title any;
+
+      if (isnull(self.v_pid))
+      {
+        select P_NAME into title from POLLS.WA.POLL where P_ID = self.v_id;
+      } else {
+        select PC_TITLE into title from POLLS.WA.POLL_COMMENT where PC_ID = self.v_pid;
+      }
+      return concat('Re: ', coalesce(title, '~ no title ~'));
+    ]]>
+  </v:method>
+
+  <v:method name="getComment" arglist="">
+    <![CDATA[
+      declare comment any;
+
+      if (isnull(self.v_pid))
+      {
+        select P_NAME into comment from POLLS.WA.POLL where P_ID = self.v_id;
+      } else {
+        select PC_COMMENT into comment from POLLS.WA.POLL_COMMENT where PC_ID = self.v_pid;
+      }
+      return coalesce (comment, '');
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>Discussion page</vm:pagetitle>
+  <vm:popup_page_wrapper>
+    <vm:variables>
+      <v:variable persist="0" name="v_mode" type="varchar" default="'show'" param-name="mode" />
+      <v:variable persist="0" name="v_id" param-name="id" type="integer" />
+      <v:variable persist="0" name="v_pid" type="integer" />
+      <v:variable persist="0" name="openid_identity" type="varchar" default="null" param-name="openid.identity" />
+      <v:variable persist="0" name="openid_sig" type="varchar" default="null" param-name="openid.sig" />
+      <v:variable persist="0" name="openid_key" type="varchar" default="null" param-name="openid.assoc_handle" />
+      <v:variable persist="0" name="openid_mail" type="varchar" default="null" param-name="openid.sreg.email" />
+      <v:variable persist="0" name="openid_name" type="varchar" default="null" param-name="openid.sreg.fullname" />
+    </vm:variables>
+    <vm:pagebody>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <div class="new-form-header">
+        Discussion
+      </div>
+      <div class="new-form-body">
+        <table cellspacing="0">
+          <tr>
+            <td>
+              <div class="comment-section">Item</div>
+              <v:label value="">
+                <v:after-data-bind>
+                  <![CDATA[
+                    control.ufl_value := (select coalesce (P_NAME, '~ no title ~') from POLLS.WA.POLL where P_ID = self.v_id);
+                  ]]>
+                </v:after-data-bind>
+              </v:label>
+              <div class="comment-button">
+                <v:button action="simple" value="Reply" xhtml_title="Reply" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_pid := null;
+                      self.v_mode := 'reply';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </td>
+          </tr>
+          <?vsp
+            if (exists (select 1 from POLLS.WA.POLL_COMMENT where PC_POLL_ID = self.v_id and PC_PARENT_ID is not null))
+            {
+          ?>
+          <tr>
+            <td>
+              <div class="comment-section">Comments</div>
+              <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_id" open-at="--'//*'" root="POLLS.WA.cm_root_node"  child-function="POLLS.WA.cm_child_node">
+                <v:node-template name="node_tmpl">
+                  <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
+                    <?vsp
+                      {
+                        declare id, comment, title, u_name, last_update any;
+
+                        id := cast (control.tn_value as integer);
+                        declare exit handler for not found;
+                        select PC_TITLE, PC_COMMENT, PC_U_NAME, PC_UPDATED
+                          into title, comment, u_name, last_update
+                          from POLLS.WA.POLL_COMMENT
+                         where PC_ID = id;
+
+                        declare parsed_message any;
+                        declare d_name varchar;
+                        declare idx integer;
+
+                        parsed_message := POLLS.WA.news_comment_get_mess_attachments (comment, 0);
+                        comment := parsed_message[0] || '<br/>';
+
+                        for (idx := 1; idx < length (parsed_message); idx := idx + 1)
+                        {
+	                        d_name := parsed_message[idx];
+	                        comment := comment || sprintf ('Download attachment : <a target="_BLANK" href="%spolls/%d/attachment.vsp?id=%d&part=%i&fn=%s">%s</a><br/>',
+                                                          WA_LINK(1,'/'),
+                                                          self.domain_id,
+                                                          id,
+                                                          idx,
+                                                          d_name,
+                                                          d_name);
+	                        if (d_name like '%.jpg' or d_name like '%.gif' or d_name like '%.png')
+	                        {
+	                          comment := comment || sprintf ('<img alt="attachment" src="%spolls/%d/attachment.vsp?id=%d&part=%i&fn=%s" />',
+                                                           WA_LINK(1,'/'),
+                                                           self.domain_id,
+                                                           id,
+                                                           idx,
+                                                           d_name);
+	                          comment := comment||'<br/>';
+	                        }
+                        }
+                    ?>
+                    <div class="comment" id="msg_<?V id ?>">
+                      <div class="comment-header">
+                        <span class="comment-subj"><?V title ?></span> <br />
+                      </div>
+                      <div class="comment-msg">
+                        <?vsp
+                          http (comment);
+                        ?>
+                      </div>
+                      <div class="comment-footer">
+                        <span class="comment-user">
+                          Posted by <?V POLLS.WA.utf2wide (u_name) ?>
+                        </span>
+                        <span class="comment-date"> on <?V POLLS.WA.dt_value (last_update) ?></span>
+                      </div>
+                      <div class="comment-button">
+                        <v:button action="simple" value="Reply" xhtml_title="Reply" xhtml_class="button">
+                          <v:on-post>
+                            <![CDATA[
+                              self.v_pid := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);;
+                              self.v_mode := 'reply';
+                              self.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                        <v:button action="simple" value="Delete" xhtml_title="Delete" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this comment?\');" xhtml_class="button">
+                          <v:on-post>
+                            <![CDATA[
+                              declare id integer;
+
+                              id := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);
+                              delete from POLLS.WA.POLL_COMMENT where PC_ID = id;
+
+                              self.v_mode := 'show';
+                              self.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </div>
+                   </div>
+                   <?vsp
+                     }
+                   ?>
+                   <v:node />
+                  </div>
+                </v:node-template>
+              </v:tree>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+          <tr>
+            <td>
+              <div class="comment-button"></div>
+            </td>
+          </tr>
+          <v:template type="simple" enabled="--case when (self.v_mode = 'reply') then 1 else 0 end">
+            <tr>
+              <td>
+                <table cellspacing="0">
+                  <tr>
+                    <td colspan="2">
+                      <div class="comment-section">Reply</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_name" value="Name" />
+                    </th>
+                    <td>
+                      <v:text name="f_name" xhtml_id="f_name" value="--coalesce (self.openid_name, POLLS.WA.account_fullName (self.account_id))" xhtml_class="textbox"  xhtml_style="width: 300px;">
+		                    <v:before-render>
+			                    control.ufl_value := POLLS.WA.utf2wide (control.ufl_value);
+		                    </v:before-render>
+                      </v:text>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_mail" value="E-Mail" />
+                    </th>
+                    <td>
+                      <v:text name="f_mail" xhtml_id="f_mail" value="--coalesce (self.openid_mail, POLLS.WA.account_mail (self.account_id))" xhtml_class="textbox"  xhtml_style="width: 300px;" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="openid_url" value="OpenID" />
+                    </th>
+                    <td>
+		                  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig">
+  		                  <v:on-init>
+  		                    <![CDATA[
+  		                      if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'id_res')
+  		                      {
+                              declare rc int;
+                      			  declare k any;
+
+                      			  k := (select SS_KEY from OPENID..SERVER_SESSIONS where SS_HANDLE = self.openid_key);
+                      			  rc := openid..check_signature (http_request_get ('QUERY_STRING') || sprintf ('&mac_key=%U', cast (k as varchar)));
+                      			  if (rc = 0)
+                      			  {
+                      			    self.openid_sig := null;
+                      			    self.vc_error_message := 'The OpenID identity verification failed.';
+                      			    self.vc_is_valid := 0;
+                      			    return;
+                      			  }
+                      			  self.openid_key := cast (k as varchar);
+                              self.openid_sig := http_request_get ('QUERY_STRING');
+                      			}
+                      		  if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'cancel')
+                      		  {
+                      			  self.openid_sig := null;
+                      			  self.vc_error_message := 'The OpenID identity verification failed.';
+                      			  self.vc_is_valid := 0;
+                      			}
+                      		]]>
+                        </v:on-init>
+                 		  </v:text>
+                 		  <v:text name="oid_key" value="--self.openid_key" type="hidden" xhtml_id="oid_key" />
+		                  <v:text name="openid_url" value="--self.openid_identity" xhtml_id="openid_url" xhtml_class="openID" xhtml_style="width: 282px;" />
+		                  <v:button value='Verify' xhtml_id='verify_button' xhtml_class="button" action="simple">
+		                    <v:on-post>
+		                      <![CDATA[
+                            declare url, ret, cnt, oi_srv, oi_delegate, oi_ident, this_page, xt, hdr, host, oi_mode any;
+                            declare setup_url, oi_handle, trust_root, oi_sig, oi_signed, oi_key varchar;
+                            declare ses, flds, check_immediate any;
+
+                            host := http_request_header (lines, 'Host');
+
+                            this_page := 'http://' || host || http_path () || sprintf ('?id=%d&mode=reply', self.v_id);
+                            trust_root := 'http://' || host;
+                            oi_ident := self.openid_url.ufl_value;
+                            if (oi_ident is not null)
+                            {
+                              url := trim(oi_ident);
+                              declare exit handler for sqlstate '*'
+                              {
+                                 self.vc_error_message := 'The URL cannot be retrieved';
+                                 self.vc_is_valid := 0;
+                                  return;
+                              };
+                              if (not length (url) or url not like 'http%://%')
+                              {
+                                self.vc_is_valid := 0;
+                                self.vc_error_message := 'Invalid URL';
+                                return;
+                              }
+                            again:
+                              hdr := null;
+                              cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+
+                              if (hdr [0] like 'HTTP/1._ 30_ %')
+                              {
+                                declare loc any;
+                           	    loc := http_request_header (hdr, 'Location', null, null);
+                           	    url := WS.WS.EXPAND_URL (url, loc);
+                                oi_ident := url;
+                           	    goto again;
+                              }
+
+                              xt := xtree_doc (cnt, 2);
+
+                              oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+                              oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+                              if (oi_srv is null)
+                              {
+                                self.vc_is_valid := 0;
+                                self.vc_error_message := 'The OpenID server cannot be located';
+                                return;
+                              }
+
+                              if (oi_delegate is not null)
+                                oi_ident := oi_delegate;
+
+                              oi_handle := null;
+                              oi_key := '';
+                              check_immediate := sprintf ('%s?openid.mode=associate', oi_srv);
+                              cnt := http_client (url=>check_immediate);
+                              cnt := split_and_decode (cnt, 0, '\0\0\x0A:');
+                              oi_handle := get_keyword ('assoc_handle', cnt, null);
+                              oi_key := get_keyword ('mac_key', cnt, '');
+
+                              insert into OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+                              	values (oi_handle, oi_key, 'RAW', dateadd ('hour', 1, now()));
+                              self.openid_key := oi_key;
+
+                              check_immediate := sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',	oi_srv, oi_ident, this_page, trust_root);
+                              if (length (oi_handle))
+                                check_immediate := check_immediate || sprintf ('&openid.assoc_handle=%U', oi_handle);
+
+                              check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U', 'email,fullname');
+                              self.vc_redirect (check_immediate);
+                            }
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Comment
+                    </th>
+                    <td>
+                      <?vsp
+                        declare tmpString any;
+                        tmpString := self.getComment();
+                        tmpString := replace(tmpString, '\'', '&#39;');
+                        tmpString := replace(tmpString, '"', '&#34;');
+                        tmpString := replace(tmpString, chr(10), ' ');
+                        tmpString := replace(tmpString, chr(13), ' ');
+                      ?>
+                      <![CDATA[
+                        <script language="JavaScript" type="text/javascript" src="rte/js/richtext.js"></script>
+                        <script language="JavaScript" type="text/javascript" src="rte/js/html2xhtml.js"></script>
+                        <script language="JavaScript" type="text/javascript">
+                          initRTE("rte/images/", "rte/js/", "", true);
+                        </script>
+                        <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                        <script language="JavaScript" type="text/javascript">
+                          writeRichText('f_message', '<?vsp http(tmpString); ?>', 500, 170, true, false);
+                        </script>
+                      ]]>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" align="center">
+                      <div class="comment-button">
+                      <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button">
+                        <v:on-post>
+                          <![CDATA[
+                            declare name, mail, url, title, comment any;
+                            declare rName, rMail, rTitle, rComment any;
+
+                            title := self.getTitle();
+                            comment := trim(get_keyword('f_message', self.vc_event.ve_params, ''));
+                            name := trim(self.f_name.ufl_value);
+                            mail := trim(self.f_mail.ufl_value);
+                            url := trim(self.openid_url.ufl_value);
+
+                            if (isnull(self.v_pid))
+                            {
+                              -- get root comment;
+                              self.v_pid := (select PC_ID from POLLS.WA.POLL_COMMENT where PC_DOMAIN_ID = self.domain_id and PC_POLL_ID = self.v_id and PC_PARENT_ID is null);
+                              if (isnull (self.v_pid))
+                              {
+                                POLLS.WA.nntp_root (self.domain_id, self.v_id);
+                                self.v_pid := (select PC_ID from POLLS.WA.POLL_COMMENT where PC_DOMAIN_ID = self.domain_id and PC_POLL_ID = self.v_id and PC_PARENT_ID is null);
+                              }
+                            }
+
+                            POLLS.WA.nntp_update_item (self.domain_id, self.v_id);
+                            insert into POLLS.WA.POLL_COMMENT (PC_PARENT_ID, PC_DOMAIN_ID, PC_POLL_ID, PC_TITLE, PC_COMMENT, PC_U_NAME, PC_U_MAIL, PC_U_URL, PC_UPDATED, PC_OPENID_SIG)
+                              values (self.v_pid, self.domain_id, self.v_id, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
+
+                            self.v_mode := 'show';
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button">
+                        <v:on-post>
+                          <![CDATA[
+                            self.v_mode := 'show';
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      </div>
+                      <div class="comment-button" />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </v:template>
+          <tr>
+            <td>
+              Subscribe to an RSS feed of this comment thread:
+              <?vsp
+                http (sprintf ('<a href="%sPolls.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS discussion" class="gems"><img src="image/rss-icon-16.gif" border="0" /></a>', POLLS.WA.dav_url (self.domain_id), self.v_id));
+              ?>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </vm:pagebody>
+  </vm:popup_page_wrapper>
+</v:page>

@@ -199,14 +199,16 @@ function coloriseTable(id) {
 }
 
 // ---------------------------------------------------------------------------
-function coloriseRow(obj, checked) {
+function coloriseRow(obj, checked)
+{
   obj.className = (obj.className).replace('tr_select', '');
   if (checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString, sChar) {
+function myTrim(sString, sChar)
+{
   if (sChar == null)
     sChar = ' ';
 
@@ -220,7 +222,8 @@ function trim(sString, sChar) {
 }
 
 // ---------------------------------------------------------------------------
-function showTag(tag) {
+function showTag(tag)
+{
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
 }
@@ -350,9 +353,9 @@ function rowSelectValue(dstField, srcField, singleMode)
   if (singleMode) {
     dstField.value = srcField.value;
   } else {
-    dstField.value = trim(dstField.value);
-    dstField.value = trim(dstField.value, ',');
-    dstField.value = trim(dstField.value);
+    dstField.value = myTrim(dstField.value);
+    dstField.value = myTrim(dstField.value, ',');
+    dstField.value = myTrim(dstField.value);
     if (dstField.value.indexOf(srcField.value) == -1) {
       if (dstField.value == '') {
         dstField.value = srcField.value;
@@ -407,9 +410,9 @@ function updateChecked (obj, objName)
 {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = trim(objForm.s1.value);
-  objForm.s1.value = trim(objForm.s1.value, ',');
-  objForm.s1.value = trim(objForm.s1.value);
+  objForm.s1.value = myTrim(objForm.s1.value);
+  objForm.s1.value = myTrim(objForm.s1.value, ',');
+  objForm.s1.value = myTrim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
   for (var i = 0; i < objForm.elements.length; i = i + 1) {
     var obj = objForm.elements[i];
@@ -422,7 +425,7 @@ function updateChecked (obj, objName)
       }
     }
   }
-  objForm.s1.value = trim(objForm.s1.value, ',');
+  objForm.s1.value = myTrim(objForm.s1.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -479,9 +482,9 @@ function addChecked (form, txt, selectionMsq)
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
-  obj.value = trim(obj.value);
-  obj.value = trim(obj.value, ',');
-  obj.value = trim(obj.value);
+  obj.value = myTrim(obj.value);
+  obj.value = myTrim(obj.value, ',');
+  obj.value = myTrim(obj.value);
   obj.value = (obj.value).replace('  ', ' ');
   obj.value = (obj.value).replace(' ,', ',');
   obj.value = obj.value + ',';
@@ -490,7 +493,7 @@ function addTag(tag, objName)
   } else {
     obj.value = (obj.value).replace(tag+',', '');
   }
-  obj.value = trim(obj.value, ',');
+  obj.value = myTrim(obj.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -501,9 +504,9 @@ function addCheckedTags (openerName, checkName)
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
 
-    objOpener.value = trim(objOpener.value);
-    objOpener.value = trim(objOpener.value, ',');
-    objOpener.value = trim(objOpener.value);
+    objOpener.value = myTrim(objOpener.value);
+    objOpener.value = myTrim(objOpener.value, ',');
+    objOpener.value = myTrim(objOpener.value);
     objOpener.value = objOpener.value + ',';
     for (var i = 0; i < objForm.elements.length; i = i + 1) {
       var obj = objForm.elements[i];
@@ -516,7 +519,7 @@ function addCheckedTags (openerName, checkName)
         }
       }
     }
-    objOpener.value = trim(objOpener.value, ',');
+    objOpener.value = myTrim(objOpener.value, ',');
   }
   window.close();
 }
@@ -627,7 +630,7 @@ function checkRange (obj)
     alert ('Bad value');
     return false;
   }
-  if ((required == 1) && (trim (obj.value) == '')) {
+  if ((required == 1) && (myTrim (obj.value) == '')) {
     alert ('Must has value');
     return false;
   }

@@ -45,8 +45,10 @@
     <![CDATA[
       declare tmp any;
 
-      declare exit handler for SQLSTATE '*' {
-        if (__SQL_STATE = 'TEST') {
+      declare exit handler for SQLSTATE '*'
+      {
+        if (__SQL_STATE = 'TEST')
+        {
           self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
            self.vc_is_valid := 0;
           return;
@@ -57,7 +59,8 @@
       self.update_params();
 
       POLLS.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         POLLS.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         POLLS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
         POLLS.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
@@ -181,8 +184,10 @@
   </v:on-init>
   <v:after-data-bind>
     <![CDATA[
-      if (not e.ve_is_post or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+      if (not e.ve_is_post or ((self.v_mode = 'simple') and isnull (e.ve_button)) or (get_keyword ('tag', e.ve_params, '') <> ''))
+      {
         self.do_search (e);
+      }
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Search results</vm:pagetitle>
@@ -249,10 +254,12 @@
       </v:before-data-bind>
       <v:on-post>
         <![CDATA[
-          if (e.ve_button = control) {
+          if (e.ve_button = control)
+          {
             self.a_keywords.ufl_value := '';
             self.f_expression.ufl_value := '';
             self.ds_data := vector ();
+            self.ds_meta := vector ();
             self.ds_tags := vector ();
             self.vc_data_bind (e);
           }
@@ -295,7 +302,12 @@
         <tr>
           <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
-              <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="--POLLS.WA.settings_rows(self.account_id)" scrollable="1">
+              <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_nrows := POLLS.WA.settings_rows (self.settings);
+                  ]]>
+                </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
