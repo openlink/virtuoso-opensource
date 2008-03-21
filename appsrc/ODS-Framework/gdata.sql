@@ -51,14 +51,14 @@ create procedure ODS_INIT_VHOST ()
     {
       default_host := arr[0];
       default_port := arr[1];
-      vhost := cname;
+      vhost := default_host;
       inet := ':'||default_port;
     }
   else if (length (arr) = 1)
     {
       default_host := cname;
       default_port := '80';
-      vhost := cname || ':80';
+      vhost := cname;
       inet := ':'||default_port;
     }
   else -- only happens in the testsuite with M2

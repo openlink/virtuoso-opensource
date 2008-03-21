@@ -6445,6 +6445,8 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/activities',
       ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
 
+  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
+    {
   if (not (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/')))
     {
       DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/');
@@ -6474,6 +6476,7 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
 	      where HP_LPATH = '/' and HP_HOST = _host and HP_LISTEN_HOST = _lhost;
 	  DB.DBA.VHOST_MAP_RELOAD (_host, _lhost, '/');
 	}
+    }
     }
 
   return;
