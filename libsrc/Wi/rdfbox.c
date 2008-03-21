@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2006 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,8 +33,10 @@ rdf_box_audit_impl (rdf_box_t * rb)
 {
   if (0 >= rb->rb_ref_count)
     GPF_T1("RDF box has nonpositive reference count");
+#ifdef RDF_DEBUG
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1("RDF box is too incomplete");
+#endif
 }
 
 
@@ -550,7 +552,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
           int str_len = box_length (str) - 1;
       if (rb->rb_is_complete && str_len <= RB_MAX_INLINED_CHARS)
 	flags |= RBS_COMPLETE;
-#ifdef DEBUG
+#ifdef RDF_DEBUG
           else if (0 == rb->rb_ro_id)
             GPF_T1 ("Unable to serialize complete but long-valued RDF box with zero ro_id");
 #endif
@@ -668,11 +670,11 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   short rdftype1, rdftype2, rdflang1, rdflang2;
   dtp_t data_dtp1, data_dtp2;
   db_buf_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, trhe one that is a box is first */
+  /* arrange so that if both are not rdf boxes, trhe one that is an rdf box is first */
   if (DV_RDF != dtp1)
     {
       int res = dv_rdf_compare (dv2, dv1);
-      return res == DVC_MATCH ? res : (res == DVC_GREATER ? DVC_LESS : DVC_GREATER);
+      return ((res == DVC_GREATER) ? DVC_LESS : ((res == DVC_LESS) ? DVC_GREATER : res));
     }
   flags1 = dv1[1];
       data1 = dv1 + 2;
@@ -696,9 +698,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
           if (RBS_CHKSUM & flags2)
             GPF_T;
 #endif
-          if (RBS_CHKSUM & flags1)
-            return DVC_LESS;
-	  return dv_compare (data1, data2, NULL);
+          return dv_compare (dv1, data2, NULL);
     }
       len2 = data2[1];
       data2 += 2;
@@ -707,14 +707,10 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     }
   else
     {
-      if (RBS_CHKSUM & flags1)
-        return DVC_LESS;
       /* rdf string and non rdf */
       if (DV_STRING != dtp2 && DV_SHORT_STRING_SERIAL != dtp2)
-	{
-	  return dv_compare (data1, dv2, NULL);
-        }
-	  /* rdf string and dv string */
+        return DVC_LESS;
+      /* rdf string or checksum and dv string */
       flags2 = RBS_COMPLETE;
 	  data2 = dv2;
 	  data_dtp2 = dtp2;
@@ -797,10 +793,10 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
    * If the rdf string is complete, ity is eq if no language.  */
   if (RBS_COMPLETE & flags1)
     {
-      uint32 ro1;
+      int64 ro1;
       if ((RBS_HAS_LANG & flags1) || (RBS_HAS_TYPE & flags1))
 	return DVC_GREATER;
-      ro1 = ((RBS_OUTLINED & flags1) ? LONG_REF_NA (data1 + len1) : 0);
+      ro1 = RBS_RO_ID (data1 + len1, flags1);
       if (0 < ro1)
         return DVC_GREATER;
       return DVC_MATCH;
@@ -826,7 +822,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
   if (DV_RDF != dtp1)
     {
       int res = rdf_box_compare (a2, a1);
-      return res == DVC_MATCH ? res : (res == DVC_GREATER ? DVC_LESS : DVC_GREATER);
+      return ((res == DVC_GREATER) ? DVC_LESS : ((res == DVC_LESS) ? DVC_GREATER : res));
     }
       if ((DV_RDF == dtp2) && (0 != rb1->rb_ro_id) && (rb2->rb_ro_id == rb1->rb_ro_id))
         return DVC_MATCH;
@@ -841,13 +837,15 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 	{
       data2 = rb2->rb_box;
       data_dtp2 = DV_TYPE_OF (data2);
+      if ((DV_STRING != data_dtp2) && !rb2->rb_chksum_tail)
+        return cmp_boxes (rb1, data2, NULL, NULL);
     }
   else 
     {
-      if (rb1->rb_chksum_tail)
-        return DVC_LESS;
       data2 = (caddr_t) a2;
       data_dtp2 = DV_TYPE_OF (a2);
+      if (DV_STRING != data_dtp2)
+        return DVC_LESS;
       dtp2 = DV_RDF;
       tmp_rb2.rb_box = (caddr_t) a2;
       tmp_rb2.rb_is_outlined = 0;
@@ -858,8 +856,6 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       tmp_rb2.rb_ro_id = 0;
       rb2 = &tmp_rb2;
     }
-  if ((DV_STRING != data_dtp2) && !rb1->rb_chksum_tail && !rb2->rb_chksum_tail)
-	return cmp_boxes (data1, data2, NULL, NULL);
     {
     short type1 = rb1->rb_type;
     short type2 = rb2->rb_type;
@@ -896,6 +892,10 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
   {
       if (rb2->rb_chksum_tail)
         return DVC_GREATER;
+#ifdef DEBUG
+      if (DV_STRING != data_dtp2)
+        GPF_T;
+#endif
       len1 = box_length (data1) - 1;
       len2 = box_length (data2) - 1;
       cmp_len = MIN (len1, len2);
