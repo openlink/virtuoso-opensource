@@ -236,7 +236,7 @@ nntpf_get_mess_attachments (inout _data any, in get_uuparts integer)
       
       if (line is null or isstring (line) = 0)
 	{
-	   if (_all = vector ())
+       if (length (_all) = 0)
 	     {
 	        _all := vector_concat (_all, vector (string_output_string (outp)));
 	     }
