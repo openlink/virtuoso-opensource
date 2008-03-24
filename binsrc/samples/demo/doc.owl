@@ -35,14 +35,30 @@
         <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   
-  <rdfs:Class rdf:ID="DocItem">
+  <rdfs:Class rdf:ID="File">
     <rdfs:label>Documentation item</rdfs:label>
     <rdfs:subClassOf rdf:resource="http://purl.org/ontology/bibo/Article"/>
   </rdfs:Class>
 
+  <rdfs:Class rdf:ID="DocPath">
+    <rdfs:label>Documentation path</rdfs:label>
+  </rdfs:Class>
+
+  <rdfs:Class rdf:ID="Collection">
+    <rdfs:label>Collection contaning documentation</rdfs:label>
+  </rdfs:Class>
+  
+  <rdfs:Class rdf:ID="Property">
+    <rdfs:label>Collection/File properties</rdfs:label>
+  </rdfs:Class>
+    
   <rdfs:Class rdf:ID="Product">
     <rdfs:label>Product</rdfs:label>
     <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/virtrdf#Container"/>
+  </rdfs:Class>
+
+  <rdfs:Class rdf:ID="Search">
+    <rdfs:label>Search</rdfs:label>
   </rdfs:Class>
 
   <rdf:Property rdf:ID="ProductRelease">

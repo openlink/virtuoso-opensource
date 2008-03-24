@@ -629,6 +629,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         rdfs:isDefinedBy northwind:order_iri (orders.OrderID) ;
                         rdfs:isDefinedBy northwind:Order (orders.OrderID) .
 
+                northwind:Country (orders.ShipCountry)
+                        northwind:is_ship_country_of
+                northwind:Order (orders.OrderID) as virtrdf:Order-is_country_of .
+
                 northwind:Customer (orders.CustomerID)
                         northwind:has_order northwind:Order (orders.OrderID) as virtrdf:Order-has_order .
 
@@ -651,6 +655,14 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
                         rdfs:isDefinedBy northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) .
                                 
+                northwind:Order (orders.OrderID)
+                        northwind:is_order_of
+                northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{orders.}^.OrderID = ^{order_lines.}^.OrderID) as virtrdf:Order-is_order_of .
+
+                northwind:Product (products.ProductID)
+                        northwind:is_product_of
+                northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{products.}^.ProductID = ^{order_lines.}^.ProductID) as virtrdf:Product-is_product_of .
+
                 northwind:Country (countries.Name)
                         a northwind:Country
                                 as virtrdf:Country-Type2 ;

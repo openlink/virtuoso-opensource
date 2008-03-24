@@ -620,6 +620,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         rdfs:isDefinedBy tut_northwind:order_iri (orders.OrderID) ;
                         rdfs:isDefinedBy tut_northwind:Order (orders.OrderID).
 
+                tut_northwind:Country (orders.ShipCountry)
+                        tut_northwind:is_ship_country_of
+                tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-is_country_of .
+
                 tut_northwind:Customer (orders.CustomerID)
                         tut_northwind:has_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-has_order .
                 
@@ -642,6 +646,14 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         rdfs:isDefinedBy tut_northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
                         rdfs:isDefinedBy tut_northwind:OrderLine (order_lines.OrderID, order_lines.ProductID).
                 
+                tut_northwind:Order (orders.OrderID)
+                        tut_northwind:is_order_of
+                tut_northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{orders.}^.OrderID = ^{order_lines.}^.OrderID) as virtrdf:tutOrder-is_order_of .
+
+                tut_northwind:Product (products.ProductID)
+                        tut_northwind:is_product_of
+                tut_northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{products.}^.ProductID = ^{order_lines.}^.ProductID) as virtrdf:tutProduct-is_product_of .
+
                 tut_northwind:Country (countries.Name)
                         a tut_northwind:Country
                                 as virtrdf:tutCountry-Type2 ;
