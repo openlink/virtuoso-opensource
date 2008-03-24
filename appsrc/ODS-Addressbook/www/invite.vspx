@@ -63,7 +63,7 @@
         </div>
       </v:template>
       <div class="new-form-header">
-        Invitation: '<?V (self.v_fullName) ?>'
+        Invitation: '<?V AB.WA.utf2wide (self.v_fullName) ?>'
       </div>
       <div class="new-form-body">
         <table cellspacing="0">
@@ -77,13 +77,13 @@
           	<tr>
           	  <th>Subject</th>
           	  <td>
-          	    <v:text name="f_subject" value="--'Invitation to ODS'" xhtml_size="50" />
+          	    <v:text name="f_subject" value="--'Invitation to ODS'" fmt-function="AB.WA.utf2wide" xhtml_size="50" />
           	  </td>
           	</tr>
           	<tr>
           	  <th>Customize Message</th>
           	  <td>
-          	    <v:textarea name="f_content" xhtml_rows="15" xhtml_cols="50" >
+          	    <v:textarea name="f_content" fmt-function="AB.WA.utf2wide" xhtml_rows="15" xhtml_cols="50" >
           	      <v:after-data-bind>
           	        <![CDATA[
           		        if (not e.ve_is_post)

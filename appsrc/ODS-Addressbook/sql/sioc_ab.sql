@@ -30,7 +30,8 @@ create procedure addressbook_contact_iri (
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-  select U_NAME, WAI_NAME into _member, _inst
+	select U_NAME, WAI_NAME
+	  into _member, _inst
     from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
@@ -48,7 +49,8 @@ create procedure addressbook_annotation_iri (
 	declare _member, _inst varchar;
 	declare exit handler for not found { return null; };
 
-	select U_NAME, WAI_NAME into _member, _inst
+	select U_NAME, WAI_NAME
+	  into _member, _inst
 		from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
 	 where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
@@ -65,11 +67,12 @@ create procedure socialnetwork_contact_iri (
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-  select U_NAME, WAI_NAME into _member, _inst
+	select U_NAME, WAI_NAME
+	  into _member, _inst
     from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
-  return sprintf ('http://%s%s/%U/socialnetwork/%U/%d', get_cname(), get_base_path (), _member, _inst, contact_id);
+	return sprintf ('http://%s%s/%U/socialnetwork/%U/%d#this', get_cname(), get_base_path (), _member, _inst, contact_id);
 }
 ;
 
@@ -101,7 +104,8 @@ create procedure fill_ods_addressbook_sioc (
     id := -1;
     deadl := 3;
     cnt := 0;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
       if (deadl <= 0)
 	      resignal;
       rollback work;
@@ -241,7 +245,8 @@ create procedure fill_ods_addressbook_sioc (
 													 A_UPDATED);
 			}
       cnt := cnt + 1;
-      if (mod (cnt, 500) = 0) {
+		   if (mod (cnt, 500) = 0)
+		   {
   	    commit work;
   	    id := P_ID;
       }
@@ -362,12 +367,15 @@ create procedure contact_insert (
 			inst_id := WAI_ID;
     }
 
-  if (not isnull (graph_iri)) {
+	if (not isnull (graph_iri))
+	{
     -- SocialNetwork
 		if (length (ext_iri))
+		{
 		  iri := ext_iri;
-	        else
+    } else {
     iri := socialnetwork_contact_iri (domain_id, contact_id);
+		}
 		--ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
 		scot_tags_insert (inst_id, iri, tags);
 
@@ -383,7 +391,8 @@ create procedure contact_insert (
 		DB.DBA.RDF_QUAD_URI   (graph_iri, sc_iri, sioc_iri ('container_of'), iri);
 		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), sc_iri);
 
-		if (kind = 1) {
+		if (kind = 1)
+		{
 		  -- Organization
   		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
 
@@ -394,7 +403,8 @@ create procedure contact_insert (
   			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), bWeb);
   		if (not DB.DBA.is_empty_or_null (bPhone))
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || bPhone);
-  		if (not DB.DBA.is_empty_or_null (bLat) and not DB.DBA.is_empty_or_null (bLng)) {
+  		if (not DB.DBA.is_empty_or_null (bLat) and not DB.DBA.is_empty_or_null (bLng))
+  		{
   			temp_iri := iri || '#based_near';
   			DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
   			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
@@ -433,7 +443,8 @@ create procedure contact_insert (
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), hWeb);
     if (not DB.DBA.is_empty_or_null (hPhone))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || hPhone);
-    if (not DB.DBA.is_empty_or_null (hLat) and not DB.DBA.is_empty_or_null (hLng)) {
+  		if (not DB.DBA.is_empty_or_null (hLat) and not DB.DBA.is_empty_or_null (hLng))
+  		{
       temp_iri := iri || '#based_near';
       DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
@@ -453,7 +464,8 @@ create procedure contact_insert (
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('NICKNAME'), name);
 	  if (not DB.DBA.is_empty_or_null (fullName))
 		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('FN'), fullName);
-    if (not DB.DBA.is_empty_or_null (firstName) or not DB.DBA.is_empty_or_null (lastName) or not DB.DBA.is_empty_or_null (title)) {
+		if (not DB.DBA.is_empty_or_null (firstName) or not DB.DBA.is_empty_or_null (lastName) or not DB.DBA.is_empty_or_null (title))
+		{
       temp_iri := iri2 || '#n';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('N'), temp_iri);
       if (not DB.DBA.is_empty_or_null (firstName))
@@ -465,13 +477,15 @@ create procedure contact_insert (
     }
     if (not DB.DBA.is_empty_or_null (birthday))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('BDAY'), AB.WA.dt_format (birthday, 'Y-M-D'));
-    if (not DB.DBA.is_empty_or_null (mail)) {
+		if (not DB.DBA.is_empty_or_null (mail))
+		{
       temp_iri := iri2 || '#email_pref';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('pref'));
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('value'), mail);
     }
-    if (not DB.DBA.is_empty_or_null (hMail)) {
+		if (not DB.DBA.is_empty_or_null (hMail))
+		{
       temp_iri := iri2 || '#email_internet';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('internet'));
@@ -479,7 +493,8 @@ create procedure contact_insert (
     }
     if (not DB.DBA.is_empty_or_null (tags))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('CATEGORIES'), tags);
-    if (not DB.DBA.is_empty_or_null (hCountry) or not DB.DBA.is_empty_or_null (hState) or not DB.DBA.is_empty_or_null (hCity) or not DB.DBA.is_empty_or_null (hCode) or not DB.DBA.is_empty_or_null (hAddress1) or not DB.DBA.is_empty_or_null (hAddress2)) {
+		if (not DB.DBA.is_empty_or_null (hCountry) or not DB.DBA.is_empty_or_null (hState) or not DB.DBA.is_empty_or_null (hCity) or not DB.DBA.is_empty_or_null (hCode) or not DB.DBA.is_empty_or_null (hAddress1) or not DB.DBA.is_empty_or_null (hAddress2))
+		{
       temp_iri := iri2 || '#adr_home';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('home'));
@@ -496,7 +511,8 @@ create procedure contact_insert (
       if (not DB.DBA.is_empty_or_null (hCountry))
         DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), hCountry);
     }
-    if (not DB.DBA.is_empty_or_null (bCountry) or not DB.DBA.is_empty_or_null (bState) or not DB.DBA.is_empty_or_null (bCity) or not DB.DBA.is_empty_or_null (bCode) or not DB.DBA.is_empty_or_null (bAddress1) or not DB.DBA.is_empty_or_null (bAddress2)) {
+		if (not DB.DBA.is_empty_or_null (bCountry) or not DB.DBA.is_empty_or_null (bState) or not DB.DBA.is_empty_or_null (bCity) or not DB.DBA.is_empty_or_null (bCode) or not DB.DBA.is_empty_or_null (bAddress1) or not DB.DBA.is_empty_or_null (bAddress2))
+		{
       temp_iri := iri2 || '#adr_work';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('work'));
@@ -528,7 +544,8 @@ create procedure contact_delete (
 {
   declare graph_iri, iri varchar;
 
-  declare exit handler for sqlstate '*' {
+	declare exit handler for sqlstate '*'
+	{
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -696,7 +713,8 @@ create procedure annotation_insert (
 			forum_iri := addressbook_iri (WAI_NAME);
 		}
 
-	if (not isnull (graph_iri)) {
+	if (not isnull (graph_iri))
+	{
 		master_iri := addressbook_contact_iri (domain_id, cast (master_id as integer));
 		annotattion_iri := addressbook_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
 		DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
@@ -856,7 +874,8 @@ create procedure ODS_ADDRESSBOOK_TAGS ()
 					and P_DOMAIN_ID = WAI_ID
 					and length (P_TAGS) > 0) do {
 		V := split_and_decode (P_TAGS, 0, '\0\0,');
-		foreach (any t in V) do {
+		foreach (any t in V) do
+		{
 			t := trim(t);
 			if (length (t))
 				result (WAM_INST, U_NAME, P_ID, t);

@@ -51,7 +51,7 @@
     </vm:variables>
     <vm:pagebody>
       <div class="new-form-header">
-        Free Text Annotation: '<?V (select coalesce(P_NAME, '~ no title ~') from AB.WA.PERSONS where P_ID = self.v_oid) ?>'
+        Free Text Annotation: '<?V AB.WA.utf2wide ((select coalesce(P_NAME, '~ no title ~') from AB.WA.PERSONS where P_ID = self.v_oid)) ?>'
       </div>
 
       <div class="new-form-body">

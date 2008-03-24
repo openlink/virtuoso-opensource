@@ -1412,7 +1412,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_name" value="--AB.WA.utf2wide (self.v_name)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_name" value="--self.v_name" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_name); ?>
                       </td>
@@ -1447,7 +1447,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_fName" value="--AB.WA.utf2wide (self.v_fName)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_fName" value="--self.v_fName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_fName); ?>
                       </td>
@@ -1458,7 +1458,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_mName" value="--AB.WA.utf2wide (self.v_mName)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_mName" value="--self.v_mName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_mName); ?>
                       </td>
@@ -1469,7 +1469,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_lName" value="--AB.WA.utf2wide (self.v_lName)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_lName" value="--self.v_lName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_lName); ?>
                       </td>
@@ -1480,7 +1480,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_fullName" value="--AB.WA.utf2wide (self.v_fullName)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_fullName" value="--self.v_fullName" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_fullName); ?>
                       </td>
@@ -1616,7 +1616,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_mail" value="--AB.WA.utf2wide (self.v_mail)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_mail" value="--self.v_mail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_mail); ?>
                       </td>
@@ -1627,7 +1627,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_web" value="--AB.WA.utf2wide (self.v_web)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_web" value="--self.v_web" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_web); ?>
                       </td>
@@ -1638,7 +1638,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_icq" value="--AB.WA.utf2wide (self.v_icq)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_icq" value="--self.v_icq" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_icq); ?>
                       </td>
@@ -1649,7 +1649,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_skype" value="--AB.WA.utf2wide (self.v_skype)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_skype" value="--self.v_skype" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_skype); ?>
                       </td>
@@ -1660,7 +1660,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_aim" value="--AB.WA.utf2wide (self.v_aim)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_aim" value="--self.v_aim" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_aim); ?>
                       </td>
@@ -1671,7 +1671,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_yahoo" value="--AB.WA.utf2wide (self.v_yahoo)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_yahoo" value="--self.v_yahoo" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_yahoo); ?>
                       </td>
@@ -1682,7 +1682,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_msn" value="--AB.WA.utf2wide (self.v_msn)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_msn" value="--self.v_msn" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_msn); ?>
                       </td>
@@ -1739,7 +1739,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hCity" value="--AB.WA.utf2wide (self.v_hCity)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_hCity" value="--self.v_hCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hCity); ?>
                       </td>
@@ -1761,7 +1761,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hAddress1" value="--AB.WA.utf2wide (self.v_hAddress1)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_hAddress1" value="--self.v_hAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hAddress1); ?>
                       </td>
@@ -1772,7 +1772,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hAddress2" value="--AB.WA.utf2wide (self.v_hAddress2)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_hAddress2" value="--self.v_hAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hAddress2); ?>
                       </td>
@@ -1862,7 +1862,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hWeb" value="--AB.WA.utf2wide (self.v_hWeb)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_hWeb" value="--self.v_hWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hWeb); ?>
                       </td>
@@ -1873,7 +1873,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hMail" value="--AB.WA.utf2wide (self.v_hMail)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_hMail" value="--self.v_hMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hMail); ?>
                       </td>
@@ -1884,7 +1884,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hPhone" value="--AB.WA.utf2wide (self.v_hPhone)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_hPhone" value="--self.v_hPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hPhone); ?>
                       </td>
@@ -1895,7 +1895,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hMobile" value="--AB.WA.utf2wide (self.v_hMobile)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_hMobile" value="--self.v_hMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hMobile); ?>
                       </td>
@@ -1906,7 +1906,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_hFax" value="--AB.WA.utf2wide (self.v_hFax)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_hFax" value="--self.v_hFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hFax); ?>
                       </td>
@@ -1961,7 +1961,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bCity" value="--AB.WA.utf2wide (self.v_bCity)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_bCity" value="--self.v_bCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bCity); ?>
                       </td>
@@ -1983,7 +1983,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bAddress1" value="--AB.WA.utf2wide (self.v_bAddress1)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bAddress1" value="--self.v_bAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bAddress1); ?>
                       </td>
@@ -1994,7 +1994,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bAddress2" value="--AB.WA.utf2wide (self.v_bAddress2)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bAddress2" value="--self.v_bAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bAddress2); ?>
                       </td>
@@ -2101,7 +2101,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bOrganization" value="--AB.WA.utf2wide (self.v_bOrganization)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bOrganization" value="--self.v_bOrganization" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bOrganization); ?>
                       </td>
@@ -2112,7 +2112,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_bDepartment" value="--AB.WA.utf2wide (self.v_bDepartment)" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bDepartment" value="--self.v_bDepartment" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bDepartment); ?>
                       </td>
@@ -2123,7 +2123,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bJob" value="--AB.WA.utf2wide (self.v_bJob)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bJob" value="--self.v_bJob" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bJob); ?>
                       </td>
@@ -2134,7 +2134,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bWeb" value="--AB.WA.utf2wide (self.v_bWeb)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bWeb" value="--self.v_bWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bWeb); ?>
                       </td>
@@ -2145,7 +2145,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bMail" value="--AB.WA.utf2wide (self.v_bMail)" fmt-function="AB.WA.utf2wide" xhtml_size="60"/>
+                            <v:text name="ab_bMail" value="--self.v_bMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bMail); ?>
                       </td>
@@ -2156,7 +2156,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bPhone" value="--AB.WA.utf2wide (self.v_bPhone)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_bPhone" value="--self.v_bPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bPhone); ?>
                       </td>
@@ -2167,7 +2167,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bMobile" value="--AB.WA.utf2wide (self.v_bMobile)" fmt-function="AB.WA.utf2wide" xhtml_size="30"/>
+                            <v:text name="ab_bMobile" value="--self.v_bMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bMobile); ?>
                       </td>
@@ -2178,7 +2178,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_bFax" value="--AB.WA.utf2wide (self.v_bFax)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_bFax" value="--self.v_bFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bFax); ?>
                       </td>
