@@ -51,7 +51,7 @@
     </vm:variables>
     <vm:pagebody>
       <div class="new-form-header">
-        Free Text Annotation: '<?V (select coalesce(EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_oid) ?>'
+        Free Text Annotation: '<?V ENEWS.WA.utf2wide ((select coalesce(EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_oid)) ?>'
       </div>
 
       <div class="new-form-body">

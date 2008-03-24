@@ -51,7 +51,7 @@
     </vm:variables>
     <vm:pagebody>
       <div class="new-form-header">
-        Free Text Annotation: '<?V (select coalesce(E_SUBJECT, '~ no title ~') from CAL.WA.EVENTS where E_ID = self.v_oid) ?>'
+        Free Text Annotation: '<?V CAL.WA.utf2wide ((select coalesce(E_SUBJECT, '~ no title ~') from CAL.WA.EVENTS where E_ID = self.v_oid)) ?>'
       </div>
 
       <div class="new-form-body">

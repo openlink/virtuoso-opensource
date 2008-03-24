@@ -51,7 +51,7 @@
     </vm:variables>
     <vm:pagebody>
       <div class="new-form-header">
-        Free Text Annotation: '<?V (select coalesce(BD_NAME, '~ no title ~') from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.v_oid) ?>'
+        Free Text Annotation: '<?V BMK.WA.utf2wide ((select coalesce(BD_NAME, '~ no title ~') from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.v_oid)) ?>'
       </div>
 
       <div class="new-form-body">
