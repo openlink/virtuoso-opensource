@@ -916,6 +916,42 @@ iSPARQL.Advanced = function () {
 	prefs.status = "Select more with Ctrl click";
 	prefs.content = $('pathTravSchemesWin');
 	OAT.Anchor.assign("pathTravSchemes",prefs);
+	/* Custom predicates:
+	   add predicate */
+	OAT.Event.attach($("spongerPredsAdd"),"click",function() {
+		var pred = window.prompt("Type new predicate:");
+		if (pred) {
+			for (var i=0;i<$("pathTravSchemesPreds").options.length;i++) {
+				if ($("pathTravSchemesPreds").options[i].value==pred) {
+					alert("Predicate "+pred+" is already present in the list.");
+					return;
+				}	
+			}
+			var l =$("pathTravSchemesPreds").options.length;
+			$("pathTravSchemesPreds").options[l] = new Option(pred,pred);
+		} else {
+			alert("No predicate added.");
+		}
+	});
+	/* remove selected predicate */
+	OAT.Event.attach($("spongerPredsDel"),"click",function() {
+		for (var i=0;i<$("pathTravSchemesPreds").options.length;i++)
+			if ($("pathTravSchemesPreds").options[i].selected) {
+				$("pathTravSchemesPreds").options[i] = null;
+				i--;
+			}
+	});
+	/* restore default set of predicates (ask only if list length is not 0) */
+	OAT.Event.attach($("spongerPredsDefault"),"click",function() {
+		if ($("pathTravSchemesPreds").options.length==0 || window.confirm("This will remove custom added predicates. Really restore?")) {
+			$("pathTravSchemesPreds").options.length = 0;
+			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','foaf:knows');
+			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','sioc:links_to');
+			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','rdfs:isDefinedBy');
+			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','rdfs:seeAlso');
+			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','owl:sameAs');
+		}
+	});
 
 }
 

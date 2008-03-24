@@ -130,7 +130,15 @@
 									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball" checked="checked"/> <label for="pathTravSchemesGraball">Follow all Properties</label><br/>
 									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso">Follow Properties</label> <br/>
 										<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 40px;">
-										</select><br/><br/>
+										<option value="foaf:knows">foaf:knows</option>
+										<option value="sioc:links_to">sioc:links_to</option>
+										<option value="rdfs:isDefinedBy">rdfs:isDefinedBy</option>
+										<option value="rdfs:seeAlso">rdfs:seeAlso</option>
+										<option value="owl:sameAs">owl:sameAs</option>
+										</select><br/>
+									<input type="button" id="spongerPredsAdd" value="Add custom"/> 
+									<input type="button" id="spongerPredsDel" value="Remove selected"/><br/> 
+									<input type="button" id="spongerPredsDefault" value="Restore default set"/><br/><br/>
 									<div style="text-align:center;width:100%;">
 										<input type="button" value="Save" id="pathTravSchemesSave"/>
 									</div>
