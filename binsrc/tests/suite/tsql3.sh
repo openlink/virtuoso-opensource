@@ -185,6 +185,13 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfbox.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- trdfbox.sql"
+    exit 1
+fi
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
 if test $STATUS -ne 0
 then
