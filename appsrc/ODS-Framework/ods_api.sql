@@ -771,6 +771,13 @@ create procedure ODS..openid_url_set (in uid int, in url varchar)
       return 'Invalid OpenID URL.';
     };
 
+  if (not length (url))
+    {
+      oi_ident := null;
+      oi_srv := null;
+      goto clear_auth;
+    }
+
   oi_ident := url;
 again:
   hdr := null;
@@ -799,7 +806,7 @@ again:
 
   if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID <> uid))
     return 'This OpenID identity is already registered.';
-
+clear_auth:
   update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL = oi_ident, WAUI_OPENID_SERVER = oi_srv
    where WAUI_U_ID = uid;
   -- success

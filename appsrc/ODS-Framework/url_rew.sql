@@ -210,7 +210,13 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
     {
       iri := iri || '#this';
     }
---  dbg_obj_print (val, iri);
+  -- if this is a person or organization, we put #this at end if not present
+  if (regexp_match ('http://([^/]*)/dataspace/([^/]*)/socialnetwork/([^/]*)/(.*)', iri) is not null and
+      iri not like '%#this')
+    {
+      iri := iri || '#this';
+    }
+  dbg_obj_print (val, iri);
   res := sprintf ('iid (%d)', iri_id_num (iri_to_id (iri)));
   return sprintf (fmt, res);
 }
