@@ -71,12 +71,12 @@
     </xsl:template> 
     <xsl:template match="assigned_to">
 	<bugzilla:assignee>
-	    <xsl:value-of select="."/>
+	    <xsl:value-of select="vi:proxyIRI (.)"/>
 	</bugzilla:assignee>
   </xsl:template>
   <xsl:template match="reporter">
 	<bugzilla:reporter>
-	    <xsl:value-of select="."/>
+	    <xsl:value-of select="vi:proxyIRI (.)"/>
 	</bugzilla:reporter>
     </xsl:template> 
     <xsl:template match="product">
@@ -149,5 +149,10 @@
 	    <xsl:value-of select="."/>
 	</bugzilla:shortDescription>
   </xsl:template>
+    <xsl:template match="long_desc">
+       <dc:description>
+           <xsl:value-of select="thetext"/>
+       </dc:description>
+    </xsl:template>
   <xsl:template match="*|text()"/>
 </xsl:stylesheet>
