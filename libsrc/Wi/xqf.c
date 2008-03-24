@@ -3477,14 +3477,18 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
     return NEW_DB_NULL;
   if (DV_STRING != arg_dtp)
     {
+      caddr_t err = NULL;
       if (desc->p_dest_dtp == arg_dtp)
         {
           res = box_copy_tree (arg);
           goto res_ready;
         }
+      res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+      if (NULL == err)
+        goto res_ready;
       sqlr_new_error ("22023", "SR553",
-        "Literal of type xsd:%s can not be created from SQL value of type %s (%d)",
-        p_name, dv_type_title (arg_dtp), arg_dtp);
+        "Literal of type xsd:%s can not be created from SQL value of type %s (%d): %.1000s",
+        p_name, dv_type_title (arg_dtp), arg_dtp, ERR_MESSAGE (err) );
     }
   QR_RESET_CTX
     {
