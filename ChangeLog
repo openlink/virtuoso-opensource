@@ -1,3 +1,305 @@
+2008-03-25 12:00  source
+
+	* Updated version to 5.0.6-rc10
+
+2008-03-25 11:59  source
+
+	* Merged latest documentation fixes
+
+2008-03-25 11:50  source
+
+	* Updated version of vad package
+
+2008-03-25 11:34  source
+
+	* Removed deprecated files
+
+2008-03-25 11:03  source
+
+	* Fixed RDFA in blog as per new WD
+
+2008-03-25 11:02  source
+
+	* Fixed foaf:Group and rdfa
+
+2008-03-25 10:55  source
+
+	* Fixed processing of @id
+
+2008-03-24 17:36  source
+
+	* Updated version to 5.0.6-rc9
+
+2008-03-24 17:35  source
+
+	* Fixed AddressBook Item URIs
+	* Added allow to clear external openid url
+
+2008-03-24 17:34  source
+
+	* Fixed wrong encoding in Invite/Annotation forms
+
+2008-03-24 17:33  source
+
+	* Fixed Addressbook Item URI
+	* Fixed wrong encoding in Invite/Annotation forms
+
+2008-03-24 17:27  source
+
+	* Updated version
+
+2008-03-24 17:26  source
+
+	* Fixed small bugs in ontologies
+
+2008-03-24 17:25  source
+
+	* Added digest authentication when using curl
+
+2008-03-24 17:23  source
+
+	* Added tests for datatype conversion like sparql insert
+	  { <s> <p> "11.04"^^<http://www.w3.org/2001/XMLSchema#double> . }
+
+2008-03-24 17:22  source
+
+	* Added instanceof
+	* Fixed structure
+
+2008-03-24 17:21  source
+
+	* Fixed description and proxy use
+
+2008-03-24 17:19  source
+
+	* Fixed datatype conversion problem with sparql insert
+	  { <s> <p> "11.04"^^<http://www.w3.org/2001/XMLSchema#double> . }
+
+2008-03-24 17:17  source
+
+	* Merged from upstream project
+
+2008-03-21 12:29  source
+
+	* Added discussions
+	* Added new navigation
+	* Fixed simple search navigation
+
+2008-03-21 12:27  source
+
+	* Fixed virtual directory problem
+	* Fixed check for DAV directory
+	* Fixed title
+
+2008-03-21 12:25  source
+
+	* Fixed sql error during installation
+
+2008-03-21 12:24  source
+
+	* Added new navidation
+	* Fixed simple search navigation
+	* Fixed use of OpenID
+
+2008-03-21 12:22  source
+
+	* Added new navigation
+	* Fixed simple search navigation
+
+2008-03-21 10:29  source
+
+	* Fixed comparison of typed RDF boxes with XML content
+
+2008-03-21 10:28  source
+
+	* Added support for writing DV_BIN to file system
+
+2008-03-21 10:27  source
+
+	* Updated documentation
+
+2008-03-20 11:12  source
+
+	* Minor fixes
+
+2008-03-19 23:50  source
+
+	* If strerror_t returns char * we should check != NULL instead of == 0
+
+2008-03-19 23:49  source
+
+	* Fixed typo in function prototype leading to core dump on 64bit machines
+
+2008-03-19 23:41  source
+
+	* Fixed compiler warnings
+
+2008-03-19 20:16  source
+
+	* Fixed problem comparing vad version numbers
+
+2008-03-19 20:12  source
+
+	* Merged latest documentation fixes
+
+2008-03-19 14:28  source
+
+	* Fixed url_rewrite rule
+
+2008-03-19 14:24  source
+
+	* Uncomment code that was temp disabled
+
+2008-03-19 14:22  source
+
+	* Fixed xslt for bugzilla rdf views result
+
+2008-03-19 14:21  source
+
+	* Fixed ods & blog search to return rdf when asked for
+
+2008-03-19 14:20  source
+
+	* Merged from upstream project
+
+2008-03-19 14:20  source
+
+	* Merged latest documentation changes
+
+2008-03-19 14:19  source
+
+	* Fixed breakup on union of joins with fake joins optimized away
+	* Improved support for long varchar columns in RDF views
+
+2008-03-19 14:18  source
+
+	* Added AP_LINK_DATA_LONG to support long data associated with phrases
+
+2008-03-19 14:16  source
+
+	* Flag to url rewrite to keep logical path, used in /~user rule in ODS
+
+2008-03-19 14:12  source
+
+	* Added bif to change runtime mem sql hash max size for testing purposes only
+
+2008-03-19 14:11  source
+
+	* Use same serialization for longer strings as for key_has_box when
+	  longvarbinary and inlined string are returned
+
+2008-03-19 14:03  source
+
+	* Changed title
+	* Fixed error in mail instances
+	* Fixed missing qualifier
+	* Fixed ods & blog search to return rdf when asked for
+	* Fixed label and IRI
+
+2008-03-19 14:02  source
+
+	* Fixed ods & blog search to return RDF
+
+2008-03-18 13:30  source
+
+	* Added tests for physical quads
+
+2008-03-18 10:43  source
+
+	* Added missing phrasematch.sql
+
+2008-03-17 22:40  source
+
+	* Removed errors copying non-existent files
+	* Small cleanup
+
+2008-03-17 22:31  source
+
+	* Fixed missing qualifier
+	* Fixed problem with duplicate proc name
+	* Fixed search page to return rdf
+	* Fixed typo in drop table statement
+
+2008-03-17 22:25  source
+
+	* Fixed delete files from 'rdf_sink' folder
+
+2008-03-15 14:08  source
+
+	* Added check for more tools that need to be available for building
+
+2008-03-14 17:52  source
+
+	* Fixed docbook generation to not insert spurious spaces
+
+2008-03-14 17:50  source
+
+	* Fixed problem with uploading bad RDF files
+
+2008-03-14 17:50  source
+
+	* Fixed search, connection, disappearing footers
+	* Fixed when /dataspace is in param list, do not take this route
+
+2008-03-14 16:04  source
+
+	* Updated version to 5.0.6-rc8
+
+2008-03-14 16:03  source
+
+	* Added support to allow users registered via OpenId to change their password
+	* Added support to allow users to change their OpenID URL
+	* Added support for automatic hyperlinking
+	* Fixed default welcome message formatting issue
+	* Fixed problem with duplicate oids
+
+2008-03-14 16:00  source
+
+	* Added support for blockquote to docbook generator
+
+2008-03-14 15:59  source
+
+	* Fixed sql error when creating new poll
+	* Fixed wrong error message for opening date
+
+2008-03-14 15:58  source
+
+	* Fixed bad URI in feeds
+
+2008-03-14 15:57  source
+
+	* Added support for automatic hyperlinking
+
+2008-03-14 15:48  source
+
+	* Updated version of vad package
+
+2008-03-14 15:47  source
+
+	* Updated version of docs
+
+2008-03-14 15:17  source
+
+	* Rewrote script to use sparql directly
+
+2008-03-14 15:14  source
+
+	* Merged from upstream project
+
+2008-03-14 15:14  source
+
+	* Added code to allow deserialize a content from dv_bin
+	* Added code in blob_to_string/output to allocate properly varchar from bin
+	* Added code to allow http to send dv_bin directly to client
+
+2008-03-14 12:06  source
+
+	* Removed deprecated define
+
+2008-03-14 11:48  source
+
+	* Fixed regex rule for social graph
+
 2008-03-13 23:35  source
 
 	* Updated version to 5.0.6-rc7
