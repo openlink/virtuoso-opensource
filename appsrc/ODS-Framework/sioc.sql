@@ -470,6 +470,16 @@ create procedure person_iri (in iri varchar, in suff varchar := '#this', in tp i
   return sprintf ('http://%s/dataspace/person/%s%s',arr[0],arr[1], suff);
 };
 
+create procedure group_iri (in iri varchar, in suff varchar := '#this')
+{
+  declare arr any;
+  arr := sprintf_inverse (iri, 'http://%s/dataspace/%s/community/%s', 1);
+  if (length (arr) <> 3)
+    signal ('22023', sprintf ('Community IRI [%s] can\'t be transformed to group IRI', iri));
+  return sprintf ('http://%s/dataspace/group/%s%s', arr[0], arr[2], suff);
+}
+;
+
 create procedure person_ola_iri (in iri varchar, in suff varchar)
 {
   declare arr any;
@@ -886,6 +896,13 @@ create procedure sioc_forum (
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('space_of'), iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_space'), site_iri);
+    }
+  if (wai_type_name = 'Community')
+    {
+      declare giri any;
+      giri :=  group_iri (iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), foaf_iri ('Group'));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, foaf_iri ('name'), wai_name);
     }
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
@@ -1468,6 +1485,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		      _wai_type := 'SocialNetwork';
 		      goto do_social;
 		    }
+		  if (_wai_type = 'Community')
+		    {
+		      DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
+		    }
 		}
 	      for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = U_ID and length (US_IRI) do
 		{
@@ -1710,6 +1731,16 @@ create procedure delete_quad_sp (in _g any, in _s any, in _p any)
   if (_g is null or _s is null or _p is null)
     return;
   delete from DB.DBA.RDF_QUAD where G = _g and S = _s and P = _p;
+};
+
+create procedure delete_quad_po (in _g any, in _p any, in _o any)
+{
+  _g := DB.DBA.RDF_IID_OF_QNAME (_g);
+  _o := DB.DBA.RDF_IID_OF_QNAME (_o);
+  _p := DB.DBA.RDF_IID_OF_QNAME (_p);
+  if (_g is null or _o is null or _p is null)
+    return;
+  delete from DB.DBA.RDF_QUAD where G = _g and O = _o and P = _p;
 };
 
 create procedure delete_quad_s_p_o (in _g any, in _s any, in _p any, in _o any)
@@ -2150,6 +2181,12 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
 	  DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_owner'), iri);
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
 	}
+      if (N.WAM_APP_TYPE = 'Community')
+	{
+	  declare person_iri any;
+	  person_iri := person_iri (iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
+	}
       --DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), iri);
     }
   if (_wai_type = 'AddressBook')
@@ -2184,6 +2221,12 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
     {
       delete_quad_s_or_o (graph_iri, riri, riri);
     }
+  if (O.WAM_APP_TYPE = 'Community')
+    {
+      declare person_iri any;
+      person_iri := person_iri (iri);
+      delete_quad_po (graph_iri, foaf_iri ('member'), person_iri);
+    }
   return;
 };
 
@@ -2204,6 +2247,13 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
 
   iri := forum_iri_n (O.WAI_TYPE_NAME, O.WAI_NAME, N.WAI_NAME);
   oiri := forum_iri (O.WAI_TYPE_NAME, O.WAI_NAME);
+
+  if (N.WAI_TYPE_NAME = 'Community')
+    {
+      declare giri any;
+      giri := group_iri (iri);
+      delete_quad_sp (graph_iri, giri, foaf_iri ('name'));
+    }
 
   if (N.WAI_IS_PUBLIC = 0 and O.WAI_IS_PUBLIC = 1)
     {

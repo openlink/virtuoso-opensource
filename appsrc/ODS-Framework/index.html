@@ -2,8 +2,18 @@
 <!DOCTYPE html PUBLIC
   "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+      xmlns:cal="http://www.w3.org/2002/12/cal/icaltzd#"
+      xmlns:wot="http://xmlns.com/wot/0.1/" 
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+      xmlns:owl="http://www.w3.org/2002/07/owl#"
+      xmlns:dc="http://purl.org/dc/terms/"
+      xmlns:openid="http://xmlns.openid.net/auth#"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+      xmlns:bio="http://vocab.org/bio/0.1/olb/">
+  <head profile="http://www.w3.org/1999/xhtml/vocab#">
     <script type="text/javascript">
       document.write('<base href="'+document.location.protocol+'//'+ document.location.host+'/ods/" /> <!--[if IE]></base><![endif]-->');
     </script>
@@ -185,7 +195,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   	      <div class="w_content">
                 <div class="user_img_ctr">
                   <a href="javascript:void(0)">
-                    <img id="userProfilePhotoImg" class="prof_photo" src="images/profile.png"/>
+                    <img id="userProfilePhotoImg" rel="foaf:depicition" class="prof_photo" src="images/profile.png"/>
                   </a>
                 </div> <!-- user_img_ctr -->
                 <div class="gems_ctr">
@@ -341,7 +351,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 
             <!-- Contact Information widget -->
 
-            <div class="widget w_contact">
+            <div class="widget w_contact" about="#THIS" instanceof="foaf:Person">
               <div class="w_title">
                 <h3>Contact Information</h3>
                 <div class="w_title_bar_btns">
@@ -364,11 +374,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   </div>
                   <div id="ciP1" class="tab_page">
                     <div  class="vcard">
-                      <div class="vcard_l"><img id="ciP1photo" src="images/profile_small.png" alt="photo" class="photo"/></div>
+		      <div class="vcard_l">
+			    <img id="ciP1photo" rel="foaf:depiction"  src="images/profile_small.png" alt="photo" class="photo"/></div>
                       <div class="vcard_r">
                         <span class="fn" id="ciP1fn"></span>
                         <div class="org" id="ciP1org"></div>
-                        <a class="email" id="ciP1email" href=""></a>
+                        <a class="email" id="ciP1email" rel="foaf:mbox" href=""></a>
                         <div class="adr">
                           <div class="street-address" id="ciP1address"></div>
                           <span class="locality" id="ciP1city">,</span>

@@ -147,6 +147,10 @@ skip_meta:
 
 --  html_content := file_to_string('/dev/virtuoso/binsrc/samples/wa/index.html');
 
+  if (length (uname))
+    html_content:=replace (html_content,'#THIS',  server_dataspace||utype||uname || '#this');
+  else
+    html_content:=replace (html_content,'#THIS', '#this');
   html_content:=replace(html_content,'<!-- #META# -->',string_output_string (resMeta));
 
   http_rewrite();

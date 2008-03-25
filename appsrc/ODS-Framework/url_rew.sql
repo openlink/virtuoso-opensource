@@ -198,7 +198,7 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
       iri := subseq (iri, 0, pos);
     }
   -- if this is a person or organization, we put #this at end if not present
-  if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null and
+  if (regexp_match ('http://([^/]*)/dataspace/(person|organization|group)/(.*)', iri) is not null and
       iri not like '%#this')
     {
       iri := iri || '#this';
