@@ -1,3 +1,66 @@
+March 25, 2008, V5.0.6:
+  * Database Engine
+    - Added optimizations for bitmap intersection join
+    - Added optimizations for numeric operations
+    - Added optimizations to cost based model
+    - Added optimizations to locking model
+    - Added optimizations for async queue
+    - Added support for long data associated with phrases
+    - Added support for writing DV_BIN to filesystem
+    - Added support for (de)serialization of db_bin directly in http
+    - Added support for getallheaders in php hosting
+    - Fixed 64 bit portability issues
+    - Fixed problem with alter table add column using a default value
+    - Fixed comparison of typed RDF boxes with XML content
+    - Fixed deleting files and private graphs from 'rdf_sink' folder
+    - Updated documentation
+    - Fixed compiler warnings
+    - Small bugfixes
+
+  * SPARQL and RDF
+    - Added Social Graph mapper
+    - Added Calais mapper
+    - Added MusicBrainz mapper
+    - Added support for NUMERIC in RDF views
+    - Added passing content type to mappers
+    - Added max cache ttl
+    - Improved SQL code generation
+    - Fixed proxy URLs
+    - Fixed RDFA instanceof, @id and structure
+    - Fixed Bugzilla description, xslt and proxy use
+    - Fixed XBRL labels and datatypes
+    - Fixed XBRL use of / and namespace
+    - Fixed issues with datatype conversion
+    - Fixed breakup on union of joins with fake joins optimized away
+    - Fixed JSON parser to pass the JSON checker test suite
+    - Fixed sponger with build-in metadata
+    - Fixed attempts to sponge on non-IRI values
+    - Fixed various RDF related serialization issues
+    - Fixed printing of datetype types 
+    - Fixed parsing integers and strings
+    - Small bugfixes
+	
+  * ODS Applications
+    - Added new Framework navigation
+    - Added autodiscovery links for RSS and Atom
+    - Added support for automatic hyperlinking
+    - Added a++ links and mini RDF browser
+    - Added invitations in Calendar
+    - Added support for Annotea shared bookmarks
+    - Added support for discussion to Polls application
+    - Fixed IE 6.0 rendering problem
+    - Enhanced OpenID support
+    - Fixed handling of foaf:Group and RDFA
+    - Fixed virtual directory problem
+    - Fixed search navigation
+    - Fixed issues installing/uninstalling application
+    - Fixed RDF views
+    - Fixed Wiki docbook generation
+    - Fixed stack overflow in xslt transformation
+    - Removed deprecated files
+    - Small bugfixes
+
+
 February 11, 2008, V5.0.5:
   * Database Engine:
     - Added support for rehashable dictionary objects
