@@ -206,6 +206,7 @@
 		  </xsl:attribute>
 	      </xsl:element>
 	  </rdf:Description>
+					<xsl:apply-templates />
 				</xsl:otherwise>
 			</xsl:choose>
 	  <xsl:if test="@rev">
@@ -433,8 +434,6 @@
 					<xsl:when test="ancestor-or-self::*/@instanceof">
 						<xsl:value-of select="ancestor-or-self::*/@instanceof" />
 					</xsl:when>
-		  <!--xsl:when test="@id">#<xsl:value-of select="@id"/></xsl:when-->
-					<xsl:when test="parent::*/@id">#<xsl:value-of select="parent::*/@id" /></xsl:when>
 	      </xsl:choose>
 	  </xsl:with-param>
       </xsl:call-template>
