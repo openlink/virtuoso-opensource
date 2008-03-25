@@ -25,7 +25,7 @@ March 25, 2008, V5.0.6:
     - Added max cache ttl
     - Improved SQL code generation
     - Fixed proxy URLs
-    - Fixed RDFA instanceof, @id and structure
+    - Fixed RDFa instanceof, @id and structure
     - Fixed Bugzilla description, xslt and proxy use
     - Fixed XBRL labels and datatypes
     - Fixed XBRL use of / and namespace
@@ -47,7 +47,7 @@ March 25, 2008, V5.0.6:
     - Added support for discussion to Polls application
     - Fixed IE 6.0 rendering problem
     - Enhanced OpenID support
-    - Fixed handling of foaf:Group and RDFA
+    - Fixed handling of foaf:Group and RDFa
     - Fixed virtual directory problem
     - Fixed search navigation
     - Fixed issues installing/uninstalling application

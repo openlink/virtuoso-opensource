@@ -1253,7 +1253,8 @@ By default SPARQL web service endpoint is owned by <emphasis>SPARQL</emphasis> u
 <emphasis>SPARQL_UPDATE</emphasis>.
 It is possible in principle to grant <emphasis>SPARQL_UPDATE</emphasis> to <emphasis>SPARQL</emphasis> but this breaches the whole security of the RDF storage.
 </para>
-<listitem><emphasis>FROM CLAUSE with options</emphasis></listitem>
+<listitem><emphasis>FROM CLAUSE with options</emphasis>: options in OPTION() list should be delimited with commas.
+grab options are not allowed as they are global for the query. Only specific 'get:xxx' options are useful here.</listitem>
 <programlisting><![CDATA[
 SQL>sparql
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>

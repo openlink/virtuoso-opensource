@@ -324,7 +324,7 @@ function dd(txt){
 
 
     <xsl:template match="vm:nntpf-copyright">
-      <div class="copyright">
+      <div class="copyright" id="FT">
 
         <div id="FT_L"><a href="http://www.openlinksw.com/virtuoso"><img border="0" src="images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso Universal Server"/></a></div>
         <div id="FT_R">
