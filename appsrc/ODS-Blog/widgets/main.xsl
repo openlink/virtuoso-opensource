@@ -836,7 +836,7 @@ else if (length (self.catid))
 
 
   <xsl:template match="vm:header">
-   <head profile="http://gmpg.org/xfn/11 http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile">
+    <head profile="http://gmpg.org/xfn/11 http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile http://www.w3.org/1999/xhtml/vocab#">
      <link rel="stylesheet" href="/weblog/public/css/webdav.css" type="text/css"/>
       <xsl:text>&#10;</xsl:text>
       <?vsp
@@ -1142,7 +1142,7 @@ window.onload = function (e)
       if (length (url))
         {
       ?>
-      <v:url name="url_{generate-id()}" value="--self.title" format="%s" url="--url" xhtml_class="title_link" render-only="1"/>
+      <v:url name="url_{generate-id()}" value="--self.title" format="%s" url="--url" xhtml_class="title_link" render-only="1" xhtml_property="dc:title"/>
       <?vsp
         }
       else
@@ -2180,7 +2180,7 @@ window.onload = function (e)
 		        {
 			   auth_iri := sioc.DBA.user_obj_iri (auth_name);
                            auth_pers_iri := sioc.DBA.person_iri (auth_iri);
-                           title_val := charset_recode ('<a href="' || auth_pers_iri || '">' ||
+                           title_val := charset_recode ('<a rel="foaf:maker" rev="foaf:made" href="' || auth_pers_iri || '">' ||
 		  	      sprintf('%V', author) || '</a>', 'UTF-8', '');
                     }
                     }
@@ -2789,8 +2789,8 @@ window.onload = function (e)
 
   <xsl:template match="vm:e-mail">
     <vm:if test="email">
-      <a href="mailto:&lt;?V self.email ?>">
-        <img border="0" alt="E-mail">
+      <a rel="foaf:mbox" href="mailto:&lt;?V self.email ?>">
+        <img border="0" alt="E-mail" rel="foaf:depicition">
           <xsl:if test="@image">
             <xsl:attribute name="src">&lt;?vsp
               if (self.custom_img_loc)
@@ -2864,10 +2864,11 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:about-me">
+   <div instanceof="foaf:Person" about="<?V self.owner_iri ?>#this">
     <div>
       <vm:photo width="64"/>
     </div>
-    <div>
+    <div property="foaf:name">
       <vm:if test="name">
         <?vsp
            http_value (self.owner);
@@ -2908,8 +2909,10 @@ window.onload = function (e)
 	  url="--self.owner_iri"
 	  render-only="1"
 	  is-local="1"
+	  xhtml_rel="rdfs:seeAlso"
 	    />
     </div>
+  </div>
   </xsl:template>
 
   <xsl:template match="vm:amazon-wishlist">
@@ -2969,7 +2972,9 @@ window.onload = function (e)
             tit := xpath_eval('string(//*|.)', xml_tree_doc(xml_tree(tit, 2, '', 'UTF-8')), 1);
     </xsl:processing-instruction>
       <li>
-	  <v:url name="lm1" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%s" is-local="1"/>
+	  <v:url name="lm1" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%s" is-local="1"
+	      xhtml_rel="sioc:container_of"
+	      />
       </li>
       <?vsp
         }
@@ -3351,7 +3356,7 @@ window.onload = function (e)
           <div class="post-title">
         <?V BLOG..blog_utf2wide (MP_TITLE) ?>
         </div>
-          <div class="post-content">
+          <div class="post-content" property="sioc:content">
             <?V BLOG..blog_utf2wide (BLOG.DBA.BLOG_TIDY_HTML (MP_EXCERPT, self.filt)) ?>
           </div>
           <div class="pubdate"><?V MP_TS ?></div>
@@ -12142,6 +12147,15 @@ window.onload = function (e)
       <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
       <xsl:text>&#10;</xsl:text>
       <?vsp } ?>
+  </xsl:template>
+
+  <xsl:template match="vm:attr">
+      <xsl:attribute name="{@name}">
+	  <xsl:choose>
+	      <xsl:when test="@value = 'permalink-iri'"><![CDATA[<?V concat(self.blog_iri, '/', t_post_id) ?>]]></xsl:when>
+	      <xsl:when test="@value = 'blog-iri'"><![CDATA[<?V self.blog_iri ?>]]></xsl:when>
+	  </xsl:choose>
+      </xsl:attribute>
   </xsl:template>
 
   <xsl:template match="vm:keep-variable"/>

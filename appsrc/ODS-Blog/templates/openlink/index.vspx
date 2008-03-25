@@ -50,7 +50,8 @@
       <!-- end -->
     </vm:header>
     <vm:body>
-      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%" instanceof="sioct:Weblog">
+       <vm:attr name="about" value="blog-iri" />
         <tr>
 	    <td colspan="3">
 		<table id="header" cellpadding="0" cellspacing="0">
@@ -164,7 +165,8 @@
           </td>
           <td id="texttd">
 	      <vm:posts>
-		  <div class="message">
+		  <div class="message" instanceof="sioct:BlogPost">
+		      <vm:attr name="about" value="permalink-iri" />
 		      <div class="post-title">
 			  <vm:post-enclosure title=""/>
 			  <vm:post-title />
@@ -172,7 +174,7 @@
 			      [<small><vm:post-author format="" /></small>]
 			  </vm:if>
 		      </div>
-		      <div class="post-content">
+		      <div class="post-content" property="sioc:content">
 			  <vm:trackback-discovery/>
 			  <vm:post-body />
 		      </div>
