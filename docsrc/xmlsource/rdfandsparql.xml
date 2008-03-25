@@ -1253,6 +1253,37 @@ By default SPARQL web service endpoint is owned by <emphasis>SPARQL</emphasis> u
 <emphasis>SPARQL_UPDATE</emphasis>.
 It is possible in principle to grant <emphasis>SPARQL_UPDATE</emphasis> to <emphasis>SPARQL</emphasis> but this breaches the whole security of the RDF storage.
 </para>
+<listitem><emphasis>FROM CLAUSE with options</emphasis></listitem>
+<programlisting><![CDATA[
+SQL>sparql
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+SELECT DISTINCT ?friend
+FROM NAMED  <http://myopenlink.net/dataspace/person/kidehen>
+OPTION (get:soft "soft", get:method "GET")
+WHERE
+  {
+      <http://myopenlink.net/dataspace/person/kidehen#this> foaf:knows
+?friend .
+  };
+friend
+VARCHAR
+_______________________________________________________________________________
+
+http://www.dajobe.org/foaf.rdf#i
+http://www.w3.org/People/Berners-Lee/card#i
+http://www.w3.org/People/Connolly/#me
+http://my.opera.com/chaals/xml/foaf#me
+http://www.w3.org/People/Berners-Lee/card#amy
+http://www.w3.org/People/EM/contact#me
+http://myopenlink.net/dataspace/person/ghard#this
+http://myopenlink.net/dataspace/person/omfaluyi#this
+http://myopenlink.net/dataspace/person/alanr#this
+http://myopenlink.net/dataspace/person/bblfish#this
+http://myopenlink.net/dataspace/person/danja#this
+http://myopenlink.net/dataspace/person/tthibodeau#this
+...
+36 Rows. -- 1693 msec.
+]]></programlisting>
 </itemizedlist>
 </sect2>
 <sect2 id="rdfinputgrab"><title>IRI Dereferencing For Variables, &quot;define input:grab-...&quot; Pragmas</title>
