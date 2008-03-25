@@ -2,17 +2,16 @@ March 25, 2008, V5.0.6:
   * Database Engine
     - Added optimizations for bitmap intersection join
     - Added optimizations for numeric operations
-    - Added optimizations to cost based model
+    - Added optimizations to cost-based model
     - Added optimizations to locking model
     - Added optimizations for async queue
     - Added support for long data associated with phrases
     - Added support for writing DV_BIN to filesystem
-    - Added support for (de)serialization of db_bin directly in http
-    - Added support for getallheaders in php hosting
+    - Added support for (de)serialization of DV_BIN directly in http
     - Fixed 64 bit portability issues
-    - Fixed problem with alter table add column using a default value
+    - Fixed issue with 'alter table add column' using a default value
     - Fixed comparison of typed RDF boxes with XML content
-    - Fixed deleting files and private graphs from 'rdf_sink' folder
+    - Fixed deleting files and private graphs from rdf_sink folder
     - Updated documentation
     - Fixed compiler warnings
     - Small bugfixes
@@ -35,9 +34,7 @@ March 25, 2008, V5.0.6:
     - Fixed JSON parser to pass the JSON checker test suite
     - Fixed sponger with build-in metadata
     - Fixed attempts to sponge on non-IRI values
-    - Fixed various RDF related serialization issues
-    - Fixed printing of datetype types 
-    - Fixed parsing integers and strings
+    - Fixed various RDF-related serialization issues
     - Small bugfixes
 	
   * ODS Applications
@@ -54,9 +51,9 @@ March 25, 2008, V5.0.6:
     - Fixed virtual directory problem
     - Fixed search navigation
     - Fixed issues installing/uninstalling application
+    - Fixed stack overflow in xslt transformation
     - Fixed RDF views
     - Fixed Wiki docbook generation
-    - Fixed stack overflow in xslt transformation
     - Removed deprecated files
     - Small bugfixes
 
