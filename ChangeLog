@@ -1,3 +1,23 @@
+2008-03-26 13:14  source
+
+	* Updated version to 5.0.6-rc11
+
+2008-03-26 13:13  source
+
+	* Removed debugging prints
+
+2008-03-26 13:07  source
+
+	* Added Handle System lookup plugin
+
+2008-03-26 13:04  source
+
+	* Added support for DV_BIN in subseq
+
+2008-03-26 10:54  source
+
+	* Merged from upstream project
+
 2008-03-25 12:00  source
 
 	* Updated version to 5.0.6-rc10

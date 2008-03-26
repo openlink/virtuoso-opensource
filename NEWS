@@ -8,6 +8,7 @@ March 25, 2008, V5.0.6:
     - Added support for long data associated with phrases
     - Added support for writing DV_BIN to filesystem
     - Added support for (de)serialization of DV_BIN directly in http
+    - Added support for handle system lookup plugin
     - Fixed 64 bit portability issues
     - Fixed issue with 'alter table add column' using a default value
     - Fixed comparison of typed RDF boxes with XML content
