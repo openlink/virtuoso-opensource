@@ -429,6 +429,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hosting_php", "hosting_php.
 		{58F7DCEF-D5DE-402D-8F50-39B67C8B9E9E} = {58F7DCEF-D5DE-402D-8F50-39B67C8B9E9E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hslookup", "hslookup.vcproj", "{14ECED18-FB38-11DC-8216-8B38A5565D8C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{93051962-7797-49F0-8958-BB1CE60FFE6F} = {93051962-7797-49F0-8958-BB1CE60FFE6F}
+		{031DB868-5294-4738-90BA-F80BB2CEA9DC} = {031DB868-5294-4738-90BA-F80BB2CEA9DC}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -656,6 +662,10 @@ Global
 		{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}.Debug.Build.0 = Debug|Win32
 		{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}.Release.ActiveCfg = Release|Win32
 		{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}.Release.Build.0 = Release|Win32
+		{14ECED18-FB38-11DC-8216-8B38A5565D8C}.Debug.ActiveCfg = Debug|Win32
+		{14ECED18-FB38-11DC-8216-8B38A5565D8C}.Debug.Build.0 = Debug|Win32
+		{14ECED18-FB38-11DC-8216-8B38A5565D8C}.Release.ActiveCfg = Release|Win32
+		{14ECED18-FB38-11DC-8216-8B38A5565D8C}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
