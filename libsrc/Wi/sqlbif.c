@@ -1924,7 +1924,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     case DV_STRING: case DV_UNAME: case DV_WIDE: case DV_LONG_WIDE:
     case DV_BLOB_HANDLE: case DV_BLOB_WIDE_HANDLE: case DV_BLOB_XPER_HANDLE:
-    case DV_STRING_SESSION: case DV_ARRAY_OF_POINTER:
+    case DV_STRING_SESSION: case DV_ARRAY_OF_POINTER: case DV_BIN:
       break;
     default:  
     sqlr_new_error ("22023", "SR023",
@@ -1938,6 +1938,8 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   len = BOX_ELEMENTS (str);
   else if (dtp1 == DV_STRING_SESSION)
     len = strses_length ((dk_session_t *)str);
+  else if (dtp1 == DV_BIN) /* no trailing zero */
+    len = box_length (str) / sizeof_char;
   else
 #ifndef O12
   len = box_length (str) / sizeof_char - ((dtp1 != DV_G_REF_CLASS) ? 1 : 0);
