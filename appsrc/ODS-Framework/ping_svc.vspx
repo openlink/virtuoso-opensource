@@ -153,7 +153,7 @@ declare exit handler for sqlstate '23000'
   rollback work;
   self.vc_is_valid := 0;
   self.vc_error_message := 'The values entered conflict with other host/provider combination. Please supply correct host and provider values.';
-  dbg_obj_print (__SQL_MESSAGE);
+  return;
 };
 
 if (self.edit_svc is null)

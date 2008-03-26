@@ -216,7 +216,6 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
     {
       iri := iri || '#this';
     }
-  dbg_obj_print (val, iri);
   res := sprintf ('iid (%d)', iri_id_num (iri_to_id (iri)));
   return sprintf (fmt, res);
 }
