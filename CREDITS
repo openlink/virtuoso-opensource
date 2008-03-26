@@ -242,3 +242,12 @@ WBXML2
     WBXML2 is distributed under the terms of the GNU Lesser General Public
     License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
 
+
+Handle System Client Library
+<http://handle.net>
+
+   Parts of Virtuoso may be linked against the Handle System Client library.
+
+   The Handle System Client Library is distributed under the terms of
+   the Handle.NET Software Client Library (VER. 5) -- C Version License:
+   <http://hdl.handle.net/4263537/5027>

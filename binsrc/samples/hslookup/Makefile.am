@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2008 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -18,7 +18,27 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = demo docbookview hslookup IBuySpy image_magick JDBC odp petshop schemaview sparql_demo TPC-W webapp xpath xquery wbxml2
+
+if WITH_HSL
+hosting_LTLIBRARIES = hslookup.la
+endif
+
+hslookup_la_SOURCES = \
+	hslookup.c \
+	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+
+hslookup_la_CFLAGS  = @VIRT_AM_CFLAGS@
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
+hslookup_la_CFLAGS  += $(HSL_CPPFLAGS)
+hslookup_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
+hslookup_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols hslookup.exp -no-undefined
+hslookup_la_LIBADD  = $(HSL_LDFLAGS) $(HSL_LIBS)
 
 
 # ----------------------------------------------------------------------
@@ -26,4 +46,6 @@ SUBDIRS = demo docbookview hslookup IBuySpy image_magick JDBC odp petshop schema
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST=
+EXTRA_DIST = \
+	hslookup.def \
+	hslookup.exp

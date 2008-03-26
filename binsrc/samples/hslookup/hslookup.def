@@ -1,0 +1,3 @@
+LIBRARY HSLOOKUP
+EXPORTS
+  hslookup_check @1
