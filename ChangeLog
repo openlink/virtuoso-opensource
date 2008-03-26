@@ -1,3 +1,15 @@
+2008-03-26 15:30  source
+
+	* Updated version to 5.0.6 for final release
+
+2008-03-26 13:59  source
+
+	* Added hslookup plugin to default ini file
+
+2008-03-26 13:42  source
+
+	* Added support for building hslookup plugin on windows
+
 2008-03-26 13:14  source
 
 	* Updated version to 5.0.6-rc11
