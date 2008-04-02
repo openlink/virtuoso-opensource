@@ -55,3 +55,4 @@ rdf_mapping_jso.ttl-sample
 json_p.c
 json_p.h
 json_l.c
+sqlwords.h
