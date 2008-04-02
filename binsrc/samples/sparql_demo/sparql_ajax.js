@@ -75,7 +75,7 @@ function init()
   OAT.Dom.hide(filewin.div);
   filewin.onclose = function() { OAT.Dom.hide(filewin.div); }
   
-	OAT.WebDav.init({imagePath:OAT.Preferences.imagePath,imageExt:"png"});
+	OAT.WebDav.init({imagePath:OAT.Preferences.imagePath,imageExt:"png", user:"", pass:""});
 	
 	OAT.Dom.hide($('remote_panel'));
 	//switch_panels();

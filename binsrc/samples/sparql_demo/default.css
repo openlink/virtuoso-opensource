@@ -305,7 +305,7 @@ label.load { font-size: 8pt; font-weight: normal;}
 #grid thead td {
 	background-color: #ebeadb;
 	font-weight: bold;
-	background-image: url(images/Grid_header.gif);
+	background-image: url(toolkit/images/Grid_header.gif);
 	background-position: 0% 100%;
 	background-repeat: repeat-x;
 	border-left: 1px solid #ccc;
@@ -315,7 +315,7 @@ label.load { font-size: 8pt; font-weight: normal;}
 #graphs_grid_div thead td.hover,
 #grid_etalon thead td.hover,
 #grid thead td.hover {
-	background-image: url(images/Grid_header_hover.gif);
+	background-image: url(toolkit/images/Grid_header_hover.gif);
 }
 
 #graphs_grid_div td,
