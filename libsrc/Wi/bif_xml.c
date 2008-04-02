@@ -1517,6 +1517,11 @@ xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t 
       xrie->xrie_text_len = (s_size_t) (box_length(text)-1);
       return 1;
     }
+  if (dtp_of_text == DV_BIN)
+    {
+      xrie->xrie_text_len = (s_size_t) box_length(text);
+      return 1;
+    }
   return 0;
 }
 
@@ -1711,7 +1716,8 @@ _bif_xml_tree_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int 
     {
       if ((dtp_of_text_arg == DV_SHORT_STRING) ||
 	  (dtp_of_text_arg == DV_LONG_STRING) ||
-	  (dtp_of_text_arg == DV_C_STRING) )
+	  (dtp_of_text_arg == DV_C_STRING) ||
+	  (dtp_of_text_arg == DV_BIN))
 	{ /* Note DV_TIMESTAMP_OBJ is not enumerated in if(...), unlike bif_string_arg)_ */
 	  break;
 	}
