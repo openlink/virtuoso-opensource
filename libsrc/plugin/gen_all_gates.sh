@@ -17,7 +17,18 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
-#  
+
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+LC_ALL=POSIX
+export LANG LC_ALL
+
+#
+#  Main
+#
 ./gen_gate.sh gate_virtuoso.h
 ./gen_gate.sh plugin_lang25.h
 ./gen_gate.sh plugin_msdtc.h
