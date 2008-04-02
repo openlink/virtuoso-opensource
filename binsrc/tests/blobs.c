@@ -60,7 +60,8 @@ long write_bytes;
 
 char *dd_stmt_text =
 " create table BLOBS (ROW_NO integer, B1 long varchar, B2 long varbinary, B3 long nvarchar, B4 long varbinary, "
-"                 primary key (ROW_NO))";
+"                 primary key (ROW_NO))\n"
+"alter index BLOBS on BLOBS partition (ROW_NO int)";
 
 
 void

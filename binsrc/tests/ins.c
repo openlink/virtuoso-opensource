@@ -85,7 +85,10 @@ char *dd_stmt_text_ts =
 "     ROW_NO integer, TIME1 timestamp, STRING1 varchar (3), STRING2 varchar (3), "
 "      FS1 varchar (4), FI2 integer, FI3 integer, FS4 varchar (13), FS5 varchar (16),  "
 "      FI6 integer, FI7 integer, FREAL real, FDOUBLE double precision, FDEC decimal (30, 10) default 11.1111, FDATE date, "
-"      primary key (ROW_NO)) ";
+"      primary key (ROW_NO)) "
+"alter index T1 on T1 partition (ROW_NO int (0hexff00))";
+
+
 char *dd_stmt_text_dt =
 "create table T1 ( "
 "     ROW_NO integer, TIME1 datetime, STRING1 varchar (3), STRING2 varchar (3), "
@@ -115,9 +118,9 @@ char *dd_stmt_text_ora =
 
 char *dd_stmt_text;
 
-char *dd_1 = "create index TIME1 on T1 (TIME1) ";
-char *dd_2 = "create index STR1 on T1 (STRING1) ";
-char *dd_3 = "create index STR2 on T1 (STRING2)";
+char *dd_1 = "create index TIME1 on T1 (TIME1) partition (TIME1 varchar)";
+char *dd_2 = "create index STR1 on T1 (STRING1) partition (STRING1 varchar)";
+char *dd_3 = "create index STR2 on T1 (STRING2) partition (STRING2 varchar)";
 
 
 char *insert_text_ts =
