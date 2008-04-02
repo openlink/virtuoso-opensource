@@ -1021,6 +1021,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
 	| _LPAR ASK_L {
+                spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
@@ -1035,6 +1036,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		spar_env_pop (sparp_arg);
 		$$ = spar_gp_finalize_with_subquery (sparp_arg, subselect_top); }
 	| _LPAR spar_select_query_mode {
+                spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
