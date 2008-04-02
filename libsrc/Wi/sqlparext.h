@@ -138,7 +138,7 @@
 #define TABLE_RENAME		(ptrlong)507
 #define SCHEMA_ELEMENT_LIST	(ptrlong)508
 #define MODIFY_COLUMN		(ptrlong)509
-
+#define DDL_NONE (ptrlong)523
 #define CO_IDENTITY		(ptrlong)510
 #define VIEW_DEF		(ptrlong)511
 #define FOREIGN_KEY		(ptrlong)512

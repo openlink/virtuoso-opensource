@@ -3590,6 +3590,8 @@ sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 		    break;
 		  case CHECK_XMLSCHEMA_CONSTR:
 		    break;
+		  case DDL_NONE:
+		    break;
 		  default:
 		    sqlr_new_error ("42000", "SQ128", "Unsupported table constraint.");
 		  }
@@ -3740,7 +3742,8 @@ sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
     case CREATE_TABLE_AS:
       sch_create_table_as (qi, tree);
       break;
-
+    case DDL_NONE:
+      break;
     default:
       sqlr_new_error ("42000", "SQ031", "Unsupported DDL statement.");
     }
