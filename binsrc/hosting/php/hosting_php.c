@@ -689,9 +689,57 @@ PHP_FUNCTION (getallheaders)
 }
 
 
+/*
+ *  This constructs an ODBC connect string suitable to talk back to
+ *  the server using the credentials the php script is running under.
+ *  These credentials are associated with the virtual directory of the
+ *  application, and can be set through the Virtuoso conductor.
+ *  usage: __virt_internal_dsn([dsn])
+ */
+static
+PHP_FUNCTION (__virt_internal_dsn)
+{
+  client_connection_t *cli;
+  zval **pv_dsn;
+  user_t *usr;
+  char *dsn;
+  char *connstr;
+  int argc;
+
+  argc = ZEND_NUM_ARGS ();
+  if (argc == 0)
+    {
+      dsn = "Local Virtuoso";
+    }
+  else if (argc == 1)
+    {
+      if (zend_get_parameters_ex (1, &pv_dsn) == FAILURE)
+	{
+	  WRONG_PARAM_COUNT;
+	}
+      convert_to_string_ex (pv_dsn);
+      dsn = Z_STRVAL_PP (pv_dsn);
+    }
+  else
+    {
+      WRONG_PARAM_COUNT;
+    }
+
+  cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  if (cli == NULL || (usr = cli->cli_user) == NULL)
+    RETURN_FALSE;
+  if (!usr->usr_name || !usr->usr_pass)
+    RETURN_FALSE;
+  spprintf (&connstr, 0, "DSN=%s;UID=%s;PWD=%s",
+      dsn, usr->usr_name, usr->usr_pass);
+  RETURN_STRING (connstr, 0);
+}
+
+
 static zend_function_entry virtuoso_functions[] =
   {
     PHP_FE (getallheaders, NULL)
+    PHP_FE (__virt_internal_dsn, NULL)
     PHP_FALIAS (apache_request_headers, getallheaders, NULL)
     { NULL, NULL, NULL }
   };

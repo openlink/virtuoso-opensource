@@ -17,7 +17,6 @@ Building:
 		--prefix=/where/to/put/it \
 		--enable-maintainer-zts \
 		--with-tsrm-pthreads \
-		--with-config-file-scan-dir=. \
 		--with-config-file-path=. \
 		--enable-static \
 		--disable-shared \
@@ -36,7 +35,6 @@ Building:
 		--enable-experimental-zts \
 		--with-tsrm-pthreads \
 		--with-config-file-path=. \
-		--with-config-file-scan-dir=. \
 		--enable-static \
 		--disable-shared \
 		--disable-ipv6 \
