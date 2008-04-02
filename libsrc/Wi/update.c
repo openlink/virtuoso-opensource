@@ -171,13 +171,9 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
   int old_off = 0, old_len = 0;
   int v_fill = new_tb->tb_primary_key->key_row_var_start;
   int nth_part = 0;
-  char null_col_buffer[10];
-  caddr_t null_col;
-
   dk_set_t changed_keys = NULL;
   int nth_val;
 
-  BOX_AUTO (null_col, null_col_buffer, 0, DV_DB_NULL);
 
   SHORT_SET (&new_image[IE_KEY_ID], new_tb->tb_primary_key->key_id);
   SHORT_SET (&new_image[IE_NEXT_IE], 0);
@@ -205,7 +201,7 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 	    }
 	  else
 	    {
-	      row_set_col (&new_image[0], new_cl, null_col, &v_fill, ROW_MAX_DATA * 2,
+	      row_set_col (&new_image[0], new_cl, col->col_default, &v_fill, ROW_MAX_DATA * 2,
 		  new_tb->tb_primary_key, err_ret, itc, (db_buf_t) "\000", state);
 	    }
 	  goto complete_key_column;
@@ -242,12 +238,10 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
 	  *err_ret = srv_make_new_error ("42000", "SR437", "Ruling part too long in update");
 	  if (changed_keys != ALL_KEYS && changed_keys != BLOB_ERROR)
 	    dk_set_free (changed_keys);
-	  BOX_DONE (null_col, null_col_buffer);
 	  return NULL;
 	}
     }
   END_DO_SET ();
-  BOX_DONE (null_col, null_col_buffer);
   if (v_fill > ROW_MAX_DATA * 2)
     {
       *err_ret = srv_make_new_error ("42000", "SR248", "Row too long in update");
@@ -317,8 +311,6 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
   caddr_t err = NULL;
   int v_fill = key->key_row_var_start;
   int nth = 0;
-  char null_col_buffer[10];
-  caddr_t null_col;
   union
    {
      dtp_t key_image[MAX_ROW_BYTES];
@@ -326,7 +318,6 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
    } v;
 #define key_image v.key_image
 
-  BOX_AUTO (null_col, null_col_buffer, 0, DV_DB_NULL);
 
 
   SHORT_SET (&key_image[IE_KEY_ID], key->key_id);
@@ -343,7 +334,7 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
 	}
       else
 	{
-	  row_set_col (&key_image[IE_FIRST_KEY], new_cl, null_col, &v_fill, ROW_MAX_DATA,
+	  row_set_col (&key_image[IE_FIRST_KEY], new_cl, col->col_default, &v_fill, ROW_MAX_DATA,
 	      key, &err, ins_itc, (db_buf_t) "\000", NULL);
 	}
 
@@ -353,7 +344,6 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
     }
   END_DO_SET ();
 
-  BOX_DONE (null_col, null_col_buffer);
 
   if (err || v_fill + (IE_LP_FIRST_KEY - IE_FIRST_KEY) > MAX_RULING_PART_BYTES)
     {
