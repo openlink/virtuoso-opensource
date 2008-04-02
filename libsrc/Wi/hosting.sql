@@ -45,6 +45,9 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
     }
   options := vector (
     '__VIRT_CGI', 		'1'
+   ,'__VIRT_APP_UID', 		http_map_get ('vsp_uid')
+   ,'__VIRT_APP_LPATH', 	http_map_get ('domain')
+   ,'__VIRT_APP_PPATH', 	http_map_get ('mounted')
    ,'SERVER_SOFTWARE', 		'Virtuoso Universal Server/5.0'
    ,'SERVER_SIGNATURE',		'Virtuoso Universal Server/5.0 on ' || sys_addr
    ,'SERVER_NAME', 		server_name

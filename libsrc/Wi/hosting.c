@@ -393,9 +393,7 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   hosting_version_t *ver;
   void *hcli;
   char err[512];
-  caddr_t *options = NULL, *new_options = NULL;
-  user_t *uid = NULL;
-
+  caddr_t *options = NULL;
   char *_res = NULL;
   char *_head_ret = NULL;
   caddr_t res = NULL;
@@ -428,18 +426,6 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   if (BOX_ELEMENTS (args) > 5)
     {
       options = (caddr_t *) bif_array_or_null_arg (qst, args, 5, "hosting_http_handler");
-    }
-
-  uid = sec_id_to_user (sec_bif_caller_uid (qi));
-
-  if (uid)
-    {
-      new_options = (caddr_t *) dk_alloc_box ((options ? box_length (options) : 0) + 2 * sizeof (caddr_t),
-	  DV_ARRAY_OF_POINTER);
-      if (options)
-	memcpy (&(new_options[2]), options, box_length (options));
-      new_options[0] = box_dv_short_string ("__VIRT_UID");
-      new_options[1] = box_dv_short_string (uid->usr_name);
     }
 
   IO_SECT(qst);
@@ -579,12 +565,6 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     {
       dk_free_tree (res);
       res = NULL;
-    }
-  if (new_options)
-    {
-      dk_free_box ((box_t) new_options[0]);
-      dk_free_box ((box_t) new_options[1]);
-      dk_free_box ((box_t) new_options);
     }
 
   return res;

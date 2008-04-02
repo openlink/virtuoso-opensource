@@ -6654,6 +6654,8 @@ char * ws_def_2 =
 "        declare hdl_mode, stream_params any; \n"
 "        hdl_mode := NULL; \n"
 "        stream_params := __http_stream_params (); \n"
+"        if (isstring (http_map_get (\'vsp_uid\')))\n"
+"          __set_user_id (http_map_get (\'vsp_uid\'));\n"
 "        http (call (fext) (concat (http_root (), http_physical_path ()), stream_params, lines, hdl_mode)); \n"
 "        if (isarray (hdl_mode) and length (hdl_mode) > 1) \n"
 "          { \n"
