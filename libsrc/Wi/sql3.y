@@ -540,6 +540,7 @@
 %type <tree> cost_decl 
 %type <list> cost_number_list 
 %type <box> cost_number 
+%type <tree> partition_def 
 
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA
@@ -576,7 +577,7 @@
 %token ARRAY
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED CLUSTER PARTITION VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS QUIETCAST_L SPARQL_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -695,6 +696,7 @@ schema_element
 	: base_table_def
 /*	| view_def */
 	| create_index_def
+	| partition_def
 	| drop_table
 	| drop_index
 	| table_rename
@@ -972,7 +974,7 @@ opt_index_option_list
 
 create_index_def
 	: CREATE opt_index_option_list INDEX index
-		ON q_table_name '(' index_column_commalist ')'
+		ON q_table_name '(' index_column_commalist ')' opt_part_def
 		{ $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), $2); }
 	;
 
@@ -4283,3 +4285,42 @@ drop_assembly
 		 t_list (1, $3));
 	   }
         ;
+
+
+/* dummy partitioning defs for 6 compatibility */
+
+col_partition
+	: INTEGER 
+	| INTEGER '(' INTNUM ')' 
+	| INTEGER '(' BINARYNUM ')' 
+	| VARCHAR  
+	| VARCHAR '(' INTNUM ',' INTNUM ')'  
+	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'  
+	;
+
+
+
+col_part_commalist
+	: NAME col_partition { } 
+	| col_part_list ',' NAME col_partition 
+	;
+
+col_part_list 
+	: /* empty */  
+	| '(' col_part_commalist ')' 
+	;
+opt_cluster 
+	: /* empty */
+	| CLUSTER  NAME 
+	;
+
+
+opt_part_def 
+	: /* empty */
+	| PARTITION opt_cluster col_part_list
+	;
+
+partition_def
+	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list { $$ = t_list (1, DDL_NONE); }
+	;
+
