@@ -26,7 +26,7 @@ OAT.Connection = function(type,optObj) {
 	switch (type) {
 		case OAT.ConnectionData.TYPE_XMLA:
 			this.options = {
-				endpoint:"",
+				endpoint:OAT.Preferences.endpointXmla,
 				dsn:"",
 				user:"",
 				password:""

@@ -36,8 +36,8 @@
 	</xsl:template>
 
 	<xsl:template name="form"> <!-- basic form properties -->
-		<xsl:for-each select="//form">
-			var nocred = parseInt("<xsl:value-of select="@nocred" />");
+		<xsl:for-each select="//connection">
+			var nocred = <xsl:value-of select="@nocred" />;
 			var showajax = <xsl:value-of select="@showajax" />;
 		</xsl:for-each>
 	</xsl:template>

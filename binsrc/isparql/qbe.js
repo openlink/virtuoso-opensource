@@ -386,17 +386,20 @@ iSPARQL.QBE = function () {
 		OAT.AJAX.PUT(save_name,send_ref(),recv_ref,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC,headers:{'Content-Type':get_mime_type(goptions.last_path)}});
 	}
 	
+	/* return data for saving */
 	this.getSaveData = function(save_type){
 		var data = "";
 		
-		data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-		data += '#service:' + self.service.input.value + '\n';
-		
 		switch (save_type) {
 			case "rq":
+				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
+				data += '#service:' + self.service.input.value + '\n';
 			  data += self.QueryGenerate();
 			break;
+
 			case "xml":
+				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
+				data += '#service:' + self.service.input.value + '\n';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   			xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
@@ -408,6 +411,8 @@ iSPARQL.QBE = function () {
 			case "isparql":
 			case "ldr":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
+				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
+				data += '#service:' + self.service.input.value + '\n';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n';
@@ -426,6 +431,13 @@ iSPARQL.QBE = function () {
   			xml += '<service>'+self.service.input.value+'</service>\n';
   			xml += '</iSPARQL>';
   			data = xml;
+			break;
+
+			case "rdf":
+				/* no previous query, no data */
+				if(qe.cacheIndex == -1) { break; }
+				var xml = qe.cache[qe.cacheIndex].data;
+				data = OAT.Xml.serializeXmlDoc(xml);
 			break;
 		}
 		return data;
@@ -980,6 +992,7 @@ iSPARQL.QBE = function () {
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
     		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
+							  ['rdf','rdf','RDF Data',get_mime_type('rdf')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
     		                 ],
 				callback:function(path,fname){

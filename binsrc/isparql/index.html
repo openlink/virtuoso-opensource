@@ -55,13 +55,6 @@
 		<div id="page_loading" style="margin-top:20px;text-align:center;"><img src="/isparql/toolkit/images/throbber.gif"/></div>
 		<div id="page_content" style="display:none;">
 			<ul id="menu">
-				<li>iSPARQL
-				  <ul class="menu_isparql">
-						  <li id="menu_about">About iSPARQL</li>
-						  <li><hr/></li>
-					<li id="menu_proc_opt" title="Preferences">Preferences</li>
-				  </ul>
-				</li>
 				<li>File
 				  <ul id="menu_file_down" class="menu_file" style="display:none;">
 					<li id="menu_b_reset">Reset</li>
@@ -84,6 +77,7 @@
 				</li>
 				<li>Help
 						<ul class="menu_help" style="display:none;">
+						  	<li id="menu_about">About iSPARQL</li>
 							<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
 							<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
 							<li><a target="_blank" href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a></li>
@@ -110,59 +104,29 @@
 								<div id="qbe_orderby_grid"></div>
 							</div>
 
-							<fieldset style="float:right;" class="derefOpts">
+							<div class="controls">
+
+							<div id="opttoggler"><span id="togglerarrow">&#8681;</span> Sponger Options</div>
+
+							<fieldset class="derefOpts" id="derefOpts">
 								<legend>Data dereferencing options:</legend>
-								<button id="cachingSchemes">
-									Caching Schemes<br/>
-									<span id="cachingSchemesTitle">Automatic</span>
-								</button>
-								<div id="cachingSchemesWin" class="derefOptsWinContent">
-									<select id="cachingSchemesCtl">
-										<option value="get::soft">Automatic</option>
+								<table style="border-collapse: collapse;"><tr><td style="padding-right: 8px;">
+									<span class="title">Caching Schemes<br/>
+									<select id="cachingSchemesCtl" style="margin-bottom:5px;width: 100px;">
+										<option value="get::soft">Automatic</span></option>
 										<option value="get::replacing">None</option>
-									</select>
-								</div>
-								<button id="pathTravSchemes">
-									Path Traversal Schemes<br/>
-									<span id="pathTravSchemesTitle">Follow all Properties</span>
-								</button>
-								<div id="pathTravSchemesWin" class="derefOptsWinContent" style="text-align:left;">
-									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball" checked="checked"/> <label for="pathTravSchemesGraball">Follow all Properties</label><br/>
-									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso">Follow Properties</label> <br/>
-										<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 40px;">
-										<option value="foaf:knows">foaf:knows</option>
-										<option value="sioc:links_to">sioc:links_to</option>
-										<option value="rdfs:isDefinedBy">rdfs:isDefinedBy</option>
-										<option value="rdfs:seeAlso">rdfs:seeAlso</option>
-										<option value="owl:sameAs">owl:sameAs</option>
 										</select><br/>
-									<input type="button" id="spongerPredsAdd" value="Add custom"/> 
-									<input type="button" id="spongerPredsDel" value="Remove selected"/><br/> 
-									<input type="button" id="spongerPredsDefault" value="Restore default set"/><br/><br/>
-									<div style="text-align:center;width:100%;">
-										<input type="button" value="Save" id="pathTravSchemesSave"/>
-									</div>
-								</div>
-								<button id="nodesRetrieved">
-									Nodes Retrieved<br/>
-									<span id="nodesRetrievedTitle">Default</span>
-								</button>
-								<div id="nodesRetrievedWin" class="derefOptsWinContent">
-									<select id="nodesRetrievedCtl">
+									<span class="title">Nodes Retrieved</span><br/>
+									<select id="nodesRetrievedCtl" style="margin-bottom:5px;width: 100px;">
 										<option value="">Default</option>
 										<option value="100">Max 100</option>
 										<option value="200">Max 200</option>
 										<option value="300">Max 300</option>
 										<option value="400">Max 400</option>
 										<option value="500">Max 500</option>
-									</select>
-								</div>
-								<button id="nodesCrawled">
-									Nodes Crawled<br/>
-									<span id="nodesCrawledTitle">Default</span>
-								</button>
-								<div id="nodesCrawledWin" class="derefOptsWinContent">
-									<select id="nodesCrawledCtl">
+									</select><br/>
+									<span class="title">Nodes Crawled</span><br/>
+									<select id="nodesCrawledCtl" style="width: 100px;">
 										<option value="">Default</option>
 										<option value="1">Max 1</option>
 										<option value="2">Max 2</option>
@@ -175,11 +139,28 @@
 										<option value="9">Max 9</option>
 										<option value="10">Max 10</option>
 									</select>
-								</div>
+									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;">
+									<span class="title">Path Traversal Schemes<span><br/>
+									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball" checked="checked"/> <label for="pathTravSchemesGraball" id="pathTravSchemesGraballLabel">Follow all Properties</label><br/>
+									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso" id="pathTravSchemesSeealsoLabel">Follow Properties</label><br/>
+									<input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
+									<input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/><br/> 
+									<input type="button" id="spongerPredsDefault" value="Restore default set"/>
+									</td><td>
+									<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 20px;height: 100px;width: 150px;">
+										<option value="foaf:knows" selected="selected">foaf:knows</option>
+										<option value="sioc:links_to" selected="selected">sioc:links_to</option>
+										<option value="rdfs:isDefinedBy" selected="selected">rdfs:isDefinedBy</option>
+										<option value="rdfs:seeAlso" selected="selected">rdfs:seeAlso</option>
+										<option value="owl:sameAs" selected="selected">owl:sameAs</option>
+									</select>
+								</td></tr></table>
 							</fieldset>
 
 							<div> <!-- options -->
-								<label for="qbe_maxrows">Max Rows:</label>
+								<fieldset class="queryopts" id="queryopts">
+									<legend>Query options</legend>
+									Max rows
 								<select id="qbe_maxrows">
 									<option value="10">10</option>
 									<option value="20">20</option>
@@ -189,10 +170,10 @@
 									<option value="0">[no limit]</option>
 								</select>
 
-								<label for="qbe_distinct">Distinct:</label>
+									<label for="qbe_distinct">Distinct</label>
 								<input type="checkbox" value="on" id="qbe_distinct"/>
 
-								<label for="qbe_query_div">Type:</label>
+									Type
 								<select id="qbe_query_type">
 									<option value="SELECT" selected="selected">SELECT</option>
 									<option value="CONSTRUCT">CONSTRUCT</option>
@@ -200,14 +181,20 @@
 									<option value="INSERT">INSERT</option>
 									<option value="DELETE">DELETE</option>
 								</select>
+								</fieldset>
 							</div>
 
-							<div> <!-- endpoint -->
-								<label for="qbe_service_div">Endpoint:</label>
+							<fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
+								<legend>Endpoint</legend>
 								<div id="qbe_service_div"></div>
+							</fieldset>
+
+							<br style="clear:both;"/>
+
 							</div>
+
 							<div id="qbe_resizer_area" style=""></div>
-						</div>
+						</div> <!-- id="qbe_bottom"-->
 					</div>
 					<div id="qbe_props">
 					  <div id="qbe_props_node" style="display:none;">

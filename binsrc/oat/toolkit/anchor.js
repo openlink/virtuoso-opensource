@@ -113,7 +113,7 @@ OAT.Anchor = {
 	fixSize:function (win) {
 			/* wait to finish all ajax calls */
 			setTimeout(function(){
-				if (OAT.AJAX.requests.length) {
+				if (OAT.AJAX && OAT.AJAX.requests.length) {
 					OAT.Anchor.fixSize(win);
 				} else {
 					var height = OAT.Dom.getWH(win.dom.content)[1];

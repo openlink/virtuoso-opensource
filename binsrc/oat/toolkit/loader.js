@@ -36,7 +36,8 @@ OAT.Preferences = {
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
-	version:"19.03.2008",
+	endpointXmla:"/XMLA",
+	version:"31.03.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -590,11 +591,12 @@ OAT.Dom = { /* DOM common object */
 	},
 
 	toSafeXML:function(str) {
-		if (typeof(str) != "string") { return str; }
+		if (!str || (typeof(str) != "string")) { return str; }
 		return str.replace(/&/g,"&amp;").replace(/>/g,"&gt;").replace(/</g,"&lt;");
 	},
 	
 	fromSafeXML:function(str) {
+		if (!str || (typeof(str) != "string")) { return str; }
 		return str.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<");
 	},
 	

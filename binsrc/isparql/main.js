@@ -151,9 +151,6 @@ function init() {
 
   tab.go (0); /* is 0-based index... */
   
-	OAT.Dom.attach("menu_proc_opt","click",function() {
-	  dialogs.goptions.show();
-	});
 	OAT.Dom.attach("menu_about","click",function() {
 	  dialogs.about.show();
 	});
@@ -279,8 +276,8 @@ function init() {
 	window.adv = new iSPARQL.Advanced();
 
 	var execCB = function(query) {
-		if (qbe.QueryGenerate() == query) { return; }
 		if (tab.selectedIndex == 0) { 
+			if (qbe.QueryGenerate() == query) { return; }
 			qbe.loadFromString(query);
 		}
 		if (tab.selectedIndex == 1) {
@@ -691,6 +688,7 @@ iSPARQL.Advanced = function () {
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
     		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
+					  		  ['rdf','rdf','RDF Data',get_mime_type('rdf')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
     		                 ],
 				callback:function(path,fname){
@@ -817,6 +815,12 @@ iSPARQL.Advanced = function () {
   			xml += '><sql:sparql>'+OAT.Dom.toSafeXML(data)+'</sql:sparql></root>';
   			data = xml;
 			break;
+
+			case "rdf":
+				if(qe.cacheIndex == -1) { break; }
+				var xml = qe.cache[qe.cacheIndex].data;
+				data = OAT.Xml.serializeXmlDoc(xml);
+			break;
 		}
 	  return data;
   }
@@ -861,20 +865,32 @@ iSPARQL.Advanced = function () {
   self.service.img.height = "16";
   $("adv_service_div").appendChild(self.service.div);
 	
+	/* toggle options */
+	OAT.Event.attach("opttoggler",'click', function() {
+		if ($("queryopts").style.display=="none") {
+			$("queryopts").style.display = "block";
+			$("endpoint").style.display = "block";
+			$("derefOpts").style.display = "block";
+			$("togglerarrow").innerHTML = "&#8681;";
+		} else {
+			$("queryopts").style.display = "none";
+			$("endpoint").style.display = "none";
+			$("derefOpts").style.display = "none";
+			$("togglerarrow").innerHTML = "&#8679;";
+		}
+	});
+
 	/* Data Retrieval Options */
 	OAT.Event.attach($("cachingSchemesCtl"),'change', function(event) {
 		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		$("cachingSchemesTitle").innerHTML = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].text;
 		// = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].value;
 	});
-	OAT.Event.attach($("pathTravSchemesSave"),'click', function(event) {
-		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
+	OAT.Event.attach($("pathTravSchemesPred"),'change',pathTravSchemes)
+	var pathTravSchemes = function() {
 		if ($("pathTravSchemesGraball").checked) {
-			$("pathTravSchemesTitle").innerHTML = 'Follow all Properties';
 			// = 'grab-all';
 			return;
 		} else {
-			$("pathTravSchemesTitle").innerHTML = 'Follow Properties';
 			var out = new Array();
 			var preds = $("pathTravSchemesPreds").options;
 			for (var i=0;i<preds.length; i++) {
@@ -886,36 +902,35 @@ iSPARQL.Advanced = function () {
 			}
 			// = out;
 		}		
-	});
+	}
 	OAT.Event.attach($("nodesCrawledCtl"),'change', function(event) {
 		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		$("nodesCrawledTitle").innerHTML = $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].text;
 		//  = $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].value;
 	});
 	OAT.Event.attach($("nodesRetrievedCtl"),'change', function(event) {
 		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		$("nodesRetrievedTitle").innerHTML = $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].text;
 		//  = $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].value;
 	});
-	var prefs = {	title:"Caching Schemes",
-			content:$('cachingSchemesWin'),
-			status:"",
-			width:200,
-			result_control:false,
-			activation:"click",
-			type:OAT.WinData.TYPE_RECT
+
+	/* show advanced path traversal schemes controls only if necessary */
+	var pathTravSchemesHide = function() {
+		OAT.Dom.hide("pathTravSchemesPreds");
+		OAT.Dom.hide("spongerPredsAdd");
+		OAT.Dom.hide("spongerPredsDel");
+		OAT.Dom.hide("spongerPredsDefault");
 	}
-	OAT.Anchor.assign("cachingSchemes",prefs);
-	prefs.title = "Nodes Retrieved";
-	prefs.content = $('nodesRetrievedWin');
-	OAT.Anchor.assign("nodesRetrieved",prefs);
-	prefs.title = "Nodes Crawled";
-	prefs.content = $('nodesCrawledWin');
-	OAT.Anchor.assign("nodesCrawled",prefs);
-	prefs.title = "Path Traversal Schemes";
-	prefs.status = "Select more with Ctrl click";
-	prefs.content = $('pathTravSchemesWin');
-	OAT.Anchor.assign("pathTravSchemes",prefs);
+	OAT.Event.attach("pathTravSchemesGraball",'click',pathTravSchemesHide);
+	OAT.Event.attach("pathTravSchemesGraballLabel",'click',pathTravSchemesHide);
+	pathTravSchemesHide(); /* hidden by default */
+	var pathTravSchemesShow = function(event) {
+		OAT.Dom.show("pathTravSchemesPreds");
+		OAT.Dom.show("spongerPredsAdd");
+		OAT.Dom.show("spongerPredsDel");
+		OAT.Dom.show("spongerPredsDefault");
+	}
+	OAT.Event.attach("pathTravSchemesSeealso",'click',pathTravSchemesShow);
+	OAT.Event.attach("pathTravSchemesSeealsoLabel",'click',pathTravSchemesShow);
+
 	/* Custom predicates:
 	   add predicate */
 	OAT.Event.attach($("spongerPredsAdd"),"click",function() {
@@ -929,7 +944,7 @@ iSPARQL.Advanced = function () {
 			}
 			var l =$("pathTravSchemesPreds").options.length;
 			$("pathTravSchemesPreds").options[l] = new Option(pred,pred);
-		} else {
+		} else if (pred=='') {
 			alert("No predicate added.");
 		}
 	});
@@ -945,11 +960,11 @@ iSPARQL.Advanced = function () {
 	OAT.Event.attach($("spongerPredsDefault"),"click",function() {
 		if ($("pathTravSchemesPreds").options.length==0 || window.confirm("This will remove custom added predicates. Really restore?")) {
 			$("pathTravSchemesPreds").options.length = 0;
-			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','foaf:knows');
-			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','sioc:links_to');
-			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','rdfs:isDefinedBy');
-			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','rdfs:seeAlso');
-			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','owl:sameAs');
+			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','foaf:knows',true);
+			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','sioc:links_to',true);
+			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','rdfs:isDefinedBy',true);
+			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','rdfs:seeAlso',true);
+			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','owl:sameAs',true);
 		}
 	});
 
@@ -1016,6 +1031,7 @@ function set_dav_props(res){
 	}
 }
 
+/* return mime type from file extension */
 function get_mime_type(res){
   var ext = '';
   if (res.indexOf(('.')))
@@ -1026,6 +1042,10 @@ function get_mime_type(res){
     case 'isparql':
     case 'ldr':
 	    return 'text/xml';
+	case 'rdf':
+		return 'application/rdf+xml'
+	break;
+
 	  default:
 	    return 'text/plain';
 	}

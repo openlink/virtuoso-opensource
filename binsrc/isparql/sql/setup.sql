@@ -14,7 +14,7 @@ create procedure ISPARQL_GEN_LDR_CONTENT (inout content any)
     declare _user_service, _query varchar;
     declare full_query varchar;
 
-    xt := xtree_doc(content);
+    xt := xtree_doc(cast(content as varchar));
     _query := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:ISparqlDynamicPage/i:query)', xt), '_WIDE_', 'UTF-8');
     _user_service := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:service)', xt), '_WIDE_', 'UTF-8');
 
@@ -41,12 +41,12 @@ create trigger ISPARQL_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES referenci
     perms[8] := ascii('1');
     UPDATE WS.WS.SYS_DAV_RES SET RES_PERMS = perms WHERE RES_FULL_PATH = N.RES_FULL_PATH;
     content := ISPARQL_GEN_LDR_CONTENT (N.RES_CONTENT);
-    dbg_obj_print (content);
+    --dbg_obj_print (content);
     if (content is not null)
       {
         path := regexp_replace (N.RES_FULL_PATH, '\.isparql\x24', '.ldr');
 	rc := DAV_RES_UPLOAD_STRSES_INT (path, content, '', perms, N.RES_OWNER, N.RES_GROUP, null, null, 0);
-	dbg_obj_print (rc);
+	--dbg_obj_print (rc);
       }
   }
 };
@@ -75,7 +75,7 @@ create trigger ISPARQL_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referenci
       {
         path := regexp_replace (N.RES_FULL_PATH, '\.isparql\x24', '.ldr');
 	rc := DAV_RES_UPLOAD_STRSES_INT (path, content, '', perms, N.RES_OWNER, N.RES_GROUP, null, null, 0);
-	dbg_obj_print (rc);
+	--dbg_obj_print (rc);
       }
   }
 };
@@ -136,7 +136,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
      )
   {
     declare xt any;
-    xt := xtree_doc(content);
+    xt := xtree_doc(cast(content as varchar));
 
     declare _user_service, _default_graph_uri, _query varchar;
     declare full_query varchar;
@@ -213,7 +213,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
     declare _xml any;
     declare _xslt any;
     http_header ('Content-Type: text/html\r\n');
-    _xml := xtree_doc(content);
+    _xml := xtree_doc(cast(content as varchar));
     _xslt := xpath_eval('string(processing-instruction()[local-name() = \'xml-stylesheet\'])',_xml);
     _xslt := cast(regexp_substr('href="(.*)"',_xslt,1) as varchar);
     _xslt := 'http://' || HTTP_GET_HOST() || _xslt;

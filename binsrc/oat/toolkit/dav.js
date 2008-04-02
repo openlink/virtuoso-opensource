@@ -473,7 +473,7 @@ OAT.WebDav = {
 			}
 			callback();
 		}
-		OAT.AJAX.PROPFIND(escape(directory),data,ref,o);	
+		OAT.AJAX.PROPFIND(directory,data,ref,o);	
 	},
 	
 	parse:function(directory,xml) { /* parse dav response: update tree, add data to cache */
@@ -779,7 +779,7 @@ OAT.WebDav = {
 		/* name */
 		var href = OAT.Xml.getElementsByLocalName(node,"href")[0];
 		result.fullName = OAT.Xml.textValue(href);
-		result.fullName = unescape(result.fullName);
+		result.fullName = decodeURIComponent(result.fullName);
 		result.name = result.fullName.match(/([^\/]+)\/?$/)[1];
 
 		/* dates */
@@ -913,11 +913,11 @@ OAT.WebDav = {
 					'<D:propertyupdate xmlns:D="DAV:"><D:set><D:prop>'+
 					'<virtpermissions xmlns="http://www.openlinksw.com/virtuoso/webdav/1.0/">'+newPermissions+'</virtpermissions>' +
 					'</D:prop></D:set></D:propertyupdate>';
-			OAT.AJAX.PROPPATCH(escape(url),patch,function(){
+			OAT.AJAX.PROPPATCH(url,patch,function(){
 				if (cb) { cb(); }
 			},o);
 		}
-		OAT.AJAX.PROPFIND(escape(url),data,ref,o);	
+		OAT.AJAX.PROPFIND(url,data,ref,o);	
 	},
 	
 /* backwards compatibility */	

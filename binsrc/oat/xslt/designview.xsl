@@ -30,7 +30,7 @@
 	<title>SQL Designer redirection...</title>
 	<script type="text/javascript">
 		function init() {
-			document.location = "/DAV/JS/designer/index.html?load="+encodeURIComponent(document.location);
+			document.location = "/DAV/JS/dbdesigner/index.html?load="+encodeURIComponent(document.location);
 		}
 	</script>
 </head>
