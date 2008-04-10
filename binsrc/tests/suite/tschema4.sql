@@ -246,3 +246,22 @@ ECHO BOTH ": BUG 9975: INFORMATION_SCHEMA.TABLES STATE=" $STATE " MESSAGE=" $MES
 select * from DB.INFORMATION_SCHEMA.CATALOGS;
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": INFORMATION_SCHEMA nonexsistent table STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+USE TESTS;
+
+DROP TABLE "TESTS"."phpBB".phpbb_users;
+CREATE TABLE "TESTS"."phpBB".phpbb_users (
+	user_id INTEGER IDENTITY NOT NULL,
+	user_permissions LONG VARCHAR NOT NULL,
+	PRIMARY KEY (user_id)
+);
+
+INSERT INTO "TESTS"."phpBB".phpbb_users (user_id, user_permissions) VALUES (1, '');
+ALTER TABLE "TESTS"."phpBB".phpbb_users ADD COLUMN user_openid VARCHAR NOT NULL default '';
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": alter table with column having default empty string STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+UPDATE "TESTS"."phpBB".phpbb_users SET user_permissions = '';
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": update of column from previous table layout STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+use DB;
