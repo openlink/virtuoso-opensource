@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="SEM-S-1">
+  <refmeta>
+    <refentrytitle>Linked Data</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Linked Data</refname>
+    <refpurpose>Getting Yourself a Linked Data URI in 5 minutes or less</refpurpose>
+  </refnamediv>
+  <refsect1 id="SEM-S-1a">
+    <title>Concept</title>
+    <para>
+      This demonstration guides you through the process of 
+      creating presence on the Semantic Web by creating a Linked Data URI. 
+      There are simple instructions:
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>
+        <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload">Downloading Virtuoso (Commercial or Open Source)</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://sourceforge.net/projects/virtuoso/">Download and install Virtuoso installation archives</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload">Download and install OpenLink Data Spaces (ODS) installation packages (VADs)</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSStart">Start with OpenLink Virtuoso</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSBuild">Build OpenLink Virtuoso</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSUsageWindows">OpenLink Virtuoso User Guide</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="http://wiki.usnet.private/dataspace/dav/wiki/Main/GettingYourselfaURIinLessThan5Minutes">Getting Yourself a URI in Less Than 5 Minutes</ulink>
+      </listitem>
+    </itemizedlist>
+  </refsect1>
+  <refsect1 id="VS-B-1c">
+     <title>Simple steps registering ODS user</title>
+     <orderedlist>
+       <listitem>Go to <ulink url="/ods">ODS Framework</ulink></listitem>
+       <listitem>Click Sign Up</listitem>
+       <listitem>Register either using the sample form or with existing OpenID</listitem>
+     </orderedlist>
+     <title>Import data to your ODS profile using the "Import" feature</title>
+     <orderedlist>
+        <listitem>Go to Edit profile</listitem>
+        <listitem>Open Import page</listitem>
+        <listitem>Enter FOAF Url or choose LDAP server</listitem>
+     </orderedlist>
+     <title>Import RSS Feed in your Dataspace</title>
+     <orderedlist>
+        <listitem>Go to Feed Manager</listitem>
+        <listitem>Click Admnistration</listitem>
+        <listitem>Click  Subscribe</listitem>
+     </orderedlist>
+     <para>
+        Now view the link: http://[host:port]/dataspace/person/[username]
+     </para>
+  </refsect1>
+</refentry>

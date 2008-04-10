@@ -456,6 +456,10 @@
         <group Title="SPARQL Query Language">
 					<example id="RQ-S-1" fspath="xml/rq_s_1"></example>
 	      </group>
+        <group Title="Linked Data">
+                                        <example id="SEM-S-1" fspath="semweb/sem_s_1"></example>
+              </group>
+
       </group>
     </subsection>
   </section>
