@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2008 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,8 @@ import com.hp.hpl.jena.graph.*;
 
 public class VirtResSetIter implements ExtendedIterator
 {
+//??Compare with 
+//??  return new ExtendedStatementIterator(new IteratorWrapper<Statement>(stit.asCollection().iterator()));
 
     protected ResultSet 	v_resultSet;
     protected Triple 		v_row;
