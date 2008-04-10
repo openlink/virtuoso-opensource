@@ -658,7 +658,7 @@ OAT.GridRow = function(grid,number) {
 				} /* all rows */
 			} /* below */
 		} /* if shift */
-		
+		OAT.MSG.send(this,OAT.MSG.GRID_ROWCLICK,this);
 		self.selected ? self.deselect() : self.select();
 	}
 	
@@ -667,6 +667,9 @@ OAT.GridRow = function(grid,number) {
 	OAT.Event.attach(self.html,"click",click);
 	
 } /* GridRow */
+
+OAT.MSG.attach("*",OAT.MSG.GRID_CELLCLICK,function(source,message,event) {alert(source + message + event)});
+OAT.MSG.attach("*",OAT.MSG.GRID_ROWCLICK,function(source,message,event) {alert(source + message + event)});
 
 OAT.GridRowCell = function(params_,number) {
 	var self = this;
@@ -687,6 +690,10 @@ OAT.GridRowCell = function(params_,number) {
 	this.html.setAttribute("title",self.options.value);
 	OAT.Dom.append([self.html,self.container],[self.container,self.value]);
 	
+ 	OAT.Event.attach(this.html, "click", function() {
+ 		OAT.MSG.send(this,OAT.MSG.GRID_CELLCLICK,this);
+ 	});
+
 	switch (self.options.align) {
 		case OAT.GridData.ALIGN_LEFT: self.html.style.textAlign = "left"; break;
 		case OAT.GridData.ALIGN_CENTER: self.html.style.textAlign = "center"; break;

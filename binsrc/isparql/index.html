@@ -104,58 +104,6 @@
 								<div id="qbe_orderby_grid"></div>
 							</div>
 
-							<div class="controls">
-
-							<div id="opttoggler"><span id="togglerarrow">&#8681;</span> Sponger Options</div>
-
-							<fieldset class="derefOpts" id="derefOpts">
-								<legend>Data dereferencing options:</legend>
-								<table style="border-collapse: collapse;"><tr><td style="padding-right: 8px;">
-									<span class="title">Caching Schemes<br/>
-									<select id="cachingSchemesCtl" style="margin-bottom:5px;width: 100px;">
-										<option value="get::soft">Automatic</span></option>
-										<option value="get::replacing">None</option>
-										</select><br/>
-									<span class="title">Nodes Retrieved</span><br/>
-									<select id="nodesRetrievedCtl" style="margin-bottom:5px;width: 100px;">
-										<option value="">Default</option>
-										<option value="100">Max 100</option>
-										<option value="200">Max 200</option>
-										<option value="300">Max 300</option>
-										<option value="400">Max 400</option>
-										<option value="500">Max 500</option>
-									</select><br/>
-									<span class="title">Nodes Crawled</span><br/>
-									<select id="nodesCrawledCtl" style="width: 100px;">
-										<option value="">Default</option>
-										<option value="1">Max 1</option>
-										<option value="2">Max 2</option>
-										<option value="3">Max 3</option>
-										<option value="4">Max 4</option>
-										<option value="5">Max 5</option>
-										<option value="6">Max 6</option>
-										<option value="7">Max 7</option>
-										<option value="8">Max 8</option>
-										<option value="9">Max 9</option>
-										<option value="10">Max 10</option>
-									</select>
-									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;">
-									<span class="title">Path Traversal Schemes<span><br/>
-									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball" checked="checked"/> <label for="pathTravSchemesGraball" id="pathTravSchemesGraballLabel">Follow all Properties</label><br/>
-									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso" id="pathTravSchemesSeealsoLabel">Follow Properties</label><br/>
-									<input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
-									<input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/><br/> 
-									<input type="button" id="spongerPredsDefault" value="Restore default set"/>
-									</td><td>
-									<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 20px;height: 100px;width: 150px;">
-										<option value="foaf:knows" selected="selected">foaf:knows</option>
-										<option value="sioc:links_to" selected="selected">sioc:links_to</option>
-										<option value="rdfs:isDefinedBy" selected="selected">rdfs:isDefinedBy</option>
-										<option value="rdfs:seeAlso" selected="selected">rdfs:seeAlso</option>
-										<option value="owl:sameAs" selected="selected">owl:sameAs</option>
-									</select>
-								</td></tr></table>
-							</fieldset>
 
 							<div> <!-- options -->
 								<fieldset class="queryopts" id="queryopts">
@@ -183,15 +131,7 @@
 								</select>
 								</fieldset>
 							</div>
-
-							<fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
-								<legend>Endpoint</legend>
-								<div id="qbe_service_div"></div>
-							</fieldset>
-
 							<br style="clear:both;"/>
-
-							</div>
 
 							<div id="qbe_resizer_area" style=""></div>
 						</div> <!-- id="qbe_bottom"-->
@@ -365,30 +305,100 @@
 					</div>
 					<br/>
 					<div>
-						<label for="adv_sponge">Data dereferencing options:</label>
-					  <select id="adv_sponge">
-							<option value="">Use Local Data Only</option>
-							<option value="soft" selected="selected">Follow Links missing from Local Storage</option>
-							<option value="grab-all">Follow Remote Links (1 degree)</option>
-							<option value="grab-seealso">Follow Remote Links &amp; Their Related Links (&gt;= 2 degrees)</option>
-							<option value="grab-everything">Follow every Link</option>
-					  </select>
 					  <input type="button" value="Use Query & Close" id="return_btn">
-					</div>
-					<div>
-					  <label for="adv_service">Endpoint:</label>
-					  <div id="adv_service_div"></div>
 					</div>
 				  </form>
 					<div id="query_resizer_area"></div>
 				</div> <!-- query_div -->
 				<div id="res_area"></div>
 			  </div> <!-- page_query -->
+				<div class="controls" id="controls">
+
+							<div id="opttoggler"><span id="togglerarrow">&#8681;</span> Sponger Options</div>
+
+							<fieldset class="derefOpts" id="derefOpts">
+								<legend>Data dereferencing options:</legend>
+								<table style="border-collapse: collapse;"><tr><td style="padding-right: 8px;">
+									<span class="title">Caching Schemes<br/>
+									<select id="cachingSchemesCtl" style="margin-bottom:5px;width: 100px;">
+										<option value="">Default</span></option>
+										<option value="soft">Automatic</span></option>
+										<option value="replacing">None</option>
+									</select><br/>
+									<span class="title">Nodes Retrieved</span><br/>
+									<select id="nodesRetrievedCtl" style="margin-bottom:5px;width: 100px;">
+										<option value="">Default</option>
+										<option value="100">Max 100</option>
+										<option value="200">Max 200</option>
+										<option value="300">Max 300</option>
+										<option value="400">Max 400</option>
+										<option value="500">Max 500</option>
+									</select><br/>
+									<span class="title">Nodes Crawled</span><br/>
+									<select id="nodesCrawledCtl" style="width: 100px;">
+										<option value="">Default</option>
+										<option value="1">Max 1</option>
+										<option value="2">Max 2</option>
+										<option value="3">Max 3</option>
+										<option value="4">Max 4</option>
+										<option value="5">Max 5</option>
+										<option value="6">Max 6</option>
+										<option value="7">Max 7</option>
+										<option value="8">Max 8</option>
+										<option value="9">Max 9</option>
+										<option value="10">Max 10</option>
+									</select>
+									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;">
+									<span class="title">Path Traversal Schemes<span><br/>
+									<input type="radio" name="pathTraversalSchemes" value="" id="pathTravSchemesDefault" checked="checked"/> <label for="pathTravSchemesDefault" id="pathTravSchemesDefaultLabel">Default settings</label><br/>
+									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball"/> <label for="pathTravSchemesGraball" id="pathTravSchemesGraballLabel">Follow all Properties</label><br/>
+									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso" id="pathTravSchemesSeealsoLabel">Follow Properties</label><br/>
+									<input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
+									<input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/><br/> 
+									<input type="button" id="spongerPredsDefault" value="Restore default set"/>
+									</td><td>
+									<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 20px;height: 100px;width: 150px;">
+										<option value="foaf:knows" selected="selected">foaf:knows</option>
+										<option value="sioc:links_to" selected="selected">sioc:links_to</option>
+										<option value="rdfs:isDefinedBy" selected="selected">rdfs:isDefinedBy</option>
+										<option value="rdfs:seeAlso" selected="selected">rdfs:seeAlso</option>
+										<option value="owl:sameAs" selected="selected">owl:sameAs</option>
+									</select>
+								</td></tr></table>
+							</fieldset>
+
+							<fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
+								<legend>Endpoint</legend>
+								<div id="service_div"></div>
+							</fieldset>
+
+							<br style="clear:both;"/>
+				</div> <!-- opttoggler -->
 				<div class="main_col_page" id="page_results"></div>
 				<div id="foot">Copyright &copy; 2007 OpenLink Software, Inc</div>
 			</div> <!-- #content -->
 		</div><!-- #page_content -->
 	</div><!-- #page -->
+	<div id="pragmaAddProp" style="display:none;">
+		<h2>Add Predicate</h2>
+		<table style="width: 80%;">
+			<tr>
+				<td>Prefix</td>
+				<td><input type="text" id="pragmaAddPropPrefix"/></td>
+			</tr>
+			<tr>
+				<td>URI</td>
+				<td><input type="text" id="pragmaAddPropUri"/></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td style="text-align:center;">
+					<input type="button" value="Add" id="pragmaAddPropAdd" /> 
+					<input type="button" value="Cancel" id="pragmaAddPropCancel" />
+				</td>
+			</tr>
+		</table>
+	</div>
     <div id="windows" style="display:none;">
       <div id="goptions">
         <label for="username" class="align">Username</label>

@@ -393,13 +393,13 @@ iSPARQL.QBE = function () {
 		switch (save_type) {
 			case "rq":
 				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + self.service.input.value + '\n';
+				data += '#service:' + adv.service.input.value + '\n';
 			  data += self.QueryGenerate();
 			break;
 
 			case "xml":
 				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + self.service.input.value + '\n';
+				data += '#service:' + adv.service.input.value + '\n';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   			xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
@@ -412,7 +412,7 @@ iSPARQL.QBE = function () {
 			case "ldr":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
 				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + self.service.input.value + '\n';
+				data += '#service:' + adv.service.input.value + '\n';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n';
@@ -428,7 +428,7 @@ iSPARQL.QBE = function () {
   			xml += '</ISparqlDynamicPage>\n';
   			xml += self.svgsparql.toXML();
   			xml += '<should_sponge>'+$v('qbe_sponge')+'</should_sponge>\n';
-  			xml += '<service>'+self.service.input.value+'</service>\n';
+  				xml += '<service>'+adv.service.input.value+'</service>\n';
   			xml += '</iSPARQL>';
   			data = xml;
 			break;
@@ -807,7 +807,7 @@ iSPARQL.QBE = function () {
 			var oldIcon = "";
 			var oldFilter = "";
 			var params = {
-				service:self.service.input.value,
+				service:adv.service.input.value,
 				query:
 					'define get:soft "replacing" \n'+
 					'PREFIX owl: <http://www.w3.org/2002/07/owl#> \n' +
@@ -879,7 +879,7 @@ iSPARQL.QBE = function () {
 				}
 			}
 			var params = {
-				service:self.service.input.value,
+				service:adv.service.input.value,
 				query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
 'SELECT DISTINCT ?g ' + getFromQueryStr() + '\n' +
 ' WHERE { ?s a ?o .\n' +
@@ -1449,19 +1449,13 @@ iSPARQL.QBE = function () {
 	}
 	OAT.Dom.attach("qbe_browse_btn","click",fileRef);
 
-	this.service = new OAT.Combolist(defaultEndpoints,"/sparql");
-	self.service.img.src = "images/cl.gif";
-	self.service.img.width = "16";
-	self.service.img.height = "16";
-	$("qbe_service_div").appendChild(self.service.div);
-	
 	this.RunQuery = function() {
 		var maxrows = parseInt($v("qbe_maxrows"));
 		var p = {
 			query:self.QueryGenerate(),
 			defaultGraph:$v("qbe_graph"),
 			sponge:$v("qbe_sponge"),
-			endpoint:self.service.input.value,
+			endpoint:adv.service.input.value,
 			limit:maxrows
 		}
 		qe.execute(p);
@@ -1628,7 +1622,7 @@ iSPARQL.QBE = function () {
 
 				if (xml.getElementsByTagName("service").length)	{
 				  var service = xml.getElementsByTagName("service")[0];
-				  self.service.input.value = OAT.Xml.textValue(service);
+				  adv.service.input.value = OAT.Xml.textValue(service);
 				}
 				
 					for (var i=0;i<self.svgsparql.groups.length;i++)
@@ -1651,7 +1645,7 @@ iSPARQL.QBE = function () {
 
 			  var tmp = data.match(/#service:(.*)/i)
 			  if (tmp && tmp.length > 1) {
-				self.service.input.value = tmp[1].trim();
+				adv.service.input.value = tmp[1].trim();
 			  }
 			}
 

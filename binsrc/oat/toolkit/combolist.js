@@ -9,7 +9,6 @@
  */
 /*
 	var cl = new OAT.Combolist(optList,value)
-	cl.onchange = callback;
 	appendChild(cl.div)
 	
 	cl.clearOpts()
@@ -23,14 +22,14 @@ OAT.Combolist = function(optList,value,optObj) {
 	
 	this.options = {
 		name:"combo_list", /* name of input element */
-		imagePath:OAT.Preferences.imagePath
+		imagePath:OAT.Preferences.imagePath,
+		onchange:function() {}
 	}
 	
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.value = value;
 	this.div = OAT.Dom.create("div",{},"combo_list");
-	this.onchange = function() {};
 	
 	this.img = OAT.Dom.create("img",{cursor:"pointer"});
 	this.img.src = self.options.imagePath + "Combolist_select.gif";
@@ -42,7 +41,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200},"combo_list_list");
 	OAT.Dom.attach(this.input,"keyup",function(){
 		self.value = self.input.value; 
-		self.onchange(self.value);
+		self.options.onchange(self.value);
 	});
 	self.instant = new OAT.Instant(self.list);
 	
@@ -65,14 +64,16 @@ OAT.Combolist = function(optList,value,optObj) {
 		var ref = function(event) {
 			self.value = option.value;
 			self.input.value = option.value;
-			self.onchange(self.value);
+			self.options.onchange(self.value);
 			self.instant.hide();
 		}
 		OAT.Dom.attach(option,"click",ref);
 	}
 	
+	if (optList) {	
 	for (var i=0;i<optList.length;i++) {
 		this.addOption(optList[i]);
+	}
 	}
 	
 	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);

@@ -37,7 +37,7 @@ OAT.Preferences = {
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
 	endpointXmla:"/XMLA",
-	version:"31.03.2008",
+	version:"07.04.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -838,6 +838,8 @@ OAT.MSG = { /* messages */
 	DOCK_REMOVE:15,
 	SLB_OPENED:16,
 	SLB_CLOSED:17,
+	GRID_CELLCLICK:18,
+	GRID_ROWCLICK:19,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }

@@ -68,6 +68,23 @@ fieldset.endpoint {
 	width: 360px;
 }
 
+
+div#pragmaAddProp h2 {
+    margin-top: 0px;
+}
+
+div#pragmaAddProp {
+	position: absolute;
+	width: 20%;
+	left: 40%;
+	top: 25%;
+	padding: 20px 15px 20px 30px;
+	background-color: #eee;
+	border: 2px #ddd outset;
+	text-align: center;
+}
+
+
 div#opttoggler {
 	width: 180px;
 	position: relative;

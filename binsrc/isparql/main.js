@@ -859,21 +859,19 @@ iSPARQL.Advanced = function () {
 	}
 
 
-  this.service = new OAT.Combolist(defaultEndpoints,"/sparql");
+  this.service = new OAT.Combolist(defaultEndpoints,"/sparql",{name:"service"});
   self.service.img.src = "images/cl.gif";
   self.service.img.width = "16";
   self.service.img.height = "16";
-  $("adv_service_div").appendChild(self.service.div);
+  $("service_div").appendChild(self.service.div);
 	
 	/* toggle options */
 	OAT.Event.attach("opttoggler",'click', function() {
-		if ($("queryopts").style.display=="none") {
-			$("queryopts").style.display = "block";
+		if ($("endpoint").style.display == "none") {
 			$("endpoint").style.display = "block";
 			$("derefOpts").style.display = "block";
 			$("togglerarrow").innerHTML = "&#8681;";
 		} else {
-			$("queryopts").style.display = "none";
 			$("endpoint").style.display = "none";
 			$("derefOpts").style.display = "none";
 			$("togglerarrow").innerHTML = "&#8679;";
@@ -919,6 +917,7 @@ iSPARQL.Advanced = function () {
 		OAT.Dom.hide("spongerPredsDel");
 		OAT.Dom.hide("spongerPredsDefault");
 	}
+	OAT.Event.attach("pathTravSchemesDefault",'click',pathTravSchemesHide);
 	OAT.Event.attach("pathTravSchemesGraball",'click',pathTravSchemesHide);
 	OAT.Event.attach("pathTravSchemesGraballLabel",'click',pathTravSchemesHide);
 	pathTravSchemesHide(); /* hidden by default */
@@ -934,19 +933,32 @@ iSPARQL.Advanced = function () {
 	/* Custom predicates:
 	   add predicate */
 	OAT.Event.attach($("spongerPredsAdd"),"click",function() {
-		var pred = window.prompt("Type new predicate:");
-		if (pred) {
+		OAT.Dimmer.show($("pragmaAddProp"), {color:"#333", popup:false});
+		$("pragmaAddPropPrefix").focus();
+	});
+	OAT.Event.attach($("pragmaAddPropAdd"),"click",function() {
+		var prefix = $v("pragmaAddPropPrefix");
+		var uri = $v("pragmaAddPropUri");
+		if (!prefix.length || !uri.length) {
+			alert("Both prefix and URI must be entered.");
+		} else {
 			for (var i=0;i<$("pathTravSchemesPreds").options.length;i++) {
-				if ($("pathTravSchemesPreds").options[i].value==pred) {
-					alert("Predicate "+pred+" is already present in the list.");
+				if ($("pathTravSchemesPreds").options[i].text==prefix) {
+					alert("Prefix "+prefix+" already used");
 					return;
 				}	
 			}
 			var l =$("pathTravSchemesPreds").options.length;
-			$("pathTravSchemesPreds").options[l] = new Option(pred,pred);
-		} else if (pred=='') {
-			alert("No predicate added.");
+			$("pathTravSchemesPreds").options[l] = new Option(prefix,uri);
+			OAT.Dimmer.hide();
+			$("pragmaAddPropPrefix").value = '';
+			$("pragmaAddPropUri").value = '';
 		}
+	});
+	OAT.Event.attach($("pragmaAddPropCancel"),"click",function() {
+		OAT.Dimmer.hide();
+		$("pragmaAddPropPrefix").value = '';
+		$("pragmaAddPropUri").value = '';
 	});
 	/* remove selected predicate */
 	OAT.Event.attach($("spongerPredsDel"),"click",function() {

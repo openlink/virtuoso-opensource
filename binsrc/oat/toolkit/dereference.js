@@ -21,7 +21,7 @@ OAT.Dereference = {
 		}
 	},
 
-	clearPragmas:function(pragmaObj) {
+	clearPragmas:function() {
 		this.pragmas = {};
 	},
 
