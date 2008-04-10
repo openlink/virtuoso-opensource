@@ -963,6 +963,27 @@ hs_make_signature (setp_node_t * setp, dbe_table_t * tb)
 }
 
 
+void
+sqlg_unplace_ssl (sqlo_t * so, ST * tree)
+{
+  /* if the tree is placed and has ssls for subexps, set the ssl refs to zero so that the exp will be generated again.
+  * If a hash filler has an exp and the same exp occurs later, the ssl set by the hash filler must not be refd.  The exp must be re evaluated. */
+  df_elt_t * dfe;
+  int inx;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  if (ST_P(tree, COL_DOTTED))
+    return;
+  dfe = sqlo_df_elt (so, tree);
+  if (dfe && dfe->dfe_ssl)
+	dfe->dfe_ssl = NULL;
+  DO_BOX (ST *, exp, inx, (caddr_t*)tree)
+    {
+      sqlg_unplace_ssl (so, exp);
+    }
+  END_DO_BOX;
+}
+
 data_source_t *
 sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
 {
@@ -991,6 +1012,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
   DO_SET (df_elt_t *, out_dfe, &tb_dfe->_.table.hash_keys)
     {
       state_slot_t * ssl = scalar_exp_generate (so->so_sc, out_dfe->dfe_tree, &fill_code);
+      sqlg_unplace_ssl  (so, out_dfe->dfe_tree);
       NCONCF1 (setp->setp_keys, ssl);
       if (DFE_COLUMN != out_dfe->dfe_type)
 	shareable = 0; /* a hash inx w/ exps for keys is not shareable */
