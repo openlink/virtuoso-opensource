@@ -67,6 +67,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.theyworkforyou.com/api/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_TWFY', null, 'TWFY');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://socialgraph.apis.google.com/lookup\\?.*)',
             'URL', 'DB.DBA.RDF_LOAD_SOCIALGRAPH', null, 'SocialGraph');
 
@@ -821,6 +825,38 @@ try_profile:
 end_sp:
   return 1;
 };
+
+create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp, tmp2, api_key, img_id, hdr, exif any;
+  declare output_type varchar;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  tmp := sprintf_inverse (new_origin_uri, '%s://%s/api/%s?%s', 0);
+  if (length(tmp) > 3)
+  {
+    if (left(tmp[3], 7) <> 'output=')
+          url := sprintf('%s://%s/api/%s?output=%s&%s', tmp[0], tmp[1], tmp[2], 'xml', tmp[3]);
+    else
+    {
+          tmp := sprintf_inverse (new_origin_uri, '%s://%s/api/%s?%s&%s', 0);
+          url := sprintf('%s://%s/api/%s?output=%s&%s', tmp[0], tmp[1], tmp[2], 'xml', tmp[4]);
+    }
+  }
+  else
+    url := concat(new_origin_uri, '?output=xml');
+  tmp2 := http_get (url, hdr);
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  xd := xtree_doc (tmp2);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twfy2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -1666,6 +1702,10 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 
   -- this maybe is not need to be here, as it's a kind of content negotiation
   rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" and @type="application/rdf+xml" ]/@href', xt, 0);
+  if (not length (rdf_url_arr))
+    rdf_url_arr  := xpath_eval ('//head/link[ @rel="alternate" and @type="application/rdf+xml" ]/@href', xt, 0);
+  if (not length (rdf_url_arr))
+    rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" ]/@href', xt, 0);
   if (length (rdf_url_arr))
     {
       declare rdf_url_inx int;
@@ -1682,6 +1722,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	  load_msec := msec_time () - load_msec;
 	  download_size := length (content);
 	  DB.DBA.RDF_LOAD_RDFXML (content, new_origin_uri, coalesce (dest, graph_iri));
+      mdta := mdta + 1;
 	  RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	  rdf_url_inx := rdf_url_inx + 1;
 	  ret_flag := -1;
@@ -1698,6 +1739,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	{
 	    xd := serialize_to_UTF8_xml (x);
 	    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      mdta := mdta + 1;
 	}
     }
 
