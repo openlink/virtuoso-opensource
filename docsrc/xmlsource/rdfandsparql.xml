@@ -5769,6 +5769,14 @@ re-build MetaExtractor.class &amp; changes to CLASSPATH etc.</para>
 http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp .
 </para>
 </sect3>
+<sect3 id="virtuosospongerproxy"><title>Sponger Proxy service</title>
+<para>Sponger functionality is also exposed via Virtuoso's "/proxy/rdf/" endpoint, as an in-built
+REST style Web service available in any Virtuoso standard installation. This web service takes
+a target URL and either returns the content "as is" or tries to transform (by sponging) to RDF.
+Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.
+</para>
+<para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
+</sect3>
 </sect2>
 </sect1>
 </chapter>
