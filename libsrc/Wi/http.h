@@ -227,7 +227,7 @@ caddr_t int_client_ip (query_instance_t * qi, long dns_name);
 caddr_t ws_soap (ws_connection_t * ws, int soap_version, caddr_t soap_method);
 caddr_t ws_soap_http (ws_connection_t * ws);
 caddr_t ws_soap_sdl_services (ws_connection_t *ws);
-caddr_t ws_soap_wsdl_services (ws_connection_t *ws);
+caddr_t ws_soap_wsdl_services (ws_connection_t *ws, caddr_t doc);
 caddr_t ws_dav (ws_connection_t * ws, query_t * http_call);
 
 caddr_t http_read_chunked_content (dk_session_t *ses, caddr_t *err_ret, char *uri, int allow_ses);

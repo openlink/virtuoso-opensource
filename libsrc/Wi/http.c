@@ -2691,7 +2691,7 @@ ws_request (ws_connection_t * ws)
   int soap_version;
 #endif
   int deflt, inln;
-  int is_dsl, is_wdsl, is_vsmx, is_http_binding;
+  int is_dsl, is_wsdl, is_vsmx, is_http_binding;
   int is_physical_soap, previous_http_status = 0;
   int is_soap_mime_att = 0;
 
@@ -2708,7 +2708,7 @@ request_do_again:
   deflt = 0;
   inln = 0;
   is_dsl = 0;
-  is_wdsl = 0;
+  is_wsdl = 0;
   is_vsmx = 0;
   is_http_binding = 0;
   is_physical_soap = 0;
@@ -2896,7 +2896,8 @@ end_hack_block:
       (BOX_ELEMENTS (ws->ws_p_path) == 2 &&
       !strcmp (ws->ws_p_path[0], "SOAP") &&
       ((is_dsl = !strcmp (ws->ws_p_path[1], "services.xml")) ||
-       (is_wdsl = !strcmp (ws->ws_p_path[1], "services.wsdl")) ||
+       (is_wsdl = !strcmp (ws->ws_p_path[1], "services.wsdl")) ||
+       (is_wsdl = !strncmp (ws->ws_p_path[1], "services20.", 11)) || /* .xml, .rdf, .n3 goes here */
        (is_vsmx = !strcmp (ws->ws_p_path[1], "services.vsmx")))) ||
       (BOX_ELEMENTS (ws->ws_p_path) > 2 &&
        !strcmp (ws->ws_p_path[0], "SOAP") &&
@@ -2906,8 +2907,8 @@ end_hack_block:
       SET_SOAP_USER (ws);
       if (is_dsl)
 	err = ws_soap_sdl_services (ws);
-      else if (is_wdsl)
-	err = ws_soap_wsdl_services (ws);
+      else if (is_wsdl)
+	err = ws_soap_wsdl_services (ws, ws->ws_p_path[1]);
       else if (is_vsmx)
 	{
 	  deflt = 1;
@@ -6287,11 +6288,13 @@ caddr_t
 bif_http_auth (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
+  char *auth;
+
   if (!qi->qi_client->cli_ws)
     sqlr_new_error ("42000", "HT036", "The http_auth not effective outside an VSP context");
 
-  return (box_dv_short_string (ws_header_field (qi->qi_client->cli_ws->ws_lines,
-					       "Authorization:","")));
+  auth = ws_get_packed_hf (qi->qi_client->cli_ws, "Authorization:", "");
+  return auth ? auth : box_dv_short_string ("");
 }
 
 caddr_t

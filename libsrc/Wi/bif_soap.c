@@ -274,6 +274,18 @@ void soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * 
        ((caddr_t **)(x))[n + 1] : \
        NULL)
 
+static void
+ses_sprintf (dk_session_t *ses, const char *fmt, ...)
+{
+  char buf[PAGE_SZ]; 
+  int len;
+  va_list list;
+  va_start (list, fmt);
+  len = vsnprintf (buf, sizeof (buf), fmt, list);
+  va_end (list);
+  SES_PRINT (ses, buf);
+}
+
 static caddr_t
 ws_uddi_error (dk_session_t * ses, char *state, char *message, int soap_version)
 {
@@ -5009,7 +5021,7 @@ soap_call_write_params (soap_call_ctx_t * ctx,
 {
   caddr_t * params =  (0 == header  ? ctx->sc_params : ctx->sc_header_params);
   caddr_t param_name, param_value;
-  dtp_t param_name_dtp;
+  dtp_t param_name_dtp, param_value_dtp;
   int i;
 
   for (i = 0; params && BOX_ELEMENTS (params) > 0 && i < (int) (BOX_ELEMENTS (params) - 1); i+= 2)
@@ -5017,6 +5029,7 @@ soap_call_write_params (soap_call_ctx_t * ctx,
       param_name = params[i];
       param_value = params[i + 1];
       param_name_dtp = DV_TYPE_OF (param_name);
+      param_value_dtp = DV_TYPE_OF (param_value);
 
       if (!param_name)
 	{
@@ -5077,7 +5090,7 @@ soap_call_write_params (soap_call_ctx_t * ctx,
 						  ctx->sc_soap_out,
 						  param_name,
 						  ctx->sc_ser_ctx->soap_version,
-						  NULL, 0, ctx->sc_ser_ctx)) && ctx->sc_ser_ctx->literal)
+						  NULL, param_value_dtp, ctx->sc_ser_ctx)) && ctx->sc_ser_ctx->literal)
 	return (HC_RET_ERR_ABORT);
     }
   return (HC_RET_OK);
@@ -6550,12 +6563,13 @@ soap_wsdl_find_schemas (dk_set_t * ns_set, dk_set_t * types_set, dk_set_t * proc
 static void
 soap_print_dl_schema (dk_session_t * out, dk_set_t * proc_set,
                        char *qpref, size_t pref_len, caddr_t qual, int sch_elm_qual,
-		       soap_ctx_t *ctx, dk_set_t * types_set, dk_set_t * ns_set, char * tns)
+		       soap_ctx_t *ctx, dk_set_t * types_set, dk_set_t * ns_set, char * tns,
+		       int dl_flag, int type_mask)
 {
   char * operation_name, q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
   int out_pars = 0;
 
-  if (ctx->def_enc != (SOAP_MSG_LITERALW | SOAP_MSG_LITERAL) || !tns)
+  if (dl_flag != (SOAP_MSG_LITERALW | SOAP_MSG_LITERAL) || !tns)
     return;
 
   /* Find in procedures what types are referenced */
@@ -6572,9 +6586,7 @@ soap_print_dl_schema (dk_session_t * out, dk_set_t * proc_set,
 	  operation_name = n;
 	}
 
-      if ((SOAP_MSG_LITERAL & proc->qr_proc_place) ||
-	  (SOAP_MSG_LITERALW & proc->qr_proc_place) ||
-	  (SOAP_MSG_HTTP & proc->qr_proc_place))
+      if (type_mask & proc->qr_proc_place)
 	continue;
       /* input message */
       SES_PRINT (out, "\t<element name=\""); SES_PRINT (out, operation_name); SES_PRINT (out, "\" >\n");
@@ -6677,6 +6689,8 @@ soap_print_dl_schema (dk_session_t * out, dk_set_t * proc_set,
       END_DO_SET ();
       /* return; special case */
       custom_type = proc->qr_proc_alt_ret_type;
+      if (proc->qr_proc_place & SOAP_MSG_HTTP)
+	custom_type = NULL;
 
       if (custom_type && DV_STRINGP(custom_type)
 	  && !stricmp(custom_type, SOAP_VOID_TYPE)
@@ -6729,7 +6743,8 @@ skip_out_pars:
 
 static int
 soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t pref_len,
-    caddr_t qual, dk_set_t * ns_set, dk_set_t * types_set, int sch_elm_qual, soap_ctx_t *ctx)
+    caddr_t qual, dk_set_t * ns_set, dk_set_t * types_set, int sch_elm_qual, soap_ctx_t *ctx, 
+    char * wsdl_ns, int dl_flag, int type_mask)
 {
   int rc = 0;
   char *type;
@@ -6739,10 +6754,7 @@ soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t 
 
   DO_SET (soap_wsdl_ns_t *, elm, ns_set)
     {
-      SES_PRINT (out, "\t<schema targetNamespace=\"");
-      SES_PRINT (out, elm->ns_uri);
-      SES_PRINT (out, "\"\n"
-	  "\t xmlns=\"" W3C_2001_TYPE_SCHEMA_XSD "\"\n");
+      ses_sprintf (out, "\t<schema targetNamespace=\"%s\"\n\t xmlns=\"%s\"\n", elm->ns_uri, W3C_2001_TYPE_SCHEMA_XSD);
 #if 0
       DO_SET (caddr_t, import, &(elm->ns_imports))
 	{
@@ -6750,7 +6762,7 @@ soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t 
 	}
       END_DO_SET ();
 #endif
-      SES_PRINT (out, "\t xmlns:wsdl=\"" SOAP_WSDL_SCHEMA11 "\"");
+      ses_sprintf (out, "\t xmlns:wsdl=\"%s\"", wsdl_ns ? wsdl_ns :  SOAP_WSDL_SCHEMA11);
       if (sch_elm_qual)
 	SES_PRINT (out, " elementFormDefault=\"qualified\"");
       SES_PRINT (out, " >\n");
@@ -6810,9 +6822,8 @@ soap_print_schema (dk_session_t * out, dk_set_t * proc_set, char *qpref, size_t 
       END_DO_SET ();
 
       if (def_ns && !strcmp (def_ns, elm->ns_uri))
-	soap_print_dl_schema (out, proc_set,
-	    qpref, pref_len, qual, sch_elm_qual,
-	    ctx, types_set, ns_set, elm->ns_uri);
+	soap_print_dl_schema (out, proc_set, qpref, pref_len, qual, sch_elm_qual, ctx, 
+	    types_set, ns_set, elm->ns_uri, dl_flag, type_mask);
 
 
       SES_PRINT (out, "\t</schema>\n");
@@ -7289,7 +7300,8 @@ soap_wsdl_services (dk_session_t *out, query_t *module, caddr_t qual, const char
     SES_PRINT (out, "Virtuoso");
   SES_PRINT (out, "\" xmlns=\"" SOAP_WSDL_SCHEMA11 "\">\n");
 
-  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx);
+  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx, NULL, 
+      ctx.def_enc, (SOAP_MSG_LITERAL|SOAP_MSG_LITERALW|SOAP_MSG_HTTP));
 
   /* messages */
   DO_SET (query_t *, proc, &proc_set)
@@ -7885,15 +7897,396 @@ output_message_end:
   return NULL;
 }
 
+static void 
+soap_wsdl20_rpc_sig (dk_session_t *out, query_t *proc)
+{
+  int ix = 0;
+  caddr_t custom_type;
+  sql_type_t sqt;
+  DO_SET (state_slot_t *, ssl, &proc->qr_parms)
+    {
+      if (IS_SOAP_SERVICE_PARAM(ssl->ssl_name) || IS_SOAP_MSG_SPECIAL(proc->qr_parm_place[ix]))
+	continue;
+      SES_PRINT (out, ssl->ssl_name);
+      switch (ssl->ssl_type)
+	{
+          case SSL_REF_PARAMETER_OUT:
+	      SES_PRINT (out, " #out ");
+	      break;
+          case SSL_REF_PARAMETER:
+	      SES_PRINT (out, " #in-out ");
+	      break;
+	  default:
+	      SES_PRINT (out, " #in ");
+	}
+      ix++;
+    }
+  END_DO_SET ();
+  custom_type = proc->qr_proc_alt_ret_type;
+  if (proc->qr_proc_place & SOAP_MSG_HTTP)
+    custom_type = NULL;
+
+  if (custom_type)
+    {
+      ddl_type_to_sqt (&sqt, (caddr_t *) proc->qr_proc_ret_type);
+      if (IS_UDT_XMLTYPE_SQT(&sqt))
+	custom_type = NULL;
+    }
+
+  /* if return is not a void one */
+  if (!custom_type || (DV_STRINGP(custom_type) && 0 != stricmp(custom_type, SOAP_VOID_TYPE)))
+    {
+      SOAP_PRINT (PART_NAME, out, proc, -1, "CallReturn");
+      SES_PRINT (out, " #return");
+    }
+}
 
 caddr_t
-ws_soap_wsdl_services (ws_connection_t *ws)
+soap_wsdl20_services (dk_session_t *out, query_t *module, caddr_t qual, const char * owner, caddr_t module_name,
+    caddr_t service_name, caddr_t service_schema_name, client_connection_t *cli, caddr_t url1, caddr_t * opts,
+    query_instance_t *qi)
+{
+  char qpref [MAX_QUAL_NAME_LEN], *prt_action, *element_form_default;
+  int inx, ix, mime_enabled = 0, dime_enabled = 0, async, make_plink;
+  size_t pref_len;
+  char * operation_name, q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
+  long literal, docs = 0, sch_elm_qual = 0;
+  dk_set_t ns_set = NULL, types_set = NULL;
+  char * def_ns = SOAP_TYPES_SCH (opts);
+  soap_ctx_t ctx;
+  /* positions in the tmp_set array */
+#define SOAP_INTERFACE 0
+#define HTTP_INTERFACE 1  
+  dk_set_t proc_set = NULL, http_set = NULL, *tmp_set[2];
+  caddr_t desc;
+  char * svc_name = service_name && service_name[0] ? service_name : "Virtuoso";
+  char url[PAGE_SZ];
+
+  tmp_set[0] = &proc_set;
+  tmp_set[1] = &http_set;
+  memset (&ctx, 0, sizeof (soap_ctx_t));
+  ctx.opts = opts;
+  ctx.qst = (caddr_t *)qi;
+
+  if (module_name)
+    snprintf (qpref, sizeof (qpref), "%s.%s.%s.", qual, owner, module_name);
+  else
+    snprintf (qpref, sizeof (qpref), "%s.%s.", qual, owner);
+  pref_len = strlen (qpref);
+
+  proc_set = get_granted_qrs (cli, module, qpref, pref_len);
+
+  element_form_default = SOAP_SCH_ELEM_QUAL (opts);
+  if (element_form_default && !strcmp (element_form_default, "qualified"))
+    sch_elm_qual = 1;
+  prt_action = SOAP_PRINT_ACTION (opts);
+  dime_enabled = soap_get_opt_flag (opts, SOAP_DIME_ENC);
+  mime_enabled = soap_get_opt_flag (opts, SOAP_MIME_ENC);
+  ctx.def_enc = SOAP_DEF_ENC(opts);
+  make_plink = soap_get_opt_flag (opts, SOAP_PLINK);
+
+  /* collect XSDs; qr_recompile inside if needed */
+  soap_wsdl_find_schemas (&ns_set, &types_set, &proc_set, &ctx, qpref, pref_len, qual);
+  ns_set = dk_set_nreverse (ns_set);
+
+  if (!soap_wsdl_ns_exists (&ns_set, def_ns))
+    soap_wsdl_ns_decl (&ns_set, def_ns, NULL);
+
+  if (strnicmp (url1, "http", 4))
+    strcpy_ck (url, "http:");
+  strcat_ck (url, url1);
+
+  /* header */
+  SES_PRINT (out,
+      "<?xml version=\"1.0\"?>\n"
+      "<description \n"
+      " xmlns:xsd=\""     W3C_2001_TYPE_SCHEMA_XSD "\" \n"
+      " xmlns:wsdl=\""    SOAP_WSDL_SCHEMA20 "\" \n"
+      " xmlns:wsoap='"    SOAP_BINDING_TYPE_SOAP "' \n"
+      " xmlns:whttp='"    SOAP_BINDING_TYPE_HTTP "' \n"
+      " xmlns:wrpc='"	  SOAP_WSDL20_RPC "' \n"
+      " xmlns:soapenc=\"" SOAP_ENC_SCHEMA11 "\" \n"
+      );
+
+  soap_wsdl_print_ns_decl (out, &ns_set, NULL);
+
+  ses_sprintf (out, " xmlns:dl=\"%s\" \n", SOAP_TYPES_SCH (opts));
+
+  ses_sprintf (out, 
+      " xmlns:tns=\"%s/services.wsdl\"\n targetNamespace=\"%s/services.wsdl\"\n xmlns=\"" SOAP_WSDL_SCHEMA20 "\">\n",
+      url, url);
+
+  /* we override the default encoding for virtual directory as wsdl2 also needs element declarations for RPC */
+  soap_print_schema (out, &proc_set, qpref, pref_len, qual, &ns_set, &types_set, sch_elm_qual, &ctx, 
+      SOAP_WSDL_SCHEMA20, SOAP_MSG_DOC, SOAP_MSG_DOC);
+
+  DO_SET (query_t *, proc, &proc_set)
+    {
+      if (qi && qi->qi_query && qi->qi_query == proc)
+	continue;
+      if (SOAP_MSG_HTTP & proc->qr_proc_place)
+	{
+	  dk_set_push (&http_set, (void *)proc);
+	  dk_set_delete (&proc_set, (void *)proc);
+	}
+    }
+  END_DO_SET ();
+
+  for (inx = SOAP_INTERFACE; inx <= HTTP_INTERFACE; inx ++)
+    {   
+      dk_set_t * set = tmp_set[inx]; 
+      /* interface */
+      if (!*set || !dk_set_length (*set))
+	continue;
+      ses_sprintf (out, "\t<interface name=\"%s%sInterface\">\n", svc_name, inx == HTTP_INTERFACE ? "Http" : "Soap");
+      DO_SET (query_t *, proc, set)
+	{
+	  char * custom_type = NULL;
+
+	  if (qi && qi->qi_query && qi->qi_query == proc)
+	    continue;
+	  if (!strnicmp (proc->qr_proc_name, qpref, pref_len))
+	    operation_name = proc->qr_proc_name + pref_len;
+	  else
+	    {
+	      sch_split_name (qual, proc->qr_proc_name, q, o, n);
+	      operation_name = n;
+	    }
+	  /* input message */
+	  literal = ((SOAP_MSG_LITERAL|SOAP_MSG_LITERALW) & proc->qr_proc_place);
+	  async = (int) unbox ((box_t) SOAP_OPT (ONEWAY, proc, -1, 0));
+
+	  /* Don't do old styles */
+	  ses_sprintf (out, "\t\t<operation name=\"%s\" pattern='" SOAP_WSDL20_PATTERN_INOUT "'", operation_name);
+	  if (!literal && !ctx.def_enc)
+	    {
+	      SES_PRINT (out, "\n\t\t\t style=\"" SOAP_WSDL20_RPC "\" ");
+	      SES_PRINT (out, "\n\t\t\t wrpc:signature=\"");
+	      soap_wsdl20_rpc_sig (out, proc);
+	      SES_PRINT (out, "\"");
+	    }
+	  SES_PRINT (out, ">\n");
+	  if (proc->qr_text && NULL != (desc = regexp_match_01 ("--##.*", proc->qr_text, 0)))
+	    {
+	      char * msg = desc + 4;
+	      SES_PRINT (out, "\t\t\t<documentation>");
+	      dks_esc_write (out, msg, strlen (msg),
+		  CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT | DKS_ESC_COMPAT_SOAP);
+	      SES_PRINT (out, "</documentation>\n");
+	      dk_free_tree (desc);
+	    }
+
+	  if (!literal)
+	    {
+	      ses_sprintf (out, "\t\t\t<input messageLabel='In' element=\"dl:%s\"/>\n", operation_name);
+	      docs++;
+	      goto input_message_end;
+	    }
+
+	  ix = 0;
+	  DO_SET (state_slot_t *, ssl, &proc->qr_parms)
+	    {
+	      if (ssl->ssl_type != SSL_REF_PARAMETER_OUT &&
+		  !IS_SOAP_SERVICE_PARAM(ssl->ssl_name) &&
+		  !IS_SOAP_MSG_SPECIAL(proc->qr_parm_place[ix]))
+		{
+		  caddr_t udt_custom_type = NULL;
+		  custom_type = proc->qr_parm_alt_types[ix];
+		  if (!custom_type && IS_COMPLEX_SQT (ssl->ssl_sqt))
+		    {
+		      udt_custom_type = custom_type =
+			  soap_sqt_to_soap_type (&(ssl->ssl_sqt), NULL, ctx.opts, operation_name, ssl->ssl_name);
+		    }
+
+		  if (!custom_type)
+		    SES_PRINT (out, "<!-- an input parameter of Doc/Literal encoded operation has no data type -->");
+		  else
+		    {
+		      SES_PRINT (out, "\t\t\t<input messageLabel='In' element=\"");
+		      wsdl_print_q_name (out, custom_type, &types_set);
+		      SES_PRINT (out, "\" />\n");
+		    }
+		  dk_free_box (udt_custom_type);
+		}
+	      ix++;
+	    }
+	  END_DO_SET ();
+input_message_end:
+
+	  /* output message */
+	  if (!literal)
+	    {
+	      ses_sprintf  (out, "\t\t\t<output messageLabel='Out' element=\"dl:%sResponse\" />\n", operation_name);
+	      goto output_message_end;
+	    }
+	  ix = 0;
+	  DO_SET (state_slot_t *, ssl, &proc->qr_parms)
+	    {
+	      if (IS_SSL_REF_PARAMETER (ssl->ssl_type) &&
+		  !IS_SOAP_SERVICE_PARAM(ssl->ssl_name) &&
+		  !IS_SOAP_MSG_SPECIAL (proc->qr_parm_place[ix]))
+		{
+		  caddr_t udt_custom_type = NULL;
+		  custom_type = proc->qr_parm_alt_types[ix];
+		  if (!custom_type && IS_COMPLEX_SQT (ssl->ssl_sqt))
+		    {
+		      udt_custom_type = custom_type =
+			  soap_sqt_to_soap_type (&(ssl->ssl_sqt), NULL, ctx.opts, operation_name, ssl->ssl_name);
+		    }
+		  if (!custom_type)
+		    SES_PRINT (out, "<!-- an output parameter of Doc/Literal encoded operation has no data type -->");
+		  else
+		    {
+		      SES_PRINT (out, "\t\t\t<output messageLabel='Out' element=\"");
+		      wsdl_print_q_name (out, custom_type, &types_set);
+		      SES_PRINT (out, "\" />\n");
+		    }
+		  dk_free_box (udt_custom_type);
+		}
+	      ix++;
+	    }
+	  END_DO_SET ();
+	  custom_type = proc->qr_proc_alt_ret_type;
+	  if (proc->qr_proc_place & SOAP_MSG_HTTP)
+	    custom_type = NULL;
+
+	  if (custom_type && DV_STRINGP(custom_type)
+	      && !stricmp(custom_type, SOAP_VOID_TYPE)
+	      && proc->qr_proc_ret_type)
+	    {
+	      sql_type_t sqt;
+	      ddl_type_to_sqt (&sqt, (caddr_t *) proc->qr_proc_ret_type);
+	      if (IS_UDT_XMLTYPE_SQT(&sqt))
+		custom_type = NULL;
+	    }
+
+	  /* if return is not a void one */
+	  if ((DV_STRINGP(custom_type) && 0 != stricmp(custom_type, SOAP_VOID_TYPE)))
+	    {
+	      SES_PRINT (out, "\t\t\t<output element='");
+	      wsdl_print_q_name (out, custom_type, &types_set);
+	      SES_PRINT (out, "' />\n");
+	    }
+output_message_end:
+	  SES_PRINT (out, "\t\t</operation>\n");
+	}
+      END_DO_SET () /* end interface */
+	  SES_PRINT (out, "\t</interface>\n");
+    }
+
+  /* bindings */
+  for (inx = 11; dk_set_length (proc_set) && inx <= 12; inx++)
+    {
+      int soap_major = inx/10, soap_minor = inx % 10;
+      ses_sprintf (out, "\t<binding name='%sSoap%dBinding' \n\t\tinterface='tns:%sSoapInterface' \n\t\ttype='%s' "
+	  "\n\t\twsoap:version='%d.%d' \n\t\twsoap:protocol='" SOAP_BINDING_PROTOCOL_HTTP "'>\n", 
+	  svc_name, inx, svc_name, SOAP_BINDING_TYPE_SOAP, soap_major, soap_minor, inx);
+      DO_SET (query_t *, proc, &proc_set)
+	{
+	  const char * soapAction;
+	  if (qi && qi->qi_query && qi->qi_query == proc)
+	    continue;
+
+	  if (!strnicmp (proc->qr_proc_name, qpref, pref_len))
+	    operation_name = proc->qr_proc_name + pref_len;
+	  else
+	    {
+	      sch_split_name (qual, proc->qr_proc_name, q, o, n);
+	      operation_name = n;
+	    }
+	  soapAction = SOAP_OPT (ACTION, proc, -1, NULL);
+	  if (!soapAction)
+	    {
+	      char buf[PAGE_SZ];
+	      buf[0] = '\x0';
+	      /* operation in soapAction option is !'empty' && !'only' */
+	      if ((prt_action && tolower (prt_action[0]) != 'e' && tolower (prt_action[0]) != 'o') || !prt_action)
+		snprintf (buf, sizeof (buf), service_schema_name);
+	      /* operation in soapAction option is 'yes' || 'only' */
+	      if ((prt_action && (tolower (prt_action[0]) == 'y' || tolower (prt_action[0]) == 'o')) || !prt_action)
+		{
+		  strcat_ck (buf, "#");
+		  strcat_ck (buf, operation_name);
+		}
+	      soapAction = buf;
+	    }
+	  ses_sprintf (out, "\t\t<operation ref='tns:%s' wsoap:soapAction='%s'/>\n", operation_name, soapAction);
+
+	}
+      END_DO_SET ();
+      SES_PRINT (out, "\t</binding>\n");
+    }
+
+  if (dk_set_length (http_set))
+    {
+      ses_sprintf (out, "\t<binding name='%sHttpBinding' \n\t\tinterface='tns:%sHttpInterface' "
+	  "\n\t\ttype='%s' whttp:methodDefault='GET'>\n", 
+	  svc_name, svc_name, SOAP_BINDING_TYPE_HTTP);
+      DO_SET (query_t *, proc, &http_set)
+	{
+	  if (qi && qi->qi_query && qi->qi_query == proc)
+	    continue;
+
+	  if (!strnicmp (proc->qr_proc_name, qpref, pref_len))
+	    operation_name = proc->qr_proc_name + pref_len;
+	  else
+	    {
+	      sch_split_name (qual, proc->qr_proc_name, q, o, n);
+	      operation_name = n;
+	    }
+	  ses_sprintf (out, "\t\t<operation ref='tns:%s' whttp:location='%s' />\n", operation_name, operation_name);
+
+	}
+      END_DO_SET ();
+      SES_PRINT (out, "\t</binding>\n");
+    }
+
+  /* services */
+  ses_sprintf (out, "\t<service name='%sService'>\n", svc_name);
+  if (dk_set_length (proc_set))
+    {
+      ses_sprintf (out, "\t\t<endpoint name='%sSoap11Endpoint' binding='tns:%sSoap11Binding' address='%s'/>\n", 
+	  svc_name, svc_name, url);
+      ses_sprintf (out, "\t\t<endpoint name='%sSoap12Endpoint' binding='tns:%sSoap12Binding' address='%s'/>\n", 
+	  svc_name, svc_name, url);
+    }
+  if (dk_set_length (http_set))
+    {
+      ses_sprintf (out, "\t\t<endpoint name='%sHttpEndpoint' binding='tns:%sHttpBinding' address='%s/Http'/>\n", 
+	  svc_name, svc_name, url);
+    }
+  SES_PRINT (out, "\t</service>\n");
+  SES_PRINT (out, "</description>\n");
+  soap_wsdl_schema_free (&ns_set, &types_set);
+  dk_set_free (proc_set);
+  dk_set_free (http_set);
+  return NULL;
+}
+
+
+caddr_t
+ws_soap_wsdl_services (ws_connection_t *ws, caddr_t doc)
 {
   caddr_t url = ws_soap_get_url (ws, 0);
-  caddr_t res = soap_wsdl_services (ws->ws_strses, NULL, ws_usr_qual (ws, 1), WS_SOAP_NAME (ws), NULL,
+  caddr_t res;
+  ws->ws_charset = CHARSET_UTF8;
+  if (doc && !strncmp (doc, "services20.", 11)) 
+    {
+      res = soap_wsdl20_services (ws->ws_strses, NULL, ws_usr_qual (ws, 1), WS_SOAP_NAME (ws), NULL,
+	  SERVICE_NAME (ws), SERVICE_SCHEMA_NAME (ws), ws->ws_cli, url, SOAP_OPTIONS(ws), NULL);
+      ws->ws_header = box_dv_short_string ("Cache-Control: no-cache, must-revalidate\r\n"
+	  "Pragma: no-cache\r\nExpires: -1\r\nContent-Type: application/wsdl+xml\r\n");
+      if (!strcmp (doc, "services20.rdf"))
+	ws->ws_xslt_url = box_dv_short_string ("http://local.virt/wsdl2rdf");
+    }
+  else
+    {
+      res = soap_wsdl_services (ws->ws_strses, NULL, ws_usr_qual (ws, 1), WS_SOAP_NAME (ws), NULL,
       SERVICE_NAME (ws), SERVICE_SCHEMA_NAME (ws), ws->ws_cli, url, SOAP_OPTIONS(ws), NULL);
+      ws->ws_header = box_dv_short_string ("Cache-Control: no-cache, must-revalidate\r\n"
+	  "Pragma: no-cache\r\nExpires: -1\r\nContent-Type: text/xml\r\n");
+    }
   dk_free_box (url);
-  ws->ws_header = box_dv_short_string ("Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1\r\nContent-Type: text/xml\r\n");
   return res;
 }
 
@@ -10963,7 +11356,7 @@ ws_soap_http (ws_connection_t * ws)
   /* Set context for SOAP serialization */
   memset (&ctx, 0, sizeof (soap_ctx_t));
   ctx.soap_version = atoi (ws_soap_get_opt (opts, "HttpSOAPVersion", "11"));
-  ctx.dks_esc_compat = ((soap_escapes && (soap_escapes[0] == 'y' || soap_escapes[0] == 'Y')) ?
+  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ?
       DKS_ESC_COMPAT_SOAP: 0);
   ctx.def_enc = SOAP_DEF_ENC(opts);
   ctx.opts = opts;

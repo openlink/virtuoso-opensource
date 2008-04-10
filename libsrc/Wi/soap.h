@@ -37,6 +37,19 @@
 #define SOAP_CONTENT_TYPE_200204 "http://schemas.xmlsoap.org/ws/2002/04/content-type/"
 #define SOAP_REF_SCH_200204	 "http://schemas.xmlsoap.org/ws/2002/04/reference/"
 
+/* WSDL 2.0 NS */
+
+#define SOAP_WSDL_SCHEMA20_NS 		"http://www.w3.org/ns/wsdl"
+
+#define SOAP_WSDL_SCHEMA20 		"http://www.w3.org/2006/01/wsdl" /* must be SOAP_WSDL_SCHEMA20_NS */
+#define SOAP_BINDING_TYPE_SOAP 		SOAP_WSDL_SCHEMA20_NS "/soap"
+#define SOAP_BINDING_TYPE_HTTP 		SOAP_WSDL_SCHEMA20_NS "/http"
+#define SOAP_11_VERSION 		"1.1"
+#define SOAP_BINDING_PROTOCOL_HTTP 	"http://www.w3.org/2006/01/soap%d/bindings/HTTP/"
+#define SOAP_WSDL20_PATTERN_INOUT  	SOAP_WSDL_SCHEMA20_NS "/in-out"
+#define SOAP_WSDL20_PATTERN_IN  	SOAP_WSDL_SCHEMA20_NS "/in"
+#define SOAP_WSDL20_RPC		  	SOAP_WSDL_SCHEMA20_NS "/rpc"
+
 /* SOAP 1.2 NS */
 #define SOAP_TYPE_SCHEMA12 	"http://www.w3.org/2003/05/soap-envelope"
 #define SOAP_ENC_SCHEMA12	"http://www.w3.org/2003/05/soap-encoding"
@@ -83,6 +96,7 @@ int is_in_urls (char **szURIs, const char *uri, int *idx);
 #define SOAP_MSG_LITERALW 	0x08   /* the method is document/literal encoded, like RPC one */
 #define SOAP_MSG_HTTP		0x10   /* the method have HTTP/GET/POST disposition */
 #define SOAP_MSG_FAULT		0x20   /* an parameter is exposed to soap:fault */
+#define SOAP_MSG_DOC		(SOAP_MSG_LITERAL|SOAP_MSG_LITERALW) /* document */
 
 #define IS_SOAP_RPCLIT(f)	((f)&SOAP_MSG_LITERALW)
 #define IS_SOAP_LIT(f)		((f)&SOAP_MSG_LITERAL && !((f)&SOAP_MSG_LITERALW))

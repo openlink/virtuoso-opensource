@@ -517,6 +517,7 @@ SQL_FILES		= \
 	$(srcdir)/wsdl_expand.xsl \
 	$(srcdir)/wsdl_parts.xsl \
 	$(srcdir)/wsdl_import.xsl \
+	$(srcdir)/wsdl2rdf.xsl \
 	$(srcdir)/xmlrpc_soap.xsl \
 	$(srcdir)/soap_xmlrpc.xsl \
 	$(srcdir)/soap12_router.xsl \
