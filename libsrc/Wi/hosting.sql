@@ -64,6 +64,7 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
    ,'SCRIPT_FILENAME',		http_root() || http_physical_path ()
    ,'QUERY_STRING',		http_request_get ('QUERY_STRING')
    ,'REMOTE_ADDR',		http_client_ip ()
+   ,'AUTHORIZATION',		http_auth ()
    ,'CONTENT_TYPE',		http_request_header_full (lines, 'Content-Type', '')
    ,'CONTENT_LENGTH',		http_request_header_full (lines, 'Content-Length', '0')
   );
