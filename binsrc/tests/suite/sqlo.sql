@@ -1021,4 +1021,15 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": error path of the max row in hash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+create procedure f (in x any)
+{
+  return x;
+};
+
+select count (*) from t1 a, t1 b where a.fi2 = b.fi2 and f(a.row_no) = f(b.row_no) and  f(b.row_no) < 1000  option (order, hash);
+ECHO BOTH $IF $EQU $LAST[1] 980 "PASSED" "*** FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": count with hash j with expression hash  key reused in after join test\m";
+
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
