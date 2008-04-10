@@ -44,8 +44,8 @@ extern "C" {
 #undef SQLConnect
 
 #define MAX_SERVER_LEN		70
-#define MAX_UID_LEN		32
-#define MAX_PWD_LEN		32
+#define MAX_UID_LEN		64
+#define MAX_PWD_LEN		64
 
 extern PTSTR _virtuoso_tags;
 extern BOOL virtodbc_LoginDlg (TKVList &props, HWND hWnd);

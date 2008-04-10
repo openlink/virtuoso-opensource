@@ -43,12 +43,12 @@
 #define AUTHMETHOD_PKCS12	3	/* PWDClearText == 3 */
 
 /* string lengths */
-#define MAX_DSN_LEN		32
+#define MAX_DSN_LEN		64
 #define MAX_COMMENT_LEN		255
 #define MAX_SERVER_LEN		70
-#define MAX_UID_LEN		32
-#define MAX_PWD_LEN		32
-#define MAX_DB_LEN		32
+#define MAX_UID_LEN		64
+#define MAX_PWD_LEN		64
+#define MAX_DB_LEN		64
 #define MAX_CS_LEN		100
 #define MAX_IL_LEN		32
 #define MAX_BOOL_LEN		10
