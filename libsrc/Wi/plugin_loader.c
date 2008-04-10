@@ -126,6 +126,16 @@ unit_version_t *msdtc_plugin_load (const char *plugin_dll_name, const char *plug
   return res;
 }
 
+unit_version_t *attach_plugin_load (const char *plugin_dll_name, const char *plugin_load_path)
+{
+  char *filename;
+  char *plugin_name = make_plugin_name (plugin_dll_name);
+  filename = (char *) dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_name) + 1);
+  snprintf (filename, strlen (plugin_load_path) + 1 + strlen (plugin_name) + 1, "%s/%s", plugin_load_path, plugin_name);
+  dk_free_box (plugin_name);
+  return uv_load_and_check_plugin (filename, NULL, NULL, NULL);
+}
+
 
 /*! \brief Type of function registered via plugin_add_type and used by
     plugin_load to invoke uv_connect of a plugin with proper appdata */
@@ -134,6 +144,15 @@ void plain_plugin_connect (const unit_version_t *plugin)
   UV_CALL (plugin, uv_connect, NULL);
 }
 
+
+/* the attach plugin is meant to attach shared libraries to the
+   executable without further actions or checks. This helps to
+   solve the situation where a (hosting) plugin depends on other
+   local shared libraries that wouldn't load if Virtuoso is running
+   on unix as root */
+void attach_plugin_connect (const unit_version_t *plugin)
+{
+}
 
 
 void plugin_loader_init()
@@ -146,6 +165,11 @@ void plugin_loader_init()
   if (-1 == plugin_add_type(MSDTC_PLUGIN_TYPE, msdtc_plugin_load, plain_plugin_connect))
     {
       log_error ("Could not add msdtc plugin type");
+      return;
+    }
+  if (-1 == plugin_add_type(ATTACH_PLUGIN_TYPE, attach_plugin_load, attach_plugin_connect))
+    {
+      log_error ("Could not add attach plugin type");
       return;
     }
 }

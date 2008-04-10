@@ -78,6 +78,13 @@ unit_version_t *uv_load_and_check_plugin(
       res->uv_load_error = strdup (DLL_ERROR());
       return res;
     }
+  if (NULL == function_name)
+    {
+      res = calloc (1, sizeof (unit_version_t));
+      res->uv_filename = strdup (fname);
+      res->uv_load_error = NULL;
+      return res;
+    }
   check_callback = (unit_check_t *) DLL_PROC (dll, function_name);
   if (NULL == check_callback)
     {

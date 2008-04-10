@@ -117,5 +117,6 @@ extern int plugin_load (
 /* list of supported plugins */
 #define PLAIN_PLUGIN_TYPE	"plain"
 #define MSDTC_PLUGIN_TYPE	"msdtc"
+#define ATTACH_PLUGIN_TYPE	"attach"
 
 #endif
