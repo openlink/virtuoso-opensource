@@ -59,7 +59,7 @@
 <table class="tableentry">
 <tr>
   <td>Enter the target WSDL URL</td>
-  <td><input type="text" name="wsdl" value="http://www.xmethods.net/sd/2001/TemperatureService.wsdl" size="65"></td>
+  <td><input type="text" name="wsdl" value="http://soap.amazon.com/schemas2/AmazonWebServices.wsdl" size="65"></td>
 </tr>
 <!--tr>
   <td>Clear cache</td>
