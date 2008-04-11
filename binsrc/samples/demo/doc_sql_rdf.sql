@@ -151,12 +151,15 @@ from DB.DBA.document_search as docs
 where (^{collections.}^.COL_ID = ^{resources.}^.RES_COL)
 where (^{resources.}^.RES_FULL_PATH LIKE  '/DAV/VAD/doc/html/%')
 where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties.}^.PROP_PARENT_ID = ^{collections.}^.COL_ID))
+where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/doc/html/%')
 {
         create virtrdf:Doc as graph iri ("http://^{URIQADefaultHost}^/Doc") option (exclusive)
         {
                 doc:File (resources.RES_ID, resources.RES_NAME)
                         a doc:File
                                 as virtrdf:File-RES_ID ;
+                        a foaf:Document
+                                as virtrdf:siocFile-RES_ID;
                         a bibo:Article
                                 as virtrdf:BiboFile-RES_ID ;
                         bibo:identifier resources.RES_NAME
@@ -164,11 +167,15 @@ where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties
                         bibo:author users.U_NAME
                                 where (^{resources.}^.RES_OWNER = ^{users.}^.U_ID)
                                 as virtrdf:File-RES_OWNER ;
-                        doc:collection doc:Collection(resources.RES_COL, collections.COL_NAME)
+                        doc:belongs_to_collection doc:Collection(resources.RES_COL, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
                                 as virtrdf:File-RES_COL ;
                         doc:content resources.RES_CONTENT
                                 as virtrdf:File-RES_CONTENT ;
+                        sioc:content resources.RES_CONTENT
+                                as virtrdf:siocFile-RES_CONTENT ;
+                        sioc:description resources.RES_NAME
+                                as virtrdf:siocFile-RES_NAME ;
                         doc:type resources.RES_TYPE
                                 as virtrdf:File-RES_TYPE ;
                         bibo:presentedAt resources.RES_CR_TIME
@@ -181,13 +188,15 @@ where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties
 
                 doc:DocPath(resources.RES_FULL_PATH)
                         a doc:DocPath
-                                as virtrdf:DocPath-RES_FULL_PATH .
+                                as virtrdf:DocPath2-RES_FULL_PATH .
 
                 doc:Collection (collections.COL_ID, collections.COL_NAME)
                         a doc:Collection
                                 as virtrdf:Collection-COL_ID ;
                         a bibo:Collection
                                 as virtrdf:BiboCollection-COL_ID ;
+                        a sioc:Container
+                                as virtrdf:siocColection-COL_ID ;
                         bibo:identifier collections.COL_NAME
                                 as virtrdf:Collection-COL_NAME ;
                         bibo:author users.U_NAME
@@ -195,6 +204,12 @@ where ((^{properties.}^.PROP_PARENT_ID = ^{resources.}^.RES_ID) or (^{properties
                                 as virtrdf:Collection-COL_OWNER ;
                         rdfs:isDefinedBy doc:collection_iri (collections.COL_ID) ;
                         rdfs:isDefinedBy doc:Collection (collections.COL_ID, collections.COL_NAME) .
+
+                doc:Collection (collections.COL_ID, collections.COL_NAME)
+                        sioc:is_collection_of
+                        doc:File(resources.RES_ID, resources.RES_NAME)
+                        where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
+                        as virtrdf:siocCollection-COL_ID2 .
 
                 doc:Property (properties.PROP_NAME, properties.PROP_ID)
                         a doc:Property
