@@ -2267,6 +2267,12 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
       http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
       http ('> ', ses);
     }
+  else if (__tag of varbinary =  __tag (obj))
+    {
+      http ('"', ses);
+      http_escape (obj, 11, ses, 0, 0);
+      http ('" ', ses);
+    }
   else
     {
       http ('"', ses);
@@ -2561,6 +2567,12 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
         {
           http ('>', ses);
 	  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
+          http_value (obj, 0, ses);
+          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+        }
+      else if (__tag of varbinary = __tag (obj))
+        {
+          http ('>', ses);
           http_value (obj, 0, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
@@ -7376,6 +7388,11 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             {
               http ('"type": "literal", "value": "', ses);
               http_escape (val, 11, ses, 1, 1);
+            }
+          else if (__tag of varbinary = __tag (val))
+            {
+              http ('"type": "literal", "value": "', ses);
+              http_escape (val, 11, ses, 0, 0);
             }
           else if (185 = __tag (val))
             {

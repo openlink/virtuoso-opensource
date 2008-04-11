@@ -619,7 +619,7 @@ bif_double_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   return 0;
 }
 
-static caddr_t
+caddr_t
 bif_varchar_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
