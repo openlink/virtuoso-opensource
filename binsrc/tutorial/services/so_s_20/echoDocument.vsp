@@ -50,7 +50,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/compound1','White Mesa (http://www.whitemesa.net/interop/r3/compound1)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/Compound1.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/Compound1.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/compound1.wsdl','SQLData (http://www.soapclient.com/interop/compound1.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/compound1.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/compound1.wsdl)')

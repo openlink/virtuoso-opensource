@@ -44,7 +44,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/import2','White Mesa (http://www.whitemesa.net/interop/r3/import2)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/import2.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/import2.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/Import2.wsdl','SQLData (http://www.soapclient.com/interop/Import2.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/import2.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/import2.wsdl)')
@@ -59,7 +58,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/import3','White Mesa (http://www.whitemesa.net/interop/r3/import3)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/import3.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/import3.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/Import3.wsdl','SQLData (http://www.soapclient.com/interop/Import3.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/import3.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/import3.wsdl)')
@@ -74,7 +72,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/rpcEnc','White Mesa (http://www.whitemesa.net/interop/r3/rpcEnc)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestRpcEnc.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestRpcEnc.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/RpcEnc.wsdl','SQLData (http://www.soapclient.com/interop/RpcEnc.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.wsdl)')

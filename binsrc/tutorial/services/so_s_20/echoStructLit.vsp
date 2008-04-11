@@ -42,7 +42,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/doclitparam','White Mesa (http://www.whitemesa.net/interop/r3/doclitparam)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestDocLitParameters.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestDocLitParameters.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/DocLitParam.wsdl','SQLData (http://www.soapclient.com/interop/DocLitParam.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/InteropTestDocLitParameters.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/InteropTestDocLitParameters.wsdl)')
@@ -55,7 +54,6 @@
        opl2 := concat ('OpenLink Software (', opl1, ')');
        urls := vector (
 	       vector (opl1, opl2),
-	       vector ('http://www.whitemesa.net/interop/r3/doclit','White Mesa (http://www.whitemesa.net/interop/r3/doclit)'),
 	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestDocLit.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestDocLit.wsdl)'),
 	       vector ('http://www.soapclient.com/interop/DocLit.wsdl','SQLData (http://www.soapclient.com/interop/DocLit.wsdl)'),
 	       vector ('http://mssoapinterop.org/asmx/wsdl/InteropTestDocLit.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/InteropTestDocLit.wsdl)')
