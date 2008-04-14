@@ -36,10 +36,18 @@
 	</xsl:template>
 
 	<xsl:template name="form"> <!-- basic form properties -->
-		<xsl:for-each select="//connection">
-			var nocred = <xsl:value-of select="@nocred" />;
-			var showajax = <xsl:value-of select="@showajax" />;
+		<xsl:variable name="nocred">
+			<xsl:for-each select="//connection|/form">
+				<xsl:value-of select="@nocred" />
 		</xsl:for-each>
+		</xsl:variable>
+		var nocred = "<xsl:value-of select="$nocred" />";
+		<xsl:variable name="showajax">
+			<xsl:for-each select="//connection|/form">
+				<xsl:value-of select="@showajax" />
+			</xsl:for-each>
+		</xsl:variable>
+		var showajax = "<xsl:value-of select="$showajax" />";
 	</xsl:template>
 	
     <xsl:template match = "/*"> <!-- see http://www.dpawson.co.uk/xsl/sect2/root.html for explanation -->

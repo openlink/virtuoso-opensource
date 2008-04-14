@@ -37,7 +37,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	this.input.type = "text";
 	this.input.name = self.options.name;
 	this.input.value = value;
-	
+
 	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200},"combo_list_list");
 	OAT.Dom.attach(this.input,"keyup",function(){
 		self.value = self.input.value; 
@@ -69,11 +69,11 @@ OAT.Combolist = function(optList,value,optObj) {
 		}
 		OAT.Dom.attach(option,"click",ref);
 	}
-	
+
 	if (optList) {	
-	for (var i=0;i<optList.length;i++) {
-		this.addOption(optList[i]);
-	}
+		for (var i=0;i<optList.length;i++) {
+			this.addOption(optList[i]);
+		}
 	}
 	
 	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);

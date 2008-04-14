@@ -668,9 +668,6 @@ OAT.GridRow = function(grid,number) {
 	
 } /* GridRow */
 
-OAT.MSG.attach("*",OAT.MSG.GRID_CELLCLICK,function(source,message,event) {alert(source + message + event)});
-OAT.MSG.attach("*",OAT.MSG.GRID_ROWCLICK,function(source,message,event) {alert(source + message + event)});
-
 OAT.GridRowCell = function(params_,number) {
 	var self = this;
 	
