@@ -32,9 +32,15 @@ endif
 
 
 SESAME_SRC= \
+	virtuoso_driver/NamespaceResult.java \
+	virtuoso_driver/VirtuosoBooleanQuery.java \
+	virtuoso_driver/VirtuosoGraphQuery.java \
+	virtuoso_driver/VirtuosoQuery.java \
+	virtuoso_driver/VirtuosoRepositoryConnection.java \
+	virtuoso_driver/VirtuosoRepository.java \
+	virtuoso_driver/VirtuosoTupleQuery.java
 
-SESAME_CLASSPATH=lib/sesame-slf4j-api-1.3.0.jar:lib/openrdf-sesame-2.0.1-onej
-ar.jar:lib/sesame-slf4j-jdk14-1.3.0.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+SESAME_CLASSPATH=lib/sesame-slf4j-api-1.3.0.jar:lib/openrdf-sesame-2.0.1-onejar.jar:lib/sesame-slf4j-jdk14-1.3.0.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am: lib virt_sesame2.jar
 
