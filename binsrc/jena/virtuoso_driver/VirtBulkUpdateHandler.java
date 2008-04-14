@@ -43,8 +43,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     public void add( Triple [] triples ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
-	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		boolean autoCommit = _graph.getConnection().getAutoCommit();
 	        if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
 
@@ -63,8 +63,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
     @Override
     protected void add(List triples, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
-	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		boolean autoCommit = _graph.getConnection().getAutoCommit();
 	        if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
 		for (Iterator i = triples.iterator(); i.hasNext(); ) {
@@ -86,8 +86,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     public void delete( Triple [] triples ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
-	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		boolean autoCommit = _graph.getConnection().getAutoCommit();
 		if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
         	for (int i = 0; i < triples.length; i += 1) 
@@ -105,8 +105,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     protected void delete( List triples, boolean notify ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
-	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		boolean autoCommit = _graph.getConnection().getAutoCommit();
 		if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
         	for (int i = 0; i < triples.size(); i += 1) 
