@@ -2350,6 +2350,7 @@ AC_CONFIG_FILES([
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile
 	binsrc/sesame/Makefile
+	binsrc/sesame2/Makefile
 	binsrc/sqldoc/Makefile
 	binsrc/sync/Makefile
 	binsrc/tests/biftest/Makefile
