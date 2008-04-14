@@ -54,7 +54,7 @@ OAT.Win = function(optObj) {
 	self.moveTo = function(x,y) {
 		self.dom.container.style.left = x+"px";
 		self.dom.container.style.top = y+"px";
-	} 
+	}
 	self.innerResizeTo = function(w,h) { }
 	self.outerResizeTo = function(w,h) { }
 	self.show = function() { 
@@ -98,7 +98,7 @@ OAT.Win = function(optObj) {
 	if (self.dom.title) {
 		OAT.Drag.create(self.dom.title,self.dom.container);
 	}
-	
+
 	/* size & title & position */
 	self.moveTo(self.options.x,self.options.y);
 	if (self.options.outerWidth || self.options.outerHeight) { self.outerResizeTo(self.options.outerWidth,self.options.outerHeight); }

@@ -183,11 +183,22 @@ var QueryExec = function(optObj) {
 	
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
-		paramsObj["query"] = opts.query;
 		paramsObj["format"] = "application/rdf+xml";
 		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
 		if (opts.limit) { paramsObj["maxrows"] = opts.limit; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
+
+		var pragmas = [];
+		if (opts.pragmas) { 
+			for (var i=0;i<opts.pragmas.length;i++) {
+				var pragma = opts.pragmas[i];
+				var name = pragma[0];
+				var values = pragma[1];
+				for(var j=0;j<values.length;j++) { pragmas.push(name+" "+values[j]); }
+			}
+		}
+
+		paramsObj["query"] = pragmas.join('\n') + '\n' + opts.query;
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -319,14 +330,14 @@ var QueryExec = function(optObj) {
 		
 		if (self.options.executeCallback) { self.options.executeCallback(opts.query); }
 		
-		OAT.Dom.clear(self.dom.query);
-		OAT.Dom.clear(self.dom.request);
-
 		var r = decodeURIComponent(request);
 		var parts = r.split("&");
 		var req = OAT.Dom.create("pre");
+		OAT.Dom.append([self.dom.request,req]);
 
 		for (var i=0;i<parts.length;i++) { req.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
+
+		OAT.Dom.clear(self.dom.query);
 
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Query URI";
@@ -336,7 +347,6 @@ var QueryExec = function(optObj) {
 		var q = OAT.Dom.create("pre");
 		q.innerHTML = OAT.Xml.escape(opts.query);
 
-		OAT.Dom.append([self.dom.request,req]);
 		OAT.Dom.append([self.dom.query,a,q]);
 
 		if (wasError) {
@@ -418,7 +428,7 @@ var QueryExec = function(optObj) {
 			o.backupQuery = bq;
 			self.execute(o);
  		}
-	
+
 		var selectRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
@@ -496,6 +506,7 @@ var QueryExec = function(optObj) {
 		
 		var request = self.buildRequest(opts);
 		var callback = function(data) {
+			if (opts.callback) { opts.callback(data); }
 			self.addResponse(request,optObj,0,data);
 		}
 		var onerror = function(xhr) {
@@ -507,9 +518,9 @@ var QueryExec = function(optObj) {
 				newO.backupQuery = false;
 				self.execute(newO);
 			} else {
-			if (opts.onerror) { opts.onerror(txt); }
-			self.addResponse(request,optObj,1,txt);
-		}
+				if (opts.onerror) { opts.onerror(txt); }
+				self.addResponse(request,optObj,1,txt);
+			}
 		}
 		var o = {
 			type:OAT.AJAX.TYPE_XML,

@@ -62,7 +62,7 @@ OAT.Notify = function(parentDiv,optObj) {
 			OAT.Event.attach(window,'scroll',self.update); 
 			self.update();
 		} 
-		} 
+	}
 
 	this.send = function(content, optObj) {
 		var options = {
@@ -79,7 +79,7 @@ OAT.Notify = function(parentDiv,optObj) {
 			height:50
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
-		
+
 		if (!self.container) { self.createContainer(options.width,options.height); }
 		
 		var c = $(content);
@@ -120,7 +120,7 @@ OAT.Notify = function(parentDiv,optObj) {
 				OAT.Dom.unlink(div);
 			}
 		});
-		
+
 		var start = function() {
 			self.container.appendChild(div);
 			if (options.delayIn) { 

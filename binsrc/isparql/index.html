@@ -46,6 +46,7 @@
                 "svgsparql","toolbar","dialog","sparql","graphsvg","menu","layers","rdfstore","rdfmini","map","ymaps"];
 	</script>
 	<script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
+	<script type="text/javascript" src="io.js"></script>
 	<script type="text/javascript" src="main.js"></script>
 	<script type="text/javascript" src="qbe.js"></script>
 	<script type="text/javascript" src="execute.js"></script>
@@ -109,26 +110,26 @@
 								<fieldset class="queryopts" id="queryopts">
 									<legend>Query options</legend>
 									Max rows
-								<select id="qbe_maxrows">
-									<option value="10">10</option>
-									<option value="20">20</option>
-									<option value="50" selected="selected">50</option>
-									<option value="100">100</option>
-									<option value="200">200</option>
-									<option value="0">[no limit]</option>
-								</select>
+									<select id="qbe_maxrows">
+										<option value="10">10</option>
+										<option value="20">20</option>
+										<option value="50" selected="selected">50</option>
+										<option value="100">100</option>
+										<option value="200">200</option>
+										<option value="0">[no limit]</option>
+									</select>
 
 									<label for="qbe_distinct">Distinct</label>
-								<input type="checkbox" value="on" id="qbe_distinct"/>
+									<input type="checkbox" value="on" id="qbe_distinct"/>
 
 									Type
-								<select id="qbe_query_type">
-									<option value="SELECT" selected="selected">SELECT</option>
-									<option value="CONSTRUCT">CONSTRUCT</option>
-									<option value="DESCRIBE">DESCRIBE</option>
-									<option value="INSERT">INSERT</option>
-									<option value="DELETE">DELETE</option>
-								</select>
+									<select id="qbe_query_type">
+										<option value="SELECT" selected="selected">SELECT</option>
+										<option value="CONSTRUCT">CONSTRUCT</option>
+										<option value="DESCRIBE">DESCRIBE</option>
+										<option value="INSERT">INSERT</option>
+										<option value="DELETE">DELETE</option>
+									</select>
 								</fieldset>
 							</div>
 							<br style="clear:both;"/>
@@ -305,7 +306,7 @@
 					</div>
 					<br/>
 					<div>
-					  <input type="button" value="Use Query & Close" id="return_btn">
+					    <input type="button" value="Use Query & Close" id="return_btn">
 					</div>
 				  </form>
 					<div id="query_resizer_area"></div>
@@ -348,7 +349,7 @@
 										<option value="9">Max 9</option>
 										<option value="10">Max 10</option>
 									</select>
-									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;">
+									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;width:325px;">
 									<span class="title">Path Traversal Schemes<span><br/>
 									<input type="radio" name="pathTraversalSchemes" value="" id="pathTravSchemesDefault" checked="checked"/> <label for="pathTravSchemesDefault" id="pathTravSchemesDefaultLabel">Default settings</label><br/>
 									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball"/> <label for="pathTravSchemesGraball" id="pathTravSchemesGraballLabel">Follow all Properties</label><br/>
@@ -357,14 +358,19 @@
 									<input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/><br/> 
 									<input type="button" id="spongerPredsDefault" value="Restore default set"/>
 									</td><td>
-									<select id="pathTravSchemesPreds" multiple="multiple" style="margin-left: 20px;height: 100px;width: 150px;">
-										<option value="foaf:knows" selected="selected">foaf:knows</option>
-										<option value="sioc:links_to" selected="selected">sioc:links_to</option>
-										<option value="rdfs:isDefinedBy" selected="selected">rdfs:isDefinedBy</option>
-										<option value="rdfs:seeAlso" selected="selected">rdfs:seeAlso</option>
-										<option value="owl:sameAs" selected="selected">owl:sameAs</option>
+									<select id="pathTravSchemesPreds" multiple="multiple" style="height: 100px;width: 150px;margin-right: 10px;">
+										<option value="http://xmlns.com/foaf/0.1/" selected="selected">foaf:knows</option>
+										<option value="http://rdfs.org/sioc/ns#" selected="selected">sioc:links_to</option>
+										<option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:isDefinedBy</option>
+										<option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:seeAlso</option>
+										<option value="http://www.w3.org/2002/07/owl#" selected="selected">owl:sameAs</option>
 									</select>
-								</td></tr></table>
+								</td></td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;width: 160px;">
+									<span class="title">Bound Variables<span><br/>
+									<select id="spongerVars" multiple="multiple" style="height: 100px;width: 150px;margin-right: 10px;"></select><br/>
+									<input type="button" id="spongerVarsAdd" value="Add" style="margin-top:10px;"/>
+									<input type="button" id="spongerVarsDel" style="margin-top:10px;" value="Remove"/><br/> 
+								</tr></table>
 							</fieldset>
 
 							<fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
@@ -411,11 +417,7 @@
         <select id="login_put_type">
   			  <option value="http">HTTP - Basic</option>
   			  <option value="dav" selected="selected">HTTP - WebDAV</option>
-  		  </select>
-        <hr/>
-        <label for="service">Query Service Endpoint</label>
-        <br/>
-        <div id="sr_cl_div"></div>
+  		</select>
         <div id="virtuoso_options" style="display:none">
           <hr/>
           Virtuoso Specific:

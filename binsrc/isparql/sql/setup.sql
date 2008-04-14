@@ -79,7 +79,7 @@ create trigger ISPARQL_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referenci
       }
   }
 };
-  
+
 create procedure WS.WS.__http_handler_ldr (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   return iSPARQL.DBA.http_ldr_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
@@ -94,13 +94,13 @@ create procedure WS.WS.__http_handler_head_ldr (in content any, in params any, i
 create procedure WS.WS.__http_handler_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
-}; 
-  
+};
+
 create procedure WS.WS.__http_handler_head_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
-}; 
-  
+};
+
 create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   declare accept varchar;
@@ -125,13 +125,13 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
   }
 
   if (_format <> '' or
-      strcasestr (accept, 'application/sparql-results+json') is not null or 
+      strcasestr (accept, 'application/sparql-results+json') is not null or
       strcasestr (accept, 'application/json') is not null or
       strcasestr (accept, 'application/sparql-results+xml') is not null or
       strcasestr (accept, 'text/rdf+n3') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
-      strcasestr (accept, 'application/soap+xml') is not null or 
+      strcasestr (accept, 'application/soap+xml') is not null or
       strcasestr (accept, 'application/rdf+turtle') is not null
      )
   {
@@ -147,10 +147,10 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 
     declare _rq_expn, _rq_state, _rq_msg varchar;
     declare _rq_res any;
-  
+
     declare _maxrows integer;
     _maxrows := 1024*1024; -- More than enough for web-interface.
-    
+
     _rq_state := '00000';
     _rq_msg := 'OK';
     _rq_expn := concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')');
@@ -163,9 +163,9 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
     else
     {
 
-      if (strcasestr(_query,'construct') is null and 
-          strcasestr(_query,'describe') is null and 
-          strcasestr(_query,'distinct') is null and 
+      if (strcasestr(_query,'construct') is null and
+          strcasestr(_query,'describe') is null and
+          strcasestr(_query,'distinct') is null and
           (
             strcasestr (accept, 'text/rdf+n3') is not null or
             strcasestr (accept, 'application/rdf+xml') is not null or
@@ -177,10 +177,10 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
         whr := regexp_match('WHERE[^\{]*\{[^\}]+[^\$]+\$',_query);
         whr := subseq(whr,strchr(whr,'{'));
         whr := subseq(whr,0,strrchr(whr,'}') + 1);
-        
+
         declare new_query varchar;
         new_query := subseq(_query,0,strcasestr(_query,'select')) ||
-                     'CONSTRUCT ' || whr || 
+                     'CONSTRUCT ' || whr ||
                      subseq(_query,strcasestr(_query,'from'));
         declare nstate, nmsg varchar;
         nstate := '00000';
@@ -193,14 +193,14 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 
       http_request_status ('HTTP/1.1 303 See Other');
       if (_user_service = '/sparql')
-          {
+	{
 	  declare ldr_name, arr, path varchar;
 	  arr := WS.WS.PARSE_URI (in_path_url_out_status_and_hdr);
 	  path := split_and_decode (arr[2], 0, '\0\0/');
 	  ldr_name := path[length(path)-1];
 	  ldr_name := regexp_replace (ldr_name, '\.isparql\x24', '.ldr');
 	  http_header(sprintf('Location: %s\r\n', ldr_name));
-      }
+	}
       else
 	http_header(sprintf('Location: %s?query=%U&format=%U\r\n', _user_service, _query,accept));
       return '';
@@ -208,7 +208,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 
   }
 
-  if (http_param('srvXSLT')) 
+  if (http_param('srvXSLT'))
   {
     declare _xml any;
     declare _xslt any;
@@ -225,7 +225,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 
   http_header ('Content-Type: text/xml\r\n');
   http(content);
-  
+
   return '';
 };
 

@@ -63,7 +63,6 @@ OAT.WebDav = {
 	},
 	
 /* standard methods */
-
 	openDirectory:function(newDir,treeOnly,treeNode) { /* try to open a path */
 		var dir = newDir;
 		if (dir.substring(newDir.length-1) != "/") { dir += "/"; } /* add trailing slash */
@@ -212,6 +211,7 @@ OAT.WebDav = {
 		if (OAT.Preferences.windowTypeOverride == 2 || OAT.Browser.isMac) {
 			this.options.width += 16;
 		}
+
 		/* create window */
 		var wopts = {
 			min:0,
@@ -234,6 +234,7 @@ OAT.WebDav = {
 		}
 		OAT.Dom.hide(div);
 		document.body.appendChild(div);
+
 		/* create toolbar */
 		var toolbarDiv = OAT.Dom.create("div");
 		var toolbar = new OAT.Toolbar(toolbarDiv);
@@ -268,6 +269,7 @@ OAT.WebDav = {
 		go.src = this.options.imagePath+"Dav_go.gif";
 		this.dom.go = go;
 		OAT.Dom.append([path,OAT.Dom.text('Location: '),input,go]);
+
 		/* main part */
 		var h1 = (this.options.height-165)+"px";
 		var h2 = (this.options.height-167)+"px";
@@ -323,7 +325,7 @@ OAT.WebDav = {
 
 		OAT.Dom.append([line_1,label_1,this.dom.file,this.dom.ok]);
 		OAT.Dom.append([line_2,label_2,this.dom.ext,this.dom.cancel]);
-		
+
 		/* connection dialog */
 		var connectDiv = OAT.Dom.create("div");
 		var ct = OAT.Dom.create("table");

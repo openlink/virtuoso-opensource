@@ -118,7 +118,6 @@ OAT.SimpleFX = {
 		options.size = margins.length;
 		var top = false;
 		var bottom = false;
-
 		/* let's go */
 		if (options.corners[0] || options.corners[1]) {
 			/* top */

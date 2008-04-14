@@ -25,21 +25,21 @@ function GBrowserIsCompatible(setBodyClass)
     var AGENTS = ["opera", "msie", "safari", "firefox", "netscape", "mozilla"];
     var agent = navigator.userAgent.toLowerCase();
     for (var i = 0; i < AGENTS.length; i++) {
-        var agentStr = AGENTS[i];
+		var agentStr = AGENTS[i];
 		if (agent.indexOf(agentStr) != -1) {
 		    if (setBodyClass && document.body) {
 				document.body.className = agentStr;
 	    	}
-            var versionExpr = new RegExp(agentStr + "[ \/]?([0-9]+(\.[0-9]+)?)");
-            var version = 0;
-                
+			var versionExpr = new RegExp(agentStr + "[ \/]?([0-9]+(\.[0-9]+)?)");
+			var version = 0;
+
 			if (versionExpr.exec(agent) != null) { version = parseFloat(RegExp.$1); }
-            if (agentStr == "opera") return version >= 7;
-            if (agentStr == "safari") return version >= 125;
+			if (agentStr == "opera") return version >= 7;
+			if (agentStr == "safari") return version >= 125;
 			if (agentStr == "msie")	return (version >= 5.5 && agent.indexOf("powerpc") == -1);
-            if (agentStr == "netscape") return version > 7;
+			if (agentStr == "netscape")	return version > 7;
 			if (agentStr == "firefox") return version >= 0.8;
-        }
+		}
     }
     return !!document.getElementById;
 }
@@ -51,12 +51,12 @@ function GLoad()
     );
 
     if (!true) {
-        G_INCOMPAT = true;
+		G_INCOMPAT = true;
 		alert
 	    	("The Google Maps API key used on this web site was registered for a different web site. You can generate a new key for this web site at http://code.google.com/apis/maps/.");
-        return;
+		return;
     }
-        
+
     GLoadApi(["http://mt0.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt1.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt2.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26", "http://mt3.google.com/mt?n\x3d404\x26v\x3dap.69\x26hl\x3den\x26"],["http://kh0.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh1.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh2.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26", "http://kh3.google.com/kh?n\x3d404\x26v\x3d25\x26hl\x3den\x26"],["http://mt0.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt1.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt2.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26", "http://mt3.google.com/mt?n\x3d404\x26v\x3dapt.69\x26hl\x3den\x26"],window._apiKey, "", "", true, "G", {
   public_api:true}
 	     ,

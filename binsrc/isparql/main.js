@@ -35,7 +35,6 @@ var tab_qbe = {};
 var tab_query = {};
 var page_w = 800;
 var page_h = 800;
-var iSPARQL = {};
 
 if (typeof(default_dgu) == 'undefined') var default_dgu = '';
 if (typeof(default_qry) == 'undefined') var default_qry = 'SELECT * WHERE {?s ?p ?o}';
@@ -82,6 +81,230 @@ function init() {
 	var m = new OAT.Menu();
 	m.noCloseFilter = "noclose";
 	m.createFromUL("menu");
+
+	/* FIXME: outfactor this into separate class ? */
+	var redrawSpongerOpts = function() {
+
+		var setEndpoint = function(endpoint) {
+			iSPARQL.Common.setEndpoint(endpoint);
+		}
+
+  		var showEndpoints = function() {	
+  			OAT.Dom.clear('service_div');
+			var c = new OAT.Combolist(defaultEndpoints,"/sparql",{name:"service",onchange:setEndpoint});
+  			c.input.id = "service";
+			$("service_div").appendChild(c.div);
+		}
+
+		/* toggle options */
+		var toggleOptions = function() {
+			if ($("endpoint").style.display=="none") {
+				$("endpoint").style.display = "block";
+				$("derefOpts").style.display = "block";
+				$("togglerarrow").innerHTML = "&#8681;";
+			} else {
+				$("endpoint").style.display = "none";
+				$("derefOpts").style.display = "none";
+				$("togglerarrow").innerHTML = "&#8679;";
+			}
+		}
+
+		/* Data Retrieval Options */
+
+		/* cache -> get soft/replacing */
+		var setGetPragma = function() {
+			var a = [];
+			var p = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].value;
+			a.push(['define get:soft',[(p)? '"'+p+'"' : p]]);
+			iSPARQL.Common.setPragmas(a);
+		}
+
+		/* grab-seealso/grab-all */
+		var setGrabPragma = function() {
+			var a = [];
+
+			if ($("pathTravSchemesDefault").checked) {
+				a.push(['define input:grab-all',[false]]);
+				a.push(['define input:grab-seealso',[false]]);
+			} else
+			if ($("pathTravSchemesGraball").checked) {
+				a.push(['define input:grab-all',['"yes"']]);
+				a.push(['define input:grab-seealso',[false]]);
+			} else {
+				var v = [];
+				var pref = [];
+
+				var preds = $("pathTravSchemesPreds").options;
+				for (var i=0;i<preds.length;i++) {
+					var p = preds[i];
+					if (p.selected) { v.push("<" + p.text + ">"); pref.push(p.text + " = " + p.value); }
+				}
+				iSPARQL.Common.addPrefix(p);
+				a.push(['define input:grab-all',[false]]);
+				a.push(['define input:grab-seealso',v]);
+			}
+
+			iSPARQL.Common.setPragmas(a);
+		}
+
+		var setGrabVarPragma = function() {
+			var a = [];
+			var v = [];
+			var vars = $("spongerVars").options;
+			for (var i=0;i<vars.length;i++) {
+				var item = vars[i];
+				if (item.selected) { v.push("?" + item.value); }
+			}
+			a.push(['define input:grab-var',v]);
+			iSPARQL.Common.setPragmas(a);
+		}
+
+		var setGrabLimitPragma = function() {
+			var a = [];
+			a.push(['define input:grab-limit', [ $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].value ] ]);
+			iSPARQL.Common.setPragmas(a);
+		}
+
+		var setGrabDepthPragma = function() {
+			var a = [];
+			a.push(['define input:grab-depth', [ $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].value ] ]);
+			iSPARQL.Common.setPragmas(a);
+		}
+
+		var hideSeeAlsoControls = function() {
+			OAT.Dom.hide("pathTravSchemesPreds");
+			OAT.Dom.hide("spongerPredsAdd");
+			OAT.Dom.hide("spongerPredsDel");
+			OAT.Dom.hide("spongerPredsDefault");
+		}
+
+		var showSeeAlsoControls = function() {
+			OAT.Dom.show("pathTravSchemesPreds");
+			OAT.Dom.show("spongerPredsAdd");
+			OAT.Dom.show("spongerPredsDel");
+			OAT.Dom.show("spongerPredsDefault");
+		}
+
+		var addGrabVar = function() {
+			var v = window.prompt("Variable name");
+			if (!v) { return; }
+			var l = $("spongerVars").options.length;
+			$("spongerVars").options[l] = new Option(v,v);
+			setGrabVarPragma();
+		}
+
+		var delGrabVar = function() {
+			for (var i=0;i<$("spongerVars").options.length;i++) {
+				if ($("spongerVars").options[i].selected) {
+					$("spongerVars").options[i] = null;
+				}
+			}
+			setGrabVarPragma();
+		}
+
+		var addSeeAlsoPredicate = function() {
+			var prefix = $v("pragmaAddPropPrefix");
+			var uri = $v("pragmaAddPropUri");
+			if (!prefix.length || !uri.length) {
+				alert("Both prefix and URI must be entered.");
+				return;
+			}
+
+			for (var i=0;i<$("pathTravSchemesPreds").options.length;i++) {
+				if ($("pathTravSchemesPreds").options[i].text==prefix) {
+					alert("Prefix "+prefix+" is already present in the list.");
+					return;
+				}	
+			}
+			
+			var l = $("pathTravSchemesPreds").options.length;
+			$("pathTravSchemesPreds").options[l] = new Option(prefix,uri);
+			OAT.Dimmer.hide();
+			$("pragmaAddPropPrefix").value = '';
+			$("pragmaAddPropUri").value = '';
+			setGrabPragma();
+		}
+
+		/* remove selected predicate */
+		var delSeeAlsoPredicate = function() {
+			for (var i=0;i<$("pathTravSchemesPreds").options.length;i++) {
+				if ($("pathTravSchemesPreds").options[i].selected) {
+					$("pathTravSchemesPreds").options[i] = null;
+				}
+			}
+			setGrabPragma();
+		}
+
+		var restoreSeeAlsoPredicates = function() {
+			if ($("pathTravSchemesPreds").options.length == 0 
+			    || window.confirm("This will remove custom added predicates. Really restore?")) {
+
+				$("pathTravSchemesPreds").options.length = 0;
+				$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','http://xmlns.com/foaf/0.1/',true);
+				$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','http://rdfs.org/sioc/ns#',true);
+				$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','http://www.w3.org/2000/01/rdf-schema#',true);
+				$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','http://www.w3.org/2000/01/rdf-schema#',true);
+				$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','http://www.w3.org/2002/07/owl#',true);
+			}
+			setGrabPragma();
+		}
+
+		var showAddSeealso = function() {
+			OAT.Dimmer.show($("pragmaAddProp"), {color:"#333", popup:false});
+			$("pragmaAddPropPrefix").focus();
+		}
+	
+		var hideAddSeealso = function() {
+			OAT.Dimmer.hide();
+			$("pragmaAddPropPrefix").value = '';
+			$("pragmaAddPropUri").value = '';
+		}
+
+		/* main display toggling */
+		OAT.Event.attach("opttoggler",'click', toggleOptions);
+
+		/* pragmas */
+		OAT.Event.attach($("cachingSchemesCtl"),'change', setGetPragma);
+		OAT.Event.attach($("nodesCrawledCtl"),'change', setGrabDepthPragma);
+		OAT.Event.attach($("nodesRetrievedCtl"),'change', setGrabLimitPragma);
+
+		/* clicking on other traversal schemes hides grab:seealso controls */
+		OAT.Event.attach("pathTravSchemesGraball",'click',function() { hideSeeAlsoControls(); setGrabPragma(); });
+		OAT.Event.attach("pathTravSchemesGraballLabel",'click',function() { hideSeeAlsoControls(); setGrabPragma(); });
+		OAT.Event.attach("pathTravSchemesDefault",'click',function() { hideSeeAlsoControls(); setGrabPragma(); });
+		OAT.Event.attach("pathTravSchemesDefaultLabel",'click',function() { hideSeeAlsoControls(); setGrabPragma(); });
+
+		/* and displaying shows them */
+		OAT.Event.attach("pathTravSchemesSeealso",'click',function() { showSeeAlsoControls(); setGrabPragma(); });
+		OAT.Event.attach("pathTravSchemesSeealsoLabel",'click',function() { showSeeAlsoControls(); setGrabPragma(); });
+		OAT.Event.attach("pathTravSchemesPreds",'change',function() { setGrabPragma(); });
+
+
+		/* hidden by default */
+		hideSeeAlsoControls();
+
+		/* Custom predicates: add predicate */
+		OAT.Event.attach($("spongerPredsAdd"),"click",showAddSeealso);
+		OAT.Event.attach($("pragmaAddPropAdd"),"click",addSeeAlsoPredicate);
+		OAT.Event.attach($("pragmaAddPropCancel"),"click",hideAddSeealso);
+
+		/* remove selected predicate */
+		OAT.Event.attach($("spongerPredsDel"),"click",delSeeAlsoPredicate);
+
+		/* restore default set of predicates (ask only if list length is not 0) */
+		OAT.Event.attach($("spongerPredsDefault"),"click",restoreSeeAlsoPredicates);
+
+		/* input grab-var */
+		OAT.Event.attach($("spongerVars"),'change',setGrabVarPragma);
+		OAT.Event.attach($("spongerVarsAdd"),"click",addGrabVar);
+		OAT.Event.attach($("spongerVarsDel"),"click",delGrabVar);
+
+		/* endpoint combolist */
+		showEndpoints();	
+		setEndpoint($("service").value);
+	}
+
+	redrawSpongerOpts();
 
   var menuOn = function(index) {
     var menu_on = menus[index];
@@ -160,16 +383,6 @@ function init() {
   tabgraphs.add ("tabgrph_named","tabgrph_named_content");
   tabgraphs.go (0);
 
-  var sr_cl = new OAT.Combolist(defaultEndpoints,"/sparql");
-  sr_cl.input.name = "service";
-  sr_cl.input.id = "service";
-  sr_cl.list.style.zIndex = "1200";
-  sr_cl.img.src = "images/cl.gif";
-  sr_cl.img.width = "16";
-  sr_cl.img.height = "16";
-  $("sr_cl_div").appendChild(sr_cl.div);
-
-	
 	/* qbe_unsupp */
 	dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
 	dialogs.qbe_unsupp.ok = function() {
@@ -214,12 +427,13 @@ function init() {
 		}
 	}
 	dialogs.goptions = new OAT.Dialog("Preferences","goptions",{width:450,height:500,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
-	dialogs.goptions.cancel = function(){
-//	  if (!do_auth_verify || !goptions.initial_screen)
+	dialogs.goptions.cancel = function() {
+  		OAT.WebDav.init({imageExt:"png",silentStart:true,user:"demo",pass:"demo"});
 	    dialogs.goptions.hide();
 	}
-	dialogs.goptions.ok = function(){
+	dialogs.goptions.ok = function() {
 	  var auth = iSPARQL.Common.checkAuth($v('username'),$v('password'));
+  		OAT.WebDav.init({imageExt:"png",silentStart:true,user:$v('username'),pass:$v('password')});
 
 	    if (auth == true) {
 	      goptions.username = $v('username');
@@ -321,7 +535,8 @@ function init() {
 	$("query_resizer_area").style.cursor = "nw-resize";
   
   
-  
+	OAT.Dom.attach("query","keyup",function() { iSPARQL.Common.setQuery($v("query")); });
+	OAT.Dom.attach("default-graph-uri","keyup",function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
   
   
   OAT.Dom.attach("menu_b_reset","click",function() {
@@ -436,318 +651,213 @@ function init() {
     else
     	goptions.initial_screen = true;
   }
-
-  OAT.WebDav.init({imageExt:"png",silentStart:true,user:goptions.user,pass:goptions.pass});
+ 
 
   if (OAT.Browser.isIE) {
     tab.go (1); /* is 0-based index... */
   }
 }
 
-iSPARQL.QueryCache = {};
 
-iSPARQL.QueryExec = function(paramsObj) {
-	    // We use this to fix IE visualization problems with pre content
-	    var putTextInPre = function(elm,txt){
-	      if (OAT.Browser.isIE) 
-	        txt = txt.replace(/\r\n/g,'\r').replace(/\n/g,'\r');
-	      OAT.Dom.append([elm,OAT.Dom.text(txt)]);
-	    }
+/* FIXME: this is only used by Schemas, so it should go away.
+ * Schemas should use its own query (caching mechanism)
+ */
+iSPARQL.QueryExec = function(optObj) {
+	var self = this;
 
-	  	var params = {
-			onstart:false,
-			onend:false,
-	  		service:goptions.service,               // The sparql endpoint to send the query to
-	  		default_graph_uri:'',                   // Default graph
-	  		query:'',                               // The query itself
-	  		res_div:$('res_area'),                  // DIV where to put the results
-	  		format:'text/html',                     // Sets format to the request and process the results accordingly.
-	  		should_sponge:goptions.should_sponge,   // should-sponge param - as described in Virtuoso Docs.
-	  		maxrows:0,                              // sets maxrows params to the endpoint, 0 for nolimit /limit left to server/
-	  		proxy:goptions.proxy,                   // If the endpoint is http: ... and this is set, the request would be send to './remote.vsp'
-	  		named_graphs:[],                        // Array of named graphs to send to the endpoint
-	  		prefixes:[], // {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'} // those are used when showing results
-	  		imagePath:'images/',
-	  		errorHandler:function(xhr) {             // function called when the endpoint returns error
-				var status = xhr.getStatus();
-				var response = xhr.getResponseText();
-				var headers = xhr.getAllResponseHeaders();
-				var data = '';
-				if (!response) {
-					data = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
-					data += 'Unfortunately your browser does not allow us to show the error. ';
-					data += 'This is a known bug in the Opera Browser.<br/>\n';
-					data += 'However you can click this link which will open a new window with the error: <br/>\n';
-					data += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
-				} else {
-					data = response.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-				}
-				params.cb(data,headers,'er');
-			},
-	  		hideRequest:false,  // if true hides the request tab in the generated response
-	  		hideResponse:false, // if true hides the response tab in the generated response
-	  		showQuery:false,    // if true shows the query tab in the generated response
-			//RESULT PROCESSING
-	        callback:function(data,headers,param) {  // function called on result
-		    } /* callback */
-	  	};
-	  	for (var p in paramsObj) { params[p] = paramsObj[p]; }
+	this.options = {
+		/* ajax */
+		onstart:false,
+		onend:false,
+		onerror:false,
+		errorHandler:function(xhr) {
+			var status = xhr.getStatus();
+			var response = xhr.getResponseText();
+			var headers = xhr.getAllResponseHeaders();
+			alert(response);
+		},
 
-	    if (params.service == '') {
-	      alert('You must specify "Query Service Endpoint"!');
-	      return;
-	    }
-	    
-	    var content_type = 'application/x-www-form-urlencoded';
-	    var ReqHeaders = {'Accept':params.format,'Content-Type':content_type};
-	    var endpoint = params.service;
-	    if (endpoint.match(/^http:\/\//) && params.proxy && isVirtuoso) { endpoint = './remote.vsp'; }
-	    OAT.Dom.clear(params.res_div);
-	  
-	    // generate the request body
-	    var body = function()  {
-	      var body = '';
+	  	endpoint:"/sparql",
+	  	query:false,
+	  	format:"text/html",
+	  	sponge:false,
+	  	maxrows:0,
+	    callback:function(data,headers,param) {}
+	};
 
-	      if (params.default_graph_uri) {
-	        body += '&default-graph-uri=';
-	        body += encodeURIComponent(params.default_graph_uri);
-	      }
+	this.cache = {};
 
-	      if (params.query) {
-	        body += '&query=';
-	        body += encodeURIComponent(params.query);
-	      }
+	this.go = function(optObj) {
+		var opts = {};
+		for (var p in self.options) { opts[p] = self.options[p]; }
+		for (var p in optObj) { opts[p] = optObj[p]; }
 
-	      if (params.format) {
-	        body += '&format=';
-	        if (params.format == 'application/isparql+table')
-	          body += encodeURIComponent('application/sparql-results+json'); 
-	        else if (params.format == 'application/isparql+rdf-graph')
-	          body += encodeURIComponent('application/rdf+xml'); 
-	        else
-	          body += encodeURIComponent(params.format);
-	      }
+		if (opts.query in self.cache) { 
+			if (opts.callback) { opts.callback(self.cache[opts.query]); }
+			return;
+		}
 
-	      if (params.maxrows) {
-	        body += '&maxrows=';
-	        body += encodeURIComponent(params.maxrows);
-	      }
+		var req = {
+			query:opts.query,
+			format:opts.format,
+		};
 
-	      if (isVirtuoso && params.should_sponge && params.should_sponge != '') {
-	        body += '&should-sponge=';
-	        body += encodeURIComponent(params.should_sponge);
-	      }
-	      
-	      if (endpoint != params.service) {
-	        body += '&service=';
-	        body += encodeURIComponent(params.service);
-	      }
-	      
-	      for(var n = 0; n < params.named_graphs.length; n++) {
-	        if (params.named_graphs[n] != '')
-	        {
-	          body += '&named-graph-uri=';
-	          body += encodeURIComponent(params.named_graphs[n]); 
-	        }
-	      }
-	      return body.substring(1);
-	    }
+		if (opts.defaultGraph && !opts.query.match(/from *</i)) { req["default-graph-uri"] = opts.defaultGraph; }
+		if (opts.limit) { req["maxrows"] = opts.limit; }
+		if (opts.sponge && self.options.virtuoso) { req["should-sponge"] = opts.sponge; }
+
+		var arr = [];
+		for (var p in req) {
+			arr.push(p+"="+encodeURIComponent(req[p]));
+		}
+		var query = arr.join("&");
+
+		var callback = function(data) {
+			self.cache[opts.query] = data;
+			if (opts.callback) { opts.callback(data); }
+		}
 
 		var o = {
-			header:ReqHeaders,
-			onerror:params.errorHandler,
-			onstart:params.onstart || function(){OAT.Dom.show("throbber");},
-			onend:params.onend || function(){OAT.Dom.hide("throbber");}
-		}
-
-		var cb = function(data) {
-			iSPARQL.QueryCache[params.query] = data;
-			params.callback(data);
+			onerror:opts.errorHandler,
+			onstart:opts.onstart || function() { OAT.Dom.show("throbber"); },
+			onend:opts.onend || function() { OAT.Dom.hide("throbber"); }
 		}
 		
-		if (params.query in iSPARQL.QueryCache) {
-			params.callback(iSPARQL.QueryCache[params.query]);
-		} else {
-			OAT.AJAX.POST (endpoint, body(), cb, o);
-		}
+		OAT.AJAX.POST (opts.endpoint, query, callback, o);
 	}
+
+	self.go(optObj);
+}
 
 iSPARQL.Advanced = function () {
 	var self = this;
 
-	var icon_reset, icon_load, icon_save, icon_saveas, icon_run, icon_load_to_qbe, icon_get_from_qbe;
-	var icon_back, icon_forward, icon_start, icon_finish;
-	
 	this.func_reset = function() {
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(tab_query);
-		if(confirm('Are you sure you want to reset the query?'))
-		{
-		  //$("query_form").reset();
-		  $("query").value = '';
-  	  
-      var table = $('named_graph_list');
-      if (table.tBodies.length)
-        OAT.Dom.unlink(table.tBodies[0]);
-      $('named_graphs_cnt').innerHTML=0;
-  	  //$("res_area").innerHTML = '';
-      //OAT.Dom.hide(self.results_win.div);
+		tab.go(tab_query);
+		if(confirm('Are you sure you want to reset the query?')) {
+			iSPARQL.Common.reset();
+			self.redraw();
 		}
 	}
-	
-	this.func_load = function() {
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(tab_query);
-	  var path = iSPARQL.Common.getFilePath();
-	  var file = iSPARQL.Common.getFile();
-	  //var pathDefault = iSPARQL.Common.getDefaultPath();
-	    
-	  var loadProcess = function(data){
-  	  if (data.match(/<[\w:_ ]+>/))
-        var xml = OAT.Xml.createXmlDoc(data);
-      else
-        var xml = {};
 
-      $('default-graph-uri').value = '';
-      if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length && xml.getElementsByTagName("ISparqlDynamicPage").length) {
-        var dyn_page_node = xml.getElementsByTagName("ISparqlDynamicPage")[0];
-        var query_node = dyn_page_node.getElementsByTagName("query")[0];
-        data = OAT.Xml.textValue(query_node);
-        if (dyn_page_node.getElementsByTagName("graph").length)
-          $('default-graph-uri').value = OAT.Xml.textValue(dyn_page_node.getElementsByTagName("graph")[0]);
+	this.redraw = function() {
+		/* query */
+		$("query").value = iSPARQL.dataObj.query;
 
-      } else if (xml.firstChild && xml.getElementsByTagName("sparql").length) {
-        var nodes = xml.getElementsByTagName("sparql");
-        for (var i=0;i<nodes.length;i++)
-          if (nodes[i].namespaceURI == "urn:schemas-openlink-com:xml-sql")
-          {
-            data = OAT.Xml.textValue(nodes[i]);
-            $('default-graph-uri').value = nodes[i].getAttribute('default-graph-uri');
-          }
-      }
+		/* default graph */
+		$("default-graph-uri").value = iSPARQL.dataObj.defaultGraph;
 
-      var tmp = data.match(/#should-sponge:(.*)/i)
-      if (tmp && tmp.length > 1)
-      {
-        $('adv_sponge').value = tmp[1].trim();
-      }
-      var tmp = data.match(/#service:(.*)/i)
-      if (tmp && tmp.length > 1)
-      {
-        self.service.input.value = tmp[1].trim();
-      }
-	    
-	    $('query').value = data;
-	  }
+		var findPragma = function(name) {
+			for (var i=0;i<iSPARQL.dataObj.pragmas.length;i++) {
+				var pragma = iSPARQL.dataObj.pragmas[i];
+				if (pragma[0] == name) { return pragma; } 
+			}
+			return false;
+		}
 
-    	var options = {
-    		user:goptions.username,
-    		pass:goptions.password,
-    		path:path + '/',
-    		file:file,
-    		extension:get_file_type(goptions.last_path),
-    		isDav:((goptions.login_put_type == 'http')?false:true),
-    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
-    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
-    		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
-    		                  ['','*','All files','']
-    		                 ],
-        callback:function(path,fname,data){
-          goptions.last_path = path + fname;
-          loadProcess(data);
-          //OAT.WebDav.close();
-        }
-      }
-      	
-    	OAT.WebDav.openDialog(options);
-	}
-	
-	this.func_save = function() {
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(tab_query);
-    if (goptions.last_path)
-    {
-      self.save(goptions.last_path,get_file_type(goptions.last_path)); 
-    }else 
-      icon_saveas.toggle();
-	}
-	
-	this.func_saveas = function() {
-	  tab.go(tab_query);
-  	  var path = iSPARQL.Common.getFilePath();
-  	  var file = iSPARQL.Common.getFile();
+		var setPragmaSelect = function(pragma,select) {
+			var p = findPragma(pragma) || false;
+			if (!p) { return; }
 
-			var options = {
-    		user:goptions.username,
-    		pass:goptions.password,
-    		path:path + '/',
-    		file:file,
-    		extension:get_file_type(goptions.last_path),
-    		isDav:((goptions.login_put_type == 'http')?false:true),
-    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
-    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
-					  		  ['rdf','rdf','RDF Data',get_mime_type('rdf')],
-    		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
-    		                 ],
-				callback:function(path,fname){
-          goptions.last_path = path + fname;
-          set_dav_props(goptions.last_path);
-				},
-    		dataCallback:function(fname,ext){
-				  //OAT.Dav.SaveContentType = get_mime_type(ext);
-      		return self.getSaveData(ext);
-				}
-			};
-			OAT.WebDav.saveDialog(options);
-	}
-	
-	this.func_run = function() {
-		//if (tab.selectedIndex != 1 && !tab_query.window) return;
-		tab.go(tab_query);
-
-		// get all checked named_graphs from named graphs tab
-		var graphs = [];
-		named_graphs = document.getElementsByName('named_graph_cbk');
-
-		if (named_graphs && named_graphs.length > 0) {
-			for (var n = 0; n < named_graphs.length; n++) {
-				// if it is checked, add to params too
-				if (named_graphs[n].checked) {
-					var named_graph_value = $v('named_graph_'+named_graphs[n].value);
-					if (named_graph_value != '') { graphs.push(named_graph_value); }
+			var opts = $(select).options;
+			for (var i=0;i<opts.length;i++) {
+				var opt = opts[i];
+				if (opt.value == pragma[1][0]) { 
+					$(select).options[i].selectedIndex = i; 
+					break; 
 				}
 			}
 		}
 
-		var q = $v("query");
-		var prefixes = [];
-		var pre_arr = q.match(/prefix\s\w+:\s<\S+>/ig);
-		if (pre_arr) for(var n = 0; n < pre_arr.length; n++) {
-			var tmp = pre_arr[n].match(/prefix\s(\w+):\s<(\S+)>/i);
-			prefixes.push({"label":tmp[1],"uri":tmp[2]});
+		var setPragmaRadio = function(pragma,radio) {
+			var p = findPragma(pragma) || false;
+			if (!p) { return; }
+			$(radio).checked = true;
 		}
 
-		var p = {
-			query:q,
-			defaultGraph:$v('default-graph-uri').trim(),
-			sponge:$v("adv_sponge"),
-			endpoint:self.service.input.value,
-			namedGraphs:graphs
+		var setPragmaList = function(pragma,select) {
+			var p = findPragma(pragma) || false;
+			if (!p) { return; }
+		
+			var values = pragma[1];
+			var opts = $(select).options;
+			for (var i=0;i<opts.length;i++) {
+				var opt = opts[i];
+				var index = values.find("<" + opt.value + ">");
+				$(select).options[i].selected = (index == -1)? false : true; 
+			}
 		}
-		qe.execute(p);
+
+		/* pragmas */
+		setPragmaSelect('define input:grab-limit',"nodesRetrievedCtl");
+		setPragmaSelect('define input:grab-depth',"nodesCrawledCtl");
+		setPragmaSelect('define get:soft',"cachingSchemesCtl");
+		setPragmaRadio('define input:grab-all',"pathTravSchemesGraball");
+		setPragmaRadio('define input:grab-seealso',"pathTravSchemesSeealso");
+		setPragmaList('define input:grab-seealso',"pathTravSchemesPreds");
+
+		/* named graphs */
+      	var table = $('named_graph_list');
+      	if (table.tBodies.length) { OAT.Dom.unlink(table.tBodies[0]); }
+		$('named_graphs_cnt').innerHTML = 0;
+
+		for (var i=0;i<iSPARQL.dataObj.namedGraphs.length;i++) {
+			add_named_graph(iSPARQL.dataObj.namedGraphs[i]);
+		}
+	}
+	
+	this.func_load = function() {
+		var callback = function(path,file,data) {
+			iSPARQL.dataObj = data;
+			self.redraw();
+		}
+
+		iSPARQL.IO.load(callback);
+	}
+	
+	this.func_save = function() {
+    	self.save(); 
+	}
+	
+	this.func_saveas = function() {
+		self.save();
+	}
+	
+	this.func_run = function() {
+		/* FIXME: what to do with these schmas/prefixes */
+		/*
+		var prefixes = [];
+		var q = iSPARQL.dataObj.query;
+		var allPrefixes = q.match(/prefix\s+\w+:\s+<\S+>/mig) || [];		
+		for(var i=0;i<allPrefixes.length;i++) {
+			var cur = allPrefixes[i];
+			var pref = cur.match(/prefix\s+(\w+):\s+<(\S+)>/i);
+			prefixes.push({"label":pref[1],"uri":pref[2]});
+		}
+
+		FIXME: catch also pragmas here
+		*/
+
+		var o = {
+			query:iSPARQL.dataObj.query,
+			defaultGraph:iSPARQL.dataObj.defaultGraph,
+			endpoint:iSPARQL.dataObj.endpoint,
+			pragmas:iSPARQL.dataObj.pragmas,
+			namedGraphs:iSPARQL.dataObj.namedGraphs,
+			callback:iSPARQL.Common.setData
+		}
+		qe.execute(o);
 	}
 	
 	this.func_load_to_qbe = function() {
-	  if (OAT.Browser.isIE) return;
+		if (OAT.Browser.isIE) { return; }
+		tab.go(tab_qbe);
 	  
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(tab_qbe);
-	  qbe.loadFromString($('query').value);
-	  if ($v('qbe_graph') == '')
-	    $('qbe_graph').value = $v('default-graph-uri').trim();
-    $('qbe_sponge').value = $v('adv_sponge');
+		qbe.loadFromString($('query').value);
+	 	 if ($v('qbe_graph') == '')
+	    	$('qbe_graph').value = $v('default-graph-uri').trim();
+	    $('qbe_sponge').value = $v('adv_sponge');
+		//qbe.redraw();
 	}
 	
 	this.func_get_from_qbe = function() {
@@ -756,233 +866,39 @@ iSPARQL.Advanced = function () {
 
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
     $('adv_sponge').value = $v('qbe_sponge');
-    $('query').value = qbe.QueryGenerate();
+		iSPARQL.Common.setQuery(qbe.QueryGenerate());
+		iSPARQL.Common.setDefaultGraph($v('qbe_graph'));
+		self.redraw();	
 	}
 
-  this.save = function(save_name,save_type) {
-    var data = self.getSaveData(save_type);
-    goptions.last_path = save_name;
-    set_dav_props(goptions.last_path);
-		var send_ref = function() { return data; }
-		var recv_ref = function(data) { alert('Saved.'); }
-		OAT.AJAX.PUT(save_name,send_ref(),recv_ref,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC,headers:{'Content-Type':get_mime_type(goptions.last_path)}});
-  }
-
-  this.getSaveData = function(save_type) {
-		var data = "";
-		
-		var query = $('query');
-
-    if(query.value.match(/#should-sponge:(.*)/i))
-      query.value = query.value.replace(/#should-sponge:.*/i,'#should-sponge:' + $v('adv_sponge'));
-    else
-  	  query.value = '#should-sponge:' + $v('adv_sponge') + '\n' + query.value;
-
-    if(query.value.match(/#service:(.*)/i))
-      query.value = query.value.replace(/#service:.*/i,'#service:' + self.service.input.value);
-    else
-  	  query.value = '#service:' + self.service.input.value + '\n' + query.value;
-		
-		switch (save_type) {
-			case "rq":
-			  data += $v('query');
-			break;
-			case "isparql":
-			case "ldr":
-			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
-			  data += $v('query');
-    		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n';
-  			xml += '<iSPARQL xmlns="urn:schemas-openlink-com:isparql">\n';
-  			xml += '<ISparqlDynamicPage>\n';
-  			//xml += '<service>'+goptions.service+'</service>\n';
-  			//xml += '<should_sponge>'+goptions.should_sponge+'</should_sponge>\n';
-  			xml += '<proxy>'+goptions.proxy+'</proxy>\n';
-  			xml += '<query>'+OAT.Dom.toSafeXML(data)+'</query>\n';
-  			xml += '<graph>'+OAT.Dom.toSafeXML($v('default-graph-uri'))+'</graph>\n';
-  			xml += '</ISparqlDynamicPage>\n';
-  			xml += '<should_sponge>'+$v('adv_sponge')+'</should_sponge>\n';
-  			xml += '<service>'+self.service.input.value+'</service>\n';
-  			xml += '</iSPARQL>';
-  			data = xml;
-			break;
-			case "xml":
-			  data += $v('query');
-    		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  			xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
-  			if ($v('default-graph-uri'))
-  			  xml += ' sql:default-graph-uri="' + $v('default-graph-uri') + '"';
-  			xml += '><sql:sparql>'+OAT.Dom.toSafeXML(data)+'</sql:sparql></root>';
-  			data = xml;
-			break;
-
-			case "rdf":
-				if(qe.cacheIndex == -1) { break; }
-				var xml = qe.cache[qe.cacheIndex].data;
-				data = OAT.Xml.serializeXmlDoc(xml);
-			break;
-		}
-	  return data;
-  }
+	this.save = function() {
+		iSPARQL.IO.save(iSPARQL.dataObj);
+	}
 
 	var t = new OAT.Toolbar("toolbar");
-	icon_reset = t.addIcon(0,"images/new.png","Reset",self.func_reset);
-	OAT.Dom.attach("menu_reset","click",self.func_reset);
-	
-	icon_load = t.addIcon(0,"images/open_h.png","Open",self.func_load); 
-	OAT.Dom.attach("menu_load","click",self.func_load);
-
-	icon_save = t.addIcon(0,"images/save_h.png","Save",self.func_save); 
-	OAT.Dom.attach("menu_save","click",self.func_save);
-
-	icon_saveas = t.addIcon(0,"images/save_as_h.png","Save As...",self.func_saveas); 
-	OAT.Dom.attach("menu_saveas","click",self.func_saveas);
-
+	t.addIcon(0,"images/new.png","Reset",self.func_reset);
+	t.addIcon(0,"images/open_h.png","Open",self.func_load); 
+	t.addIcon(0,"images/save_h.png","Save",self.func_save); 
+	t.addIcon(0,"images/save_as_h.png","Save As...",self.func_saveas); 
 	t.addSeparator();
+	t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run); 
 
-	icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run); 
-	OAT.Dom.attach("menu_run","click",self.func_run);
-
-	t.addSeparator();
-	
-	icon_load_to_qbe = t.addIcon(0,"images/arrange.png","Visualize",self.func_load_to_qbe); 
-	OAT.Dom.attach("menu_load_to_qbe","click",self.func_load_to_qbe);
-
-	icon_get_from_qbe = t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe); 
-	OAT.Dom.attach("menu_get_from_qbe","click",self.func_get_from_qbe);
-	
-	if (OAT.Browser.isIE) {
-	  icon_load_to_qbe.style.filter = 'alpha(opacity=30)';
-	  icon_load_to_qbe.style.cursor = 'default';
-	  icon_get_from_qbe.style.filter = 'alpha(opacity=30)';
-	  icon_get_from_qbe.style.cursor = 'default';
+	/* msie does not support svg yet */
+	if (!OAT.Browser.isIE) {
+		t.addSeparator();
+		t.addIcon(0,"images/arrange.png","Visualize",self.func_load_to_qbe); 
+		t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe);
 	}
-
-
-  this.service = new OAT.Combolist(defaultEndpoints,"/sparql",{name:"service"});
-  self.service.img.src = "images/cl.gif";
-  self.service.img.width = "16";
-  self.service.img.height = "16";
-  $("service_div").appendChild(self.service.div);
-	
-	/* toggle options */
-	OAT.Event.attach("opttoggler",'click', function() {
-		if ($("endpoint").style.display == "none") {
-			$("endpoint").style.display = "block";
-			$("derefOpts").style.display = "block";
-			$("togglerarrow").innerHTML = "&#8681;";
-		} else {
-			$("endpoint").style.display = "none";
-			$("derefOpts").style.display = "none";
-			$("togglerarrow").innerHTML = "&#8679;";
-		}
-	});
-
-	/* Data Retrieval Options */
-	OAT.Event.attach($("cachingSchemesCtl"),'change', function(event) {
-		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		// = $("cachingSchemesCtl").options[$("cachingSchemesCtl").options.selectedIndex].value;
-	});
-	OAT.Event.attach($("pathTravSchemesPred"),'change',pathTravSchemes)
-	var pathTravSchemes = function() {
-		if ($("pathTravSchemesGraball").checked) {
-			// = 'grab-all';
-			return;
-		} else {
-			var out = new Array();
-			var preds = $("pathTravSchemesPreds").options;
-			for (var i=0;i<preds.length; i++) {
-				var p = preds[i];
-				if (p.selected) { 
-					var v = "<" + p.value + ">";
-					out.push(v);
-				}
-			}
-			// = out;
-		}		
-	}
-	OAT.Event.attach($("nodesCrawledCtl"),'change', function(event) {
-		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		//  = $("nodesCrawledCtl").options[$("nodesCrawledCtl").options.selectedIndex].value;
-	});
-	OAT.Event.attach($("nodesRetrievedCtl"),'change', function(event) {
-		OAT.Anchor.close(event.target || event.srcElement); // "||" because IE has srcElement instead of target
-		//  = $("nodesRetrievedCtl").options[$("nodesRetrievedCtl").options.selectedIndex].value;
-	});
-
-	/* show advanced path traversal schemes controls only if necessary */
-	var pathTravSchemesHide = function() {
-		OAT.Dom.hide("pathTravSchemesPreds");
-		OAT.Dom.hide("spongerPredsAdd");
-		OAT.Dom.hide("spongerPredsDel");
-		OAT.Dom.hide("spongerPredsDefault");
-	}
-	OAT.Event.attach("pathTravSchemesDefault",'click',pathTravSchemesHide);
-	OAT.Event.attach("pathTravSchemesGraball",'click',pathTravSchemesHide);
-	OAT.Event.attach("pathTravSchemesGraballLabel",'click',pathTravSchemesHide);
-	pathTravSchemesHide(); /* hidden by default */
-	var pathTravSchemesShow = function(event) {
-		OAT.Dom.show("pathTravSchemesPreds");
-		OAT.Dom.show("spongerPredsAdd");
-		OAT.Dom.show("spongerPredsDel");
-		OAT.Dom.show("spongerPredsDefault");
-	}
-	OAT.Event.attach("pathTravSchemesSeealso",'click',pathTravSchemesShow);
-	OAT.Event.attach("pathTravSchemesSeealsoLabel",'click',pathTravSchemesShow);
-
-	/* Custom predicates:
-	   add predicate */
-	OAT.Event.attach($("spongerPredsAdd"),"click",function() {
-		OAT.Dimmer.show($("pragmaAddProp"), {color:"#333", popup:false});
-		$("pragmaAddPropPrefix").focus();
-	});
-	OAT.Event.attach($("pragmaAddPropAdd"),"click",function() {
-		var prefix = $v("pragmaAddPropPrefix");
-		var uri = $v("pragmaAddPropUri");
-		if (!prefix.length || !uri.length) {
-			alert("Both prefix and URI must be entered.");
-		} else {
-			for (var i=0;i<$("pathTravSchemesPreds").options.length;i++) {
-				if ($("pathTravSchemesPreds").options[i].text==prefix) {
-					alert("Prefix "+prefix+" already used");
-					return;
-				}	
-			}
-			var l =$("pathTravSchemesPreds").options.length;
-			$("pathTravSchemesPreds").options[l] = new Option(prefix,uri);
-			OAT.Dimmer.hide();
-			$("pragmaAddPropPrefix").value = '';
-			$("pragmaAddPropUri").value = '';
-		}
-	});
-	OAT.Event.attach($("pragmaAddPropCancel"),"click",function() {
-		OAT.Dimmer.hide();
-		$("pragmaAddPropPrefix").value = '';
-		$("pragmaAddPropUri").value = '';
-	});
-	/* remove selected predicate */
-	OAT.Event.attach($("spongerPredsDel"),"click",function() {
-		for (var i=0;i<$("pathTravSchemesPreds").options.length;i++)
-			if ($("pathTravSchemesPreds").options[i].selected) {
-				$("pathTravSchemesPreds").options[i] = null;
-				i--;
-			}
-	});
-	/* restore default set of predicates (ask only if list length is not 0) */
-	OAT.Event.attach($("spongerPredsDefault"),"click",function() {
-		if ($("pathTravSchemesPreds").options.length==0 || window.confirm("This will remove custom added predicates. Really restore?")) {
-			$("pathTravSchemesPreds").options.length = 0;
-			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','foaf:knows',true);
-			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','sioc:links_to',true);
-			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','rdfs:isDefinedBy',true);
-			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','rdfs:seeAlso',true);
-			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','owl:sameAs',true);
-		}
-	});
-
 }
 
 iSPARQL.Common = {
+
+	log:function(msg) {
+		if(!!(window.console) && iSPARQL.Preferences.debug) { 
+			window.console.log(msg);
+		}
+	},
+
 	getFilePath:function() {
 	  var path = '/DAV';
 	  if (goptions.username)
@@ -1024,8 +940,105 @@ iSPARQL.Common = {
         auth = data;
     },{async:false,onerror:function(xhr){alert(xhr.getResponseText());}});
     return auth;
-	}
+	},
 
+	setPragmas:function(pragmas) {
+		for (var i=0;i<pragmas.length;i++) {
+			var pragma = pragmas[i];
+			
+			/* look for existing pragma defs in dataObj */
+			var index = -1;
+			for (var j=0;j<iSPARQL.dataObj.pragmas.length;j++) {
+				var searched = iSPARQL.dataObj.pragmas[j];
+				if (searched[0] == pragma[0]) { index = j; break; }
+			}
+
+			/* now, if our value is false, then delete them */
+			var value = pragma[1][0];
+
+			if (value) {
+				if (index == -1) { iSPARQL.dataObj.pragmas.push(pragma); }
+				else { iSPARQL.dataObj.pragmas[index] = pragma; }
+			} else {
+				if (index != -1) { iSPARQL.dataObj.pragmas.splice(index,1); }
+			}
+		}
+		iSPARQL.Common.log(iSPARQL.dataObj.pragmas);
+	},
+
+	clearPragmas:function() {
+		iSPARQL.dataObj.pragmas = [];
+	},
+
+	setEndpoint:function(endpoint) {
+		iSPARQL.dataObj.endpoint = endpoint || "";
+		iSPARQL.Common.log(iSPARQL.dataObj.endpoint);
+	},
+
+	addNamedGraph:function(graph) {
+		var index = iSPARQL.dataObj.namedGraphs.find(graph);
+		if (index != -1) { return; }
+		iSPARQL.dataObj.namedGraphs.push(graph);
+		iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+	},
+
+	removeNamedGraph:function(graph) {
+		var index = iSPARQL.dataObj.namedGraphs.find(graph);
+		if (index == -1) { return; }
+		iSPARQL.dataObj.namedGraphs.splice(index,1);
+		iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
+	},
+
+	addGraph:function(graph) {
+		var index = iSPARQL.dataObj.graphs.find(graph);
+		if (index != -1) { return; }
+		iSPARQL.dataObj.graphs.push(graph);
+		iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+	},
+
+	addPrefix:function(prefix) {
+		var index = iSPARQL.dataObj.prefixes.find(prefix);
+		if (index != -1) { return; }
+		iSPARQL.dataObj.prefixes.push(prefix);
+		iSPARQL.Common.log(iSPARQL.dataObj.prefixes);
+	},
+
+	removeGraph:function(graph) {
+		var index = iSPARQL.dataObj.graphs.find(graph);
+		if (index == -1) { return; }
+		iSPARQL.dataObj.graphs.splice(index,1);
+		iSPARQL.Common.log(iSPARQL.dataObj.graphs);
+	},
+
+	setQuery:function(query) {
+		iSPARQL.dataObj.query = query;
+		iSPARQL.Common.log(iSPARQL.dataObj.query);
+	},
+
+	setDefaultGraph:function(graph) {
+		iSPARQL.dataObj.defaultGraph = graph;
+		iSPARQL.Common.log(iSPARQL.dataObj.defaultGraph);
+	},
+
+	setData:function(data) {
+		iSPARQL.dataObj.data = data;
+		iSPARQL.Common.log(iSPARQL.dataObj.data);
+	},
+
+	reset:function() {
+		iSPARQL.dataObj = {
+			data:false,
+			query:"",
+			endpoint:"",
+			defaultGraph:"",
+			graphs:[],
+			namedGraphs:[],
+			prefixes:[],			/* FIXME: prefixes? */
+			pragmas:{},
+			canvas:false
+		};
+		this.log(iSPARQL.dataObj);
+	}
 }
 
 function get_file_type(file_name) {
@@ -1043,25 +1056,6 @@ function set_dav_props(res){
 	}
 }
 
-/* return mime type from file extension */
-function get_mime_type(res){
-  var ext = '';
-  if (res.indexOf(('.')))
-    ext = res.substring(res.lastIndexOf('.') + 1).toLowerCase();
-  else ext = res.toLowerCase();
-  switch (ext) {
-    case 'xml':
-    case 'isparql':
-    case 'ldr':
-	    return 'text/xml';
-	case 'rdf':
-		return 'application/rdf+xml'
-	break;
-
-	  default:
-	    return 'text/plain';
-	}
-}
 
 function prefix_insert(){
   prefix = $v('prefix');
@@ -1260,67 +1254,64 @@ function tools_popup(){
 
 }
 
-var graphs_grid_num = 1;
+function add_named_graph(graph) {
+	var named_graph = $v('named_graph_add') || graph;
+  
+	if (!named_graph) {
+	    alert('Please fill in named graph value.');
+    	return false;
+	}
 
-function add_named_graph(){
-  var named_graph = $v('named_graph_add');
+	if (iSPARQL.dataObj.namedGraphs.find(named_graph) != -1) {
+		alert('Graph already present.');
+		return false;
+	}
   
-  if (!named_graph)
-  {
-    alert('Please fill in named graph value');
-    return false;
-  }
+	var table = $('named_graph_list');
   
-  var table = $('named_graph_list');
+	if (!table.tBodies.length) {
+	    var body = OAT.Dom.create("tbody");
+  		table.appendChild(body);
+	}
   
-  if (!table.tBodies.length)
-  {
-    var body = OAT.Dom.create("tbody")
-  	table.appendChild(body);
-  }
-  
-  var row = OAT.Dom.create("tr");
-  OAT.Dom.addClass(row,"odd");
-  row.id = 'named_graph_list_rom'+graphs_grid_num;
-  table.tBodies[0].appendChild(row);
-  
-  var cell_cb = OAT.Dom.create("td");
-  cell_cb.innerHTML = '<input type="checkbox" name="named_graph_cbk" value="'+graphs_grid_num+'" checked="checked"/>';
-  cell_cb.style.textAlign = "center";
-  row.appendChild(cell_cb);
+	var row = OAT.Dom.create("tr");
 
-  var cell_gr = OAT.Dom.create("td");
-  cell_gr.innerHTML = '<input type="text" style="width: 440px;" id="named_graph_'+graphs_grid_num+'" value="'+named_graph+'"/>';
-  row.appendChild(cell_gr);
+	var boxCell = OAT.Dom.create("td");
+	boxCell.style.textAlign = "center";
 
-  var cell_rm = OAT.Dom.create("td");
-  cell_rm.style.textAlign = "center";
-  row.appendChild(cell_rm);
-  var rem_btn = OAT.Dom.create("button");
-  rem_btn.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
-  cell_rm.appendChild(rem_btn);
+	var boxCheck = OAT.Dom.create("input");
+	boxCheck.type = "checkbox";
+	boxCheck.checked = "checked";
+
+	var graphCell = OAT.Dom.create("td");
+	graphCell.innerHTML = '<input type="text" style="width: 440px;" value="'+named_graph+'"/>';
+
+	var delCell = OAT.Dom.create("td");
+	delCell.style.textAlign = "center";
+
+	var delButton = OAT.Dom.create("button");
+	delButton.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
+
+	OAT.Dom.append([delCell,delButton],[boxCell,boxCheck],[row,boxCell,graphCell,delCell],[table.tBodies[0],row]);
   
-	OAT.Dom.attach(rem_btn,"click",function(){
-    OAT.Dom.unlink(row);
-    $('named_graphs_cnt').innerHTML--;
-    if (!table.tBodies[0].rows.length)
-      OAT.Dom.unlink(table.tBodies[0]);
+	OAT.Dom.attach(delButton,"click",function() {
+	    OAT.Dom.unlink(row);
+    	$('named_graphs_cnt').innerHTML--;
+	    if (!table.tBodies[0].rows.length)
+    		OAT.Dom.unlink(table.tBodies[0]);
+		iSPARQL.Common.removeNamedGraph(named_graph);
 	});
   
+	OAT.Dom.attach(boxCheck,"click",function() {
+		if (iSPARQL.dataObj.namedGraphs.find(named_graph) == -1) {
+			iSPARQL.Common.addNamedGraph(named_graph);
+		} else {
+			iSPARQL.Common.removeNamedGraph(named_graph);
+		}
+	});
+		
+	iSPARQL.Common.addNamedGraph(named_graph);  
   
-  graphs_grid_num++;
-  
-  $('named_graphs_cnt').innerHTML++;
-  
-  $('named_graph_add').value = '';
-  
-  return false;
-  
-}
-
-function remove_named_graph(ind){
-	OAT.Dom.unlink($('named_graph_list_rom'+ind));
-	$('named_graphs_cnt').innerHTML--;
-	var table = $('named_graph_list');
-	if (!table.tBodies[0].rows.length) { OAT.Dom.unlink(table.tBodies[0]); }
+	$('named_graphs_cnt').innerHTML++;
+	$('named_graph_add').value = '';
 }

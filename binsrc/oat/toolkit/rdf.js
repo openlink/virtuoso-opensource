@@ -27,7 +27,7 @@ OAT.RDF = {
 		if (!root || !root.childNodes) { return triples; }
 		var bnodePrefix = "_:" + Math.round(1000*Math.random()) + "_";
 		var bnodeCount = 0;
-		
+
 		var u = url || "";
 		u = u.match(/^[^#]+/);
 		u = u? u[0] : "";
@@ -83,6 +83,7 @@ OAT.RDF = {
 				var n = node.childNodes[i];
 				var nattribs = OAT.Xml.getLocalAttributes(n);
 				var pred = n.namespaceURI+OAT.Xml.localName(n);
+
 				if (getAtt(nattribs,"resource") != "") { /* link via id */
 					var obj = getAtt(nattribs,"resource");
 					if (obj[0] == "#") { obj = idPrefix + obj.substring(1); }

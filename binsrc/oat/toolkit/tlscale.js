@@ -364,7 +364,7 @@ OAT.TlScale = {
 			return [l];
 		}
 	},
-	
+
 	_fiveseconds:function() {
 		var self = this;
 		this.format = "i:s.x";

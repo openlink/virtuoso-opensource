@@ -738,7 +738,7 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		v.appendChild(a);		
 		self.parent.processLink(a,uri);
 	}
-	
+
 	this.patchEmbedded = function(column) {
 		var v = self.grid.rows[self.grid.rows.length-1].cells[column].value;
 		var all = v.getElementsByTagName("a");

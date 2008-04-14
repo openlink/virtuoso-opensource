@@ -377,70 +377,38 @@ iSPARQL.QBE = function () {
 
 	this.var_cnt = 1;
 
-	this.save = function(save_name,save_type) {
-		var data = self.getSaveData(save_type)
-		goptions.last_path = save_name;
-		set_dav_props(goptions.last_path);
-		var send_ref = function() { return data; }
-		var recv_ref = function(data) { alert('Saved.'); }
-		OAT.AJAX.PUT(save_name,send_ref(),recv_ref,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC,headers:{'Content-Type':get_mime_type(goptions.last_path)}});
+	this.save = function() {
+		var data = self.getSaveData();
+		iSPARQL.IO.save(data);
 	}
 	
 	/* return data for saving */
-	this.getSaveData = function(save_type){
-		var data = "";
-		
-		switch (save_type) {
-			case "rq":
-				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + adv.service.input.value + '\n';
-			  data += self.QueryGenerate();
-			break;
+	this.getSaveData = function() {
+		var dataObj = {
+			query:"",
+			endpoint:false,
+			canvas:false,
+			defaultGraph:false,
+			schemas:[],
+			pragmas:{},
+		};
 
-			case "xml":
-				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + adv.service.input.value + '\n';
-			  data += self.QueryGenerate();
-    		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  			xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
-  			if ($v('qbe_graph'))
-  			  xml += ' sql:default-graph-uri="' + $v('qbe_graph') + '"';
-  			xml += '><sql:sparql>'+OAT.Dom.toSafeXML(data)+'</sql:sparql></root>';
-  			data = xml;
-			break;
-			case "isparql":
-			case "ldr":
-			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
-				data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-				data += '#service:' + adv.service.input.value + '\n';
-			  data += self.QueryGenerate();
-    		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n';
-  			xml += '<iSPARQL xmlns="urn:schemas-openlink-com:isparql">\n';
-  			xml += '<ISparqlDynamicPage>\n';
-  			//xml += '<service>'+goptions.service+'</service>\n';
-  			//xml += '<should_sponge>'+goptions.should_sponge+'</should_sponge>\n';
-  			xml += '<proxy>'+goptions.proxy+'</proxy>\n';
-  			//xml += '<query><![CDATA['+data+']]></query>\n';
-  			xml += '<query>'+OAT.Dom.toSafeXML(data)+'</query>\n';
-  			for (var i=0;i < self.Schemas.Imported.length;i++)
-  			  xml += '<schema uri="'+ self.Schemas.Imported[i] +'"/>\n';
-  			xml += '</ISparqlDynamicPage>\n';
-  			xml += self.svgsparql.toXML();
-  			xml += '<should_sponge>'+$v('qbe_sponge')+'</should_sponge>\n';
-  				xml += '<service>'+adv.service.input.value+'</service>\n';
-  			xml += '</iSPARQL>';
-  			data = xml;
-			break;
+		dataObj.query = self.QueryGenerate();
+		dataObj.enpoint = iSPARQL.dataObj.enpoint;
+		dataObj.proxy = goptions.proxy;
+		dataObj.canvas = self.svgsparql.toXML();
+		dataObj.defaultGraph = $v('qbe_graph');
 
-			case "rdf":
-				/* no previous query, no data */
-				if(qe.cacheIndex == -1) { break; }
-				var xml = qe.cache[qe.cacheIndex].data;
-				data = OAT.Xml.serializeXmlDoc(xml);
-			break;
+		if(qe.cacheIndex == -1) { 
+			var cache = qe.cache[qe.cacheIndex];
+			dataObj.data = (cache)? cache.data : false;
 		}
-		return data;
+  		
+		for (var i=0;i < self.Schemas.Imported.length;i++) {
+  			dataObj.prefixes.push(self.Schemas.Imported[i]);
+		}
+
+		return dataObj;
 	}
 
 	this.prefixes = [];
@@ -556,6 +524,7 @@ iSPARQL.QBE = function () {
 	OAT.Dom.attach("schema_remove","click",function() {
 		self.Schemas.Remove($v('schema').trim());
 	});
+
 	self.Schemas = {
 		Tree:t,
 		Bound:bound,
@@ -776,7 +745,7 @@ iSPARQL.QBE = function () {
 						var comment = (obj.comment ? obj.comment.value : false);
 						self.Schemas.InsertNode(self.Schemas.Unbound,uri,type,label,comment);
 				}
-						
+
 				if (JSONData.results.bindings.length > 0) {
 					var objs = JSONData.results.bindings;
 					var schemaParts = self.getPrefixParts(node.schema);
@@ -807,7 +776,7 @@ iSPARQL.QBE = function () {
 			var oldIcon = "";
 			var oldFilter = "";
 			var params = {
-				service:adv.service.input.value,
+				endpoint:iSPARQL.dataObj.endpoint,
 				query:
 					'define get:soft "replacing" \n'+
 					'PREFIX owl: <http://www.w3.org/2002/07/owl#> \n' +
@@ -824,11 +793,11 @@ iSPARQL.QBE = function () {
 					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#ObjectProperty>) } UNION\n' +
 					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#DatatypeProperty>) } UNION\n' +
 					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#InverseFunctionalProperty>) } }\n' +
-				  '         OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-				  '         OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-				  '         OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-				  '}' + '\n' +
-				  'ORDER BY ?uri',
+					'         OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
+					'         OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
+					'         OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
+					'}' + '\n' +
+					'ORDER BY ?uri',
 				//default_graph_uri:node.li.uri,
 				default_graph_uri:'',
 				maxrows:0,
@@ -879,7 +848,7 @@ iSPARQL.QBE = function () {
 				}
 			}
 			var params = {
-				service:adv.service.input.value,
+				endpoint:iSPARQL.dataObj.endpoint,
 				query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
 'SELECT DISTINCT ?g ' + getFromQueryStr() + '\n' +
 ' WHERE { ?s a ?o .\n' +
@@ -943,68 +912,18 @@ iSPARQL.QBE = function () {
 	}
 	
 	this.func_load = function() {
-	  tab.go(tab_qbe);
-	  var path = iSPARQL.Common.getFilePath();
-	  var file = iSPARQL.Common.getFile();
-    	var options = {
-    		user:goptions.username,
-    		pass:goptions.password,
-    		path:path + '/',
-    		file:file,
-    		extension:get_file_type(goptions.last_path),
-    		isDav:((goptions.login_put_type == 'http')?false:true),
-    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
-    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
-    		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
-    		                  ['','*','All files','']
-    		                 ],
-        callback:function(path,fname,data){
-          goptions.last_path = path + fname;
-          self.loadFromString(data);
-        }
-      };
-    	OAT.WebDav.openDialog(options);
+    	var callback = function(path,file,data){
+        	self.loadFromString(data.query);
+		}
+		iSPARQL.IO.load(callback);
 	}
 	
 	this.func_save = function() {
-	  tab.go(tab_qbe);
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-    if (goptions.last_path)
-    {
-      self.save(goptions.last_path,get_file_type(goptions.last_path)); 
-    }else 
-      icon_saveas.toggle();
+		self.save();
 	}
 	
 	this.func_saveas = function() {
-	  tab.go(tab_qbe);
-  	  var path = iSPARQL.Common.getFilePath();
-  	  var file = iSPARQL.Common.getFile();
-
-			var options = {
-    		user:goptions.username,
-    		pass:goptions.password,
-    		path:path + '/',
-    		file:file,
-    		extension:get_file_type(goptions.last_path),
-    		isDav:((goptions.login_put_type == 'http')?false:true),
-    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
-    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
-							  ['rdf','rdf','RDF Data',get_mime_type('rdf')],
-    		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
-    		                 ],
-				callback:function(path,fname){
-          goptions.last_path = path + fname;
-          set_dav_props(goptions.last_path);
-				},
-    		dataCallback:function(fname,ext){
-				  //OAT.Dav.SaveContentType = get_mime_type(ext);
-      		return self.getSaveData(ext);
-				}
-			};
-			OAT.WebDav.saveDialog(options);
+		self.save();
 	}
 
 	/* create toolbar and bind its buttons to various SVGSparql modes */
@@ -1130,7 +1049,6 @@ iSPARQL.QBE = function () {
 	t.addSeparator();
 
 	this.func_run = function() {
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
 	  self.RunQuery();
 	}
 	
@@ -1455,7 +1373,8 @@ iSPARQL.QBE = function () {
 			query:self.QueryGenerate(),
 			defaultGraph:$v("qbe_graph"),
 			sponge:$v("qbe_sponge"),
-			endpoint:adv.service.input.value,
+			endpoint:iSPARQL.dataObj.endpoint,
+			pragmas:iSPARQL.dataObj.pragmas,
 			limit:maxrows
 		}
 		qe.execute(p);

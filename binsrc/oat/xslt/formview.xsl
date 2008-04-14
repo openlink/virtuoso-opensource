@@ -39,7 +39,7 @@
 		<xsl:variable name="nocred">
 			<xsl:for-each select="//connection|/form">
 				<xsl:value-of select="@nocred" />
-		</xsl:for-each>
+			</xsl:for-each>
 		</xsl:variable>
 		var nocred = "<xsl:value-of select="$nocred" />";
 		<xsl:variable name="showajax">

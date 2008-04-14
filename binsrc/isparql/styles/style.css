@@ -42,7 +42,7 @@ fieldset {
 }
 
 fieldset.derefOpts {
-	width: 450px;
+	width: 600px;
 	float: right;
 	margin-top: -28px;
 }
@@ -65,7 +65,7 @@ fieldset.queryopts {
 fieldset.endpoint {
 	margin-top: 10px;
 	display: block;
-	width: 360px;
+	width: 260px;
 }
 
 
