@@ -43,13 +43,17 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     public void add( Triple [] triples ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
+	boolean autoCommit = _graph.getAutoCommit();
 	try {
+	        if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
 
         	for (int i = 0; i < triples.length; i += 1) 
         		_graph.performAdd( triples[i] ); 
+        	if (autoCommit) {
 		_graph.getConnection().commit();
 		_graph.getConnection().setAutoCommit(true);
+		}
 	} catch (Exception e) {
 		throw new RuntimeException("Couldn't create transaction",e);
 	}
@@ -59,14 +63,18 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
     @Override
     protected void add(List triples, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
+	boolean autoCommit = _graph.getAutoCommit();
 	try {
+	        if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
 		for (Iterator i = triples.iterator(); i.hasNext(); ) {
 			Triple trip = (Triple) i.next();
 			_graph.performAdd(trip);
 		}
+	        if (autoCommit)  {
 		_graph.getConnection().commit();
 		_graph.getConnection().setAutoCommit(true);
+		}
 	} catch (Exception e) {
 		throw new RuntimeException("Couldn't create transaction",e);
 	}
@@ -78,12 +86,16 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     public void delete( Triple [] triples ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
+	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
         	for (int i = 0; i < triples.length; i += 1) 
         		_graph.performDelete( triples[i] ); 
+	        if (autoCommit) {
 		_graph.getConnection().commit();
 		_graph.getConnection().setAutoCommit(true);
+		}
 	} catch (Exception e) {
 		throw new RuntimeException("Couldn't create transaction",e);
 	}
@@ -93,12 +105,16 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 
     protected void delete( List triples, boolean notify ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
+	boolean autoCommit = _graph.getAutoCommit();
 	try {
+		if (autoCommit) 
 		_graph.getConnection().setAutoCommit(false);
         	for (int i = 0; i < triples.size(); i += 1) 
         		graph.performDelete( (Triple) triples.get(i) );
+		if (autoCommit) {
 		_graph.getConnection().commit();
 		_graph.getConnection().setAutoCommit(true);
+		}
 	} catch (Exception e) {
 		throw new RuntimeException("Couldn't create transaction",e);
 	}
