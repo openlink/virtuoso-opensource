@@ -43,6 +43,19 @@
 #define xml_dbg_printf(a)
 #endif
 
+#define V8B				((unsigned char)(0x80))
+#define VXML_CHARPROP_CTRL		((unsigned char)('A'^'@'))	/*0x01*/
+#define VXML_CHARPROP_SPACE		((unsigned char)('B'^'@'))	/*0x02*/
+#define VXML_CHARPROP_TEXTEND		((unsigned char)('D'^'@'))	/*0x04*/
+#define VXML_CHARPROP_ATTREND		((unsigned char)('H'^'@'))	/*0x08*/
+#define VXML_CHARPROP_ENTBEGIN		((unsigned char)('P'^'@'))	/*0x10*/
+#define VXML_CHARPROP_ELTEND		((unsigned char)('`'^'@'))	/*0x20*/
+#define VXML_CHARPROP_8BIT		((unsigned char)(0x80))		/*0x80*/
+#define VXML_CHARPROP_ANY_SPECIAL	((unsigned char)(~'@'))		/*0xcf*/
+#define VXML_CHARPROP_ANY_NONCHAR	((unsigned char)(~0))		/*0xff*/
+
+#define V8B VXML_CHARPROP_8BIT
+
 unsigned char vxml_char_props [0x100] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
   'B','@','@','@','@','@','@','@','@','B','C','@','@','C','@','@',
@@ -51,7 +64,7 @@ unsigned char vxml_char_props [0x100] = {
 /*     !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /  */
   'B','@','H','@','@','P','P','H','@','@','@','@','@','@','@','@',
 /* 0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?  */
-  '@','@','@','@','@','@','@','@','@','@','@','@','D','@','@','@',
+  '@','@','@','@','@','@','@','@','@','@','@','@','D','@','`','@',
 /* @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O  */
   '@', 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
 /* P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _  */
@@ -61,30 +74,21 @@ unsigned char vxml_char_props [0x100] = {
 /* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  \x7f*/
    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,'@','@','@','@','@',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
-  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`' };
-
-#define VXML_CHARPROP_CTRL		((unsigned char)('A'^'@'))	/*0x01*/
-#define VXML_CHARPROP_SPACE		((unsigned char)('B'^'@'))	/*0x02*/
-#define VXML_CHARPROP_TEXTEND		((unsigned char)('D'^'@'))	/*0x04*/
-#define VXML_CHARPROP_ATTREND		((unsigned char)('H'^'@'))	/*0x08*/
-#define VXML_CHARPROP_ENTBEGIN		((unsigned char)('P'^'@'))	/*0x10*/
-#define VXML_CHARPROP_8BIT		((unsigned char)('`'^'@'))	/*0x20*/
-#define VXML_CHARPROP_ANY_SPECIAL	((unsigned char)(~'@'))		/*0xcf*/
-#define VXML_CHARPROP_ANY_NONCHAR	((unsigned char)(~0))		/*0xcf*/
+  V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B,V8B };
 
 #ifndef NO_validate_parser_bricks
 static int validate_brick (brick_t *brk)
@@ -1221,7 +1225,7 @@ get_attr_value (vxml_parser_t * parser, int dtd_body)
 	  for (;;)
 	    {
               if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
-                skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_SPACE | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN | VXML_CHARPROP_ATTREND | VXML_CHARPROP_TEXTEND);
+                skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_SPACE | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN | VXML_CHARPROP_ATTREND | VXML_CHARPROP_TEXTEND | VXML_CHARPROP_ELTEND);
 	      tmp = parser->pptr;
 	      c = get_tok_char (parser);
 	      switch (c)
