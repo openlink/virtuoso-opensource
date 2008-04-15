@@ -273,14 +273,14 @@ typedef unsigned char * db_buf_t;
   {((unsigned int32*)(place))[0] = (v) >> 32; \
   ((unsigned int32*)(place))[1] = (int32)(v); }
 
-
+#if 0
 #define INT64_REF_NA(p) \
   (((int64)LONG_REF_NA (p)) << 32 | ((uint32)LONG_REF_NA (((caddr_t)p) + 4)))
 
 #define INT64_SET_NA(p, v) \
   {LONG_SET_NA ((p),  ((v) >> 32));				\
     LONG_SET_NA (((caddr_t)(p)) + 4, 0xffffffff & (v)); }
-
+#endif
 
 
 /* Index entry flags. Used only for uncommitted rows */
