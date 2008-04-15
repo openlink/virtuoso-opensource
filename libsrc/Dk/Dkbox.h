@@ -28,6 +28,8 @@
 
 #ifndef _DKBOX1_H
 #define _DKBOX1_H
+#include "Dkword.h"
+
 
 #ifdef __cplusplus
 typedef char * box_t;
@@ -750,4 +752,13 @@ extern caddr_t uname___empty;
 
 extern void dkbox_terminate_module (void);
 
+#endif
+
+
+#ifdef WORDS_BIGENDIAN
+#define DV_INT_TAG_WORD  0x080000bd
+#define DV_IRI_TAG_WORD 0x080000f3
+#else
+#define DV_INT_TAG_WORD  0xbd000008
+#define DV_IRI_TAG_WORD 0xf3000008
 #endif

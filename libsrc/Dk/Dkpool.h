@@ -102,7 +102,7 @@ extern box_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t 
 extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
-extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, ptrlong num);
+extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxint num);
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
@@ -123,7 +123,7 @@ extern box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t le
 extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_num (mem_pool_t * mp, ptrlong num);
+extern caddr_t mp_box_num (mem_pool_t * mp, boxint num);
 #endif
 
 #ifdef LACERATED_POOL
@@ -318,6 +318,32 @@ caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);
 #endif
 
 void mp_trash (mem_pool_t * mp, caddr_t box);
+caddr_t mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp);
+
+#ifdef LACERATED_POOL 
+#define MP_BYTES(x, mp, len)  x = mp_alloc_box (mp, len, DV_NON_BOX)
+#else
+#define MP_BYTES(x, mp, len2) \
+{ \
+  int __len = ALIGN_8 (len2); \
+  mem_block_t * f = mp->mp_first; \
+  if (f && f->mb_fill + __len <= f->mb_size) \
+    { \
+      x = ((char*)f) + f->mb_fill; \
+      f->mb_fill += __len; \
+    } \
+  else \
+    x = mp_alloc_box (mp, len2, DV_NON_BOX); \
+}
+#endif
+
+#define MP_INT(x, mp, v, tag_word)		\
+{ \
+  MP_BYTES (x, mp, 16); \
+  x = ((char *)x) + 8; \
+  *(int64 *)x = v; \
+  ((int32*)x)[-1] = tag_word; \
+}
 
 #endif /* ifdef __DKPOOL_H */
 

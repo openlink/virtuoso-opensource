@@ -413,6 +413,18 @@ typedef struct scheduler_io_data_s {
   SESSION_SCH_DATA (ses)->sio_read_fail_on = 1; \
   if (0 == setjmp_splice (&SESSION_SCH_DATA (ses)->sio_read_broken_context))
 
+
+#define SAVE_READ_FAIL(ses) \
+{ \
+  scheduler_io_data_t __siod, *__siod_save = SESSION_SCH_DATA(ses); \
+  memset (&__siod, 0, sizeof (__siod));				    \
+  SESSION_SCH_DATA (ses) = &__siod;
+
+
+#define RESTORE_READ_FAIL(ses) \
+  SESSION_SCH_DATA(ses) = __siod_save; \
+}
+
 #define CATCH_WRITE_FAIL(ses) \
   SESSION_SCH_DATA (ses)->sio_write_fail_on = 1; \
   if (0 == setjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context))

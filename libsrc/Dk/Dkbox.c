@@ -1145,7 +1145,7 @@ DBG_NAME(box_dv_short_nchars_reuse) (DBG_PARAMS const char *buf, size_t buf_len,
   res = DBG_NAME(dk_alloc_box) (DBG_ARGS res_size, DV_SHORT_STRING);
   memcpy (res, buf, buf_len);
   res [buf_len] = '\0';
-  dk_free_box (replace);
+  dk_free_tree (replace);
   return res;
 }
 

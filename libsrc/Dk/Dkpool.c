@@ -38,10 +38,13 @@ void mp_uname_free (const void *k, void *data)
 {
 #ifdef DEBUG
   caddr_t box = k;
+  if (DV_UNAME == box_tag (box))
+    {
   int len = box_length (box) - 1;
   ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
   if (data != (void *)qchk)
     GPF_T1 ("mp_uname_free(): bad checksum");
+    }
 #endif
   dk_free_box ((box_t) k);
 }
@@ -57,7 +60,7 @@ mem_pool_t * mem_pool_alloc (void)
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_size = 0x100;
   mp->mp_allocs = (caddr_t *)DK_ALLOC (sizeof (caddr_t) * mp->mp_size);
-  mp->mp_unames = hash_table_allocate (4096);
+  mp->mp_unames = hash_table_allocate (11);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
@@ -117,7 +120,7 @@ mem_pool_t * mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8((4096 * 8));
-  mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 4096);
+  mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 11);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
@@ -385,9 +388,29 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	    GPF_T1 ("not supposed to make a tmp pool copy of this copiable dtp");
 	    return NULL;
 	  }
-	cp = DBG_MP_ALLOC_BOX (mp, box_length (box), box_tag (box));
+	{
+#ifdef MALLOC_DEBUG
+	  cp = mp_alloc_box (mp, box_length (box), box_tag (box));
         memcpy (cp, box, box_length (box));
         return cp;
+#else
+	  int align_len = ALIGN_8 (box_length (box));
+	  MP_BYTES (cp, mp, 8 + align_len);
+	  cp = ((char*)cp) + 8;
+	  ((int32*)cp)[-1] = ((int32*)box)[-1];
+#if 0	  
+	  if (align_len < 64)
+	    {
+	      int inx;
+	      for (inx = 0; inx < align_len / 8; inx++)
+		((int64*)cp)[inx] = ((int64*)box)[inx];
+	    }
+	  else
+#endif	    
+	    memcpy (cp, box, box_length (box));
+	  return cp;
+#endif
+	}
       }
     }
 }
@@ -481,14 +504,14 @@ mp_list (mem_pool_t * mp, long n, ...)
   return ((caddr_t *) box);
 }
 
-caddr_t DBG_NAME(mp_box_num) (DBG_PARAMS mem_pool_t * mp, ptrlong n)
+caddr_t DBG_NAME(mp_box_num) (DBG_PARAMS mem_pool_t * mp, boxint n)
 {
-  box_t *box;
+  caddr_t box;
   if (!IS_POINTER (n))
     return (box_t) n;
-  box = (box_t *) DBG_NAME(mp_alloc_box) (DBG_ARGS mp, sizeof (boxint), DV_LONG_INT);
-  *box = (box_t) n;
-  return (caddr_t) box;
+
+  MP_INT (box, mp, n, DV_INT_TAG_WORD);
+  return box;
 }
 
 caddr_t DBG_NAME(t_box_num) (DBG_PARAMS boxint n)
@@ -924,3 +947,22 @@ mp_trash (mem_pool_t * mp, caddr_t box)
 {
   dk_set_push (&mp->mp_trash, (void*)box);
 }
+
+
+caddr_t 
+mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp)
+{
+#ifdef MALLOC_DEBUG 
+  return mp_alloc_box (mp, len, dtp);
+#else
+  caddr_t box;
+  MP_BYTES (box, mp, 8 + len);
+  box += 8;
+  box_tag_modify (box, dtp);
+  ((dtp_t *)box)[-4] = (dtp_t) (len & 0xff);
+  ((dtp_t *)box)[-3] = (dtp_t) (len >> 8);
+  ((dtp_t *)box)[-2] = (dtp_t) (len >> 16);
+  return box;
+#endif
+}
+

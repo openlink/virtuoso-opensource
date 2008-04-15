@@ -733,26 +733,55 @@ print_int64_no_tag (boxint n, dk_session_t *session)
 ses_write_func int64_serialize_client_f;
 
 void
-print_int (boxint n, dk_session_t *session)
+print_int (boxint n, dk_session_t *ses)
 {
+  int fill = ses->dks_out_fill;
   if ((n > -128) && (n < 128))
     {
-      session_buffered_write_char (DV_SHORT_INT, session);
-      session_buffered_write_char ((char) n, session);
+      if (fill + 2 <= ses->dks_out_length)
+	{
+	  ses->dks_out_buffer[fill] = DV_SHORT_INT;
+	  ses->dks_out_buffer[fill + 1] = n;
+	  ses->dks_out_fill += 2;
+	}
+      else 
+	{
+	  session_buffered_write_char (DV_SHORT_INT, ses);
+	  session_buffered_write_char ((char) n, ses);
+	}
     }
   else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
     {
-      session_buffered_write_char (DV_LONG_INT, session);
-      print_long (n, session);
+      if (fill + 5 <= ses->dks_out_length)
+	{
+	  int32 ni = n;
+	  ses->dks_out_buffer[fill] = DV_LONG_INT;
+	  LONG_SET_NA (ses->dks_out_buffer + fill + 1, ni);
+	  ses->dks_out_fill += 5;
+	}
+      else 
+	{
+	  session_buffered_write_char (DV_LONG_INT, ses);
+	  print_long (n, ses);
+	}
     }
   else
     {
       if (int64_serialize_client_f)
 	{
-	  (*int64_serialize_client_f) ((caddr_t)&n, session);
+	  (*int64_serialize_client_f) ((caddr_t)&n, ses);
 	}
       else
-	print_int64 (n, session);
+	{
+	  if (fill + 9 <= ses->dks_out_length)
+	    {
+	      ses->dks_out_buffer[fill] = DV_INT64;
+	      INT64_SET_NA (ses->dks_out_buffer + fill + 1, n);
+	      ses->dks_out_fill += 9;
+	}
+      else
+	    print_int64 (n, ses);
+	}
     }
 }
 
@@ -952,6 +981,7 @@ print_object2 (void *object, dk_session_t *session)
 		sr_report_future_error (session, "", temp);
 		SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
 	      }
+	    CHECK_WRITE_FAIL (session);
 	    longjmp_splice (&(SESSION_SCH_DATA (session)->sio_write_broken_context), 1);
 #else
 	    GPF_T1 ("Bad tag in print_object");
