@@ -28,6 +28,7 @@ install-data-local:
 	mkdir -p "$(DESTDIR)$(httprootdir)"
 	mkdir -p "$(DESTDIR)$(httprootdir)"/images
 	mkdir -p "$(DESTDIR)$(httprootdir)"/admin
+	mkdir -p "$(DESTDIR)$(httprootdir)"/vsmx
 	$(INSTALL_DATA) *.html "$(DESTDIR)$(httprootdir)"
 	$(INSTALL_DATA) *.css "$(DESTDIR)$(httprootdir)"
 	$(INSTALL_DATA) *.txt "$(DESTDIR)$(httprootdir)"
@@ -35,6 +36,8 @@ install-data-local:
 	$(INSTALL_DATA) images/*.gif "$(DESTDIR)$(httprootdir)"/images
 	$(INSTALL_DATA) images/*.png "$(DESTDIR)$(httprootdir)"/images
 	$(INSTALL_DATA) images/*.jpg "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) vsmx/*.* "$(DESTDIR)$(httprootdir)"/vsmx
+
 
 uninstall-local:
 	rm -rf "$(DESTDIR)$(httprootdir)"/*
