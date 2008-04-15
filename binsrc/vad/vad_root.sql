@@ -40,8 +40,9 @@ create table  "VAD"."DBA"."VAD_REGISTRY" (
     "R_TYPE"  varchar not null,
     "R_VALUE" long varchar,
     primary key ("R_ID") )
-create index VAD_REGISTRY_CHDIR on "VAD"."DBA"."VAD_REGISTRY" (R_PRNT,R_SHKEY,R_TYPE)
-create index VAD_REGISTRY_KEY on "VAD"."DBA"."VAD_REGISTRY" (R_KEY)
+create index VAD_REGISTRY_CHDIR on "VAD"."DBA"."VAD_REGISTRY" (R_PRNT,R_SHKEY,R_TYPE) partition cluster replicated
+create index VAD_REGISTRY_KEY on "VAD"."DBA"."VAD_REGISTRY" (R_KEY) partition cluster replicated
+alter index VAD_REGISTRY on "VAD"."DBA"."VAD_REGISTRY" partition cluster replicated
 ;
 
 --drop table "VAD"."DBA"."VAD_LOG";
@@ -769,12 +770,13 @@ create procedure "VAD"."DBA"."__vad_init"()
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'FILES');
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'SCHEMA');
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'VAD');
+    _ini_id := sequence_set ('vad_id', 0, 2);
+    sequence_set ('__NEXT__vad_id', _ini_id + 1, 1);
 --    sequence_set ('vad_id', 1000, 0);
   }
 }
 ;
 
-
-
+--!AFTER
 "VAD"."DBA"."__vad_init"()
 ;
