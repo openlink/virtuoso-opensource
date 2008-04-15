@@ -14,6 +14,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	ajax:"crypto",
 	ajax2:"xml",
 	soap:"ajax2",
+	connection:"crypto",
 	xmla:["soap","xml","connection"],
 	roundwin:["drag","resize","simplefx"],
 	rectwin:["drag","resize"],
