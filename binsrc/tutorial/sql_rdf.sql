@@ -136,48 +136,48 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
         {
                 tutorial:Post (resources.RES_ID, resources.RES_NAME)
                         a tutorial:Post
-                                as virtrdf:Post-RES_ID ;
+                                as virtrdf:tutPost-RES_ID ;
                         a foaf:Document
-                                as virtrdf:siocPost-RES_ID;
+                                as virtrdf:tutsiocPost-RES_ID;
                         a bibo:Article
-                                as virtrdf:BiboPost-RES_ID ;
+                                as virtrdf:tutBiboPost-RES_ID ;
                         bibo:identifier resources.RES_NAME
-                                as virtrdf:Post-RES_NAME ;
+                                as virtrdf:tutPost-RES_NAME ;
                         bibo:author users.U_NAME
                                 where (^{resources.}^.RES_OWNER = ^{users.}^.U_ID)
-                                as virtrdf:Post-RES_OWNER ;
+                                as virtrdf:tutPost-RES_OWNER ;
                         tutorial:belongs_to_section tutorial:Section(resources.RES_COL, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
-                                as virtrdf:Post-RES_COL ;
+                                as virtrdf:tutPost-RES_COL ;
                         sioc:content resources.RES_CONTENT
-                                as virtrdf:Post-RES_CONTENT ;
+                                as virtrdf:tutPost-RES_CONTENT ;
                         sioc:description resources.RES_NAME
-                                as virtrdf:siocPost-RES_NAME ;
+                                as virtrdf:tutsiocPost-RES_NAME ;
                         tutorial:type resources.RES_TYPE
-                                as virtrdf:Post-RES_TYPE ;
+                                as virtrdf:tutPost-RES_TYPE ;
                         bibo:presentedAt resources.RES_CR_TIME
-                                as virtrdf:Post-RES_CR_TIME ;
+                                as virtrdf:tutPost-RES_CR_TIME ;
                         bibo:url tutorial:DocPath(resources.RES_FULL_PATH)
-                                as virtrdf:Post-RES_FULL_PATH ;
+                                as virtrdf:tutPost-RES_FULL_PATH ;
                         rdfs:isDefinedBy tutorial:post_iri (resources.RES_ID) ;
                         rdfs:isDefinedBy tutorial:Post (resources.RES_ID, resources.RES_NAME) .
 
                 tutorial:DocPath(resources.RES_FULL_PATH)
                         a tutorial:DocPath
-                                as virtrdf:DocPath-RES_FULL_PATH .
+                                as virtrdf:tutDocPath-RES_FULL_PATH .
 
                 tutorial:Section (collections.COL_ID, collections.COL_NAME)
                         a tutorial:Section
-                                as virtrdf:Section-COL_ID ;
+                                as virtrdf:tutSection-COL_ID ;
                         a sioc:Container
-                                as virtrdf:siocSection-COL_ID ;
+                                as virtrdf:tutsiocSection-COL_ID ;
                         a bibo:Collection
-                                as virtrdf:BiboSection-COL_ID ;
+                                as virtrdf:tutBiboSection-COL_ID ;
                         bibo:identifier collections.COL_NAME
-                                as virtrdf:Section-COL_NAME ;
+                                as virtrdf:tutSection-COL_NAME ;
                         bibo:author users.U_NAME
                                 where (^{collections.}^.COL_OWNER = ^{users.}^.U_ID)
-                                as virtrdf:Section-COL_OWNER ;
+                                as virtrdf:tutSection-COL_OWNER ;
                         rdfs:isDefinedBy tutorial:section_iri (collections.COL_ID) ;
                         rdfs:isDefinedBy tutorial:Section (collections.COL_ID, collections.COL_NAME) .
                         
@@ -185,7 +185,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
                         sioc:is_container_of
                         tutorial:Post(resources.RES_ID, resources.RES_NAME)
                         where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
-                        as virtrdf:siocSection-COL_ID2 .
+                        as virtrdf:tutsiocSection-COL_ID2 .
 
         } .
 } .
