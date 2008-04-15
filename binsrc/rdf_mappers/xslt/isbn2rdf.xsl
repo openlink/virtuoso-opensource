@@ -41,11 +41,15 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:apply-templates select="ISBNdb/BookList/BookData"/>
+	    <xsl:apply-templates select="ISBNdb/SubjectList/SubjectData"/>
+	    <xsl:apply-templates select="ISBNdb/AuthorList/AuthorData"/>
+	    <xsl:apply-templates select="ISBNdb/CategoryList/CategoryData"/>
+	    <xsl:apply-templates select="ISBNdb/PublisherList/PublisherData"/>
 	</rdf:RDF>
     </xsl:template>
     
     <xsl:template match="ISBNdb/BookList/BookData">
-	<bibo:Book rdf:about="{$baseUri}">
+	<bibo:Book rdf:about="{@book_id}">
             <bibo:isbn>
                 <xsl:value-of select="@isbn"/>
             </bibo:isbn>
@@ -54,6 +58,45 @@
             </bibo:url>
 	    <xsl:apply-templates select="*"/>
 	</bibo:Book>
+    </xsl:template>
+    
+    <xsl:template match="ISBNdb/SubjectList/SubjectData">
+	<bibo:Collection rdf:about="{@subject_id}">
+            <bibo:shortTitle>
+                <xsl:value-of select="Name"/>
+            </bibo:shortTitle>
+	    <xsl:apply-templates select="*"/>
+	</bibo:Collection>
+    </xsl:template>
+    
+    <xsl:template match="ISBNdb/AuthorList/AuthorData">
+	<bibo:author rdf:about="{@person_id}">
+            <bibo:familyName>
+                <xsl:value-of select="Name"/>
+            </bibo:familyName>
+	    <xsl:apply-templates select="*"/>
+	</bibo:author>
+    </xsl:template>
+
+    <xsl:template match="ISBNdb/CategoryList/CategoryData">
+	<bibo:Collection rdf:about="{@category_id}">
+            <bibo:shortTitle>
+                <xsl:value-of select="Name"/>
+            </bibo:shortTitle>
+	    <xsl:apply-templates select="*"/>
+	</bibo:Collection>
+    </xsl:template>
+    
+    <xsl:template match="ISBNdb/PublisherList/PublisherData">
+	<bibo:publisher rdf:about="{@publisher_id}">
+            <bibo:familyName>
+                <xsl:value-of select="Name"/>
+            </bibo:familyName>
+	    <bibo:physicalLocation>
+		<xsl:value-of select="Details/@location"/>
+	    </bibo:physicalLocation>
+	    <xsl:apply-templates select="*"/>
+	</bibo:publisher>
     </xsl:template>
     
     <xsl:template match="Title">

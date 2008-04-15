@@ -63,11 +63,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://isbndb.com/api/.*)',
+    values ('(http://isbndb.com/.*)|'||
+            '(https://isbndb.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://www.theyworkforyou.com/api/.*)',
+    values ('(http://www.theyworkforyou.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_TWFY', null, 'TWFY');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -828,29 +829,48 @@ end_sp:
 
 create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xt, url, tmp, tmp2, api_key, img_id, hdr, exif any;
-  declare output_type varchar;
+  declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+	asin := null;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
-  tmp := sprintf_inverse (new_origin_uri, '%s://%s/api/%s?%s', 0);
-  if (length(tmp) > 3)
+        
+	if (new_origin_uri like 'http://www.theyworkforyou.com/search/?s=%')
   {
-    if (left(tmp[3], 7) <> 'output=')
-          url := sprintf('%s://%s/api/%s?output=%s&%s', tmp[0], tmp[1], tmp[2], 'xml', tmp[3]);
-    else
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.theyworkforyou.com/search/?s=%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://www.theyworkforyou.com/api/getHansard?search=%s&output=xml',
+			asin);
+	}
+        else if (new_origin_uri like 'http://www.theyworkforyou.com/mp/?pc=%')
     {
-          tmp := sprintf_inverse (new_origin_uri, '%s://%s/api/%s?%s&%s', 0);
-          url := sprintf('%s://%s/api/%s?output=%s&%s', tmp[0], tmp[1], tmp[2], 'xml', tmp[4]);
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.theyworkforyou.com/mp/?pc=%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://www.theyworkforyou.com/api/getMP?postcode=%s&output=xml',
+			asin);
     }
+	else if (new_origin_uri like 'http://www.theyworkforyou.com/mp/%/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.theyworkforyou.com/mp/%s/%s', 0);
+		asin := trim (tmp[1], '/');
+		if (asin is null)
+			return 0;
+                        
+		url := sprintf ('http://www.theyworkforyou.com/api/getMP?constituency=%s&output=xml',
+			asin);
   }
   else
-    url := concat(new_origin_uri, '?output=xml');
-  tmp2 := http_get (url, hdr);
+            return 0;        
+  
+  tmp := http_get (url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-  xd := xtree_doc (tmp2);
+  xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twfy2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -860,15 +880,100 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 
 create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+	declare xd, xt, url, tmp, api_key, asin, hdr, exif, books any;
+	declare is_book integer;
+	asin := null;
+	is_book := 0;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
-  tmp := http_get (new_origin_uri, hdr);
+	--api_key := _key;
+	api_key := '6GP9NBME';
+	if (not isstring (api_key))
+		return 0;
+	if (new_origin_uri like 'http%://%isbndb.com/d/subject/index.html?kw=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/d/subject/index.html?kw=%s', 0);
+		asin := rtrim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/subjects.xml?access_key=%s&index1=name&value1=%s',
+			api_key, asin);
+	}
+    else if (new_origin_uri like 'http%://%isbndb.com/search-all.html?kw=%&%')
+	{
+		is_book := 1;
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/search-all.html?kw=%s&%s', 0);
+		asin := rtrim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=title&value1=%s',
+			api_key, asin);
+	}
+	else if (new_origin_uri like 'http%://%isbndb.com/search-all.html?kw=%')
+	{
+		is_book := 1;
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/search-all.html?kw=%s', 0);
+		asin := rtrim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=title&value1=%s',
+			api_key, asin);
+	}
+	else if (new_origin_uri like 'http%://%isbndb.com/d/book/index.html?kw=%')
+	{	
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/d/book/index.html?kw=%s', 0);
+		asin := rtrim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=title&value1=%s', api_key, asin);
+		is_book := 1;
+	}
+    else if (new_origin_uri like 'http%://%isbndb.com/authors/search.html?kw=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/authors/search.html?kw=%s', 0);
+		asin := rtrim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/authors.xml?access_key=%s&index1=name&value1=%s',
+			api_key, asin);
+	}
+        else if (new_origin_uri like 'http%://%isbndb.com/c/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/c/%s', 0);
+		asin := trim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/categories.xml?access_key=%s&index1=name&value1=%s',
+			api_key, asin);
+	}
+        else if (new_origin_uri like 'http%://%isbndb.com/publishers/search.html?kw=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/publishers/search.html?%s', 0);
+		asin := trim (tmp[2], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://isbndb.com/api/publishers.xml?access_key=%s&index1=name&value1=%s',
+			api_key, asin);
+	}
+	else
+	{
+		return 0;
+	}
+	tmp := http_get (url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
+	books := xpath_eval('//BookData', xd);
+	if (is_book = 1 and books is null)
+	{
+		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=isbn&value1=%s', api_key, asin);
+		tmp := http_get (url, hdr);
+		if (hdr[0] not like 'HTTP/1._ 200 %')
+			signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+		xd := xtree_doc (tmp);
+	}
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/isbn2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));

@@ -46,19 +46,58 @@
     </xsl:template>
     
     <xsl:template match="twfy">
-        <xsl:apply-templates select="*"/>
+        <xsl:choose>
+            <xsl:when test="info">
+                <xsl:apply-templates select="info"/>
+                <xsl:apply-templates select="searchdescription"/>
+                <xsl:apply-templates select="rows/match"/>
+            </xsl:when>
+	    <xsl:otherwise>
+                <xsl:apply-templates />
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     
-    <!--xsl:template match="match">
-        <xsl:variable name="canonicalname" select="local-name(.)" />
-        <xsl:element namespace="{$ns}" name="{$canonicalname}" >
-                <xsl:apply-templates />
+    <xsl:template match="info">
+        <rdf:Description rdf:about="{$baseUri}">
+            <xsl:element namespace="{$ns}" name="s" >
+                <xsl:value-of select="s"/>
         </xsl:element>
-    </xsl:template-->
+        </rdf:Description>
+        <rdf:Description rdf:about="{$baseUri}">
+            <xsl:element namespace="{$ns}" name="results_per_page" >
+                <xsl:value-of select="results_per_page"/>
+            </xsl:element>
+        </rdf:Description>
+        <rdf:Description rdf:about="{$baseUri}">
+            <xsl:element namespace="{$ns}" name="first_result" >
+                <xsl:value-of select="first_result"/>
+            </xsl:element>
+        </rdf:Description>
+        <rdf:Description rdf:about="{$baseUri}">
+            <xsl:element namespace="{$ns}" name="total_results" >
+                <xsl:value-of select="total_results"/>
+            </xsl:element>
+        </rdf:Description>
+    </xsl:template>
+    
+    <xsl:template match="searchdescription">
+        <rdf:Description rdf:about="{$baseUri}">
+            <xsl:element namespace="{$ns}" name="searchdescription" >
+                <xsl:value-of select="searchdescription"/>
+            </xsl:element>
+        </rdf:Description>
+    </xsl:template>
+
+    <xsl:template match="rows/match">
+        <xsl:apply-templates />
+    </xsl:template>
     
     <xsl:template match="*">
+        <xsl:variable name="gid" select="../gid" />
+        <xsl:variable name="about" select="concat($baseUri, '#', $gid)" />
         <xsl:variable name="canonicalname" select="local-name(.)" />
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{$about}">
             <xsl:element namespace="{$ns}" name="{$canonicalname}" >
                         <xsl:value-of select="."/>
             </xsl:element>
