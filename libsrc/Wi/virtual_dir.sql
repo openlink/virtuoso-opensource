@@ -70,6 +70,7 @@ create table HTTP_ACL (
   PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
 ;
 
+--#IF VER=5
 -- HTTP_ACL table upgrade
 --!AFTER
 alter table HTTP_ACL add HA_LIST varchar not null
@@ -82,6 +83,7 @@ alter table HTTP_ACL add HA_ORDER integer not null
 --!AFTER
 alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 ;
+--#ENDIF
 
 -- triggers to keep in sync in-memory representation
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
@@ -258,6 +260,7 @@ insert soft DB.DBA.HTTP_PATH
 )
 ;
 
+--#IF VER=5
 create procedure HTTP_PATH_UPGRADE ()
 {
   declare arr, new_vhost any;
@@ -281,6 +284,7 @@ create procedure HTTP_PATH_UPGRADE ()
 
 HTTP_PATH_UPGRADE ()
 ;
+--#ENDIF
 
 create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
 {

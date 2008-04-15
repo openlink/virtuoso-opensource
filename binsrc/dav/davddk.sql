@@ -74,6 +74,7 @@ create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT)
 create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID)
 ;
 
+--#IF VER=5
 alter table WS.WS.SYS_DAV_COL add COL_DET varchar
 ;
 
@@ -85,6 +86,7 @@ alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
 
 alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
 ;
+--#ENDIF
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES (
@@ -113,6 +115,7 @@ create unique index SYS_DAV_RES_ID on WS.WS.SYS_DAV_RES (RES_ID)
 create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH)
 ;
 
+--#IF VER=5
 alter table WS.WS.SYS_DAV_RES add ROWGUID varchar
 ;
 
@@ -124,6 +127,7 @@ alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 
 alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID
 ;
+--#ENDIF
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
 --;
@@ -164,10 +168,12 @@ create index SYS_DAV_PROP_PARENT on WS.WS.SYS_DAV_PROP (PROP_TYPE, PROP_PARENT_I
 create unique index SYS_DAV_PROP_ID on WS.WS.SYS_DAV_PROP (PROP_ID)
 ;
 
+--#IF VER=5
 update DB.DBA.SYS_COLS set COL_DTP = 125 where "TABLE" = 'WS.WS.SYS_DAV_PROP' and "COLUMN" = 'PROP_VALUE'
 ;
 __ddl_changed ('WS.WS.SYS_DAV_PROP')
 ;
+--#ENDIF
 
 
 -- WebDAV Locks
@@ -245,6 +251,7 @@ create table WS.WS.SYS_RDF_SCHEMAS (
 create unique index SYS_RDF_SCHEMAS_CATNAME on WS.WS.SYS_RDF_SCHEMAS (RS_CATNAME)
 ;
 
+--#IF VER=5
 alter table WS.WS.SYS_RDF_SCHEMAS add RS_COMPILATION_DATE datetime
 ;
 
@@ -256,6 +263,7 @@ alter table WS.WS.SYS_RDF_SCHEMAS add RS_PROP_CATNAMES long varchar
 
 alter table WS.WS.SYS_RDF_SCHEMAS add RS_DEPRECATED integer
 ;
+--#ENDIF
 
 -- Known uses of RDF schemas for particular MIME types
 create table WS.WS.SYS_MIME_RDFS (

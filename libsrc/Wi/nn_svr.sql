@@ -23,6 +23,7 @@
 
 -- Upgrade code for NNTP using a view
 
+--#IF VER=5
 create procedure NEWS_MSG_UPGRADE ()
 {
   if (exists (select 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.NEWS_MSG')
@@ -39,6 +40,7 @@ create procedure NEWS_MSG_UPGRADE ()
 
 NEWS_MSG_UPGRADE ()
 ;
+--#ENDIF
 
 create table NEWS_MSG_NNTP (
 	NM_ID		varchar not null,	-- Message-ID (unique)
@@ -323,6 +325,7 @@ create table NEWS_GROUPS (
 	PRIMARY KEY (NG_GROUP))
 ;
 
+--#IF VER=5
 --!AFTER
 alter table NEWS_GROUPS add NG_NEXT_NUM integer
 ;
@@ -330,6 +333,7 @@ alter table NEWS_GROUPS add NG_NEXT_NUM integer
 --!AFTER
 alter table NEWS_GROUPS add NG_TYPE varchar default 'NNTP'
 ;
+--#ENDIF
 
 create table NEWS_SERVERS (
 	NS_ID		integer identity,	-- News server ID
@@ -355,10 +359,10 @@ create view NEWS_MESSAGES as select * from DB.DBA.NEWS_MSG, DB.DBA.NEWS_MULTI_MS
   where NM_ID = NM_KEY_ID
 ;
 
-
+--#IF VER=5
 update DB.DBA.NEWS_GROUPS set NG_AUTO = 1 where NG_UP_INT > 0
 ;
-
+--#ENDIF
 
 -- NNTP server start
 

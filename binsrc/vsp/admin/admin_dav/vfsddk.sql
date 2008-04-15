@@ -92,6 +92,7 @@ create table WS.WS.VFS_SITE_RDF_MAP (
     primary key (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ))
 ;
 
+--#IF VER=5
 create procedure WS.WS.VFS_TBL_UPGRADE ()
 {
   declare _err, _state varchar;
@@ -129,4 +130,5 @@ WS.WS.VFS_TBL_UPGRADE ()
 --!AFTER
 alter table WS.WS.VFS_SITE add VS_DLOAD_META int default 0
 ;
+--#ENDIF
 

@@ -32,6 +32,7 @@ DB.DBA.SIMILE_INIT ()
 }
 ;
 
+--!AFTER
 DB.DBA.SIMILE_INIT ()
 ;
 

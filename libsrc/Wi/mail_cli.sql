@@ -61,6 +61,7 @@ create table MAIL_ATTACHMENT (
    	)
 ;
 
+--#IF VER=5
 --!AFTER
 alter table MAIL_ATTACHMENT add MA_BLOG_ID varchar
 ;
@@ -90,6 +91,7 @@ alter table MAIL_MESSAGE add MM_MOBLOG varchar(50) default NULL
 --!AFTER
 alter table MAIL_MESSAGE add MM_MSG_ID varchar default NULL
 ;
+--#ENDIF
 
 
 --!AFTER_AND_BEFORE DB.DBA.MAIL_MESSAGE MM_MSG_ID !

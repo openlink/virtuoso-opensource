@@ -53,8 +53,10 @@ create table DB.DBA.SYS_ANN_PHRASE_SET
   )
 ;
 
+--#IF VER=5
 alter table DB.DBA.SYS_ANN_PHRASE_SET add APS_LOAD_AT_BOOT integer not null
 ;
+--#ENDIF
 
 create table DB.DBA.SYS_ANN_PHRASE
 (
@@ -67,8 +69,10 @@ create table DB.DBA.SYS_ANN_PHRASE
   )
 ;
 
+--#IF VER=5
 alter table DB.DBA.SYS_ANN_PHRASE add AP_LINK_DATA_LONG long varchar
 ;
+--#ENDIF
 
 create table DB.DBA.SYS_ANN_AD_ACCOUNT (
   AAA_ID integer not null primary key,

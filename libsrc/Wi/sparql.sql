@@ -70,8 +70,10 @@ create table DB.DBA.RDF_OBJ (
 create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL, RO_DIGEST)
 ;
 
+--#IF VER=5
 alter table DB.DBA.RDF_OBJ add RO_DIGEST any
 ;
+--#ENDIF
 
 create table DB.DBA.RDF_DATATYPE (
   RDT_IID IRI_ID not null primary key,
@@ -92,8 +94,10 @@ create table DB.DBA.SYS_SPARQL_HOST (
 )
 ;
 
+--#IF VER=5
 alter table DB.DBA.SYS_SPARQL_HOST add SH_DEFINES long varchar
 ;
+--#ENDIF
 
 create table DB.DBA.RDF_OBJ_FT_RULES (
   ROFR_G varchar not null,
@@ -8548,9 +8552,11 @@ create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER)
 ;
 
+--#IF VER=5
 --!AFTER
 alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
 ;
+--#ENDIF
 
 create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
    (
@@ -9007,6 +9013,7 @@ create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID)
 create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID)
 ;
 
+--#IF VER=5
 --!AFTER
 alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
 ;
@@ -9038,6 +9045,7 @@ create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
 --!AFTER
 DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
 ;
+--#ENDIF
 
 create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr any,
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)
