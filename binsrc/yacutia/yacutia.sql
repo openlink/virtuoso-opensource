@@ -347,8 +347,8 @@ create procedure adm_menu_tree ()
       <node name="Transactional (publish)" url="db_repl_sub_edit.vspx" id="105" place="1" />
    </node>
  </node>
- <node name="WebDAV &amp; HTTP" url="cont_page.vspx"  id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
-   <node name="WebDAV Content Management" url="cont_page.vspx"  id="139" allowed="yacutia_http_content_page">
+ <node name="Web Application Server" url="cont_page.vspx"  id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
+   <node name="Content Management" url="cont_page.vspx"  id="139" allowed="yacutia_http_content_page">
       <node name="Content Management" url="cont_page.vspx" id="140" place="1" allowed="yacutia_http_content_page"/>
       <node name="Content Management" url="cont_management.vspx" id="141" place="1" allowed="yacutia_http_content_page"/>
       <node name="Robot Control" url="robot_control.vspx" id="142" place="1" allowed="yacutia_http_content_page"/>
@@ -364,7 +364,7 @@ create procedure adm_menu_tree ()
       <node name="Resource Types" url="cont_type_edit.vspx" id="151" place="1" allowed="yacutia_http_content_page"/>
       <node name="Resource Types" url="cont_type_remove.vspx" id="152" place="1" allowed="yacutia_http_content_page"/>
    </node>
-   <node name="HTTP Hosts &amp; Directories" url="http_serv_mgmt.vspx"  id="153" allowed="yacutia_http_server_management_page">
+   <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx"  id="153" allowed="yacutia_http_server_management_page">
       <node name="Edit Paths" url="http_edit_paths.vspx" id="154" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Add Path" url="http_add_path.vspx" id="155" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Edit Host" url="http_host_edit.vspx" id="170" place="1" allowed="yacutia_http_server_management_page"/>
