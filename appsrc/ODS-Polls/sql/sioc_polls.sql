@@ -19,8 +19,11 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
 use sioc;
 
+-------------------------------------------------------------------------------
+--
 create procedure poll_post_iri (
   in domain_id varchar,
   in poll_id integer)
@@ -33,6 +36,23 @@ create procedure poll_post_iri (
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
   return sprintf ('http://%s%s/%U/polls/%U/%d', get_cname(), get_base_path (), _member, _inst, poll_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure poll_comment_iri (
+	in domain_id varchar,
+	in poll_id integer,
+	in comment_id integer)
+{
+	declare c_iri varchar;
+
+	c_iri := poll_post_iri (domain_id, poll_id);
+	if (isnull (c_iri))
+	  return c_iri;
+
+	return sprintf ('%s/%d', c_iri, comment_id);
 }
 ;
 
@@ -59,7 +79,8 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
     id := -1;
     deadl := 3;
     cnt := 0;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
       if (deadl <= 0)
 	      resignal;
       rollback work;
@@ -99,8 +120,34 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
                     P_CREATED,
                     P_UPDATED);
 
+	    for (select PC_ID,
+                  PC_DOMAIN_ID,
+                  PC_POLL_ID,
+                  PC_TITLE,
+                  PC_COMMENT,
+                  PC_UPDATED,
+                  PC_U_NAME,
+                  PC_U_MAIL,
+                  PC_U_URL
+		         from POLLS.WA.POLL_COMMENT
+		        where PC_POLL_ID = P_ID) do
+		  {
+		    polls_comment_insert (graph_iri,
+                              c_iri,
+                              PC_ID,
+                              PC_DOMAIN_ID,
+                              PC_POLL_ID,
+                              PC_TITLE,
+                              PC_COMMENT,
+                              PC_UPDATED,
+                              PC_U_NAME,
+                              PC_U_MAIL,
+                              PC_U_URL);
+      }
+
       cnt := cnt + 1;
-      if (mod (cnt, 500) = 0) {
+      if (mod (cnt, 500) = 0)
+      {
   	    commit work;
   	    id := P_ID;
       }
@@ -127,7 +174,8 @@ create procedure polls_insert (
   declare iri any;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -156,7 +204,8 @@ create procedure polls_insert (
       foaf_maker (graph_iri, person_iri (creator_iri), U_FULL_NAME, U_E_MAIL);
     }
 
-  if (not isnull (graph_iri)) {
+  if (not isnull (graph_iri))
+  {
     iri := poll_post_iri (domain_id, poll_id);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, POLLS.WA.poll_url (domain_id, poll_id), description);
     scot_tags_insert (inst_id, iri, tags);
@@ -174,7 +223,8 @@ create procedure polls_delete (
 {
   declare graph_iri, iri varchar;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -208,7 +258,8 @@ create trigger POLLS_SIOC_I after insert on POLLS.WA.POLL referencing new as N
 create trigger POLLS_SIOC_U after update on POLLS.WA.POLL referencing old as O, new as N
 {
   polls_delete (O.P_ID,
-                O.P_DOMAIN_ID, O.P_TAGS);
+                O.P_DOMAIN_ID,
+                O.P_TAGS);
   polls_insert (null,
                 null,
                 null,
@@ -227,7 +278,132 @@ create trigger POLLS_SIOC_U after update on POLLS.WA.POLL referencing old as O, 
 create trigger POLLS_SIOC_D before delete on POLLS.WA.POLL referencing old as O
 {
   polls_delete (O.P_ID,
-                O.P_DOMAIN_ID, O.P_TAGS);
+                O.P_DOMAIN_ID,
+                O.P_TAGS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure polls_comment_insert (
+	in graph_iri varchar,
+	in forum_iri varchar,
+  inout comment_id integer,
+  inout domain_id integer,
+  inout master_id integer,
+  inout title varchar,
+  inout comment varchar,
+  inout last_update datetime,
+  inout u_name varchar,
+  inout u_mail varchar,
+  inout u_url varchar)
+{
+	declare master_iri, comment_iri varchar;
+
+	declare exit handler for sqlstate '*'
+	{
+		sioc_log_message (__SQL_MESSAGE);
+		return;
+	};
+
+  master_id := cast (master_id as integer);
+	if (isnull (graph_iri))
+		for (select WAI_ID, WAM_USER, WAI_NAME
+					 from DB.DBA.WA_INSTANCE,
+								DB.DBA.WA_MEMBER
+					where WAI_ID = domain_id
+						and WAM_INST = WAI_NAME
+						and WAI_IS_PUBLIC = 1) do
+		{
+			graph_iri := get_graph ();
+      forum_iri := polls_iri (WAI_NAME);
+		}
+
+	if (not isnull (graph_iri))
+	{
+		comment_iri := poll_comment_iri (domain_id, master_id, comment_id);
+    if (not isnull (comment_iri))
+    {
+		  master_iri := poll_post_iri (domain_id, master_id);
+      foaf_maker (graph_iri, u_url, u_name, u_mail);
+      ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure polls_comment_delete (
+  inout domain_id integer,
+  inout item_id integer,
+  inout id integer)
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare iri varchar;
+
+  iri := poll_comment_iri (domain_id, item_id, id);
+  delete_quad_s_or_o (get_graph (), iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_COMMENT_SIOC_I after insert on POLLS.WA.POLL_COMMENT referencing new as N
+{
+  if (not isnull(N.PC_PARENT_ID))
+    polls_comment_insert (null,
+                          null,
+                          N.PC_ID,
+                          N.PC_DOMAIN_ID,
+                          N.PC_POLL_ID,
+                          N.PC_TITLE,
+                          N.PC_COMMENT,
+                          N.PC_UPDATED,
+                          N.PC_U_NAME,
+                          N.PC_U_MAIL,
+                          N.PC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_COMMENT_SIOC_U after update on POLLS.WA.POLL_COMMENT referencing old as O, new as N
+{
+  if (not isnull(O.PC_PARENT_ID))
+    polls_comment_delete (O.PC_DOMAIN_ID,
+                          O.PC_POLL_ID,
+                          O.PC_ID);
+  if (not isnull(N.PC_PARENT_ID))
+    polls_comment_insert (null,
+                          null,
+                          N.PC_ID,
+                          N.PC_DOMAIN_ID,
+                          N.PC_POLL_ID,
+                          N.PC_TITLE,
+                          N.PC_COMMENT,
+                          N.PC_UPDATED,
+                          N.PC_U_NAME,
+                          N.PC_U_MAIL,
+                          N.PC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_COMMENT_SIOC_D before delete on POLLS.WA.POLL_COMMENT referencing old as O
+{
+  if (not isnull(O.PC_PARENT_ID))
+    polls_comment_delete (O.PC_DOMAIN_ID,
+                          O.PC_POLL_ID,
+                          O.PC_ID);
 }
 ;
 
@@ -307,7 +483,8 @@ create procedure ODS_POLLS_TAGS ()
            and P_DOMAIN_ID = WAI_ID
            and length (P_TAGS) > 0) do {
     V := split_and_decode (P_TAGS, 0, '\0\0,');
-    foreach (any t in V) do {
+    foreach (any t in V) do
+    {
       t := trim(t);
       if (length (t))
  	      result (WAM_INST, U_NAME, P_ID, t);

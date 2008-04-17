@@ -428,7 +428,7 @@ create procedure POLLS.WA.export_atom_sqlx(
   declare retValue, xsltTemplate any;
 
   xsltTemplate := POLLS.WA.xslt_full ('rss2atom03.xsl');
-  if (POLLS.WA.settings_atomVersion (account_id) = '1.0')
+  if (POLLS.WA.settings_atomVersion (domain_id) = '1.0')
     xsltTemplate := POLLS.WA.xslt_full ('rss2atom.xsl');
 
   retValue := POLLS.WA.export_rss_sqlx_int (domain_id, account_id);
@@ -583,11 +583,14 @@ create procedure POLLS.WA.domain_gems_create (
 --
 create procedure POLLS.WA.domain_gems_delete(
   in domain_id integer,
-  in account_id integer,
+  in account_id integer := null,
   in appName varchar := 'Polls',
   in appGems varchar := null)
 {
   declare tmp, home, path varchar;
+
+  if (isnull (account_id))
+    account_id := POLLS.WA.domain_owner_id (domain_id);
 
   home := POLLS.WA.dav_home(account_id);
   if (isnull(home))
@@ -661,7 +664,9 @@ create procedure POLLS.WA.domain_delete (
 {
   delete from POLLS.WA.POLL where P_DOMAIN_ID = domain_id;
   delete from POLLS.WA.TAGS where T_DOMAIN_ID = domain_id;
+  delete from POLLS.WA.SETTINGS where S_DOMAIN_ID = domain_id;
 
+  POLLS.WA.domain_gems_delete (domain_id);
   POLLS.WA.nntp_update (domain_id, null, null, 1, 0);
 
   VHOST_REMOVE(lpath => concat('/polls/', cast(domain_id as varchar)));
@@ -794,7 +799,6 @@ create procedure POLLS.WA.account_delete(
   in domain_id integer,
   in account_id integer)
 {
-  POLLS.WA.domain_gems_delete(domain_id, account_id);
   return 1;
 }
 ;
@@ -1013,11 +1017,11 @@ create procedure POLLS.WA.settings_rows (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.settings_atomVersion (
-  inout account_id integer)
+  inout domain_id integer)
 {
   declare settings any;
 
-  settings := POLLS.WA.settings(account_id);
+  settings := POLLS.WA.settings (domain_id);
   return get_keyword('atomVersion', settings, '1.0');
 }
 ;
@@ -1191,7 +1195,7 @@ create procedure POLLS.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Polls';
 
-  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
                   POLLS.WA.domain_sioc_url (domain_id, sid, realm),
                   POLLS.WA.domain_name (domain_id),
                   POLLS.WA.domain_name (domain_id),

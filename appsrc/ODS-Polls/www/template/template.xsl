@@ -152,13 +152,9 @@
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-            <v:url value="--''" format="%s" url="--POLLS.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Polls Home">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/pollsbanner_sml.jpg" border="0" alt="Polls Home" />';
-              ]]>
-            </v:before-render>
-          </v:url>
+            <?vsp
+              http (sprintf ('<a alt="Polls Home" title="Polls Home" href="%s"><img src="image/pollsbanner_sml.jpg" border="0" alt="Polls Home" /></a>', POLLS.WA.utf2wide (POLLS.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
+            ?>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -181,7 +177,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp http (POLLS.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
+            <?vsp http (POLLS.WA.utf2wide (POLLS.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
@@ -255,7 +251,7 @@
         http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', POLLS.WA.foaf_url (self.domain_id)));
         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
 
-        S := sprintf ('http://%s/dataspace/%U/polls/%U/', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (self.domain_id), POLLS.WA.domain_name (self.domain_id));
+        S := sprintf ('http://%s/dataspace/%U/polls/%U/', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (self.domain_id), POLLS.WA.utf2wide (POLLS.WA.domain_name (self.domain_id)));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>

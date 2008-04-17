@@ -200,6 +200,12 @@
     ]]>
   </v:method>
 
+  <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
+    <![CDATA[
+      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'polls_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', POLLS.WA.url_fix (sprintf ('%s%s', POLLS.WA.polls_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Polls</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -592,25 +598,25 @@
                             
                           actions := '';
                           if (POLLS.WA.poll_enable_vote (id))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
 
                           if (POLLS.WA.poll_enable_clear (self.domain_id, self.account_role, id))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link_ed">clear</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link_ed">clear</a>', id, title);
 
                           if (POLLS.WA.poll_enable_result (id) > 0)
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link_ed">result</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link_ed">result</a>', id, title);
 
                           if (POLLS.WA.poll_enable_activate (self.domain_id, self.account_role, id))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link_ed">activate</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link_ed">activate</a>', id, title);
 
                           if (POLLS.WA.poll_enable_close (self.domain_id, self.account_role, id))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link_ed">close</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link_ed">close</a>', id, title);
 
                           if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id) = 1)
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
 
                           if (POLLS.WA.discussion_check () and POLLS.WA.conversation_enable (self.domain_id))
-                            actions := actions || either (equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open(\'%s\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="Discussion %s" class="link_ed">discussion</a>', POLLS.WA.url_fix (sprintf ('conversation.vspx?id=%d', id), self.sid, self.realm), title);
+                            actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', id), 'discuss', title);
 
                           http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
                           http (actions);

@@ -50,10 +50,6 @@ EXTRA_DIST = \
 	www/image/*.jpg \
 	www/image/*.png \
 	www/js/*.js \
-	www/rte/css/*.css \
-	www/rte/images/*.gif \
-	www/rte/js/*.htm \
-	www/rte/js/*.js \
 	www/template/*.vspx \
 	www/template/*.xsl \
 	xslt/*.xsl
