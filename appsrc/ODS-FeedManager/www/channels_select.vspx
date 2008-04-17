@@ -54,8 +54,10 @@
       self.v_order := columnName;
     ]]>
   </v:method>
+
   <vm:pagetitle>Select Feed</vm:pagetitle>
-  <vm:popup_page_wrapper>
+
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable name="v_exclude" param-name="ex" type="integer" default="0"/>
       <v:variable name="v_params" param-name="params" type="varchar"/>
@@ -123,7 +125,7 @@
         </v:data-source>
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="channels" class="grid" cellspacing="0">
+            <table id="channels" class="FM_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <th>
@@ -188,5 +190,5 @@
         </script>
       </div>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

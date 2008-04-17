@@ -815,7 +815,8 @@ create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int (inout vtb any, inout d_i
   select EFID_DOMAIN_ID, EFID_ACCOUNT_ID, EFID_ITEM_ID, EFID_TAGS into domain_id, account_id, item_id, tags from ENEWS.WA.FEED_ITEM_DATA where EFID_ID = d_id;
 
   tags := split_and_decode (tags, 0, '\0\0,');
-  foreach (any tag in tags) do  {
+  foreach (any tag in tags) do
+  {
     tag := trim(tag);
     tag := replace (tag, ' ', '_');
     tag := replace (tag, '+', '_');
@@ -826,7 +827,8 @@ create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int (inout vtb any, inout d_i
     if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);
 
-  if (not isnull(domain_id)) {
+  if (not isnull(domain_id))
+  {
     vt_batch_feed (vtb, sprintf ('^R%d', domain_id), mode);
     if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);

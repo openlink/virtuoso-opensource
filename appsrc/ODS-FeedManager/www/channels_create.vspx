@@ -94,8 +94,6 @@
       if (type = 2)
         return 'Upload from WebDAV (OPML, OCS)';
       if (type = 3)
-        return 'Upload from Server-side file system (OPML, OCS)';
-      if (type = 4)
         return 'From directory of known (popular) feeds';
       return '';
     ]]>
@@ -142,7 +140,8 @@
             self.v_title := get_keyword('title', self.v_data[1], '');
           self.v_folder_id := trim(get_keyword('f_folder_id', self.vc_page.vc_event.ve_params, '0'));
           self.v_folder_name := trim(get_keyword('f_folder_name', self.vc_page.vc_event.ve_params, ''));
-          if (self.v_source = 4) {
+          if (self.v_source = 3)
+          {
             declare N integer;
             N := cast(get_keyword('directory', self.vc_page.vc_event.ve_params, '-1') as integer);
             if (N <> -1)
@@ -174,13 +173,8 @@
                 <v:radio-button name="rb_2" xhtml_id="rb_2" value="2" group-name="choice_source" initial-checked="--either(equ(self.v_rb,2),1,0)" xhtml_title="--self.source_label(2)" />
                 <vm:label for="rb_2" value="--self.source_label(2)" />
                 <br />
-                <v:template type="simple" enabled="-- case when (ENEWS.WA.check_admin(self.account_id)) then 1 else 0 end">
                   <v:radio-button name="rb_3" xhtml_id="rb_3" value="3" group-name="choice_source" initial-checked="--either(equ(self.v_rb,3),1,0)" xhtml_title="--self.source_label(3)" />
                   <vm:label for="rb_3" value="--self.source_label(3)" />
-                  <br />
-                </v:template>
-                <v:radio-button name="rb_4" xhtml_id="rb_4" value="4" group-name="choice_source" initial-checked="--either(equ(self.v_rb,4),1,0)" xhtml_title="--self.source_label(4)" />
-                <vm:label for="rb_4" value="--self.source_label(4)" />
               </td>
             </tr>
           </table>
@@ -197,8 +191,6 @@
                   self.v_source := 2;
                 } else if (self.rb_3.ufl_selected) {
                   self.v_source := 3;
-                } else if (self.rb_4.ufl_selected) {
-                  self.v_source := 4;
                   self.v_directory_id := 0;
                 }
                 self.v_step := '1';
@@ -216,7 +208,7 @@
         </div>
       </v:template>
 
-      <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source <> 4)) then 1 else 0 end">
+      <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source <> 3)) then 1 else 0 end">
         <div class="new-form-header">
           <v:label format="%s" value="--'Subscribe feed(s)'" />
         </div>
@@ -242,10 +234,6 @@
             			    ]]>
             			  </v:after-data-bind>
             		  </v:button>
-                </v:template>
-                <v:template type="simple" enabled="-- case when (self.v_source = 3) then 1 else 0 end">
-                  <v:text name="source_3" xhtml_size="70"/>
-                  <vm:file_browser render="popup" list_type="details" path="DAV" browse_type="res" style_css="css/dav.css" w_title="File Browser" title="File Browser" lang="en" return_box="source_3"/>
                 </v:template>
                 <v:button action="simple" value="Subscribe" xhtml_alt="Subscribe feed" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
                   <v:on-post>
@@ -419,18 +407,19 @@
                 declare url2 varchar;
 
                 self.v_retrieve := self.f_retrieve.ufl_selected;
-                if (self.v_source = 1) {
+                if (self.v_source = 1)
+                {
                   self.v_url := trim(get_keyword('source_1', e.ve_params, ''));
                   retValue := self.check_url(self.v_url, null, 1, 'local file name for OPML or OCS feeds');
-                } else if (self.v_source = 2) {
+                }
+                else if (self.v_source = 2)
+                {
                   self.v_url := trim(get_keyword('source_2', e.ve_params, ''));
                   url2 := concat(ENEWS.WA.host_url(), self.v_url);
                   retValue := self.check_url(self.v_url, url2, 2, 'WebDAV file name for OPML or OCS feeds');
-                } else if (self.v_source = 3) {
-                  self.v_url := trim(get_keyword('source_3', e.ve_params, ''));
-                  retValue := self.check_url(self.v_url, null, 3, 'server-side file name for OPML or OCS feeds');
                 }
-                if (retValue = '') {
+                if (retValue = '')
+                {
                   self.v_url := '';
                   self.vc_data_bind(e);
                 }
@@ -444,18 +433,19 @@
                 declare url2 varchar;
 
                 self.v_retrieve := self.f_retrieve.ufl_selected;
-                if (self.v_source = 1) {
+                if (self.v_source = 1)
+                {
                   self.v_url := trim(get_keyword('source_1', e.ve_params, ''));
                   retValue := self.check_url(self.v_url, null, 1, 'local file name for OPML or OCS feeds');
-                } else if (self.v_source = 2) {
+                }
+                else if (self.v_source = 2)
+                {
                   self.v_url := trim(get_keyword('source_2', e.ve_params, ''));
                   url2 := concat(ENEWS.WA.host_url(), self.v_url);
                   retValue := self.check_url(self.v_url, url2, 2, 'WebDAV file name for OPML or OCS feeds');
-                } else if (self.v_source = 3) {
-                  self.v_url := trim(get_keyword('source_3', e.ve_params, ''));
-                  retValue := self.check_url(self.v_url, null, 3, 'server-side file name for OPML or OCS feeds');
                 }
-                if (retValue = '') {
+                if (retValue = '')
+                {
                   self.v_step := '4';
                   self.v_url := '';
                   self.vc_data_bind(e);
@@ -471,7 +461,7 @@
         </div>
       </v:template>
 
-      <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source = 4)) then 1 else 0 end">
+      <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source = 3)) then 1 else 0 end">
         <div class="new-form-header">
           Directory of known (popular) feeds
         </div>
@@ -489,26 +479,30 @@
                   for (N := 0; N < L; N := N + 1)
                     http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" class="nolink3" title="%s"> %s</a>', aLinks[N][1], rtrim(aLinks[N][0], '/'), rtrim(aLinks[N][0], '/'), aLinks[N][0]));
                   http('<hr />');
-                  if (self.v_directory_id) {
-                    for (select ED_ID, ED_NAME from ENEWS.WA.DIRECTORY where ED_PARENT_ID = self.v_directory_id order by ED_NAME) do {
+                  if (self.v_directory_id)
+                  {
+                    for (select ED_ID, ED_NAME from ENEWS.WA.DIRECTORY where ED_PARENT_ID = self.v_directory_id order by ED_NAME) do
+                    {
                       http(sprintf('<input type="image" src="image/folder_16.png" border="0" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" title="%s"/>&nbsp;', ED_ID, ED_NAME, ED_NAME));
                       http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" title="%s" class="nolink3"> %s</a>', ED_ID, ED_NAME, ED_NAME, ED_NAME));
                       http('<br />');
                       needHR := 1;
                     }
                   } else {
-                    for (select ED_ID, ED_NAME from ENEWS.WA.DIRECTORY where ED_PARENT_ID is null order by ED_NAME) do {
+                    for (select ED_ID, ED_NAME from ENEWS.WA.DIRECTORY where ED_PARENT_ID is null order by ED_NAME) do
+                    {
                       http(sprintf('<input type="image" src="image/folder_16.png" border="0" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" title="%s"/>&nbsp;', ED_ID, ED_NAME, ED_NAME));
                       http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" class="nolink3" title="%s"> %s</a>', ED_ID, ED_NAME, ED_NAME, ED_NAME));
                       http('<br />');
                       needHR := 1;
                     }
                   }
-                  if (exists(select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_DIRECTORY_ID = self.v_directory_id)) {
+                  if (exists(select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_DIRECTORY_ID = self.v_directory_id))
+                  {
                     if (needHR)
                       http('<hr />');
                 ?>
-                <table id="channels" class="grid" cellspacing="0">
+                <table id="channels" class="FM_grid" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
                       <th style="text-align: center; background-color: #B0CDE4;">
@@ -528,7 +522,8 @@
                                   join ENEWS.WA.FEED_DIRECTORY b on b.EFD_FEED_ID = a.EF_ID
                                     left join ENEWS.WA.FEED_DOMAIN c on c.EFD_FEED_ID = a.EF_ID and c.EFD_DOMAIN_ID = self.domain_id
                           where EFD_DIRECTORY_ID = self.v_directory_id
-                          order by EF_TITLE) do {
+                          order by EF_TITLE) do
+                    {
                   ?>
                     <tr>
                       <td align="center">

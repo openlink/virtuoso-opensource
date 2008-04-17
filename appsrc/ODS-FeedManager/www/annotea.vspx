@@ -39,7 +39,7 @@
   </v:method>
 
   <vm:pagetitle>Annotation page</vm:pagetitle>
-  <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
       <v:variable persist="0" name="v_oid" param-name="oid" type="integer" />
@@ -71,7 +71,7 @@
                 </v:on-post>
               </v:button>
             </div>
-            <table id="annotations" class="grid1" cellspacing="0" style="border: 0;">
+            <table id="annotations" class="FM_grid1" cellspacing="0" style="border: 0;">
             </table>
           </v:template>
 
@@ -222,5 +222,5 @@
         ]]>
       </script>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

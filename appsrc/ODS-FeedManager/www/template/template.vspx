@@ -50,7 +50,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "ghostdrag", "dav"];
+        var featureList=["ajax2", "json", "tree", "anchor", "ghostdrag", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
@@ -64,7 +64,8 @@
         // WebDAV Object
         var oWebDAV;
 
-        function myInit() {
+        function myInit()
+        {
           // WebDAV
           var options = { imagePath: '/ods/images/oat/',
                           imageExt: 'png',
@@ -76,6 +77,7 @@
 
           // a++
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
@@ -86,38 +88,55 @@
           showTab('p', 2, 0);
           showTab('s', 2, 0);
 
-      		// favorites
-          var favourites = $('pane_right2');
-          if (favourites)
-          {
-            var gd = new OAT.GhostDrag();
+          // Init left pane - feeds & tags
+          Feeds.initLeftPane();
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
 
-            var dummyReference = function(){};
-            var successReference = function(node)
+        function getWindowHeight()
             {
-              return function(target,x,y) {addFavourite(node);}
-            }
-            gd.addTarget(favourites);
-            nodes = document.getElementsByTagName('span');
-            if (nodes)
-              for (var i = 0; i < nodes.length; i++)
+          var windowHeight = 0;
+          if (typeof(window.innerHeight) == 'number')
               {
-                if (nodes[i].id)
+            windowHeight = window.innerHeight;
+          }
+          else
                 {
-                  var id = nodes[i].id;
-                  if (id.indexOf('pt_node_') != -1)
+            if (document.documentElement && document.documentElement.clientHeight)
                   {
-                    gd.addSource(nodes[i], dummyReference, successReference(id.replace('pt_node_','')));
+              windowHeight = document.documentElement.clientHeight;
                   }
-                  else if (id.indexOf('pt_node2_') != -1)
+            else
+            {
+              if (document.body && document.body.clientHeight)
                   {
-                    gd.addSource(nodes[i], dummyReference, successReference(id.replace('pt_node2_','')));
+                windowHeight = document.body.clientHeight;
+              }
+            }
                   }
+          return windowHeight;
                 }
+
+        function setFooter()
+        {
+          if (document.getElementById)
+          {
+            var windowHeight = getWindowHeight();
+            if (windowHeight > 0)
+            {
+              var footerElement = $('FT');
+              if (footerElement)
+              {
+                var footerHeight = footerElement.offsetHeight;
+                if ($('pane_main'))
+                  document.getElementById('pane_main').style.height = (windowHeight - footerHeight - 250) + 'px';
               }
           }
         }
-        OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);
+        }
+
+        window.onload = function() {setFooter();};
+        window.onresize = function() {setFooter();}
       </script>
     ]]>
     <title></title>

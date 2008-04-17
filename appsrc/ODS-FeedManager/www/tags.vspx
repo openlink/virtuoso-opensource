@@ -24,7 +24,7 @@
 -->
 <v:page name="tags" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:pagetitle>Tags page</vm:pagetitle>
-      <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
         <vm:variables>
           <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
           <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
@@ -181,5 +181,5 @@
             <v:button action="simple" value="Close" enabled="--case when (self.step = 0) then 0 else 1 end" xhtml_onclick=" javascript: if (opener != null) { opener.document.forms[0].submit(); opener.focus();} window.close(); " xhtml_class="form-button"/>
           </div>
     </vm:pagebody>
-      </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
     </v:page>

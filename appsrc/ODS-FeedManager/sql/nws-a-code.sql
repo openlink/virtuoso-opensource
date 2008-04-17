@@ -685,6 +685,14 @@ create procedure ENEWS.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.sparql_url ()
+{
+  return sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', SIOC..get_cname (), SIOC..get_graph (), 'DESCRIBE <_RDF_>', 'application/sparql-results+xml');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -923,12 +931,14 @@ create procedure ENEWS.WA.favourite_add (
   in node varchar,
   in numb integer)
 {
-  if (ENEWS.WA.node_type (node) = 'c') {
+  if (ENEWS.WA.node_type (node) = 'c')
+  {
     update ENEWS.WA.FEED_DOMAIN
        set EFD_FAVOURITE = numb
      where EFD_ID = ENEWS.WA.node_id (node);
   }
-  if (ENEWS.WA.node_type (node) = 'b') {
+  else if (ENEWS.WA.node_type (node) = 'b')
+  {
     update ENEWS.WA.BLOG
        set EB_FAVOURITE = numb
      where EB_ID = ENEWS.WA.node_id (node);
@@ -3080,9 +3090,9 @@ create procedure ENEWS.WA.sfolder_sql(
       '             <CONVERSATION> \n' ||
       'where fd.EFD_DOMAIN_ID = <DOMAIN_ID> <WHERE> \n';
     if (C = '') {
-      S := sprintf('select distinct <MAX> z.* \n from (%s) z ', replace (S, '<CONVERSATION>', ''));
+      S := sprintf('select distinct <MAX> z.* \n from (%s) z where 1=1 ', replace (S, '<CONVERSATION>', ''));
     } else {
-      S := sprintf('select distinct <MAX> z.* from (%s union all %s) z ', replace (S, '<CONVERSATION>', ''), replace (replace (S, '<CONVERSATION>', C), '<ITEM_DESCRIPTION>', ''));
+      S := sprintf('select distinct <MAX> z.* from (%s union all %s) z where 1=1 ', replace (S, '<CONVERSATION>', ''), replace (replace (S, '<CONVERSATION>', C), '<ITEM_DESCRIPTION>', ''));
     }
   } else {
     S :=
@@ -3147,9 +3157,9 @@ create procedure ENEWS.WA.sfolder_sql(
       'where fd.EFD_DOMAIN_ID = <DOMAIN_ID> <WHERE>\n';
     if (C = '')
     {
-      S := sprintf('select distinct <MAX> z.* \n from (%s) z ', replace (S, '<CONVERSATION>', ''));
+      S := sprintf('select distinct <MAX> z.* \n from (%s) z where 1=1 ', replace (S, '<CONVERSATION>', ''));
     } else {
-      S := sprintf('select distinct <MAX> z.* from (%s union all %s) z ', replace (S, '<CONVERSATION>', ''), replace (replace (S, '<CONVERSATION>', C), '<ITEM_DESCRIPTION>', ''));
+      S := sprintf('select distinct <MAX> z.* from (%s union all %s) z where 1=1 ', replace (S, '<CONVERSATION>', ''), replace (replace (S, '<CONVERSATION>', C), '<ITEM_DESCRIPTION>', ''));
     }
   }
 
@@ -3816,25 +3826,34 @@ create procedure ENEWS.WA.feed_change_flag (
   fType := left(flag,1);
   fValue := atoi(right(flag,1));
 
-  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_ACCOUNT_ID = account_id)) {
+  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_ACCOUNT_ID = account_id))
+  {
     if (fType = 'r')
+    {
       update ENEWS.WA.FEED_ITEM_DATA
          set EFID_READ_FLAG = fValue
        where EFID_ITEM_ID = item_id
          and EFID_ACCOUNT_ID = account_id;
-    if (fType = 'f')
+    }
+    else if (fType = 'f')
+    {
       update ENEWS.WA.FEED_ITEM_DATA
          set EFID_KEEP_FLAG = fValue
        where EFID_ITEM_ID = item_id
          and EFID_ACCOUNT_ID = account_id;
+    }
   } else {
     if (fType = 'r')
+    {
       insert replacing ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID, EFID_ACCOUNT_ID, EFID_READ_FLAG)
         values(item_id, account_id, fValue);
-    if (fType = 'f')
+    }
+    else if (fType = 'f')
+    {
       insert replacing ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID, EFID_ACCOUNT_ID, EFID_KEEP_FLAG)
         values(item_id, account_id, fValue);
   }
+}
 }
 ;
 
@@ -5094,7 +5113,7 @@ create procedure ENEWS.WA.enews_tree2(
   node_type := ENEWS.WA.node_type(node);
   if (node_type = 'r') {
     if (node_id = 0)
-      return vector('Last Feeds', ENEWS.WA.make_node('f', -1), ENEWS.WA.make_path('', 'f', -1));
+      return vector('Feeds', ENEWS.WA.make_node('f', -1), ENEWS.WA.make_path('', 'f', -1));
 
     if (node_id = 1)
       return vector('Feeds', ENEWS.WA.make_node('f', -1), ENEWS.WA.make_path(path, 'f', -1), 'Smart Folders', ENEWS.WA.make_node('s', -1), ENEWS.WA.make_path(path, 's', -1), 'Weblogs', ENEWS.WA.make_node('w', -1), ENEWS.WA.make_path(path, 'w', -1));
@@ -6854,3 +6873,60 @@ create procedure ENEWS.WA.update_imageUri ()
 ENEWS.WA.update_imageUri();
 
 registry_set ('news_table_version', '1');
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.obj2json (
+  in o any,
+  in d integer := 2)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+	if (d = 0)
+	  return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
+	retValue := '';
+	if (isnumeric (o))
+	{
+		retValue := cast (o as varchar);
+	}
+	else if (isstring (o))
+	{
+		for (N := 0; N < length(o); N := N + 1)
+		{
+			R := chr (o[N]);
+		  for (M := 0; M < length(T); M := M + 2)
+		  {
+				if (R = T[M])
+				  R := T[M+1];
+			}
+			retValue := retValue || R;
+		}
+		retValue := '"' || retValue || '"';
+	}
+	else if (isarray (o))
+	{
+		retValue := '[';
+		for (N := 0; N < length(o); N := N + 1)
+		{
+		  retValue := retValue || ENEWS.WA.obj2json (o[N], d-1);
+		  if (N <> length(o)-1)
+			  retValue := retValue || ',\n';
+		}
+		retValue := retValue || ']';
+	}
+	return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;

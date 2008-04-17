@@ -23,379 +23,122 @@
  -
 -->
 <v:page name="feed_reader_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
-
-      if (self.n_order = columnName and self.n_direction = 'desc')
-      {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      }
-      else if (self.n_order = columnName and self.n_direction = 'asc')
-      {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-        altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-        http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
-
-  <v:method name="sortChange" arglist="in columnName varchar">
-    <![CDATA[
-      if (columnName = '')
-        return;
-
-      self.ds.vc_reset();
-      if (self.n_order = columnName)
-      {
-        self.n_direction := either(equ(self.n_direction, 'asc'), 'desc', 'asc');
-      } else {
-        self.n_direction := 'asc';
-      }
-      self.n_order := columnName;
-    ]]>
-  </v:method>
-
-  <v:method name="linkClass" arglist="inout flag any">
-    <![CDATA[
-      if (self.account_role in ('public', 'guest'))
-        return 'unread';
-      return either(equ(flag, 1), 'read', 'unread');
-    ]]>
-  </v:method>
-
-  <v:method name="mode_test" arglist="">
-    <![CDATA[
-      if (not is_empty_or_null(self.fTag))
-      {
-        self.fTab := 'tags';
-        self.fNode := concat('t#', self.fTag);
-      }
-      else if (self.link)
-      {
-        self.fTab := 'feeds';
-        if (self.domain_id > 0)
-        {
-          self.fNode := 'c#' || cast(coalesce((select TOP 1 EFD_ID from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED_ITEM where EFD_DOMAIN_ID = self.domain_id and EFD_FEED_ID = EFI_FEED_ID and EFI_ID = self.link), '') as varchar);
-        } else {
-          self.fNode := 'c#' || cast(coalesce((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = self.link), '') as varchar);
-        }
-        self.fPath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
-      }
-      else if (self.feed)
-      {
-        self.fTab := 'feed';
-        self.link := (select min (EFI_ID) from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = self.feed);
-        self.fNode := 'c#' || cast (self.feed as varchar);
-        self.fPath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
-      }
-      self.state_init();
-    ]]>
-  </v:method>
-
-  <v:method name="state_init" arglist="">
-    <![CDATA[
-      if (isnull(self.fState))
-        self.fState := self.fxState;
-      if (is_empty_or_null(self.fPath))
-        self.fPath := self.fxPath;
-      if (is_empty_or_null(self.fNode))
-        self.fNode := self.fxNode;
-    ]]>
-  </v:method>
-
-  <v:method name="refresh" arglist="">
-    <![CDATA[
-      declare exit handler for sqlstate '*' { return; };
-
-      if (ENEWS.WA.node_type(self.fNode) = 'c')
-      {
-        declare tmp any;
-        tmp := (select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = ENEWS.WA.node_id(self.fNode));
-  	    ENEWS.WA.feed_refresh(tmp);
-      }
-      else if (ENEWS.WA.node_type(self.fNode) = 'b')
-      {
-  	    ENEWS.WA.blog_refresh(ENEWS.WA.node_id(self.fNode));
-  	  }
-    ]]>
-  </v:method>
-
-  <v:method name="validateNode" arglist="in domain_id integer">
-    <![CDATA[
-      declare N, node_type, node_id, tmp, nodes any;
-
-      node_id := ENEWS.WA.node_id(self.fNode);
-      node_type := ENEWS.WA.node_type(self.fNode);
-
-      if (self.fNode in ('r#0', 'r#1', 'f#-1', 's#-1', 'w#-1'))
-        goto _next;
-
-      if (self.fTab = 'tags')
-      {
-        if (self.fNode not like 't#%')
-          self.fNode := 't#';
-        goto _next;
-      }
-
-      if ((node_type = 'f') and (node_id <> -1) and (exists (select 1 from ENEWS.WA.FOLDER where EFO_ID = node_id)))
-        goto _next;
-
-      if ((node_type = 'c') and (self.domain_id < 0) and (exists (select 1 from ENEWS.WA.FEED where EF_ID = node_id)))
-        goto _next;
-
-      if ((node_type = 'c') and (self.domain_id > 0) and (exists (select 1 from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_ID = node_id)))
-        goto _next;
-
-      if ((node_type = 's') and (exists (select 1 from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = domain_id and ESFO_ID = node_id)))
-        goto _next;
-
-      if ((node_type = 'b') and (exists (select 1 from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EB_ID = node_id and EB_WEBLOG_ID = EW_ID)))
-        goto _next;
-
-      for (select TOP 1 EFD_ID, EFD_TITLE, ENEWS.WA.folder_path (EFD_DOMAIN_ID, EFD_FOLDER_ID) EFD_PATH from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id order by EFD_PATH, EFD_TITLE) do
-      {
-        self.fNode := ENEWS.WA.make_node ('c', EFD_ID);
-        self.fPath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
-        goto _next;
-      }
-
-      for (select TOP 1 EB_ID, EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EB_WEBLOG_ID = EW_ID order by EW_NAME, EB_NAME) do
-      {
-        self.fNode := ENEWS.WA.make_node ('b', EB_ID);
-        self.fPath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
-        goto _next;
-      }
-
-      self.fNode := ENEWS.WA.make_node('f', -1);
-      self.fPath := ENEWS.WA.make_path('', 'f', -1);
-
-    _next:;
-      tmp := '';
-      nodes := split_and_decode (trim(self.fPath, '/'), 0, '\0\0/');
-      for (N := 0; N < length(nodes) - 1; N := N + 1)
-      {
-        tmp := concat(tmp, '/', nodes[N]);
-        if (not ENEWS.WA.vector_contains (self.fState, tmp))
-          self.fState := vector_concat (self.fState, vector(tmp));
-      }
-      self.fxNode := self.fNode;
-      self.fxPath := self.fPath;
-      self.fxState := self.fState;
-    ]]>
-  </v:method>
-
-  <v:method name="showTree" arglist="in level integer, in domain_id integer, in node varchar, in path varchar">
-    <![CDATA[
-      declare N, isOpen, hasChild integer;
-      declare node_type, node_id, nodes, image, image2, icon, alt, class any;
-
-      if (isnull(self.fState))
-        self.fState := vector();
-      nodes := ENEWS.WA.enews_tree2(domain_id, node, path);
-      for (N := 0; N < length (nodes); N := N + 3)
-      {
-        if (level = 1)
-        {
-          http ('<div style="margin-left:3px; margin-top:3px; white-space: nowrap;">');
-        } else {
-          http ('<div style="margin-left:12px; white-space: nowrap;">');
-        }
-        node_type := ENEWS.WA.node_type(nodes[N+1]);
-        node_id := ENEWS.WA.node_id (nodes[N+1]);
-        image := 'plus.gif';
-        image2 := 'image/folder_16.png';
-        alt := 'Open Node';
-        hasChild := ENEWS.WA.enews_node_has_childs (domain_id, nodes[N+1]);
-        if (not hasChild)
-        {
-          image := 'c.gif';
-          image2 := 'image/folder_16.png';
-        }
-        else if (ENEWS.WA.vector_contains(self.fState, nodes[N+2]))
-        {
-          image := 'minus.gif';
-          image2 := 'image/folder_open_16.png';
-          alt := 'Close Node';
-        }
-        if (node_type = 'c')
-        {
-          image2 := ENEWS.WA.channel_icon (node_id, 'image/docs_16.gif');
-        }
-        else if ((node_type = 's') and (node_id <> -1))
-        {
-          image2 := 'image/sfolder_16.jpg';
-        }
-        if (node_type = 'b')
-          image2 := 'image/ods_weblog_16.png';
-
-        class := 'nolink_b';
-        if (nodes[N+2] = self.fPath)
-        {
-          class := 'nolink_a';
-          self.fName := nodes[N];
-        }
-        if (image = 'c.gif')
-        {
-          http (sprintf ('<img src="image/%s" border="0" width="11px" />', image));
-        } else {
-          http (sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
-        }
-        if ((node_type = 'w') or
-            ((node_type = 's') and (node_id = -1)) or
-            ((not hasChild) and (node_type <> 'c') and (node_type <> 's') and (node_type <> 'b'))
-           )
-        {
-          http (sprintf(' <img src="%s" border="0" /> <b>%s</b>', image2, nodes[N]));
-        } else {
-          if ((node_type = 'c') or (node_type = 'b'))
-            http (sprintf('<span id="pt_node_%s" class="dragable"><a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', nodes[N+1], nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
-          if ((node_type <> 'c') and (node_type <> 'b'))
-          http (sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
-        }
-        if (image = 'minus.gif')
-          self.showTree(level+1, domain_id, nodes[N+1], nodes[N+2]);
-
-        http ('</div>');
-      }
-    ]]>
-  </v:method>
-
   <vm:pagetitle>Read news</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
       Read news
     </vm:header>
     <vm:variables>
-      <v:variable persist="0" name="n_order" type="varchar" default="'EFI_PUBLISH_DATE'" />
-      <v:variable persist="0" name="n_direction" type="varchar" default="'desc'" />
-      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
-      <v:variable persist="temp" name="fName" type="varchar" default="''"/>
-      <v:variable persist="0" name="fTag" type="varchar" default="null" />
-      <v:variable persist="0" name="link" type="varchar" default="null" />
-      <v:variable persist="0" name="feed" type="varchar" default="null" />
-      <v:variable persist="1" name="fTab" type="varchar" default="'feeds'"/>
-
-      <v:variable persist="1" name="fBookmark" type="varchar" default="null" />
-
-      <v:variable persist="1" name="fNode" type="varchar" default="''"/>
-      <v:variable persist="1" name="fPath" type="varchar" default="''"/>
-      <v:variable persist="1" name="fState" type="any" default="null" />
-
-      <v:variable persist="0" name="fxNode" type="varchar" default="''"/>
-      <v:variable persist="0" name="fxPath" type="varchar" default="''"/>
-      <v:variable persist="0" name="fxState" type="any" default="null" />
+      <v:variable name="fTab" type="varchar" default="'feeds'"/>
+      <v:variable name="fNode" type="varchar" default="''"/>
+      <v:variable name="fNodePath" type="varchar" default="''"/>
+      <v:variable name="fNodeItem" type="varchar" default="''"/>
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
-        <![CDATA[
-          declare i integer;
-          declare flag varchar;
+    <![CDATA[
+          declare N, node_type, node_id any;
+          declare tmp, params any;
 
-          flag := get_keyword('mark', params, '');
-          if (flag <> '')
-          {
-            for (i := 0; i < length(params); i := i + 2)
-            {
-              if (params[i] = 'cb_item')
-              {
-                declare exit handler for sqlstate '*' {
-                  rollback work;
-                  goto _next;
-                };
-                commit work;
-                if (ENEWS.WA.node_type(self.fNode) = 'b')
-                {
-                  ENEWS.WA.blog_change_flag(atoi(params[i+1]), self.account_id, flag);
-                } else {
-                  ENEWS.WA.feed_change_flag(atoi(params[i+1]), self.account_id, flag);
-                }
-              }
-              _next:;
-            }
-          }
+          params := self.vc_page.vc_event.ve_params;
+          tmp := lcase (get_keyword ('tag',  params, ''));
+          if (tmp <> '')
+      {
+        self.fTab := 'tags';
+            self.fNode := 't#' || tmp;
+            goto _validate;
+      }
+          tmp := cast (get_keyword ('link', params, '0') as integer);
+          if (tmp)
+      {
+        self.fTab := 'feeds';
+        if (self.domain_id > 0)
+        {
+              self.fNode := 'c#' || cast (coalesce ((select TOP 1 EFD_ID from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED_ITEM where EFD_DOMAIN_ID = self.domain_id and EFD_FEED_ID = EFI_FEED_ID and EFI_ID = tmp), '') as varchar);
+        } else {
+              self.fNode := 'c#' || cast (coalesce ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = tmp), '') as varchar);
+        }
+            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodeItem := cast (tmp as varchar);
+            goto _validate;
+      }
+          tmp := cast (get_keyword ('feed', params, '0') as integer);
+          if (tmp)
+      {
+        self.fTab := 'feed';
+            self.fNode := 'c#' || cast (tmp as varchar);
+            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            goto _validate;
+      }
+          tmp := get_keyword('node', params, '');
+          if (tmp <> '')
+      {
+            self.fNode := tmp;
+            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            goto _validate;
+  	  }
+          goto _exit;
 
-          if (get_keyword('refresh', e.ve_params, '') <> '')
-            self.refresh();
+        _validate:;
+      node_id := ENEWS.WA.node_id(self.fNode);
+      node_type := ENEWS.WA.node_type(self.fNode);
 
-          self.fTag := lcase(get_keyword('tag', e.ve_params, ''));
-          self.feed := cast (get_keyword('feed', e.ve_params, '0') as integer);
-          self.link := cast (get_keyword('link', e.ve_params, '0') as integer);
+      if (self.fNode in ('r#0', 'r#1', 'f#-1', 's#-1', 'w#-1'))
+            goto _exit;
 
-          self.mode_test();
+          if (node_type = 't')
+            goto _exit;
+
+      if ((node_type = 'f') and (node_id <> -1) and (exists (select 1 from ENEWS.WA.FOLDER where EFO_ID = node_id)))
+            goto _exit;
+
+      if ((node_type = 'c') and (self.domain_id < 0) and (exists (select 1 from ENEWS.WA.FEED where EF_ID = node_id)))
+            goto _exit;
+
+          if ((node_type = 'c') and (self.domain_id > 0) and (exists (select 1 from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = self.domain_id and EFD_ID = node_id)))
+            goto _exit;
+
+          if ((node_type = 's') and (exists (select 1 from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = self.domain_id and ESFO_ID = node_id)))
+            goto _exit;
+
+          if ((node_type = 'b') and (exists (select 1 from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id and EB_ID = node_id and EB_WEBLOG_ID = EW_ID)))
+            goto _exit;
+
+          for (select TOP 1 EFD_ID, EFD_TITLE, ENEWS.WA.folder_path (EFD_DOMAIN_ID, EFD_FOLDER_ID) EFD_PATH from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = self.domain_id order by EFD_PATH, EFD_TITLE) do
+      {
+        self.fNode := ENEWS.WA.make_node ('c', EFD_ID);
+            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodeItem := '';
+            goto _exit;
+      }
+
+          for (select TOP 1 EB_ID, EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id and EB_WEBLOG_ID = EW_ID order by EW_NAME, EB_NAME) do
+      {
+        self.fNode := ENEWS.WA.make_node ('b', EB_ID);
+            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodeItem := '';
+            goto _exit;
+      }
+
+      self.fNode := ENEWS.WA.make_node('f', -1);
+          self.fNodePath := ENEWS.WA.make_path ('', 'f', -1);
+          self.fNodeItem := '';
+
+        _exit:;
+          self.fTab := case when (ENEWS.WA.node_type (self.fNode) = 't') then 'tabs' else 'feeds' end;
         ]]>
       </v:before-data-bind>
-      
-      <v:on-post>
-        <![CDATA[
-          if (e.ve_button is not null)
-          {
-            if (e.ve_button.vc_name = 'pt_browse')
-            {
-              if (get_keyword('pt_toggle', e.ve_params, '') <> '')
-              {
-                self.fBookmark := 'pt_toggle_' || get_keyword ('pt_path', e.ve_params);
-              }
-              else if (get_keyword('pt_node', e.ve_params, '') <> '')
-              {
-                self.fBookmark := 'pt_node_' || get_keyword ('pt_path', e.ve_params);
-              }
-            }
-            else if (e.ve_button.vc_name = 'pt_tags')
-            {
-              self.fBookmark := 'pt_tag_' || self.fTag;
-            }
-          }
-        ]]>
-      </v:on-post>
-      
       <?vsp 
-        declare sparqlUrl, graphIri any;
-        
-        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
-        graphIri := SIOC..get_graph ();
-        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+        http (sprintf ('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s" />', ENEWS.WA.sparql_url ()));
+        http (sprintf ('<input type="hidden" id="node" name="node" value="%s" />', self.fNode));
+        http (sprintf ('<input type="hidden" id="nodePath" name="nodePath" value="%V" />', self.fNodePath));
+        http (sprintf ('<input type="hidden" id="nodeItem" name="nodeItem" value="%V" />', self.fNodeItem));
       ?>
-      
       <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
         <div class="tabs">
           <div style="float: left;">
-          <div class="tabLabel">
-            <v:button action="simple" style="url" value="Feeds" xhtml_class="--either(equ(self.fTab, 'feeds'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Feeds">
-            <v:on-post>
-              <![CDATA[
-                    if (self.fTab <> 'feeds')
-                    {
-                  self.fTab := 'feeds';
-                  self.fNode := '';
-                    self.fPath := '';
-                    self.fState := null;
-                  self.vc_data_bind (e);
-                }
-              ]]>
-            </v:on-post>
-          </v:button>
-          </div>
-          <div class="tabLabel">
-            <v:button action="simple" style="url" value="Tags" xhtml_class="--either(equ(self.fTab, 'tags'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Tags">
-            <v:on-post>
-              <![CDATA[
-                    if (self.fTab <> 'tags')
-                    {
-                  self.fTab := 'tags';
-                  self.fNode := 't#';
-                    self.ds.vc_reset();
-                  self.vc_data_bind (e);
-                }
-              ]]>
-            </v:on-post>
-          </v:button>
-        </div>
+            <a href="#" id="feeds_button" class="tab <?V case when self.fTab = 'feeds' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('feeds'); return false;">Feeds</a>
+            <a href="#" id="tags_button" class="tab <?V case when self.fTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('tags'); return false;">Tags</a>
         </div>
         <?vsp
           if (ENEWS.WA.settings_favourites (self.settings))
@@ -413,521 +156,24 @@
         </div>
       </v:template>
 
-      <div class="pane_main">
-        <div class="pane_left" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 20.3%;' else '' end ?>">
-                  <?vsp
-              if (0)
-              {
-                  ?>
-                <v:button name="pt_tags" action="simple" style="url" value="Submit"/>
-                <v:button name="pt_browse" action="simple" style="url" value="Submit">
-                    <v:on-post>
-                      <![CDATA[
-                    declare node, path any;
-
-                    path := get_keyword ('pt_path', e.ve_params, '');
-
-                    -- toggle
-                      self.state_init();
-                    node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
-                    if (node <> '')
-                    {
-                      if (ENEWS.WA.vector_contains (self.fState, path))
-                      {
-                        if (get_keyword ('pt_toggle', e.ve_params, '') <> '')
-                          self.fState := ENEWS.WA.vector_cut (self.fState, path);
-                        if (self.fPath like concat (path, '%'))
-                        {
-                          self.fNode := node;
-                          self.fPath := path;
-                        }
-                        } else {
-                        self.fState := vector_concat (self.fState, vector(path));
-                      }
-                        }
-
-                      -- node
-                      node := get_keyword('pt_node', e.ve_params, '');
-                    if (node <> '')
-                    {
-                        self.fNode := node;
-                      self.fPath := path;
-                      self.ds.vc_reset ();
-                    }
-                        self.vc_data_bind (e);
-                     ]]>
-                    </v:on-post>
-                  </v:button>
-            <?vsp
-              }
-            ?>
-              <?vsp
-            if (self.fTab = 'feeds')
-            {
-              if (self.domain_id <= -1)
-              {
-                self.showTree(1, self.domain_id, 'r#0', '');
-              } else {
-                self.showTree(1, self.domain_id, 'r#1', '');
-              }
-            }
-            if (self.fTab = 'tags')
-            {
-                declare tMin, tMax integer;
-              declare tClass, tStyle varchar;
-
-                if (is_empty_or_null(self.fTag))
-                  self.fTag := ENEWS.WA.node_suffix(self.fNode);
-                select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from ENEWS..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
-
-              for (select TS_TAG, TS_COUNT 
-                     from ENEWS..TAGS_STATISTICS 
-                    where domain_id = self.domain_id 
-                      and account_id = self.account_id 
-                      and TS_TAG <> '' 
-                    order by TS_TAG) do
-              {
-                tStyle := ODS.WA.tag_style(TS_COUNT, tMin, tMax) || 'padding-left: 3px;';
-                  tClass := '';
-                    if (self.fTag = TS_TAG)
-                    tClass := 'nolink_a';
-                http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', ENEWS.WA.tag_id(TS_TAG), TS_TAG, TS_TAG, 'app', SIOC..feeds_tag_iri (self.account_id, TS_TAG), tClass, tStyle, TS_TAG));
-                }
-            }
-          ?>
-        </div>
-        <div class="pane_right" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 59.3%;' else '' end ?>">
-          <div class="pane_right_sub1">
-          <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
-            <v:before-data-bind>
-              <![CDATA[
-                declare read_flag, keep_flag varchar;
-                  declare data, node_type, node_id any;
-
-                self.mode_test();
-                self.validateNode(self.domain_id);
-
-                  node_id := ENEWS.WA.node_id (self.fNode);
-                  node_type := ENEWS.WA.node_type (self.fNode);
-
-                read_flag := 'EFID_READ_FLAG';
-                keep_flag := 'EFID_KEEP_FLAG';
-                  control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
-                control.ds_parameters := null;
-
-                  if ((node_type = 'c') and (self.domain_id < 0))
-                  {
-                  control.ds_sql := 'select top 10 EFI_ID,
-                                            ENEWS.WA.show_title(EFI_TITLE) EFI_TITLE,
-                                            ENEWS.WA.show_author(EFI_AUTHOR) EFI_AUTHOR,
-                                            EFI_PUBLISH_DATE,
-                                            EFID_READ_FLAG,
-                                              EFID_KEEP_FLAG,
-                                              \'\' EFD_TITLE
-                                       from ENEWS.WA.FEED_ITEM
-                                              join ENEWS.WA.FEED on EF_ID = EFI_FEED_ID
-                                                left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null
-                                      where EF_ID = %d
-                                        and coalesce(EFI_DELETE_FLAG, 0) <> 1';
-                    control.ds_sql := sprintf(control.ds_sql, node_id);
-
-                  }
-                  else if ((node_type = 'c') and (self.domain_id > 0))
-                  {
-                  control.ds_sql := 'select EFI_ID,
-                                            ENEWS.WA.show_title(EFI_TITLE) EFI_TITLE,
-                                            ENEWS.WA.show_author(EFI_AUTHOR) EFI_AUTHOR,
-                                            EFI_PUBLISH_DATE,
-                                            EFID_READ_FLAG,
-                                              EFID_KEEP_FLAG,
-                                              \'\' EFD_TITLE
-                                       from ENEWS.WA.FEED_ITEM
-                                              join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EFI_FEED_ID
-                                                left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_ACCOUNT_ID = %d
-                                      where EFD_ID = %d
-                                        and coalesce(EFI_DELETE_FLAG, 0) <> 1';
-                    control.ds_sql := sprintf(control.ds_sql, self.account_id, node_id);
-
-                  }
-                  else if (node_type = 'f')
-                  {
-                    if (node_id <> -1)
-                      ENEWS.WA.xml_set('folder', data, node_id);
-                  control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
-
-                  }
-                  else if ((node_type = 's') and (node_id <> -1))
-                  {
-                    data := (select ESFO_DATA from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = self.domain_id and ESFO_ID = node_id);
-                    control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
-
-                  }
-                  else if (node_type = 'b')
-                  {
-                  read_flag := 'EBPD_READ_FLAG';
-                  keep_flag := 'EBPD_KEEP_FLAG';
-                  control.ds_sql := 'select EBP_ID EFI_ID,
-                                            ENEWS.WA.show_title((EBP_META as BLOG..MWeblogPost).title) EFI_TITLE,
-                                            ENEWS.WA.show_author((EBP_META as BLOG..MWeblogPost).author) EFI_AUTHOR,
-                                            coalesce((EBP_META as BLOG..MWeblogPost).dateCreated, now()) EFI_PUBLISH_DATE,
-                                            EBPD_READ_FLAG EFID_READ_FLAG,
-                                              EBPD_KEEP_FLAG EFID_KEEP_FLAG,
-                                              \'\' EFD_TITLE
-                                       from ENEWS.WA.BLOG_POST
-                                           join ENEWS.WA.BLOG on EB_ID = EBP_BLOG_ID
-                                              join ENEWS.WA.WEBLOG on EW_ID = EB_WEBLOG_ID
-                                                left join ENEWS.WA.BLOG_POST_DATA on EBPD_POST_ID = EBP_ID
-                                      where EW_DOMAIN_ID = %d
-                                        and EB_ID = %d';
-                    control.ds_sql := sprintf(control.ds_sql, self.domain_id, node_id);
-
-                  }
-                  else if ((node_type = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode)))
-                  {
-                  ENEWS.WA.xml_set('tags', data, ENEWS.WA.node_suffix(self.fNode));
-                  control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
-
-                } else {
-                  control.ds_sql := 'select * from ENEWS.WA.BLOG where 1=0';
-                  goto _end;
-                }
-
-                declare flag varchar;
-
-                flag := get_keyword('show', params, '');
-                if (flag = 'r1')
-                  control.ds_sql := concat(control.ds_sql, sprintf(' and coalesce(%s, 0) = 1', read_flag));
-                else if (flag = 'r0')
-                  control.ds_sql := concat(control.ds_sql, sprintf(' and coalesce(%s, 0) = 0', read_flag));
-                else if (flag = 'f1')
-                  control.ds_sql := concat(control.ds_sql, sprintf(' and coalesce(%s, 0) = 1', keep_flag));
-                else if (flag = 'f0')
-                  control.ds_sql := concat(control.ds_sql, sprintf(' and coalesce(%s, 0) = 0', keep_flag));
-
-                self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
-                control.ds_sql := concat(control.ds_sql, ' order by ', self.n_order, ' ', self.n_direction, ', EFI_ID');
-              _end:;
-              ]]>
-            </v:before-data-bind>
-          </v:data-source>
-
-          <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
-            <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                <?vsp
-                  declare mt, st, sv, sButtons, T, S varchar;
-                  declare data, node_type, node_id, appParams any;
-
-                  node_id := ENEWS.WA.node_id (self.fNode);
-                  node_type := ENEWS.WA.node_type (self.fNode);
-
-                  mt := sprintf('<b>Selected as</b> <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select>');
-                  if (self.account_role in ('public', 'guest'))
-                    mt := '';
-
-                  st := sprintf('<b>View</b> <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select> <b>posts</b>');
-                  sv := get_keyword('show', self.vc_page.vc_event.ve_params, '');
-                  st := replace(st, sprintf('value="%s"', sv), sprintf('value="%s" selected="selected"', sv));
-
-                  declare cFirst, cPrevious, cNext, cLast vspx_button;
-
-                  cFirst := control.vc_find_control ('ds_first');
-                  cLast := control.vc_find_control ('ds_last');
-                  cNext := control.vc_find_control ('ds_next');
-                  cPrevious := control.vc_find_control ('ds_prev');
-
-                  T := '';
-                  sButtons := '';
-                  
-                  if (not (cNext is not null and not cNext.vc_enabled and cPrevious is not null and not cPrevious.vc_enabled))
-                  {
-                    if (cFirst is not null and not cFirst.vc_enabled)
-                    {
-                      sButtons := sButtons || ' <img src="image/first_16.gif" border="0" alt="First" title="First" />';
-                    } else {
-                      sButtons := sButtons || ' <a name="btn_ds_first"></a><a href="#" onclick="javascript: doPost (\'F1\', \'ds_first\'); return false"><img src="image/first_16.gif" border="0" alt="First" title="First" /></a>';
-                    }
-
-                    if (cPrevious is not null and not cPrevious.vc_enabled) {
-                      sButtons := sButtons || ' <img src="image/previous_16.gif" border="0" alt="Previous" title="Previous" />';
-                    } else {
-                      sButtons := sButtons || ' </a><a href="#" onclick="javascript: doPost (\'F1\', \'ds_prev\'); return false"><img src="image/previous_16.gif" border="0" alt="Previous" title="Previous" /></a>';
-                    }
-
-                    if (cNext is not null and not cNext.vc_enabled)
-                    {
-                      sButtons := sButtons || ' <img src="image/next_16.gif" border="0" alt="Next" title="Next" />';
-                    } else {
-                      sButtons := sButtons || ' <a href="#" onclick="javascript: doPost (\'F1\', \'ds_next\'); return false"><img src="image/next_16.gif" border="0" alt="Next" title="Next" /></a>';
-                    }
-
-                    if (cLast is not null and not cLast.vc_enabled)
-                    {
-                      sButtons := sButtons || ' <img src="image/last_16.gif" border="0" alt="Last" title="Last" />';
-                    } else {
-                      sButtons := sButtons || ' <a href="#" onclick="javascript: doPost (\'F1\', \'ds_last\'); return false"><img src="image/last_16.gif" border="0" alt="Last" title="Last" /></a>';
-                    }
-                  }
-
-                  if ((node_type = 'c') and (self.domain_id < 0))
-                    for (select EF_TITLE,
-                                EF_HOME_URI,
-                                EF_LAST_UPDATE,
-                                EF_IMAGE_URI,
-                                EF_ICON_URI
-                           from ENEWS.WA.FEED
-                          where EF_ID = node_id) do
-                    {
-                          
-                      appParams := '';
-                      if ((cast (get_keyword ('app', self.settings, '0') as integer)) and (node_type in ('c', 'f', 's')))
-                        appParams := sprintf ('id="feed2_%d" class="app" about="%U"', node_id, SIOC..feed_iri (node_id));
-                         
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a %s href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', appParams, EF_HOME_URI, EF_TITLE, EF_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EF_TITLE, 'dc:title'), sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i></div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified')));
-                    }
-
-                  if ((node_type = 'c') and (self.domain_id > 0))
-                    for (select EFD_TITLE,
-                                EF_ID,
-                                EF_URI,
-                                EF_HOME_URI,
-                                EF_LAST_UPDATE,
-                                EF_IMAGE_URI,
-                                EF_ICON_URI
-                           from ENEWS.WA.FEED_DOMAIN
-                                  join ENEWS.WA.FEED on EF_ID = EFD_FEED_ID
-                          where EFD_ID = node_id) do
-                    {
-                      appParams := '';
-                      if ((cast (get_keyword ('app', self.settings, '0') as integer)) and (node_type in ('c', 'f', 's')))
-                        appParams := sprintf ('id="feed2_%d" class="app" about="%U"', EF_ID, SIOC..feed_iri (EF_ID));
-                          
-                      if (sButtons <> '')
-                        sButtons := ' | ' || sButtons;
-                      S := sprintf ('<a %s href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a>', appParams, EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EFD_TITLE, 'dc:title'));
-                      if (ENEWS.WA.settings_favourites(self.settings))
-                      {
-                        S := sprintf ('<span id="pt_node2_c#%d" class="dragable">%s</span>', node_id, S);
-                        T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
-                      }
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><div style="clear: both;"></div></div>', S, T, EF_URI, self.fNode, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified'), mt, st));
-                    }
-
-                  if ((node_type = 'f') and (node_id = -1))
-                  {
-                    http (sprintf ('<div id="channel_header"><div id="channel_header_left"><img src="image/folder_16.png" border="0"/> %s</div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', 'Feeds', sButtons));
-                    http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
-                  }
-
-                  if ((node_type = 'f') and (node_id <> -1))
-                    for (select EFO_ID,
-                                EFO_NAME
-                           from ENEWS.WA.FOLDER
-                          where EFO_ID = node_id
-                            and EFO_DOMAIN_ID = self.domain_id) do
-                    {
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left"><a href="folders.vspx?sid=%s&realm=%s&id=%d&mode=update" alt="Folder %s" title="Folder %s"><img src="image/folder_16.png" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', self.sid, self.realm, EFO_ID, EFO_NAME, EFO_NAME, EFO_NAME, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
-                    }
-
-                  if ((node_type = 's') and (node_id <> -1))
-                    for (select ESFO_ID,
-                                ESFO_NAME
-                           from ENEWS.WA.SFOLDER
-                          where ESFO_ID = node_id
-                            and ESFO_DOMAIN_ID = self.domain_id) do
-                    {
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left"><a href="sfolders_update.vspx?sid=%s&realm=%s&id=%s" alt="Smart folder %s" title="Smart folder %s"><img src="image/sfolder_16.jpg" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', self.sid, self.realm, ESFO_ID, ESFO_NAME, ESFO_NAME, ESFO_NAME, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
-                    }
-
-                  if (node_type = 'b')
-                    for (select EB_ID,
-                                EB_NAME,
-                                EB_LAST_UPDATE
-                           from ENEWS.WA.BLOG,
-                                ENEWS.WA.WEBLOG
-                          where EB_ID = node_id
-                            and EW_ID = EB_WEBLOG_ID
-                            and EW_DOMAIN_ID = self.domain_id) do
-                    {
-                      if (sButtons <> '')
-                        sButtons := ' | ' || sButtons;
-                      S := sprintf ('<a href="weblog.vspx?sid=%s&realm=%s&id=%d&mode=update_blog" alt="Blog %s" title="Blog %s"><img src="image/ods_weblog_16.png" border="0"/> %s</a>', self.sid, self.realm, EB_ID, EB_NAME, EB_NAME, ENEWS.WA.rdfa_value (EB_NAME, 'dc:title'));
-                      if (ENEWS.WA.settings_favourites(self.settings))
-                      {
-                        S := sprintf ('<span id="pt_node2_b#%d" class="dragable">%s</span>', node_id, S);
-                        T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
-                      }
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><div style="clear: both;"></div></div>', S, T, self.fNode, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EB_LAST_UPDATE), 'dct:modified'), mt, st));
-                    }
-
-                  if ((node_type = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode)))
-                  {
-                    http (sprintf ('<div id="channel_header"><div id="channel_header_left">Tag: %s</div><div id="channel_header_right">&nbsp;%s<div style="clear: both;"></div></div>', ENEWS.WA.node_suffix(self.fNode), sButtons));
-                    http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s </div>', mt, st));
-                  }
-                ?>
-                <div style="display: none">
-                  <vm:ds-navigation data-set="ds"/>
+      <div id="pane_main" class="pane_main">
+        <div id="pane_left" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 20.3%;' else '' end ?>">
+          <div id="pane_left_feeds">...</div>
+          <div id="pane_left_tags">...</div>
                 </div>
-                <table id="feed" style="clear: left; float: left; width: 100%;" cellspacing="0">
-                <thead class="sortHeader">
-                  <tr>
-                    <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-                        <th width="1%" class="checkbox">
-                        <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
-                      </th>
-                      <th width="1%" class="image">
-                        <img src="image/flag.gif" border="0"/>
-                      </th>
-                     </v:template>
-                    <th width="1%" class="last">
-                      <img src="image/c.gif" border="0"/>
-                    </th>
-                    <th>
-                      <?vsp self.sortColumn('Headline', 'EFI_TITLE'); ?>
-                    </th>
-                      <v:template type="simple" enabled="--case when (ENEWS.WA.node_type (self.fNode) = 'f') then 1 else 0 end">
-                        <th>
-                          Feed
-                        </th>
-                      </v:template>
-                    <th>
-                      <?vsp self.sortColumn('Author', 'EFI_AUTHOR'); ?>
-                    </th>
-                    <th>
-                      <?vsp self.sortColumn('Date', 'EFI_PUBLISH_DATE'); ?>
-                    </th>
-                  </tr>
-                </thead>
-              </table>
-            </v:template>
-
-            <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
-
-              <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table>
-                  <?vsp
-                    self.r_count := self.r_count + 1;
-                      if (self.r_count = 1)
-                      {
-                        if (self.link)
-                        {
-                          http (sprintf ('<input type="hidden" name="fid" value="%d" />', self.link));
-                      } else {
-                          http (sprintf ('<input type="hidden" name="fid" value="%d" />', control.te_column_value('EFI_ID')));
-                        }
-                        http (sprintf ('<input type="hidden" name="did" value="%d" />', self.domain_id));
-                        http (sprintf ('<input type="hidden" name="aid" value="%d" />', self.account_id));
-                        http (sprintf ('<input type="hidden" name="m" value="%s" />', ENEWS.WA.node_type(self.fNode)));
-                      }
-                  ?>
-                  <tr>
-                    <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-                      <td align="center">
-                        <?vsp
-                          http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));
-                        ?>
-                      </td>
-                      <td align="center">
-                        <?vsp
-                          http(sprintf('<span id="image_%d">', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));
-                            if (((control.vc_parent) as vspx_row_template).te_column_value('EFID_KEEP_FLAG') = 1)
-                            {
-                            http('<img src="image/flag.gif" border="0"/>');
-                          } else {
-                            http('&nbsp;');
-                          }
-                          http('</span>');
-                        ?>
-                      </td>
-                     </v:template>
-                    <td>
-                      <img src="image/html.png" border="0" alt="folder" width="16"/>
-                    </td>
-                    <td>
-                        <?vsp
-                          declare id, feed_id integer;
-                          declare title, href, onclick, appIri varchar;
-                          
-                          id := (control as vspx_row_template).te_column_value('EFI_ID');
-                          title := (control as vspx_row_template).te_column_value('EFI_TITLE');
-                          href := SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id);
-                          onclick := sprintf ('javascript: loadIFrame(\'%d\', \'%d\', \'%d\', null, \'%s\'); return false;', id, self.domain_id, self.account_id, ENEWS.WA.node_type (self.fNode));
-                          appIri := '';
-                          if (ENEWS.WA.node_type (self.fNode) in ('c', 'f', 's'))
-                            appIri := sprintf (' about="%U"', href);
-                          
-                          http (sprintf ('<a id="feed_%d" href="%s" onclick="%s" title="%s" class="%s %s" %s>%s</a>', id, href, onclick, title, 'app', self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG')), appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
-                        ?>
-                    </td>
-                      <v:template type="simple" enabled="--case when (ENEWS.WA.node_type (self.fNode) = 'f') then 1 else 0 end">
-                        <td>
-                          <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('EFD_TITLE')" format="%s"/>
-                        </td>
-                      </v:template>
-                    <td>
-                        <v:label value="--ENEWS.WA.rdfa_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_AUTHOR'), 'dc:creator')" format="%s"/>
-                    </td>
-                    <td align="right" nowrap="nowrap">
-                        <i><v:label value="--ENEWS.WA.rdfa_value (ENEWS.WA.dt_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_PUBLISH_DATE')), 'dct:modified')" format="%s"/></i>
-                    </td>
-                  </tr>
-                </table>
-              </v:template>
-
-            </v:template>
-
-            <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
-              <table>
-              </table>
-            </v:template>
-
-          </v:data-set>
-          <script type="text/javascript">
-            <![CDATA[
-              coloriseTable('feed');
-            ]]>
-          </script>
+        <div id="pane_right" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 59.3%;' else '' end ?>">
+          <div id="pane_right_top">
         </div>
-          <div class="pane_right_sub2" id="feed_content">
+          <div id="pane_right_bottom">
           </div>
         </div>
         <?vsp
           if (ENEWS.WA.settings_favourites (self.settings))
           {
-        ?>
-        <div class="pane_right2" id="pane_right2">
-      </div>
-      <script type="text/javascript">
-        <![CDATA[
-            getFavourites();
-          ]]>
-        </script>
-        <?vsp
+            http ('<div id="pane_right2"></div>');
           }
         ?>
       </div>
-
-      <script type="text/javascript">
-        <![CDATA[
-          if (document.forms['F1'].elements['fid'])
-            if (document.forms['F1'].elements['did'])
-              if (document.forms['F1'].elements['aid'])
-                loadIFrame(document.forms['F1'].elements['fid'].value, document.forms['F1'].elements['did'].value, document.forms['F1'].elements['aid'].value, 'x', document.forms['F1'].elements['m'].value);
-        ]]>
-      </script>
-      <?vsp
-        if (self.fBookmark is not null)
-        {
-          http ('\n<script type="text/javascript">\n');
-          http (sprintf ('if (!OAT.Browser.isOpera) location.hash = "%s";\n', self.fBookmark));
-          http ('</script>\n');
-        }
-      ?>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

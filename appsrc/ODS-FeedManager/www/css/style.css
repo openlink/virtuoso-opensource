@@ -466,21 +466,21 @@ table#list thead input {
 .pane_main
 {
   width: 100%;
-  height: 500px;
+  min-height: 500px;
   position: relative;
 }
 
-.pane_left
+#pane_left
 {
   width: 30.0%;
   height: 100%;
   float: left;
   overflow: auto;
   border: solid #7f94a5;
-  border-width: 1px;
+  border-width: 1px
 }
 
-.pane_right
+#pane_right
 {
   width: 69.3%;
   height: 100%;
@@ -488,7 +488,7 @@ table#list thead input {
   margin-left: 0.15%;
 }
 
-.pane_right_sub1
+#pane_right_top
 {
   width: 100%;
   height: 49.5%;
@@ -497,7 +497,7 @@ table#list thead input {
   border-width: 1px
 }
 
-.pane_right_sub2
+#pane_right_bottom
 {
   width: 100%;
   height: 49.5%;
@@ -507,7 +507,7 @@ table#list thead input {
   border-width: 1px
 }
 
-.pane_right2
+#pane_right2
 {
   width: 19.55%;
   height: 100%;
@@ -524,7 +524,7 @@ table#list thead input {
   width: auto;
   font-size: 1em;
   padding: 3px 0 3px 0;
-  background-color: #EFEFEF;
+  background-color: #b0cde4;
   border: solid #7f94a5;
   border-width: 0px 0px 1px 0px;
 }
@@ -669,7 +669,6 @@ input.nolink2 {
 
 .nolink3 {
   font-size: 1em;
-  font-weight: bold;
   color: #000;
   background-color: inherit;
 }
@@ -684,9 +683,9 @@ input.nolink4 {
   background-color: #b0cde4;
 }
 
-.nolink_a {
-  color: #000;
-  background-color: #F0F0F0;
+.FM_bold
+{
+  font-weight: bold;
 }
 
 .nolink_b {
@@ -859,7 +858,7 @@ div.boxHeader {
 }
 
 /*====== Grids ======*/
-.grid
+.FM_grid
 {
   width: 100%;
   border: solid #7f94a5;
@@ -922,7 +921,7 @@ thead.sortHeader a:hover
 	width: 100%
 }
 
-table.grid td
+table.FM_grid td
 {
   padding: 2px 4px 2px 4px;
 }
@@ -1041,6 +1040,7 @@ a.remove
 {
   color: red;
   font-weight: bold;
+  font-size: 10px;
 }
 
 
@@ -1227,4 +1227,13 @@ td.cpDayColumnHeader
 .cpOtherMonthDate
 {
  color: #808080;
+}
+
+/* Tree */
+#pane_left .tree_li_selected {
+font-weight:bold;
+}
+
+#pane_left .tree_ul_selected {
+font-weight:normal !important;
 }

@@ -27,7 +27,6 @@
   <xsl:variable name="page_title" select="string (//vm:pagetitle)"/>
 
   <xsl:include href="http://local.virt/DAV/VAD/wa/comp/ods_bar.xsl"/>
-  <xsl:include href="file_browser.xsl"/>
 
   <!--=========================================================================-->
   <xsl:template match="head/title[string(.)='']" priority="100">
@@ -101,42 +100,25 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template match="vm:popup_page_wrapper">
+  <xsl:template match="vm:popup_pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="1"/>
     <v:variable name="nav_top" type="integer" default="0"/>
     <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
-    <div style="padding: 0.5em;">
+    <xsl:if test="not @clean or @clean = 'no'">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
         <hr />
       </div>
+    </xsl:if>
       <v:form name="F1" type="simple" method="POST">
         <xsl:apply-templates select="vm:pagebody" />
       </v:form>
-    </div>
+    <xsl:if test="not @clean or @clean = 'no'">
     <div class="copyright"><vm:copyright /></div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:popup_external_page_wrapper">
-    <xsl:element name="v:variable">
-      <xsl:attribute name="persist">0</xsl:attribute>
-      <xsl:attribute name="name">page_owner</xsl:attribute>
-      <xsl:attribute name="type">varchar</xsl:attribute>
-      <xsl:choose>
-        <xsl:when test="../@vm:owner">
-          <xsl:attribute name="default">'<xsl:value-of select="../@vm:owner"/>'</xsl:attribute>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:attribute name="default">null</xsl:attribute>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:element>
-    <xsl:apply-templates select="node()|processing-instruction()"/>
-    <div class="copyright"><vm:copyright /></div>
+    </xsl:if>
   </xsl:template>
 
   <!--=========================================================================-->

@@ -22,7 +22,520 @@
  */
 
 // ---------------------------------------------------------------------------
-function myPost(frm_name, fld_name, fld_value) {
+var Feeds = new Object();
+
+// Drag Object
+Feeds.gdDummy = function(){};
+
+Feeds.gdSuccess = function(node)
+{
+  return function(target,x,y) {Feeds.addFavourite(node);}
+}
+
+Feeds.trim = function (sString, sChar)
+{
+  if (sChar == null)
+  {
+    sChar = ' ';
+  }
+  while (sString.substring(0,1) == sChar)
+  {
+    sString = sString.substring(1, sString.length);
+  }
+  while (sString.substring(sString.length-1, sString.length) == sChar)
+  {
+    sString = sString.substring(0,sString.length-1);
+  }
+  return sString;
+}
+
+Feeds.writeCookie = function (name, value, hours)
+{
+  if (hours)
+  {
+    var date = new Date ();
+    date.setTime (date.getTime () + (hours * 60 * 60 * 1000));
+    var expires = "; expires=" + date.toGMTString ();
+  } else {
+    var expires = "";
+  }
+  document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+Feeds.readCookie = function (name)
+{
+  var cookiesArr = document.cookie.split (';');
+  for (var i = 0; i < cookiesArr.length; i++)
+  {
+    cookiesArr[i] = cookiesArr[i].trim ();
+    if (cookiesArr[i].indexOf (name+'=') == 0)
+      return cookiesArr[i].substring (name.length + 1, cookiesArr[i].length);
+  }
+  return false;
+}
+
+Feeds.readField = function (field, doc)
+{
+  var v;
+  if (!doc) {doc = document;}
+  if (doc.forms[0])
+  {
+    v = doc.forms[0].elements[field];
+    if (v)
+    {
+      v = v.value;
+    }
+  }
+  return v;
+}
+
+Feeds.createParam = function (field, doc)
+{
+  var S = '';
+  var v = Feeds.readField(field, doc);
+  if (v)
+    S = '&'+field+'='+ encodeURIComponent(v);
+  return S;
+}
+
+Feeds.sessionParams = function (doc)
+{
+  return Feeds.createParam('sid', doc)+Feeds.createParam('realm', doc);
+}
+
+Feeds.initState = function (state)
+{
+  if (!state)
+    var state = new Object();
+
+  state.sid = Feeds.readField('sid');
+  state.realm = Feeds.readField('realm');
+  if (!state.tab)
+    state.tab = 'feeds';
+
+  return state;
+}
+
+Feeds.saveState = function ()
+{
+  Feeds.writeCookie('Feeds_State', escape(OAT.JSON.stringify(Feeds.state)), 1);
+}
+
+Feeds.toggleLeftPane = function (pane)
+{
+  Feeds.state.tab = pane;
+  Feeds.saveState();
+
+  Feeds.initFeeds();
+  Feeds.initTags();
+}
+
+Feeds.initLeftPane = function ()
+{
+  var div = $('pane_left');
+  if (!div)
+    return;
+
+  // favorites
+  var favourites = $('pane_right2');
+  if (favourites)
+  {
+    Feeds.listFavourites();
+    Feeds.gd = new OAT.GhostDrag();
+    Feeds.gd.addTarget(favourites);
+  }
+
+  // load cookie data
+  var s = Feeds.readCookie('Feeds_State');
+  if (s)
+  {
+    try {
+      s = OAT.JSON.parse(unescape(s));
+    } catch (e) { s = null; }
+    s = Feeds.initState(s);
+  } else {
+    s = Feeds.initState();
+  }
+  Feeds.state = s;
+  var v = $('nodePath');
+  if (v && (v.value != ''))
+  {
+    Feeds.state.selected = v.value;
+  }
+
+  Feeds.initFeeds()
+  Feeds.initTags()
+}
+
+Feeds.initTags = function ()
+{
+  var div = $('pane_left_tags');
+  if (!div)
+    return;
+
+  if (Feeds.state.tab != 'tags')
+  {
+    OAT.Dom.addClass('tags_button', 'tab2');
+    OAT.Dom.removeClass('tags_button', 'activeTab2');
+    OAT.Dom.hide('pane_left_tags');
+    return;
+  }
+
+  OAT.Dom.show('pane_left_tags');
+  OAT.Dom.removeClass('tags_button', 'tab2');
+  OAT.Dom.addClass('tags_button', 'activeTab2');
+
+  if (div.innerHTML != '...')
+    return;
+
+  Feeds.loadTags();
+}
+
+Feeds.loadTags = function ()
+{
+  var div = $('pane_left_tags');
+  div.innerHTML = '';
+
+  var x = function(data) {
+    div.innerHTML = data;
+    var selected = Feeds.state.selected;
+    if (selected.indexOf('t#') == 0)
+      Feeds.selectTag(selected);
+  }
+  var S = 'ajax.vsp?a=tags&sa=load&np='+encodeURIComponent(Feeds.state.selected)+Feeds.sessionParams();
+  OAT.AJAX.GET(S, '', x);
+}
+
+Feeds.selectTag = function (tag)
+{
+  var newTag = tag.replace('t#', '');
+  if (tag.indexOf('t#') != 0)
+    tag = 't#'+tag;
+  aTags = $('pane_left_tags').getElementsByTagName('a');
+  for (var i = 0; i < aTags.length; i++)
+  {
+    a = aTags[i];
+    if (a.id)
+    {
+      if (a.id.indexOf('t_tag_') == 0)
+      {
+        OAT.Dom.removeClass(a, 'FM_bold');
+        if (a.id == ('t_tag_' + newTag))
+          OAT.Dom.addClass(a, 'FM_bold');
+      }
+    }
+  }
+  Feeds.state.selected = tag;
+  Feeds.saveState();
+  Feeds.loadItems(Feeds.state.selected)
+}
+
+Feeds.initFeeds = function ()
+{
+  var div = $('pane_left_feeds');
+  if (!div)
+    return;
+
+  if (Feeds.state.tab != 'feeds')
+  {
+    OAT.Dom.addClass('feeds_button', 'tab2');
+    OAT.Dom.removeClass('feeds_button', 'activeTab2');
+    OAT.Dom.hide('pane_left_feeds');
+    return;
+  }
+
+  OAT.Dom.removeClass('feeds_button', 'tab2');
+  OAT.Dom.addClass('feeds_button', 'activeTab2');
+  OAT.Dom.show('pane_left_feeds');
+
+  if (div.innerHTML != '...')
+    return;
+
+  Feeds.loadFeeds();
+}
+
+Feeds.loadFeeds = function ()
+{
+  var div = $('pane_left_feeds');
+  div.innerHTML = '';
+
+  Feeds.tree = new OAT.Tree();
+  var ul = OAT.Dom.create("ul",{whiteSpace:"nowrap"});
+  Feeds.tree.assign(ul, true);
+  div.appendChild(ul);
+
+  OAT.MSG.attach(Feeds.tree, OAT.MSG.TREE_EXPAND, function(sender,msg,node) {
+    var nodePath = node.myPath;
+    Feeds.expandTree(nodePath, node);
+  });
+  OAT.MSG.attach(Feeds.tree, OAT.MSG.TREE_COLLAPSE, function(sender,msg,node) {
+    var nodePath = node.myPath;
+    Feeds.collapseTree(nodePath, node);
+  });
+
+  // load and open selected nodes
+  var x = function() {
+    var v = new Array();
+    if (Feeds.state.expanded)
+    {
+      for (var i = 0; i < Feeds.state.expanded.length; i++)
+      {
+        v.push(Feeds.state.expanded[i]);
+      }
+    }
+    if (Feeds.state.selected)
+    {
+      v.push(Feeds.state.selected);
+    }
+    Feeds.loadPath(v, 0);
+  };
+  Feeds.loadTree('', Feeds.tree.tree, x);
+}
+
+Feeds.loadPath = function (w, wIndex)
+{
+  var selectNode;
+
+  for (var n = wIndex; n < w.length; n++)
+  {
+    var nodePath = w[n];
+    var parts = nodePath.split("/");
+    if (parts[0] == "") { parts.shift(); }
+    if (parts[parts.length-1] == "") { parts.pop(); }
+
+    var node = Feeds.tree.tree;
+    var currentPath = '';
+
+    for (var i = 0; i < parts.length; i++)
+    {
+      currentPath += '/' + parts[i];
+      var index = -1;
+      for (var j = 0; j < node.children.length; j++)
+      {
+        var child = node.children[j];
+        if (child.myPath == currentPath)
+        {
+          if ((child.children.length == 0) && child.ul)
+          {
+            var x = function() {Feeds.loadPath(w, n);};
+            Feeds.loadTree(currentPath, child, x);
+            return;
+          }
+          index = j;
+          break;
+        }
+      }
+      if (index == -1) {break;}
+
+      node = node.children[index];
+      node.expand(true);
+      if (Feeds.state.selected == node.myPath)
+      {
+        selectNode = node;
+      }
+    }
+    node.toggleSelect({ctrlKey:false});
+  }
+  Feeds.loadItems(Feeds.selectPath());
+}
+
+Feeds.selectPath = function ()
+{
+  if (Feeds.state.selected)
+  {
+    if (Feeds.state.selected.indexOf('t#') != 0)
+    {
+      var parts = Feeds.state.selected.split("/");
+      if (parts[0] == "") { parts.shift(); }
+      if (parts[parts.length-1] == "") { parts.pop(); }
+
+      var node = Feeds.tree.tree;
+      var currentPath = '';
+
+      for (var i = 0; i < parts.length; i++)
+      {
+        currentPath += '/' + parts[i];
+        for (var j = 0; j < node.children.length; j++)
+        {
+          var child = node.children[j];
+          if (child.myPath == currentPath)
+          {
+            if (Feeds.state.selected == child.myPath)
+            {
+              child.select();
+              return child.myID;
+            }
+            index = j;
+            break;
+          }
+        }
+        if (index == -1) {return;}
+        node = node.children[index];
+        if (!node) {break;}
+      }
+      Feeds.state.selected = '';
+    }
+  }
+  return Feeds.state.selected;
+}
+
+Feeds.loadTree = function(nodePath, node, nodeFunction)
+{
+  var S = 'ajax.vsp?a=tree&sa=load&np='+encodeURIComponent(nodePath)+Feeds.sessionParams();
+  var x = function(data) {
+    Feeds.updateTree(data, node, nodePath, nodeFunction);
+  }
+  OAT.AJAX.GET(S, '', x);
+}
+
+Feeds.updateTree = function(data, node, nodePath, nodeFunction)
+{
+  function attach(node, path) {
+    OAT.Dom.attach(node._gdElm, 'click', function() {Feeds.selectNode(path, node);});
+  }
+  var o = OAT.JSON.parse(data);
+  for (var i = 0; i < o.length; i++)
+  {
+    var item = o[i];
+    var iID = item[0];
+    var iType = item[1];
+    var iLabel = item[2];
+    var iPath = item[3];
+    var iImage = item[4];
+    var iSelected = item[5];
+    var iDraggable = item[6];
+
+    var newNode = node.createChild(iLabel, iType==0? false: true);
+    if (iImage != '')
+      newNode.setImage(iImage);
+    attach(newNode, iPath)
+    newNode.collapse();
+
+    /* draggable */
+    if ((iDraggable == 1) && (Feeds.gd))
+    {
+      Feeds.gd.addSource(newNode._gdElm, Feeds.gdDummy, Feeds.gdSuccess(iID));
+    }
+
+    /* custom properties */
+    newNode.myID = iID;
+    newNode.myPath = iPath;
+    newNode.selectable = iSelected==0? false: true;
+  }
+  if (node.children.length == 0)
+    node.ul = false
+  Feeds.tree.walk("sync");
+  if (nodeFunction)
+    nodeFunction();
+}
+
+Feeds.expandTree = function (nodePath, node)
+{
+  var a = Feeds.state.expanded;
+  if (!a)
+  {
+    a = [nodePath];
+  } else {
+    var N = a.find(nodePath);
+    if (N == -1)
+    {
+      a.push(nodePath);
+    }
+  }
+  Feeds.state.expanded = a;
+  Feeds.saveState();
+
+  if (node.children.length != 0) { return; } /* nothing when already fetched */
+
+  Feeds.loadTree(nodePath, node);
+}
+
+Feeds.collapseTree = function (nodePath, node)
+{
+  var expanded = Feeds.state.expanded;
+  if (expanded)
+  {
+    var N = expanded.find(nodePath);
+    if (N != -1)
+    {
+      var a = [];
+      for (var i = 0; i < expanded.length; i++)
+      {
+        if (i != N)
+        {
+          a.push(expanded[i]);
+        }
+      }
+      Feeds.state.expanded = a;
+      Feeds.saveState();
+    }
+  }
+}
+
+Feeds.selectNode = function(nodePath, node)
+{
+  if (node.selectable)
+  {
+    Feeds.loadItems(node.myID);
+    Feeds.state.selected = nodePath;
+    Feeds.saveState();
+  }
+}
+
+Feeds.loadItems = function(nodeID)
+{
+  $('pane_right_bottom').innerHTML = '';
+  var URL = 'items.vspx?node='+encodeURIComponent(nodeID)+Feeds.sessionParams();
+  var v = $('nodeItem');
+  if (v && (v.value != ''))
+  {
+    URL += '&item=' + v.value;
+    v.value = '';
+  }
+  $('pane_right_top').innerHTML = '<iframe id="feed_items" src="'+URL+'" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
+}
+
+Feeds.addFavourite = function (node)
+{
+  if ($('pt_favourite_'+node)) {return;}
+  var x = function(data) {
+    Feeds.listFavourites();
+  }
+  var S = 'ajax.vsp?a=favourites&sa=add&node='+escape(node)+'&seq=1'+Feeds.sessionParams();
+  OAT.AJAX.GET(S, '', x);
+}
+
+Feeds.removeFavourite = function (node)
+{
+  if (!$('pt_favourite_'+node)) {return};
+  if (confirmAction('Are you sure you want to remove this item from Favourites?'))
+  {
+    var x = function(data) {
+      Feeds.listFavourites();
+    }
+    var S = 'ajax.vsp?a=favourites&sa=remove&node='+escape(node)+'&seq=1'+Feeds.sessionParams();
+    OAT.AJAX.GET(S, '', x);
+  }
+}
+
+Feeds.selectFavourite = function (nodePath)
+{
+  Feeds.state.selected = nodePath;
+  Feeds.loadPath ([nodePath], 0);
+}
+
+Feeds.listFavourites = function ()
+{
+  var x = function(data) {
+    $("pane_right2").innerHTML = data;
+  }
+  var S = 'ajax.vsp?a=favourites&sa=list'+Feeds.sessionParams();
+  OAT.AJAX.GET(S, '', x);
+}
+
+// ---------------------------------------------------------------------------
+function myPost(frm_name, fld_name, fld_value)
+{
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
@@ -35,10 +548,15 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue, f2Name, f2Value)
+// ---------------------------------------------------------------------------
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
+  if (fName)
   createHidden('F1', fName, fValue);
+  if (f2Name)
   createHidden('F1', f2Name, f2Value);
+  if (f3Name)
+    createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
 }
 
@@ -63,26 +581,28 @@ function submitEnter(myForm, myButton, e) {
 }
 
 // ---------------------------------------------------------------------------
-function getObject(id, doc) {
-  if (doc == null)
-    doc = document;
-  if (doc.all)
-    return doc.all[id];
+function getObject(id, doc)
+{
+  if (!doc) {doc = document;}
   return doc.getElementById(id);
 }
 
 // ---------------------------------------------------------------------------
-function confirmAction(confirmMsq, form, txt, selectionMsq) {
+function confirmAction(confirmMsq, form, txt, selectionMsq)
+{
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes (form, btn, txt) {
-  for (var i = 0; i < form.elements.length; i++) {
+function selectAllCheckboxes (form, btn, txt)
+{
+  for (var i = 0; i < form.elements.length; i++)
+  {
     var obj = form.elements[i];
-    if (obj != null && obj.type == "checkbox" && !obj.disabled && obj.name.indexOf (txt) != -1) {
+    if (obj != null && obj.type == "checkbox" && !obj.disabled && obj.name.indexOf (txt) != -1)
+    {
       if (btn.value == 'Select All')
         obj.checked = true;
       else
@@ -97,9 +617,12 @@ function selectAllCheckboxes (form, btn, txt) {
 }
 
 // ---------------------------------------------------------------------------
-function anySelected (form, txt, selectionMsq) {
-  if ((form != null) && (txt != null)) {
-    for (var i = 0; i < form.elements.length; i++) {
+function anySelected (form, txt, selectionMsq)
+{
+  if ((form != null) && (txt != null))
+  {
+    for (var i = 0; i < form.elements.length; i++)
+    {
       var obj = form.elements[i];
       if (obj != null && obj.type == "checkbox" && obj.name.indexOf (txt) != -1 && obj.checked)
         return true;
@@ -112,12 +635,16 @@ function anySelected (form, txt, selectionMsq) {
 }
 
 // ---------------------------------------------------------------------------
-function coloriseTable(id) {
-  if (document.getElementsByTagName) {
+function coloriseTable(id)
+{
+  if (document.getElementsByTagName)
+  {
     var table = document.getElementById(id);
-    if (table != null) {
+    if (table != null)
+    {
       var rows = table.getElementsByTagName("tr");
-      for (i = 0; i < rows.length; i++) {
+      for (i = 0; i < rows.length; i++)
+      {
         rows[i].className = "td_row" + (i % 2);;
       }
     }
@@ -125,23 +652,14 @@ function coloriseTable(id) {
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString) {
-  while (sString.substring(0,1) == ' ')
-    sString = sString.substring(1, sString.length);
-
-  while (sString.substring(sString.length-1, sString.length) == ' ')
-    sString = sString.substring(0,sString.length-1);
-
-  return sString;
-}
-
-// ---------------------------------------------------------------------------
-function clickNode(obj) {
+function clickNode(obj)
+{
   var nodes = obj.parentNode.childNodes;
-  for (var i=0; i<nodes.length; i++) {
+  for (var i=0; i<nodes.length; i++)
+  {
     var node = nodes[i];
-    if (node.tagName == 'A')
-      if (node.innerHTML != null) {
+    if ((node.tagName == 'A') && (node.innerHTML))
+    {
         if (node.innerHTML.indexOf('<IMG') == 0)
            return node.onclick();
         if (node.innerHTML.indexOf('<img') == 0)
@@ -154,167 +672,95 @@ function clickNode(obj) {
 function clickNode2(obj)
 {
   var nodes = obj.parentNode.childNodes;
-  for (var i=0; i<nodes.length; i++) {
+  for (var i=0; i<nodes.length; i++)
+  {
     var node = nodes[i];
-    if (node.tagName == 'A')
-      if (node.onclick)
+    if ((node.tagName == 'A') && (node.onclick))
         return node.onclick();
   }
 }
 
 // ---------------------------------------------------------------------------
-function loadIFrame(id, domainID, accountID, flag, mode)
+function loadIFrame(id, mode)
 {
-  if (flag == null)
-    flag = 'r1';
-  if (mode == null)
-    mode = 'channel';
-  if ((mode != 'p') && (accountID != '-1')) {
-    readObject('feed_'+id, flag, document);
-    flagObject('image_'+id, flag, document);
-    showCount(document);
+  var doc = document.ownerDocument;
+  if (!getObject('pane_right_bottom', doc)) {var doc = parent.document;}
+  if (!mode) {mode = 'c';}
+  if (mode != 'p')
+{
+    readObject('feed_'+id, 'r1', doc);
   }
-  var sid = '';
-  if (document.forms['F1'].elements['sid'])
-    sid = document.forms['F1'].elements['sid'].value;
-  var realm = '';
-  if (document.forms['F1'].elements['realm'])
-    realm = document.forms['F1'].elements['realm'].value;
-  var URL = 'view.vspx?sid='+sid+'&realm='+realm+'&fid='+id+'&did='+domainID+'&aid='+accountID+'&f='+flag+'&m='+mode;
-  document.getElementById('feed_content').innerHTML = '<iframe src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
+  var URL = 'item.vspx?&fid='+id+'&f=r1&m='+mode+Feeds.sessionParams(doc);
+  getObject('pane_right_bottom', doc).innerHTML = '<iframe id="feed_item" src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
 // ---------------------------------------------------------------------------
 function loadIFrameURL(URL)
 {
-  document.getElementById('feed_content').innerHTML = '<iframe src="http://feedvalidator.org/check.cgi?url='+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
+  var doc = parent.document;
+  getObject('pane_right_bottom', doc).innerHTML = '<iframe src="http://feedvalidator.org/check.cgi?url='+encodeURIComponent(URL)+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
 // ---------------------------------------------------------------------------
-function addFavourite(node)
+function loadFromIFrame(id, flag, mode)
 {
-  var favourite = $('pt_favourite_'+node);
-  if (favourite)
-    return;
-  var tNode = $('pt_node_'+node);
-  if (!tNode)
-    return;
+  var doc = parent.document;
+  if (!flag) {flag = 'r1';}
+  if (!mode) {mode = 'c';}
 
-  var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=add&node='+escape(node)+'&seq=1';
-  OAT.AJAX.GET(S, '', favouriteCallback);
+  readObject('feed_'+id, flag, doc);
+  flagObject('image_'+id, flag, doc);
+
+  var URL = 'item.vspx?fid='+id+'&f='+flag+'&m='+mode+Feeds.sessionParams(doc);
+  getObject('pane_right_bottom', doc).innerHTML = '<iframe src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="no" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
 // ---------------------------------------------------------------------------
-function favouriteCallback()
+function readObject(id, flag, doc)
 {
-  getFavourites ();
-}
-
-// ---------------------------------------------------------------------------
-function removeFavourite(node)
-{
-  var favourite = $('pt_favourite_'+node);
-  if (!favourite)
-    return;
-  if (confirmAction('Are you sure you want to remove this item from Favourites?')) {
-    var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=remove&node='+escape(node)+'&seq=1';
-    OAT.AJAX.GET(S, '', favouriteCallback);
-  }
-}
-
-// ---------------------------------------------------------------------------
-function getFavourites()
-{
-  var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=list';
-  OAT.AJAX.GET(S, '', getFavouritesCallback);
-}
-
-// ---------------------------------------------------------------------------
-function getFavouritesCallback(txt)
-{
-  $("pane_right2").innerHTML = txt;
-}
-
-// ---------------------------------------------------------------------------
-function loadFromIFrame(id, domainID, accountID, flag, mode) {
-  if (flag == null)
-    flag = 'r1';
-  if (mode == null)
-    mode = 'channel';
-  readObject('feed_'+id, flag, parent.document);
-  flagObject('image_'+id, flag, parent.document);
-  showCount(parent.document);
-  var sid = '';
-  if (document.forms['F1'].elements['sid'])
-    sid = document.forms['F1'].elements['sid'].value;
-  var realm = '';
-  if (document.forms['F1'].elements['realm'])
-    realm = document.forms['F1'].elements['realm'].value;
-  var URL = 'view.vspx?sid='+sid+'&realm='+realm+'&fid='+id+'&did='+domainID+'&aid='+accountID+'&f='+flag+'&m='+mode;
-  parent.document.getElementById('feed_content').innerHTML = '<iframe src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="no" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
-}
-
-// ---------------------------------------------------------------------------
-function readObject(id, flag, doc) {
-  if (doc == null)
-    doc = document;
-  if (flag == null)
-    flag = 'r0';
-  var c = getObject(id, doc);
-  if (c) {
-    if (flag == 'r0') {
-      OAT.Dom.removeClass(c, 'read');
-      OAT.Dom.addClass(c, 'unread');
-    }
-    if (flag == 'r1') {
-      OAT.Dom.removeClass(c, 'unread');
-      OAT.Dom.addClass(c, 'read');
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-function flagObject(id, flag, doc) {
-  if (doc == null)
-    doc = document;
-  var c = getObject(id, doc);
-  if (c) {
-    if (flag == 'f0')
-      if (c.innerHTML != '')
-        c.innerHTML = '';
-    if (flag == 'f1')
-      if (c.innerHTML == '')
-        c.innerHTML = '<img src="image/flag.gif" border="0"/>';
-  }
-}
-
-// ---------------------------------------------------------------------------
-function showCount(doc) {
-  if (doc == null)
-    doc = document;
-  var countAll = 0;
-  var countUnread = 0;
-  var links = doc.links;
-  for (var i=0; i<links.length; i++) {
-    if (links[i].id.indexOf('feed_') != -1) {
-      countAll += 1;
-      if (OAT.Dom.isClass(links[i], 'unread'))
-        countUnread += 1;
-    }
-  }
-  var c = getObject('feed_count', doc);
+  var c = $(id);
   if (c)
-    if (c.innerHTML != (countAll+' ('+countUnread+')'))
-      c.innerHTML = countAll+' ('+countUnread+')';
+{
+    if (flag == 'r0')
+{
+      OAT.Dom.removeClass(id, 'read');
+      OAT.Dom.addClass(id, 'unread');
+}
+    else if (flag == 'r1')
+    {
+      OAT.Dom.removeClass(id, 'unread');
+      OAT.Dom.addClass(id, 'read');
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
-function addOption (form, text_name, box_name) {
+function flagObject(id, flag, doc)
+{
+  var c = $(id);
+  if (c)
+  {
+    if (flag == 'f0')
+    {
+        c.innerHTML = '';
+}
+    else if (flag == 'f1')
+    {
+      c.innerHTML = '<img src="image/flag.gif" border="0"/>';
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+function addOption (form, text_name, box_name)
+{
   var box = form.elements[box_name];
-  if (box) {
+  if (box)
+  {
     var text = form.elements[text_name];
-    if (text) {
-      text.value = trim(text.value);
+    if (text)
+    {
+      text.value = Feeds.trim(text.value);
       if (text.value == '')
         return;
     	for (var i=0; i<box.options.length; i++)
@@ -328,24 +774,28 @@ function addOption (form, text_name, box_name) {
 }
 
 // ---------------------------------------------------------------------------
-function deleteOption (form, box_name) {
+function deleteOption (form, box_name)
+{
   var box = form.elements[box_name];
   if (box)
 	  box.options[box.selectedIndex] = null;
 }
 
 // ---------------------------------------------------------------------------
-function composeOptions (form, box_name, text_name) {
+function composeOptions (form, box_name, text_name)
+{
   var box = form.elements[box_name];
-  if (box) {
+  if (box)
+  {
     var text = form.elements[text_name];
-    if (text) {
+    if (text)
+    {
 		  text.value = '';
     	for (var i=0; i<box.options.length; i++)
     	  if (text.value == '')
 		      text.value = box.options[i].value;
 		    else
-		      text.value = text.value + '\n' + box.options[i].value;
+          text.value += '\n' + box.options[i].value;
 	  }
 	}
 }
@@ -353,8 +803,9 @@ function composeOptions (form, box_name, text_name) {
 // ---------------------------------------------------------------------------
 function showTag(tag)
 {
-  createHidden2(parent.document, 'F1', 'tag', tag);
-  parent.document.forms['F1'].submit();
+  var doc = parent.document;
+  createHidden2(doc, 'F1', 'tag', tag);
+  doc.forms[0].submit();
 }
 
 // ---------------------------------------------------------------------------
@@ -388,20 +839,27 @@ function sortSelect(box)
 //
 function showTab(tabs, tabsCount, tabNo)
 {
-  if ($(tabs)) {
-    for (var i = 0; i < tabsCount; i++) {
+  if ($(tabs))
+  {
+    for (var i = 0; i < tabsCount; i++)
+    {
       var l = $(tabs+'_tab_'+i);      // tab labels
       var c = $(tabs+'_content_'+i);  // tab contents
-      if (i == tabNo) {
+      if (i == tabNo)
+      {
         if ($('tabNo'))
+        {
           $('tabNo').value = tabNo;
-        if (c) {
+        }
+        if (c)
+        {
           OAT.Dom.show(c);
       }
         OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-        if (c) {
+        if (c)
+        {
           OAT.Dom.hide(c);
     }
         OAT.Dom.removeClass(l, "activeTab");
@@ -479,11 +937,14 @@ function rowSelect(obj)
 //
 function rowSelectValue(dstField, srcField, singleMode)
 {
-  if (singleMode) {
+  if (singleMode)
+  {
     dstField.value = srcField.value;
   } else {
-    if (dstField.value.indexOf(srcField.value) == -1) {
-      if (dstField.value == '') {
+    if (dstField.value.indexOf(srcField.value) == -1)
+    {
+      if (dstField.value == '')
+      {
         dstField.value = srcField.value;
       } else {
         dstField.value = dstField.value + ', ' + srcField.value;
@@ -497,7 +958,8 @@ function rowSelectValue(dstField, srcField, singleMode)
 // Hidden functions
 //
 // ---------------------------------------------------------------------------
-function createHidden(frm_name, fld_name, fld_value) {
+function createHidden(frm_name, fld_name, fld_value)
+{
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
@@ -507,9 +969,11 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
 {
   var hidden;
 
-  if (doc.forms[frm_name]) {
+  if (doc.forms[frm_name])
+  {
     hidden = doc.forms[frm_name].elements[fld_name];
-    if (hidden == null) {
+    if (hidden == null)
+    {
       hidden = doc.createElement("input");
       hidden.setAttribute("type", "hidden");
       hidden.setAttribute("name", fld_name);
@@ -527,8 +991,10 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
 // ---------------------------------------------------------------------------
 function menuMouseIn(a, b)
 {
-  if (b != undefined) {
-    while (b.parentNode) {
+  if (b != undefined)
+  {
+    while (b.parentNode)
+    {
       b = b.parentNode;
       if (b == a)
         return true;
@@ -543,7 +1009,8 @@ function menuMouseOut(event)
 {
   var current, related;
 
-  if (window.event) {
+  if (window.event)
+  {
     current = this;
     related = window.event.toElement;
   } else {
@@ -596,7 +1063,8 @@ function urlParams(mask)
   var S = '';
   var form = document.forms['F1'];
 
-  for (var i = 0; i < form.elements.length; i++) {
+  for (var i = 0; i < form.elements.length; i++)
+  {
     var obj = form.elements[i];
     if ((obj.name.indexOf (mask) != -1) && (((obj.type == "checkbox") && (obj.checked)) || (obj.type != "checkbox")))
       S += '&' + form.elements[i].name + '=' + encodeURIComponent(form.elements[i].value);
@@ -609,7 +1077,8 @@ function urlParams(mask)
 function showObject(id)
 {
   var obj = document.getElementById(id);
-  if (obj != null) {
+  if (obj)
+  {
     obj.style.display="";
     obj.visible = true;
   }
@@ -620,7 +1089,8 @@ function showObject(id)
 function hideObject(id)
 {
   var obj = document.getElementById(id);
-  if (obj != null) {
+  if (obj != null)
+  {
     obj.style.display="none";
     obj.visible = false;
   }
@@ -635,7 +1105,8 @@ function initRequest()
     xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
   } catch (e) { }
 
-  if (xmlhttp == null) {
+  if (xmlhttp == null)
+  {
     try {
       xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
     } catch (e) { }
@@ -776,9 +1247,11 @@ function createProgressBar()
   var centerCellName;
   var tableText = "";
   var tdText = "";
-  for (x = 0; x < size; x++) {
+  for (x = 0; x < size; x++)
+  {
     tdText = "";
-    if (x == ((size/2)-1)) {
+    if (x == ((size/2)-1))
+    {
       centerCellName = "progress_" + x;
       tdText = "<font color=\"white\">" + 0 + '&nbsp;out&nbsp;of&nbsp;' + progressMax + "</font>"
     }
@@ -804,9 +1277,11 @@ function showProgress(progressIndex)
 
   var percentage = progressIndex * 100 / progressMax;
   centerCell.innerHTML = "<font color=\"white\">" + progressIndex + '&nbsp;out&nbsp;of&nbsp;' + progressMax + "</font>";
-  for (x = 0; x < size; x++) {
+  for (x = 0; x < size; x++)
+  {
     var cell = window.document.getElementById("progress_" + x);
-    if ((cell) && (percentage/x < increment)) {
+    if ((cell) && (percentage/x < increment))
+    {
       cell.style.backgroundColor = "blue";
     } else {
       cell.style.backgroundColor = "red";
