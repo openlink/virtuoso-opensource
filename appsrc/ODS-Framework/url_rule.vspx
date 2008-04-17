@@ -43,6 +43,26 @@
       <vm:navigation1 on="services"/>
       <vm:rawheader caption="Content Hyperlinking Rules"/>
       <vm:body>
+	<script type="text/javascript"><![CDATA[
+function selectAllCheckboxes (form, btn)
+{
+  for (var i = 0; i < form.elements.length; i = i + 1) {
+    var contr = form.elements[i];
+    if (contr != null && contr.type == "checkbox") {
+      contr.focus();
+      if (btn.value == 'Select All')
+        contr.checked = true;
+      else
+        contr.checked = false;
+    }
+  }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+]]></script>
 	<vm:login redirect="index.vspx"/>
 	<v:before-data-bind><![CDATA[
 	  if (self.aps_id is null)
@@ -75,7 +95,10 @@
 		  <col/>
 	      </colgroup>
 	      <tr class="listing_header_row">
-		  <th>Phrase</th>
+		  <th>
+		      <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)" />
+		      Phrase
+		  </th>
 		  <th>URI</th>
 		  <th>Action</th>
 	      </tr>
@@ -100,6 +123,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_id and self.chksum = c
 	                  </v:after-data-bind>
 			  <tr class="<?V case when self.edit_id = control.te_rowset[0] and self.chksum = control.te_rowset[2] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 			      <td>
+				  <input type="checkbox" name="cb_<?V control.te_rowset[0] ?>" value="on"/>
 				  <v:url name="dset_ur1"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[0])'
 				      format="%s"
@@ -180,6 +204,40 @@ self.dset.vc_data_bind (e);
 	    </v:form>
 	    <v:form name="impf" type="simple" method="POST">
 	      <span class="fm_ctl_btn">
+		  <v:button action="simple" name="exp_btn1" value="Export"
+		      xhtml_onclick="--sprintf ('javascript: window.open (\'href_export.xml?:u=%d&amp;contenttype=application/octet-stream&amp;content-filename=hyperlinking_rules.xml\', \'export\', \'\'); return false', self.u_id)"
+		      enabled="--coalesce ((select top 1 1 from SYS_ANN_PHRASE, SYS_ANN_PHRASE_SET where  AP_APS_ID  = APS_ID and  APS_NAME = sprintf ('Hyperlinking-%d', self.u_id)), 0)">
+		  </v:button>
+		  <v:text type="file" name="exp_file" value="">
+		  </v:text>
+		  <v:button action="simple" name="imp_btn4" value="Import from File">
+		      <v:on-post><![CDATA[
+declare f, i, arr, xt, xp, phrase, href any;
+
+f := self.exp_file.ufl_value;
+declare exit handler for sqlstate '*'
+{
+  rollback work;
+  self.vc_is_valid := 0;
+  self.vc_error_message := 'The file to import is not specified or does not contains hyperlinking rules data.';
+  return;
+};
+
+xt := xtree_doc (f);
+xp := xpath_eval ('/href-rules/phrase', xt, 0);
+arr := make_array (length (xp), 'any');
+i := 0;
+foreach (any p in xp) do
+  {
+    phrase := cast (xpath_eval ('@text', p) as varchar);
+    href := cast (xpath_eval ('@link', p) as varchar);
+    arr[i] := vector (phrase, href);
+    i := i + 1;
+  }
+ap_add_phrases (self.aps_id, arr);
+self.tm1.vc_data_bind (e);
+			  ]]></v:on-post>
+		  </v:button>
 		    <v:button name="import1" value="Import from MOAT" action="simple">
 		      <v:on-post><![CDATA[
 self.pg := 2;
@@ -189,6 +247,22 @@ self.tm2.vc_enabled := 1;
 		    </v:button>
 	      </span>
 	    </v:form>
+	      <span class="fm_ctl_btn">
+		    <v:button name="del_sel" value="Delete selected" action="simple">
+			<v:on-post><![CDATA[
+declare i, phrase any;
+
+i := 0;
+while ((phrase := adm_next_checkbox ('cb_', params, i)))
+  {
+    delete from SYS_ANN_PHRASE where AP_APS_ID = self.aps_id and AP_TEXT = phrase;
+  }
+if (row_count ())
+  self.tm1.vc_data_bind (e);
+
+			]]></v:on-post>
+		    </v:button>
+	      </span>
 	  </fieldset>
       </div>
     </v:template>

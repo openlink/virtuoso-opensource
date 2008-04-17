@@ -247,10 +247,14 @@ directory_init() {
   mkdir vad/data/wa/users
   mkdir vad/data/wa/users/css
   mkdir vad/data/wa/users/js
+  mkdir vad/data/wa/rte
+  mkdir vad/data/wa/rte/images
+  mkdir vad/data/wa/rte/images/smileys
   cp *.vspx vad/data/wa
   cp *.vsp vad/data/wa
   cp *.xsl vad/data/wa
   cp trs*.xml vad/data/wa
+  cp href*.xml vad/data/wa
   cp foa*.xml vad/data/wa
   cp afoa*.xml vad/data/wa
   cp ufoa*.xml vad/data/wa
@@ -297,6 +301,9 @@ directory_init() {
   cp users/* vad/data/wa/users
   cp users/css/* vad/data/wa/users/css
   cp users/js/* vad/data/wa/users/js
+  cp rte/* vad/data/wa/rte
+  cp rte/images/* vad/data/wa/rte/images
+  cp rte/images/smileys/* vad/data/wa/rte/images/smileys
 }
 
 virtuoso_shutdown() {
@@ -376,6 +383,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/facebook.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/nav_framework_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
+  echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export_all.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
+  echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/href_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      rc := DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-sql-encoding', 'UTF-8', 'dav', null, 0, 0, 1);" >> $STICKER
@@ -421,7 +430,7 @@ sticker_init() {
   do
      if echo "$file" | grep -v ".vsp" | grep -v ".php" >/dev/null
      then
-	 if echo "$file" | grep -v "trs_export.xml" | grep -v "foaf.xml" >/dev/null
+    	 if echo "$file" | grep -v "trs_export.xml" | grep -v "trs_export_all.xml" | grep -v "href_export.xml" | grep -v "foaf.xml" >/dev/null
 	 then
 	     perms="110100100NN"
 	 else

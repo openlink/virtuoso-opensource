@@ -101,6 +101,20 @@ db.dba.wa_exec_ddl (
   )
 create unique index moat_user_meanings_id on moat.DBA.moat_user_meanings (mu_id)');
 
+
+create trigger tag_rules_u after update on DB.DBA.tag_rules referencing old as O, new as N
+{
+  if (not exists (select 1 from moat.DBA.moat_user_meanings where mu_trs_id = O.rs_trs and mu_tag = N.rs_tag))
+    update moat.DBA.moat_user_meanings set mu_tag = N.rs_tag where mu_trs_id = O.rs_trs and mu_tag = O.rs_tag;
+}
+;
+
+create trigger tag_rules_d after delete on DB.DBA.tag_rules referencing old as O
+{
+  delete from moat.DBA.moat_user_meanings where mu_trs_id = O.rs_trs and mu_tag = O.rs_tag;
+}
+;
+
 -- A dummy table is created for holding taggable content.  Then a text trigger is created on this table.  In fact the text trigger rules will be invoked without recourse to the table or its triggers.
 
 wa_exec_no_error('create table tag_content (tc_id int identity primary key, tc_text long varchar)');

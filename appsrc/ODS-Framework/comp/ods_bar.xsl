@@ -1276,7 +1276,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 <!--
       <li><a href="<?V (case when locate('http://',INST_URL) then '' else rtrim(self.odsbar_ods_gpath,'/ods/') end)||wa_expand_url (INST_URL, self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 -->
-      <li><a href="<?vsp http(wa_expand_url (sprintf('%s%V/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,replace(sprintf('%U',INST_NAME),'/','%2f')),self.odsbar_loginparams)); ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
+      <li><a href="<?vsp http(wa_expand_url (sprintf('%s%V/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,replace(sprintf('%U',wa_utf8_to_wide (INST_NAME)),'/','%2f')),self.odsbar_loginparams)); ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 <?vsp
           i := i + 1;
 

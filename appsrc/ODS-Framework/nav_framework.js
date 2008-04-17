@@ -4571,6 +4571,7 @@ ODS.Nav = function (navOptions)
 
     this.wait = function (waitState)
     {
+      return;
 
 	if ($('loginDiv') && $('loginDiv').style.display != 'none')
 	    return; //checks if login is show.. so login disables wait div

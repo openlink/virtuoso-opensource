@@ -698,6 +698,15 @@ db.dba.wa_exec_ddl ('create table WA_USER_SVC (
       )'
 );
 
+db.dba.wa_exec_ddl ('create table WA_RELATED_APPS (
+      RA_ID int identity,
+      RA_WAI_ID int,
+      RA_URI  varchar,
+      RA_LABEL  varchar,
+      primary key (RA_WAI_ID, RA_ID)
+      )'
+);
+
 create method wa_id_string () for web_app
 {
   return '';
@@ -5572,7 +5581,7 @@ create procedure wa_inst_type_icon (in app varchar)
     return 'go';
 };
 
-create function WA_MAKE_THUMBNAIL (inout image any, in width integer := 64, in height integer := 50)
+create function WA_MAKE_THUMBNAIL_1 (inout image any, in width integer := 192, in height integer := 150)
 returns any
 {
   if (__proc_exists ('IM ThumbnailImageBlob', 2))
@@ -6397,7 +6406,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     '/~(.*)',
     vector('uname'),
     1,
-    '/DAV/home/%s',
+    '/home/%s',
     vector('uname'),
     null, null, 2, null
     );
@@ -6444,6 +6453,11 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/activities');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/activities',
       ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+
+  -- VD for user's home folders
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/home');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/home',
+      ppath=>'/DAV/home/', is_dav=>isdav);
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {

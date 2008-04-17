@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Related Applications</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <v:variable name="wai_id" type="int" default="null" param-name="wai_id"/>
+      <v:variable name="edit_id" type="int" default="null" param-name="edit" />
+      <v:variable name="del_id" type="int" default="null" param-name="del" />
+
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="services"/>
+      <vm:rawheader caption="Related Applications"/>
+      <vm:body>
+	<vm:login redirect="index.vspx"/>
+        <div class="box">
+	    <h3>
+		Applications related to "<?V (select WAI_NAME from WA_INSTANCE where WAI_ID = self.wai_id) ?>"
+	    </h3>
+          <div>
+	    <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data">
+	      <v:template type="simple" name="tm1">
+	  <table class="listing" rules="groups">
+	      <colgroup>
+		  <col/>
+		  <col/>
+		  <col/>
+	      </colgroup>
+	      <tr class="listing_header_row">
+		  <th>Description</th>
+		  <th>URI</th>
+		  <th>Action</th>
+	      </tr>
+	      <v:data-set name="dset"
+		  sql="select RA_ID, RA_URI, RA_LABEL from WA_RELATED_APPS where RA_WAI_ID = :self.wai_id"
+		  scrollable="1" editable="1" nrows="1000">
+		  <v:before-data-bind>
+if (not e.ve_is_post and self.del_id is not null)
+{
+  delete from WA_RELATED_APPS where RA_WAI_ID = self.wai_id and RA_ID = self.del_id;
+}
+		  </v:before-data-bind>
+
+		  <v:template name="dst_rep" type="repeat">
+		      <v:template name="dset_brows" type="browse">
+			  <v:after-data-bind>
+if (not e.ve_is_post and control.te_rowset[0] = self.edit_id)
+{
+  self.a_pat.ufl_value := control.te_rowset[2];
+  self.a_url.ufl_value := control.te_rowset[1];
+}
+	                  </v:after-data-bind>
+			  <tr class="<?V case when self.edit_id = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			      <td>
+				  <v:url name="dset_ur1"
+				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
+				      format="%s"
+				      url="--sprintf ('related_apps.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				      xhtml_title="Edit"
+				      xhtml_alt="Edit"
+				      />
+			      </td>
+			      <td>
+				  <v:label name="lr1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+			      </td>
+			      <td>
+				  <v:url name="dset_ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+				      format="%s"
+				      url="--sprintf ('related_apps.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				      xhtml_title="Delete"
+				      xhtml_alt="Delete"
+				      />
+			      </td>
+			  </tr>
+		      </v:template>
+		  </v:template>
+
+		  <v:template name="dset_footer" type="simple">
+		      <tr>
+			  <td colspan="3" class="listing_col_action">
+			      <vm:ds-navigation data-set="dset" type="set" />
+			  </td>
+		      </tr>
+		  </v:template>
+	      </v:data-set>
+	  </table>
+	  <div class="fm">
+	      <fieldset>
+	      <v:form name="addf" type="simple" method="POST">
+		  <label for="a_pat">Description</label><br/>
+		  <v:text name="a_pat" value="" xhtml_id="a_pat" xhtml_size="50" error-glyph="*">
+		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Description can not be empty"/>
+		  </v:text>
+		  <br/>
+		  <label for="a_url">URI</label><br/>
+		  <v:text name="a_url" value="" xhtml_id="a_url" xhtml_size="100"/>
+		  <br />
+	      <span class="fm_ctl_btn">
+		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_id),0)">
+		      <v:on-post>
+self.a_pat.ufl_value := null;
+self.a_url.ufl_value := null;
+self.edit_id := null;
+self.save1.vc_data_bind (e);
+control.vc_enabled := 0;
+		      </v:on-post>
+		  </v:button>
+		  <v:button name="save1" value="--case when self.edit_id is null then 'Add' else 'Update' end" action="simple">
+		      <v:on-post><![CDATA[
+declare url, pat varchar;
+if (not self.vc_is_valid)
+  return;
+
+url := self.a_url.ufl_value;
+pat := self.a_pat.ufl_value;
+if (not length (url))
+  {
+    self.vc_is_valid := 0;
+    self.vc_error_message := 'The URI cannot be empty';
+    return;
+  }
+if (self.edit_id is not null)
+  update WA_RELATED_APPS set RA_URI = url, RA_LABEL = pat where RA_WAI_ID = self.wai_id and RA_ID = self.edit_id;
+else
+  insert into WA_RELATED_APPS (RA_URI, RA_LABEL, RA_WAI_ID) values (url, pat, self.wai_id);
+self.edit_id := null;
+self.a_pat.ufl_value := null;
+self.a_url.ufl_value := null;
+control.vc_data_bind (e);
+self.cancel1.vc_data_bind (e);
+self.dset.vc_data_bind (e);
+]]></v:on-post>
+		  </v:button>
+		  <v:button name="back1" value="Back to Applications" action="simple">
+		      <v:on-post>
+			  self.vc_redirect ('services.vspx');
+		      </v:on-post>
+		  </v:button>
+	      </span>
+	    </v:form>
+	  </fieldset>
+      </div>
+    </v:template>
+	</v:form>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>
+

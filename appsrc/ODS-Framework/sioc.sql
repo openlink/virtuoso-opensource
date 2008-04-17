@@ -802,6 +802,20 @@ create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  na
   DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
 
+create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in pred varchar := null)
+{
+  declare rel_iri any;
+
+  rel_iri := url;
+  delete_quad_s_or_o (graph_iri, rel_iri, rel_iri);
+
+  if (0 = length (pred))
+    pred := rdfs_iri ('seeAlso');
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, pred, rel_iri);
+  DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
+};
+
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
 {
@@ -1489,6 +1503,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
 		    }
+		  for select RA_URI, RA_LABEL from DB.DBA.WA_RELATED_APPS where RA_WAI_ID = WAI_ID do
+		    {
+		      sioc_app_related (graph_iri, firi, RA_LABEL, RA_URI);
+		    }
 		}
 	      for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = U_ID and length (US_IRI) do
 		{
@@ -2135,6 +2153,60 @@ create trigger WA_USER_RELATED_RES_SIOC_D after delete on DB.DBA.WA_USER_RELATED
   opiri := O.WUR_SEEALSO_IRI;
   delete_quad_s_or_o (graph_iri, opiri, opiri);
 };
+
+-- Related Apps
+create trigger WA_RELATED_APPS_SIOC_I after insert on DB.DBA.WA_RELATED_APPS referencing new as N
+{
+  declare graph_iri, iri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  for select WAI_TYPE_NAME, WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = N.RA_WAI_ID do
+    {
+      iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+      sioc_app_related (graph_iri, iri, N.RA_LABEL, N.RA_URI);
+    }
+};
+
+create trigger WA_RELATED_APPS_SIOC_U after update on DB.DBA.WA_RELATED_APPS referencing old as O, new as N
+{
+  declare graph_iri, iri, opiri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  for select WAI_TYPE_NAME, WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = N.RA_WAI_ID do
+    {
+      iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+      opiri := O.RA_URI;
+      delete_quad_s_or_o (graph_iri, opiri, opiri);
+      sioc_app_related (graph_iri, iri, N.RA_LABEL, N.RA_URI);
+    }
+};
+
+create trigger WA_RELATED_APPS_SIOC_D after delete on DB.DBA.WA_RELATED_APPS referencing old as O
+{
+  declare graph_iri, iri, opiri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  graph_iri := get_graph ();
+  for select WAI_TYPE_NAME, WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = O.RA_WAI_ID do
+    {
+      iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+      opiri := O.RA_URI;
+      delete_quad_s_or_o (graph_iri, opiri, opiri);
+    }
+};
+
 
 
 

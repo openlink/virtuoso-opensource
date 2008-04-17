@@ -519,6 +519,43 @@
                     </v:script>
                   </v:on-post>
                 </v:button>
+                <v:button style="url"
+                          value="Related"
+                          action="simple"
+                          name="rel_bt"
+                          xhtml_class="img_button">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Related (applications)" title="Related (applications)"/>&#160;Related';
+		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
+		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail', 'IM'))
+		        control.vc_enabled := 0;
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 1;
+                        else
+                          control.vc_enabled := 0;
+                      ]]>
+                  </v:before-data-bind>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare freeze varchar;
+			freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+			  {
+			    self.vc_redirect ('services.vspx');
+                            return;
+                          }
+			self.vc_redirect (sprintf ('related_apps.vspx?wai_id=%d',
+			   (control.vc_parent as vspx_row_template).te_rowset[0]));
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
               </td>
               <td>
                 <?vsp

@@ -468,7 +468,8 @@
        declare isDiscussions integer;
        isDiscussions:=0;
 
-       if('<xsl:value-of select="$app"/>'='Discussions'){
+       if('<xsl:value-of select="$app"/>'='Discussions')
+       {
           isDiscussions:=1;
           q_str := 'select distinct top 10 '||
                    '  NG_NAME as inst_name, FTHR_SUBJ as title, FTHR_DATE as ts, FTHR_FROM as author,'||
@@ -892,7 +893,7 @@
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
-        <table class="app_summary_listing">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
           <tr>
             <th>
               <v:url name="bmk_orderby_instance"

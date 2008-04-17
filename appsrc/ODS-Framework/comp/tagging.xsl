@@ -218,6 +218,102 @@
 		</v:template>
 	    </v:data-set>
 	</table>
+	<br/>
+	<v:button action="simple" name="trs_btn3" value="Export"
+	    xhtml_onclick="--sprintf ('javascript: window.open (\'trs_export_all.xml?:u=%d&amp;contenttype=application/octet-stream&amp;content-filename=tagging_rules.xml\', \'export\', \'\'); return false', self.u_id)"
+		    enabled="--coalesce ((select top 1 1 from tag_user where tu_u_id = self.u_id), 0)">
+	</v:button>
+	<v:form action="POST" name="impform" type="simple" xhtml_enctype="multipart/form-data">
+	    <v:text type="file" name="trs_file" value=""
+		>
+	    </v:text>
+	    <v:button action="simple" name="trs_btn4" value="Import">
+		<v:on-post>
+		    declare f, xt, xp, dat, _trs_aps_id, _trs_apc_id, _trs_id any;
+		    declare rule_name, is_shared, tmp, moat, muri any;
+
+		    f := self.trs_file.ufl_value;
+
+		    declare exit handler for sqlstate '*'
+		    {
+		      rollback work;
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The file to import is not specified or does not contains ruleset data.';
+		      return;
+		    };
+
+		    _trs_apc_id := coalesce (
+		      (select top 1 APC_ID from DB.DBA.SYS_ANN_PHRASE_CLASS where APC_OWNER_UID = self.u_id),
+		      ANN_GETID ('C'));
+
+                    insert soft DB.DBA.SYS_ANN_PHRASE_CLASS
+	 	  	(APC_ID, APC_NAME, APC_OWNER_UID, APC_READER_GID, APC_CALLBACK, APC_APP_ENV)
+ 		        values (_trs_apc_id, self.u_name || '\'s Tagging Rule Class', self.u_id, http_nogroup_gid (), null, null);
+
+		    xt := xtree_doc (f);
+
+		    tmp := xpath_eval ('/tagging-rules/rule-set', xt, 0);
+
+		    self.vc_is_valid := 1;
+		    foreach (any rul in tmp) do
+		      {
+		        declare pref, ord, inx int;
+			pref := rule_name := cast (xpath_eval ('@name', rul) as varchar);
+			inx := 1;
+			while (exists (select 1 from tag_rule_set where trs_owner = self.u_id and trs_name = rule_name))
+		          {
+			    rule_name := pref || sprintf (' (%d)', inx);
+                            inx := inx + 1;
+			  }
+
+			is_shared := cast (xpath_eval ('@shared', rul) as int);
+			_trs_aps_id := ANN_GETID ('S');
+			insert into tag_rule_set (trs_name, trs_owner, trs_is_public, trs_apc_id, trs_aps_id)
+			   values (rule_name, self.u_id, is_shared, _trs_apc_id, _trs_aps_id);
+			_trs_id := identity_value ();
+                        ord := coalesce ((select top 1 tu_order from tag_user where tu_u_id = self.u_id order by tu_order desc), 0);
+			ord := ord + 1;
+			insert soft tag_user (tu_u_id, tu_trs, tu_order) values
+			(self.u_id, _trs_id, ord);
+
+
+			insert soft DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID,
+				APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+				values (_trs_aps_id, self.u_name || '\'s ' || rule_name,
+					self.u_id, http_nogroup_gid (), _trs_apc_id, 'x-any', null, 10000, 1);
+
+			dat := vector ();
+			xp := xpath_eval ('rule', rul, 0);
+			foreach (any r in xp) do
+			  {
+			    declare q, t, is_p any;
+			    q := cast (xpath_eval ('string(pattern)', r) as varchar);
+			    t := cast (xpath_eval ('string(tags)', r) as varchar);
+			    is_p := cast (xpath_eval ('string(is-phrase)', r) as int);
+			    dat := vector_concat (dat, vector ( vector (q, t, is_p) ));
+			    insert into tag_rules (rs_trs, rs_query, rs_tag, rs_is_phrase)
+			    	values (_trs_id, q, t, is_p);
+			    if (is_p = 1)
+			      {
+				ap_add_phrases (_trs_aps_id, vector ( vector (q, t) ));
+			      }
+			    else
+			      {
+				tt_query_tag_content (q, self.u_id, '', '', serialize (vector (_trs_id, t, is_p)));
+			      }
+			    moat := xpath_eval ('meaning', r, 0);
+			    foreach (any m in moat) do
+			      {
+				muri := xpath_eval ('string(.)', m);
+				insert replacing moat.DBA.moat_user_meanings (mu_tag, mu_trs_id, mu_url)
+				    values (t, _trs_id, muri);
+			      }
+			  }
+		      }
+		    self.vc_redirect ('tags.vspx');
+		</v:on-post>
+	    </v:button>
+	</v:form>
 	<h3>Rule sets offered for use by other users</h3>
 	<table class="listing">
 	    <tr class="listing_header_row">

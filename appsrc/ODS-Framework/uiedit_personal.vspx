@@ -656,21 +656,22 @@
             <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21" xhtml_id="user_sset_personal" xhtml_onclick="return mailIsValid() ? true : false ;">
               <v:on-post>
                 <![CDATA[
-
-                  if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-                  {
-                    self.vc_error_message := 'This e-mail address is already registered.';
-                    self.vc_is_valid := 0;
-                  }
 		  if (exists(select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
 		  {
 		    self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
 		    self.nickn.vc_data_bind (e);
                     self.vc_error_message := 'This nick already used please enter another or use suggested';
                     self.vc_is_valid := 0;
+      return;
                   }
 
-                  if (self.vc_is_valid = 0) return;
+  if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and
+      exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+    {
+      self.vc_error_message := 'This e-mail address is already registered.';
+      self.vc_is_valid := 0;
+      return;
+    }
 
                   declare _arr any;
 
@@ -703,8 +704,7 @@
                       self.vc_is_valid := 0;
                       self.vc_error_message :=
                       sprintf ('An invalid date (%s-%s-%s) is specified',
-                        self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value
-                      );
+	      self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value);
                       return;
                     };
                      dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
@@ -712,7 +712,7 @@
                   else
                     dt := null;
 
-                  -- before to edit rest of fields, set the org flag
+  -- before to edit rest of fields, set the org(anization) flag
                   self.is_org := self.cb_org.ufl_selected;
                   update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
 
@@ -730,33 +730,40 @@
                     self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
                     self.vc_is_valid := 0;
                     self.previe_path:='';
+      return;
                   }
-                  if (self.vc_is_valid = 0) return;
 
-                  if (get_keyword ('up_photo', e.ve_params, '') <> '' OR (self.previe_path<>'' and self.s_photo.ufl_value<>''))
+  if (get_keyword ('up_photo', e.ve_params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
                   {
-                    declare dir, p_path, p_path_org any;
+      declare dir, p_path, p_path_org, dotpos, up_cont any;
+      declare p_path_size2 any;
+
                     dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
-                    p_path := case
-                      when self.s_photo.ufl_value not like '/%'
-                        then dir||self.s_photo.ufl_value
-                        else self.s_photo.ufl_value
-                      end;
-                    p_path_org := case
-                      when self.s_photo.ufl_value not like '/%'
-                        then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-                        else subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-                      end;
+      up_cont := get_keyword ('up_photo', e.ve_params);
+
+      p_path := self.s_photo.ufl_value;
+      if (self.s_photo.ufl_value not like '/%')
+	p_path := dir || p_path;
+
+      dotpos := REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1;
+      p_path_org := subseq (self.s_photo.ufl_value,0, dotpos) || '_org' || subseq (self.s_photo.ufl_value, dotpos);
+      p_path_size2 := subseq (self.s_photo.ufl_value,0, dotpos) || '_size2' || subseq (self.s_photo.ufl_value, dotpos);
+      if (self.s_photo.ufl_value not like '/%')
+	{
+	  p_path_org := dir || p_path_org;
+	  p_path_size2 := dir || p_path_size2;
+	}
 
                     rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
 
-                    if (get_keyword ('up_photo', e.ve_params, '') <> '')
+      if (up_cont <> '')
                     {
-                      rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-                      rc_org := DAV_RES_UPLOAD (p_path_org, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-                    } else if(self.previe_path<>'' and self.s_photo.ufl_value<>'')
+	  rc := DAV_RES_UPLOAD (p_path, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+	  rc_org := DAV_RES_UPLOAD (p_path_org, up_cont, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+	}
+      else if (self.previe_path <> '' and self.s_photo.ufl_value <> '')
                     {
-                      rc := DB.DBA.DAV_COPY(self.previe_path, dir||self.s_photo.ufl_value,1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+	  rc := DB.DBA.DAV_COPY (self.previe_path, p_path, 1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
                       self.previe_path := '';
                     }
 
@@ -774,26 +781,24 @@
               declare img,thumb,thumb_size2 any;
               img := null; thumb := null; thumb_size2 := null;
         select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = rc;
+
         if (img is not null)
-          thumb := WA_MAKE_THUMBNAIL (img);
-          thumb_size2 := WA_MAKE_THUMBNAIL (img, 115, 160);
+	    thumb := WA_MAKE_THUMBNAIL_1 (img);
+          thumb_size2 := WA_MAKE_THUMBNAIL_1 (img, 115, 160);
+
         if (thumb is not null)
-          DAV_RES_UPLOAD (p_path, thumb,
-            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-        if (thumb_size2 is not null){
-          declare p_path_size2 any;
-          p_path_size2 := case
-                          when self.s_photo.ufl_value not like '/%'
-                          then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-                          else
-                             subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_size2'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-                          end;
-          DAV_RES_UPLOAD (p_path_size2, thumb_size2,
-            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+	    DAV_RES_UPLOAD (p_path, thumb, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+
+	  if (thumb_size2 is not null)
+	    {
+		DAV_RES_UPLOAD (p_path_size2, thumb_size2, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
             }
         }
+	  if (p_path like '/DAV/%')
+	    p_path := subseq (p_path, 4);
           WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
-        }else
+    }
+  else
         {
          if(get_keyword ('s_photo', e.ve_params, '') = '')
             WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
@@ -806,12 +811,11 @@
         {
           declare dir, p_path any;
           dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/media/';
-          p_path := case
-            when self.s_audio.ufl_value not like '/%'
-              then dir||self.s_audio.ufl_value
-                  else
-                          self.s_audio.ufl_value
-                        end;
+
+      p_path := self.s_audio.ufl_value;
+      if (self.s_audio.ufl_value not like '/%')
+	p_path := dir|| p_path;
+
           rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
           rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 

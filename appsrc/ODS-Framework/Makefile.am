@@ -67,6 +67,12 @@ EXTRA_DIST = \
 	images/skin/default/*.png \
 	images/skin/pager/*.png \
 	make_vad.sh \
+	rte/*.css \
+	rte/*.htm \
+	rte/*.js \
+	rte/images/*.gif \
+	rte/images/*.jpg \
+	rte/images/smileys/*.gif \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
 	tmpl/WS_CHANGE_BY_OWNER_TEMPLATE \
