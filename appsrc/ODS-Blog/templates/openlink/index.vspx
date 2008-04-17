@@ -91,7 +91,7 @@
         <tr>
           <td class="box" id="left">
             <div class="box">
-              <h2>Personal Details</h2>
+              <h2>Details</h2>
               <div class="roll">
                 <vm:about-me/>
               </div>
