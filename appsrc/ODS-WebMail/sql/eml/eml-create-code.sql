@@ -2266,7 +2266,7 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('usr_sig_inc',_settings) = 0)
     OMAIL.WA.omail_setparam('usr_sig_txt', _settings, '');
 
-  if (cast (OMAIL.WA.omail_getp ('msg_result', _settings) as integer) <= 0)
+  if (cast (OMAIL.WA.omail_getp ('msg_result', _settings) as integer) <= 5)
     OMAIL.WA.omail_setparam('msg_result',_settings, 10);
 
   if (OMAIL.WA.omail_getp('msg_name', _settings) not in (0,1))
@@ -2277,6 +2277,18 @@ create procedure OMAIL.WA.omail_get_settings (
 
   if (OMAIL.WA.omail_getp('atom_version',_settings) = '')
     OMAIL.WA.omail_setparam('atom_version',_settings, '1.0');
+
+  if (OMAIL.WA.omail_getp ('spam_msg_action', _settings) not in (0,1,2))
+    OMAIL.WA.omail_setparam('spam_msg_action', _settings, 0);
+
+  if (OMAIL.WA.omail_getp ('spam_msg_state', _settings) not in (0,1))
+    OMAIL.WA.omail_setparam('spam_msg_state', _settings, 0);
+
+  if (cast (OMAIL.WA.omail_getp ('spam_msg_clean', _settings) as integer) <= 0)
+    OMAIL.WA.omail_setparam('spam_msg_clean', _settings, 0);
+
+  if (cast (OMAIL.WA.omail_getp ('spam_msg_header', _settings) as integer) <= 0)
+    OMAIL.WA.omail_setparam('spam_msg_header', _settings, 0);
 
   if (OMAIL.WA.omail_getp('spam', _settings) not in (0,1,2,3,4,5))
     OMAIL.WA.omail_setparam('spam',_settings, 0);
@@ -3753,6 +3765,33 @@ create procedure OMAIL.WA.omail_print(
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.spam_clean_schedule ()
+{
+  declare _days integer;
+  declare _now datetime;
+
+  _now := now ();
+  for (select DOMAIN_ID as _domain_id, USER_ID as _user_id, deserialize (SVALUES) as _settings from OMAIL.WA.SETTINGS where SNAME = 'base_settings') do
+  {
+    _days := cast (get_keyword ('spam_msg_clean', _settings, '0') as integer);
+    if (_days > 0)
+    {
+      for (select MSG_ID as _msg_id from OMAIL.WA.MESSAGES
+            where DOMAIN_ID = _domain_id
+              and USER_ID = _user_id
+              and FOLDER_ID = 125
+              and RCV_DATE < dateadd ('day', -_days, _now)) do
+      {
+        OMAIL.WA.omail_del_message(_domain_id, _user_id, _msg_id);
+      }
+    }
+  }
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.is_spam (
   in _user_id integer,
   in _mail varchar,
@@ -3877,7 +3916,10 @@ create procedure OMAIL.WA.omail_receive_message(
   _attached      := 0;
   _tags          := '';
   _settings      := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
+
+  -- spam sender?
   if (cast(get_keyword ('spam', _settings, '0') as integer) > 0)
+  {
     if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('to', _to, 2))
     {
       if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2))
@@ -3888,12 +3930,49 @@ create procedure OMAIL.WA.omail_receive_message(
           _folder_id := 125;
       }
     }
+  }
+  -- spam header?
+  if (cast (get_keyword ('spam_msg_header', _settings, '0') as integer) = 1)
+  {
+    -- SpamAssassin - condition="OR (\"X-Spam-Status\",begins with,Yes) OR (\"X-Spam-Flag\",begins with,YES) OR (subject,begins with,***SPAM***)"
+    if (_folder_id <> 125)
+      if (
+          (get_keyword_ucase ('X-Spam-Status', _attrs, '') like 'Yes%') or
+          (get_keyword_ucase ('X-Spam-Flag', _attrs, '') like 'YES%') or
+          (_subject like '***SPAM***%')
+         )
+      {
+        _folder_id := 125;
+      }
+    -- SpamPal - X-SpamPal: PASS or : SPAM
+    if (_folder_id <> 125)
+      if (cast (get_keyword ('spam_msg_header', _settings, '0') as integer) = 2)
+      {
+        if (get_keyword_ucase ('X-SpamPal', _attrs, '') like 'SPAM%')
+        {
+          _folder_id := 125;
+        }
+      }
+  }
 
+  if (_folder_id = 125)
+    if (cast (get_keyword ('spam_msg_action', _settings, '0') as integer) = 2)
+    {
+      return 0;
+    }
+
+  if (_folder_id = 125)
+    if (cast (get_keyword ('spam_msg_state', _settings, '0') as integer) <> 0)
+    {
+      _mstatus := 1;
+    }
 
   if (get_keyword_ucase('X-MSMail-Priority',_attrs,'') <> '')
+  {
     OMAIL.WA.omail_get_mm_priority(get_keyword_ucase('X-MSMail-Priority',_attrs,''),_priority);
-  else
+  } else {
     _priority  := 3;
+  }
 
   _address  := '<addres_list>';
   _address  := sprintf('%s%s',_address,OMAIL.WA.omail_address2xml('to', _to,0));
@@ -3927,7 +4006,8 @@ create procedure OMAIL.WA.omail_receive_message(
   _part_id := 1;
   _fname   := '';
 
-  if (isarray(_parts)) {
+  if (isarray(_parts))
+  {
     -- mime body
     OMAIL.WA.omail_get_mime_parts(_domain_id,_user_id,_msg_id,_parent_id,_folder_id,_part_id,_source,_parts,0);
   } else {
@@ -3942,7 +4022,8 @@ create procedure OMAIL.WA.omail_receive_message(
 
     _type_id   := OMAIL.WA.res_get_mimetype_id(_mime_type);
     _pdefault  := 1;
-    if (_type_id not in (10100, 10110)) {
+    if (_type_id not in (10100, 10110))
+    {
       _aparams  := OMAIL.WA.array2xml(vector('content-type','text/plain'));
       insert into OMAIL.WA.MSG_PARTS(DOMAIN_ID,MSG_ID,USER_ID,PART_ID,TYPE_ID,TDATA,DSIZE,APARAMS,PDEFAULT,FREETEXT_ID)
         values (_domain_id,_msg_id,_user_id,_part_id,_type_id,'',0,_aparams,_pdefault,_freetext_id);
@@ -4781,6 +4862,20 @@ create procedure OMAIL.WA.omail_set_mail(
 
     OMAIL.WA.omail_setparam('msg_reply', _settings, get_keyword('msg_reply', params));
     OMAIL.WA.omail_setparam('atom_version', _settings, get_keyword('atom_version', params, '1.0'));
+    if (cast (get_keyword ('spam_msg_action', params, '0') as integer) > 0)
+    {
+      OMAIL.WA.omail_setparam ('spam_msg_action', _settings, cast (get_keyword ('spam_msg_action_radio', params, '0') as integer));
+    } else {
+      OMAIL.WA.omail_setparam ('spam_msg_action', _settings, cast (get_keyword ('spam_msg_action', params, '0') as integer));
+    }
+    OMAIL.WA.omail_setparam ('spam_msg_state', _settings, cast (get_keyword ('spam_msg_state', params, '0') as integer));
+    if (OMAIL.WA.omail_check_interval (get_keyword ('spam_msg_clean', params), 0, 1000))
+      -- check clean spam interval
+      OMAIL.WA.omail_setparam ('spam_msg_clean', _settings, cast (get_keyword ('spam_msg_clean', params, '0') as integer));
+    else
+      OMAIL.WA.utl_redirect (sprintf ('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,1702));
+
+    OMAIL.WA.omail_setparam ('spam_msg_header', _settings, cast (get_keyword ('spam_msg_header', params, '0') as integer));
     OMAIL.WA.omail_setparam('spam', _settings, cast(get_keyword ('spam', params, '0') as integer));
     OMAIL.WA.omail_setparam('conversation', _settings, cast(get_keyword('conversation', params, '0') as integer));
 
@@ -4809,6 +4904,10 @@ create procedure OMAIL.WA.omail_set_mail(
   _rs := sprintf('%s<msg_result>%d</msg_result>', _rs, OMAIL.WA.omail_getp('msg_result',_settings));
   _rs := sprintf('%s<usr_sig_inc selected="%d"><![CDATA[%s]]></usr_sig_inc>', _rs, OMAIL.WA.omail_getp('usr_sig_inc',_settings),OMAIL.WA.omail_getp('usr_sig_txt',_settings));
   _rs := sprintf('%s<atom_version>%s</atom_version>', _rs, OMAIL.WA.omail_getp('atom_version', _settings));
+  _rs := sprintf ('%s<spam_msg_action>%d</spam_msg_action>', _rs, OMAIL.WA.omail_getp ('spam_msg_action', _settings));
+  _rs := sprintf ('%s<spam_msg_state>%d</spam_msg_state>', _rs, OMAIL.WA.omail_getp ('spam_msg_state', _settings));
+  _rs := sprintf ('%s<spam_msg_clean>%d</spam_msg_clean>', _rs, OMAIL.WA.omail_getp ('spam_msg_clean', _settings));
+  _rs := sprintf ('%s<spam_msg_header>%d</spam_msg_header>', _rs, OMAIL.WA.omail_getp ('spam_msg_header', _settings));
   _rs := sprintf ('%s<spam>%d</spam>', _rs, OMAIL.WA.omail_getp('spam', _settings));
   _rs := sprintf('%s<conversation>%d</conversation>', _rs, OMAIL.WA.omail_getp('conversation', _settings));
   _rs := sprintf('%s<discussion>%d</discussion>', _rs, OMAIL.WA.discussion_check ());
@@ -5506,7 +5605,7 @@ create procedure OMAIL.WA.omail_write(
 
   -- Set constants  -------------------------------------------------------------------
   _sql_params  := vector(0,0,0,0,0,0);
-  _page_params := vector (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+  _page_params := vector (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
   _sql_result2 := '';
   _faction     := '';
@@ -5677,13 +5776,17 @@ create procedure OMAIL.WA.omail_write(
   aset(_page_params, 3, vector('user_info', OMAIL.WA.array2xml(_user_info)));
   aset(_page_params,4,vector('save_copy', get_keyword('save_copy', _settings, '1')));
   aset (_page_params, 5, vector ('app', get_keyword ('app', _settings, '0')));
-  aset (_page_params, 6, vector ('spam', get_keyword ('spam', _settings, '0')));
-  aset (_page_params, 7, vector ('conversation', get_keyword ('conversation', _settings, '0')));
-  aset (_page_params, 8, vector ('discussion', OMAIL.WA.discussion_check ()));
+  aset (_page_params, 6, vector ('spam_msg_action', get_keyword ('spam_msg_action', _settings, '0')));
+  aset (_page_params, 7, vector ('spam_msg_state', get_keyword ('spam_msg_state', _settings, '0')));
+  aset (_page_params, 8, vector ('spam_msg_clean', get_keyword ('spam_msg_clean', _settings, '0')));
+  aset (_page_params, 9, vector ('spam_msg_header', get_keyword ('spam_msg_header', _settings, '0')));
+  aset (_page_params,10, vector ('spam', get_keyword ('spam', _settings, '0')));
+  aset (_page_params,11, vector ('conversation', get_keyword ('conversation', _settings, '0')));
+  aset (_page_params,12, vector ('discussion', OMAIL.WA.discussion_check ()));
 
   -- If massage is saved, that we open the Draft folder in Folders tree
   if (OMAIL.WA.omail_getp('msg_id',_params) <> 0)
-    aset (_page_params, 9, vector ('folder_id', 130));
+    aset (_page_params, 13, vector ('folder_id', 130));
 
   -- XML structure-------------------------------------------------------------------
   _rs := '';
@@ -7824,12 +7927,13 @@ create procedure OMAIL.WA.check_app (
 create procedure OMAIL.WA.spam_update ()
 {
   if (registry_get ('_oMail_spam_') <> '1')
+  {
     for (select DOMAIN_ID as _domain_id, USER_ID as _user_id from OMAIL.WA.FOLDERS where FOLDER_ID = 100) do
      insert soft OMAIL.WA.FOLDERS(DOMAIN_ID, USER_ID, FOLDER_ID, NAME) values (_domain_id, _user_id, 125, 'Spam');
+}
+  registry_set ('_oMail_spam_', '1');
 }
 ;
 
 OMAIL.WA.spam_update ()
-;
-registry_set ('_oMail_spam_', '1')
 ;

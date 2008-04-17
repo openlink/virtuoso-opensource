@@ -225,8 +225,8 @@
   <!-- ========================================================================== -->
   <xsl:template name="css">
     <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/styles.css"/>
-    <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/webdav.css"/>
     <link type="text/css" media="print" rel="Stylesheet" href="/oMail/i/css/print.css"/>
+    <link type="text/css" media="screen" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
   </xsl:template>
 
   <!-- ========================================================================== -->

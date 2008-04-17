@@ -21,113 +21,6 @@
  *
  */
 // ---------------------------------------------------------------------------
-var BrowserDetect = {
-  init: function () {
-    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
-    this.version = this.searchVersion(navigator.userAgent)
-      || this.searchVersion(navigator.appVersion)
-      || "an unknown version";
-    this.OS = this.searchString(this.dataOS) || "an unknown OS";
-  },
-  searchString: function (data) {
-    for (var i=0;i<data.length;i++)  {
-      var dataString = data[i].string;
-      var dataProp = data[i].prop;
-      this.versionSearchString = data[i].versionSearch || data[i].identity;
-      if (dataString) {
-        if (dataString.indexOf(data[i].subString) != -1)
-          return data[i].identity;
-      }
-      else if (dataProp)
-        return data[i].identity;
-    }
-  },
-  searchVersion: function (dataString) {
-    var index = dataString.indexOf(this.versionSearchString);
-    if (index == -1) return;
-    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
-  },
-  dataBrowser: [
-    {   string: navigator.userAgent,
-      subString: "OmniWeb",
-      versionSearch: "OmniWeb/",
-      identity: "OmniWeb"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Apple",
-      identity: "Safari"
-    },
-    {
-      prop: window.opera,
-      identity: "Opera"
-    },
-    {
-      string: navigator.vendor,
-      subString: "iCab",
-      identity: "iCab"
-    },
-    {
-      string: navigator.vendor,
-      subString: "KDE",
-      identity: "Konqueror"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Firefox",
-      identity: "Firefox"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Camino",
-      identity: "Camino"
-    },
-    {    // for newer Netscapes (6+)
-      string: navigator.userAgent,
-      subString: "Netscape",
-      identity: "Netscape"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "MSIE",
-      identity: "Explorer",
-      versionSearch: "MSIE"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Gecko",
-      identity: "Mozilla",
-      versionSearch: "rv"
-    },
-    {     // for older Netscapes (4-)
-      string: navigator.userAgent,
-      subString: "Mozilla",
-      identity: "Netscape",
-      versionSearch: "Mozilla"
-    }
-  ],
-  dataOS : [
-    {
-      string: navigator.platform,
-      subString: "Win",
-      identity: "Windows"
-    },
-    {
-      string: navigator.platform,
-      subString: "Mac",
-      identity: "Mac"
-    },
-    {
-      string: navigator.platform,
-      subString: "Linux",
-      identity: "Linux"
-}
-  ]
-
-};
-BrowserDetect.init();
-
-// ---------------------------------------------------------------------------
 function AddAdr(obj,addr)
 {
 	fld = eval('document.f1.'+ obj.name);
@@ -156,14 +49,6 @@ function ClearFld(obj,fvalue)
 showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
 
 // ---------------------------------------------------------------------------
-function getObject(id)
-{
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
-}
-
-// ---------------------------------------------------------------------------
 function getParent (obj, tag)
 {
   var obj = obj.parentNode;
@@ -179,30 +64,10 @@ function selectCheck (obj, prefix)
 }
 
 // ---------------------------------------------------------------------------
-function toggleCell(cell)
-{
-  var c = getObject('row_'+cell);
-  c.style.display = (c.style.display == "none") ? showRow : "none";
-  var l = getObject('label_'+cell);
-  l.innerHTML = l.innerHTML.replace((c.style.display == "none") ? 'Remove' : 'Add', (c.style.display == "none") ? 'Add' : 'Remove');
-  var v = (c.style.display == "none") ? '0' : '1';
-  createHidden (document, 'x_'+cell, v);
-  if (document.forms['f1'].elements['eparams']) {
-    var value = document.forms['f1'].elements['eparams'].value;
-    var re = new RegExp('&x_'+cell+'=0', 'gi');
-    value = value.replace(re, '');
-    re = new RegExp('&x_'+cell+'=1', 'gi');
-    value = value.replace(re, '');
-    document.forms['f1'].elements['eparams'].value = value+'&x_'+cell+'='+v
-  } else {
-    createHidden (document, 'eparams', '&x_'+cell+'='+v);
-  }
-}
-
-// ---------------------------------------------------------------------------
 function toggleTab(obj, noValue)
 {
-  if (obj.checked == true) {
+  if (obj.checked == true)
+  {
     document.getElementById('plain').style.display = 'none';
     document.getElementById('rte').style.display = 'block';
     initEditor('rteMessage');
@@ -223,8 +88,10 @@ function initTab(obj)
 }
 
 // ---------------------------------------------------------------------------
-function toggleValue(obj) {
-  if (obj.checked == true) {
+function toggleValue(obj)
+{
+  if (obj.checked == true)
+  {
     var value = document.forms['f1'].elements['plainMessage'].value;
     enableDesignMode('rteMessage', text2rte(value), true);
   } else {
@@ -235,10 +102,11 @@ function toggleValue(obj) {
 }
 
 // ---------------------------------------------------------------------------
-function initValue(obj) {
+function initValue (obj)
+{
   var value = document.forms['f1'].elements['message'].value;
-  if (obj.checked == true) {
-    if (!((BrowserDetect.browser == 'Opera') && (BrowserDetect.version <= '8.53')))
+  if (obj.checked == true)
+  {
     enableDesignMode('rteMessage', initRte(value), false);
   } else {
     document.forms['f1'].elements['plainMessage'].value = value;
@@ -246,9 +114,11 @@ function initValue(obj) {
 }
 
 // ---------------------------------------------------------------------------
-function returnValue(obj) {
+function returnValue(obj)
+{
   var value;
-  if (obj.checked == true) {
+  if (obj.checked == true)
+  {
     updateRTE('rteMessage');
     value = clearRte(document.forms['f1'].elements['rteMessage'].value);
   } else {
@@ -258,8 +128,10 @@ function returnValue(obj) {
 }
 
 // ---------------------------------------------------------------------------
-function initEditor(rte) {
-	if (document.all) {
+function initEditor(rte)
+{
+  if (document.all)
+  {
 		var oRTE = frames[rte].document;
   	oRTE.designMode = "On";
 	} else {
@@ -426,20 +298,6 @@ function coloriseRow(obj, checked) {
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString, sChar) {
-  if (sChar == null)
-    sChar = ' ';
-
-  while (sString.substring(0,1) == sChar)
-    sString = sString.substring(1, sString.length);
-
-  while (sString.substring(sString.length-1, sString.length) == sChar)
-    sString = sString.substring(0,sString.length-1);
-
-  return sString;
-}
-
-// ---------------------------------------------------------------------------
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -502,18 +360,22 @@ function addChecked (objForm, objName, selectionMsq)
   if (!anySelected (objForm, objName, selectionMsq, 'confirm'))
     return;
 
-  if (window.opener.document.f1.elements[objForm.elements["set"].value]) {
+  if (window.opener.document.f1.elements[objForm.elements["set"].value])
+  {
     var destField = window.opener.document.f1.elements[objForm.elements["set"].value];
 
     destField.value = (destField.value).replace(';', ',');
-    destField.value = trim(destField.value);
-    destField.value = trim(destField.value, ',');
-    destField.value = trim(destField.value);
+    destField.value = WebMail.trim(destField.value);
+    destField.value = WebMail.trim(destField.value, ',');
+    destField.value = WebMail.trim(destField.value);
     destField.value = destField.value + ',';
-    for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    for (var i = 0; i < objForm.elements.length; i = i + 1)
+    {
       var obj = objForm.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name == objName) {
-        if (obj.checked) {
+      if (obj != null && obj.type == "checkbox" && obj.name == objName)
+      {
+        if (obj.checked)
+        {
           if (destField.value.indexOf(obj.value+',') == -1)
             destField.value = destField.value + obj.value+',';
         } else {
@@ -521,7 +383,7 @@ function addChecked (objForm, objName, selectionMsq)
         }
       }
     }
-    destField.value = trim(destField.value, ',');
+    destField.value = WebMail.trim(destField.value, ',');
   }
 
   window.close();
@@ -534,4 +396,56 @@ function davBrowse (fld)
                   onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
                 };
   oWebDAV.open(options);
+}
+
+// ---------------------------------------------------------------------------
+var WebMail = new Object();
+
+// ---------------------------------------------------------------------------
+WebMail.trim = function (sString, sChar)
+{
+  if (sChar == null)
+    sChar = ' ';
+
+  while (sString.substring(0,1) == sChar)
+    sString = sString.substring(1, sString.length);
+
+  while (sString.substring(sString.length-1, sString.length) == sChar)
+    sString = sString.substring(0,sString.length-1);
+
+  return sString;
+}
+
+// ---------------------------------------------------------------------------
+WebMail.toggleCell = function (cell)
+{
+  var c = $('row_'+cell);
+  c.style.display = (c.style.display == "none") ? showRow : "none";
+  var l = $('label_'+cell);
+  l.innerHTML = l.innerHTML.replace((c.style.display == "none") ? 'Remove' : 'Add', (c.style.display == "none") ? 'Add' : 'Remove');
+  var v = (c.style.display == "none") ? '0' : '1';
+  createHidden (document, 'x_'+cell, v);
+  if (document.forms['f1'].elements['eparams'])
+  {
+    var value = document.forms['f1'].elements['eparams'].value;
+    var re = new RegExp('&x_'+cell+'=0', 'gi');
+    value = value.replace(re, '');
+    re = new RegExp('&x_'+cell+'=1', 'gi');
+    value = value.replace(re, '');
+    document.forms['f1'].elements['eparams'].value = value+'&x_'+cell+'='+v
+  } else {
+    createHidden (document, 'eparams', '&x_'+cell+'='+v);
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+WebMail.enableRadioGroup = function (cell)
+{
+  var c = $(cell);
+  var r = document.forms['f1'].elements[cell+'_radio'];
+  for (var i = 0; i < r.length; i = i + 1)
+  {
+    r[i].disabled = !c.checked;
+  }
 }

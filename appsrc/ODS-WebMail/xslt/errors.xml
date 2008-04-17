@@ -96,6 +96,11 @@
     <decision>Please, go back and try again with a correct value. </decision>
     <button/>
   </error>
+  <error id="1702">
+    <title>The parameter ''Spam messages older then'' must be in range [0, 1000].</title>
+    <decision>Please, go back and try again with a correct value. </decision>
+    <button/>
+  </error>
   <error id="1902">
     <title>Bad recipient(s) e-mail address specified</title>
     <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).  The format for email address is </descr>

@@ -30,11 +30,11 @@
       <xsl:call-template name="hid_sid"/>
       <table width="100%" cellpadding="0" cellspacing="0" align="center" class="content">
         <colgroup>
-          <col class="w200"/>
+          <col class="w350"/>
           <col/>
         </colgroup>
         <caption>
-          <span>Set your preferences</span>
+          <span>Preferences</span>
         </caption>
         <tbody>
           <xsl:apply-templates select="settings"/>
@@ -61,13 +61,25 @@
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="settings">
+    <tr>
+      <th style="background-color: #EAEAEE;" />
+      <th style="background-color: #EAEAEE; text-align: left;">General</th>
+    </tr>
     <xsl:apply-templates select="msg_name"/>
     <xsl:apply-templates select="msg_reply"/>
     <xsl:apply-templates select="msg_result"/>
     <xsl:apply-templates select="usr_sig_inc"/>
     <xsl:apply-templates select="atom_version"/>
-    <xsl:apply-templates select="spam"/>
     <xsl:apply-templates select="conversation"/>
+    <tr>
+      <th style="background-color: #EAEAEE;" />
+      <th style="background-color: #EAEAEE; text-align: left;">Privacy</th>
+    </tr>
+    <xsl:apply-templates select="spam_msg_action"/>
+    <xsl:apply-templates select="spam_msg_state"/>
+    <xsl:apply-templates select="spam_msg_clean"/>
+    <xsl:apply-templates select="spam_msg_header"/>
+    <xsl:apply-templates select="spam"/>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="msg_name">
@@ -174,19 +186,6 @@
     </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <xsl:template match="spam">
-    <tr>
-      <th>Spam Filter</th>
-      <td>
-         <xsl:call-template name="make_select">
-          <xsl:with-param name="name">spam</xsl:with-param>
-           <xsl:with-param name="selected"><xsl:value-of select="." /></xsl:with-param>
-           <xsl:with-param name="list">0:Disable;1:My contacts only;2:My contacts and contacts with depth 1;3:My contacts and contacts with depth 2;4:My contacts and contacts with depth 3;5:My contacts and contacts with depth 4;</xsl:with-param>
-        </xsl:call-template>
-      </td>
-    </tr>
-  </xsl:template>
-  <!-- ====================================================================================== -->
   <xsl:template match="conversation">
     <tr>
       <th>Discussion</th>
@@ -209,6 +208,111 @@
         </td>
       </tr>
     </xsl:if>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="spam_msg_action">
+    <tr>
+      <th />
+      <td>
+        <label>
+          <xsl:call-template name="make_checkbox">
+            <xsl:with-param name="name">spam_msg_action</xsl:with-param>
+            <xsl:with-param name="id">spam_msg_action</xsl:with-param>
+            <xsl:with-param name="value">1</xsl:with-param>
+            <xsl:with-param name="checked"><xsl:if test=". > 0">1</xsl:if></xsl:with-param>
+            <xsl:with-param name="onclick">javascript: WebMail.enableRadioGroup('spam_msg_action');</xsl:with-param>
+          </xsl:call-template>
+          When messages are determined to be Spam
+        </label>
+        <div style="margin-left: 16px;">
+          <label>
+            <input type="radio" name="spam_msg_action_radio" id="spam_msg_action_radio_1" value="1">
+              <xsl:if test=". <= 1">
+                <xsl:attribute name="checked">checked</xsl:attribute>
+              </xsl:if>
+              <xsl:if test=". = 0">
+                <xsl:attribute name="disabled" />
+              </xsl:if>
+            </input>
+    			  Move them to the Spam folder
+    	    </label>
+    	    <br />
+          <label>
+            <input type="radio" name="spam_msg_action_radio" id="spam_msg_action_radio_2" value="2">
+              <xsl:if test=". = 2">
+                <xsl:attribute name="checked">checked</xsl:attribute>
+              </xsl:if>
+              <xsl:if test=". = 0">
+                <xsl:attribute name="disabled" />
+              </xsl:if>
+            </input>
+            Delete them
+    	    </label>
+        </div>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="spam_msg_state">
+    <tr>
+      <th />
+      <td>
+        <label>
+          <xsl:call-template name="make_checkbox">
+            <xsl:with-param name="name">spam_msg_state</xsl:with-param>
+            <xsl:with-param name="id">spam_msg_state</xsl:with-param>
+            <xsl:with-param name="value">1</xsl:with-param>
+            <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+          </xsl:call-template>
+          Mark messages determined to be Spam as read
+        </label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="spam_msg_clean">
+    <tr>
+      <th>Automatically delete spam messages older then</th>
+      <td>
+        <label>
+          <input type="text" name="spam_msg_clean" style="width:30px">
+            <xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
+          </input>
+          <xsl:text> days (0 - no delete)</xsl:text>
+        </label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="spam_msg_header">
+    <tr>
+      <th>Trust mail headers</th>
+      <td>
+        <label>
+          <xsl:call-template name="make_checkbox">
+            <xsl:with-param name="name">spam_msg_header</xsl:with-param>
+            <xsl:with-param name="id">spam_msg_header</xsl:with-param>
+            <xsl:with-param name="value">1</xsl:with-param>
+            <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+          </xsl:call-template>
+          (set by SpamAssassin or SpamPal)
+        </label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <!-- ====================================================================================== -->
+  <xsl:template match="spam">
+    <tr>
+      <th>Allow messages from</th>
+      <td>
+        <xsl:call-template name="make_select">
+          <xsl:with-param name="name">spam</xsl:with-param>
+          <xsl:with-param name="selected"><xsl:value-of select="." /></xsl:with-param>
+          <xsl:with-param name="list">0:Everyone;1:My contacts only;2:My contacts and contacts with depth 1;3:My contacts and contacts with depth 2;4:My contacts and contacts with depth 3;5:My contacts and contacts with depth 4;</xsl:with-param>
+        </xsl:call-template>
+      </td>
+    </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
 </xsl:stylesheet>

@@ -622,3 +622,11 @@ OMAIL.WA.exec_no_error ('
 ')
 ;
 
+-------------------------------------------------------------------------------
+--
+OMAIL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'WebMail Spam Clean Scheduler\', now(), \'OMAIL.WA.spam_clean_schedule ()\', 60)
+')
+;
+

@@ -47,6 +47,7 @@ OMAIL.WA.uninstall ()
 
 -- Scheduler
 OMAIL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail External POP3 Scheduler\'');
+OMAIL.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail Spam Clean Scheduler\'');
 
 -- Tables
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS_TDATA_WORDS');
