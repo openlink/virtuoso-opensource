@@ -1,3 +1,310 @@
+2008-04-17 09:14  source
+
+	* Update version to 5.0.7-rc1
+
+2008-04-17 09:10  source
+
+	* Added export/import of auto hyperlinking
+	* Added RTE editor to framework
+	* Fixed bad encoding in application URLs
+	* Fixed related apps
+	* Fixed export all rules in tagging
+	* Fixed indentation of part of uiedt*.xspx
+	* Fixed wrong function redefinition
+	* Updated UI
+	* Removed debugging
+
+2008-04-17 09:07  source
+
+	* Fixed discussions
+	* Fixed refs to reserved word cluster
+	* Removed custom macros
+
+2008-04-17 09:05  source
+
+	* Added new SPAM features
+	* Fixed JS problem with toggle dcc field
+
+2008-04-17 09:04  source
+
+	* Updated discussions
+	* Fixed SIOC data for comments
+	* Fixed encoding
+	* Moved RTE from Polls to Framework
+
+2008-04-17 09:03  source
+
+	* Updated UI
+	* Fixed encoding
+	* Moved RTE from Feeds to Framework
+
+2008-04-17 09:01  source
+
+	* Added discussions
+	* Updated UI
+	* Fixed SIOC data for comments
+	* Fixed encoding
+
+2008-04-17 09:00  source
+
+	* Fixed remove .nnn from RDF data
+	* Fixed encoding in banner
+
+2008-04-17 09:00  source
+
+	* Added discussions
+	* Updated UI
+	* Fixed SIOC data for comments
+	* Fixed encoding in annotations
+	* Fixed installation problem
+	* Fixed delete instance
+
+2008-04-17 08:56  source
+
+	* Fixed auto links
+	* Fixed label
+
+2008-04-17 08:55  source
+
+	* Added discussions
+	* Fixed encoding
+	* Fixed SIOC data for comments
+
+2008-04-15 21:47  source
+
+	* Added installation of vsmx
+
+2008-04-15 15:55  source
+
+	* Added missing images
+
+2008-04-15 12:55  source
+
+	* Fixed #!/bin/sh
+
+2008-04-15 12:54  source
+
+	* Fixed comments
+
+2008-04-15 11:05  source
+
+	* Merged latest documentation changes
+
+2008-04-15 11:03  source
+
+	* Merged optimizations and small fixes from VJ branch
+
+2008-04-15 10:59  source
+
+	* Fixed end-of-attribute at ">"
+
+2008-04-15 10:58  source
+
+	* Removed unused defines
+
+2008-04-15 10:57  source
+
+	* Added ifdef around 5.0 specific upgrades
+
+2008-04-15 10:55  source
+
+	* Added 6.0 compatibility
+
+2008-04-15 10:55  source
+
+	* Fixed names
+
+2008-04-15 10:54  source
+
+	* Fixed labels
+
+2008-04-15 10:51  source
+
+	* Merged from upstream project
+
+2008-04-15 10:02  source
+
+	* Fixed TWFY mapper
+	* Fixed ISBN mapper
+
+2008-04-14 09:57  source
+
+	* Added missing source files
+	* Fixed typo
+
+2008-04-14 09:53  source
+
+	* Regenerated driver
+
+2008-04-14 09:52  source
+
+	* Fixed wrong function namespace
+
+2008-04-14 09:40  source
+
+	* Added initial support for Sesame v2 driver
+
+2008-04-14 07:33  source
+
+	* Merged from upstream project
+
+2008-04-14 07:31  source
+
+	* Added VirtuosoSPARQLExample6 to test transactionHandler
+	* Added VirtuosoSPARQLExample7 to test bulkUpdateHandler
+
+2008-04-14 07:30  source
+
+	* Fixed problem with transaction model
+
+2008-04-14 07:20  source
+
+	* Fixed CRLF
+
+2008-04-11 12:51  source
+
+	* Removed link to non-existing alt stylesheet
+
+2008-04-11 09:16  source
+
+	* Fixed support for varbinary results in RDF/XML, TTL and JSON serialization
+
+2008-04-11 09:10  source
+
+	* Fixed rdf views
+
+2008-04-11 09:09  source
+
+	* Removed obsolete service
+
+2008-04-10 09:48  source
+
+	* Updated documentation
+
+2008-04-10 09:48  source
+
+	* Added http authorization to hosting plugin
+
+2008-04-10 09:46  source
+
+	* Added new plugin type "attach" to preload shared libraries
+
+2008-04-10 09:45  source
+
+	* Added support for WSDL 2.0 and WSDL 2.0-RDF
+
+2008-04-10 09:41  source
+
+	* Fixed problem with an exp that is a hash join key and is thereafter
+	  reused in the after join test gets a bad ssl cause the ssl is refd outside
+	  of context so do not associate ssls to stuff placed inside hash fillers
+
+2008-04-10 09:39  source
+
+	* Added test for ALTER TABLE ADD COLUMN problem with DEFAULT value
+
+2008-04-10 09:38  source
+
+	* Added test for hash j exp
+
+2008-04-10 09:38  source
+
+	* Added RDF views for tutorial
+
+2008-04-10 09:37  source
+
+	* Fixed default wsdl value
+
+2008-04-10 09:35  source
+
+	* Added semantic web tutorial
+
+2008-04-10 09:32  source
+
+	* Fixed size of UID and PWD fields
+
+2008-04-10 09:32  source
+
+	* Added TheyWorkForYou mapper
+
+2008-04-10 09:30  source
+
+	* Merged from upstream project
+
+2008-04-10 07:30  source
+
+	* Recompiled jena driver
+
+2008-04-10 07:26  source
+
+	* Added missing interfaces to Jena provider
+
+2008-04-02 10:22  source
+
+	* Fixed problem with locale sort order
+
+2008-04-02 10:20  source
+
+	* More files to ignore
+
+2008-04-02 10:20  source
+
+	* Added extra CGI variables
+	* Added code to run hosting requests under same user id as vsp code
+
+2008-04-02 10:19  source
+
+	* Fixed inlining long varbinary giving a dv_bin
+
+2008-04-02 10:18  source
+
+	* Added dummy partition def syntax
+
+2008-04-02 10:16  source
+
+	* Added content location header
+
+2008-04-02 10:16  source
+
+	* Added empty rules for testing
+
+2008-04-02 10:15  source
+
+	* Fixed update to use default value instead of NULL in init of new columns
+
+2008-04-02 10:14  source
+
+	* Fixed parsing scalar subqueries
+
+2008-04-02 10:13  source
+
+	* Added thread_setattr and thread_getattr to export gate
+
+2008-04-02 10:13  source
+
+	* Updated documentation
+
+2008-04-02 10:12  source
+
+	* Fixed broken image path and dav init
+
+2008-04-02 10:12  source
+
+	* Added ISBN cardridge
+
+2008-04-02 10:10  source
+
+	* Added new __virt_internal_dsn to construct DSN for ODBC connection
+	* Updated documentation
+
+2008-04-02 10:09  source
+
+	* Fixed declaration for cluster partition
+
+2008-04-02 10:06  source
+
+	* Merged from upstream project
+
 2008-03-26 15:30  source
 
 	* Updated version to 5.0.6 for final release
