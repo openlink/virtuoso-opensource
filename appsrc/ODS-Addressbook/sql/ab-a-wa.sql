@@ -407,6 +407,7 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_Add
 
   AB.WA.domain_gems_delete (domainID, ownerID, 'AddressBook', oldValues[0] || '_Gems');
   AB.WA.domain_gems_create (domainID, ownerID);
+  AB.WA.nntp_update (domainID, AB.WA.domain_nntp_name2 (oldValues[0], AB.WA.account_name (ownerID)), AB.WA.domain_nntp_name2 (newValues[0], AB.WA.account_name (ownerID)));
 
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }

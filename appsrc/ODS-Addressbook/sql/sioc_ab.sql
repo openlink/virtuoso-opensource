@@ -41,20 +41,35 @@ create procedure addressbook_contact_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure addressbook_comment_iri (
+	in domain_id varchar,
+	in contact_id integer,
+	in comment_id integer)
+{
+	declare c_iri varchar;
+
+	c_iri := addressbook_contact_iri (domain_id, contact_id);
+	if (isnull (c_iri))
+	  return c_iri;
+
+	return sprintf ('%s/%d', c_iri, comment_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure addressbook_annotation_iri (
 	in domain_id varchar,
 	in contact_id integer,
 	in annotation_id integer)
 {
-	declare _member, _inst varchar;
-	declare exit handler for not found { return null; };
+	declare c_iri varchar;
 
-	select U_NAME, WAI_NAME
-	  into _member, _inst
-		from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
-	 where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+	c_iri := addressbook_contact_iri (domain_id, contact_id);
+	if (isnull (c_iri))
+	  return c_iri;
 
-	return sprintf ('http://%s%s/%U/addressbook/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, contact_id, annotation_id);
+	return sprintf ('%s/annotation/%d', c_iri, annotation_id);
 }
 ;
 
@@ -224,6 +239,30 @@ create procedure fill_ods_addressbook_sioc (
 		                  P_FOAF,
 				  P_IRI);
 
+	    for (select PC_ID,
+                  PC_DOMAIN_ID,
+                  PC_PERSON_ID,
+                  PC_TITLE,
+                  PC_COMMENT,
+                  PC_UPDATED,
+                  PC_U_NAME,
+                  PC_U_MAIL,
+                  PC_U_URL
+		         from AB.WA.PERSON_COMMENTS
+		        where PC_PERSON_ID = P_ID) do
+		  {
+		    addressbook_comment_insert (graph_iri,
+            		                    ab_iri,
+                                    PC_ID,
+                                    PC_DOMAIN_ID,
+                                    PC_PERSON_ID,
+                                    PC_TITLE,
+                                    PC_COMMENT,
+                                    PC_UPDATED,
+                                    PC_U_NAME,
+                                    PC_U_MAIL,
+                                    PC_U_URL);
+      }
 			for (select A_ID,
 									A_DOMAIN_ID,
 									A_OBJECT_ID,
@@ -234,7 +273,7 @@ create procedure fill_ods_addressbook_sioc (
 						 from AB.WA.ANNOTATIONS
 						where A_OBJECT_ID = P_ID) do
 			{
-				annotation_insert (graph_iri,
+		    addressbook_annotation_insert (graph_iri,
 													 ab_iri,
 													 A_ID,
 													 A_DOMAIN_ID,
@@ -256,7 +295,8 @@ create procedure fill_ods_addressbook_sioc (
 		id := -1;
 		deadl := 3;
 		cnt := 0;
-		declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
 			if (deadl <= 0)
 				resignal;
 			rollback work;
@@ -276,7 +316,8 @@ create procedure fill_ods_addressbook_sioc (
       ods_sioc_service (graph_iri, iri, ab_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
 
 			cnt := cnt + 1;
-			if (mod (cnt, 500) = 0) {
+	    if (mod (cnt, 500) = 0)
+	    {
 				commit work;
 				id := WAI_ID;
 			}
@@ -683,7 +724,131 @@ create trigger PERSONS_SIOC_D before delete on AB.WA.PERSONS referencing old as 
 
 -------------------------------------------------------------------------------
 --
-create procedure annotation_insert (
+create procedure addressbook_comment_insert (
+	in graph_iri varchar,
+	in forum_iri varchar,
+  inout comment_id integer,
+  inout domain_id integer,
+  inout master_id integer,
+  inout title varchar,
+  inout comment varchar,
+  inout last_update datetime,
+  inout u_name varchar,
+  inout u_mail varchar,
+  inout u_url varchar)
+{
+	declare master_iri, comment_iri varchar;
+
+	declare exit handler for sqlstate '*'
+	{
+		sioc_log_message (__SQL_MESSAGE);
+		return;
+	};
+
+  master_id := cast (master_id as integer);
+	if (isnull (graph_iri))
+		for (select WAI_ID, WAM_USER, WAI_NAME
+					 from DB.DBA.WA_INSTANCE,
+								DB.DBA.WA_MEMBER
+					where WAI_ID = domain_id
+						and WAM_INST = WAI_NAME
+						and WAI_IS_PUBLIC = 1) do
+		{
+			graph_iri := get_graph ();
+      forum_iri := addressbook_iri (WAI_NAME);
+		}
+
+	if (not isnull (graph_iri))
+	{
+		comment_iri := addressbook_comment_iri (domain_id, master_id, comment_id);
+    if (not isnull (comment_iri))
+    {
+		  master_iri := addressbook_contact_iri (domain_id, master_id);
+      foaf_maker (graph_iri, u_url, u_name, u_mail);
+      ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure addressbook_comment_delete (
+  inout domain_id integer,
+  inout item_id integer,
+  inout id integer)
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare iri varchar;
+
+  iri := addressbook_comment_iri (domain_id, item_id, id);
+  delete_quad_s_or_o (get_graph (), iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSON_COMMENTS_SIOC_I after insert on AB.WA.PERSON_COMMENTS referencing new as N
+{
+  if (not isnull(N.PC_PARENT_ID))
+    addressbook_comment_insert (null,
+                                null,
+                                N.PC_ID,
+                                N.PC_DOMAIN_ID,
+                                N.PC_PERSON_ID,
+                                N.PC_TITLE,
+                                N.PC_COMMENT,
+                                N.PC_UPDATED,
+                                N.PC_U_NAME,
+                                N.PC_U_MAIL,
+                                N.PC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSON_COMMENTS_SIOC_U after update on AB.WA.PERSON_COMMENTS referencing old as O, new as N
+{
+  if (not isnull(O.PC_PARENT_ID))
+    addressbook_comment_delete (O.PC_DOMAIN_ID,
+                                O.PC_PERSON_ID,
+                                O.PC_ID);
+  if (not isnull(N.PC_PARENT_ID))
+    addressbook_comment_insert (null,
+                                null,
+                                N.PC_ID,
+                                N.PC_DOMAIN_ID,
+                                N.PC_PERSON_ID,
+                                N.PC_TITLE,
+                                N.PC_COMMENT,
+                                N.PC_UPDATED,
+                                N.PC_U_NAME,
+                                N.PC_U_MAIL,
+                                N.PC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSON_COMMENTS_SIOC_D before delete on AB.WA.PERSON_COMMENTS referencing old as O
+{
+  if (not isnull(O.PC_PARENT_ID))
+    addressbook_comment_delete (O.PC_DOMAIN_ID,
+                                O.PC_PERSON_ID,
+                                O.PC_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure addressbook_annotation_insert (
 	in graph_iri varchar,
 	in forum_iri varchar,
 	inout annotation_id integer,
@@ -696,7 +861,8 @@ create procedure annotation_insert (
 {
 	declare master_iri, annotattion_iri varchar;
 
-	declare exit handler for sqlstate '*' {
+	declare exit handler for sqlstate '*'
+	{
 		sioc_log_message (__SQL_MESSAGE);
 		return;
 	};
@@ -710,7 +876,6 @@ create procedure annotation_insert (
 						and WAI_IS_PUBLIC = 1) do
 		{
 			graph_iri := get_graph ();
-			forum_iri := addressbook_iri (WAI_NAME);
 		}
 
 	if (not isnull (graph_iri))
@@ -730,7 +895,7 @@ create procedure annotation_insert (
 
 -------------------------------------------------------------------------------
 --
-create procedure annotation_delete (
+create procedure addressbook_annotation_delete (
 	inout annotation_id integer,
 	inout domain_id integer,
 	inout master_id integer)
@@ -752,7 +917,7 @@ create procedure annotation_delete (
 --
 create trigger ANNOTATIONS_SIOC_I after insert on AB.WA.ANNOTATIONS referencing new as N
 {
-	annotation_insert (null,
+	addressbook_annotation_insert (null,
 										 null,
 										 N.A_ID,
 										 N.A_DOMAIN_ID,
@@ -768,10 +933,10 @@ create trigger ANNOTATIONS_SIOC_I after insert on AB.WA.ANNOTATIONS referencing 
 --
 create trigger ANNOTATIONS_SIOC_U after update on AB.WA.ANNOTATIONS referencing old as O, new as N
 {
-	annotation_delete (O.A_ID,
+	addressbook_annotation_delete (O.A_ID,
 										 O.A_DOMAIN_ID,
 										 O.A_OBJECT_ID);
-	annotation_insert (null,
+	addressbook_annotation_insert (null,
 										 null,
 										 N.A_ID,
 										 N.A_DOMAIN_ID,
@@ -787,7 +952,7 @@ create trigger ANNOTATIONS_SIOC_U after update on AB.WA.ANNOTATIONS referencing 
 --
 create trigger ANNOTATIONS_SIOC_D before delete on AB.WA.ANNOTATIONS referencing old as O
 {
-	annotation_delete (O.A_ID,
+	addressbook_annotation_delete (O.A_ID,
 										 O.A_DOMAIN_ID,
 										 O.A_OBJECT_ID);
 }

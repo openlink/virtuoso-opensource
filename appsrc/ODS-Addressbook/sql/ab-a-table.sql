@@ -341,13 +341,188 @@ AB.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('
-  create table AB.WA.SETTINGS (
-    S_ACCOUNT_ID integer not null,
-    S_DATA varchar,
+  create table AB.WA.PERSON_COMMENTS (
+    PC_ID integer identity,
+    PC_PARENT_ID integer,
+    PC_DOMAIN_ID integer not null,
+    PC_PERSON_ID varchar not null,
+    PC_TITLE varchar,
+    PC_COMMENT long varchar,
+    PC_U_NAME varchar,
+    PC_U_MAIL varchar,
+    PC_U_URL varchar,
+    PC_RFC_ID varchar,
+    PC_RFC_HEADER long varchar,
+    PC_RFC_REFERENCES varchar,
+    PC_OPENID_SIG long varbinary,
+    PC_CREATED datetime,
+    PC_UPDATED datetime,
 
-    primary key(S_ACCOUNT_ID)
+    constraint FK_PERSON_COMMENTS_01 FOREIGN KEY (PC_PERSON_ID) references AB.WA.PERSONS (P_ID) on delete cascade,
+
+    primary key (PC_ID)
   )
 ');
+
+AB.WA.exec_no_error ('
+  create index SK_PERSON_COMMENTS_01 on AB.WA.PERSON_COMMENTS (PC_PERSON_ID)
+');
+
+AB.WA.exec_no_error ('
+  create trigger PERSON_COMMENTS_I after insert on AB.WA.PERSON_COMMENTS referencing new as N
+  {
+    declare id integer;
+    declare rfc_id, rfc_header, rfc_references varchar;
+    declare nInstance any;
+
+    nInstance := AB.WA.domain_nntp_name (N.PC_DOMAIN_ID);
+    id := N.PC_ID;
+    rfc_id := N.PC_RFC_ID;
+    if (isnull(rfc_id))
+      rfc_id := AB.WA.make_rfc_id (N.PC_PERSON_ID, N.PC_ID);
+
+    rfc_references := \'\';
+    if (N.PC_PARENT_ID)
+    {
+      declare p_rfc_id, p_rfc_references any;
+
+      --declare exit handler for not found;
+
+      select PC_RFC_ID, PC_RFC_REFERENCES
+        into p_rfc_id, p_rfc_references
+        from AB.WA.PERSON_COMMENTS
+       where PC_ID = N.PC_PARENT_ID;
+      if (isnull(p_rfc_references))
+         p_rfc_references := rfc_references;
+      rfc_references :=  p_rfc_references || \' \' || p_rfc_id;
+    }
+
+    rfc_header := N.PC_RFC_HEADER;
+    if (isnull(rfc_header))
+      rfc_header := AB.WA.make_post_rfc_header (rfc_id, rfc_references, nInstance, N.PC_TITLE, N.PC_UPDATED, N.PC_U_MAIL);
+
+    set triggers off;
+    update AB.WA.PERSON_COMMENTS
+       set PC_RFC_ID = rfc_id,
+           PC_RFC_HEADER = rfc_header,
+           PC_RFC_REFERENCES = rfc_references
+     where PC_ID = id;
+    set triggers on;
+  }
+')
+;
+
+AB.WA.exec_no_error ('
+  create trigger PERSON_COMMENTS_NEWS_I after insert on AB.WA.PERSON_COMMENTS order 30 referencing new as N
+  {
+    declare grp, ngnext integer;
+    declare rfc_id, nInstance any;
+
+    declare exit handler for not found { return;};
+
+    nInstance := AB.WA.domain_nntp_name (N.PC_DOMAIN_ID);
+    select NG_GROUP, NG_NEXT_NUM into grp, ngnext from DB..NEWS_GROUPS where NG_NAME = nInstance;
+    if (ngnext < 1)
+      ngnext := 1;
+    rfc_id := (select PC_RFC_ID from AB.WA.PERSON_COMMENTS where PC_ID = N.PC_ID);
+
+    insert into DB.DBA.NEWS_MULTI_MSG (NM_KEY_ID, NM_GROUP, NM_NUM_GROUP)
+      values (rfc_id, grp, ngnext);
+
+    set triggers off;
+    update DB.DBA.NEWS_GROUPS
+       set NG_NEXT_NUM = ngnext + 1
+     where NG_NAME = nInstance;
+    DB.DBA.ns_up_num (grp);
+    set triggers on;
+  }
+')
+;
+
+AB.WA.exec_no_error ('
+  create trigger PERSON_COMMENTS_D after delete on AB.WA.PERSON_COMMENTS referencing old as O
+  {
+    -- update all that have PC_PARENT_ID == O.PC_PARENT_ID
+    set triggers off;
+    update AB.WA.PERSON_COMMENTS
+       set PC_PARENT_ID = O.PC_PARENT_ID
+     where PC_PARENT_ID = O.PC_ID;
+    set triggers on;
+  }
+')
+;
+
+AB.WA.exec_no_error ('
+  create trigger PERSON_COMMENTS_NEWS_D after delete on AB.WA.PERSON_COMMENTS order 30 referencing old as O
+  {
+    declare grp integer;
+    declare oInstance any;
+
+    oInstance := AB.WA.domain_nntp_name (O.PC_DOMAIN_ID);
+    grp := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = oInstance);
+    delete from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = O.PC_RFC_ID and NM_GROUP = grp;
+    DB.DBA.ns_up_num (grp);
+  }
+')
+;
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error ('
+  create table AB.WA.SETTINGS (
+    S_DOMAIN_ID integer,
+    S_DATA varchar,
+    S_ACCOUNT_ID integer,
+
+    primary key (S_DOMAIN_ID)
+  )
+');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.SETTINGS add S_DOMAIN_ID integer', 'C', 'AB.WA.SETTINGS', 'S_DOMAIN_ID'
+)
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tmp_update ()
+{
+  declare account_id, domain_id integer;
+
+  if (registry_get ('ab_settings_update') = '1')
+    return;
+
+  AB.WA.exec_no_error ('update AB.WA.SETTINGS set S_DOMAIN_ID = -S_ACCOUNT_ID');
+
+  set triggers off;
+  for (select * from AB.WA.SETTINGS) do
+  {
+    account_id := abs (S_DOMAIN_ID);
+    domain_id := (select top 1 C.WAI_ID
+                    from SYS_USERS A,
+                         WA_MEMBER B,
+                         WA_INSTANCE C
+                   where A.U_ID = account_id
+                     and B.WAM_USER = A.U_ID
+                     and B.WAM_MEMBER_TYPE = 1
+                     and B.WAM_INST = C.WAI_NAME
+                     and C.WAI_TYPE_NAME = 'AddressBook');
+    if (isnull (domain_id))
+    {
+      delete from AB.WA.SETTINGS where S_DOMAIN_ID = -account_id;
+    } else {
+      update AB.WA.SETTINGS set S_DOMAIN_ID = domain_id where S_DOMAIN_ID = -account_id;
+    }
+  }
+  set triggers on;
+
+  --AB.WA.exec_no_error ('alter table AB.WA.SETTINGS drop S_ACCOUNT_ID', 'D', 'AB.WA.SETTINGS', 'S_ACCOUNT_ID');
+  AB.WA.exec_no_error ('alter table AB.WA.SETTINGS modify primary key (S_DOMAIN_ID)');
+
+  registry_set ('ab_settings_update', '1');
+}
+;
+AB.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --

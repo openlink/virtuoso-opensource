@@ -306,6 +306,12 @@
     ]]>
   </v:method>
 
+  <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
+    <![CDATA[
+      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+    ]]>
+  </v:method>
+
   <vm:pagetitle>AddressBook</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -805,7 +811,7 @@
                       http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', AB.WA.foaf_url (self.domain_id)));
 
                       http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-                      S := sprintf ('http://%s/dataspace/%U/addressbook/%U/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id));
+                      S := sprintf ('http://%s/dataspace/%U/addressbook/%U/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.utf2wide (AB.WA.domain_name (self.domain_id)));
                       http (sprintf ('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
                       http (sprintf ('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
                     ?>
@@ -1035,7 +1041,7 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare title, actions, tags any;
+                              declare tmp, title, permissions, actions, tags any;
 
                             if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
                             {
@@ -1047,17 +1053,20 @@
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
+                              permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
 
-                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
+                              tmp := 'view';
+                              if (permissions = 'W')
+                                tmp := 'edit';
+                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'%s\', \'pt_value\', \'%d\');" title="%s \'%s\'" class="%s link_ed" about="%U">%s</a></div>', id, tmp, id, initcap (tmp), title, 'app', SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
                           
                           actions := '';
-                          -- actions := sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="link_ed">view</a>', id, title);
-                          if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
-                          actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
-                          if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="link_ed">annotate</a>', self.sid, self.realm, id, self.domain_id, self.account_id, title);
-                          if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
-                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'invite.vspx?sid=%s&realm=%s&oid=%d\', \'addressbook_inbite_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Invite %s" class="link_ed">invite</a>', self.sid, self.realm, id, title);
+                              if (permissions = 'W')
+                                actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('annotea.vspx?oid=%d', id), 'annotate', title);
+                              if (AB.WA.discussion_check () and AB.WA.conversation_enable (self.domain_id))
+                                actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', id), 'discuss', title);
+                              if (permissions = 'W')
+                                actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('invite.vspx?0id=%d', id), 'invite', title);
 
                           http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
                           http (actions);
@@ -2951,7 +2960,7 @@
                       <th>Name</th>
                       <th>Mail</th>
                       <th>Comment</th>
-                      <th>Action</th>
+                        <th width="1%">Action</th>
                     </tr>
                   </thead>
                 <?vsp
@@ -2983,7 +2992,7 @@
               		  <td>
                       <?vsp
                         if (not is_empty_or_null (self.i_Items[N][3]))
-                          http (sprintf ('<a href="#" onclick="javascript: window.open (\'invite.vspx?sid=%s&realm=%s&name=%U&mail=%U\', \'addressbook_inbite_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Invite %s" class="link_ed">invite</a>', self.sid, self.realm, self.i_Items[N][2], self.i_Items[N][3], self.i_Items[N][2]));
+                            http (self.windowOpen (sprintf ('invite.vspx?name=%U&mail=%U', self.i_Items[N][2], self.i_Items[N][3]), 'invite', self.i_Items[N][2]));
                       ?>
               		  </td>
                   </tr>
@@ -3567,8 +3576,14 @@
                 <div class="new-form-header">
                   Preferences: Settings
       </div>
-                <div class="new-form-body">
-                  <table cellspacing="0">
+                <div id="s" class="c1">
+                  <div class="tabs">
+                    &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="0" caption="Main" />
+                    &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="1" caption="Discussion" />
+                  </div>
+                  <div class="contents">
+                    <div id="s_content_0" class="tabContent">
+                      <table class="form-body" cellspacing="0">
                   <tr>
                     <th width="30%">
                       <v:label for="f_chars" value="Contact name display"/>
@@ -3634,14 +3649,66 @@
                   </tr>
                 </table>
                 </div>
+                    <div id="s_content_1" class="tabContent" style="display: none;">
+                      <table class="form-body" cellspacing="0">
+                        <v:template type="simple" enabled="--either (equ (AB.WA.discussion_check (), 1), 0, 1)">
+                          <tr>
+                            <td class="error_text" colspan="2">
+                              <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                            </td>
+                          </tr>
+                        </v:template>
+                        <tr>
+                          <th width="30%">&nbsp;</th>
+                          <td>
+                            <?vsp
+                              declare S, T varchar;
+
+                              S := '';
+                    				  if (not AB.WA.discussion_check ())
+                    				    S := 'disabled="disabled"';
+                              T := '';
+                    				  if (cast(get_keyword ('conv', self.settings, '0') as integer) = 1)
+                    				    T := 'checked';
+                              http (sprintf ('<input type="checkbox" name="f_conv" value="1" %s %s />', T, S));
+                            ?>
+                    				<vm:label for="f_conv" value="Enable discussions on this instance" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <th width="30%">&nbsp;</th>
+                          <td>
+                            <?vsp
+                              declare S, T varchar;
+
+                              S := '';
+                    				  if (not AB.WA.discussion_check ())
+                    				    S := 'disabled="disabled"';
+                              T := '';
+                    				  if (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1)
+                    				    T := 'checked';
+                              http (sprintf ('<input type="checkbox" name="f_conv_init" value="1" %s %s />', T, S));
+                            ?>
+                    				<vm:label for="f_conv_init" value="Initialize the news group with existing posts" />
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
                 <div class="new-form-footer">
                   <v:button action="simple" value="Save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         declare rows, chars any;
+                        declare conv, f_conv, f_conv_init, params any;
 
-                        declare exit handler for SQLSTATE '*' {
-                          if (__SQL_STATE = 'TEST') {
+                        params := self.vc_page.vc_event.ve_params;
+
+                        declare exit handler for SQLSTATE '*'
+                        {
+                          if (__SQL_STATE = 'TEST')
+                          {
                             self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
                             self.vc_is_valid := 0;
                             return;
@@ -3657,15 +3724,28 @@
                         AB.WA.test (rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
                         AB.WA.test (chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
+                        conv := cast (get_keyword ('conv', self.settings, '0') as integer);
+                        f_conv := cast (get_keyword ('f_conv', params, '0') as integer);
+                        f_conv_init := cast (get_keyword ('f_conv_init', params, '0') as integer);
+
                         self.settings := AB.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
                         self.settings := AB.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
                         self.settings := AB.WA.set_keyword ('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
                         self.settings := AB.WA.set_keyword ('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+                        self.settings := AB.WA.set_keyword ('conv', self.settings, f_conv);
+                        self.settings := AB.WA.set_keyword ('conv_init', self.settings, f_conv_init);
 
-                        insert replacing AB.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+                        insert replacing AB.WA.SETTINGS(S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID) values(self.domain_id, serialize(self.settings), self.account_id);
                         commit work;
 
                         AB.WA.domain_gems_create(self.domain_id, self.account_id);
+
+                    		if (AB.WA.discussion_check ())
+                    		{
+              					  AB.WA.nntp_update (self.domain_id, null, null, conv, f_conv);
+                   				if (f_conv and f_conv_init)
+              					    AB.WA.nntp_fill (self.domain_id);
+              					}
 
                         self.vc_redirect('home.vspx');
                       ]]>
@@ -3675,15 +3755,9 @@
                     <v:on-post>
                       <![CDATA[
                         delete from AB.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+                        AB.WA.nntp_update (self.domain_id, null, null, 1, 0);
 
                         self.vc_redirect('settings.vspx');
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                  <v:button action="simple" value="Cancel" xhtml_class="form-button">
-                    <v:on-post>
-                      <![CDATA[
-                        self.vc_redirect('home.vspx');
                       ]]>
                     </v:on-post>
                   </v:button>

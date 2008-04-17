@@ -152,13 +152,9 @@
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-            <v:url value="--''" format="%s" url="--AB.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="AddressBook Home">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/abbanner_sml.jpg" border="0" alt="AddressBook Home"/>';
-              ]]>
-            </v:before-render>
-          </v:url>
+            <?vsp
+              http (sprintf ('<a alt="AddressBook Home" title="AddressBook Home" href="%s"><img src="image/abbanner_sml.jpg" border="0" alt="AddressBook Home" /></a>', AB.WA.utf2wide (AB.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
+            ?>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -181,7 +177,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp http (AB.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
+            <?vsp http (AB.WA.utf2wide (AB.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
