@@ -26,8 +26,16 @@
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
+      <script type="text/javascript">
+        var toolkitPath="/ods/oat";
+        var imagePath="/ods/images/oat/";
+
+        var featureList=["dav"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" language="JavaScript" src="js/enews.js"></script>
     ]]>
     <title></title>

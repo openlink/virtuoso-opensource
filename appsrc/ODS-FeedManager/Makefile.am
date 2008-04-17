@@ -53,10 +53,6 @@ EXTRA_DIST = \
 	www/image/gems/*.gif \
 	www/image/gems/*.png \
 	www/js/*.js \
-	www/rte/css/*.css \
-	www/rte/images/*.gif \
-	www/rte/js/*.htm \
-	www/rte/js/*.js \
 	www/template/*.vspx \
 	www/template/*.xsl \
 	xslt/*.xsl

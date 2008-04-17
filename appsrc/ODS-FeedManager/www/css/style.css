@@ -494,17 +494,19 @@ table#list thead input {
   height: 49.5%;
   overflow: auto;
   border: solid #7f94a5;
-  border-width: 1px;
+  border-width: 1px
 }
 
 .pane_right_sub2
 {
   width: 100%;
   height: 49.5%;
-  margin-top: 0.3%;
+  margin-top: 0.4%;
+  overflow: auto;
   border: solid #7f94a5;
-  border-width: 1px;
+  border-width: 1px
 }
+
 .pane_right2
 {
   width: 19.55%;

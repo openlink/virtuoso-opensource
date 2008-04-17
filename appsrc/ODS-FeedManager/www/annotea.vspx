@@ -160,7 +160,7 @@
                 <v:label for="f_author" value="Author" />
               </th>
               <td>
-                <v:text name="f_author" xhtml_id="f_author" value="--self.v_author" xhtml_class="textbox" xhtml_size="50">
+                <v:text name="f_author" xhtml_id="f_author" value="--self.v_author" fmt-function="AB.WA.utf2wide" xhtml_class="textbox" xhtml_size="50">
                   <v:before-data-bind>
                     <![CDATA[
                       if (self.v_mode = 'edit')

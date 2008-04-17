@@ -66,6 +66,7 @@
     <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="user_name" id="user_name" value="%s" />', ENEWS.WA.account_name (self.account_id))); ?>
           <div class="new-form-header">
         Discussion
           </div>
@@ -151,7 +152,7 @@
                       	?>
 	                      <div class="comment" id="msg_<?V id ?>">
 		                      <div class="comment-header">
-			                      <span class="comment-subj"><?V title ?></span> <br />
+                        <span class="comment-subj"><?V ENEWS.WA.utf2wide (title) ?></span> <br />
 		                      </div>
 		                      <div class="comment-msg">
                             <?vsp
@@ -364,10 +365,9 @@
                             tmpString := replace(tmpString, chr(13), ' ');
                           ?>
                           <![CDATA[
-                            <script language="JavaScript" type="text/javascript" src="rte/js/richtext.js"></script>
-                            <script language="JavaScript" type="text/javascript" src="rte/js/html2xhtml.js"></script>
+                        <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
                             <script language="JavaScript" type="text/javascript">
-                              initRTE("rte/images/", "rte/js/", "", true);
+                          initRTE("/ods/rte/images/", "/ods/rte/", "", false);
                             </script>
                             <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
                             <script language="JavaScript" type="text/javascript">

@@ -3947,26 +3947,30 @@ create procedure ENEWS.WA.make_dasboard_item (
   http ('<feed-db>', ses);
 
   i := 0;
-  if (action = 'insert') {
+  if (action = 'insert')
+  {
     ret := sprintf (
-      '<post id="%d"><title>%V</title><dt>%s</dt><link>%V</link><from>%V</from><email>%V</email></post>',
+      '<post id="%d"><title><![CDATA[%s]]></title><dt>%s</dt><link>%V</link><from><![CDATA[%s]]></from><email>%V</email></post>',
       id, ENEWS.WA.show_title(title), ENEWS.WA.dt_iso8601 (tim), SIOC..feed_item_iri (feed_id, id), ENEWS.WA.show_author(uname), coalesce(ENEWS.WA.process_authorEMail(data), ''));
     http (ret, ses);
     i := i + 1;
   }
 
-  if (dash is not null) {
+  if (dash is not null)
+  {
     declare xt, xp any;
 
     xt := xtree_doc (dash);
     xp := xpath_eval ('/feed-db/*', xt, 0);
     l := length (xp);
-    for (j := 0; j < l; j := j + 1) {
+    for (j := 0; j < l; j := j + 1)
+    {
 	    declare pid any;
 	    pid := xpath_eval ('number(@id)', xp[j]);
 	    if (pid is null)
 	      pid := -2;
-      if (action = 'insert' or pid <> id) {
+      if (action = 'insert' or pid <> id)
+      {
 	      http (serialize_to_UTF8_xml (xp[j]), ses);
 	      i := i + 1;
 	      if (i = 10)
@@ -3992,8 +3996,8 @@ create procedure ENEWS.WA.dashboard_get(
   _user_name := ENEWS.WA.account_name (_user_id);
   sStream := string_output ();
 
-  for (select EF_ID, EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id) do
-    if (EF_DASHBOARD is not null) {
+  for (select EF_ID, EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id and EF_DASHBOARD is not null) do
+  {
       declare I, J integer;
       declare xt, xp any;
       declare _id, _title, _dt, _from, _email any;
@@ -4001,12 +4005,13 @@ create procedure ENEWS.WA.dashboard_get(
       xt := xtree_doc (EF_DASHBOARD);
       xp := xpath_eval ('/feed-db/*', xt, 0);
       http ('<feed-db>', sStream);
-      for (j := 0; j < length (xp); j := j + 1) {
-        _id    := xpath_eval ('string(@id)', xp[j]);
-        _title := xpath_eval ('string(./title)', xp[j]);
-        _dt    := xpath_eval ('string(./dt)', xp[j]);
-        _from  := xpath_eval ('string(./from)', xp[j]);
-        _email := xpath_eval ('string(./email)', xp[j]);
+    for (j := 0; j < length (xp); j := j + 1)
+    {
+      _id    := serialize_to_UTF8_xml (xpath_eval ('string(@id)', xp[j]));
+      _title := serialize_to_UTF8_xml (xpath_eval ('string(./title)', xp[j]));
+      _dt    := serialize_to_UTF8_xml (xpath_eval ('string(./dt)', xp[j]));
+      _from  := serialize_to_UTF8_xml (xpath_eval ('string(./from)', xp[j]));
+      _email := serialize_to_UTF8_xml (xpath_eval ('string(./email)', xp[j]));
         http (sprintf ('<post id="%s"><title><![CDATA[%s]]></title><dt>%s</dt><link>%V?instance=%d</link><from><![CDATA[%s]]></from><uid>%V</uid><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _user_name, _email), sStream);
       }
       http ('</feed-db>', sStream);
@@ -4174,7 +4179,7 @@ create procedure ENEWS.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Feeds';
 
-  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
                   ENEWS.WA.domain_sioc_url (domain_id, sid, realm),
                   ENEWS.WA.domain_name (domain_id),
                   ENEWS.WA.domain_name (domain_id),
