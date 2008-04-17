@@ -1495,7 +1495,7 @@ create procedure ODRIVE.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Briefcase';
 
-  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
                   ODRIVE.WA.domain_sioc_url (domain_id, sid, realm),
                   ODRIVE.WA.domain_name (domain_id),
                   ODRIVE.WA.domain_name (domain_id),

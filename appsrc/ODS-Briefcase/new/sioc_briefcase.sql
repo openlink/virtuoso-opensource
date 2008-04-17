@@ -108,7 +108,8 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
     for (select RES_ID, RES_FULL_PATH, RES_NAME, RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_CONTENT
            from WS.WS.SYS_DAV_RES
                   join WS.WS.SYS_DAV_USER ON RES_OWNER = U_ID
-          where RES_FULL_PATH like '/DAV/home/%/Public/%' and RES_FULL_PATH like ODRIVE.WA.odrive_dav_home(_U_NAME) || 'Public/%') do
+            where RES_FULL_PATH like '/DAV/home/%/Public/%' and RES_FULL_PATH like ODRIVE.WA.odrive_dav_home(_U_NAME) || 'Public/%'
+	    and  RES_NAME[0] <> ascii ('.')) do
     {
         iri := post_iri_ex (c_iri, RES_ID);
       creator_iri := user_iri (RES_OWNER);
@@ -193,7 +194,7 @@ create procedure briefcase_sioc_insert (
     return;
   };
 
-  if (r_full_path not like '/DAV/home/%')
+  if (r_full_path not like '/DAV/home/%' or r_name[0] = ascii ('.'))
     return;
 
   path := split_and_decode (r_full_path, 0, '\0\0/');
