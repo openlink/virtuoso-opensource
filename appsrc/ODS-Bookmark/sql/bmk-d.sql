@@ -40,6 +40,12 @@ BMK.WA.uninstall ()
 VHOST_REMOVE (lpath => '/bookmark');
 VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
 
+-- NNTP
+BMK.WA.exec_no_error ('DROP procedure DB.DBA.BOOKMARKS_NEWS_MSG_I');
+BMK.WA.exec_no_error ('DROP procedure DB.DBA.BOOKMARKS_NEWS_MSG_U');
+BMK.WA.exec_no_error ('DROP procedure DB.DBA.BOOKMARKS_NEWS_MSG_D');
+BMK.WA.exec_no_error ('DB.DBA.NNTP_NEWS_MSG_DEL (\'BOOKMARKS\')');
+
 -- Scheduler
 BMK.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'BM tags aggregator\'');
 
@@ -52,6 +58,7 @@ BMK.WA.exec_no_error('DROP TABLE BMK.WA.SETTINGS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.TAGS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.GRANTS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.ANNOTATIONS');
+BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_COMMENT');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DATA');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DOMAIN');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.SFOLDER');
@@ -78,7 +85,8 @@ registry_remove ('bmk_path_update');
 -- Procedures
 create procedure BMK.WA.drop_procedures()
 {
-  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'BMK.WA.%') do {
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'BMK.WA.%') do
+  {
     if (P_NAME not in ('BMK.WA.exec_no_error', 'BMK.WA.drop_procedures'))
       BMK.WA.exec_no_error(sprintf('drop procedure %s', P_NAME));
   }

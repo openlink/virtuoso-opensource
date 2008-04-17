@@ -43,21 +43,20 @@
     <vm:variables>
       <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
       <v:variable persist="0" name="v_oid" param-name="oid" type="integer" />
-      <v:variable persist="0" name="v_did" param-name="did" type="integer" />
-      <v:variable persist="0" name="v_aid" param-name="aid" type="integer" />
       <v:variable persist="0" name="v_id" type="integer" />
       <v:variable persist="0" name="v_author" type="varchar" default="''" />
       <v:variable persist="0" name="v_body" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
       <div class="new-form-header">
         Free Text Annotation: '<?V BMK.WA.utf2wide ((select coalesce(BD_NAME, '~ no title ~') from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.v_oid)) ?>'
       </div>
 
       <div class="new-form-body">
-        <v:data-set name="ds" sql="select * from BMK.WA.ANNOTATIONS where A_OBJECT_ID = :p0 and A_DOMAIN_ID = :p1 order by A_ID desc" nrows="0" scrollable="1">
+        <v:data-set name="ds" sql="select * from BMK.WA.ANNOTATIONS where A_OBJECT_ID = :p0 order by A_ID desc" nrows="0" scrollable="1">
           <v:param name="p0" value="--self.v_oid" />
-          <v:param name="p1" value="--self.v_did" />
 
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
             <div style="padding-bottom: 5px;">
@@ -142,7 +141,7 @@
           <hr />
           <v:before-data-bind>
             <![CDATA[
-              self.v_author := BMK.WA.account_fullName (self.v_aid);
+              self.v_author := BMK.WA.account_fullName (self.account_id);
               self.v_body := '';
               if (self.v_mode = 'edit') {
                 select A_AUTHOR,
@@ -160,7 +159,7 @@
                 <v:label for="f_author" value="Author" />
               </th>
               <td>
-                <v:text name="f_author" xhtml_id="f_author" value="--self.v_author" xhtml_class="textbox" xhtml_size="50">
+                <v:text name="f_author" xhtml_id="f_author" value="--self.v_author" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="50">
                   <v:before-data-bind>
                     <![CDATA[
                       if (self.v_mode = 'edit')
@@ -189,7 +188,7 @@
                         if (self.v_mode = 'create') {
                           self.v_author := trim (self.f_author.ufl_value);
                           insert into BMK.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
-                            values (self.v_did, self.v_oid, self.v_body, self.v_author, now (), now ());
+                            values (self.domain_id, self.v_oid, self.v_body, self.v_author, now (), now ());
                         } else {
                           update BMK.WA.ANNOTATIONS
                              set A_BODY = self.v_body,

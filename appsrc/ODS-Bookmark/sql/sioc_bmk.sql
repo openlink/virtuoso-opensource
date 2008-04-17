@@ -40,19 +40,35 @@ create procedure bmk_post_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure bmk_comment_iri (
+	in domain_id varchar,
+	in bookmark_id integer,
+	in comment_id integer)
+{
+	declare c_iri varchar;
+
+	c_iri := bmk_post_iri (domain_id, bookmark_id);
+	if (isnull (c_iri))
+	  return c_iri;
+
+	return sprintf ('%s/%d', c_iri, comment_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure bmk_annotation_iri (
 	in domain_id varchar,
-	in contact_id integer,
+	in bookmark_id integer,
 	in annotation_id integer)
 {
-	declare _member, _inst varchar;
-	declare exit handler for not found { return null; };
+	declare c_iri varchar;
 
-	select U_NAME, WAI_NAME into _member, _inst
-		from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
-	 where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+	c_iri := bmk_post_iri (domain_id, bookmark_id);
+	if (isnull (c_iri))
+	  return c_iri;
 
-	return sprintf ('http://%s%s/%U/bookmark/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, contact_id, annotation_id);
+	return sprintf ('%s/annotation/%d', c_iri, annotation_id);
 }
 ;
 
@@ -106,7 +122,8 @@ create procedure fill_ods_bookmark_sioc (
     id := -1;
     deadl := 3;
     cnt := 0;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
       if (deadl <= 0)
 	resignal;
       rollback work;
@@ -150,6 +167,30 @@ create procedure fill_ods_bookmark_sioc (
                               BD_CREATED,
                               BD_UPDATED
                              );
+	    for (select BC_ID,
+                  BC_DOMAIN_ID,
+                  BC_BOOKMARK_ID,
+                  BC_TITLE,
+                  BC_COMMENT,
+                  BC_UPDATED,
+                  BC_U_NAME,
+                  BC_U_MAIL,
+                  BC_U_URL
+		         from BMK.WA.BOOKMARK_COMMENT
+		        where BC_BOOKMARK_ID = BD_ID) do
+		  {
+		    bmk_comment_insert (graph_iri,
+                            c_iri,
+                            BC_ID,
+                            BC_DOMAIN_ID,
+                            BC_BOOKMARK_ID,
+                            BC_TITLE,
+                            BC_COMMENT,
+                            BC_UPDATED,
+                            BC_U_NAME,
+                            BC_U_MAIL,
+                            BC_U_URL);
+      }
 			for (select A_ID,
 									A_DOMAIN_ID,
 									A_OBJECT_ID,
@@ -341,6 +382,130 @@ create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN re
 
 -------------------------------------------------------------------------------
 --
+create procedure bmk_comment_insert (
+	in graph_iri varchar,
+	in forum_iri varchar,
+  inout comment_id integer,
+  inout domain_id integer,
+  inout master_id integer,
+  inout title varchar,
+  inout comment varchar,
+  inout last_update datetime,
+  inout u_name varchar,
+  inout u_mail varchar,
+  inout u_url varchar)
+{
+	declare master_iri, comment_iri varchar;
+
+	declare exit handler for sqlstate '*'
+	{
+		sioc_log_message (__SQL_MESSAGE);
+		return;
+	};
+
+  master_id := cast (master_id as integer);
+	if (isnull (graph_iri))
+		for (select WAI_ID, WAM_USER, WAI_NAME
+					 from DB.DBA.WA_INSTANCE,
+								DB.DBA.WA_MEMBER
+					where WAI_ID = domain_id
+						and WAM_INST = WAI_NAME
+						and WAI_IS_PUBLIC = 1) do
+		{
+			graph_iri := get_graph ();
+      forum_iri := bmk_iri (WAI_NAME);
+		}
+
+	if (not isnull (graph_iri))
+	{
+		comment_iri := bmk_comment_iri (domain_id, master_id, comment_id);
+    if (not isnull (comment_iri))
+    {
+		  master_iri := bmk_post_iri (domain_id, master_id);
+      foaf_maker (graph_iri, u_url, u_name, u_mail);
+      ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
+      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bmk_comment_delete (
+  inout domain_id integer,
+  inout item_id integer,
+  inout id integer)
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare iri varchar;
+
+  iri := bmk_comment_iri (domain_id, item_id, id);
+  delete_quad_s_or_o (get_graph (), iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_COMMENT_SIOC_I after insert on BMK.WA.BOOKMARK_COMMENT referencing new as N
+{
+  if (not isnull(N.BC_PARENT_ID))
+    bmk_comment_insert (null,
+                        null,
+                        N.BC_ID,
+                        N.BC_DOMAIN_ID,
+                        N.BC_BOOKMARK_ID,
+                        N.BC_TITLE,
+                        N.BC_COMMENT,
+                        N.BC_UPDATED,
+                        N.BC_U_NAME,
+                        N.BC_U_MAIL,
+                        N.BC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_COMMENT_SIOC_U after update on BMK.WA.BOOKMARK_COMMENT referencing old as O, new as N
+{
+  if (not isnull(O.BC_PARENT_ID))
+    bmk_comment_delete (O.BC_DOMAIN_ID,
+                        O.BC_BOOKMARK_ID,
+                        O.BC_ID);
+  if (not isnull(N.BC_PARENT_ID))
+    bmk_comment_insert (null,
+                        null,
+                        N.BC_ID,
+                        N.BC_DOMAIN_ID,
+                        N.BC_BOOKMARK_ID,
+                        N.BC_TITLE,
+                        N.BC_COMMENT,
+                        N.BC_UPDATED,
+                        N.BC_U_NAME,
+                        N.BC_U_MAIL,
+                        N.BC_U_URL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_COMMENT_SIOC_D before delete on BMK.WA.BOOKMARK_COMMENT referencing old as O
+{
+  if (not isnull(O.BC_PARENT_ID))
+    bmk_comment_delete (O.BC_DOMAIN_ID,
+                        O.BC_BOOKMARK_ID,
+                        O.BC_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure bmk_annotation_insert (
 	in graph_iri varchar,
 	inout annotation_id integer,
@@ -371,7 +536,8 @@ create procedure bmk_annotation_insert (
 			graph_iri := get_graph ();
 		}
 
-	if (not isnull (graph_iri)) {
+	if (not isnull (graph_iri))
+	{
     bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = master_id);
 		master_iri := bmk_post_iri (domain_id, bookmark_id);
 		annotattion_iri := bmk_annotation_iri (domain_id, bookmark_id, annotation_id);
@@ -396,7 +562,8 @@ create procedure bmk_annotation_delete (
   declare bookmark_id integer;
 	declare graph_iri, iri varchar;
 
-	declare exit handler for sqlstate '*' {
+	declare exit handler for sqlstate '*'
+	{
 		sioc_log_message (__SQL_MESSAGE);
 		return;
 	};

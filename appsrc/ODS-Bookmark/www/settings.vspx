@@ -36,6 +36,40 @@
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
+      <table id="MTB">
+        <tr>
+          <td id="LC">
+            <div class="lc lc_close">
+              <v:button action="simple" style="url" value="Settings" xhtml_class="gems2">
+                <v:on-post>
+                  <![CDATA[
+                    self.abSubAction := '';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Categories" xhtml_class="gems2">
+                <v:on-post>
+                  <![CDATA[
+                    self.abSubAction := 'categoriesBrowse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+              <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
+                <v:on-post>
+                  <![CDATA[
+                    self.abAction := 'browse';
+                    self.abSubAction := '';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </td>
+          <td id="RC">
+            <vm:if test="self.abSubAction =''">
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <div class="new-form-header" style="margin-top: 6px;">
         Preferences
@@ -300,6 +334,9 @@
       	  </v:on-post>
         </v:button>
       </div>
+            </vm:if>
+            <vm:if test="self.abSubAction != ''">
+            </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

@@ -119,8 +119,9 @@ a:hover
   background-color: #b0cde4;
 }
 
-.left_container
+.lc
 {
+  font-size: 12px;
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
   padding: 5px;
@@ -128,22 +129,54 @@ a:hover
   width: auto;
 }
 
-.left_container div, .left_container a
+.lc_none
+{
+  margin: 0 0.5em 0.5em 0.5em;
+  width: auto;
+}
+
+.lc_closer
+{
+  margin-top: -0.5em;
+  z-index: 1;
+}
+
+.lc_noborder
+{
+  border-top: 0;
+}
+
+.lc a.gems, .lc a.gems2, .lc div
 {
   display: block;
   padding: 3px;
 	margin: 3px;
 }
 
-.left_container a
+.lc a.gems, .lc a.gems2
 {
   text-decoration: none;
 }
 
-.left_container a:hover
+.lc a.gems:hover, .lc a.gems2:hover
+{
+  color: blue;
+  background: #99b3c5;
+}
+
+.lc a.gems2
 {
   color: black;
-  background: #99b3c5;
+  font-weight: bold;
+  background: #b0cde4;
+}
+
+.lc_head
+{
+  -moz-user-select: none;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
 }
 
 .navigator_info
@@ -386,7 +419,8 @@ table#list thead input {
 {
   width: 69.3%;
   height: 100%;
-  float: right;
+  float: left;
+  margin-left: 0.15%;
 }
 
 .pane_right_sub
@@ -411,7 +445,7 @@ table#list thead input {
 {
   width: 100%;
   height: 49.5%;
-  margin-top: 0.3%;
+  margin-top: 0.4%;
   overflow: auto;
   border: solid #7f94a5;
   border-width: 1px
@@ -994,4 +1028,57 @@ span.toolbar
 span.toolbarLabel
 {
   font-size: 0.8em;
+}
+
+/* Comments */
+div.cm_node_top
+{
+  padding-left: 1em;
+  margin-left: 0px;
+}
+
+div.cm_node
+{
+  padding-left: 1em;
+  margin-left: 0px;
+  border-left: 2px #e0e0e0 solid;
+}
+
+div.comment-section
+{
+  padding: 0 0px 0 2px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #b0cde4;
+}
+
+div.comment
+{
+  margin-top: 5px;
+}
+
+div.comment-footer
+{
+  margin: 1px;
+  color: gray;
+}
+
+div.comment-header
+{
+  border-bottom: 1px #cccccc solid;
+  font-size: 1.1em;
+}
+
+div.comment-button
+{
+  margin: 1px;
+  padding-top: 5px;
+  border-top: 1px #cccccc solid;
+}
+
+input.openID {
+  background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
+  padding-left: 18px;
 }

@@ -139,13 +139,9 @@
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-            <v:url value="--''" format="%s" url="--BMK.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Calendar Home">
-            <v:before-render>
-              <![CDATA[
-                  control.ufl_value := '<img src="image/bmkbanner_sml.jpg" border="0" alt="Bookmark Home" />';
-              ]]>
-            </v:before-render>
-          </v:url>
+            <?vsp
+              http (sprintf ('<a alt="Bookmarks Home" title="Bookmarks Home" href="%s"><img src="image/bmkbanner_sml.jpg" border="0" alt="Bookmarks Home" /></a>', BMK.WA.utf2wide (BMK.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
+            ?>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -168,38 +164,23 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp http (BMK.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
+            <?vsp http (BMK.WA.utf2wide (BMK.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-            <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              <v:url url="bookmarks.vspx?action=settings" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
       </div>
         </div>
       <v:include url="bmk_login.vspx"/>
-      <table id="MTB">
-        <tr>
-          <!-- Navigation left column -->
-          <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
-            <td id="LC">
-              <xsl:call-template name="vm:formats"/>
-            </td>
-      	  </v:template>
-          <!-- Navigation right column -->
-          <td id="RC">
         	  <v:template type="simple" condition="not self.vc_is_valid">
         	    <div class="error">
         		    <p><v:error-summary/></p>
         	    </div>
         	  </v:template>
-        	  <div class="main_page_area">
         	    <xsl:apply-templates select="vm:pagebody" />
-        	  </div>
-          </td>
-        </tr>
-      </table>
       <div id="FT">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
@@ -219,8 +200,8 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:formats">
-    <div class="left_container">
+  <xsl:template match="vm:formats">
+    <div class="lc">
     <?vsp
       declare exit handler for not found;
 
@@ -229,7 +210,7 @@
 
       select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
         if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
-          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', BMK.WA.bookmark_url (self.domain_id)));
+          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', BMK.WA.bookmarks_url (self.domain_id)));
 
         S := BMK.WA.dav_url (self.domain_id);
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
@@ -244,7 +225,7 @@
         http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', BMK.WA.foaf_url (self.domain_id)));
 
         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        S := sprintf ('http://%s/dataspace/%U/bookmark/%U/', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.domain_name (self.domain_id));
+        S := sprintf ('http://%s/dataspace/%U/bookmark/%U/', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.utf2wide (BMK.WA.domain_name (self.domain_id)));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>

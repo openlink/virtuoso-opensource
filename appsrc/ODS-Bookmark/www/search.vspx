@@ -354,7 +354,8 @@
         <div style="padding-bottom: 5px;">
           <?vsp
     			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-            if (BMK.WA.settings_atomVersion(self.account_id) = '1.0') {
+            if (BMK.WA.settings_atomVersion (self.settings) = '1.0')
+            {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
     			  } else {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
@@ -370,7 +371,7 @@
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
               <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
                 <v:before-data-bind>
-                  control.ds_nrows := BMK.WA.settings_rows (self.account_id);
+                  control.ds_nrows := BMK.WA.settings_rows (self.settings);
                 </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
@@ -436,7 +437,7 @@
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
+                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmarks_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }

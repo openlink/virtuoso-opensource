@@ -37,11 +37,11 @@
       }
       http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.rss'));
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.atom'));
-      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, BMK.WA.bookmark_url (self.domain_id), self.account_id, self.domain_id));
+      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, BMK.WA.bookmarks_url (self.domain_id), self.account_id, self.domain_id));
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css" />
     <meta name="dc.description" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -109,7 +109,7 @@
           self.accountName := get_keyword('user_name', aSessInfo, '');
           self.owner_id := BMK.WA.domain_owner_id (self.domain_id);
           self.ownerName := BMK.WA.domain_owner_name (self.domain_id);
-          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), BMK.WA.settings (self.account_id));
+          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), BMK.WA.settings (self.domain_id));
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
           self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');

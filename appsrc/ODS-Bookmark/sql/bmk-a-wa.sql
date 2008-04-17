@@ -427,6 +427,7 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_boo
 
   BMK.WA.domain_gems_delete (domainID, ownerID, 'BM', oldValues[0] || '_Gems');
   BMK.WA.domain_gems_create (domainID, ownerID);
+  BMK.WA.nntp_update (domainID, BMK.WA.domain_nntp_name2 (oldValues[0], BMK.WA.account_name (ownerID)), BMK.WA.domain_nntp_name2 (newValues[0], BMK.WA.account_name (ownerID)));
 
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }

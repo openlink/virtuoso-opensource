@@ -116,7 +116,7 @@
                 http_value (U_E_MAIL);
               http ('</webMaster>\n');
               http ('<link>');
-                http_value (BMK.WA.bookmark_url (self.domain_id));
+                http_value (BMK.WA.bookmarks_url (self.domain_id));
               http ('</link>\n');
             }
             foreach (any row in rows) do {

@@ -360,17 +360,192 @@ BMK.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
--- Conatins settings
+BMK.WA.exec_no_error ('
+  create table BMK.WA.BOOKMARK_COMMENT (
+    BC_ID integer identity,
+    BC_PARENT_ID integer,
+    BC_DOMAIN_ID integer not null,
+    BC_BOOKMARK_ID varchar not null,
+    BC_TITLE varchar,
+    BC_COMMENT long varchar,
+    BC_U_NAME varchar,
+    BC_U_MAIL varchar,
+    BC_U_URL varchar,
+    BC_RFC_ID varchar,
+    BC_RFC_HEADER long varchar,
+    BC_RFC_REFERENCES varchar,
+    BC_OPENID_SIG long varbinary,
+    BC_CREATED datetime,
+    BC_UPDATED datetime,
+
+    constraint FK_BOOKMARK_COMMENT_01 FOREIGN KEY (BC_BOOKMARK_ID) references BMK.WA.BOOKMARK_DOMAIN (BD_ID) on delete cascade,
+
+    primary key (BC_ID)
+  )
+');
+
+BMK.WA.exec_no_error ('
+  create index SK_BOOKMARK_COMMENT_01 on BMK.WA.BOOKMARK_COMMENT (BC_BOOKMARK_ID)
+');
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_COMMENT_I after insert on BMK.WA.BOOKMARK_COMMENT referencing new as N
+  {
+    declare id integer;
+    declare rfc_id, rfc_header, rfc_references varchar;
+    declare nInstance any;
+
+    nInstance := BMK.WA.domain_nntp_name (N.BC_DOMAIN_ID);
+    id := N.BC_ID;
+    rfc_id := N.BC_RFC_ID;
+    if (isnull(rfc_id))
+      rfc_id := BMK.WA.make_rfc_id (N.BC_BOOKMARK_ID, N.BC_ID);
+
+    rfc_references := \'\';
+    if (N.BC_PARENT_ID)
+    {
+      declare p_rfc_id, p_rfc_references any;
+
+      --declare exit handler for not found;
+
+      select BC_RFC_ID, BC_RFC_REFERENCES
+        into p_rfc_id, p_rfc_references
+        from BMK.WA.BOOKMARK_COMMENT
+       where BC_ID = N.BC_PARENT_ID;
+      if (isnull(p_rfc_references))
+         p_rfc_references := rfc_references;
+      rfc_references :=  p_rfc_references || \' \' || p_rfc_id;
+    }
+
+    rfc_header := N.BC_RFC_HEADER;
+    if (isnull(rfc_header))
+      rfc_header := BMK.WA.make_post_rfc_header (rfc_id, rfc_references, nInstance, N.BC_TITLE, N.BC_UPDATED, N.BC_U_MAIL);
+
+    set triggers off;
+    update BMK.WA.BOOKMARK_COMMENT
+       set BC_RFC_ID = rfc_id,
+           BC_RFC_HEADER = rfc_header,
+           BC_RFC_REFERENCES = rfc_references
+     where BC_ID = id;
+    set triggers on;
+  }
+')
+;
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_COMMENT_NEWS_I after insert on BMK.WA.BOOKMARK_COMMENT order 30 referencing new as N
+  {
+    declare grp, ngnext integer;
+    declare rfc_id, nInstance any;
+
+    declare exit handler for not found { return;};
+
+    nInstance := BMK.WA.domain_nntp_name (N.BC_DOMAIN_ID);
+    select NG_GROUP, NG_NEXT_NUM into grp, ngnext from DB..NEWS_GROUPS where NG_NAME = nInstance;
+    if (ngnext < 1)
+      ngnext := 1;
+    rfc_id := (select BC_RFC_ID from BMK.WA.BOOKMARK_COMMENT where BC_ID = N.BC_ID);
+
+    insert into DB.DBA.NEWS_MULTI_MSG (NM_KEY_ID, NM_GROUP, NM_NUM_GROUP)
+      values (rfc_id, grp, ngnext);
+
+    set triggers off;
+    update DB.DBA.NEWS_GROUPS
+       set NG_NEXT_NUM = ngnext + 1
+     where NG_NAME = nInstance;
+    DB.DBA.ns_up_num (grp);
+    set triggers on;
+  }
+')
+;
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_COMMENT_D after delete on BMK.WA.BOOKMARK_COMMENT referencing old as O
+  {
+    -- update all that have BC_PARENT_ID == O.BC_PARENT_ID
+    set triggers off;
+    update BMK.WA.BOOKMARK_COMMENT
+       set BC_PARENT_ID = O.BC_PARENT_ID
+     where BC_PARENT_ID = O.BC_ID;
+    set triggers on;
+  }
+')
+;
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_COMMENT_NEWS_D after delete on BMK.WA.BOOKMARK_COMMENT order 30 referencing old as O
+  {
+    declare grp integer;
+    declare oInstance any;
+
+    oInstance := BMK.WA.domain_nntp_name (O.BC_DOMAIN_ID);
+    grp := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = oInstance);
+    delete from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = O.BC_RFC_ID and NM_GROUP = grp;
+    DB.DBA.ns_up_num (grp);
+  }
+')
+;
+
+-------------------------------------------------------------------------------
+--
+-- Contains settings
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
   create table BMK.WA.SETTINGS (
-    S_ACCOUNT_ID integer not null,
+    S_DOMAIN_ID integer,
     S_DATA varchar,
+    S_ACCOUNT_ID integer,
 
-    primary key(S_ACCOUNT_ID)
+    primary key (S_DOMAIN_ID)
   )
 ');
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.SETTINGS add S_DOMAIN_ID integer', 'C', 'BMK.WA.SETTINGS', 'S_DOMAIN_ID'
+)
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tmp_update ()
+{
+  declare account_id, domain_id integer;
+
+  if (registry_get ('bmk_settings_update') = '1')
+    return;
+
+  BMK.WA.exec_no_error ('update BMK.WA.SETTINGS set S_DOMAIN_ID = -S_ACCOUNT_ID');
+
+  set triggers off;
+  for (select * from BMK.WA.SETTINGS) do
+  {
+    account_id := abs (S_DOMAIN_ID);
+    domain_id := (select top 1 C.WAI_ID
+                    from SYS_USERS A,
+                         WA_MEMBER B,
+                         WA_INSTANCE C
+                   where A.U_ID = account_id
+                     and B.WAM_USER = A.U_ID
+                     and B.WAM_MEMBER_TYPE = 1
+                     and B.WAM_INST = C.WAI_NAME
+                     and C.WAI_TYPE_NAME = 'Bookmark');
+    if (isnull (domain_id))
+    {
+      delete from BMK.WA.SETTINGS where S_DOMAIN_ID = -account_id;
+    } else {
+      update BMK.WA.SETTINGS set S_DOMAIN_ID = domain_id where S_DOMAIN_ID = -account_id;
+    }
+  }
+  set triggers on;
+
+  --BMK.WA.exec_no_error ('alter table BMK.WA.SETTINGS drop S_ACCOUNT_ID', 'D', 'BMK.WA.SETTINGS', 'S_ACCOUNT_ID');
+  BMK.WA.exec_no_error ('alter table BMK.WA.SETTINGS modify primary key (S_DOMAIN_ID)');
+
+  registry_set ('bmk_settings_update', '1');
+}
+;
+BMK.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --

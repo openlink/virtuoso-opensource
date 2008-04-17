@@ -137,7 +137,7 @@
           </v:on-post>
         </v:button>
       </div>
-      <v:data-source name="dsrc" expression-type="sql" nrows="--BMK.WA.settings_rows(self.account_id)" initial-offset="0">
+      <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
             declare user_sql, group_sql varchar;
@@ -165,6 +165,7 @@
               control.ds_sql := concat('select U_TYPE, U_NAME, U_FULL_NAME from (', user_sql, ' union ' , group_sql, ') x ');
             }
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+            control.ds_nrows := BMK.WA.settings_rows (self.settings);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>
