@@ -445,6 +445,7 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_Cal
 
   CAL.WA.domain_gems_delete (domainID, ownerID, 'Calendar Gems', oldValues[0]);
   CAL.WA.domain_gems_create (domainID, ownerID);
+  CAL.WA.nntp_update (domainID, CAL.WA.domain_nntp_name2 (oldValues[0], CAL.WA.account_name (ownerID)), CAL.WA.domain_nntp_name2 (newValues[0], CAL.WA.account_name (ownerID)));
 
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }

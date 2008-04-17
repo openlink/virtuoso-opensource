@@ -871,6 +871,12 @@
     ]]>
   </v:method>
 
+  <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
+    <![CDATA[
+      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Calendar</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -1938,11 +1944,21 @@
                           <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_UPDATED'), self.cDateFormat)" />
                         </td>
                               </vm:if>
-                              <vm:if test="self.access_role not in ('public', 'guest')">
-                                <td>
-                                  <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'calendar_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
-                                </td>
-                              </vm:if>
+                              <?vsp
+                                declare N, id integer;
+                                declare title, actions any;
+
+                                id := (control as vspx_row_template).te_column_value('E_ID');
+                                title := (control as vspx_row_template).te_column_value('E_SUBJECT');
+
+                                actions := '';
+                                if (self.access_role not in ('public', 'guest'))
+                                  actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('annotea.vspx?oid=%d', id), 'annotate', title);
+                                if (CAL.WA.discussion_check () and CAL.WA.conversation_enable (self.domain_id))
+                                  actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', id), 'discuss', title);
+                                if (actions <> '')
+                                  http ('<td nowrap="nowrap">' || actions || '</td>');
+                              ?>
                       </tr>
                     </table>
                   </v:template>
@@ -3640,9 +3656,10 @@
                 <v:template type="simple" enabled="--case when self.cSubAction = '' then 1 else 0 end">
         <div id="s" class="c1">
           <div class="tabs">
-                    &nbsp;<vm:tabCaption tab="s" tabsCount="3" tabNo="0" caption="General" />
-                    &nbsp;<vm:tabCaption tab="s" tabsCount="3" tabNo="1" caption="Grids" />
-                    &nbsp;<vm:tabCaption tab="s" tabsCount="3" tabNo="2" caption="Calendar" />
+                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="0" caption="General" />
+                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="1" caption="Grids" />
+                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="2" caption="Calendar" />
+                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="3" caption="Discussion" />
           </div>
           <div id="s_contents" class="contents">
             <div id="s_content_0" class="tabContent" style="display: none;">
@@ -3890,6 +3907,51 @@
                 </tr>
               </table>
             </div>
+                      <div id="s_content_3" class="tabContent" style="display: none;">
+                        <table class="form-body" cellspacing="0">
+                          <v:template type="simple" enabled="--either (equ (CAL.WA.discussion_check (), 1), 0, 1)">
+                            <tr>
+                              <td class="error_text" colspan="2">
+                                <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                              </td>
+                            </tr>
+                          </v:template>
+                          <tr>
+                            <th width="30%">&nbsp;</th>
+                            <td>
+                              <?vsp
+                                declare S, T varchar;
+
+                                S := '';
+                      				  if (not CAL.WA.discussion_check ())
+                      				    S := 'disabled="disabled"';
+                                T := '';
+                      				  if (cast(get_keyword ('conv', self.settings, '0') as integer) = 1)
+                      				    T := 'checked';
+                                http (sprintf ('<input type="checkbox" name="s_conv" value="1" %s %s />', T, S));
+                              ?>
+                      				<vm:label for="s_conv" value="Enable discussions on this instance" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th width="30%">&nbsp;</th>
+                            <td>
+                              <?vsp
+                                declare S, T varchar;
+
+                                S := '';
+                      				  if (not CAL.WA.discussion_check ())
+                      				    S := 'disabled="disabled"';
+                                T := '';
+                      				  if (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1)
+                      				    T := 'checked';
+                                http (sprintf ('<input type="checkbox" name="s_conv_init" value="1" %s %s />', T, S));
+                              ?>
+                      				<vm:label for="s_conv_init" value="Initialize the news group with existing posts" />
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
           </div>
         </div>
         <div class="new-form-footer">
@@ -3897,6 +3959,9 @@
             <v:on-post>
               <![CDATA[
                 declare rows, chars any;
+                          declare conv, s_conv, s_conv_init, params any;
+
+                          params := self.vc_page.vc_event.ve_params;
 
                           declare exit handler for SQLSTATE '*'
                           {
@@ -3911,11 +3976,15 @@
 
                 rows := trim(self.s_rows.ufl_value);
                 chars := trim(self.s_chars.ufl_value);
-                          if (get_keyword ('sr_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                          if (get_keyword ('sr_chars', params, '-1') = '0')
                   chars := '0';
 
                 CAL.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
                 CAL.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 255));
+
+                          conv := cast (get_keyword ('conv', self.settings, '0') as integer);
+                          s_conv := cast (get_keyword ('s_conv', params, '0') as integer);
+                          s_conv_init := cast (get_keyword ('s_conv_init', params, '0') as integer);
 
                 self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
                 self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
@@ -3926,6 +3995,9 @@
                 self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
                 self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
                 self.settings := CAL.WA.set_keyword ('showTasks', self.settings, self.s_showTasks.ufl_selected);
+
+                          self.settings := CAL.WA.set_keyword ('conv', self.settings, s_conv);
+                          self.settings := CAL.WA.set_keyword ('conv_init', self.settings, s_conv_init);
 
                         self.settings := CAL.WA.set_keyword ('event_E_UPDATED',  self.settings, self.s_e_column_1.ufl_selected);
                         self.settings := CAL.WA.set_keyword ('event_E_CREATED',  self.settings, self.s_e_column_2.ufl_selected);
@@ -3939,15 +4011,35 @@
                         self.settings := CAL.WA.set_keyword ('task_E_UPDATED',   self.settings, self.s_t_column_3.ufl_selected);
                         self.settings := CAL.WA.set_keyword ('task_E_CREATED',   self.settings, self.s_t_column_4.ufl_selected);
 
-                insert replacing CAL.WA.SETTINGS (S_ACCOUNT_ID, S_DATA)
-                  values(self.account_id, serialize (self.settings));
+                          insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
+                            values(self.domain_id, serialize (self.settings), self.account_id);
                 commit work;
 
                 --CAL.WA.domain_gems_create (self.domain_id, self.account_id);
+                      		if (CAL.WA.discussion_check ())
+                      		{
+                					  CAL.WA.nntp_update (self.domain_id, null, null, conv, s_conv);
+                     				if (s_conv and s_conv_init)
+                					    CAL.WA.nntp_fill (self.domain_id);
+                					}
 
                 self.initData ();
                 self.cAction := 'browse';
                         self.cSubAction := '';
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Clear" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                          delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
+                          CAL.WA.nntp_update (self.domain_id, null, null, 1, 0);
+
+                          self.settings := vector ();
+                          self.initData ();
+
                 self.vc_data_bind(e);
               ]]>
             </v:on-post>

@@ -157,13 +157,9 @@
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-            <v:url value="--''" format="%s" url="--CAL.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Calendar Home">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/calendarbanner_sml.jpg" border="0" alt="Calendar Home" />';
-              ]]>
-            </v:before-render>
-          </v:url>
+            <?vsp
+              http (sprintf ('<a alt="Calendar Home" title="Calendar Home" href="%s"><img src="image/calendarbanner_sml.jpg" border="0" alt="Calendar Home" /></a>', CAL.WA.utf2wide (CAL.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
+            ?>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -208,7 +204,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp http (CAL.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
+            <?vsp http (CAL.WA.utf2wide (CAL.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
             <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
@@ -427,7 +423,7 @@
 
         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
 
-        S := sprintf ('http://%s/dataspace/%U/calendar/%U/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id));
+        S := sprintf ('http://%s/dataspace/%U/calendar/%U/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.utf2wide (CAL.WA.domain_name (self.domain_id)));
         http (sprintf('<a href="%ssioc.%s" title="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>

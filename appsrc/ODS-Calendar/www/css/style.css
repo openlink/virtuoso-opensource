@@ -1366,3 +1366,56 @@ td.cpDayColumnHeader
 	border: 1px solid #000;
 	cursor: pointer;
 }
+
+/* Comments */
+div.cm_node_top
+{
+  padding-left: 1em;
+  margin-left: 0px;
+}
+
+div.cm_node
+{
+  padding-left: 1em;
+  margin-left: 0px;
+  border-left: 2px #e0e0e0 solid;
+}
+
+div.comment-section
+{
+  padding: 0 0px 0 2px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #b0cde4;
+}
+
+div.comment
+{
+  margin-top: 5px;
+}
+
+div.comment-footer
+{
+  margin: 1px;
+  color: gray;
+}
+
+div.comment-header
+{
+  border-bottom: 1px #cccccc solid;
+  font-size: 1.1em;
+}
+
+div.comment-button
+{
+  margin: 1px;
+  padding-top: 5px;
+  border-top: 1px #cccccc solid;
+}
+
+input.openID {
+  background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
+  padding-left: 18px;
+}

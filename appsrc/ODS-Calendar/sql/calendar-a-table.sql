@@ -524,13 +524,189 @@ CAL.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 CAL.WA.exec_no_error ('
-  create table CAL.WA.SETTINGS (
-    S_ACCOUNT_ID integer not null,
-    S_DATA varchar,
+  create table CAL.WA.EVENT_COMMENTS (
+    EC_ID integer identity,
+    EC_PARENT_ID integer,
+    EC_DOMAIN_ID integer not null,
+    EC_EVENT_ID varchar not null,
+    EC_TITLE varchar,
+    EC_COMMENT long varchar,
+    EC_U_NAME varchar,
+    EC_U_MAIL varchar,
+    EC_U_URL varchar,
+    EC_RFC_ID varchar,
+    EC_RFC_HEADER long varchar,
+    EC_RFC_REFERENCES varchar,
+    EC_OPENID_SIG long varbinary,
+    EC_CREATED datetime,
+    EC_UPDATED datetime,
 
-    primary key(S_ACCOUNT_ID)
+    constraint FK_EVENT_COMMENTS_01 FOREIGN KEY (EC_EVENT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade,
+
+    primary key (EC_ID)
   )
 ');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENT_COMMENTS_01 on CAL.WA.EVENT_COMMENTS (EC_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  create trigger EVENT_COMMENTS_I after insert on CAL.WA.EVENT_COMMENTS referencing new as N
+  {
+    declare id integer;
+    declare rfc_id, rfc_header, rfc_references varchar;
+    declare nInstance any;
+
+    nInstance := CAL.WA.domain_nntp_name (N.EC_DOMAIN_ID);
+    id := N.EC_ID;
+    rfc_id := N.EC_RFC_ID;
+    if (isnull(rfc_id))
+      rfc_id := CAL.WA.make_rfc_id (N.EC_EVENT_ID, N.EC_ID);
+
+    rfc_references := \'\';
+    if (N.EC_PARENT_ID)
+    {
+      declare p_rfc_id, p_rfc_references any;
+
+      --declare exit handler for not found;
+
+      select EC_RFC_ID, EC_RFC_REFERENCES
+        into p_rfc_id, p_rfc_references
+        from CAL.WA.EVENT_COMMENTS
+       where EC_ID = N.EC_PARENT_ID;
+      if (isnull(p_rfc_references))
+         p_rfc_references := rfc_references;
+      rfc_references :=  p_rfc_references || \' \' || p_rfc_id;
+    }
+
+    rfc_header := N.EC_RFC_HEADER;
+    if (isnull(rfc_header))
+      rfc_header := CAL.WA.make_post_rfc_header (rfc_id, rfc_references, nInstance, N.EC_TITLE, N.EC_UPDATED, N.EC_U_MAIL);
+
+    set triggers off;
+    update CAL.WA.EVENT_COMMENTS
+       set EC_RFC_ID = rfc_id,
+           EC_RFC_HEADER = rfc_header,
+           EC_RFC_REFERENCES = rfc_references
+     where EC_ID = id;
+    set triggers on;
+  }
+')
+;
+
+CAL.WA.exec_no_error ('
+  create trigger EVENT_COMMENTS_NEWS_I after insert on CAL.WA.EVENT_COMMENTS order 30 referencing new as N
+  {
+    declare grp, ngnext integer;
+    declare rfc_id, nInstance any;
+
+    declare exit handler for not found { return;};
+
+    nInstance := CAL.WA.domain_nntp_name (N.EC_DOMAIN_ID);
+    select NG_GROUP, NG_NEXT_NUM into grp, ngnext from DB..NEWS_GROUPS where NG_NAME = nInstance;
+    if (ngnext < 1)
+      ngnext := 1;
+    rfc_id := (select EC_RFC_ID from CAL.WA.EVENT_COMMENTS where EC_ID = N.EC_ID);
+
+    insert into DB.DBA.NEWS_MULTI_MSG (NM_KEY_ID, NM_GROUP, NM_NUM_GROUP)
+      values (rfc_id, grp, ngnext);
+
+    set triggers off;
+    update DB.DBA.NEWS_GROUPS
+       set NG_NEXT_NUM = ngnext + 1
+     where NG_NAME = nInstance;
+    DB.DBA.ns_up_num (grp);
+    set triggers on;
+  }
+')
+;
+
+CAL.WA.exec_no_error ('
+  create trigger EVENT_COMMENTS_D after delete on CAL.WA.EVENT_COMMENTS referencing old as O
+  {
+    -- update all that have EC_PARENT_ID == O.EC_PARENT_ID
+    set triggers off;
+    update CAL.WA.EVENT_COMMENTS
+       set EC_PARENT_ID = O.EC_PARENT_ID
+     where EC_PARENT_ID = O.EC_ID;
+    set triggers on;
+  }
+')
+;
+
+CAL.WA.exec_no_error ('
+  create trigger EVENT_COMMENTS_NEWS_D after delete on CAL.WA.EVENT_COMMENTS order 30 referencing old as O
+  {
+    declare grp integer;
+    declare oInstance any;
+
+    oInstance := CAL.WA.domain_nntp_name (O.EC_DOMAIN_ID);
+    grp := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = oInstance);
+    delete from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = O.EC_RFC_ID and NM_GROUP = grp;
+    DB.DBA.ns_up_num (grp);
+  }
+')
+;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.SETTINGS (
+    S_DOMAIN_ID integer,
+    S_DATA varchar,
+    S_ACCOUNT_ID integer,
+
+    primary key (S_DOMAIN_ID)
+  )
+')
+;
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.SETTINGS add S_DOMAIN_ID integer', 'C', 'CAL.WA.SETTINGS', 'S_DOMAIN_ID'
+)
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  declare account_id, domain_id integer;
+
+  if (registry_get ('cal_settings_update') = '1')
+    return;
+
+  CAL.WA.exec_no_error ('update CAL.WA.SETTINGS set S_DOMAIN_ID = -S_ACCOUNT_ID');
+
+  set triggers off;
+  for (select * from CAL.WA.SETTINGS) do
+  {
+    account_id := abs (S_DOMAIN_ID);
+    domain_id := (select top 1 C.WAI_ID
+                    from SYS_USERS A,
+                         WA_MEMBER B,
+                         WA_INSTANCE C
+                   where A.U_ID = account_id
+                     and B.WAM_USER = A.U_ID
+                     and B.WAM_MEMBER_TYPE = 1
+                     and B.WAM_INST = C.WAI_NAME
+                     and C.WAI_TYPE_NAME = 'Calendar');
+    if (isnull (domain_id))
+    {
+      delete from CAL.WA.SETTINGS where S_DOMAIN_ID = -account_id;
+    } else {
+      update CAL.WA.SETTINGS set S_DOMAIN_ID = domain_id where S_DOMAIN_ID = -account_id;
+    }
+  }
+  set triggers on;
+
+  --CAL.WA.exec_no_error ('alter table CAL.WA.SETTINGS drop S_ACCOUNT_ID', 'D', 'CAL.WA.SETTINGS', 'S_ACCOUNT_ID');
+  CAL.WA.exec_no_error ('alter table CAL.WA.SETTINGS modify primary key (S_DOMAIN_ID)');
+
+  registry_set ('cal_settings_update', '1');
+}
+;
+CAL.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --
