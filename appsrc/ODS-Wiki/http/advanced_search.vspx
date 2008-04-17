@@ -53,7 +53,7 @@
 			<v:variable name="sort_by_1" type="varchar" default="'More Relevant First'" param-name="sort_by_1"/>
 			<v:variable name="source_page" type="varchar" default="'Main.WelcomeVisitors'" param-name="page"/>
 			<v:variable name="cluster_key" type="varchar" param-name="cluster"/>
-			<v:variable name="cluster" type="varchar" default="'Main'" persist="1"/>
+    <v:variable name="_cluster" type="varchar" default="'Main'" persist="1"/>
 			<v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
     <v:on-init>
       <![CDATA[
@@ -432,7 +432,7 @@ endf:
     <v:after-data-bind>
       <![CDATA[
     	   if (self.cluster_key is not null)
-    	     self.cluster := self.cluster_key;
+          self._cluster := self.cluster_key;
         self.login.vc_data_bind(e);
         if (self.qry is null)
           return;
@@ -656,7 +656,7 @@ endf:
       {
 	declare author varchar;
  	declare author_id int;
-	author_id := (select AdminId from WV.WIKI.CLUSTERS where ClusterName = self.cluster);
+          author_id := (select AdminId from WV.WIKI.CLUSTERS where ClusterName = self._cluster);
 	author := (select U_NAME from DB.DBA.SYS_USERS where U_ID = author_id);
         http_rewrite();
 	declare dta any;

@@ -113,7 +113,7 @@ failed:
 caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args, char *bifname, int run_lexer)
 {
   caddr_t rawtext = bif_string_arg (qst, args, 0, bifname);
-  caddr_t CLUSTER = bif_string_arg (qst, args, 1, bifname);
+  caddr_t CLUSTER_arg = bif_string_arg (qst, args, 1, bifname);
   caddr_t TOPIC = bif_string_arg (qst, args, 2, bifname);
   caddr_t WIKINAME = bif_string_arg (qst, args, 3, bifname);
   caddr_t *env = (caddr_t *)bif_arg (qst, args, 4, bifname);
@@ -138,7 +138,7 @@ caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args
   pipe = strses_allocate ();
   mutex_enter (wikiv_lexer_mutex);
   wikiv_env = dk_alloc_box ((8 + envlen) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  wikiv_env[0] = "CLUSTER";	wikiv_env[1] = wikiv_CLUSTER	= CLUSTER;
+  wikiv_env[0] = "CLUSTER";	wikiv_env[1] = wikiv_CLUSTER	= CLUSTER_arg;
   wikiv_env[2] = "TOPIC";	wikiv_env[3] = wikiv_TOPIC	= TOPIC;
   wikiv_env[4] = "WIKINAME";	wikiv_env[5] = wikiv_WIKINAME	= WIKINAME;
   wikiv_env[6] = "WIKIVERSION";	wikiv_env[7] = wikiv_WIKIVERSION;

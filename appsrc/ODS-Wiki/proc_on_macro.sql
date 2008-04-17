@@ -557,7 +557,7 @@ create function WV.WIKI.BUILD_PARAMS (in params any)
 
 create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, inout _env any)
 {
-  declare cluster, search_word varchar;
+  declare _cluster, search_word varchar;
   declare _res varchar; 
   declare _args any;
   declare _cluster_col_id int;
@@ -579,14 +579,14 @@ create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, i
     }
   sid := get_keyword ('sid', _env);
   realm := get_keyword ('realm', _env);
-  cluster := WV.WIKI.GETMACROPARAM (_args, 'cluster');
+  _cluster := WV.WIKI.GETMACROPARAM (_args, 'cluster');
 
   searchPath := WS.WS.COL_PATH (cast (get_keyword ('ti_col_id', _env, 0) as integer));
-  if (cluster is not null)
+  if (_cluster is not null)
     {
-      _cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterId = cluster);
+      _cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterId = _cluster);
       if (_cluster_col_id IS NULL)
-        cluster := NULL;
+        _cluster := NULL;
     }
   if (search_word <> '')
     {
@@ -633,7 +633,7 @@ whenever sqlstate '37000' goto failed;
 	_idx := 0;
 	declare _res_id, _u_name, _res_name, _res_len, _cr_time, _perms, _full_path any;
 	declare _cluster_search int;
-	_cluster_search := case when cluster is not null then 1 else 0 end;
+        _cluster_search := case when _cluster is not null then 1 else 0 end;
 	if (_cluster_search = 1)
 	  open cluster_cr;
 	else
@@ -836,95 +836,6 @@ create function WV.WIKI.MACRO_META_TOPICINFO (inout _data varchar, inout _contex
 
 }
 ;
-
-create function WV.WIKI.MACRO_VOSNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div id="vosnav" style="width: 100%;background: #306090; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"><div style="width: 60%; text-align: left; float: left; clear: none;  ">[[VOSIndex][Home]] | [[OdsIndex][Applications]] |  [[VOSDownload][Download]] | [[VOSBuild][Building]] | [[VOSStart][Getting  Started]] </div> <div style="width: 30%; float:right; text-align: right;  clear: none"> [[http://virtuoso.openlinksw.com/][Virtuoso]] |  [[http://www.openlinksw.com][OpenLink Software]]</div> <div style="float:  none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_VOSCOPY (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  10em"><hr /></div><div id="vosnav" style="width: 100%; padding: 3px;  background: #306090; color: white; font-family: helvetica; font-size:  12pt; text-align: left; float:none; clear:both">(C) 2006  [[http://www.openlinksw.com/][OpenLink Software]] </div>';
-};
-
-create function WV.WIKI.MACRO_ZGNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return ' <div id="zgnav" style="width: 100%;background: #306090; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"> <div  style="width: 60%; text-align: left; float: left; clear: none;">  [[ZitgistWeb][Home]] | [[ZitgistWebServices][Services]] |  [[ZitgistWebProducts][Products]] | [[ZitgistWebFAQ][FAQ]] |  [[ZitgistWebPressReleases][Press Releases]] | [[ZitgistWebBlog][Blog]]  |[[ZitgistWebAbout][About]] | [[ZitgistWebContact][Contact Us]]  </div>  <div style="width: 30%; float:right; text-align: right; clear: none">  [[http://virtuoso.openlinksw.com/][Virtuoso]] |  [[http://www.openlinksw.com][OpenLink Software]] </div> <div  style="float: none; clear: both"> </div> </div> ';
-};
-
-create function WV.WIKI.MACRO_ZGCOPY (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  10em"><hr /></div><div id="vosnav" style="width: 100%; padding: 3px;  background: #306090; color: white; font-family: helvetica; font-size:  12pt; text-align: left; float:none; clear:both">(C) 2006  [[http://www.zitgist.com/][ZitGist]] and  [[http://www.openlinksw.com/][OpenLink Software]] </div>';
-};
-
-create function WV.WIKI.MACRO_ZitgistNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return ' <div id="zgnav" style="width: 100%;background: #306090; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"> <div  style="width: 60%; text-align: left; float: left; clear: none;">  [[ZitgistWeb][Home]] | [[ZitgistWebServices][Services]] |  [[ZitgistWebProducts][Products]] | [[ZitgistWebFAQ][FAQ]] |  [[ZitgistWebPressReleases][Press Releases]] | [[ZitgistWebBlog][Blog]]  |[[ZitgistWebAbout][About]] | [[ZitgistWebContact][Contact Us]]  </div>  <div style="width: 30%; float:right; text-align: right; clear: none">  [[http://virtuoso.openlinksw.com/][Virtuoso]] |  [[http://www.openlinksw.com][OpenLink Software]] </div> <div  style="float: none; clear: both"> </div> </div> ';
-};
-
-create function WV.WIKI.MACRO_ZitgistCOPY (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  10em"><hr /></div><div id="vosnav" style="width: 100%; padding: 3px;  background: #306090; color: white; font-family: helvetica; font-size:  12pt; text-align: left; float:none; clear:both">(C) 2006  [[http://www.zitgist.com/][ZitGist]] and  [[http://www.openlinksw.com/][OpenLink Software]] </div>';
-};
-
-create function WV.WIKI.MACRO_RAILSODBCNAV  (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div id="rubynav" style="width: 100%;background: #A22; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"><div  style="width: 60%; text-align: left; float: left; clear: none;  ">[[RailsAdapterWeb][Home]] | [[RailsAdapterWebDownloads][Download]] |  [[RailsAdapterWebUsing][Using]]  </div> <div style="width: 30%;  float:right; text-align: right; clear: none">  [[http://www.openlinksw.com][OpenLink Software]]</div> <div style="float:  none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_RAILSODBCCOPY (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  10em"><hr /></div><div id="rubynav" style="width: 100%; padding: 3px;  background: #A22; color: white; font-family: helvetica; font-size: 12pt;  text-align: left; float:none; clear:both">(C) 2006  [[http://www.openlinksw.com/][OpenLink Software]] </div>';
-};
-
-create function WV.WIKI.MACRO_WWWNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div id="wwwnav" style="width: 100%;background: #306090; color:  white; font-family: helvetica; font-size: 10pt;padding:  3px">[[WWWIndex][Home]] | [[WWWproducts][Products]] |  [[http://download.openlinksw.com/download/][Download]] |  [[http://support.openlinksw.com/][Support]] |  [[https://oplweb2.openlinksw.com/openlinksoftwareinc-63/mck-cgi/index.asp][Buy]]  | [[WWWprofessionalServices][Professional Services]] |  [[WWWdiscussion][Discussion]] | [[WWWarticles][Articles]] |  [[WWWabout][About]] | [[WWWcontact][Contact]] |  [[/main/login.htm][Login]]</div>';
-};
-
-create function WV.WIKI.MACRO_WWWCOPY (inout _data varchar, inout _context any, inout _env any)
-{ 
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vosnav" style="width: 100%; padding: 3px;  background: #306090; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">(C) 2006  [[http://www.openlinksw.com/][OpenLink Software]] </div>';
-};
-
-create function WV.WIKI.MACRO_OATNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div id="vosnav" style="width: 100%;background: #306090; color:  white; font-family: helvetica; font-size: 8pt;padding: 3px"><div  style="width: 60%; text-align: left; left; clear: none">[[OAT][Home]] |  [[OATAbout][About]]  |  [[OATDownload][Download]] | [[OATStart][Getting  Started]]  </div> <div style="width: 30%; float:right; text-align: right;  clear: none"> [[http://virtuoso.openlinksw.com/][Virtuoso]] |  [[http://www.openlinksw.com][OpenLink Software]]</div> <div style="float:  none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_OATCOPY (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vscopy" style="width: 100%; padding: 3px;  background: #6699CC; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">OAT and the OAT Website  are Copyright c [[http://www.openlinksw.com/][OpenLink Software]]  2006 </div>';
-};
-
-create function WV.WIKI.MACRO_VSNAV (inout _data varchar, inout _context any, inout _env any)
-{
-  return '<div id="vsnav" style="width: 100%;background: #6699CC; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"><div  style="width: 100%; text-align: left; left; clear:  none">[[VirtuosoProductWebSiteHome][Home]]  |  [[http://demo.openlinksw.com/tutorial][Demo & Tutorials]]  |  [[http://www.openlinksw.com/download/][Download & Evaluate]]  |  [[https://oplweb2.openlinksw.com/openlinksoftwareinc-63/mck-cgi/index.asp][Online  Purchase]]  |  [[http://support.openlinksw.com/support/suppindx.vsp][Support]]  |  [[VirtuosoProductWebSiteVirtuosoOverview][Solutions]] |  [[AboutOpenLink][About]]  |  [[http://www.openlinksw.com/press/press.htm][News]]  |  [[http://www.openlinksw.com/main/partner.htm][Partners]]  |  [[http://www.openlinksw.com/main/jobs.htm][Careers]] |  [[http://virtuoso.openlinksw.com/wiki/main/][Open-Source Project]]  </div> <div style="float: none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_VSCOPY (inout _data varchar, inout _context any, inout _env any) {
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vscopy" style="width: 100%; padding: 3px;  background: #6699CC; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">Copyright  (C)  [[http://www.openlinksw.com/][OpenLink Software]] 2006 </div>';
-};
-
-create function WV.WIKI.MACRO_DSCOPY (inout _data varchar, inout _context any, inout _env any) {
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vscopy" style="width: 100%; padding: 3px;  background: #6699CC; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both"> (C) 2006  [[http://www.openlinksw.com/][OpenLink Software]] Inc.   All rights  reserved. </div>';
-};
-
-create function WV.WIKI.MACRO_ODSNAV (inout _data varchar, inout _context any, inout _env any) {
-  return '<div id="odsnav" style="width: 100%;background: #6699CC; color:  white; font-family: helvetica; font-size: 12pt;padding: 2px"><div  style="width: 100%; text-align: left; left; clear: none">[[Ods][Home]] |  [[OdsDownload][Download]]  | [[OdsOpenSourceWebConfig][Getting Started]]  </div> <div style="width: 30%; float:right; text-align: right; clear:  none"> [[http://virtuoso.openlinksw.com/][Virtuoso]] |  [[http://virtuoso.openlinksw.com/blog/][Blog]]  |[[http://www.openlinksw.com][OpenLink Software]]</div> <div  style="float: none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_ODSCOPY (inout _data varchar, inout _context any, inout _env any) {
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vscopy" style="width: 100%; padding: 3px;  background: #6699CC; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">Copyright  (C)  [[http://www.openlinksw.com/][OpenLink Software]] 2006 </div>';
-};
-
-create function WV.WIKI.MACRO_CODSNAV (inout _data varchar, inout _context any, inout _env any) {
-  return '<div id="vsnav" style="width: 100%;background: #6699CC; color:  white; font-family: helvetica; font-size: 12pt;padding: 3px"><div  style="width: 100%; text-align: left; left; clear:  none">[[OdsProductWeb][Home]]  |  [[http://demo.openlinksw.com/tutorial][Demo & Tutorials]]  |  [[http://www.openlinksw.com/download/][Download & Evaluate]]  |  [[https://oplweb2.openlinksw.com/openlinksoftwareinc-63/mck-cgi/index.asp][Online  Purchase]]  |  [[http://support.openlinksw.com/support/suppindx.vsp][Support]]  |  [[VirtuosoProductWebSiteVirtuosoOverview][Solutions]] |  [[AboutOpenLink][About]]  |  [[http://www.openlinksw.com/press/press.htm][News]]  |  [[http://www.openlinksw.com/main/partner.htm][Partners]]  |  [[http://www.openlinksw.com/main/jobs.htm][Careers]] |  [[http://virtuoso.openlinksw.com/wiki/main/][Open-Source Project]]  </div> <div style="float: none; clear: both"> </div> </div>';
-};
-
-create function WV.WIKI.MACRO_CODSCOPY (inout _data varchar, inout _context any, inout _env any) {
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="vscopy" style="width: 100%; padding: 3px;  background: #6699CC; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">Copyright  (C)  [[http://www.openlinksw.com/][OpenLink Software]] 2006 </div>';
-};
 
 create function WV.WIKI.MACRO_BLOGTABS (inout _data varchar, inout _context any, inout _env any) {
   return '<div id="blogtabs" style="width: 100%;background: #2CBCEF; color:  white; font-family: helvetica; font-size: 14pt;padding: 3px"><div  style="width: 100%; text-align: left; left; clear: none"> |  [[OdsWeblogProductTourWhat][1]] |[[OdsWeblogProductTourOverview][2]] |  [[OdsWeblogProductTourWhy][3]]  |  [[OdsWeblogProductTourHow][4]]  |  [[OdsWeblogProductTourBasic Features][5]] |  [[OdsWeblogProductTourAdvancedFeatures][6]]  |[[OdsWeblogProductTourStart][7]] | [[OdsWeblogProductTourLearn][8]]  |</div> </div>';

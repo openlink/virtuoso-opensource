@@ -113,7 +113,7 @@ failed:
 caddr_t bif_mediawiki_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args, char *bifname, int run_lexer)
 {
   caddr_t rawtext = bif_string_arg (qst, args, 0, bifname);
-  caddr_t CLUSTER = bif_string_arg (qst, args, 1, bifname);
+  caddr_t CLUSTER_arg = bif_string_arg (qst, args, 1, bifname);
   caddr_t TOPIC = bif_string_arg (qst, args, 2, bifname);
   caddr_t WIKINAME = bif_string_arg (qst, args, 3, bifname);
   caddr_t *env = (caddr_t *)bif_arg (qst, args, 4, bifname);
@@ -138,7 +138,7 @@ caddr_t bif_mediawiki_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** 
   pipe = strses_allocate ();
   mutex_enter (mediawiki_lexer_mutex);
   mediawiki_env = dk_alloc_box ((8 + envlen) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  mediawiki_env[0] = "CLUSTER";	mediawiki_env[1] = mediawiki_CLUSTER	= CLUSTER;
+  mediawiki_env[0] = "CLUSTER";	mediawiki_env[1] = mediawiki_CLUSTER	= CLUSTER_arg;
   mediawiki_env[2] = "TOPIC";	mediawiki_env[3] = mediawiki_TOPIC	= TOPIC;
   mediawiki_env[4] = "WIKINAME";	mediawiki_env[5] = mediawiki_WIKINAME	= WIKINAME;
   mediawiki_env[6] = "WIKIVERSION";	mediawiki_env[7] = mediawiki_WIKIVERSION;

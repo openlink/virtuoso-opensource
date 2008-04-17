@@ -44,7 +44,7 @@
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
     <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
   <v:variable name="topic_name" type="varchar" default="'WelcomeVisitors'" param-name="name"/>
-  <v:variable name="cluster" type="integer"/>
+  <v:variable name="_cluster" type="integer"/>
     <v:variable name="new_topic_template" type="varchar" default="''" persist="0"/>
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
     <v:variable name="skin2_vhost_regexp" type="varchar" default="''" persist="0"/>
@@ -71,7 +71,7 @@
       set isolation='committed';
       if ({?'name'} is not null)
           self.name.ufl_value := {?'name'};		  
-     self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME= self.cluster_name);
+      self._cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME= self.cluster_name);
     self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster_name, self.topic_name);
     ]]>
     </v:on-init>
@@ -427,7 +427,7 @@
                                 if (not self.vc_is_valid)
                                   return;
                                 declare cluster_id int;
-                                cluster_id := self.cluster;
+                                cluster_id := self._cluster;
                                 self.delicious_enable := cast (get_keyword ('cls3_delicioustoggle', e.ve_params, '2') as integer);
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_enabled', self.delicious_enable);
                                 if (self.delicious_enable = 1) {
@@ -477,7 +477,7 @@
                     	  <td valign="top">
                     	    <v:data-set
                             name="ds_tables"
-                            sql="select UP_NAME, UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = :self.cluster"
+                            sql="select UP_NAME, UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = :self._cluster"
                             nrows="10"
                             scrollable="1">
                             <v:template name="ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
@@ -567,11 +567,11 @@
 			  <v:on-post>
                             <![CDATA[
                                         declare upid int;
-                                        upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value);
+                                        upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value);
                                         if (upid is null) {
                                           insert into WV..UPSTREAM (UP_CLUSTER_ID, UP_NAME, UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER)
                                             values (
-                                              self.cluster,
+                                              self._cluster,
                                               self.upstream_name.ufl_value,
                                               self.upstream_url.ufl_value,
                                               self.upstream_user.ufl_value,
@@ -579,7 +579,7 @@
                                               null);
                                           self.message_text := 'New upstream ' || self.upstream_name.ufl_value || ' has been added.';
                                           if (self.initial_insert.ufl_selected)
-                                            WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value) );
+                                            WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value) );
                                         }
                                         else {
                                           update WV..UPSTREAM

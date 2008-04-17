@@ -47,7 +47,7 @@
   <xsl:template match="vm:item">
     <v:button name="{@name}_button" value="{@name}" action="simple" style="url">
       <v:on-post>
-	self.vc_redirect(sprintf ('<xsl:value-of select="@control"/>?cluster=%U', (select CLUSTERNAME from WV..CLUSTERS where self.cluster = CLUSTERID)));
+        self.vc_redirect(sprintf ('<xsl:value-of select="@control"/>?cluster=%U', (select CLUSTERNAME from WV..CLUSTERS where self._cluster = CLUSTERID)));
       </v:on-post>
     </v:button>
   </xsl:template>
@@ -126,7 +126,7 @@
   </xsl:template>
 
   <xsl:template match="vm:page">
-    <v:variable name="cluster" type="int"/>
+    <v:variable name="_cluster" type="int"/>
     <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
     <v:on-init>
       <![CDATA[
@@ -136,7 +136,7 @@
          self.realm := 'wa';
 	       set isolation='committed';
 	       if (get_keyword ('cluster', params) is not null)
-	         self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = get_keyword ('cluster', params));
+           self._cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = get_keyword ('cluster', params));
       ]]>
     </v:on-init>
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
@@ -151,7 +151,7 @@
   <xsl:template match="vm:upstream-list">
     <v:data-set
 	name="ds_tables"
-	sql="select UP_NAME, UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = :self.cluster"
+      sql="select UP_NAME, UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = :self._cluster"
               nrows="10"
               scrollable="1"
               cursor-type="keyset"
@@ -175,7 +175,7 @@
               <v:button name="edit_btn" value="Preferences" action="simple">
 		  <v:on-post>
 		    <![CDATA[
-                    self.vc_redirect(sprintf ('upstream.vspx?cluster=%U&upstream=%U&streamid=%d', (select CLUSTERNAME from WV..CLUSTERS where self.cluster = CLUSTERID), (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[1]));
+                    self.vc_redirect(sprintf ('upstream.vspx?cluster=%U&upstream=%U&streamid=%d', (select CLUSTERNAME from WV..CLUSTERS where self._cluster = CLUSTERID), (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[1]));
 		    ]]>
 		  </v:on-post>
 		</v:button>
@@ -257,11 +257,11 @@
 		<v:on-post>
 		  <![CDATA[
 		   declare upid int;
-		   upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value);
+                    upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value);
                     if (upid is null) {
 		         insert into WV..UPSTREAM (UP_CLUSTER_ID, UP_NAME, UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER)
 			     values (
-			        self.cluster,
+                          self._cluster,
 			        self.upstream_name.ufl_value,
 				self.upstream_url.ufl_value,
 				self.upstream_user.ufl_value,
@@ -269,7 +269,7 @@
 				null);
 			   self.message_text := 'upstream added';
                          if (self.initial_insert.ufl_selected)
-                           WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value) );
+                        WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value) );
 		       }
                     else {
 			 update WV..UPSTREAM

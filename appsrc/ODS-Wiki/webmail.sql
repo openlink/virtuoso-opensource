@@ -77,9 +77,9 @@ create function WV.WIKI.MAILBOXNEW (in box_owner varchar,
 }
 ;
 
-create procedure WV.WIKI.MAILNAME (in cluster varchar, in topic varchar)
+create procedure WV.WIKI.MAILNAME (in _cluster varchar, in topic varchar)
 {
-  return lcase (cluster || '.' || topic || '+' || cast ((100000000 + rand (899999999)) as varchar));
+  return lcase (_cluster || '.' || topic || '+' || cast ((100000000 + rand (899999999)) as varchar));
 }
 ;
 

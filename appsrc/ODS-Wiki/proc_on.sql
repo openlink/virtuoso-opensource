@@ -793,7 +793,7 @@ create method ti_report_attachments () returns any for WV.WIKI.TOPICINFO
 	if ( (aref (_file, 1) = 'R') or (aref (_file, 1) = 'r') ) {
 		_attachment := XMLELEMENT ('Attach',
 				XMLATTRIBUTES (
-				 self.ti_cluster_name as Cluster,
+         self.ti_cluster_name as "Cluster",
 				 self.ti_local_name as Topic,
 				 aref (_file, 10) as Name,
 				 aref (_file, 0) as Path,
@@ -3447,7 +3447,8 @@ create procedure WV..COLLECTION_LIST(in _coll varchar)
   return _res;
 }
 ;
-create procedure WV.WIKI.IMPORT (in cluster varchar, 
+
+create procedure WV.WIKI.IMPORT (in _cluster varchar,
 	in source_path varchar, 
 	in attachments_path varchar, 
 	in auth varchar, 
@@ -3460,10 +3461,10 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
   declare rc int;
   declare checkpoint_idx int;
 
-  cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterName = cluster);
+  cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterName = _cluster);
   if (cluster_col_id is null)
-    signal ('WV004', 'Cluster ' || cluster || ' does not exist');
-  cluster_id := (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = cluster);
+    signal ('WV004', 'Cluster ' || _cluster || ' does not exist');
+  cluster_id := (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = _cluster);
   cluster_path := DB.DBA.DAV_SEARCH_PATH (cluster_col_id, 'C');
   delete from WV.WIKI.LINK 
     where DestId is null or DestId = 0
@@ -3494,7 +3495,7 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	  --dbg_obj_princ ('got from ' || file_spec[10] || ': ', subseq (content, 0, 40));
 	  if (file_spec like 'Category%')
 	    content := WV.WIKI.ADD_REFBY_MACRO (content);
-	  if (WV.WIKI.DIFFS (cluster, file_spec, content))
+    if (WV.WIKI.DIFFS (_cluster, file_spec, content))
 	    {
   	      declare _path varchar;
 	      _path := DB.DBA.DAV_SEARCH_PATH (cluster_col_id, 'C') ||  file_spec;
@@ -3533,7 +3534,7 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	{
 	  declare _topic WV.WIKI.TOPICINFO;
 	  _topic := WV.WIKI.TOPICINFO ();
-	  _topic.ti_cluster_name := cluster;
+    _topic.ti_cluster_name := _cluster;
 	  _topic.ti_fill_cluster_by_name ();
 	  _topic.ti_local_name := subseq (file_spec, 0, length (file_spec) - 4);
 	  _topic.ti_find_id_by_local_name();
@@ -3564,7 +3565,7 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	    {
   	      declare _topic WV.WIKI.TOPICINFO;
 	      _topic := WV.WIKI.TOPICINFO();
-	      _topic.ti_cluster_name := cluster;
+    _topic.ti_cluster_name := _cluster;
 	      _topic.ti_fill_cluster_by_name();
 	  _topic.ti_local_name := file_spec;
 	      _topic.ti_find_id_by_local_name();

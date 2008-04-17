@@ -35,7 +35,7 @@
       <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
-      <v:variable name="cluster" type="varchar" default="'Main'" persist="1"/>
+      <v:variable name="_cluster" type="varchar" default="'Main'" persist="1"/>
 
       <v:variable name="topic" type="WV.WIKI.TOPICINFO" default="NULL"/>
       <v:variable name="allow_change" type="int" default="0"/>

@@ -854,7 +854,7 @@ create procedure WV.WIKI.COMMENT_GET_MESS_ATTACHMENTS (inout _data any, in get_u
 
       if (line is null or isstring (line) = 0)
       {
-       if (_all = vector ())
+       if (length (_all) = 0)
          {
             _all := vector_concat (_all, vector (string_output_string (outp)));
          }
