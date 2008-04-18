@@ -18,7 +18,8 @@ window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/
 						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
 						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
 						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-					   /*{"label":'ibis', "uri":'http://purl.org/ibis#'},*/
+						 {"label":'ibis', "uri":'http://purl.org/ibis#',"hidden":1},
+						 {"label":'conf', "uri":'http://www.mindswap.org/~golbeck/web/www04photo.owl#'},
 						 {"label":'scot', "uri":'http://scot-project.org/scot/ns'},
 						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
 						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
