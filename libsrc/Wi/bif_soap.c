@@ -4619,7 +4619,7 @@ error_in_ssl:
 	  "User-Agent: VirtuosoSOAP\r\n"
 	  "Host: %s\r\n"
 	  "SOAPMethodName: %s#%s\r\n"
-	  "Content-Length: %ld\r\n\r\n",
+	  "Content-Length: " BOXINT_FMT "\r\n\r\n",
 	  szURL, szHost, szMethodURI ? szMethodURI : "", szMethodName, strses_length (out));
   else if (soap_version == 11)
       snprintf (szTmp, sizeof (szTmp),
@@ -4637,7 +4637,7 @@ error_in_ssl:
 	  "User-Agent: VirtuosoSOAP\r\n"
 	  "Host: %s\r\n"
 	  "SOAPAction: %s%s%s\r\n"
-	  "Content-Length: %ld\r\n\r\n",
+	  "Content-Length: " BOXINT_FMT "\r\n\r\n",
 	  szURL,
 	  use_dime ? "application/dime" : "text/xml; charset=\"utf-8\"",
 	  szHost,

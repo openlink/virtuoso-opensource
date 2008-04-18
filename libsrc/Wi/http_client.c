@@ -606,7 +606,7 @@ http_cli_send_req (http_cli_ctx * ctx)
       strses_write_out (ctx->hcctx_pub_req_hdrs, ctx->hcctx_http_out);
       strses_write_out (ctx->hcctx_prv_req_hdrs, ctx->hcctx_http_out);
       snprintf (req_tmp, sizeof (req_tmp),
-	       "Content-Length: %ld\r\n\r\n", strses_length (ctx->hcctx_req_body));
+	       "Content-Length: " BOXINT_FMT "\r\n\r\n", strses_length (ctx->hcctx_req_body));
       SES_PRINT (ctx->hcctx_http_out, req_tmp);
       strses_write_out (ctx->hcctx_req_body, ctx->hcctx_http_out);
       session_flush_1 (ctx->hcctx_http_out);
