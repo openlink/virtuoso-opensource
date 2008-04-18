@@ -42,6 +42,13 @@ function strip_comments(text, pl_stats, arr)
      #print "***COM_START=" comm_start "***"
      special_comment = index (curline, "--!AWK")
      special_comment2 = index (curline, "--!AFTER")
+     if_comment = index (curline, "--#IF VER=")
+     endif_comment = index (curline, "--#ENDIF")
+     if (if_comment > 0 || endif_comment > 0)
+       {
+	 inx = inx + 1
+	 continue
+       }	   
      if (special_comment > 0)
        {
 	 res_line = substr (curline, special_comment + 3) "@"

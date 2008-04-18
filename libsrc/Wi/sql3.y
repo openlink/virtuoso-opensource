@@ -4296,6 +4296,8 @@ col_partition
 	| VARCHAR  
 	| VARCHAR '(' INTNUM ',' INTNUM ')'  
 	| VARCHAR '(' '-' INTNUM ',' INTNUM ')'  
+	| VARCHAR '(' INTNUM ',' BINARYNUM ')'  
+	| VARCHAR '(' '-' INTNUM ',' BINARYNUM ')'  
 	;
 
 
