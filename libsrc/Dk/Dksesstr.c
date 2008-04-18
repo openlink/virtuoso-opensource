@@ -210,9 +210,9 @@ strdev_write (session_t *ses2, char *buffer, int bytes)
   if (ses2->ses_file->ses_file_descriptor)
     {
       int written = 0;
-      off_t fill;
+      OFF_T fill;
 
-      fill = lseek (ses2->ses_file->ses_file_descriptor, 0, SEEK_END);
+      fill = LSEEK (ses2->ses_file->ses_file_descriptor, 0, SEEK_END);
       if (fill == -1)
 	{
 	  SESSTAT_SET (ses2, SST_DISK_ERROR);
@@ -258,12 +258,20 @@ report_error:
 	{
 	  char fname[PATH_MAX+1];
 	  snprintf (fname, sizeof (fname), "%s/sesXXXXXX", ses_tmp_dir);
-#ifdef WIN32
 	  mktemp (fname);
-	  ses2->ses_file->ses_file_descriptor = _open (fname,
-	      O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY, 0600);
+
+#if defined (WIN32)
+# define OPEN_FLAGS  	  O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY	  
+#elif defined (FILE64)
+# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_LARGEFILE
 #else
-	  ses2->ses_file->ses_file_descriptor = mkstemp (fname);
+# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY
+#endif	  
+
+#ifdef WIN32
+	  ses2->ses_file->ses_file_descriptor = _open (fname, OPEN_FLAGS, 0600);
+#else
+	  ses2->ses_file->ses_file_descriptor = open (fname, OPEN_FLAGS);
 	  unlink (fname);
 #endif
 	  if (ses2->ses_file->ses_file_descriptor < 0)
@@ -360,7 +368,7 @@ strdev_read (session_t *ses2, char *buffer, int bytes)
   else if (ses2->ses_file->ses_file_descriptor &&
       ses2->ses_file->ses_fd_read < ses2->ses_file->ses_fd_fill)
     {
-      if (-1 == lseek (ses2->ses_file->ses_file_descriptor,
+      if (-1 == LSEEK (ses2->ses_file->ses_file_descriptor,
 	    ses2->ses_file->ses_fd_read, SEEK_SET))
 	{
 	  SESSTAT_SET (ses2, SST_DISK_ERROR);
@@ -504,12 +512,12 @@ strses_file_map (dk_session_t *ses, void (*func) (buffer_elt_t *e, caddr_t arg),
 {
   buffer_elt_t elt;
   unsigned char buffer[DKSES_IN_BUFFER_LENGTH];
-  off_t offset;
+  OFF_T offset;
   strsestmpfile_t *sesfile = (strsestmpfile_t*) ses->dks_session->ses_file;
 
   if (sesfile->ses_file_descriptor)
     {
-      if (-1 == lseek (sesfile->ses_file_descriptor, 0, SEEK_SET))
+      if (-1 == LSEEK (sesfile->ses_file_descriptor, 0, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", sesfile->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -586,10 +594,10 @@ strses_flush (dk_session_t *ses)
  *
  * Globals used :
  */
-long
+int64
 strses_length (dk_session_t *ses)
 {
-  long len = 0;
+  int64 len = 0;
   buffer_elt_t *elt = ses->dks_buffer_chain;
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
   while (elt)
@@ -607,10 +615,10 @@ strses_length (dk_session_t *ses)
 }
 
 
-long
+int64
 strses_chars_length (dk_session_t *ses)
 {
-  long len = 0;
+  int64 len = 0;
   buffer_elt_t *elt = ses->dks_buffer_chain;
   int fd = ses->dks_session->ses_file->ses_file_descriptor;
 
@@ -675,15 +683,15 @@ strses_write_out (dk_session_t *ses, dk_session_t *out)
   if (fd)
     {
       char buffer [DKSES_IN_BUFFER_LENGTH];
-      int readed, to_read;
-      long end = lseek (fd, 0, SEEK_END);
+      size_t readed, to_read;
+      OFF_T end = LSEEK (fd, 0, SEEK_END);
       if (end == -1)
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 	  return;
 	}
-      if (-1 == lseek (fd, 0, SEEK_SET))
+      if (-1 == LSEEK (fd, 0, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -691,7 +699,7 @@ strses_write_out (dk_session_t *ses, dk_session_t *out)
 	}
       while (end)
 	{
-	  to_read = end < DKSES_IN_BUFFER_LENGTH ? (int) end : DKSES_IN_BUFFER_LENGTH;
+	  to_read = end < DKSES_IN_BUFFER_LENGTH ? (size_t) end : DKSES_IN_BUFFER_LENGTH;
 	  readed = read (fd, buffer, to_read);
 	  if (readed != to_read)
 	      log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -918,14 +926,14 @@ strses_to_array (dk_session_t *ses, char *buffer)
 
   if (fd)
     {
-      int rc, end = lseek (fd, 0, SEEK_END);
+      OFF_T rc, end = LSEEK (fd, 0, SEEK_END);
       if (end == -1)
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 	  return;
 	}
-      if (-1 == lseek (fd, 0, SEEK_SET))
+      if (-1 == LSEEK (fd, 0, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1017,7 +1025,7 @@ strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offse
     }
   if (fd && tail_size)
     {
-      long rc, cut_sz = lseek (fd, 0, SEEK_END);
+      OFF_T rc, cut_sz = LSEEK (fd, 0, SEEK_END);
       if (cut_sz < 0)
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1029,7 +1037,7 @@ strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offse
           fragment_offset -= cut_sz;
           goto end_of_file_read;
         }
-      if (-1 == lseek (fd, fragment_offset, SEEK_SET))
+      if (-1 == LSEEK (fd, fragment_offset, SEEK_SET))
 	{
 	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1083,7 +1091,7 @@ strses_enable_paging (dk_session_t *ses, int max_bytes_in_mem)
 caddr_t
 DBG_NAME(strses_string) (DBG_PARAMS dk_session_t * ses)
 {
-  int len = strses_length (ses);
+  int64 len = strses_length (ses);
   caddr_t box;
   if (NULL == (box = DBG_NAME(dk_alloc_box) (DBG_ARGS len + 1, DV_LONG_STRING)))
     return NULL;
@@ -1096,7 +1104,7 @@ DBG_NAME(strses_string) (DBG_PARAMS dk_session_t * ses)
 caddr_t
 t_strses_string (dk_session_t * ses)
 {
-  int len = strses_length (ses);
+  int64 len = strses_length (ses);
   caddr_t box;
   box = t_alloc_box (len + 1, DV_LONG_STRING);
   strses_to_array (ses, box);
@@ -1132,7 +1140,7 @@ strses_destroy (dk_session_t *ses)
 
 
 long
-strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data)
+strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data)
 {
   unsigned char * buffer = (unsigned char *) buf2;
   long copybytes;
@@ -1165,13 +1173,13 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes
 	  if (strses_is_utf8 (ses))
 	    {
 	      int readed;
-	      off_t skipchars;
+	      OFF_T skipchars;
 	      unsigned char *buf2_out = buffer;
 
 	      if (ses->dks_session->ses_file->ses_fd_curr_char_pos > starting_ofs ||
 		  ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
 		{ /* if the file ptr is behind the requested one start from the beginning */
-		  if (-1 == lseek (fd, 0, SEEK_SET))
+		  if (-1 == LSEEK (fd, 0, SEEK_SET))
 		    {
 		      log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 		      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1208,9 +1216,9 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes
 	    }
 	  else
 	    {
-	      int readed;
-	      long dest_readed;
-	      if (-1 == lseek (fd, starting_ofs, SEEK_SET))
+	      size_t readed;
+	      size_t dest_readed;
+	      if (-1 == LSEEK (fd, starting_ofs, SEEK_SET))
 		{
 		  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 		  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1285,7 +1293,7 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes
 }
 
 long
-strses_get_part (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes)
+strses_get_part (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes)
 {
   return strses_get_part_1 (ses, buf2, starting_ofs, nbytes, NULL, NULL);
 }
@@ -1362,7 +1370,7 @@ read_wides_from_utf8_file (
 
       if (data_ptr - &src_buffer[0] < readed)
 	{ /* there are some bytes left unconverted, unwind them for the next go */
-	  if (-1 == lseek (fd, -(readed - (data_ptr - &src_buffer[0])), SEEK_CUR))
+	  if (-1 == LSEEK (fd, -(readed - (data_ptr - &src_buffer[0])), SEEK_CUR))
 	    {
 	      log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
@@ -1411,12 +1419,12 @@ strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long n
     {
       if (ses->dks_session->ses_file->ses_fd_fill_chars > starting_ofs)
 	{
-	  int readed;
-	  off_t skipchars;
+	  size_t readed;
+	  OFF_T skipchars;
 	  if (ses->dks_session->ses_file->ses_fd_curr_char_pos > starting_ofs ||
 	      ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
 	    { /* if the file ptr is behind the requested one start from the begining */
-	      if (-1 == lseek (fd, 0, SEEK_SET))
+	      if (-1 == LSEEK (fd, 0, SEEK_SET))
 		{
 		  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 		  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);

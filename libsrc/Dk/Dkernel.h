@@ -698,8 +698,8 @@ void strses_rewind (dk_session_t *ses);
 void strses_map (dk_session_t *ses, void (*func )(buffer_elt_t *e, caddr_t arg ), caddr_t arg);
 void strses_file_map (dk_session_t *ses, void (*func )(buffer_elt_t *e, caddr_t arg ), caddr_t arg);
 EXE_EXPORT (void, strses_flush, (dk_session_t *ses));
-EXE_EXPORT (long, strses_length, (dk_session_t *ses));
-long strses_chars_length (dk_session_t *ses);
+EXE_EXPORT (int64, strses_length, (dk_session_t *ses));
+int64 strses_chars_length (dk_session_t *ses);
 EXE_EXPORT (void, strses_write_out, (dk_session_t *ses, dk_session_t *out));
 void strses_to_array (dk_session_t *ses, char *buffer);
 size_t strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offset, size_t fragment_size);
@@ -731,8 +731,8 @@ caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 #endif
 EXE_EXPORT (void, strses_free, (dk_session_t *ses));
 typedef long (*copy_func_ptr_t) (void *dest_ptr, void *src_ptr, long src_ofs, long copy_bytes, void *state_data);
-long strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data);
-long strses_get_part (dk_session_t *ses, void *buffer, long starting_ofs, long nbytes);
+long strses_get_part_1 (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes, copy_func_ptr_t cpf, void *state_data);
+long strses_get_part (dk_session_t *ses, void *buffer, int64 starting_ofs, long nbytes);
 long strses_get_wide_part (dk_session_t *ses, wchar_t *buf, long starting_ofs, long nchars);
 
 void strses_serialize (caddr_t strses, dk_session_t * ses);

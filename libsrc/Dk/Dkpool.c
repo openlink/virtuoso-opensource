@@ -398,7 +398,7 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	  MP_BYTES (cp, mp, 8 + align_len);
 	  cp = ((char*)cp) + 8;
 	  ((int32*)cp)[-1] = ((int32*)box)[-1];
-#if 0	  
+#ifdef DOUBLE_ALIGN	  
 	  if (align_len < 64)
 	    {
 	      int inx;

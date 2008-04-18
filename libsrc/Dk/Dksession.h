@@ -48,10 +48,10 @@ struct strsestmpfile_s
     int         ses_max_blocks_init;
     int         ses_file_descriptor;
     caddr_t     ses_temp_file_name;
-    off_t	ses_fd_read;
-    off_t	ses_fd_fill;
-    off_t	ses_fd_fill_chars;
-    off_t	ses_fd_curr_char_pos;
+    OFF_T	ses_fd_read;
+    OFF_T	ses_fd_fill;
+    OFF_T	ses_fd_fill_chars;
+    OFF_T	ses_fd_curr_char_pos;
   };
 
 /* General session object */
