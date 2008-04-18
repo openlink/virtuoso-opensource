@@ -108,8 +108,8 @@
                 <?vsp http(sprintf('<a class="homelinks" href="/doc/html/bpel.html#bpel">BPEL Process Manager Reference Guide</a>'));?>
               </td>
               <td class="home" width="30%">
-                <?vsp http(sprintf('<a class="homelinks" href="http://demo.usnet.private:8891/bpel4ws/interop"><img alt="BPEL Interop Web site" title="BPEL Interop Web site" src="i/web_24.png" border="0" /></a>'));?>
-                <?vsp http(sprintf('<a class="homelinks" href="http://demo.usnet.private:8891/bpel4ws/interop">BPEL Interop Web site</a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="http://demo.openlinksw.com/bpel4ws/interop"><img alt="BPEL Interop Web site" title="BPEL Interop Web site" src="i/web_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="http://demo.openlinksw.com/bpel4ws/interop">BPEL Interop Web site</a>'));?>
               </td>
               <td class="home" width="5%">&nbsp;</td>
             </tr>
