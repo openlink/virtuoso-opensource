@@ -140,7 +140,9 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create function WS.WS.PROPFIND_RESPONSE (in lpath varchar,
                                           in ppath varchar,
 					  in depth integer,
@@ -1347,7 +1349,9 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (in rc integer)
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varchar)
 {
   declare _col_parent_id integer;
@@ -2425,7 +2429,9 @@ create procedure WS.WS.SPARQL_QUERY_GET (in content any, in path any, inout line
 }
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 create procedure WS.WS."LOCK" (in path varchar, inout params varchar, in lines varchar)
 {
   declare len, tleft, tright integer;

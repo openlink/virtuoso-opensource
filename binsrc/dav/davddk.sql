@@ -70,8 +70,9 @@ create table WS.WS.SYS_DAV_COL (
     COL_FORK 		integer not null default 0,
     primary key (COL_NAME, COL_PARENT)
 )
-create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT)
-create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID)
+alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
+create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
+create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_ID int)
 ;
 
 --#IF VER=5
@@ -108,11 +109,11 @@ create table WS.WS.SYS_DAV_RES (
     RES_VCR_ID 		integer,
     RES_VCR_CO_VERSION 	integer,
     RES_VCR_STATE 	integer,
-    primary key (RES_COL, RES_NAME)
+    primary key (RES_ID)
 )
-create index SYS_DAV_RES_COL_ID on WS.WS.SYS_DAV_RES (RES_COL)
-create unique index SYS_DAV_RES_ID on WS.WS.SYS_DAV_RES (RES_ID)
-create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH)
+create unique index SYS_DAV_RES_COL on WS.WS.SYS_DAV_RES (RES_COL, RES_NAME) partition (RES_COL int)
+create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH) partition (RES_FULL_PATH varchar (-10, 0hexffff))
+alter index SYS_DAV_RES on WS.WS.SYS_DAV_RES partition (RES_ID int)
 ;
 
 --#IF VER=5
@@ -164,8 +165,9 @@ create table WS.WS.SYS_DAV_PROP (
     PROP_VALUE 		long varchar,
     primary key (PROP_PARENT_ID, PROP_TYPE, PROP_NAME)
 )
-create index SYS_DAV_PROP_PARENT on WS.WS.SYS_DAV_PROP (PROP_TYPE, PROP_PARENT_ID)
-create unique index SYS_DAV_PROP_ID on WS.WS.SYS_DAV_PROP (PROP_ID)
+alter index SYS_DAV_PROP on WS.WS.SYS_DAV_PROP partition (PROP_PARENT_ID int)
+--create index SYS_DAV_PROP_PARENT on WS.WS.SYS_DAV_PROP (PROP_TYPE, PROP_PARENT_ID) partition (PROP_PARENT_ID int)
+create unique index SYS_DAV_PROP_ID on WS.WS.SYS_DAV_PROP (PROP_ID) partition (PROP_ID int)
 ;
 
 --#IF VER=5
@@ -187,9 +189,10 @@ create table WS.WS.SYS_DAV_LOCK (
     LOCK_TIMEOUT 	integer not null,
     LOCK_OWNER 		integer,
     LOCK_OWNER_INFO	varchar,
-    primary key (LOCK_PARENT_TYPE, LOCK_PARENT_ID, LOCK_TOKEN)
+    primary key (LOCK_PARENT_ID, LOCK_PARENT_TYPE, LOCK_TOKEN)
 )
-create unique index SYS_DAV_LOCKTOKEN on WS.WS.SYS_DAV_LOCK (LOCK_TOKEN)
+alter index SYS_DAV_LOCK on WS.WS.SYS_DAV_LOCK partition (LOCK_PARENT_ID int)
+create unique index SYS_DAV_LOCKTOKEN on WS.WS.SYS_DAV_LOCK (LOCK_TOKEN) partition (LOCK_TOKEN varchar)
 ;
 
 -- The WebDAV security info is located under DB.DBA
@@ -222,6 +225,7 @@ create table WS.WS.SYS_DAV_RES_TYPES (
     T_DESCRIPTION	varchar,		-- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
     primary key (T_EXT)
 )
+alter index SYS_DAV_RES_TYPES on WS.WS.SYS_DAV_RES_TYPES partition cluster replicated
 ;
 
 -- Known MIME types.
@@ -232,6 +236,7 @@ create table WS.WS.SYS_MIME_TYPES (
   MT_BADMAGIC_IDENT	varchar,		-- MIME type that should be used if the content does not match magic data of the proclaimed MIME or NULL to use magic as best guess.
   primary key (MT_IDENT)
 )
+alter index SYS_MIME_TYPES on WS.WS.SYS_MIME_TYPES partition cluster replicated
 ;
 
 -- Known and cached RDF schemas.
@@ -248,7 +253,8 @@ create table WS.WS.SYS_RDF_SCHEMAS (
   RS_DEPRECATED		integer,		-- Flag if schema is deprecated.
   primary key (RS_URI)
 )
-create unique index SYS_RDF_SCHEMAS_CATNAME on WS.WS.SYS_RDF_SCHEMAS (RS_CATNAME)
+alter index SYS_RDF_SCHEMAS on WS.WS.SYS_RDF_SCHEMAS partition cluster replicated
+create unique index SYS_RDF_SCHEMAS_CATNAME on WS.WS.SYS_RDF_SCHEMAS (RS_CATNAME) partition cluster replicated
 ;
 
 --#IF VER=5
@@ -272,6 +278,7 @@ create table WS.WS.SYS_MIME_RDFS (
   MR_DEPRECATED		integer,		-- Flags if UIs should display the RDF in the list of RDF schemas available for the type.
   primary key (MR_MIME_IDENT, MR_RDF_URI)
 )
+alter index SYS_MIME_RDFS on WS.WS.SYS_MIME_RDFS partition cluster replicated
 ;
 
 
@@ -280,7 +287,8 @@ create table WS.WS.SYS_RDF_PROP_NAME (
    RPN_URI	varchar not null primary key,
    RPN_CATID	integer
 )
-create unique index SYS_RDF_PROP_NAME_CATID on WS.WS.SYS_RDF_PROP_NAME (RPN_CATID)
+alter index SYS_RDF_PROP_NAME on WS.WS.SYS_RDF_PROP_NAME partition cluster replicated
+create unique index SYS_RDF_PROP_NAME_CATID on WS.WS.SYS_RDF_PROP_NAME (RPN_CATID) partition cluster replicated
 ;
 
 
@@ -290,7 +298,8 @@ create table WS.WS.SYS_DAV_CATFILTER
   CF_ID integer not null primary key,
   CF_SEARCH_PATH varchar not null
 )
-create unique index SYS_DAV_CATFILTER_SEARCH_PATH on WS.WS.SYS_DAV_CATFILTER (CF_SEARCH_PATH)
+alter index SYS_DAV_CATFILTER on WS.WS.SYS_DAV_CATFILTER partition cluster replicated
+create unique index SYS_DAV_CATFILTER_SEARCH_PATH on WS.WS.SYS_DAV_CATFILTER (CF_SEARCH_PATH) partition cluster replicated
 ;
 
 
@@ -301,6 +310,7 @@ create table WS.WS.SYS_DAV_CATFILTER_DETS
   CFD_DET varchar not null,
   primary key (CFD_CF_ID, CFD_DET_SUBCOL_ID)
 )
+alter index SYS_DAV_CATFILTER_DETS on WS.WS.SYS_DAV_CATFILTER_DETS partition (CFD_CF_ID int)
 ;
 
 
@@ -313,6 +323,7 @@ create table WS.WS.SYS_DAV_RDF_INVERSE
   DRI_RES_ID integer not null,
   primary key (DRI_CATF_ID, DRI_PROP_CATID, DRI_CATVALUE, DRI_RES_ID)
 )
+alter index SYS_DAV_RDF_INVERSE on WS.WS.SYS_DAV_RDF_INVERSE partition (DRI_CATF_ID int)
 ;
 
 
@@ -325,6 +336,7 @@ create table WS.WS.SYS_DAV_ACL_INVERSE (
 
   primary key (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
 )
+alter index SYS_DAV_ACL_INVERSE on WS.WS.SYS_DAV_ACL_INVERSE partition (AI_PARENT_ID int)
 ;
 
 create view WS.WS.SYS_DAV_ACL_GRANTS (GI_SUPER, GI_SUB)
@@ -348,7 +360,8 @@ create table WS.WS.SYS_DAV_SPACE_QUOTA
   DSQ_ABOVE_HI_YELLOW	datetime,
   DSQ_LAST_WARNING	datetime
 )
-create index SYS_DAV_SPACE_QUOTA_U_ID on WS.WS.SYS_DAV_SPACE_QUOTA (DSQ_U_ID)
+alter index SYS_DAV_SPACE_QUOTA on WS.WS.SYS_DAV_SPACE_QUOTA partition (DSQ_HOME_PATH varchar (-10, 0hexffff))
+create index SYS_DAV_SPACE_QUOTA_U_ID on WS.WS.SYS_DAV_SPACE_QUOTA (DSQ_U_ID) partition (DSQ_U_ID int)
 ;
 
 create table WS.WS.SYS_DAV_TAG (
@@ -360,8 +373,9 @@ create table WS.WS.SYS_DAV_TAG (
 --  constraint SYS_DAV_TAG_02 foreign key (DT_U_ID) references DB.DBA.SYS_USERS (U_ID) on delete cascade,
   primary key (DT_RES_ID, DT_U_ID)
 )
-create unique index SYS_DAV_TAG_FT_ID on WS.WS.SYS_DAV_TAG (DT_FT_ID)
-create index SYS_DAV_TAG_U_ID on WS.WS.SYS_DAV_TAG (DT_U_ID)
+alter index SYS_DAV_TAG on WS.WS.SYS_DAV_TAG partition (DT_RES_ID int)
+create unique index SYS_DAV_TAG_FT_ID on WS.WS.SYS_DAV_TAG (DT_FT_ID) partition (DT_FT_ID int)
+create index SYS_DAV_TAG_U_ID on WS.WS.SYS_DAV_TAG (DT_U_ID) partition (DT_U_ID int)
 ;
 
 --!AWK PUBLIC
