@@ -49,84 +49,108 @@
     </xsl:template>
     
     <xsl:template match="ISBNdb/BookList/BookData">
-	<bibo:Book rdf:about="{@book_id}">
+	<bibo:Book rdf:about="{vi:proxyIRI()}{concat('http://isbndb.com/d/book/', @book_id, '.html')}">
+            <xsl:if test="@isbn">
             <bibo:isbn>
                 <xsl:value-of select="@isbn"/>
             </bibo:isbn>
+            </xsl:if>
             <bibo:url>
-                <xsl:value-of select="$baseUri"/>
+                <xsl:value-of select="concat('http://isbndb.com/d/book/', @book_id, '.html')"/>
             </bibo:url>
 	    <xsl:apply-templates select="*"/>
 	</bibo:Book>
     </xsl:template>
     
     <xsl:template match="ISBNdb/SubjectList/SubjectData">
-	<bibo:Collection rdf:about="{@subject_id}">
+	<bibo:Collection rdf:about="{vi:proxyIRI()}{concat('http://isbndb.com/d/subject/', @subject_id, '.html')}">
+            <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>
             </bibo:shortTitle>
+            </xsl:if>
 	    <xsl:apply-templates select="*"/>
 	</bibo:Collection>
     </xsl:template>
     
     <xsl:template match="ISBNdb/AuthorList/AuthorData">
-	<bibo:author rdf:about="{@person_id}">
+	<bibo:author rdf:about="{vi:proxyIRI()}{concat('http://isbndb.com/d/person/', @person_id, '.html')}">
+            <xsl:if test="Name">
             <bibo:familyName>
                 <xsl:value-of select="Name"/>
             </bibo:familyName>
+            </xsl:if>
 	    <xsl:apply-templates select="*"/>
 	</bibo:author>
     </xsl:template>
 
     <xsl:template match="ISBNdb/CategoryList/CategoryData">
-	<bibo:Collection rdf:about="{@category_id}">
+	<bibo:Collection rdf:about="{vi:proxyIRI()}{concat('http://isbndb.com/c/', @category_id)}">
+            <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>
             </bibo:shortTitle>
+            </xsl:if>
 	    <xsl:apply-templates select="*"/>
 	</bibo:Collection>
     </xsl:template>
     
     <xsl:template match="ISBNdb/PublisherList/PublisherData">
-	<bibo:publisher rdf:about="{@publisher_id}">
+	<bibo:publisher rdf:about="{vi:proxyIRI()}{concat('http://isbndb.com/d/publisher/', @publisher_id, '.html')}">
+            <xsl:if test="Name">
             <bibo:familyName>
                 <xsl:value-of select="Name"/>
             </bibo:familyName>
+            </xsl:if>
+            <xsl:if test="Details">
 	    <bibo:physicalLocation>
 		<xsl:value-of select="Details/@location"/>
 	    </bibo:physicalLocation>
+	    </xsl:if>
 	    <xsl:apply-templates select="*"/>
 	</bibo:publisher>
     </xsl:template>
     
     <xsl:template match="Title">
+      <xsl:if test="text()">
 	<bibo:shortTitle>
 	    <xsl:value-of select="."/>
 	</bibo:shortTitle>
+        </xsl:if>
     </xsl:template>  
     
     <xsl:template match="TitleLong">
+	<xsl:if test="text()">
 	<bibo:identifier>
 	    <xsl:value-of select="."/>
 	</bibo:identifier>
+        </xsl:if>
     </xsl:template> 
     
     <xsl:template match="AuthorsText">
+      <xsl:if test="text()">
 	<bibo:author>
 	    <xsl:value-of select="."/>
 	</bibo:author>
+        </xsl:if>
     </xsl:template> 
     
     <xsl:template match="Details">
+      <xsl:if test="@lcc_number">
 	<bibo:lccn>
 	    <xsl:value-of select="@lcc_number"/>
 	</bibo:lccn>
+        </xsl:if>
+      <xsl:if test="physical_description_text">
         <bibo:physicalLocationDescription>
 	    <xsl:value-of select="@physical_description_text"/>
 	</bibo:physicalLocationDescription>
+        </xsl:if>
+      <xsl:if test="@edition_info">
         <bibo:editionName>
 	    <xsl:value-of select="@edition_info"/>
 	</bibo:editionName>
+        </xsl:if>
     </xsl:template> 
 
     <xsl:template match="*|text()"/>

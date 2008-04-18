@@ -950,7 +950,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 	}
         else if (new_origin_uri like 'http%://%isbndb.com/publishers/search.html?kw=%')
 	{
-		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/publishers/search.html?%s', 0);
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/publishers/search.html?kw=%s', 0);
 		asin := trim (tmp[2], '/');
 		if (asin is null)
 			return 0;
