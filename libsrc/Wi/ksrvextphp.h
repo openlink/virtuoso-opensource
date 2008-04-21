@@ -27,7 +27,7 @@ static int sapi_virtuoso_read_post(char *buffer, uint count_bytes TSRMLS_DC);
 static char *sapi_virtuoso_read_cookies(TSRMLS_D);
 static void sapi_virtuoso_register_variables(zval *track_vars_array TSRMLS_DC);
 
-long strses_get_part (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes);
+long strses_get_part (dk_session_t *ses, void *buf2, int64 starting_ofs, long nbytes);
 void php_register_variable(char *var, char *strval, zval *track_vars_array TSRMLS_DC);
 
 ZEND_API int alloc_globals_id;
