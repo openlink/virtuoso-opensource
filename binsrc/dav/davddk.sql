@@ -147,11 +147,15 @@ WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 }
 ;
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
+--#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_RES', 'RES_CONTENT', 'RES_ID', 2, 0, vector ('RES_FULL_PATH', 'RES_OWNER', 'RES_MOD_TIME', 'RES_TYPE'), 1, '*ini*', '*ini*')
 ;
 
+--#IF VER=5
 --!AFTER
+--#ENDIF
 DB.DBA.vt_create_ftt ('WS.WS.SYS_DAV_RES', 'RES_ID', 'RES_CONTENT', 2)
 ;
 
@@ -439,7 +443,9 @@ WS.WS.SYS_DAV_TAG_DT_TAGS_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 }
 ;
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
+--#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_TAG', 'DT_TAGS', 'DT_FT_ID', 2, 0, vector ('DT_U_ID', 'DT_RES_ID'), 1, 'x-ViDoc', '*ini*')
 ;
 
@@ -1206,7 +1212,9 @@ WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 }
 ;
 
+--#IF VER=5
 --!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
+--#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_PROP', 'PROP_VALUE', 'PROP_ID', 2, 0, vector (), 1, '*ini*', '*ini*')
 ;
 
