@@ -22,9 +22,9 @@
 --  
 create user NWSVC;
 
-DB.DBA.VHOST_REMOVE (lpath=>'/Northwind');
+DB.DBA.VHOST_REMOVE (lpath=>'/NorthwindSvc');
 
-DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/SOAP/', soap_user=>'NWSVC',
+DB.DBA.VHOST_DEFINE (lpath=>'/NorthwindSvc', ppath=>'/SOAP/', soap_user=>'NWSVC',
     soap_opts => vector (
       'Namespace','http://demo.openlinksw.com/tutorial/services', 'SchemaNS', 'http://demo.openlinksw.com/tutorial/services',
       'MethodInSoapAction','yes',

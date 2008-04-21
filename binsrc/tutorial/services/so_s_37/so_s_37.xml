@@ -68,7 +68,7 @@
       <para>The example script defines a service that do a query on Northwind Demo Database 
       and return an array of structures containing sales volume per product category.</para>
   <para>To run example, set the initial state and then click on the Run link or point
-  	your browser to <ulink url="/Northwind/services.vsmx">http://[host]:[port]/Northwind/services.vsmx</ulink> 
+  	your browser to <ulink url="/NorthwindSvc/services.vsmx">http://[host]:[port]/NorthwindSvc/services.vsmx</ulink> 
   	to go to vsmx test pages.</para>
   <para>
       Note: the dateinput must follow ISO8601 format (for example: YYYY-MM-DD'T'HH:MM:SS) 

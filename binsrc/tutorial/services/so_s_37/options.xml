@@ -23,5 +23,5 @@
 <init>
     <src load_at_start="" load_to_clean="nwsetup.sql"/>
     <depend demo_db="yes"/>
-    <run name="/Northwind/services.vsmx" link="/Northwind/services.vsmx"/>
+    <run name="/NorthwindSvc/services.vsmx" link="/NorthwindSvc/services.vsmx"/>
 </init>
