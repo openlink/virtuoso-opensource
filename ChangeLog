@@ -1,3 +1,67 @@
+2008-04-21 08:28  source
+
+	* Updated version to 5.0.7-rc3
+
+2008-04-21 08:24  source
+
+	* Added OAT controls and Ajax
+
+2008-04-21 08:13  source
+
+	* Added support for proxy
+
+2008-04-21 08:10  source
+
+	* Added ifdef around 5.0 specific upgrades
+
+2008-04-21 08:09  source
+
+	* Fixed virtual directory not to collide with Northwind RDF view
+
+2008-04-21 08:08  source
+
+	* Fixed prototype
+
+2008-04-18 15:04  source
+
+	* Merged from upstream project
+
+2008-04-18 14:07  source
+
+	* Updated version to 5.0.7-rc2
+
+2008-04-18 14:05  source
+
+	* Removed usnet links
+
+2008-04-18 14:04  source
+
+	* Removed link to wiki page
+
+2008-04-18 14:03  source
+
+	* Fixed ISBN mapper
+
+2008-04-18 14:02  source
+
+	* Added ifdef around 5.0 specific upgrades
+
+2008-04-18 13:55  source
+
+	* Fixed compatibility
+
+2008-04-18 13:52  source
+
+	* Fixed Content-Length to use 64bit format
+
+2008-04-18 13:50  source
+
+	* Added support for large files in string sessions with file system cache
+
+2008-04-17 11:03  source
+
+	* Added OAT controls and Ajax
+
 2008-04-17 09:14  source
 
 	* Update version to 5.0.7-rc1
