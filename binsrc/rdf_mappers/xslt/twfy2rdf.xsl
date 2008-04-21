@@ -59,22 +59,22 @@
     </xsl:template>
     
     <xsl:template match="info">
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$baseUri}">
             <xsl:element namespace="{$ns}" name="s" >
                 <xsl:value-of select="s"/>
         </xsl:element>
         </rdf:Description>
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$baseUri}">
             <xsl:element namespace="{$ns}" name="results_per_page" >
                 <xsl:value-of select="results_per_page"/>
             </xsl:element>
         </rdf:Description>
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$baseUri}">
             <xsl:element namespace="{$ns}" name="first_result" >
                 <xsl:value-of select="first_result"/>
             </xsl:element>
         </rdf:Description>
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$baseUri}">
             <xsl:element namespace="{$ns}" name="total_results" >
                 <xsl:value-of select="total_results"/>
             </xsl:element>
@@ -82,7 +82,7 @@
     </xsl:template>
     
     <xsl:template match="searchdescription">
-        <rdf:Description rdf:about="{$baseUri}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$baseUri}">
             <xsl:element namespace="{$ns}" name="searchdescription" >
                 <xsl:value-of select="searchdescription"/>
             </xsl:element>
@@ -97,7 +97,7 @@
         <xsl:variable name="gid" select="../gid" />
         <xsl:variable name="about" select="concat($baseUri, '#', $gid)" />
         <xsl:variable name="canonicalname" select="local-name(.)" />
-        <rdf:Description rdf:about="{$about}">
+        <rdf:Description rdf:about="{vi:proxyIRI()}{$about}">
             <xsl:element namespace="{$ns}" name="{$canonicalname}" >
                         <xsl:value-of select="."/>
             </xsl:element>
