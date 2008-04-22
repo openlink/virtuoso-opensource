@@ -33,6 +33,7 @@ endif
 
 JENA_SRC= \
 	virtuoso_driver/VirtBulkUpdateHandler.java \
+	virtuoso_driver/VirtDataSource.java \
 	virtuoso_driver/VirtGraph.java \
 	virtuoso_driver/VirtModel.java \
 	virtuoso_driver/VirtResSetIter.java \
