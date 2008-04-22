@@ -390,10 +390,8 @@
       <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Exchange
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
-      <a href="javascript: cExchange('import');" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
-      <?vsp
-        http (sprintf ('<a href="gems.vsp?sid=%s&realm=%s&type=calendar.ics" title="Export" class="gems"><img src="image/dwnld_16.png" border="0" alt="Export" /> Export</a>', self.sid, self.realm));
-      ?>
+      <a href="#" onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
+      <a href="#" onclick="javascript: cExchange('export'); return false;" title="Export" class="gems"><img src="image/dwnld_16.png" border="0" alt="Export" /> Export</a>
     </div>
   </xsl:template>
 

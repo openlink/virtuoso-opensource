@@ -981,6 +981,52 @@ create procedure CAL.WA.tags2unique(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tags_exchangeTest (
+  inout tagsEvent any,
+  inout tagsInclude any := null,
+  inout tagsExclude any := null)
+{
+  declare N integer;
+  declare tags, testTags any;
+
+  if (is_empty_or_null (tagsEvent) and not is_empty_or_null (tagsInclude))
+    goto _false;
+
+  -- test exclude tags
+  if (is_empty_or_null (tagsExclude))
+    goto _include;
+  if (is_empty_or_null (tagsEvent))
+    goto _include;
+  tags := CAL.WA.tags2vector (tagsEvent);
+  testTags := CAL.WA.tags2vector (tagsExclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (CAL.WA.vector_contains (testTags, tags [N]))
+      goto _false;
+  }
+
+_include:;
+  -- test include tags
+  if (is_empty_or_null (tagsInclude))
+    goto _true;
+  tags := CAL.WA.tags2vector (tagsEvent);
+  testTags := CAL.WA.tags2vector (tagsInclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (CAL.WA.vector_contains (testTags, tags [N]))
+      goto _true;
+  }
+
+_false:;
+  return 0;
+
+_true:;
+  return 1;
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dav_home(
@@ -2337,6 +2383,45 @@ create procedure CAL.WA.dt_LastDayOfMonth (
   in dt datetime)
 {
   return dayofmonth (CAL.WA.dt_EndOfMonth (dt));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dt_exchangeTest (
+  in testFrom datetime,
+  in testTo datetime,
+  in eventFrom datetime,
+  in eventTo datetime,
+  in eventRepeatUntil datetime := null)
+{
+  if (is_empty_or_null (testFrom) and is_empty_or_null (testTo))
+    goto _true;
+
+  if (eventRepeatUntil < testFrom)
+    goto _false;
+
+  eventFrom := CAL.WA.dt_dateClear (eventFrom);
+  -- test to period
+  if (not is_empty_or_null (testTo))
+  {
+    if (eventFrom > testTo)
+      goto _false;
+  }
+
+  eventTo := CAL.WA.dt_dateClear (eventTo);
+  -- test from period
+  if (not is_empty_or_null (testFrom))
+  {
+    if (eventTo < testFrom)
+      goto _false;
+  }
+
+_true:;
+  return 1;
+
+_false:;
+  return 0;
 }
 ;
 
@@ -4537,9 +4622,10 @@ create procedure CAL.WA.export_vcal_reminder (
 create procedure CAL.WA.import_vcal (
   in domain_id integer,
   in content any,
-  in tags any := '')
+  in options any := null)
 {
   declare N, nLength integer;
+  declare oEvents, oTasks, oTags any;
   declare tmp, xmlData, xmlItems, itemName, V any;
   declare id,
           uid,
@@ -4565,6 +4651,17 @@ create procedure CAL.WA.import_vcal (
           updated any;
   declare vcalVersion any;
   declare tzDict, tzID, tzOffset any;
+
+  -- options
+  oEvents := 1;
+  oTasks := 1;
+  oTags := '';
+  if (not isnull (options))
+  {
+    oEvents := cast (get_keyword ('events', options, '0') as integer);
+    oTasks := cast (get_keyword ('tasks', options, '0') as integer);
+    oTags := get_keyword ('tags', options, '');
+  }
 
   -- using DAV parser
   if (not isstring (content))
@@ -4599,6 +4696,8 @@ create procedure CAL.WA.import_vcal (
       }
 
       -- events
+      if (oEvents)
+      {
       nLength := xpath_eval('count (IMC-VEVENT)', xmlItem);
       for (N := 1; N <= nLength; N := N + 1)
       {
@@ -4610,7 +4709,7 @@ create procedure CAL.WA.import_vcal (
         privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VEVENT[%d]/CLASS/val', N));
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-        eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VEVENT[%d]/CATEGORIES/', N)), tags);
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VEVENT[%d]/CATEGORIES/', N)), oTags);
         eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTART/', N), tzDict);
         eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTEND/', N), tzDict);
         if (isnull (eEventEnd))
@@ -4648,7 +4747,10 @@ create procedure CAL.WA.import_vcal (
             updated
           );
       }
+      }
 
+      if (oTasks)
+      {
       -- tasks (todo)
       nLength := xpath_eval('count (IMC-VTODO)', xmlItem);
       for (N := 1; N <= nLength; N := N + 1)
@@ -4660,7 +4762,7 @@ create procedure CAL.WA.import_vcal (
         privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VTODO[%d]/CLASS/val', N));
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);
-        eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VTODO[%d]/CATEGORIES/', N)), tags);
+          eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VTODO[%d]/CATEGORIES/', N)), oTags);
         eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTART/', N));
         eEventStart := CAL.WA.dt_join (eEventStart, CAL.WA.dt_timeEncode (12, 0));
         eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DUE/', N));
@@ -4697,6 +4799,7 @@ create procedure CAL.WA.import_vcal (
     }
   }
 }
+}
 ;
 
 ----------------------------------------------------------------------
@@ -4715,11 +4818,29 @@ create procedure CAL.WA.export_vcal_line (
 --
 create procedure CAL.WA.export_vcal (
   in domain_id integer,
-  in event_id integer := null)
+  in events any := null,
+  in options any := null)
 {
   declare tz integer;
+  declare oEvents, oTasks, oPeriodFrom, oPeriodTo, oTagsInclude, oTagsExclude any;
   declare S, url, tzID, tzName varchar;
   declare sStream any;
+
+  oEvents := 1;
+  oTasks := 1;
+  oPeriodFrom := null;
+  oPeriodTo := null;
+  oTagsInclude := null;
+  oTagsExclude := null;
+  if (not isnull (options))
+  {
+    oEvents := cast (get_keyword ('events', options, '0') as integer);
+    oTasks := cast (get_keyword ('tasks', options, '0') as integer);
+    oPeriodFrom := get_keyword ('periodFrom', options);
+    oPeriodTo := get_keyword ('periodTo', options);
+    oTagsInclude := get_keyword ('tagsInclude', options);
+    oTagsExclude := get_keyword ('tagsExclude', options);
+  }
 
   tz := CAL.WA.settings_timeZone2 (domain_id);
   url := sprintf ('http://%s%s/%U/calendar/%U/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
@@ -4740,7 +4861,11 @@ create procedure CAL.WA.export_vcal (
   http ('END:VTIMEZONE\r\n', sStream);
 
   -- events
-  for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and (event_id is null or (event_id = E_ID))) do
+  if (oEvents)
+  {
+    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and (events is null or CAL.WA.vector_contains (events, E_ID))) do
+    {
+      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz), E_REPEAT_UNTIL) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
   {
 	  http ('BEGIN:VEVENT\r\n', sStream);
     CAL.WA.export_vcal_line ('UID', E_UID, sStream);
@@ -4766,9 +4891,15 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VEVENT\r\n', sStream);
 	}
+    }
+  }
 
   -- tasks
-  for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and (event_id is null or (event_id = E_ID))) do
+  if (oTasks)
+  {
+    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and ((events is null) or CAL.WA.vector_contains (events, E_ID))) do
+    {
+      if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz)) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
   {
 	  http ('BEGIN:VTODO\r\n', sStream);
     CAL.WA.export_vcal_line ('UID', E_UID, sStream);
@@ -4788,6 +4919,8 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VTODO\r\n', sStream);
 	}
+    }
+  }
 
   -- end
   http ('END:VCALENDAR\r\n', sStream);
@@ -4930,40 +5063,12 @@ create procedure CAL.WA.upstream_event_update (
   in event_tags varchar,
   in action varchar)
 {
-  declare N, id, upstream_id integer;
-  declare tags, testTags any;
+  declare id, upstream_id integer;
 
   for (select U_ID, U_INCLUDE, U_EXCLUDE from CAL.WA.UPSTREAM where U_DOMAIN_ID = domain_id) do
   {
-    if (is_empty_or_null (event_tags) and not is_empty_or_null (U_INCLUDE))
-      goto _exit;
-
-    -- test exclude tags
-    if (is_empty_or_null (U_EXCLUDE))
-      goto _include;
-    if (is_empty_or_null (event_tags))
-      goto _include;
-    tags := CAL.WA.tags2vector (event_tags);
-    testTags := CAL.WA.tags2vector (U_EXCLUDE);
-    for (N := 0; N < length (tags); N := N + 1)
+    if (CAL.WA.tags_exchangeTest (event_tags, U_INCLUDE, U_EXCLUDE))
     {
-      if (CAL.WA.vector_contains (testTags, tags [N]))
-        goto _exit;
-    }
-
-_include:;
-    -- test include tags
-    if (is_empty_or_null (U_INCLUDE))
-      goto _update;
-    tags := CAL.WA.tags2vector (event_tags);
-    testTags := CAL.WA.tags2vector (U_INCLUDE);
-    for (N := 0; N < length (tags); N := N + 1)
-    {
-      if (CAL.WA.vector_contains (testTags, tags [N]))
-        goto _update;
-    }
-
-_update:;
     upstream_id := U_ID;
     id := (select UE_ID from CAL.WA.UPSTREAM_EVENT where UE_UPSTREAM_ID = upstream_id and UE_EVENT_ID = event_id and coalesce (UE_STATUS, 0) <> 1);
     if (isnull (id))
@@ -4975,7 +5080,7 @@ _update:;
          set UE_ACTION = action
        where UE_ID = id;
     }
-  _exit:;
+    }
   }
 }
 ;
@@ -5039,7 +5144,7 @@ create procedure CAL.WA.atom_entry (
        http (sprintf ('<title type="text">%V</title>', E_SUBJECT), sStream);
        http (sprintf ('<updated>%s</updated>', CAL.WA.dt_iso8601 (E_UPDATED)), sStream);
        http (sprintf ('<published>%s</published>', CAL.WA.dt_iso8601 (E_CREATED)), sStream);
-       http (sprintf ('<content>%V</content>', CAL.WA.export_vcal (E_DOMAIN_ID, event_id)), sStream);
+       http (sprintf ('<content>%V</content>', CAL.WA.export_vcal (E_DOMAIN_ID, vector (event_id))), sStream);
      }
    }
    http ('</entry>', sStream);

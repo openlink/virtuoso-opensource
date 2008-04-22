@@ -341,7 +341,7 @@
 
   <v:method name="permaLink" arglist="in domain_id integer, in id integer">
     <![CDATA[
-      return sprintf('<a href="%s" title="PermaLink" alt="PermaLink">(<img border="0" width="11" height="11" src="image/link.gif" />)</a>', SIOC..calendar_event_iri(domain_id, id));
+      return sprintf('<a href="%s" title="PermaLink" alt="PermaLink">(<img border="0" width="11" height="11" src="image/link.gif" />)</a>', CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, id)));
     ]]>
   </v:method>
 
@@ -441,7 +441,7 @@
            if (internal_type (fValue) = 211) {
              http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
            } else {
-             http (CAL.WA.utf2wide (cast (fValue as varchar)));
+         http (cast (fValue as varchar));
            }
          }
     ]]>
@@ -915,6 +915,17 @@
       <v:variable name="icSource" type="any" default="-1" />
       <v:variable name="icType" type="any" default="-1" />
 
+      <v:variable name="exType" type="integer" />
+      <v:variable name="exName" type="varchar" />
+      <v:variable name="exUser" type="varchar" />
+      <v:variable name="exPassword" type="varchar" />
+      <v:variable name="exEvents" type="integer" />
+      <v:variable name="exTasks" type="integer" />
+      <v:variable name="exPeriodFrom" type="datetime" />
+      <v:variable name="exPeriodTo" type="datetime" />
+      <v:variable name="exTagsInclude" type="varchar" />
+      <v:variable name="exTagsExclude" type="varchar" />
+
       <v:variable persist="temp" name="on_date" type="integer" default="null" />
       <v:variable persist="temp" name="on_time" type="integer" default="null" />
       <v:variable name="v_id" type="any" default="-1" />
@@ -1197,6 +1208,20 @@
                     self.icType := 0;
                     self.v_tags := '';
                   }
+                        if (cCommand = 'export')
+                        {
+                          self.cAction := cCommand;
+                          self.exType := -1;
+                          self.exName := 'calendar.ics';
+                          self.exUser := '';
+                          self.exPassword := '';
+                          self.exEvents := 1;
+                          self.exTasks := 1;
+                          self.exPeriodFrom := null;
+                          self.exPeriodTo := null;
+                          self.exTagsInclude := '';
+                          self.exTagsExclude := '';
+                        }
                 }
 
                 self.vc_data_bind(e);
@@ -1792,7 +1817,7 @@
                                   <?vsp self.sortColumn ('Updated', 'E_UPDATED', 's_sortColumn', self.s_order, self.s_direction); ?>
                                 </th>
                               </vm:if>
-                              <vm:if test="self.access_role not in ('public', 'guest')">
+                              <vm:if test="((self.access_role not in ('public', 'guest')) or (CAL.WA.discussion_check () and CAL.WA.conversation_enable (self.domain_id)))">
                           <th width="1%">
                             Action
                           </th>
@@ -2096,7 +2121,7 @@
                     </td>
                     <td>
                             <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventStartDate, \'e_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                            <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms[0].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <a href="#" id="e_eventStartDate_select" onclick="cPopup.select(document.forms[0].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -2131,7 +2156,7 @@
                     </td>
                     <td>
                             <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventEndDate, \'e_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                            <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms[0].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <a href="#" id="e_eventEndDate_select" onclick="cPopup.select(document.forms[0].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -2676,7 +2701,7 @@
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
                 <xsl:call-template name="nbsp"/>
                             <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_repeatUntil, \'e_repeatUntil_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                            <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms[0].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <a href="#" id="e_repeatUntil_select" onclick="cPopup.select(document.forms[0].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -2755,7 +2780,7 @@
         </div>
       </v:template>
 
-            <v:template type="simple" name="template_view_event" enabled="--case when ((self.cScope <> 'tasks') and (self.cAction in ('view'))) then 1 else 0 end">
+            <v:template type="simple" name="template_view_event" enabled="--case when ((self.cScope <> 'tasks') and (self.cAction = 'view')) then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             declare exit handler for not found goto _end;
@@ -2990,7 +3015,7 @@
               </th>
               <td>
                       <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventStartDate, \'t_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" name="t_eventStartDate_select" id="t_eventStartDate_select" onclick="cPopup.select(document.forms[0].t_eventStartDate, 't_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <a href="#" id="t_eventStartDate_select" onclick="cPopup.select(document.forms[0].t_eventStartDate, 't_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3001,7 +3026,7 @@
               </th>
               <td>
                       <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" name="t_eventEndDate_select" id="t_eventEndDate_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <a href="#" id="t_eventEndDate_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3012,7 +3037,7 @@
                   </th>
                   <td>
                       <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_completed, \'t_completed_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" name="t_completed_select" id="t_completed_select" onclick="cPopup.select(document.forms[0].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <a href="#" id="t_completed_select" onclick="cPopup.select(document.forms[0].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                   </td>
@@ -3379,7 +3404,7 @@
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
-                <th rowspan="3" valign="middle" width="45%">
+                      <th rowspan="3" valign="top" width="45%">
                   <v:label for="i_file" value="Source type" />
               </th>
                 <td nowrap="nowarap">
@@ -3583,7 +3608,7 @@
 
                   -- vCard
                   if (self.icType = 0)
-                    CAL.WA.import_vcal (self.domain_id, content, self.v_tags);
+                          CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags));
 
                   self.cAction := 'browse';
                   self.vc_data_bind(e);
@@ -3601,6 +3626,289 @@
         </div>
         </vm:if>
       </vm:if>
+
+            <vm:if test="self.cAction = 'export'">
+              <div class="new-form-header">
+                <v:label format="%s" value="Export" />
+              </div>
+
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <tr>
+                    <td colspan="2" class="new-section">
+                      Destination
+                    </td>
+                  </tr>
+                  <tr>
+                    <th rowspan="3" valign="top" width="30%">
+                      <v:label for="e_file" value="Destination type" />
+                    </th>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="ex_destination_type_0" xhtml_id="ex_destination_type_0" group-name="ex_destination_type" value="0" xhtml_onchange="javascript: destinationChange(this, \'ex_tr_\', \'hide\');">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := either(lte(self.exType, 0), 1, 0);
+                          ]]>
+                        </v:before-render>
+                      </v:radio-button>
+                      <xsl:call-template name="nbsp" />
+                      <b><vm:label for="ex_destination_type_0" value="--'File'" /></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="ex_destination_type_1" xhtml_id="ex_destination_type_1" group-name="ex_destination_type" value="1" xhtml_onchange="javascript: destinationChange(this, \'ex_tr_\', \'show\');">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := either(equ(self.exType, 1), 1, 0);
+                          ]]>
+                        </v:before-render>
+                      </v:radio-button>
+                      <xsl:call-template name="nbsp" />
+                      <b><vm:label for="ex_destination_type_1" value="--'WebDAV'" /></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="ex_destination_type_2" xhtml_id="ex_destination_type_2" group-name="ex_destination_type" value="2" xhtml_onchange="javascript: destinationChange(this, \'ex_tr_\', \'show\');">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := either(equ(self.exType, 2), 1, 0);
+                          ]]>
+                        </v:before-render>
+                      </v:radio-button>
+                      <xsl:call-template name="nbsp" />
+                      <b><vm:label for="ex_destination_type_2" value="--'URL'" /></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Destination name (URL)
+                    </th>
+                    <td>
+                      <v:text name="ex_destination" value="--self.exName" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="ex_tr_0" style="display: <?V case when self.exType < 1 then 'none' else '' end ?>;">
+                    <th>
+                      User
+                    </th>
+                    <td>
+                      <v:text name="ex_user" value="--self.exUser" xhtml_class="" />
+                    </td>
+                  </tr>
+                  <tr id="ex_tr_1" style="display: <?V case when self.exType < 1 then 'none' else '' end ?>;">
+                    <th>
+                      Password
+                    </th>
+                    <td>
+                      <v:text name="ex_password" type="password" value="--''" xhtml_class="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" class="new-section">
+                      Options
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td>
+                      <label>
+                        <v:check-box name="ex_events" is-boolean="1" true-value="1" false-value="0" value="--self.exEvents" />
+                        Events
+                      </label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td>
+                      <label>
+                        <v:check-box name="ex_tasks" is-boolean="1" true-value="1" false-value="0" value="--self.exTasks" />
+                        Tasks
+                      </label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Period - from
+                    </th>
+                    <td>
+                      <v:text name="ex_periodFrom" xhtml_id="ex_periodFrom" value="--self.exPeriodFrom" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].ex_periodFrom, \'ex_periodFrom_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" id="ex_periodFrom_select" onclick="cPopup.select(document.forms[0].ex_periodFrom, 'ex_periodFrom_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      - to
+                    </th>
+                    <td>
+                      <v:text name="ex_periodTo" xhtml_id="ex_periodTo" value="--self.exPeriodTo" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].ex_periodTo, \'ex_periodTo_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" id="ex_periodTo_select" onclick="cPopup.select(document.forms[0].ex_periodTo, 'ex_periodTo_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="ex_tags_include" value="Include with tags (comma-separated)" />
+                    </th>
+                    <td>
+                      <v:text name="ex_tags_include" value="--self.exTagsInclude" xhtml_class="textbox" xhtml_size="60" />
+                      <input type="button" value="Clear" onclick="javascript: document.F1.elements['ex_tags_include'].value = ''" class="button" />
+                    </td>
+                  </tr>
+                  <?vsp self.myTags ('ex_tags_include'); ?>
+                  <tr>
+                    <th>
+                      <v:label for="ex_tags_exclude" value="Exclude with tags (comma-separated)" />
+                    </th>
+                    <td>
+                      <v:text name="ex_tags_exclude" value="--self.exTagsExclude" xhtml_class="textbox" xhtml_size="60" />
+                      <input type="button" value="Clear" onclick="javascript: document.F1.elements['ex_tags_exclude'].value = ''" class="button" />
+                    </td>
+                  </tr>
+                  <?vsp self.myTags ('ex_tags_exclude'); ?>
+                </table>
+              </div>
+
+              <div class="new-form-footer">
+                <v:button action="simple" name="ex_export" value="Export" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare tmp, content any;
+                      declare exOptions any;
+
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
+                          self.vc_error_message := CAL.WA.test_clear (__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+                      if (self.ex_destination_type_0.ufl_selected)
+                      {
+                        self.exType := 0;
+                      }
+                      else if (self.ex_destination_type_1.ufl_selected)
+                      {
+                        self.exType := 1;
+                      }
+                      else if (self.ex_destination_type_2.ufl_selected)
+                      {
+                        self.exType := 2;
+                      }
+                      self.exName := trim (self.ex_destination.ufl_value);
+                      if (is_empty_or_null (self.exName))
+                      {
+                        self.vc_error_message := 'Please enter correct destination name (URL)!';
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                      tmp := trim (self.ex_tags_include.ufl_value);
+                      CAL.WA.test (self.vu_include, vector ('name', 'Include Tags', 'class', 'tags'));
+                      tmp := CAL.WA.tags2vector (tmp);
+                      tmp := CAL.WA.vector_unique (tmp);
+                      self.exTagsInclude := CAL.WA.vector2tags (tmp);
+
+                      tmp := trim (self.ex_tags_exclude.ufl_value);
+                      CAL.WA.test (tmp, vector ('name', 'Exclude Tags', 'class', 'tags'));
+                      tmp := CAL.WA.tags2vector (tmp);
+                      tmp := CAL.WA.vector_unique (tmp);
+                      self.exTagsExclude := CAL.WA.vector2tags (tmp);
+                      self.exPeriodFrom := CAL.WA.test (trim (self.ex_periodFrom.ufl_value), vector('name', 'Period from date', 'class', 'date-'||self.cDateFormat));
+                      if (is_empty_or_null (self.exPeriodFrom))
+                        self.exPeriodFrom := null;
+                      self.exPeriodTo := CAL.WA.test (trim (self.ex_periodTo.ufl_value), vector('name', 'Period from date', 'class', 'date-'||self.cDateFormat));
+                      if (is_empty_or_null (self.exPeriodTo))
+                        self.exPeriodTo := null;
+                      if (self.exPeriodTo < self.exPeriodFrom)
+                        signal ('TEST', '''Period to date'' value should be greater then ''Period from date'' value!<>');
+
+                      self.exUser := trim (self.ex_user.ufl_value);
+                      self.exPassword := self.ex_password.ufl_value;
+                      self.exEvents := case when self.ex_events.ufl_selected then 1 else 0 end;
+                      self.exTasks := case when self.ex_events.ufl_selected then 1 else 0 end;
+                      exOptions := vector ('events', self.exEvents, 'tasks', self.exTasks, 'periodFrom', self.exPeriodFrom, 'periodTo', self.exPeriodTo, 'tagsInclude', self.exTagsInclude, 'tagsExclude', self.exTagsExclude);
+
+                      content := CAL.WA.export_vcal (self.domain_id, null, exOptions);
+                      if (self.exType = 0)
+                      {
+                        http_rewrite ();
+                        http_request_status ('HTTP/1.1 200 OK');
+                        http_header (sprintf ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', self.exName));
+                        http (content);
+                        http_flush ();
+                      }
+                      else if (self.exType = 1)
+                      {
+                        declare retValue, permissions any;
+                        {
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            self.vc_error_message := 'Export is NOT posted successfully, please verify path and parameters!';
+                            self.vc_is_valid := 0;
+                            return;
+                          };
+                          permissions := USER_GET_OPTION (self.exUser, 'PERMISSIONS');
+                          if (isnull (permissions))
+                          {
+                            permissions := '110100000RR';
+                          }
+                          retValue := DB.DBA.DAV_RES_UPLOAD (self.exName, content, 'text/calendar', permissions, self.exUser, null, self.exUser, self.exPassword);
+                          if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+                          {
+                            self.vc_error_message := 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue);
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                        }
+                      }
+                      else if (self.exType = 2)
+                      {
+                        declare retContent, resHeader, reqHeader any;
+
+                        reqHeader := null;
+                        if (self.exUser <> '')
+                        {
+                          reqHeader := sprintf ('Authorization: Basic %s', encode_base64(self.exUser || ':' || self.exPassword));
+                        }
+                        commit work;
+                        {
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            self.vc_error_message := 'Connection Error in HTTP Client';
+                            self.vc_is_valid := 0;
+                            return;
+                          };
+                          retContent := http_get (self.exName, resHeader, 'PUT', reqHeader, content);
+                          if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
+                          {
+                            self.vc_error_message := 'Export is NOT posted successfully, please verify URL and parameters!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                        }
+                      }
+                      self.cAction := 'browse';
+                      self.vc_data_bind(e);
+                     ]]>
+                   </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" name="ex_cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </vm:if>
 
       <vm:if test="self.cAction = 'settings'">
         <div class="new-form-header">
@@ -4883,7 +5191,7 @@
                 </script>
       </vm:if>
       
-      <vm:if test="(self.cAction in ('create', 'edit', 'view'))">
+              <vm:if test="(self.cAction in ('create', 'edit', 'view', 'export'))">
                 <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
       </vm:if>
       

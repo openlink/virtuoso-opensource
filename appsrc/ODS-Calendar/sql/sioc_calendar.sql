@@ -23,7 +23,7 @@ use SIOC;
 
 -------------------------------------------------------------------------------
 --
-create procedure calendar_event_iri (
+create procedure calendar_event_iri_internal (
   in domain_id varchar,
   in event_id integer)
 {
@@ -42,6 +42,22 @@ create procedure calendar_event_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure calendar_event_iri (
+  in domain_id varchar,
+  in event_id integer)
+{
+	declare c_iri varchar;
+
+	c_iri := calendar_event_iri_internal (domain_id, event_id);
+	if (isnull (c_iri))
+	  return c_iri;
+
+	return c_iri || '#this';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure calendar_comment_iri (
   in domain_id varchar,
   in event_id integer,
@@ -49,7 +65,7 @@ create procedure calendar_comment_iri (
 {
 	declare c_iri varchar;
 
-	c_iri := calendar_event_iri (domain_id, event_id);
+	c_iri := calendar_event_iri_internal (domain_id, event_id);
 	if (isnull (c_iri))
 	  return c_iri;
 
@@ -66,7 +82,7 @@ create procedure calendar_annotation_iri (
 {
 	declare c_iri varchar;
 
-	c_iri := calendar_event_iri (domain_id, event_id);
+	c_iri := calendar_event_iri_internal (domain_id, event_id);
 	if (isnull (c_iri))
 	  return c_iri;
 

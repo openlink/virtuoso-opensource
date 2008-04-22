@@ -908,3 +908,32 @@ function changeComplete ()
 {
   return;
 }
+
+// ---------------------------------------------------------------------------
+function destinationChange(obj, prefix, mode)
+{
+  if (!obj.checked)
+    return;
+  if (mode == 'hide')
+  {
+    var i = 0;
+    while (true)
+    {
+      var o = $(prefix + i)
+      if (!o) {break;}
+      OAT.Dom.hide(o);
+      i++;
+    }
+  }
+  else if (mode == 'show')
+  {
+    var i = 0;
+    while (true)
+    {
+      var o = $(prefix + i)
+      if (!o) {break;}
+      OAT.Dom.show(o);
+      i++;
+    }
+  }
+}

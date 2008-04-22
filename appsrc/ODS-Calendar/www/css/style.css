@@ -862,6 +862,13 @@ thead.sortHeader a:hover
   padding: 4px;
 }
 
+td.new-section
+{
+  text-align: center;
+  font-weight: bold;
+  background-color: #B0CDE4;
+}
+
 .text
 {
   font-style: italic;
