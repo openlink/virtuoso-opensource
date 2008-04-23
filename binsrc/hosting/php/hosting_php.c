@@ -338,13 +338,16 @@ virt_log (int level, char *fmt, ...)
 
 extern zend_module_entry virtuoso_module_entry;
 
-typedef struct
-  {
-    long virtuoso_logging;
-  } php_virtuoso_info_struct;
+ZEND_BEGIN_MODULE_GLOBALS(virtuoso)
+    /* configuration parameters */
+    zend_bool logging;	/* if true, logging to virtuoso.log is enabled */
+    /* for __virt_interal_dsn: */
+    char *local_dsn;	/* default DSN to return */
+    zend_bool allow_dba;/* allow 'dba'/'dav' */
+ZEND_END_MODULE_GLOBALS(virtuoso)
 
-int php_virtuoso_info_id = -1;
-#define VG(v) TSRMG(php_virtuoso_info_id, php_virtuoso_info_struct *, v)
+int virtuoso_globals_id = -1;
+#define VG(v) TSRMG(virtuoso_globals_id, zend_virtuoso_globals *, v)
 
 static int sapi_virtuoso_startup (sapi_module_struct *sapi_module);
 static int sapi_virtuoso_activate (TSRMLS_D);
@@ -547,16 +550,7 @@ sapi_virtuoso_register_server_variables (zval *track_vars_array TSRMLS_DC)
       if (!val)
 	val = "";
       val_len = (int) strlen (val);
-#if PHP_MAJOR_VERSION == 4
       php_register_variable (name, val, track_vars_array TSRMLS_CC);
-#else
-      if (sapi_module.input_filter (PARSE_SERVER, name, &val,
-	      val_len, &new_val_len TSRMLS_CC))
-	{
-	  php_register_variable_safe (name, val, new_val_len,
-	      track_vars_array TSRMLS_CC);
-	}
-#endif
     }
   if ((val = virt_get_env ("SCRIPT_NAME" TSRMLS_CC)) != NULL)
     {
@@ -578,7 +572,7 @@ sapi_virtuoso_log_message (char *message)
 {
   TSRMLS_FETCH ();
 
-  if (-1 == php_virtuoso_info_id || VG (virtuoso_logging))
+  if (-1 == virtuoso_globals_id || VG (logging))
     virt_log (LOG_ERR, "%s", message);
 }
 
@@ -587,25 +581,40 @@ sapi_virtuoso_log_message (char *message)
 
 #define SECTION(name)  PUTS("<h2>" name "</h2>\n")
 
+#ifdef ZEND_ENGINE_2
+#define OnUpdateInt OnUpdateLong
+#endif
 
 PHP_INI_BEGIN()
-  STD_PHP_INI_BOOLEAN ("virtuoso.logging", "1", PHP_INI_SYSTEM, OnUpdateBool,
-      virtuoso_logging, php_virtuoso_info_struct, php_virtuoso_info)
+STD_PHP_INI_BOOLEAN ("virtuoso.logging", "1", PHP_INI_SYSTEM,
+    OnUpdateBool, logging, zend_virtuoso_globals, virtuoso_globals)
+STD_PHP_INI_ENTRY ("virtuoso.local_dsn",  "Local Virtuoso", PHP_INI_SYSTEM,
+    OnUpdateString, local_dsn, zend_virtuoso_globals, virtuoso_globals)
+STD_PHP_INI_ENTRY ("virtuoso.allow_dba", "0", PHP_INI_SYSTEM,
+    OnUpdateInt, allow_dba, zend_virtuoso_globals, virtuoso_globals)
 PHP_INI_END()
 
 
 static void
-php_virtuoso_globals_ctor (php_virtuoso_info_struct *virtuoso_globals TSRMLS_DC)
+php_virtuoso_globals_ctor (zend_virtuoso_globals *virtuoso_globals TSRMLS_DC)
 {
-  virtuoso_globals->virtuoso_logging = 1;
+  virtuoso_globals->logging = 1;
+  virtuoso_globals->local_dsn = NULL;
+  virtuoso_globals->allow_dba = 1;
+}
+
+
+static void
+php_virtuoso_globals_dtor (zend_virtuoso_globals *virtuoso_globals TSRMLS_DC)
+{
 }
 
 
 static
 PHP_MINIT_FUNCTION (virtuoso)
 {
-  ts_allocate_id (&php_virtuoso_info_id, sizeof (php_virtuoso_info_struct),
-      (ts_allocate_ctor) php_virtuoso_globals_ctor, NULL);
+  ZEND_INIT_MODULE_GLOBALS (virtuoso,
+      php_virtuoso_globals_ctor, php_virtuoso_globals_dtor);
   REGISTER_INI_ENTRIES ();
 
   return SUCCESS;
@@ -615,6 +624,7 @@ PHP_MINIT_FUNCTION (virtuoso)
 static
 PHP_MSHUTDOWN_FUNCTION (virtuoso)
 {
+  ts_free_id (virtuoso_globals_id);
   UNREGISTER_INI_ENTRIES ();
 
   return SUCCESS;
@@ -629,6 +639,8 @@ PHP_MINFO_FUNCTION (virtuoso)
 
   php_info_print_table_start ();
   php_info_print_table_row (2, "Plugin Version", DBMS_SRV_VER);
+  php_info_print_table_row (2, "Build Date", __DATE__);
+  php_info_print_table_row (2, "Revision", "$Revision$");
   php_info_print_table_end ();
 
   DISPLAY_INI_ENTRIES ();
@@ -638,6 +650,8 @@ PHP_MINFO_FUNCTION (virtuoso)
   php_info_print_table_header (2, "Variable", "Value");
   for (i = 0; i < r->n_options; i += 2)
     {
+      if (PG (safe_mode) && !strcasecmp (r->options[i], "AUTHORIZATION"))
+	continue;
       php_info_print_table_row (2, r->options[i], r->options[i + 1]);
     }
   php_info_print_table_end ();
@@ -709,7 +723,7 @@ PHP_FUNCTION (__virt_internal_dsn)
   argc = ZEND_NUM_ARGS ();
   if (argc == 0)
     {
-      dsn = "Local Virtuoso";
+      dsn = VG (local_dsn);
     }
   else if (argc == 1)
     {
@@ -726,10 +740,29 @@ PHP_FUNCTION (__virt_internal_dsn)
     }
 
   cli = GET_IMMEDIATE_CLIENT_OR_NULL;
-  if (cli == NULL || (usr = cli->cli_user) == NULL)
-    RETURN_FALSE;
-  if (!usr->usr_name || !usr->usr_pass)
-    RETURN_FALSE;
+  if (cli == NULL || (usr = cli->cli_user) == NULL || !usr->usr_name)
+    {
+      php_error_docref (NULL TSRMLS_CC, E_WARNING,
+	  "The Virtuoso application endpoint has not been configured properly");
+      RETURN_FALSE;
+    }
+  /* make sure user is regular and enabled for SQL access */
+  if (usr->usr_disabled || !usr->usr_is_sql || usr->usr_is_role || !usr->usr_pass)
+    {
+      php_error_docref (NULL TSRMLS_CC, E_WARNING,
+	  "The Virtuoso application endpoint has been configured to use the "
+	  "disabled or invalid user '%s'",
+	  usr->usr_name);
+      RETURN_FALSE;
+    }
+  /* disallow 'dba', 'dav' and other system privileged users? */
+  if (usr->usr_id < (oid_t) 100 && !VG (allow_dba))
+    {
+      php_error_docref (NULL TSRMLS_CC, E_WARNING,
+	  "Security settings prohibit internal connections as Virtuoso user '%s'",
+	  usr->usr_name);
+      RETURN_FALSE;
+    }
   spprintf (&connstr, 0, "DSN=%s;UID=%s;PWD=%s",
       dsn, usr->usr_name, usr->usr_pass);
   RETURN_STRING (connstr, 0);
