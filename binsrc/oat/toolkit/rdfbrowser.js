@@ -434,13 +434,14 @@ OAT.RDFBrowser = function(div,optObj) {
 		*/
 		for (var p in cats) {
 			var count = 0;
+			var pred = self.simplify(p);
 			var atLeastOne = false;
 			var obj = cats[p];
 			for (var o in obj) {
 				count++;
 				if (obj[o] > 1) { atLeastOne = true; }
 			}
-			if ((!atLeastOne && p != "type") || (count <= 1 && p != "type") || count > self.options.maxDistinctValues) { delete cats[p]; }
+			if ((!atLeastOne && pred != "type") || (count <= 1 && pred != "type") || count > self.options.maxDistinctValues) { delete cats[p]; }
 		}
 		
 		function assign(node,p,o) {

@@ -743,14 +743,18 @@ OAT.Browser = { /* Browser helper */
 }
 
 OAT.Event = { /* Event helper */
-	attach:function(elm,event,callback) {
+	attach:function(elm,event,callback,scope) {
 		var element = $(elm);
+		var cb = callback;
+		
+		if (scope) { cb = function() { return callback.call(scope,arguments); } }
+		
 		if (element.addEventListener) {	/* gecko */
-			element.addEventListener(event,callback,false);
+			element.addEventListener(event,cb,false);
 		} else if (element.attachEvent) { /* ie */
-			element.attachEvent("on"+event,callback);
+			element.attachEvent("on"+event,cb);
 		} else { /* ??? */
-			element["on"+event] = callback;
+			element["on"+event] = cb;
 		}
 	},
 	detach:function(elm,event,callback) {
