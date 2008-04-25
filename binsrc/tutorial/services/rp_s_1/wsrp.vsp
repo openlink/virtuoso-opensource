@@ -27,9 +27,11 @@ declare a, b int;
 declare resp,inp,outp, url, url1, url2 any;
 
 resp := null;
-url := coalesce ({?'url'}, 'http://localhost:'||server_http_port()||'/router');
+--url := coalesce ({?'url'}, 'http://' || sys_stat('st_host_name') || ':'||server_http_port()||'/router');
+url := coalesce ({?'url'}, 'http://' || cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost') ||'/router');
 url1 := coalesce ({?'url1'}, '');
-url2 := coalesce ({?'url2'}, 'http://localhost:'||server_http_port()||'/SumService');
+--url2 := coalesce ({?'url2'}, 'http://' || sys_stat('st_host_name') || ':'||server_http_port()||'/SumService');
+url2 := coalesce ({?'url2'}, 'http://' || cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost') ||'/SumService');
 
 if ({?'exec'} is not null)
   {
