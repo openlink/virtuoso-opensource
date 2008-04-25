@@ -1590,13 +1590,19 @@ create procedure DB.DBA.RDF_MAPPER_EXPN_URLS (in all_xslt any, in base varchar)
 };
 
 create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    in xt any, inout mdta any, inout visited any, in what varchar)
+    in xt any, inout mdta any, inout visited any, in what varchar, in lev int)
 {
   declare pf_docs, ns_doc, barr any;
   declare profile varchar;
   declare profs, hdr, ret_arr any;
   declare base_url, ns_url varchar;
   declare tf1, tf2, tf3, all_xslt, ns_trf, profile_trf  any;
+
+  -- we limit up to 100
+  if (lev > 100)
+    return;
+
+  lev := lev + 1;
 
   ret_arr := null;
   pf_docs := null;
@@ -1729,13 +1735,13 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
       declare ret any;
       foreach (any pf_item in pf_docs) do
         {
-	  ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf');
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf', lev);
 	  --dbg_obj_print ('ret1=', ret);
 	  all_xslt := vector_concat (all_xslt, ret);
 	}
       foreach (any ns_item in ns_doc) do
         {
-	  ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns');
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns', lev);
 	  --dbg_obj_print ('ret2=', ret);
 	  all_xslt := vector_concat (all_xslt, ret);
 	}
@@ -1882,7 +1888,7 @@ try_grddl:
     profs := split_and_decode (profile, 0, '\0\0 ');
 
   reg := '';
-  DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, new_origin_uri, dest, xt, mdta, reg, '');
+  DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0);
 
   --dbg_obj_print ('done mdta=', mdta);
 
