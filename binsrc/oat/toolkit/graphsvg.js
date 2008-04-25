@@ -126,8 +126,8 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	this.selectedNode = false;
 	
 	for (var p in optObj) { this.options[p] = optObj[p]; }
-	this.vertices = vertices;
-	this.edges = edges;
+	this.vertices = vertices || [];
+	this.edges = edges || [];
 	if (self.options.sidebar) { this.sidebar = new OAT.GraphSidebar(this); }
 	this.transform = {
 		x:0,

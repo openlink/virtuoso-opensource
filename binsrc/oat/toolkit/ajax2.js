@@ -14,6 +14,7 @@
 		auth:OAT.AJAX.AUTH_NONE,
 		user:"",
 		password:"",
+		timeout:false,
 		type:OAT.AJAX.TYPE_TEXT,
 		async:true,
 		onerror:function(){},
@@ -128,6 +129,7 @@ OAT.AJAX = {
 			auth:OAT.AJAX.AUTH_NONE,
 			user:"",
 			password:"",
+			timeout:false,
 			type:OAT.AJAX.TYPE_TEXT,
 			noSecurityCookie:false,
 			async:true,
@@ -165,6 +167,8 @@ OAT.AJAX = {
 			} catch (e) {}
 		}
 		for (var p in xhr.options.headers) { xhr.setRequestHeader(p,xhr.options.headers[p]); }
+		
+		if (xhr.options.timeout) { xhr.setTimeout(xhr.options.timeout); }
 
 		if (xhr.options.auth == OAT.AJAX.AUTH_DIGEST) {
 			alert("Digest auth not supported yet!");
@@ -181,6 +185,7 @@ OAT.AJAX = {
 	response:function(xhr) {
 		if (xhr.aborted) { return; }
 		if (xhr.getReadyState() == 4) {
+			if (xhr.timeout != false) { xhr.clearTimeout(); }
 			var headers = xhr.getAllResponseHeaders();
 			var index = OAT.AJAX.requests.find(xhr);
 			if (index != -1) { OAT.AJAX.requests.splice(index,1); } /* remove from request registry */
@@ -261,6 +266,7 @@ OAT.AJAX = {
 		this.obj = false;
 		this.callback = callback;
 		this.options = options;
+		this.timeout = false;
 		this.aborted = false;
 		this.open = function(method, target, async) { 
 			try {
@@ -282,11 +288,26 @@ OAT.AJAX = {
 		this.setRequestHeader = function(name,value) { self.obj.setRequestHeader(name,value); }
 		this.getAllResponseHeaders = function() { return self.obj.getAllResponseHeaders(); }
 		
+		this.setTimeout = function(msec) {
+			var cb = function() {
+			   OAT.MSG.send(OAT.AJAX,OAT.MSG.AJAX_TIMEOUT,self);
+			   self.timeout = false;
+			   self.abort();
+			}
+			self.timeout = setTimeout(cb,msec);
+		}
+		
+		this.clearTimeout = function(msec) {
+			clearTimeout(self.timeout);
+			self.timeout = false;
+		}
+		
 		this.abort = function() { /* abort */
 			self.aborted = true;
 			var index = OAT.AJAX.requests.find(self);
 			if (index != -1) { OAT.AJAX.requests.splice(index,1); }
 			if (self.options.onend) { self.options.onend(self); }
+			if (self.timeout != false) { self.clearTimeout(); }
 			OAT.AJAX.checkEnd();
 			if (self.obj.abort) { self.obj.abort(); } /* abort the xmlhttp */
 		}
