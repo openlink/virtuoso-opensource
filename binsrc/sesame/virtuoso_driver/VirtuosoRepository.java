@@ -23,9 +23,6 @@
 
 package virtuoso.sesame.driver;
 
-import virtuoso.jdbc3.*;
-
-import java.sql.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -36,13 +33,14 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.openrdf.model.impl.LiteralImpl;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Graph;
 import org.openrdf.model.Resource;
@@ -50,89 +48,65 @@ import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
-import org.openrdf.model.impl.GraphImpl;
+import org.openrdf.model.impl.BNodeImpl;
+import org.openrdf.model.impl.LiteralImpl;
+import org.openrdf.model.impl.StatementImpl;
+import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
-import org.openrdf.rio.RdfDocumentWriter;
-import org.openrdf.rio.n3.N3Writer;
-import org.openrdf.rio.ntriples.NTriplesWriter;
-import org.openrdf.rio.rdfxml.RdfXmlWriter;
-import org.openrdf.rio.turtle.TurtleWriter;
-import org.openrdf.rio.StatementHandler;
-import org.openrdf.rio.StatementHandlerException;
-import org.openrdf.rio.ntriples.NTriplesParser;
 import org.openrdf.rio.Parser;
+import org.openrdf.rio.RdfDocumentWriter;
+import org.openrdf.rio.StatementHandler;
+import org.openrdf.rio.ntriples.NTriplesParser;
+import org.openrdf.rio.rdfxml.RdfXmlParser;
+import org.openrdf.rio.turtle.TurtleParser;
 import org.openrdf.sesame.admin.AdminListener;
-import org.openrdf.sesame.admin.RdfAdmin;
-import org.openrdf.sesame.admin.UpdateException;
 import org.openrdf.sesame.config.AccessDeniedException;
-import org.openrdf.sesame.config.UnknownRepositoryException;
 import org.openrdf.sesame.constants.QueryLanguage;
 import org.openrdf.sesame.constants.RDFFormat;
-import org.openrdf.sesame.export.RdfExport;
-import org.openrdf.sesame.query.GraphQuery;
 import org.openrdf.sesame.query.GraphQueryResultListener;
 import org.openrdf.sesame.query.MalformedQueryException;
 import org.openrdf.sesame.query.QueryEvaluationException;
 import org.openrdf.sesame.query.QueryResultsGraphBuilder;
 import org.openrdf.sesame.query.QueryResultsTable;
 import org.openrdf.sesame.query.QueryResultsTableBuilder;
-import org.openrdf.sesame.query.TableQuery;
 import org.openrdf.sesame.query.TableQueryResultListener;
-import org.openrdf.sesame.query.rdql.RdqlEngine;
-import org.openrdf.sesame.query.rql.RqlEngine;
-import org.openrdf.sesame.query.serql.SerqlEngine;
 import org.openrdf.sesame.repository.SesameRepository;
-import org.openrdf.sesame.sail.RdfRepository;
-import org.openrdf.sesame.sail.RdfSchemaSource;
-import org.openrdf.sesame.sail.RdfSource;
-import org.openrdf.sesame.sail.Sail;
-import org.openrdf.sesame.sail.SailChangedEvent;
-import org.openrdf.sesame.sail.SailChangedListener;
-import org.openrdf.sesame.sail.SailInternalException;
-import org.openrdf.sesame.sail.SailUpdateException;
-import org.openrdf.sesame.sail.StatementIterator;
-import org.openrdf.sesame.repository.local.*;
+import org.openrdf.sesame.repository.local.LocalRepositoryChangedListener;
+import org.openrdf.sesame.sail.Namespace;
 import org.openrdf.sesame.sail.NamespaceIterator;
-import org.openrdf.sesame.sailimpl.memory.*;
+import org.openrdf.sesame.sail.SailChangedEvent;
+import org.openrdf.sesame.sail.StatementIterator;
+import org.openrdf.sesame.sailimpl.memory.MemNamespaceIterator;
+
+import virtuoso.jdbc3.VirtuosoResultSet;
 
 public class VirtuosoRepository implements SesameRepository
 {
-    private RdfSource _rdfSource;
     private String _id;
     private String url;
     private String user;
     private String password;
-    private int connection_status = 0;
     private Connection connection = null;
     private List _listeners;
-
-    private SerqlEngine _serqlQueryEngine;
-    private RqlEngine _rqlQueryEngine;
-    private RdqlEngine _rdqlQueryEngine;
-    private RdfAdmin _rdfAdmin;
-    private RdfExport _rdfExport;
-    private LocalService _service;
     private String graphName;
-
-    protected RdfRepository _expectedModel;
     protected ValueFactory _valueFactory;
 
-    protected VirtuosoRepository (String id, RdfSource rdfSource, LocalService service)
+    static
     {
-	_id = id;
-	_rdfSource = rdfSource;
-	_service = service;
-
-	_listeners = new ArrayList(0);
-
-	if (_rdfSource instanceof VirtuosoRepository)
+	try
 	{
-	    //		        _listeners.add(VirtuosoAdminListener);
+	    Class.forName("virtuoso.jdbc3.Driver");
+	}
+	catch (ClassNotFoundException e)
+	{
+	    e.printStackTrace();
 	}
     }
 
     public VirtuosoRepository (String graphName, String url, String user, String password)
     {
+	this._id = url + ":" + graphName;
+	this._valueFactory = new ValueFactoryImpl();
 	this.graphName = graphName;
 	this.url = url;
 	this.user = user;
@@ -142,13 +116,11 @@ public class VirtuosoRepository implements SesameRepository
 	{
 	    try
 	    {
-		Class.forName("virtuoso.jdbc3.Driver");
-		connection = DriverManager.getConnection(url, user, password);
-		connection_status = 1;
+		connection = DriverManager.getConnection(this.url, this.user, this.password);
 	    }
 	    catch(Exception e)
 	    {
-		System.out.println("Connection to " + url + " is FAILED.");
+		System.out.println("VirtuosoRepository.init() Connection to " + url + " is FAILED.");
 		e.printStackTrace();
 		System.exit(-1);
 	    }
@@ -165,30 +137,24 @@ public class VirtuosoRepository implements SesameRepository
 	return true;
     }
 
-    public QueryResultsTable performTableQuery (QueryLanguage language, String query)
-	throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
+    public QueryResultsTable performTableQuery(QueryLanguage language, String query) throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
     {
 	QueryResultsTableBuilder builder = new QueryResultsTableBuilder();
 	performTableQuery(language, query, builder);
 	return builder.getQueryResultsTable();
     }
 
-    public void performTableQuery (QueryLanguage language, String query, TableQueryResultListener listener)
-	throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
+    public void performTableQuery(QueryLanguage language, String query, TableQueryResultListener listener) throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
     {
+	// the query language is ignored, only SPARQL syntax is accepted
 	query = "SPARQL " + query;
 
 	try
 	{
-	    if (connection == null)
-	    {
-		Class.forName("virtuoso.jdbc3.Driver");
-		Connection connection = DriverManager.getConnection(url, user, password);
-	    }
 	    java.sql.Statement stmt = connection.createStatement();
-	    VirtuosoResultSet result_set = (VirtuosoResultSet) stmt.executeQuery(query);
+	    VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query);
 
-	    ResultSetMetaData data = result_set.getMetaData();
+	    ResultSetMetaData data = results.getMetaData();
 	    String[] col_names = new String[data.getColumnCount()];
 
 	    for(int meta_count = 0; meta_count < data.getColumnCount(); meta_count++)
@@ -198,13 +164,15 @@ public class VirtuosoRepository implements SesameRepository
 
 	    listener.startTableQueryResult (col_names);
 
-	    while(result_set.next())
+	    while (results.next())
 	    {
 		listener.startTuple();
 		for(int meta_count = 1;meta_count <= data.getColumnCount();meta_count++)
 		{
-		    Value value = new LiteralImpl (result_set.getString(meta_count));
-		    listener.tupleValue(value);
+		    String col = data.getColumnName(meta_count);
+		    String value = results.getString(col);
+		    Value v = parseValue(value);
+		    listener.tupleValue(v);
 		}
 		listener.endTuple ();
 	    }
@@ -214,26 +182,25 @@ public class VirtuosoRepository implements SesameRepository
 	}
 	catch(Exception e)
 	{
-	    System.out.println("GET results are FAILED.");
+	    System.out.println("VirtuosoRepository.performTableQuery() GET results are FAILED.");
 	    e.printStackTrace();
 	    System.exit(-1);
 	}
     }
 
-    public void addData (URL dataURL, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void addData(URL dataURL, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener) throws IOException, AccessDeniedException
     {
 	if (baseURI == null)
 	{
 	    baseURI = this.graphName;
 	}
 
-	String exec_text = "sparql load \"" + dataURL + "\" into graph <" + this.graphName + ">";
+	String query = "sparql load \"" + dataURL + "\" into graph <" + this.graphName + ">";
 
 	try
 	{
 	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeQuery(exec_text);
+	    stmt.executeQuery(query);
 	}
 	catch(Exception e)
 	{
@@ -242,14 +209,13 @@ public class VirtuosoRepository implements SesameRepository
 	}
     }
 
-    public void clear (AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void clear(AdminListener listener) throws IOException, AccessDeniedException
     {
 	try
 	{
-	    String exec_text ="delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('" + this.graphName + "')";
+	    String query = "delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('" + this.graphName + "')";
 	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeUpdate(exec_text);
+	    stmt.executeUpdate(query);
 	}
 	catch(Exception e)
 	{
@@ -258,79 +224,49 @@ public class VirtuosoRepository implements SesameRepository
 	}
     }
 
-    public void addData (InputStream dataStream, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void addData(InputStream dataStream, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener) throws IOException, AccessDeniedException
     {
 	try
 	{
-	    NTriplesParser _nTriplesParser;
+	    Parser parser = null;
 	    Map noParams = new HashMap();
-	    _nTriplesParser = new NTriplesParser();
-	    _nTriplesParser.setDatatypeHandling(Parser.DT_IGNORE);
-	    _expectedModel = new org.openrdf.sesame.sailimpl.memory.RdfRepository();
-	    _expectedModel.initialize(noParams);
-	    _nTriplesParser.setStatementHandler(
-		    new StatementHandler() {
-			public void handleStatement(Resource subj, URI pred, Value obj) {
-			    try {
-				_expectedModel.addStatement(subj, pred, obj);
-			    }
-			    catch (SailUpdateException e) {
-				e.getMessage();
-			    }
-			}
-		    });
-	    _expectedModel.startTransaction();
-	    _nTriplesParser.parse(dataStream, "");
-	    dataStream.close();
-	    _expectedModel.commitTransaction();
-
-	    StatementIterator statIter = _expectedModel.getStatements(null, null, null);
-	    String S, P, O;
-	    String exec_text;
-
-
-	    while (statIter.hasNext())
+	    if(format.equals(RDFFormat.TURTLE))
 	    {
-		Statement st = statIter.next();
-		S = st.getSubject().toString();
-		P = st.getPredicate().toString();
-		O = st.getObject().toString();
-		S = S.replaceAll("'", "''");
-		P = P.replaceAll("'", "''");
-		O = O.replaceAll("'", "''");
-
-		exec_text ="DB.DBA.RDF_QUAD_URI ('" + this.graphName +
-		    "', '" + S +
-		    "', '" + P +
-		    "', '" + O +
-		    "')";
-
-		try
-		{
-		    java.sql.Statement stmt = connection.createStatement();
-		    stmt.executeQuery(exec_text);
+		parser = new TurtleParser();
 		}
-		catch(Exception e)
+	    else if(format.equals(RDFFormat.RDFXML))
 		{
-		    e.printStackTrace();
-		    System.exit(-1);
+		parser = new RdfXmlParser();
 		}
+	    else if(format.equals(RDFFormat.NTRIPLES))
+	    {
+		parser = new NTriplesParser();
 	    }
+	    else return;
 
+	    parser.setDatatypeHandling(Parser.DT_IGNORE); // TODO find out what this is doing
+	    StatementHandler sh = new StatementHandler()
+	    {
+		public void handleStatement(Resource subj, URI pred, Value obj)
+		{
+		    addSingleStatement(subj, pred, obj);
 	}
-	catch (Exception e) {
+	    };
+	    parser.setStatementHandler(sh);
+	    parser.parse(dataStream, baseURI);
+	    dataStream.close();
+	}
+	catch (Exception e)
+	{
 	    System.out.println(e.getMessage());
 	}
 	finally
 	{
 	    dataStream.close();
 	}
-
     }
 
-    public void addData (File dataFile, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
-	throws FileNotFoundException, IOException, AccessDeniedException
+    public void addData(File dataFile, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener) throws FileNotFoundException, IOException, AccessDeniedException
     {
 	InputStream inputStream = new FileInputStream(dataFile);
 	addData (inputStream, baseURI, format, verifyData, listener);
@@ -338,38 +274,68 @@ public class VirtuosoRepository implements SesameRepository
 
     public NamespaceIterator getNamespaces()
     {
-	System.err.println("VirtuosoRepository.java getNamespaces ()");
-	List _namespacesList = new ArrayList();
+	List<org.openrdf.sesame.sailimpl.memory.Namespace> namespaceList = new ArrayList<org.openrdf.sesame.sailimpl.memory.Namespace>();
+	// TODO verify that this query is correct
+	StringBuffer query = new StringBuffer();
+	query.append("SELECT distinct RP_NAME, RP_ID from DB.DBA.RDF_PREFIX");
+	try
+	{
+	    java.sql.Statement stmt = this.connection.createStatement();
+	    VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+	    ResultSetMetaData data = results.getMetaData();
 
-
-	return new MemNamespaceIterator(_namespacesList);
+	    // begin at onset one
+	    while (results.next())
+	    {
+		String name = null;
+		String prefix = null;
+		for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++)
+		{
+		    // TODO need to parse these into appropriate resource values
+		    String col = data.getColumnName(meta_count);
+		    if(col.equals("RP_ID"))
+		    {
+			name = results.getString(col);
+		    }
+		    else if(col.equals("RP_NAME"))
+		    {
+			prefix = results.getString(col);
+		    }
+		}
+		if(name != null && prefix != null)
+		{
+		    org.openrdf.sesame.sailimpl.memory.Namespace ns =  new org.openrdf.sesame.sailimpl.memory.Namespace(prefix, name, false);
+		    namespaceList.add(ns);
+		}
+	    }
+	}
+	catch (Exception e)
+	{
+	    e.printStackTrace();
+	    System.exit(-1);
+	}
+	return new MemNamespaceIterator(namespaceList);
     }
-
 
     public void addSingleStatement (Resource subj, URI pred, Value obj)
     {
-	    String S, P, O;
-	    String exec_text;
+	String s, p, o;
+	String query;
 
-		S = subj.toString();
-		P = pred.toString();
-		O = obj.toString();
-		S = S.replaceAll("'", "''");
-		P = P.replaceAll("'", "''");
-		O = O.replaceAll("'", "''");
+	s = subj.toString();
+	p = pred.toString();
+	o = obj.toString();
+	
+	s = s.replaceAll("'", "''");
+	p = p.replaceAll("'", "''");
+	o = o.replaceAll("'", "''");
 
-		System.err.println ("addSingleStatement ");
-
-		exec_text ="DB.DBA.RDF_QUAD_URI ('" + this.graphName +
-		    "', '" + S +
-		    "', '" + P +
-		    "', '" + O +
-		    "')";
+	query = "DB.DBA.RDF_QUAD_URI ('" + this.graphName + "', '" + s + "', '" + p + "', '" + o + "')";
 
 		try
 		{
 		    java.sql.Statement stmt = connection.createStatement();
-		    stmt.executeQuery(exec_text);
+	    stmt.executeUpdate(query);
 		}
 		catch(Exception e)
 		{
@@ -380,27 +346,54 @@ public class VirtuosoRepository implements SesameRepository
 
     /* TODO */
 
-    public void performGraphQuery (QueryLanguage language, String query, GraphQueryResultListener listener)
-	throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
+    public void performGraphQuery(QueryLanguage language, String query, GraphQueryResultListener listener) throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
     {
+	query = "SPARQL " + query;
+
+	try
+	{
+	    java.sql.Statement stmt = connection.createStatement();
+	    VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query);
+
+	    ResultSetMetaData data = results.getMetaData();
+	    String[] col_names = new String[data.getColumnCount()];
+
+	    while (results.next())
+	    {
+		listener.startGraphQueryResult();
+		for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++)
+		{
+		    String col = data.getColumnName(meta_count);
+		    String value = results.getString(col);
+		    Value v = parseValue(value);
+		    listener.triple(null, null, null); // TODO find out how to interpret Virtuoso CONSTRUCT query
+		}
+		listener.endGraphQueryResult();
+	    }
+
+	    listener.endGraphQueryResult();
+	}
+	catch (Exception e)
+    {
+	    System.out.println("GET results are FAILED.");
+	    e.printStackTrace();
+	    System.exit(-1);
+	}
     }
 
-    public Graph performGraphQuery (QueryLanguage language, String query)
-	throws IOException, MalformedQueryException, QueryEvaluationException,
-	       AccessDeniedException
+    public Graph performGraphQuery(QueryLanguage language, String query) throws IOException, MalformedQueryException, QueryEvaluationException, AccessDeniedException
     {
-	QueryResultsGraphBuilder listener = new QueryResultsGraphBuilder();
-	return new GraphImpl();
+	QueryResultsGraphBuilder qrgb = new QueryResultsGraphBuilder();
+	performGraphQuery(language, query, qrgb);
+	return qrgb.getGraph();
     }
 
-    public void addData (String data, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void addData(String data, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener) throws IOException, AccessDeniedException
     {
 	addData(new StringReader(data), baseURI, format, verifyData, listener);
     }
 
-    public void addData (SesameRepository repository, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void addData(SesameRepository repository, AdminListener listener) throws IOException, AccessDeniedException
     {
 	if (this == repository)
 	{
@@ -419,49 +412,21 @@ public class VirtuosoRepository implements SesameRepository
 	}
     }
 
-    public void addData (Reader reader, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void addData(Reader reader, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener) throws IOException, AccessDeniedException
     {
-	try
-	{
-	    _rdfAdmin.addRdfModel(reader, baseURI, listener, format, verifyData);
-	}
-	catch (UpdateException e)
-	{
-	    listener.error("error while adding new triples: " + e.getMessage(), -1, -1, null);
-	}
     }
 
-    public InputStream extractRDF (RDFFormat format, boolean ontology,
-	    boolean instances, boolean explicitOnly, boolean niceOutput)
-	throws IOException, AccessDeniedException
+    public InputStream extractRDF(RDFFormat format, boolean ontology, boolean instances, boolean explicitOnly, boolean niceOutput) throws IOException, AccessDeniedException
     {
 	ByteArrayOutputStream baos = new ByteArrayOutputStream(8092);
 	return new ByteArrayInputStream(baos.toByteArray());
     }
 
-    public void extractRDF (RdfDocumentWriter rdfDocWriter, boolean ontology,
-	    boolean instances, boolean explicitOnly, boolean niceOutput)
-	throws IOException, AccessDeniedException
-    {
-	if (_rdfExport == null)
+    public void extractRDF(RdfDocumentWriter rdfDocWriter, boolean ontology, boolean instances, boolean explicitOnly, boolean niceOutput) throws IOException, AccessDeniedException
 	{
-	    _rdfExport = new RdfExport();
-	}
-
-	if (_rdfSource instanceof RdfSchemaSource)
-	{
-	    _rdfExport.exportRdf((RdfSchemaSource)_rdfSource, rdfDocWriter,
-		    ontology, instances, explicitOnly, niceOutput);
-	}
-	else
-	{
-	    _rdfExport.exportRdf(_rdfSource, rdfDocWriter, niceOutput);
-	}
     }
 
-    public void removeStatements (Resource subject, URI predicate, Value object, AdminListener listener)
-	throws IOException, AccessDeniedException
+    public void removeStatements(Resource subject, URI predicate, Value object, AdminListener listener) throws IOException, AccessDeniedException
     {
 	String S, P, O;
 	String exec_text;
@@ -470,54 +435,28 @@ public class VirtuosoRepository implements SesameRepository
 	P = predicate.toString();
 	O = object.toString();
 
-	exec_text ="jena_remove (" +
-	    "'" + this.graphName + "', " +
-	    "'" + S + "', " +
-	    "'" + P + "', " +
-	    "'" + O + "')";
-
-	System.out.println (exec_text);
+	exec_text = "jena_remove (" + "'" + this.graphName + "', " + "'" + S + "', " + "'" + P + "', " + "'" + O + "')";
 
 	try
 	{
-	    //			_rdfAdmin.removeStatements(subject, predicate, object, listener);
+	    java.sql.Statement stmt = this.connection.createStatement();
+	    stmt.executeUpdate(exec_text);
 	}
 	catch(Exception e)
 	{
+	    listener.error("Problem removing data", 0, 0, new StatementImpl(subject, predicate, object));
 	    e.printStackTrace();
 	    System.exit(-1);
-	}
-	;
-    }
-
-    public Sail getSail()
-    {
-	return _rdfSource;
+	};
     }
 
     public synchronized void shutDown()
     {
-	if (_rdfSource != null)
-	{
-	    _rdfSource.shutDown();
-	    _rdfSource = null;
-	    _serqlQueryEngine = null;
-	    _rqlQueryEngine = null;
-	    _rdqlQueryEngine = null;
-	    _rdfAdmin = null;
-	    _rdfExport = null;
-	}
     }
 
-    public void mergeGraph (Graph graph)
-	throws IOException, AccessDeniedException
+    public void mergeGraph(Graph graph) throws IOException, AccessDeniedException
     {
-	RdfRepository thisRep = (RdfRepository)_rdfSource;
 	StatementIterator iter = graph.getStatements();
-
-	try
-	{
-	    thisRep.startTransaction();
 	    while (iter.hasNext())
 	    {
 		Statement st = iter.next();
@@ -525,46 +464,30 @@ public class VirtuosoRepository implements SesameRepository
 		Resource subject = st.getSubject();
 		URI predicate = st.getPredicate();
 		Value object = st.getObject();
-		thisRep.addStatement(subject, predicate, object);
-	    }
+
+	    addSingleStatement(subject, predicate, object);
 	}
-	catch (SailUpdateException e)
-	{
-	    throw new IOException(e.getMessage());
-	}
-	finally
-	{
-	    thisRep.commitTransaction();
 	    iter.close();
 	}
-    }
 
-
-    public void addGraph(Graph graph)
-	throws IOException, AccessDeniedException
+    public void addGraph(Graph graph) throws IOException, AccessDeniedException
     {
 	addGraph(graph, true);
     }
 
-    public void addGraph (Graph graph, boolean joinBlankNodes)
-	throws IOException, AccessDeniedException
+    public void addGraph(Graph graph, boolean joinBlankNodes) throws IOException, AccessDeniedException
     {
-
-	RdfRepository thisRep = (RdfRepository)_rdfSource;
-
 	Map bNodesMap = null;
 	ValueFactory factory = null;
 
 	if (!joinBlankNodes)
 	{
 	    bNodesMap = new HashMap();
-	    factory = thisRep.getValueFactory();
+	    factory = getValueFactory();
 	}
 
 	StatementIterator iter = graph.getStatements();
 
-	try {
-	    thisRep.startTransaction();
 	    while (iter.hasNext())
 	    {
 		Statement st = iter.next();
@@ -599,37 +522,36 @@ public class VirtuosoRepository implements SesameRepository
 			else
 			{
 			    object = factory.createBNode();
-			    //							bNodesMap.put(bNodeId, object);
 			}
 		    }
 		}
 
-		thisRep.addStatement(subject, predicate, object);
+	    addSingleStatement(subject, predicate, object);
 	    }
+	iter.close();
 	}
-	catch (SailUpdateException e)
+
+    public void removeGraph(Graph graph) throws IOException, AccessDeniedException
 	{
-	    throw new IOException(e.getMessage());
-	}
-	finally
+	StatementIterator sit = graph.getStatements();
+	while(sit.hasNext())
 	{
-	    thisRep.commitTransaction();
-	    iter.close();
+	    Statement st = sit.next();
+	    for(int i = 0; i < this._listeners.size(); i++)
+	    {
+		if(this._listeners.get(i) instanceof AdminListener)
+		{
+		    removeStatements(st.getSubject(), st.getPredicate(), st.getObject(), (AdminListener) this._listeners.get(i));
+		}
 	}
     }
+    }
 
-    public void removeGraph (Graph graph)
-	throws IOException, AccessDeniedException
+    public void addGraph(QueryLanguage language, String query) throws IOException, AccessDeniedException 
     {
     }
 
-    public void addGraph (QueryLanguage language, String query)
-	throws IOException, AccessDeniedException
-    {
-    }
-
-    public void addGraph (QueryLanguage language, String query, boolean joinBlankNodes)
-	throws IOException, AccessDeniedException
+    public void addGraph(QueryLanguage language, String query, boolean joinBlankNodes) throws IOException, AccessDeniedException
     {
 	try
 	{
@@ -646,8 +568,7 @@ public class VirtuosoRepository implements SesameRepository
 	}
     }
 
-    public void removeGraph (QueryLanguage language, String query)
-	throws IOException, AccessDeniedException
+    public void removeGraph(QueryLanguage language, String query) throws IOException, AccessDeniedException
     {
 	try
 	{
@@ -678,7 +599,7 @@ public class VirtuosoRepository implements SesameRepository
     {
 	synchronized(_listeners)
 	{
-	    //		    _listeners.add(listener);
+			_listeners.add(listener);
 	}
     }
 
@@ -696,7 +617,39 @@ public class VirtuosoRepository implements SesameRepository
 
     public ValueFactory getValueFactory()
     {
-	System.err.println("VirtuosoRepository.java getValueFactory ()");
-	return new ValueFactoryImpl();
+	return this._valueFactory;
+    }
+
+
+    // native methods
+	
+    private Value parseValue(String val)
+    {
+	if(val == null || val.length() == 0) return null;
+	try
+	{
+	    return new URIImpl(val);					
+	}
+	catch(IllegalArgumentException iaex)
+	{
+	    //System.out.println("Resource is not a URI: " + val);
+	    try
+	    {
+		return new LiteralImpl(val);
+	    }
+	    catch(IllegalArgumentException iaex2)
+	    {
+		// System.out.println("Resource is not a Literal: " + val);
+		try
+		{
+		    return new BNodeImpl(val);					
+		}
+		catch(IllegalArgumentException iaex3)
+		{
+		    System.out.println("VirtuosoRepository.parseValue() Could not parse resource: " + val);
+		}
+	    }
+	}
+	return null;
     }
 }
