@@ -22,8 +22,11 @@
 --  
 create procedure "XQ"."XQ"."__XQ_PRE_INIT"()
 {
+  whenever not found goto none;
   if (not (exists (select * from "DB"."DBA"."HTTP_PATH" where "HP_LPATH" = '/xqdemo')))
     DB.DBA.VHOST_DEFINE (lpath=>'/xqdemo/', ppath=>'/xqdemo/', vsp_user=>'XQ', def_page=>'demo.vsp');
+  none:
+  ;
 }
 ;
 
