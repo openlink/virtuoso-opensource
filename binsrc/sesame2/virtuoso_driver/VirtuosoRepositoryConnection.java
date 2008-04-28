@@ -243,15 +243,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					String col = data.getColumnName(meta_count);
 					if(col.equals("g")) {
 						// TODO need to be able to parse BNode value also
+						try {
 						URI graphId = this.getRepository().getValueFactory().createURI(results.getString(col));
 						// add that graph to the results
 						v.add(graphId);
+					}
+						catch(IllegalArgumentException iiaex) {
+							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + results.getString(col));
+							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Ignoring context: " + results.getString(col));
+						}
 					}
 				}
 			}
 		}
 		catch (Exception e) {
-			System.out.println(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString());
+//			System.out.println(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString());
 			throw new RepositoryException(": SPARQL execute failed." + "\n" + query.toString(), e);
 		}
 		return createRepositoryResult(v);
@@ -753,6 +759,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						}
 						catch(ClassCastException ccex) {
 							System.out.println("Unexpected resource type encountered. Was expecting Resource: " + value);
+							ccex.printStackTrace();
 						}
 					}
 					else if(data.getColumnName(meta_count).equals("p")) {
@@ -761,6 +768,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						}
 						catch(ClassCastException ccex) {
 							System.out.println("Unexpected resource type encountered. Was expecting URI: " + value);
+							ccex.printStackTrace();
 						}
 					}
 					else if(data.getColumnName(meta_count).equals("o")) {
@@ -832,7 +840,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					return getRepository().getValueFactory().createBNode(val);					
 				}
 				catch(IllegalArgumentException iaex3) {
-					System.out.println("Could not parse resource: " + val);
+					System.out.println("VirtuosoRepositoryConnection().parseValue() Could not parse resource: " + val);
 				}
 			}
 		}
