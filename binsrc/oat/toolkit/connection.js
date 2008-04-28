@@ -23,6 +23,7 @@ OAT.Connection = function(type,optObj) {
 	var self = this;
 	this.type = type;
 	this.nocred = false; /* doesn't require credentials */
+	this.uid = false; /* are credentials stored in serialized form? */
 	switch (type) {
 		case OAT.ConnectionData.TYPE_XMLA:
 			this.options = {
@@ -57,6 +58,7 @@ OAT.Connection = function(type,optObj) {
 			}
 		}
 		xml += ' nocred="'+(noCreds ? 1 : 0)+'"';
+		xml += ' uid="'+(uid ? 1 : 0)+'"';
 		xml += '/>';
 		return xml;
 	}
@@ -69,6 +71,8 @@ OAT.Connection = function(type,optObj) {
 		}
 		var nc = node.getAttribute("nocred");
 		if (nc == true) { self.nocred = true; }
+		var uid = node.getAttribute("uid");
+		if (uid == true) { self.uid = true; }
 	}
 }
 OAT.Loader.featureLoaded("connection");

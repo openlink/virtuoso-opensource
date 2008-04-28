@@ -162,7 +162,7 @@ OAT.WinTemplate = function(obj) {
 
 OAT.WinMS = function(obj) { /* MS-like window */
 	OAT.Style.include('winms.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winms_container");
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winms_container oat_win_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winms_content");
 	obj.dom.title = OAT.Dom.create("div",{},"oat_winms_title");
@@ -199,7 +199,7 @@ OAT.WinMS = function(obj) { /* MS-like window */
 
 OAT.WinMAC = function(obj) { /* MacOSX-like window */
 	OAT.Style.include('winmac.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winmac_container");
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winmac_container oat_win_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winmac_content");
 	obj.dom.title = OAT.Dom.create("div",{},"oat_winmac_title");
@@ -241,7 +241,7 @@ OAT.WinMAC = function(obj) { /* MacOSX-like window */
 
 OAT.WinRECT = function(obj) { /* rectangular window */
 	OAT.Style.include('winrect.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winrect_container");
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winrect_container oat_win_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winrect_content");
 	obj.dom.title = OAT.Dom.create("div",{},"oat_winrect_title");
@@ -271,7 +271,7 @@ OAT.WinRECT = function(obj) { /* rectangular window */
 OAT.WinROUND = function(obj) { /* rounded window */
 	OAT.Style.include('winround.css');
 
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winround_container");
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winround_container oat_win_container");
 	obj.dom.resizeContainer = obj.dom.container;
 
 	obj.dom.table = OAT.Dom.create("table",{},"oat_winround_wrapper");
@@ -333,7 +333,7 @@ OAT.WinROUND = function(obj) { /* rounded window */
 
 OAT.WinODS = function(obj) { /* rounded window */
 	OAT.Style.include('winods.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winods_container");
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winods_container oat_win_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winods_content");
 	obj.dom.title = OAT.Dom.create("div",{},"oat_winods_title");

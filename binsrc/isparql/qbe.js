@@ -177,7 +177,7 @@ iSPARQL.QBE = function () {
       fill:"#f00"
     },
 		selectNodeCallback:function(node) {
-			node.svg.setAttribute("stroke-width","2");
+			node.svg.setAttribute("stroke-width","4");
 			node.svg.setAttribute("stroke","#00f"); 
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.hide("qbe_props_group");

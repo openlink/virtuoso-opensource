@@ -13,7 +13,8 @@
 
 OAT.AnchorData = {
 	active:false,
-	window:false
+	window:false,
+	closeOnBlur:true
 }
 
 OAT.Anchor = {
@@ -201,6 +202,10 @@ OAT.Anchor = {
 			var pos = OAT.Dom.eventPos(event);
 			OAT.AnchorData.window = win; /* assign last opened window */
 
+			OAT.Dom.attach(win.dom.container,"click",function(event) { OAT.Event.cancel(event); });
+
+			OAT.Event.cancel(event);
+
 			if (!options.stat) {
 				OAT.Anchor.callForData(options,pos);
 			} else { 
@@ -276,7 +281,7 @@ OAT.Anchor = {
 
 	close:function(elem, recursive) {
 		elem = $(elem);
-		if (elem.tagName=='BODY') return;
+		if (elem.tagName=='BODY' || elem.tagName=='HTML') return;
 		if (elem.className.match(/^oat_win.+_container$/)) {
 			OAT.Dom.hide(elem);
 			if (recursive) this.close(elem.parentNode);
@@ -285,4 +290,34 @@ OAT.Anchor = {
 		}
 	}
 }
+
+/* if clicked on the document outside a++ windows, close all of them */
+OAT.Anchor.closeOnBlur = function() {
+	OAT.Dom.attach(document.getElementsByTagName('html')[0], "click", function(event) {
+	if (!OAT.AnchorData.closeOnBlur) return;
+	var checkIfClickedOutside = function(elem) {
+		if (elem.tagName=='BODY' || elem.tagName=='HTML')
+			return true;
+		if (elem.className.match(/^oat_win.+_container$/)) {
+			return false;
+		} else {
+			return checkIfClickedOutside(elem.parentNode);
+		}
+	}
+	if ( !checkIfClickedOutside((OAT.Browser.isIE)?event.srcElement:event.target) )
+		return;
+	var opened = $$("oat_win_container");
+	for (i in opened) {
+		if (!opened[i].tagName) continue;
+		OAT.Anchor.close(opened[i], true);
+	}
+	});
+};
+
+if (OAT.Browser.isIE) {
+	setTimeout(OAT.Anchor.closeOnBlur,1000);
+} else {
+	OAT.Anchor.closeOnBlur();
+}
+
 OAT.Loader.featureLoaded("anchor");
