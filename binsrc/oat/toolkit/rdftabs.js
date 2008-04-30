@@ -216,8 +216,9 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
-			a.setAttribute("href","javascript:void(0)");
-			OAT.Dom.attach(a,"click",function() {
+			a.setAttribute("href","#");
+			OAT.Dom.attach(a,"click",function(event) {
+				OAT.Dom.prevent(event);
 				self.currentPage = page;
 				self.redraw();
 			});
@@ -275,7 +276,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		} /* for all data */
 		
 		var attach = function(elm,val) {
-			OAT.Dom.attach(elm,"click",function() {
+			OAT.Dom.attach(elm,"click",function(event) {
+				OAT.Dom.prevent(event);
 				self.sortTerm = val;
 				self.sort(val);
 			});
@@ -287,10 +289,10 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 				var elm = OAT.Dom.create("span");
 			} else {
 				var elm = OAT.Dom.create("a");
-				elm.href = "javascript:void(0);"
-				attach(elm,list[i]);
+				elm.href = value;
+				attach(elm,value);
 			}
-			elm.innerHTML = self.parent.simplify(list[i]);
+			elm.innerHTML = self.parent.simplify(value);
 			if (i) { self.sortDiv.appendChild(OAT.Dom.text(", ")); }
 			self.sortDiv.appendChild(elm);
 		}
@@ -765,8 +767,9 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
-			a.setAttribute("href","javascript:void(0)");
-			OAT.Dom.attach(a,"click",function() {
+			a.setAttribute("href","#");
+			OAT.Dom.attach(a,"click",function(event) {
+				OAT.Dom.prevent(event);
 				self.currentPage = page;
 				self.redraw();
 			});

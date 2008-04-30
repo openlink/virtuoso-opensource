@@ -142,7 +142,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		OAT.Dom.clear(self.store.div);
 		var total = 0;
 		var removeRef = function(a,url) {
-			OAT.Dom.attach(a,"click",function(){self.store.remove(url);});
+			OAT.Dom.attach(a,"click",function(event){ OAT.Dom.prevent(event); self.store.remove(url);});
 		}
 		var checkRef = function(ch,url) {
 			var f = function() {
@@ -178,7 +178,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 			
 			var remove = OAT.Dom.create("a");
-			remove.href = "javascript:void(0)";
+			remove.href = "#";
 			remove.innerHTML = "Remove from storage";
 			removeRef(remove,item.href);
 			checkRef(ch,item.href);
@@ -284,6 +284,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		var obj = {
 			title:"URL",
 			content:genRef,
+			newHref:href,
 			width:300,
 			height:200,
 			result_control:false,
@@ -307,10 +308,11 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Data Link";
-			a.href = "javascript:void(0)";
+			a.href = href;
 			var start1 = self.throbberReplace(a);
-			OAT.Dom.attach(a,"click",function() {
+			OAT.Dom.attach(a,"click",function(event) {
 				/* dereference link - add */
+				OAT.Dom.prevent(event);
 				self.store.addURL(href,start1);
 			});
 			list.push(a);
@@ -319,10 +321,11 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Data Link - replace storage";
-			a.href = "javascript:void(0)";
+			a.href = href;
 			var start2 = self.throbberReplace(a);
-			OAT.Dom.attach(a,"click",function() {
+			OAT.Dom.attach(a,"click",function(event) {
 				/* dereference link - replace */
+				OAT.Dom.prevent(event);
 				var ref = function() {
 					self.store.clear();
 					start2();
@@ -344,9 +347,10 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (!(disabledActions & OAT.RDFData.DISABLE_FILTER)) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Relationships";
-			a.href = "javascript:void(0)";
-			OAT.Dom.attach(a,"click",function() {
+			a.href = href;
+			OAT.Dom.attach(a,"click",function(event) {
 				/* dereference link */
+				OAT.Dom.prevent(event);
 				OAT.AnchorData.window.close();
 				self.store.addFilter(OAT.RDFStoreData.FILTER_URI,href);
 			});
@@ -356,8 +360,9 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (!(disabledActions & OAT.RDFData.DISABLE_BOOKMARK)) {
 			var aa = OAT.Dom.create("a");
 			aa.innerHTML = "Bookmark";
-			aa.href = "javascript:void(0)";
-			OAT.Dom.attach(aa,"click",function(){
+			aa.href = href;
+			OAT.Dom.attach(aa,"click",function(event) {
+				OAT.Dom.prevent(event);
 				var label = prompt("Please name your bookmark:",href);
 				self.bookmarks.add(href,label);
 				OAT.AnchorData.window.close();

@@ -141,7 +141,7 @@ OAT.Anchor = {
 		var elm = $(element);
 		var options = {
 			href:false, /* url to be fetched */
-			newHref:"javascript:void(0)",
+			newHref:"#",
 			connection:false, /* for url fetch */
 			datasource:false, /* for url fetch */
 			content:false, /* node or function to be inserted */
@@ -196,6 +196,7 @@ OAT.Anchor = {
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 
 		options.displayRef = function(event) {
+			OAT.Dom.prevent(event);
 			var win = options.window;
 			win.hide(); /* close existing window */
 			OAT.AnchorData.active = options;

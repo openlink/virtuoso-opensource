@@ -414,7 +414,9 @@ var QueryExec = function(optObj) {
 	}
 	
 	this.processLink = function(domNode,href) {
-		var dereferenceRef = function() {
+		var dereferenceRef = function(event) {
+			OAT.Dom.prevent(event);
+
 			var cache = self.cache[self.cacheIndex];
 
 			var q = 'define get:soft "replacing" \n'+
@@ -430,7 +432,8 @@ var QueryExec = function(optObj) {
 			self.execute(o);
  		}
 
-		var selectRef = function() {
+		var selectRef = function(event) {
+			OAT.Dom.prevent(event);
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -451,7 +454,7 @@ var QueryExec = function(optObj) {
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Get Entities";
-			a.href = "#";
+			a.href = href;
 			OAT.Dom.attach(a,"click",selectRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
@@ -459,7 +462,7 @@ var QueryExec = function(optObj) {
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Describe Entities";
-			a.href = "#";
+			a.href = href;
 			OAT.Dom.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
@@ -476,6 +479,7 @@ var QueryExec = function(optObj) {
 		var obj = {
 			title:"URL",
 			content:genRef,
+			newHref:href,
 			width:200,
 			height:100,
 			result_control:false,
