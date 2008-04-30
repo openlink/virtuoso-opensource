@@ -33,18 +33,37 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:bugzilla="http://www.openlinksw.com/schemas/bugzilla#"
+  xmlns:sioct="http://rdfs.org/sioc/types#"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
-  <xsl:param name="base" />
+    <xsl:param name="baseUri" />
   <xsl:template match="/">
       <rdf:RDF>
 	  	<xsl:apply-templates select="bugzilla/bug"/>
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="bugzilla/bug">
-	<wf:Task rdf:about="{$base}">
+		<wf:Task rdf:about="{$baseUri}">
 	    <xsl:apply-templates select="*"/>
 	</wf:Task>
+		<sioct:Discussion rdf:about="{$baseUri}">
+			<sioc:container_of rdf:resource="{@rdf:resource}" />
+		</sioct:Discussion>
+		<xsl:for-each select="long_desc">
+			<sioc:Post rdf:about="{vi:proxyIRI(concat($baseUri, '#', bug_when))}">
+				<sioc:has_container rdf:resource="{$baseUri}"/>
+				<dc:date>
+					<xsl:value-of select="bug_when"/>
+				</dc:date>
+				<dc:creator>
+					<xsl:value-of select="who"/>
+				</dc:creator>
+				<dc:description>
+					<xsl:value-of select="thetext"/>
+				</dc:description>
+			</sioc:Post>
+		</xsl:for-each>
   </xsl:template>
     <xsl:template match="version">
 	<bugzilla:version>
@@ -149,10 +168,5 @@
 	    <xsl:value-of select="."/>
 	</bugzilla:shortDescription>
   </xsl:template>
-    <xsl:template match="long_desc">
-       <dc:description>
-           <xsl:value-of select="thetext"/>
-       </dc:description>
-    </xsl:template>
   <xsl:template match="*|text()"/>
 </xsl:stylesheet>
