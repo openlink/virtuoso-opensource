@@ -114,13 +114,15 @@ h1.page_hd {
   background-color: #fff;
   background-image: url(images/ods_main_footer.png);}
 
-#FT_L { float: left;
+#FT_L { 
+  float: left;
   clear: left;
   margin-top: 10px;
   margin-left: 8px;
   border: 1px solid #788}
 
-#FT_R { float: right;
+#FT_R { 
+  float: right;
   clear: right;
   margin-top: 10px;
   margin-bottom: 10px;
@@ -757,6 +759,8 @@ a.profile_tab {
   color: #888;
   text-decoration: none}
 
+#u_profile_r ul { list-style-type: none; padding: 0px; }
+
 /* Contacts */
 
 div.contacts_ctr {
@@ -936,3 +940,8 @@ table.grid {
   background-color: #0080FF;
   color: white;
 }
+
+
+/* Profile edit page
+
+table.profile_edit { background-color: green} */

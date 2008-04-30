@@ -1,3 +1,90 @@
+// TODO: move template functions to OAT
+//
+
+function _getChildElemsByClassName (elm, class_name, max_depth, stop_at_first_match, elm_arr)
+{
+  var i = 0;
+
+  if (!max_depth) return elm_arr;
+
+  if (OAT.Dom.isClass (elm, class_name)) 
+    {
+      elm_arr.append (elm);
+
+      if (stop_at_first_match)
+	return elm_arr;
+    }
+  
+  for (i = 0; i < elm.childNodes.length; i++)
+    {
+      var n = elm.childNodes[i];
+
+      if (is_elem (n))
+	_getChildElemsByClassName (n, class_name, max_depth, stop_at_first_match, elm_arr);
+
+      if (elm_arr.length && stop_at_first_match)
+	return elm_arr;
+    }
+  max_depth--;
+  return elm_arr;
+}
+
+function getChildElemsByClassName (elm, class_name, max_depth, stop_at_first_match)
+{
+  var elm_arr = new Array ();
+  
+  return _getChildElemsByClassName (elm, class_name, max_depth, stop_at_first_match, elm_arr);
+}
+
+function replaceTemplateClass (elm, class_name, content)
+{
+  var  _n = getChildElemsByClassName (elm, class_name, 16, false);
+  for (var i = 0; i < _n.length; i++) 
+    {
+      _n[i].replaceChild (document.createTextNode (content), _n[i].firstChild);
+    }
+}
+
+function _def (_v)
+{
+  return typeof (_v) != 'undefined';
+}
+
+function is_elem (node)
+{
+  return (node.nodeType == 1) ? true : false;
+}
+
+function is_attrib_node (node)
+{
+  return (node.nodeType == 2) ? true : false;
+} 
+
+
+function append_elem (_src, _dst)
+{
+  for (var i = 0; i < _src.childNodes.length; i++)
+    _dst.appendChild (_src.childNodes[i].cloneNode (true));
+};
+
+
+function tpl_elem_repl (_src, _dst)
+{  
+  if (_dst.hasChildNodes)
+    {
+      OAT.Dom.clear (_dst);
+    }
+  append_elem (_src, _dst);
+  return _dst;
+}
+
+function ODSDOMSwapElem (old_elem, new_elem, tmp)
+{
+  tmp.parentNode.replaceChild (old_elem);
+  old_elem.parentNode.replaceChild (new_elem);
+  new_elem.parentNode.replaceChild (tmp);
+}
+
 function dd (txt)
 {
     if (typeof console == 'object' &&
@@ -345,7 +432,7 @@ ODS.paginator = function (iSet, containerTop, containerBottom, callback, customI
 		}
 	    else
 		{
-		    elmA = OAT.Dom.create ('a', {cursor:'pointer'});
+		    elmA = OAT.Dom.create ('a');
 		    elmA.action = elmType;
 		    OAT.Event.attach (elmA, "click", function (e) {var t = eTarget(e); self[t.action] ();} );
 		    var elmImg = OAT.Dom.create ('img');
@@ -476,8 +563,8 @@ ODS.session = function (customEndpoint)
 		           '&authStr=' +
 		           OAT.Crypto.sha (self.sid + $('loginUserName').value + $('loginUserPass').value);
 
-		var callback = function (xmlString) {
-
+	var callback = function (xmlString) 
+	{
 		    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 		    if (!self.isErr (xmlDoc))
@@ -609,8 +696,8 @@ ODS.session = function (customEndpoint)
 
 	var data = 'sid=' + self.sid;
 
-	var callback = function (xmlString) {
-
+    var callback = function (xmlString) 
+    {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 	    if (!self.isErr (xmlDoc))
@@ -632,8 +719,8 @@ ODS.session = function (customEndpoint)
 	var uriParams = OAT.Dom.uriParams ();
 
 	var url = self.openId.server +
-	          '?openid.mode=check_authentication&openid.assoc_handle='
-                                    + encodeURIComponent (self.openId.assoc_handle) +
+      '?openid.mode=check_authentication' + 
+      '&openid.assoc_handle=' + encodeURIComponent (self.openId.assoc_handle) +
 	          '&openid.sig='    + encodeURIComponent (self.openId.sig) +
 	          '&openid.signed=' + encodeURIComponent (self.openId.signed);
 
@@ -652,10 +739,10 @@ ODS.session = function (customEndpoint)
 			if (_val != '')
 			    url = url + '&openid.' + _key + '=' + encodeURIComponent (_val);
 		    }
-
 	    }
 
-	var data = 'realm=wa&openIdUrl=' + encodeURIComponent (url) +
+    var data = 'realm=wa' + 
+    '&openIdUrl='      + encodeURIComponent (url) + 
 	           '&openIdIdentity=' + encodeURIComponent (self.openId.identity);
 
 	var callback = function (xmlString)
@@ -696,8 +783,8 @@ ODS.session = function (customEndpoint)
 	           '&usersStr=' + encodeURIComponent (users) +
                    '&fieldsStr=' + encodeURIComponent (fields);
 
-	var callback = function (xmlString) {
-
+    var callback = function (xmlString) 
+    {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 	    if (!self.isErr (xmlDoc))
@@ -841,6 +928,10 @@ ODS.Nav = function (navOptions)
     this.ui            = {};
     this.defaultAction = false;
     this.session       = new ODS.session ();
+  this.loading_app_menu_elem = false;
+  this.throbberImg = false;
+  this.appIconSave = false;
+  this.appIconSaveBag = false;
     this.profile       = {userName     : false,
 			  userId       : false,
 			  userFullName : false,
@@ -851,6 +942,9 @@ ODS.Nav = function (navOptions)
 			  msgTab       : false,
 			  show         : false,
 			  dataspace    : {userName:false,userId:false},
+			personal_uri : false,
+			sioc_uri     : false,
+			foaf_uri: false,
 			  set          : function (profileId) { this.userName = false;
 							        this.userId   = profileId;
 							        userFullName  = false;
@@ -859,13 +953,11 @@ ODS.Nav = function (navOptions)
     };
 
     this.connections = { userId : false,
-			 show   : false
-    };
+		       show   : false };
 
     this.searchObj = {qStr : false,
 		      map  : false,
-		      tab  : false
-    };
+		     tab  : false };
 
     function preValidate()
     {
@@ -1104,13 +1196,14 @@ ODS.Nav = function (navOptions)
 	if (!self.session.userName)
 	    return;
 
-	var appTitle = OAT.Dom.create ("h3", {}, 'app_menu_t');
+    var appTitle = OAT.Dom.create ("h3");
 	appTitle.id = 'APP_MENU_T';
 
-	var appTitleApplicationA = OAT.Dom.create ("a", {paddingRight:'3px'});
+    var appTitleApplicationA = OAT.Dom.create ("a");
+    appTitleApplicationA.id = 'APP_MENU_LNK';
 	appTitleApplicationA.innerHTML = 'Applications';
 
-	var appTitleEditA = OAT.Dom.create ("a", {cursor:'pointer'}, 'lnk');
+    var appTitleEditA = OAT.Dom.create ("a", {}, 'lnk');
 	appTitleEditA.innerHTML='edit';
 
 	OAT.Event.attach (appTitleEditA, "click",
@@ -1123,12 +1216,10 @@ ODS.Nav = function (navOptions)
 
 	var ulApp = OAT.Dom.create ("ul");
 	ulApp.id = 'APP_MENU';
-	ulApp.className = 'app_menu';
 	OAT.Dom.append ([rootDiv,ulApp]);
 
 	var ftApp = OAT.Dom.create ('div');
 	ftApp.id='APP_MENU_FT';
-	ftApp.className='app_menu_ft';
 
 	var ftAppA=OAT.Dom.create ('a');
 	ftAppA.href='javascript:void(0)';
@@ -1141,7 +1232,7 @@ ODS.Nav = function (navOptions)
 
 	OAT.Dom.append ([rootDiv, ftApp], [ftApp, ftAppA]);
 
-	function renderAppUl (xmlDoc)
+    function renderAppNav (xmlDoc)
 	{
 	    var resXmlNodes = OAT.Xml.xpath (xmlDoc, '//installedPackages_response/application',{});
 
@@ -1160,14 +1251,17 @@ ODS.Nav = function (navOptions)
 				  dsUrl    : '#UID#/' + packageName + '/'};
 
 		    var appMenuItem = OAT.Dom.create ('li');
-		    var appMenuItemA = OAT.Dom.create ('a',{cursor:'pointer'});
+	  var appMenuItemA = OAT.Dom.create ('a');
+
 		    appMenuItemA.packageName = packageName;
 		    appMenuItemA.id = packageName + '_menuItem';
 
 		    if (resXmlNodes[i].getAttribute ('instcount') == 0)
 			OAT.Event.attach (appMenuItemA, "click",
-					  function()
+			      function (e)
 					  {
+				var t = eTarget (e);
+				self.show_app_throbber (t.parentNode);
 					      self.createApplication (this.packageName, self.appCreate);
 					  });
 		    else
@@ -1181,8 +1275,12 @@ ODS.Nav = function (navOptions)
 					      function(e)
 					      {
 						  var t = eTarget (e);
+				  
 						  if (t.defaultUrl)
+				    {
+				      self.show_app_throbber (t.parentNode);
 						      self.loadVspx (self.expandURL (t.defaultUrl));
+				    }
 					      });
 			}
 
@@ -1191,7 +1289,7 @@ ODS.Nav = function (navOptions)
 		    appMenuItemImg.className = 'app_icon';
 		    appMenuItemImg.src = appOpt.icon;
 
-//exception - items that should not be show;
+//exception - items that should not be shown
 
 		    if (appOpt.menuName != 'Community')
 			{
@@ -1207,7 +1305,7 @@ ODS.Nav = function (navOptions)
 		}
 	}
 
-	self.installedPackages (renderAppUl);
+    self.installedPackages (renderAppNav);
 
     };
 
@@ -1220,17 +1318,21 @@ ODS.Nav = function (navOptions)
 
 	var menuObj = $(packageName.replace(' ', '') + '_menuItem');
 
-	var appMenuItemA = OAT.Dom.create ('a', {cursor:'pointer'});
+    var appMenuItemA = OAT.Dom.create ('a');
+    
 	appMenuItemA.packageName = packageName;
 	appMenuItemA.defaultUrl = url;
 	appMenuItemA.id = packageName + '_menuItem';
 	appMenuItemA.innerHTML = menuObj.innerHTML;
 
 	OAT.Event.attach (appMenuItemA, "click",
-			  function ()
-                          {
+		      function (e) {
+			var t = eTarget (e);
 			      if (this.defaultUrl.length)
+			  {
+			    self.show_app_throbber (t.parentNode);
 				  self.loadVspx (self.expandURL (this.defaultUrl));
+			  }
 			  });
 
 	menuObj = menuObj.parentNode;
@@ -1246,7 +1348,9 @@ ODS.Nav = function (navOptions)
     {
 	rootDiv = self.leftbar;
 	OAT.Dom.clear (rootDiv);
-	var odsHomeA = OAT.Dom.create ('a', {cursor:'pointer'})
+    var odsHomeA = OAT.Dom.create ('a', {})
+    odsHomeA.id = 'ODS_HOME_LNK';
+    
 	odsHomeA.innerHTML = '<img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/>';
 	if (self.session.userName)
 	    OAT.Event.attach (odsHomeA,"click",
@@ -1547,8 +1651,8 @@ ODS.Nav = function (navOptions)
 	    function renderMsgNavBlock ()
 	    {
 		var container = OAT.Dom.create ("div");
-
 		var showSendA = OAT.Dom.create ('a', {cursor: 'pointer'});
+	
 		showSendA.blockId = 'sendBlock';
 		OAT.Event.attach (showSendA, "click",
 				  function (e) {
@@ -1616,7 +1720,8 @@ ODS.Nav = function (navOptions)
 
 	    if (!updateDock)
 		{
-		    var msgNavDock = dock.addObject (0, renderMsgNavBlock (), {color      : titleBGColor,
+	  var msgNavDock = dock.addObject (0, renderMsgNavBlock (), 
+                {color      : titleBGColor,
 									       title      : 'Show dashboard',
 									       titleColor : titleTxtColor});
 		    OAT.Dom.unlink (msgNavDock.close.firstChild);
@@ -1700,10 +1805,10 @@ ODS.Nav = function (navOptions)
 							    function () {
 								self.userMessages (1, renderMessagesInterface);
 							    });
-
 				  });
 
-		var msgSentTxt = OAT.Dom.create ('span', {color    : 'green',
+	var msgSentTxt = 
+	OAT.Dom.create ('span', {color    : 'green',
 							  cssFloat : 'right',
 							  padding  : '0px 5px 0px 0px',
 							  display  : 'none',
@@ -1782,7 +1887,8 @@ ODS.Nav = function (navOptions)
 
 		if (messages.length == 0)
 		    {
-			var div = OAT.Dom.create ('div', {overflow    : 'auto',
+	    var div = OAT.Dom.create ('div', {
+	      overflow    : 'auto',
 							  width       : '100%',
 							  height      : '20px',
 							  paddingLeft : '10px',
@@ -2058,16 +2164,11 @@ ODS.Nav = function (navOptions)
 			connMenuItems.childNodes[i].innerHTML.indexOf ('loadVspx') == -1)
 			{
 			    if (connMenuItems.childNodes[i].innerHTML.indexOf ('Invitations') != -1)
-				{
 				    OAT.Event.attach (connMenuItems.childNodes[i], "click",
 						      function () {
-							  self.invitationsGet ('fullName,photo,home', self.renderInvitations);
+				    self.invitationsGet ('fullName,photo,home', self.renderInvitations)
 						      });
-				}
-			    else
-				{
-				    if (connMenuItems.childNodes[i].innerHTML.indexOf ('Find People') != -1)
-					{
+	      else if (connMenuItems.childNodes[i].innerHTML.indexOf ('Find People') != -1)
 					    OAT.Event.attach (connMenuItems.childNodes[i], "click",
 							      function () {
 								  if ($('search_lst_sort'))
@@ -2078,16 +2179,15 @@ ODS.Nav = function (navOptions)
 
 								  self.showSearch ();
 							      });
-					}
 				    else
-					    OAT.Event.attach (connMenuItems.childNodes[i],
-							      "click",
+		{
+		  OAT.Event.attach (connMenuItems.childNodes[i],"click",
 							      function () {
 								  self.connections.show = true;
 								  self.connections.userId = self.session.userId;
 								  self.connectionsGet (self.connections.userId,
-										       "fullName,photo,homeLocation,dataspace",
-										       self.updateConnectionsInterface);
+							   'fullName,photo,homeLocation,dataspace',
+							   self.updateConnectionsInterface)
 							      });
 				}
 			}
@@ -2797,12 +2897,21 @@ ODS.Nav = function (navOptions)
 		$('invitations_connection_full_name_5').innerHTML = fullName;
 
 		$('invitations_connection_photo').alt = fullName;
-		$('invitations_connection_photo').src = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
+
+	$('invitations_connection_photo').src = 
+	  OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, 
 											  '//invitationsGet_response/invitation/photo',{})[0]);
 
-		$('invitations_connection_city').innerHTML = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '//invitationsGet_response/invitation/home/city',{})[0]);
-		$('invitations_connection_country').innerHTML = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '//invitationsGet_response/invitation/home/country',{})[0]);
-		$('invitations_connection_conncount').innerHTML = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '//invitationsGet_response/invitation/connections/count',{})[0]);
+	$('invitations_connection_city').innerHTML = 
+	  OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
+					    '//invitationsGet_response/invitation/home/city',{})[0]);
+
+	$('invitations_connection_country').innerHTML = 
+	  OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, 
+					    '//invitationsGet_response/invitation/home/country',{})[0]);
+
+	$('invitations_connection_conncount').innerHTML = 
+	  OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '//invitationsGet_response/invitation/connections/count',{})[0]);
 
 		$('invitations_C').visited = 1;
 
@@ -2849,6 +2958,12 @@ ODS.Nav = function (navOptions)
 
     };
 
+  this.requireLogin = function ()
+  {
+    if (this.session.userId) return;
+    self.logIn();
+  }
+
     this.logIn = function ()
     {
     // XXX: add later #destroy previous session and session cookie#
@@ -2894,7 +3009,9 @@ ODS.Nav = function (navOptions)
 
 		if ($('loginUserName'))
 		    {
-			$('loginUserName').callback = function () {
+	    $('loginUserName').callback = 
+	      function () 
+	      {
 			    if ($('loginUserPass'))
 				$('loginUserPass').focus();
 			    return;
@@ -2908,7 +3025,9 @@ ODS.Nav = function (navOptions)
 		    {
 			$('loginUserPass').tokenReceived = false;
 
-			$('loginUserPass').callback = function () {
+	    $('loginUserPass').callback = 
+	      function () 
+	      {
 			    if (this.tokenReceived)
 				{
 				    self.showLoginThrobber ();
@@ -3158,8 +3277,8 @@ ODS.Nav = function (navOptions)
         for (var i = 0; i < connections.length; i++)
 	    {
 		var conn = buildObjByChildNodes (connections[i]);
-
 		var arrPos = -1;
+	
 		if (self.session.connectionsId)
 		    arrPos = self.session.connectionsId.find (conn.uid);
 
@@ -3169,12 +3288,12 @@ ODS.Nav = function (navOptions)
 
 		var connHTML = templateHtml;
 
-		connHTML = connHTML.replace ('#connImgSRC#',
+	connHTML = connHTML.replace ('{connImgSRC}', 
 					     conn.photo.length > 0 ? conn.photo : 'images/missing_profile_picture.png'); // images/profile.png
-		connHTML = connHTML.replace ('#connProfileFullName#', conn.fullName);
-		connHTML = connHTML.replace ('#sendMsg#', 'sendMsg_' + conn.uid);
-		connHTML = connHTML.replace ('#viewConnections#', 'viewConnections_' + conn.uid);
-		connHTML = connHTML.replace ('#doConnection#', 'doConnection_' + conn.uid);
+	connHTML = connHTML.replace ('{connProfileFullName}', conn.fullName);
+	connHTML = connHTML.replace ('{sendMsg}', 'sendMsg_' + conn.uid);
+	connHTML = connHTML.replace ('{viewConnections}', 'viewConnections_' + conn.uid);
+	connHTML = connHTML.replace ('{doConnection}', 'doConnection_' + conn.uid);
 
 		var divSize = (OAT.Dom.getWH ($('RT'))[0] - 20) + 'px';
 
@@ -3323,8 +3442,6 @@ ODS.Nav = function (navOptions)
 						    });
 				}
 
-//            if(typeof(elmParent)!='undefined')
-
 			OAT.Dom.append ([elmParent,elm]);
 		    }
 		else
@@ -3338,7 +3455,8 @@ ODS.Nav = function (navOptions)
 						{
 						    self.connectionSet(t.uid, 1,
 								       function (xmlDoc) {
-									   var msg = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
+						       var msg = 
+							 OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, 
 														     '/connectionSet_response/message',{})[0]);
 									   if (msg && msg.length > 0)
 									       self.dimmerMsg (msg);
@@ -3426,7 +3544,8 @@ ODS.Nav = function (navOptions)
 				       self.updateProfile(xmlDoc2);
 				   });
 
-	var mapOpt = {
+    var mapOpt = 
+    {
 	    fix         : OAT.MapData.FIX_ROUND1,
 	    fixDistance : 20,
 	    fixEpsilon  : 0.5
@@ -3451,6 +3570,7 @@ ODS.Nav = function (navOptions)
 		ciTab.add ("ciT3", "ciP3");
 		ciTab.add ("ciT4", "ciP4");
 		ciTab.add ("ciT5", "ciP5");
+	ciTab.add ("ciT6", "ciP6");
 
 		ciTab.go (0);
 
@@ -3507,6 +3627,13 @@ ODS.Nav = function (navOptions)
 	var userProfileDataspace =
 	    OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
 					      '/usersGetInfo_response/user/dataspace',{})[0]);
+    var userFOAFURI = 
+    OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
+				      '/usersGetInfo_response/user/foaf_ds', {})[0]);
+
+    var userSIOCURI = 
+    OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, 
+				      '/usersGetInfo_response/user/sioc_ds', {})[0]);
 
 	if (userDisplayName == '')
 	    userDisplayName = self.profile.userName;
@@ -3522,156 +3649,226 @@ ODS.Nav = function (navOptions)
 
 	var gems = $('profileUserGems').getElementsByTagName ("a");
 
-	gems[0].href =
-	    self.odsLink () +
-	    userProfileDataspace.replace ('#this','/foaf.rdf'); // foaf
+    // XXX Ugly hack, replace with backend func ASAP
 
-	gems[1].href =
+    this.profile.foaf_uri = 
 	    self.odsLink () +
-	    userProfileDataspace.replace ('#this','/sioc.rdf'); //sioc
+    userProfileDataspace.replace ('#this',''); // foaf
+
+    var org_pref= (userProfileDataspace.indexOf ('/organization') > -1) ? 'organization/' : 'person/';
+
+    this.profile.sioc_uri = 
+    self.odsLink () + 
+    userProfileDataspace.replace (org_pref + self.profile.userName + '#this', self.profile.userName); //sioc
+
+    this.profile.personal_uri = userProfileDataspace;
+
+    gems[1].href = this.profile.sioc_uri;
+    gems[0].href = this.profile.foaf_uri;
 
 //    gems[2].href='http://geourl.org/near?p='+encodeURIComponent('http://'+document.location.host+'/dataspace/'+self.profile.userName); //GEOURL //http://geourl.org/near?p=http%3A//bdimitrov.lukanet.com%3A8890/dataspace/borislavdimitrov
 
-	gems[2].href = self.odsLink () +
-	               self.ods +
-	               'sn_user_export.vspx?ufid=' +
-	               self.profile.userId +
-	               '&ufname=' +
-                       self.profile.userName; //vcard
+    this.profile.vcard = self.odsLink () + 
+                   self.ods + 
+                   'sn_user_export.vspx?ufid=' + self.profile.userId + 
+                   '&ufname='                  + self.profile.userName; //vcard
 
-	function renderProfileUserActions()
-	{
+    gems[2].href = this.profile.vcard;
 
-	    OAT.Dom.show ($('profile_user_actions'));
-
-	    var msgA = $('profileSendMsg');
-	    if (self.session.userId == self.profile.userId || !self.session.userId)
-		OAT.Dom.hide (msgA);
-	    else
+    this.connect_users = function (e)
 		{
-		    OAT.Dom.show (msgA);
-		    OAT.Dom.attach (msgA, "click",
-				    function () {
-					self.ui.newMsgWin (msgA, self.profile.userId);
-				    });
-		}
-
-	    var connA = $('profileConnAction');
-
-	    if (!self.session.userId)
-		{
-		    connA.innerHTML = 'Connect';
-		    OAT.Dom.attach (connA,"click",
-				    function () {
-					self.defaultAction =
-					    function()
+      if (eTarget (e).id == 'profileConnAction' || eTarget (e).id == 'connect_box_connect')
 					    {
+	  self.requireLogin ();
 						self.connectionSet (self.profile.userId, 1,
 								    function (xmlDoc) {
-									var msg =
-									OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
-													  '/connectionSet_response/message',{})[0]);
+				var msg = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
+									    '/connectionSet_response/message',
+									    {})[0]);
 									if (msg && msg.length > 0)
 									    self.dimmerMsg (msg);
-									else
-									    {
+				
 										self.session.connectionAdd (self.profile.userId);
 										self.session.invitationAdd (self.profile.userId);
-									    };
-
-									self.connections.show = true;
-									self.connectionsGet (self.session.userId,
-											     'fullName,photo,homeLocation,dataspace',
-											     self.updateConnectionsInterface);
-
-								    });
-					    };
-					self.logIn ();
+				self.initProfile ();
 				    });
 		}
 	    else
-		if (self.session.userId == self.profile.userId || self.session.userId)
-		    OAT.Dom.hide (connA.parentNode);
-     		else
+	dd ('Invalid target in connect_users');
+    };
+
+    this.showConnectBox = function () 
 		    {
-			var connLi = connA.parentNode;
-			OAT.Dom.unlink (connA);
+      dd ('showConnectBox');
+      var conn_a = $('profileConnAction');
+      conn_a.innerHTML = 'Connect';
+      OAT.Dom.attach (conn_a, 'click', this.connect_users);
+      var cb = tpl_elem_repl ($('connect_box_tpl'), $('connect_box'));
+      var conn_btn = $('connect_box_connect')
+      OAT.Dom.attach (conn_btn, 'click', this.connect_users);
+      this.processConnectBoxTemplate (cb);
+      OAT.Dom.show (cb);
+    };
 
-			var connA = OAT.Dom.create ('a', {cursor:'pointer'});
-			connA.id = "profileConnAction";
 
-			var doAppend = true;
+    this.showDisconnectBox = function ()
+    {
+      dd ('showDisconnectBox');
+      var conn_a = $('profileConnAction');
+      conn_a.innerHTML = 'Disconnect';
+      OAT.Dom.attach (conn_a, 'click', this.disconnect_users);
+      OAT.Dom.hide ($('connect_box'));
+    };
 
-			if (self.session.connectionsId)
+    this.processConnectBoxTemplate = function (tpl)
 			    {
-				if (self.session.connectionsId.find (self.profile.userId) > -1 &&
-				    (!self.session.invitationsId ||
-				     (self.session.invitationsId &&
-				      self.session.invitationsId.find (self.profile.userId) < 0)))
+      replaceTemplateClass (tpl, 'u_full_name', self.profile.userFullName);
+      replaceTemplateClass (tpl, 'u_name', self.profile.userName);
+      //      replaceTemplateClass (tpl, 'u_thumbnail', self.profile.userThumbnail, self.profile.userPhotoURL);
+    }
+
+    this.disconnect_users = function (e)
 				    {
-					connA.innerHTML = 'Disconnect';
-					OAT.Dom.attach (connA, "click",
-							function () {
+      dd ('disconnect_users');
+      dd ('user:' + self.session.userId);
+      dd ('from:' + self.profile.userId);
+      if (eTarget (e).id == 'profileConnAction' || eTarget (e).id == 'connect_box_disconnect') 
 							    self.connectionSet (self.profile.userId, 0,
 										function () {
 										    self.session.connectionRemove (self.profile.userId);
 										    self.initProfile ();
 										});
-							});
-				    }
 				else
-				    if (self.session.connectionsId.find (self.profile.userId) > -1 &&
-					self.session.invitationsId &&
-					self.session.invitationsId.find (self.profile.userId) > -1)
+	dd ('Disconnect action for unknown control initiated');
+    }
+
+    this.withdraw_connection = 
+    function (e) 
 					{
-					    connA.innerHTML = 'Withdraw invitation';
-					    OAT.Dom.attach (connA, "click",
-							    function () {
-								self.connectionSet (self.profile.userId,
-										    4,
+      if (eTarget (e).id == 'profileConnAction' || eTarget (e).id == 'connect_box_withdraw')
+	self.connectionSet (self.profile.userId, 4,
 										    function () {
 											self.session.connectionRemove (self.profile.userId);
 											self.session.invitationRemove (self.profile.userId);
 											self.initProfile ();
 										    });
-							    });
+      else 
+	dd ('withdraw action from unknown source');
+    };
+
+    this.showWithdrawBox = 
+    function ()
+    {
+      dd ('showWithdrawBox');
+      var conn_a = $('profileConnAction')
+      conn_a.innerHTML = 'Withdraw invitation';
+      OAT.Dom.attach (conn_a, "click", this.withdraw_connection);
+      var cb = tpl_elem_repl ($('connect_pending_tpl'), $('connect_box'));
+      var wd_btn = $('connect_box_withdraw');
+      OAT.Dom.attach (wd_btn, 'click', this.withdraw_connection);
+      replaceTemplateClass (cb, 'u_full_name', self.profile.userName);
+      OAT.Dom.show (cb);
+    };
+
+    this.hideConnectBox = 
+    function ()
+    {
+      dd ('hideConnectBox');
+      var conn_a = $('profileConnAction');
+      OAT.Dom.hide (conn_a);
+      var conn_b = $('connect_box');
+      OAT.Dom.hide (conn_b);
+    };
+
+    this.isConnected =
+    function (uid)
+    {
+      if (!self.session.userId || !self.session.connectionsId) return false;
+      
+      if (self.session.connectionsId)
+	{
+	  if (self.session.connectionsId.find (uid) > -1 && 
+	      (!self.session.invitationsId || 
+	       (self.session.invitationsId && 
+		self.session.invitationsId.find (uid) < 0)))
+	    {
+	      return true;
+	    }
+	}
+    }
+
+    this.hasPendingInvitation = function (uid) 
+    {
+      if (!self.session.connectionsId) return false;
+      if (self.session.connectionsId.find (self.profile.userId) > -1 && 
+	  self.session.invitationsId && 
+	  self.session.invitationsId.find (self.profile.userId) > -1)
+	{
+	  return true;
 					}
+    }
+
+    function renderConnectBox ()
+    {
+      var box_tpl;
+      
+      if (self.session.userID == self.profile.userID) 
+	return;
+
+      if (self.canConnect (self.profile.userId))
+	box_tpl = $('connect_box_tpl');
 				    else
-					if (self.session.userId != self.profile.userId)
+	box_tpl = $('disconnect_box_tpl');
+
+      OAD.Dom.show (box_tpl);
+      OAT.Dom.attach (getConnectBoxButton (box_tpl), "click", this.initiateConnection)
+    }
+
+    function renderProfileUserActions ()
 					    {
-						connA.innerHTML='Connect';
-						OAT.Dom.attach (connA, "click",
-								function () {
-								    self.connectionSet (self.profile.userId,
-											1,
+      OAT.Dom.show ($('profile_user_actions'));
+    
+      var msgA = $('profileSendMsg');
+	  
+      if (self.session.userId == self.profile.userId || !self.session.userId)
+	OAT.Dom.hide (msgA);
+      else       
+	{
+	  OAT.Dom.show (msgA);
+	  OAT.Dom.attach (msgA, "click", 
 											function() {
-											    self.session.connectionAdd (self.profile.userId);
-											    self.session.invitationAdd (self.profile.userId);
-											    self.initProfile ();
-											});
+			    self.ui.newMsgWin (msgA, self.profile.userId);
 								});
 					    }
-					else
-					    doAppend = false;
 
-				if (doAppend)
-				    OAT.Dom.append ([connLi,connA]);
-			    }
-		    }
-	    var browseDS = $('profileBrowseDS');
-	    if (browseDS && self.serverOptions.useRDFB == 1)
+      var connA = $('profileConnAction');
+
+      if (self.session.userId)
+	{
+	  if (self.session.userId != self.profile.userId)
+	    {
+	      // dd ('viewing somebody else');
+	      if (self.isConnected (self.profile.userId))
 		{
-		    browseDS.href = '/rdfbrowser/index.html?uri=' +
-			encodeURIComponent (document.location.protocol +
-					    '//' +
-					    self.serverOptions.uriqaDefaultHost +
-					    userProfileDataspace);
-
-		    browseDS.target = "_blank";
-
+		  self.showDisconnectBox ();
+			    }
+	      else if (self.hasPendingInvitation (self.profile.userId))
+		{
+		  self.showWithdrawBox ();
+		    }
+	      else 
+		{
+		  self.showConnectBox ();
+		}
 		}
 	    else
-		OAT.Dom.hide (browseDS.parentNode);
+	    {
+	      // dd ('viewing own profile');
+	      self.hideConnectBox();
+	    }
+	}
+      else
+	self.showConnectBox ();
 	}
 
 	renderProfileUserActions ();
@@ -3872,7 +4069,6 @@ ODS.Nav = function (navOptions)
 				    if (act.status == 0)
 					actHidden.push (act.id);
 				}
-			    self.wait ('hide');
 			});
 		}
 
@@ -3918,8 +4114,10 @@ ODS.Nav = function (navOptions)
 					  var feedId = t.feedId;
 					  t = t.parentNode.parentNode;
 					  self.feedStatusSet (feedId, 0,
-							      function () {
-								  if (t.parentNode.childNodes.length == 1) {
+						  function () 
+						  {
+						    if (t.parentNode.childNodes.length == 1) 
+						      {
 								      if (t.parentNode.previousSibling.tagName == 'H3')
 									  OAT.Dom.unlink(t.parentNode.previousSibling);
 								      OAT.Dom.unlink(t.parentNode);
@@ -3927,7 +4125,6 @@ ODS.Nav = function (navOptions)
 								  else
 								      OAT.Dom.unlink(t);
 
-								  self.wait('hide');
 							      });
 				      });
 
@@ -3943,6 +4140,16 @@ ODS.Nav = function (navOptions)
 			OAT.Dom.append ([actLi, actImg, actDiv, ctrl]);
 		    else
 			OAT.Dom.append ([actLi, actDiv, ctrl]);
+
+	  // XXX hack to replace URL with loader. Should be handled in URL rewriters
+
+	  var appUri = actDiv.childNodes[4].href;
+	  actDiv.childNodes[4].onclick = function () {return false;};
+	  OAT.Dom.attach (actDiv.childNodes[4], "click",
+			  function () 
+			  {
+			    self.loadVspx (appUri);
+			  });
 
 		    var actDate = entry.updated.substring (0, 10);
 
@@ -3986,15 +4193,17 @@ ODS.Nav = function (navOptions)
 
 	    OAT.Dom.clear ($('ciP3'));
 
+      var _ul = OAT.Dom.create ('ul',{},'ci_im');
+      OAT.Dom.append ([$('ciP3'), _ul]);
+
 	    for (var i = 0; i < _im.childNodes.length; i++)
 		{
-		    var _em = OAT.Dom.create ('em');
-		    _em.innerHTML = _im.childNodes[i].nodeName + ': ';
+	  var _li = OAT.Dom.create ('li');
+	  _li.innerHTML = _im.childNodes[i].nodeName + ': ';
 
-		    OAT.Dom.append ([$('ciP3'),
-				     _em,
+	  OAT.Dom.append ([_ul,
+			   _li,
 				     OAT.Dom.text (OAT.Xml.textValue (_im.childNodes[i])),
-				     OAT.Dom.create('br')
 				     ]);
 		}
 
@@ -4119,7 +4328,13 @@ ODS.Nav = function (navOptions)
 
 //      self.profile.ciMap.optimalPosition(new Array(self.profile.ciMap.homeLocation,self.profile.ciMap.workLocation));
 
-	    self.wait ('hide');
+      $('sm_personal').href = this.nav.profile.personal_uri;
+      $('sm_openid').href = this.nav.profile.personal_uri.replace('#this','');
+      $('sm_foaf').href = this.nav.profile.foaf_uri;
+      $('sm_sioc').href = this.nav.profile.sioc_uri;
+      $('sm_dataspace').href = this.nav.profile.personal_uri.replace('#this','');
+      $('sm_vcard').href = this.nav.profile.vcard;
+
 	    return;
 
 	}
@@ -4214,10 +4429,8 @@ ODS.Nav = function (navOptions)
 		    $('sm_vcard').href =
   		        self.odsLink () +
 		        self.ods +
-		        'sn_user_export.vspx?ufid=' +
-		        self.profile.userId +
-		        '&ufname=' +
-		        self.profile.userName;
+	    'sn_user_export.vspx?ufid=' + self.profile.userId +
+	    '&ufname='                  + self.profile.userName;
 		    $('sm_vcard').target='_blank';
 		}
 	}
@@ -4308,7 +4521,7 @@ ODS.Nav = function (navOptions)
 		{
 		    discussionGroup = buildObjByChildNodes (resXmlNodes[i]);
 
-		    var discussionA = OAT.Dom.create ('a', {cursor:'pointer'});
+	  var discussionA = OAT.Dom.create ('a');
 		    discussionA.innerHTML = discussionGroup.name;
 
 		    OAT.Event.attach (discussionA, "click",
@@ -4447,7 +4660,6 @@ ODS.Nav = function (navOptions)
 
     this.showProfile = function ()
     {
-	self.wait ();
 	OAT.Dom.hide ('vspxApp');
 	OAT.Dom.hide ('messages_div');
 	OAT.Dom.hide ('contacts_interface');
@@ -4456,13 +4668,10 @@ ODS.Nav = function (navOptions)
 
 	OAT.Dom.show ('u_profile_l');
 	OAT.Dom.show ('u_profile_r');
-	self.wait ('hide');
     };
 
     this.showMessages = function ()
     {
-	self.wait ();
-
 	OAT.Dom.hide ('vspxApp');
 	OAT.Dom.hide ('u_profile_l');
 	OAT.Dom.hide ('u_profile_r');
@@ -4471,14 +4680,10 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.hide ('generalSearch_C');
 
 	OAT.Dom.show ('messages_div');
-
-	self.wait('hide');
     };
 
     this.showConnections = function()
     {
-	self.wait ();
-
 	OAT.Dom.hide ('vspxApp');
 	OAT.Dom.hide ('u_profile_l');
 	OAT.Dom.hide ('u_profile_r');
@@ -4487,14 +4692,10 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.hide ('generalSearch_C');
 
 	OAT.Dom.show ('contacts_interface');
-
-	self.wait ('hide');
     };
 
     this.showInvitations = function ()
     {
-	self.wait ();
-
 	OAT.Dom.hide ('vspxApp');
 	OAT.Dom.hide ('u_profile_l');
 	OAT.Dom.hide ('u_profile_r');
@@ -4503,13 +4704,10 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.hide ('generalSearch_C');
 
 	OAT.Dom.show ('invitations_C');
-
-	self.wait ('hide');
     };
 
     this.showSearch = function ()
     {
-	self.wait ();
 	OAT.Dom.hide ('vspxApp');
 	OAT.Dom.hide ('u_profile_l');
 	OAT.Dom.hide ('u_profile_r');
@@ -4518,13 +4716,10 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.hide ('invitations_C');
 
 	OAT.Dom.show ('generalSearch_C');
-
-	self.wait ('hide');
     };
 
     this.loadVspx = function (url)
     {
-	self.wait ();
 	OAT.Dom.hide ('u_profile_l');
 	OAT.Dom.hide ('u_profile_r');
 	OAT.Dom.hide ('messages_div');
@@ -4568,49 +4763,47 @@ ODS.Nav = function (navOptions)
 	return retUrl;
     };
 
-
-    this.wait = function (waitState)
+  this.wait = function (blah)
     {
+    dd ('Warning: Obsolete function wait called.');
       return;
+  }
 
-	if ($('loginDiv') && $('loginDiv').style.display != 'none')
-	    return; //checks if login is show.. so login disables wait div
-
-	if ($('dimmerMsg') && $('dimmerMsg').style.display != 'none') return; //checks if dimmer message is shown.
-
-	if (OAT.Dimmer.root || waitState == 'hide')
+  this.show_app_throbber = function (app_menu_elem)
 	    {
-		if (OAT.Dimmer.root)
+    if (!this.throbberImg)
 		    {
-			OAT.Dimmer.hide ();
-		    }
-		return;
+	this.appIconSaveBag = OAT.Dom.create ('div', {display: "none"});
+	this.throbberImg = OAT.Dom.create ('img', {}, 'throbber_img');
+	this.appIconSave = OAT.Dom.create ('img');
+	OAT.Dom.append ([this.appIconSaveBag, this.throbberImg, this.appIconSave]);
+	this.throbberImg.id = "APP_THROBBER"
+	this.throbberImg.src = 'images/throbber.gif';
 	    }
 
-	var waitDiv = $('waitDiv');
+    this.hide_app_throbber ();
+    this.loading_app_menu_elem = app_menu_elem;
 
-	if (!waitDiv)
-	    {
-		waitDiv = OAT.Dom.create ("div", {width           : '250px',
-						  height          : '40px',
-						  position        : 'absolute',
-						  backgroundColor : '#fff',
-						  paddingTop      : '10px'});
-		waitDiv.id = 'waitDiv';
+    var app_icon = getChildElemsByClassName (app_menu_elem, 'app_icon', 3, true)[0];
+    OAT.Dom.hide (app_icon);
 
-//      waitDiv.innerHTML="<span>Loading page... </span>";
+    var app_icon_par = app_icon.parentNode;
+    this.appIconSave = app_icon_par.replaceChild (this.throbberImg, app_icon)
+    OAT.Dom.show (this.throbberImg);
+  };
 
-		var throbberImg = OAT.Dom.create ('img', {verticalAlign: 'middle'});
-		throbberImg.src = 'images/oat/throbber.gif';
-		var throbberTxt = OAT.Dom.text ('Loading page... ');
+  this.hide_app_throbber = function ()
+    {
+      if (this.loading_app_menu_elem)
+	{
+	  var throbber = getChildElemsByClassName (this.loading_app_menu_elem, 'throbber_img', 2, true)[0];
+	  OAT.Dom.hide (this.throbberImg);
 
-		OAT.Dom.append ([document.body, waitDiv],
-			        [waitDiv, throbberTxt, throbberImg]);
+	  var throbber_par = throbber.parentNode;
+	  this.throbberImg = throbber_par.replaceChild (this.appIconSave, throbber);
+	  OAT.Dom.show (this.appIconSave);
+	  this.loading_app_menu_elem = false;
 	    }
-
-	OAT.Dimmer.show (waitDiv);
-	OAT.Dom.center (waitDiv, 1, 1);
-
     };
 
     this.dimmerMsg = function (msg,callback)
@@ -4630,6 +4823,7 @@ ODS.Nav = function (navOptions)
 				  });
 	    }
 	else
+      setTimeout ('OAT.Dimmer.hide ()', 5000)
 	    OAT.Event.attach (div, "click",
 			      function () {
 				  OAT.Dimmer.hide ();
@@ -4647,11 +4841,13 @@ ODS.Nav = function (navOptions)
 			onerror: function (request) { dd (request.getStatus ()); }
     };
 
-    this.installedPackages = function (callbackFunction) {
+  this.installedPackages =
+  function (callbackFunction) 
+  {
 	var data = 'sid=' + (self.session.sid ? self.session.sid : '');
-
 	var callback =
-	function (xmlString) {
+    function (xmlString) 
+    {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 	    if (!self.session.isErr (xmlDoc))
 		{
@@ -4664,8 +4860,9 @@ ODS.Nav = function (navOptions)
 		       data, callback, ajaxOptions);
     };
 
-    this.applicationsGet = function (userIdentity, applicationType, scope, callbackFunction) {
-
+  this.applicationsGet = 
+  function (userIdentity, applicationType, scope, callbackFunction) 
+  {
 	var data = 'sid=' + (self.session.sid ? self.session.sid : '');
 
 	if (typeof (userIdentity) != 'undefined' &&
@@ -4695,10 +4892,9 @@ ODS.Nav = function (navOptions)
 		       data, callback, ajaxOptions);
     };
 
-    this.createApplication = function (applicationType, callbackFunction)
+  this.createApplication = 
+  function (applicationType, callbackFunction) 
     {
-        self.wait ();
-
 	if (applicationType == 'FeedManager')
 	    applicationType = 'Feed Manager';
 
@@ -4729,7 +4925,9 @@ ODS.Nav = function (navOptions)
 		       ajaxOptions);
     };
 
-    this.userCommunities = function (callbackFunction) {
+  this.userCommunities = 
+  function (callbackFunction) 
+  {
 	self.wait ();
 
 	var data = 'sid=' + self.session.sid;
@@ -4751,8 +4949,8 @@ ODS.Nav = function (navOptions)
 	OAT.AJAX.POST (self.session.endpoint + "userCommunities", data, callback, ajaxOptions);
     };
 
-
-    this.invitationsGet = function (extraFields, callbackFunction)
+  this.invitationsGet = 
+  function (extraFields, callbackFunction) 
     {
 	self.wait ();
 	var data = 'sid=' + self.session.sid + '&extraFields=' + encodeURIComponent (extraFields);
@@ -4830,8 +5028,6 @@ ODS.Nav = function (navOptions)
 
     this.discussionGroupsGet = function (userId,callbackFunction)
     {
-	self.wait();
-
 	var data = 'sid=' + self.session.sid + '&userId=' + userId;
 
 	var callback =
@@ -4843,10 +5039,6 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait ();
-		}
 	};
 
 	OAT.AJAX.POST (self.session.endpoint + "userDiscussionGroups",
@@ -4855,8 +5047,6 @@ ODS.Nav = function (navOptions)
 
     this.feedStatusSet = function (feedId, feedStatus, callbackFunction)
     {
-	self.wait ();
-
 	var data = 'sid=' + self.session.sid + '&feedId=' + feedId + '&feedStatus=' + feedStatus;
 
 	var callback =
@@ -4868,10 +5058,6 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait ();
-		}
 	};
 
 	OAT.AJAX.POST (self.session.endpoint + "feedStatusSet",
@@ -4879,7 +5065,6 @@ ODS.Nav = function (navOptions)
     };
 
     this.feedStatus = function (callbackFunction) {
-	self.wait();
 
 	var data = 'sid=' + self.session.sid;
 
@@ -4891,17 +5076,13 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait ();
-		}
 	};
 
 	OAT.AJAX.POST (self.session.endpoint + "feedStatus", data, callback, optionsSynch);
     };
 
-    this.userMessages = function (msgType,callbackFunction) {
-
+  this.userMessages = function (msgType,callbackFunction) 
+  {
 	var data = 'sid=' + self.session.sid + '&msgType=' + msgType;
 
 	var callback =
@@ -4920,8 +5101,6 @@ ODS.Nav = function (navOptions)
 
     this.userMessageSend = function (recipientId, msg, senderId, callbackFunction)
     {
-	self.wait ();
-
       var data = 'sid=' + self.session.sid + '&recipientId=' + recipientId + '&msg=' + encodeURIComponent (msg);
 
       if (typeof (senderId) != 'undefined' && senderId)
@@ -4955,10 +5134,6 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait ();
-		}
 	};
 
 	OAT.AJAX.POST (self.session.endpoint+"userMessageSend", data, callback, optionsSynch);
@@ -4966,7 +5141,6 @@ ODS.Nav = function (navOptions)
 
     this.userMessageStatusSet = function (msgId, msgStatus, callbackFunction)
     {
-	self.wait ();
 
 	var data = 'sid=' + self.session.sid + '&msgId=' + msgId + '&msgStatus=' + msgStatus;
 
@@ -4978,10 +5152,6 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait ();
-		}
 	};
 
 	OAT.AJAX.POST (self.session.endpoint + "userMessageStatusSet",
@@ -4990,22 +5160,17 @@ ODS.Nav = function (navOptions)
 
     this.search = function (searchParamsStr, callbackFunction)
     {
-	self.wait ();
-
 	var data = 'sid=' + self.session.sid + '&searchParams=' + encodeURIComponent (searchParamsStr);
 
 	var callback =
-	function (xmlString) {
+    function (xmlString) 
+    {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 	    if (!self.session.isErr (xmlDoc))
 		{
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
-		}
-	    else
-		{
-		    self.wait ();
 		}
 	};
 
@@ -5015,8 +5180,6 @@ ODS.Nav = function (navOptions)
 
     this.searchContacts = function (searchParamsStr, callbackFunction)
     {
-	self.wait();
-
 	var data = 'sid=' + self.session.sid + '&searchParams=' + encodeURIComponent (searchParamsStr);
 
 	var callback =
@@ -5027,10 +5190,6 @@ ODS.Nav = function (navOptions)
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
-	    else
-		{
-		    self.wait();
-		}
 	};
 
 	OAT.AJAX.POST(self.session.endpoint+"searchContacts", data, callback, optionsSynch);
@@ -5038,8 +5197,6 @@ ODS.Nav = function (navOptions)
 
     this.tagSearchResult = function (tagParamsStr, callbackFunction)
     {
-	self.wait ();
-
 	var data = 'sid=' + self.session.sid + '&tagParams=' + encodeURIComponent (tagParamsStr);
 
 	var callback =
@@ -5050,10 +5207,6 @@ ODS.Nav = function (navOptions)
 		{
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
-		}
-	    else
-		{
-		    self.wait ();
 		}
 	};
 
@@ -5371,7 +5524,8 @@ ODS.Nav = function (navOptions)
 														     '/connectionSet_response/message',
 										                                     {})[0]);
 										   if (msg && msg.length > 0)
-										       self.dimmerMsg (msg);
+							     // self.dimmerMsg (msg);
+							     ;
 										   else
 										       {
 											   self.session.connectionAdd (t.uid);
@@ -5519,7 +5673,7 @@ ODS.Nav = function (navOptions)
 			OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:0});
 		    }
 
-    OAT.Event.attach($('vspxApp'),"load",function(){self.wait('hide');});
+  OAT.Event.attach ($('vspxApp'), "load", function () { self.hide_app_throbber (); });  
 
     OAT.Event.attach ($('vspxApp'), "load",
 		      function () {
@@ -5667,5 +5821,6 @@ function initNav ()
     $('vspxApp').style.height = vpsize[1] - 80 + 'px';
 
     nav = new ODS.Nav (navOptions);
+  var x = x;
 }
 

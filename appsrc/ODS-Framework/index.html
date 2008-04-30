@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC
-  "-//W3C//DTD XHTML 1.0 Strict//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+  "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
       xmlns:foaf="http://xmlns.com/foaf/0.1/" 
       xmlns:cal="http://www.w3.org/2002/12/cal/icaltzd#"
@@ -15,7 +15,11 @@
       xmlns:bio="http://vocab.org/bio/0.1/olb/">
   <head profile="http://www.w3.org/1999/xhtml/vocab#">
     <script type="text/javascript">
+//<![CDATA[
+
       document.write('<base href="'+document.location.protocol+'//'+ document.location.host+'/ods/" /> <!--[if IE]></base><![endif]-->');
+
+//]]>
     </script>
 
     <title>Personal Data Space Explorer</title>
@@ -24,6 +28,7 @@
     <!-- #META# -->
     <script type="text/javascript">
 
+//<![CDATA[
 // patch for recursive profile in iframe.
 
 if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
@@ -73,7 +78,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       }
      };
 
-
+//]]>
     </script>
     <script type="text/javascript" src="oat/loader.js"></script>
     <script type="text/javascript" src="nav_framework.js"></script>
@@ -88,7 +93,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
           <input id="search_textbox" type="text" size="10" value="" name="search_textbox"/>
           <img id="search_img" alt="search icon" src="images/search.png" onclick="this.callback()" />
         </div>
-        <div id="APP_MENU_C" class="app_menu_c">
+        <div id="APP_MENU_C">
         </div> <!-- #APP_MENU_C -->
       </div> <!-- #LT -->
       <div id="RT">
@@ -104,6 +109,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
   	          <ul class="menu_dd_1st_lvl" id="communities_menu_body">
+		    <li></li>
                   </ul>
                 </li>
               </ul>
@@ -117,7 +123,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   	            <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
   	          <ul class="menu_dd_1st_lvl" style="display: none;" id="connections_menu_items">
-  	            <li class="menu_item"><a href="javascript:void(0)">Online Now</a></li>
+  	            <!--li class="menu_item"><a href="javascript:void(0)">Online Now</a></li-->
   	            <li class="menu_item"><a href="javascript:void(0)">Status Updates</a></li>
   	            <li class="menu_separator"></li>
   	            <li class="menu_item"><a href="javascript:void(0)">Recently Added</a></li>
@@ -136,7 +142,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               <ul class="menu" id="messages_menu">
                 <li>
                   <div class="menu_head" >
-                    <a href="javascript:void(0)">Messages <span class="indicator"  id="newMsgCountSpan">(2)</span></a>
+                    <a href="javascript:void(0)">Messages
+		      <span class="indicator"
+		             id="newMsgCountSpan">(2)</span>
+		    </a>
   	            <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div> <!-- menu_head -->
                   <ul class="menu_dd_1st_lvl" id="messages_menu_items" style="display:none">
@@ -195,7 +204,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   	      <div class="w_content">
                 <div class="user_img_ctr">
                   <a href="javascript:void(0)">
-                    <img id="userProfilePhotoImg" rel="foaf:depicition" class="prof_photo" src="images/profile.png"/>
+		  <img alt="Profile image"
+		  id="userProfilePhotoImg"
+		  rel="foaf:depiction"
+		  class="prof_photo" src="images/profile.png"/>
                   </a>
                 </div> <!-- user_img_ctr -->
                 <div class="gems_ctr">
@@ -212,34 +224,13 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   </div> <!-- prof_user_gems -->
                 </div> <!-- gems_ctr -->
                 <ul class="prof_user_commands" id="profile_user_actions" style="display:none;">
-                  <li><a href="javascript:void(0)" id="profileConnAction">Connection/Disconnect</a></li>
+                  <li><a href="javascript:void(0)" id="profileConnAction">Connect/Disconnect</a></li>
                   <li><a href="javascript:void(0)" id="profileSendMsg">Send a message</a></li>
-                  <li><a href="javascript:void(0)" id="profileBrowseDS">Browse data space</a></li>
+                  <!--li><a href="javascript:void(0)" id="profileBrowseDS">Browse data space</a></li-->
                   <li><a href="javascript:void(0)" id="profileBrowseCG" style="display:none">Connection graph</a></li>
                 </ul>
               </div> <!-- w_content -->
   	    </div> <!-- .widget -->
-
-            <!-- Linked Data Widget -->
-            <!--div id="semantic_magic_w" class="widget semantic_magic_w">
-  	      <div class="w_title">
-                <h3>
-		  <a href="http://www.w3.org/2001/sw/" target="_blank">
-		    <img src="images/skin/default/sw-cube.png" alt="W3C Semantic Web Logo" class="w_title_img"/>
-		  </a> Linked Data
-	        </h3>
-	      </div>
-              <div class="w_content">
-                <ul class="uris_ctr" id="sm_list">
-                  <li><a href="/dataspace/person/{uname}#this" id="sm_personal">Personal URI</a></li>
-                  <li><a href="/dataspace/person/{uname}#this" id="sm_openid">OpenID URI</a></li>
-                  <li><a href="/dataspace/person/{uname}/about.rdf" id="sm_foaf">FOAF Profile URI</a></li>
-                  <li><a href="/dataspace/person/{uname}/sioc.rdf" id="sm_sioc">SIOC Data Space URI</a></li>
-                  <li><a href="/dataspace/person/{uname}#this" id="sm_dataspace">Data Space URI</a></li>
-                  <li><a href="sn_user_export.vspx?ufid=124&ufname=tester1" id="sm_vcard">Card URI</a></li>
-                </ul>
-              </div--> <!-- w_content -->
-            <!--/div--> <!-- semantic_magic_w -->
 
   	    <div id="ds_w" class="widget ds_w">
   	      <div class="w_title">
@@ -255,7 +246,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   	      <div class="w_content">
                 <ul class="ds_list" id="ds_list">
                 </ul> <!-- ds_list -->
-                <div class="cmd_ctr"><a href="javascript:void(0)">Browse</a></div>
+                <div class="cmd_ctr">&nbsp;</div>
               </div> <!-- w_content -->
             </div> <!-- .widget -->
 
@@ -302,52 +293,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
   	  </div> <!-- u_home_l -->
 
           <div id="u_profile_r" style="display:none;">
-            <div id="notify" class="notify_w widget">
-              <div class="w_title">
-                <h3>Activities</h3>
-                <div class="w_title_bar_btns">
-		  <img src="images/skin/default/settings_btn.png"
-		       alt="settings" />
-		  <img src="images/skin/default/menu_dd_handle_close.png"
-		       alt="Minimize"
-		       class="w_toggle"
-		       onclick="widgetToggle(this);"/>
-		</div> <!-- w_title_bar_btns -->
-              </div>
-              <div class="w_content" id="notify_content">
-<!--
-                <h3 class="date" >Today</h3>
-                <ul class="msgs" >
-                  <li>
-                    <img class="msg_icon person_tnail"
-                         alt="Dipsy"
-                         src="images/people/dipsy.jpg"/>
-                    <div class="msg">
-                      <span class="time">20:30</span>
-                      Yrjana and <a href="#">Dipsy</a> are now connected.
-                    </div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> Yrjana wrote a weblog article titled <a href="#">Eh Oh!</a></div>
-                      <div class="msg_r">
-                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                      </div>
-                  </li>
-                  <li>
-                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/>
-                    <div class="msg"><span class="time">22:20</span> Yrjana published a feed <a href="#">Raw!</a></div>
-                    <div class="msg_r">
-                      <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
-                    </div>
-                  </li>
-                </ul>
--->
-              </div> <!-- w_content -->
-            </div> <!-- widget -->
 
             <!-- Contact Information widget -->
 
@@ -359,7 +304,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		  <img src="images/skin/default/menu_dd_handle_close.png"
 		       alt="Minimize"
 		       class="w_toggle"
-		       onclick="widgetToggle(this);"/></div>
+		       onclick="widgetToggle(this);"/>
+		</div>
               </div>
               <div class="w_content">
                 <ul class="tab_bar">
@@ -367,7 +313,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <li id="ciT2"><a href="javascript:void(0)">Business</a></li>
                   <li id="ciT3"><a href="javascript:void(0)">IM</a></li>
                   <li id="ciT4"><a href="javascript:void(0)">Personal Information</a></li>
-                  <li id="ciT5"><a href="javascript:void(0)">Linked Data</a></li>
+                  <li id="ciT5"><a href="javascript:void(0)">Data Explorer</a></li>
                 </ul>
                 <div class="tab_deck">
                   <div id="ciPCtr" class="tab_page">
@@ -375,7 +321,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <div id="ciP1" class="tab_page">
                     <div  class="vcard">
 		      <div class="vcard_l">
-			    <img id="ciP1photo" rel="foaf:depiction"  src="images/profile_small.png" alt="photo" class="photo"/></div>
+			<img id="ciP1photo" rel="foaf:depiction"
+			     src="images/profile_small.png"
+			     alt="photo" class="photo"/>
+		      </div>
                       <div class="vcard_r">
                         <span class="fn" id="ciP1fn"></span>
                         <div class="org" id="ciP1org"></div>
@@ -406,9 +355,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     </div> <!-- .vcard -->
                   </div> <!-- .tab_page -->
                   <div id="ciP3" class="tab_page">
-                    <em>Skype:</em> <br/>
-                    <em>ICQ:</em> <br/>
-                    <em>AIM:</em> <br/>
+		    <ul class="im_contacts"></ul>
                   </div>
                   <div id="ciP4" class="tab_page ci_personal">
                     <div class="sect ci_p_interests">
@@ -428,13 +375,71 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <div id="linkedDataC" style="height:300px;overflow:scroll"></div>
                     </div>
                   </div>
-
+		  <div id="ciP6" class="tab_page">
+		    <h3>Linked Data URIs</h3>
+		    <ul class="linked_data_uris" id="linked_data_uri_list">
+		      <li><a href="#" class="personal_uri" id="sm_personal">Personal URI</a></li>
+		      <li><a href="#" class="openid_uri" id="sm_openid">OpenID URI</a></li>
+		      <li><a href="#" class="foaf_uri" id="sm_foaf">FOAF Profile URI</a></li>
+		      <li><a href="#" class="sioc_uri" id="sm_sioc">SIOC Data Space URI</a></li>
+		      <li><a href="#" class="dataspace_uri" id="sm_dataspace">Data Space URI</a></li>
+		      <li><a href="#" class="vcard_uri" id="sm_vcard">VCard</a></li>
+		    </ul>
+		  </div>
                 </div> <!-- .tab_deck -->
               </div> <!-- .w_content -->
             </div> <!-- .widget -->
 
-	    <!-- Locator -->
+	    <div id="connect_box" class="widget"></div> <!-- connect box template applied here -->
 
+	    <div id="notify" class="notify_w widget">
+              <div class="w_title">
+                <h3>Activities</h3>
+                <div class="w_title_bar_btns">
+		  <img src="images/skin/default/settings_btn.png"
+		       alt="settings" />
+		  <img src="images/skin/default/menu_dd_handle_close.png"
+		       alt="Minimize"
+		       class="w_toggle"
+		       onclick="widgetToggle(this);"/>
+		</div> <!-- w_title_bar_btns -->
+              </div>
+              <div class="w_content" id="notify_content">
+<!--
+		<h3 class="date" >Today</h3>
+                <ul class="msgs" >
+                  <li>
+                    <img class="msg_icon person_tnail"
+                         alt="Dipsy"
+                         src="images/people/dipsy.jpg"/>
+                    <div class="msg">
+                      <span class="time">20:30</span>
+                      LaaLaa and <a href="#">Dipsy</a> are now connected.
+                    </div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/>
+                    <div class="msg"><span class="time">22:20</span> LaaLaa wrote a weblog article titled <a href="#">Eh Oh!</a></div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/>
+                    <div class="msg"><span class="time">22:20</span> LaaLaa published a feed <a href="#">Raw!</a></div>
+                    <div class="msg_r">
+                      <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                    </div>
+                  </li>
+                </ul>
+-->
+              </div> <!-- w_content -->
+            </div> <!-- widget -->
+
+	    <!-- Locator -->
             <!-- div class="widget w_contact">
               <div class="w_title">
                 <h3>Locator</h3>
@@ -469,10 +474,10 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   <div id="cisP1" class="tab_page">
                     &nbsp;&nbsp;Show&nbsp;
 		    <select id="connections_filter_select" onchange="dd('');">
-                      <option value="0" selected="selected">All Friends</option>
-                      <option value="1">Recently Updated</option>
-                      <option value="3">Recently Added</option>
-                      <option value="5">Online Now</option>
+                      <option value="0" selected="selected">All Connections</option>
+                      <!--option value="1">Recently Updated</option-->
+                      <!--option value="3">Recently Added</option-->
+                      <!--option value="5">Online Now</option-->
 		    </select>
 
                     <div id="connections_list" style="text-align:center">
@@ -481,18 +486,18 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <table border="0" cellspacing="0" width="98%">
                         <tr>
 			  <td class="image" style="width:150px;">
-			    <img src="#connImgSRC#"
+			    <img src="{connImgSRC}"
 				 alt=""
 				 class=""
 				 style="width:40px;cursor:pointer"/><br/>
-			    <span style="cursor:pointer;text-decoration: underline;">#connProfileFullName#</span>
+			    <span style="cursor:pointer;text-decoration: underline;">{connProfileFullName}</span>
 			  </td>
                           <td class="info">
                           </td>
                           <td class="actions" style="width:120px;text-align:left;">
-                            <a id="#sendMsg#" style="cursor:pointer;text-decoration:underline;">Send Message</a><br/>
-                            <a id="#viewConnections#" style="cursor:pointer;text-decoration:underline;">View Connections</a><br/>
-			    <a id="#doConnection#" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
+                            <a id="{sendMsg}" style="cursor:pointer;text-decoration:underline;">Send Message</a><br/>
+                            <a id="{viewConnections}" style="cursor:pointer;text-decoration:underline;">View Connections</a><br/>
+			    <a id="{doConnection}" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
 			  </td>
                         </tr>
 		      </table>
@@ -511,7 +516,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 
           <div id="invitations_C" style="display:none;">
             <h1>
-	      <img src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to
+	      <img alt="Openlink Data Spaces" src="images/odslogo_200x25.png" style="padding-top:5px" /><br/>Welcome to
 	      <span id="invitations_connection_full_name_1"></span>'s network</h1>
             <div class="profile">
               <img src="images/profile_small.png" width="105px" alt="" id="invitations_connection_photo" />
@@ -530,7 +535,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		    <span class="label">Connections</span>
 		    <span class="value" id="invitations_connection_conncount"></span>
 		  </li>
-<!-- <li><span class="label">Connection path</span> <span class="value"><a href="#">Kingsley</a>&gt;<a href="#">Yrjänä</a></span></li> -->
+
+<!-- <li><span class="label">Connection path</span> <span class="value"><a href="#">UserX</a>&gt;<a href="#">UserY</a></span></li> -->
 
 		</ul>
             </div>
@@ -556,17 +562,17 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		</li>
               </ul>
               <p class="info">
-		<img class="" alt="info" src="images/info.png" /> It is usually a good idea to connect
+		<img class="block_attention_decor" alt="info" src="images/info.png" /> It is usually a good idea to connect
 		only with people you know and share interest with.</p>
 	    </div>
             <div class="explanation">
               <h2>Why this message?</h2>
               <p>This message is part of myopenlink.net social network connection process and was sent
-		because someone found 
+		because {user_first} found 
 		<a href="javascript:void(0)" id="invitations_connection_ownprofileA">your profile</a>
 		and asked to connect with you directly. If you choose to ignore this message, the
 		invitation will expire automatically within 7 days. During this period you can always
-		accept or reject the invitation by signing in to myopenlink.net and navigating to the
+		accept or reject the invitation by signing in to ODS and navigating to the
 		incoming invitations page.</p>
               <p>If you choose to reject the invitation, you can also choose to block this user from
 		sending any invitations to you in the future.</p>
@@ -605,8 +611,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <select id="search_lst_sort">
                         <option value="sort_order=desc">By Date, Newest First</option>
                         <option value="sort_order=asc">By Date, Oldest First</option>
-                        <option value="sort_by_score=1&sort_order=asc">By Score, Ascending</option>
-                        <option value="sort_by_score=1&sort_order=desc">By Score, Descending</option>
+                        <option value="sort_by_score=1&amp;sort_order=asc">By Score, Ascending</option>
+                        <option value="sort_by_score=1&amp;sort_order=desc">By Score, Descending</option>
                       </select>
                       <label for="search_focus_sel" class="inline_select">Focus on</label>
                       <select id="search_focus_sel" onchange="this.callback()">
@@ -967,6 +973,93 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
         </div> <!-- #FT -->
       </div> <!-- #RT -->
     </div> <!-- #PG -->
+
+<!-- templates
+    
+    span prof_user_full_name
+    span prof_user_first_name
+    span prof_user_last_name
+    span prof_user_id
+    span prof_user_dataspace_lnk
+    img user_depiction
+    img user_depiction_thumbnail
+    a user_dataspace_lnk
+    a user_vcard_lnk
+    a user_personal_uri_lnk
+
+-->
+    <div id="connect_box_tpl" class="widget" style="display: none">
+      <div class="w_title">
+        <!--div class="lt">
+	  <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
+	</div-->
+	<h3 class="w_title"><span class="u_full_name">Full Name</span> is not in your network</h3>
+	<!--div class="rt">
+	  <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
+	</div-->
+      </div>
+      <div class="w_content">
+	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
+	<p>If you know <span class="u_full_name">Full Name</span>, you may ask to connect with him/her directly.
+	This would allow you to access information only published to network connections, as well as send messages
+	directly.</p>
+      </div>
+      <div class="w_btns"><button id="connect_box_connect">Connect</button></div>
+    </div>
+
+    <div id="connect_info_tpl" class="widget" style="display: none">
+      <div class="w_title">
+        <!--div class="lt">
+	  <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
+	</div-->
+	<h3 class="w_title"><span class="u_full_name">XXXXXXX</span> and you are directly connected</h3>
+	<!--div class="rt">
+	  <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
+	</div-->
+      </div>
+      <div class="w_content">	
+	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
+	<p>You are directly connected with <span class="u_full_name">XXXXXXX XXXXXXXXXX</span>.</p>
+	<div class="w_btns"><button id="connect_box_disconnect">Disconnect</button></div>
+      </div>
+    </div>
+
+    <div id="connect_pending_tpl" class="widget" style="display: none">
+      <div class="w_title">
+        <!--div class="lt">
+          <img class="w_toggle" alt="minimize" src="skin/default/i/w_toggle_open.png" />
+        </div-->
+        <h3 class="w_title">A connection request with <span class="u_full_name">XXXXXXX XXXXXXXXX</span> is pending</h3>
+        <!--div class="rt">
+          <img class="w_close" alt="close" src="skin/default/i/w_close.png"/>
+        </div-->
+      </div>
+      <div class="w_content">	
+	<img class="connect_img" src="images/skin/default/nicubunu_Abstract_people.png" alt="Connection graphic"/>
+	<p>You have requested a direct connection with <span class="u_full_name">XXXXXXX XXXXXXXXXX</span> but
+	<span class="pronoun">(s)he</span> has not approved the request yet.</p>
+	<div class="w_btns"><button id="connect_box_withdraw">Withdraw connect request</button></div>
+      </div>
+    </div>
+
+<!-- dialogs -->
+
+    <div id="connect_confirm_dialog" class="ods_dialog" style="display:none">
+      <div class="dlg_title">
+	<h3>Connection request confirmation</h3>
+      </div>
+      <div class="dlg_content">
+	<p>You are about to send a connection request to <span class="u_full_name">XXXXXXX XXXXXXXXX</span>.
+	This means you are granting <span class="pronoun_to">him/her</span> access to all information you have marked in
+	your profile as available to connected users/friends.</p>
+	<p>Are you sure you want to proceed? (You can withdraw this request or disconnect any time)</p>
+      </div>
+      <div class="dlg_buttons">
+	<button id="connect_confirm_ok">Yes, proceed!</button>
+	<button id="connect_confirm_cancel">No, go back!</button>
+      </div>
+    </div>
+    
     <div id="app_create_dialog" class="ods_dialog" style="display: none;">
       <div class="dlg_title"><h3>Blog Setup</h3></div>
       <div class="wizard">
@@ -1000,10 +1093,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 	</div> <!-- wizard_btnbar -->
       </div> <!-- wizard -->
     </div>
+    
     <div id="conn_del_confirm_dialog" class="ods_dialog" style="display: none;">
       <div class="dlg_title"><h3>Delete connection</h3></div>
       <div class="dlg_content">
-	<p class="dlg_msg">Are you sure you want to delete connection with Yrjana Rankka.</p>
+	<p class="dlg_msg">Are you sure you want to delete connection with <span class="u_full_name">XXXXXXX XXXXXXXXXX</span>?</p>
 	<p class="dlg_explain">The user will not receive notification.</p>
 	<div class="dlg_btn_row">
 	  <button onclick="conn_del_dlg_hide()">Delete connection</button>
@@ -1014,7 +1108,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 
     <div id="connection_info_bubble" class="a_bubble conn_info_bubble" style="display: none">
       <div class="lt">
-	<img src="people/kidehen_large.jpg" alt="Kingsley Idehen" />
+	<img src="#" alt="Connection Name" />
       </div> <!-- .lt -->
       <div class="rt">
 	<ul class="menu">
@@ -1080,7 +1174,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		   class="tab_page"
 		   style="display:none">
 		<label for="loginOpenIdUrl">OpenID URL
-		  <img src="images/login-bg.gif"
+		  <img alt="OpenID" src="images/login-bg.gif"
 		       style="vertical-align:bottom;margin-left:5px;"/>
 		</label>
 		<input type="text"
@@ -1094,12 +1188,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		     name="cb_remember_me"
 		     value="1"
 		     id="login_frm_cb_remember_me"
-		     checked="1"/>
+		     checked="checked"/>
 	      <label for="login_frm_cb_remember_me">Remember me</label><br />
               <input type="button" name="loginBtn" value="Login" id="loginBtn" />
               <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
               <span id="loginThrobber" style="display:none">Logging in ...
-		<img src="images/oat/throbber.gif"/>
+		<img alt="Please wait..." src="images/oat/throbber.gif"/>
 	      </span>
               <br/>
               <a id="loginForgot" style="display:none">Forgot your password?</a>

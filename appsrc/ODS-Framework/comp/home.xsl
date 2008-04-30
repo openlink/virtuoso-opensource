@@ -237,7 +237,7 @@
                         </td>
                       <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                         <v:url name="b_url15"
-                               value="Linked Data View"
+                               value="Data Explorer"
                                format="%s"
                                url="--sprintf('uhome.vspx?page=5&ufname=%s#uinavtab',self.fname)"
                                xhtml_class="tab"/>

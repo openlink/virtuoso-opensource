@@ -12,15 +12,16 @@ table {
   font-family: "Gill Sans", Arial, Helvetica, sans-serif;
   font-size: 9pt}
 
-img {
-	border: 0;
-}
+img { border: 0;}
+
+ul { 
+  list-style-type: none; 
+  padding: 0}
 
 #PG {
 	margin-right: auto;
 	text-align: left;
-	width: 1000px
-}
+  width: 1000px}
 
 #LT {
   position: absolute;
@@ -118,35 +119,38 @@ span.indicator {
 #APP_MENU {
 }
 
-#DS_APP_MENU {
-}
+#APP_MENU_LNK {
+  padding-right: 3px}
 
-#LT .app_menu li {
+#DS_APP_MENU { }
+
+#APP_MENU li {
   width: 100%;
   margin: 2px}
 
-#LT .app_menu a {
+#APP_MENU a {
   display: block;
   width: 100%;
   color: inherit;
-  text-decoration: none}
+  text-decoration: none;
+  cursor: pointer}
 
-#LT .app_menu a:hover {
+#APP_MENU a:hover {
   background-color: #aef}
 
-#LT .app_menu_t a {
+#APP_MENU_T a {
 	color: #003366;
-	text-decoration: none
-}
+  text-decoration: none;
+  cursor: pointer}
 
-#LT .app_menu_t a.lnk {
+#APP_MENU_T a.lnk {
   color: #368;
-  font-size: 8pt;
-}
-#LT .app_menu_ft {
+  font-size: 8pt}
+
+#APP_MENU_FT {
   margin-left: 4px;
-  margin-right: 4px;
-}
+  margin-right: 4px}
+
 #FT {
   float: left;
   clear: both;
@@ -237,6 +241,16 @@ div.w_content {
 	float: left;
 	clear: both;
 }
+
+div.w_btns { float: left; clear: left;}
+div.w_btns button { font-weight: normal;
+  font-size: 8pt;
+  border: 1px solid #555;
+  background-color: #ddf;
+  color: #333;
+  margin: 3px}
+div.w_btns button:hover {
+  background-color: #eef}
 div.notify_w {}
 div.notify_w .w_content h3 {
   color: #555;
@@ -415,7 +429,6 @@ ul.prof_user_commands {
 	padding: 0px;
 	width: 197px;
 	list-style-type: none;
-	border: 1px solid #333;
 	margin: 5px 0px 5px 0px;
 	float: left;
 	clear: both;}
@@ -499,6 +512,10 @@ ul.tab_bar .tab_selected {
 	width: 100%;
 }
 
+.tab_page h3 {
+  color: #333;
+  margin: 10px 5px 10px 5px}
+
 #u_profile_l .tab_deck {
   width: 196px;}
 
@@ -527,13 +544,26 @@ ul.tab_bar .tab_selected {
 	text-align: center;
 	float: left;
 	clear: both;
-	width: 100%;
-}
+	width: 100%}
+
+#user_info_w .w_title {
+  background-color: #fff;
+  height: auto;}
+
+#user_info_w .w_title h3 {
+  color: #333;
+  font-size: 14pt;
+  margin-top: 8px;
+  margin-bottom: 10px;}
+
 #u_profile_r .w_contact .photo {
 	width: 40px;
 	float: left;
-	margin: 4px;
-}
+	margin: 4px}
+
+#u_profile_r .w_contact .tab_page {
+  min-height: 100px}
+
 .panelbar_option {
 	height: 22px;
 	color: #eef;
@@ -704,8 +734,7 @@ div.a_bubble {
 div.a_bubble ul.menu {
   list-style-type: none;
   padding: 0;
-  margin: 0;
-}
+  margin: 0;}
 
 /* connect-info anchor bubbles */
 
@@ -713,16 +742,14 @@ div.conn_info_bubble {
   font-family: "Gill Sans", Arial, Helvetica, sans-serif;
   font-size: 9pt;
   color: #333;
-  margin: 3px;
-}
+  margin: 3px;}
 
 div.conn_info_bubble div.lt {
   width: 177px;
   float: left;
   clear: left;
   margin: 0;
-  padding: 0;
-}
+  padding: 0;}
 
 div.conn_info_bubble div.rt {
   width: 117px;
@@ -741,25 +768,18 @@ div.login_dialog {
   padding: 0;
   margin: 0}
 
-div.login_dialog label
-{width: 100px;
- Float: left;
+div.login_dialog label {width: 100px;
+  float: left;
  text-align: left;
- margin: 23px 5px 0px 0px;
+  margin: 23px 5px 0px 0px;}
 
-}
-
-
-#loginErrDiv
-{
+#loginErrDiv {
  padding-left: 40px;
- height : 14px;
-}
+ height : 14px;}
 
-div.sect
-{
-padding: 0px 10px 0px 10px;
-}
+div.sect { 
+  padding: 0px 10px 0px 10px;}
+
 #login_page {
   float: left;
   clear: both;
@@ -775,13 +795,16 @@ padding: 0px 10px 0px 10px;
   border: 2px solid #b6d4e3;
   background-color: #e0f0f9;
   background-image: url(images/ods_signin_container1.png)}
+
 #login_form { margin: 10px;width: 300px;}
+
 #login_page img.id_logo {
   margin: 50px 50px 50px 40px}
+
 #login_page h1 {
   margin-left: 50px;
-  margin-right: 6px;
-}
+  margin-right: 6px;}
+
 #login_page h2 {
   font-size: 10pt;
   margin-left: 10px}
@@ -823,9 +846,10 @@ padding: 0px 10px 0px 10px;
   background-color: #ddf;
   color: #333;
   margin: 3px}
+
 #loginBtn:hover {
-  background-color: #eef;
-}
+  background-color: #eef;}
+
 #signupBtn {
   margin-left: 100px;
   font-weight: normal;
@@ -834,17 +858,16 @@ padding: 0px 10px 0px 10px;
   background-color: #ddf;
   color: #333;
   margin: 3px}
-#signupBtn:hover {
-  background-color: #eef;
-}
-#loginCloseBtn  {
 
+#signupBtn:hover {
+  background-color: #eef;}
+
+#loginCloseBtn  {
 float: right;
 cursor: pointer;
 color: #000;
-padding: 3px 5px 0px 0px;
+  padding: 3px 5px 0px 0px;}
 
-}
 div.login_error_ctr {
   margin: 0;
   padding: 0;
@@ -868,8 +891,8 @@ p.login_error img {
 
 #loginThrobber {
 padding: 0px 0px 4px 82px;
-color:#999;
-}
+  color:#999;}
+
 #loginThrobber img
 {
  width:16px;
@@ -883,27 +906,27 @@ color:#999;
   text-decoration: underline;
 }
 
-
 #login_form div.login_frm_button_row {
   margin-top: 6px;
-  margin-left: 100px;
-}
+  margin-left: 100px;}
+
 h1.page_title img.openid_logo { margin-right: 6px; }
+
 #login_form_ctr p.login_frm_guide { margin: 6px; }
+
 p.login_frm_guide span.openid_client_name { font-weight: bold; }
 
 #cb_openid {
   margin-left: 100px;
-  float: left;
-}
+  float: left;}
+
 #login_form label.cb {
   clear: none;
-  float: left;
-}
+  float: left;}
+
 #login_form div.openid_selector {
   float: left;
-  width: 100%;
-}
+  width: 100%;}
 
 /* Error page */
 
@@ -911,80 +934,77 @@ p.login_frm_guide span.openid_client_name { font-weight: bold; }
   float: left; clear: both;
   width: 100%;
   color: #5f6366;
-  background-color: #d9e9f2;
-}
+  background-color: #d9e9f2;}
+
 #err_page .id_col {
-  float: left; clear: left;
-}
+  float: left; clear: left;}
+
 #err_page .form_col { float: left; margin-bottom: 50px; width: 350px;}
 
 #err_page img.id_logo {
   margin: 50px 50px 50px 40px}
+
 #err_page h1 {
   margin-left: 50px}
+
 #err_page .err_hd img {
 	vertical-align: middle;
-	margin-right: 8px;
-}
+	margin-right: 8px;}
+
 #err_page div.err_codes {
   color: #9bb;
   margin-top: 25px;
   font-size: smaller;
-  font-style: italic;
-}
+  font-style: italic;}
 
 #err_page div.btn_bar {
-  margin-top: 10px;
-}
+  margin-top: 10px;}
 
 .w_personal div.sect {
-  margin: 0 3px 0 3px;
-}
+  margin: 0 3px 0 3px;}
 
 .w_personal div.sect h4 {
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: #CCDDDD;
 	margin-top: 3px;
-	margin-bottom: 5px;
-}
+	margin-bottom: 5px;}
+
+ul.linked_data_uris {
+    margin: 5px}
+
+
 #FT_L { float: left; }
 #FT_R { float: right; }
 
+#messages_tab_interface {
+padding: 5px; }
 
-#messages_tab_interface
-{
-padding: 5px;
-}
+li.menu_separator {
+height:10px;}
 
-li.menu_separator
-{
-height:10px;
-}
 #contacts_interface
-{
-}
-div.msg_item
-{
+{ }
+
+div.msg_item {
 overflow:auto;
 width:100%;
-border-bottom: 1px dotted #DDDDDD;
-}
+  border-bottom: 1px dotted #DDDDDD;}
 
-#SEARCH_C
-{
-padding: 5px 0px 5px 3px;
-}
-#search_img
-{
-	cursor: pointer;
+#SEARCH_C {
+padding: 5px 0px 5px 3px;}
 
-}
-#search_textbox
-{
-width:120px;
+#search_img {
+  cursor: pointer;}
+
+#search_textbox {
+  width:120px;}
+
+#connect_box {
 
 }
+
+#connect_box img.connect_img { float: left; clear: left;}
 /* Invitations Interface */
 
 #invitations_C {background-color: #e8f2f7}
@@ -1037,6 +1057,8 @@ div.pager a:hover {
   background-color: #FFFFFF;
   color: #339999;
   border: 2px solid #339999;}
+
+#messages_tab_interface .tab_deck { min-height: 200px;}
 
 ul.mbox_listing {
   list-style-type: none;
