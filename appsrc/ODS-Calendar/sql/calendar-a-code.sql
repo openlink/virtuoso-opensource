@@ -664,6 +664,7 @@ create procedure CAL.WA.domain_delete (
   delete from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id;
   delete from CAL.WA.TAGS where T_DOMAIN_ID = domain_id;
   delete from CAL.WA.UPSTREAM where U_DOMAIN_ID = domain_id;
+  delete from CAL.WA.EXCHANGE where EX_DOMAIN_ID = domain_id;
   delete from CAL.WA.SETTINGS where S_DOMAIN_ID = domain_id;
 
   CAL.WA.domain_gems_delete (domain_id);
@@ -1105,14 +1106,18 @@ create procedure CAL.WA.host_url ()
 
 _default:;
   host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (host is not null)
-    return host;
+  if (host is null)
+  {
   host := sys_stat ('st_host_name');
   if (server_http_port () <> '80')
     host := host || ':' || server_http_port ();
+  }
 
 _exit:;
-  return 'http://' || host ;
+  if (host not like 'http://%')
+    host := 'http://' || host;
+
+  return host;
 }
 ;
 
@@ -1219,7 +1224,9 @@ create procedure CAL.WA.banner_links (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dav_content (
-  inout uri varchar)
+  inout uri varchar,
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
 {
   declare exit handler for sqlstate '*'
   {
@@ -1228,11 +1235,11 @@ create procedure CAL.WA.dav_content (
 
   declare N integer;
   declare content, oldUri, newUri, reqHdr, resHdr varchar;
-  declare auth_uid, auth_pwd varchar;
   declare xt any;
 
   newUri := uri;
   reqHdr := null;
+  if (isnull (auth_uid))
   CAL.WA.account_access (auth_uid, auth_pwd);
   reqHdr := sprintf ('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
 
@@ -4658,8 +4665,8 @@ create procedure CAL.WA.import_vcal (
   oTags := '';
   if (not isnull (options))
   {
-    oEvents := cast (get_keyword ('events', options, '0') as integer);
-    oTasks := cast (get_keyword ('tasks', options, '0') as integer);
+    oEvents := cast (get_keyword ('events', options, 0) as integer);
+    oTasks := cast (get_keyword ('tasks', options, 0) as integer);
     oTags := get_keyword ('tags', options, '');
   }
 
@@ -4818,7 +4825,7 @@ create procedure CAL.WA.export_vcal_line (
 --
 create procedure CAL.WA.export_vcal (
   in domain_id integer,
-  in events any := null,
+  in entries any := null,
   in options any := null)
 {
   declare tz integer;
@@ -4863,7 +4870,7 @@ create procedure CAL.WA.export_vcal (
   -- events
   if (oEvents)
   {
-    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and (events is null or CAL.WA.vector_contains (events, E_ID))) do
+    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and (entries is null or CAL.WA.vector_contains (entries, E_ID))) do
     {
       if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz), E_REPEAT_UNTIL) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
   {
@@ -4897,7 +4904,7 @@ create procedure CAL.WA.export_vcal (
   -- tasks
   if (oTasks)
   {
-    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and ((events is null) or CAL.WA.vector_contains (events, E_ID))) do
+    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and ((entries is null) or CAL.WA.vector_contains (entries, E_ID))) do
     {
       if (CAL.WA.dt_exchangeTest (oPeriodFrom, oPeriodTo, CAL.WA.event_gmt2user (E_EVENT_START, tz), CAL.WA.event_gmt2user (E_EVENT_END, tz)) and CAL.WA.tags_exchangeTest (E_TAGS, oTagsInclude, oTagsExclude))
   {
@@ -4931,12 +4938,179 @@ create procedure CAL.WA.export_vcal (
 
 --------------------------------------------------------------------------------
 --
+create procedure CAL.WA.exchange_exec (
+  in _id integer,
+  in _mode integer := 0)
+{
+  declare exit handler for SQLSTATE '*'
+  {
+    rollback work;
+    update CAL.WA.EXCHANGE
+       set EX_EXEC_LOG = __SQL_STATE || ' ' || __SQL_MESSAGE
+     where EX_ID = _id;
+    commit work;
+
+    if (_mode)
+      resignal;
+  };
+
+  CAL.WA.exchange_exec_internal (_id);
+
+  update CAL.WA.EXCHANGE
+     set EX_EXEC_TIME = now (),
+         EX_EXEC_LOG = null
+   where EX_ID = _id;
+  commit work;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_event_update (
+  in _domain_id integer)
+{
+  for (select EX_ID from CAL.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  {
+    CAL.WA.exchange_exec (EX_ID);
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_exec_internal (
+  in _id integer)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_ID = _id) do
+  {
+    declare _type, _name, _user, _password any;
+    declare _content any;
+
+    _type := get_keyword ('type', _options);
+    _name := get_keyword ('name', _options);
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+
+    -- publish
+    if (_direction = 0)
+    {
+      _content := CAL.WA.export_vcal (_domain_id, null, _options);
+      if (_type = 1)
+      {
+        declare retValue, permissions any;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('CAL02', 'Export is NOT posted successfully, please verify path and parameters!');
+          };
+          permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
+          if (isnull (permissions))
+          {
+            permissions := '110100000RR';
+          }
+          retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
+          if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+          {
+            signal ('CAL01', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue));
+          }
+        }
+      }
+      else if (_type = 2)
+      {
+        declare retContent, resHeader, reqHeader any;
+
+        reqHeader := null;
+        if (_user <> '')
+        {
+          reqHeader := sprintf ('Authorization: Basic %s', encode_base64 (_user || ':' || _password));
+        }
+        commit work;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('CAL02', 'Connection Error in HTTP Client');
+          };
+          retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
+          if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
+          {
+            signal ('CAL01', 'Export is NOT posted successfully, please verify URL and parameters!');
+          }
+        }
+      }
+    }
+    -- subscribe
+    if (_direction = 1)
+    {
+      if (_type = 1)
+      {
+        _name := CAL.WA.host_url () || _name;
+      }
+      _content := CAL.WA.dav_content (_name, _user, _password);
+      if (isnull(_content))
+      {
+        signal ('CAL01', 'Bad import source!');
+      }
+      CAL.WA.import_vcal (_domain_id, _content, _options);
+    }
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_scheduler ()
+{
+  declare id, days, rc, err integer;
+  declare bm any;
+
+  declare _error integer;
+  declare _bookmark any;
+  declare _dt datetime;
+  declare exID any;
+
+  _dt := now ();
+  declare cr static cursor for select EX_ID
+                                 from CAL.WA.EXCHANGE
+                                where EX_UPDATE_TYPE = 2
+                                  and (EX_EXEC_TIME is null or dateadd('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt);
+
+  whenever not found goto _done;
+  open cr (exclusive, prefetch 1);
+  fetch cr into exID;
+  while (1)
+  {
+    _bookmark := bookmark(cr);
+    _error := 0;
+    close cr;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        _error := 1;
+
+        goto _next;
+      };
+      CAL.WA.exchange_exec (exID, 1);
+    }
+
+  _next:
+    open cr (exclusive, prefetch 1);
+    fetch cr bookmark _bookmark into exID;
+    if (_error)
+      fetch cr next into exID;
+  }
+_done:;
+  close cr;
+}
+;
+
+--------------------------------------------------------------------------------
+--
 create procedure CAL.WA.alarm_scheduler ()
 {
   declare dt, nextReminderDate date;
   declare eID, eDomainID, eEvent, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate any;
 
-  dt := curdate ();
+  dt := now ();
   declare cr cursor for select E_ID,
                                E_DOMAIN_ID,
                                E_EVENT,

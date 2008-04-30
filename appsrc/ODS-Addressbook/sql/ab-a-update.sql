@@ -41,6 +41,22 @@ AB.WA.tmp_update ();
 --
 create procedure AB.WA.tmp_update ()
 {
+  if (registry_get ('ab_uid_update') = '1')
+    return;
+
+  set triggers off;
+  update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_UID is null;
+  set triggers on;
+
+  registry_set ('ab_uid_update', '1');
+}
+;
+AB.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tmp_update ()
+{
   if (registry_get ('ab_grants_update') = '2')
     return;
 

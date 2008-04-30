@@ -29,7 +29,8 @@ create procedure AB.WA.session_restore(
 {
   declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     domain_id := -2;
     goto _end;
   };
@@ -40,7 +41,8 @@ create procedure AB.WA.session_restore(
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
@@ -67,7 +69,8 @@ _end:
     domain_id := -1;
 
   if (user_id = -1)
-    if (domain_id = -1) {
+    if (domain_id = -1)
+    {
       user_role := 'expire';
       user_name := 'Expire session';
     } else if (domain_id = -2) {
@@ -676,6 +679,7 @@ create procedure AB.WA.domain_delete (
   delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id;
   delete from AB.WA.CATEGORIES where C_DOMAIN_ID = domain_id;
   delete from AB.WA.TAGS where T_DOMAIN_ID = domain_id;
+  delete from AB.WA.EXCHANGE where EX_DOMAIN_ID = domain_id;
   delete from AB.WA.SETTINGS where S_DOMAIN_ID = domain_id;
 
   AB.WA.domain_gems_delete (domain_id);
@@ -1012,6 +1016,52 @@ create procedure AB.WA.tags2unique(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tags_exchangeTest (
+  inout tagsEvent any,
+  inout tagsInclude any := null,
+  inout tagsExclude any := null)
+{
+  declare N integer;
+  declare tags, testTags any;
+
+  if (is_empty_or_null (tagsEvent) and not is_empty_or_null (tagsInclude))
+    goto _false;
+
+  -- test exclude tags
+  if (is_empty_or_null (tagsExclude))
+    goto _include;
+  if (is_empty_or_null (tagsEvent))
+    goto _include;
+  tags := AB.WA.tags2vector (tagsEvent);
+  testTags := AB.WA.tags2vector (tagsExclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (AB.WA.vector_contains (testTags, tags [N]))
+      goto _false;
+  }
+
+_include:;
+  -- test include tags
+  if (is_empty_or_null (tagsInclude))
+    goto _true;
+  tags := AB.WA.tags2vector (tagsEvent);
+  testTags := AB.WA.tags2vector (tagsInclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (AB.WA.vector_contains (testTags, tags [N]))
+      goto _true;
+  }
+
+_false:;
+  return 0;
+
+_true:;
+  return 1;
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure AB.WA.dav_home(
@@ -1074,9 +1124,11 @@ create procedure AB.WA.host_url ()
 
   declare exit handler for sqlstate '*' { goto _default; };
 
-  if (is_http_ctx ()) {
+  if (is_http_ctx ())
+  {
     host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (host) and strchr (host , ':') is null) {
+    if (isstring (host) and strchr (host , ':') is null)
+    {
       declare hp varchar;
       declare hpa any;
 
@@ -1089,14 +1141,18 @@ create procedure AB.WA.host_url ()
 
 _default:;
   host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (host is not null)
-    return host;
+  if (host is null)
+  {
   host := sys_stat ('st_host_name');
   if (server_http_port () <> '80')
     host := host || ':' || server_http_port ();
+  }
 
 _exit:;
-  return 'http://' || host ;
+  if (host not like 'http://%')
+    host := 'http://' || host;
+
+  return host;
 }
 ;
 
@@ -2863,7 +2919,7 @@ create procedure AB.WA.contact_update4 (
   in pFields any,
   in pValues any,
   in tags varchar,
-  in validation any)
+  in validation any := null)
 {
   declare L, N, M varchar;
   declare S varchar;
@@ -2904,14 +2960,16 @@ create procedure AB.WA.contact_update4 (
 
         id := vector ();
         for (N := 0; N < length (rows); N := N + 1)
+        {
           id := vector_concat (id, vector (rows [N][0]));
       }
     }
   }
+  }
 
-  L := length (pFields);
-  if (isinteger (id) and (id = -1))
+  if ((isinteger (id)) and (id = -1))
   {
+    L := length (pFields);
     for (N := 0; N < L; N := N + 1)
     {
       if (pFields [N] = 'P_NAME')
@@ -2937,8 +2995,9 @@ create procedure AB.WA.contact_update4 (
       }
   _exit:;
     if (isinteger (id) and (id = -1))
+    {
       return 0;
-
+    }
     V := vector ();
     F := vector ();
     for (N := 0; N < L; N := N + 1)
@@ -2951,10 +3010,11 @@ create procedure AB.WA.contact_update4 (
     }
     pFields := F;
     pValues := V;
-
+  }
+  if (isinteger (id))
+  {
     id := vector (id);
   }
-
   for (N := 0; N < length (id); N := N + 1)
   {
     AB.WA.contact_update3 (id[N], domain_id, pFields, pValues, tags);
@@ -3129,15 +3189,22 @@ create procedure AB.WA.contact_tags_update (
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
-  in tags any,
-  in validation any)
+  in options any,
+  in validation any := null)
 {
   declare L, M, N, nLength, mLength, id integer;
-  declare tmp, data, pFields, pValues, pField, pField2 any;
+  declare tmp, uid, oTags, data, pFields, pValues, pField, pField2 any;
   declare xmlData, xmlItems, itemName, Meta, V any;
+
+  oTags := '';
+  if (not isnull (options))
+  {
+    oTags := get_keyword ('tags', options, '');
+  }
 
   Meta := vector
     (
+      'P_UID',            null, 'UID/val',
       'P_NAME',           null, 'NICKNAME/val|N/fld[1]|N/fld[2]|N/val',
       'P_TITLE',          null, 'N/fld[4]',
       'P_FIRST_NAME',     null, 'N/fld[2]',
@@ -3174,6 +3241,7 @@ create procedure AB.WA.import_vcard (
     if (itemName = 'IMC-VCARD')
     {
       id := -1;
+      uid := null;
       pFields := vector ();
       pValues := vector ();
       for (N := 0; N < mLength; N := N + 3)
@@ -3195,6 +3263,10 @@ create procedure AB.WA.import_vcard (
                 };
                 T := AB.WA.dt_reformat (T, 'YMD');
               }
+            }
+            else if (pField2 = 'P_UID')
+            {
+              uid := T;
             }
             if (not is_empty_or_null (T))
             {
@@ -3231,7 +3303,8 @@ create procedure AB.WA.import_vcard (
         }
       }
       }
-      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
+      id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = uid), -1);
+      AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
     }
   }
 }
@@ -3710,47 +3783,70 @@ create procedure AB.WA.import_ldap (
 }
 ;
 
+----------------------------------------------------------------------
+--
+create procedure AB.WA.export_vcard_line (
+  in property varchar,
+  in value any,
+  inout sStream any)
+{
+  if (not is_empty_or_null (value))
+  {
+    http (sprintf ('%s:%s\r\n', property, cast (value as varchar)), sStream);
+  }
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.export_vcard (
-  in id integer,
-  in domain_id integer)
+  in domain_id integer,
+  in entries any := null,
+  in options any := null)
 {
   declare S varchar;
+  declare oTagsInclude, oTagsExclude any;
   declare sStream any;
 
+  oTagsInclude := null;
+  oTagsExclude := null;
+  if (not isnull (options))
+  {
+    oTagsInclude := get_keyword ('tagsInclude', options);
+    oTagsExclude := get_keyword ('tagsExclude', options);
+  }
   sStream := string_output();
-  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do
+  for (select * from AB.WA.PERSONS where P_DOMAIN_ID = domain_id  and (entries is null or AB.WA.vector_contains (entries, P_ID))) do
+  {
+    if (AB.WA.tags_exchangeTest (P_TAGS, oTagsInclude, oTagsExclude))
   {
 	  http ('BEGIN:VCARD\r\n', sStream);
 	  http ('VERSION:2.1\r\n', sStream);
 
+      AB.WA.export_vcard_line ('REV', AB.WA.dt_iso8601 (P_UPDATED), sStream);
+
 	  -- personal
-	  http (sprintf ('NICKNAME:%s\r\n', P_NAME), sStream);
-	  if (not is_empty_or_null (P_FULL_NAME))
-  	  http (sprintf ('FN:%s\r\n', P_FULL_NAME), sStream);
+      AB.WA.export_vcard_line ('UID', P_UID, sStream);
+      AB.WA.export_vcard_line ('NICKNAME', P_NAME, sStream);
+      AB.WA.export_vcard_line ('FN', P_FULL_NAME, sStream);
+
     -- Home
 	  S := coalesce (P_LAST_NAME, '');
 	  S := S || ';' || coalesce (P_FIRST_NAME, '');
 	  S := S || ';' || coalesce (P_MIDDLE_NAME, '');
 	  S := S || ';' || coalesce (P_TITLE, '');
 	  if (S <> ';;;')
-  	  http (sprintf ('N:%s\r\n', S), sStream);
-	  if (not is_empty_or_null (P_BIRTHDAY))
-	    http (sprintf ('BDAY:%s\r\n', AB.WA.dt_format (P_BIRTHDAY, 'Y-M-D')), sStream);
+  	  {
+        AB.WA.export_vcard_line ('N', S, sStream);
+      }
+      AB.WA.export_vcard_line ('BDAY', AB.WA.dt_format (P_BIRTHDAY, 'Y-M-D'), sStream);
 
 	  -- mail
-	  if (not is_empty_or_null (P_MAIL))
-	    http (sprintf ('EMAIL;TYPE=PREF;TYPE=INTERNET:%s\r\n', P_MAIL), sStream);
-
+      AB.WA.export_vcard_line ('EMAIL;TYPE=PREF;TYPE=INTERNET', P_MAIL, sStream);
 	  -- web
-	  if (not is_empty_or_null (P_WEB))
-	    http (sprintf ('URL:%s\r\n', P_WEB), sStream);
-	  if (not is_empty_or_null (P_H_WEB))
-	    http (sprintf ('URL;TYPE=HOME:%s\r\n', P_H_WEB), sStream);
-	  if (not is_empty_or_null (P_B_WEB))
-	    http (sprintf ('URL;TYPE=WORK:%s\r\n', P_B_WEB), sStream);
-
+      AB.WA.export_vcard_line ('URL', P_WEB, sStream);
+      AB.WA.export_vcard_line ('URL;TYPE=HOME', P_H_WEB, sStream);
+      AB.WA.export_vcard_line ('URL;TYPE=WORK', P_B_WEB, sStream);
     -- Home
 	  S := ';';
 	  S := S || ''  || coalesce (P_H_ADDRESS1, '');
@@ -3760,14 +3856,12 @@ create procedure AB.WA.export_vcard (
 	  S := S || ';' || coalesce (P_H_CODE, '');
 	  S := S || ';' || coalesce (P_H_COUNTRY, '');
 	  if (S <> ';;;;;;')
-	    http (sprintf ('ADR;TYPE=HOME:%s\r\n', S), sStream);
-	  if (not is_empty_or_null (P_H_TZONE))
-	    http (sprintf ('TS:%s\r\n', P_H_TZONE), sStream);
-
-	  if (not is_empty_or_null (P_H_PHONE))
-	    http (sprintf ('TEL;TYPE=HOME:%s\r\n', P_H_PHONE), sStream);
-	  if (not is_empty_or_null (P_H_MOBILE))
-	    http (sprintf ('TEL;TYPE=HOME;TYPE=CELL:%s\r\n', P_H_MOBILE), sStream);
+  	  {
+  	    AB.WA.export_vcard_line ('ADR;TYPE=HOME', S, sStream);
+  	  }
+      AB.WA.export_vcard_line ('TS', P_H_TZONE, sStream);
+      AB.WA.export_vcard_line ('TEL;TYPE=HOME', P_H_PHONE, sStream);
+      AB.WA.export_vcard_line ('TEL;TYPE=HOME;TYPE=CELL', P_H_MOBILE, sStream);
 
     -- Business
 	  S := ';';
@@ -3778,19 +3872,17 @@ create procedure AB.WA.export_vcard (
 	  S := S || ';' || coalesce (P_B_CODE, '');
 	  S := S || ';' || coalesce (P_B_COUNTRY, '');
 	  if (S <> ';;;;;;')
-  	  http (sprintf ('ADR;TYPE=WORK:%s\r\n', S), sStream);
+  	  {
+    	  AB.WA.export_vcard_line ('ADR;TYPE=WORK', S, sStream);
+    	}
+      AB.WA.export_vcard_line ('TEL;TYPE=WORK', P_B_PHONE, sStream);
+      AB.WA.export_vcard_line ('TEL;TYPE=WORK;TYPE=CELL', P_B_MOBILE, sStream);
 
-	  if (not is_empty_or_null (P_B_PHONE))
-	    http (sprintf ('TEL;TYPE=WORK:%s\r\n', P_B_PHONE), sStream);
-	  if (not is_empty_or_null (P_B_MOBILE))
-	    http (sprintf ('TEL;TYPE=WORK;TYPE=CELL:%s\r\n', P_B_MOBILE), sStream);
-
-	  if (not is_empty_or_null (P_B_ORGANIZATION))
-	    http (sprintf ('ORG:%s\r\n', P_B_ORGANIZATION), sStream);
-	  if (not is_empty_or_null (P_B_JOB))
-	    http (sprintf ('TITLE:%s\r\n', P_B_JOB), sStream);
+      AB.WA.export_vcard_line ('ORG', P_B_ORGANIZATION, sStream);
+      AB.WA.export_vcard_line ('TITLE', P_B_JOB, sStream);
 
 	  http ('END:VCARD\r\n', sStream);
+	}
 	}
   return string_output_string(sStream);
 }
@@ -3841,15 +3933,16 @@ create procedure AB.WA.export_csv_head ()
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.export_csv (
-  in id integer,
-  in domain_id integer)
+  in domain_id integer,
+  in entries any := null)
 {
   declare S varchar;
 
   S := '';
-  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do
+  for (select * from AB.WA.PERSONS where P_DOMAIN_ID = domain_id  and (entries is null or AB.WA.vector_contains (entries, P_ID))) do
   {
-    S := sprintf
+    S := S ||
+         sprintf
            (
             '"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"\r\n',
             coalesce (P_NAME, ''),
@@ -3897,8 +3990,8 @@ create procedure AB.WA.export_csv (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.export_foaf (
-  in ids any,
-  in domain_id integer)
+  in domain_id integer,
+  in entries any := null)
 {
   declare S, T varchar;
   declare sStream any;
@@ -4000,9 +4093,9 @@ create procedure AB.WA.export_foaf (
 
 	S := sprintf (S, SIOC..get_graph ());
   T := '';
-	if (not isnull (ids))
+	if (not isnull (entries))
 	{
-	  foreach (any id in ids) do
+	  foreach (any id in entries) do
 	  {
 	    if (T = '')
 	    {
@@ -4024,6 +4117,180 @@ create procedure AB.WA.export_foaf (
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.uid ()
+{
+  return sprintf ('%s@%s', uuid (), sys_stat ('st_host_name'));
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.exchange_exec (
+  in _id integer,
+  in _mode integer := 0)
+{
+  declare exit handler for SQLSTATE '*'
+  {
+    rollback work;
+    update AB.WA.EXCHANGE
+       set EX_EXEC_LOG = __SQL_STATE || ' ' || __SQL_MESSAGE
+     where EX_ID = _id;
+    commit work;
+
+    if (_mode)
+      resignal;
+  };
+
+  AB.WA.exchange_exec_internal (_id);
+
+  update AB.WA.EXCHANGE
+     set EX_EXEC_TIME = now (),
+         EX_EXEC_LOG = null
+   where EX_ID = _id;
+  commit work;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.exchange_entry_update (
+  in _domain_id integer)
+{
+  for (select EX_ID from AB.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  {
+    AB.WA.exchange_exec (EX_ID);
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.exchange_exec_internal (
+  in _id integer)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_ID = _id) do
+  {
+    declare _type, _name, _user, _password any;
+    declare _content any;
+
+    _type := get_keyword ('type', _options);
+    _name := get_keyword ('name', _options);
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+
+    -- publish
+    if (_direction = 0)
+    {
+      _content := AB.WA.export_vcard (_domain_id, null, _options);
+      if (_type = 1)
+      {
+        declare retValue, permissions any;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('AB002', 'Export is NOT posted successfully, please verify path and parameters!');
+          };
+          permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
+          if (isnull (permissions))
+          {
+            permissions := '110100000RR';
+          }
+          retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
+          if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+          {
+            signal ('AB001', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue));
+          }
+        }
+      }
+      else if (_type = 2)
+      {
+        declare retContent, resHeader, reqHeader any;
+
+        reqHeader := null;
+        if (_user <> '')
+        {
+          reqHeader := sprintf ('Authorization: Basic %s', encode_base64 (_user || ':' || _password));
+        }
+        commit work;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('AB002', 'Connection Error in HTTP Client');
+          };
+          retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
+          if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
+          {
+            signal ('AB001', 'Export is NOT posted successfully, please verify URL and parameters!');
+          }
+        }
+      }
+    }
+    -- subscribe
+    if (_direction = 1)
+    {
+      if (_type = 1)
+      {
+        _name := AB.WA.host_url () || _name;
+      }
+      _content := AB.WA.dav_content (_name, _user, _password);
+      if (isnull(_content))
+      {
+        signal ('AB001', 'Bad import source!');
+      }
+      AB.WA.import_vcard (_domain_id, _content, _options, vector ());
+    }
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.exchange_scheduler ()
+{
+  declare id, days, rc, err integer;
+  declare bm any;
+
+  declare _error integer;
+  declare _bookmark any;
+  declare _dt datetime;
+  declare exID any;
+
+  _dt := now ();
+  declare cr static cursor for select EX_ID
+                                 from AB.WA.EXCHANGE
+                                where EX_UPDATE_TYPE = 2
+                                  and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt);
+
+  whenever not found goto _done;
+  open cr (exclusive, prefetch 1);
+  fetch cr into exID;
+  while (1)
+  {
+    _bookmark := bookmark(cr);
+    _error := 0;
+    close cr;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        _error := 1;
+
+        goto _next;
+      };
+      AB.WA.exchange_exec (exID, 1);
+    }
+
+  _next:
+    open cr (exclusive, prefetch 1);
+    fetch cr bookmark _bookmark into exID;
+    if (_error)
+      fetch cr next into exID;
+  }
+_done:;
+  close cr;
+}
+;
 
 -------------------------------------------------------------------------------
 --

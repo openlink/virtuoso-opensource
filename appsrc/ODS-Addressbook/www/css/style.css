@@ -759,14 +759,14 @@ div.boxHeader {
 }
 
 /*====== Grids ======*/
-.grid
+.AB_grid
 {
   width: 100%;
   border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
 }
 
-.grid tr td {
+.AB_grid tr td {
   border-bottom: 1px solid #fff;
 }
 
@@ -903,6 +903,13 @@ thead.sortHeader a:hover
   text-align: right;
   white-space: nowrap;
   padding: 4px;
+}
+
+td.new-section
+{
+  text-align: center;
+  font-weight: bold;
+  background-color: #B0CDE4;
 }
 
 .text

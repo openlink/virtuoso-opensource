@@ -360,8 +360,8 @@ CAL.WA.exec_no_error ('
                                 null);
       set triggers on;
     }
-
     CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, N.E_UID, N.E_TAGS, \'I\');
+    CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
   }
 ');
 
@@ -409,6 +409,7 @@ CAL.WA.exec_no_error ('
     set triggers on;
 
     CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, N.E_UID, N.E_TAGS, \'U\');
+    CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
   }
 ');
 
@@ -800,6 +801,78 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
     values(\'Calendar Upstream Scheduler\', now(), \'CAL.WA.upstream_scheduler ()\', 10)
+')
+;
+
+-------------------------------------------------------------------------------
+--
+--  PUBLISH & SUBSCRIBE
+--
+-------------------------------------------------------------------------------
+CAL.WA.exec_no_error ('
+  create table CAL.WA.EXCHANGE (
+    EX_ID integer identity,
+    EX_DOMAIN_ID integer not null,
+    EX_TYPE integer not null,
+    EX_NAME varchar not null,
+    EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_INTERVAL integer,
+    EX_UPDATE_PERIOD varchar,
+    EX_UPDATE_FREQ integer,
+    EX_OPTIONS varchar,
+	  EX_EXEC_LOG long varchar,
+    EX_EXEC_TIME datetime,
+
+    primary key (EX_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create trigger EXCHANGE_AI AFTER INSERT ON CAL.WA.EXCHANGE referencing new as N
+  {
+    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+CAL.WA.exec_no_error ('
+  create trigger EXCHANGE_AU AFTER UPDATE on CAL.WA.EXCHANGE referencing old as O, new as N
+  {
+    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.calc_update_interval (
+  in _id any,
+  in _type any,
+  in _period any,
+  in _freq any)
+{
+  declare _update integer;
+
+  if (_type < 2)
+    return;
+
+  _update := case lower (coalesce (_period, 'daily'))
+               when 'hourly' then 60
+               when 'daily' then 1440
+               else 1440
+             end / coalesce (_freq, 1);
+
+  set triggers off;
+  update CAL.WA.EXCHANGE
+     set EX_UPDATE_INTERVAL = _update
+   where EX_ID = _id;
+  set triggers on;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'Calendar Exchange Scheduler\', now(), \'CAL.WA.exchange_scheduler ()\', 30)
 ')
 ;
 

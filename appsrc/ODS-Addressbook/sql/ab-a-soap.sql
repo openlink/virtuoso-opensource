@@ -49,22 +49,24 @@ create procedure DBA.DB.addressbook_import (
                     and WAI_ID   = domain_id))
   	signal ('AB103', 'User not a member of the instance');
 
-
   -- get content
-  if (lcase(pSourceType) = 'string') {
+  if (lcase(pSourceType) = 'string')
+  {
     content := pSource;
-
-  } else if (lcase(pSourceType) = 'webdav') {
+  }
+  else if (lcase(pSourceType) = 'webdav')
+  {
     if (pSource not like (AB.WA.dav_home (user_id) || '%'))
       signal ('AB108', sprintf('Please select file from your WebDAV home directory ''%s''!', AB.WA.dav_home (user_id)));
     content := AB.WA.dav_content (AB.WA.host_url () || pSource, pUser, pPassword);
-
-  } else if (lcase(pSourceType) = 'url') {
+  }
+  else if (lcase(pSourceType) = 'url')
+  {
     content := pSource;
-
-  } else {
+  }
+  else
+  {
 	  signal ('AB106', 'The source type must be string, WebDAV or URL.');
-
   }
 
   pTags := trim (pTags);
@@ -78,17 +80,17 @@ create procedure DBA.DB.addressbook_import (
   if (is_empty_or_null (content))
     signal ('AB107', 'Bad import source!');
 
-  if (lcase(pContentType) = 'vcard') {
-    -- vCard
-    AB.WA.import_vcard (domain_id, content, pTags);
-
-  } else if (lcase(pContentType) = 'foaf') {
-    -- foaf
+  if (lcase(pContentType) = 'vcard')
+  {
+    AB.WA.import_vcard (domain_id, content, vector ('tags', pTags));
+  }
+  else if (lcase(pContentType) = 'foaf')
+  {
     AB.WA.import_foaf (domain_id, content, pTags, vector (), case when (lcase (pSourceType) = 'url') then 1 else 0 end);
-
-  } else {
+  }
+  else
+  {
   	signal ('AB105', 'The content type must be vCard or FOAF.');
-
   }
   return 1;
 }
@@ -122,24 +124,23 @@ create procedure DBA.DB.addressbook_export (
 
   sStream := string_output ();
   set_user_id ('dba');
-  if (lcase(pContentType) = 'vcard') {
-    -- vCard
-    for (select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id) do
-      http (AB.WA.export_vcard (P_ID, domain_id), sStream);
-
-  } else if (lcase(pContentType) = 'foaf') {
-    -- foaf
-    http (AB.WA.export_foaf (null, domain_id), sStream);
-
-  } else if (lcase(pContentType) = 'csv') {
+  if (lcase(pContentType) = 'vcard')
+  {
+    http (AB.WA.export_vcard (domain_id), sStream);
+  }
+  else if (lcase(pContentType) = 'foaf')
+  {
+    http (AB.WA.export_foaf (domain_id), sStream);
+  }
+  else if (lcase(pContentType) = 'csv')
+  {
     -- CSV
     http (AB.WA.export_csv_head (), sStream);
-    for (select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id) do
-      http (AB.WA.export_csv (P_ID, domain_id), sStream);
-
-  } else {
+    http (AB.WA.export_csv (domain_id), sStream);
+  }
+  else
+  {
   	signal ('AB104', 'The content type must be vCard, FOAF or CSV.');
-
   }
   return string_output_string (sStream);
 }

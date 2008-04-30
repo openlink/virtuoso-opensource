@@ -40,7 +40,7 @@
       http (AB.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
     <meta name="dc.description" content="<?V AB.WA.utf2wide (AB.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V AB.WA.utf2wide (AB.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>

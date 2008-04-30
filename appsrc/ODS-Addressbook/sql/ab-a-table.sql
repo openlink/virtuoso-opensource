@@ -69,6 +69,7 @@ AB.WA.exec_no_error('
 AB.WA.exec_no_error('
   create table AB.WA.PERSONS (
     P_ID integer not null,
+    P_UID varchar,
     P_DOMAIN_ID integer not null,
     P_CATEGORY_ID integer,
     P_KIND integer,
@@ -130,6 +131,10 @@ AB.WA.exec_no_error('
 ');
 
 AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_UID varchar', 'C', 'AB.WA.PERSONS', 'P_UID'
+);
+
+AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_CATEGORY_ID integer', 'C', 'AB.WA.PERSONS', 'P_CATEGORY_ID'
 );
 
@@ -163,14 +168,28 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error ('
   create trigger PERSONS_AI after insert on AB.WA.PERSONS referencing new as N {
+    if (isnull (N.P_UID))
+    {
+      set triggers off;
+      update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_ID = N.P_ID;
+      set triggers on;
+    }
     AB.WA.tags_update (N.P_DOMAIN_ID, \'\', N.P_TAGS);
+    AB.WA.exchange_entry_update (N.P_DOMAIN_ID);
     AB.WA.domain_ping (N.P_DOMAIN_ID);
   }
 ');
 
 AB.WA.exec_no_error ('
   create trigger PERSONS_AU after update on AB.WA.PERSONS referencing  old as O, new as N {
+    if (isnull (N.P_UID))
+    {
+      set triggers off;
+      update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_ID = N.P_ID;
+      set triggers on;
+    }
     AB.WA.tags_update (N.P_DOMAIN_ID, O.P_TAGS, N.P_TAGS);
+    AB.WA.exchange_entry_update (N.P_DOMAIN_ID);
     AB.WA.domain_ping (N.P_DOMAIN_ID);
   }
 ');
@@ -548,6 +567,78 @@ AB.WA.exec_no_error('
 AB.WA.exec_no_error('
   alter table AB.WA.GRANTS add constraint FK_AB_GRANTS_01 FOREIGN KEY (G_PERSON_ID) references AB.WA.PERSONS (P_ID) on delete cascade
 ');
+
+-------------------------------------------------------------------------------
+--
+--  PUBLISH & SUBSCRIBE
+--
+-------------------------------------------------------------------------------
+AB.WA.exec_no_error ('
+  create table AB.WA.EXCHANGE (
+    EX_ID integer identity,
+    EX_DOMAIN_ID integer not null,
+    EX_TYPE integer not null,
+    EX_NAME varchar not null,
+    EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_INTERVAL integer,
+    EX_UPDATE_PERIOD varchar,
+    EX_UPDATE_FREQ integer,
+    EX_OPTIONS varchar,
+	  EX_EXEC_LOG long varchar,
+    EX_EXEC_TIME datetime,
+
+    primary key (EX_ID)
+  )
+');
+
+AB.WA.exec_no_error ('
+  create trigger EXCHANGE_AI AFTER INSERT ON AB.WA.EXCHANGE referencing new as N
+  {
+    AB.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+AB.WA.exec_no_error ('
+  create trigger EXCHANGE_AU AFTER UPDATE on AB.WA.EXCHANGE referencing old as O, new as N
+  {
+    AB.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.calc_update_interval (
+  in _id any,
+  in _type any,
+  in _period any,
+  in _freq any)
+{
+  declare _update integer;
+
+  if (_type < 2)
+    return;
+
+  _update := case lower (coalesce (_period, 'daily'))
+               when 'hourly' then 60
+               when 'daily' then 1440
+               else 1440
+             end / coalesce (_freq, 1);
+
+  set triggers off;
+  update AB.WA.EXCHANGE
+     set EX_UPDATE_INTERVAL = _update
+   where EX_ID = _id;
+  set triggers on;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'AddressBook Exchange Scheduler\', now(), \'AB.WA.exchange_scheduler ()\', 30)
+')
+;
 
 -------------------------------------------------------------------------------
 --

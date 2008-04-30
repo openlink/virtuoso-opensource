@@ -42,6 +42,7 @@ DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.ADDRESSBOOK_NEWS_MSG_D');
 DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (\'ADDRESSBOOK\')');
 
 -- Tables
+AB.WA.exec_no_error('DROP TABLE AB.WA.EXCHANGE');
 AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSON_COMMENTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.ANNOTATIONS');
