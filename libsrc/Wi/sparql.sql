@@ -3502,7 +3502,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
 	  saved_user := user;
-	  set_user_id ('dba');
+	  set_user_id ('dba', 1);
           exec (txt);
 	  set_user_id (saved_user);
         }
@@ -7818,7 +7818,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       from DB.DBA.SYS_USERS as sup
         join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
         join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
-      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_UPDATE' ), 0);
+      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
   declare exit handler for sqlstate '*' {
     DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
       '500', 'SPARQL Request Failed',
@@ -7943,7 +7943,7 @@ declare host_ur varchar;
       host_ur := registry_get ('URIQADefaultHost');
 
 http('			  <i>Security restrictions of this server do not allow you to retrieve remote RDF data.
-DBA may wish to grant "SPARQL_UPDATE" privilege to "SPARQL" account to remove the restriction.\n');
+DBA may wish to grant "SPARQL_SPONGE" privilege to "SPARQL" account to remove the restriction.\n');
 http('In order to do this, please perform the following steps:</i>\n');
 http('<br />\n');
 http('1. Go to the Virtuoso Administration Conductor i.e. \n');
@@ -7961,7 +7961,7 @@ http('2. Login as dba user\n');
 http('<br />\n');
 http('3. Go to System Admin->User Accounts->Roles\n');
 http('<br />\n');
-http('4. Click the link "Edit" for "SPARQL_UPDATE\n');
+http('4. Click the link "Edit" for "SPARQL_SPONGE"\n');
 http('<br />\n');
 http('5. Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n');
 http('<br />\n');
@@ -9130,7 +9130,7 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
 
 create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 {
-  set_user_id ('dba');
+  set_user_id ('dba', 1);
   return procedure_cols (pname);
 }
 ;
@@ -9299,6 +9299,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 {
   declare dest, get_soft, local_iri, immg varchar;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
+  set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
     local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
@@ -9956,8 +9957,11 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
   declare cmds any;
   cmds := vector (
     'create role SPARQL_SELECT',
+    'create role SPARQL_SPONGE',
     'create role SPARQL_UPDATE',
     'grant SPARQL_SELECT to SPARQL_UPDATE',
+    'grant SPARQL_SELECT to SPARQL_SPONGE',
+    'grant SPARQL_SPONGE to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_QUAD to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_QUAD to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_URL to SPARQL_SELECT',
@@ -10063,9 +10067,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_IID_CMP to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_CMP to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LONG_CMP to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_GRAB_SINGLE to SPARQL_UPDATE',
-    'grant execute on DB.DBA.RDF_GRAB_SEEALSO to SPARQL_UPDATE',
-    'grant execute on DB.DBA.RDF_GRAB to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_GRAB_SINGLE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.RDF_GRAB_SEEALSO to SPARQL_SPONGE',
+    'grant execute on DB.DBA.RDF_GRAB to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARQL_EVAL_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_REXEC to SPARQL_SELECT',
@@ -10080,7 +10084,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_LOAD_RDFXML_MT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',
-    'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_SPONGE',
     'grant execute on DB.DBA.TTLP_EV_COMMIT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"' );
   foreach (varchar cmd in cmds) do
