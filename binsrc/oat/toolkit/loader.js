@@ -37,7 +37,7 @@ OAT.Preferences = {
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
 	endpointXmla:"/XMLA",
-	version:"28.04.2008",
+	version:"30.04.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1

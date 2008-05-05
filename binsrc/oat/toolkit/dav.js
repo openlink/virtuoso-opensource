@@ -143,14 +143,9 @@ OAT.WebDav = {
 			}
 			
 			/* ready to save */
-			var response = function() {
-				if (OAT.WebDav.options.isDav) { OAT.WebDav.updatePermissions(p+f); }
+			if (!this.options.dataCallback) {
 				OAT.Dom.hide(OAT.WebDav.window.div);
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
-			}
-
-			if (!this.options.dataCallback) {
-				response();
 				return; 
 			}
 			var data = this.options.dataCallback(f,id);
@@ -173,6 +168,13 @@ OAT.WebDav = {
 					if (filter[1] == ext && filter.length == 4) { o.headers = {"Content-Type":filter[3]}; }
 				}
 			}
+			
+			var response = function() {
+				if (OAT.WebDav.options.isDav) { OAT.WebDav.updatePermissions(p+f); }
+				OAT.Dom.hide(OAT.WebDav.window.div);
+				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
+			}
+
 			OAT.AJAX.PUT(p+f,data,response,o);
 		} /* save */
 	},

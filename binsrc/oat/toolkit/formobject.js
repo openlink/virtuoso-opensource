@@ -130,8 +130,13 @@ OAT.FormObject = {
 			if (fo.userSet) { fo.setValue(node.getAttribute("value")); }
 			/* css */
 			tmp = node.getElementsByTagName("style")[0];
-			fo.elm.style.left = tmp.getAttribute("left")+"px";
-			fo.elm.style.top = tmp.getAttribute("top")+"px";
+
+			/* backward compat, to prevent elements from getting out of viewport */
+			var left = tmp.getAttribute("left");
+			var top = tmp.getAttribute("top");
+			fo.elm.style.left = ((left > 0)? left : 0) + "px";
+			fo.elm.style.top = ((top > 0)? top : 0) + "px";
+
 			if (fo.resizable) {
 				fo.elm.style.width = tmp.getAttribute("width")+"px";
 				fo.elm.style.height = tmp.getAttribute("height")+"px";
