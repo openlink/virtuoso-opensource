@@ -100,7 +100,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
   if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       err_ret[0] = srv_make_new_error ("42000", "SR575",
-        "No permission to execute %.300s[] as callback of %.100s()", full_name_ret[0], funname );
+        "No permission to execute %.300s as callback of %.100s()", full_name_ret[0], funname );
       return;
     }
   if (strlen (cbk_param_types) != dk_set_length (proc_ret[0]->qr_parms))
