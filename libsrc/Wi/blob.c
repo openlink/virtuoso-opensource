@@ -3250,8 +3250,11 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 /* If blob handle references to a field of deleted row, or in case of internal error, we should return empty string */
 stub_for_corrupted_blob:
   dk_free_box (out);
-  while (NULL != string_list)
-    dk_free_box ((box_t) dk_set_pop(&string_list));
+  if (BH_DIRTYREAD != string_list)
+    {
+      while (NULL != string_list)
+	dk_free_box ((box_t) dk_set_pop(&string_list));
+    }
   log_info ("Attempt to get subsequence from invalid blob at page %d, %ld bytes expected, %ld retrieved%s",
     bh->bh_page, bytes, fill,
     ((0 == fill) ? "; it may be access to deleted page." : "") );
