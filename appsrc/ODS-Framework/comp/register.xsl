@@ -576,10 +576,18 @@ if(self.use_oid_url=0
          if (length (self.oid_dob))
          {
           declare tmp_date datetime;
+          tmp_date := null;
+	  {
+	    declare exit handler for sqlstate '*'
+	    {
+	      goto no_date;
+	    };
           tmp_date:=stringdate(self.oid_dob);
+	  }
           if(tmp_date is not null)
           WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY', tmp_date);
          }
+no_date:
          if (length (self.oid_fullname))
          WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME', self.oid_fullname);
        if (length (self.oid_gender))
@@ -798,9 +806,9 @@ if (hdr [0] like 'HTTP/1._ 30_ %')
     goto again;
   }
 xt := xtree_doc (cnt, 2);
-oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
-oi2_srv := cast (xpath_eval ('//link[@rel="openid2.provider"]/@href', xt) as varchar);
-oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
+oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
 
 if (oi2_srv is not null)
   oi_srv := oi2_srv;

@@ -1571,8 +1571,8 @@ again:
   }
 
   xt := xtree_doc (cnt, 2);
-  oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
-  oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+  oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+  oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
 
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);

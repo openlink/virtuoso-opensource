@@ -413,9 +413,9 @@ if (hdr [0] like 'HTTP/1._ 30_ %')
     goto again;
   }
 xt := xtree_doc (cnt, 2);
-oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
-oi2_srv := cast (xpath_eval ('//link[@rel="openid2.provider"]/@href', xt) as varchar);
-oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
+oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
 
 if (oi2_srv is not null)
   oi_srv := oi2_srv;

@@ -316,7 +316,7 @@ create procedure authorize (
 }
 ;
 
-create procedure check_authentication_safe (in inparams any := null, in lines any := null)
+create procedure check_authentication_safe (in inparams any := null, in lines any := null, out uname varchar)
 {
   if (inparams is null)
     inparams := http_param ();
@@ -325,11 +325,11 @@ create procedure check_authentication_safe (in inparams any := null, in lines an
   declare exit handler for sqlstate '*' {
     return 0;
   };
-  return check_authentication (inparams, lines);
+  return check_authentication (inparams, lines, uname);
 }
 ;
 
-create procedure check_authentication (in inparams any, in lines any)
+create procedure check_authentication (in inparams any, in lines any, out uname varchar)
 {
   declare oauth_consumer_key varchar;
   declare oauth_token varchar;
@@ -380,7 +380,7 @@ create procedure check_authentication (in inparams any, in lines any)
   declare exit handler for sqlstate '*' {
     resignal;
   };
-  select a_secret, a_id into app_sec, app_id from APP_REG where a_key = oauth_consumer_key;
+  select a_secret, a_id, U_NAME into app_sec, app_id, uname from APP_REG, DB.DBA.SYS_USERS where a_owner = U_ID and a_key = oauth_consumer_key;
 
   if (exists (select 1 from SESSIONS where s_nonce = oauth_nonce))
     {
