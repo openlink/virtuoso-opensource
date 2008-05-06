@@ -3965,15 +3965,15 @@
                   }
                   else if (self.cSubAction = 'subscribeBrowse')
                   {
-                    T := 'Subscriptiones';
+                    T := 'Subscriptions';
                   }
                   else if (self.cSubAction = 'subscribeCreate')
                   {
-                    T := 'Subscriptiones/Create';
+                    T := 'Subscriptions/Create';
                   }
                   else if (self.cSubAction = 'subscribeUpdate')
                   {
-                    T := 'Subscriptiones/Update';
+                    T := 'Subscriptions/Update';
                   }
                   else if (self.cSubAction = 'grantBrowse')
                   {

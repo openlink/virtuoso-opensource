@@ -3609,15 +3609,15 @@
                   }
                   else if (self.abSubAction = 'subscribeBrowse')
                   {
-                    T := 'Subscriptiones';
+                    T := 'Subscriptions';
                   }
                   else if (self.abSubAction = 'subscribeCreate')
                   {
-                    T := 'Subscriptiones/Create';
+                    T := 'Subscriptions/Create';
                   }
                   else if (self.abSubAction = 'subscribeUpdate')
                   {
-                    T := 'Subscriptiones/Update';
+                    T := 'Subscriptions/Update';
                   }
                   http (S || T);
                 ?>
