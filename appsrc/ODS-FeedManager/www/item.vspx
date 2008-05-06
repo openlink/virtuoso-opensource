@@ -22,44 +22,11 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<?vsp
-  exec('SET CHARSET = ''UTF-8''');
-  exec('SET HTTP_CHARSET =  ''UTF-8''');
-?>
-<html>
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" href="css/style.css" type="text/css" />
-    <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
+<v:page name="item" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-        var featureList=["ajax2", "anchor", "ghostdrag"];
-      </script>
-      <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="js/enews.js"></script>
-      <script type="text/javascript" src="/ods/app.js"></script>
-      <script type="text/javascript">
-        function myInit()
-        {
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-          OAT.Anchor.zIndex = 1001;
-
-          if (0 == 1)
-            generateAPP('app_area', {});
-        }
-        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
-      </script>
-    ]]>
-  </head>
-  <body>
-    <?vsp
-      http (sprintf ('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s" />', ENEWS.WA.sparql_url ()));
-    ?>
-    <form name="F1">
-      <div id="app_area">
+  <vm:pagetitle>Item page</vm:pagetitle>
+  <vm:popup_pagewrapper clean="yes">
+    <vm:pagebody>
         <input type="hidden" name="sid"   id="sid"   value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
         <input type="hidden" name="realm" id="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
         <input type="hidden" name="fid"   value="&lt;?V get_keyword('fid', self.vc_event.ve_params) ?>"/>
@@ -412,7 +379,6 @@
 
         _end:;
         ?>
-      </div>
-    </form>
-  </body>
-</html>
+    </vm:pagebody>
+  </vm:popup_pagewrapper>
+</v:page>

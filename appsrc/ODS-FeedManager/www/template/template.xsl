@@ -113,9 +113,11 @@
         <hr />
       </div>
     </xsl:if>
+    <div id="app_area">
       <v:form name="F1" type="simple" method="POST">
         <xsl:apply-templates select="vm:pagebody" />
       </v:form>
+    </div>
     <xsl:if test="not @clean or @clean = 'no'">
     <div class="copyright"><vm:copyright /></div>
     </xsl:if>

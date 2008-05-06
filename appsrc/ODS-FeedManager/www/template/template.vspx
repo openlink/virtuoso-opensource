@@ -42,6 +42,7 @@
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/oat/styles/winrect.css" type="text/css" />
     <meta name="dc.description" content="<?V ENEWS.WA.utf2wide (ENEWS.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V ENEWS.WA.utf2wide (ENEWS.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>

@@ -27,16 +27,37 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
+    <link rel="stylesheet" href="/ods/oat/styles/winrect.css" type="text/css" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
       <script type="text/javascript">
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
 
-        var featureList=["dav"];
+        var featureList=["anchor", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" language="JavaScript" src="js/enews.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript">
+        function myInit()
+        {
+          // a++
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
+          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+          OAT.Anchor.zIndex = 1001;
+
+          if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+          {
+            if ($('app_area'))
+            {
+              generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            }
+          }
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      </script>
     ]]>
     <title></title>
   </head>
@@ -62,7 +83,7 @@
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
-          self.settings := ENEWS.WA.settings (self.domain_id, self.account_id);
+          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ENEWS.WA.settings (self.domain_id, self.account_id));
         ]]>
       </v:on-init>
 
