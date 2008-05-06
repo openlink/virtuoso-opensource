@@ -37,7 +37,7 @@ OAT.Preferences = {
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
 	endpointXmla:"/XMLA",
-	version:"30.04.2008",
+	version:"05.05.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -369,7 +369,7 @@ OAT.Dom = { /* DOM common object */
 		if (!elm) { return false; }
 		if (className == "*") { return true; }
 		if (className == "") { return false; }
-		if (!elm.className) { return false; }
+		if (!elm.className || typeof(elm.className) != "string") { return false; }
 		var arr = elm.className.split(" ");
 		var index = arr.find(className);
 		return (index != -1);
