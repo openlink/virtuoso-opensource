@@ -3006,19 +3006,19 @@ box_find_mt_unsafe_subtree (caddr_t box)
     case DV_DICT_ITERATOR:
       {
         id_hash_iterator_t *hit = (id_hash_iterator_t *)box;
-        caddr_t key, val;
+        caddr_t *key_ptr, *val_ptr;
         id_hash_iterator_t tmp_hit;
         if (NULL == hit->hit_hash)
           return NULL;
         if (NULL != hit->hit_hash->ht_mutex)
           return NULL;
         id_hash_iterator (&tmp_hit, hit->hit_hash);
-        while (hit_next (&tmp_hit, &key, &val))
+        while (hit_next (&tmp_hit, &key_ptr, &val_ptr))
           {
             caddr_t res;
-            res = box_find_mt_unsafe_subtree (key);
+            res = box_find_mt_unsafe_subtree (key_ptr[0]);
             if (NULL != res) return res;
-            res = box_find_mt_unsafe_subtree (val);
+            res = box_find_mt_unsafe_subtree (val_ptr[0]);
             if (NULL != res) return res;
           }
         return NULL;
@@ -3050,7 +3050,7 @@ box_make_tree_mt_safe (caddr_t box)
     case DV_DICT_ITERATOR:
       {
         id_hash_iterator_t *hit = (id_hash_iterator_t *)box;
-        caddr_t key, val;
+        caddr_t *key_ptr, *val_ptr;
         id_hash_iterator_t tmp_hit;
         if (NULL != hit->hit_hash)
           {
@@ -3059,10 +3059,10 @@ box_make_tree_mt_safe (caddr_t box)
             hit->hit_hash->ht_mutex = mutex_allocate ();
           }
         id_hash_iterator (&tmp_hit, hit->hit_hash);
-        while (hit_next (&tmp_hit, &key, &val))
+        while (hit_next (&tmp_hit, &key_ptr, &val_ptr))
           {
-            box_make_tree_mt_safe (key);
-            box_make_tree_mt_safe (val);
+            box_make_tree_mt_safe (key_ptr[0]);
+            box_make_tree_mt_safe (val_ptr[0]);
           }
         return;
       }
