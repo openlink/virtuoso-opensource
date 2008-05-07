@@ -2115,6 +2115,7 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
       (SPAR_VARIABLE == SPART_TYPE (right)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (right)) ) )
     { /* Comparison that is partially optimizable for indexing */
       const char *typemin, *typemax;
+#ifdef RIGOROUS_CMP
       ssg_puts ("((");
       ssg->ssg_indent += 2;
       ssg_print_scalar_expn (ssg, left, smallest_union, NULL_ASNAME);
@@ -2173,6 +2174,15 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
         }
       ssg->ssg_indent -= 2;
       ssg_puts ("))");
+#else
+      ssg_puts ("(");
+      ssg->ssg_indent += 1;
+      ssg_print_scalar_expn (ssg, left, smallest_union, NULL_ASNAME);
+      ssg_puts (bool_op);
+      ssg_print_scalar_expn (ssg, right, smallest_union, NULL_ASNAME);
+      ssg_puts (")");
+      ssg->ssg_indent -= 1;
+#endif
       return;
     }
 /* Plain use of cmp function */  
