@@ -1764,6 +1764,7 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (_err_ret)
     {
       dk_free_tree (ret);
+      ret = NULL;
       _err_ret = box_copy_tree (_err_ret);
       http_cli_ctx_free (ctx);
       sqlr_resignal (_err_ret);
