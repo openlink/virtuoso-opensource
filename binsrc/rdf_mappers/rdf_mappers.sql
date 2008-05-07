@@ -56,7 +56,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
-        '(http://.*/show_bug.cgi?id.*)|'||
+        '(http://.*/show_bug.cgi\\?id.*)|'||
         '(http://.*bugzilla.*)|'||
         '(https://bugzilla.*)|'||
         '(https://.*bugzilla.*)',
@@ -983,15 +983,19 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 
 create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
   tmp := sprintf_inverse (new_origin_uri, '%s://%s/show_bug.cgi?id=%s', 0);
   img_id := tmp[2];
+  host_part := tmp[1];
   if (img_id is null)
     return 0;
+  if (right(host_part, 6) = 'issues')  
+	url := concat(tmp[0], '://', host_part, '/xml.cgi?id=', img_id);
+  else
   url := concat(new_origin_uri, '&ctype=xml');
   tmp := RDF_HTTP_URL_GET (url, url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')

@@ -41,8 +41,31 @@
   <xsl:template match="/">
       <rdf:RDF>
 	  	<xsl:apply-templates select="bugzilla/bug"/>
+	    <xsl:apply-templates select="issuezilla/issue"/>
       </rdf:RDF>
   </xsl:template>
+    <xsl:template match="issuezilla/issue">
+		<wf:Task rdf:about="{$baseUri}">
+			<xsl:apply-templates select="*"/>
+		</wf:Task>
+		<sioct:Discussion rdf:about="{$baseUri}">
+			<sioc:container_of rdf:resource="{@rdf:resource}" />
+		</sioct:Discussion>
+		<xsl:for-each select="long_desc">
+			<sioc:Post rdf:about="{vi:proxyIRI(concat($baseUri, '#', issue_when))}">
+				<sioc:has_container rdf:resource="{$baseUri}"/>
+				<dc:date>
+					<xsl:value-of select="issue_when"/>
+				</dc:date>
+				<dc:creator>
+					<xsl:value-of select="who"/>
+				</dc:creator>
+				<dc:description>
+					<xsl:value-of select="thetext"/>
+				</dc:description>
+			</sioc:Post>
+		</xsl:for-each>
+    </xsl:template>
   <xsl:template match="bugzilla/bug">
 		<wf:Task rdf:about="{$baseUri}">
 	    <xsl:apply-templates select="*"/>
@@ -83,6 +106,11 @@
 	    <xsl:value-of select="."/>
 	</bugzilla:state>
     </xsl:template> 
+    <xsl:template match="issue_status">
+	<bugzilla:state>
+	    <xsl:value-of select="."/>
+	</bugzilla:state>
+    </xsl:template>
     <xsl:template match="rep_platform">
 	<bugzilla:reporterPlatform>
 	    <xsl:value-of select="."/>
@@ -123,7 +151,17 @@
 	  <xsl:value-of select="."/>
 	</bugzilla:bug_severity>
     </xsl:template> 
+    <xsl:template match="issue_severity">
+	<bugzilla:bug_severity>
+	    <xsl:value-of select="."/>
+	</bugzilla:bug_severity>
+    </xsl:template>
     <xsl:template match="bug_file_loc">
+	<bugzilla:bug_file_loc>
+	    <xsl:value-of select="."/>
+	</bugzilla:bug_file_loc>
+    </xsl:template>
+    <xsl:template match="issue_file_loc">
 	<bugzilla:bug_file_loc>
 	    <xsl:value-of select="."/>
 	</bugzilla:bug_file_loc>
