@@ -725,7 +725,13 @@ createApplication (in sid varchar := '',
         if(length(full_user_name)=0)
         full_user_name := _uname;
 
-      wainstance_name := full_user_name || '\'s ' || application; --'
+      --wainstance_name := full_user_name || '\'s ' || application; --'
+      if (application = 'Wiki')
+      {
+		wainstance_name := replace(full_user_name || application, ' ', '_');
+	  }
+	  else
+		wainstance_name := full_user_name || '\'s ' || application;
 
         declare create_res any;
 

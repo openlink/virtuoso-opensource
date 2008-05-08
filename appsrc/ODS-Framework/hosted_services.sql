@@ -6411,7 +6411,17 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     null, null, 2, null
     );
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
+    1,
+    '/~([^/]*)/Public/(.*)',
+    vector('uname', 'path'),
+    1,
+    '/public_home/%s/Public/%s',
+    vector('uname', 'path'),
+    null, null, 2, null
+    );
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule'));
 
 
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
@@ -6458,6 +6468,10 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/home');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/home',
       ppath=>'/DAV/home/', is_dav=>isdav);
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/public_home');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/public_home',
+      ppath=>'/DAV/home/', is_dav=>isdav, is_brws=>1, vsp_user=>'dba');
+
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {
