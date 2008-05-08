@@ -4178,6 +4178,16 @@ bif_tag (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_box_flags (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t x = bif_arg (qst, args, 0, "__tag");
+  if (!IS_BOX_POINTER (x))
+    return box_num (0);
+  return (box_num (box_flags (x)));
+}
+
+
 /* The following three functions added 20.JAN.1997 by AK.
    Used by SQLColumns
    This one is more important than the next.  */
@@ -4286,7 +4296,6 @@ dv_buffer_length (int type, int prec)
   case DV_G_REF_CLASS: /* 205 */
   case DV_G_REF: /* 206 */
 #endif
-  case DV_BLOB_HEAD: /* 207 */
   case DV_PL_CURSOR: /* 234 */
   default:
     return 100; /* To fit an error mark */
@@ -12656,6 +12665,7 @@ sql_bif_init (void)
 
 /* Type testing functions. */
   bif_define_typed ("__tag", bif_tag, &bt_integer);   /* for sqlext.c */
+  bif_define_typed ("__box_flags", bif_box_flags, &bt_integer);
   bif_define_typed ("dv_to_sql_type", bif_dv_to_sql_type, &bt_integer);   /* for sqlext.c */
   bif_define_typed ("dv_to_sql_type3", bif_dv_to_sql_type3, &bt_integer);   /* for sqlext.c */
   bif_define_typed ("internal_to_sql_type", bif_dv_to_sql_type, &bt_integer);

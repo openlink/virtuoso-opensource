@@ -3072,6 +3072,19 @@ unsigned ptrlong initbrk;
 #endif
 
 
+int
+box_flags_serial_test (dk_session_t * ses)
+{
+  /* serialize box flags only for clients that are 3029 or newer.  Do not serialize this if going to non-client.  */
+  client_connection_t *cli = DKS_DB_DATA (ses);
+  if (!cli)
+    return 0;
+  if (cli && cli->cli_version < 3029)
+    return 0;
+  return 1;
+}
+
+
 void
 numeric_serialize_client (caddr_t n, dk_session_t * ses)
 {
@@ -3195,6 +3208,7 @@ srv_compatibility_init (void)
   PrpcSetWriter (DV_WIDE, (ses_write_func) wide_serialize_client);
   PrpcSetWriter (DV_LONG_WIDE, (ses_write_func) wide_serialize_client);
   int64_serialize_client_f = (ses_write_func) int64_serialize_client;
+  box_flags_serial_test_hook = box_flags_serial_test; 
   blobio_compatibility_init ();
 }
 

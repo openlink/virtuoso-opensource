@@ -494,8 +494,8 @@ sqlr_new_error is void, and should never return.
     "CUSTOM" : \
   ((type) == DV_DB_NULL) /* 204 */ ? \
     "DB_NULL" : \
-  ((type) == DV_BLOB_HEAD) /* 207 */ ? \
-    "BLOB_HEAD" : \
+  ((type) == DV_BOX_FLAGS) /* 207 */ ? \
+    "box_flags" : \
   ((type) == DV_ARRAY_OF_XQVAL) ? \
     "ARRAY_OF_XQVAL" : \
   ((type) == DV_NUMERIC) ? \
