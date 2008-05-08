@@ -1804,10 +1804,15 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0L == iid)
     return NEW_DB_NULL;
   if (min_bnode_iri_id () <= iid)
-    return BNODE_IID_TO_LABEL(iid);
+    {
+      iri = BNODE_IID_TO_LABEL(iid);
+      box_flags (iri) = BF_IRI;
+      return iri;
+    }
   iri = key_id_to_iri (qi, iid);
   if (!iri)
     return NEW_DB_NULL;
+  box_flags (iri) = BF_IRI;
   return iri;
 }
 

@@ -148,7 +148,11 @@ d_id_set (d_id_t * to, d_id_t * from)
     }
   else
     {
+#ifdef WIN32      
+      D_ID_NUM_SET (&to->id[0], D_ID_NUM_REF (&from->id[0]));
+#else
       memcpy (to, from, sizeof (int64) + 1);
+#endif
     }
 }
 

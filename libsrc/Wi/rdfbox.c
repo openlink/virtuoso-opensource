@@ -998,6 +998,8 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t so_dtp = DV_TYPE_OF (shortobj);
   rdf_box_t *rb;
   query_instance_t * qi = (query_instance_t *) qst;
+  if (DV_STRINGP (shortobj) && box_flags (shortobj))
+    return iri_to_id (qst, shortobj, IRI_TO_ID_WITH_CREATE, err_ret);
   if (DV_RDF != so_dtp)
     {
       if ((DV_IRI_ID == so_dtp) || (DV_IRI_ID_8 == so_dtp))
@@ -1010,6 +1012,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (NULL == iri)
             sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
               (boxint)iid );
+	  box_flags (iri) = BF_IRI;
           return iri;
         }
       return box_copy_tree (shortobj);
