@@ -58,11 +58,11 @@ struct dk_session_s
     dk_mutex_t *	dks_mtx;
 
     int			dks_refcount;
-
-    char *		dks_in_buffer;
     int			dks_in_length;
     int			dks_in_fill;
     int			dks_in_read;
+
+    char *		dks_in_buffer;
 
     buffer_elt_t *	dks_buffer_chain;
     buffer_elt_t *	dks_buffer_chain_tail;
@@ -70,7 +70,6 @@ struct dk_session_s
     char *		dks_out_buffer;
     int			dks_out_length;
     int			dks_out_fill;
-    int			dks_out_written;  /*!< Used by single-thread router */
 
     struct scheduler_io_data_s *dks_client_data;	/*!< Used by scheduler */
     void *		dks_object_data;  /*!< Used by Distributed Objects */
@@ -86,26 +85,26 @@ struct dk_session_s
     void *		dks_dbs_data;
     void *		dks_write_temp;	/*!< Used by Distributed Objects */
 
-    int			dks_n_threads;
-    int			dks_to_close;
-    /*! Is the next read known NOT to block */
-    int			dks_is_read_select_ready;
     /*! max msecs to block on a read */
     timeout_t		dks_read_block_timeout;
     /*! Is this a client or server initiated session */
-    int			dks_is_server;
+    char		dks_is_server;
+    char		dks_to_close;
+    char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
+    char		dks_ws_status;
+    
+    short		dks_n_threads;
     /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
-    long		dks_last_used;
+    uint32		dks_last_used;
+    /*! burst mode */
+    dks_thread_state_t  dks_thread_state;
     /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
     void *		dks_ws_pending;
-    int			dks_ws_status;
 
     /*! fixed server thread per client */
     du_thread_t *	dks_fixed_thread; /*!< note: also used to pass the http ses for chunked write */
     basket_t		dks_fixed_thread_reqs;
 
-    /*! burst mode */
-    dks_thread_state_t  dks_thread_state;
     du_thread_t *	dks_waiting_http_recall_session;
     dk_hash_t *		dks_pending_futures;
   };
