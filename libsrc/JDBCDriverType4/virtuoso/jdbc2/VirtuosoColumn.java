@@ -201,7 +201,6 @@ class VirtuosoColumn
 	return "java.lang.Object";
 	case VirtuosoTypes.DV_BLOB_BIN:
 	case VirtuosoTypes.DV_BLOB:
-	case VirtuosoTypes.DV_BLOB_HEAD:
 	case VirtuosoTypes.DV_BLOB_HANDLE:
 	case VirtuosoTypes.DV_BIN:
 	case VirtuosoTypes.DV_LONG_BIN:
@@ -336,7 +335,6 @@ class VirtuosoColumn
 
       case VirtuosoTypes.DV_BLOB_HANDLE:
       case VirtuosoTypes.DV_BLOB_WIDE_HANDLE:
-      case VirtuosoTypes.DV_BLOB_HEAD:
 	return Types.BLOB;
       default:
 	return Types.OTHER;

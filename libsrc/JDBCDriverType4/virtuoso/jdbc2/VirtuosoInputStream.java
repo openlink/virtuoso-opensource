@@ -394,6 +394,15 @@ class VirtuosoInputStream extends BufferedInputStream
 		     //System.out.println (res.toString());
                      return res;
                    }
+	     case VirtuosoTypes.DV_BOX_FLAGS:
+		   {
+                     int flags = readlongint();
+		     Object str = read_object ();
+                     res = new VirtuosoExtendedString ((String) str, flags);
+                     //System.out.print("DV_BOX_FLAGS: ");
+		     //System.out.println (res.toString());
+                     return res;
+		   }
              case VirtuosoTypes.DV_LONG_BIN:
                    {
 		     //System.out.println("reading DV_LONG_BIN");

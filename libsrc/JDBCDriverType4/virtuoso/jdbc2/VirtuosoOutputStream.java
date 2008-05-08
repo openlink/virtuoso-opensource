@@ -390,6 +390,14 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		   writenumeric((BigDecimal)obj);
 		 return;
 	       }
+	 case VirtuosoTypes.DV_BOX_FLAGS:
+	       {
+		 VirtuosoExtendedString o = (VirtuosoExtendedString) obj;
+		 write (tag);
+		 writelong (o.strType);
+		 write_object (o.str);
+		 return;
+	       }
 	 default:
 	     // Problem !
 	     //System.err.println("Tag not defined : "+tag + "object=[" + obj.toString() + "]");

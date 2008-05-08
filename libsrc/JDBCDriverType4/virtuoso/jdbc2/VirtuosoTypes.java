@@ -213,7 +213,7 @@ class VirtuosoTypes
    /**
     * struct with first dp, current dp, current byte and length
     */
-   public static final int DV_BLOB_HEAD = 207;
+   public static final int DV_BOX_FLAGS = 207;
 
    public static final int DV_BLOB = 125;
 

@@ -53,7 +53,8 @@ VirtuosoInputStream.java VirtuosoOutputStream.java \
 VirtuosoPreparedStatement.java VirtuosoResultSet.java \
 VirtuosoResultSetMetaData.java VirtuosoRow.java \
 VirtuosoStatement.java VirtuosoTypes.java \
-VirtuosoNullParameter.java VirtuosoExplicitString.java
+VirtuosoNullParameter.java VirtuosoExplicitString.java \
+VirtuosoExtendedString.java
 
 in3files= \
 VirtuosoParameterMetaData.java \
