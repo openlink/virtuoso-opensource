@@ -387,7 +387,7 @@
   <!--=========================================================================-->
   <xsl:template match="vm:exchange">
     <div class="lc lc_head" onclick="shCell('exchange')">
-      <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Exchange
+      <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Import/Export
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
       <a href="#" onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
@@ -398,7 +398,7 @@
   <!--=========================================================================-->
   <xsl:template match="vm:formats">
     <div class="lc lc_head" onclick="shCell('gems')">
-      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Calendar Gems
+      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Data Portability
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
       <?vsp

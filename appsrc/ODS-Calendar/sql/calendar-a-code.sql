@@ -4665,8 +4665,8 @@ create procedure CAL.WA.import_vcal (
   oTags := '';
   if (not isnull (options))
   {
-    oEvents := cast (get_keyword ('events', options, 0) as integer);
-    oTasks := cast (get_keyword ('tasks', options, 0) as integer);
+    oEvents := cast (get_keyword ('events', options, oEvents) as integer);
+    oTasks := cast (get_keyword ('tasks', options, oTasks) as integer);
     oTags := get_keyword ('tags', options, '');
   }
 
@@ -6187,5 +6187,62 @@ create procedure CAL.WA.news_comment_get_cn_type (in f_name varchar)
 	  ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
   return ext;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.obj2json (
+  in o any,
+  in d integer := 2)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+	if (d = 0)
+	  return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
+	retValue := '';
+	if (isnumeric (o))
+	{
+		retValue := cast (o as varchar);
+	}
+	else if (isstring (o))
+	{
+		for (N := 0; N < length(o); N := N + 1)
+		{
+			R := chr (o[N]);
+		  for (M := 0; M < length(T); M := M + 2)
+		  {
+				if (R = T[M])
+				  R := T[M+1];
+			}
+			retValue := retValue || R;
+		}
+		retValue := '"' || retValue || '"';
+	}
+	else if (isarray (o))
+	{
+		retValue := '[';
+		for (N := 0; N < length(o); N := N + 1)
+		{
+		  retValue := retValue || CAL.WA.obj2json (o[N], d-1);
+		  if (N <> length(o)-1)
+			  retValue := retValue || ',\n';
+		}
+		retValue := retValue || ']';
+	}
+	return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.json2obj (
+  in o any)
+{
+  return json_parse (o);
 }
 ;

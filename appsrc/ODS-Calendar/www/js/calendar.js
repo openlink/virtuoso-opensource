@@ -910,30 +910,37 @@ function changeComplete ()
 }
 
 // ---------------------------------------------------------------------------
-function destinationChange(obj, prefix, mode)
+function destinationChange(obj, actions)
 {
   if (!obj.checked)
     return;
-  if (mode == 'hide')
+  if (!actions)
+    return;
+  if (actions.hide)
   {
-    var i = 0;
-    while (true)
+    var a = actions.hide;
+    for (var i = 0; i < a.length; i++)
     {
-      var o = $(prefix + i)
-      if (!o) {break;}
-      OAT.Dom.hide(o);
-      i++;
+      var o = $(a[i])
+      if (o) {OAT.Dom.hide(o);}
     }
   }
-  else if (mode == 'show')
+  if (actions.show)
   {
-    var i = 0;
-    while (true)
+    var a = actions.show;
+    for (var i = 0; i < a.length; i++)
     {
-      var o = $(prefix + i)
-      if (!o) {break;}
-      OAT.Dom.show(o);
-      i++;
+      var o = $(a[i])
+      if (o) {OAT.Dom.show(o);}
+    }
+  }
+  if (actions.clear)
+  {
+    var a = actions.clear;
+    for (var i = 0; i < a.length; i++)
+    {
+      var o = $(a[i])
+      if (o && o.value) {o.value = '';}
     }
   }
 }
