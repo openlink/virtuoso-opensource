@@ -1887,7 +1887,8 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		    return DVC_LESS;
 		  if (DVC_CMP_MASK & op)
 		    {
-		      if (0 == (op & itc_col_check (itc, sp, sp->sp_min)))
+		      int res = itc_col_check_1 (itc, sp, sp->sp_min);
+		      if (0 == (op & res) || (DVC_NOORDER & res))
 			{
 			  itc->itc_bp.bp_at_end = 1;
 			return DVC_LESS;
@@ -1896,12 +1897,22 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		  else if (op == CMP_LIKE)
 		    {
 		      if (DVC_MATCH != itc_like_compare (itc, itc->itc_search_params[sp->sp_min], sp))
+			{
+			  itc->itc_bp.bp_at_end = 1;
 			return DVC_LESS;
+			}
+
 		      goto next_sp;
 		    }
-		  if (sp->sp_max_op != CMP_NONE
-		      && (0 == (sp->sp_max_op & itc_col_check (itc, sp, sp->sp_max))))
+		  if (sp->sp_max_op != CMP_NONE)
+		    {
+		      int res = itc_col_check_1 (itc, sp, sp->sp_max);
+		      if ((0 == (sp->sp_max_op & res)) || (DVC_NOORDER & res))
+			{
+			  itc->itc_bp.bp_at_end = 1;
 		    return DVC_LESS;
+		}
+		    }
 		}
 	    next_sp:
 	      sp = sp->sp_next;

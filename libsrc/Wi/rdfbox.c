@@ -670,11 +670,18 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   short rdftype1, rdftype2, rdflang1, rdflang2;
   dtp_t data_dtp1, data_dtp2;
   db_buf_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, trhe one that is an rdf box is first */
+  /* arrange so that if both are not rdf boxes, the one that is an rdf box is first */
   if (DV_RDF != dtp1)
     {
       int res = dv_rdf_compare (dv2, dv1);
-      return ((res == DVC_GREATER) ? DVC_LESS : ((res == DVC_LESS) ? DVC_GREATER : res));
+      switch (res)
+	{
+	  case DVC_LESS: return DVC_GREATER;
+	  case DVC_GREATER: return DVC_LESS;
+	  case DVC_DTP_LESS: return DVC_DTP_GREATER;
+	  case DVC_DTP_GREATER: return DVC_DTP_LESS;
+	  default: return res;
+	}
     }
   flags1 = dv1[1];
       data1 = dv1 + 2;
@@ -709,7 +716,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     {
       /* rdf string and non rdf */
       if (DV_STRING != dtp2 && DV_SHORT_STRING_SERIAL != dtp2)
-        return DVC_LESS;
+        return DVC_DTP_LESS;
       /* rdf string or checksum and dv string */
       flags2 = RBS_COMPLETE;
 	  data2 = dv2;
@@ -730,11 +737,11 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   len1 = data1[1];
   data1 += 2;
   rdftype1 = ((RBS_HAS_TYPE & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_TYPE);
-  if (rdftype1 < rdftype2) return DVC_LESS;
-  if (rdftype1 > rdftype2) return DVC_GREATER;
+  if (rdftype1 < rdftype2) return DVC_DTP_LESS;
+  if (rdftype1 > rdftype2) return DVC_DTP_GREATER;
   rdflang1 = ((RBS_HAS_LANG & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_LANG);
-  if (rdflang1 < rdflang2) return DVC_LESS;
-  if (rdflang1 > rdflang2) return DVC_GREATER;
+  if (rdflang1 < rdflang2) return DVC_DTP_LESS;
+  if (rdflang1 > rdflang2) return DVC_DTP_GREATER;
   if (RBS_CHKSUM & flags1)
     {
       if (!(RBS_CHKSUM & flags2))

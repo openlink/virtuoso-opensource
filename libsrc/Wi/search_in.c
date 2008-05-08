@@ -137,8 +137,8 @@
   dv2 = (db_buf_t) itc->itc_search_params[nth_param]; \
   dv1 = row + off; \
   n1 = dv_compare (dv1, dv2, NULL); \
-  if (DVC_LESS == n1) goto lt; \
-  if (DVC_GREATER == n1) goto gt; \
+  if (DVC_LESS & n1) goto lt; \
+  if (DVC_GREATER & n1) goto gt; \
 }
 
 

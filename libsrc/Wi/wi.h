@@ -1244,8 +1244,8 @@ typedef struct ra_req_s
 #define DVC_MATCH 1
 #define DVC_LESS 2
 #define DVC_GREATER 4
-#define DVC_DTP_LESS 2
-#define DVC_DTP_GREATER	4
+#define DVC_DTP_LESS (2 | DVC_NOORDER)
+#define DVC_DTP_GREATER	(4 | DVC_NOORDER)
 #define DVC_NOORDER 8
 #define DVC_INDEX_END 16
 #define DVC_CMP_MASK 15 /* or of bits for eq, lt, gt */

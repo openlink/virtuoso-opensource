@@ -280,7 +280,7 @@ itc_dive_cache_check (it_cursor_t * itc)
 
 
 int
-itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
+itc_col_check_1 (it_cursor_t * itc, search_spec_t * spec, int param_inx)
 {
   collation_t * collation;
   int res;
@@ -1237,9 +1237,11 @@ itc_compare_spec (it_cursor_t * itc, search_spec_t * spec)
 	{
 	  return (itc_like_compare (itc, itc->itc_search_params[spec->sp_min], spec));
 	}
-      res = itc_col_check (itc, spec, spec->sp_min);
+      res = itc_col_check_1 (itc, spec, spec->sp_min);
 
       /* The min operation is 1. EQ. 2 GTE, 3 GT */
+      if (DVC_NOORDER & res)
+	return res & ~DVC_NOORDER; 
       switch (op)
 	{
 	case CMP_EQ:
@@ -1268,7 +1270,9 @@ itc_compare_spec (it_cursor_t * itc, search_spec_t * spec)
       int res;
       if (op == CMP_NONE)
 	return DVC_MATCH;
-      res = itc_col_check (itc, spec, spec->sp_max);
+      res = itc_col_check_1 (itc, spec, spec->sp_max);
+      if (DVC_NOORDER & res)
+	return res & ~DVC_NOORDER; 
 
       switch (op)
 	{
@@ -1523,7 +1527,8 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    return DVC_LESS;
 	  if (DVC_CMP_MASK & op)
 	    {
-	      if (0 == (op & itc_col_check (itc, sp, sp->sp_min)))
+	      int res = itc_col_check_1 (itc, sp, sp->sp_min);
+	      if (0 == (op & res) || (DVC_NOORDER & res))
 		return DVC_LESS;
 	    }
 	  else if (op == CMP_LIKE)
@@ -1532,9 +1537,12 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		return DVC_LESS;
 	      goto next_sp;
 	    }
-	  if (sp->sp_max_op != CMP_NONE
-	      && (0 == (sp->sp_max_op & itc_col_check (itc, sp, sp->sp_max))))
+	  if (sp->sp_max_op != CMP_NONE)
+	    {
+	      int res = itc_col_check_1 (itc, sp, sp->sp_max);
+	      if ((0 == (sp->sp_max_op & res)) || (DVC_NOORDER & res))
 	    return DVC_LESS;
+	    }
 	next_sp:
 	  sp = sp->sp_next;
 	} while (sp);
