@@ -239,10 +239,7 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
   if (bh_len)
     {
 #endif
-  (ptr++)[0] = (dtp_t) (len1 & 0xff);
-  (ptr++)[0] = (dtp_t) (len1 >> 8);
-  (ptr++)[0] = (dtp_t) (len1 >> 16);
-  (ptr++)[0] = dtp;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
 #ifndef LACERATED_POOL
     }
 #endif
@@ -391,13 +388,14 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	{
 #ifdef MALLOC_DEBUG
 	  cp = mp_alloc_box (mp, box_length (box), box_tag (box));
+	  box_flags (cp) = box_flags (box);
         memcpy (cp, box, box_length (box));
         return cp;
 #else
 	  int align_len = ALIGN_8 (box_length (box));
 	  MP_BYTES (cp, mp, 8 + align_len);
 	  cp = ((char*)cp) + 8;
-	  ((int32*)cp)[-1] = ((int32*)box)[-1];
+	  ((int64*)cp)[-1] = ((int64*)box)[-1];
 #ifdef DOUBLE_ALIGN	  
 	  if (align_len < 64)
 	    {
@@ -957,11 +955,8 @@ mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp)
 #else
   caddr_t box;
   MP_BYTES (box, mp, 8 + len);
-  box += 8;
-  box_tag_modify (box, dtp);
-  ((dtp_t *)box)[-4] = (dtp_t) (len & 0xff);
-  ((dtp_t *)box)[-3] = (dtp_t) (len >> 8);
-  ((dtp_t *)box)[-2] = (dtp_t) (len >> 16);
+  box += 4;
+  WRITE_BOX_HEADER (box, len, dtp);
   return box;
 #endif
 }

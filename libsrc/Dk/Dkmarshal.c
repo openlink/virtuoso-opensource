@@ -262,6 +262,16 @@ box_read_long_string (dk_session_t *session, dtp_t dtp)
 }
 
 
+
+static void *
+box_read_flags (dk_session_t *session, dtp_t dtp)
+{
+  uint32 flags = (uint32) read_long (session);
+  char *string = scan_session_boxing (session);
+  box_flags (string) = flags;
+  return (void*)string;
+}
+
 #ifndef O12
 static void *
 box_read_ref_box (dk_session_t *session, dtp_t dtp)
@@ -510,6 +520,7 @@ init_readtable (void)
   readtable[DV_ARRAY_OF_DOUBLE] = box_read_array_of_double;
 
   readtable[DV_DB_NULL] = box_read_db_null;
+  readtable[DV_BOX_FLAGS] = box_read_flags;
 #ifndef O12
   readtable[DV_G_REF_CLASS] = box_read_ref_box;
   readtable[DV_G_REF] = box_read_ref_box;
@@ -810,11 +821,19 @@ dks_array_head (dk_session_t *session, long n_elements, dtp_t type)
 }
 
 
+int (*box_flags_serial_test_hook) (dk_session_t * ses);
+
 void
 print_string (char *string, dk_session_t *session)
 {
   /* There will be a zero at the end. Do not send the zero. */
+  uint32 flags = box_flags (string);
   size_t length = box_length (string) - 1;
+  if (flags && (!box_flags_serial_test_hook || box_flags_serial_test_hook (session)))
+    {
+      session_buffered_write_char (DV_BOX_FLAGS, session);
+      print_long (flags, session);
+    }
   if (length < 256)
     {
       session_buffered_write_char (DV_SHORT_STRING_SERIAL, session);

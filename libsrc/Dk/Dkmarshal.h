@@ -89,3 +89,6 @@ void *box_read_error (dk_session_t *session, dtp_t dtp);
       longjmp_splice (&(SESSION_SCH_DATA (session)->sio_read_broken_context), 1); \
       return 0; /* dummy */ \
     }
+
+
+extern int (* box_flags_serial_test_hook) (dk_session_t * ses);

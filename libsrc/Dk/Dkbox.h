@@ -90,6 +90,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define box_tag_aux(box) (*((dtp_t *) &(((unsigned char *)(box))[-1])))
 #define box_tag_aux_const(box) (*((const dtp_t *) &(((const unsigned char *)(box))[-1])))
+#define box_flags(b) (((uint32*)(b))[-2])
 
 #ifdef _DEBUG
 /* This is to prevent us from occasional use of assignments like
@@ -135,8 +136,10 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define box_tag_modify(box,new_tag) box_tag_modify_impl(box,new_tag)
 #endif
 
+#ifdef WORDS_BIGENDIAN
 #ifdef NDEBUG
 #define WRITE_BOX_HEADER(ptr, bytes, tag) \
+  ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
@@ -146,10 +149,30 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define WRITE_BOX_HEADER(ptr, bytes, tag) \
   if (bytes >= (256L * 256L * 256L)) \
     GPF_T1 ("box to allocate too large"); \
+  ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
   *ptr++ = (unsigned char) tag
+#endif
+#else
+#ifdef NDEBUG
+#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+  ((uint32*)(ptr))[-1] = 0;		   \
+  ((uint32*)ptr)[0] = bytes; \
+  ptr[3] = (unsigned char) tag; \
+ptr += 4
+
+#else
+  /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
+#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+  if (bytes >= (256L * 256L * 256L)) \
+    GPF_T1 ("box to allocate too large"); \
+  ((uint32*)(ptr))[-1] = 0;		   \
+  ((uint32*)ptr)[0] = bytes; \
+  ptr[3] = (unsigned char) tag; \
+  ptr += 4
+#endif
 #endif
 
 
@@ -410,8 +433,8 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define DV_G_REF 206
 #endif
 
-/* struct with first dp, current dp, current byte and length */
-#define DV_BLOB_HEAD 207
+/* box with non-zero box_flags, box follows.  Occurs only in serialization */
+#define DV_BOX_FLAGS 207
 
 #define DV_ARRAY_OF_XQVAL 212	/*!< List of XQuery values results */
 #define DV_DICT_HASHTABLE 213	/*!< Copyable dictionary with keys of type "box", values of type "box or tree" and by-byte tree compare on keys. */
@@ -540,6 +563,7 @@ extern uint32 big_endian_box_length (const void *box);
 
 #define UNB_HDR_HASH	0
 #define UNB_HDR_REFCTR	1
+#define UNB_HDR_BOXFLAGS 2
 #define UNB_HDR_BOXHEAD	3
 
 typedef struct uname_blk_s
@@ -752,13 +776,14 @@ extern caddr_t uname___empty;
 
 extern void dkbox_terminate_module (void);
 
-#endif
-
-
 #ifdef WORDS_BIGENDIAN
 #define DV_INT_TAG_WORD  0x080000bd
 #define DV_IRI_TAG_WORD 0x080000f3
 #else
 #define DV_INT_TAG_WORD  0xbd000008
 #define DV_IRI_TAG_WORD 0xf3000008
+#endif
+/* values for box_flaggs */
+#define BF_IRI 1
+
 #endif

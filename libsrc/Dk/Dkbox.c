@@ -165,6 +165,7 @@ dk_alloc_box (size_t bytes, dtp_t tag)
   align_bytes += 8;
   ptr = (unsigned char *) dk_alloc (align_bytes) + 4;
 #else
+#error boxes must be aligned at 8
   align_bytes += 4;
   ptr = (unsigned char *) dk_alloc (align_bytes);
 #endif
@@ -957,6 +958,7 @@ DBG_NAME(box_copy) (DBG_PARAMS cbox_t box)
     }
   len = box_length (box);
   copy = DBG_NAME(dk_alloc_box) (DBG_ARGS len, tag);
+  box_flags (copy) = box_flags (box);
   memcpy (copy, box, (uint32) len);
   return copy;
 }
@@ -1002,6 +1004,7 @@ DBG_NAME(box_copy_tree) (DBG_PARAMS cbox_t box)
     }
   len = box_length (box);
   copy = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS len, tag);
+  box_flags (copy) = box_flags (box);
   memcpy (copy, box, (uint32) len);
   return (box_t) copy;
 }
@@ -1080,6 +1083,7 @@ DBG_NAME(box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
     }
   len = box_length (box);
   copy = DBG_NAME(dk_alloc_box) (DBG_ARGS len, tag);
+  box_flags (copy) = box_flags (box);
   memcpy (copy, box, (uint32) len);
   return (box_t) copy;
 }
@@ -1598,11 +1602,13 @@ DBG_NAME (box_dv_uname_nchars) (DBG_PARAMS const char *text, size_t len)
   char *uname;
   uname_blk_t *blk, *old_persistent_chain_head;
   uname_chain_pair_t *cpair;
-  uint32 boxhead = 0;
+  uint32 boxhead[2];
+  boxhead[0] = 0;
+  boxhead[1] = 0;
   BYTE_BUFFER_HASH(hash,text,len);
   {
     size_t bytes = len+1;
-    char *hd = ((char *)(&boxhead));
+    char *hd = ((char *)(&boxhead[1]));
     WRITE_BOX_HEADER(hd, bytes, DV_UNAME);
   }
   cpair = unames + (hash % UNAME_TABLE_SIZE);
@@ -1611,7 +1617,7 @@ DBG_NAME (box_dv_uname_nchars) (DBG_PARAMS const char *text, size_t len)
     {
       if ((blk->unb_hdr[UNB_HDR_HASH] != hash))
         continue;
-      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead))
+      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead[1]))
         continue;
 #ifdef MALLOC_DEBUG
       uname = blk->unb_data_ptr;
@@ -1628,7 +1634,7 @@ DBG_NAME (box_dv_uname_nchars) (DBG_PARAMS const char *text, size_t len)
     {
       if ((blk->unb_hdr[UNB_HDR_HASH] != hash))
 	continue;
-      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead))
+      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead[1]))
 	continue;
 #ifdef MALLOC_DEBUG
       uname = blk->unb_data_ptr;
@@ -1649,7 +1655,7 @@ DBG_NAME (box_dv_uname_nchars) (DBG_PARAMS const char *text, size_t len)
     {
       if ((blk->unb_hdr[UNB_HDR_HASH] != hash))
 	continue;
-      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead))
+      if ((blk->unb_hdr[UNB_HDR_BOXHEAD] != boxhead[1]))
 	continue;
 #ifdef MALLOC_DEBUG
       uname = blk->unb_data_ptr;
@@ -1690,7 +1696,8 @@ DBG_NAME (box_dv_uname_nchars) (DBG_PARAMS const char *text, size_t len)
   cpair->unc_refcounted = blk;
   blk->unb_hdr[UNB_HDR_HASH] = hash;
   blk->unb_hdr[UNB_HDR_REFCTR] = 1;
-  blk->unb_hdr[UNB_HDR_BOXHEAD] = boxhead;
+  blk->unb_hdr[UNB_HDR_BOXFLAGS] = boxhead[0];
+  blk->unb_hdr[UNB_HDR_BOXHEAD] = boxhead[1];
   memcpy (uname, text, len);
   uname[len] = '\0';
   box_dv_uname_audit_one (hash);
