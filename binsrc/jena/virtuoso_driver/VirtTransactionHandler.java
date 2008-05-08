@@ -52,7 +52,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase {
 				return(m_transactionsSupported.booleanValue());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new JenaException(e);
 		}
 		return (false);
 	}

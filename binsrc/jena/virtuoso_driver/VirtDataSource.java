@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Vector;
 
 
+import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
@@ -65,7 +66,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	    rs.next();
 	    ret = rs.getInt(1);
 	} catch (Exception e) {
-	    throw new RuntimeException(e);
+	    throw new JenaException(e);
         }
 
 	try {
@@ -91,7 +92,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	            stmt.executeQuery(exec_text);
 	        }
 	} catch (Exception e) {
-	    throw new RuntimeException(e);
+	    throw new JenaException(e);
 	}
     }
 
@@ -105,7 +106,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	    java.sql.Statement stmt = getConnection().createStatement();
 	    stmt.executeUpdate(exec_text);
 	} catch (Exception e) {
-		throw new RuntimeException(e);
+		throw new JenaException(e);
 	}
     }
 
@@ -121,10 +122,10 @@ public class VirtDataSource extends VirtGraph implements DataSource {
  	    try {
 		getConnection().rollback();
 	    } catch (Exception e2) {
-		throw new RuntimeException(
+		throw new JenaException(
 			"Could not replace model, and could not rollback!", e2);
 	    }
-	    throw new RuntimeException("Could not replace model:", e);
+	    throw new JenaException("Could not replace model:", e);
 	}
     }
 
@@ -141,7 +142,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 		return new VirtModel(new VirtGraph(name, this.getGraphUrl(), 
 			this.getGraphUser(), this.getGraphPassword()));
 	} catch (Exception e) {
-		throw new RuntimeException(e);
+		throw new JenaException(e);
 	}
     }
 
@@ -160,7 +161,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	    rs.next();
 	    ret = rs.getInt(1);
 	} catch (Exception e) {
-	    throw new RuntimeException(e);
+	    throw new JenaException(e);
         }
 
 	return (ret!=0);
@@ -183,14 +184,14 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	        names.add(rs.getString(1));
 	    return names.iterator();
 	} catch (Exception e) {
-	    throw new RuntimeException(e);
+	    throw new JenaException(e);
         }
     }
 
 
     /** Get the lock for this dataset */
     public Lock getLock() {
-	throw new RuntimeException("Lock are not implemented yet, in VirtDataSource.java .");
+	throw new JenaException("Lock are not implemented yet, in VirtDataSource.java .");
     }
 
 

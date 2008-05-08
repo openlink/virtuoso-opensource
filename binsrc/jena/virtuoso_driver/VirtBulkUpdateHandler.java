@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
+import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.GraphUtil;
 import com.hp.hpl.jena.graph.Node;
@@ -55,7 +56,7 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 		_graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
-		throw new RuntimeException("Couldn't create transaction",e);
+		throw new JenaException("Couldn't create transaction:"+e);
 	}
         manager.notifyAddArray( graph, triples );
     }
@@ -76,7 +77,7 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 		_graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
-		throw new RuntimeException("Couldn't create transaction",e);
+		throw new JenaException("Couldn't create transaction:"+e);
 	}
 	if (notify) 
 		manager.notifyAddList( graph, triples );
@@ -97,7 +98,7 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 		_graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
-		throw new RuntimeException("Couldn't create transaction",e);
+		throw new JenaException("Couldn't create transaction:"+e);
 	}
         manager.notifyDeleteArray( graph, triples );
     }
@@ -116,7 +117,7 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 		_graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
-		throw new RuntimeException("Couldn't create transaction",e);
+		throw new JenaException("Couldn't create transaction:"+e);
 	}
         if (notify) 
         	manager.notifyDeleteList( graph, triples );

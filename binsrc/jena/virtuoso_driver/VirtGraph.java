@@ -32,7 +32,7 @@ import virtuoso.jdbc3.*;
 
 import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.graph.impl.*;
-//import com.hp.hpl.jena.db.GraphRDB;
+import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.util.iterator.ExtendedIterator;
 import com.hp.hpl.jena.util.iterator.NiceIterator;
 import com.hp.hpl.jena.db.impl.ResultSetIterator;
@@ -86,7 +86,6 @@ public class VirtGraph extends GraphBase
 	{
 	    try
 	    {
-//??TOD FIXME create procedure twice
 		Class.forName("virtuoso.jdbc3.Driver");
 		connection = DriverManager.getConnection(url, user, password);
 		java.sql.Statement stmt = connection.createStatement();
@@ -94,9 +93,8 @@ public class VirtGraph extends GraphBase
 	    }
 	    catch(Exception e)
 	    {
-		System.out.println("Connection to " + url + " is FAILED.");
-		e.printStackTrace();
-		System.exit(-1);
+//		System.out.println("Connection to " + url + " is FAILED.");
+	        throw new JenaException(e);
 	    }
 	}
     }
@@ -171,8 +169,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
-	    System.exit(-1);
+            throw new JenaException(e);
 	}
     }
 
@@ -199,8 +196,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
-	    System.exit(-1);
+            throw new JenaException(e);
 	}
     }
 
@@ -222,8 +218,7 @@ public class VirtGraph extends GraphBase
 		rs.next();
 		ret = rs.getInt(1);
 	} catch (Exception e) {
-		e.printStackTrace();
-		System.exit(-1);
+	        throw new JenaException(e);
 	}
 	return ret;
     }
@@ -239,24 +234,31 @@ public class VirtGraph extends GraphBase
 	String exec_text;
 
 	checkOpen();
-	S = t.getSubject().toString();
-	P = t.getPredicate().toString();
-	O = t.getObject().toString();
+
+	S = " ?s ";
+	P = " ?p ";
+	O = " ?o ";
+
+	if (!Node.ANY.equals(t.getSubject()))
+		S = " <" + t.getSubject().toString() + "> ";
+
+	if (!Node.ANY.equals(t.getPredicate()))
+		P = " <" + t.getPredicate().toString() + "> ";
+
+	if (!Node.ANY.equals(t.getObject()))
+		O = " <" + t.getObject().toString() + "> ";
 
 	exec_text = "select count (*) from (sparql select * from <"
-			+ this.graphName + "> where {" + "<" + S + "> <" + P + "> <"
-				+ O + ">})f";
+			+ this.graphName + "> where { " + S +  P + O + " })f";
+
 	try {
 		java.sql.Statement stmt = connection.createStatement();
 		rs = stmt.executeQuery(exec_text);
 		rs.next();
-		return (rs.getInt(1) == 1);
+		return (rs.getInt(1) != 0);
 	} catch (Exception e) {
-		e.printStackTrace();
-		System.exit(-1);
+	        throw new JenaException(e);
 	}
-
-	return false;
     }
 
 
@@ -285,13 +287,10 @@ public class VirtGraph extends GraphBase
 	try {
 		java.sql.PreparedStatement stmt = connection
 				.prepareStatement(exec_text);
-		return new VirtResSetIter(stmt.executeQuery(), tm);
+		return new VirtResSetIter(this, stmt.executeQuery(), tm);
 	} catch (Exception e) {
-		e.printStackTrace();
-		System.exit(-1);
+	        throw new JenaException(e);
 	}
-
-	return null;
     }
 
 
@@ -301,7 +300,7 @@ public class VirtGraph extends GraphBase
 		super.close(); // will set closed = true
 		connection.close();
 	} catch (Exception e) {
-		e.printStackTrace();
+	        throw new JenaException(e);
 	}
     }
     
@@ -320,8 +319,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
-	    System.exit(-1);
+            throw new JenaException(e);
 	}
 	;
     }
@@ -341,8 +339,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
-	    System.exit(-1);
+            throw new JenaException(e);
 	}
 
     }
@@ -363,7 +360,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
+            throw new JenaException(e);
 	}
     }
 
@@ -383,7 +380,7 @@ public class VirtGraph extends GraphBase
 	}
 	catch(Exception e)
 	{
-	    e.printStackTrace();
+            throw new JenaException(e);
 	}
     }
 
@@ -397,8 +394,6 @@ public class VirtGraph extends GraphBase
 
     
     
-    /* TODO */
-
     @Override
     public TransactionHandler getTransactionHandler()
     {

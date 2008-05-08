@@ -31,24 +31,23 @@ import com.hp.hpl.jena.graph.*;
 
 public class VirtResSetIter implements ExtendedIterator
 {
-//??Compare with 
-//??  return new ExtendedStatementIterator(new IteratorWrapper<Statement>(stit.asCollection().iterator()));
-
     protected ResultSet 	v_resultSet;
     protected Triple 		v_row;
     protected TripleMatch 	v_in;
     protected boolean 		v_finished = false;
     protected boolean 		v_prefetched = false;
+    protected VirtGraph         v_graph = null;
 
     public VirtResSetIter()
     {
         v_finished = true;
     }
 
-    public VirtResSetIter(ResultSet resultSet, TripleMatch in)
+    public VirtResSetIter(VirtGraph graph, ResultSet resultSet, TripleMatch in)
     {
         v_resultSet = resultSet;
 	v_in = in;
+	v_graph = graph;
     }
 
     public void reset(ResultSet resultSet, PreparedStatement sourceStatement)
@@ -67,7 +66,9 @@ public class VirtResSetIter implements ExtendedIterator
 
     public Object removeNext()
         {
-	    return null;
+            Object ret = next();
+            remove();
+	    return ret;
 	}
 
     public Object next()
@@ -85,6 +86,11 @@ public class VirtResSetIter implements ExtendedIterator
 
     public void remove()
     {
+        if (v_row != null && v_graph != null)
+          {
+            v_graph.delete(v_row);
+            v_row = null;
+          }
     }
 
     protected void moveForward()
@@ -101,8 +107,7 @@ public class VirtResSetIter implements ExtendedIterator
 	}
 	catch (Exception e)
 	{
-	    e.printStackTrace();
-	    System.exit(-1);
+	    throw new JenaException(e);
 	}
     }
 
@@ -146,8 +151,7 @@ public class VirtResSetIter implements ExtendedIterator
 		}
 		catch (SQLException e)
 		{
-		    e.printStackTrace();
-		    System.exit(-1);
+		    throw new JenaException(e);
 		}
 	    }
 	}

@@ -30,6 +30,7 @@ import java.sql.*;
 
 import virtuoso.jdbc3.*;
 
+import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Dataset;
 
@@ -89,12 +90,9 @@ public class VirtuosoQueryExecution
 	}
 	catch(Exception e)
 	{
-	    System.out.println("Convert results are FAILED.");
-	    e.printStackTrace();
-	    System.exit(-1);
+//	    System.out.println("Convert results are FAILED.");
+            throw new JenaException("Convert results are FAILED.:"+e);
 	}
-
-	return null;
     }
 
     public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (virtuoso.jdbc3.VirtuosoResultSet VirtuosoRes)
@@ -118,9 +116,8 @@ public class VirtuosoQueryExecution
 	}
 	catch(Exception e)
 	{
-	    System.out.println("ViruosoResultBindingsToJenaResults is FAILED.");
-	    e.printStackTrace();
-	    System.exit(-1);
+//	    System.out.println("ViruosoResultBindingsToJenaResults is FAILED.");
+            throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:"+e);
 	}
 
 	return new ResultSetStream(null, null, output);
