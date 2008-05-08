@@ -319,6 +319,7 @@ caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);
 
 void mp_trash (mem_pool_t * mp, caddr_t box);
 caddr_t mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp);
+extern box_tmp_copy_f box_tmp_copier[256];
 
 #ifdef LACERATED_POOL 
 #define MP_BYTES(x, mp, len)  x = mp_alloc_box (mp, len, DV_NON_BOX)
