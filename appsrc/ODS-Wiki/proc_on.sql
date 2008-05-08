@@ -1841,6 +1841,7 @@ again:
 create procedure WV.WIKI.CREATEROLES (in _cname varchar)
 {
   declare st, msg any;
+  set_user_id ('dba');
   EXEC ('DB.DBA.USER_ROLE_CREATE (''' || _cname || 'Readers'') ', st, msg);
   EXEC ('DB.DBA.USER_ROLE_CREATE (''' || _cname || 'Writers'') ', st, msg);
 }
