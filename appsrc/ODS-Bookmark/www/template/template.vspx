@@ -42,6 +42,7 @@
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css" />
+    <link rel="stylesheet" href="/ods/oat/styles/winrect.css" type="text/css" />
     <meta name="dc.description" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -50,37 +51,91 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "dav"];
+        var featureList=["ajax2", "json", "tree", "anchor", "dialog", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
-        // WebDAV Object
-        var oWebDAV;
+        // publics
+        var formDialog;
 
         function myInit() {
           // WebDAV
           var options = { imagePath: '/ods/images/oat/',
                           imageExt: 'png',
-			  path: '<?V '/DAV/home/' || self.ownerName || '/' ?>',
-			  user: '<?V self.ownerName ?>'
+			                    path: '<?V '/DAV/home/' || BMK.WA.account_name (self.owner_id) || '/' ?>',
+			                    user: '<?V BMK.WA.account_name (self.owner_id) ?>'
                         };
           OAT.WebDav.init(options);
-          oWebDAV = OAT.WebDav;
 
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+          {
+            if ($('app_area'))
+            {
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            }
+          }
             
       		// init tabs
           showTab('p', 3, 0);
           showTab('s', 2, 0);
+
+          // Init left pane - tree & tags
+          BMK.initLeftPane();
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+
+        function getWindowHeight()
+        {
+          var windowHeight = 0;
+          if (typeof(window.innerHeight) == 'number')
+          {
+            windowHeight = window.innerHeight;
+          }
+          else
+          {
+            if (document.documentElement && document.documentElement.clientHeight)
+            {
+              windowHeight = document.documentElement.clientHeight;
+            }
+            else
+            {
+              if (document.body && document.body.clientHeight)
+              {
+                windowHeight = document.body.clientHeight;
+              }
+            }
+          }
+          return windowHeight;
+        }
+
+        function setFooter()
+        {
+          if (document.getElementById)
+          {
+            var windowHeight = getWindowHeight();
+            if (windowHeight > 0)
+            {
+              var footerElement = $('FT');
+              if (footerElement)
+              {
+                var footerHeight = footerElement.offsetHeight;
+                var pane = $('pane_main');
+                if (pane)
+                  pane.style.height = (windowHeight - footerHeight - 270) + 'px';
+              }
+            }
+          }
+        }
+
+        window.onload = function() {setFooter();};
+        window.onresize = function() {setFooter();}
       </script>
     ]]>
     <title></title>
@@ -88,11 +143,9 @@
   <body>
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
+      <v:variable persist="0" name="owner_id" type="integer" default="null" />
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
-      <v:variable persist="0" name="owner_id" type="integer" default="null" />
-      <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="settings" type="any" />
       <v:on-init>
         <![CDATA[
@@ -100,15 +153,13 @@
           set http_charset = 'utf-8';
 
           -- Initialize variables
-          declare aSessInfo any;
+          declare sessionData any;
 
-          aSessInfo := BMK.WA.session_restore (params);
-          self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
+          sessionData := BMK.WA.session_restore (params);
+          self.domain_id := cast (get_keyword('domain_id', sessionData, '-1') as integer);
           self.owner_id := BMK.WA.domain_owner_id (self.domain_id);
-          self.ownerName := BMK.WA.domain_owner_name (self.domain_id);
+          self.account_id := cast (get_keyword('user_id', sessionData, '-1') as integer);
+          self.account_role := get_keyword ('user_role', sessionData, '');
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), BMK.WA.settings (self.domain_id));
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');

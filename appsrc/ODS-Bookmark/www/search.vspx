@@ -374,7 +374,7 @@
                   control.ds_nrows := BMK.WA.settings_rows (self.settings);
                 </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
+                  <table id="search" class="BMK_grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
                         <th width="1%" class="last">
@@ -433,10 +433,12 @@
                             http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
                             tags := BMK.WA.tags_select (self.domain_id, id);
-                            if (not is_empty_or_null(tags)) {
+                            if (not is_empty_or_null(tags))
+                            {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
-                              for (N := 0; N < length(tags); N := N + 1) {
+                              for (N := 0; N < length(tags); N := N + 1)
+                              {
                                 http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmarks_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
@@ -454,7 +456,7 @@
                         </vm:if>
                         <td valign="top">
                           <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"
-                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[10], -1))"
+                                 url="--sprintf('bookmarks.vspx?fid=%d&gid=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[10], -1))"
                                  format="%s"
                                  xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"/>
                         </td>
@@ -465,11 +467,12 @@
                             if (coalesce((control as vspx_row_template).te_rowset[10], -1) = -1)
                             {
                             S := 'edit';
-                              http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&bd=%d&folder=%d" title="%s %s">%s</a>',
+                              http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&id=%d&fid=%d&gid=%d" title="%s %s">%s</a>',
                                            self.sid,
                                            self.realm,
                                            (control as vspx_row_template).te_rowset[1],
                                            coalesce((control as vspx_row_template).te_rowset[8], -1),
+                                             coalesce((control as vspx_row_template).te_rowset[10], -1),
                                            initcap (S),
                                            BMK.WA.utf2wide ((control as vspx_row_template).te_rowset[3]),
                                              'edit'));
@@ -648,11 +651,11 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Save" xhtml_class="form-button">
+          <v:button action="simple" value="Save" enabled="-- case when self.account_role in ('public', 'guest') then 0 else 1 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.update_params();
-                self.vc_redirect('bookmarks.vspx?action=sfolder' || self.do_url('save', 's_'));
+                self.vc_redirect (sprintf ('bookmarks.vspx?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_')));
               ]]>
             </v:on-post>
           </v:button>

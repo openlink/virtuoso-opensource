@@ -25,15 +25,17 @@
 <v:page name="preferences" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <v:after-data-bind>
     <![CDATA[
-      self.url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/bookmark/%d/bookmarks.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Bookmark with BM</a>', BMK.WA.host_url(), self.domain_id);
+      self.s_url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/bookmark/%d/bookmarks.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Bookmark with BM</a>', BMK.WA.host_url(), self.domain_id);
     ]]>
   </v:after-data-bind>
   <vm:pagetitle>Preferences</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="url" type="varchar" default="''" />
-      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="bSubAction" type="varchar" default="''" />
+
+      <v:variable name="s_url" type="varchar" default="''" />
+      <v:variable name="s_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
       <table id="MTB">
@@ -43,15 +45,15 @@
               <v:button action="simple" style="url" value="Settings" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
-                    self.abSubAction := '';
+                    self.bSubAction := '';
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Categories" xhtml_class="gems2">
+              <v:button action="simple" style="url" value="Bookmarklet" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
-                    self.abSubAction := 'categoriesBrowse';
+                    self.bSubAction := 'bookmarklet';
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -60,17 +62,15 @@
               <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
                 <v:on-post>
                   <![CDATA[
-                    self.abAction := 'browse';
-                    self.abSubAction := '';
-                    self.vc_data_bind(e);
+                    self.vc_redirect('bookmarks.vspx');
                   ]]>
                 </v:on-post>
               </v:button>
             </div>
           </td>
           <td id="RC">
-            <vm:if test="self.abSubAction =''">
-      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+            <vm:if test="self.bSubAction = ''">
+              <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.s_tabNo"/>
       <div class="new-form-header" style="margin-top: 6px;">
         Preferences
       </div>
@@ -78,7 +78,7 @@
         <div class="tabs">
           &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="0" caption="Main" />
           &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="1" caption="Links" />
-          &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="2" caption="Bookmarklet" />
+                  &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="2" caption="Discussion" />
         </div>
         <div class="contents">
           <div id="p_content_0" class="tabContent" style="display: none;">
@@ -247,36 +247,45 @@
           </div>
           <div id="p_content_2" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
+                    <v:template type="simple" enabled="--either (equ (BMK.WA.discussion_check (), 1), 0, 1)">
+                      <tr>
+                        <td class="error_text" colspan="2">
+                          <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                        </td>
+                      </tr>
+                    </v:template>
               <tr>
+                      <th width="30%">&nbsp;</th>
                 <td>
-                   <br />
-                   You can bookmark URL from anywhere with the BM Bookmark button.
-                   <h3>Internet Explorer Users</h3>
-                   <ol>
-                     <li>To install the button, right click on this url <?vsp http(self.url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
-                     <li>To subscribe to the site you're currently viewing in your browser, just click the 'Bookmark with BM' button from within your Favorites menu.</li>
-                   </ol>
-                   <h3>Firefox Users</h3>
-                   <ol>
-                     <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
-                     <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
-                     <li>A 'Bookmark with BM' button should now appear in your 'Bookmarks Toolbar'.</li>
-                     <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
-                  </ol>
-                  <h3>Mozilla/Netscape Users</h3>
-                  <ol>
-                    <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
-                    <li>Drag this url <?vsp http(self.url); ?> to the 'Personal Toolbar' toolbar.</li>
-                    <li>A 'Bookmark with BM' button should now appear in your 'Personal Toolbar'.</li>
-                    <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
-                  </ol>
-                  <h3>Safari Users</h3>
-                  <ol>
-                    <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
-                    <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmark Bar' toolbar.</li>
-                    <li>A 'Bookmark with BM' button should now appear in your 'Bookmark Bar'. </li>
-                    <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
-                  </ol>
+                        <?vsp
+                          declare S, T varchar;
+
+                          S := '';
+                          if (not BMK.WA.discussion_check ())
+                            S := 'disabled="disabled"';
+                          T := '';
+                          if (cast(get_keyword ('conv', self.settings, '0') as integer) = 1)
+                            T := 'checked';
+                          http (sprintf ('<input type="checkbox" name="f_conv" value="1" %s %s />', T, S));
+                        ?>
+                         <vm:label for="f_conv" value="Enable discussions on this instance" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">&nbsp;</th>
+                        <td>
+                          <?vsp
+                            declare S, T varchar;
+
+                            S := '';
+                            if (not BMK.WA.discussion_check ())
+                              S := 'disabled="disabled"';
+                            T := '';
+                            if (cast(get_keyword ('conv_init', self.settings, '0') as integer) = 1)
+                              T := 'checked';
+                            http (sprintf ('<input type="checkbox" name="f_conv_init" value="1" %s %s />', T, S));
+                          ?>
+                          <vm:label for="f_conv_init" value="Initialize the news group with existing posts" />
                 </td>
               </tr>
             </table>
@@ -288,6 +297,20 @@
           <v:on-post>
             <![CDATA[
               declare rows, chars any;
+                      declare conv, f_conv, f_conv_init, params any;
+
+                      params := self.vc_page.vc_event.ve_params;
+
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
+                          self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
 
               rows := trim(self.f_rows.ufl_value);
               chars := trim(self.f_chars.ufl_value);
@@ -297,8 +320,12 @@
               BMK.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
               BMK.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
-              self.settings := BMK.WA.set_keyword('panes', self.settings, cast(cast(get_keyword ('r_panes', self.vc_page.vc_event.ve_params, '0') as integer) as varchar));
-              self.settings := BMK.WA.set_keyword('bookmarkOpen', self.settings, cast(cast(get_keyword ('r_bookmarkOpen', self.vc_page.vc_event.ve_params, '0') as integer) as varchar));
+                      conv := cast (get_keyword ('conv', self.settings, '0') as integer);
+                      f_conv := cast (get_keyword ('f_conv', params, '0') as integer);
+                      f_conv_init := cast (get_keyword ('f_conv_init', params, '0') as integer);
+
+                      self.settings := BMK.WA.set_keyword ('panes', self.settings, cast(cast(get_keyword ('r_panes', params, '0') as integer) as varchar));
+                      self.settings := BMK.WA.set_keyword ('bookmarkOpen', self.settings, cast(cast(get_keyword ('r_bookmarkOpen', params, '0') as integer) as varchar));
               self.settings := BMK.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := BMK.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := BMK.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
@@ -307,13 +334,20 @@
               self.settings := BMK.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);
               self.settings := BMK.WA.set_keyword('deliciousUser', self.settings, self.f_deliciousUser.ufl_value);
               self.settings := BMK.WA.set_keyword('deliciousPwd', self.settings, self.f_deliciousPwd.ufl_value);
+                      self.settings := BMK.WA.set_keyword ('conv', self.settings, f_conv);
+                      self.settings := BMK.WA.set_keyword ('conv_init', self.settings, f_conv_init);
 
-              insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+                      insert replacing BMK.WA.SETTINGS(S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID) values(self.domain_id, serialize (self.settings), self.account_id);
               commit work;
 
               BMK.WA.domain_gems_create(self.domain_id, self.account_id);
-
-              self.vc_redirect('bookmarks.vspx');
+                      if (BMK.WA.discussion_check ())
+                      {
+                        BMK.WA.nntp_update (self.domain_id, null, null, conv, f_conv);
+                         if (f_conv and f_conv_init)
+                          BMK.WA.nntp_fill (self.domain_id);
+                      }
+                      self.vc_data_bind(e);
       	    ]]>
       	  </v:on-post>
         </v:button>
@@ -321,22 +355,58 @@
           <v:on-post>
             <![CDATA[
               delete from BMK.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+                      BMK.WA.nntp_update (self.domain_id, null, null, 1, 0);
 
-              self.vc_redirect('settings.vspx');
-            ]]>
-          </v:on-post>
-        </v:button>
-        <v:button action="simple" value="Cancel" xhtml_class="form-button">
-          <v:on-post>
-            <![CDATA[
-              self.vc_redirect('bookmarks.vspx');
+                      self.vc_data_bind(e);
       	    ]]>
       	  </v:on-post>
         </v:button>
       </div>
             </vm:if>
-            <vm:if test="self.abSubAction != ''">
+            <vm:if test="self.bSubAction <> ''">
+              <v:after-data-bind>
+                <![CDATA[
+                  self.s_url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/bookmark/%d/bookmarks.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Bookmark with BM</a>', BMK.WA.host_url(), self.domain_id);
+                ]]>
+              </v:after-data-bind>
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <td>
+                     <br />
+                     You can bookmark URL from anywhere with the BM Bookmark button.
+                     <h3>Internet Explorer Users</h3>
+                     <ol>
+                       <li>To install the button, right click on this url <?vsp http(self.s_url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
+                       <li>To subscribe to the site you're currently viewing in your browser, just click the 'Bookmark with BM' button from within your Favorites menu.</li>
+                     </ol>
+                     <h3>Firefox Users</h3>
+                     <ol>
+                       <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
+                       <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
+                       <li>A 'Bookmark with BM' button should now appear in your 'Bookmarks Toolbar'.</li>
+                       <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                    <h3>Mozilla/Netscape Users</h3>
+                    <ol>
+                      <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
+                      <li>Drag this url <?vsp http(self.s_url); ?> to the 'Personal Toolbar' toolbar.</li>
+                      <li>A 'Bookmark with BM' button should now appear in your 'Personal Toolbar'.</li>
+                      <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                    <h3>Safari Users</h3>
+                    <ol>
+                      <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
+                      <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmark Bar' toolbar.</li>
+                      <li>A 'Bookmark with BM' button should now appear in your 'Bookmark Bar'. </li>
+                      <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                  </td>
+                </tr>
+              </table>
             </vm:if>
+          </td>
+        </tr>
+      </table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

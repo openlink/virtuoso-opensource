@@ -100,23 +100,27 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template match="vm:popup_page_wrapper">
+  <xsl:template match="vm:popup_pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="1"/>
     <v:variable name="nav_top" type="integer" default="0"/>
     <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
-    <div style="padding: 0.5em;">
+    <xsl:if test="not @clean or @clean = 'no'">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
         <hr />
       </div>
-      <v:form name="F1" type="simple" method="POST">
+    </xsl:if>
+    <div id="app_area">
+      <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
         <xsl:apply-templates select="vm:pagebody" />
       </v:form>
     </div>
+    <xsl:if test="not @clean or @clean = 'no'">
     <div class="copyright"><vm:copyright /></div>
+    </xsl:if>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -168,7 +172,7 @@
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-              <v:url url="bookmarks.vspx?action=settings" value="Preferences" xhtml_title="Preferences"/>
+              <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>

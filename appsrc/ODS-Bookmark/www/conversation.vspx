@@ -52,7 +52,7 @@
   </v:method>
 
   <vm:pagetitle>Discussion page</vm:pagetitle>
-  <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable persist="0" name="v_mode" type="varchar" default="'show'" param-name="mode" />
       <v:variable persist="0" name="v_id" param-name="id" type="integer" default="0"/>
@@ -433,5 +433,5 @@
         </table>
       </div>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

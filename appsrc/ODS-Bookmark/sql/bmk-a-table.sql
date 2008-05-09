@@ -577,18 +577,17 @@ BMK.WA.exec_no_error('
 --
 create procedure BMK.WA.drop_index ()
 {
-  if (registry_get ('bmk_index_version') = '1')
+  if (registry_get ('bmk_index_version') = '2')
     return;
 
   BMK.WA.exec_no_error ('drop table BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_WORDS');
-  registry_set ('bmk_index_version', '1');
-
+  registry_set ('bmk_index_version', '2');
 }
 ;
 BMK.WA.drop_index ();
 
 BMK.WA.exec_no_error('
-  create text index on BMK.WA.BOOKMARK_DOMAIN(BD_DESCRIPTION) with key BD_ID not insert clustered with (BD_ID) using function
+  create text index on BMK.WA.BOOKMARK_DOMAIN (BD_DESCRIPTION) with key BD_ID not insert clustered with (BD_ID, BD_UPDATED) using function
 ');
 
 -------------------------------------------------------------------------------

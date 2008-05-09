@@ -25,7 +25,7 @@
 <v:page name="tags" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <vm:pagetitle>Suggest Tags</vm:pagetitle>
-  <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable persist="0" name="v_txt" param-name="txt" type="varchar"/>
       <v:variable persist="0" name="v_txt2" param-name="txt2" type="varchar"/>
@@ -33,7 +33,7 @@
       <v:variable persist="0" name="v_tags" type="any"/>
     </vm:variables>
     <vm:pagebody>
-      <table id="tags" class="grid" style="width: 100%;" cellspacing="0">
+      <table id="tags" class="BMK_grid" style="width: 100%;" cellspacing="0">
         <thead class="sortHeader">
           <tr>
             <th class="checkbox" width="1%">
@@ -110,5 +110,5 @@
         ]]>
       </script>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

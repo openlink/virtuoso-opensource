@@ -80,7 +80,7 @@
 
   <vm:pagetitle>Select User/Group</vm:pagetitle>
 
-  <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
@@ -175,7 +175,7 @@
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="users" class="grid" cellspacing="0">
+          <table id="users" class="BMK_grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
@@ -281,5 +281,5 @@
         ]]>
       </script>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

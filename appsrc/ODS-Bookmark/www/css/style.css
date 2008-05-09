@@ -269,79 +269,6 @@ table.sub_page_area
   bottom:15pt;
 }
 
-/* The main navigation bar */
-.nav_bar
-{
-  display: block;
-  padding: 0;
-  margin: 0;
-  line-height: 1.9em;
-  font-size: 0.9em;
-}
-
-.nav_bar td.sel
-{
-}
-
-.nav_bar td
-{
-  background: #ddd;
-}
-
-.nav_bar td.filler
-{
-  background: #b0cde4;
-  width: 100%;
-}
-
-.nav_bar a
-{
-  display: block;
-  color: #444;
-  text-decoration: none;
-  font-weight: bold;
-  background: #99b3c5;
-  background-image: url(../image/stl_blu2_grad.gif);
-  background-repeat: repeat-x;
-  margin: 0;
-  padding: 0.25em 1em;
-  border-left: 1px solid #fff;
-  border-top: 1px solid #fff;
-  border-right: 1px solid #aaa;
-  white-space: nowrap;
-}
-
-.nav_bar a.les
-{
-  background: #b0cde4;
-  background-image: url(../image/sel_nav_grad2.gif);
-}
-
-.nav_bar a.les:hover
-{
-  color: black;
-  background: #99b3c5;
-}
-
-.nav_bar a:hover,
-.nav_bar a:active,
-.nav_bar a.sel:link,
-.nav_bar a.sel:visited
-{
-  background: #b0cde4;
-  background-image: url(../image/sel_nav_grad2.gif);
-  color: #000;
-}
-
-.nav_seperator {
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  background-color: #b0cde4;
-  line-height: 2.6em;
-  color: #b0cde4;
-}
-
 /*
   Fields
 */
@@ -386,26 +313,15 @@ table#list thead input {
   background-color: #b0cde4;
 }
 
-/*====== trees ======*/
-.tree_main
-{
-  border: solid #7f94a5;
-  border-width: 1px 1px 1px 1px;
-  padding: 3px;
-  height: 400px;
-  overflow: auto;
-  font-weight: bold;
-}
-
 /*====== Panes ======*/
 .pane_main
 {
   width: 100%;
-  height: 500px;
+  min-height: 500px;
   position: relative;
 }
 
-.pane_left
+#pane_left
 {
   width: 30.0%;
   height: 100%;
@@ -415,7 +331,7 @@ table#list thead input {
   border-width: 1px;;
 }
 
-.pane_right
+#pane_right
 {
   width: 69.3%;
   height: 100%;
@@ -423,7 +339,7 @@ table#list thead input {
   margin-left: 0.15%;
 }
 
-.pane_right_sub
+#pane_right_top
 {
   width: 100%;
   height: 100%;
@@ -432,16 +348,7 @@ table#list thead input {
   border-width: 1px
 }
 
-.pane_right_sub1
-{
-  width: 100%;
-  height: 49.5%;
-  overflow: auto;
-  border: solid #7f94a5;
-  border-width: 1px
-}
-
-.pane_right_sub2
+#pane_right_bottom
 {
   width: 100%;
   height: 49.5%;
@@ -449,46 +356,6 @@ table#list thead input {
   overflow: auto;
   border: solid #7f94a5;
   border-width: 1px
-}
-
-.feed_pane
-{
-  height: 200px;
-  overflow: auto;
-}
-
-#feed_content
-{
-  clear: both;
-  border: solid #7f94a5;
-  border-width: 1px 0px 0px 0px;
-  height: 300px;
-}
-
-#feed_header
-{
-  width: auto;
-  font-size: 1em;
-  padding: 3px 0 3px 0;
-  background-color: #EFEFEF;
-  border: solid #7f94a5;
-  border-width: 0px 0px 1px 0px;
-}
-
-#feed_subheader
-{
-  width: auto;
-  font-size: 0.9em;
-  padding: 2px 0 2px 0;
-  background-color: #b0cde4;
-  border: solid #7f94a5;
-  border-width: 0px 0px 2px 0px;
-}
-
-#feed_body
-{
-  width: auto;
-  padding: 3px 0px 0px 3px;
 }
 
 #channel_header
@@ -533,6 +400,11 @@ table#list thead input {
 {
   border: solid #7f94a5;
   border-width: 0px 0px 1px 0px;
+}
+
+.tr_1:hover, .tr_0:hover
+{
+ 	background-color: #eec;
 }
 
 .tr_select
@@ -804,14 +676,14 @@ div.boxHeader {
 }
 
 /*====== Grids ======*/
-.grid
+.BMK_grid
 {
   width: 100%;
   border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
 }
 
-.grid tr td {
+.BMK_grid tr td {
   border-bottom: 1px solid #CCC;
 }
 
@@ -1081,4 +953,18 @@ div.comment-button
 input.openID {
   background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
   padding-left: 18px;
+}
+
+.FM_bold
+{
+  font-weight: bold;
+}
+
+/* Tree */
+#pane_left .tree_li_selected {
+font-weight:bold;
+}
+
+#pane_left .tree_ul_selected {
+font-weight:normal !important;
 }

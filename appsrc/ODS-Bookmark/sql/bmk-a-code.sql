@@ -625,6 +625,14 @@ create procedure BMK.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.sparql_url ()
+{
+  return sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', SIOC..get_cname (), SIOC..get_graph (), 'DESCRIBE <_RDF_>', 'application/sparql-results+xml');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -756,7 +764,7 @@ create procedure BMK.WA.bookmark_update (
     folder_id := null;
   if (id = -1)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
-  if (id = -1) {
+  if (id <= 0) {
     insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID)
       values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id);
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
@@ -1145,10 +1153,13 @@ create procedure BMK.WA.folder_id(
   declare aPath any;
 
   folder_id := null;
-  if (not is_empty_or_null(folder_name)) {
+  if (not is_empty_or_null(folder_name))
+  {
     aPath := split_and_decode(trim(folder_name, '/'),0,'\0\0/');
-    for (i := 0; i < length(aPath); i := i + 1) {
-      if (i = 0) {
+    for (i := 0; i < length(aPath); i := i + 1)
+    {
+      if (i = 0)
+      {
         if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null))
           insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_NAME, F_PATH) values (domain_id, aPath[i], '');
         folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null);
@@ -1240,10 +1251,9 @@ create procedure BMK.WA.folder_delete_all(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.folder_name(
-  in domain_id integer,
   in folder_id integer)
 {
-  return coalesce((select F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id), '');
+  return coalesce((select F_NAME from BMK.WA.FOLDER where F_ID = folder_id), '');
 }
 ;
 
@@ -1553,6 +1563,45 @@ create procedure BMK.WA.shared_sql(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.shareNode (
+  in account_id integer,
+  in node varchar,
+  in grants varchar,
+  in override integer)
+{
+  declare N, pos, id integer;
+  declare name, V any;
+
+  grants := replace(grants, ' ', '');
+  grants := replace(grants, ',,', ',');
+  grants := trim (grants, ',', '');
+  grants := grants || ',';
+  for (select U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = account_id and G_GRANTEE_ID = U_ID and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type (node)) and G_OBJECT_ID = BMK.WA.node_id (node)) do
+  {
+    name := U_NAME;
+    id := U_ID;
+    pos := strstr(grants, name || ',');
+    if (isnull(pos))
+    {
+      if (override)
+        delete from BMK.WA.GRANTS where G_GRANTER_ID = account_id and G_GRANTEE_ID = id and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type (node)) and G_OBJECT_ID = BMK.WA.node_id (node);
+    } else {
+      grants := replace(grants, name || ',', '');
+    }
+  }
+  V := split_and_decode(trim (grants, ','), 0, '\0\0,');
+  for (N := 0; N < length(V); N := N + 1)
+  {
+    id := (select U_ID from SYS_USERS where U_NAME = V[N]);
+    if (not isnull(id))
+      insert into BMK.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_TYPE, G_OBJECT_TYPE, G_OBJECT_ID)
+        values(account_id, id, 'G', ucase(BMK.WA.node_type (node)), BMK.WA.node_id (node));
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.sfolder_sql_where(
   inout where2 varchar,
   inout delimiter varchar,
@@ -1611,6 +1660,15 @@ create procedure BMK.WA.sfolder_delete(
   in folder_id integer)
 {
   delete from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_ID = folder_id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.sfolder_name (
+  in sfolder_id integer)
+{
+  return coalesce((select SF_NAME from BMK.WA.SFOLDER where SF_ID = sfolder_id), '');
 }
 ;
 
@@ -1772,11 +1830,8 @@ create procedure BMK.WA.settings_rows (
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.settings_atomVersion (
-  inout domain_id integer)
+  inout settings any)
 {
-  declare settings any;
-
-  settings := BMK.WA.settings (domain_id);
   return get_keyword('atomVersion', settings, '1.0');
 }
 ;
@@ -2140,9 +2195,10 @@ create procedure BMK.WA.export_atom_sqlx(
   declare retValue, xsltTemplate any;
 
   xsltTemplate := BMK.WA.xslt_full ('rss2atom03.xsl');
-  if (BMK.WA.settings_atomVersion (domain_id) = '1.0')
+  if (BMK.WA.settings_atomVersion (BMK.WA.settings (domain_id)) = '1.0')
+  {
     xsltTemplate := BMK.WA.xslt_full ('rss2atom.xsl');
-
+  }
   retValue := BMK.WA.export_rss_sqlx_int(domain_id, account_id);
   return replace (retValue, 'sql:xsl=""', sprintf('sql:xsl="%s"', xsltTemplate));
 }
@@ -2713,43 +2769,45 @@ create procedure BMK.WA.bmk_tree2(
   in path varchar)
 {
   declare node_type, node_id any;
+  declare retValue any;
+
+  retValue := vector ();
 
   node_id := BMK.WA.node_id(node);
   node_type := BMK.WA.node_type(node);
-  if (node_type = 'r') {
-    if (node_id = 0)
-      return vector('Last Bookmarks', BMK.WA.make_node('f', -1), BMK.WA.make_path('', 'f', -1));
-
-    if (node_id = 1)
-      return vector('Bookmarks', BMK.WA.make_node ('f', -1), BMK.WA.make_path(path, 'f', -1), 'Smart Folders', BMK.WA.make_node ('s', -1), BMK.WA.make_path(path, 's', -1));
-
-    if (node_id = 2)
-      return vector('Shared Bookmarks By', BMK.WA.make_node('u', -1), BMK.WA.make_path(path, 'u', -1));
+  if ((node_type = 'r') and (node_id = 0))
+  {
+    retValue := vector('Bookmarks', BMK.WA.make_node ('f', -1), BMK.WA.make_path('', 'f', -1));
   }
-
-  declare retValue any;
-  retValue := vector ();
-
-  if ((node_type = 'u') and (node_id = -1))
+  else if ((node_type = 'r') and (node_id = 1))
+  {
+    retValue := vector('Bookmarks', BMK.WA.make_node ('f', -1), BMK.WA.make_path(path, 'f', -1), 'Smart Folders', BMK.WA.make_node ('s', -1), BMK.WA.make_path(path, 's', -1), 'Shared Bookmarks By', BMK.WA.make_node ('u', -1), BMK.WA.make_path(path, 'u', -1));
+  }
+  else if ((node_type = 'u') and (node_id = -1))
+  {
     for (select distinct U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
       retValue := vector_concat(retValue, vector(U_NAME, BMK.WA.make_node('u', U_ID), BMK.WA.make_path(path, 'u', U_ID)));
-
-  if (node_type = 'f')
+  }
+  else if (node_type = 'f')
+  {
     for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, -1) = coalesce(node_id, -1) order by 2) do
       retValue := vector_concat(retValue, vector(F_NAME, BMK.WA.make_node('f', F_ID), BMK.WA.make_path(path, 'f', F_ID)));
-
-  if ((node_type = 's') and (node_id = -1))
+  }
+  else if ((node_type = 's') and (node_id = -1))
+  {
     for (select SF_ID, SF_NAME from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id order by 2) do
       retValue := vector_concat(retValue, vector(SF_NAME, BMK.WA.make_node('s', SF_ID), BMK.WA.make_path(path, 's', SF_ID)));
-
-  if ((node_type = 'u') and (node_id >= 0))
+  }
+  else if ((node_type = 'u') and (node_id >= 0))
+  {
     for (select distinct F_ID, F_NAME from BMK.WA.FOLDER, BMK.WA.GRANTS where G_OBJECT_TYPE = 'F' and F_ID = G_OBJECT_ID and G_GRANTEE_ID = user_id and G_GRANTER_ID = node_id order by 2) do
       retValue := vector_concat(retValue, vector(F_NAME, BMK.WA.make_node('F', F_ID), BMK.WA.make_path(path, 'F', F_ID)));
-
-  if (node_type = 'F')
+  }
+  else if (node_type = 'F')
+  {
     for (select F_ID, F_NAME from BMK.WA.FOLDER where F_PARENT_ID = node_id order by 2) do
       retValue := vector_concat(retValue, vector(F_NAME, BMK.WA.make_node('F', F_ID), BMK.WA.make_path(path, 'F', F_ID)));
-
+  }
   return retValue;
     }
 ;
@@ -2804,7 +2862,8 @@ create procedure BMK.WA.bmk_path2_int(
   node_type := BMK.WA.node_type(node);
 
   if ((lcase(node_type) = 'f') and (node_id <> 0))
-    for (select F_PARENT_ID from BMK.WA.FOLDER where F_ID = node_id) do {
+    for (select F_PARENT_ID from BMK.WA.FOLDER where F_ID = node_id) do
+    {
       path := sprintf('%s/%s', BMK.WA.make_node(node_type, coalesce(F_PARENT_ID, -1)), path);
       if (coalesce(F_PARENT_ID, 0) <> root_id)
         BMK.WA.bmk_path2_int(BMK.WA.make_node(node_type, coalesce(F_PARENT_ID, -1)), root_id, path);
@@ -2822,14 +2881,15 @@ create procedure BMK.WA.bmk_path2_int(
 --
 create procedure BMK.WA.bmk_path2(
   in node varchar,
-  in grant_id integer)
+  in grant_id integer := -1)
 {
   declare user_id, root_id any;
   declare path any;
 
   path := node;
   root_id := 0;
-  for (select G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do {
+  for (select G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do
+  {
     if (G_OBJECT_TYPE = 'F')
       root_id := G_OBJECT_ID;
     user_id := G_GRANTER_ID;
@@ -4278,5 +4338,62 @@ create procedure BMK.WA.news_comment_get_cn_type (in f_name varchar)
 	  ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
   return ext;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.obj2json (
+  in o any,
+  in d integer := 2)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+	if (d = 0)
+	  return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
+	retValue := '';
+	if (isnumeric (o))
+	{
+		retValue := cast (o as varchar);
+	}
+	else if (isstring (o))
+	{
+		for (N := 0; N < length(o); N := N + 1)
+		{
+			R := chr (o[N]);
+		  for (M := 0; M < length(T); M := M + 2)
+		  {
+				if (R = T[M])
+				  R := T[M+1];
+			}
+			retValue := retValue || R;
+		}
+		retValue := '"' || retValue || '"';
+	}
+	else if (isarray (o))
+	{
+		retValue := '[';
+		for (N := 0; N < length(o); N := N + 1)
+		{
+		  retValue := retValue || BMK.WA.obj2json (o[N], d-1);
+		  if (N <> length(o)-1)
+			  retValue := retValue || ',\n';
+		}
+		retValue := retValue || ']';
+	}
+	return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.json2obj (
+  in o any)
+{
+  return json_parse (o);
 }
 ;
