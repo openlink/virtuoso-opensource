@@ -21,11 +21,12 @@ OAT.WebDav = {
 	options: { /* defaults */
 		user:false,
 		pass:false,
-		path:'/DAV/home/', /* where are we now */
+		path:false, /* where are we now */
 		file:'', /* preselected filename */
 		extension:false, /* preselected extension */
 		silentStart:true, /* don't display our settings dialog on startup */
-		pathFallback:'/DAV/home/', /* what to offer when dirchange fails */
+		pathFallback:false, /* what to offer when dirchange fails */
+		pathHome:'/DAV/home/', /* user's home directories path */
 		width:760,
 		height:450,
 		imagePath:OAT.Preferences.imagePath,
@@ -391,7 +392,7 @@ OAT.WebDav = {
 				user = $v("dav_user");
 				pass = $v("dav_pass");
 				isDav = ($v("dav_login_put_type") == "1");
-				path = "/DAV/home/" + user + "/";
+				path = pathHome + user + "/";
 			}
 			cdialog.hide();
 		}
@@ -417,7 +418,7 @@ OAT.WebDav = {
 		this.attachEvents();
 
 		with(this.options) {
-			if(user !== false) { path = "/DAV/home/" + user + "/"; }
+			if(user !== false) { path = pathHome + user + "/"; }
 			if(!silentStart || (user === false && pass === false)) { this.connectDialog.show(); }
 		}
 		
@@ -811,6 +812,10 @@ OAT.WebDav = {
 	
 	applyOptions:function(optObj) { /* inherit options */
 		for (var p in optObj) { this.options[p] = optObj[p]; }
+		if (!this.options.path)
+		  this.options.path = this.options.pathHome;
+		if (!this.options.pathFallback)
+		  this.options.pathFallback = this.options.pathHome;
 	},
 	
 	commonDialog:function(optObj) { /* common phase for both dialog types */
