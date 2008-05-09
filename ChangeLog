@@ -1,3 +1,214 @@
+2008-05-09 11:43  source
+
+	* Added grant for sparql_sponge for linked data tab to work
+	* Added new images
+	* Fixed image width
+
+2008-05-09 11:41  source
+
+	* Added support for Ajax and OAT
+
+2008-05-09 11:41  source
+
+	* Fixed SUBSCRIBE and PUBLISH options
+
+2008-05-09 10:24  source
+
+	* Merged from upstream project
+
+2008-05-08 14:52  source
+
+	* Rebuild jena driver
+
+2008-05-08 14:51  source
+
+	* Fixed bugs in jena driver
+
+2008-05-08 10:44  source
+
+	* Updated version to 5.0.7-rc4
+
+2008-05-08 10:44  source
+
+	* Updated version of vad package
+
+2008-05-08 09:06  source
+
+	* Fixed wiki instance creation
+
+2008-05-08 09:06  source
+
+	* Fixed public folder rules
+	* Fixed wiki creation
+
+2008-05-08 09:05  source
+
+	* Fixed IMPORT, SUBSCRIBE and PUBLISH
+
+2008-05-08 08:58  source
+
+	* Updated version to 05.00.3030
+
+2008-05-08 08:57  source
+
+	* Added support for DV_BOX_FLAGS
+
+2008-05-08 08:57  source
+
+	* Dropped the unused dv blob header tag, replaced by the new rdf box tag dv.
+	* Init string print to transmit the tag to newer clients
+
+2008-05-08 08:55  source
+
+	* Added a field for box flags under the lenght and tag; requires boxes to
+	  be aligned at 8. Need to qualify strings of different meaning for
+	  rdf clients over cli. Serves also for utf8 flags and the like
+	* Fixed non-NDEBUG builds in WRITE_BOX_HEADER macro
+
+2008-05-08 08:51  source
+
+	* Added missing extern
+
+2008-05-08 08:51  source
+
+	* Fixed dk_session_t to a more compact layout
+
+2008-05-08 08:36  source
+
+	* Fixed problem with bf_iri
+
+2008-05-08 08:30  source
+
+	* For any collation, when different dtp, distinguish dtp range from
+	  value range. Binary-or the dvc noorder bit into the result to show it us
+	  a difference of dtp and not magnitude.  Like this lte 10 will give
+	  numbers but not strings. Same for rdf boxes that differ in type or lang
+
+2008-05-07 14:27  source
+
+	* Fixed problems with issuezilla
+
+2008-05-07 13:55  source
+
+	* Disabled typemax / typemin comparisons for now
+
+2008-05-07 13:52  source
+
+	* Fixed support of dictionaries
+
+2008-05-07 13:51  source
+
+	* Fixed double free if error is raised inside context
+
+2008-05-06 13:24  source
+
+	* Fixed OpenID Client code to suppoer rel="oid1 oid2"
+
+2008-05-06 13:22  source
+
+	* Fixed a++ links
+
+2008-05-06 13:22  source
+
+	* Fixed spelling
+
+2008-05-06 13:15  source
+
+	* Fixed TFWY mapper
+
+2008-05-06 13:13  source
+
+	* Merged from upstream project
+
+2008-05-05 09:05  source
+
+	* Fixed error message
+
+2008-05-05 09:04  source
+
+	* Added new role SPARQL_SPONGE
+
+2008-05-05 08:54  source
+
+	* Merged from upstream project
+
+2008-05-05 08:51  source
+
+	* Fixed problem trying to free when recovering from deleted blob
+
+2008-04-30 22:56  source
+
+	* Added sioct:Discussion
+
+2008-04-30 10:44  source
+
+	* Added application creation throbber
+	* Small OAT integration fixes
+	* Fixed labels
+
+2008-04-30 10:40  source
+
+	* Added SUBSCRIBE and PUBLISH options
+
+2008-04-30 08:41  source
+
+	* Merged from upstream project
+
+2008-04-28 12:17  source
+
+	* Regenerated driver
+
+2008-04-28 12:16  source
+
+	* Updated sesame2 driver
+
+2008-04-28 12:16  source
+
+	* Update sesame driver
+	* Added extra example
+
+2008-04-28 12:03  source
+
+	* Fixed data not-found problem
+
+2008-04-28 12:01  source
+
+	* Merged from upstream project
+
+2008-04-25 15:08  source
+
+	* Fixed minor problems
+
+2008-04-25 14:59  source
+
+	* Limit depth of traversal to 100 to avoid running out of stack space
+
+2008-04-24 18:45  source
+
+	* Merged from upstream project
+
+2008-04-23 10:54  source
+
+	* Use macros provided by PHP to increase portability to upcoming versions
+	* Added option to disable internal connection using dba or dav
+	* Fixed memory leak
+
+2008-04-22 11:13  source
+
+	* Fixed problems with "Export" function
+
+2008-04-22 11:11  source
+
+	* Updated version
+
+2008-04-22 10:07  source
+
+	* Regenerated jena driver
+
+2008-04-22 10:06  source
+
+	* Added support for DataSource API
+
 2008-04-21 08:28  source
 
 	* Updated version to 5.0.7-rc3
