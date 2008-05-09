@@ -8,25 +8,24 @@
  *  See LICENSE file for details.
  */
 /*
-	var pb = new OAT.Panelbar(div,fadeDelay) ( 0 == no fade )
+	var pb = new OAT.Panelbar(div,fadeDelayAndSpeed, heightInPixelsOrFalseForAuto, doNotAnimate) ( 0 == no fade )
 	pb.addPanel(clickerDiv,contentDiv)
 	pb.go(0);
 	
 	CSS: .panelbar, .panelbar_option, .panelbar_option_selected, .panelbar_option_upper, .panelbar_option_lower, .panelbar_content
 */
 
-OAT.Panelbar = function(div,delay,height) {
+OAT.Panelbar = function(div, delay, height, noanim) {
 	var self = this;
-	this.div = $(div);
+	self.div = $(div);
 	OAT.Dom.addClass(self.div,"panelbar");
-	this.selectedIndex = -1;
-	this.panels = [];
-	this.delay = delay;
-	this.height = self.div.style.heigh
+	self.selectedIndex = -1;
+	self.panels = [];
+	self.height = false;
+	self.delay = (delay ? delay : 30);
+	self.noanim = (noanim ? true : false);
 	
 	this.go = function(index,noanim) {
-		if (!self.delay) self.delay = 20;
-		if (!self.height) self.height = 350;
 		OAT.Dom.addClass(self.panels[index][0],"panelbar_option_selected");
 		for (var i=0;i<self.panels.length;i++) {
 			OAT.Dom.removeClass(self.panels[i][0],"panelbar_option_selected");
@@ -34,6 +33,7 @@ OAT.Panelbar = function(div,delay,height) {
 			OAT.Dom.removeClass(self.panels[i][0],"panelbar_option_lower");
 			OAT.Dom.addClass(self.panels[i][0],(i <= index ? "panelbar_option_upper" : "panelbar_option_lower"));
 			if (i == index) { /* show the selected */
+				OAT.Dom.show(self.panels[i][1]);
 				if (OAT.Browser.isIE6) {
 					OAT.Dom.show(self.panels[i][1]);
 				} else if (!noanim) {
@@ -42,11 +42,13 @@ OAT.Panelbar = function(div,delay,height) {
 					a.start();
 					b.start();
 				} else {
-					OAT.Style.opacity(self.panels[i][1], 0);
-					self.panels[i][1].style.height = '0px';
+					OAT.Style.opacity(self.panels[i][1], 1);
+					self.panels[i][1].style.height = self.height+'px';
 				}
 			} else { /* hide others */
-				if (OAT.Browser.isIE6) {
+				if (self.panels[i][1].style.height=='0px') {
+					; // no need to hide again what is already hidden
+				} else if (OAT.Browser.isIE6) {
 					OAT.Dom.hide(self.panels[i][1]);
 				} else if (!noanim) {
 					var a = new OAT.AnimationOpacity(self.panels[i][1],{delay:self.delay,opacity:0});
@@ -72,12 +74,14 @@ OAT.Panelbar = function(div,delay,height) {
 			var index = -1;
 			for (var i=0;i<self.panels.length;i++) if (self.panels[i][0] == clicker_elm) { index = i; }
 			if (index == self.selectedIndex) { return; }
-			self.go(index);
+			self.go(index, self.noanim);
 		}
 		OAT.Dom.attach(clicker_elm,"click",callback);
 		this.panels.push([clicker_elm,content_elm]);
 		this.div.appendChild(clicker_elm);
 		this.div.appendChild(content_elm);
+		if (!self.height)
+			self.height = parseInt(OAT.Style.get(content_elm,"height"));
 		this.go(this.panels.length-1, true);
 	}
 	
