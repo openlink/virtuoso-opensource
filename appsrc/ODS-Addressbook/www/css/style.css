@@ -396,49 +396,13 @@ table#list thead input {
 .ab_main
 {
   width: 100%;
-  position: relative;
 }
 
 .ab_left
 {
   width: 30.3%;
+  min-height: 500px;
   float: left;
-}
-
-.ab_left_sub
-{
-  width: 100%;
-  float: left;
-  overflow: auto;
-  border: solid #7f94a5;
-  border-width: 1px
-}
-
-.ab_left_sub1
-{
-  width: 100%;
-  height: 500px;
-  float: left;
-  overflow: auto;
-  border: solid #7f94a5;
-  border-width: 1px
-}
-
-.ab_left_sub2
-{
-  width: 100%;
-  height: 150px;
-  float: left;
-  margin-top: 12px;
-  background-color: #EFEFEF;
-  border: solid #7f94a5;
-  border-width: 1px
-}
-
-.ab_left_sub2 div
-{
-  padding: 3px;
-  margin: 3px;
 }
 
 .ab_right
@@ -1069,7 +1033,7 @@ td.cpDayColumnHeader
 .panelbar
 {
   width: 100%;
-  height: 500px;
+  height: 420px;
 	border: 1px solid #7f94a5;
 }
 

@@ -674,3 +674,38 @@ function exchangeHTML ()
   }
 }
 
+// ---------------------------------------------------------------------------
+function destinationChange(obj, actions)
+{
+  if (!obj.checked)
+    return;
+  if (!actions)
+    return;
+  if (actions.hide)
+  {
+    var a = actions.hide;
+    for (var i = 0; i < a.length; i++)
+    {
+      var o = $(a[i])
+      if (o) {OAT.Dom.hide(o);}
+    }
+  }
+  if (actions.show)
+  {
+    var a = actions.show;
+    for (var i = 0; i < a.length; i++)
+    {
+      var o = $(a[i])
+      if (o) {OAT.Dom.show(o);}
+    }
+  }
+  if (actions.clear)
+  {
+    var a = actions.clear;
+    for (var i = 0; i < a.length; i++)
+    {
+      var o = $(a[i])
+      if (o && o.value) {o.value = '';}
+    }
+  }
+}

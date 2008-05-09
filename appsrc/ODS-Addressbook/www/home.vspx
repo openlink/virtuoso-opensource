@@ -792,9 +792,9 @@
           }
         ?>
         <div class="ab_left">
-            <div id="panelbar">
+            <div id="panelbar" class="panelbar">
               <vm:if test="self.domain_id > 0">
-                <div id="pb_1">Gems</div>
+                <div id="pb_1">Data Portability (Feeds)</div>
                 <div id="pc_1" style="display: none;">
                   <div class="left_container">
                     <?vsp
@@ -4238,7 +4238,7 @@
                       </th>
                       <td nowrap="nowarap">
                         <label>
-                          <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1">
+                          <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                             <v:before-render>
                               <![CDATA[
                                 control.ufl_selected := either (lte (get_keyword ('type', self.ve_options, 1), 1), 1, 0);
@@ -4252,7 +4252,7 @@
                     <tr>
                       <td nowrap="nowarap">
                         <label>
-                          <v:radio-button name="exc_options_type_2" group-name="ex_destination_type" value="2">
+                          <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                             <v:before-render>
                               <![CDATA[
                                 control.ufl_selected := either (equ (get_keyword ('type', self.ve_options, 1), 2), 1, 0);
@@ -4268,7 +4268,15 @@
                         WebDAV Path / URL
                       </th>
                       <td>
-                        <v:text name="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
+                        <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
+                        <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
+                          <v:after-data-bind>
+                            <![CDATA[
+                              control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
+                              control.vc_add_attribute ('style', 'display: ' || case when get_keyword ('type', self.ve_options, 1) = 1 then '' else 'none' end);
+                            ]]>
+                          </v:after-data-bind>
+                        </v:button>
                       </td>
                     </tr>
                     <tr>

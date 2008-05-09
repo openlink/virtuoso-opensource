@@ -94,7 +94,7 @@
               pcSelect = $v("abSubAction");
             var pcIndex = -1;
             var pcSelectIndex = -1;
-          	var pb = new OAT.Panelbar("panelbar", 10);
+          	var pb = new OAT.Panelbar("panelbar", 0);
             if ($('pc_1'))
             {
           	  pb.addPanel("pb_1","pc_1");
@@ -131,6 +131,9 @@
             if (pcSelectIndex == -1)
               pcSelectIndex = pcIndex;
           	pb.go(pcSelectIndex);
+            OAT.Dom.show('pc_1');
+            OAT.Dom.show('pc_2');
+            OAT.Dom.show('pc_3');
           }
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
