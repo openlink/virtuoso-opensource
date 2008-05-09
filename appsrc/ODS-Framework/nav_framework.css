@@ -276,6 +276,10 @@ img.person_tnail {
 	clear: left;
 	margin-right: 4px;
 }
+img.person_large {
+  width: 80px;
+}
+
 .notify_w ul.msgs {
 	margin-bottom: 4px;
 }
@@ -1004,7 +1008,7 @@ padding: 5px 0px 5px 3px;}
 
 }
 
-#connect_box img.connect_img { float: left; clear: left;}
+#connect_box img.connect_img { width: 80px; float: left; clear: left;}
 /* Invitations Interface */
 
 #invitations_C {background-color: #e8f2f7}

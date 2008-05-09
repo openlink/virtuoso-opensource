@@ -6659,3 +6659,6 @@ create procedure ods_iri_expand (in iri varchar)
   return iri;
 }
 ;
+
+
+wa_exec_no_error_log('grant SPARQL_SPONGE to "SPARQL"');
