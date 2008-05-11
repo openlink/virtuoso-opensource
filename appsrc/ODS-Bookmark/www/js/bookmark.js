@@ -1024,7 +1024,7 @@ BMK.initLeftPane = function ()
     BMK.saveState();
   }
   BMK.forms = new Object();
-  BMK.forms['import'] = {height: '200px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['import'] = {height: '400px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['export'] = {height: '160px'};
   BMK.forms['bookmark'] = {height: '380px', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['folder'] = {height: '180px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};

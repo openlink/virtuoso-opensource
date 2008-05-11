@@ -650,9 +650,10 @@ create procedure BMK.WA.account()
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.account_access (
-	out auth_uid varchar,
-	out auth_pwd varchar)
+  inout auth_uid varchar,
+  inout auth_pwd varchar)
 {
+  if (isnull (auth_uid))
   auth_uid := BMK.WA.account();
   auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_uid), '');
   if (auth_pwd[0] = 0)
@@ -1890,6 +1891,20 @@ _error:
 }
 ;
 
+-----------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_logical_home (
+  inout account_id integer) returns varchar
+{
+  declare home any;
+
+  home := BMK.WA.dav_home (account_id);
+  if (not isnull (home))
+    home := replace (home, '/DAV', '');
+  return home;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.host_url ()
@@ -2036,7 +2051,7 @@ create procedure BMK.WA.dav_content (
 
   newUri := uri;
   reqHdr := null;
-  if (isnull (auth_uid))
+  if (isnull (auth_uid) or isnull (auth_pwd))
   BMK.WA.account_access (auth_uid, auth_pwd);
   reqHdr := sprintf('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
 

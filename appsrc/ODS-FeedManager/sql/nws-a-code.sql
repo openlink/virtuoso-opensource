@@ -710,9 +710,10 @@ create procedure ENEWS.WA.account() returns varchar
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.account_access (
-	out auth_uid varchar,
-	out auth_pwd varchar)
+  inout auth_uid varchar,
+  inout auth_pwd varchar)
 {
+  if (isnull (auth_uid))
   auth_uid := ENEWS.WA.account();
   auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_uid), '');
   if (auth_pwd[0] = 0)
@@ -1432,7 +1433,9 @@ create procedure ENEWS.WA.channel_retrieve (
   inout uri varchar,
   inout content any,
   in uriType integer := 0,
-  in reqType varchar := '') returns integer
+  in reqType varchar := '',
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
 {
   declare exit handler for sqlstate '*' { return __SQL_MESSAGE;};
   declare hp, contentType any;
@@ -1440,7 +1443,8 @@ create procedure ENEWS.WA.channel_retrieve (
   contentType := '';
   hp := WS.WS.PARSE_URI (uri);
 
-  if (lower(hp[0]) <> 'http') {
+  if (lower(hp[0]) <> 'http')
+  {
     content := DB.DBA.XML_URI_GET (uri, '');
   } else {
     declare N integer;
@@ -1449,9 +1453,9 @@ create procedure ENEWS.WA.channel_retrieve (
     N := 0;
     newUri := uri;
     reqHdr := null;
-    if (uriType = 2) {
-      declare auth_uid, auth_pwd varchar;
-
+    if (uriType = 2)
+    {
+      if (isnull (auth_uid) or isnull (auth_pwd))
       ENEWS.WA.account_access (auth_uid, auth_pwd);
       reqHdr := sprintf('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
     }
@@ -1462,7 +1466,8 @@ create procedure ENEWS.WA.channel_retrieve (
       commit work;
     content := http_get (newUri, resHdr, 'GET', reqHdr);
     contentType := http_request_header (resHdr, 'Content-Type');
-    if (resHdr[0] like 'HTTP/1._ 30_ %') {
+    if (resHdr[0] like 'HTTP/1._ 30_%')
+    {
       newUri := http_request_header (resHdr, 'Location');
       newUri := WS.WS.EXPAND_URL (oldUri, newUri);
       if (N > 15)
@@ -1490,7 +1495,8 @@ create procedure ENEWS.WA.channel_add(
   in format varchar)
 {
   declare N, L integer;
-  foreach (any link in links) do {
+  foreach (any link in links) do
+  {
     if (isstring (link))
       link := xpath_eval ('/link', xtree_doc (link));
     L := length(channels);
@@ -1507,14 +1513,16 @@ create procedure ENEWS.WA.channel_add(
 --
 create procedure ENEWS.WA.channels_uri (
   inout uri varchar,
-  in type integer := 0) returns any
+  in type integer := 0,
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
 {
   declare xt, channel any;
 
   channel := ENEWS.WA.channel_select (uri);
   if (length(channel))
     return vector_concat (vector ('channel'), vector(channel));
-  if (ENEWS.WA.channel_retrieve (uri, xt, type) = '')
+  if (ENEWS.WA.channel_retrieve (uri, xt, type, '', auth_uid, auth_pwd) = '')
     return ENEWS.WA.channels_get(uri, xt);
   return vector ();
 }
@@ -4090,6 +4098,20 @@ create procedure ENEWS.WA.dav_home_create(
 
 _error:
   return -18;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.dav_logical_home (
+  inout account_id integer) returns varchar
+{
+  declare home any;
+
+  home := ENEWS.WA.dav_home (account_id);
+  if (not isnull (home))
+    home := replace (home, '/DAV', '');
+  return home;
 }
 ;
 

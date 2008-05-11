@@ -62,23 +62,20 @@
         var cPopup = new CalendarPopup('cDiv');
         cPopup.isShowYearNavigation = true;
 
-        // WebDAV Object
-        var oWebDAV;
-
         function myInit()
         {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
+
           // WebDAV
-          var options = { imagePath: '/ods/images/oat/',
-                          imageExt: 'png',
-			  path: '<?V '/DAV/home/' || self.ownerName || '/' ?>',
+          var options = { imagePath: OAT.Preferences.imagePath,
+                          pathHome: '/home/',
+                          path: '<?V ENEWS.WA.dav_logical_home (self.owner_id) ?>',
 			  user: '<?V self.ownerName ?>'
                         };
           OAT.WebDav.init(options);
-          oWebDAV = OAT.WebDav;
 
           // a++
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.showAjax = false;
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         

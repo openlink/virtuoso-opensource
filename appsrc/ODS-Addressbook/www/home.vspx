@@ -2833,7 +2833,8 @@
                         resignal;
                       };
 
-	                    if (self.i_source = 0) {
+                        if (self.i_source = 0)
+                        {
 	                      self.i_data := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
                           if (is_empty_or_null (self.i_data))
                           {
@@ -2846,13 +2847,7 @@
                         else if (self.i_source = 1)
                         {
 	                      self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-                          if (self.f_dav.ufl_value not like (AB.WA.dav_home (self.account_id) || '%'))
-                          {
-	                        self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', AB.WA.dav_home (self.account_id));
-	                        self.vc_is_valid := 0;
-	                        return;
-	                      }
-                        self.i_data := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value);
+                          self.i_data := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value, AB.WA.account_name (self.account_id));
                           if (isnull(self.i_data))
                           {
 	                        self.vc_error_message := 'Bad import source!';
@@ -2877,9 +2872,7 @@
                             self.i_contentLimit := atoi (self.i_limit.ufl_value);
                             self.i_contentFollow := self.i_follow.ufl_value;
                           }
-
                         self.i_data := self.f_uri.ufl_value;
-                        
                         }
                         else if (self.i_source = 3)
                         {
@@ -2912,7 +2905,7 @@
                           self.i_iri := AB.WA.ab_graph_create ();
                           self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
                       }
-                        if (self.i_type = 2)
+                        else if (self.i_type = 2)
                         {
                         self.i_data := replace (self.i_data, '\015\012', '\012');
                         self.i_data := replace (self.i_data, '\012\015', '\012');

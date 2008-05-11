@@ -61,20 +61,18 @@
         var cPopup = new CalendarPopup('cDiv');
         cPopup.isShowYearNavigation = true;
         
-        // WebDAV Object
-        var oWebDAV;
-
         function myInit() {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+
           // WebDAV
-          var options = { imagePath: '/ods/images/oat/',
-                          imageExt: 'png',
-			  path: '<?V '/DAV/home/' || self.ownerName || '/' ?>',
+          var options = { imagePath: OAT.Preferences.imagePath,
+                          pathHome: '/home/',
+                          path: '<?V AB.WA.dav_logical_home (self.owner_id) ?>',
 			  user: '<?V self.ownerName ?>'
                         };
           OAT.WebDav.init(options);
-          oWebDAV = OAT.WebDav;
 
-          OAT.Preferences.imagePath = '/ods/images/oat/';
+          // <a>++
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
@@ -94,8 +92,9 @@
               pcSelect = $v("abSubAction");
             var pcIndex = -1;
             var pcSelectIndex = -1;
-          	var pb = new OAT.Panelbar("panelbar", 0);
-            if ($('pc_1'))
+          	var pb = new OAT.Panelbar("panelbar", 0, 500, true);
+          	var pc_1 = $('pc_1');
+            if (pc_1)
             {
           	  pb.addPanel("pb_1","pc_1");
           	  pcHeight -= 22;
@@ -103,7 +102,8 @@
               if (pcSelect == "gems")
                 pcSelectIndex = pcIndex;
           	}
-            if ($('pc_2'))
+          	var pc_2 = $('pc_2');
+            if (pc_2)
             {
             	pb.addPanel("pb_2","pc_2");
           	  pcHeight -= 22;
@@ -111,7 +111,8 @@
               if (pcSelect == "category")
                 pcSelectIndex = pcIndex;
           	}
-            if ($('pc_3'))
+          	var pc_3 = $('pc_3');
+            if (pc_3)
             {
             	pb.addPanel("pb_3","pc_3");
           	  pcHeight -= 22;
@@ -119,21 +120,15 @@
               if (pcSelect == "tags")
                 pcSelectIndex = pcIndex;
           	}
-          	var pc = $('pc_1');
-            if (pc)
-          	  pc.style.height = pcHeight + "px";
-          	var pc = $('pc_2');
-            if (pc)
-          	  pc.style.height = pcHeight + "px";
-          	var pc = $('pc_3');
-            if (pc)
-          	  pc.style.height = pcHeight + "px";
+            if (pc_1)
+          	  pc_1.style.height = pcHeight + "px";
+            if (pc_2)
+          	  pc_2.style.height = pcHeight + "px";
+            if (pc_3)
+          	  pc_3.style.height = pcHeight + "px";
             if (pcSelectIndex == -1)
               pcSelectIndex = pcIndex;
           	pb.go(pcSelectIndex);
-            OAT.Dom.show('pc_1');
-            OAT.Dom.show('pc_2');
-            OAT.Dom.show('pc_3');
           }
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);

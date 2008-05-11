@@ -61,16 +61,20 @@
         var formDialog;
 
         function myInit() {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
+
           // WebDAV
-          var options = { imagePath: '/ods/images/oat/',
-                          imageExt: 'png',
-			                    path: '<?V '/DAV/home/' || BMK.WA.account_name (self.owner_id) || '/' ?>',
+          var options = { imagePath: OAT.Preferences.imagePath,
+                          pathHome: '/home/',
+                      		width:650,
+                      		height:400,
+                          path: '<?V BMK.WA.dav_logical_home (self.owner_id) ?>',
 			                    user: '<?V BMK.WA.account_name (self.owner_id) ?>'
                         };
           OAT.WebDav.init(options);
 
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.showAjax = false;
+          // <a>++
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         

@@ -640,7 +640,7 @@ function davBrowse (fld)
   var options = { mode: 'browser',
                   onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
                 };
-  oWebDAV.open(options);
+  OAT.WebDav.open(options);
 }
 
 // ---------------------------------------------------------------------------

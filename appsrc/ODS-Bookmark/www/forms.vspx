@@ -787,9 +787,6 @@
             <v:button action="simple" value="Next" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
-                  declare tmp any;
-
-                  tmp := self.v_source;
                   if (self.i_source_0.ufl_selected)
                   {
                     self.v_source := 0;
@@ -915,13 +912,7 @@
                   else if (self.v_source = 1)
                   {
                     self.v_sourceParam_1 := trim (get_keyword ('i_dav', params, ''));
-                    if (self.v_sourceParam_1 not like (BMK.WA.dav_home(self.account_id) || '%'))
-                    {
-                      self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', BMK.WA.dav_home (self.account_id));
-                      self.vc_is_valid := 0;
-                      return;
-                    }
-                    S := BMK.WA.dav_content (BMK.WA.host_url () || self.v_sourceParam_1);
+                    S := BMK.WA.dav_content (BMK.WA.host_url () || self.v_sourceParam_1, BMK.WA.account_name (self.account_id));
                     if (isnull(S))
                     {
                       self.vc_error_message := 'Bad import source!';

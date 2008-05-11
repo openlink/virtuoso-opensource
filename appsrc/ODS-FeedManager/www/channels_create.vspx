@@ -47,9 +47,7 @@
       } else if (type = 1) {
         self.v_data := ENEWS.WA.channels_content(url);
       } else if (type = 2) {
-        if (url not like concat(ENEWS.WA.dav_home(self.account_id),'%'))
-          return sprintf('Please select file from your home directory ''%s''', ENEWS.WA.dav_home(self.account_id));
-        self.v_data := ENEWS.WA.channels_uri(url2, 2);
+        self.v_data := ENEWS.WA.channels_uri(url2, 2, ENEWS.WA.account_name (self.account_id));
       } else if (type = 3) {
         url2 := file_to_string(url);
         self.v_data := ENEWS.WA.channels_content(url2);
