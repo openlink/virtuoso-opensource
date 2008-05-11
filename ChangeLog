@@ -1,3 +1,24 @@
+2008-05-11 22:19  source
+
+	* Updated version to 5.0.7-rc5
+
+2008-05-11 22:18  source
+
+	* Fixed WebDAV popup window
+	* Fixed Import and moved SUBSCRIBE/PUBLISH
+
+2008-05-11 22:17  source
+
+	* Fixed WebDAV popup window
+
+2008-05-11 21:46  source
+
+	* Added new bif_mdigest5
+
+2008-05-11 21:42  source
+
+	* Merged from upstream project
+
 2008-05-09 11:43  source
 
 	* Added grant for sparql_sponge for linked data tab to work
