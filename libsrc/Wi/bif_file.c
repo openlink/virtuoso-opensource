@@ -2210,6 +2210,20 @@ md5 (caddr_t str)
   return res;
 }
 
+caddr_t
+mdigest5 (caddr_t str)
+{
+  caddr_t res;
+  MD5_CTX ctx;
+
+  memset (&ctx, 0, sizeof (MD5_CTX));
+  MD5Init (&ctx);
+  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+  res = dk_alloc_box (17, DV_SHORT_STRING);
+  res[16] = '\0';
+  MD5Final ((unsigned char *)res, &ctx);
+  return res;
+}
 
 caddr_t
 md5ctx_to_string (MD5_CTX * pctx)
@@ -2379,6 +2393,13 @@ bif_md5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t str = bif_string_or_uname_arg (qst, args, 0, "md5");
       return md5 (str);
     }
+}
+
+static caddr_t
+bif_mdigest5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_uname_arg (qst, args, 0, "mdigest5");
+  return mdigest5 (str);
 }
 
 #define MOD_ADLER 65521
@@ -5541,6 +5562,7 @@ bif_file_init (void)
   bif_define ("cfg_write", bif_cfg_write);
   bif_define_typed ("adler32", bif_adler32, &bt_integer);
   bif_define ("tridgell32", bif_tridgell32);
+  bif_define_typed ("mdigest5", bif_mdigest5, &bt_varchar);
   bif_define_typed ("md5", bif_md5, &bt_varchar);
   bif_define_typed ("md5_init", bif_md5_init, &bt_varchar);
   bif_define_typed ("md5_update", bif_md5_update, &bt_varchar);
