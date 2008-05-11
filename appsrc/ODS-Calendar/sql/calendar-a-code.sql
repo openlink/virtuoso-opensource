@@ -1082,6 +1082,20 @@ _error:
 }
 ;
 
+-----------------------------------------------------------------------------
+--
+create procedure CAL.WA.dav_logical_home (
+  inout account_id integer) returns varchar
+{
+  declare home any;
+
+  home := CAL.WA.dav_home (account_id);
+  if (not isnull (home))
+    home := replace (home, '/DAV', '');
+  return home;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.host_url ()
@@ -1239,7 +1253,7 @@ create procedure CAL.WA.dav_content (
 
   newUri := uri;
   reqHdr := null;
-  if (isnull (auth_uid))
+  if (is_empty_or_null (auth_uid))
   CAL.WA.account_access (auth_uid, auth_pwd);
   reqHdr := sprintf ('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
 

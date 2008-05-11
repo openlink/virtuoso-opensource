@@ -66,9 +66,6 @@
       	var deleteDialog;
       	var deleteDialog2;
       	
-        // WebDAV Object
-        var oWebDAV;
-
         function myInit()
         {
           // CalendarPopup
@@ -78,17 +75,17 @@
             cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
           }
 
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+
           // WebDAV
-          var options = { imagePath: '/ods/images/oat/',
-                          imageExt: 'png',
-			  path: '<?V '/DAV/home/' || self.ownerName || '/' ?>',
+          var options = { imagePath: OAT.Preferences.imagePath,
+                          pathHome: '/home/',
+                          path: '<?V CAL.WA.dav_logical_home (self.owner_id) ?>',
 			  user: '<?V self.ownerName ?>'
                         };
           OAT.WebDav.init(options);
-          oWebDAV = OAT.WebDav;
 
           // <a>++
-          OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         

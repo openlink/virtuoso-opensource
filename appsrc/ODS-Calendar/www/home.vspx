@@ -911,9 +911,9 @@
       <v:variable name="cShowTasks" type="integer" default="1" />
       <v:variable name="cPrivacy" type="integer" default="0" />
 
-      <v:variable name="icStep" type="varchar" default="''" />
       <v:variable name="icSource" type="any" default="-1" />
-      <v:variable name="icType" type="any" default="-1" />
+      <v:variable name="icUser" type="varchar" />
+      <v:variable name="icPassword" type="varchar" />
 
       <v:variable name="exType" type="integer" />
       <v:variable name="exName" type="varchar" />
@@ -1003,8 +1003,6 @@
               <div class="lc lc_close">
                 <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems2">Settings</a>
                 <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Import" class="gems2">Upstreams</a>
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems2">Publications</a>
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems2">Subscriptions</a>
                 <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems2">Share My Calendar</a>
                 <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems2">Accepted Calendars</a>
                 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
@@ -1221,12 +1219,12 @@
                         if (cCommand = 'import')
                         {
                   self.cAction := cCommand;
-                    self.icStep := '1';
                     self.icSource := -1;
-                    self.icType := 0;
                     self.v_tags := '';
+                          self.icUser := '';
+                          self.icPassword := '';
                   }
-                        if (cCommand = 'export')
+                        else if (cCommand = 'export')
                         {
                           self.cAction := cCommand;
                           self.exType := -1;
@@ -1240,6 +1238,15 @@
                           self.exTagsInclude := '';
                           self.exTagsExclude := '';
                         }
+                        else if (cCommand = 'publishBrowse')
+                        {
+                          self.cAction := cCommand;
+                        }
+                        else if (cCommand = 'subscribeBrowse')
+                        {
+                          self.cAction := cCommand;
+                        }
+
                 }
 
                 self.vc_data_bind(e);
@@ -3414,19 +3421,18 @@
       </v:template>
 
       <vm:if test="self.cAction = 'import'">
-        <vm:if test="self.icStep = '1'">
         <div class="new-form-header">
-            <v:label format="%s" value="Import: Select source type" />
+                <v:label format="%s" value="Import" />
         </div>
 
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
-                      <th rowspan="3" valign="top" width="45%">
+                    <th rowspan="3" valign="top" width="30%">
                   <v:label for="i_file" value="Source type" />
               </th>
                 <td nowrap="nowarap">
-                  <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0">
+                      <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_0\'], hide: [\'imp_td_1\', \'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\']});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(lte(self.icSource, 0), 1, 0);
@@ -3439,7 +3445,7 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                  <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1">
+                      <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_1\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_2\']});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 1), 1, 0);
@@ -3452,7 +3458,7 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                  <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2">
+                      <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\']});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 2), 1, 0);
@@ -3463,61 +3469,15 @@
                   <b><vm:label for="icSource_2" value="--'URL'" /></b>
               </td>
             </tr>
-          </table>
-        </div>
-
-        <div class="new-form-footer">
-            <v:button action="simple" value="Next" xhtml_class="form-button">
-              <v:on-post>
-                <![CDATA[
-                  self.icStep := '2';
-                        if (self.icSource_0.ufl_selected)
-                        {
-                    self.icSource := 0;
-                  } else if (self.icSource_1.ufl_selected) {
-                    self.icSource := 1;
-                  } else if (self.icSource_2.ufl_selected) {
-                    self.icSource := 2;
-                  }
-                  self.vc_data_bind(e);
-                ]]>
-              </v:on-post>
-            </v:button>
-            <v:button action="simple" value="Cancel" name="i1_cancel" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.cAction := 'browse';
-                self.vc_data_bind(e);
-              ]]>
-            </v:on-post>
-          </v:button>
-        </div>
-        </vm:if>
-
-        <vm:if test="self.icStep = '2'">
-        <div class="new-form-header">
-            <v:label format="%s" value="Import: Select content type" />
-        </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
-              <vm:if test="self.icSource = 0">
                 <tr>
-                  <th width="30%">
-                    Select file
+                    <th>
+                      Source name
                   </th>
-                  <td>
-                    <input type="file" name="f_file" size="40" />
+                    <td id="imp_td_0" style="display: <?V case when self.icSource < 1 then '' else 'none' end ?>;">
+                      <input type="file" name="f_file" size="60" />
                   </td>
-                </tr>
-              </vm:if>
-              <vm:if test="self.icSource = 1">
-                <tr>
-                  <th width="30%">
-                    Select WebDAV file
-                  </th>
-                  <td>
-                    <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
-                    <v:button action="browse" value="Browse...">
+                    <td id="imp_td_1" style="display: <?V case when self.icSource = 1 then '' else 'none' end ?>;">
+                      <v:text name="f_dav" xhtml_id="f_dav" value="--''" xhtml_size="60" /><v:button action="browse" value="Browse...">
                    	  <v:after-data-bind>
                    		  <![CDATA[
                                 control.vc_add_attribute ('onclick', 'javascript: davBrowse (\'f_dav\');');
@@ -3525,18 +3485,26 @@
               			  </v:after-data-bind>
               		  </v:button>
                   </td>
+                    <td id="imp_td_2" style="display: <?V case when self.icSource = 2 then '' else 'none' end ?>;">
+                      <v:text name="f_uri" value="--''" xhtml_size="60" />
+                    </td>
                 </tr>
-              </vm:if>
-              <vm:if test="self.icSource = 2">
-            <tr>
-              <th width="30%">
-                    Select URL
+                  <tr id="imp_tr_31" style="display: <?V case when self.icSource < 1 then 'none' else '' end ?>;">
+                    <th>
+                      User
                   </th>
                   <td>
-                    <v:text name="f_uri" value="--''" xhtml_size="60" />
+                      <v:text name="i_user" value="--self.icUser" xhtml_class="" />
+                    </td>
+                  </tr>
+                  <tr id="imp_tr_32" style="display: <?V case when self.icSource < 1 then 'none' else '' end ?>;">
+                    <th>
+                      Password
+                    </th>
+                    <td>
+                      <v:text name="i_password" type="password" value="--''" xhtml_class="" />
                   </td>
                 </tr>
-              </vm:if>
               <tr>
                 <th>
                   <v:label for="i_tags" value="Tags (comma-separated)" />
@@ -3550,14 +3518,6 @@
         </div>
 
         <div class="new-form-footer">
-            <v:button action="simple" value="Back" xhtml_class="form-button">
-              <v:on-post>
-                <![CDATA[
-                  self.icStep := '1';
-                  self.vc_data_bind(e);
-                ]]>
-              </v:on-post>
-            </v:button>
             <v:button action="simple" value="Import" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
@@ -3574,8 +3534,11 @@
                     resignal;
                   };
 
-                        if (self.icSource = 0)
+                      self.icUser := trim (self.i_user.ufl_value);
+                      self.icPassword := self.i_password.ufl_value;
+                      if (self.icSource_0.ufl_selected)
                         {
+                        self.icSource := 0;
                     content := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
                           if (is_empty_or_null (content))
                           {
@@ -3583,24 +3546,22 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-
-                  } else if (self.icSource = 1) {
-                    self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-                          if (self.f_dav.ufl_value not like (CAL.WA.dav_home (self.account_id) || '%'))
-                          {
-                      self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', CAL.WA.dav_home (self.account_id));
-                      self.vc_is_valid := 0;
-                      return;
                     }
-                    content := CAL.WA.dav_content (CAL.WA.host_url () || self.f_dav.ufl_value);
+                      else if (self.icSource_1.ufl_selected)
+                      {
+                        self.icSource := 1;
+                        self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
+                        content := CAL.WA.dav_content (CAL.WA.host_url () || self.f_dav.ufl_value, self.icUser, self.icPassword);
                           if (isnull(content))
                           {
                       self.vc_error_message := 'Bad import source!';
                       self.vc_is_valid := 0;
                       return;
                     }
-
-                  } else if (self.icSource = 2) {
+                      }
+                      else if (self.icSource_2.ufl_selected)
+                      {
+                        self.icSource := 2;
                     self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                           if (is_empty_or_null (self.f_uri.ufl_value))
                           {
@@ -3608,7 +3569,7 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                    content := CAL.WA.dav_content (self.f_uri.ufl_value);
+                        content := CAL.WA.dav_content (self.f_uri.ufl_value, self.icUser, self.icPassword);
                           if (isnull(content))
                           {
                       self.vc_error_message := 'Bad URL source!';
@@ -3625,7 +3586,6 @@
                   self.v_tags := CAL.WA.vector2tags (tmp);
 
                   -- vCard
-                  if (self.icType = 0)
                           CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags, 'events', 1, 'tasts', 1));
 
                   self.cAction := 'browse';
@@ -3643,7 +3603,6 @@
           </v:button>
         </div>
         </vm:if>
-      </vm:if>
 
             <vm:if test="self.cAction = 'export'">
               <div class="new-form-header">
@@ -3662,7 +3621,7 @@
                       <v:label for="e_file" value="Destination type" />
                     </th>
                     <td nowrap="nowarap">
-                      <v:radio-button name="ex_destination_type_0" xhtml_id="ex_destination_type_0" group-name="ex_destination_type" value="0" xhtml_onchange="javascript: destinationChange(this, {hide: [\'ex_tr_0\', \'ex_tr_1\']});">
+                      <v:radio-button name="ex_destination_type_0" xhtml_id="ex_destination_type_0" group-name="ex_destination_type" value="0" xhtml_onchange="javascript: destinationChange(this, {hide: [\'ex_tr_0\', \'ex_tr_1\', \'ex_destination_button\']});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(lte(self.exType, 0), 1, 0);
@@ -3675,7 +3634,7 @@
                   </tr>
                   <tr>
                     <td nowrap="nowarap">
-                      <v:radio-button name="ex_destination_type_1" xhtml_id="ex_destination_type_1" group-name="ex_destination_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'ex_tr_0\', \'ex_tr_1\']});">
+                      <v:radio-button name="ex_destination_type_1" xhtml_id="ex_destination_type_1" group-name="ex_destination_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'ex_tr_0\', \'ex_tr_1\', \'ex_destination_button\']});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(equ(self.exType, 1), 1, 0);
@@ -3688,7 +3647,7 @@
                   </tr>
                   <tr>
                     <td nowrap="nowarap">
-                      <v:radio-button name="ex_destination_type_2" xhtml_id="ex_destination_type_2" group-name="ex_destination_type" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'ex_tr_0\', \'ex_tr_1\']});">
+                      <v:radio-button name="ex_destination_type_2" xhtml_id="ex_destination_type_2" group-name="ex_destination_type" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'ex_tr_0\', \'ex_tr_1\'], hide: [\'ex_destination_button\']});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(equ(self.exType, 2), 1, 0);
@@ -3704,7 +3663,15 @@
                       Destination name (URL)
                     </th>
                     <td>
-                      <v:text name="ex_destination" value="--self.exName" xhtml_size="60" />
+                      <v:text name="ex_destination" xhtml_id="ex_destination" value="--self.exName" xhtml_size="60" />
+                      <v:button action="browse" value="Browse..." name="ex_destination_button" xhtml_id="ex_destination_button">
+                        <v:after-data-bind>
+                          <![CDATA[
+                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''ex_destination'');');
+                            control.vc_add_attribute ('style', 'display: none;');
+                          ]]>
+                        </v:after-data-bind>
+                      </v:button>
                     </td>
                   </tr>
                   <tr id="ex_tr_0" style="display: <?V case when self.exType < 1 then 'none' else '' end ?>;">
@@ -3928,8 +3895,486 @@
               </div>
             </vm:if>
 
-      <vm:if test="self.cAction = 'settings'">
+            <vm:if test="self.cAction in ('publishBrowse', 'subscribeBrowse')">
         <div class="new-form-header">
+                <?vsp
+                  declare T varchar;
+
+                  T := '';
+                  if (self.cAction = 'publishBrowse')
+                  {
+                    T := 'Publications';
+                  }
+                  else if (self.cAction = 'subscribeBrowse')
+                  {
+                    T := 'Subscriptions';
+                  }
+                  http (T);
+                ?>
+              </div>
+              <v:button value="--'New'" action="simple" xhtml_class="button">
+                <v:after-data-bind>
+                  <![CDATA[
+                    if (self.cAction = 'publishBrowse')
+                  {
+                      control.ufl_value := 'New Publish';
+                    } else {
+                      control.ufl_value := 'New Subscription';
+                  }
+                  ]]>
+                </v:after-data-bind>
+                <v:on-post>
+                  <![CDATA[
+                    if (self.cAction = 'publishBrowse')
+                  {
+                      self.cAction := 'publishCreate';
+                    } else {
+                      self.cAction := 'subscribeCreate';
+                  }
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    declare N integer;
+
+                    for (N := 0; N < length(e.ve_params); N := N + 4)
+                      if (e.ve_params[N] = 'cb_item')
+                        delete from CAL.WA.EXCHANGE where EX_ID = cast (e.ve_params[N+1] as integer);
+
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:data-source name="dsrc_exchanges" expression-type="sql" nrows="0" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_sql := sprintf ('select * from CAL.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.cAction = 'publishBrowse' then 0 else 1 end);
+                  ]]>
+                </v:before-data-bind>
+              </v:data-source>
+
+              <div style="min-height: 200px">
+                <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
+                  <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                    <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                      <thead class="sortHeader">
+                        <tr>
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                          </th>
+                          <th style="text-align: left;">Name</th>
+                          <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
+                          <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
+                          <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </v:template>
+                  <v:template name="ds_exchanges_repeat" type="repeat">
+
+                    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                      <table>
+                      </table>
+                    </v:template>
+
+                    <v:template name="ds_exchanges_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td align="center" valign="top">
+                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('EX_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EX_NAME')" />
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:label value="--CAL.WA.dt_datetimestring ((control.vc_parent as vspx_row_template).te_column_value('EX_EXEC_TIME'), self.cDateFormat, self.cTimeFormat)" />
+                          </td>
+                          <td nowrap="nowrap">
+                      		  <?vsp
+                      		    if ((control as vspx_row_template).te_column_value('EX_EXEC_LOG') is not null)
+                  {
+                      		      http (sprintf ('<a href="#" onclick="javascript: window.open (\'message.vspx?msg=%U\', \'calendar_message\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
+                  }
+                      		    else
+                  {
+                      		      http ('OK');
+                  }
+                      		  ?>
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:button value="Edit" action="simple" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
+                                  if (self.cAction = 'publishBrowse')
+                  {
+                                    self.cAction := 'publishUpdate';
+                                  } else {
+                                    self.cAction := 'subscribeUpdate';
+                  }
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button value="Exec" action="simple" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
+                                  CAL.WA.exchange_exec (self.ve_id);
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                  </v:template>
+
+                  <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                    <table>
+                    </table>
+                  </v:template>
+
+                </v:data-set>
+              </div>
+              <div style="width: 100%; border-top: 1px solid #7f94a5;">
+                <v:button value="--'Back'" action="simple" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+              <script type="text/javascript">
+                <![CDATA[
+                  coloriseTable('preferences');
+                ]]>
+              </script>
+            </vm:if>
+
+            <vm:if test="self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate')">
+              <div class="new-form-header">
+                <?vsp
+                  declare T varchar;
+
+                  T := '';
+                  if (self.cAction = 'publishCreate')
+                  {
+                    T := 'Publications/Create';
+                  }
+                  else if (self.cAction = 'publishUpdate')
+                  {
+                    T := 'Publications/Update';
+                  }
+                  else if (self.cAction = 'subscribeCreate')
+                  {
+                    T := 'Subscriptions/Create';
+                  }
+                  else if (self.cAction = 'subscribeUpdate')
+                  {
+                    T := 'Subscriptions/Update';
+                  }
+                  http (T);
+                ?>
+              </div>
+              <v:before-data-bind>
+                <![CDATA[
+                  declare params any;
+                  params := self.vc_page.vc_event.ve_params;
+
+                  if (isnull (get_keyword ('exc_name', params)))
+                  {
+                    declare exit handler for not found goto _end;
+
+                    if (self.cAction in  ('publishUpdate', 'subscribeUpdate'))
+                  {
+                      select EX_TYPE,
+                             EX_NAME,
+                             EX_UPDATE_TYPE,
+                             EX_UPDATE_PERIOD,
+                             EX_UPDATE_FREQ,
+                             deserialize (EX_OPTIONS)
+                        into self.ve_type,
+                             self.ve_name,
+                             self.ve_update_type,
+                             self.ve_update_period,
+                             self.ve_update_freq,
+                             self.ve_options
+                        from CAL.WA.EXCHANGE
+                       where EX_ID = self.ve_id;
+
+                       return;
+                  }
+                  _end:;
+
+                    self.ve_type := case when (self.cAction = 'publishCreate') then 0 else 1 end;
+                    self.ve_id := null;
+                    self.ve_name := '';
+                    self.ve_update_type := case when (self.cAction = 'publishCreate') then 1 else 2 end;
+                    self.ve_update_period := case when (self.cAction = 'publishCreate') then null else 'hourly' end;
+                    self.ve_update_freq := case when (self.cAction = 'publishCreate') then null else 1 end;
+                    self.ve_options := vector ();
+                  }
+                ]]>
+              </v:before-data-bind>
+              <div class="new-form-body">
+                <table cellspacing="0">
+                <tr>
+                  <th width="30%">
+                      <v:label for="exc_name" value="Name" />
+                  </th>
+                  <td>
+                      <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
+                  </td>
+                </tr>
+                <tr>
+                    <th rowspan="<?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 3 else 2 end ?>" valign="top">
+                      Refresh type
+                    </th>
+                    <td nowrap="nowarap">
+                      <label>
+                        <v:radio-button name="exc_update_type_0" group-name="exc_update_type" value="0">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := either (lte (self.ve_update_type, 0), 1, 0);
+                            ]]>
+                          </v:before-render>
+                        </v:radio-button>
+                        <b>manually</b>
+                      </label>
+                  </td>
+                </tr>
+                  <vm:if test="self.cAction in ('publishCreate', 'publishUpdate')">
+                <tr>
+                      <td nowrap="nowarap">
+                        <label>
+                          <v:radio-button name="exc_update_type_1" group-name="exc_update_type" value="1">
+                            <v:before-render>
+                              <![CDATA[
+                                control.ufl_selected := either (equ (self.ve_update_type, 1), 1, 0);
+                              ]]>
+                            </v:before-render>
+                          </v:radio-button>
+                          <b>after any entry is changed</b>
+                        </label>
+                  </td>
+                </tr>
+                  </vm:if>
+                <tr>
+                    <td nowrap="nowarap">
+                      <label>
+                        <v:radio-button name="exc_update_type_2" group-name="exc_update_type" value="2">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := either (equ (self.ve_update_type, 2), 1, 0);
+                            ]]>
+                          </v:before-render>
+                        </v:radio-button>
+                        <b>every</b>
+                      </label>
+                      <v:text name="exc_update_freq" value="--self.ve_update_freq" xhtml_size="2" />
+                      <v:select-list name="exc_update_period">
+                        <v:item value="hourly" name="hour(s)" />
+                        <v:item value="dayly" name="day(s)" />
+                      <v:before-data-bind>
+                        <![CDATA[
+                            control.ufl_value := self.ve_update_period;
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="new-section">
+                      <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?>
+                  </td>
+                </tr>
+                <tr>
+                    <th rowspan="2" valign="top">
+                      <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
+                          </th>
+                    <td nowrap="nowarap">
+                      <label>
+                        <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := either (lte (get_keyword ('type', self.ve_options, 1), 1), 1, 0);
+                            ]]>
+                          </v:before-render>
+                        </v:radio-button>
+                        <b>WebDAV Path</b>
+                      </label>
+                          </td>
+                        </tr>
+                        <tr>
+                    <td nowrap="nowarap">
+                      <label>
+                        <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := either (equ (get_keyword ('type', self.ve_options, 1), 2), 1, 0);
+                            ]]>
+                          </v:before-render>
+                        </v:radio-button>
+                        <b>URL</b>
+                      </label>
+                          </td>
+                        </tr>
+                        <tr>
+                    <th>
+                      WebDAV Path / URL
+                          </th>
+                          <td>
+                      <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
+                      <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
+                        <v:after-data-bind>
+                          <![CDATA[
+                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
+                            control.vc_add_attribute ('style', 'display: ' || case when get_keyword ('type', self.ve_options, 1) = 1 then '' else 'none' end);
+                          ]]>
+                        </v:after-data-bind>
+                      </v:button>
+                          </td>
+                        </tr>
+                        <tr>
+                    <th>
+                      User
+                    </th>
+                          <td>
+                      <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" />
+                          </td>
+                        </tr>
+                        <tr>
+                    <th>
+                      Password
+                    </th>
+                          <td>
+                      <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" />
+                          </td>
+                        </tr>
+                        <tr>
+                    <td colspan="2" class="new-section">
+                      Options
+                          </td>
+                        </tr>
+                        <tr>
+                          <th />
+                          <td>
+                      <label>
+                        <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', self.ve_options, 1)" />
+                        Events
+                      </label>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th />
+                          <td>
+                      <label>
+                        <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', self.ve_options, 1)" />
+                        Tasks
+                      </label>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="--case when self.cAction in ('publishCreate', 'subscribeCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
+                  <v:on-post>
+                        <![CDATA[
+                      declare _type, _name, _user, _password, _events, _tasks any;
+                    declare tmp, params any;
+
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            if (__SQL_STATE = 'TEST')
+                            {
+                    self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  resignal;
+                };
+                    params := self.vc_page.vc_event.ve_params;
+
+
+                    self.ve_name := trim (self.exc_name.ufl_value);
+                    self.ve_update_freq := null;
+                    self.ve_update_period := null;
+                    if (self.exc_update_type_0.ufl_selected)
+                    {
+                      self.ve_update_type := 0;
+                    }
+                    else if (self.exc_update_type_1.ufl_selected)
+                    {
+                      self.ve_update_type := 1;
+                    }
+                    else if (self.exc_update_type_2.ufl_selected)
+                    {
+                      self.ve_update_type := 2;
+                      self.ve_update_freq := self.exc_update_freq.ufl_value;
+                      self.ve_update_period := self.exc_update_period.ufl_value;
+                    }
+                    _type := 0;
+                    if (self.exc_options_type_1.ufl_selected)
+                    {
+                      _type := 1;
+                    }
+                    else if (self.exc_options_type_2.ufl_selected)
+                    {
+                      _type := 2;
+                    }
+                    _name := trim (self.exc_options_name.ufl_value);
+                    _user := trim (self.exc_options_user.ufl_value);
+                    _password := self.exc_options_password.ufl_value;
+                    _events := case when self.exc_options_events.ufl_selected then 1 else 0 end;
+                    _tasks := case when self.exc_options_events.ufl_selected then 1 else 0 end;
+                    self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'events', _events, 'tasks', _tasks);
+
+                    CAL.WA.test (self.ve_name, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                    if (self.ve_update_type = 2)
+                       CAL.WA.test (self.ve_update_freq, vector ('name', 'Frequency', 'class', 'integer', 'minValue', 1, 'maxValue', 30));
+                      CAL.WA.test (_name, vector('name', 'Resource Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+
+                      self.ve_update_freq := cast (self.ve_update_freq as integer);
+                      if (self.cAction in ('publishCreate', 'subscribeCreate'))
+                      		{
+                        insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
+                          values (self.domain_id, self.ve_type, self.ve_name, self.ve_update_type, self.ve_update_period, self.ve_update_freq, serialize (self.ve_options));
+                      } else {
+                        update CAL.WA.EXCHANGE
+                           set EX_NAME = self.ve_name,
+                               EX_UPDATE_TYPE = self.ve_update_type,
+                               EX_UPDATE_PERIOD = self.ve_update_period,
+                               EX_UPDATE_FREQ = self.ve_update_freq,
+                               EX_OPTIONS = serialize (self.ve_options)
+                         where EX_ID = self.ve_id;
+                					}
+
+                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                <v:button action="simple" value="Cancel" name="exc_cancel" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+                </div>
+            </vm:if>
+
+            <vm:if test="self.cAction = 'settings'">
+              <div class="new-form-header">
                 <?vsp
                   declare S, T varchar;
 
@@ -4001,274 +4446,274 @@
                   }
                   http (S || T);
                 ?>
-        </div>
+              </div>
 
                 <v:template type="simple" enabled="--case when self.cSubAction = '' then 1 else 0 end">
-        <div id="s" class="c1">
-          <div class="tabs">
+                  <div id="s" class="c1">
+                    <div class="tabs">
                       &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="0" caption="General" />
                       &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="1" caption="Grids" />
                       &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="2" caption="Calendar" />
                       &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="3" caption="Discussion" />
-          </div>
-          <div id="s_contents" class="contents">
-            <div id="s_content_0" class="tabContent" style="display: none;">
-              <table class="form-body" cellspacing="0">
-                <tr>
-                  <th width="30%">
+                    </div>
+                    <div id="s_contents" class="contents">
+                      <div id="s_content_0" class="tabContent" style="display: none;">
+                        <table class="form-body" cellspacing="0">
+                          <tr>
+                            <th width="30%">
                               <v:label for="sr_chars" value="Contact name display" />
-                  </th>
-                  <td>
-                    <?vsp
+                            </th>
+                            <td>
+                              <?vsp
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_0" value="0" %s />', CAL.WA.checkedAttribute (CAL.WA.settings_chars (self.settings), 0)));
-                    ?>
-                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_0" value="--'show everything'" />
-                  </td>
-                </tr>
-                <tr>
-                  <th />
-                  <td>
-                    <?vsp
-                      declare S varchar;
+                              ?>
+                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_0" value="--'show everything'" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <?vsp
+                                declare S varchar;
 
-                      S := '';
-                      if (CAL.WA.settings_chars (self.settings) <> 0)
-                        S := 'checked="checked"';
+                                S := '';
+                                if (CAL.WA.settings_chars (self.settings) <> 0)
+                                  S := 'checked="checked"';
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_1" value="1" %s />', S));
-                    ?>
-                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
-                    <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
-                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    <v:label for="s_rows" value="Rows per page"/>
-                  </th>
-                  <td>
-                    <v:text name="s_rows" value="--CAL.WA.settings_rows (self.settings)" xhtml_size="3"/>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    Atom File Version
-                  </th>
-                  <td>
-                    <v:select-list name="s_atomVersion">
-                      <v:item value="0.3" name="0.3"/>
-                      <v:item value="1.0" name="1.0"/>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_atomVersion (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-                <tr>
-                  <th />
-                  <td>
-                    <v:check-box name="s_showTasks" xhtml_id="s_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
-                    <vm:label for="s_showTasks" value="Show tasks in Calendar"/>
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div id="s_content_1" class="tabContent" style="display: none;">
-              <table class="form-body" cellspacing="0">
-                <tr>
-                  <th width="30%">
-                            Show columns in 'Events' view
+                              ?>
+                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp" />
+                              <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3" />
+                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_1" value="--'characters'" /><xsl:call-template name="nbsp" />
+                            </td>
+                          </tr>
+                        <tr>
+                            <th>
+                              <v:label for="s_rows" value="Rows per page" />
+                            </th>
+                            <td>
+                              <v:text name="s_rows" value="--CAL.WA.settings_rows (self.settings)" xhtml_size="3" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              Atom File Version
                           </th>
-                          <td>
-                            <v:check-box name="s_e_column_3" xhtml_id="s_e_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_LOCATION', self.settings, '0') as integer)" />
-                            <vm:label for="s_e_column_3" value="Location"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_e_column_1" xhtml_id="s_e_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_UPDATED', self.settings, '1') as integer)" />
-                            <vm:label for="s_e_column_1" value="Updated"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_e_column_2" xhtml_id="s_e_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('event_E_CREATED', self.settings, '0') as integer)" />
-                            <vm:label for="s_e_column_2" value="Created"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th width="30%">
-                            Show columns in 'Tasks' view
-                          </th>
-                          <td>
-                            <v:check-box name="s_t_column_1" xhtml_id="s_t_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_STATUS', self.settings, '1') as integer)" />
-                            <vm:label for="s_t_column_1" value="Status"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_5" xhtml_id="s_t_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_PRIORITY', self.settings, '1') as integer)" />
-                            <vm:label for="s_t_column_5" value="Priority"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_6" xhtml_id="s_t_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_START', self.settings, '0') as integer)" />
-                            <vm:label for="s_t_column_6" value="Start Date"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_7" xhtml_id="s_t_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_END', self.settings, '1') as integer)" />
-                            <vm:label for="s_t_column_7" value="Due Date"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_2" xhtml_id="s_t_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_COMPLETED', self.settings, '0') as integer)" />
-                            <vm:label for="s_t_column_2" value="Completed"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_3" xhtml_id="s_t_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_UPDATED', self.settings, '0') as integer)" />
-                            <vm:label for="s_t_column_3" value="Updated"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th />
-                          <td>
-                            <v:check-box name="s_t_column_4" xhtml_id="s_t_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_CREATED', self.settings, '0') as integer)" />
-                            <vm:label for="s_t_column_4" value="Created"/>
-                          </td>
+                            <td>
+                              <v:select-list name="s_atomVersion">
+                                <v:item value="0.3" name="0.3" />
+                                <v:item value="1.0" name="1.0" />
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_atomVersion (self.settings);
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_showTasks" xhtml_id="s_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
+                              <vm:label for="s_showTasks" value="Show tasks in Calendar"/>
+                            </td>
                         </tr>
                       </table>
-                    </div>
-                    <div id="s_content_2" class="tabContent" style="display: none;">
-                      <table class="form-body" cellspacing="0">
+                      </div>
+                      <div id="s_content_1" class="tabContent" style="display: none;">
+                        <table class="form-body" cellspacing="0">
                         <tr>
-                          <th width="30%">
-                    Default view
-                  </th>
-                  <td>
-                    <v:select-list name="s_defaultView">
-                      <v:item value="day" name="Day"/>
-                      <v:item value="week" name="Week"/>
-                      <v:item value="month" name="Month"/>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_defaultView (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    Week starts on
-                  </th>
-                  <td>
-                    <v:select-list name="s_weekStarts">
-                      <v:item value="m" name="Monday"/>
-                      <v:item value="s" name="Sunday"/>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_weekStarts (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    Time format
-                  </th>
-                  <td>
-                    <v:select-list name="s_timeFormat">
-                      <v:item value="e" name="13:00"/>
-                      <v:item value="u" name="01:00 pm"/>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_timeFormat (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    Date format
-                  </th>
-                  <td>
-                    <v:select-list name="s_dateFormat">
-                      <v:item value="dd.MM.yyyy" name="31.12.2007"/>
-                      <v:item value="MM/dd/yyyy" name="12/31/2007"/>
-                      <v:item value="yyyy/MM/dd" name="2007/12/31"/>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_dateFormat (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    Current timezone
-                  </th>
-                  <td>
-                    <v:select-list name="s_timeZone">
-                      <v:on-init>
-                        <![CDATA[
-                          declare i, j integer;
-                          declare x, y any;
+                            <th width="30%">
+                              Show columns in 'Events' view
+                            </th>
+                            <td>
+                              <v:check-box name="s_e_column_3" xhtml_id="s_e_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_LOCATION', self.settings, '0') as integer)" />
+                              <vm:label for="s_e_column_3" value="Location"/>
+                          </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_e_column_1" xhtml_id="s_e_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_UPDATED', self.settings, '1') as integer)" />
+                              <vm:label for="s_e_column_1" value="Updated"/>
+                          </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_e_column_2" xhtml_id="s_e_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('event_E_CREATED', self.settings, '0') as integer)" />
+                              <vm:label for="s_e_column_2" value="Created"/>
+                          </td>
+                          </tr>
+                          <tr>
+                            <th width="30%">
+                              Show columns in 'Tasks' view
+                            </th>
+                            <td>
+                              <v:check-box name="s_t_column_1" xhtml_id="s_t_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_STATUS', self.settings, '1') as integer)" />
+                              <vm:label for="s_t_column_1" value="Status"/>
+                          </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_5" xhtml_id="s_t_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_PRIORITY', self.settings, '1') as integer)" />
+                              <vm:label for="s_t_column_5" value="Priority"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_6" xhtml_id="s_t_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_START', self.settings, '0') as integer)" />
+                              <vm:label for="s_t_column_6" value="Start Date"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_7" xhtml_id="s_t_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_END', self.settings, '1') as integer)" />
+                              <vm:label for="s_t_column_7" value="Due Date"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_2" xhtml_id="s_t_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_COMPLETED', self.settings, '0') as integer)" />
+                              <vm:label for="s_t_column_2" value="Completed"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_3" xhtml_id="s_t_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_UPDATED', self.settings, '0') as integer)" />
+                              <vm:label for="s_t_column_3" value="Updated"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th />
+                            <td>
+                              <v:check-box name="s_t_column_4" xhtml_id="s_t_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_CREATED', self.settings, '0') as integer)" />
+                              <vm:label for="s_t_column_4" value="Created"/>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                      <div id="s_content_2" class="tabContent" style="display: none;">
+                        <table class="form-body" cellspacing="0">
+                          <tr>
+                            <th width="30%">
+                              Default view
+                            </th>
+                            <td>
+                              <v:select-list name="s_defaultView">
+                                <v:item value="day" name="Day" />
+                                <v:item value="week" name="Week" />
+                                <v:item value="month" name="Month" />
+                                <v:before-data-bind>
+                                <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_defaultView (self.settings);
+                                ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
+                          </td>
+                        </tr>
+                          <tr>
+                            <th>
+                              Week starts on
+                            </th>
+                            <td>
+                              <v:select-list name="s_weekStarts">
+                                <v:item value="m" name="Monday" />
+                                <v:item value="s" name="Sunday" />
+                <v:before-data-bind>
+                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_weekStarts (self.settings);
+                  ]]>
+                </v:before-data-bind>
+                              </v:select-list>
+                            </td>
+                          </tr>
+                  <tr>
+                            <th>
+                              Time format
+                    </th>
+                    <td>
+                              <v:select-list name="s_timeFormat">
+                                <v:item value="e" name="13:00" />
+                                <v:item value="u" name="01:00 pm" />
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_timeFormat (self.settings);
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                        <th>
+                              Date format
+                    </th>
+                    <td>
+                              <v:select-list name="s_dateFormat">
+                                <v:item value="dd.MM.yyyy" name="31.12.2007" />
+                                <v:item value="MM/dd/yyyy" name="12/31/2007" />
+                                <v:item value="yyyy/MM/dd" name="2007/12/31" />
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_dateFormat (self.settings);
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                        <th>
+                              Current timezone
+                    </th>
+                    <td>
+                              <v:select-list name="s_timeZone">
+                                <v:on-init>
+                                  <![CDATA[
+                                    declare i, j integer;
+                                    declare x, y any;
 
-                          x := make_array (25, 'any');
-                          y := make_array (25, 'any');
-                          i := -12;
-                          j := 0;
+                                    x := make_array (25, 'any');
+                                    y := make_array (25, 'any');
+                                    i := -12;
+                                    j := 0;
                                     while (i <= 12)
                                     {
-                            x[j] := cast (i*60 as varchar);
-                            y[j] := self.showTimeZone (i);
-                            i := i + 1;
-                            j := j + 1;
-                          }
-                          control.vsl_item_values := x;
-                          control.vsl_items := y;
-                          control.ufl_value := '0';
-                        ]]>
-                      </v:on-init>
-                      <v:before-data-bind>
-                        <![CDATA[
-                          control.ufl_value := CAL.WA.settings_timeZone (self.settings);
-                        ]]>
-                      </v:before-data-bind>
-                    </v:select-list>
-                  </td>
-                </tr>
-              </table>
-            </div>
+                                      x[j] := cast (i*60 as varchar);
+                                      y[j] := self.showTimeZone (i);
+                                      i := i + 1;
+                                      j := j + 1;
+                                    }
+                                    control.vsl_item_values := x;
+                                    control.vsl_items := y;
+                                    control.ufl_value := '0';
+                                  ]]>
+                                </v:on-init>
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_value := CAL.WA.settings_timeZone (self.settings);
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:select-list>
+                    </td>
+                  </tr>
+                        </table>
+                      </div>
                       <div id="s_content_3" class="tabContent" style="display: none;">
                         <table class="form-body" cellspacing="0">
                           <v:template type="simple" enabled="--either (equ (CAL.WA.discussion_check (), 1), 0, 1)">
-                            <tr>
+                  <tr>
                               <td class="error_text" colspan="2">
                                 <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
-                              </td>
-                            </tr>
+                    </td>
+                  </tr>
                           </v:template>
-                          <tr>
+                  <tr>
                             <th width="30%">&nbsp;</th>
-                            <td>
+                    <td>
                               <?vsp
                                 declare S, T varchar;
 
@@ -4281,11 +4726,11 @@
                                 http (sprintf ('<input type="checkbox" name="s_conv" value="1" %s %s />', T, S));
                               ?>
                       				<vm:label for="s_conv" value="Enable discussions on this instance" />
-                            </td>
-                          </tr>
-                          <tr>
+                    </td>
+                  </tr>
+                  <tr>
                             <th width="30%">&nbsp;</th>
-                            <td>
+                    <td>
                               <?vsp
                                 declare S, T varchar;
 
@@ -4298,301 +4743,20 @@
                                 http (sprintf ('<input type="checkbox" name="s_conv_init" value="1" %s %s />', T, S));
                               ?>
                       				<vm:label for="s_conv_init" value="Initialize the news group with existing posts" />
-                            </td>
-                          </tr>
-                        </table>
-                      </div>
-          </div>
-        </div>
-        <div class="new-form-footer">
-          <v:button action="simple" value="Save" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                declare rows, chars any;
+                    </td>
+                  </tr>
+                </table>
+                  </div>
+                    </div>
+                  </div>
+                <div class="new-form-footer">
+                    <v:button action="simple" value="Save" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                          declare rows, chars any;
                           declare conv, s_conv, s_conv_init, params any;
 
                           params := self.vc_page.vc_event.ve_params;
-
-                          declare exit handler for SQLSTATE '*'
-                          {
-                            if (__SQL_STATE = 'TEST')
-                            {
-                    self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
-                    self.vc_is_valid := 0;
-                    return;
-                  }
-                  resignal;
-                };
-
-                rows := trim(self.s_rows.ufl_value);
-                chars := trim(self.s_chars.ufl_value);
-                          if (get_keyword ('sr_chars', params, '-1') = '0')
-                  chars := '0';
-
-                CAL.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
-                CAL.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 255));
-
-                          conv := cast (get_keyword ('conv', self.settings, '0') as integer);
-                          s_conv := cast (get_keyword ('s_conv', params, '0') as integer);
-                          s_conv_init := cast (get_keyword ('s_conv_init', params, '0') as integer);
-
-                self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
-                self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
-                self.settings := CAL.WA.set_keyword ('atomVersion', self.settings, self.s_atomVersion.ufl_value);
-                self.settings := CAL.WA.set_keyword ('defaultView', self.settings, self.s_defaultView.ufl_value);
-                self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
-                self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
-                self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
-                self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
-                self.settings := CAL.WA.set_keyword ('showTasks', self.settings, self.s_showTasks.ufl_selected);
-
-                          self.settings := CAL.WA.set_keyword ('conv', self.settings, s_conv);
-                          self.settings := CAL.WA.set_keyword ('conv_init', self.settings, s_conv_init);
-
-                        self.settings := CAL.WA.set_keyword ('event_E_UPDATED',  self.settings, self.s_e_column_1.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('event_E_CREATED',  self.settings, self.s_e_column_2.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('event_E_LOCATION', self.settings, self.s_e_column_3.ufl_selected);
-
-                        self.settings := CAL.WA.set_keyword ('task_E_STATUS',    self.settings, self.s_t_column_1.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_PRIORITY',  self.settings, self.s_t_column_5.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_START',     self.settings, self.s_t_column_6.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_END',       self.settings, self.s_t_column_7.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_COMPLETED', self.settings, self.s_t_column_2.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_UPDATED',   self.settings, self.s_t_column_3.ufl_selected);
-                        self.settings := CAL.WA.set_keyword ('task_E_CREATED',   self.settings, self.s_t_column_4.ufl_selected);
-
-                          insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
-                            values(self.domain_id, serialize (self.settings), self.account_id);
-                commit work;
-
-                --CAL.WA.domain_gems_create (self.domain_id, self.account_id);
-                      		if (CAL.WA.discussion_check ())
-                      		{
-                					  CAL.WA.nntp_update (self.domain_id, null, null, conv, s_conv);
-                     				if (s_conv and s_conv_init)
-                					    CAL.WA.nntp_fill (self.domain_id);
-                					}
-
-                self.initData ();
-                self.cAction := 'browse';
-                        self.cSubAction := '';
-
-                          self.vc_data_bind(e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button action="simple" value="Clear" xhtml_class="form-button">
-                      <v:on-post>
-                        <![CDATA[
-                          delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
-                          CAL.WA.nntp_update (self.domain_id, null, null, 1, 0);
-
-                          self.settings := vector ();
-                          self.initData ();
-
-                self.vc_data_bind(e);
-              ]]>
-            </v:on-post>
-          </v:button>
-                </div>
-                </v:template>
-
-                <v:template type="simple" enabled="--case when self.cSubAction = 'upstreamBrowse' then 1 else 0 end">
-                <v:button value="--'New Upstream'" action="simple" xhtml_class="button">
-            <v:on-post>
-              <![CDATA[
-                      self.cSubAction := 'upstreamCreate';
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
-                  <v:on-post>
-                    <![CDATA[
-                      declare N integer;
-
-                      for (N := 0; N < length(e.ve_params); N := N + 4)
-                        if (e.ve_params[N] = 'cb_item')
-                          delete from CAL.WA.UPSTREAM where U_ID = cast (e.ve_params[N+1] as integer);
-
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
-                <v:data-set name="ds_upstreams" sql="select * from CAL.WA.UPSTREAM where U_DOMAIN_ID = :p0 order by U_NAME" nrows="0" scrollable="1">
-                  <v:param name="p0" value="--self.domain_id" />
-
-                  <v:template name="ds_upstreams_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
-                      <thead class="sortHeader">
-                        <tr>
-                          <th class="checkbox" width="1%">
-                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
-                          </th>
-                          <th style="text-align: left;">Name</th>
-                          <th style="text-align: left;">Path</th>
-                          <th style="text-align: left;">In Queue</th>
-                          <th style="text-align: left;" width="5%">Action</th>
-                        </tr>
-                      </thead>
-                    </table>
-                  </v:template>
-                  <v:template name="ds_upstreams_repeat" type="repeat">
-
-                    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                      <table>
-                      </table>
-                    </v:template>
-
-                    <v:template name="ds_upstreams_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                      <table>
-                        <tr>
-                          <td align="center" valign="top">
-                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('U_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
-                          </td>
-                          <td nowrap="nowrap">
-                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" />
-                          </td>
-                          <td nowrap="nowrap">
-                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_URI')" />
-                          </td>
-                          <td nowrap="nowrap">
-                            <?vsp
-                              http (cast ((select count(*) from CAL.WA.UPSTREAM_EVENT where UE_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')) as varchar));
-                            ?>
-                          </td>
-                          <td nowrap="nowrap">
-                            <v:button value="Edit" action="simple" xhtml_class="button">
-                              <v:on-post>
-                                <![CDATA[
-                                  self.vu_id := (control.vc_parent as vspx_row_template).te_column_value('U_ID');
-                                  self.cSubAction := 'upstreamUpdate';
-                                  self.vc_data_bind(e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-                            <?vsp
-                              if ((select count(*) from CAL.WA.UPSTREAM_LOG where UL_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')))
-                                http (sprintf ('<input type="button" value="Error Log" onclick="javascript: window.open (\'logs.vspx?sid=%s&realm=%s&oid=%d\', \'calendar_log_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('U_ID')));
-                            ?>
-                          </td>
-                        </tr>
-                      </table>
-                    </v:template>
-
-                  </v:template>
-
-                  <v:template type="simple" name-to-remove="table" set-to-remove="top">
-                    <table>
-                    </table>
-                  </v:template>
-
-                </v:data-set>
-                </v:template>
-
-                <v:template type="simple" enabled="--case when self.cSubAction in ('upstreamCreate', 'upstreamUpdate') then 1 else 0 end">
-                <v:before-data-bind>
-                  <![CDATA[
-                    declare params any;
-                    params := self.vc_page.vc_event.ve_params;
-
-                    if (isnull (get_keyword ('su_name', params)))
-                    {
-                        declare exit handler for not found goto _end3;
-
-                      if (self.cSubAction = 'upstreamUpdate')
-                      {
-                        declare tmp any;
-
-                        select U_NAME,
-                               U_URI,
-                               U_USER,
-                               U_PASSWORD,
-                               U_INCLUDE,
-                               U_EXCLUDE
-                          into self.vu_name,
-                               self.vu_uri,
-                               self.vu_user,
-                               self.vu_password,
-                               self.vu_include,
-                               self.vu_exclude
-                          from CAL.WA.UPSTREAM
-                         where U_ID = self.vu_id;
-
-                         return;
-                      }
-                      _end3:;
-
-                      self.vu_name := '';
-                      self.vu_uri := '';
-                      self.vu_user := '';
-                      self.vu_password := '';
-                      self.vu_include := '';
-                      self.vu_exclude := '';
-                    }
-                  ]]>
-                </v:before-data-bind>
-                  <div class="new-form-body">
-                    <table cellspacing="0">
-                  <tr>
-                    <th width="30%">
-                      Name
-                    </th>
-                    <td>
-                      <v:text name="su_name" value="--self.vu_name" xhtml_size="60" />
-                    </td>
-                  </tr>
-                  <tr>
-                        <th>
-                      URI
-                    </th>
-                    <td>
-                      <v:text name="su_uri" value="--self.vu_uri" xhtml_size="60" />
-                    </td>
-                  </tr>
-                  <tr>
-                        <th>
-                      User
-                    </th>
-                    <td>
-                      <v:text name="su_user" value="--self.vu_user" xhtml_class="" />
-                    </td>
-                  </tr>
-                  <tr>
-                        <th>
-                      Password
-                    </th>
-                    <td>
-                      <v:text name="su_password" type="password" value="--self.vu_password" xhtml_class="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <v:label for="su_include" value="Include with tags (comma-separated)" />
-                    </th>
-                    <td>
-                      <v:text name="su_include" null-value="''" value="--self.vu_include" xhtml_class="textbox" xhtml_size="60" />
-                      <input type="button" value="Clear" onclick="javascript: document.F1.elements['su_include'].value = ''" class="button" />
-                    </td>
-                  </tr>
-                  <?vsp self.myTags ('su_include'); ?>
-                  <tr>
-                    <th>
-                      <v:label for="su_exclude" value="Exclude with tags (comma-separated)" />
-                    </th>
-                    <td>
-                      <v:text name="su_exclude" null-value="''" value="--self.vu_exclude" xhtml_class="textbox" xhtml_size="60" />
-                      <input type="button" value="Clear" onclick="javascript: document.F1.elements['su_exclude'].value = ''" class="button" />
-                    </td>
-                  </tr>
-                  <?vsp self.myTags ('su_exclude'); ?>
-                </table>
-                  </div>
-                <div class="new-form-footer">
-                    <v:button action="simple" value="--case when self.cSubAction = 'upstreamCreate' then 'Create' else 'Update' end" name="su_save" xhtml_class="form-button">
-                    <v:on-post>
-                      <![CDATA[
-                        declare tmp, params any;
 
                         declare exit handler for SQLSTATE '*'
                         {
@@ -4605,52 +4769,72 @@
                           resignal;
                         };
 
-                        params := self.vc_page.vc_event.ve_params;
+                          rows := trim(self.s_rows.ufl_value);
+                          chars := trim(self.s_chars.ufl_value);
+                          if (get_keyword ('sr_chars', params, '-1') = '0')
+                            chars := '0';
 
-                        self.vu_name     := trim (self.su_name.ufl_value);
-                        self.vu_uri      := trim (self.su_uri.ufl_value);
-                        self.vu_user     := trim (self.su_user.ufl_value);
-                        self.vu_password := trim (self.su_password.ufl_value);
-                        self.vu_include  := trim (self.su_include.ufl_value);
-                        self.vu_exclude  := trim (self.su_exclude.ufl_value);
+                          CAL.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+                          CAL.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 255));
 
-                        CAL.WA.test (self.vu_name, vector('name', 'Upstream Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                        CAL.WA.test (self.vu_uri, vector('name', 'Upstream URI', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                        CAL.WA.test (self.vu_user, vector('name', 'Upstream User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                        CAL.WA.test (self.vu_password, vector('name', 'Upstream Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                        CAL.WA.test (self.vu_include, vector ('name', 'Include Tags', 'class', 'tags'));
-                        tmp := CAL.WA.tags2vector (self.vu_include);
-                        tmp := CAL.WA.vector_unique (tmp);
-                        self.vu_include := CAL.WA.vector2tags (tmp);
-                        CAL.WA.test (self.vu_exclude, vector ('name', 'Exclude Tags', 'class', 'tags'));
-                        tmp := CAL.WA.tags2vector (self.vu_exclude);
-                        tmp := CAL.WA.vector_unique (tmp);
-                        self.vu_exclude := CAL.WA.vector2tags (tmp);
+                          conv := cast (get_keyword ('conv', self.settings, '0') as integer);
+                          s_conv := cast (get_keyword ('s_conv', params, '0') as integer);
+                          s_conv_init := cast (get_keyword ('s_conv_init', params, '0') as integer);
 
-                        if (self.cSubAction = 'upstreamCreate')
+                          self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
+                          self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
+                          self.settings := CAL.WA.set_keyword ('atomVersion', self.settings, self.s_atomVersion.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('defaultView', self.settings, self.s_defaultView.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
+                          self.settings := CAL.WA.set_keyword ('showTasks', self.settings, self.s_showTasks.ufl_selected);
+
+                          self.settings := CAL.WA.set_keyword ('conv', self.settings, s_conv);
+                          self.settings := CAL.WA.set_keyword ('conv_init', self.settings, s_conv_init);
+
+                          self.settings := CAL.WA.set_keyword ('event_E_UPDATED',  self.settings, self.s_e_column_1.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('event_E_CREATED',  self.settings, self.s_e_column_2.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('event_E_LOCATION', self.settings, self.s_e_column_3.ufl_selected);
+
+                          self.settings := CAL.WA.set_keyword ('task_E_STATUS',    self.settings, self.s_t_column_1.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_PRIORITY',  self.settings, self.s_t_column_5.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_START',     self.settings, self.s_t_column_6.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_END',       self.settings, self.s_t_column_7.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_COMPLETED', self.settings, self.s_t_column_2.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_UPDATED',   self.settings, self.s_t_column_3.ufl_selected);
+                          self.settings := CAL.WA.set_keyword ('task_E_CREATED',   self.settings, self.s_t_column_4.ufl_selected);
+
+                          insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
+                            values(self.domain_id, serialize (self.settings), self.account_id);
+                          commit work;
+
+                          -- CAL.WA.domain_gems_create (self.domain_id, self.account_id);
+                      		if (CAL.WA.discussion_check ())
                         {
-                          insert into CAL.WA.UPSTREAM (U_DOMAIN_ID, U_NAME, U_URI, U_USER, U_PASSWORD, U_INCLUDE, U_EXCLUDE)
-                            values (self.domain_id, self.vu_name, self.vu_uri, self.vu_user, self.vu_password, self.vu_include, self.vu_exclude);
-                        } else {
-                          update CAL.WA.UPSTREAM
-                             set U_NAME = self.vu_name,
-                                 U_URI = self.vu_uri,
-                                 U_USER = self.vu_user,
-                                 U_PASSWORD = self.vu_password,
-                                 U_INCLUDE = self.vu_include,
-                                 U_EXCLUDE = self.vu_exclude
-                           where U_ID = self.vu_id;
+                					  CAL.WA.nntp_update (self.domain_id, null, null, conv, s_conv);
+                     				if (s_conv and s_conv_init)
+                					    CAL.WA.nntp_fill (self.domain_id);
                         }
 
-                        self.cSubAction := 'upstreamBrowse';
+                          self.initData ();
+                          self.cAction := 'browse';
+                          self.cSubAction := '';
+
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
                   </v:button>
-                    <v:button action="simple" value="Cancel" name="su_cancel" xhtml_class="form-button">
+                    <v:button action="simple" value="Clear" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
-                        self.cSubAction := 'upstreamBrowse';
+                          delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
+                          CAL.WA.nntp_update (self.domain_id, null, null, 1, 0);
+
+                          self.settings := vector ();
+                          self.initData ();
+
                 self.vc_data_bind(e);
               ]]>
             </v:on-post>
@@ -4658,26 +4842,11 @@
         </div>
                 </v:template>
 
-                <vm:if test="self.cSubAction in ('publishBrowse', 'subscribeBrowse')">
-                  <v:button value="--'New'" action="simple" xhtml_class="button">
-                    <v:after-data-bind>
-                      <![CDATA[
-                        if (self.cSubAction = 'publishBrowse')
-                        {
-                          control.ufl_value := 'New Publish';
-                        } else {
-                          control.ufl_value := 'New Subscription';
-                        }
-                      ]]>
-                    </v:after-data-bind>
+                <v:template type="simple" enabled="--case when self.cSubAction = 'upstreamBrowse' then 1 else 0 end">
+                  <v:button value="--'New Upstream'" action="simple" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
-                        if (self.cSubAction = 'publishBrowse')
-                        {
-                          self.cSubAction := 'publishCreate';
-                        } else {
-                          self.cSubAction := 'subscribeCreate';
-                        }
+                        self.cSubAction := 'upstreamCreate';
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -4689,22 +4858,16 @@
 
                         for (N := 0; N < length(e.ve_params); N := N + 4)
                           if (e.ve_params[N] = 'cb_item')
-                            delete from CAL.WA.EXCHANGE where EX_ID = cast (e.ve_params[N+1] as integer);
+                            delete from CAL.WA.UPSTREAM where U_ID = cast (e.ve_params[N+1] as integer);
 
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:data-source name="dsrc_exchanges" expression-type="sql" nrows="0" initial-offset="0">
-                    <v:before-data-bind>
-                      <![CDATA[
-                        control.ds_sql := sprintf ('select * from CAL.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.cSubAction = 'publishBrowse' then 0 else 1 end);
-                      ]]>
-                    </v:before-data-bind>
-                  </v:data-source>
+                  <v:data-set name="ds_upstreams" sql="select * from CAL.WA.UPSTREAM where U_DOMAIN_ID = :p0 order by U_NAME" nrows="0" scrollable="1">
+                    <v:param name="p0" value="--self.domain_id" />
 
-                  <v:data-set name="ds_exchanges" data-source="self.dsrc_exchanges" scrollable="1">
-                    <v:template name="ds_exchanges_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                    <v:template name="ds_upstreams_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                       <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
                         <thead class="sortHeader">
                           <tr>
@@ -4712,68 +4875,51 @@
                               <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                             </th>
                             <th style="text-align: left;">Name</th>
-                            <th style="text-align: left;" width="5%" nowrap="nowrap">Executed On</th>
-                            <th style="text-align: left;" width="5%" nowrap="nowrap">Status</th>
-                            <th style="text-align: left;" width="5%" nowrap="nowrap">Action</th>
+                            <th style="text-align: left;">Path</th>
+                            <th style="text-align: left;">In Queue</th>
+                            <th style="text-align: left;" width="5%">Action</th>
                           </tr>
                         </thead>
                       </table>
                     </v:template>
-                    <v:template name="ds_exchanges_repeat" type="repeat">
+                    <v:template name="ds_upstreams_repeat" type="repeat">
 
                       <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
                         <table>
                         </table>
                       </v:template>
 
-                      <v:template name="ds_exchanges_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <v:template name="ds_upstreams_browse" type="browse" name-to-remove="table" set-to-remove="both">
                         <table>
                           <tr>
                             <td align="center" valign="top">
-                              <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('EX_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
+                              <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('U_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
                             </td>
                             <td nowrap="nowrap">
-                              <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EX_NAME')" />
+                              <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" />
                             </td>
                             <td nowrap="nowrap">
-                              <v:label value="--CAL.WA.dt_datetimestring ((control.vc_parent as vspx_row_template).te_column_value('EX_EXEC_TIME'), self.cDateFormat, self.cTimeFormat)" />
+                              <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_URI')" />
                             </td>
                             <td nowrap="nowrap">
                         		  <?vsp
-                        		    if ((control as vspx_row_template).te_column_value('EX_EXEC_LOG') is not null)
-                        		    {
-                        		      http (sprintf ('<a href="#" onclick="javascript: window.open (\'message.vspx?msg=%U\', \'calendar_message\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');"><img src="/ods/images/icons/stop_16.png" border="0"/></a>', (control as vspx_row_template).te_column_value('EX_EXEC_LOG')));
-                        		    }
-                        		    else
-                        		    {
-                        		      http ('OK');
-                        		    }
+                                http (cast ((select count(*) from CAL.WA.UPSTREAM_EVENT where UE_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')) as varchar));
                         		  ?>
                             </td>
                             <td nowrap="nowrap">
                               <v:button value="Edit" action="simple" xhtml_class="button">
                                 <v:on-post>
                                   <![CDATA[
-                                    self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
-                                    if (self.cSubAction = 'publishBrowse')
-                                    {
-                                      self.cSubAction := 'publishUpdate';
-                                    } else {
-                                      self.cSubAction := 'subscribeUpdate';
-                                    }
+                                    self.vu_id := (control.vc_parent as vspx_row_template).te_column_value('U_ID');
+                                    self.cSubAction := 'upstreamUpdate';
                                     self.vc_data_bind(e);
                                   ]]>
                                 </v:on-post>
                               </v:button>
-                              <v:button value="Exec" action="simple" xhtml_class="button">
-                                <v:on-post>
-                                  <![CDATA[
-                                    self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
-                                    CAL.WA.exchange_exec (self.ve_id);
-                                    self.vc_data_bind(e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+                              <?vsp
+                                if ((select count(*) from CAL.WA.UPSTREAM_LOG where UL_UPSTREAM_ID = (control as vspx_row_template).te_column_value('U_ID')))
+                                  http (sprintf ('<input type="button" value="Error Log" onclick="javascript: window.open (\'logs.vspx?sid=%s&realm=%s&oid=%d\', \'calendar_log_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('U_ID')));
+                              ?>
                             </td>
                           </tr>
                         </table>
@@ -4787,46 +4933,47 @@
                     </v:template>
 
                   </v:data-set>
-                </vm:if>
+                </v:template>
 
-                <vm:if test="self.cSubAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate')">
+                <v:template type="simple" enabled="--case when self.cSubAction in ('upstreamCreate', 'upstreamUpdate') then 1 else 0 end">
                   <v:before-data-bind>
                     <![CDATA[
                       declare params any;
                       params := self.vc_page.vc_event.ve_params;
 
-                      if (isnull (get_keyword ('exc_name', params)))
+                      if (isnull (get_keyword ('su_name', params)))
                       {
-                        declare exit handler for not found goto _end;
+                        declare exit handler for not found goto _end3;
 
-                        if (self.cSubAction in  ('publishUpdate', 'subscribeUpdate'))
+                        if (self.cSubAction = 'upstreamUpdate')
                         {
-                          select EX_TYPE,
-                                 EX_NAME,
-                                 EX_UPDATE_TYPE,
-                                 EX_UPDATE_PERIOD,
-                                 EX_UPDATE_FREQ,
-                                 deserialize (EX_OPTIONS)
-                            into self.ve_type,
-                                 self.ve_name,
-                                 self.ve_update_type,
-                                 self.ve_update_period,
-                                 self.ve_update_freq,
-                                 self.ve_options
-                            from CAL.WA.EXCHANGE
-                           where EX_ID = self.ve_id;
+                          declare tmp any;
+
+                          select U_NAME,
+                                 U_URI,
+                                 U_USER,
+                                 U_PASSWORD,
+                                 U_INCLUDE,
+                                 U_EXCLUDE
+                            into self.vu_name,
+                                 self.vu_uri,
+                                 self.vu_user,
+                                 self.vu_password,
+                                 self.vu_include,
+                                 self.vu_exclude
+                            from CAL.WA.UPSTREAM
+                           where U_ID = self.vu_id;
 
                            return;
                         }
-                      _end:;
+                      _end3:;
 
-                        self.ve_type := case when (self.cSubAction = 'publishCreate') then 0 else 1 end;
-                        self.ve_id := null;
-                        self.ve_name := '';
-                        self.ve_update_type := case when (self.cSubAction = 'publishCreate') then 1 else 2 end;
-                        self.ve_update_period := case when (self.cSubAction = 'publishCreate') then null else 'hourly' end;
-                        self.ve_update_freq := case when (self.cSubAction = 'publishCreate') then null else 1 end;
-                        self.ve_options := vector ();
+                        self.vu_name := '';
+                        self.vu_uri := '';
+                        self.vu_user := '';
+                        self.vu_password := '';
+                        self.vu_include := '';
+                        self.vu_exclude := '';
                       }
                     ]]>
                   </v:before-data-bind>
@@ -4834,119 +4981,18 @@
                     <table cellspacing="0">
                       <tr>
                         <th width="30%">
-                          <v:label for="exc_name" value="Name" />
+                          Name
                         </th>
                         <td>
-                          <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th rowspan="<?V case when (self.cSubAction in ('publishCreate', 'publishUpdate')) then 3 else 2 end ?>" valign="top">
-                          Refresh type
-                        </th>
-                        <td nowrap="nowarap">
-                          <label>
-                            <v:radio-button name="exc_update_type_0" group-name="exc_update_type" value="0">
-                              <v:before-render>
-                                <![CDATA[
-                                  control.ufl_selected := either (lte (self.ve_update_type, 0), 1, 0);
-                                ]]>
-                              </v:before-render>
-                            </v:radio-button>
-                            <b>manually</b>
-                          </label>
-                        </td>
-                      </tr>
-                      <vm:if test="self.cSubAction in ('publishCreate', 'publishUpdate')">
-                        <tr>
-                          <td nowrap="nowarap">
-                            <label>
-                              <v:radio-button name="exc_update_type_1" group-name="exc_update_type" value="1">
-                                <v:before-render>
-                                  <![CDATA[
-                                    control.ufl_selected := either (equ (self.ve_update_type, 1), 1, 0);
-                                  ]]>
-                                </v:before-render>
-                              </v:radio-button>
-                              <b>after any entry is changed</b>
-                            </label>
-                          </td>
-                        </tr>
-                      </vm:if>
-                      <tr>
-                        <td nowrap="nowarap">
-                          <label>
-                            <v:radio-button name="exc_update_type_2" group-name="exc_update_type" value="2">
-                              <v:before-render>
-                                <![CDATA[
-                                  control.ufl_selected := either (equ (self.ve_update_type, 2), 1, 0);
-                                ]]>
-                              </v:before-render>
-                            </v:radio-button>
-                            <b>every</b>
-                          </label>
-                          <v:text name="exc_update_freq" value="--self.ve_update_freq" xhtml_size="2" />
-                          <v:select-list name="exc_update_period">
-                            <v:item value="hourly" name="hour(s)" />
-                            <v:item value="dayly" name="day(s)" />
-                            <v:before-data-bind>
-                              <![CDATA[
-                                control.ufl_value := self.ve_update_period;
-                              ]]>
-                            </v:before-data-bind>
-                          </v:select-list>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colspan="2" class="new-section">
-                          <?V case when (self.cSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th rowspan="2" valign="top">
-                          <?V case when (self.cSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
-                        </th>
-                        <td nowrap="nowarap">
-                          <label>
-                            <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
-                              <v:before-render>
-                                <![CDATA[
-                                  control.ufl_selected := either (lte (get_keyword ('type', self.ve_options, 1), 1), 1, 0);
-                                ]]>
-                              </v:before-render>
-                            </v:radio-button>
-                            <b>WebDAV Path</b>
-                          </label>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td nowrap="nowarap">
-                          <label>
-                            <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
-                              <v:before-render>
-                                <![CDATA[
-                                  control.ufl_selected := either (equ (get_keyword ('type', self.ve_options, 1), 2), 1, 0);
-                                ]]>
-                              </v:before-render>
-                            </v:radio-button>
-                            <b>URL</b>
-                          </label>
+                          <v:text name="su_name" value="--self.vu_name" xhtml_size="60" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          WebDAV Path / URL
+                          URI
                         </th>
                         <td>
-                          <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
-                          <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
-                            <v:after-data-bind>
-                              <![CDATA[
-                                control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
-                                control.vc_add_attribute ('style', 'display: ' || case when get_keyword ('type', self.ve_options, 1) = 1 then '' else 'none' end);
-                              ]]>
-                            </v:after-data-bind>
-                          </v:button>
+                          <v:text name="su_uri" value="--self.vu_uri" xhtml_size="60" />
                         </td>
                       </tr>
                       <tr>
@@ -4954,7 +5000,7 @@
                           User
                         </th>
                         <td>
-                          <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" />
+                          <v:text name="su_user" value="--self.vu_user" xhtml_class="" />
                         </td>
                       </tr>
                       <tr>
@@ -4962,39 +5008,35 @@
                           Password
                         </th>
                         <td>
-                          <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" />
+                          <v:text name="su_password" type="password" value="--self.vu_password" xhtml_class="" />
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="2" class="new-section">
-                          Options
-                        </td>
-                      </tr>
-                      <tr>
-                        <th />
+                        <th>
+                          <v:label for="su_include" value="Include with tags (comma-separated)" />
+                        </th>
                         <td>
-                          <label>
-                            <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', self.ve_options, 1)" />
-                            Events
-                          </label>
+                          <v:text name="su_include" null-value="''" value="--self.vu_include" xhtml_class="textbox" xhtml_size="60" />
+                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['su_include'].value = ''" class="button" />
                         </td>
                       </tr>
+                      <?vsp self.myTags ('su_include'); ?>
                       <tr>
-                        <th />
+                        <th>
+                          <v:label for="su_exclude" value="Exclude with tags (comma-separated)" />
+                        </th>
                         <td>
-                          <label>
-                            <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', self.ve_options, 1)" />
-                            Tasks
-                          </label>
+                          <v:text name="su_exclude" null-value="''" value="--self.vu_exclude" xhtml_class="textbox" xhtml_size="60" />
+                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['su_exclude'].value = ''" class="button" />
                         </td>
                       </tr>
+                      <?vsp self.myTags ('su_exclude'); ?>
                     </table>
                   </div>
                   <div class="new-form-footer">
-                    <v:button action="simple" value="--case when self.cSubAction in ('publishCreate', 'subscribeCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
+                    <v:button action="simple" value="--case when self.cSubAction = 'upstreamCreate' then 'Create' else 'Update' end" name="su_save" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
-                          declare _type, _name, _user, _password, _events, _tasks any;
                           declare tmp, params any;
 
                           declare exit handler for SQLSTATE '*'
@@ -5007,77 +5049,59 @@
                             }
                             resignal;
                           };
+
                           params := self.vc_page.vc_event.ve_params;
 
+                          self.vu_name     := trim (self.su_name.ufl_value);
+                          self.vu_uri      := trim (self.su_uri.ufl_value);
+                          self.vu_user     := trim (self.su_user.ufl_value);
+                          self.vu_password := trim (self.su_password.ufl_value);
+                          self.vu_include  := trim (self.su_include.ufl_value);
+                          self.vu_exclude  := trim (self.su_exclude.ufl_value);
 
-                          self.ve_name := trim (self.exc_name.ufl_value);
-                          self.ve_update_freq := null;
-                          self.ve_update_period := null;
-                          if (self.exc_update_type_0.ufl_selected)
-                          {
-                            self.ve_update_type := 0;
-                          }
-                          else if (self.exc_update_type_1.ufl_selected)
-                          {
-                            self.ve_update_type := 1;
-                          }
-                          else if (self.exc_update_type_2.ufl_selected)
-                          {
-                            self.ve_update_type := 2;
-                            self.ve_update_freq := self.exc_update_freq.ufl_value;
-                            self.ve_update_period := self.exc_update_period.ufl_value;
-                          }
-                          _type := 0;
-                          if (self.exc_options_type_1.ufl_selected)
-                          {
-                            _type := 1;
-                          }
-                          else if (self.exc_options_type_2.ufl_selected)
-                          {
-                            _type := 2;
-                          }
-                          _name := trim (self.exc_options_name.ufl_value);
-                          _user := trim (self.exc_options_user.ufl_value);
-                          _password := self.exc_options_password.ufl_value;
-                          _events := case when self.exc_options_events.ufl_selected then 1 else 0 end;
-                          _tasks := case when self.exc_options_events.ufl_selected then 1 else 0 end;
-                          self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'events', _events, 'tasks', _tasks);
+                          CAL.WA.test (self.vu_name, vector('name', 'Upstream Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          CAL.WA.test (self.vu_uri, vector('name', 'Upstream URI', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          CAL.WA.test (self.vu_user, vector('name', 'Upstream User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          CAL.WA.test (self.vu_password, vector('name', 'Upstream Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          CAL.WA.test (self.vu_include, vector ('name', 'Include Tags', 'class', 'tags'));
+                          tmp := CAL.WA.tags2vector (self.vu_include);
+                          tmp := CAL.WA.vector_unique (tmp);
+                          self.vu_include := CAL.WA.vector2tags (tmp);
+                          CAL.WA.test (self.vu_exclude, vector ('name', 'Exclude Tags', 'class', 'tags'));
+                          tmp := CAL.WA.tags2vector (self.vu_exclude);
+                          tmp := CAL.WA.vector_unique (tmp);
+                          self.vu_exclude := CAL.WA.vector2tags (tmp);
 
-                          CAL.WA.test (self.ve_name, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          if (self.ve_update_type = 2)
-                            CAL.WA.test (self.ve_update_freq, vector ('name', 'Frequency', 'class', 'integer', 'minValue', 1, 'maxValue', 30));
-                          CAL.WA.test (_name, vector('name', 'Resource Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-
-                          self.ve_update_freq := cast (self.ve_update_freq as integer);
-                          if (self.cSubAction in ('publishCreate', 'subscribeCreate'))
+                          if (self.cSubAction = 'upstreamCreate')
                           {
-                            insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
-                              values (self.domain_id, self.ve_type, self.ve_name, self.ve_update_type, self.ve_update_period, self.ve_update_freq, serialize (self.ve_options));
+                            insert into CAL.WA.UPSTREAM (U_DOMAIN_ID, U_NAME, U_URI, U_USER, U_PASSWORD, U_INCLUDE, U_EXCLUDE)
+                              values (self.domain_id, self.vu_name, self.vu_uri, self.vu_user, self.vu_password, self.vu_include, self.vu_exclude);
                           } else {
-                            update CAL.WA.EXCHANGE
-                               set EX_NAME = self.ve_name,
-                                   EX_UPDATE_TYPE = self.ve_update_type,
-                                   EX_UPDATE_PERIOD = self.ve_update_period,
-                                   EX_UPDATE_FREQ = self.ve_update_freq,
-                                   EX_OPTIONS = serialize (self.ve_options)
-                             where EX_ID = self.ve_id;
+                            update CAL.WA.UPSTREAM
+                               set U_NAME = self.vu_name,
+                                   U_URI = self.vu_uri,
+                                   U_USER = self.vu_user,
+                                   U_PASSWORD = self.vu_password,
+                                   U_INCLUDE = self.vu_include,
+                                   U_EXCLUDE = self.vu_exclude
+                             where U_ID = self.vu_id;
                           }
 
-                          self.cSubAction := case when (self.cSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                          self.cSubAction := 'upstreamBrowse';
                           self.vc_data_bind(e);
                         ]]>
                       </v:on-post>
                     </v:button>
-                    <v:button action="simple" value="Cancel" name="exc_cancel" xhtml_class="form-button">
+                    <v:button action="simple" value="Cancel" name="su_cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
-                          self.cSubAction := case when (self.cSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                          self.cSubAction := 'upstreamBrowse';
                           self.vc_data_bind(e);
                         ]]>
                       </v:on-post>
                     </v:button>
                   </div>
-                </vm:if>
+                </v:template>
 
                 <v:template type="simple" enabled="--case when self.cSubAction = 'grantBrowse' then 1 else 0 end">
                   <v:button value="--'Share'" action="simple" xhtml_class="button">

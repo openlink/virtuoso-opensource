@@ -245,8 +245,8 @@
   <!--=========================================================================-->
   <xsl:template match="vm:event">
     <div>
-      <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 78px;"/>
-      <input type="button" value="New Task"  onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 78px;"/>
+      <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 80px;"/>
+      <input type="button" value="New Task"  onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 80px;"/>
       <br style="clear: both;" />
     </div>
   </xsl:template>
@@ -392,6 +392,9 @@
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
       <a href="#" onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
       <a href="#" onclick="javascript: cExchange('export'); return false;" title="Export" class="gems"><img src="image/dwnld_16.png" border="0" alt="Export" /> Export</a>
+      <?vsp http ('<div style="border-top: 1px solid #7f94a5;"></div>'); ?>
+      <a href="#" onclick="javascript: cExchange('subscribeBrowse'); return false;" title="Import" class="gems">Manage Subscriptions</a>
+      <a href="#" onclick="javascript: cExchange('publishBrowse'); return false;" title="Export" class="gems">Manage Publications</a>
     </div>
   </xsl:template>
 
