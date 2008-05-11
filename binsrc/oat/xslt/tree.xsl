@@ -78,7 +78,7 @@
 		<title>XML tree</title>
 		<link rel="stylesheet" href="style.css" type="text/css" />
 	</head>
-	<body onload="init()">
+	<body>
 
 	<ul id="tree">
 		<li>

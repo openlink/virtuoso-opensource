@@ -33,6 +33,7 @@ OAT.WebDav = {
 		imageExt:'png',
 		confirmOverwrite:true,
 		isDav:true,
+		connectionHeaders:{},
 		extensionFilters:[], /* ['id','ext','my extension description','content type'],... */
 		callback:function(path,file,content){}, /* what to do after selection */
 		dataCallback:function(file,extID){return "";} /* data provider for saving. when false, nothing is saved */
@@ -118,6 +119,7 @@ OAT.WebDav = {
 				auth:OAT.AJAX.AUTH_BASIC,
 				user:this.options.user,
 				password:this.options.pass,
+				headers:this.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
@@ -158,6 +160,7 @@ OAT.WebDav = {
 				auth:OAT.AJAX.AUTH_BASIC,
 				user:this.options.user,
 				password:this.options.pass,
+				headers:this.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
@@ -195,6 +198,7 @@ OAT.WebDav = {
 			user:OAT.WebDav.options.user,
 			password:OAT.WebDav.options.pass,
 			type:OAT.AJAX.TYPE_TEXT,
+			headers:OAT.WebDav.options.connectionHeaders,
 			onerror:error
 		}
 
@@ -456,8 +460,12 @@ OAT.WebDav = {
 				'	<virtowneruid xmlns="http://www.openlinksw.com/virtuoso/webdav/1.0/"/>' + 
 				'	<virtownergid xmlns="http://www.openlinksw.com/virtuoso/webdav/1.0/"/>' + 
 				' </prop></propfind>';
+
+		var headers = OAT.WebDav.options.connectionHeaders;
+		headers.Depth = 1;
+
 		var o = {
-			headers:{Depth:1},
+			headers:headers,
 			auth:OAT.AJAX.AUTH_BASIC,
 			user:OAT.WebDav.options.user,
 			password:OAT.WebDav.options.pass,
@@ -904,8 +912,12 @@ OAT.WebDav = {
 				'<propfind xmlns="DAV:"><prop>' +
 				'	<virtpermissions xmlns="http://www.openlinksw.com/virtuoso/webdav/1.0/"/>' + 
 				' </prop></propfind>';
+
+		var headers = OAT.WebDav.options.connectionHeaders;
+		headers.Depth = 1;
+
 		var o = {
-			headers:{Depth:1},
+			headers:headers,
 			auth:OAT.AJAX.AUTH_BASIC,
 			user:OAT.WebDav.options.user,
 			password:OAT.WebDav.options.pass,

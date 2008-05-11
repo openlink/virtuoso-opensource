@@ -68,7 +68,7 @@
 			}		</style>
 		<title>XML tree</title>
 	</head>
-	<body onload="init()">
+	<body>
 
 	<div id="grid"></div>
 	

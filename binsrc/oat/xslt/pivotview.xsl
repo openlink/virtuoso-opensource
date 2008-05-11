@@ -172,7 +172,7 @@
 			<title>Pivot table</title>
 		</head>
 		
-		<body onload="init()">
+		<body>
 			<select id="pivot_agg" onchange="pivot_agg()"></select>
 			<div id="page"></div>
 			<div id="ajax_alert">

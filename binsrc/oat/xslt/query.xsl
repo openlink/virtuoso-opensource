@@ -122,7 +122,7 @@
 		</style>
 		<title>Query results</title>
 	</head>
-	<body onload="init()">
+	<body>
 
 		<div id="grid" style="position:relative;"></div>
 		<div id="nav" style="position:relative;"></div>
