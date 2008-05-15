@@ -33,6 +33,7 @@
     <vm:variable name="user_sid" type="varchar" default="null" persist="page"/>
     <vm:variable name="user_id" type="int" default="0" persist="temp"/>
     <vm:variable name="app_name" type="varchar" default="null" persist="page"/>
+    <vm:variable name="app_id" type="int" default="null" persist="page" param-name="app_id"/>
     <vm:variable name="message" type="varchar" default="''" persist="page"/>
     <vm:variable name="activated" type="int" default="0" persist="page"/>
     <vm:variable name="member_type" type="int" default="0" persist="temp"/>
@@ -44,6 +45,8 @@
           self.user_name := (select VS_UID from VSPX_SESSION where VS_SID = self.user_sid and VS_REALM = 'wa');
           self.user_id := (select U_ID from SYS_USERS where U_NAME = self.user_name);
           self.app_name := get_keyword('app', self.vc_event.ve_params);
+	  if (self.app_name is null)
+	    self.app_name := (select WAI_NAME from WA_INSTANCE where WAI_ID = self.app_id);
           self.member_type := (select top 1 WAM_MEMBER_TYPE from WA_MEMBER where WAM_USER = self.user_id and WAM_INST = self.app_name);
           if(self.user_name is null) self.activated := -1;
         ]]>

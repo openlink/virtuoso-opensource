@@ -20,11 +20,11 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-create procedure WA_GET_EMAIL_TEMPLATE(in name varchar)
+create procedure WA_GET_EMAIL_TEMPLATE(in name varchar, in dav int := 0)
 {
   declare ret any;
 
-  if (http_map_get ('is_dav') = 0)
+  if (http_map_get ('is_dav') = 0 and dav = 0)
   {
     ret := file_to_string (http_root () || '/wa/tmpl/' || name);
   }
@@ -1051,9 +1051,9 @@ closed:
     -- notify user by e-mail
     declare _mail_body, _url, _sid any;
     _sid := connection_get('__sid');
-    _url := sprintf('%s/conf_app.vspx?app=%U&sid=%s&realm=wa',
+    _url := sprintf('%s/conf_app.vspx?app_id=%d&sid=%s&realm=wa',
                     wa_link (1),
-                    self.wa_name,
+                    _wai_id,
                     _sid);
     _mail_body := WA_GET_EMAIL_TEMPLATE('WS_INV_TEMPLATE');
     -- WA_MAIL_TEMPLATES(templ, web_app, user_name, app_action_url)
