@@ -196,6 +196,78 @@ read_double (dk_session_t *session)
 }
 
 
+float
+buf_to_float (char * buf)
+{
+#ifdef _IEEE_FLOATS
+# ifdef WORDS_BIGENDIAN
+  /* ieee numbers, big endian */
+  float res;
+
+  memcpy (&res, buf, sizeof (res));
+  return res;
+
+# else /* WORDS_BIGENDIAN */
+  /* ieee numbers, little endian */
+  union
+    {
+      uint32 l;
+      float f;
+    } ds;
+  ds.l = LONG_REF_NA (buf);
+  return ds.f;
+# endif
+
+#else /* _IEEE_FLOATS */
+  /* unusual numbers */
+  unsigned char buf2[4];
+  float res;
+  XDR x;
+  memcpy  (buf2, buf, 4);
+  xdrmem_create (&x, (caddr_t) buf2, sizeof (buf2), XDR_DECODE);
+  xdr_float (&x, &res);
+  return res;
+#endif
+}
+
+
+double
+buf_to_double (char * buf)
+{
+#ifdef _IEEE_FLOATS
+# ifdef WORDS_BIGENDIAN
+  /* ieee numbers, big endian */
+  double res;
+  memcpy (&res, buf, sizeof (double));
+  return res;
+
+# else /* WORDS_BIGENDIAN */
+  /* ieee numbers, little endian */
+  union
+    {
+      uint32 l[2];
+      double d;
+    } ds;
+  ds.l[1] = LONG_REF_NA (buf + 1);
+  ds.l[0] = LONG_REF_NA (buf + 4);
+  return ds.d;
+# endif
+
+#else /* _IEEE_FLOATS */
+  /* unusual numbers */
+  unsigned char buf2[8];
+  double res;
+  XDR x;
+
+  memcpy (buf2, buf, 8);
+  xdrmem_create (&x, (caddr_t) buf, sizeof (buf), XDR_DECODE);
+  xdr_double (&x, &res);
+  return res;
+#endif
+}
+
+
+
 /*
  *  read_object (dk_session_t *session)
  *
@@ -745,6 +817,37 @@ print_raw_double (double d, dk_session_t *session)
   xdrmem_create (&x, (char *) buf, sizeof (buf), XDR_ENCODE);
   xdr_double (&x, &d);
   session_buffered_write (session, (char *) buf, sizeof (buf));
+#endif
+}
+
+
+void
+double_to_buf (double d, char * buf)
+{
+#ifdef _IEEE_FLOATS
+# ifdef WORDS_BIGENDIAN
+  /* ieee numbers, big endian */
+  memcpy (buf, &d, sizeof (d));
+# else /* WORDS_BIGENDIAN */
+  /* ieee numbers, little endian */
+  union
+    {
+      uint32 l[2];
+      double d;
+    } ds;
+  ds.d = d;
+  LONG_SET_NA (buf, ds.l[1]);
+  LONG_SET_NA (buf + 4, ds.l[0]);
+# endif
+
+#else /* _IEEE_FLOATS */
+  /* unusual numbers */
+  unsigned char buf2[8];
+  XDR x;
+
+  xdrmem_create (&x, (char *) buf, sizeof (buf2), XDR_ENCODE);
+  xdr_double (&x, &d);
+  memcpy (buf, buf2, sizeof (double));
 #endif
 }
 

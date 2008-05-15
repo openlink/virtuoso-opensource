@@ -811,4 +811,9 @@ extern void dkbox_terminate_module (void);
 /* values for box_flaggs */
 #define BF_IRI 1
 
+double buf_to_double (char * buf);
+float buf_to_float (char * buf);
+void double_to_buf (double d, char * buf);
+
+
 #endif
