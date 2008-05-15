@@ -1307,6 +1307,12 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
   return 0; /* Never reached, to keep compiler happy */
 }
 
+#define SPAR_FUNCALL_ARG_IS_LONG(arg) ( \
+  (SPAR_QM_SQL_FUNCALL == SPART_TYPE (arg)) || \
+  (SPAR_FUNCALL == SPART_TYPE (arg)) || \
+  (((DV_STRING == DV_TYPE_OF (arg)) || (DV_UNAME == DV_TYPE_OF (arg))) && \
+    (40 < box_length (arg)) ) )
+
 void
 ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
 {
@@ -3110,7 +3116,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       }
     case SPAR_FUNCALL:
       {
-        int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        int curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
 	ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname);
         if (native != needed)
@@ -3141,10 +3147,6 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             ssg_putchar (')');
             goto print_asname;
           }
-        bigtext =
-          ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
-           (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
-           (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
@@ -3157,11 +3159,14 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
+            SPART *arg = tree->_.funcall.argtrees[arg_ctr];
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
-            if (bigtext) ssg_newline (0); else ssg_putchar (' ');
-            ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[arg_ctr], argtype, NULL_ASNAME);
+            curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
+            if (curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
+            ssg_print_scalar_expn (ssg, arg, argtype, NULL_ASNAME);
+            prev_arg_is_long = curr_arg_is_long;
           }
         ssg->ssg_indent--;
         ssg_putchar (')');
@@ -5641,10 +5646,6 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
   {
     case SPAR_QM_SQL_FUNCALL:
       {
-#define QM_SQL_ARG_IS_LONG(arg) ( \
-  (SPAR_QM_SQL_FUNCALL == SPART_TYPE (arg)) || \
-  (((DV_STRING == DV_TYPE_OF (arg)) || (DV_STRING == DV_TYPE_OF (arg))) && \
-    (40 < box_length (arg)) ) )
         int ctr, prev_was_long, fixedlen, namedlen;
         prev_was_long = 0;
         ssg_puts (tree->_.qm_sql_funcall.fname);
@@ -5654,7 +5655,7 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
         for (ctr = 0; ctr < fixedlen; ctr++)
           {
             SPART *arg = tree->_.qm_sql_funcall.fixed[ctr];
-            int curr_is_long = QM_SQL_ARG_IS_LONG(arg);
+            int curr_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
             if (0 != ctr)
               ssg_puts (", ");
             if (curr_is_long || prev_was_long)
@@ -5675,7 +5676,7 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
             for (ctr = 0; ctr < namedlen; ctr++)
               {
                 SPART *arg = tree->_.qm_sql_funcall.named[ctr];
-                int curr_is_long = QM_SQL_ARG_IS_LONG(arg);
+                int curr_is_long = SPAR_FUNCALL_ARG_IS_LONG(arg);
                 if (0 != ctr)
                   ssg_puts (", ");
                 if (curr_is_long || prev_was_long)
@@ -5689,7 +5690,6 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
         ssg->ssg_indent--;
         ssg_puts (" )");
         break;
-#undef QM_SQL_ARG_IS_LONG
       }
     case SPAR_LIT: case SPAR_QNAME:
       if (NULL == tree)
