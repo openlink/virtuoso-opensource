@@ -217,6 +217,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_qm_deleted;		/*!< Backstack of deleted JS objects, class IRI pushed first, instance IRI pushed after so it's above) */
     caddr_t		spare_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
     int			spare_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
+    caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
     sparp_trav_state_t spare_saved_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Saved state of \c sparp_stss, used when a subquery is entered */
     int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stss is in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
   } sparp_env_t;

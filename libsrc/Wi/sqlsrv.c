@@ -678,6 +678,8 @@ client_connection_reset (client_connection_t * cli)
       PrpcSessionFree (cli->cli_outp_worker);
       cli->cli_outp_worker = NULL;
     }
+  if (NULL != cli->cli_ns_2dict)
+    xml_ns_2dict_clean (cli->cli_ns_2dict);
 }
 
 

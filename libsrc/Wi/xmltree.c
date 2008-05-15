@@ -43,6 +43,7 @@
 #include "math.h"
 #include "text.h"
 #include "bif_xper.h"
+#include "security.h"
 #include "srvmultibyte.h"
 #include "xml_ecm.h"
 #include "http.h"
@@ -9607,7 +9608,207 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 }
 
-xml_doc_cache_t *xml_doc_cache_alloc (void *owner)
+xml_ns_2dict_t *xml_global_ns_2dict = NULL;
+dk_mutex_t *xml_global_ns_2dict_mutex = NULL;
+
+xml_ns_2dict_t *
+xml_global_ns_2dict_get (caddr_t *qst, const char *fname)
+{
+  if ((NULL != fname) && !sec_bif_caller_is_dba ((query_instance_t *)qst))
+    sqlr_new_error ("42000", "SR585", "Function %.300s() is restricted to dba group when it tries to access to the global namespace dictionary.", fname);
+  if (NULL == xml_global_ns_2dict)
+    {
+      xml_global_ns_2dict_mutex = mutex_allocate ();
+      mutex_enter (xml_global_ns_2dict_mutex);
+      xml_global_ns_2dict = dk_alloc (sizeof (xml_ns_2dict_t));
+      memset (xml_global_ns_2dict, 0, sizeof (xml_ns_2dict_t));
+    }
+  else
+    mutex_enter (xml_global_ns_2dict_mutex);
+  return xml_global_ns_2dict;
+}
+
+void
+xml_global_ns_2dict_release (xml_ns_2dict_t *ns_2dict)
+{
+  mutex_leave (xml_global_ns_2dict_mutex);
+}
+
+xml_ns_2dict_t *
+xml_cli_ns_2dict (client_connection_t *cli)
+{
+  if (NULL == cli->cli_ns_2dict)
+    {
+      cli->cli_ns_2dict = dk_alloc (sizeof (xml_ns_2dict_t));
+      memset (cli->cli_ns_2dict, 0, sizeof (xml_ns_2dict_t));
+    }
+  return cli->cli_ns_2dict;
+}
+
+
+caddr_t
+bif_xml_set_ns_decl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_set_ns_decl");
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 1, "__xml_set_ns_decl");
+  ptrlong persistent = bif_long_arg (qst, args, 2, "__xml_set_ns_decl");
+  int res = 0;
+  nsdecl_t decl;
+  decl.nsd_prefix = pref;
+  decl.nsd_uri = uri;
+  if (persistent & 0x1)
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
+      if (xml_ns_2dict_add (xn2, &decl))
+        res |= 0x1;
+    }
+  if (persistent & 0x2)
+    {
+      xml_ns_2dict_t *xn2;
+      xn2 = xml_global_ns_2dict_get (qst, "__xml_set_ns_decl");
+      if (xml_ns_2dict_add (xn2, &decl))
+        res |= 0x2;
+      xml_global_ns_2dict_release (xn2);
+    }
+  return box_num (res);
+}
+
+caddr_t
+bif_xml_get_ns_prefix (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, "__xml_get_ns_prefix");
+  ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_get_ns_prefix");
+  caddr_t res = NULL;
+  if (persistent & 0x1)
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
+      long iri_idx = ecm_find_name (uri, xn2->xn2_uri2prefix, xn2->xn2_size, sizeof (xml_name_assoc_t));
+      if (ECM_MEM_NOT_FOUND != iri_idx)
+        res = box_copy (xn2->xn2_uri2prefix[iri_idx].xna_key);
+    }
+  if ((NULL == res) && (persistent & 0x2))
+    {
+      xml_ns_2dict_t *xn2 = xml_global_ns_2dict_get (NULL, NULL);
+      long iri_idx = ecm_find_name (uri, xn2->xn2_uri2prefix, xn2->xn2_size, sizeof (xml_name_assoc_t));
+      if (ECM_MEM_NOT_FOUND != iri_idx)
+        res = box_copy (xn2->xn2_uri2prefix[iri_idx].xna_key);
+      xml_global_ns_2dict_release (xn2);
+    }
+  if (NULL == res)
+    return NEW_DB_NULL;
+  return res;
+}
+
+caddr_t
+xml_get_ns_uri (client_connection_t *cli, caddr_t pref, ptrlong persistent, int ret_in_mp_box)
+{
+  caddr_t res = NULL;
+  if ((NULL != cli) && (persistent & 0x1))
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (cli);
+      long pref_idx = ecm_find_name (pref, xn2->xn2_prefix2uri, xn2->xn2_size, sizeof (xml_name_assoc_t));
+      if (ECM_MEM_NOT_FOUND != pref_idx)
+        {
+          res = xn2->xn2_prefix2uri[pref_idx].xna_value;
+          res = (ret_in_mp_box ? t_box_copy(res) : box_copy(res));
+        }
+    }
+  if ((NULL == res) && (persistent & 0x2))
+    {
+      xml_ns_2dict_t *xn2 = xml_global_ns_2dict_get (NULL, NULL);
+      long pref_idx = ecm_find_name (pref, xn2->xn2_prefix2uri, xn2->xn2_size, sizeof (xml_name_assoc_t));
+      if (ECM_MEM_NOT_FOUND != pref_idx)
+        {
+          res = xn2->xn2_prefix2uri[pref_idx].xna_value;
+          res = (ret_in_mp_box ? t_box_copy(res) : box_copy(res));
+        }
+      xml_global_ns_2dict_release (xn2);
+    }
+  return res;
+}
+
+caddr_t
+bif_xml_get_ns_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_get_ns_uri");
+  ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_get_ns_uri");
+  caddr_t res = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, persistent, 0);
+  return ((NULL == res) ? NEW_DB_NULL : res);
+}
+
+caddr_t
+bif_xml_get_all_ns_decls (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ptrlong persistent = bif_long_arg (qst, args, 0, "__xml_get_all_ns_decls");
+  dk_set_t acc = NULL;
+  int size, ctr;
+  if (persistent & 0x2)
+    {
+      xml_ns_2dict_t *xn2 = xml_global_ns_2dict_get (NULL, NULL);
+      size = xn2->xn2_size;
+      for (ctr = 0; ctr < size; ctr++)
+        {
+          xml_name_assoc_t *xna = xn2->xn2_prefix2uri + ctr;
+          dk_set_push (&acc, box_copy (xna->xna_key));
+          dk_set_push (&acc, box_copy (xna->xna_value));
+        }
+      xml_global_ns_2dict_release (xn2);
+    }
+  if (persistent & 0x1)
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
+      size = xn2->xn2_size;
+      for (ctr = 0; ctr < size; ctr++)
+        {
+          xml_name_assoc_t *xna = xn2->xn2_prefix2uri + ctr;
+          dk_set_push (&acc, box_copy (xna->xna_key));
+          dk_set_push (&acc, box_copy (xna->xna_value));
+        }
+    }
+  return revlist_to_array (acc);
+}
+
+caddr_t
+bif_xml_remove_ns_by_prefix (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_remove_ns_by_prefix");
+  ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_remove_ns_by_prefix");
+  if (persistent & 0x2)
+    {
+      xml_ns_2dict_t *xn2;
+      xn2 = xml_global_ns_2dict_get (qst, "__xml_remove_ns_by_prefix");
+      xml_ns_2dict_del (xn2, pref);
+      xml_global_ns_2dict_release (xn2);
+    }
+  if (persistent & 0x1)
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
+      xml_ns_2dict_del (xn2, pref);
+    }
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_xml_clear_all_ns_decls (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ptrlong persistent = bif_long_arg (qst, args, 0, "__xml_clear_all_ns_decls");
+  if (persistent & 0x2)
+    {
+      xml_ns_2dict_t *xn2;
+      xn2 = xml_global_ns_2dict_get (qst, "__xml_clear_all_ns_decls");
+      xml_ns_2dict_clean (xn2);
+      xml_global_ns_2dict_release (xn2);
+    }
+  if (persistent & 0x1)
+    {
+      xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
+      xml_ns_2dict_clean (xn2);
+    }
+  return NEW_DB_NULL;
+}
+
+xml_doc_cache_t *
+xml_doc_cache_alloc (void *owner)
 {
   NEW_VARZ (xml_doc_cache_t, xdc);
   xdc->xdc_owner = owner;
@@ -9969,6 +10170,12 @@ xml_tree_init (void)
 #endif
   bif_define ("xtree_sum64", bif_xtree_sum64);
   bif_define ("__xsd_type", bif_xsd_type);
+  bif_define ("__xml_set_ns_decl", bif_xml_set_ns_decl);
+  bif_define ("__xml_get_ns_prefix", bif_xml_get_ns_prefix);
+  bif_define ("__xml_get_ns_uri", bif_xml_get_ns_uri);
+  bif_define ("__xml_get_all_ns_decls", bif_xml_get_all_ns_decls);
+  bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
+  bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
   dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);

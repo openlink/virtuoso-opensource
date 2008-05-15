@@ -895,6 +895,8 @@ void xslt_instantiate (xparse_ctx_t * xp, xslt_template_t * xst, xml_entity_t * 
 
 #define xslt_traverse_1(XP) xslt_traverse_inner ((XP), NULL)
 
+extern caddr_t xml_get_ns_uri (client_connection_t *cli, caddr_t pref, ptrlong persistent, int ret_in_mp_box);
+
 extern caddr_t uname___empty;
 extern caddr_t uname__bang_cdata_section_elements;
 extern caddr_t uname__bang_file;

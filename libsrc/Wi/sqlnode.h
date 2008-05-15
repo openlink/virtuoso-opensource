@@ -1098,6 +1098,7 @@ typedef struct client_connection_s
 #endif
     long		cli_start_time;
     caddr_t *		cli_info;
+    struct xml_ns_2dict_s      *cli_ns_2dict;
   } client_connection_t;
 
 #define CLI_NEXT_USER(cli) \

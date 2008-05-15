@@ -115,6 +115,13 @@ create table DB.DBA.SYS_SPARQL_SW_LOG (
     primary key (PL_SERVER, PL_URI, PL_TS))
 ;
 
+create table DB.DBA.SYS_XML_PERSISTENT_NS_DECL
+(
+  NS_PREFIX varchar not null primary key,
+  NS_URL varchar not null
+)
+;
+
 sequence_set ('RDF_URL_IID_NAMED', 1000000, 1)
 ;
 
@@ -159,6 +166,72 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_i
     }
   return 1;
 }
+;
+
+--!AWK PUBLIC
+create function DB.DBA.XML_SET_NS_DECL (in prefix varchar, in url varchar, in persist integer := 1) returns integer
+{
+  declare res integer;
+  res := __xml_set_ns_decl (prefix, url, persist);
+  if (bit_and (res, 2))
+    {
+      insert soft DB.DBA.SYS_XML_PERSISTENT_NS_DECL (NS_PREFIX, NS_URL) values (prefix, url);
+      commit work;
+    }
+  return res;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.XML_REMOVE_NS_BY_PREFIX (in prefix varchar, in persist integer := 1)
+{
+  declare res integer;
+  __xml_remove_ns_by_prefix (prefix, persist);
+  if (bit_and (persist, 2))
+    {
+      delete from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX=prefix;
+      commit work;
+    }
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.XML_CLEAR_ALL_NS_DECLS (in persist integer := 1)
+{
+  declare res integer;
+  __xml_clear_all_ns_decls (persist);
+  if (bit_and (persist, 2))
+    {
+      delete from DB.DBA.SYS_XML_PERSISTENT_NS_DECL;
+      commit work;
+    }
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.XML_SELECT_ALL_NS_DECLS (in persist integer := 3)
+{
+  declare decls any;
+  declare ctr, len integer;
+  declare PREFIX, URI varchar;
+  decls := __xml_get_all_ns_decls (persist);
+  result_names (PREFIX, URI);
+  len := length (decls);
+  for (ctr := 0; ctr < len; ctr := ctr + 2)
+    result (decls[ctr], decls[ctr+1]);
+}
+;
+
+create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
+{
+  for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      __xml_set_ns_decl (NS_PREFIX, NS_URL, 2);
+    }
+}
+;
+
+DB.DBA.XML_LOAD_ALL_NS_DECLS ()
 ;
 
 rdf_inf_const_init ()

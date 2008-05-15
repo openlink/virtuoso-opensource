@@ -828,7 +828,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 <PRAGMA_PREFIX>({SPAR_NCNAME_PREFIX}?)":"	{
 	BEGIN(PRAGMA_PREFIX_2);
-	scn3_namespaces->data = t_box_dv_uname_string (yytext);
+	scn3_namespaces->data = t_box_dv_uname_nchars (yytext, strlen (yytext) - 1);
 	RETURN_WS(WS_PRAGMA_PREFIX_2); }
 
 <PRAGMA_PREFIX_2>[ \t+]"<"([^<>''{}|^`\001-\040])*">"	{

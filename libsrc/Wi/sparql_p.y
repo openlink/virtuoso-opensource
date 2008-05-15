@@ -486,7 +486,7 @@ spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
                 if (!strcmp ("sql:", $2) || !strcmp ("bif:", $2))
 		  sparyyerror ("Prefixes 'sql:' and 'bif:' are reserved for SQL names");
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), sparp_expand_q_iri_ref (sparp_arg, $3));
-		t_set_push (&(sparp_env()->spare_namespace_prefixes), $2); }
+		t_set_push (&(sparp_env()->spare_namespace_prefixes), t_box_dv_short_nchars ($2, box_length ($2)-2)); }
 	| PREFIX_L QNAME_NS { sparyyerror ("Missing <namespace-iri-string> in PREFIX declaration"); }
 	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
 	;

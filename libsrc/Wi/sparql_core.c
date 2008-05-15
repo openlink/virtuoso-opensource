@@ -312,23 +312,45 @@ sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname)
   int ns_uri_len, local_len, res_len;
   if (NULL == lname)
     return qname;
-  lname++;
   ns_dict = sparp->sparp_env->spare_namespace_prefixes;
   ns_pref = t_box_dv_short_nchars (qname, lname - qname);
-  ns_uri = dk_set_get_keyword (ns_dict, ns_pref, NULL);
-  if (NULL == ns_uri)
+  lname++;
+  do
     {
-      if (!strcmp (ns_pref, "rdf:"))
-        ns_uri = uname_rdf_ns_uri;
-      else if (!strcmp (ns_pref, "xsd:"))
-        ns_uri = uname_xmlschema_ns_uri_hash;
-      else if (!strcmp (ns_pref, "virtrdf:"))
-        ns_uri = uname_virtrdf_ns_uri;
-      else if (!strcmp ("sql:", ns_pref) || !strcmp ("bif:", ns_pref))
-        ns_uri = ns_pref;
-      else
-        sparyyerror_impl (sparp, ns_pref, "Undefined namespace prefix");
+      ns_uri = dk_set_get_keyword (ns_dict, ns_pref, NULL);
+      if (NULL != ns_uri)
+	break;
+      if (!strcmp (ns_pref, "rdf"))
+	{
+	  ns_uri = uname_rdf_ns_uri;
+	  break;
+	}
+      if (!strcmp (ns_pref, "xsd"))
+	{
+	  ns_uri = uname_xmlschema_ns_uri_hash;
+	  break;
+	}
+      if (!strcmp (ns_pref, "virtrdf"))
+	{
+	  ns_uri = uname_virtrdf_ns_uri;
+	  break;
+	}
+      if (!strcmp ("sql", ns_pref))
+	{
+	  ns_uri = box_dv_uname_string ("sql:");
+	  break;
+	}
+      if (!strcmp ("bif", ns_pref))
+	{
+	  ns_uri = box_dv_uname_string ("bif:");
+	  break;
+	}
+      ns_uri = xml_get_ns_uri (sparp->sparp_sparqre->sparqre_cli, ns_pref, 0x3, 1 /* ret_in_mp_box */ );
+      if (NULL != ns_uri)
+	break;
+      sparyyerror_impl (sparp, ns_pref, "Undefined namespace prefix");
     }
+  while (0);
   ns_uri_len = box_length (ns_uri) - 1;
   local_len = strlen (lname);
   res_len = ns_uri_len + local_len;
@@ -921,6 +943,10 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       if (NULL == triple_with_var_obj)
         spar_error (sparp, "The group does not contain triple pattern with '$%s' object before %s() predicate", var_name, ft_pred_name);
       triple_with_var_obj->_.triple.ft_type = ft_type;
+      if (IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
+        ((boxint *)(sparp->sparp_env->spare_sql_refresh_free_text))[0] = 1;
+      else
+        sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
     }
   t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_acc_filters->data)), filt);
 }
@@ -1442,7 +1468,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
-  tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
+  tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)0, (ptrlong)0);
   parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
   res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
   dk_free_tree (parsed_value);
@@ -1453,12 +1479,13 @@ cannot_cast:
   return NULL;
 }
 
-SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
+SPART *
+sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
 {
   rdf_grab_config_t *rgc_ptr = &(sparp->sparp_env->spare_grab);
   dk_set_t *opts_ptr = &(sparp->sparp_env->spare_common_sponge_options);
-  SPART **mixed_options;
-  int common_count;
+  SPART **mixed_options, **mixed_tail;
+  int common_count, ctr;
   if (NULL != rgc_ptr->rgc_sa_preds)
     {
       t_set_push_new_string (&(rgc_ptr->rgc_sa_graphs),
@@ -1467,10 +1494,7 @@ SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
   if ((NULL == options) && (0 > dk_set_position_of_string (opts_ptr[0], "get:soft")))
     return iriref;
   common_count = dk_set_length (opts_ptr[0]);
-  if (0 < common_count)
-    {
-      int ctr;
-      SPART **mixed_tail = mixed_options = (SPART **)t_alloc_box (common_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+  mixed_tail = mixed_options = (SPART **)t_alloc_box ((common_count + 2 + BOX_ELEMENTS_0 (options)) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
       DO_SET (SPART *, val, opts_ptr)
         {
           (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(val));
@@ -1488,9 +1512,10 @@ SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
           (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree (param);
           (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(options[ctr + 1]));
         }
-    }
-  else
-    mixed_options = options;
+  if (!IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
+    sparp->sparp_env->spare_sql_refresh_free_text = t_box_num_and_zero (0);
+  (mixed_tail++)[0] = t_box_dv_short_string ("refresh_free_text");
+  (mixed_tail++)[0] = sparp->sparp_env->spare_sql_refresh_free_text;
   return spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
     (SPART **)t_list (1,
       spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
