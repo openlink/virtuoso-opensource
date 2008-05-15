@@ -40,16 +40,6 @@
 #endif
 
 /* 8 - sizeof (numeric_s without n_value) */
-#define NUMERIC_PADDING	4
-
-struct numeric_s
-    {
-      char n_len;	/* The number of digits before the decimal point. */
-      char n_scale;	/* The number of digits after the decimal point. */
-      char n_invalid;	/* NDF_NAN or NDF_INF */
-      char n_neg;	/* 0 or 1 */
-      char n_value[NUMERIC_PADDING];
-    };
 
 /* special numbers		   len sc i sgn   data */
 static struct numeric_s _num_0	= { 0, 0, 0, 0, { 0	}};	/* 0 */
@@ -1806,9 +1796,9 @@ numeric_from_double (numeric_t n, double d)
   char buffer[64];
 
 #if defined (bsdi) || defined (__FreeBSD__) || defined (__APPLE__)
-  snprintf (buffer, sizeof (buffer), "%.15g", d);
+  snprintf (buffer, sizeof (buffer), "%.16g", d);
 #else
-  gcvt (d, 15, buffer);
+  gcvt (d, 16, buffer);
 #endif
 
   return numeric_from_string (n, buffer);

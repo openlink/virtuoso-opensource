@@ -32,6 +32,18 @@
 /* basic data type */
 typedef struct numeric_s *numeric_t;
 
+#define NUMERIC_PADDING	4
+
+
+struct numeric_s
+    {
+      char n_len;	/* The number of digits before the decimal point. */
+      char n_scale;	/* The number of digits after the decimal point. */
+      char n_invalid;	/* NDF_NAN or NDF_INF */
+      char n_neg;	/* 0 or 1 */
+      char n_value[NUMERIC_PADDING];
+    };
+
 /* intrinsics */
 #define DV_NUMERIC			219
 

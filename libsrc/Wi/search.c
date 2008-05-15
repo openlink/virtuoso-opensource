@@ -1112,22 +1112,9 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
       {
 	NUMERIC_VAR (dn1);
 	NUMERIC_VAR (dn2);
-	dtp_t res_dtp;
 	dtp1 = dv_ext_to_num (dv1, (caddr_t) & dn1);
 	dtp2 = dv_ext_to_num (dv2, (caddr_t) & dn2);
-
-	n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, dtp1, dtp2, &res_dtp);
-	switch (res_dtp)
-	  {
-	  case DV_SINGLE_FLOAT:
-	    return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
-	  case DV_DOUBLE_FLOAT:
-	    return cmp_double (*(double *) &dn1, *(double *) &dn2, DBL_EPSILON);
-	  case DV_NUMERIC:
-	    return (numeric_compare_dvc ((numeric_t) &dn1, (numeric_t) &dn2));
-	  default:
-	    GPF_T;		/* Impossible num type combination */
-	  }
+	return dv_num_compare ((numeric_t*)&dn1, (numeric_t*)&dn2, dtp1, dtp2);
       }
     /* the types are different and it is not a number to number comparison.
      * Because the range of num dtps is not contiguous, when comparing num to non-num by dtp, consider all nums as ints.

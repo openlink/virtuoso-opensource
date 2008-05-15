@@ -60,5 +60,9 @@ caddr_t box_identity (caddr_t arg, caddr_t ignore, caddr_t * qst,
 #endif
 
 int numeric_compare_dvc (numeric_t x, numeric_t y);
+int dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2);
+#define MAX_INT_DOUBLE ((((int64)1) << 53) - 1)
+#define MIN_INT_DOUBLE  (-(((int64)1)<<53) + 1)
+
 
 #endif /* _WI_ARITH_H */

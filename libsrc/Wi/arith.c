@@ -30,7 +30,7 @@
 #include "sqlfn.h"
 #include "arith.h"
 #include "srvmultibyte.h"
-
+#include "numeric.h"
 
 void
 qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv)
@@ -293,7 +293,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
       *(boxint *) to = LONG_REF_NA (place + 1);
       return DV_LONG_INT;
     case DV_INT64:
-      *(boxint*) place = INT64_REF_NA (place + 1);
+      *(boxint*) to = INT64_REF_NA (place + 1);
       return DV_LONG_INT;
     case DV_NULL:
       *(boxint *) to = 0;
@@ -1074,5 +1074,155 @@ box_identity (caddr_t arg, caddr_t ignore, caddr_t * qst, state_slot_t * target)
       return NULL;
     }
   return (box_copy_tree (arg));
+}
+
+
+/* Comparison rules for numbers in any collation index:
+  The cases are:  
+
+  int64, double  - if double has no fract and is in 53 bit int range, compare as int.  Else as double and if they look eq as doubles then int is farther from 0.
+int64, decimal -  compare as decimal.
+decimal, double - if dec has more than 15 digits and not between min and max 53 bit, dec is farther from 0 if dec and double look equal as doubles.
+
+Operands of the same type compare natively.
+*/
+
+#if defined(WIN32) || defined (SOLARIS)
+double trunc (double x)
+{
+  if (x >= 0) 
+    return floor(x);
+  else 
+    return ceil(x);
+}
+#endif
+
+int 
+dvc_int_double (int64 i, double d)
+{
+  /* if double is in range where int cast is precise and has zero fraction, it is equal to int. 
+   * if out of int range, double is opso facto lt or gt.
+   * if double is in imprecise int range (1<<53 - 1<<64 -1) and the int cast to double is equal to the double, then the int is seen as farther from zero. */
+  int r;
+  if (d > MIN_INT_DOUBLE && d < MAX_INT_DOUBLE && trunc (d) == d)
+    {
+      int64 i2 = (int64)d;
+      return NUM_COMPARE (i, i2);
+    }
+  if (d > -1 && d< 1)
+    return NUM_COMPARE (((double)i), d);
+  r = NUM_COMPARE ((double)i, d);
+  if (DVC_MATCH == r)
+    {
+      /* if int and double look like eq and the double is outside the int precise int range, then the int is seen as farther from zero */
+      if (d > 0)
+	return DVC_GREATER;
+      return DVC_LESS;
+    }
+  return r;
+}
+
+
+int 
+dvc_num_double (numeric_t num1, double d2)
+{
+  double d1;
+  if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE && trunc (d2) == d2)
+    {
+      NUMERIC_VAR (num2);
+      numeric_from_double ((numeric_t)num2, d2);
+      return numeric_compare_dvc ((numeric_t)num1, (numeric_t)num2);
+    }
+  numeric_to_double (num1, &d1);
+  if (d1 == d2)
+    {
+      if (num1->n_len + num1->n_scale < 15)
+	return DVC_MATCH;
+      if (0 < d2)
+	return DVC_GREATER;
+      else 
+	return DVC_LESS;
+    }
+  if (d1 < d2)
+    return DVC_LESS;
+  return DVC_GREATER;
+}
+
+int
+dvc_int_num (int64 i, numeric_t n2)
+{
+  NUMERIC_VAR (n1);
+  numeric_from_int64 ((numeric_t)n1, i);
+  return numeric_compare_dvc ((numeric_t)n1, (numeric_t)n2);
+}
+
+
+#define REV(x) \
+  { \
+  int __r = x; \
+return __r == DVC_LESS ? DVC_GREATER : (__r == DVC_MATCH ? DVC_MATCH : DVC_LESS); \
+}
+
+
+int
+dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
+{
+  if (DV_SINGLE_FLOAT == dtp1)
+    {
+      *(double *)dn1 = *(float *)dn1;
+      dtp1 = DV_DOUBLE_FLOAT;
+    }
+  if (DV_SINGLE_FLOAT == dtp2)
+    {
+      *(double *)dn2 = *(float *)dn2;
+      dtp2 = DV_DOUBLE_FLOAT;
+    }
+
+  if (dtp1 == dtp2)
+    {
+      switch (dtp1)
+	{
+	case DV_LONG_INT:
+	  return NUM_COMPARE (*(int64*)dn1, *(int64*)dn2);
+	  case DV_DOUBLE_FLOAT:
+	    return NUM_COMPARE (*(double *) dn1, *(double *) dn2);
+	  case DV_NUMERIC:
+	    return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
+	  default:
+	    GPF_T;		/* Impossible num type combination */
+	  }    
+    }
+  switch (dtp1)
+    {
+    case DV_LONG_INT:
+      switch (dtp2)
+	{
+	case DV_NUMERIC:
+	  return dvc_int_num (*(int64*)dn1, dn2);
+	case DV_DOUBLE_FLOAT:
+	  return dvc_int_double (*(int64*)dn1, *(double*)dn2);
+	default: GPF_T1 ("bad num compare combnination");
+	}
+    case DV_DOUBLE_FLOAT:
+      switch (dtp2)
+	{
+	case DV_LONG_INT:
+	  REV (dvc_int_double (*(int64*)dn2,  *(double*) dn1));
+	case DV_NUMERIC:
+	  REV (dvc_num_double (dn2, *(double*)dn1));
+	default: GPF_T1 ("bad num compare combnination");
+	}
+    case DV_NUMERIC:
+      switch (dtp2)
+	{
+	case DV_LONG_INT: 
+	  REV (dvc_int_num (*(int64*)dn2, (numeric_t)dn1));
+	case DV_DOUBLE_FLOAT: 
+	  return dvc_num_double ((numeric_t)dn1, *(double*)dn2);
+	default: GPF_T1 ("bad num compare combnination");
+	}
+    default: GPF_T1 ("bad num compare combnination");
+    }
+  return 0;
 }
 
