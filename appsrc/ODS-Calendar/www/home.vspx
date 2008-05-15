@@ -3525,7 +3525,7 @@
 
                         declare exit handler for SQLSTATE '*'
                         {
-                          if (__SQL_STATE = 'TEST')
+                        if ((__SQL_STATE = 'TEST') or (__SQL_STATE like 'CAL%')) 
                           {
                       self.vc_error_message := CAL.WA.test_clear (__SQL_MESSAGE);
                       self.vc_is_valid := 0;
@@ -3917,7 +3917,7 @@
                   <![CDATA[
                     if (self.cAction = 'publishBrowse')
                   {
-                      control.ufl_value := 'New Publish';
+                      control.ufl_value := 'New Publication';
                     } else {
                       control.ufl_value := 'New Subscription';
                   }

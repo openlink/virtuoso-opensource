@@ -4960,7 +4960,7 @@ create procedure CAL.WA.exchange_exec (
   {
     rollback work;
     update CAL.WA.EXCHANGE
-       set EX_EXEC_LOG = __SQL_STATE || ' ' || __SQL_MESSAGE
+       set EX_EXEC_LOG = __SQL_STATE || ' ' ||  CAL.WA.test_clear (__SQL_MESSAGE)
      where EX_ID = _id;
     commit work;
 
@@ -5015,7 +5015,7 @@ create procedure CAL.WA.exchange_exec_internal (
         {
           declare exit handler for SQLSTATE '*'
           {
-            signal ('CAL02', 'Export is NOT posted successfully, please verify path and parameters!');
+            signal ('CAL02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           };
           permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
           if (isnull (permissions))
@@ -5025,7 +5025,7 @@ create procedure CAL.WA.exchange_exec_internal (
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
-            signal ('CAL01', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue));
+            signal ('CAL01', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue) || '.<>');
           }
         }
       }
@@ -5042,12 +5042,12 @@ create procedure CAL.WA.exchange_exec_internal (
         {
           declare exit handler for SQLSTATE '*'
           {
-            signal ('CAL02', 'Connection Error in HTTP Client');
+            signal ('CAL02', 'Connection Error in HTTP Client!<>');
           };
           retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
           if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
           {
-            signal ('CAL01', 'Export is NOT posted successfully, please verify URL and parameters!');
+            signal ('cal02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           }
         }
       }
@@ -5062,7 +5062,7 @@ create procedure CAL.WA.exchange_exec_internal (
       _content := CAL.WA.dav_content (_name, _user, _password);
       if (isnull(_content))
       {
-        signal ('CAL01', 'Bad import source!');
+        signal ('CAL01', 'Bad import/subscription source!<>');
       }
       CAL.WA.import_vcal (_domain_id, _content, _options);
     }
