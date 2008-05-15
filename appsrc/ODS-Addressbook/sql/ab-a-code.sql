@@ -4150,7 +4150,7 @@ create procedure AB.WA.exchange_exec (
   {
     rollback work;
     update AB.WA.EXCHANGE
-       set EX_EXEC_LOG = __SQL_STATE || ' ' || __SQL_MESSAGE
+       set EX_EXEC_LOG = __SQL_STATE || ' ' || AB.WA.test_clear (__SQL_MESSAGE)
      where EX_ID = _id;
     commit work;
 
@@ -4205,7 +4205,7 @@ create procedure AB.WA.exchange_exec_internal (
         {
           declare exit handler for SQLSTATE '*'
           {
-            signal ('AB002', 'Export is NOT posted successfully, please verify path and parameters!');
+            signal ('AB002', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           };
           permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
           if (isnull (permissions))
@@ -4215,7 +4215,7 @@ create procedure AB.WA.exchange_exec_internal (
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
-            signal ('AB001', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue));
+            signal ('AB001', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue) || '.<>');
           }
         }
       }
@@ -4232,12 +4232,12 @@ create procedure AB.WA.exchange_exec_internal (
         {
           declare exit handler for SQLSTATE '*'
           {
-            signal ('AB002', 'Connection Error in HTTP Client');
+            signal ('AB002', 'Connection Error in HTTP Client!<>');
           };
           retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
           if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
           {
-            signal ('AB001', 'Export is NOT posted successfully, please verify URL and parameters!');
+            signal ('AB002', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           }
         }
       }
@@ -4252,7 +4252,7 @@ create procedure AB.WA.exchange_exec_internal (
       _content := AB.WA.dav_content (_name, _user, _password);
       if (isnull(_content))
       {
-        signal ('AB001', 'Bad import source!');
+        signal ('AB001', 'Bad import/subscription source!<>');
       }
       AB.WA.import_vcard (_domain_id, _content, _options, vector ());
     }

@@ -3373,7 +3373,8 @@
 
                         declare exit handler for SQLSTATE '*'
                         {
-                        if (__SQL_STATE = 'TEST') {
+                          if ((__SQL_STATE = 'TEST') or (__SQL_STATE like 'AB%')) 
+                          {
                           self.vc_error_message := AB.WA.test_clear (__SQL_MESSAGE);
                           self.vc_is_valid := 0;
                           return;
@@ -3987,7 +3988,7 @@
                     <![CDATA[
                       if (self.abSubAction = 'publishBrowse')
                       {
-                        control.ufl_value := 'New Publish';
+                        control.ufl_value := 'New Publication';
                       } else {
                         control.ufl_value := 'New Subscription';
                       }
@@ -4091,6 +4092,16 @@
                             <v:button value="Exec" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
+                                  declare exit handler for SQLSTATE '*'
+                                  {
+                                    if (__SQL_STATE like 'AB%')
+                                    {
+                                      self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
+                                      self.vc_is_valid := 0;
+                                      return;
+                                    }
+                                    resignal;
+                                  };
                                   self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
                                   AB.WA.exchange_exec (self.ve_id);
                                   self.vc_data_bind(e);
