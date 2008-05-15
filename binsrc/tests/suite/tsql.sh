@@ -170,6 +170,22 @@ then
 fi
 
 
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tany.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tany.sql"
+    exit 1
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tany2.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tany2.sql"
+    exit 1
+fi
+
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigt.sql
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigtrig.sql
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrig1.sql
