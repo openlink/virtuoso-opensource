@@ -453,7 +453,7 @@ var QueryExec = function(optObj) {
 
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Get Entities";
+			a.innerHTML = "Get Data";
 			a.href = href;
 			OAT.Dom.attach(a,"click",selectRef);
 			var li = OAT.Dom.create("li");
@@ -461,7 +461,7 @@ var QueryExec = function(optObj) {
 
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Describe Entities";
+			a.innerHTML = "Describe Data";
 			a.href = href;
 			OAT.Dom.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");

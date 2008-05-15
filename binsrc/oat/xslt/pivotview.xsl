@@ -130,12 +130,6 @@
 					font-weight: bold;
 				}
 
-				#ajax_progress {
-					background-image:url("/DAV/JS/images/progress.gif");
-					height: 16px;
-					width: 80%;
-				}
-
 				/* pivot chart */
 				#pivot_chart {
 					height: 200px;
@@ -175,10 +169,6 @@
 		<body>
 			<select id="pivot_agg" onchange="pivot_agg()"></select>
 			<div id="page"></div>
-			<div id="ajax_alert">
-				Ajax call in progress...
-				<div id="ajax_progress"></div>
-			</div>
 			<div id="credentials">
 				<table>
 				<tr><td class="right">Name: </td><td><input name="cred_user" value="demo" type="text" id="cred_user" /></td></tr>

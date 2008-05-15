@@ -205,7 +205,11 @@ OAT.DataSource = function(type) {
 			self.processData(parsed,index);
 			if (self.checkAvailability(index,false)) { callback(); }
 		}
-		self.transport.fetch(self.connection,self.options,index,ref);
+
+		var options = self.options;
+		if ("limit" in options) { options.limit = self.pageSize; }
+
+		self.transport.fetch(self.connection,options,index,ref);
 	}
 
 	this.getNewIndex = function(something,index,size) { /* calculate new index */

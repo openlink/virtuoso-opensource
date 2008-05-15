@@ -25,7 +25,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 	self.delay = (delay ? delay : 30);
 	self.noanim = (noanim ? true : false);
 	
-	this.go = function(index,noanim) {
+	this.go = function(index, noanim) {
 		OAT.Dom.addClass(self.panels[index][0],"panelbar_option_selected");
 		for (var i=0;i<self.panels.length;i++) {
 			OAT.Dom.removeClass(self.panels[i][0],"panelbar_option_selected");

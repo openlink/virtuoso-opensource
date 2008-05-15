@@ -60,29 +60,18 @@
 				  <ul id="menu_file_down" class="menu_file" style="display:none;">
 					<li id="menu_b_reset">Reset</li>
 					<li id="menu_b_load">Open</li>
-							<li><hr/></li>
 					<li id="menu_b_save">Save</li>
 					<li id="menu_b_saveas">Save As...</li>
 				  </ul>
 				</li>
-				<li>View
-				  <ul class="menu_view" style="display:none;">
-					<li id="menu_b_qbe">Visual Builder</li>
-					<li id="menu_b_adv">Advanced Query</li>
-				  </ul>
-				</li>
-				<li>Tools
-				  <ul id="menu_tools_down">
-					<li id="menu_b_run">Run Query</li>
-				  </ul>
-				</li>
 				<li>Help
 						<ul class="menu_help" style="display:none;">
-						  	<li id="menu_about">About iSPARQL</li>
 							<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
 							<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
 							<li><a target="_blank" href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a></li>
 							<li><a target="_blank" href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a></li>
+							<li class="noclose"><hr/></li>
+						  	<li id="menu_about">About iSPARQL</li>
 						</ul>
 				</li>
 			</ul> <!-- menu -->
@@ -90,7 +79,7 @@
 			<ul id="tabs">
 				<li id="tab_qbe" title="SPARQL Query By Example">QBE</li>
 				<li id="tab_query" title="SPARQL Query By Typing">Advanced</li>
-				<!-- <li id="tab_results" title="Results">Results</li> -->
+				<li id="tab_results" title="Results">Results</li>
 			</ul>
 			<div id="content">  
 				<div id="main_col"></div> <!-- this is where the main_col_pages appear. It's magick (tm)! -->
@@ -317,7 +306,7 @@
 
 							<div id="opttoggler"><span id="togglerarrow">&#8681;</span> Sponger Options</div>
 
-							<fieldset class="derefOpts" id="derefOpts">
+							<fieldset class="derefOpts" id="derefOpts" style="display:none">
 								<legend>Data dereferencing options:</legend>
 								<table style="border-collapse: collapse;"><tr><td style="padding-right: 8px;">
 									<span class="title">Caching Schemes<br/>
@@ -373,7 +362,7 @@
 								</tr></table>
 							</fieldset>
 
-							<fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
+							<fieldset class="endpoint" id="endpoint" style="display:none"> <!-- endpoint -->
 								<legend>Endpoint</legend>
 								<div id="service_div"></div>
 							</fieldset>

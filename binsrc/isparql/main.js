@@ -101,11 +101,11 @@ function init() {
 			if ($("endpoint").style.display=="none") {
 				$("endpoint").style.display = "block";
 				$("derefOpts").style.display = "block";
-				$("togglerarrow").innerHTML = "&#8681;";
+				$("togglerarrow").innerHTML = "&#8679;";
 			} else {
 				$("endpoint").style.display = "none";
 				$("derefOpts").style.display = "none";
-				$("togglerarrow").innerHTML = "&#8679;";
+				$("togglerarrow").innerHTML = "&#8681;";
 			}
 		}
 
@@ -306,44 +306,7 @@ function init() {
 
 	redrawSpongerOpts();
 
-  var menuOn = function(index) {
-    var menu_on = menus[index];
-    if (OAT.Browser.isIE) menu_on.style.filter = '';
-    for (var i = 0; i < menu_on.childNodes.length;i++) {
-      if (menu_on.childNodes[i].tagName && menu_on.childNodes[i].tagName.toLowerCase() == "li") {
-        menu_on.childNodes[i].style.opacity = '';
-        menu_on.childNodes[i].style.filter = '';
-        menu_on.childNodes[i].style.cursor = 'pointer';
-      }
-    }
-  }
-  
-  var menuOff = function(index) {
-    if (tab.tabs[index].window)
-      return;
-    var menu_off = menus[index];
-    if (OAT.Browser.isIE)
-      menu_off.style.filter = 'alpha(opacity=50)';
-    for (var i = 0; i < menu_off.childNodes.length;i++) {
-      if (menu_off.childNodes[i].tagName && menu_off.childNodes[i].tagName.toLowerCase() == "li") {
-        menu_off.childNodes[i].style.opacity = 0.5;
-        menu_off.childNodes[i].style.filter = 'alpha(opacity=50)';
-        menu_off.childNodes[i].style.cursor = 'default';
-      }
-    }
-  }
-  
-  var menus = [$('menu_file_down'),$('menu_tools_down')];
-
   var tab_goCallback = function(oldIndex,newIndex) {
-    if (oldIndex != newIndex) {
-      for (var i=0;i < menus.length;i++)
-        if (newIndex > 1)
-          menuOff(i);
-        else
-          menuOn(i);
-    }
-
     if (OAT.Browser.isIE && dialogs.qbe_unsupp && newIndex == 0) {
       dialogs.qbe_unsupp.show();
       return;
@@ -357,7 +320,6 @@ function init() {
       qbe.props_win.moveTo(x,42);
       qbe.schema_win.moveTo(x,182);
     }
-    //menuOn(newIndex);
   }
 
   var onDock = function(newIndex) {
@@ -365,12 +327,12 @@ function init() {
       qbe.props_win.moveTo(page_w - 260,92);
       qbe.schema_win.moveTo(page_w - 260,232);
     }
-    //menuOn(newIndex);
   }
   
   tab = new OAT.Tab ("main_col",{dockMode:true,dockElement:"tabs",goCallback:tab_goCallback,onDock:onDock,onUnDock:onUnDock,dockWindowWidth:1000,dockWindowHeight:600});
   tab_qbe = tab.add ("tab_qbe","page_qbe");
   tab_query = tab.add ("tab_query","page_query");
+  tab_results = tab.add("tab_results","page_results");
 
   tab.go (0); /* is 0-based index... */
   
@@ -490,14 +452,11 @@ function init() {
 	window.adv = new iSPARQL.Advanced();
 
 	var execCB = function(query) {
-		if (tab.selectedIndex == 0) { 
 			if (qbe.QueryGenerate() == query) { return; }
 			qbe.loadFromString(query);
-		}
-		if (tab.selectedIndex == 1) {
+		qbe.svgsparql.reposition();
 			$("query").value = query;
 		}
-	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 
 	var loadToQBE = OAT.Dom.create("li",{},"nav");

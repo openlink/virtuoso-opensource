@@ -52,6 +52,7 @@
 
 				var ds = new OAT.DataSource(OAT.DataSourceData.TYPE_SQL);
 				ds.connection = conn;
+				ds.pageSize = 50;
 				ds.options.query = OAT.Dom.fromSafeXML(q);
 				
 				var nav = new OAT.FormObject["nav"](30,0,0);
