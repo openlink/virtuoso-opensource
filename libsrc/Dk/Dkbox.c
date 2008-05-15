@@ -1122,6 +1122,34 @@ DBG_NAME(box_dv_short_string) (DBG_PARAMS const char *string)
   return box;
 }
 
+rdf_box_t *
+rb_allocate (void)
+{
+  rdf_box_t * rb= (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
+  rb->rb_ref_count = 1;
+  return rb;
+}
+
+rdf_bigbox_t *
+rbb_allocate (void)
+{
+  rdf_bigbox_t * rbb= (rdf_bigbox_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
+  rbb->rbb_base.rb_ref_count = 1;
+  return rbb;
+}
+
+void
+rdf_box_audit_impl (rdf_box_t * rb)
+{
+  if (0 >= rb->rb_ref_count)
+    GPF_T1("RDF box has nonpositive reference count");
+#ifdef RDF_DEBUG
+  if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
+    GPF_T1("RDF box is too incomplete");
+#endif
+}
+
+
 
 box_t
 DBG_NAME(box_dv_short_nchars) (DBG_PARAMS const char *buf, size_t buf_len)

@@ -589,6 +589,10 @@ typedef struct uname_blk_s
 #define DV_UNAME_BOX_HASH(hash,box) (hash) = UNAME_TO_UNAME_BLK(box)->unb_hdr[UNB_HDR_HASH]
 #endif
 
+#define RDF_BOX_DEFAULT_TYPE 257
+#define RDF_BOX_DEFAULT_LANG 257
+
+
 typedef struct rdf_box_s
 {
   int32		rb_ref_count;
@@ -600,6 +604,17 @@ typedef struct rdf_box_s
   int64		rb_ro_id;
   caddr_t	rb_box;
 } rdf_box_t;
+
+#define RB_MAX_INLINED_CHARS 20
+
+#define RBS_OUTLINED	0x01
+#define RBS_COMPLETE	0x02
+#define RBS_HAS_LANG	0x04
+#define RBS_HAS_TYPE	0x08
+#define RBS_CHKSUM	0x10
+#define RBS_64		0x20
+#define RBS_SKIP_DTP	0x40
+
 
 typedef struct rdf_bigbox_s
 {
@@ -652,6 +667,16 @@ EXE_EXPORT (box_t, box_double, (double d));
 EXE_EXPORT (box_t, box_float, (float d));
 #ifdef _DKSYSTEM_H
 EXE_EXPORT (caddr_t, box_vsprintf, (size_t buflen_eval, const char *format, va_list tail));
+#endif
+rdf_box_t * rb_allocate (void);
+rdf_bigbox_t * rbb_allocate (void);
+void rdf_box_audit_impl (rdf_box_t * rb);
+#ifdef DEBUG
+#define rdf_box_audit(rb) rdf_box_audit_impl(rb)
+#define rdf_bigbox_audit(rbb) rdf_box_audit_impl(&(rbb->rbb_base))
+#else
+#define rdf_box_audit(rb)
+#define rdf_bigbox_audit(rbb)
 #endif
 
 EXE_EXPORT (box_t, box_copy, (cbox_t box));

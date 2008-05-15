@@ -450,6 +450,68 @@ imm_read_float (dk_session_t *session, dtp_t dtp)
   return *(void **)&f;
 }
 
+static short 
+read_short (dk_session_t * ses)
+{
+  short s = ((short) (dtp_t)session_buffered_read_char (ses)) << 8;
+  s |= (dtp_t) session_buffered_read_char (ses);
+  return s;
+}
+
+
+
+caddr_t
+rb_deserialize (dk_session_t * ses)
+{
+  rdf_box_t * rb;
+  dtp_t flags = session_buffered_read_char (ses);
+  if (flags & RBS_CHKSUM)
+    {
+      rb = (rdf_box_t *)rbb_allocate ();
+      rb->rb_chksum_tail = 1;
+      ((rdf_bigbox_t *)rb)->rbb_chksum = scan_session_boxing (ses);
+    }
+  else
+    {
+      rb = rb_allocate ();
+      if (RBS_SKIP_DTP & flags)
+	{
+	  dtp_t len = session_buffered_read_char (ses);
+	  rb->rb_box = dk_alloc_box (len + 1, DV_STRING);
+	  session_buffered_read (ses, rb->rb_box, len);
+	  rb->rb_box[len] = 0;
+	}
+      else
+      rb->rb_box = scan_session_boxing (ses);
+    }
+  if (flags & RBS_OUTLINED)
+    {
+      if (flags & RBS_64)
+	rb->rb_ro_id = read_int64 (ses);
+      else
+	rb->rb_ro_id = read_long (ses);
+    }
+  if (flags & RBS_COMPLETE)
+    rb->rb_is_complete = 1;
+  if (flags & RBS_HAS_TYPE)
+    rb->rb_type = read_short (ses);
+  else
+    rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+  if (flags & RBS_HAS_LANG)
+    rb->rb_lang = read_short (ses);
+  else
+    rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  if (flags & RBS_CHKSUM)
+    ((rdf_bigbox_t *)rb)->rbb_box_dtp = session_buffered_read_char (ses);
+  if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
+    sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't deserialize");
+  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
+    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't deserialize");
+  rdf_box_audit (rb);
+  return (caddr_t) rb;
+}
+
+
 
 void *
 box_read_error (dk_session_t *session, dtp_t dtp)
@@ -525,6 +587,7 @@ init_readtable (void)
   readtable[DV_G_REF_CLASS] = box_read_ref_box;
   readtable[DV_G_REF] = box_read_ref_box;
 #endif
+  readtable [DV_RDF] = rb_deserialize;
   strses_readtable_initialize ();
 }
 
