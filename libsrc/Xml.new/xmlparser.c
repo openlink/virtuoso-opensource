@@ -112,6 +112,32 @@ int xml_ns_2dict_add (xml_ns_2dict_t *xn2, nsdecl_t *ns)
   return 1;
 }
 
+int
+xml_ns_2dict_del (xml_ns_2dict_t *xn2, caddr_t pref)
+{
+  ptrlong prefix_idx, uri_idx;
+  caddr_t old_prefix;
+  caddr_t old_uri;
+  prefix_idx = ecm_find_name (pref, xn2->xn2_prefix2uri, xn2->xn2_size, sizeof (xml_name_assoc_t));
+  if (ECM_MEM_NOT_FOUND == prefix_idx)
+    return 0;
+  old_prefix = xn2->xn2_prefix2uri[prefix_idx].xna_key;
+  old_uri = xn2->xn2_prefix2uri[prefix_idx].xna_value;
+  uri_idx = ecm_find_name (old_uri, xn2->xn2_uri2prefix, xn2->xn2_size, sizeof (xml_name_assoc_t));
+  if (ECM_MEM_NOT_FOUND == uri_idx)
+    GPF_T;
+  if (old_prefix != xn2->xn2_uri2prefix[uri_idx].xna_value)
+    GPF_T;
+  if (old_uri != xn2->xn2_uri2prefix[uri_idx].xna_key)
+    GPF_T;
+  ecm_delete_nth (prefix_idx, xn2->xn2_prefix2uri, &(xn2->xn2_size), sizeof (xml_name_assoc_t));
+  xn2->xn2_size++;
+  ecm_delete_nth (uri_idx, xn2->xn2_uri2prefix, &(xn2->xn2_size), sizeof (xml_name_assoc_t));
+  dk_free_box (old_prefix);
+  dk_free_box (old_uri);
+  return 1;
+}
+
 int xml_ns_2dict_extend (xml_ns_2dict_t *dest, xml_ns_2dict_t *src)
 {
   int res = 1;

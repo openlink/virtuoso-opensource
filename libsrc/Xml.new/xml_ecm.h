@@ -360,6 +360,9 @@ If this item is exist locates this one.
 \return pointer to the allocated or found object */
 extern caddr_t ecm_try_add_name (const char *new_obj_name, struct id_hash_s *hash, size_t size_of_obj);
 
+/*! Deletes nth item from array of named objs.
+\return 1 if deleted 0 if \c obj_idx is out of bounds */
+extern int ecm_delete_nth (ptrlong obj_idx, void *objs, ptrlong *obj_no, size_t size_of_obj);
 
 /*! Locates an existing item in array of named objs.
 \return index of found object or -1 if name is already defined */

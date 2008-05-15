@@ -167,6 +167,9 @@ do { \
       dk_check_tree ((ns_2dict)->xn2_uri2prefix); \
       dk_free_tree ((box_t) (ns_2dict)->xn2_prefix2uri); \
       dk_free_box ((box_t) (ns_2dict)->xn2_uri2prefix); \
+      (ns_2dict)->xn2_prefix2uri = NULL; \
+      (ns_2dict)->xn2_uri2prefix = NULL; \
+      (ns_2dict)->xn2_size = 0; \
     } \
  } while (0)
 

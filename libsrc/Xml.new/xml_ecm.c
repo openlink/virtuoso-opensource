@@ -1403,6 +1403,19 @@ ptrlong DBG_NAME(ecm_add_name) (DBG_PARAMS const char *new_obj_name, void **objs
   return 0;
 }
 
+int
+ecm_delete_nth (ptrlong idx, void *objs, ptrlong *obj_no, size_t size_of_obj)
+{
+  if ((0 > idx) || (idx >= obj_no[0]))
+    return 0;
+  memmove (
+    (char *)(objs)+(idx * size_of_obj),
+    (char *)(objs)+((idx+1) * size_of_obj),
+    (obj_no[0] - idx)*size_of_obj );
+  obj_no[0] --;
+  return 1;
+}
+
 ptrlong ecm_map_name (const char *new_obj_name, void **objs, ptrlong *obj_no, size_t size_of_obj)
 {
   box_t array_box = *(box_t*) objs;

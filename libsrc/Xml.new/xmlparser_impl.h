@@ -435,6 +435,9 @@ int insert_external_xmlschema_dtd (struct vxml_parser_s * parser);
 /*! Adds namespace declaration \c ns into \c xn2.
 Returns 1 if really added or a duplicate detected, 0 if there's a conflict between prefixes or URIs */
 extern int xml_ns_2dict_add (xml_ns_2dict_t *xn2, nsdecl_t *ns);
+/*! Removes namespace declaration for prefix \c pref from \c xn2.
+Returns 1 if really deleted, 0 if the prefix is not found. */
+extern int xml_ns_2dict_del (xml_ns_2dict_t *xn2, caddr_t pref);
 /*! Adds all namespace declaration from \src into \c dest.
 Returns 1 if all declarations from \c src are really added or detected as duplicates,
 0 if there's at least one conflict between prefixes or URIs */
