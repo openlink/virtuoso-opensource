@@ -719,21 +719,6 @@ DB.DBA.install_run()
 drop procedure DB.DBA.install_run
 ;
 
-
-create procedure tut_nw_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
-
-create procedure tut_nw_html_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*#', path);
-  return subseq (r, 0, length (r)-1);
-};
-
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_nw_rule2',
     1,
