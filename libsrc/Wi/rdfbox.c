@@ -29,18 +29,6 @@
 #include "http.h" /* For DKS_ESC_XXX constants */
 
 void
-rdf_box_audit_impl (rdf_box_t * rb)
-{
-  if (0 >= rb->rb_ref_count)
-    GPF_T1("RDF box has nonpositive reference count");
-#ifdef RDF_DEBUG
-  if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
-    GPF_T1("RDF box is too incomplete");
-#endif
-}
-
-
-void
 rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
 {
   static query_t *rdf_box_qry_complete_xml = NULL;
@@ -94,22 +82,6 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
     }
   if ((!rb->rb_is_complete) && (CALLER_LOCAL != caller_qi))
     sqlr_new_error ("22023", "SR580", "RDF box refers to row with RO_ID = " BOXINT_FMT " of table DB.DBA.RDF_OBJ, but no such row in the table", (boxint)(rb->rb_ro_id) );
-}
-
-rdf_box_t *
-rb_allocate (void)
-{
-  rdf_box_t * rb= (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
-  rb->rb_ref_count = 1;
-  return rb;
-}
-
-rdf_bigbox_t *
-rbb_allocate (void)
-{
-  rdf_bigbox_t * rbb= (rdf_bigbox_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
-  rbb->rbb_base.rb_ref_count = 1;
-  return rbb;
 }
 
 
@@ -467,19 +439,18 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-#define RBS_OUTLINED	0x01
-#define RBS_COMPLETE	0x02
-#define RBS_HAS_LANG	0x04
-#define RBS_HAS_TYPE	0x08
-#define RBS_CHKSUM	0x10
-#define RBS_64		0x20
-
 
 int 
 rbs_length (db_buf_t rbs)
 {
   long hl, l;
   dtp_t flags = rbs[1];
+  if (flags & RBS_SKIP_DTP)
+    {
+      hl = 1;
+      l = rbs[2];
+    }
+  else
   db_buf_length (rbs + 2, &hl, &l);
   l += 2;
   if (flags & RBS_OUTLINED)
@@ -489,145 +460,6 @@ rbs_length (db_buf_t rbs)
   if (flags & (RBS_HAS_TYPE | RBS_HAS_LANG))
     l += 2;
   return hl + l;
-}
-
-
-static void
-print_short (short s, dk_session_t * ses)
-{
-  session_buffered_write_char (s >> 8, ses);
-  session_buffered_write_char (s & 0xff, ses);
-}
-
-static short 
-read_short (dk_session_t * ses)
-{
-  short s = ((short) (dtp_t)session_buffered_read_char (ses)) << 8;
-  s |= (dtp_t) session_buffered_read_char (ses);
-  return s;
-}
-
-
-void
-rb_serialize (caddr_t x, dk_session_t * ses)
-{
-  /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
-   * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
-  rdf_box_t * rb = (rdf_box_t *) x;
-  rdf_box_audit (rb);
-  if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
-    sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
-  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
-    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
-  if (DKS_DB_DATA (ses))
-    print_object (rb->rb_box, ses, NULL, NULL);
-  else 
-    {
-      int flags = 0;
-      session_buffered_write_char (DV_RDF, ses);
-      if (rb->rb_ro_id)
-	flags |= RBS_OUTLINED;
-      if (rb->rb_ro_id > INT32_MAX)
-	flags |= RBS_64;
-      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
-	flags |= RBS_HAS_LANG;
-      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-	flags |= RBS_HAS_TYPE;
-      if (rb->rb_chksum_tail)
-	flags |= RBS_CHKSUM;
-      if (rb->rb_chksum_tail)
-        {
-          caddr_t str = ((rdf_bigbox_t *)rb)->rbb_chksum;
-          int str_len = box_length (str) - 1;
-          session_buffered_write_char (flags, ses);
-	  if (str_len > RB_MAX_INLINED_CHARS)
-	    str_len = RB_MAX_INLINED_CHARS;
-	  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
-	  session_buffered_write_char (str_len, ses);
-	  session_buffered_write (ses, str, str_len);
-        }
-      else if (DV_STRING == DV_TYPE_OF (rb->rb_box))
-	{
-          caddr_t str = rb->rb_box;
-          int str_len = box_length (str) - 1;
-      if (rb->rb_is_complete && str_len <= RB_MAX_INLINED_CHARS)
-	flags |= RBS_COMPLETE;
-#ifdef RDF_DEBUG
-          else if (0 == rb->rb_ro_id)
-            GPF_T1 ("Unable to serialize complete but long-valued RDF box with zero ro_id");
-#endif
-      session_buffered_write_char (flags, ses);
-	  if (str_len > RB_MAX_INLINED_CHARS)
-	    str_len = RB_MAX_INLINED_CHARS;
-	  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
-	  session_buffered_write_char (str_len, ses);
-	  session_buffered_write (ses, str, str_len);
-	}
-      else 
-        {
-          if (rb->rb_is_complete)
-	    flags |= RBS_COMPLETE;
-          session_buffered_write_char (flags, ses);
-	print_object (rb->rb_box, ses, NULL, NULL);
-        }
-      if (rb->rb_ro_id)
-	{
-	  if (rb->rb_ro_id > INT32_MAX)
-	    print_int64_no_tag (rb->rb_ro_id, ses);
-	  else
-	print_long (rb->rb_ro_id, ses);
-	}
-      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
-	print_short  (rb->rb_type, ses);
-      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
-	print_short (rb->rb_lang, ses);
-      if (rb->rb_chksum_tail)
-        session_buffered_write_char (((rdf_bigbox_t *)rb)->rbb_box_dtp, ses);
-    }
-}
-
-
-caddr_t
-rb_deserialize (dk_session_t * ses)
-{
-  rdf_box_t * rb;
-  dtp_t flags = session_buffered_read_char (ses);
-  if (flags & RBS_CHKSUM)
-    {
-      rb = (rdf_box_t *)rbb_allocate ();
-      rb->rb_chksum_tail = 1;
-      ((rdf_bigbox_t *)rb)->rbb_chksum = scan_session_boxing (ses);
-    }
-  else
-    {
-      rb = rb_allocate ();
-  rb->rb_box = scan_session_boxing (ses);
-    }
-  if (flags & RBS_OUTLINED)
-    {
-      if (flags & RBS_64)
-	rb->rb_ro_id = read_int64 (ses);
-      else
-    rb->rb_ro_id = read_long (ses);
-    }
-  if (flags & RBS_COMPLETE)
-    rb->rb_is_complete = 1;
-  if (flags & RBS_HAS_TYPE)
-    rb->rb_type = read_short (ses);
-  else
-    rb->rb_type = RDF_BOX_DEFAULT_TYPE;
-  if (flags & RBS_HAS_LANG)
-    rb->rb_lang = read_short (ses);
-  else
-    rb->rb_lang = RDF_BOX_DEFAULT_LANG;
-  if (flags & RBS_CHKSUM)
-    ((rdf_bigbox_t *)rb)->rbb_box_dtp = session_buffered_read_char (ses);
-  if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
-    sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't deserialize");
-  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
-    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't deserialize");
-  rdf_box_audit (rb);
-  return (caddr_t) rb;
 }
 
 
@@ -684,6 +516,14 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 	}
     }
   flags1 = dv1[1];
+  if (RBS_SKIP_DTP & flags1)
+    {
+      data_dtp1 = DV_SHORT_STRING_SERIAL;
+      len1 = dv1[2];
+      data1 = dv1 + 3;
+    }
+  else
+    {
       data1 = dv1 + 2;
       data_dtp1 = data1[0];
   if (DV_SHORT_STRING_SERIAL != data_dtp1)
@@ -694,9 +534,20 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 #endif
       return dv_compare (data1, dv2, NULL);
     }
+      len1 = data1[1];
+      data1 += 2;
+    }
   if (DV_RDF == dtp2)
     {
       flags2 = dv2[1];
+      if (RBS_SKIP_DTP & flags2)
+        {
+          data_dtp2 = DV_SHORT_STRING_SERIAL;
+          len2 = dv2[2];
+          data2 = dv2 + 3;
+        }
+      else
+        {
       data2 = dv2 + 2;
       data_dtp2 = data2[0];
       if (DV_SHORT_STRING_SERIAL != data_dtp2)
@@ -709,6 +560,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     }
       len2 = data2[1];
       data2 += 2;
+        }
       rdftype2 = ((RBS_HAS_TYPE & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_TYPE);
       rdflang2 = ((RBS_HAS_LANG & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_LANG);
     }
@@ -734,8 +586,6 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 	  rdftype2 = RDF_BOX_DEFAULT_TYPE;
 	  rdflang2 = RDF_BOX_DEFAULT_LANG;
 	}
-  len1 = data1[1];
-  data1 += 2;
   rdftype1 = ((RBS_HAS_TYPE & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_TYPE);
   if (rdftype1 < rdftype2) return DVC_DTP_LESS;
   if (rdftype1 > rdftype2) return DVC_DTP_GREATER;
@@ -774,7 +624,9 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 	return DVC_LESS;
         if (len1 > len2)
 	return DVC_GREATER;
-          /*return DVC_MATCH; -- Complete boxes that differ only in ro_id are intentionally kept distinct in table but equal in memory */
+/* In version 5, complete boxes that differ only in ro_id are intentionally kept distinct in table but equal in memory.
+In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of ids is zero. ids are compared only if both boxes are ncomplete.
+          return DVC_MATCH; */
     }
     else if (cmp_len < RB_MAX_INLINED_CHARS)
 	{
@@ -783,6 +635,11 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
         if ((len2 == cmp_len) && (len1 > cmp_len))
 		return DVC_GREATER;
 	    }
+/* In version 6 (Vajra) the comparison is better, by adding these two comparisons:
+      else if (RBS_COMPLETE & flags2)
+        return DVC_GREATER;
+      else if (RBS_COMPLETE & flags1)
+        return DVC_LESS; */
 	    }
   if (DV_RDF == dtp2)
 	{
@@ -1190,12 +1047,104 @@ bif_rdf_dist_deser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return deser;
 }
 
+static void
+print_short (short s, dk_session_t * ses)
+{
+  session_buffered_write_char (s >> 8, ses);
+  session_buffered_write_char (s & 0xff, ses);
+}
+
+void
+rb_serialize (caddr_t x, dk_session_t * ses)
+{
+  /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
+   * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
+  client_connection_t *cli = DKS_DB_DATA (ses);
+  rdf_box_t * rb = (rdf_box_t *) x;
+  rdf_box_audit (rb);
+  if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
+    sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
+  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
+    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
+  if (cli && cli->cli_version < 3031)
+    print_object (rb->rb_box, ses, NULL, NULL);
+  else 
+    {
+      int flags = 0;
+      session_buffered_write_char (DV_RDF, ses);
+      if (rb->rb_ro_id)
+	flags |= RBS_OUTLINED;
+      if (rb->rb_ro_id > INT32_MAX)
+	flags |= RBS_64;
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+	flags |= RBS_HAS_LANG;
+      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+	flags |= RBS_HAS_TYPE;
+      if (rb->rb_chksum_tail)
+	flags |= RBS_CHKSUM;
+      if (cli)
+	{
+          if (rb->rb_is_complete)
+	    flags |= RBS_COMPLETE;
+          session_buffered_write_char (flags, ses);
+	  print_object (rb->rb_box, ses, NULL, NULL);
+	}
+      else if (rb->rb_chksum_tail)
+        {
+          caddr_t str = ((rdf_bigbox_t *)rb)->rbb_chksum;
+          int str_len = box_length (str) - 1;
+          session_buffered_write_char (flags, ses);
+	  if (str_len > RB_MAX_INLINED_CHARS)
+	    str_len = RB_MAX_INLINED_CHARS;
+	  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
+	  session_buffered_write_char (str_len, ses);
+	  session_buffered_write (ses, str, str_len);
+        }
+      else if (DV_STRING == DV_TYPE_OF (rb->rb_box))
+	{
+          caddr_t str = rb->rb_box;
+          int str_len = box_length (str) - 1;
+          if (rb->rb_is_complete && str_len <= RB_MAX_INLINED_CHARS)
+	    flags |= RBS_COMPLETE;
+#ifdef RDF_DEBUG
+          else if (0 == rb->rb_ro_id)
+            GPF_T1 ("Unable to serialize complete but long-valued RDF box with zero ro_id");
+#endif
+          session_buffered_write_char (flags, ses);
+	  if (str_len > RB_MAX_INLINED_CHARS)
+	    str_len = RB_MAX_INLINED_CHARS;
+	  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
+	  session_buffered_write_char (str_len, ses);
+	  session_buffered_write (ses, str, str_len);
+	}
+      else
+        {
+          if (rb->rb_is_complete)
+	    flags |= RBS_COMPLETE;
+          session_buffered_write_char (flags, ses);
+          print_object (rb->rb_box, ses, NULL, NULL);
+        }
+      if (rb->rb_ro_id)
+	{
+	  if (rb->rb_ro_id > INT32_MAX)
+	    print_int64_no_tag (rb->rb_ro_id, ses);
+	  else
+	    print_long (rb->rb_ro_id, ses);
+	}
+      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+	print_short (rb->rb_type, ses);
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+	print_short (rb->rb_lang, ses);
+      if (rb->rb_chksum_tail)
+        session_buffered_write_char (((rdf_bigbox_t *)rb)->rbb_box_dtp, ses);
+    }
+}
+
 void
 rdf_box_init ()
 {
   dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 0);
   PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
-  get_readtable ()[DV_RDF] = (macro_char_func) rb_deserialize;
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);

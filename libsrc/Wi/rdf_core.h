@@ -36,16 +36,6 @@ extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
   box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
   box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
 
-#ifdef DEBUG
-#define rdf_box_audit(rb) rdf_box_audit_impl(rb)
-#define rdf_bigbox_audit(rbb) rdf_box_audit_impl(&(rbb->rbb_base))
-#else
-#define rdf_box_audit(rb)
-#define rdf_bigbox_audit(rbb)
-#endif
-
-extern void rdf_box_audit_impl (rdf_box_t * rb);
-
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
 

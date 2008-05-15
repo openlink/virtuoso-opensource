@@ -2393,6 +2393,13 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 
 	  return piece_len;
 	}
+      case DV_RDF:
+	{
+	  rdf_box_t * rb = (rdf_box_t *) it;
+	  str = rb->rb_box;
+	  len = box_length (rb->rb_box);
+	  break;
+	}
 
       default:
 	snprintf (temp, sizeof (temp), "%u=dtp Unknown type in dv_to_str_place", dtp);
@@ -2672,12 +2679,18 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	{
 	case SQL_C_CHAR:
 	case SQL_C_BINARY:
-	case SQL_C_BOX:	/* For a while, let it be here. */
 #ifndef O12
 	case SQL_C_OID:
 #endif
 	case SQL_C_WCHAR:
 	  return dv_to_str_place (it, its_type, max, place, len_ret, str_from_pos, stmt, nth_col, len, c_type, sql_type);
+
+	case SQL_C_BOX:	
+	    {
+	      ret_len = sizeof (caddr_t);
+	      *((caddr_t *)place) = (caddr_t) it;
+	      break;
+	    }
 
 	case SQL_C_SLONG:
 	case SQL_C_LONG:

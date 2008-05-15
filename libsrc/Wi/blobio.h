@@ -149,9 +149,6 @@ struct it_cursor_s;
 int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, unsigned to);
 
 
-#define RDF_BOX_DEFAULT_TYPE 257
-#define RDF_BOX_DEFAULT_LANG 257
-
 int rbs_length (db_buf_t rbs);
 
 extern caddr_t rb_copy (rdf_box_t * rb);
