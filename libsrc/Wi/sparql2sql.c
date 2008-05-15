@@ -6250,7 +6250,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     }
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
-  sparp->sparp_expr = spartlist (sparp, 20, SPAR_CODEGEN, /* #0 */
+  sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN, /* #0 */
     t_box_num ((ptrlong)(ssg_grabber_codegen)),
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
@@ -6266,8 +6266,9 @@ sparp_rewrite_grab (sparp_t *sparp)
     t_box_copy (rgc->rgc_base),	/* #13 */
     t_box_copy (rgc->rgc_destination), t_box_copy (rgc->rgc_group_destination),	/* #14-#15 */
     t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #16-#17 */
-    (ptrlong)use_plain_return,	/* #18 */
-    t_box_num (rgc_flags) );	/* #19 */
+    /* no copy here, pass by ref */ sparp->sparp_env->spare_sql_refresh_free_text, /* #18 */
+    (ptrlong)use_plain_return,	/* #19 */
+    t_box_num (rgc_flags) );	/* #20 */
 }
 
 void
@@ -6288,11 +6289,12 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   caddr_t grab_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #12 */
   caddr_t base			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #13 */
   caddr_t destination		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
-  caddr_t group_destination	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
-  caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
-  caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
-  int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #17 */
-  caddr_t rgc_flags		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #18 */
+  caddr_t group_destination	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
+  caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
+  caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #17 */
+  int refresh_free_text		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #18 */
+  int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #19 */
+  caddr_t rgc_flags		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #20 */
   int varctr, varcount = BOX_ELEMENTS (retvals);
   int need_comma;
   caddr_t call_alias = t_box_sprintf (0x100, "grabber-t%d", ssg->ssg_sparp->sparp_key_gen);
@@ -6348,7 +6350,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   ssg_newline (0);
   ssg_puts ("FROM ");
   ssg_prin_function_name (ssg, procedure_name);
-      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _plain_ret, _grabber_flags) (rset any) ");
+      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _refresh_free_text, _plain_ret, _grabber_flags) (rset any) ");
   ssg_prin_id (ssg, call_alias);
       ssg_newline (0);
       ssg_puts ("WHERE _grabber_params = ");
@@ -6394,6 +6396,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
   PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
   PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
+  PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
   PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong)use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
 #undef PROC_PARAM_EQ_SPART
