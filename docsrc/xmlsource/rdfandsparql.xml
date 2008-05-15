@@ -5645,13 +5645,297 @@ db..rdf_load_rdfxml (file_to_string_output ('file.xml'), 'base_uri', 'target_gra
 checkpoint;
 </programlisting>
 <para>Loading a file with text like the above with isql will load the data.  Since the transaction logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server restart since there is no roll forward log.</para>
-<para>If large amounts of data are to be loaded, run multiple such streams
-in parallel.  One may have for example 6 streams for 4 cores.  This
+<para>If large amounts of data are to be loaded, run multiple such streams in parallel. One may have for example 6 streams for 4 cores. This
 means that if up to two threads wait for disk, there is still work
 for all cores.</para>
 <para>Having substantially more threads than processors or disks is not particularly useful.</para>
 <para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thread per file is better.</para>
 <para>For loading Turtle, some platforms may have a non-reentrant Turtle parser.  This means that only one load may run at a time.  One can try this by calling <link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time. If these do not execute concurrently, then the best way may be to try <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than a single threaded ttlp call.</para>
+       <sect3 id="rdfperfloadingunitpro"><title>Loading UniProt RDF data</title>
+<para>To load the uniprot data, create a function for example such as:</para>
+<programlisting><![CDATA[
+create function DB.DBA.UNIPROT_LOAD (in log_mode integer := 1)
+{
+  DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output('filename1'),'http://base_uri_1', 'destination_graph_1', log_mode, 3);
+  DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output('filename2'),'http://base_uri_2', 'destination_graph_2', log_mode, 3);
+  ...
+  DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output('filename9'),'http://base_uri_9', 'destination_graph_9', log_mode, 3);
+}
+]]></programlisting>
+<para>If you are starting from blank database and you can drop it and re-create in case of error signaled, use it this way:</para>
+<programlisting><![CDATA[
+checkpoint;
+checkpoint_interval(6000);
+DB.DBA.UNIPROT_LOAD (0),
+checkpoint;
+checkpoint_interval(60);
+]]></programlisting>
+<para>If the database contains important data already and there's no way to stop it and backup before the load then use:</para>
+<programlisting><![CDATA[
+checkpoint;
+checkpoint_interval(6000);
+DB.DBA.UNIPROT_LOAD (),
+checkpoint;
+checkpoint_interval(60);
+]]></programlisting>
+<para>Note that the 'number of threads' parameter of DB.DBA.RDF_LOAD_RDFXML() mentions threads
+used to process data from file, an extra thread will read the text and parse it,
+so for 4 CPU cores there's no need in parameter value greater than 3. Three processing
+threads per one parsing tread is usually good ratio because parsing is usually three
+times faster than the rest of loading so CPU loading is well balanced.
+If for example you are using 2 x Quad Xeon, then you can choose between 8
+single-threaded parsers or 2 parsers with 3 processing threads each. With 4 cores you may simply load
+file after file with 3 processing threads. The most important performance tuning is to set the
+[Parameters] section of virtuoso configuration file:</para>
+<programlisting><![CDATA[
+NumberOfBuffers = 1000000
+MaxDirtyBuffers = 800000
+MaxCheckpointRemap = 1000000
+]]></programlisting>
+<para>Note: these numbers are reasonable for 16 GB RAM Linux box. Usually when there are no such massive operations as loading huge database, you can set up the values as:</para>
+<programlisting><![CDATA[
+NumberOfBuffers = 1500000
+MaxDirtyBuffers = 1200000
+MaxCheckpointRemap = 1500000
+]]></programlisting>
+<para>Tip: Thus after loading all data you may wish to shutdown, tweak and start server again.
+If you have ext2fs or ext3fs filesystem, then it's better to have enough free space on disk not to
+make it more than 80% full.  When it's almost full it may allocate database file badly, resulting
+in measurable loss of disk access speed. That is not Virtuoso-specific fact, but a common hint
+for all database-like applications with random access to big files.</para>
+<para>Here is an example of using awk file for splitting big file smaller ones:</para>
+<programlisting><![CDATA[
+BEGIN {
+	file_part=1000
+	e_line = "</rdf:RDF>"
+        cur=0
+        cur_o=0
+	file=0
+	part=file_part
+      }
+	{
+	    res_file_i="res/"FILENAME
+	    line=$0
+	    s=$1
+	    res_file=res_file_i"_"file".rdf"
+
+	    if (index (s, "</rdf:Description>") == 1)
+	    {
+		cur=cur+1
+		part=part-1
+	    }
+
+	    if (part > 0)
+	    {
+	    	print line >> res_file
+	    }
+
+	    if (part == 0)
+	    {
+#		print "===================== " cur
+	    	print line >> res_file
+		print e_line >> res_file
+		close (res_file)
+		file=file+1
+		part=file_part
+	    	res_file=res_file_i"_"file".rdf"
+		system ("cp beg.txt " res_file)
+	    }
+        }
+END { }
+]]></programlisting>
+       </sect3>
+       <sect3 id="rdfperfloadingdbpedia"><title>Loading DBPedia RDF data</title>
+<para>You can use the following script as an example for loading DBPedia RDF data in Virtuoso:</para>
+<programlisting><![CDATA[
+#!/bin/sh
+
+LOG=load_dbpedia.log
+#rm -f $LOG
+
+#Directory structore
+mkdir BAD   2>> /dev/null
+mkdir READY 2>> /dev/null
+
+ISQL=${ISQL-isql}
+PORT=${PORT-1118}
+DATABASE_USER=${DATABASE_USER-dba}
+DATABASE_PASS=${DATABASE_PASS-dba}
+DATABASE_INI=${DATABASE_INI-dbpedia.ini}
+
+DSN="$ISQL $PORT $DATABASE_USER $DATABASE_PASS"
+export LOG DSN DATABASE_INI
+
+STAR_NEW_SERVER ()
+{
+	rm -rf core *.lck   2>> /dev/null
+	echo "Starting OpenLink Virtuoso Universal Server"
+        virtuoso-iodbc-t +wait -c $DATABASE_INI
+	sleep 5
+	echo "Starting OpenLink Virtuoso Universal Server - Done."
+	STATUS=1
+}
+
+CHECK_LOG()
+{
+    rline=`cat temp.res | grep -i "TURTLE RDF loader"`
+    if test "x$rline" != "x"
+    then
+	echo "BAD FILE. " $1 | tee -a $LOG
+	echo $bad_line
+	bad_line=`cat temp.res | grep "TURTLE RDF loader" | sed -e "s/\*\*\* Error 37000: \[Virtuoso Driver\]\[Virtuoso Server\]SP029: TURTLE RDF loader, line //g" | cut -f 1 -d :`
+	echo "Bad line:" $bad_line " from " $1
+	mv $1 BAD
+    fi
+
+    rline=`cat temp.res | grep -i "Lost connection to server"`
+    if test "x$rline" != "x"
+    then
+	echo "GPF !!! in " $1 | tee -a $LOG
+	STAR_NEW_SERVER
+	return
+    fi
+
+    rline=`cat temp.res | grep -i "Connect failed"`
+    if test "x$rline" != "x"
+    then
+	STAR_NEW_SERVER
+	return
+    fi
+
+    sleep 1
+    STATUS=0
+}
+
+echo "======================================="
+echo "Loading dbpedia started."
+echo "======================================="
+
+LOAD_ONE ()
+{
+    FINISH=0
+    for f in `find data -name '*.nt'`
+    do
+	du -h data READY $f
+	#   LOAD DATA
+	echo "Loading $f (`cat $f | wc -l` lines) `date \"+%H:%M:%S\"`" | tee -a $LOG
+	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout  \
+	exec="ttlp_mt (file_to_string_output ('$f'), '', 'http://dbpedia.org');" > temp.res
+	cat temp.res >> $LOG
+	CHECK_LOG $f
+	if test $STATUS -ne 0
+	then
+	    return
+	fi
+
+	#   CHECKPOINT
+	echo "Checkpoint start at: `date \"+%H:%M:%S\"`" | tee -a $LOG
+	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout exec="checkpoint;" > temp.res
+	cat temp.res >> $LOG
+
+	CHECK_LOG $f
+	if test $STATUS -ne 0
+	then
+	    return
+	fi
+	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout  \
+	exec="sparql select count(*) where { ?s <http://dbpedia.org/property/wordnet_type> ?o};" > temp.res
+	cat temp.res >> $LOG
+	CHECK_LOG $f
+	echo "Finish.  "
+	echo "======================================="
+	mv $f READY 2>> /dev/null
+	rm temp.res
+	return
+    done
+
+    FINISH=1
+}
+
+while true
+do
+  LOAD_ONE
+  if test $FINISH -ne 0
+  then
+      echo "If you read this you have a red letter day !!!"
+      echo "Check BAD directory for bad skiped files."
+      echo "======================================="
+      exit 0
+  fi
+done
+]]></programlisting>
+       </sect3>
+       <sect3 id="rdfperfloadingbio2rdf"><title>Loading Bio RDF data</title>
+<para>The shell script below was used to import files in n3 notation into OpenLink Virtuoso RDF storage.</para>
+<para>When an syntax error it will cut content from next line and will retry. This was used on ubuntu linux to import bio2rdf and freebase dumps.</para>
+<para>Note it uses gawk, so it must be available on system where is tried. Also for recovery additional disk space is needed at max the size of original file.</para>
+<programlisting><![CDATA[
+#!/bin/bash
+
+PASS=$1
+f=$2
+g=$3
+
+# Usage
+if [ -z "$PASS" -o -z "$f" -o -z "$g" ]
+then
+  echo "Usage: $0 [password] [ttl-file] [graph-iri]"
+  exit
+fi
+
+if [ ! -f "$f" ]
+then
+    echo "$f does not exists"
+    exit
+fi
+
+# Your port here
+PORT=1111  #`inifile -f dbpedia.ini -s Parameters -k ServerPort`
+if test -z "$PORT"
+then
+    echo "Cannot find INI and inifile command"
+    exit
+fi
+
+# Initial run
+isql $PORT dba $PASS verbose=on banner=off prompt=off echo=ON errors=stdout exec="ttlp_mt (file_to_string_output ('$f'), '', '$g'); checkpoint;" > $0.log
+
+# If disconnect etc.
+if [ $? != 0 ]
+then
+    echo "An error occured, please check $0.log"
+    exit
+fi
+
+# Check for error
+line_no=`grep Error $0.log | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
+newf=$f.part
+inx=1
+
+# Error recovery
+while [ ! -z "$line_no" ]
+do
+    cat $f |  awk "BEGIN { i = 0 } { if (i==$line_no) { print \$0; exit; } i = i + 1 }"  >> bad.nt
+    line_no=`expr $line_no + 1`
+    echo "Retryng from line $line_no"
+    cat $f |  awk "BEGIN { i = 0 } { if (i>=$line_no) print \$0; i = i + 1 }"  > tmp.nt
+    mv tmp.nt $newf
+    f=$newf
+    mv $0.log $0.log.$inx
+    # Run the recovered part
+    isql $PORT dba $PASS verbose=on banner=off prompt=off echo=ON errors=stdout exec="ttlp_mt (file_to_string_output ('$f'), '', '$g'); checkpoint;" > $0.log
+
+    if [ $? != 0 ]
+    then
+	echo "An error occured, please check $0.log"
+	exit
+    fi
+   line_no=`grep Error $0.log | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
+   inx=`expr $inx + 1`
+done
+]]></programlisting>
+
+       </sect3>
     </sect2>
     <sect2 id="rdfperfsparul"><title>Using SPARUL</title>
 	<para>Since SPARUL updates are generally not ment to be transactional, it is
@@ -5892,6 +6176,16 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id
 [Virt]	QmSqlId		 ::=  PLAIN_ID | 'TEXT' | 'XML'
 [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' String ')' )
+]]></programlisting>
+<para><emphasis>Example using OFFSET and LIMIT:</emphasis></para>
+<para>Virtuoso uses a zero index in the OFFSET. Thus in the example below, will be taken position at
+record 9000 in the result set, and will get the next 1000 rows starting from 9001 record. Note that the
+MaxSortedTopRows in parameters Virtuoso ini section needs to be encreased (default is 10000).</para>
+<programlisting><![CDATA[
+select ?name
+ORDER BY ?name
+OFFSET 9000
+LIMIT 1000
 ]]></programlisting>
 <sect2 id="rdfsparqlandxquery"><title>SPARQL and XQuery Core Function Library</title>
 <para>In the current implementation, the XQuery Core Function Library is not available from SPARQL.</para>

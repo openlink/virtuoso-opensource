@@ -854,7 +854,18 @@ JavaVMOption5  = -Ddt5=val5
 			pertinent to the result.  The number of rows allowed to be cached
 			within memory is limited by this parameter.</para>
             </formalpara>
+<para><emphasis>Simple example using OFFSET and LIMIT:</emphasis></para>
+<para>Virtuoso uses a zero index in the OFFSET. Thus in the example below, will be taken position at
+record 9000 in the result set, and will get the next 1000 rows starting from 9001 record. Note that the
+MaxSortedTopRows in parameters Virtuoso ini section needs to be encreased (default is 10000).</para>
+<programlisting><![CDATA[
+select ?name
+ORDER BY ?name
+OFFSET 9000
+LIMIT 1000
+]]></programlisting>
 				</listitem>
+
 				<listitem id="ini_Parameters_DisableUnixSocket">
 					<formalpara>
 						<title>DisableUnixSocket = 0/1 default 0</title>
