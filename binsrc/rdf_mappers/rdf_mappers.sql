@@ -2656,9 +2656,10 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns var
     datatype := (sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> select ?range from <http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property; rdfs:range ?range } );
     datatype := subseq(datatype, strrchr(datatype, '#') + 1);
     datatype := subseq(datatype, 0, strstr(datatype, 'ItemType'));
-    if (datatype = 'monetary')
-        return 'decimal';
-    else
+    if (datatype = 'monetary' or datatype = 'perShare' or datatype = 'shares' or datatype = 'pure' or datatype = 'percent')
+        datatype := 'decimal';
+    else if (datatype is NULL or datatype = '' or datatype = 'textBlock')
+		datatype := 'string';
         return datatype;
 };
 
