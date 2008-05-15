@@ -432,10 +432,6 @@
                     linkClass := self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG'));
                     href := SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id);
                     nodeType := ENEWS.WA.node_type (self.fNode);
-                    if ((nodeType = 'c') and (self.domain_id < 0))
-                    {
-                      nodeType := 'p';
-                    }
                     onclick := sprintf ('javascript: loadIFrame(\'%d\', \'%s\'); return false;', id, nodeType);
                     appIri := '';
                     if (ENEWS.WA.node_type (self.fNode) in ('c', 'f', 's'))
