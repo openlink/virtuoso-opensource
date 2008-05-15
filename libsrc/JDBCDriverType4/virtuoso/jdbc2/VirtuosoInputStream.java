@@ -555,8 +555,12 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_IRI_ID_8:
              case VirtuosoTypes.DV_INT64:
                    {
-                     res = new Long((((long)readlongint() << 32) & 0xffffffff00000000L) |
-          (readlongint() & 0xffffffffL));
+                     res = new Long((((long)readlongint() << 32) & 0xffffffff00000000L) | (readlongint() & 0xffffffffL));
+                     return res;
+                   }
+	     case VirtuosoTypes.DV_RDF:		   
+		   {
+		     res = readRdfBox ();
                      return res;
                    }
              default:
@@ -600,6 +604,11 @@ class VirtuosoInputStream extends BufferedInputStream
    private int readshortint() throws IOException
    {
       return read();
+   }
+
+   private short readshort() throws IOException
+   {
+      return (short) ( ((read() << 8) & 0xff00) | (read() & 0xff) );
    }
 
    /**
@@ -712,6 +721,45 @@ class VirtuosoInputStream extends BufferedInputStream
       bd = new BigDecimal( ((isneg) ? "-" : "") + new String(dp, 0,
           (rp != 4) ? (i - (((array[2] & 0x02) == 0x02) ? 1 : 0)) : 1));
       return bd;
+   }
+
+   private VirtuosoRdfBox readRdfBox () throws IOException, VirtuosoException
+   {
+      int flags = read ();
+      Object box;
+      short type;
+      short lang;
+      boolean is_complete = false;
+      long ro_id = 0L;
+      VirtuosoRdfBox rb;
+
+      if (0 != (flags & VirtuosoRdfBox.RBS_CHKSUM))
+      {
+	throw new VirtuosoException ("Invalid rdf box received", "42000", VirtuosoException.MISCERROR);
+      }
+      box = read_object ();
+      if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
+      {
+	if (0 != (flags & VirtuosoRdfBox.RBS_64))
+	  ro_id = (((long)readlongint() << 32) & 0xffffffff00000000L) | (readlongint() & 0xffffffffL);
+	else
+	  ro_id = readlongint ();
+      }
+
+      if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE))
+	is_complete = true; 
+
+      if (0 != (flags & VirtuosoRdfBox.RBS_HAS_TYPE))
+	type = readshort ();
+      else 
+	type = VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE;
+
+      if (0 != (flags & VirtuosoRdfBox.RBS_HAS_LANG))
+	lang = readshort ();
+      else 
+	lang = VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG;
+      rb = new VirtuosoRdfBox (this.connection, box, is_complete, type, lang, ro_id);
+      return rb;
    }
 
    private Object readObject() throws IOException, VirtuosoException

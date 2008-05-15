@@ -245,6 +245,8 @@ class VirtuosoTypes
    public static final int DV_IRI_ID = 243;
    public static final int DV_IRI_ID_8 = 244;
 
+   public static final int DV_RDF = 246;
+
    /**
     *  Codes for Remote Actions
     */

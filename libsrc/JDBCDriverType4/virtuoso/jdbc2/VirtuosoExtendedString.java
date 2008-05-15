@@ -30,17 +30,26 @@ public class VirtuosoExtendedString
 {
     public String str;
     public int strType;
+    public int iriType;
+
+    public static final int IRI = 1;
+    public static final int BNODE = 2;
 
     public VirtuosoExtendedString (String str, int type)
     {
 	this.str = str;
 	this.strType = type;
+	if (str.indexOf ("nodeID://") == 0)
+	    this.iriType = VirtuosoExtendedString.BNODE;
+	else
+	    this.iriType = VirtuosoExtendedString.IRI;
     }
     
     public VirtuosoExtendedString (int type)
     {
 	this.str = new String ();
 	this.strType = type;
+	this.iriType = VirtuosoExtendedString.IRI;
     }
     
     public String toString ()

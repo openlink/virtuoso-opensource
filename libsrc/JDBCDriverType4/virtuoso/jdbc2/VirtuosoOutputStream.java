@@ -398,6 +398,11 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 write_object (o.str);
 		 return;
 	       }
+	 case VirtuosoTypes.DV_RDF:
+	       {
+		   writeRdfBox ((VirtuosoRdfBox) obj);
+		   return;
+	       }
 	 default:
 	     // Problem !
 	     //System.err.println("Tag not defined : "+tag + "object=[" + obj.toString() + "]");
@@ -509,6 +514,12 @@ class VirtuosoOutputStream extends BufferedOutputStream
       write((int)n);
    }
 
+   protected void writeshort (short n) throws IOException
+   {
+     write ((int)n >> 8);
+     write ((int)n & 0xff);
+   }
+
    /**
     * Method to send a numeric value depending DV_NUMERIC type.
     *
@@ -585,6 +596,43 @@ class VirtuosoOutputStream extends BufferedOutputStream
 //      for(i++;i <= numaftdot + numbefdot;i += 2)
 //         write(((bcd.charAt(i) - '0') << 4) | ((((flags & 0x2) == 0x2) && (i + 1) >= bcd.length()) ? 0 : (bcd.charAt(i + 1) - '0')));
 
+   }
+
+   private void writeRdfBox (VirtuosoRdfBox rb) throws IOException, VirtuosoException
+   {
+      int flags = 0;
+
+      write (VirtuosoTypes.DV_RDF);
+
+      if (rb.rb_ro_id != 0)
+	flags |= VirtuosoRdfBox.RBS_OUTLINED;
+      if (rb.rb_ro_id > 0xffffffffL)
+	flags |= VirtuosoRdfBox.RBS_64;
+      if (VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG != rb.rb_lang)
+	flags |= VirtuosoRdfBox.RBS_HAS_LANG;
+      if (VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE != rb.rb_type)
+	flags |= VirtuosoRdfBox.RBS_HAS_TYPE;
+      if (rb.rb_is_complete)
+	flags |= VirtuosoRdfBox.RBS_COMPLETE;
+
+      write (flags);
+      write_object (rb.rb_box);
+      if (rb.rb_ro_id != 0) 
+      {
+	if (rb.rb_ro_id > 0xffffffffL)
+	{
+	  writelong ((rb.rb_ro_id >> 32) & 0xffffffffL);
+	  writelong (rb.rb_ro_id & 0xffffffffL);
+	}
+	else
+	{
+	  writelong (rb.rb_ro_id);
+	}
+      }
+      if (VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE != rb.rb_type)
+	writeshort (rb.rb_type);
+      if (VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG != rb.rb_lang)
+	writeshort (rb.rb_lang);
    }
 
    private void writeobject(Object obj) throws IOException
@@ -902,6 +950,10 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	  //System.err.println ("OUT: ExpObj=" + sobj.toString());
 	  return ((VirtuosoExplicitString)obj).getDtp();
 	}
+      if (obj instanceof VirtuosoExtendedString)
+	return VirtuosoTypes.DV_BOX_FLAGS;  
+      if (obj instanceof VirtuosoRdfBox)
+	return VirtuosoTypes.DV_RDF;  
       return 0;
    }
 

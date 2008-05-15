@@ -125,6 +125,12 @@ public class VirtuosoConnection implements Connection
 #endif
 
    protected String charset;
+
+   protected Hashtable rdf_type_hash = null;
+   protected Hashtable rdf_lang_hash = null;
+   protected Hashtable rdf_type_rev = null;
+   protected Hashtable rdf_lang_rev = null;
+
    /**
     * Constructs a new connection to Virtuoso database and makes the
     * connection.
@@ -166,6 +172,11 @@ public class VirtuosoConnection implements Connection
       //System.err.println ("4PwdClear is " + pwdclear);
       // Create the hash table
       futures = new Hashtable();
+      // RDF box type & lang
+      rdf_type_hash = new Hashtable ();
+      rdf_lang_hash = new Hashtable ();
+      rdf_type_rev = new Hashtable ();
+      rdf_lang_rev = new Hashtable ();
       // Connect to the database
       connect(host,port,(String)prop.get("database"));
    }
