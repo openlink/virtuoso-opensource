@@ -3175,7 +3175,7 @@ bif_xml_validate_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       blob_arg_len = (((blob_handle_t *) text_arg)->bh_length);
       blob_arg_len *= (arg_is_wide ? sizeof (wchar_t) : sizeof (char));
       if( MAX_XML_STRING_LENGTH < blob_arg_len)
-	sqlr_error ("42000", "Unable to validate BLOB of length %ld bytes", blob_arg_len);
+	sqlr_error ("42000", "Unable to validate BLOB of length %ld bytes", (long)blob_arg_len);
       text = blob_to_string (((query_instance_t *)(qst))->qi_trx, text_arg);
       text_is_temporary = 1;
     } while (0);
@@ -3708,7 +3708,7 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       blob_arg_len = (((blob_handle_t *) text_arg)->bh_length);
       blob_arg_len *= (arg_is_wide ? sizeof (wchar_t) : sizeof (char));
       if( MAX_XML_STRING_LENGTH < blob_arg_len)
-	sqlr_error ("42000", "Unable to validate BLOB of length %ld bytes", blob_arg_len);
+	sqlr_error ("42000", "Unable to validate BLOB of length %ld bytes", (long)blob_arg_len);
       text = blob_to_string (((query_instance_t *)(qst))->qi_trx, text_arg);
       text_is_temporary = 1;
     } while (0);

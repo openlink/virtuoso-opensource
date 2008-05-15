@@ -3013,7 +3013,7 @@ box_find_mt_unsafe_subtree (caddr_t box)
         if (NULL != hit->hit_hash->ht_mutex)
           return NULL;
         id_hash_iterator (&tmp_hit, hit->hit_hash);
-        while (hit_next (&tmp_hit, &key_ptr, &val_ptr))
+        while (hit_next (&tmp_hit, (char **)(&key_ptr), (char **)(&val_ptr)))
           {
             caddr_t res;
             res = box_find_mt_unsafe_subtree (key_ptr[0]);
