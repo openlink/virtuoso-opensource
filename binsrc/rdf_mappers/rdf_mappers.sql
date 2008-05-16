@@ -2658,7 +2658,7 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_DATATYPE(in elem varchar) returns var
     datatype := subseq(datatype, 0, strstr(datatype, 'ItemType'));
     if (datatype = 'monetary' or datatype = 'perShare' or datatype = 'shares' or datatype = 'pure' or datatype = 'percent')
         datatype := 'decimal';
-    else if (datatype is NULL or datatype = '' or datatype = 'textBlock')
+    else if (datatype is NULL or datatype = '' or datatype = 'domain' or datatype = 'textBlock' or datatype = 'fractionItemType')
 		datatype := 'string';
         return datatype;
 };
