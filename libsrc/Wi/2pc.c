@@ -1185,7 +1185,7 @@ static unsigned long
 virt_prepare_set_log (tp_data_t * tpd)
 {
   box_t info_box = dk_alloc_box (sizeof (trx_uuid_t), DV_BIN);
-  uuid_parse ((char *) tpd->tpd_trx_cookie, (struct uuid_s *) info_box);
+  uuid_parse ((char *) tpd->tpd_trx_cookie, (unsigned char *) info_box);
   tpd->cli_tp_lt->lt_2pc._2pc_log = info_box;
   return 0;
 }

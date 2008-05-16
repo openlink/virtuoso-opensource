@@ -43,7 +43,6 @@
 #define xml_dbg_printf(a)
 #endif
 
-#define V8B				((unsigned char)(0x80))
 #define VXML_CHARPROP_CTRL		((unsigned char)('A'^'@'))	/*0x01*/
 #define VXML_CHARPROP_SPACE		((unsigned char)('B'^'@'))	/*0x02*/
 #define VXML_CHARPROP_TEXTEND		((unsigned char)('D'^'@'))	/*0x04*/

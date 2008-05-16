@@ -5164,7 +5164,8 @@ int check_for_failed_tables(struct tabledeflist *tl)
 
 
 
-void main (int argc, char ** argv)
+int 
+main (int argc, char ** argv)
 {
   int rc;
   char *query_string;
@@ -5574,6 +5575,8 @@ error:
 
 
   SQLDisconnect (hdbc);
+
+  exit (0);
 }
 
 /* ================================================================== */

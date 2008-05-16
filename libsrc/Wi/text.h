@@ -46,7 +46,7 @@ typedef struct d_id_u {
 { \
   if ((int64) (id) > (int64)D_ID32_MAX) \
     { ((dtp_t*)(place))[0] = D_ID_64; \
-      INT64_SET_NA ((((db_buf_t)(place)) + 1), (id)); \
+      INT64_SET_NA ((((db_buf_t)(place)) + 1), ((int64) id)); \
     } else { \
     LONG_SET_NA ((place), (id)); \
   } \

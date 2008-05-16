@@ -506,7 +506,7 @@ caddr_t DBG_NAME(mp_box_num) (DBG_PARAMS mem_pool_t * mp, boxint n)
 {
   caddr_t box;
   if (!IS_POINTER (n))
-    return (box_t) n;
+    return (box_t) (ptrlong) n;
 
   MP_INT (box, mp, n, DV_INT_TAG_WORD);
   return box;

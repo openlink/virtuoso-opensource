@@ -390,7 +390,7 @@ col_binding_t *stmt_nth_col (cli_stmt_t *stmt, int n);
 void set_error (sql_error_t *err, const char *state, const char *virt_state, const char *message);
 sql_error_rec_t * cli_make_error (const char * state, const char *virt_state, const char * msg, int col);
 void  err_queue_append (sql_error_rec_t ** q1, sql_error_rec_t ** q2);
-void set_success_info (sql_error_t * err, const char *state, char *virt_state, const char *message, int col);
+void set_success_info (sql_error_t * err, const char *state, const char *virt_state, const char *message, int col);
 void set_data_truncated_success_info (cli_stmt_t *stmt, const char *virt_state, SQLUSMALLINT icol);
 SQLRETURN stmt_seq_error (cli_stmt_t *stmt);
 void stmt_set_proc_return (cli_stmt_t *stmt, caddr_t *res);

@@ -69,8 +69,8 @@ int json_line;
 %%
 
 jsondoc
-	: object { json_tree = $1; }
-	| array { json_tree = $1; }
+	: object { json_tree = (caddr_t *) $1; }
+	| array { json_tree = (caddr_t *) $1; }
 	;
 
 object	: OBJ_BEGIN members_opt OBJ_END { 

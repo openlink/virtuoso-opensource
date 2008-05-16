@@ -1514,8 +1514,8 @@ sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
         }
   if (!IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
     sparp->sparp_env->spare_sql_refresh_free_text = t_box_num_and_zero (0);
-  (mixed_tail++)[0] = t_box_dv_short_string ("refresh_free_text");
-  (mixed_tail++)[0] = sparp->sparp_env->spare_sql_refresh_free_text;
+  (mixed_tail++)[0] = (SPART *) t_box_dv_short_string ("refresh_free_text");
+  (mixed_tail++)[0] = (SPART *) sparp->sparp_env->spare_sql_refresh_free_text;
   return spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
     (SPART **)t_list (1,
       spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",

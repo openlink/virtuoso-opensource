@@ -48,7 +48,7 @@ SQLHSTMT hstmtUpdate;
 SQLRETURN retcode;
 SQLHDBC hdbc;
 SQLCHAR szName[NAME_LEN], szPhone[PHONE_LEN];
-SQLINTEGER cbName, cbPhone;
+SQLLEN cbName, cbPhone;
 RETCODE rc;
 
 #define CHK_ERR(stmt)  \

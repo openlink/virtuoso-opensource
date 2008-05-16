@@ -1114,7 +1114,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	NUMERIC_VAR (dn2);
 	dtp1 = dv_ext_to_num (dv1, (caddr_t) & dn1);
 	dtp2 = dv_ext_to_num (dv2, (caddr_t) & dn2);
-	return dv_num_compare ((numeric_t*)&dn1, (numeric_t*)&dn2, dtp1, dtp2);
+	return dv_num_compare ((numeric_t)dn1, (numeric_t)dn2, dtp1, dtp2);
       }
     /* the types are different and it is not a number to number comparison.
      * Because the range of num dtps is not contiguous, when comparing num to non-num by dtp, consider all nums as ints.

@@ -2129,7 +2129,7 @@ sec_stmt_exec (query_instance_t * qi, ST * tree)
     }
 }
 
-long cli_encryption_on_password = 0; /* digest */
+int32 cli_encryption_on_password = 0; /* digest */
 static caddr_t caller_id_defaults = NULL;
 
 static void

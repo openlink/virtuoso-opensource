@@ -3059,7 +3059,7 @@ box_make_tree_mt_safe (caddr_t box)
             hit->hit_hash->ht_mutex = mutex_allocate ();
           }
         id_hash_iterator (&tmp_hit, hit->hit_hash);
-        while (hit_next (&tmp_hit, &key_ptr, &val_ptr))
+        while (hit_next (&tmp_hit, (char **) &key_ptr, (char **) &val_ptr))
           {
             box_make_tree_mt_safe (key_ptr[0]);
             box_make_tree_mt_safe (val_ptr[0]);

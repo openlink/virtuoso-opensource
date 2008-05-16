@@ -221,10 +221,10 @@ err:
 	return(0);
 	}
 
-int asn1_parse_to_xml(BIO *bp, const unsigned char **pp, long length, int offset,
+int asn1_parse_to_xml(BIO *bp, unsigned char **pp, long length, int offset,
 	     int depth, int indent, int dump)
 	{
-	const unsigned char *p,*ep,*tot,*op,*opp;
+	unsigned char *p,*ep,*tot,*op,*opp;
 	long len;
 	int save_tag, tag,xclass,ret=0;
 	int nl,hl,j,r;
@@ -544,7 +544,7 @@ bif_asn1_to_xml(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long length = bif_long_arg (qst, args, 1, "asn1_to_xml");
 	if (!(out = BIO_new(BIO_s_mem())))
 		return NEW_DB_NULL;
-	if (asn1_parse_to_xml(out, &bytes, length, 0, 0, 0, 1) != 1)
+	if (asn1_parse_to_xml(out, (unsigned char **) &bytes, length, 0, 0, 0, 1) != 1)
 	{
 		res = NEW_DB_NULL;
 		goto err;

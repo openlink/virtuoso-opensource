@@ -67,8 +67,8 @@ int	f_crash_dump;
 int	f_read_from_rebuilt_database;
 int	f_wait;
 int	f_debug;
-const char *	f_mode = "";
-const char *	f_dump_keys = "";
+char *	f_mode = "";
+char *	f_dump_keys = "";
 
 
 extern long min_signal_handling;

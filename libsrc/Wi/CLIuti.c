@@ -559,7 +559,7 @@ set_error (sql_error_t * err, const char *state, const char *virt_state, const c
 
 
 void
-set_success_info (sql_error_t * err, const char *state, char *virt_state, const char *message, int col)
+set_success_info (sql_error_t * err, const char *state, const char *virt_state, const char *message, int col)
 {
   set_error_ext (err, state, virt_state, message, col, SQL_SUCCESS_WITH_INFO);
 }

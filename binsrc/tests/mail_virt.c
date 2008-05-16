@@ -68,7 +68,7 @@ main (int argc, char ** argv)
   int c, readed = 0;
   FILE *fd = NULL;
   char buf [4096];
-  SQLINTEGER cbParam;
+  SQLLEN cbParam;
   SQLRETURN  retcode;
   SQLPOINTER pToken;
   FILE *cfg;

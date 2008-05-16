@@ -289,7 +289,7 @@ int32 cli_query_timeout;
 int32 cli_txn_timeout;
 int32 cli_not_c_char_escape;
 int32 cli_utf8_execs;
-long cli_binary_timestamp = 1;
+int32 cli_binary_timestamp = 1;
 int32 cli_no_system_tables = 0;
 
 caddr_t client_defaults;

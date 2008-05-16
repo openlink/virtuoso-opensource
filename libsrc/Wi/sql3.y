@@ -4323,6 +4323,6 @@ opt_part_def
 	;
 
 partition_def
-	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list { $$ = t_list (1, DDL_NONE); }
+	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list { $$ = (ST *) t_list (1, DDL_NONE); }
 	;
 

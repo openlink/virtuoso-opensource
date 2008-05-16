@@ -864,8 +864,8 @@ void srv_client_defaults_init (void);
 extern int32 cli_not_c_char_escape;
 extern int32 cli_utf8_execs;
 extern int32 cli_no_system_tables;
-extern long cli_binary_timestamp;
-extern long cli_encryption_on_password;
+extern int32 cli_binary_timestamp;
+extern int32 cli_encryption_on_password;
 int current_of_node_scrollable (current_of_node_t * co, query_instance_t * qi, char * cr_name);
 void cli_set_scroll_current_ofs (client_connection_t * cli, caddr_t * current_ofs);
 void stmt_start_scroll (client_connection_t * cli, srv_stmt_t * stmt,

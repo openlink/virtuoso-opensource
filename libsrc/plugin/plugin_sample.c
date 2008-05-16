@@ -18,14 +18,15 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
-#include <sqlver.h>
-#include "plugin.h"
-#include <stdio.h>
-#include "import_gate_virtuoso.h"
+ */
 
-caddr_t bif_plugin_sample (void * qst, caddr_t * err, void ** args)
+#include "import_gate_virtuoso.h"
+#include "sqlver.h"
+
+#include <stdio.h>
+
+static caddr_t
+bif_plugin_sample (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res = dk_alloc_box (strlen (PLAIN_PLUGIN_TYPE) + 1, DV_STRING);
   strcpy (res, PLAIN_PLUGIN_TYPE);
@@ -39,10 +40,10 @@ plain_plugin_connect ()
   bif_define ("PLAIN_PLUGIN_TEST", bif_plugin_sample);
 }
 
-static unit_version_t
-plugin_sample_version = {
+
+static unit_version_t plugin_sample_version = {
   PLAIN_PLUGIN_TYPE,			/*!< Title of unit, filled by unit */
-  DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,/*!< Version number, filled by unit */
+  DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
   "OpenLink Software",			/*!< Plugin's developer, filled by unit */
   "sample plugin",			/*!< Any additional info, filled by unit */
   0,					/*!< Error message, filled by unit loader */
@@ -54,8 +55,9 @@ plugin_sample_version = {
   &_gate
 };
 
-unit_version_t *
-CALLBACK plugin_sample_check (unit_version_t *in, void *appdata)
+
+unit_version_t *CALLBACK
+plugin_sample_check (unit_version_t * in, void *appdata)
 {
   return &plugin_sample_version;
 }

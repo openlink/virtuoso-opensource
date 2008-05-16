@@ -39,6 +39,7 @@ int jsonyy_string_input (char *buf, int max);
   res = jsonyy_string_input (buf, max);
 #define jsonyyerror(str) jsonyyerror_impl(str)
 
+struct sparp_s; /* forward */
 extern caddr_t spar_strliteral (struct sparp_s *sparp, const char *strg, int strg_is_long, int is_json);
 extern int json_line;
 %}

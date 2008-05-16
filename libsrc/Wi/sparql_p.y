@@ -1861,8 +1861,8 @@ spar_qm_sqltype		/* [Virt]	QmSqltype	 ::=  QmSqlId ( 'NOT' 'NULL' )?	*/
 	;
 
 spar_qm_sql_in_out_inout	/* ::=  ('IN' | QmSqlId)	*/
-	: IN_L			{ $$ = (SPART *) t_box_dv_uname_string ("in"); }
-	| spar_qm_sql_id	{ $$ = (SPART *) t_box_dv_uname_string ($1); }
+	: IN_L			{ $$ = t_box_dv_uname_string ("in"); }
+	| spar_qm_sql_id	{ $$ = t_box_dv_uname_string ($1); }
 	;
 
 spar_qm_sqlcol		/* [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id	*/

@@ -702,7 +702,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
       data2 = rb2->rb_box;
       data_dtp2 = DV_TYPE_OF (data2);
       if ((DV_STRING != data_dtp2) && !rb2->rb_chksum_tail)
-        return cmp_boxes (rb1, data2, NULL, NULL);
+        return cmp_boxes ((caddr_t) rb1, data2, NULL, NULL);
     }
   else 
     {

@@ -315,7 +315,7 @@ extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
 char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
-long c_iri_cache_size = 0;
+int32 c_iri_cache_size = 0;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -324,7 +324,7 @@ extern int32 cli_query_timeout;
 extern int32 cli_txn_timeout;
 extern int32 cli_not_c_char_escape;
 extern int32 cli_utf8_execs;
-extern long cli_binary_timestamp;
+extern int32 cli_binary_timestamp;
 extern int32 cli_no_system_tables;
 
 extern caddr_t client_defaults;
@@ -531,8 +531,7 @@ cfg_setup (void)
       }
     /* Don't allow someone to create files we can't read ourselves */
     mask &= 077;
-    if (umask (mask) == -1)
-      log_error ("Can't set umask to 0%o (%m)", mask);
+    umask (mask);
   }
 #endif
 
@@ -1361,7 +1360,7 @@ cfg_setup (void)
     else
       {
         sprintf(ucm_path, "%s/%s", c_ucm_load_path, ucm_file);
-        new_eh = eh_create_ucm_handler (ucm_names, ucm_path, log_info, log_error);
+        new_eh = eh_create_ucm_handler (ucm_names, ucm_path, (eh_ucm_log_callback *) log_info, (eh_ucm_log_callback *) log_error);
         if (NULL != new_eh)
     eh_load_handler (new_eh);
       }
@@ -1393,7 +1392,7 @@ cfg_setup (void)
       }
     plugin_type = cslentry (pconfig->value, 1);
     plugin_dll = cslentry (pconfig->value, 2);
-    plugin_load (plugin_type, plugin_dll, c_plugin_load_path, loadctr, log_info, log_error);
+    plugin_load (plugin_type, plugin_dll, c_plugin_load_path, loadctr, (plugin_log_callback *) log_info, (plugin_log_callback *) log_error);
     /*free (plugin_type);*/
     /*free (plugin_dll);*/
     if (msdtc_plugin)
@@ -1825,7 +1824,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      /* Check for queue name */
 	      if ((sep = strrchr (value, '=')) != NULL)
 		{
-		  s_ioq = ltrim (sep + 1);
+		  s_ioq = (char *) ltrim ((const char *)(sep + 1));
 		  *sep = '\0';
 		}
 	      rtrim (value);

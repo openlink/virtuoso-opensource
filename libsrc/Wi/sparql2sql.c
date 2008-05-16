@@ -6396,8 +6396,8 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
   PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
   PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
-  PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
-  PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong)use_plain_return));
+  PROC_PARAM_EQ_SPART ("_refresh_free_text", (ptrlong) refresh_free_text);
+  PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong) use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
 #undef PROC_PARAM_EQ_SPART
   if (use_plain_return)

@@ -532,16 +532,16 @@ read_short (dk_session_t * ses)
 
 
 
-caddr_t
-rb_deserialize (dk_session_t * ses)
+static void *
+rb_deserialize (dk_session_t * ses, dtp_t dtp)
 {
-  rdf_box_t * rb;
+  rdf_box_t *rb;
   dtp_t flags = session_buffered_read_char (ses);
   if (flags & RBS_CHKSUM)
     {
-      rb = (rdf_box_t *)rbb_allocate ();
+      rb = (rdf_box_t *) rbb_allocate ();
       rb->rb_chksum_tail = 1;
-      ((rdf_bigbox_t *)rb)->rbb_chksum = scan_session_boxing (ses);
+      ((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
     }
   else
     {
@@ -574,13 +574,13 @@ rb_deserialize (dk_session_t * ses)
   else
     rb->rb_lang = RDF_BOX_DEFAULT_LANG;
   if (flags & RBS_CHKSUM)
-    ((rdf_bigbox_t *)rb)->rbb_box_dtp = session_buffered_read_char (ses);
+    ((rdf_bigbox_t *) rb)->rbb_box_dtp = session_buffered_read_char (ses);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't deserialize");
   if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't deserialize");
   rdf_box_audit (rb);
-  return (caddr_t) rb;
+  return (void *) rb;
 }
 
 
