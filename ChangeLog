@@ -1,3 +1,118 @@
+2008-05-18 15:21  source
+
+	* Updated version to 5.0.7-rc7
+
+2008-05-18 15:20  source
+
+	* Fixed attendees
+
+2008-05-18 15:15  source
+
+	* Added MaxSqlExpressionDepth setting to virtuoso.ini to limit complex
+	  queries to overflow the stack
+
+2008-05-16 16:04  source
+
+	* Fixed compiler warnings
+
+2008-05-16 16:03  source
+
+	* Added additional us-gaap-2008-03-31 ontology
+	* Fixed xbrl mapper
+
+2008-05-16 15:59  source
+
+	* Updated documentation
+
+2008-05-16 08:22  source
+
+	* Fixed wrong arguments
+
+2008-05-15 16:18  source
+
+	* Updated version to 5.0.7-rc6
+
+2008-05-15 16:17  source
+
+	* Added invitation to use wai_id
+
+2008-05-15 16:16  source
+
+	* Fixed problem with public bookmarks access
+
+2008-05-15 16:16  source
+
+	* Fixed piblication/subscription messages
+	* Fixed attendees
+
+2008-05-15 16:15  source
+
+	* Fixed publication/subscription messages
+
+2008-05-15 16:07  source
+
+	* Removed obsolete code
+
+2008-05-15 16:07  source
+
+	* Fixed datatype for XBRL
+
+2008-05-15 16:06  source
+
+	* Merged from upstream project
+
+2008-05-15 16:06  source
+
+	* Added tests for ANY col collation
+
+2008-05-15 16:04  source
+
+	* Updated version
+
+2008-05-15 16:03  source
+
+	* Added support for parallelized and ft-enabled SPONGE
+
+2008-05-15 16:02  source
+
+	* Added support for persistent namespace declarations
+
+2008-05-15 15:57  source
+
+	* Added _refresh_fre_text param for ssg_grabber_codegen
+
+2008-05-15 15:56  source
+
+	* Improved pretty-print for long function calls
+
+2008-05-15 13:49  source
+
+	* Fixed collation of num in any col
+
+2008-05-15 13:47  source
+
+	* Fixed cast
+
+2008-05-15 13:39  source
+
+	* Added DV_RDF box support in clients
+
+2008-05-15 13:38  source
+
+	* Added new float functions for external rep
+
+2008-05-15 13:37  source
+
+	* Added support for DV_RDF box support in clients
+
+2008-05-15 13:32  source
+
+	* Added new xml_ns_2dict_del and ecm_delete_nth
+
+2008-05-15 13:31  source
+
+	* Merged latest documentation changes
+
 2008-05-11 22:19  source
 
 	* Updated version to 5.0.7-rc5
