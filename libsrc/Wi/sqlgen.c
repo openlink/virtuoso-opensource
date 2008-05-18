@@ -744,7 +744,7 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
   ks->ks_row_spec = NULL;
   iop->iop_ks_start_spec = ks->ks_spec;
   ks->ks_spec.ksp_spec_array = NULL;
-  inx_op_set_search_params (so->so_sc, NULL, iop);
+  inx_op_set_search_params (so->so_sc->sc_cc, NULL, iop);
 }
 
 
@@ -894,9 +894,9 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   /* if the order key has no spec then this can't be a full match of the key.  The situation is a contradiction, can happen if there is a unique pred but the wrong key.  Aberration of score function is possible cause.*/
 
   if (order_ks)
-    ks_set_search_params (NULL, NULL, order_ks);
+    ks_set_search_params (cc, NULL, order_ks);
   if (ts->ts_main_ks)
-    ks_set_search_params (sc, NULL, ts->ts_main_ks);
+    ks_set_search_params (cc, NULL, ts->ts_main_ks);
 #ifdef BIF_XML
   if (tb_dfe->_.table.text_node)
     {

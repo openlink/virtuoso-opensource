@@ -856,7 +856,7 @@ ks_col_specs (key_source_t * ks, dbe_column_t * col,
 
 
 void
-ks_set_search_params (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks)
+ks_set_search_params (comp_context_t * cc, comp_table_t * ct, key_source_t * ks)
 {
   int inx = 0;
   search_spec_t *sp = ks->ks_spec.ksp_spec_array;
@@ -878,6 +878,8 @@ ks_set_search_params (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks)
 	sp->sp_max = inx++;
       sp = sp->sp_next;
     }
+  if (cc && inx >= MAX_SEARCH_PARAMS)
+    sqlc_error (cc, "42000", "The number of predicates is too high");
 }
 
 
@@ -891,7 +893,7 @@ il_init (comp_context_t * cc, inx_locality_t * il)
 
 
 void
-inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
+inx_op_set_search_params (comp_context_t * cc, comp_table_t * ct, inx_op_t * iop)
 {
   int inx = 0;
   search_spec_t *sp = iop->iop_ks_full_spec.ksp_spec_array;
@@ -913,6 +915,8 @@ inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
 	sp->sp_max = inx++;
       sp = sp->sp_next;
     }
+  if (cc && inx >= MAX_SEARCH_PARAMS)
+    sqlc_error (cc, "42000", "The number of predicates is too high");
   sp = iop->iop_ks_start_spec.ksp_spec_array;
   inx = 0;
   while (sp)
@@ -923,7 +927,9 @@ inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
 	sp->sp_max = inx++;
       sp = sp->sp_next;
     }
-  il_init (sc->sc_cc, &iop->iop_il);
+  if (cc && inx >= MAX_SEARCH_PARAMS)
+    sqlc_error (cc, "42000", "The number of predicates is too high");
+  il_init (cc, &iop->iop_il);
 }
 
 
@@ -1410,9 +1416,9 @@ table_source_create (
       ts->ts_order_ks->ks_init_used = cc_new_instance_slot (cc);
     }
   dk_free_box ((caddr_t) sps);
-  ks_set_search_params (NULL, NULL, ts->ts_order_ks);
+  ks_set_search_params (cc, NULL, ts->ts_order_ks);
   if (ts->ts_main_ks)
-    ks_set_search_params (NULL, NULL, ts->ts_main_ks);
+    ks_set_search_params (cc, NULL, ts->ts_main_ks);
   ts_alias_current_of (ts);
   table_source_om (cc, ts);
   return ts;

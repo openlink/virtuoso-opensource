@@ -1520,7 +1520,7 @@ void
 dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float * overhead_ret)
 {
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 1000))
-    GPF_T1 ("stack overflow in cost model");
+    sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow in cost model");
 
   switch (dfe->dfe_type)
     {

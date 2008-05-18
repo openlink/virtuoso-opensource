@@ -382,6 +382,9 @@ int32 c_recursive_trigger_calls;
 extern long setp_top_row_limit; /* sort.c */
 int32 c_setp_top_row_limit;
 
+extern long sql_max_tree_depth;
+int32 c_sql_max_tree_depth;
+
 extern long hi_end_memcache_size; /* hash.c */
 int32 c_hi_end_memcache_size;
 
@@ -933,6 +936,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "MaxSortedTopRows", &c_setp_top_row_limit) == -1)
     c_setp_top_row_limit = 10000;
+
+  if (cfg_getlong (pconfig, section, "MaxSqlExpressionDepth", &c_sql_max_tree_depth) == -1)
+    c_sql_max_tree_depth = 1000;
 
   if (cfg_getlong (pconfig, section, "MaxDistinctTempMemCacheRows", &c_hi_end_memcache_size) == -1)
     c_hi_end_memcache_size = 100000;
@@ -1587,6 +1593,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   recursive_trigger_calls = c_recursive_trigger_calls;
 
   setp_top_row_limit = c_setp_top_row_limit;
+  sql_max_tree_depth = c_sql_max_tree_depth;
   hi_end_memcache_size = c_hi_end_memcache_size;
   run_as_os_uname = c_run_as_os_uname;
   dbe_auto_sql_stats = c_dbe_auto_sql_stats;

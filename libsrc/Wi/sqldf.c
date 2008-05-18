@@ -415,13 +415,13 @@ sqlo_df (sqlo_t * so, ST * tree)
   if (dfe)
     return dfe;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 1000))
-    sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
+    sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
-    sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
+    sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
   SQLO_MP_SAMPLE;
   if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
     {
-      sqlc_error (so->so_sc->sc_cc, ".....", 
+      sqlc_error (so->so_sc->sc_cc, "42000", 
 	  "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting", 
 	  (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     } 
@@ -3794,7 +3794,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
   if (!dfe)
     return 1;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 128))
-    sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, ".....", "Stack Overflow");
+    sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow");
   while (dfe->dfe_prev)
     {
       if (DFE_TABLE == dfe->dfe_type)
@@ -4835,9 +4835,9 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
   int any_tried = 0;
   must_be_next = sqlo_next_joined (ot->ot_work_dfe);
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ot, 1000))
-    sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
+    sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
-    sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
+    sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
   SQLO_MP_SAMPLE;      
   if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
     {
@@ -4848,7 +4848,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  return;
 	}
       else
-	sqlc_error (so->so_sc->sc_cc, ".....", 
+	sqlc_error (so->so_sc->sc_cc, "42000", 
 	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.", 
 	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     } 
@@ -5699,6 +5699,27 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
     return 0;
 }
 
+long sql_max_tree_depth = 1000;
+
+static void
+sqlo_tree_depth_check (sql_comp_t * sc, ST * tree, int level)
+{
+  int inx;
+
+  if (0 == sql_max_tree_depth)
+    return;
+
+  level++;
+  if (level > sql_max_tree_depth)
+    sqlc_error (sc->sc_cc, "42000", "Expression recursion is too deep");
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  DO_BOX (ST *, elt, inx, tree)
+    {
+      sqlo_tree_depth_check (sc, elt, level);
+    }
+  END_DO_BOX;
+}
 
 df_elt_t *
 sqlo_top_1 (sqlo_t * so, sql_comp_t * sc, ST ** ptree)
@@ -5719,6 +5740,7 @@ sqlo_top_1 (sqlo_t * so, sql_comp_t * sc, ST ** ptree)
     }
   while (!in_cursor_def && sc_tmp);
 
+  sqlo_tree_depth_check (sc, tree, 0);
   if (in_cursor_def)
     {
       best1 = sqlo_top_2 (so, sc, ptree);
