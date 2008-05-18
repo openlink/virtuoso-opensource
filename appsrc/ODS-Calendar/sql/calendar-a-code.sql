@@ -4032,6 +4032,11 @@ create procedure CAL.WA.attendees_update (
   declare V any;
 
   V := split_and_decode (attendees, 0, '\0\0,');
+  for (select AT_ID as _id, AT_MAIL as _mail from CAL.WA.ATTENDEES where AT_EVENT_ID = id) do
+  {
+    if (not CAL.WA.vector_contains (V, _mail))
+      delete from CAL.WA.ATTENDEES where AT_ID = _id;
+  }
   for (N := 0; N < length (V); N := N + 1)
   {
     mail := trim (V[N]);
