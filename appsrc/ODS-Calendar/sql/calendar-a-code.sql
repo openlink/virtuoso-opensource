@@ -5027,6 +5027,7 @@ create procedure CAL.WA.exchange_exec_internal (
           {
             permissions := '110100000RR';
           }
+          _name := http_physical_path_resolve (_name);
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
