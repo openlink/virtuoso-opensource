@@ -1350,12 +1350,6 @@
                 //-->
                 </script>
                 <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-		<?vsp
-		if (not (length (self.sid)))
-	          {
-	             http ('<script type="text/javascript">isRichText = false;</script>');
-		  }
-		?>
                 <script language="JavaScript" type="text/javascript">
                 <!--
 		writeRichText('comment2', '<?vsp http(tmpString); ?>', 340, 180, true, false);

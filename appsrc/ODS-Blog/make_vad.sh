@@ -318,6 +318,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/wa_search_blog.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/conv.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/sioc_blog.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/blog2/blog_api.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
@@ -341,6 +342,7 @@ sticker_init() {
   echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_search_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/conv.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/sioc_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog_api.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   cd vad/data/blog2 2>/dev/null
   oldIFS="$IFS"
   IFS='

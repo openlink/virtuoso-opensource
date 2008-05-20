@@ -2198,12 +2198,12 @@ procedure "blogger_auth" (in req "blogRequest")
     if ((pwd[0] = 0 and pwd_magic_calc (req.user_name, req.passwd) = pwd)
                               or (pwd[0] <> 0 and pwd = req.passwd))
             {
-              declare own, home any;
+	      declare own, home, inst_name any;
         declare bid varchar;
         own := null; home := null; bid := null;
         if (isstring (req.blogid))
     {
-            select BI_HOME, BI_OWNER into home, own from SYS_BLOG_INFO where BI_BLOG_ID = req.blogid with (prefetch 1);
+		  select BI_HOME, BI_OWNER, BI_WAI_NAME into home, own, inst_name from SYS_BLOG_INFO where BI_BLOG_ID = req.blogid with (prefetch 1);
       bid := req.blogid;
     }
               else if (isstring (req.postId))
@@ -2226,6 +2226,7 @@ procedure "blogger_auth" (in req "blogRequest")
         if (own <> id and id <> http_dav_uid ())
     {
       declare dummy int;
+		  if (not exists (select 1 from DB.DBA.WA_MEMBER where WAM_USER = id and WAM_INST = inst_name and WAM_MEMBER_TYPE = 2))
       select 1 into dummy from "DB"."DBA"."SYS_ROLE_GRANTS" where GI_SUPER = id and GI_SUB = own with (prefetch 1);
     }
               if (bid is not null and hdr = concat (registry_get ('WeblogServerID'), ';', bid))
