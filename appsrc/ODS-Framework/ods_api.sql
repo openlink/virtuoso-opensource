@@ -911,7 +911,7 @@ create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any,
   accept := http_request_header (lines, 'Accept');
   if (not isstring (accept))
     accept := '';
-  if (regexp_match ('(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)', accept) is null)
+  if (regexp_match ('(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|(application/sparql-results+xml)', accept) is null)
     return 0;
 
   set http_charset='utf-8';
@@ -941,6 +941,8 @@ reporterr:
     fmt := 'rdf';
   else if (strstr (accept, 'text/rdf+n3') is not null)
     fmt := 'n3';
+  else if (strstr (accept, 'application/sparql-results+xml') is not null)
+    fmt := 'sparql-results';
   else
     signal ('22023', 'Content type is not supported');
   ses := string_output ();
@@ -963,6 +965,8 @@ reporterr:
     sioc..rdf_tail (ses);
   if (fmt = 'n3')
     http_header ('Content-Type: text/rdf+n3\r\n');
+  else if (fmt = 'sparql-results')
+    http_header ('Content-Type: application/sparql-results+xml\r\n');
   else
     http_header ('Content-Type: application/rdf+xml\r\n');
   http_rewrite ();

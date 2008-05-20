@@ -862,7 +862,8 @@ create procedure sioc_forum (
         in iri varchar,
      	in wai_name varchar,
     	in wai_type_name varchar,
-	in wai_description varchar)
+	in wai_description varchar,
+	in wai_id int := null)
 {
 
   declare uname, clazz, sub, pers_iri, uiri varchar;
@@ -898,6 +899,10 @@ create procedure sioc_forum (
   ods_is_defined_by (graph_iri, iri);
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
+  if (wai_id is null)
+    wai_id := (select i.WAI_ID from DB.DBA.WA_INSTANCE i where i.WAI_NAME = wai_name);
+  if (wai_id is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), wai_id);
   -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
   if (wai_description is null)
     wai_description := wai_name;
@@ -1617,7 +1622,7 @@ create procedure fill_ods_sioc (in doall int := 0)
       iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
       if (iri is not null)
 	{
-	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION);
+	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_ID);
 	  cc_work_lic (graph_iri, iri, WAI_LICENSE);
 
 	  --for select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME do
@@ -2345,7 +2350,7 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     {
       declare p_name varchar;
       site_iri  := get_graph ();
-      sioc_forum (graph_iri, site_iri, iri, N.WAI_NAME, N.WAI_TYPE_NAME, N.WAI_DESCRIPTION);
+      sioc_forum (graph_iri, site_iri, iri, N.WAI_NAME, N.WAI_TYPE_NAME, N.WAI_DESCRIPTION, N.WAI_ID);
       cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
       p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
       -- dbg_obj_print (p_name, __proc_exists (p_name));
@@ -2929,9 +2934,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
-	      foaf:holdsAccount ?sioc_user ;
-	      rdfs:seeAlso ?pers_see_also .
-	      ?sioc_user rdfs:seeAlso ?see_also .
+	      foaf:holdsAccount ?sioc_user .
+	      optional { ?person rdfs:seeAlso ?pers_see_also . } .
+	      optional { ?sioc_user rdfs:seeAlso ?see_also . } .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {
 			optional { ?person foaf:knows ?friend } .
@@ -3000,7 +3005,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
 	    ?person foaf:made ?made .
-	    ?made foaf:maker ?person .'
+	    ?made foaf:maker ?person .
+	    ?made dc:title ?made_title .'
 	    || cons ||
 	    '
 	  }
@@ -3025,7 +3031,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
-	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident } .
+	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title } .
 	      '
 	      || vars ||
 	      '

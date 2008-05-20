@@ -64,7 +64,7 @@
 		  <th>Secret</th>
 		  <th>Action</th>
 	      </tr>
-	      <v:data-set name="oauth" sql="select a_id, a_name, a_descr, a_key, a_secret, a_url, a_cb_url
+	      <v:data-set name="oauth" sql="select a_id, a_name, a_descr, a_key, a_secret, a_url, a_cb_url, a_status
 		  from OAUTH.DBA.APP_REG where a_owner = :self.u_id"
 		  scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
@@ -115,14 +115,14 @@ if (not e.ve_is_post and self.del_oauth is not null)
 		  </v:template>
 	      </v:data-set>
 	  </table>
-	  <?vsp if (exists (select 1 from WA_MEMBER where WAM_USER = self.u_id and WAM_MEMBER_TYPE = 1 and
+	  <?vsp if (exists (select 1 from WA_MEMBER where WAM_USER = self.u_id and
 	  	not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST))) { ?>
 	  <div class="fm">
 	      <fieldset>
 		  <label for="a_name">Application name</label>
 		  <v:data-list
 		      name="a_name"
-		      sql="select WAM_INST from WA_MEMBER where WAM_USER = self.u_id and WAM_MEMBER_TYPE = 1 and not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST)"
+		      sql="select WAM_INST from WA_MEMBER where WAM_USER = self.u_id and not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST)"
 		      key-column="WAM_INST"
 		      value-column="WAM_INST"
 		      xhtml_id="a_name" error-glyph="*">
