@@ -875,7 +875,7 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
 }
 
 
-rdf_inf_ctx_t ** 
+rdf_inf_ctx_t * 
 sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
 {
   df_elt_t * dfe = tb_dfe;
@@ -891,7 +891,7 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
     {
       if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
 	{
-	  return &ctx;
+	  return ctx;
 	}
       dfe = dfe->dfe_super;
     } 
