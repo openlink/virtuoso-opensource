@@ -33,6 +33,7 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:twfy="http://www.openlinksw.com/schemas/twfy#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
@@ -97,9 +98,29 @@
         <xsl:variable name="gid" select="../gid" />
         <xsl:variable name="about" select="concat($baseUri, '#', $gid)" />
         <xsl:variable name="canonicalname" select="local-name(.)" />
+        <foaf:Document rdf:about="{vi:proxyIRI()}{$about}">
+            <xsl:if test="$canonicalname = 'full_name'">
+            <foaf:primaryTopic>
+                <foaf:Person rdf:about="{$baseUri}">
+                    <owl:sameAs>
+                        <xsl:attribute name="rdf:resource">
+                            <xsl:value-of select="concat('http://dbpedia.org/resource/', .)"/>
+                        </xsl:attribute>
+                    </owl:sameAs>
+                </foaf:Person>
+            </foaf:primaryTopic>
+            </xsl:if>
+        </foaf:Document>
         <rdf:Description rdf:about="{vi:proxyIRI()}{$about}">
-            <xsl:element namespace="{$ns}" name="{$canonicalname}" >
+            <xsl:element namespace="{$ns}" name="{$canonicalname}">
+              <xsl:choose>
+                <xsl:when test="$canonicalname = 'image'">
+                  <xsl:value-of select="concat('http://www.theyworkforyou.com', .)"/>
+                </xsl:when>
+                <xsl:otherwise>
                         <xsl:value-of select="."/>
+                </xsl:otherwise>
+              </xsl:choose>
             </xsl:element>
         </rdf:Description>
     </xsl:template>
