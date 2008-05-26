@@ -740,7 +740,7 @@ sqlo_rls_add_condition (sqlo_t *so, op_table_t *ot, dk_set_t *res, dbe_table_t *
 {
   client_connection_t *cli = sqlc_client();
   if (tb->tb_rls_procs[TB_RLS_S] &&
-      cli->cli_user && !sec_user_has_group (0, cli->cli_user->usr_g_id))
+      cli->cli_user && !sec_user_has_group (G_ID_DBA, cli->cli_user->usr_g_id))
     {
       caddr_t err = NULL;
       caddr_t ret_val = NULL;
@@ -781,6 +781,7 @@ sqlo_rls_add_condition (sqlo_t *so, op_table_t *ot, dk_set_t *res, dbe_table_t *
       /* do the scope thing */
       memset (&sco, 0, sizeof (sql_scope_t));
       sco.sco_super = so->so_scope;
+      sco.sco_so = so; 
       so->so_scope = &sco;
       t_set_push (&(sco.sco_tables), ot);
       ot->ot_prefix = NULL;
