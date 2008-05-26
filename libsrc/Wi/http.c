@@ -1352,16 +1352,15 @@ long http_keep_hosting = 0;
 void
 ws_clear (ws_connection_t * ws, int error_cleanup)
 {
-  if(http_ses_trap) {
-    dk_free_box ((box_t) ws->ws_req_log);
-    ws->ws_ses_trap = http_ses_trap;
-    if (ws->ws_ses_trap)
-      {
-        ws->ws_req_log = strses_allocate ();
-      }
-    else
-      ws->ws_req_log = NULL;
-  }
+  if (http_ses_trap)
+    {
+      dk_free_box ((box_t) ws->ws_req_log);
+      ws->ws_ses_trap = http_ses_trap;
+      if (ws->ws_ses_trap)
+	ws->ws_req_log = strses_allocate ();
+      else
+	ws->ws_req_log = NULL;
+    }
   if (!error_cleanup)
     {
       dk_free_tree ((box_t) ws->ws_lines);
@@ -1410,7 +1409,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_store_in_cache = NULL;
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
-#endif  
+#endif
 }
 
 char http_server_id_string_buf [1024];
@@ -3232,7 +3231,14 @@ do_file:
 	  ws_set_phy_path (ws, 0, ws->ws_path_string);
 
 	  ws_connection_vars_clear (cli);
-	  ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
+	  if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
+	    {
+	      ws->ws_params = (caddr_t *) list (4, 
+		  box_dv_short_string ("__SQL_STATE"), box_copy (ERR_STATE (err)), 
+		  box_dv_short_string ("__SQL_MESSAGE"), box_copy (ERR_MESSAGE (err)));
+	    }
+	  else
+	    ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
 	  strses_flush (ws->ws_strses);
 	  goto request_do_again;
 	}

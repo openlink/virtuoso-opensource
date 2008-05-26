@@ -2424,7 +2424,7 @@ soap_xml_params_to_array (query_t *proc_qry, caddr_t *method,
 	literal, 0, NULL, ctx);
 
   if (n_set < npars && !*err_ret)
-    *err_ret = srv_make_new_error ("37000", "SP008", "Not enough actual parameters in a SOAP request");
+    *err_ret = srv_make_new_error ("37000", "SP008", "Not enough input parameters in a SOAP request");
 
 error_end:
   if (*err_ret)
@@ -11323,7 +11323,7 @@ soap_http_params (query_t *qr, caddr_t * in_params, caddr_t * text, caddr_t * er
 	ctx->literal, 0, NULL, ctx);
 
   if (n_set < npars && !*err)
-    *err = srv_make_new_error ("37000", "SP029", "Not enough actual parameters in a SOAP request");
+    *err = srv_make_new_error ("37000", "SP029", "Not enough input parameters in the request");
   else
     (*text)[strlen(*text) - (n_set ? 1 : 0)] = ')';
 end:
