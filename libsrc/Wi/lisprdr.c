@@ -74,7 +74,7 @@ lisp_read (lisp_stream_t * stream)
 	  if (token_fill)
 	    return interpret_token (token, token_fill);
 	  else
-	    return ((caddr_t) -1L);
+	    return box_num (-1L);
 	};
       macro_func = macro_chars[ich];
       if (macro_func == (mcfunc_t) CST_CONSTITUENT)
