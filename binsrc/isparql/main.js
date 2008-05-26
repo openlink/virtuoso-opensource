@@ -59,7 +59,11 @@ function init() {
 	
 	OAT.AJAX.httpError = 0;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
+	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$("throbber").src = OAT.Preferences.imagePath + "Dav_throbber.gif";
+
+	/* build info */
+	$("foot").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
   // determine server type, if virtuoso we show virtuoso specifics
 	OAT.AJAX.GET('./version', '', function(data,headers) { 
@@ -189,7 +193,8 @@ function init() {
 			var v = window.prompt("Variable name");
 			if (!v) { return; }
 			var l = $("spongerVars").options.length;
-			$("spongerVars").options[l] = new Option(v,v);
+			$("spongerVars").options[l++] = new Option(v,v);
+			if (l>0) { OAT.Dom.show("spongerVars"); }
 			setGrabVarPragma();
 		}
 
@@ -199,6 +204,8 @@ function init() {
 					$("spongerVars").options[i] = null;
 				}
 			}
+			var l = $("spongerVars").options.length;
+			if (l<1) { OAT.Dom.hide("spongerVars"); }
 			setGrabVarPragma();
 		}
 

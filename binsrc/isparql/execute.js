@@ -453,7 +453,7 @@ var QueryExec = function(optObj) {
 
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Get Data";
+			a.innerHTML = "Get Entity Instances";
 			a.href = href;
 			OAT.Dom.attach(a,"click",selectRef);
 			var li = OAT.Dom.create("li");
@@ -461,7 +461,7 @@ var QueryExec = function(optObj) {
 
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Describe Data";
+			a.innerHTML = "Describe Entity";
 			a.href = href;
 			OAT.Dom.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
@@ -488,7 +488,7 @@ var QueryExec = function(optObj) {
 		OAT.Anchor.assign(domNode,obj);
 		
 		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-		img1.title = "Describe Entities";
+		img1.title = "Describe Entity";
 		img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
 		OAT.Dom.attach(img1,"click",dereferenceRef);
 

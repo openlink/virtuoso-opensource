@@ -25,7 +25,10 @@ OAT.MenuItem = function(menu,parent,li,ul) {
 	
 	this.open = function() {
 		/* close all siblings */
-		for (var i=0;i<self.parent.items.length;i++) { self.parent.items[i].close(); }
+		for (var i=0;i<self.parent.items.length;i++) {
+			if (self.parent.items[i]!=self)
+				self.parent.items[i].close();
+		}
 		/* do something */
 		if (self.ul) { OAT.Dom.show(ul); }
 		self.state = 1;

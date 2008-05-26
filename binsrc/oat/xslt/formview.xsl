@@ -35,6 +35,33 @@
 		</xsl:for-each>
 	</xsl:template>
 
+	<xsl:template name="maps"> <!-- include google map loader if form contains google maps -->
+		<xsl:variable name="maptype">
+			<xsl:for-each select="//object[@type = 'map']/properties/property">
+				<xsl:if test="./name = 'Provider'">
+					<xsl:value-of select="./value" />
+				</xsl:if>
+			</xsl:for-each>
+		</xsl:variable>
+
+		<xsl:variable name="mapkey">
+			<xsl:for-each select="//object[@type = 'map']/properties/property">
+				<xsl:if test="./name = 'Key'">
+					<xsl:value-of select="./value" />
+				</xsl:if>
+			</xsl:for-each>
+		</xsl:variable>
+
+		<xsl:if test="$maptype = 1 and $mapkey != ''">
+			<script type="text/javascript">
+				<xsl:attribute name="src">
+					<xsl:text>http://www.google.com/jsapi?key=</xsl:text>
+					<xsl:value-of select="$mapkey"/>
+				</xsl:attribute>
+			</script>
+		</xsl:if>
+	</xsl:template>
+
 	<xsl:template name="form"> <!-- basic form properties -->
 		<xsl:variable name="nocred">
 			<xsl:for-each select="//connection|/form">
@@ -53,6 +80,7 @@
     <xsl:template match = "/*"> <!-- see http://www.dpawson.co.uk/xsl/sect2/root.html for explanation -->
 	<html>
 		<head>
+			<xsl:call-template name="maps" />
 			<xsl:call-template name="gems" />
 			<script type="text/javascript">
 				var featureList = ["form"];

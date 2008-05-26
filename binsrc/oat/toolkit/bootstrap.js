@@ -38,7 +38,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	dav:["grid","tree","toolbar","ajax2","xml","dialog"],
 	dialog:["window","dimmer"],
 	datasource:["jsobj","json","xml","connection","dstransport","ajax2"],
-	gmaps:["gapi","map"],
+	gmaps:["map"],
 	ymaps:"map",
 	simplefx:"animation",
 	msapi:["map","layers"],
@@ -74,8 +74,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 OAT.Loader.Files = { /* only those whose names differ */
 	gmaps:"customGoogleLoader.js",
 	ymaps:"customYahooLoader.js",
-	openlayers:"OpenLayers.js",
-	gapi:"gmapapi.js"
+	openlayers:"OpenLayers.js"
 }
 
 OAT.LoaderTMP = { /* second part of loader */
