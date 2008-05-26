@@ -1,5 +1,12 @@
 use DB;
 
+create procedure DB.DBA.exec_no_error (in expr varchar)
+{                                              
+  declare state, message, meta, result any;                                                            
+  exec(expr, state, message, vector(), 0, meta, result);                                               
+}
+;
+
 --GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_RES" TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_COL" TO "SPARQL";
@@ -222,19 +229,28 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tutorial_rule1',
-    1,
-    '(/[^#]*)',
-    vector('path'),
-    1,
-    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
-    vector('path'),
-    null,
-    '(text/html)|(\\*/\\*)',
-    0,
-    303
-    );
+--DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+--    'tutorial_rule1',
+--    1,
+--    '(/[^#]*)',
+--    vector('path'),
+--    1,
+--    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
+--    vector('path'),
+--    null,
+--    '(text/html)|(\\*/\\*)',
+--    0,
+--    303
+--    );
+
+DB.DBA.exec_no_error('
+DB.DBA.URLREWRITE_DROP_RULELIST (\'tutorial_rule_list1\')
+');
+
+DB.DBA.exec_no_error('
+DB.DBA.URLREWRITE_DROP_RULE (\'tutorial_rule1\')
+');
+
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tutorial_rule3',
@@ -318,7 +334,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
     'tutorial_rule_list1',
     1,
     vector (
-                'tutorial_rule1',
                 'tutorial_rule2',
                 'tutorial_rule3',
                 'tutorial_rule4',
