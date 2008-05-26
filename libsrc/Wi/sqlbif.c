@@ -5830,11 +5830,13 @@ permit:
 caddr_t
 bif_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   char *name = bif_string_or_null_arg (qst, args, 0, "disconnect");
   dk_session_t *this_client_ses = IMMEDIATE_CLIENT;
-  query_instance_t * qi = (query_instance_t *) qst;
   long disconnected_users = 0;
   dk_set_t users;
+
+  sec_check_dba (qi, "disconnect_user");
 
   IN_TXN;
   mutex_enter (thread_mtx);
@@ -5844,22 +5846,16 @@ bif_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (name || ses != this_client_ses)
 	{
 	  client_connection_t *cli = DKS_DB_DATA (ses);
-	  if (cli &&    /* A missing check added by AK 23-FEB-1997 */
-	      (!name ||
-	       (cli->cli_user && (DVC_MATCH == cmp_like (cli->cli_user->usr_name, name, NULL, 0,
-							 LIKE_ARG_CHAR, LIKE_ARG_CHAR))))
-	     )
+	if (cli && 
+  	    (!name || (cli->cli_user && (DVC_MATCH == cmp_like (cli->cli_user->usr_name, name, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR)))))
 	    {
 	      ASSERT_IN_TXN;
 	      DO_SET (lock_trx_t *, lt, &all_trxs)
 		{
 		  if (lt->lt_client == cli)
-		    if (lt != qi->qi_trx &&
-			lt->lt_status == LT_PENDING
-			&& (lt->lt_threads > 0 || lt_has_locks (lt)))
+		if (lt != qi->qi_trx && lt->lt_status == LT_PENDING && (lt->lt_threads > 0 || lt_has_locks (lt)))
 		      {
-			LT_ERROR_DETAIL_SET (lt,
-			    box_dv_short_string ("DBA forced disconnect"));
+		    LT_ERROR_DETAIL_SET (lt, box_dv_short_string ("DBA forced disconnect"));
 			lt->lt_error  = LTE_SQL_ERROR;
 			lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 		      }
@@ -7561,11 +7557,14 @@ bif_row_deref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long volatile dp = (long) bif_long_arg (qst, args, 0, "page_dump");
   buffer_desc_t buf_auto;
   ALIGNED_PAGE_BUFFER (bd_buffer);
   buffer_desc_t *buf = NULL;
   it_cursor_t itc_auto, *itc = &itc_auto;
+
+  sec_check_dba (qi, "page_dump");
 
   memset (&itc_auto, 0, sizeof (itc_auto));
 
@@ -7580,9 +7579,9 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  ITC_LEAVE_MAP_NC (itc);
 	  return 0;
 	}
-      ITC_LEAVE_MAP_NC(itc);
+    ITC_LEAVE_MAP_NC (itc);
     }
-  END_DO_SET();
+  END_DO_SET ();
 
   buf = &buf_auto;
   memset (&buf_auto, 0, sizeof (buf_auto));
@@ -7597,7 +7596,8 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dbg_page_map (buf);
 
   if (buf->bd_content_map)
-    resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+    resource_store (PM_RC (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
+
   return 0;
 }
 
@@ -7605,9 +7605,7 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_corrupt_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  O12;
 #ifndef O12
-
   long volatile dp = bif_long_arg (qst, args, 0, "corrupt_page");
   long volatile offset = bif_long_arg (qst, args, 1, "corrupt_page");
   unsigned char volatile crap = 0xFF;
@@ -7629,11 +7627,14 @@ bif_corrupt_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   page_wait_access (it, dp, NULL, NULL, &buf, PA_READ, RWG_WAIT_SPLIT);
     }
   while (!buf);
+
   if (offset + craplength  >= PAGE_SZ)
     offset = PAGE_SZ - craplength;
+
   for (i = offset; i < offset + craplength; i++)
     buf->bd_buffer[i] = crap;
-  buf_set_dirty(buf);
+
+      buf_set_dirty (buf);
   itc_page_leave (it, buf);
   ITC_LEAVE_MAP (it);
   }
@@ -7649,6 +7650,10 @@ bif_corrupt_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_mem_enter_reserve_mode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
+
+  sec_check_dba (qi, "mem_enter_reserve_mode");
+
   dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_IN_USE);
   return box_num (DK_ALLOC_ON_RESERVE ? 1 : 0);
 }
@@ -7709,18 +7714,30 @@ caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_
 
 
 #ifdef MALLOC_STRESS
-caddr_t bif_set_hard_memlimit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+bif_set_hard_memlimit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   ptrlong consumption = bif_long_arg (qst, args, 0, "set_hard_memlimit");
-  dbg_malloc_set_hard_memlimit ((size_t)consumption);
+
+  sec_check_dba (qi, "set_hard_memlimit");
+
+  dbg_malloc_set_hard_memlimit ((size_t) consumption);
+
   return box_num (consumption);
 }
 
-caddr_t bif_set_hit_memlimit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+bif_set_hit_memlimit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t name = bif_string_arg (qst, args, 0, "set_hit_memlimit");
   ptrlong consumption = bif_long_arg (qst, args, 1, "set_hit_memlimit");
-  dbg_malloc_set_hit_memlimit (box_uname_string(name), consumption);
+
+  sec_check_dba (qi, "set_hit_memlimit");
+
+  dbg_malloc_set_hit_memlimit (box_uname_string (name), consumption);
+
   return box_num (consumption);
 }
 #endif
@@ -9376,21 +9393,25 @@ bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) inst;
   int inx, len = BOX_ELEMENTS (args);
-  caddr_t * arr = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t *arr;
   dk_set_t temp_blobs = NULL;
 
+  sec_check_dba (qi, "log_text");
+
+  arr = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < len; inx++)
   {
     arr[inx] = bif_arg (inst, args, inx, "log_text");
     if (IS_BLOB_HANDLE (arr[inx]))
       {
         arr[inx] = blob_to_string (qi->qi_trx, arr[inx]);
-	dk_set_push(&temp_blobs, arr[inx]);
+	  dk_set_push (&temp_blobs, arr[inx]);
       }
   }
   log_text_array (qi->qi_trx, (caddr_t) arr);
   dk_free_box ((caddr_t) arr);
-  dk_free_tree(list_to_array (temp_blobs));
+  dk_free_tree (list_to_array (temp_blobs));
+
   return 0;
 }
 
@@ -9401,12 +9422,20 @@ bif_repl_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) inst;
   caddr_t acct = bif_string_arg (inst, args, 0, "repl_text");
   int n_args = BOX_ELEMENTS (args) - 1;
-  caddr_t * arr = (caddr_t*) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t *arr;
   int inx;
+
+  sec_check_dba (qi, "repl_text");
+
+  arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+
   for (inx = 0; inx < n_args; inx++)
   arr[inx] = bif_arg (inst, args, inx + 1, "repl_text");
+
   log_repl_text_array (qi->qi_trx, NULL, acct, (caddr_t) arr);
+
   dk_free_box ((caddr_t) arr);
+
   return 0;
 }
 
@@ -9417,12 +9446,19 @@ bif_repl_text_pushback (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t srv = bif_string_arg (inst, args, 0, "repl_text_pushback");
   caddr_t acct = bif_string_arg (inst, args, 1, "repl_text_pushback");
   int n_args = BOX_ELEMENTS (args) - 2;
-  caddr_t * arr = (caddr_t*) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t *arr;
   int inx;
+
+  sec_check_dba (qi, "repl_text_pushback");
+
+  arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_args; inx++)
   arr[inx] = bif_arg (inst, args, inx + 2, "repl_text_pushback");
+
   log_repl_text_array (qi->qi_trx, srv, acct, (caddr_t) arr);
+
   dk_free_box ((caddr_t) arr);
+
   return 0;
 }
 
@@ -9431,7 +9467,11 @@ bif_repl_set_raw (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) inst;
   long is_raw = (int) bif_long_arg (inst, args, 0, "repl_set_raw");
+
+  sec_check_dba (qi, "repl_set_raw");
+
   qi->qi_trx->lt_repl_is_raw = is_raw;
+
   return 0;
 }
 
@@ -9450,27 +9490,33 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long flag = (long) bif_long_or_null_arg (qst, args, 0, "log_enable", &flag_is_null);
   long quiet;
   long old_value;
+
+  sec_check_dba (qi, "log_enable");
+
   old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) | /* not || */
-     (qi->qi_client->cli_row_autocommit ? 2 : 0) );
+      (qi->qi_client->cli_row_autocommit ? 2 : 0));
+
   if (flag_is_null)
     return box_num (old_value);
+
   quiet = (BOX_ELEMENTS (args) > 1) ? (long) bif_long_arg (qst, args, 1, "log_enable") : 0L;
+
   if (srv_have_global_lock (THREAD_CURRENT_THREAD))
     return box_num (old_value);
-  if (!(flag & 1) && qi->qi_client != bootstrap_cli &&
-      qi->qi_trx->lt_replicate == REPL_NO_LOG)
+
+  if (!(flag & 1) && qi->qi_client != bootstrap_cli && qi->qi_trx->lt_replicate == REPL_NO_LOG)
     {
       if (quiet)
         {
           qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
           return box_num (old_value);
         }
-      sqlr_new_error ("42000", "SR471",
-	"log_enable () called twice to disable the already disabled log output" );
+      sqlr_new_error ("42000", "SR471", "log_enable () called twice to disable the already disabled log output");
     }
+
   qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
-  qi->qi_trx->lt_replicate = ((flag & 1) ?
-    (caddr_t*) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate) : REPL_NO_LOG );
+  qi->qi_trx->lt_replicate = ((flag & 1) ? (caddr_t *) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate) : REPL_NO_LOG);
+
   return box_num (old_value);
 }
 
@@ -9870,6 +9916,9 @@ caddr_t
 bif_txn_killall (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
+
+  sec_check_dba (qi, "txn_killall");
+
   IN_TXN;
   lt_killall (qi->qi_trx);
   LEAVE_TXN;
@@ -9881,11 +9930,14 @@ caddr_t
 bif_replay (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-
-  char * fname = bif_string_arg (qst, args, 0, "replay");
+  char *fname = bif_string_arg (qst, args, 0, "replay");
   int fd;
+
+  sec_check_dba (qi, "replay");
+
   if (lt_has_locks (qi->qi_trx))
   sqlr_new_error ("25000", "SR074", "replay must be run in a fresh transaction.");
+
   fd = open (fname, O_RDONLY | O_BINARY);
   if (-1 == fd)
   {
@@ -10436,10 +10488,13 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   int32 old_cp_interval;
   int atomic = srv_have_global_lock  (THREAD_CURRENT_THREAD);
   c_checkpoint_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
   old_cp_interval = cfg_autocheckpoint / 60000L;
+
+  sec_check_dba (qi, "checkpoint_interval");
 
   if (!atomic)
     {
@@ -10448,7 +10503,12 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (-1 > c_checkpoint_interval)
   c_checkpoint_interval = -1;
   cfg_autocheckpoint = 60000L * c_checkpoint_interval;
+#if 0
+  /* 
+   * PMN: THIS SHOULD NEVER BE WRITTEN BACK INTO THE .INI FILE !!!!
+   */
   cfg_set_checkpoint_interval (c_checkpoint_interval);
+#endif
   if (!atomic)
     {
   LEAVE_CPT(((query_instance_t *) qst)->qi_trx);
@@ -11028,16 +11088,20 @@ bif_mutex_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  /* number of ietrations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
+  query_instance_t *qi = (query_instance_t *) qst;
+  /* number of iterations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
   long inx;
   long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
   long fl = (long) bif_long_arg (qst, args, 1, "mutex_meter");
   long type = (long) bif_long_arg (qst, args, 2, "mutex_meter");
   long waits = 0;
-  static dk_mutex_t * stmtx;
-  static dk_mutex_t * stmtx_long;
-  static dk_mutex_t * stmtx_spin;
-  dk_mutex_t * mtx;
+  static dk_mutex_t *stmtx;
+  static dk_mutex_t *stmtx_long;
+  static dk_mutex_t *stmtx_spin;
+  dk_mutex_t *mtx;
+
+  sec_check_dba (qi, "mutex_meter");
+
   if (!stmtx)
     {
       stmtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
@@ -11050,8 +11114,12 @@ bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       switch (type)
 	{
-	case MUTEX_TYPE_SPIN: mtx = stmtx_spin; break;
-	case MUTEX_TYPE_LONG: mtx = stmtx_long; break;
+	case MUTEX_TYPE_SPIN:
+	  mtx = stmtx_spin;
+	  break;
+	case MUTEX_TYPE_LONG:
+	  mtx = stmtx_long;
+	  break;
 	default:
   mtx = stmtx;
 	}
@@ -11084,18 +11152,24 @@ bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_spin_wait_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  /* number of ietrations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
+  query_instance_t *qi = (query_instance_t *) qst;
+  /* number of iterations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
   int hncooh = 0;
 #ifdef _PTHREAD_H
   long inx;
   long n_loops = (long) bif_long_arg (qst, args, 0, "spin__wait_meter");
   long loop_len  = (long) bif_long_arg (qst, args, 1, "spin_wait_meter");
-  dk_mutex_t * mtx = mutex_allocate ();
+  dk_mutex_t *mtx;
+
+  sec_check_dba (qi, "spin_wait_meter");
+
+  mtx = mutex_allocate ();
   mutex_enter (mtx);
+
   for (inx = 0; inx < n_loops; inx++)
     {
       int inx2;
-      pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle);
+      pthread_mutex_trylock ((pthread_mutex_t *) mtx->mtx_handle);
       for (inx2 = 0; inx2 < loop_len; inx2++)
 	hncooh++;
     }
@@ -11110,12 +11184,16 @@ caddr_t
 bif_spin_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #if HAVE_SPINLOCK
+  query_instance_t *qi = (query_instance_t *) qst;
   long inx;
-  long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
-  long fl = (long) bif_long_arg (qst, args, 1, "mutex_meter");
+  long n = (long) bif_long_arg (qst, args, 0, "spin_meter");
+  long fl = (long) bif_long_arg (qst, args, 1, "spin_meter");
   static pthread_spinlock_t sl_st;
-  pthread_spinlock_t * sl;
+  pthread_spinlock_t *sl;
   static int inited = 0;
+
+  sec_check_dba (qi, "spin_meter");
+
   if (!inited)
     {
       pthread_spin_init (&sl_st, 0);
@@ -11165,19 +11243,25 @@ mem_traverse (int32 ** arr, int sz, int step, int wr)
 caddr_t
 bif_mem_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long inx, ctr, inx2;
   long sum = 0;
   long n = (long) bif_long_arg (qst, args, 0, "mem_meter");
   long sz = (long) bif_long_arg (qst, args, 1, "mem_meter");
+
+  sec_check_dba (qi, "mem_meter");
+
   for (ctr = 0; ctr < n; ctr++)
     {
-      int32 ** arr = (int32 **) malloc (sizeof (void*) * sz);
-      for (inx = 0; inx < sz; inx ++)
+      int32 **arr = (int32 **) malloc (sizeof (void *) * sz);
+
+      for (inx = 0; inx < sz; inx++)
 	{
-	  arr[inx] = (int32*) malloc (sizeof (int32) * 1024);
+	  arr[inx] = (int32 *) malloc (sizeof (int32) * 1024);
 	  memset (arr[inx], 0, 1024 * sizeof (int32));
 	}
-      for (inx= 0; inx < sz; inx++)
+
+      for (inx = 0; inx < sz; inx++)
 	{
 	  for (inx2 = 0; inx2 < 1024; inx2++)
 	    sum += arr[inx][inx2];
@@ -11193,9 +11277,11 @@ bif_mem_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sum += mem_traverse (arr, sz, 11, 1);
       
       for (inx = 0; inx < sz; inx++)
-	free ((void*) arr[inx]);
-      free ((void*) arr);
+	free ((void *) arr[inx]);
+
+      free ((void *) arr);
     }
+
   return box_num (sum);
 }
 
@@ -11203,17 +11289,21 @@ bif_mem_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_malloc_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long inx;
   long n = (long) bif_long_arg (qst, args, 0, "malloc_meter");
   caddr_t x;
   long fl = (long) bif_long_arg (qst, args, 1, "malloc_meter");
+
+  sec_check_dba (qi, "malloc_meter");
+
 /*  static dk_mutex_t * stmtx; */
   for (inx = 0; inx < n; inx++)
   {
     if (0 == fl)
   {
     x = (caddr_t) malloc (16);
-    free ((void*) x);
+	  free ((void *) x);
   }
     else
   {
@@ -11229,12 +11319,15 @@ bif_malloc_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_copy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long target[100];
   long inx, ct;
-  long n = (long) bif_long_arg (qst, args, 0, "malloc_meter");
-  /*caddr_t x;*/
-  long fl = (long) bif_long_arg (qst, args, 1, "malloc_meter");
-  char * from = (char *) &n;
+  long n = (long) bif_long_arg (qst, args, 0, "copy_meter");
+  /*caddr_t x; */
+  long fl = (long) bif_long_arg (qst, args, 1, "copy_meter");
+  char *from = (char *) &n;
+
+  sec_check_dba (qi, "copy_meter");
 
   for (ct = 0; ct < n; ct++)
   {
@@ -11246,27 +11339,31 @@ bif_copy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 1:
         memcpy (target, from + 1, 32);
         break;
+
       case 2:
         for (inx = 0; inx < 8; inx++)
-    ((long*)&target)[inx] = ((long*)from)[inx];
-        break;
-      case 3:
-        from =  ((char *)&fl) + 1;
-        for (inx = 0; inx < 8; inx++)
-    ((long*)&target)[inx] = ((long*)from)[inx];
-        break;
-      case 4:
-        for (inx = 0; inx < 4; inx++)
-    ((int64*)&target)[inx] = ((int64*)from)[inx];
-        break;
-      case 5:
-        from =  ((char *)&fl) + 1;
-        for (inx = 0; inx < 4; inx++)
-    ((int64*)&target)[inx] = ((int64*)from)[inx];
+	    ((long *) &target)[inx] = ((long *) from)[inx];
         break;
 
+      case 3:
+	  from = ((char *) &fl) + 1;
+        for (inx = 0; inx < 8; inx++)
+	    ((long *) &target)[inx] = ((long *) from)[inx];
+        break;
+
+      case 4:
+        for (inx = 0; inx < 4; inx++)
+	    ((int64 *) & target)[inx] = ((int64 *) from)[inx];
+        break;
+
+      case 5:
+	  from = ((char *) &fl) + 1;
+        for (inx = 0; inx < 4; inx++)
+	    ((int64 *) & target)[inx] = ((int64 *) from)[inx];
+        break;
       }
   }
+
   return 0;
 }
 
@@ -11274,11 +11371,14 @@ bif_copy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long inx, n_busy = 0, n_samples = 0, n_key;
-  long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
+  long n = (long) bif_long_arg (qst, args, 0, "busy_meter");
   caddr_t tb_name = BOX_ELEMENTS (args) > 1 ? bif_string_arg (qst, args, 1, "busy_meter") : NULL;
-  dbe_table_t * tb = NULL;
-  long * counts = NULL;
+  dbe_table_t *tb = NULL;
+  long *counts = NULL;
+
+  sec_check_dba (qi, "busy_meter");
   
   if (tb_name)
     {
@@ -11309,7 +11409,7 @@ bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		}
 	    n_key++;
 	  }
-	END_DO_SET();
+	  END_DO_SET ();
       }
     n_samples++;
     virtuoso_sleep (0, 1000);
@@ -11323,9 +11423,10 @@ bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  printf ("Key %s busy %ld\n", key->key_name, counts[n_key]);
 	  n_key++;
 	}
-      END_DO_SET();
-      dk_free_box ((caddr_t)counts);
+      END_DO_SET ();
+      dk_free_box ((caddr_t) counts);
     }
+
   return box_num (n_busy);
 }
 
@@ -11333,8 +11434,12 @@ bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long inx;
-  long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
+  long n = (long) bif_long_arg (qst, args, 0, "self_meter");
+
+  sec_check_dba (qi, "self_meter");
+
   for (inx = 0; inx < n; inx++)
   {
     THREAD_CURRENT_THREAD;
@@ -11410,9 +11515,13 @@ bif_assert_found (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_atomic (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   int flag = (int) bif_long_arg (qst, args, 0, "__atomic");
+
+  sec_check_dba (qi, "__atomic");
+
   srv_global_lock (qi, flag);
+
   return 0;
 }
 
@@ -11438,9 +11547,13 @@ bif_trx_disk_log_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_client_trace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *) qst;
   long fl;
 
-  fl = (long) bif_long_arg(qst, args, 0, "client_trace");
+  sec_check_dba (qi, "client_trace");
+
+  fl = (long) bif_long_arg (qst, args, 0, "client_trace");
+
   if (0 != fl)
   {
     client_trace_flag = 1;
@@ -12794,7 +12907,9 @@ sql_bif_init (void)
   bif_define_typed ("dbg_row_deref_pos", bif_dbg_row_deref_pos, &bt_integer);
 #endif
   bif_define ("page_dump", bif_page_dump);
+#ifndef O12
   bif_define ("corrupt_page", bif_corrupt_page);
+#endif
   bif_define_typed ("lisp_read", bif_lisp_read, &bt_any);
 
   bif_define_typed ("make_array", bif_make_array, &bt_any);
@@ -12885,6 +13000,7 @@ sql_bif_init (void)
   bif_define ("exec_result", bif_exec_result);
   bif_define ("__set", bif_set);
   bif_define_typed ("vector_concat", bif_vector_concatenate, &bt_any);
+#ifndef NDEBUG
   bif_define ("mutex_meter", bif_mutex_meter);
   bif_define ("spin_wait_meter", bif_spin_wait_meter);
   bif_define ("spin_meter", bif_spin_meter);
@@ -12893,8 +13009,9 @@ sql_bif_init (void)
   bif_define ("self_meter", bif_self_meter);
   bif_define ("malloc_meter", bif_malloc_meter);
   bif_define ("copy_meter", bif_copy_meter);
-  bif_define ("alloc_cache_status", bif_alloc_cache_status);
   bif_define ("busy_meter", bif_busy_meter);
+#endif
+  bif_define ("alloc_cache_status", bif_alloc_cache_status);
   bif_define ("getrusage", bif_getrusage);
   bif_define_typed ("row_count", bif_row_count, &bt_integer);
   bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
@@ -12924,7 +13041,7 @@ sql_bif_init (void)
 #endif
 #ifdef MALLOC_STRESS
   bif_define ("set_hard_memlimit", bif_set_hard_memlimit);
-  bif_define ("set_hot_memlimit", bif_set_hot_memlimit);
+  bif_define ("set_hit_memlimit", bif_set_hit_memlimit);
 #endif
   bif_define ("sqlo_enable", bif_sqlo);
   bif_define ("hic_clear", bif_hic_clear);
