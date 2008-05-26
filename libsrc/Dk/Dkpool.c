@@ -961,3 +961,51 @@ mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp)
 #endif
 }
 
+
+caddr_t 
+ap_alloc_box (auto_pool_t * ap, int len, dtp_t dtp)
+{
+  caddr_t ptr = ap->ap_area + ap->ap_fill + 4;
+  WRITE_BOX_HEADER(ptr, len, dtp);
+  ap->ap_fill += ALIGN_8(len) + 8;
+  return ptr;
+}
+
+caddr_t
+ap_box_num (auto_pool_t * ap, int64 n)
+{
+  caddr_t box;
+  if (!IS_BOXINT_POINTER (n))
+    return (caddr_t)(ptrlong)n;
+  box = ap_alloc_box (ap, sizeof (int64), DV_LONG_INT);
+  *(int64*)box = n;
+  return box;
+}
+
+
+caddr_t
+ap_box_iri_id (auto_pool_t * ap, int64 n)
+{
+  caddr_t box;
+  box = ap_alloc_box (ap, sizeof (int64), DV_IRI_ID);
+  *(int64*)box = n;
+  return box;
+}
+
+
+caddr_t *
+ap_list (auto_pool_t * apool, long n, ...)
+{
+  caddr_t *box;
+  va_list ap;
+  int inx;
+  va_start (ap, n);
+  box = (caddr_t *) ap_alloc_box (apool, sizeof (caddr_t) * n, DV_ARRAY_OF_POINTER);
+  for (inx = 0; inx < n; inx++)
+    {
+      box[inx] = va_arg (ap, caddr_t);
+    }
+  va_end (ap);
+  return ((caddr_t *) box);
+}
+

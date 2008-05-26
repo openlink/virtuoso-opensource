@@ -445,6 +445,9 @@ ptr += 4
 #define DV_UNAME 217		/*!< Unique name, whose single instance is saved in system-wide registry */
 #define DV_REFERENCE 206	/*!< Reference to an 'self as ref' object, this is a read-only thing with do-nothing copy and free semantics */
 #define DV_XPATH_QUERY 232	/*!< Query object, this is a read-only thing with reference counting */
+#define DV_IRI_ID 243
+#define DV_IRI_ID_8 244
+
 #define DV_RDF 246		/*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
 #define DV_INT64 247		/*!< This tag is used in schema and serialization. int box is always int64 */
 #define DV_PLACEHOLDER 248	/* This tag keeps placeholder_t structure */

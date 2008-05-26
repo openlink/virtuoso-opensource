@@ -346,5 +346,26 @@ extern box_tmp_copy_f box_tmp_copier[256];
   ((int32*)x)[-1] = tag_word; \
 }
 
+
+typedef struct auto_pool_s 
+{
+  caddr_t	ap_area;
+  int		ap_size;
+  int	ap_fill;
+} auto_pool_t;
+
+#define AUTO_POOL(n) \
+  int64  area[n];  \
+  auto_pool_t ap; \
+  ap.ap_area = (caddr_t) &area;			\
+ap.ap_fill = 0; \
+ap.ap_size = sizeof (area); \
+
+caddr_t ap_box_num (auto_pool_t * ap, int64 i);
+caddr_t ap_alloc_box (auto_pool_t * ap, int n, dtp_t tag);
+caddr_t * ap_list (auto_pool_t * apool, long n, ...);
+caddr_t ap_box_iri_id (auto_pool_t * ap, int64 n);
+
+
 #endif /* ifdef __DKPOOL_H */
 
