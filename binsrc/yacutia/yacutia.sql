@@ -578,6 +578,29 @@ create procedure db_root_1 (in path varchar)
 ;
 
 create procedure
+adm_rdf_db_tree ()
+{
+  declare ses any;
+  declare i int;
+
+  ses := string_output ();
+  http ('<db_tree>\n', ses); i := 0;
+  for select distinct name_part (KEY_TABLE, 0) as TABLE_QUAL from SYS_KEYS
+    union select distinct name_part (P_NAME, 0) from SYS_PROCEDURES
+    order by TABLE_QUAL
+    do
+    {
+       i := i + 1;
+       http (sprintf ('<node name="%V" id="%d">', TABLE_QUAL, i), ses);
+         http (sprintf ('<node name="Tables" id="1-%d"/>\n', i), ses);
+       http ('</node>\n', ses);
+     }
+  http ('</db_tree>\n', ses);
+  return string_output_string (ses);
+}
+;
+
+create procedure
 adm_db_tree ()
 {
   declare ses any;
@@ -603,9 +626,22 @@ adm_db_tree ()
 }
 ;
 
+create procedure rdf_db_root (in path varchar)
+{
+  return xpath_eval (sprintf ('/db_tree/*[@name like "%s"]', path), xml_tree_doc (adm_rdf_db_tree ()), 0);
+}
+;
+
+
 create procedure db_root (in path varchar)
 {
   return xpath_eval (sprintf ('/db_tree/*[@name like "%s"]', path), xml_tree_doc (adm_db_tree ()), 0);
+}
+;
+
+create procedure rdf_db_child (in path varchar, in node any)
+{
+  return xpath_eval (path, node, 0);
 }
 ;
 
@@ -5487,3 +5523,225 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
     }
 }
 ;
+
+
+-- RDF Schema objects
+
+create procedure view_from_tbl (in _dir varchar, in _tbls varchar)
+{
+   declare create_class_stmt, create_view_stmt, prefix, ns, uriqa_str any;
+
+   prefix := 'SPARQL\n';
+-- FIXME ns generation;
+   ns := '
+prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix Nort_test: <http://demo.openlinksw.com/schemas/northwind#>
+prefix WEX_test: <http://demo.openlinksw.com/schemas/wex#>
+prefix demo: <http://www.openlinksw.com/schemas/demo#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n';
+
+   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+   create_class_stmt := '';
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+     create_class_stmt := create_class_stmt || view_create_class (_tbls[xx], uriqa_str, _dir);
+
+   create_class_stmt := prefix || ns || create_class_stmt;
+   string_to_file ('class.sql', create_class_stmt || ';', -2);
+   exec (create_class_stmt);
+
+   create_view_stmt := view_create_view (_tbls, _dir);
+   create_view_stmt := prefix || ns || create_view_stmt;
+-- string_to_file ('view.sql', create_view_stmt || ';', -2);
+-- exec (create_view_stmt);
+
+}
+;
+
+
+create procedure view_create_view (in _tbls any, in _dir varchar)
+{
+   declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
+   declare sufix, tname, tbl any;
+
+   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   qual := name_part (_tbls[0], 0);
+   qual_l := lcase (qual);
+
+   ret := 'alter quad storage virtrdf:DefaultQuadStorage\n';
+   sufix := '_s';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+      ret := ret || ' from ' || _tbls[xx] || ' as ' || lcase (name_part (_tbls[xx], 3) || sufix) || '\n';
+
+   ret := ret || view_get_where_from_foreign_key (_tbls, sufix) || '\n';
+
+   ret := ret || ' { create virtrdf:' || qual || '
+	as graph iri ("http://' || uriqa_str || '/' || qual_l || '") option (exclusive) \n{ \n';
+
+   for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+      {
+	   tbl := _tbls[xx];
+	   tbl_name := name_part (tbl, 3);
+	   tbl_name_l := lcase (tbl_name);
+	   pks := view_get_primary_key (tbl);
+	   tname := tbl_name_l || sufix;
+	   pk_text := '';
+
+	   for (declare xx any, xx := 0; xx < length (pks) ; xx := xx + 1)
+	     pk_text := tname || '.' || pks[xx][0] || ',';
+
+	   pk_text := trim (pk_text, ',');
+
+
+	   ret := ret || sprintf ('%s:%s (%s)\n', _dir, tbl_name_l, pk_text);
+
+	    for select "COLUMN" from SYS_COLS where "TABLE" = tbl do
+	       {
+--			dbg_obj_print ("COLUMN");
+--			dbg_obj_print (sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;',
+--				_dir, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") ));
+			ret := ret || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
+				_dir, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") );
+
+-- northwind:has_customer northwind:Customer (orders.CustomerID) as virtrdf:Order-order_has_customer ;
+			-- If col is FK?
+			if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN"
+				AND position (PK_TABLE, _tbls) <> 0))
+			  {
+				for (select name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME from DB.DBA.SYS_FOREIGN_KEYS
+					where FK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN" AND position (PK_TABLE, _tbls) <> 0) do
+					   {
+					      ret := ret || sprintf ('%s:has_%s %s:%s (%s%s.%s) as virtrdf:%s-%s_has_%s ;\n\n',
+						 _dir, lcase (PK_TABLE_NAME), _dir, PK_TABLE_NAME,
+						 tbl_name_l, sufix, "COLUMN", tbl_name, tbl_name_l, lcase (PK_TABLE_NAME));
+					   }
+			  }
+
+			-- If col is part from FK?
+			if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where PK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN"
+				AND position (FK_TABLE, _tbls) <> 0))
+			  {
+				for (select name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME, PK_TABLE,
+				   FK_TABLE, FKCOLUMN_NAME
+				     from DB.DBA.SYS_FOREIGN_KEYS
+					where PK_TABLE = tbl and PKCOLUMN_NAME= "COLUMN" AND position (FK_TABLE, _tbls) <> 0) do
+					   {
+					      ret := ret || sprintf ('%s:%s_of %s:%s (%s%s.%s) as virtrdf:%s-%s_of ;\n\n',
+						 _dir, lcase (FK_TABLE_NAME),
+						 _dir, FK_TABLE_NAME,
+						 FK_TABLE_NAME, sufix, view_get_pk (FK_TABLE),
+						 lcase (name_part (PK_TABLE, 2)),
+						 FK_TABLE_NAME);
+					   }
+			  }
+
+
+
+	       }
+
+   	    ret := trim (ret, '\n');
+   	    ret := trim (ret, ';');
+   	    ret := ret || '.\n\n';
+      }
+
+   ret := ret || ' } }';
+
+   --string_to_file ('gen.sql', 'sparql ' || ret || ';', -2);
+
+   return ret;
+
+}
+;
+
+create procedure view_dv_to_printf_str_type (in _dv varchar)
+{
+   if (_dv = 189 or _dv = 188) return '%d';
+   if (_dv = 182) return '%U';
+   signal ('XXXXX', sprintf ('Unknown DV %i in view_dv_to_printf_str_type', _dv));
+}
+;
+
+create procedure view_dv_to_sql_str_type (in _dv varchar)
+{
+   if (_dv = 189 or _dv = 188) return 'integer';
+   if (_dv = 182) return 'varchar';
+   signal ('XXXXX', sprintf ('Unknown DV %i', _dv));
+}
+;
+
+create procedure view_create_class (in _tbl varchar, in _host varchar, in _f varchar)
+{
+   declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_len any;
+
+   qual := name_part (_tbl, 0);
+   tbl_name := name_part (_tbl, 3);
+   tbl_name_l := lcase (tbl_name);
+   pks := view_get_primary_key (_tbl);
+
+   pk_text := '';
+   sk_len := '';
+
+   for (declare xx any, xx := 0; xx < length (pks) ; xx := xx + 1)
+       {
+           pk_text := pk_text || 'in ' || pks[xx][0] || ' ' || view_dv_to_sql_str_type(pks[xx][1]) || ' not null,';
+	   sk_len := sk_len || '/' || view_dv_to_printf_str_type (pks[xx][1]);
+       }
+
+   pk_text := trim (pk_text, ',');
+   sk_len  := trim (sk_len , '/');
+
+-- ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%sd#this" (%s) option (bijection, deref) .',
+-- ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%sd#this" (%s) option (bijection, deref) .',
+   ret := sprintf ('create iri class %s:%s "http://%s/%s/%s/%s/%s#this" (%s) . \n',
+		_f, tbl_name_l, _host, _f, tbl_name_l, pks[0][0], sk_len, pk_text);
+
+   return ret;
+}
+;
+
+create procedure view_get_primary_key (in _tbl varchar)
+{
+   return DB.DBA.REPL_PK_COLS (_tbl);
+}
+;
+
+create procedure view_get_pk (in _tbl varchar)
+{
+   return DB.DBA.REPL_PK_COLS (_tbl)[0][0];
+}
+;
+
+create procedure view_get_where_from_foreign_key (in _tbls varchar, in _suff varchar)
+{
+   declare ret, tbl any;
+
+   ret := '';
+
+   foreach (any tbl in _tbls) do
+
+   for (SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA, PK_TABLE,
+                     name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+                     name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
+                     name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
+                     KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
+                     FROM DB.DBA.SYS_FOREIGN_KEYS WHERE FK_TABLE like tbl) do
+
+	{
+		if (position (PK_TABLE, _tbls) <> 0)
+		  {
+			ret := ret || sprintf (' where (^{%s%s.}^."%s" = ^{%s%s.}^."%s") \n',
+			lcase (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
+			lcase (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);
+		  }
+	}
+
+   return ret;
+}
+;
+
+-- END RDF Schema objects
