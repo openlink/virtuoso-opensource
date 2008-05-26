@@ -4568,9 +4568,9 @@ ttlp ('
    <http://localhost:8890/dataspace>                            <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/ods> .
    <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>.
    <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> .
-   ', '', 'http://example.com/datapace/test');
+   ', '', 'http://localhost:8890/test');
 ]]></programlisting>
-<para>This loads data space instance data Triples into a Named Graph: &lt;http://example.com/dataspace/test&gt;
+<para>This loads data space instance data Triples into a Named Graph: &lt;http://localhost:8890/test&gt;
 </para>
 <programlisting><![CDATA[
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -4580,19 +4580,19 @@ ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   <http://rdfs.org/sioc/types#Weblog> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/types#MessageBoard> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/ns#link> rdfs:subPropertyOf <http://rdfs.org/sioc/ns> .
-  ', '', 'http://example.com/schema/dataspace/test');
+  ', '', 'http://localhost:8890/schema/test');
 ]]></programlisting>
 <para>This loads a Triples into a Named Graph for schema/ontology data called:
-&lt;http://example.com/schema/dataspace/test&gt; that expresses assertions
+&lt;http://localhost:8890/schema/test&gt; that expresses assertions
 about subclasses and subproperties.
 </para>
 <programlisting>
-rdfs_rule_set ('http://example.com/dataspace/test', 'http://example.com/schema/dataspace/test');
+rdfs_rule_set ('http://localhost:8890/schema/property_rules1', 'http://localhost:8890/schema/test');
 </programlisting>
-<para>This defines the rule context http://example.com/dataspace/test that is initialized from the contents of graph http://example.com/schema/dataspace/test.
+<para>This defines the rule context http://localhost:8890/schema/property_rules1 that is initialized from the contents of graph http://localhost:8890/schema/test.
 </para>
 <programlisting><![CDATA[
-SQL>sparql define input:inference 'http://example.com/dataspace/test' select ?s from <http://example.com/dataspace/test> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
+SQL>sparql define input:inference 'http://localhost:8890/schema/property_rules1' select ?s from <http://localhost:8890/test> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
 s
 VARCHAR
 _______________________________________________________________________________
@@ -4612,8 +4612,8 @@ http://localhost:8890/dataspace/discussion/oWiki-test1Wiki.
 </para>
 <programlisting><![CDATA[
 SQL>select id_to_iri (s)
-from rdf_quad table option (with 'http://example.com/dataspace/test')
-where g = iri_to_id ('http://example.com/dataspace/test',0)
+from rdf_quad table option (with 'http://localhost:8890/schema/property_rules1')
+where g = iri_to_id ('http://localhost:8890/test',0)
   and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
   and o = iri_to_id ('http://rdfs.org/sioc/ns#Space', 0);
 callret
@@ -4637,7 +4637,7 @@ the same but now specify that inference should apply only to the first triple pa
 </para>
 <programlisting><![CDATA[
 
-SQL>sparql define input:inference  'http://example.com/dataspace/test' select * from <http://example.com/dataspace/test>
+SQL>sparql define input:inference  'http://localhost:8890/schema/property_rules1' select * from <http://localhost:8890/test>
 where { ?s ?p <http://rdfs.org/sioc/ns#Space> . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
 
 
@@ -4651,8 +4651,8 @@ http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/199
 2 Rows. -- 0 msec.
 
 
-SQL>sparql  select * from <http://example.com/dataspace/test>
-where { ?s ?p <http://rdfs.org/sioc/ns#Space> option (inference 'http://example.com/dataspace/test') . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
+SQL>sparql  select * from <http://localhost:8890/test>
+where { ?s ?p <http://rdfs.org/sioc/ns#Space> option (inference 'http://localhost:8890/schema/property_rules1') . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
 
 s             p              p1
 VARCHAR       VARCHAR        VARCHAR
@@ -4661,6 +4661,103 @@ _______________________________________________________________________________
 http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
 
 1 Rows. -- 10 msec.
+
+]]></programlisting>
+<emphasis>DBpedia example</emphasis>
+<programlisting><![CDATA[
+ttlp ('
+ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ <http://dbpedia.org/property/birthcity> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
+ <http://dbpedia.org/property/birthcountry> rdfs:subPropertyOf  <http://dbpedia.org/property/birthPlace> .
+ <http://dbpedia.org/property/cityofbirth> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
+ <http://dbpedia.org/property/countryofbirth> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
+ <http://dbpedia.org/property/countyofbirth> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
+ <http://dbpedia.org/property/cityofdeath> rdfs:subPropertyOf <http://dbpedia.org/property/deathPlace> .
+ <http://dbpedia.org/property/countryofdeath> rdfs:subPropertyOf <http://dbpedia.org/property/deathPlace> . "",
+ 'http://dbpedia.org/inference/rules#') ;
+
+rdfs_rule_set ('http://dbpedia.org/schema/property_rules1', 'http://dbpedia.org/inference/rules#');
+]]></programlisting>
+<programlisting><![CDATA[
+sparql
+define input:inference 'http://dbpedia.org/schema/property_rules1'
+prefix p: <http://dbpedia.org/property/>
+select ?s from <http://dbpedia.org> where {?s p:birthcity ?o }
+limit 50
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Britt_Janyk
+http://dbpedia.org/resource/Chiara_Costazza
+http://dbpedia.org/resource/Christoph_Gruber
+http://dbpedia.org/resource/Daron_Rahlves
+http://dbpedia.org/resource/Finlay_Mickel
+http://dbpedia.org/resource/Genevi%C3%A8ve_Simard
+http://dbpedia.org/resource/Johann_Grugger
+http://dbpedia.org/resource/Kalle_Palander
+http://dbpedia.org/resource/Marc_Gini
+http://dbpedia.org/resource/Mario_Scheiber
+http://dbpedia.org/resource/Prince_Hubertus_of_Hohenlohe-Langenburg
+http://dbpedia.org/resource/Resi_Stiegler
+http://dbpedia.org/resource/Steven_Nyman
+http://dbpedia.org/resource/Hannes_Reichelt
+http://dbpedia.org/resource/Jeremy_Transue
+
+15 Rows. -- 167 msec.
+
+sparql
+define input:inference 'http://dbpedia.org/schema/property_rules1'
+prefix p: <http://dbpedia.org/property/>
+select ?s from <http://dbpedia.org> where {?s p:countryofbirth ?o }
+limit 50
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/A._J._Wood
+http://dbpedia.org/resource/A._J._Godbolt
+http://dbpedia.org/resource/Ac%C3%A1cio_Casimiro
+http://dbpedia.org/resource/Adam_Fry
+http://dbpedia.org/resource/Adam_Gilchrist
+http://dbpedia.org/resource/Adam_Griffin
+http://dbpedia.org/resource/Adam_Gross
+...
+
+50 Rows. -- 324 msec.
+
+sparql
+define input:inference 'http://dbpedia.org/schema/property_rules1'
+prefix p: <http://dbpedia.org/property/>
+select ?s from <http://dbpedia.org> where {?s p:countyofbirth ?o }
+limit 50
+
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Eddie_Colman
+
+1 Rows. -- 163 msec.
+
+sparql
+define input:inference 'http://dbpedia.org/schema/property_rules1'
+prefix p: <http://dbpedia.org/property/>
+select ?s from <http://dbpedia.org> where {?s p:birthPlace ?o }
+
+s
+VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Eddie_Colman
+http://dbpedia.org/resource/Jeremy_Transue
+http://dbpedia.org/resource/Finlay_Mickel
+http://dbpedia.org/resource/Prince_Hubertus_of_Hohenlohe-Langenburg
+http://dbpedia.org/resource/Hannes_Reichelt
+http://dbpedia.org/resource/Johann_Grugger
+http://dbpedia.org/resource/Chiara_Costazza
+...
+155287 Rows. -- 342179 msec.
 
 ]]></programlisting>
 </sect2>
