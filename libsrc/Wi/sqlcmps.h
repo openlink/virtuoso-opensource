@@ -518,7 +518,6 @@ void sqlc_implied_columns (sql_comp_t * sc);
 void ks_ancestor_scan (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks);
 ST * sqlc_embedded_xpath (sql_comp_t * sc, char * str2, caddr_t * err_ret);
 
-void ks_make_misc_accelerator (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks);
 #endif
 
 /* sqlcr.c */

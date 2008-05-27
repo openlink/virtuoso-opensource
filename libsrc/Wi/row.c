@@ -99,46 +99,6 @@ itc_col_loc (it_cursor_t * itc, db_buf_t page, oid_t col_id)
 }
 
 
-#ifndef O12
-void
-itc_read_row_extension (it_cursor_t *it, db_buf_t header, long read_so_far, db_buf_t xx)
-{
-  blob_handle_t * bh;
-  long bh_length;
-  long ext_length = it->itc_extension ?  box_length (it->itc_extension) : 0;
-
-  if (it->itc_extension_flag != REXT_UNREAD_EXTENSION)
-    return;
-  bh_length = LONG_REF (xx + 5);
-
-  if (bh_length + read_so_far + DV_LONG_CONT_STRING_DISK_LEN > ext_length)
-    {
-      dk_free_box (it->itc_extension);
-      it->itc_extension = dk_alloc_box (bh_length + read_so_far + DV_LONG_CONT_STRING_DISK_LEN, DV_BIN);
-      it->itc_extension[0] = DV_LONG_CONT_STRING;
-      LONG_SET (&it->itc_extension[1], bh_length + read_so_far);
-    }
-  memcpy (it->itc_extension + DV_LONG_CONT_STRING_DISK_LEN, header, read_so_far);
-  it->itc_extension_fill = bh_length + read_so_far + DV_LONG_CONT_STRING_DISK_LEN;
-
-  bh = bh_alloc (DV_BLOB_HANDLE);
-
-  bh->bh_page = LONG_REF (xx + 1);
-  bh->bh_length = bh_length;
-  bh->bh_current_page = bh->bh_page;
-
-  if (bh_length !=
-      bh_fill_buffer_from_blob (it->itc_space, it->itc_ltrx,
-				bh, it->itc_extension + read_so_far + DV_LONG_CONT_STRING_DISK_LEN, bh_length))
-    it->itc_extension_flag = REXT_NO_EXTENSION;
-  else
-    {
-      it->itc_extension_fill = bh_length + read_so_far + DV_LONG_CONT_STRING_DISK_LEN;
-      it->itc_extension_flag = REXT_EXTENSION;
-    }
-  bh_free (bh);
-}
-#endif
 
 long
 itc_long_column (it_cursor_t * it, buffer_desc_t * buf, oid_t col)
@@ -349,13 +309,6 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
 	numeric_from_buf (num, xx);
 	return ((caddr_t) num);
       }
-#ifndef O12
-    case DV_G_REF:
-    case DV_G_REF_CLASS:
-      str = dk_alloc_box ((int) len, *xx);
-      memcpy (str, xx, (int) len);
-      return str;
-#endif
     case DV_BIN:
     case DV_LONG_BIN:
       {

@@ -403,9 +403,6 @@ udt_clr_sqt_to_sig (dtp_t dtp)
     case DV_DOUBLE_FLOAT:
       return "Double";
     case DV_SHORT_STRING:
-#ifndef O12
-    case DV_LONG_STRING:
-#endif
     case DV_WIDE:
     case DV_LONG_WIDE:
       return "String";

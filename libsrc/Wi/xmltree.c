@@ -3567,15 +3567,6 @@ void bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *f
   str_is_temp_ret[0] = 0;
   ent_ret[0] = NULL;
   xqr_ret[0] = NULL;
-#ifndef O12
-  if (dtp == DV_BLOB_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    str_ret[0] = bs;
-    return;
-  }
-#endif
   if (DV_XML_ENTITY == dtp)
     {
       xml_entity_t *xe = (xml_entity_t *)arg;

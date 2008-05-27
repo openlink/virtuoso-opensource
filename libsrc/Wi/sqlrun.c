@@ -1890,21 +1890,6 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
   if (dn->dn_is_oid)
     {
       O12;
-#ifndef O12
-      search_spec_t sp;
-      memset (&sp, 0, sizeof (sp));
-      ITC_START_SEARCH_PARS (ref_itc);
-      sp.sp_min_op = CMP_EQ;
-      sp.sp_max_op = CMP_NONE;
-      sp.sp_min = 0;
-      ITC_SEARCH_PARAM (ref_itc, id);
-
-      sp.sp_is_boxed = 1;
-
-      ref_itc->itc_key_spec.ksp_spec_array = &sp;
-      ref_itc->itc_key_spec.ksp_key_cmp = NULL;
-      ref_itc->itc_key_id = KI_OBJECT_ID;
-#endif
     }
   else
     {

@@ -212,10 +212,6 @@ init_file_acl (void)
   char *p_www_abs_path = www_abs_path;
   static char fdb[PATH_MAX + 1], *pfdb = fdb;
   char tmpdir[PATH_MAX + 1];
-#ifndef O12
-  log_segment_t *lg = db_main_tree->it_log_segments;
-  dk_set_t dsk = db_main_tree->it_disks;
-#endif
 
   {
     size_t cwd_len = 0;
@@ -273,48 +269,9 @@ init_file_acl (void)
       rel_to_abs_path (pfdb, f_config_file, sizeof (fdb));	/* ini file */
       dk_set_push (&d_db_files, box_dv_short_string (fdb));
     }
-#ifndef O12
-  if (db_main_tree->it_file)
-    {
-      rel_to_abs_path (pfdb, db_main_tree->it_file, sizeof (fdb));	/* db file */
-      dk_set_push (&d_db_files, box_dv_short_string (fdb));
-    }
-  if (db_main_tree->it_log_name)
-    {
-      rel_to_abs_path (pfdb, db_main_tree->it_log_name, sizeof (fdb));	/* log file */
-      dk_set_push (&d_db_files, box_dv_short_string (fdb));
-    }
-#endif
   rel_to_abs_path (pfdb, "virtuoso.lic", sizeof (fdb));	/* license file */
   dk_set_push (&d_db_files, box_dv_short_string (fdb));
   /* log segments */
-#ifndef O12
-  while (lg)
-    {
-      if (lg->ls_file)
-	{
-	  rel_to_abs_path (pfdb, lg->ls_file, sizeof (fdb));	/* log segment file */
-	  dk_set_push (&d_db_files, box_dv_short_string (fdb));
-	}
-      lg = lg->ls_next;
-    }
-  /* disk segments */
-  DO_SET (disk_segment_t *, seg, &dsk)
-    {
-      disk_stripe_t *dst;
-      int ix;
-      for (ix = 0; ix < seg->ds_n_stripes; ix++)
-        {
-          dst = seg->ds_stripes[ix];
-          if (dst->dst_file)
-            {
-              rel_to_abs_path (pfdb, dst->dst_file, sizeof (fdb));	/* log segment file */
-              dk_set_push (&d_db_files, box_dv_short_string (fdb));
-            }
-        }
-    }
-  END_DO_SET ();
-#endif
   acl_initilized = 1;
 }
 

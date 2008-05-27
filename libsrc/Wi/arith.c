@@ -514,13 +514,6 @@ cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t
 	  dtp1 = DV_BIN;
 	  collation1 = collation2 = NULL;
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  dtp1 = DV_G_REF;
-	  n1 -= 4;
-	  collation1 = collation2 = NULL;
-	  break;
-#endif
 	case DV_DATETIME:
 	  dtp1 = DV_BIN;
 	  n1 = DT_COMPARE_LENGTH;
@@ -545,13 +538,6 @@ cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t
 	  dtp2 = DV_BIN;
 	  collation1 = NULL;
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  dtp2 = DV_G_REF;
-	  collation2 = NULL;
-	  n2 -= 4;
-	  break;
-#endif
 	case DV_DATETIME:
 	  dtp2 = DV_BIN;
 	  n2 = DT_COMPARE_LENGTH;
@@ -727,13 +713,6 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 	  dtp1 = DV_BIN;
 	  collation1 = collation2 = NULL;
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  dtp1 = DV_G_REF;
-	  n1 -= 4;
-	  collation1 = collation2 = NULL;
-	  break;
-#endif
 	case DV_DATETIME:
 	  dtp1 = DV_BIN;
 	  n1 = DT_COMPARE_LENGTH;
@@ -758,13 +737,6 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 	  dtp2 = DV_BIN;
 	  collation1 = NULL;
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  dtp2 = DV_G_REF;
-	  collation2 = NULL;
-	  n2 -= 4;
-	  break;
-#endif
 	case DV_DATETIME:
 	  dtp2 = DV_BIN;
 	  n2 = DT_COMPARE_LENGTH;

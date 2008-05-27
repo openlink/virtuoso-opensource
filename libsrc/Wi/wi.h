@@ -32,11 +32,8 @@
 #ifndef _WI_H
 #define _WI_H
 
-#ifdef O12
-#undef O12
-#endif
 #define VAJRA
-#define O12 GPF_T1 ("Not in Omega 12");
+#define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
 /* #define DBG_BLOB_PAGES_ACCOUNT */
 #undef OLD_HASH
@@ -623,13 +620,6 @@ struct it_cursor_s
       int	n_sample_rows; /* count of rows retrieved in random traversal */
       dk_hash_t *	cols;	/* hash from de_col_t to col_stat_t *for random sample col stats. */
     } itc_st;
-
-#ifndef O12
-    /* row extension (dependant part) as blob - not in  use.*/
-    caddr_t		itc_extension;
-    long		itc_extension_fill;
-    char		itc_extension_flag;
-#endif
   };
 
 

@@ -397,18 +397,6 @@ int
 lt_set_checkpoint (lock_trx_t * lt)
 {
   return 1;
-  /* not supported in O12 */
-#ifndef O12
-  if (lt->lt_mode == TM_SNAPSHOT)
-    return 1;
-  if (lt->lt_locks)
-    return 0;	/* This has locks, can't become a lock free trx any longer */
-
-  if (lt->lt_waits_for || lt->lt_waiting_for_this)
-    GPF_T1 ("Snapshot trx can't be waiting");
-  lt->lt_mode = TM_SNAPSHOT;
-  return 1;
-#endif
 }
 
 

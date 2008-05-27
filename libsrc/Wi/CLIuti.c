@@ -1122,15 +1122,6 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 
   switch (c_type)
     {
-#ifndef O12
-    case SQL_C_OID:
-      {
-	caddr_t str = dk_alloc_box (*len, DV_G_REF_CLASS);
-	memcpy (str, place, *len);
-	return str;
-      }
-#endif
-
     case SQL_C_LONG:
     case SQL_C_SLONG:
     case SQL_C_ULONG:
@@ -1452,9 +1443,6 @@ sqlc_sizeof (int sqlc, SQLULEN deflt)
 {
   switch (sqlc)
     {
-#ifndef O12
-    case SQL_C_OID:
-#endif
 
     case SQL_C_LONG:
     case SQL_C_SLONG:
@@ -2188,9 +2176,6 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	switch (dtp)		/* Not SQL_C_CHAR/SQL_C_OID */
 	  {
 	  case DV_STRING:
-#ifndef O12
-	  case DV_G_REF:
-#endif
 	    len--;		/* Exclude the termination byte */
 	    break;
 
@@ -2204,19 +2189,10 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     switch (dtp)
       {
       case DV_STRING:
-#ifndef O12
-      case DV_G_REF_CLASS:
-      case DV_G_REF:
-#endif
       case DV_SHORT_CONT_STRING:
       case DV_LONG_CONT_STRING:
       case DV_BIN:
 	len = box_len;		/* box_length(it); */
-#ifndef O12
-	if ((DV_G_REF_CLASS == dtp))
-	  len -= 4;
-	else
-#endif
 	if (DV_SHORT_STRING == dtp || DV_LONG_STRING == dtp)
 	  len--;		/* Terminating zero byte '\0' is excluded. */
 	str = ((char *) it);
@@ -2679,9 +2655,6 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	{
 	case SQL_C_CHAR:
 	case SQL_C_BINARY:
-#ifndef O12
-	case SQL_C_OID:
-#endif
 	case SQL_C_WCHAR:
 	  return dv_to_str_place (it, its_type, max, place, len_ret, str_from_pos, stmt, nth_col, len, c_type, sql_type);
 

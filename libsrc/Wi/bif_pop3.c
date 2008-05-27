@@ -395,9 +395,6 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   CATCH_WRITE_FAIL (out)
     {
       if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING ||
-#ifndef O12
-	  dtp == DV_TIMESTAMP_OBJ ||
-#endif
 	  dtp == DV_C_STRING)
 	session_buffered_write (out, string,
 	    box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));

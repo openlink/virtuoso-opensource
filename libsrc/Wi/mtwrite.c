@@ -745,17 +745,9 @@ iq_loop (io_queue_t * iq)
 		      start_write_cum_time = write_cum_time;
 		      PROCESS_ALLOW_SCHEDULE ();
 		    }
-
-
 		}
 	      else
 		{
-#ifdef O12DEBUG
-		  dbg_printf (("[Canceled W %ld now %ld %ld]",
-			       mtwrite_pages[n], buf->bd_page, buf->bd_physical_page));
-		  rdbg_printf (("[Canceled W ??? now %ld %ld]",
-				buf->bd_page, buf->bd_physical_page));
-#endif
 		  mutex_leave (&buf_itm->itm_mtx);
 		}
 	    }

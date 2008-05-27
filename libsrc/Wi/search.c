@@ -51,9 +51,6 @@ const_length_init (void)
   db_buf_const_length[DV_SINGLE_FLOAT] = 5;
   db_buf_const_length[DV_DOUBLE_FLOAT] = 9;
   db_buf_const_length[DV_SHORT_STRING] = -1;
-#ifndef O12
-  db_buf_const_length[DV_G_REF_CLASS] = -1;
-#endif
   db_buf_const_length[DV_BIN] = -1;
   db_buf_const_length[DV_DATETIME] = DT_LENGTH + 1;
   db_buf_const_length[DV_NUMERIC] = -1;
@@ -76,10 +73,6 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
     case DV_WIDE:
     case DV_SHORT_STRING_SERIAL:
     case DV_SHORT_CONT_STRING:
-#ifndef O12
-    case DV_G_REF_CLASS:
-    case DV_G_REF:
-#endif
     case DV_NUMERIC:
     case DV_COMPOSITE:
       *head_ret = 2;
@@ -226,56 +219,7 @@ long  tc_dive_cache_compares;
 buffer_desc_t *
 itc_dive_cache_check (it_cursor_t * itc)
 {
-#ifdef O12
   return NULL;
-#else
-  int ign1/*, ign2*/;
-  int ct, rc1, rc2;
-  buffer_desc_t * buf = NULL;
-  dp_addr_t dp, phys;
-  index_space_t * isp;
-  dbe_key_t * key = itc->itc_insert_key;
-  if (!dive_cache_enable)
-    return NULL;
-  if (! (itc->itc_search_mode == SM_READ_EXACT || itc->itc_search_mode == SM_INSERT))
-    return NULL;
-  if (!key || !itc->itc_key_spec.ksp_spec_array)
-    return NULL;
-  ITC_IN_MAP (itc);
-  dp = key->key_last_page;
-  if (!dp)
-    return NULL;
-  if (key->key_n_landings / (key->key_total_last_page_hits | 1) > dive_cache_enable)
-    return NULL;
-
-  buf = isp_locate_page (itc->itc_space, dp, &isp, &phys);
-  if (!buf
-      || !buf->bd_page
-      || buf->bd_is_write
-      || buf->bd_write_waiting
-      || buf->bd_to_bust
-      || DPF_INDEX != SHORT_REF (buf->bd_buffer + DP_FLAGS)
-      || it_is_free_page (db_main_tree, dp))
-    return NULL;
-  ct = buf->bd_content_map->pm_count;
-  if (ct < 2)
-    return NULL;
-
-  TC (tc_dive_cache_compares);
-
-  rc1 = pg_insert_key_compare (buf, buf->bd_content_map->pm_entries[0],
-			       itc);
-  if (rc1 == DVC_GREATER)
-    return NULL;
-  rc2 = pg_insert_key_compare (buf, buf->bd_content_map->pm_entries[ct - 1],
-			       itc);
-  if (rc2 == DVC_LESS)
-    return NULL;
-  buf->bd_readers++;
-  itc->itc_page = buf->bd_page;
-  TC (tc_dive_cache_hits);
-  return buf;
-#endif
 }
 
 
@@ -592,13 +536,6 @@ itc_clear (it_cursor_t * it)
     {
       itc_unregister (it);
     }
-#ifndef O12
-  if (it->itc_extension)
-    {
-      dk_free_box (it->itc_extension);
-      it->itc_extension = NULL;
-    }
-#endif
   if (it->itc_random_search != RANDOM_SEARCH_OFF && it->itc_st.cols)
     itc_col_stat_free (it, 0, 0);
 }
@@ -896,19 +833,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	      }
 	  }
 	break;
-#ifndef O12
-      case DV_G_REF:
-	n1 = dv1[1];
-	dv1 += 2;
-	collation = NULL;
-	break;
-      case DV_G_REF_CLASS:
-	n1 = dv1[1] - 4;
-	dv1 += 2;
-	dtp1 = DV_G_REF;
-	collation = NULL;
-	break;
-#endif
       case DV_BIN:
 	n1 = dv1[1];
 	dv1 += 2;
@@ -1003,19 +927,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	      }
 	  }
 	break;
-#ifndef O12
-      case DV_G_REF:
-	n2 = dv2[1];
-	dv2 += 2;
-	collation = NULL;
-	break;
-      case DV_G_REF_CLASS:
-	n2 = dv2[1] - 4;
-	dtp2 = DV_G_REF;
-	dv2 += 2;
-	collation = NULL;
-	break;
-#endif
       case DV_BIN:
 	n2 = dv2[1];
 	dv2 += 2;
@@ -1049,9 +960,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	    return ((n1 < n2 ? DVC_LESS
 		    : (n1 == n2 ? DVC_MATCH
 			: DVC_GREATER)));
-#ifndef O12
-	  case DV_G_REF:
-#endif
 	  case DV_LONG_STRING:
 	  case DV_BIN:
 	    if (collation)
@@ -1183,14 +1091,6 @@ itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec)
       st = LIKE_ARG_UTF;
       collation = NULL;
       break;
-#ifndef O12
-    case DV_G_REF_CLASS:
-      collation = NULL;
-      break;
-    case DV_G_REF:
-      collation = NULL;
-      break;
-#endif
     default:
       return DVC_LESS;
     }

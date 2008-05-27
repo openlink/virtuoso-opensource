@@ -31,9 +31,6 @@
 
 #define SQL_OID		21
 #define SQL_BOX		22
-#ifndef O12
-#define SQL_C_OID	SQL_OID
-#endif
 #define SQL_C_BOX	SQL_BOX
 
 /*

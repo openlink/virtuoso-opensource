@@ -190,24 +190,10 @@ extern oid_t textfrag_long_col_id;
 extern dbe_table_t * entity_table;
 extern dbe_table_t * textfrag_table;
 
-#ifndef O12
-int  itc_misc_check (it_cursor_t * itc, buffer_desc_t * buf,
-		int first_key,
-		int is_rm_to_date);
-#endif
-
-void itc_xml_init_level (it_cursor_t * itc, buffer_desc_t * buf);
 
 int itc_xml_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
-void itc_xml_init (it_cursor_t * itc, buffer_desc_t * buf);
 int itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
-
-
-
-
-
-void tb_write_misc (dbe_column_t ** cols, dk_session_t * ses, db_buf_t old_misc, dbe_table_t * tb,
-	caddr_t * qst, state_slot_t ** slots);
+void tb_write_misc (dbe_column_t ** cols, dk_session_t * ses, db_buf_t old_misc, dbe_table_t * tb, caddr_t * qst, state_slot_t ** slots);
 
 #define MIN_MISC_ID ((oid_t) 10000000)
 #define MAX_MISC_ID ((oid_t) 0xffffffff)

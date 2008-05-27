@@ -137,14 +137,6 @@ bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
-#ifndef O12
-  if (dtp == DV_BLOB_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    return bs;
-  }
-#endif
   if (dtp != DV_STRING)
     sqlr_new_error ("22023", "SR014",
   "Function %s needs a string as argument %d, not an arg of type %s (%d)",
@@ -308,14 +300,6 @@ bif_string_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   {
     return (NULL);
   }
-#ifndef O12
-  else if (dtp == DV_BLOB_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    return bs;
-  }
-#endif
 
   if (dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING
       &&  dtp != DV_C_STRING)
@@ -337,14 +321,6 @@ bif_string_or_wide_or_null_or_strses_arg (caddr_t * qst, state_slot_t ** args, i
   {
     return (NULL);
   }
-#ifndef O12
-  if (dtp == DV_BLOB_HANDLE || dtp == DV_BLOB_WIDE_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    return bs;
-  }
-#endif
   if (dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING
        && dtp != DV_C_STRING
       && !IS_WIDE_STRING_DTP (dtp) && dtp != DV_STRING_SESSION)
@@ -366,14 +342,6 @@ bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, co
   {
     return (NULL);
   }
-#ifndef O12
-  if (dtp == DV_BLOB_HANDLE || dtp == DV_BLOB_WIDE_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    return bs;
-  }
-#endif
   if (dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING
       && dtp != DV_C_STRING
       && !IS_WIDE_STRING_DTP (dtp))
@@ -395,14 +363,6 @@ bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, in
   {
     return (NULL);
   }
-#ifndef O12
-  if (dtp == DV_BLOB_HANDLE || dtp == DV_BLOB_WIDE_HANDLE)
-  {
-    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
-    qst_set (qst, args[nth], bs);
-    return bs;
-  }
-#endif
   if (dtp != DV_STRING && dtp != DV_UNAME
       && dtp != DV_C_STRING
       && !IS_WIDE_STRING_DTP (dtp))
@@ -1443,10 +1403,6 @@ bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (box_num (len - 1));
   case DV_BIN:
   case DV_LONG_BIN:
-#ifndef O12
-  case DV_G_REF_CLASS:  /* Added by AK 21-FEB-1997. */
-  case DV_G_REF:
-#endif
     return (box_num (len));
   case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL:
   case DV_ARRAY_OF_LONG:
@@ -1513,10 +1469,6 @@ bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   case DV_ARRAY_OF_POINTER:
   case DV_LIST_OF_POINTER:
   case DV_ARRAY_OF_XQVAL:
-#ifndef O12
-  case DV_G_REF_CLASS:
-  case DV_G_REF:
-#endif
   case DV_ARRAY_OF_LONG:
   case DV_ARRAY_OF_FLOAT:
   case DV_ARRAY_OF_DOUBLE:
@@ -1941,11 +1893,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (dtp1 == DV_BIN) /* no trailing zero */
     len = box_length (str) / sizeof_char;
   else
-#ifndef O12
-  len = box_length (str) / sizeof_char - ((dtp1 != DV_G_REF_CLASS) ? 1 : 0);
-#else
   len = box_length (str) / sizeof_char - 1;
-#endif
   /* Second argument is NULL? Force an empty substring as result. */
   if (DV_DB_NULL == dtp2)
   {
@@ -3914,10 +3862,6 @@ bif_ascii (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   switch (dtp)
   {
-#ifndef O12
-  case DV_G_REF_CLASS:
-  case DV_G_REF:
-#endif
   case DV_STRING:
     return (box_num (*((unsigned char *) arg)));
   case DV_WIDE:
@@ -4292,10 +4236,6 @@ dv_buffer_length (int type, int prec)
   case DV_NULL: /* 180 */
   case DV_DELETED: /* 199 */
   case DV_DB_NULL: /* 204 */
-#ifndef O12
-  case DV_G_REF_CLASS: /* 205 */
-  case DV_G_REF: /* 206 */
-#endif
   case DV_PL_CURSOR: /* 234 */
   default:
     return 100; /* To fit an error mark */
@@ -6371,53 +6311,6 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
    retrieved without specification of table by using the ID.
  */
 
-#ifndef O12
-caddr_t
-bif_make_oid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "make_oid");
-  long cid = bif_long_arg (qst, args, 1, "make_oid");
-  int slen = box_length (str);
-  caddr_t res = dk_alloc_box (slen + 4 - 1, DV_G_REF_CLASS);
-  memcpy (res, str, slen - 1);
-  LONG_SET (res + slen - 1, cid);
-  return res;
-}
-/* The above bug of long_setting the wrong variable corrected,
-   as well as this new function, which returns the class specified
-   number of the object id,
-   by AK 22-FEB-1997. */
-caddr_t
-bif_oid_class_spec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t arg = bif_arg (qst, args, 0, "oid_class_spec");
-  int slen;
-  dtp_t dtp;
-  long classnum;
-
-  if (DV_G_REF_CLASS != (dtp = DV_TYPE_OF (arg)))
-  {
-    sqlr_new_error ("22023", "SR054",
-    "Function oid_class_spec needs an object id as its argument, "
-    "not an argument of type %s (%d)",
-    dv_type_title (dtp), dtp);
-  }
-
-  slen = box_length (arg);
-  if (slen < 4)
-  {
-    sqlr_new_error ("22023", "SR055",
-    "Function oid_class_spec detected an object id whose length %d < 4. "
-    "oid[0]=%u. oid[1]=%u. oid[2]=%u. ",
-    slen, (((unsigned char *) arg)[0]),
-    (((unsigned char *) arg)[1]),
-    (((unsigned char *) arg)[2]));
-  }
-
-  classnum = LONG_REF (arg + slen - 4);   /* Take the four last bytes. */
-  return (box_num (classnum));
-}
-#endif
 
 /* Oring an ascii upper or lowercase letter with decimal 96. forces it
    to lowercase. */
@@ -7603,51 +7496,6 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_corrupt_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-#ifndef O12
-  long volatile dp = bif_long_arg (qst, args, 0, "corrupt_page");
-  long volatile offset = bif_long_arg (qst, args, 1, "corrupt_page");
-  unsigned char volatile crap = 0xFF;
-  long volatile craplength = 1, i;
-  buffer_desc_t *buf;
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
-  it_cursor_t *it = itc_create (qi->qi_space, qi->qi_trx);
-
-  if (BOX_ELEMENTS (args) > 2)
-  crap = (unsigned char) bif_long_arg (qst, args, 2, "corrupt_page");
-  if (BOX_ELEMENTS (args) > 3)
-  craplength = bif_long_arg (qst, args, 3, "corrupt_page");
-  it->itc_page = dp;
-  ITC_FAIL (it)
-  {
-  do
-    {
-  ITC_IN_MAP (it);
-  page_wait_access (it, dp, NULL, NULL, &buf, PA_READ, RWG_WAIT_SPLIT);
-    }
-  while (!buf);
-
-  if (offset + craplength  >= PAGE_SZ)
-    offset = PAGE_SZ - craplength;
-
-  for (i = offset; i < offset + craplength; i++)
-    buf->bd_buffer[i] = crap;
-
-      buf_set_dirty (buf);
-  itc_page_leave (it, buf);
-  ITC_LEAVE_MAP (it);
-  }
-  ITC_FAILED
-  {
-  }
-  END_FAIL (it);
-  itc_free (it);
-#endif
-  return 0;
-}
-
-caddr_t
 bif_mem_enter_reserve_mode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
@@ -8533,11 +8381,6 @@ bif_blob_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (((blob_handle_t*)bh)->bh_length > 10000000)
     sqlr_new_error ("22001", "SR072",
 	"Blob longer than maximum string length not allowed in blob_to_string");
-#ifndef O12
-  if (use_temp && qi->qi_temp_isp)
-    res = blob_to_string_isp (NULL, qi->qi_temp_isp, bh);
-  else
-#endif
     res = blob_to_string (qi->qi_trx, bh);
   return res;
 }
@@ -8600,11 +8443,6 @@ bif_blob_to_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	"Blob argument to blob_to_string_output must be a non-interactive blob");
 
 
-#ifndef O12
-  if (use_temp && qi->qi_temp_isp)
-    res = blob_to_string_output_isp (NULL, qi->qi_temp_isp, bh);
-  else
-#endif
     res = blob_to_string_output (qi->qi_trx, bh);
   return (caddr_t) res;
 }
@@ -9582,11 +9420,6 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize () built-in function");
   if (((blob_handle_t*)xx)->bh_length > 10000000)
     sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize ()");
-#ifndef O12
-  if (use_temp && qi->qi_temp_isp)
-    tmp_xx = blob_to_string_isp (NULL, qi->qi_temp_isp, xx);
-  else
-#endif
     tmp_xx = blob_to_string (qi->qi_trx, xx);
   QR_RESET_CTX
     {
@@ -12857,12 +12690,6 @@ sql_bif_init (void)
   bif_define_typed ("floor", bif_floor, &bt_integer);
   bif_define_typed ("pi", bif_pi, &bt_double);
 
-/* Object ids */
-#ifndef O12
-  bif_define ("make_oid", bif_make_oid);
-  bif_define_typed ("oid_class_spec", bif_oid_class_spec, &bt_integer);
-#endif
-
   bif_define_typed ("rnd", bif_rnd, &bt_integer);
   bif_define_typed ("rand", bif_rnd, &bt_integer); /* SQL 92 standard function */
   bif_define ("randomize", bif_randomize);
@@ -12907,9 +12734,6 @@ sql_bif_init (void)
   bif_define_typed ("dbg_row_deref_pos", bif_dbg_row_deref_pos, &bt_integer);
 #endif
   bif_define ("page_dump", bif_page_dump);
-#ifndef O12
-  bif_define ("corrupt_page", bif_corrupt_page);
-#endif
   bif_define_typed ("lisp_read", bif_lisp_read, &bt_any);
 
   bif_define_typed ("make_array", bif_make_array, &bt_any);

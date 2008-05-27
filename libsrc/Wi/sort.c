@@ -335,16 +335,6 @@ setp_mem_sort_flush (setp_node_t * setp, caddr_t * qst)
   int fill;
   if (!setp->setp_sorted || setp->setp_top)
     return;
-#ifndef O12
-  if (setp->setp_ordered_gb_out)
-    {
-      data_source_t * gb_read_ts = (data_source_t *) setp->setp_ordered_gb_fref->src_gen.src_continuations->data;
-      setp_set_gb_out (setp, qst, 1);
-      qn_record_in_state ((data_source_t *) setp, qst, NULL);
-      qn_input ((data_source_t *) gb_read_ts->src_continuations->data, qst, qst);
-      return;
-    }
-#endif
   arr = (caddr_t **) qst_get (qst, setp->setp_sorted);
   fill = (int)  unbox (qst_get (qst, setp->setp_row_ctr));
   if (fill && arr)

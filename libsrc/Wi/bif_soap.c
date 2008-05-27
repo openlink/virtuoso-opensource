@@ -1570,22 +1570,6 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 	     snprintf (temp, sizeof (temp), ">%f", *(double *) object);
 	  SES_PRINT (out, temp);
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  {
-	    length = box_length (object);
-	    if (length > sizeof (temp))
-	      length = sizeof (temp);
-	    memcpy (temp, object, length - 4);
-	    temp[length - 4] = 0;
-	    if (SOAP_USES_TYPES)
-	      SES_PRINT (out, " xsi:type=\"xsd:string\" dt:dt=\"string\">");
-	    else
-	      session_buffered_write_char ('>', out);
-	    session_buffered_write (out, object, length - 4);
-	    break;
-	  }
-#endif
 	case DV_OBJECT:
 	case DV_REFERENCE:
 	  {

@@ -165,31 +165,6 @@ xmls_init (void)
   ddl_ensure_table ("DB.DBA.SYS_VT_INDEX", xmlt5);
 
   ddl_std_proc (ent_map_text, 1);
-  {
-#ifndef O12
-    dbe_column_t *misc_col;
-    dbe_table_t *entity_tb = sch_name_to_table (/*isp_schema (db_main_tree->it_commit_space)*/ wi_inst.wi_schema, TN_ENTITY);
-    dbe_table_t *textfrag_tb = sch_name_to_table (/*isp_schema (db_main_tree->it_commit_space)*/ wi_inst.wi_schema, TN_TEXTFRAG);
-    if (!entity_tb || !textfrag_tb)
-      GPF_T;
-    entity_table = entity_tb;
-    entity_key_id = entity_tb->tb_primary_key->key_id;
-    misc_col = tb_name_to_column (entity_tb, CN_ENT_MISC);
-    misc_col->col_is_misc_cont = 1;
-    entity_misc_col_id = misc_col->col_id;
-    entity_id_col_id = tb_name_to_column (entity_tb, CN_ENT_ID)->col_id;
-    entity_level_col_id = tb_name_to_column (entity_tb, CN_ENT_LEVEL)->col_id;
-    entity_name_col_id = tb_name_to_column (entity_tb, CN_ENT_NAME)->col_id;
-    entity_wspace_col_id = tb_name_to_column (entity_tb, CN_ENT_WSPACE)->col_id;
-    entity_leading_col_id = tb_name_to_column (entity_tb, CN_ENT_LEAD)->col_id;
-
-    entity_trailing_col_id = tb_name_to_column (entity_tb, CN_ENT_TRAIL)->col_id;
-    textfrag_table = textfrag_tb;
-    textfrag_key_id = textfrag_tb->tb_primary_key->key_id;
-    textfrag_leading_col_id = tb_name_to_column (textfrag_tb, CN_FRAG_SHORT)->col_id;
-    textfrag_long_col_id = tb_name_to_column (textfrag_tb, "V_LONG")->col_id;
-#endif
-  }
 
   if (!xml_global)
     xml_global = xs_allocate ();

@@ -1559,10 +1559,6 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   /* dbg_sleep (2); */
   flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
   DBG_PT_WRITE (buf, phys_dp_to);
-#ifdef O12DEBUG
-  if (flags == DPF_INDEX)
-    buf_check_deleted_refs (buf, checkpoint_in_progress ? 0 : 1);
-#endif
 
   if (0 == dest)
     GPF_T1 ("cannot write buffer to 0 page.");

@@ -46,14 +46,8 @@ typedef struct
  ((DV_SHORT_INT == (T)) || (DV_LONG_INT == (T)) ||\
   (DV_CHARACTER == (T)) || (DV_C_SHORT == (T)) || (DV_C_INT == (T)))
 
-#ifndef O12
-#define is_some_sort_of_a_string(T)\
- (((T) == DV_SHORT_STRING) || ((T) == DV_LONG_STRING) ||\
-  ((T) == DV_G_REF) || ((T) == DV_G_REF_CLASS))
-#else
 #define is_some_sort_of_a_string(T)\
  (((T) == DV_SHORT_STRING) || ((T) == DV_LONG_STRING))
-#endif
 void sql_bif_init (void);
 
 EXE_EXPORT (void, bif_define, (const char * name, bif_t bif));

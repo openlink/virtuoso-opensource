@@ -519,21 +519,6 @@ long isp_r_new;
 long isp_r_delta;
 
 
-void
-isp_rep_map_fn (void *key, void *value)
-{
-#ifndef O12
-  dp_addr_t from = (dp_addr_t) key;
-  dp_addr_t to = (dp_addr_t) value;
-
-  if (from == to)
-    isp_r_new++;
-  else
-    isp_r_delta++;
-#endif
-}
-
-
 #define PRINT_MAX_LOCKS 1000
 
 
@@ -1009,10 +994,6 @@ status_report (const char * mode)
 
   process_status_report ();
   dbms_status_report ();
-#ifndef O12
-  isp_status_report (db_main_tree->it_commit_space,
-      "Committed since checkpoint.");
-#endif
   st_chkp_mapback_pages = 0 /* cpt_count_mapped_back () */;
   rep_printf ("Checkpoint Remap %ld pages, %ld mapped back. %ld s atomic time.\n",
 	      wi_inst.wi_master->dbs_cpt_remap->ht_count,
@@ -2089,16 +2070,6 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	case DV_DOUBLE_FLOAT:
 	  fprintf (out, "%f", *(double *) object);
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  {
-	    int len = box_length (object);
-	    memcpy (temp, object, len - 4);
-	    temp[len - 4] = 0;
-	    fprintf (out, "<id %d %s>", len, temp);
-	    break;
-	  }
-#endif
 
 	case DV_DB_NULL:
 	  fprintf (out, "<DB NULL>");
@@ -2225,10 +2196,6 @@ printf_dv (db_buf_t dv, FILE * out)
       break;
 
     case DV_SHORT_STRING:
-#ifndef O12
-    case DV_G_REF_CLASS:
-    case DV_G_REF:
-#endif
       {
 	int n;
 	int len = dv[1];

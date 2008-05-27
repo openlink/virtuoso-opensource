@@ -70,10 +70,6 @@ encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_i
 #endif
 
 /* XML bif functions names */
-#ifndef O12
-#define	XMLINSERTDOC		"insertxml"
-#define	XMLSERIALIZEFNC		"getxml"
-#endif
 #define XMLATTR			"xml_attr"
 #define XMLATTRREPLAY		 "xml_attr_replay"
 #define XMLSELEMENTTABLE	 "xmls_element_table"
@@ -99,10 +95,6 @@ _boolean;
 #endif
 #endif
 
-#ifndef O12
-caddr_t bx_serialize (query_instance_t * qi, caddr_t id, dk_session_t * out,
-	      int value_only);
-#endif
 
 
 

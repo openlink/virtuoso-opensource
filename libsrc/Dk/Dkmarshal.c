@@ -344,17 +344,6 @@ box_read_flags (dk_session_t *session, dtp_t dtp)
   return (void*)string;
 }
 
-#ifndef O12
-static void *
-box_read_ref_box (dk_session_t *session, dtp_t dtp)
-{
-  size_t length = session_buffered_read_char (session);
-  char *string;
-  MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length, dtp));
-  session_buffered_read (session, string, (int) length);
-  return (void *) string;
-}
-#endif
 
 static void *
 box_read_short_cont_string (dk_session_t *session, dtp_t dtp)
@@ -655,10 +644,6 @@ init_readtable (void)
 
   readtable[DV_DB_NULL] = box_read_db_null;
   readtable[DV_BOX_FLAGS] = box_read_flags;
-#ifndef O12
-  readtable[DV_G_REF_CLASS] = box_read_ref_box;
-  readtable[DV_G_REF] = box_read_ref_box;
-#endif
   readtable [DV_RDF] = rb_deserialize;
   strses_readtable_initialize ();
 }
@@ -1126,12 +1111,6 @@ print_object2 (void *object, dk_session_t *session)
 	case DV_UNAME:
 	  print_string ((char *) object, session);
 	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	case DV_G_REF:
-	  print_ref_box (object, session);
-	  break;
-#endif
 	case DV_SINGLE_FLOAT:
 	  print_float (*(float *) object, session);
 	  break;

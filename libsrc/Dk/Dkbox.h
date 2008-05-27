@@ -423,15 +423,7 @@ ptr += 4
 
 #define DV_DB_NULL 204
 
-#ifndef O12
-#define O12 /* always define O12 in main branch */
-#endif
 
-#ifndef O12
-#define DV_G_REF_CLASS 205
-
-#define DV_G_REF 206
-#endif
 
 /* box with non-zero box_flags, box follows.  Occurs only in serialization */
 #define DV_BOX_FLAGS 207

@@ -1032,33 +1032,6 @@ char * col_check_text =
 void
 ddl_check_cols (query_instance_t * qi, long id)
 {
-#ifndef O12
-  int n = -1;
-  local_cursor_t *lc;
-  caddr_t err = NULL;
-  static query_t * ck;
-  if (!ck)
-    ck = sql_compile (col_check_text, qi->qi_client, &err, SQLC_DEFAULT);
-  if (err)
-    ddlr_resignal (qi, err);
-  err = qr_rec_exec (ck, qi->qi_client, &lc, qi, NULL, 2,
-		     ":0", (ptrlong) id, QRP_INT,
-		     ":1", (ptrlong) id, QRP_INT);
-  if (err)
-    {
-      lc_free (lc);
-      ddlr_resignal (qi, err);
-    }
-  if (lc_next (lc))
-    {
-      n = unbox (lc_nth_col (lc, 0));
-    }
-  lc_free (lc);
-  if (n != 0)
-    {
-      SQL_DDL_ERROR (qi, ("42S22", "SQ006", "Table has non unique column names either directly through inheritance"));
-    }
-#endif
 }
 
 
