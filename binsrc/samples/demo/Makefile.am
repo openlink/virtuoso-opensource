@@ -72,7 +72,7 @@ DEMO_DEPS=\
 	EMP8 \
 	EMP9 \
 	thalia_test/*.rq \
-	tpch/*.sql \
+	tpc-h/*.sql \
 	vad_version \
 	make_vad.sh
 
