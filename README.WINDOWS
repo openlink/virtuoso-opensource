@@ -7,8 +7,14 @@ Windows 32- or 64-bit platforms.
 You need the following development tools and software installed:
 
   * Microsoft Visual Studio 2003
-  * Cygwin bash with developer tools (gawk, flex, bison) installed. Bison needs
-    to be version 1.875b; the newer (2.x) is not compatible.
+  * Cygwin bash with developer tools (gawk, flex, bison) installed: 
+
+	Package   Version 
+	flex      2.5.33
+	bison     2.3
+	gperf     2.7.2
+	gawk      3.1.1
+
   * Active Perl, available from http://www.activestate.com/ActivePerl
   * OpenSSL version 0.97 static libraries for Windows and header files.
 
@@ -72,9 +78,9 @@ Windows 64 bit
 
 Known issues
 ============
-  * It's a known issue that bison version 2.1 that comming with Cygwin bash
-    generates buggy code. To resolve this, you must either install old bison
-    (1.875b) or edit the generated files (sql3.c and turtle_p.c in libsrc/Wi)
+  * It's a known issue that bison version 2.1 that came with Cygwin bash
+    generates buggy code. To resolve this, please upgrade  bison to 2.3
+    or edit the generated files (sql3.c and turtle_p.c in libsrc/Wi)
     and remove the ';' after the 'yyparse' function begin:
 
 ...

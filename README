@@ -62,8 +62,8 @@ installed on your system.
     autoconf  2.57     http://www.gnu.org/software/autoconf/
     automake  1.7      http://www.gnu.org/software/automake/
     libtool   1.5      http://www.gnu.org/software/libtool/
-    flex      2.5.4    http://www.gnu.org/software/non-gnu/flex/
-    bison     1.35     http://www.gnu.org/software/bison/
+    flex      2.5.33   http://flex.sourceforge.net/
+    bison     2.3      http://www.gnu.org/software/bison/
     gperf     2.7.2    http://www.gnu.org/software/gperf/
     gawk      3.1.1    http://www.gnu.org/software/gawk/
     m4        1.4.1    http://www.gnu.org/software/m4/
