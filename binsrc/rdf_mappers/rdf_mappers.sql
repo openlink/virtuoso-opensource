@@ -55,6 +55,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*youtube.com/results\\?search_query=.*)|'||
+			'(http://ru.youtube.com/results\\?search_query=.*)|'||
+			'(http://.*youtube.com/results\\?)',
+            'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
         '(http://.*/show_bug.cgi\\?id.*)|'||
         '(http://.*bugzilla.*)|'||
@@ -975,6 +981,30 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 		xd := xtree_doc (tmp);
 	}
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/isbn2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/results?search_query=%s&search_type=%s&%s', 0);
+  img_id := tmp[2];
+  host_part := tmp[3];
+  if (host_part <> '' or img_id is null)
+    return 0;
+  url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
+  tmp := RDF_HTTP_URL_GET (url, url, hdr);
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  xd := xtree_doc (tmp, 2);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
