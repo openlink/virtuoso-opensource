@@ -758,7 +758,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
         }
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
-      v := __rdf_sqlval_of_obj (v);
+      v := __rdf_sqlval_of_obj (v, 1);
     }
   else
     {
@@ -1015,48 +1015,76 @@ recheck:
 }
 ;
 
-create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR) returns varchar
+create function DB.DBA.RDF_OBJ_FIND_EXISTING (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR) returns varchar
 {
-  declare llong int;
-  declare dt_s, lang_s, tridgell, sum64 varchar;
+  declare llong, id, need_digest integer;
   declare digest, old_digest any;
+  -- dbg_obj_princ ('DB.DBA.RDF_OBJ_FIND_EXISTING (', dt_twobyte, v, lang_twobyte, ')');
   if (126 = __tag (v))
     v := blob_to_string (v);
-  if (not (isstring (v)))
+  need_digest := rdf_box_needs_digest (v, NULL);
+  if (__tag of rdf_box = __tag (v))
     {
-      if (__tag of XML <> __tag (v))
+      if (0 = need_digest)
         return v;
+      if (1 = need_digest)
+        {
+          if (0 <> rdf_box_ro_id (v))
+        return v;
+        }
+      dt_twobyte := rdf_box_type (v);
+      lang_twobyte := rdf_box_lang (v);
+      v := __rdf_sqlval_of_obj (v, 1);
+    }
+  else
+    {
+      if (dt_twobyte <> 257 or lang_twobyte <> 257)
+        need_digest := 3;
+      else if (0 = need_digest)
+        return v;
+      if (dt_twobyte < 257)
+        signal ('RDFXX', sprintf ('Bad datatype code: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
+      if (lang_twobyte < 257)
+        signal ('RDFXX', sprintf ('Bad lang code: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
+    }
+  if (not isstring (v))
+    {
+      declare sum64 varchar;
+      if (__tag of XML <> __tag (v))
+        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_FIND_EXISTING (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
       sum64 := xtree_sum64 (v);
-      return (select RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL)
+      return coalesce ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
+          from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = sum64
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-        and rdf_box_data_tag (RO_DIGEST) = __tag of XML
+          and rdf_box_data_tag (RO_DIGEST) = __tag of XML ));
         --!TBD ... and paranoid check
-        );
     }
   if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     return v;
   llong := 1010;
   if (length (v) > llong)
     {
+      declare tridgell varchar;
       tridgell := tridgell32 (v, 1);
-      return (select
-        coalesce (RO_DIGEST, rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1))
+      return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
         from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = tridgell
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-        and blob_to_string (RO_LONG) = v );
+          and blob_to_string (RO_LONG) = v ));
     }
   else
     {
-      return (select
-        coalesce (RO_DIGEST, rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1))
+      return ((select rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1)
         from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = v
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
-        and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end) );
+          and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end) ));
     }
 }
 ;
@@ -1105,9 +1133,17 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
+retry_unrdf:
   t := __tag (v);
   if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
+    {
+      if (__tag of rdf_box = t)
+        {
+          v := rdf_box_data (v);
+          goto retry_unrdf;
+        }
     signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
+    }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
@@ -1127,9 +1163,17 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_ID, in lang varchar, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
+retry_unrdf:
   t := __tag (v);
   if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
+    {
+      if (__tag of rdf_box = t)
+        {
+          v := rdf_box_data (v);
+          goto retry_unrdf;
+        }
     signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
+    }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
@@ -1162,7 +1206,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
-  if (isstring (o_type))
+  if (__tag (o_type) in (__tag of varchar, 217))
     {
       declare parsed any;
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
@@ -1401,7 +1445,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
 create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
-  if (isstring (o_type))
+  if (__tag (o_type) in (__tag of varchar, 217))
     {
       declare parsed any;
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
@@ -1682,7 +1726,7 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 {
-  if (not isstring (v))
+  if (not (__tag (v) in (__tag of varchar, 217)))
     return 0;
   if ("LEFT" (v, 9) = 'nodeID://')
     return 0;
@@ -2307,13 +2351,13 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
     {
       http ('"', ses);
       if (__tag of varchar = rdf_box_data_tag (obj))
-        http_escape (__rdf_sqlval_of_obj (obj), 11, ses, 1, 1);
+        http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 1, 1);
       else if (__tag of datetime = rdf_box_data_tag (obj))
         __rdf_long_to_ttl (obj, ses);
       else if (__tag of XML = rdf_box_data_tag (obj))
-        http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj)), 11, ses, 1, 1);
+        http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj, 1)), 11, ses, 1, 1);
       else
-        http_escape (cast (__rdf_sqlval_of_obj (obj) as varchar), 11, ses, 1, 1);
+        http_escape (cast (__rdf_sqlval_of_obj (obj, 1) as varchar), 11, ses, 1, 1);
       if (257 <> rdf_box_type (obj))
         {
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
@@ -2333,9 +2377,18 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
     }
   else if (__tag of varchar = __tag (obj))
     {
+      if (1 = __Box_flags (obj))
+        {
+          http ('<', ses);
+          http_escape (obj, 12, ses, 1, 1);
+          http ('> ', ses);
+        }
+      else
+        {
       http ('"', ses);
       http_escape (obj, 11, ses, 1, 1);
       http ('" ', ses);
+    }
     }
   else if (__tag of datetime = rdf_box_data_tag (obj))
     {
@@ -2368,6 +2421,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
   declare tcount, tctr integer;
   declare prev_s, prev_p IRI_ID;
   declare res varchar;
+  declare string_subjs_found, string_preds_found integer;
+  string_subjs_found := 0;
+  string_preds_found := 0;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   if (0 = tcount)
@@ -2380,22 +2436,34 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       declare subj,pred any;
       subj := triples[tctr][0];
       pred := triples[tctr][1];
-      if (not isiri_id (subj))
+      if (not (isiri_id (subj)))
+        {
+          if (isstring (subj) and (1 = __box_flags (subj)))
+            string_subjs_found := 1;
+          else
         {
           if (subj is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is NULL');
           signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is literal');
         }
+        }
       if (not isiri_id (pred))
         {
+          if (isstring (pred) and (1 = __box_flags (pred)))
+            string_preds_found := 1;
+          else
+            {
           if (pred is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is NULL');
           signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is literal');
         }
+        }
       if (pred >= min_bnode_iri_id ())
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): blank node as predicate');
     }
+  if (not string_preds_found)
   rowvector_digit_sort (triples, 1, 1);
+  if (not string_subjs_found)
   rowvector_digit_sort (triples, 0, 1);
   prev_s := null;
   prev_p := null;
@@ -2417,7 +2485,22 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
         }
       if (prev_s is not null)
         http ('.\n', ses);
-      if (subj >= min_bnode_iri_id ())
+      if (isstring (subj))
+        {
+          if (subj like 'nodeID://%')
+            {
+              http ('_:', ses);
+              http_escape (subseq (subj, 9), 12, ses, 1, 1);
+	      http (' ', ses);
+            }
+          else
+            {
+              http ('<', ses);
+              http_escape (subj, 12, ses, 1, 1);
+              http ('> ', ses);
+            }
+        }
+      else if (subj >= min_bnode_iri_id ())
         {
           if (subj >= #ib0)
             http (sprintf ('_:bb%d ', iri_id_num (subj) - iri_id_num (#ib0)), ses);
@@ -2434,10 +2517,28 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       prev_s := subj;
       prev_p := null;
 print_p:
+      if (isstring (pred))
+        {
+          if (pred like 'nodeID://%')
+            {
+              http ('_:', ses);
+              http_escape (subseq (pred, 9), 12, ses, 1, 1);
+	      http (' ', ses);
+            }
+          else
+            {
+              http ('<', ses);
+              http_escape (pred, 12, ses, 1, 1);
+              http ('> ', ses);
+            }
+        }
+      else
+        {
       res := id_to_iri (pred);
       http ('<', ses);
       http_escape (res, 12, ses, 1, 1);
       http ('> ', ses);
+        }
       prev_p := pred;
 print_o:
       DB.DBA.RDF_LONG_TO_TTL (obj, ses);
@@ -2540,11 +2641,23 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
       http ('\n<rdf:Description', ses);
       if (not isiri_id (subj))
         {
-          if (subj is null)
+          if (isstring (subj) and (1 = __box_flags (subj)))
+            {
+              if (subj like 'nodeID://%')
+                {
+                  http (' rdf:nodeID="', ses); http_value (subj, 0, ses); http ('"/>', ses);
+                }
+              else
+                {
+                  http (' rdf:about="', ses); http_value (subj, 0, ses); http ('">', ses);
+                }
+            }
+          else if (subj is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is NULL');
+          else
           signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): subject is literal');
         }
-      if (subj >= min_bnode_iri_id ())
+      else if (subj >= min_bnode_iri_id ())
         http (sprintf (' rdf:nodeID="b%d">', iri_id_num (subj)), ses);
       else
         {
@@ -2554,16 +2667,22 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
         }
       if (not isiri_id (pred))
         {
-          if (pred is null)
+          if (isstring (pred) and (1 = __box_flags (pred)))
+            {
+              if (pred like 'nodeID://%')
+                signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
+              res := pred;
+              goto res_for_pred;
+            }
+          else if (pred is null)
             signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is NULL');
+          else
           signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): predicate is literal');
         }
       if (pred >= min_bnode_iri_id ())
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): blank node as predicate');
-      else
-        {
           res := id_to_iri (pred);
---          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = pred));
+res_for_pred:
           declare delim, delim1, delim2, delim3 integer;
 	  delim1 := coalesce (strrchr (res, '/'), -1);
 	  delim2 := coalesce (strrchr (res, '#'), -1);
@@ -2583,7 +2702,6 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               http (' xmlns:ns0pred="', ses); http_value (subseq (res, 0, delim+1), 0, ses);
               http ('"', ses);
             }
-        }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): object is NULL');
       if (isiri_id (obj))
@@ -2610,7 +2728,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
             }
-          dat := __rdf_sqlval_of_obj (obj);
+          dat := __rdf_sqlval_of_obj (obj, 1);
           if (__tag of XML = __tag (dat))
             {
               http (' rdf:parseType="Literal">', ses);
@@ -2643,10 +2761,24 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
         }
       else if (__tag of varchar = __tag (obj))
         {
+          if (1 = __box_flags (obj))
+            {
+              if (obj like 'nodeID://%')
+                {
+                  http (' rdf:nodeID="', ses); http_value (obj, 0, ses); http ('"/>', ses);
+                }
+              else
+                {
+                  http (' rdf:resource="', ses); http_value (obj, 0, ses); http ('"/>', ses);
+                }
+            }
+          else
+            {
           http ('>', ses);
 	  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
           http_value (obj, 0, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+        }
         }
       else if (__tag of varbinary = __tag (obj))
         {
@@ -3378,12 +3510,14 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not isiri_id (i))
+              if ((2 > fld_ctr) and not (isiri_id (i) or (isstring (i) and (1 = __box_flags (i)))))
                 signal ('RDF01',
                   sprintf ('Bad variable value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
                     DB.DBA.RDF_STRSQLVAL_OF_LONG (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and isiri_id (i) and (i >= min_bnode_iri_id ()))
+              if ((1 = fld_ctr) and (
+                  (isiri_id (i) and (i >= min_bnode_iri_id ())) or
+                  (isstring (i) and (i like 'bnode://%')) ) )
                 signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := i;
             }
@@ -3401,11 +3535,13 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
             {
               if (arg is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not isiri_id (arg))
+              if ((2 > fld_ctr) and not (isiri_id (arg) or (isstring (arg) and (1 = __box_flags (arg)))))
                 signal ('RDF01', sprintf ('Bad const value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
                   DB.DBA.RDF_STRSQLVAL_OF_LONG (arg),
                   case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and isiri_id (arg) and (arg >= min_bnode_iri_id ()))
+              if ((1 = fld_ctr) and (
+                  (isiri_id (arg) and (arg >= min_bnode_iri_id ())) or
+                  (isstring (arg) and (arg like 'bnode://%')) ) )
                 signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := arg;
             }
@@ -7497,7 +7633,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             {
               declare res varchar;
               declare dat, typ any;
-              dat := __rdf_sqlval_of_obj (val);
+              dat := __rdf_sqlval_of_obj (val, 1);
               typ := rdf_box_type (val);
               if (not isstring (dat))
                 {
@@ -9876,13 +10012,13 @@ no_more_olds:
 --    {
 --      if (VT_D_ID > VT_D_ID_2)
 --        {
---          dbg_obj_princ ('FT BUG: misordered bounds: ', VT_WORD, VT_D_ID, VT_D_ID_2);
+--          -- dbg_obj_princ ('FT BUG: misordered bounds: ', VT_WORD, VT_D_ID, VT_D_ID_2);
           -- raw_exit ();
 --          ;
 --        }
 --      if (VT_D_ID <= dbg_prev_d_id_2)
 --        {
---          dbg_obj_princ ('FT BUG: overlapping ranges: ', VT_WORD, VT_D_ID, VT_D_ID_2, '; prev is ', dbg_prev_d_id, dbg_prev_d_id_2);
+--          -- dbg_obj_princ ('FT BUG: overlapping ranges: ', VT_WORD, VT_D_ID, VT_D_ID_2, '; prev is ', dbg_prev_d_id, dbg_prev_d_id_2);
            -- raw_exit ();
 --          ;
 --        }
@@ -10092,7 +10228,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-03-11 0001'
+                virtrdf:version '2008-05-21 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -10185,7 +10321,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RQ_IID_OF_O to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RQ_O_IS_LIT to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_OBJ_ADD to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_FIND_RO_DIGEST to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_OBJ_FIND_EXISTING to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL to SPARQL_SELECT',

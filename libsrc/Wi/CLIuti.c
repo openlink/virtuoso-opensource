@@ -2372,8 +2372,14 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
       case DV_RDF:
 	{
 	  rdf_box_t * rb = (rdf_box_t *) it;
+          if (DV_STRING == DV_TYPE_OF (rb->rb_box))
+            {
 	  str = rb->rb_box;
 	  len = box_length (rb->rb_box);
+            }
+          else
+            return dv_to_str_place (rb->rb_box, DV_TYPE_OF (rb->rb_box), max, place,
+              len_ret, str_from_pos, stmt, nth_col, box_length (rb->rb_box), c_type, sql_type);
 	  break;
 	}
 

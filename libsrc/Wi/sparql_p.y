@@ -525,12 +525,14 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_dataset_clauses_opt
 	    spar_where_clause spar_solution_modifier {
+                const char *formatter;
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg);
 		$$ = spar_make_top (sparp_arg, CONSTRUCT_L, NULL,
                   spar_selid_pop (sparp_arg),
 		  where_gp, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) );
-                spar_compose_retvals_of_construct (sparp_arg, $$, $3); }
+                formatter = ssg_find_formatter_by_name_and_subtype ($$->_.req_top.formatmode_name, CONSTRUCT_L);
+                spar_compose_retvals_of_construct (sparp_arg, $$, $3, formatter); }
 	;
 
 spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier	*/

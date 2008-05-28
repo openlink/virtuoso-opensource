@@ -127,15 +127,27 @@ caddr_t
 bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   if (((uint32) nth) >= BOX_ELEMENTS (args))
-  sqlr_new_error ("22003", "SR030", "Too few arguments for %s.", func);
+    sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
   return bif_arg_nochecks(qst,args,nth);
 }
 
+caddr_t
+bif_arg_unrdf (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  if (((uint32) nth) >= BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
+  caddr_t arg = bif_arg_nochecks(qst,args,nth);
+  if (DV_RDF != DV_TYPE_OF (arg))
+    return arg;
+  if (!((rdf_box_t *)arg)->rb_is_complete)
+    sqlr_new_error ("22003", "SR586", "Incomplete RDF box as argument %d for %s().", nth, func);
+  return ((rdf_box_t *)arg)->rb_box;
+}
 
 caddr_t
 bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_STRING)
     sqlr_new_error ("22023", "SR014",
@@ -191,7 +203,7 @@ bif_strict_2type_array_arg (dtp_t element_dtp1, dtp_t element_dtp2, caddr_t * qs
 caddr_t
 bif_string_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if ((dtp != DV_UNAME) && (dtp != DV_STRING))
     sqlr_new_error ("22023", "SR014",
@@ -203,7 +215,7 @@ bif_string_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, const cha
 caddr_t
 bif_string_or_wide_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if ((dtp != DV_UNAME) && (dtp != DV_STRING) && (dtp != DV_WIDE))
     sqlr_new_error ("22023", "SR014",
@@ -230,7 +242,7 @@ bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 struct xml_entity_s *
 bif_entity_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   switch (dtp)
     {
@@ -254,7 +266,7 @@ bif_entity_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 struct xml_tree_ent_s *
 bif_tree_ent_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   switch (dtp)
     {
@@ -281,7 +293,7 @@ bif_tree_ent_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func
 caddr_t
 bif_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_BIN && dtp != DV_LONG_BIN)
   sqlr_new_error ("22023", "SR004",
@@ -294,7 +306,7 @@ bif_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 caddr_t
 bif_string_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (DV_DB_NULL == dtp)
   {
@@ -315,7 +327,7 @@ bif_string_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
 caddr_t
 bif_string_or_wide_or_null_or_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (DV_DB_NULL == dtp)
   {
@@ -336,7 +348,7 @@ bif_string_or_wide_or_null_or_strses_arg (caddr_t * qst, state_slot_t ** args, i
 caddr_t
 bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (DV_DB_NULL == dtp)
   {
@@ -357,7 +369,7 @@ bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, co
 caddr_t
 bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (DV_DB_NULL == dtp)
   {
@@ -393,7 +405,7 @@ bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
 boxint
 bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SINGLE_FLOAT)
   return ((boxint) unbox_float (arg));
@@ -419,7 +431,7 @@ bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 iri_id_t
 bif_iri_id_or_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SINGLE_FLOAT)
     return ((iri_id_t) (unsigned int64) unbox_float (arg));
@@ -500,7 +512,7 @@ bif_long_low_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
 boxint
 bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   *isnull = 0;
   if (DV_DB_NULL == dtp)
@@ -531,7 +543,7 @@ bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 float
 bif_float_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SHORT_INT || dtp == DV_LONG_INT)
   return ((float) unbox (arg));
@@ -557,7 +569,7 @@ bif_float_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 double
 bif_double_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SHORT_INT || dtp == DV_LONG_INT)
   return ((double) unbox (arg));
@@ -582,7 +594,7 @@ bif_double_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 caddr_t
 bif_varchar_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if ((dtp != DV_BIN && dtp != DV_LONG_BIN &&
        !IS_STRING_DTP (dtp)) || (box_length (args) < 1))
@@ -596,7 +608,7 @@ bif_varchar_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
 ptrlong
 bif_long_or_char_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if ((dtp == DV_SHORT_STRING) || (dtp == DV_LONG_STRING))  /* If string */
   {
@@ -1376,7 +1388,7 @@ caddr_t
 bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long len = 0;
-  caddr_t arg = bif_arg (qst, args, 0, "length"); /* Was: bif_array_arg */
+  caddr_t arg = bif_arg_unrdf (qst, args, 0, "length"); /* Was: bif_array_arg */
   dtp_t dtp = DV_TYPE_OF (arg);
   switch (dtp)
     {
@@ -1430,23 +1442,21 @@ bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   NO_CADDR_T;
 }
 
-caddr_t
-bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+long raw_length (caddr_t arg)
 {
   long len = 0;
-  caddr_t arg = bif_arg (qst, args, 0, "raw_length"); /* Was: bif_array_arg */
   dtp_t dtp = DV_TYPE_OF (arg);
   switch (dtp)
     {
     case DV_DB_NULL:
-      return (box_num (0));
+      return 0;
     case DV_BLOB_HANDLE:
     case DV_BLOB_WIDE_HANDLE:
-      return box_num (((blob_handle_t *) arg)->bh_diskbytes);
+      return ((blob_handle_t *) arg)->bh_diskbytes;
 #ifdef BIF_XML
     case DV_XML_ENTITY:
       if (XE_IS_PERSISTENT((xml_entity_t *)arg))
-  return box_num (((xml_entity_t *) arg)->xe_doc.xpd->xpd_bh->bh_diskbytes);
+        return ((xml_entity_t *) arg)->xe_doc.xpd->xpd_bh->bh_diskbytes;
 #endif
     }
   if (IS_BOX_POINTER (arg))
@@ -1457,15 +1467,14 @@ bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
   case DV_STRING:
   case DV_C_STRING:
-    return (box_num (len - 1));
+    return len - 1;
   case DV_WIDE:
   case DV_LONG_WIDE:
-    return (box_num (len  - sizeof (wchar_t)));
+    return len  - sizeof (wchar_t);
   case DV_STRING_SESSION:
-    return (box_num (strses_length ((dk_session_t *) arg)));
+    return strses_length ((dk_session_t *) arg);
   case DV_COMPOSITE:
-    return (box_num (box_length (arg) - 2));
-
+    return box_length (arg) - 2;
   case DV_ARRAY_OF_POINTER:
   case DV_LIST_OF_POINTER:
   case DV_ARRAY_OF_XQVAL:
@@ -1474,9 +1483,19 @@ bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   case DV_ARRAY_OF_DOUBLE:
   default:
     {
-      return box_num(len);
+      return len;
     }
   }
+}
+
+caddr_t
+bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_arg (qst, args, 0, "raw_length"); /* Was: bif_array_arg */
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_RDF == dtp)
+    return box_num (box_length (arg) + raw_length (((rdf_box_t *)arg)->rb_box));
+  return box_num (raw_length (arg));
 }
 
 
@@ -1871,9 +1890,18 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* Return NULL if the first argument is NULL: */
   if (DV_DB_NULL == dtp1)
     return (NEW_DB_NULL);
-
+retry_unrdf:
   switch (dtp1)
   {
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)str;
+        /*if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+          sqlr_new_error ("22023", "SR587",
+            "Function subseq() can not use a typed RDF box as its first argument" );*/
+        str = rb->rb_box;
+        goto retry_unrdf; /* see above */
+      }
     case DV_STRING: case DV_UNAME: case DV_WIDE: case DV_LONG_WIDE:
     case DV_BLOB_HANDLE: case DV_BLOB_WIDE_HANDLE: case DV_BLOB_XPER_HANDLE:
     case DV_STRING_SESSION: case DV_ARRAY_OF_POINTER: case DV_BIN:
@@ -1882,7 +1910,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "SR023",
     "Function subseq needs a string, array or object id as its first argument, "
     "not an arg of type %s (%d)",
-    dv_type_title (dtp1), dtp1);
+        dv_type_title (dtp1), dtp1 );
   }
 
   /* box_length returns a string length + 1, except with object id's */
@@ -2029,16 +2057,27 @@ bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t dtp1 = DV_TYPE_OF (str);
   int sizeof_char = IS_WIDE_STRING_DTP (dtp1) ? sizeof (wchar_t) : sizeof (char);
 
+retry_unrdf:
   if (dtp1 == DV_DB_NULL)
     str = NULL;
   else if (dtp1 != DV_STRING && dtp1 != DV_C_STRING &&
-      !IS_WIDE_STRING_DTP (dtp1) &&
+      !IS_WIDE_STRING_DTP (dtp1) && dtp1 != DV_UNAME &&
       dtp1 != DV_BIN  && dtp1 != DV_LONG_BIN)
+    {
+      if (DV_RDF == dtp1)
+        {
+          rdf_box_t *rb = (rdf_box_t *)str;
+          /*if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+            sqlr_new_error ("22023", "SR588",
+              "Function left() can not use a typed RDF box as its first argument" );*/
+          str = rb->rb_box;
+          goto retry_unrdf; /* see above */
+        }
     sqlr_new_error ("22023", "SR007",
 	"Function left needs a string or NULL or binary as argument 1, "
 	"not an arg of type %s (%d)",
 	dv_type_title (dtp1), dtp1);
-
+     }
   if (NULL == str)
     {
       return (NEW_DB_NULL);
@@ -2053,6 +2092,13 @@ bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (dtp1 != DV_BIN  && dtp1 != DV_LONG_BIN)
     {
+      if (DV_UNAME == dtp1)
+        {
+          if (0x80 == (str[to] & 0xC0))
+            sqlr_new_error ("22011", "SR591",
+              "Function LEFT: ending offset %ld crosses UTF-8 character in the middle", (long)to);
+          return box_dv_uname_nchars (str, to);
+        }
       res = dk_alloc_box ((to + 1) * sizeof_char, (dtp_t)(IS_WIDE_STRING_DTP (dtp1) ? DV_WIDE : DV_LONG_STRING));
       memcpy (res, str, to * sizeof_char);
       memset (res + to * sizeof_char, 0, sizeof_char);
@@ -2070,7 +2116,7 @@ bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_right (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "right");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "right");
   long n_last = (long) bif_long_range_arg (qst, args, 1, "right", 0, 10000000);  /* substr length */
   caddr_t res;
   long len;
@@ -2082,11 +2128,15 @@ bif_right (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     return (NEW_DB_NULL);
   }
-
   len = (box_length (str) / sizeof_char - 1); /* box_length returns a length + 1 */
-
   n_last = MIN (n_last, len);
-
+  if (DV_UNAME == dtp1)
+    {
+      if (0x80 == (str[(len - n_last)] & 0xC0))
+        sqlr_new_error ("22011", "SR591",
+          "Function RIGHT: starting offset %ld crosses UTF-8 character in the middle", (long)(len - n_last));
+      return box_dv_uname_nchars (str + (len - n_last), n_last);
+    }
   res = dk_alloc_box ((n_last + 1) * sizeof_char, (dtp_t)(IS_WIDE_STRING_DTP (dtp1) ? DV_WIDE : DV_LONG_STRING));
   memcpy (res, (str + (len - n_last) * sizeof_char), n_last * sizeof_char);
   memset (res + n_last * sizeof_char, 0, sizeof_char);
@@ -3158,6 +3208,22 @@ bif_sprintf_or_null (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_sprintf (qst, err_ret, args);
 }
 
+caddr_t
+bif_sprintf_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t res = bif_sprintf (qst, err_ret, args);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
+bif_sprintf_iri_or_null (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t res = bif_sprintf_or_null (qst, err_ret, args);
+  if (DV_STRING == DV_TYPE_OF (res))
+    box_flags (res) = BF_IRI;
+  return res;
+}
 
 caddr_t
 bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3176,13 +3242,21 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *field_fmt_tail;
   int field_ctr = 0;
   caddr_t val;
+
+retry_unrdf:
   if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
     {
+      if (DV_RDF == str_dtp)
+        {
+          str = ((rdf_box_t *)str)->rb_box;
+          str_dtp = DV_TYPE_OF (str);
+          goto retry_unrdf; /* see above */
+        }
       if ((0 == hide_errors) && (DV_DB_NULL != str_dtp))
         {
           sqlr_new_error ("22023", "SR536",
             "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
-	      dv_type_title (str_dtp), str_dtp);
+            dv_type_title (str_dtp), str_dtp );
         }
       goto format_mismatch;
     }
@@ -3855,7 +3929,7 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_ascii (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg = bif_arg (qst, args, 0, "ascii");
+  caddr_t arg = bif_string_or_wide_or_uname_arg (qst, args, 0, "ascii");
   dtp_t dtp = DV_TYPE_OF (arg);
 
   /* if(DV_DB_NULL == dtp) { return(box_num(0)); } */
@@ -4125,12 +4199,35 @@ bif_tag (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_box_flags (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t x = bif_arg (qst, args, 0, "__tag");
+  caddr_t x = bif_arg (qst, args, 0, "__box_flags");
   if (!IS_BOX_POINTER (x))
     return box_num (0);
   return (box_num (box_flags (x)));
 }
 
+caddr_t
+bif_box_flags_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t x = bif_arg (qst, args, 0, "__box_flags_set");
+  ptrlong flags = bif_long_arg (qst, args, 1, "__box_flags_set");
+  if (!IS_BOX_POINTER (x))
+    sqlr_new_error ("22023", "SR590", "__box_flags_set () can not handle integer as a first argument");
+  box_flags (x) = flags;
+  return (box_num (flags));
+}
+
+caddr_t
+bif_box_flags_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t x = bif_arg (qst, args, 0, "__box_flags_tweak");
+  ptrlong flags = bif_long_arg (qst, args, 1, "__box_flags_tweak");
+  caddr_t res;
+  if (!IS_BOX_POINTER (x))
+    sqlr_new_error ("22023", "SR589", "__box_flags_tweak () can not handle integer as a first argument");
+  res = box_copy_tree (x);
+  box_flags (res) = flags;
+  return res;
+}
 
 /* The following three functions added 20.JAN.1997 by AK.
    Used by SQLColumns
@@ -5190,8 +5287,10 @@ caddr_t
 bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg1 = bif_arg (qst, args, 0, "not");
+  dtp_t dtp;
 
-  dtp_t dtp = DV_TYPE_OF (arg1);
+retry_unrdf:
+  dtp = DV_TYPE_OF (arg1);
   switch (dtp)
     {
     case DV_DB_NULL: return NEW_DB_NULL;
@@ -5201,6 +5300,9 @@ bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_C_SHORT:    /* These are  */
     case DV_C_INT:    /*  not needed? */
       return (caddr_t)((ptrlong)((0 == unbox (arg1)) ? 1 : 0));
+    case DV_RDF:
+      arg1 = ((rdf_box_t *)arg1)->rb_box;
+      goto retry_unrdf;
     default:
       return 0;
   }
@@ -12586,6 +12688,8 @@ sql_bif_init (void)
   bif_define_typed ("replace", bif_replace, &bt_string);
   bif_define_typed ("sprintf", bif_sprintf, &bt_varchar);
   bif_define_typed ("sprintf_or_null", bif_sprintf_or_null, &bt_varchar);
+  bif_define_typed ("sprintf_iri", bif_sprintf_iri, &bt_varchar);
+  bif_define_typed ("sprintf_iri_or_null", bif_sprintf_iri_or_null, &bt_varchar);
   bif_define ("sprintf_inverse", bif_sprintf_inverse);
 
 /* Finding occurrences of characters and substrings in strings: */
@@ -12612,6 +12716,8 @@ sql_bif_init (void)
 /* Type testing functions. */
   bif_define_typed ("__tag", bif_tag, &bt_integer);   /* for sqlext.c */
   bif_define_typed ("__box_flags", bif_box_flags, &bt_integer);
+  bif_define ("__box_flags_set", bif_box_flags_set);
+  bif_define ("__box_flags_tweak", bif_box_flags_tweak);
   bif_define_typed ("dv_to_sql_type", bif_dv_to_sql_type, &bt_integer);   /* for sqlext.c */
   bif_define_typed ("dv_to_sql_type3", bif_dv_to_sql_type3, &bt_integer);   /* for sqlext.c */
   bif_define_typed ("internal_to_sql_type", bif_dv_to_sql_type, &bt_integer);

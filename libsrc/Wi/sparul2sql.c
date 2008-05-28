@@ -171,7 +171,7 @@ ctor_var_enumerator_t;
 #define CTOR_OPCODE_CONST_OR_EXPN 3
 
 void
-spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve)
+spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve, const char *formatter)
 {
   int triple_ctr, fld_ctr, var_ctr;
   dk_set_t var_iter;
@@ -192,7 +192,7 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
       SPART *tvector_call;
       int triple_is_const = 1;
       tvector_args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
-      tvector_call = spar_make_funcall (sparp, 0, "LONG::bif:vector", tvector_args);
+      tvector_call = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"), tvector_args);
       for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
           SPART *fld = triple->_.triple.tr_fields[fld_ctr];
@@ -249,7 +249,7 @@ bnode_found_or_added:
           t_set_push (&var_tvectors, tvector_call);
         }
     }
-  var_vector_expn = spar_make_funcall (sparp, 0, "LONG::bif:vector",
+  var_vector_expn = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"),
     (SPART **)t_revlist_to_array (cve->cve_vars_acc) );
   if (cve->cve_limofs_var)
     var_vector_arg = cve->cve_limofs_var;
@@ -278,7 +278,7 @@ bnode_found_or_added:
 }
 
 void
-spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp)
+spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter)
 {
   int need_limofs_trick = CTOR_NEEDS_LIMOFS_TRICK(top);
   ctor_var_enumerator_t cve;
@@ -290,7 +290,7 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp)
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve);
+    &(top->_.req_top.retvals), &cve, formatter );
 }
 
 void
@@ -319,7 +319,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_bnodes_are_prohibited = 1;
     }
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve);
+    &(top->_.req_top.retvals), &cve, NULL );
   rv = top->_.req_top.retvals;
   rv[0] = spar_make_funcall (sparp, 0, top_fname,
     (SPART **)t_list (3, graph_to_patch, rv[0], log_mode) );
@@ -358,11 +358,11 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
     }
   cve.cve_bnodes_are_prohibited = 1;
   spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &(top->_.req_top.retvals), &cve);
+    &(top->_.req_top.retvals), &cve, NULL );
   cve.cve_limofs_var_alias = NULL;
   cve.cve_bnodes_are_prohibited = 0;
   spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
-    &ins, &cve);
+    &ins, &cve, NULL );
   rv = top->_.req_top.retvals;
   rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
     (SPART **)t_list (4, graph_to_patch, rv[0], ins[0], log_mode) );

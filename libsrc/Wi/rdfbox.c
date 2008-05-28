@@ -877,7 +877,10 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rb = (rdf_box_t *)shortobj;
   if (!rb->rb_is_complete)
     rb_complete (rb, qi->qi_trx, qi);
+  if (((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
+    || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
   return box_copy_tree (rb->rb_box);
+  return box_copy (rb);
 }
 
 caddr_t
@@ -1082,17 +1085,33 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	flags |= RBS_HAS_TYPE;
       if (rb->rb_chksum_tail)
 	flags |= RBS_CHKSUM;
-      if (cli)
+      if (cli && rb->rb_is_complete)
 	{
-          if (rb->rb_is_complete)
 	    flags |= RBS_COMPLETE;
+          flags &= ~RBS_CHKSUM;
           session_buffered_write_char (flags, ses);
+          if (DV_XML_ENTITY == DV_TYPE_OF (rb->rb_box))
+            xe_serialize ((xml_entity_t *)(rb->rb_box), ses);
+          else
 	  print_object (rb->rb_box, ses, NULL, NULL);
+          if (rb->rb_ro_id)
+            {
+              if (rb->rb_ro_id > INT32_MAX)
+                print_int64_no_tag (rb->rb_ro_id, ses);
+              else
+                print_long (rb->rb_ro_id, ses);
+            }
+          if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+            print_short (rb->rb_type, ses);
+          if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+	    print_short (rb->rb_lang, ses);
+          return;
 	}
       else if (rb->rb_chksum_tail)
         {
           caddr_t str = ((rdf_bigbox_t *)rb)->rbb_chksum;
           int str_len = box_length (str) - 1;
+          flags &= ~RBS_COMPLETE;
           session_buffered_write_char (flags, ses);
 	  if (str_len > RB_MAX_INLINED_CHARS)
 	    str_len = RB_MAX_INLINED_CHARS;

@@ -636,7 +636,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         {
           if (NULL == qm_fmt)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-string-1}^ if qm_fmt is NULL", asname_printed);
-          ssg_print_literal (ssg, uname_xmlschema_ns_uri_hash_string, (SPART *)qm_fmt->qmfCustomString1);
+          ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfCustomString1, 0);
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
@@ -1314,7 +1314,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     (40 < box_length (arg)) ) )
 
 void
-ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
+ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
 {
   char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
   size_t buflen;
@@ -1426,7 +1426,7 @@ ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
 }
 
 void
-ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
+ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
   caddr_t dt = NULL;
@@ -1443,7 +1443,7 @@ ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
         value = lit->_.lit.val;
       else
         {
-          spar_sqlprint_error ("ssg_print_literal(): non-lit tree as argument");
+          spar_sqlprint_error ("ssg_" "print_literal_as_sql_atom (): non-lit tree as argument");
           value = BADBEEF_BOX; /* To keep gcc 4.0 happy */
         }
     }
@@ -1459,7 +1459,64 @@ ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
         ssg_puts ("0");
       return;
     }
-  ssg_print_box_as_sqlval (ssg, value, 0);
+  ssg_print_box_as_sql_atom (ssg, value, 0);
+}
+
+void
+ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
+{
+  caddr_t value;
+  caddr_t dt = NULL;
+  caddr_t lang = NULL;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
+    {
+      if (SPAR_LIT == lit->type)
+        {
+          value = lit->_.lit.val;
+          dt = lit->_.lit.datatype;
+          lang = lit->_.lit.language;
+        }
+      else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
+        value = lit->_.lit.val;
+      else
+        {
+          spar_sqlprint_error ("ssg_" "print_literal_as_sqlval (): non-lit tree as argument");
+          value = BADBEEF_BOX; /* To keep gcc 4.0 happy */
+        }
+    }
+  else
+    value = (caddr_t)lit;
+  if (NULL == type)
+    type = dt;
+#if 0
+  if (uname_xmlschema_ns_uri_hash_boolean == type)
+    {
+      if (unbox (value))
+        ssg_puts ("1");
+      else
+        ssg_puts ("0");
+      return;
+    }
+#else
+  if ((NULL != type) || (NULL != lang))
+    {
+      ssg_puts (" /* sqlval of typed literal */ __rdf_sqlval_of_obj (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
+      ssg_print_box_as_sql_atom (ssg, value, 0);
+      ssg_putchar (',');
+      if (NULL != type)
+        ssg_print_box_as_sql_atom (ssg, type, 1);
+      else
+        ssg_puts (" NULL");
+      ssg_putchar (',');
+      if (NULL != lang)
+        ssg_print_box_as_sql_atom (ssg, lang, 0);
+      else
+        ssg_puts (" NULL");
+      ssg_puts ("))");
+      return;
+    }
+#endif
+  ssg_print_box_as_sql_atom (ssg, value, 0);
 }
 
 void
@@ -1480,7 +1537,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
           ssg_puts (" DB.DBA.RDF_MAKE_IID_OF_QNAME (");
-          ssg_print_literal (ssg, NULL, lit);
+          ssg_print_box_as_sql_atom (ssg, lit->_.lit.val, 1);
           ssg_putchar (')');
           return;
         }
@@ -1493,15 +1550,15 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   if ((NULL != datatype) || (NULL != language))
     {
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-      ssg_print_literal (ssg, NULL, lit);
+      ssg_print_box_as_sql_atom (ssg, value, 0);
       ssg_putchar (',');
       if (NULL != datatype)
-        ssg_print_literal (ssg, NULL, (SPART *)datatype);
+        ssg_print_box_as_sql_atom (ssg, datatype, 1);
       else
         ssg_puts (" NULL");
       ssg_putchar (',');
       if (NULL != language)
-        ssg_print_literal (ssg, NULL, (SPART *)language);
+        ssg_print_box_as_sql_atom (ssg, language, 0);
       else
         ssg_puts (" NULL");
       ssg_putchar (')');
@@ -1512,11 +1569,11 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
     (DV_XML_ENTITY == value_dtp) )
     {
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (");
-      ssg_print_literal (ssg, NULL, lit);
+      ssg_print_literal_as_sqlval (ssg, NULL, value);
       ssg_putchar (')');
       return;
     }
-  ssg_print_box_as_sqlval (ssg, value, 0);
+  ssg_print_box_as_sql_atom (ssg, value, 0);
 }
 
 void
@@ -1524,7 +1581,7 @@ ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr
 {
   caddr_t name_as_expn = NULL;
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
-    ssg_print_literal (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
+    ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
   else
     {
       if (NULL != selectid)
@@ -2048,7 +2105,7 @@ vmodes_found:
     }
   else if (SSG_VALMODE_DATATYPE == needed)
     {
-      ssg_print_literal (ssg, NULL, (SPART *)uname_xmlschema_ns_uri_hash_boolean);
+      ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, 1);
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {
@@ -3042,7 +3099,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         else if (SSG_VALMODE_DATATYPE == needed)
           {
-            ssg_print_literal (ssg, NULL, (SPART *)uname_xmlschema_ns_uri_hash_boolean);
+            ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, 1);
           }
         else if (SSG_VALMODE_LANGUAGE == needed)
           {
@@ -3187,12 +3244,12 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               }
             else if (SSG_VALMODE_LONG == needed)
               {
-                ssg_puts (" DB.DBA.RDF_MAKE_IID_OF_QNAME (");
-                ssg_print_literal (ssg, NULL, tree);
+                ssg_puts (" iri_to_id (");
+                ssg_print_box_as_sql_atom (ssg, tree, 1);
                 ssg_puts (")");
               }
             else if (SSG_VALMODE_SQLVAL == needed)
-              ssg_print_literal (ssg, NULL, tree);
+              ssg_print_literal_as_sqlval (ssg, NULL, tree);
             else if (IS_BOX_POINTER (needed))
               {
                 if (NULL != needed->qmfShortOfUriTmpl)
@@ -3202,8 +3259,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                   }
                 else
                   {
-                    ssg_puts (" DB.DBA.RDF_MAKE_IID_OF_QNAME (");
-                    ssg_print_literal (ssg, NULL, tree);
+                    ssg_puts (" iri_to_id (");
+                    ssg_print_literal_as_sqlval (ssg, NULL, tree);
                     ssg_puts (")");
                   }
               }
@@ -3218,11 +3275,11 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             if (DV_ARRAY_OF_POINTER != tree_dtp)
               {
                 ssg_puts (" __xsd_type ("); /* !!!TBD Replace with something less ugly when twobyte of every predefined type is fixed */
-                ssg_print_literal (ssg, NULL, tree);
+                ssg_print_literal_as_sqlval (ssg, NULL, tree);
                 ssg_puts (")");
               }
             else if (NULL != tree->_.lit.datatype)
-              ssg_print_literal (ssg, NULL, (SPART *)(tree->_.lit.datatype));
+              ssg_print_box_as_sql_atom (ssg, tree->_.lit.datatype, 1);
             else
               ssg_puts (" NULL");
             goto print_asname;
@@ -3232,7 +3289,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             if (DV_ARRAY_OF_POINTER != tree_dtp)
               ssg_puts (" NULL");
             else if (NULL != tree->_.lit.language)
-              ssg_print_literal (ssg, NULL, (SPART *)(tree->_.lit.language));
+              ssg_print_box_as_sql_atom (ssg, tree->_.lit.language, 0);
             else
               ssg_puts (" NULL");
             goto print_asname;
@@ -3244,7 +3301,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         if (SSG_VALMODE_SQLVAL == needed)
           {
-          ssg_print_literal (ssg, NULL, tree);
+            ssg_print_literal_as_sqlval (ssg, NULL, tree);
             goto print_asname;
           }
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
@@ -3263,7 +3320,11 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       else if (SSG_VALMODE_LONG == needed)
         ssg_print_literal_as_long (ssg, tree);
       else if (SSG_VALMODE_SQLVAL == needed)
-        ssg_print_literal (ssg, NULL, tree);
+        {
+          ssg_puts (" __box_flags_tweak (");
+          ssg_print_literal_as_sqlval (ssg, NULL, tree);
+          ssg_puts (", 1)");
+        }
       else
         ssg_print_tmpl (ssg, needed, needed->qmfShortOfUriTmpl, NULL, NULL, tree, asname);
       goto print_asname;
@@ -3568,7 +3629,7 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       else
   ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   ssg_puts (" =");
-      ssg_print_literal (ssg, NULL, (SPART *)litvalue);
+      ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)litvalue);
     }
 }
 
@@ -3624,7 +3685,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       else
       ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_LONG, NULL_ASNAME);
       ssg_puts (" = iri_to_id (");
-      ssg_print_literal (ssg, NULL, (SPART *)uri);
+      ssg_print_box_as_sql_atom (ssg, uri, 1);
       ssg_puts (")");
     }
   else
@@ -3635,7 +3696,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       else
       ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       ssg_puts (" = ");
-      ssg_print_literal (ssg, NULL, (SPART *)uri);
+      ssg_print_box_as_sql_atom (ssg, uri, 1);
     }
 }
 
@@ -3700,7 +3761,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
               {
                 if (NULL == graph_qmv)
                   {
-                    ssg_print_literal (ssg, NULL, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
+                    ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
                     break;
                   }
                 if ((SPAR_VARIABLE == graph_tree_type) || (SPAR_BLANK_NODE_LABEL == graph_tree_type))
@@ -3708,7 +3769,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
                     ptrlong graph_tree_restr = graph_tree->_.var.rvr.rvrRestrictions;
                     if (SPART_VARR_FIXED & graph_tree_restr)
                       {
-                        ssg_print_literal (ssg, NULL, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
+                        ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
                         break;
                       }
                     if (SPART_VARR_GLOBAL & graph_tree_restr)
@@ -4030,7 +4091,7 @@ if (NULL != jright_alias)
               ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
               ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
               ssg_puts (" =");
-              ssg_print_literal (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
+              ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
             }
           continue;
         }
@@ -4085,7 +4146,7 @@ if (NULL != jright_alias)
           ssg_print_where_or_and (ssg, "fixed type of equiv class");
           ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_DATATYPE, NULL_ASNAME);
           ssg_puts (" =");
-          ssg_print_literal (ssg, NULL, (SPART *)(eq->e_rvr.rvrDatatype));
+              ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrDatatype));
         }
     }
     }
@@ -4558,7 +4619,7 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid,
             }
         }
       else
-        ssg_print_literal (ssg, NULL, (SPART *)asname);
+        ssg_print_box_as_sql_atom (ssg, asname, 0);
     }
   END_DO_BOX_FAST;
 }
@@ -5698,9 +5759,9 @@ ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree)
           return;
         }
       if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
-        ssg_print_box_as_sqlval (ssg, tree->_.lit.val, 1);
+        ssg_print_box_as_sql_atom (ssg, tree->_.lit.val, 1);
       else
-        ssg_print_box_as_sqlval (ssg, (caddr_t)tree, 1);
+        ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 1);
       break;
     default:
      ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);
