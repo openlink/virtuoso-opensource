@@ -386,21 +386,11 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-dk_mutex_t *ttl_lex_mtx = NULL;
-ttlp_t global_ttlp;
-
 ttlp_t *
 ttlp_alloc (void)
 {
   ttlp_t *ttlp;
-#ifdef RE_ENTRANT_TTLYY
   ttlp = (ttlp_t *)dk_alloc (sizeof (ttlp_t));
-#else
-  if (!ttl_lex_mtx)
-    ttl_lex_mtx = mutex_allocate ();
-  mutex_enter (ttl_lex_mtx);
-  ttlp = &global_ttlp;
-#endif
   memset (ttlp, 0, sizeof (ttlp_t));
   ttlp->ttlp_lexlineno = 1;
   ttlp->ttlp_tf = tf_alloc ();
@@ -425,22 +415,18 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_obj_type);
   dk_free_tree (ttlp->ttlp_obj_lang);
   dk_free_tree (ttlp->ttlp_formula_iid);
-#ifdef RE_ENTRANT_TTLYY
   dk_free (ttlp, sizeof (ttlp_t));
-#else
-  mutex_leave (ttl_lex_mtx);
-#endif
 }
 
 void
-ttlyyerror_impl (TTLP_PARAM const char *raw_text, const char *strg)
+ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg)
 {
-  int lineno = ttlp_inst.ttlp_lexlineno;
+  int lineno = ttlp_arg[0].ttlp_lexlineno;
   if (NULL == raw_text)
-    raw_text = ttlp_inst.ttlp_raw_text;
+    raw_text = ttlp_arg[0].ttlp_raw_text;
   sqlr_new_error ("37000", "SP029",
       "%.400s, line %d: %.500s%.5s%.1000s",
-      ttlp_inst.ttlp_err_hdr,
+      ttlp_arg[0].ttlp_err_hdr,
       lineno,
       strg,
       ((NULL == raw_text) ? "" : " at "),
@@ -449,18 +435,18 @@ ttlyyerror_impl (TTLP_PARAM const char *raw_text, const char *strg)
 
 
 void
-ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg)
+ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg)
 {
   int sm2, sm1, sp1;
-  int lineno = ttlp_inst.ttlp_lexlineno;
+  int lineno = ttlp_arg[0].ttlp_lexlineno;
   if (NULL == raw_text)
-    raw_text = ttlp_inst.ttlp_raw_text;
+    raw_text = ttlp_arg[0].ttlp_raw_text;
   sp1 = yyssp[1];
   sm1 = yyssp[-1];
   sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
   sqlr_new_error ("37000", "RDF30",
      /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
-      ttlp_inst.ttlp_err_hdr,
+      ttlp_arg[0].ttlp_err_hdr,
       lineno,
       strg,
       sm2,
@@ -474,7 +460,7 @@ ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, s
 }
 
 
-caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int mode, char delimiter)
+caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char delimiter)
 {
   caddr_t tmp_buf;
   caddr_t res;
@@ -550,7 +536,7 @@ caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int mode, char delimiter)
 
 err:
   dk_free_box (tmp_buf);
-  ttlyyerror_impl (TTLP_ARG NULL, err_msg);
+  ttlyyerror_impl (ttlp_arg, NULL, err_msg);
   return NULL;
 }
 
@@ -566,7 +552,7 @@ ttlp_bit_of_special_qname (caddr_t qname)
 }
 
 #undef ttlp_expand_qname_prefix
-caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname)
+caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname)
 {
   char *lname = strchr (qname, ':');
   dk_set_t ns_dict;
@@ -575,7 +561,7 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
   if (NULL == lname)
     {
       lname = qname;
-      ns_uri = ttlp_inst.ttlp_default_ns_uri;
+      ns_uri = ttlp_arg[0].ttlp_default_ns_uri;
       if (NULL == ns_uri)
         {
           ns_uri = "#";
@@ -588,7 +574,7 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
   if (qname == lname)
     {
       lname = qname + 1;
-      ns_uri = ttlp_inst.ttlp_default_ns_uri;
+      ns_uri = ttlp_arg[0].ttlp_default_ns_uri;
       if (NULL == ns_uri)
         {
 /* TimBL's sample:
@@ -614,7 +600,7 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
       goto ns_uri_found; /* see below */
     }
   lname++;
-  ns_dict = ttlp_inst.ttlp_namespaces;
+  ns_dict = ttlp_arg[0].ttlp_namespaces;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
   ns_uri = (caddr_t) dk_set_get_keyword (ns_dict, ns_pref, NULL);
   if (NULL == ns_uri)
@@ -628,7 +614,7 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
       else
         {
           dk_free_box (ns_pref);
-          ttlyyerror_impl (TTLP_ARG qname, "Undefined namespace prefix");
+          ttlyyerror_impl (ttlp_arg, qname, "Undefined namespace prefix");
         }
     }
   dk_free_box (ns_pref);
@@ -655,80 +641,80 @@ ns_uri_found:
 }
 
 caddr_t
-ttlp_uri_resolve (TTLP_PARAM caddr_t qname)
+ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
-  query_instance_t *qi = ttlp_inst.ttlp_tf->tf_qi;
+  query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;
   caddr_t res, err = NULL;
-  res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_inst.ttlp_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
+  res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_arg[0].ttlp_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
   if (NULL != err)
     sqlr_resignal (err);
-  if (res == ttlp_inst.ttlp_base_uri)
+  if (res == ttlp_arg[0].ttlp_base_uri)
     return box_copy (res);
   return res;
 }
 
 void
-ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri)
+ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
 {
-  triple_feed_t *tf = ttlp_inst.ttlp_tf;
-  caddr_t s = ttlp_inst.ttlp_subj_uri;
-  caddr_t p = ttlp_inst.ttlp_pred_uri;
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  caddr_t s = ttlp_arg[0].ttlp_subj_uri;
+  caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   caddr_t o = o_uri;
   if (NULL == s)
     return;
-  if (ttlp_inst.ttlp_pred_is_reverse)
+  if (ttlp_arg[0].ttlp_pred_is_reverse)
     {
       caddr_t swap = o;
       o = s;
       s = swap;
     }
-  if (ttlp_inst.ttlp_formula_iid)
+  if (ttlp_arg[0].ttlp_formula_iid)
     {
       caddr_t stmt = tf_bnode_iid (tf, NULL);
       tf_triple (tf, stmt, uname_rdf_ns_uri_subject, s);
       tf_triple (tf, stmt, uname_rdf_ns_uri_predicate, p);
       tf_triple (tf, stmt, uname_rdf_ns_uri_object, o);
       tf_triple (tf, stmt, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
-      tf_triple (tf, ttlp_inst.ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
+      tf_triple (tf, ttlp_arg[0].ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
     }
   tf_triple (tf, s, p, o);
 }
 
 void
-ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
 {
-  triple_feed_t *tf = ttlp_inst.ttlp_tf;
-  caddr_t s = ttlp_inst.ttlp_subj_uri;
-  caddr_t p = ttlp_inst.ttlp_pred_uri;
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  caddr_t s = ttlp_arg[0].ttlp_subj_uri;
+  caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   if (NULL == s)
     return;
-  if (ttlp_inst.ttlp_pred_is_reverse)
+  if (ttlp_arg[0].ttlp_pred_is_reverse)
     {
-      if (!(ttlp_inst.ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
-        ttlyyerror_impl (TTLP_ARG "", "Virtuoso does not support literal subjects");
-      if (ttlp_inst.ttlp_formula_iid)
+      if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
+        ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");
+      if (ttlp_arg[0].ttlp_formula_iid)
         {
           caddr_t stmt = tf_bnode_iid (tf, NULL);
           tf_triple_l (tf, stmt, uname_rdf_ns_uri_subject, o_sqlval, o_dt, o_lang);
           tf_triple (tf, stmt, uname_rdf_ns_uri_predicate, p);
           tf_triple (tf, stmt, uname_rdf_ns_uri_object, s);
           tf_triple (tf, stmt, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
-          tf_triple (tf, ttlp_inst.ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
+          tf_triple (tf, ttlp_arg[0].ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
         }
       return;
     }
-  if (ttlp_inst.ttlp_formula_iid)
+  if (ttlp_arg[0].ttlp_formula_iid)
     {
       caddr_t stmt = tf_bnode_iid (tf, NULL);
       tf_triple (tf, stmt, uname_rdf_ns_uri_subject, s);
       tf_triple (tf, stmt, uname_rdf_ns_uri_predicate, p);
       tf_triple_l (tf, stmt, uname_rdf_ns_uri_object, o_sqlval, o_dt, o_lang);
       tf_triple (tf, stmt, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
-      tf_triple (tf, ttlp_inst.ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
+      tf_triple (tf, ttlp_arg[0].ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
     }
-  tf_triple_l (ttlp_inst.ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
+  tf_triple_l (ttlp_arg[0].ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
 }
 
 
@@ -785,118 +771,6 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   BOX_DONE (params, params_buf);
   if (NULL != err)
     sqlr_resignal (err);
-}
-
-caddr_t
-rdf_load_turtle (
-  caddr_t text, caddr_t base_uri, caddr_t graph_uri, long flags,
-  ccaddr_t *cbk_names, caddr_t app_env,
-  query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret )
-{
-  bh_from_client_fwd_iter_t bcfi;
-  bh_from_disk_fwd_iter_t bdfi;
-  dk_session_fwd_iter_t dsfi;
-  /* !!!TBD: add wide support: int text_strg_is_wide = 0; */
-  dtp_t dtp_of_text = DV_TYPE_OF (text);
-  caddr_t res;
-  ttlp_t *ttlp;
-  triple_feed_t *tf;
-  if (DV_BLOB_XPER_HANDLE == dtp_of_text)
-    sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
-  ttlp = ttlp_alloc ();
-  ttlp->ttlp_flags = flags;
-  tf = ttlp->ttlp_tf;
-  tf->tf_qi = qi;
-  tf->tf_app_env = app_env;
-  if ((DV_BLOB_HANDLE == dtp_of_text) /* !!!TBD: add wide support: || (DV_BLOB_WIDE_HANDLE == dtp_of_text)*/ )
-    {
-      blob_handle_t *bh = (blob_handle_t *) text;
-#if 0 /* !!!TBD: add wide support: */
-      text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-#endif      
-      if (bh->bh_ask_from_client)
-        {
-          bcfi_reset (&bcfi, bh, qi->qi_client);
-          ttlp->ttlp_iter = bcfi_read;
-          ttlp->ttlp_iter_abend = bcfi_abend;
-          ttlp->ttlp_iter_data = &bcfi;
-	  goto iter_is_set;
-        }
-      bdfi_reset (&bdfi, bh, qi);
-      ttlp->ttlp_iter = bdfi_read;
-      ttlp->ttlp_iter_data = &bdfi;
-      goto iter_is_set;
-    }
-  if (DV_STRING_SESSION == dtp_of_text)
-    {
-      dk_session_t *ses = (dk_session_t *) text;
-      dsfi_reset (&dsfi, ses);
-      ttlp->ttlp_iter = dsfi_read;
-      ttlp->ttlp_iter_data = &dsfi;
-      goto iter_is_set;
-    }
-#if 0 /* !!!TBD: add wide support: */
-   if (IS_WIDE_STRING_DTP (dtp_of_text))
-    {
-      text_len = (s_size_t) (box_length(text)-sizeof(wchar_t));
-      text_strg_is_wide = 1;
-      goto iter_is_set;
-    }
-#endif
-  if (IS_STRING_DTP (dtp_of_text))
-    {
-      ttlp->ttlp_text = text;
-      ttlp->ttlp_text_len = box_length(text) - 1;
-      goto iter_is_set;
-    }
-  ttlp_free (ttlp);
-  sqlr_new_error ("42000", "SP037",
-    "Unable to parse TURTLE from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
-
-iter_is_set:
-  tf->tf_graph_uri = box_copy (graph_uri);
-  ttlp->ttlp_err_hdr = "TURTLE RDF loader";
-  if (NULL == query_charset)
-    query_charset = default_charset;
-  if (NULL == query_charset)
-    ttlp->ttlp_enc = &eh__ISO8859_1;
-  else
-    {
-      ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
-      if (NULL == ttlp->ttlp_enc)
-        ttlp->ttlp_enc = &eh__ISO8859_1;
-    }
-  if (box_length (base_uri) > 1)
-    ttlp->ttlp_base_uri = box_copy (base_uri);
-  QR_RESET_CTX
-    {
-      tf_set_cbk_names (tf, (const char **)cbk_names);
-      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-      tf_commit (tf);
-      tf_new_graph (tf);
-      ttlyy_reset ();
-      ttlyyparse();
-      tf_commit (tf);
-    }
-  QR_RESET_CODE
-    {
-      du_thread_t *self = THREAD_CURRENT_THREAD;
-      ttlp->ttlp_catched_error = thr_get_error_code (self);
-      thr_set_error_code (self, NULL);
-      if (NULL != ttlp->ttlp_iter_abend)
-        {
-          ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
-          ttlp->ttlp_iter_abend = NULL;
-        }
-      /*no POP_QR_RESET*/;
-    }
-  END_QR_RESET
-  err_ret[0] = ttlp->ttlp_catched_error;
-  ttlp->ttlp_catched_error = NULL;
-  res = ttlp->ttlp_tf->tf_graph_uri;
-  ttlp->ttlp_tf->tf_graph_uri = NULL;
-  ttlp_free (ttlp);
-  return res;
 }
 
 caddr_t
@@ -1904,13 +1778,13 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
 }
 
 #undef tf_formula_bnode_iid
-caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM caddr_t txt)
+caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t txt)
 {
-  caddr_t btext = box_sprintf (10+strlen (txt), "%ld%s", (long)(unbox_iri_id(ttlp_inst.ttlp_formula_iid)), txt);
+  caddr_t btext = box_sprintf (10+strlen (txt), "%ld%s", (long)(unbox_iri_id(ttlp_arg[0].ttlp_formula_iid)), txt);
   caddr_t res;
-  dk_set_push (&(ttlp_inst.ttlp_saved_uris), btext);
-  res = DBG_NAME (tf_bnode_iid) (DBG_ARGS ttlp_inst.ttlp_tf, btext);
-  dk_set_pop (&(ttlp_inst.ttlp_saved_uris));
+  dk_set_push (&(ttlp_arg[0].ttlp_saved_uris), btext);
+  res = DBG_NAME (tf_bnode_iid) (DBG_ARGS ttlp_arg[0].ttlp_tf, btext);
+  dk_set_pop (&(ttlp_arg[0].ttlp_saved_uris));
   return res;
 }
 

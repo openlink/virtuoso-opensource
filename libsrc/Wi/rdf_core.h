@@ -114,61 +114,44 @@ typedef struct ttlp_s
 } ttlp_t;
 
 
-#ifndef RE_ENTRANT_TTLYY
-extern dk_mutex_t *ttl_lex_mtx;
-#endif
-extern ttlp_t global_ttlp;
 extern ttlp_t *ttlp_alloc (void);
 extern void ttlp_free (ttlp_t *ttlp);
-#ifdef RE_ENTRANT_TTLYY
-#define TTLP_PARAM ttlp_t *ttlp_arg,
-#define TTLP_PARAM_0 ttlp_t *ttlp_arg
-#define TTLP_ARG ttlp_arg,
-#define TTLP_ARG_0 ttlp_arg
-#define ttlp_ptr ttlp_arg
-#define ttlp_inst ttlp_arg[0]
-#else
-#define TTLP_PARAM
-#define TTLP_PARAM_0
-#define TTLP_ARG
-#define TTLP_ARG_0
-#define ttlp_ptr (&global_ttlp)
-#define ttlp_inst global_ttlp
+
+extern caddr_t rdf_load_turtle (
+  caddr_t text, caddr_t base_uri, caddr_t graph_uri, long flags,
+  ccaddr_t *cbk_names, caddr_t app_env,
+  query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
+
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
 #endif
 
-#define YY_DECL int ttlyylex (void *yylval)
-extern int ttlyylex (void *yylval);
-extern void ttlyy_reset (void);
-extern int ttlyyparse (void);
-
-extern void ttlyyerror_impl (TTLP_PARAM const char *raw_text, const char *strg);
-extern void ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
+extern int ttlyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
+extern void ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg);
+extern void ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 
 extern ptrlong ttlp_bit_of_special_qname (caddr_t qname);
-extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname);
+extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t boxed_sparyytext);
-extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM caddr_t boxed_sparyytext);
+extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t boxed_sparyytext);
 #ifdef MALLOC_DEBUG
-#define ttlp_expand_qname_prefix(qname) DBG_NAME (ttlp_expand_qname_prefix) (__FILE__, __LINE__, (qname))
+#define ttlp_expand_qname_prefix(ttlp,qname) DBG_NAME (ttlp_expand_qname_prefix) (__FILE__, __LINE__, (ttlp), (qname))
 #define tf_bnode_iid(tf, boxed_sparyytext) DBG_NAME (tf_bnode_iid) (__FILE__, __LINE__, (tf), (boxed_sparyytext))
-#ifdef RE_ENTRANT_TTLYY
-#define tf_formula_bnode_iid(ttlp, boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (boxed_sparyytext))
-#else
-#define tf_formula_bnode_iid(boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (boxed_sparyytext))
+#define tf_formula_bnode_iid(ttlp,boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (boxed_sparyytext))
 #endif
-#endif
-extern caddr_t ttlp_uri_resolve (TTLP_PARAM caddr_t qname);
+extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 
 /* Numeric values of these constants are important, do not alter them. Theyh're used in tricky way. */
 #define TTLP_STRLITERAL_QUOT 		1
 #define TTLP_STRLITERAL_QUOT_AT		2
 #define TTLP_STRLITERAL_3QUOT 		3
 #define TTLP_STRLITERAL_3QUOT_AT	4
-extern caddr_t ttlp_strliteral (TTLP_PARAM const char *sparyytext, int mode, char delimiter);
+extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 
-extern void ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri);
-extern void ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
+extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
 
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
