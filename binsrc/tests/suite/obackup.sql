@@ -29,12 +29,19 @@ echo BOTH "STARTED: Online-Backup stage 2\n";
 
 checkpoint;
 backup_max_dir_size (300000);
+backup_online ('nwdemo_i_#'	, 150,0,
+    vector ('nw1', 'nw2', 'nw3', 'nw4', 'nw5'));
 
 -- Spawn two isql's to background each to insert ten thousand and one items:
-CONNECT; SET AUTOCOMMIT=ON; delete from "Demo.demo.Orders"; delete from "Demo.demo.Shippers"; delete from "Demo.demo.Suppliers"; delete from "Demo.demo.Categories"; delete from "Demo.demo.Products"; delete from "Demo.demo.Customers"; delete from "Demo.demo.Employees"; delete from "Demo.demo.Order_Details"; &
-CONNECT; SET AUTOCOMMIT=ON; backup_online ('nwdemo_i_#'	, 150,0, vector ('nw1', 'nw2', 'nw3', 'nw4', 'nw5')); &
-
-WAIT_FOR_CHILDREN;
+SET AUTOCOMMIT=ON;
+delete from "Demo.demo.Orders";
+delete from "Demo.demo.Shippers";
+delete from "Demo.demo.Suppliers";
+delete from "Demo.demo.Categories";
+delete from "Demo.demo.Products";
+delete from "Demo.demo.Customers";
+delete from "Demo.demo.Employees";
+delete from "Demo.demo.Order_Details";
 
 select count (*) from "Demo.demo.Categories";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";

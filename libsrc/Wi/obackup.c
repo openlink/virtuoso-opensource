@@ -872,20 +872,29 @@ try_to_restore_backup_context (ol_backup_context_t* ctx)
 
 ol_backup_context_t*
 backup_context_allocate(const char* fileprefix,
-	long pages, long timeout, caddr_t* backup_path_arr)
+	long pages, long timeout, caddr_t* backup_path_arr, caddr_t *err_ret)
 {
   ol_backup_context_t* ctx;
   int fd;
   int restored;
 
   if (pages < MIN_BACKUP_PAGES)
-    sqlr_new_error ("42000", PAGE_NUMBER_ERR_CODE, "Number of backup pages is less than %ld", (long)MIN_BACKUP_PAGES);
+    {
+      *err_ret = srv_make_new_error ("42000", PAGE_NUMBER_ERR_CODE, "Number of backup pages is less than %ld", (long)MIN_BACKUP_PAGES);
+      return NULL;
+    }
 
   if (timeout < 0)
-    sqlr_new_error ("42000", TIMEOUT_NUMBER_ERR_CODE, "Timeout can not be negative");
+    {
+      *err_ret = srv_make_new_error ("42000", TIMEOUT_NUMBER_ERR_CODE, "Timeout can not be negative");
+      return NULL;
+    }
 
   if (strlen(fileprefix) > FILEN_BUFSIZ)
-    sqlr_new_error ("42000", FILE_SZ_ERR_CODE, "Prefix name too long");
+    {
+      *err_ret = srv_make_new_error ("42000", FILE_SZ_ERR_CODE, "Prefix name too long");
+      return NULL;
+    }
 
   ctx = (ol_backup_context_t*) dk_alloc (sizeof (ol_backup_context_t));
   memset (ctx, 0, sizeof (ol_backup_context_t));
@@ -924,7 +933,7 @@ backup_context_allocate(const char* fileprefix,
   else
     {
       dk_free (ctx, sizeof (ol_backup_context_t));
-      sqlr_new_error ("42000", BACKUP_FILE_CR_ERR_CODE, "Could not create backup file %s", ctx->octx_curr_file);
+      *err_ret = srv_make_new_error ("42000", BACKUP_FILE_CR_ERR_CODE, "Could not create backup file %s", ctx->octx_curr_file);
       return NULL; /* keeps compiler happy */
     }
 }
@@ -1039,19 +1048,59 @@ static int try_to_change_dir (ol_backup_context_t * ctx)
   return 0;
 }
 
+#define OB_IN_CPT(need_mtx,qi) \
+  if (need_mtx) \
+    IN_CPT (qi->qi_trx); \
+  else \
+    { \
+      IN_TXN; \
+      lt_threads_dec_inner (qi->qi_trx); \
+      LEAVE_TXN; \
+    } 
+
+#define OB_LEAVE_CPT(need_mtx,qi) \
+      if (need_mtx) \
+	{ \
+	  IN_TXN; \
+	  cpt_over (); \
+	  LEAVE_TXN; \
+	  LEAVE_CPT(qi->qi_trx); \
+	} \
+      else \
+	{ \
+	  IN_TXN; \
+	  lt_threads_inc_inner (qi->qi_trx); \
+	  LEAVE_TXN; \
+	}
+
 long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_path_arr, query_instance_t *qi)
 {
-  ol_backup_context_t * ctx = backup_context_allocate(prefix, pages, timeout, backup_path_arr);
-  long _pages = ctx->octx_page_count;
+  ol_backup_context_t * ctx;
+  long _pages;
+  int need_mtx = !srv_have_global_lock(THREAD_CURRENT_THREAD);
+  char * log_name;
+  caddr_t err = NULL;
+
+  OB_IN_CPT (need_mtx,qi);
+
+  log_name = sf_make_new_log_name (wi_inst.wi_master);
+  IN_TXN;
+  dbs_checkpoint (wi_inst.wi_master, log_name, CPT_INC_RESET);
+  LEAVE_TXN;
+
+  ctx = backup_context_allocate (prefix, pages, timeout, backup_path_arr, &err);
+  if (err)
+    {
+      OB_LEAVE_CPT (need_mtx,qi);
+      sqlr_resignal (err);
+    }
+
+  _pages = ctx->octx_page_count;
+  time (&db_bp_date);
   ctx->octx_free_set = read_free_set_from_disk();
-
-
   memset (&backup_status, 0, sizeof (backup_status_t));
   backup_status.is_running = 1;
   backup_status.pages = dbs_count_incbackup_pages (wi_inst.wi_master);
-
-  time (&db_bp_date);
-  IN_CPT (qi->qi_trx);
 
   dir_first_page = 0;
   CATCH_WRITE_FAIL (ctx->octx_file)
@@ -1083,10 +1132,8 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 
-  LEAVE_CPT(qi->qi_trx);
-
+  OB_LEAVE_CPT (need_mtx,qi);
   _pages = ctx->octx_page_count - _pages;
-
   backup_context_free(ctx);
   backup_status.is_running = 0;
   return _pages;
@@ -1101,7 +1148,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   backup_status.is_error = 1;
   backup_status.is_running = 0;
 
-  LEAVE_CPT(qi->qi_trx);
+  OB_LEAVE_CPT (need_mtx,qi);
   backup_context_free (ctx);
 
   sqlr_new_error ("42000", backup_status.errcode, backup_status.errstring);
@@ -1347,14 +1394,7 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 
   bp_sec_user_check (qi);
 
-  if (need_mtx)
-    IN_CPT (qi->qi_trx);
-  else
-    {
-      IN_TXN;
-      lt_threads_dec_inner (qi->qi_trx);
-      LEAVE_TXN;
-    }
+  OB_IN_CPT (need_mtx, qi);
 
   memset (&bp_ctx, 0, sizeof (ol_backup_ctx_t));
 
@@ -1397,19 +1437,7 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
     dbs_write_cfg_page (dbs, 0);
 
-    if (need_mtx)
-      {
-	IN_TXN;
-	cpt_over ();
-	LEAVE_TXN;
-	LEAVE_CPT(qi->qi_trx);
-      }
-    else
-      {
-	IN_TXN;
-	lt_threads_inc_inner (qi->qi_trx);
-	LEAVE_TXN;
-      }
+  OB_LEAVE_CPT (need_mtx, qi);
 
   return NEW_DB_NULL;
 }
