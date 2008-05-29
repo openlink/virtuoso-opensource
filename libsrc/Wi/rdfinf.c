@@ -38,6 +38,7 @@
 #include "xmltree.h"
 #include "arith.h"
 #include "rdfinf.h"
+#include "rdf_core.h"
 
 
 dk_set_t
@@ -139,6 +140,8 @@ sas_ensure ()
 
 
 caddr_t same_as_iri;
+caddr_t owl_sub_class_iri = NULL;
+caddr_t owl_sub_property_iri = NULL;
 
 
 void
@@ -434,6 +437,16 @@ ric_iri_to_sub (rdf_inf_ctx_t * ctx, caddr_t iri)
   {
     NEW_VARZ (rdf_sub_t, rs);
     rs->rs_iri = box_copy (iri);
+
+    rs->rs_superclasses_ht = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    id_hash_set_rehash_pct (rs->rs_superclasses_ht, 200);
+    rs->rs_subclasses_ht = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    id_hash_set_rehash_pct (rs->rs_subclasses_ht, 200);
+    rs->rs_subproperties_ht = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    id_hash_set_rehash_pct (rs->rs_subproperties_ht, 200);
+    rs->rs_superproperties_ht = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    id_hash_set_rehash_pct (rs->rs_superproperties_ht, 200);
+
     id_hash_set (ctx->ric_iri_to_sub, (caddr_t)&rs->rs_iri, (caddr_t)&rs);
     return rs;
   }
@@ -441,14 +454,17 @@ ric_iri_to_sub (rdf_inf_ctx_t * ctx, caddr_t iri)
 
 
 void
-dk_set_pushnew_equal (dk_set_t * s, void* box)
+dk_set_pushnew_equal (dk_set_t * s, id_hash_t * ht, void* box, int check_exists)
 {
-  DO_SET (caddr_t, elt, s)
+  caddr_t place;
+  ptrlong one = 1;
+  if (check_exists)
     {
-      if (box_equal (elt, (caddr_t) box))
+      place = id_hash_get (ht, (caddr_t)&box);
+      if (place)
 	return;
+      id_hash_set (ht, (caddr_t)&box, (caddr_t)&one);
     }
-  END_DO_SET ();
   dk_set_push (s, box);
 }
 
@@ -460,6 +476,7 @@ bif_rdf_inf_super (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t super = bif_arg (qst, args, 1, "rdf_inf_super");
   caddr_t sub = bif_arg (qst, args, 2, "rdf_inf_super");
   int is_cl = bif_long_arg (qst, args, 3, "rdf_inf_super");
+  int check_exists  = BOX_ELEMENTS (args) > 4 ? bif_long_arg (qst, args, 4, "rdf_inf_super") : 1;
   rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name);
   rdf_inf_ctx_t * ctx;
   rdf_sub_t * super_rs, * sub_rs;
@@ -471,6 +488,7 @@ bif_rdf_inf_super (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&c1);
       ctx = c1;
       ctx->ric_iri_to_sub = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
+      id_hash_set_rehash_pct (ctx->ric_iri_to_sub, 200);
     }
   else
     ctx = * place;
@@ -478,13 +496,13 @@ bif_rdf_inf_super (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   super_rs = ric_iri_to_sub (ctx, super);
   if (is_cl)
     {
-      dk_set_pushnew_equal (&super_rs->rs_subclasses, box_copy (sub));
-      dk_set_pushnew_equal (&sub_rs->rs_superclasses, box_copy (super));
+      dk_set_pushnew_equal (&super_rs->rs_subclasses, super_rs->rs_subclasses_ht, box_copy (sub), check_exists);
+      dk_set_pushnew_equal (&sub_rs->rs_superclasses, sub_rs->rs_superclasses_ht, box_copy (super), check_exists);
     }
   else
     {
-      dk_set_pushnew_equal (&super_rs->rs_subproperties, box_copy (sub));
-      dk_set_pushnew_equal (&sub_rs->rs_superproperties, box_copy (super));
+      dk_set_pushnew_equal (&super_rs->rs_subproperties, super_rs->rs_subproperties_ht, box_copy (sub), check_exists);
+      dk_set_pushnew_equal (&sub_rs->rs_superproperties, sub_rs->rs_superproperties_ht, box_copy (super), check_exists);
     }
   return 0;
 }
@@ -514,6 +532,29 @@ bif_rdf_sas_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (same_as_iri);
 }
 
+caddr_t
+bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int flag = bif_long_arg (qst, args, 0, "rdf_owl_iri");
+  caddr_t err = NULL;
+  if (!owl_sub_class_iri)
+    {
+      caddr_t name;
+      name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subClassOf");
+      owl_sub_class_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
+      dk_free_box (name);
+      if (err) sqlr_resignal (err);
+      name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subPropertyOf");
+      owl_sub_property_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
+      dk_free_box (name);
+      if (err) sqlr_resignal (err);
+    }
+  if (flag)
+    return box_copy_tree (owl_sub_class_iri);
+  else
+    return box_copy_tree (owl_sub_property_iri);
+}
+
 
 void
 sas_init ()
@@ -533,10 +574,12 @@ void
 rdf_inf_init ()
 {
   rdf_name_to_ric = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  id_hash_set_rehash_pct (rdf_name_to_ric, 200);
   bif_define ("rdf_inf_super", bif_rdf_inf_super);
   bif_define ("rdf_inf_const_init", bif_rdf_inf_const_init);
   bif_define ("rdf_inf_clear", bif_rdf_inf_clear);
   bif_define ("rdf_sas_iri", bif_rdf_sas_iri);
+  bif_define ("rdf_owl_iri", bif_rdf_owl_iri);
   sas_init ();
 }
 
@@ -886,6 +929,7 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
       memset (ctx, 0, sizeof (rdf_inf_ctx_t));
       ctx->ric_name = box_dv_short_string ("dummy");
       ctx->ric_iri_to_sub = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      id_hash_set_rehash_pct (ctx->ric_iri_to_sub, 200);
     }
   do
     {

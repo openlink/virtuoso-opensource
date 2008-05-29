@@ -31,6 +31,10 @@ typedef struct rdf_sub_s
   dk_set_t	rs_subclasses;
   dk_set_t	rs_subproperties;
   dk_set_t	rs_superproperties;
+  id_hash_t *   rs_superclasses_ht;
+  id_hash_t *   rs_subclasses_ht;
+  id_hash_t *   rs_subproperties_ht;
+  id_hash_t *   rs_superproperties_ht;
   char		rs_transitive;
 } rdf_sub_t;
 

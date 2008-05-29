@@ -10717,33 +10717,41 @@ create procedure rdfs_pn (in is_class int)
 ;
 
 
-create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in visited any)
+create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in visited any, inout supers any, in pos int)
 {
   for select o from rdf_quad where g = gr and p = rdf_sas_iri () and s = c do
     {
-      rdfs_closure_1 (gr, name, super_c, o, 0, visited);
+      rdfs_closure_1 (gr, name, super_c, o, 0, visited, supers, pos);
     }
   for select s from rdf_quad where g = gr and p = rdf_sas_iri () and o = c do
     {
-      rdfs_closure_1 (gr, name, super_c, s, 0, visited);
+      rdfs_closure_1 (gr, name, super_c, s, 0, visited, supers, pos);
     }
 }
 ;
 
-create procedure rdfs_closure_1 (in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any)
+create procedure rdfs_closure_1
+(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, in pos int)
 {
-  rdf_inf_super (name, super_c, c, is_class);
-  rdf_inf_super (name, c, c, is_class);
-  --dbg_printf ('registered: super=[%s] sub=[%s]', id_to_iri (super_c), id_to_iri (c));
+  declare i int;
   if (dict_get (visited, c))
     return;
   dict_put (visited, c, 1);
-  for select s from rdf_quad where g = gr and p =  rdfs_pn (is_class) and o = c do
+  if (pos >= length (supers))
+    supers := vector_concat (supers, make_array (100, 'any'));
+  supers [pos] := c;
+  for (i := 0; i <= pos; i := i + 1)
     {
-      rdfs_closure_1 (gr, name, super_c, s, is_class, visited);
-      if (not is_class)
-	rdf_owl_sas_p (gr, name, super_c, s, visited);
+      --dbg_printf ('registered: super=[%s] sub=[%s]', id_to_iri (supers[i]), id_to_iri (c));
+      rdf_inf_super (name, supers[i], c, is_class, 1);
     }
+  for select s from rdf_quad where g = gr and p =  rdf_owl_iri (is_class) and o = c do
+    {
+      rdfs_closure_1 (gr, name, super_c, s, is_class, visited, supers, pos + 1);
+      if (not is_class)
+	rdf_owl_sas_p (gr, name, super_c, s, visited, supers, pos + 1);
+    }
+  supers[pos] := 0;
 }
 ;
 
@@ -10752,18 +10760,24 @@ create procedure rdfs_load_schema (in name varchar, in gn varchar)
 {
   declare gr iri_id;
   declare visited any;
+  declare supers any;
   gr := iri_to_id (gn, 0, 0);
   if (isinteger (gr))
     return;
-  for select o from rdf_quad where g = gr and p = rdfs_pn (1) do
+  supers := make_array (100, 'any');
+  for select a.o as o from rdf_quad a where a.g = gr and a.p = rdf_owl_iri (1)
+    and not exists (select 1 from rdf_quad b where b.g = a.g and b.p = a.p and a.o = b.s)
+    do
     {
-      rdfs_closure_1 (gr, name, o, o, 1, dict_new ());
+      rdfs_closure_1 (gr, name, o, o, 1, dict_new (), supers, 0);
     }
-  for select o from rdf_quad where g = gr and p = rdfs_pn (0) do
+  supers := make_array (100, 'any');
+  for select a.o as o from rdf_quad a where a.g = gr and a.p = rdf_owl_iri (0)
+    and not exists (select 1 from rdf_quad b where b.g = a.g and b.p = a.p and a.o = b.s)
+    do
     {
-      rdfs_closure_1 (gr, name, o, o, 0, dict_new ());
+      rdfs_closure_1 (gr, name, o, o, 0, dict_new (), supers, 0);
     }
-
 }
 ;
 
