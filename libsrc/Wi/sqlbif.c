@@ -134,9 +134,10 @@ bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 caddr_t
 bif_arg_unrdf (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
+  caddr_t arg;
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
-  caddr_t arg = bif_arg_nochecks(qst,args,nth);
+  arg = bif_arg_nochecks(qst,args,nth);
   if (DV_RDF != DV_TYPE_OF (arg))
     return arg;
   if (!((rdf_box_t *)arg)->rb_is_complete)
