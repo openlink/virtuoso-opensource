@@ -159,7 +159,11 @@ dk_alloc_box (size_t bytes, dtp_t tag)
     GPF_T1 ("box to allocate is too large");
 #endif
   /* This assumes dk_alloc aligns at least at 4 */
+#ifdef DOUBLE_ALIGN
+  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes);
+#else
   align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#endif
 
 #ifdef DOUBLE_ALIGN
   align_bytes += 8;
