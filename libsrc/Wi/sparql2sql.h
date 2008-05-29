@@ -512,7 +512,7 @@ extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_r
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
 
-extern caddr_t ssg_find_formatter_by_name (ccaddr_t name);
+extern const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype);
 
 /*! Field is the expression that represents the value of a SPARQL variable. */
 typedef struct spar_sqlgen_var_s
@@ -577,6 +577,7 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
+extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, caddr_t box, int allow_uname);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit);

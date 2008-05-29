@@ -136,6 +136,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
+%token DATA_L		/*:: PUNCT_SPAR_LAST("DATA") ::*/
 %token DATATYPE_L	/*:: PUNCT_SPAR_LAST("DATATYPE") ::*/
 %token DEFAULT_L	/*:: PUNCT_SPAR_LAST("DEFAULT") ::*/
 %token DEFINE_L		/*:: PUNCT_SPAR_LAST("DEFINE") ::*/
@@ -328,7 +329,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_sparul_actions
 %type <tree> spar_sparul_action
 %type <tree> spar_sparul_insert
+%type <tree> spar_sparul_insertdata
 %type <tree> spar_sparul_delete
+%type <tree> spar_sparul_deletedata
 %type <tree> spar_sparul_modify
 %type <tree> spar_sparul_clear
 %type <tree> spar_sparul_load
@@ -1203,9 +1206,12 @@ spar_sparul_actions
 
 spar_sparul_action		/* [DML]	SparulAction	 ::=  */
 			/*... CreateAction | DropAction | LoadAction	*/
-			/*... | InsertAction | DeleteAction | ModifyAction | ClearAction	*/
+			/*... | InsertAction | InsertDataAction | DeleteAction | DeleteDataAction	*/
+			/*... | ModifyAction | ClearAction	*/
 	: spar_sparul_insert
+	| spar_sparul_insertdata
 	| spar_sparul_delete
+	| spar_sparul_deletedata
 	| spar_sparul_modify
 	| spar_sparul_clear
 	| spar_sparul_load
@@ -1229,6 +1235,20 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
                 spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $4); }
 	;
 
+spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
+			/*... 'INSERT' 'DATA' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? */
+			/*... PrecodeExpn ConstructTemplate	*/
+	: INSERT_L DATA_L spar_in_graph_precode_opt {
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+            spar_ctor_template {
+                SPART **fake = spar_make_fake_action_solution (sparp_arg);
+		$$ = spar_make_top (sparp_arg, INSERT_L, NULL,
+                  spar_selid_pop (sparp_arg),
+                  fake[0], (SPART **)(fake[1]), (caddr_t)(fake[2]), (caddr_t)(fake[3]) );
+                spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $5); }
+	;
+
 spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 			/*... 'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
@@ -1240,6 +1260,20 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
                   spar_selid_pop (sparp_arg),
 		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) );
                 spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $4); }
+	;
+
+spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
+			/*... 'DELETE' 'DATA' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )?	*/
+			/*... PrecodeExpn ConstructTemplate	*/
+	: DELETE_L DATA_L spar_from_graph_precode_opt {
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+            spar_ctor_template {
+                SPART **fake = spar_make_fake_action_solution (sparp_arg);
+		$$ = spar_make_top (sparp_arg, DELETE_L, NULL,
+                  spar_selid_pop (sparp_arg),
+                  fake[0], (SPART **)(fake[1]), (caddr_t)(fake[2]), (caddr_t)(fake[3]) );
+                spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $5); }
 	;
 
 spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */

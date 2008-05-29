@@ -426,6 +426,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{C}{O}{N}{S}{T}{R}{U}{C}{T}	{ return CONSTRUCT_L	; }
 <SPARQL>{C}{O}{U}{N}{T}			{ BEGIN SPARQL_AFTER_COUNT; }
 <SPARQL>{C}{R}{E}{A}{T}{E}		{ return CREATE_L	; }
+<SPARQL>{D}{A}{T}{A}			{ return DATA_L		; }
 <SPARQL>{D}{A}{T}{A}{T}{Y}{P}{E}	{ return DATATYPE_L	; }
 <SPARQL>{D}{E}{F}{A}{U}{L}{T}		{ return DEFAULT_L	; }
 <SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }

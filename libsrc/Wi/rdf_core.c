@@ -1349,10 +1349,16 @@ re_search:
 int 
 iri_split (char * iri, caddr_t * pref, caddr_t * name)
 {
-  char * local_start = strrchr (iri, '#');
+  char * local_start;
   int len = strlen (iri);
   if (len > MAX_RULING_PART_BYTES - 20)
     return 0;
+  if (('_' == iri[0]) && (':' == iri[1]))
+    { /* named blank node is a special case. Label can contain weird chars but it is treated as */
+      local_start = iri + 2;
+      goto local_start_found; /* see below */
+    }
+  local_start = strrchr (iri, '#');
   if (!local_start)
     local_start = strrchr (iri, '?');
   if (!local_start)
@@ -1376,6 +1382,8 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
     }
   else 
     local_start++;
+
+local_start_found:
   *pref = box_dv_short_nchars (iri, local_start - iri);
   *name = box_dv_short_nchars (local_start - 4, 4 + strlen (local_start));
   return 1;
@@ -1423,7 +1431,11 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
       return box_iri_id (iri_id_no);
     }
   local_copy = box_copy (local);
-  iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local, make_new ? "RDF_URL_IID_NAMED" : NULL);
+  iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local,
+    (  make_new ? 
+      ((('_' == name[0]) && (':' == name[1])) ?
+        "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
+      NULL ) );
   if(!iri_id)
     {
       dk_free_box (local_copy);
@@ -1677,7 +1689,7 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t iri;
   if (0L == iid)
     return NEW_DB_NULL;
-  if (min_bnode_iri_id () <= iid)
+  if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
     {
       iri = BNODE_IID_TO_LABEL(iid);
       box_flags (iri) = BF_IRI;

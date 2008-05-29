@@ -203,9 +203,12 @@ User-level object is of type DV_XML_ENTITY. */
 typedef unsigned int64 iri_id_t;
 #define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
+#define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
+#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
 #define unbox_iri_id(i) (*(iri_id_t*)(i))
 extern int bnode_iri_ids_are_huge;
 #define min_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_BNODE_IRI_ID : MIN_32BIT_BNODE_IRI_ID)
+#define min_named_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_NAMED_BNODE_IRI_ID : MIN_32BIT_NAMED_BNODE_IRI_ID)
 
 
 #define DV_IRI_ID 243

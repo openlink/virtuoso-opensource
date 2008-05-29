@@ -5036,6 +5036,12 @@ bif_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_min_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (min_named_bnode_iri_id());
+}
+
+caddr_t
 bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "iri_id_bnode32_to_bnode64");
@@ -5047,7 +5053,9 @@ bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t **
     return box_iri_id (iid);
   if (iid >= MIN_64BIT_BNODE_IRI_ID)
     sqlr_new_error ("22012", "SR563", "64 bit bnode IRI ID is not a valid argument of iri_id_bnode32_to_bnode64() function");
+  if (iid < MIN_32BIT_NAMED_BNODE_IRI_ID)
   return box_iri_id (iid + (MIN_64BIT_BNODE_IRI_ID - MIN_32BIT_BNODE_IRI_ID));
+  return box_iri_id (iid + (MIN_64BIT_NAMED_BNODE_IRI_ID - MIN_32BIT_NAMED_BNODE_IRI_ID));
 }
 
 caddr_t
@@ -5057,9 +5065,21 @@ bif_min_32bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 }
 
 caddr_t
+bif_min_32bit_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_32BIT_NAMED_BNODE_IRI_ID);
+}
+
+caddr_t
 bif_min_64bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return box_iri_id (MIN_64BIT_BNODE_IRI_ID);
+}
+
+caddr_t
+bif_min_64bit_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_64BIT_NAMED_BNODE_IRI_ID);
 }
 
 caddr_t
@@ -12745,8 +12765,11 @@ sql_bif_init (void)
   bif_define_typed ("iri_id_from_num", bif_iri_id_from_num, &bt_iri);
   bif_define ("__set_64bit_min_bnode_iri_id", bif_set_64bit_min_bnode_iri_id);
   bif_define_typed ("min_bnode_iri_id", bif_min_bnode_iri_id, &bt_iri);
+  bif_define_typed ("min_named_bnode_iri_id", bif_min_named_bnode_iri_id, &bt_iri);
   bif_define_typed ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, &bt_iri);
+  bif_define_typed ("min_32bit_named_bnode_iri_id", bif_min_32bit_named_bnode_iri_id, &bt_iri);
   bif_define_typed ("min_64bit_bnode_iri_id", bif_min_64bit_bnode_iri_id, &bt_iri);
+  bif_define_typed ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, &bt_iri);
   bif_define_typed ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, &bt_iri);
 
   bif_define ("__all_eq", bif_all_eq);

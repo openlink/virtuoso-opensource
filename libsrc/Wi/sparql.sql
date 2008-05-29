@@ -131,6 +131,9 @@ sequence_set ('RDF_PREF_SEQ', 1, 1)
 sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1)
 ;
 
+sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()), 1)
+;
+
 sequence_set ('RDF_RO_ID', 1, 1)
 ;
 
@@ -278,6 +281,7 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
       sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
       sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
+      sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()), 0);
       sequence_set ('RDF_PREF_SEQ', 1, 0);
       sequence_set ('RDF_RO_ID', 1, 0);
       sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
@@ -287,7 +291,8 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       raw_exit ();
     }
   sequence_set ('RDF_URL_IID_NAMED', 1000000, 1);
-  sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
+  sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
+  sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()), 1);
   sequence_set ('RDF_PREF_SEQ', 1, 1);
   sequence_set ('RDF_RO_ID', 1, 1);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1);
@@ -317,7 +322,8 @@ virtrdf:DefaultQuadStorage-UserMaps
   delete from SYS_HTTP_SPONGE where HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
   commit work;
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);
-  sequence_set ('RDF_URL_IID_BLANK', 1000010000, 1);
+  sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()) + 10000, 1);
+  sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()) + 10000, 1);
   sequence_set ('RDF_PREF_SEQ', 101, 1);
   sequence_set ('RDF_RO_ID', 1001, 1);
   iri_id_cache_flush ();
@@ -3123,7 +3129,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
           o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
           if (not rdf_box_is_storeable (o_final))
             {
-              dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
+              -- dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
               signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
         }
         }
@@ -3132,7 +3138,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
           o_final := DB.DBA.RDF_OBJ_OF_LONG (o_final);
           if (not rdf_box_is_storeable (o_final))
             {
-              dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig, '=>', o_final);
+              -- dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig, '=>', o_final);
               signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
             }
         }
@@ -6525,7 +6531,7 @@ create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options a
   if (not get_keyword ('refresh_free_text', options, 0))
     return;
   g_iri := get_keyword ('get:group-destination', options);
-  --dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has g_iri = ', g_iri);
+  -- dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has g_iri = ', g_iri);
   if (isstring (g_iri) and __rdf_obj_ft_rule_count_in_graph (iri_to_id (g_iri)))
     {
       VT_INC_INDEX_DB_DBA_RDF_OBJ();
@@ -6580,7 +6586,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
       call (get_keyword ('loader', env))(url, opts);
       commit work;
       dict_put (grabbed, url, final_dest);
-      --dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
+      -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
       if (get_keyword ('refresh_free_text', env, 0) and
         (__rdf_obj_ft_rule_count_in_graph (iri_to_id (final_dest)) or
           __rdf_obj_ft_rule_count_in_graph (iri_to_id (final_gdest)) ) )
@@ -6602,7 +6608,7 @@ end_of_sponge:
 
 create procedure DB.DBA.RDF_GRAB_SINGLE_ASYNC (in val any, in grabbed any, in env any, in counter_limit integer := 1)
 {
-  --dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE_ASYNC (', val, ', { dict of size ', dict_size (grabbed), ' }, ', env, counter_limit);
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE_ASYNC (', val, ', { dict of size ', dict_size (grabbed), ' }, ', env, counter_limit);
   if (dict_size (grabbed) < counter_limit)
     DB.DBA.RDF_GRAB_SINGLE (val, grabbed, vector_concat (vector ('refresh_free_text', 0), env));
 }
@@ -6683,7 +6689,7 @@ DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final v
   declare stat, msg varchar;
   declare grab_params, all_params any;
   declare grabbed, metas, rset, aq any;
-  dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, group_destination, resolver, loader, plain_ret, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, group_destination, resolver, loader, plain_ret, ')');
   grab_params := vector ('sa_graphs', sa_graphs, 'sa_preds', sa_preds,
     'doc_limit', doc_limit, 'base_iri', base_iri,
     'get:destination', destination,
@@ -6696,7 +6702,7 @@ DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final v
   grabbed := dict_new ();
   foreach (any val in const_iris) do
     {
-      dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
+      -- dbg_obj_princ ('DB.DBA.RDF_GRAB: const IRI', val);
       if (val is not null)
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () aq_request ', vector (val, '...', grab_params, doc_limit));
@@ -10274,7 +10280,8 @@ virtrdf:DefaultQuadStorage-UserMaps
     }
   DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);
-  sequence_set ('RDF_URL_IID_BLANK', 1000010000, 1);
+  sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()) + 10000, 1);
+  sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()) + 10000, 1);
   sequence_set ('RDF_PREF_SEQ', 101, 1);
   sequence_set ('RDF_RO_ID', 1001, 1);
 }

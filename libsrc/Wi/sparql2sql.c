@@ -2907,6 +2907,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
     }
   if (NULL != value)
     {
+      dest->rvrRestrictions |= SPART_VARR_FIXED;
       if (SPAR_QNAME == SPART_TYPE (value))
         {
 #ifdef DEBUG
@@ -2914,12 +2915,12 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             GPF_T1 ("sparp_" "rvr_set_by_constant(): bad QNAME");
 #endif
           dest->rvrFixedValue = value->_.lit.val;
-          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= ((SPART_IRI_IS_NAMED_BNODE (dest->rvrFixedValue)) ? SPART_VARR_IS_BLANK : SPART_VARR_IS_REF);
         }
       else if (DV_UNAME == DV_TYPE_OF (value))
         {
           dest->rvrFixedValue = (ccaddr_t)value;
-          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= ((SPART_IRI_IS_NAMED_BNODE (dest->rvrFixedValue)) ? SPART_VARR_IS_BLANK : SPART_VARR_IS_REF);
         }
       else
         {
@@ -2928,7 +2929,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
                 GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
 #endif
           dest->rvrFixedValue = (ccaddr_t)value;
-          dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= SPART_VARR_IS_LIT;
         }
     }
 }
