@@ -305,49 +305,49 @@ prefix owl: <http://www.w3.org/2002/07/owl#>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 
 create iri class northwind:category_iri using
-    function DB.DBA.CATEGORY_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.CATEGORY_IRI_INVERSE (in customer_iri varchar) returns integer .
+    function DB.DBA.CATEGORY_IRI (in category_id integer) returns varchar,
+    function DB.DBA.CATEGORY_IRI_INVERSE (in category_iri varchar) returns integer .
 create iri class northwind:shipper_iri using
-    function DB.DBA.SHIPPER_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.SHIPPER_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.SHIPPER_IRI (in shipper_id integer) returns varchar,
+    function DB.DBA.SHIPPER_IRI_INVERSE (in shipper_iri varchar) returns integer.
 create iri class northwind:supplier_iri using
-    function DB.DBA.SUPPLIER_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.SUPPLIER_IRI_INVERSE (in customer_iri varchar) returns varchar.
+    function DB.DBA.SUPPLIER_IRI (in supplier_id varchar) returns varchar,
+    function DB.DBA.SUPPLIER_IRI_INVERSE (in supplier_iri varchar) returns varchar.
 create iri class northwind:product_iri using
-    function DB.DBA.PRODUCT_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.PRODUCT_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.PRODUCT_IRI (in product_id integer) returns varchar,
+    function DB.DBA.PRODUCT_IRI_INVERSE (in product_iri varchar) returns integer.
 create iri class northwind:customer_iri using
     function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar.
 create iri class northwind:employee_iri using
-    function DB.DBA.EMPLOYEE_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.EMPLOYEE_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.EMPLOYEE_IRI (in employee_id integer) returns varchar,
+    function DB.DBA.EMPLOYEE_IRI_INVERSE (in employee_iri varchar) returns integer.
 create iri class northwind:order_iri using
-    function DB.DBA.ORDER_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.ORDER_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.ORDER_IRI (in order_id integer) returns varchar,
+    function DB.DBA.ORDER_IRI_INVERSE (in order_iri varchar) returns integer.
 create iri class northwind:customercontact_iri using
-    function DB.DBA.CUSTOMERCONTACT_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customer_iri varchar) returns varchar.
+    function DB.DBA.CUSTOMERCONTACT_IRI (in customercontact_id varchar) returns varchar,
+    function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customercontact_iri varchar) returns varchar.
 create iri class northwind:orderline_iri using
-    function DB.DBA.ORDERLINE_IRI (in customer_id integer, in customer_id2 integer) returns varchar,
-    function DB.DBA.ORDERLINE_IRI_INV_1 (in customer_iri varchar) returns integer,
-    function DB.DBA.ORDERLINE_IRI_INV_2 (in customer_iri varchar) returns integer.
+    function DB.DBA.ORDERLINE_IRI (in orderline_id integer, in orderline_id2 integer) returns varchar,
+    function DB.DBA.ORDERLINE_IRI_INV_1 (in orderline_iri varchar) returns integer,
+    function DB.DBA.ORDERLINE_IRI_INV_2 (in orderline_iri varchar) returns integer.
 create iri class northwind:province_iri using
-    function DB.DBA.PROVINCE_IRI (in customer_id varchar, in customer_id2 varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_1 (in customer_iri varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_2 (in customer_iri varchar) returns varchar.
+    function DB.DBA.PROVINCE_IRI (in province_id varchar, in province_id2 varchar) returns varchar,
+    function DB.DBA.PROVINCE_IRI_INV_1 (in province_iri varchar) returns varchar,
+    function DB.DBA.PROVINCE_IRI_INV_2 (in province_iri varchar) returns varchar.
 create iri class northwind:country_iri using
-    function DB.DBA.COUNTRY_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.COUNTRY_IRI_INVERSE (in customer_iri varchar) returns varchar.
+    function DB.DBA.COUNTRY_IRI (in country_id varchar) returns varchar,
+    function DB.DBA.COUNTRY_IRI_INVERSE (in country_iri varchar) returns varchar.
 create iri class northwind:employeephoto_iri using
-    function DB.DBA.EMPLOYEEPHOTO_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.EMPLOYEEPHOTO_IRI (in employeephoto_id integer) returns varchar,
+    function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in employeephoto_iri varchar) returns integer.
 create iri class northwind:categoryphoto_iri using
-    function DB.DBA.CATEGORYPHOTO_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.CATEGORYPHOTO_IRI (in categoryphoto_id integer) returns varchar,
+    function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in categoryphoto_iri varchar) returns integer.
 create iri class northwind:flag_iri using
-    function DB.DBA.FLAG_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.FLAG_IRI_INVERSE (in customer_iri varchar) returns varchar.
+    function DB.DBA.FLAG_IRI (in flag_id varchar) returns varchar,
+    function DB.DBA.FLAG_IRI_INVERSE (in flag_iri varchar) returns varchar.
 ;
 
 SPARQL
