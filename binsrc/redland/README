@@ -23,5 +23,26 @@ Test virtuoso storage whit some utility:
  export LD_LIBRARY_PATH=virtuoso_driver:$LD_LIBRARY_PATH
  export ODBCINI=odbc.ini
  
-rdfproc test query sparql 'http://m3pe.org' 'SELECT ?p ?o WHERE { <http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage> ?p ?o }' -r xml -t "query='sparql SELECT ?o ?p WHERE {<http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage> ?p ?o }',user='dba',password='dba', dsn='1111'"
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red add aa bb cc  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red add aa a2 _:cc  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red add aa a2 "cc"  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red add mm nn "Some long literal with language@en"  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red add <oo> <pp> \"12345\"^^<http://www.w3.org/2001/XMLSchema#int>
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red print 
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red size 
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red arc aa cc  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" red arcs aa cc  
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr arcs-in aa   
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr arcs-out aa   
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr contains aa a2 cc
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr find aa - -
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr has-arc-in yy zz
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr has-arc-out aa bb
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr query sparql - "SELECT * WHERE { ?s ?p ?o }"
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr remove aa bb cc
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr source a2 cc
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr sources a2 cc
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr target aa a2
+rdfproc -r xml -t "user='dba',password='dba',dsn='Demo'" gr targets
+
 

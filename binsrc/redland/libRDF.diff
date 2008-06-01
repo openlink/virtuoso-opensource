@@ -1,8 +1,7 @@
-Index: configure.ac
-===================================================================
---- configure.ac	(revision 12275)
-+++ configure.ac	(working copy)
-@@ -712,6 +712,82 @@
+diff -ur ./redland-1.0.7/configure.ac ./redland-1.0.7.new/configure.ac
+--- ./redland-1.0.7/configure.ac	2007-12-17 17:48:47.000000000 +1000
++++ ./redland-1.0.7.new/configure.ac	2008-05-31 11:19:36.000000000 +1100
+@@ -723,6 +723,82 @@
  fi
  
  
@@ -39,11 +38,11 @@ Index: configure.ac
 +    case "$with_virtuoso" in
 +	yes) 
 +	   virt_CFLAGS=""
-+	   virt_LDFLAGS="-liodbc"
++	   virt_LDFLAGS="$with_virtuoso/lib/virtodbc_r.a"
 +	   ;;
 +	*) 
 +	   virt_CFLAGS="-I$with_virtuoso/include"
-+	   virt_LDFLAGS="-L$with_virtuoso/lib -liodbc"
++	   virt_LDFLAGS="$with_virtuoso/lib/virtodbc_r.a"
 +	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_virtuoso/lib" 
 +	   export LD_LIBRARY_PATH 
 +	   ;;
@@ -85,7 +84,15 @@ Index: configure.ac
  
  AC_ARG_WITH(sqlite, [  --with-sqlite(=yes|no|2|3) Enable SQLite store with version (default=auto)], sqlite_api_version="$withval", sqlite_api_version="auto")
  AC_ARG_WITH(sqlite-version, [  --with-sqlite-version(=yes|no|2|3) SQLite version to use (default=auto)], sqlite_api_version="$withval")
-@@ -841,6 +917,7 @@
+@@ -813,6 +889,7 @@
+   AC_DEFINE(STORAGE_MYSQL,  1, [Building MySQL storage])
+   AC_DEFINE(STORAGE_SQLITE, 1, [Building SQLite storage])
+   AC_DEFINE(STORAGE_TSTORE, 1, [Building 3store storage])
++  AC_DEFINE(STORAGE_VIRTUOSO, 1, [Building Virtuoso storage])
+   AC_DEFINE(STORAGE_POSTGRESQL, 1, [Building PostgreSQL storage])
+ fi
+ 
+@@ -852,6 +929,7 @@
  AM_CONDITIONAL(STORAGE_HASHES, test $hashes_storage = yes)
  AM_CONDITIONAL(STORAGE_MEMORY, test $memory_storage = yes)
  AM_CONDITIONAL(STORAGE_MYSQL,  test $mysql_storage  = yes)
@@ -93,11 +100,24 @@ Index: configure.ac
  AM_CONDITIONAL(STORAGE_SQLITE, test $sqlite_storage = yes)
  AM_CONDITIONAL(STORAGE_TSTORE, test $tstore_storage = yes)
  AM_CONDITIONAL(STORAGE_POSTGRESQL, test $postgresql_storage = yes)
-Index: librdf/rdf_internal.h
-===================================================================
---- librdf/rdf_internal.h	(revision 12275)
-+++ librdf/rdf_internal.h	(working copy)
-@@ -78,6 +78,7 @@
+diff -ur ./redland-1.0.7/librdf/Makefile.am ./redland-1.0.7.new/librdf/Makefile.am
+--- ./redland-1.0.7/librdf/Makefile.am	2007-12-17 16:51:58.000000000 +1000
++++ ./redland-1.0.7.new/librdf/Makefile.am	2008-05-06 20:28:47.000000000 +1100
+@@ -150,6 +150,10 @@
+ librdf_la_SOURCES += rdf_storage_mysql.c
+ endif
+ 
++if STORAGE_VIRTUOSO
++librdf_la_SOURCES += rdf_storage_virtuoso.c
++endif
++
+ if STORAGE_SQLITE
+ librdf_la_SOURCES += rdf_storage_sqlite.c
+ endif
+diff -ur ./redland-1.0.7/librdf/rdf_internal.h ./redland-1.0.7.new/librdf/rdf_internal.h
+--- ./redland-1.0.7/librdf/rdf_internal.h	2007-09-22 01:23:33.000000000 +1100
++++ ./redland-1.0.7.new/librdf/rdf_internal.h	2008-05-06 20:28:47.000000000 +1100
+@@ -82,6 +82,7 @@
  #endif
  
  
@@ -105,25 +125,36 @@ Index: librdf/rdf_internal.h
  #ifdef LIBRDF_ASSERT_MESSAGES
  #define LIBRDF_ASSERT_REPORT(msg) fprintf(stderr, "%s:%d: (%s) assertion failed: " msg "\n", __FILE__, __LINE__, __func__);
  #else
-Index: librdf/rdf_storage.c
-===================================================================
---- librdf/rdf_storage.c	(revision 12289)
-+++ librdf/rdf_storage.c	(working copy)
-@@ -81,6 +81,10 @@
-   librdf_init_storage_file(world);
- #endif
- 
-+#ifdef STORAGE_VIRTUOSO
-+  librdf_init_storage_virtuoso(world);
-+#endif
+diff -ur ./redland-1.0.7/librdf/rdf_storage.c ./redland-1.0.7.new/librdf/rdf_storage.c
+--- ./redland-1.0.7/librdf/rdf_storage.c	2007-12-21 07:39:42.000000000 +1000
++++ ./redland-1.0.7.new/librdf/rdf_storage.c	2008-05-31 11:37:49.000000000 +1100
+@@ -106,6 +106,13 @@
+     if (module)
+       raptor_sequence_push(world->storage_modules, module);
+   #endif
 +
- #ifdef STORAGE_MYSQL
-   librdf_init_storage_mysql(world);
- #endif
-Index: librdf/rdf_storage_internal.h
-===================================================================
---- librdf/rdf_storage_internal.h	(revision 12275)
-+++ librdf/rdf_storage_internal.h	(working copy)
++  #ifdef STORAGE_VIRTUOSO
++    module = librdf_storage_load_module(world, "librdf_storage_virtuoso",
++                                        "librdf_init_storage_virtuoso");
++    if (module)
++      raptor_sequence_push(world->storage_modules, module);
++  #endif
+   
+   #ifdef STORAGE_MYSQL
+     module = librdf_storage_load_module(world, "librdf_storage_mysql",
+@@ -140,6 +147,9 @@
+   #ifdef STORAGE_FILE
+     librdf_init_storage_file(world);
+   #endif
++  #ifdef STORAGE_VIRTUOSO
++   librdf_init_storage_virtuoso(world);
++  #endif
+   #ifdef STORAGE_MYSQL
+     librdf_init_storage_mysql(world);
+   #endif
+diff -ur ./redland-1.0.7/librdf/rdf_storage_internal.h ./redland-1.0.7.new/librdf/rdf_storage_internal.h
+--- ./redland-1.0.7/librdf/rdf_storage_internal.h	2007-11-03 18:14:01.000000000 +1000
++++ ./redland-1.0.7.new/librdf/rdf_storage_internal.h	2008-05-06 20:28:47.000000000 +1100
 @@ -175,6 +175,10 @@
  
  void librdf_init_storage_file(librdf_world *world);
@@ -135,18 +166,3 @@ Index: librdf/rdf_storage_internal.h
  #ifdef STORAGE_MYSQL
  void librdf_init_storage_mysql(librdf_world *world);
  #endif
-Index: librdf/Makefile.am
-===================================================================
---- librdf/Makefile.am	(revision 12275)
-+++ librdf/Makefile.am	(working copy)
-@@ -110,6 +110,10 @@
- librdf_la_SOURCES += rdf_storage_mysql.c
- endif
- 
-+if STORAGE_VIRTUOSO
-+librdf_la_SOURCES += rdf_storage_virtuoso.c
-+endif
-+
- if STORAGE_SQLITE
- librdf_la_SOURCES += rdf_storage_sqlite.c
- endif
