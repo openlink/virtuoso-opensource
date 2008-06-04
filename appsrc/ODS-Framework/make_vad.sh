@@ -401,11 +401,12 @@ sticker_init() {
   echo "      vhost_define (lpath=>'/php/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.php');" >> $STICKER
   echo "      vhost_define (lpath=>'/jsp/users', ppath=>'http://localhost:8080/users/jsp', is_dav=>0, vsp_user=>'dba');" >> $STICKER
   echo "      vhost_define (lpath=>'/ruby/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.rb');" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/scot.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc_priv.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.\"RDFData_MAKE_DET_COL\" ('/DAV/VAD/wa/RDFData/', sioc..get_graph (), NULL);" >> $STICKER
   echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER

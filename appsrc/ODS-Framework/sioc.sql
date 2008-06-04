@@ -1161,7 +1161,7 @@ create procedure ods_sioc_post (
 	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('published'), sioc_date (ts));
 	  if (modf is not null)
 	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('updated'), sioc_date (modf));
-	  if (link is not null)
+	  if (0 and link is not null) -- obsoleted
 	    {
 	      DB.DBA.RDF_QUAD_URI (graph_iri, link, rdf_iri ('type'), atom_iri ('Link'));
 	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('link'), link);
@@ -1248,7 +1248,8 @@ create procedure ods_sioc_service (
     in wsdl varchar,
     in endpoint varchar,
     in proto varchar,
-    in descr varchar := null
+    in descr varchar := null,
+    in id int := null
     )
 {
   if (iri is null or forum_iri is null)
@@ -1269,6 +1270,8 @@ create procedure ods_sioc_service (
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('service_protocol'), proto);
   if (descr is not null or proto is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), coalesce (descr, proto));
+  if (id is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), id);
   commit work;
 };
 
@@ -1290,6 +1293,23 @@ create procedure ods_sioc_tags (in graph_iri any, in post_iri any, in _tags any)
   else
     DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), '~none~');
 };
+
+create procedure service_iri (in forum_iri varchar, in id int)
+{
+  return sprintf ('%s/service/%d', forum_iri, id);
+}
+;
+
+create procedure ods_ping_svc_init (in graph_iri varchar, in site_iri varchar)
+{
+  declare iri any;
+  for select SH_URL, SH_NAME, SH_PROTO, SH_ID, SH_METHOD from ODS.DBA.SVC_HOST where SH_ID > 0 do
+    {
+      iri := service_iri (site_iri, SH_ID);
+      ods_sioc_service (graph_iri, iri, site_iri, null, null, null, SH_URL, SH_PROTO, SH_NAME, SH_ID);
+    }
+}
+;
 
 create procedure ods_current_ver ()
 {
@@ -1350,15 +1370,15 @@ create procedure fill_ods_sioc (in doall int := 0)
 
   declare exit handler for sqlstate '*', not found
     {
-      checkpoint_interval (cpt);
---      log_enable (1);
+      --checkpoint_interval (cpt);
+      log_enable (1);
       resignal;
     };
 
   cnt := 0;
---  log_enable (0);
+  log_enable (2);
 
-  cpt := checkpoint_interval (0);
+  --cpt := checkpoint_interval (0);
 
   site_iri  := get_graph ();
   graph_iri := get_graph ();
@@ -1379,6 +1399,8 @@ create procedure fill_ods_sioc (in doall int := 0)
     set isolation='committed';
     ods_graph_init ();
   }
+
+  ods_ping_svc_init (graph_iri, site_iri);
 
   scot_tags_init ();
 
@@ -1669,8 +1691,8 @@ create procedure fill_ods_sioc (in doall int := 0)
 
   commit work;
   ods_sioc_result ('The RDF data is reloaded');
-  checkpoint_interval (cpt);
---  log_enable (1);
+  --checkpoint_interval (cpt);
+  log_enable (1);
   return;
 };
 

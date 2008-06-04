@@ -38,6 +38,7 @@
   <v:variable name="a_name" type="varchar" default="null" persist="0" />
   <v:variable name="a_descr" type="varchar" default="null" persist="0" />
   <v:variable name="_ver" type="varchar" default="1" persist="0" param-name="ver" />
+  <v:variable name="_uname" type="varchar" default="null" persist="temp" />
   <v:on-init><![CDATA[
     declare cookie_vec, sid any;
 
@@ -47,6 +48,14 @@
       {
         self.vc_redirect ('login.vspx');
       }
+
+    declare exit handler for not found {
+     self.vc_redirect ('login.vspx');
+     return;
+    };
+    select U_NAME, a_name into self._uname, self.a_name
+      	from OAUTH.DBA.SESSIONS, OAUTH.DBA.APP_REG, DB.DBA.SYS_USERS
+        where U_ID = a_owner and a_id = s_a_id and s_req_key = self.token;
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
 
@@ -106,7 +115,7 @@
               <div id="login_form">
                 <form> <!-- just to keep validator happy on this mockup -->
 		  <label for="login_frm_username">Member ID</label>
-		  <v:text name="username" value="" xhtml_id="login_frm_username" /><br />
+		  <v:text name="username" type="hidden" value="--self._uname" xhtml_id="login_frm_username" /><?V self._uname ?><br />
 		  <label for="password">Password</label>
 		  <v:text name="password" value="" xhtml_id="login_frm_password" type="password" />
 		  <div class="login_frm_button_row">
@@ -140,7 +149,7 @@
 		  </div>
                 </form>
               </div> <!-- login_form -->
-	      <p class="login_frm_guide">A <?V http_client_ip () ?> trying to access an application,
+	      <p class="login_frm_guide">A <?V http_client_ip () ?> trying to access <i><?V self.a_name ?></i>,
 		please login to authorize or decline the request.
 	      </p>
 	    </v:template>

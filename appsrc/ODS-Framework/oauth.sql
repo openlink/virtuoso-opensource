@@ -274,9 +274,9 @@ create procedure access_token (
     __SOAP_HTTP 'text/plain'
 {
   declare ret, tok, sec varchar;
-  declare sid, app_sec, url, meth, params, cookie, req_sec varchar;
+  declare sid, app_sec, url, meth, params, cookie, req_sec, uname varchar;
   declare lines any;
-  declare app_id int;
+  declare app_id, owner int;
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
@@ -287,7 +287,8 @@ create procedure access_token (
     http_header ('Content-Type: text/plain\r\n');
     return 'Server error: '||__SQL_MESSAGE||'\n';
   };
-  select a_secret, a_id into app_sec, app_id from APP_REG where a_key = oauth_consumer_key;
+  select a_secret, a_id, a_owner into app_sec, app_id, owner from APP_REG where a_key = oauth_consumer_key;
+  select U_NAME into owner from DB.DBA.SYS_USERS where U_ID = owner;
 
   if (exists (select 1 from SESSIONS where s_nonce = oauth_nonce))
     {
@@ -300,7 +301,7 @@ create procedure access_token (
     return 'OAuth Verification Failed\n';
   };
 
-  select s_req_secret into req_sec from SESSIONS where s_req_key = oauth_token and s_ip = http_client_ip () and s_state = 2;
+  select s_req_secret, s_sid into req_sec, sid from SESSIONS where s_req_key = oauth_token and s_ip = http_client_ip () and s_state = 2;
 
   url := http_requested_url ();
   lines := http_request_header ();
@@ -319,6 +320,8 @@ create procedure access_token (
 
   update SESSIONS set s_nonce = oauth_nonce, s_timestamp = oauth_timestamp, s_access_key = tok, s_access_secret = sec, s_state = 3
       where s_req_key = oauth_token and s_ip = http_client_ip () and s_state = 2;
+  --insert soft DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
+  --    values (sid, 'wa', uname, now ());
 
   ret := sprintf ('oauth_token=%U&oauth_token_secret=%U', tok, sec);
   return ret;
@@ -354,6 +357,46 @@ create procedure check_authentication_safe (in inparams any := null, in lines an
     return 0;
   };
   return check_authentication (inparams, lines, uname, inst_id);
+}
+;
+
+create procedure get_sid (in inparams any, in lines any)
+{
+  declare oauth_token varchar;
+  declare ret, tok, sec, ahead, params varchar;
+
+  ahead := http_request_header (lines, 'Authorization', null, null);
+  params := null;
+  if (ahead is not null)
+    {
+      declare tmp, newpars any;
+      tmp := split_and_decode (ahead, 0, '\0\0,');
+      newpars := vector ();
+      if (length (tmp) and trim(tmp[0]) like 'OAuth %')
+	{
+	  for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
+	    {
+	      declare par any;
+	      par := split_and_decode (trim(tmp[0]), 0, '\0\0=');
+	      newpars := vector_concat (newpars, par);
+	    }
+	  if (length (newpars))
+	    params := newpars;
+	}
+    }
+  if (params is null)
+    params := inparams;
+
+  oauth_token := get_keyword ('oauth_token', params);
+  declare exit handler for not found {
+    return null;
+  };
+
+  declare exit handler for sqlstate '*' {
+    return null;
+  };
+  select s_sid into ret from SESSIONS where s_access_key = oauth_token and s_ip = http_client_ip () and s_state = 3;
+  return ret;
 }
 ;
 
@@ -432,10 +475,6 @@ create procedure check_authentication (in inparams any, in lines any, out uname 
     {
       signal ('42000', 'OAuth Verification Failed: bad signature');
     }
-
-  update SESSIONS set s_nonce = oauth_nonce, s_timestamp = oauth_timestamp
-      where s_access_key = oauth_token and s_ip = http_client_ip () and s_state = 2;
-
   return 1;
 }
 ;

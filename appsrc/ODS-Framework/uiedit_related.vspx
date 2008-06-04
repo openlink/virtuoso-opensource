@@ -31,6 +31,7 @@
 	<v:variable name="edit_related" type="int" default="null" param-name="edit" />
 	<v:variable name="del_related" type="int" default="null" param-name="del" />
 	<v:variable name="rel_iri" type="varchar" default="'rdfs:seeAlso'" persist="temp" />
+	<div>These are other statements made via RDF Triples</div>
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=11">
 	    <input type="hidden" name="page" value="11"/>
 	  <table class="listing" rules="groups">
@@ -128,7 +129,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 		  <!--v:text xhtml_id="pred" name="pred" value="" default_value="rdfs:seeAlso">
 		  </v:text-->
 		  <br/>
-		  <label for="related_name">Label</label><br/>
+		  <label for="related_name">Value</label><br/>
 		  <v:text name="related_name" value="" xhtml_id="related_name" xhtml_size="50" error-glyph="*">
 		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Label can not be empty"/>
 		  </v:text>

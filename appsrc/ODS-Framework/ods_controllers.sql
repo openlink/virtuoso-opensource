@@ -33,21 +33,46 @@ create procedure ODS.ODS_API."user.register" (
 	) __soap_http 'text/xml'
 {
   declare ret any;
+  declare msg varchar;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   ret := DB.DBA.ODS_CREATE_USER (name, "password", "email");
+  if (isinteger (ret))
+    msg := 'Created';
+  else
+    {
+      msg := ret;
+      ret := -1;
+    }
   return ods_serialize_int_res (ret);
 }
 ;
 
 create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
 {
-  if (isinteger (rc))
-    return sprintf ('<result><code>%d</code><message>%V</message></result>', rc, msg);
-  else if (isarray (rc) and not isstring (rc) and length (rc) = 2 and __tag (rc[0]) = 255)
+  if (isarray (rc) and length (rc) = 2 and __tag (rc[0]) = 255)
+    rc := rc[1];
+  rc := cast (rc as int);
+  if (msg = '')
     {
-      return sprintf ('<result><code>%d</code><message>%V</message></result>', rc[1], msg);
+      if (rc < 0)
+        msg := DB.DBA.DAV_PERROR (rc);
+      else
+	msg := 'Success';
     }
+  if (rc >= 0)
+    return sprintf ('<result><code>%d</code><message>%V</message></result>', rc, msg);
   else
-    return sprintf ('<failed><code>-1</code><message>%V</message></failed>', rc); -- unknown error
+    return sprintf ('<failed><code>%d</code><message>%V</message></failed>', rc, msg);
+}
+;
+
+create procedure ods_serialize_sql_error (in state varchar, in message varchar)
+{
+  return sprintf ('<failed><code>%s</code><message>%V</message></failed>', state, message);
 }
 ;
 
@@ -103,6 +128,44 @@ nf:
 }
 ;
 
+create procedure get_ses (in uname varchar)
+{
+  declare params, lines any;
+  declare sid any;
+
+  params := http_param ();
+  lines := http_request_header ();
+
+  sid := get_keyword ('sid', params);
+  --if (sid is null)
+  --  sid := OAUTH.DBA.get_sid (params, lines);
+  if (sid is null)
+    {
+      sid := DB.DBA.vspx_sid_generate ();
+      insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, 'wa', uname, now ());
+    }
+  return sid;
+}
+;
+
+create procedure close_ses (in sid1 varchar)
+{
+  declare params, lines any;
+  declare sid any;
+
+  params := http_param ();
+  lines := http_request_header ();
+
+  sid := get_keyword ('sid', params);
+  if (sid is null)
+    sid := OAUTH.DBA.get_sid (params, lines);
+  if (sid is null)
+    {
+      delete from DB.DBA.VSPX_SESSION where VS_SID = sid1 and  VS_REALM = 'wa';
+    }
+}
+;
+
 create procedure exec_sparql (in qr varchar)
 {
   declare ses, stat, msg, metas, rset any;
@@ -128,8 +191,7 @@ create procedure exec_sparql (in qr varchar)
   if (stat <> '00000')
     {
 reporterr:
-      http_status_set (500);
-      http (sprintf ('Error: %V', msg));
+      http (ods_serialize_int_res (-500, msg));
       return;
     }
   ses := string_output ();
@@ -152,9 +214,13 @@ create procedure ODS.ODS_API."user.authenticate" (
 	) __soap_http 'text/plain'
 {
   declare uname varchar;
-  declare rc int;
   declare sid varchar;
-  rc := ods_check_auth (uname);
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, 'wa', uname, now ());
   return sid;
@@ -170,9 +236,13 @@ create procedure ODS.ODS_API."user.update" (
   declare rc int;
   declare pars any;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
-  pars := split_and_decode (user_info, 0, '%\0,=');
+  pars := split_and_decode (user_info, 0, '%\0,='); -- XXX: FIXME
 
 
   for (declare i, l int, i := 0, l := length (pars); i < l; i := i + 2)
@@ -186,7 +256,7 @@ create procedure ODS.ODS_API."user.update" (
       DB.DBA.WA_USER_EDIT (uname, k, v);
       rc := 1;
     }
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, 'Profile was updated');
 }
 ;
 
@@ -194,18 +264,23 @@ create procedure ODS.ODS_API."user.password_change" (
 	in new_password varchar
 	) __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare uname, msg varchar;
   declare rc int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
-  whenever sqlexception goto ret;
-  rc := 0;
+  declare exit handler for sqlstate '*' { msg := __SQL_MESSAGE; goto ret; };
+  rc := -1;
+  msg := 'Success';
   set_user_id ('dba');
   DB.DBA.USER_PASSWORD_SET (uname, new_password);
   rc := 1;
   ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -215,6 +290,10 @@ create procedure ODS.ODS_API."user.delete" (in name varchar) __soap_http 'text/x
   declare uname varchar;
   declare rc int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
   if (uname in ('dav', 'dba'))
@@ -223,7 +302,7 @@ create procedure ODS.ODS_API."user.delete" (in name varchar) __soap_http 'text/x
       rc := row_count ();
     }
   else
-    rc := 'Insufficent rights.';
+    rc := -13;
   return ods_serialize_int_res (rc);
 }
 ;
@@ -234,6 +313,10 @@ create procedure ODS.ODS_API."user.freeze" (in name varchar) __soap_http 'text/x
   declare uname varchar;
   declare rc int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
   if (uname in ('dav', 'dba'))
@@ -242,7 +325,7 @@ create procedure ODS.ODS_API."user.freeze" (in name varchar) __soap_http 'text/x
       rc := 1;
     }
   else
-    rc := 'Insufficent rights.';
+    rc := -13;
   return ods_serialize_int_res (rc);
 }
 ;
@@ -250,6 +333,10 @@ create procedure ODS.ODS_API."user.freeze" (in name varchar) __soap_http 'text/x
 create procedure ODS.ODS_API."user.get" (in name varchar) __soap_http 'text/xml'
 {
   declare q varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   q := sprintf (
   'select * from <%s> where '||
   ' { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ',
@@ -262,6 +349,10 @@ create procedure ODS.ODS_API."user.get" (in name varchar) __soap_http 'text/xml'
 create procedure ODS.ODS_API."user.search" (in pattern varchar) __soap_http 'text/xml'
 {
   declare q varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   q := sprintf (
   'select * from <%s> where '||
   ' { ?user a sioc:User ; ?property ?value . ?value bif:contains "%s" } ',
@@ -280,7 +371,12 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
   declare i, uids, sn_id, msg, url any;
   declare copy varchar;
   declare _u_full_name, _u_e_mail varchar;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
@@ -290,6 +386,7 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
     copy := sys_stat ('st_host_name');
 
   whenever not found goto ret;
+  msg := '';
   select U_FULL_NAME, U_E_MAIL into _u_full_name, _u_e_mail from DB.DBA.SYS_USERS where U_NAME = uname;
   sn_id := (select sne_id from DB.DBA.sn_person where sne_name = uname);
   msg := DB.DBA.WA_GET_EMAIL_TEMPLATE ('SN_INV_TEMPLATE', 1);
@@ -302,7 +399,8 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
 
   if (not length (uids))
     {
-      rc := 'Please enter at least one mail address';
+      rc := -1;
+      msg := 'Please enter at least one mail address';
       goto ret;
     }
 
@@ -315,7 +413,7 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
       msg := replace (msg, '%url%', url);
 
       insert soft DB.DBA.sn_invitation (sni_from, sni_to, sni_status) values (sn_id, mail, 0);
-      rc := row_count();
+      rc := rc + row_count();
 
       if (row_count () > 0)
 	{
@@ -323,9 +421,10 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
 	    {
 	      rollback work;
 	      if (__SQL_STATE not like 'WA%')
-		rc := 'The e-mail address(es) is not valid and mail cannot be sent.';
+		msg := 'The e-mail address(es) is not valid and mail cannot be sent.';
 	      else
-		rc := __SQL_MESSAGE;
+		msg := __SQL_MESSAGE;
+              rc := -1;
               goto ret;
 	    };
 	  DB.DBA.WA_SEND_MAIL (_u_e_mail, mail, 'Join my network', msg);
@@ -336,11 +435,10 @@ create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_
 
   if (i <> length (uids))
     {
-      rc := 'Some of the e-mail addresses entered already have a pending invitation, the mail was not sent to he/she.';
-      return;
+      msg := 'Some of the e-mail addresses entered already have a pending invitation, the mail was not sent to he/she.';
     }
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -350,11 +448,18 @@ create procedure ODS.ODS_API."user.invitation" (in invitation_id int, in approve
   declare rc int;
   declare sn_me, sn_from int;
   declare e_mail varchar;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No pending invitations';
+  rc := -1;
   select U_E_MAIL into e_mail from DB.DBA.SYS_USERS where U_NAME = uname;
   select sni_from into sn_from from DB.DBA.sn_invitation where sni_id = invitation_id and sni_to = e_mail;
   sn_me := (select sne_id from DB.DBA.sn_person where sne_name = uname);
@@ -369,6 +474,7 @@ create procedure ODS.ODS_API."user.invitation" (in invitation_id int, in approve
     {
       update DB.DBA.sn_invitation set sni_status = -1 where sni_id = invitation_id and sni_to = e_mail;
     }
+  msg := '';
   rc := 1;
 ret:
   return ods_serialize_int_res (rc);
@@ -382,6 +488,10 @@ create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
   declare sn_me, sn_from int;
   declare e_mail varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
@@ -396,6 +506,10 @@ create procedure ODS.ODS_API."user.relation_terminate" (in friend varchar) __soa
   declare uname varchar;
   declare rc, sn_id, f_sn_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
   sn_id := (select sne_id from DB.DBA.sn_person where sne_name = uname);
@@ -420,14 +534,21 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (in rulelist_name varchar,
   declare uname varchar;
   declare rc int;
   declare aps_id, apc_id, id, _u_id, ord int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  msg := '';
+  rc := -1;
   rulelist_name := trim (rulelist_name);
   if (length (rulelist_name) = 0)
     {
-      rc := 'The ruleset name cannot be empty';
+      msg := 'The ruleset name cannot be empty';
       goto ret;
     }
 
@@ -438,7 +559,8 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (in rulelist_name varchar,
   declare exit handler for sqlstate '23000'
     {
       rollback work;
-      rc := 'The ruleset name is already used, please enter unique rule name';
+      msg := 'The ruleset name is already used, please enter unique rule name';
+      rc := -1;
       goto ret;
     };
 
@@ -475,7 +597,7 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (in rulelist_name varchar,
 	}
     }
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -484,14 +606,21 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (in rulelist_name varch
   declare uname varchar;
   declare rc int;
   declare _aps_id, _apc_id, id, _u_id int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  msg := '';
+  rc := -1;
   rulelist_name := trim (rulelist_name);
   if (length (rulelist_name) = 0)
     {
-      rc := 'The ruleset name cannot be empty';
+      msg := 'The ruleset name cannot be empty';
       goto ret;
     }
 
@@ -500,7 +629,8 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (in rulelist_name varch
   declare exit handler for sqlstate '23000'
     {
       rollback work;
-      rc := 'The ruleset name is already used, please enter unique rule name';
+      msg := 'The ruleset name is already used, please enter unique rule name';
+      rc := -1;
       goto ret;
     };
 
@@ -515,7 +645,7 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (in rulelist_name varch
   delete from DB.DBA.SYS_ANN_PHRASE_SET where APS_ID = _aps_id and APS_OWNER_UID = _u_id;
   rc := row_count ();
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -524,14 +654,21 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (in rulelist_name varch
   declare uname varchar;
   declare rc int;
   declare aps_id, apc_id, id, _u_id int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
   rulelist_name := trim (rulelist_name);
+  msg := '';
+  rc := -1;
   if (length (rulelist_name) = 0)
     {
-      rc := 'The ruleset name cannot be empty';
+      msg := 'The ruleset name cannot be empty';
       goto ret;
     }
 
@@ -540,7 +677,8 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (in rulelist_name varch
   declare exit handler for sqlstate '23000'
     {
       rollback work;
-      rc := 'The ruleset name is already used, please enter unique rule name';
+      msg := 'The ruleset name is already used, please enter unique rule name';
+      rc := -1;
       goto ret;
     };
 
@@ -567,7 +705,7 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (in rulelist_name varch
 	}
     }
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -579,10 +717,17 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.add" (in rules any) __soap
   declare rc int;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  msg := '';
+  rc := -1;
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   ap_name := sprintf ('Hyperlinking-%d', _u_id);
   aps_id := (select APS_ID from DB.DBA.SYS_ANN_PHRASE_SET where APS_OWNER_UID = _u_id and APS_NAME = ap_name);
@@ -599,7 +744,8 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.add" (in rules any) __soap
     {
       ap_add_phrases (aps_id, vector (vector (elm[0], elm[1])));
     }
-  return ods_serialize_int_res (rc);
+  rc := 1;
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -616,6 +762,10 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
@@ -626,6 +776,7 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
     {
       delete from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = aps_id and AP_TEXT = elm[0] and AP_CHKSUM = elm[1];
     }
+  rc := 1;
   return ods_serialize_int_res (rc);
 }
 ;
@@ -644,12 +795,22 @@ create procedure ODS.ODS_API."instance.create" (
 {
   declare uname varchar;
   declare rc int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  msg := '';
   rc := DB.DBA.ODS_CREATE_NEW_APP_INST ("type", name, uname, model, "public", description);
-
+  if (not isinteger (rc))
+    {
+      msg := rc;
+      rc := -1;
+    }
   return ods_serialize_int_res (rc);
 }
 ;
@@ -666,17 +827,25 @@ create procedure ODS.ODS_API."instance.update" (
   declare uname varchar;
   declare rc int;
   declare dummy int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No such instance';
+  rc := -1;
   select WAI_ID into dummy from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and U_NAME = uname and WAI_ID = inst_id;
 
   update DB.DBA.WA_INSTANCE set WAI_NAME = name, WAI_DESCRIPTION = description, WAI_MEMBER_MODEL = model,
 	 WAI_IS_PUBLIC = "public" where WAI_ID = inst_id;
   rc := row_count ();
+  msg := '';
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -688,22 +857,32 @@ create procedure ODS.ODS_API."instance.delete" (in inst_id int) __soap_http 'tex
   declare rc int;
   declare inst any;
   declare h any;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No such instance';
+  rc := -1;
   select WAI_INST into inst from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and U_NAME = uname and WAI_ID = inst_id;
 
   h := udt_implements_method (inst, 'wa_drop_instance');
   declare exit handler for sqlstate '*' {
-                                            rc := __SQL_MESSAGE;
+                                            msg := __SQL_MESSAGE;
+					    rc := -1;
                                             rollback work;
                                             goto ret;
                                         };
   commit work;
   rc := call (h) (inst);
+  msg := '';
+  rc := 1;
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -714,14 +893,22 @@ create procedure ODS.ODS_API."instance.join" (in inst_id int) __soap_http 'text/
   declare _wai_name, acc_type, app_type any;
   declare uname varchar;
   declare rc int;
-  declare _u_id, _msg, _result any;
+  declare _u_id, _result any;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  msg := '';
+  rc := -1;
   declare exit handler for sqlstate '*', not found
     {
-      rc := __SQL_MESSAGE;
+      msg := __SQL_MESSAGE;
+      rc := -1;
       rollback work;
       goto ret;
     };
@@ -735,14 +922,14 @@ create procedure ODS.ODS_API."instance.join" (in inst_id int) __soap_http 'text/
   _result := connection_get('join_result');
   rc := 1;
   if (_result = 'approved')
-    _msg := 'Your join request approved.';
+    msg := 'Your join request approved.';
   else if (_result = 'ownerwait')
     {
-      _msg := 'Application owner notified about your join request. You will get e-mail message after approval.';
+      msg := 'Application owner notified about your join request. You will get e-mail message after approval.';
       rc := 0;
     }
 ret:
-  return ods_serialize_int_res (rc, _msg);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -751,6 +938,10 @@ create procedure ODS.ODS_API."instance.disjoin" (in inst_id int) __soap_http 'te
   declare uname varchar;
   declare rc int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
   delete from DB.DBA.WA_MEMBER where
@@ -768,9 +959,35 @@ create procedure ODS.ODS_API."instance.join_approve" (in inst_id int, in uname v
 }
 ;
 
-create procedure ODS.ODS_API."instance.notification.services" () __soap_http 'text/xml'
+create procedure ODS.ODS_API."notification.services" () __soap_http 'text/xml'
 {
-  return;
+  declare q varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  q := sprintf (
+  'select * from <%s> where '||
+  ' { <%s> sioc:has_service ?svc . ?svc dc:identifier ?id ; rdfs:label ?label  } ',
+  sioc..get_graph(), sioc..get_graph());
+  exec_sparql (q);
+  return '';
+}
+;
+
+create procedure ODS.ODS_API."instance.notification.services" (in inst_id int) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc, dummy int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname, inst_id))
+    return ods_auth_failed ();
+ret:
+  return '';
 }
 ;
 
@@ -780,6 +997,10 @@ create procedure ODS.ODS_API."instance.notification.set" (in inst_id int, in ser
   declare uname varchar;
   declare rc, dummy int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
@@ -802,12 +1023,18 @@ create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id int, in 
 {
   declare uname varchar;
   declare rc, dummy int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
   whenever not found goto ret;
-  rc := 'No enough permissions, must be instance owner';
+  msg := 'No enough permissions, must be instance owner';
+  rc := -13;
   select WAI_ID into dummy from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and U_NAME = uname and WAI_ID = inst_id;
    foreach (any psi in services) do
@@ -816,8 +1043,9 @@ create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id int, in 
      }
 
   rc := row_count ();
+  msg := '';
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -831,6 +1059,10 @@ create procedure ODS.ODS_API."instance.notification.log" (in inst_id int) __soap
 create procedure ODS.ODS_API."instance.search" (in pattern varchar) __soap_http 'text/xml'
 {
   declare q varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   q := sprintf (
   'select * from <%s> where '||
   ' { ?inst a sioc:Container ; dc:identifier ?inst_id ; ?property ?value . ?value bif:contains "%s" } ',
@@ -843,6 +1075,10 @@ create procedure ODS.ODS_API."instance.search" (in pattern varchar) __soap_http 
 create procedure ODS.ODS_API."instance.get" (in inst_id int) __soap_http 'text/xml'
 {
   declare q varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   q := sprintf (
   'select * from <%s> where '||
   ' { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ',
@@ -857,14 +1093,31 @@ create procedure ODS.ODS_API."instance.get" (in inst_id int) __soap_http 'text/x
 
 create procedure ODS.ODS_API."site.search" (in pattern varchar, in options any) __soap_http 'text/xml'
 {
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   ODS.DBA.search_do_rdf (pattern, options, vector ('Accept: application/sparql-results+xml\r\n'), 100);
   return '';
 }
 ;
 
+create procedure ODS.ODS_API.error_handler () __soap_http 'text/xml'
+{
+  declare code, msg any;
+  code := http_param ('__SQL_STATE');
+  msg  := http_param ('__SQL_MESSAGE');
+  if (isstring (code) and isstring (msg))
+    return ods_serialize_sql_error (code, msg);
+  return '<failed><code>-500</code><message>Can not process your request, please check parameters</message></failed>';
+}
+;
+
 DB.DBA.USER_CREATE ('ODS_API', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'ODS'));
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
-DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API');
+DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
+
+grant execute on ODS.ODS_API.error_handler to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
@@ -891,6 +1144,7 @@ grant execute on ODS.ODS_API."instance.delete" to ODS_API;
 grant execute on ODS.ODS_API."instance.join" to ODS_API;
 grant execute on ODS.ODS_API."instance.disjoin" to ODS_API;
 grant execute on ODS.ODS_API."instance.join_approve" to ODS_API;
+grant execute on ODS.ODS_API."notification.services" to ODS_API;
 grant execute on ODS.ODS_API."instance.notification.set" to ODS_API;
 grant execute on ODS.ODS_API."instance.notification.cancel" to ODS_API;
 grant execute on ODS.ODS_API."instance.notification.log" to ODS_API;
@@ -932,6 +1186,10 @@ create procedure ODS.ODS_API."briefcase.resource.get" (in path varchar) __soap_h
   declare content, tp any;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
@@ -961,6 +1219,10 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
   declare uid, gid int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
@@ -980,6 +1242,10 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (in path varchar) __soa
   declare rc int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
@@ -998,6 +1264,10 @@ create procedure ODS.ODS_API."briefcase.collection.create" (in path varchar, in 
   declare uid, gid int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
@@ -1018,12 +1288,16 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (in path varchar) __s
   declare rc int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
-  rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null);
+  rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null, 0);
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -1038,6 +1312,10 @@ __soap_http 'text/xml'
   declare uid, gid int;
   declare inst_id, inst_id2 int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (from_path);
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
@@ -1060,6 +1338,10 @@ create procedure ODS.ODS_API."briefcase.move" (in from_path varchar, in to_path 
   declare rc int;
   declare inst_id, inst_id2 int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (from_path);
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
@@ -1080,6 +1362,10 @@ create procedure ODS.ODS_API."briefcase.property.set" (in path varchar, in prope
   declare rc int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
@@ -1097,6 +1383,10 @@ create procedure ODS.ODS_API."briefcase.property.remove" (in path varchar, in pr
   declare rc int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
 
   if (not ods_check_auth (uname, inst_id))
@@ -1116,6 +1406,10 @@ __soap_http 'text/xml'
   declare st char;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
@@ -1133,7 +1427,9 @@ ret:
 }
 ;
 
+db.dba.wa_exec_no_error ('grant SPARQL_SELECT to ODS_API');
 grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to ODS_API;
+grant execute on DB.DBA.RDF_SPONGE_UP to ODS_API;
 grant select on WS.WS.SYS_DAV_RES to ODS_API;
 
 grant execute on ODS.ODS_API."briefcase.resource.get" to ODS_API;

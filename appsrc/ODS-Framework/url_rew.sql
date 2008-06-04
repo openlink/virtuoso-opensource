@@ -203,6 +203,11 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
     {
       iri := iri || '#this';
     }
+  if (regexp_match ('http://([^/]*)/dataspace/([^/]*)/calendar/([^/]*)/(Task|Event)/([^/\\?]*)', iri) is not null and
+      iri not like '%#this')
+    {
+      iri := iri || '#this';
+    }
   -- space also have #this
   if ((regexp_match ('http://([^/]*)/dataspace/([^/]*)\x24', iri) is not null
       or regexp_match ('http://([^/]*)/dataspace/([^/]*)/space\x24', iri) is not null)

@@ -221,7 +221,7 @@ function selectAllCheckboxes (form, btn)
                         </td>
 			            <td class="<?V case when pg = 11 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url18"
-                                 value="Related"
+                                 value="Other Claims"
                                  format="%s"
                                  url="--sprintf('uiedit.vspx?page=11')"
                                  xhtml_class="tab"/>
