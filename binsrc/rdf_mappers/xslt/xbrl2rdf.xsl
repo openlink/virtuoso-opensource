@@ -84,6 +84,11 @@
   <xsl:template match="context">
     <xsl:variable name="id" select="@id"/>
     <rdf:Description rdf:ID="{$id}">
+        <rdf:type>
+          <xsl:attribute name="rdf:resource">
+            <xsl:value-of select="concat($ns, 'context')"/>
+          </xsl:attribute>
+        </rdf:type>
         <xsl:apply-templates select="entity"/>
         <xsl:apply-templates select="period"/>
     </rdf:Description>
@@ -92,6 +97,11 @@
   <xsl:template match="unit">
     <xsl:variable name="id" select="@id"/>
     <rdf:Description rdf:ID="{$id}">
+        <rdf:type>
+          <xsl:attribute name="rdf:resource">
+            <xsl:value-of select="concat($ns, 'context')"/>
+          </xsl:attribute>
+        </rdf:type>
           <virt-xbrl:measure>
               <xsl:value-of select="measure" />
           </virt-xbrl:measure>
@@ -165,6 +175,11 @@
     <xsl:variable name="dt"/>
     <xsl:if test="$canonicalname">
       <rdf:Description rdf:ID="{$contextRef}">
+        <rdf:type>
+          <xsl:attribute name="rdf:resource">
+            <xsl:value-of select="concat($ns, 'context')"/>
+          </xsl:attribute>
+        </rdf:type>
         <xsl:element namespace="{$ns}" name="{$canonicalname}" >
                   <xsl:attribute name="rdf:datatype">
                     <xsl:value-of select="concat('&xsd;', $canonical_datatype)"/>
