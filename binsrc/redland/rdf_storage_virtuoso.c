@@ -377,6 +377,9 @@ typedef struct {
   char *user;
   char *password;
   char *dsn;
+  char *host;
+  char *database;
+  char *conn_str;
 
   /* if inserts should be optimized by locking and index optimizations */
   int bulk;
@@ -1113,6 +1116,8 @@ librdf_storage_virtuoso_get_handle(librdf_storage* storage)
   librdf_storage_virtuoso_connection* connection= NULL;
   int i;
   int rc;
+  short buflen;
+  char outdsn[4096];
 
 #ifdef VIRT_DEBUG
   fprintf(stderr, "librdf_storage_virtuoso_connection \n");
@@ -1184,8 +1189,13 @@ librdf_storage_virtuoso_get_handle(librdf_storage* storage)
       goto end;
     }
 
+#if 0
   rc = SQLConnect (connection->hdbc, (UCHAR *) context->dsn, SQL_NTS, 
   	(UCHAR *) context->user, SQL_NTS, (UCHAR *) context->password, SQL_NTS);
+#else
+  rc = SQLDriverConnect(connection->hdbc, 0, (UCHAR *) context->conn_str, SQL_NTS,
+  	(UCHAR *) outdsn, sizeof(outdsn), &buflen, SQL_DRIVER_COMPLETE);
+#endif
   if (!SQL_SUCCEEDED(rc))
     {
       rdf_virtuoso_ODBC_Errors("SQLConnect()", storage->world, connection);
@@ -1264,7 +1274,7 @@ librdf_storage_virtuoso_release_handle(librdf_storage* storage, librdf_storage_v
  * librdf_storage_virtuoso_init:
  * @storage: the storage
  * @name: model name
- * @options:  dsn, user, password, [bulk].
+ * @options:  dsn, user, password, host, database, [bulk].
  *
  * .
  *
@@ -1297,6 +1307,8 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
   context->password=librdf_hash_get_del(options, "password");
   context->user=librdf_hash_get_del(options, "user");
   context->dsn=librdf_hash_get_del(options, "dsn");
+  context->host=librdf_hash_get_del(options, "host");
+  context->database=librdf_hash_get_del(options, "database");
 
   if ((context->h_lang = htinit (100)) == NULL)
     return 1;
@@ -1309,6 +1321,20 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
 
   if (!name)
     name = "virt:DEFAULT";
+
+  if (context->password)
+    len += (strlen(context->password) + strlen("PWD=;"));
+  if (context->user)
+    len += (strlen(context->user) + strlen("UID=;"));
+  if (context->dsn)
+    len += (strlen(context->dsn) + strlen("DSN=;"));
+  if (context->host)
+    len += (strlen(context->host) + strlen("HOST=;"));
+  if (context->database)
+    len += (strlen(context->database) + strlen("DATABASE=;"));
+
+  if(!(context->conn_str=(char*)LIBRDF_MALLOC(cstring, len+16)))
+    return 1;
 
   if(!(context->model_name=(char*)LIBRDF_MALLOC(cstring, strlen(name))))
     return 1;
@@ -1325,6 +1351,33 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
 
   if(!context->model_name || !context->user || !context->dsn || !context->password)
     return 1;
+
+  strcpy(context->conn_str, "");
+  if (context->dsn) {
+    strcat(context->conn_str, "DSN=");
+    strcat(context->conn_str, context->dsn);
+    strcat(context->conn_str, ";");
+  }
+  if (context->host) {
+    strcat(context->conn_str, "HOST=");
+    strcat(context->conn_str, context->host);
+    strcat(context->conn_str, ";");
+  }
+  if (context->database) {
+    strcat(context->conn_str, "DATABASE=");
+    strcat(context->conn_str, context->database);
+    strcat(context->conn_str, ";");
+  }
+  if (context->user) {
+    strcat(context->conn_str, "UID=");
+    strcat(context->conn_str, context->user);
+    strcat(context->conn_str, ";");
+  }
+  if (context->password) {
+    strcat(context->conn_str, "PWD=");
+    strcat(context->conn_str, context->password);
+    strcat(context->conn_str, ";");
+  }
 
   /* Initialize Virtuoso connections */
   librdf_storage_virtuoso_init_connections(storage);
@@ -1365,6 +1418,15 @@ librdf_storage_virtuoso_terminate(librdf_storage* storage)
 
   if(context->dsn)
     LIBRDF_FREE(cstring,(char *)context->dsn);
+
+  if(context->database)
+    LIBRDF_FREE(cstring,(char *)context->database);
+
+  if(context->host)
+    LIBRDF_FREE(cstring,(char *)context->host);
+
+  if(context->conn_str)
+    LIBRDF_FREE(cstring,(char *)context->conn_str);
 
   if(context->transaction_handle)
     librdf_storage_virtuoso_transaction_rollback(storage);
