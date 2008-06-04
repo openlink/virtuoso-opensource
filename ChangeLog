@@ -1,3 +1,240 @@
+2008-06-04 08:18  source
+
+	* Updated verstion to 5.0.7-rc10
+
+2008-06-04 08:18  source
+
+	* Added new ODS Controllers API
+	* Added new role for ODS_API user - SPARQL_SELECT
+	* Added initial private graph code
+	* Fixed obsolete link; the IRI is only valid
+	* Fixed url rew event&task
+	* Fixed labels
+
+2008-06-04 08:14  source
+
+	* Added new ODS API
+	* Fixed empty exif properties
+	* Fixed typos
+	* Fixed wrong return
+
+2008-06-04 08:13  source
+
+	* Fixed cursor in tree
+
+2008-06-04 08:12  source
+
+	* Added initial ODS Controllers
+	* Resolve location with base
+	* Fixed WYSIWYG editor for unauthorized users
+	* Fixed crash when row-level security is used and no access to table
+	* Fixed bad url in comment footer
+	* Fixed error behaviour
+
+2008-06-04 08:09  source
+
+	* Added new API
+	* Fixed import from WebDAV
+
+2008-06-04 08:08  source
+
+	* Fixed mini-calendar navigation error
+	* Fixed import from WebDav
+	* Fixed problem withsubscriptions
+
+2008-06-04 08:07  source
+
+	* Added new API
+
+2008-06-04 07:55  source
+
+	* Fixed reading TempDatabase section using proper defaults
+	* Removed writing of TempDatabase section back to ini file
+	* Fixed problem with TransactionFile key
+
+2008-06-04 07:51  source
+
+	* Added support for using SQLDriverConnect
+
+2008-06-04 07:49  source
+
+	* Added check when out of threads
+
+2008-06-04 07:48  source
+
+	* Added url to tpc-h demo
+
+2008-06-04 07:47  source
+
+	* Fixed foaf elements in twfy mapper
+
+2008-06-04 07:47  source
+
+	* Fixed rdf:type for subjects
+
+2008-06-04 07:45  source
+
+	* Fixes for "SPARQL and Java" valmode tricks
+	* Fixed function to not return IRI_ID
+
+2008-06-04 07:43  source
+
+	* Fixed problem with RDF box argument
+
+2008-06-04 07:33  source
+
+	* Merged from upstream project
+
+2008-06-01 20:20  source
+
+	* Updated support for redland
+
+2008-05-29 19:28  source
+
+	* Fixed alignment of boxes at 8 when aligning on double boundry
+
+2008-05-29 19:24  source
+
+	* Added inference loading optimization, i.e. traverse subclasses from the
+	  superclass, also use HT instead of looking into linked list for presence
+
+2008-05-29 16:17  source
+
+	* Fixed compile error
+
+2008-05-29 08:26  source
+
+	* Updated version to 5.0.7-rc9
+
+2008-05-29 08:21  source
+
+	* Added extentions for Jena and other providers:
+	   - Named blank nodes
+	   - INSERT DATA
+	   - DELETE DATA
+
+2008-05-29 07:56  source
+
+	* Fixed argument names
+
+2008-05-28 21:41  source
+
+	* Added additional SPARQL support for Java clients
+
+2008-05-28 10:29  source
+
+	* Updated to reflect dependency on later versions of flex (2.5.33) and
+	  bison (2.3)
+
+2008-05-28 00:18  source
+
+	* Updated version to 5.0.7-rc8
+
+2008-05-28 00:17  source
+
+	* Updated documentation
+
+2008-05-28 00:16  source
+
+	* Added YouTube rdf mapper
+
+2008-05-28 00:12  source
+
+	* Added checkpoint before starting backup_online
+
+2008-05-28 00:12  source
+
+	* Fixed Turtle parser to be re-entrant
+
+2008-05-27 23:47  source
+
+	* Removed remnants of previous database engine that clutter the sources
+
+2008-05-27 09:42  source
+
+	* Fixed typo
+
+2008-05-27 09:42  source
+
+	* Added missing files from distribution
+
+2008-05-26 20:42  source
+
+	* Removed html url rewrite rule
+	* Small fixes
+
+2008-05-26 20:40  source
+
+	* Updated documentation
+
+2008-05-26 20:39  source
+
+	* Added missing dummy function
+
+2008-05-26 20:38  source
+
+	* Added initial support for auto pool for boxes on stack
+	* Added iri id dv tags
+	* Fixed length in free of id hash
+
+2008-05-26 20:36  source
+
+	* Fixed frash when row-level security is used and no access to table
+	* Fixed bad url in comment footer
+
+2008-05-26 20:35  source
+
+	* Added improved error passing for ODS api
+
+2008-05-26 20:31  source
+
+	* Fixed to box return value as caller expects this
+
+2008-05-26 20:28  source
+
+	* Added check for DBA group to limit access to:
+	    __atomic, client_trace, disconnect_user, log_enable, log_text,
+	    mem_enter_reserve_mode, mem_set_hard_limit, page_dump, replay,
+	    repl_set_raw, repl_text, repl_text_pushback, set_hit_memlimit,
+	    txn_killall and *_meter
+	* Disabled *_meter functions in production build
+	* Removed deprecated function corrupt_page from function list
+
+2008-05-26 15:58  source
+
+	* Added rdf view generation
+
+2008-05-26 15:57  source
+
+	* Added foaf support
+
+2008-05-26 15:57  source
+
+	* Added LEH ontology
+	* Added XRX ontology
+
+2008-05-26 15:54  source
+
+	* Merged from upstream project
+
+2008-05-21 12:38  source
+
+	* Fixed pointer returned by function
+
+2008-05-20 12:35  source
+
+	* Added initial support for ODS Controllers
+	* Fixed made label
+
+2008-05-20 12:29  source
+
+	* Added initial support for ODS Controllers
+	* Fixed WYSWIG editor for unauthorized users
+
+2008-05-20 12:27  source
+
+	* Fixed problem with subscriptions
+
 2008-05-18 15:21  source
 
 	* Updated version to 5.0.7-rc7
