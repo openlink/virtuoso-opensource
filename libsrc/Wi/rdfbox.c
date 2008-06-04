@@ -855,8 +855,6 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t so_dtp = DV_TYPE_OF (shortobj);
   rdf_box_t *rb;
   query_instance_t * qi = (query_instance_t *) qst;
-  if (DV_STRINGP (shortobj) && box_flags (shortobj))
-    return iri_to_id (qst, shortobj, IRI_TO_ID_WITH_CREATE, err_ret);
   if (DV_RDF != so_dtp)
     {
       if ((DV_IRI_ID == so_dtp) || (DV_IRI_ID_8 == so_dtp))
@@ -1069,7 +1067,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
   if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
-  if (cli && cli->cli_version < 3031)
+  if ((NULL != cli) && cli->cli_version < 3031)
     print_object (rb->rb_box, ses, NULL, NULL);
   else 
     {
@@ -1085,7 +1083,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	flags |= RBS_HAS_TYPE;
       if (rb->rb_chksum_tail)
 	flags |= RBS_CHKSUM;
-      if (cli && rb->rb_is_complete)
+      if (rb->rb_is_complete && (cli || !(rb->rb_ro_id)))
 	{
 	    flags |= RBS_COMPLETE;
           flags &= ~RBS_CHKSUM;

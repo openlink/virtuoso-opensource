@@ -1818,6 +1818,16 @@ ret_null:
 ;
 
 --!AWK PUBLIC
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#int" (in strg varchar) returns integer
+{
+  whenever sqlstate '*' goto ret_null;
+  return cast (strg as integer);
+ret_null:
+  return NULL;
+}
+;
+
+--!AWK PUBLIC
 create function DB.DBA."http://www.w3.org/2001/XMLSchema#time" (in strg any) returns time
 {
   if (__tag of datetime = __tag (strg))
@@ -2383,7 +2393,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
     }
   else if (__tag of varchar = __tag (obj))
     {
-      if (1 = __Box_flags (obj))
+      if (1 = __box_flags (obj))
         {
           http ('<', ses);
           http_escape (obj, 12, ses, 1, 1);
@@ -7267,6 +7277,8 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
       _val := dta[x];
       if (_val is null)
         goto end_of_binding;
+      if (isstring (_val) and (1 = __box_flags (_val)))
+        _val := iri_to_id (_val);
       if (isiri_id (_val))
         {
           if (_val >= min_bnode_iri_id ())
@@ -7389,6 +7401,8 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
       _val := dta[rowno][x];
       if (_val is null)
         goto end_of_binding;
+      if (isstring (_val) and (1 = __box_flags (_val)))
+        _val := iri_to_id (_val);
       http (sprintf ('\n      <res:binding rdf:nodeID="r%dc%d"><res:variable>%V</res:variable><res:value', rowno, x, _name), ses);
       if (isiri_id (_val))
         {
