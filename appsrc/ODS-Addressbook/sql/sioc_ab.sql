@@ -24,7 +24,7 @@ use sioc;
 -------------------------------------------------------------------------------
 --
 create procedure addressbook_contact_iri (
-  in domain_id varchar,
+	in domain_id integer,
 	in contact_id integer)
 {
   declare _member, _inst varchar;
@@ -42,7 +42,7 @@ create procedure addressbook_contact_iri (
 -------------------------------------------------------------------------------
 --
 create procedure addressbook_comment_iri (
-	in domain_id varchar,
+	in domain_id integer,
 	in contact_id integer,
 	in comment_id integer)
 {
@@ -425,9 +425,9 @@ create procedure contact_insert (
     -- FOAF Data Space
   		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
   		DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
-		if (length (fullName))
+		if (not DB.DBA.is_empty_or_null (fullName))
 		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
-		if (0 and length (foaf))
+		if (not DB.DBA.is_empty_or_null (foaf))
 		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
 		DB.DBA.RDF_QUAD_URI   (graph_iri, sc_iri, sioc_iri ('container_of'), iri);
 		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), sc_iri);
@@ -456,7 +456,9 @@ create procedure contact_insert (
 		  -- Person
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
 
+  		if (not DB.DBA.is_empty_or_null (firstName))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
+		  if (not DB.DBA.is_empty_or_null (lastName))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
     if (not DB.DBA.is_empty_or_null (gender))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);

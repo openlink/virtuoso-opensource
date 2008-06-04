@@ -1283,7 +1283,7 @@ create procedure AB.WA.banner_links (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.dav_content (
-  inout uri varchar,
+  in uri varchar,
   in auth_uid varchar := null,
   in auth_pwd varchar := null)
 {
@@ -1299,7 +1299,7 @@ create procedure AB.WA.dav_content (
   declare N integer;
   declare oldUri, newUri, reqHdr, resHdr varchar;
 
-  newUri := uri;
+  newUri := replace (uri, ' ', '%20');
   reqHdr := null;
   if (isnull (auth_uid) or isnull (auth_pwd))
   AB.WA.account_access (auth_uid, auth_pwd);
@@ -4221,7 +4221,7 @@ create procedure AB.WA.exchange_exec_internal (
           {
             permissions := '110100000RR';
           }
-          _name := http_physical_path_resolve (_name);
+          _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
@@ -4583,7 +4583,7 @@ create procedure AB.WA.nntp_root (
   name := AB.WA.account_fullName (owner_id);
   mail := AB.WA.account_mail (owner_id);
 
-  select P_NAME, P_FULL_NAME into title, comment from AB.WA.PERSONS where P_ID = person_id;
+  select coalesce (P_NAME, ''), coalesce (P_FULL_NAME, '') into title, comment from AB.WA.PERSONS where P_ID = person_id;
   insert into AB.WA.PERSON_COMMENTS (PC_PARENT_ID, PC_DOMAIN_ID, PC_PERSON_ID, PC_TITLE, PC_COMMENT, PC_U_NAME, PC_U_MAIL, PC_CREATED, PC_UPDATED)
     values (null, domain_id, person_id, title, comment, name, mail, now (), now ());
 }
