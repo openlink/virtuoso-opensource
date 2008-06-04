@@ -1,5 +1,5 @@
 OpenLink Software's Virtuoso Open-Source (VOS) project
-Copyright (C) 1998-2006 OpenLink Software
+Copyright (C) 1998-2008 OpenLink Software
 
 This software is licensed under the GNU General Public License (see
 COPYING).
@@ -28,7 +28,7 @@ Client Protocol Driver exemptions
 
     In addition, as a special exemption, OpenLink Software gives
     permission to use the unmodified client libraries (ODBC, JDBC,
-    ADO.NET and OleDB providers) in your own application whether
-    open-source or not, with no obligation to use the GPL on the
-    resulting application.  In all other respects you must abide
-    by the terms of the GPL.
+    ADO.NET, OleDB, Jena, Sesame and Redland providers) in your own
+    application whether open-source or not, with no obligation to use
+    the GPL on the resulting application. In all other respects you 
+    must abide by the terms of the GPL.
