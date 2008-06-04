@@ -3410,7 +3410,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     arg = NULL;
   else
     {
-      arg = bif_arg (qst, args, 1, "xqf_str_parse");
+      arg = bif_arg_unrdf (qst, args, 1, "xqf_str_parse");
       arg_dtp = DV_TYPE_OF (arg);
       if (DV_DB_NULL == arg_dtp)
         return NEW_DB_NULL;
