@@ -861,7 +861,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           caddr_t iri;
           iri_id_t iid = unbox_iri_id (shortobj);
-          if (min_bnode_iri_id () <= iid)
+	  if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
             return BNODE_IID_TO_LABEL(iid);
           iri = key_id_to_iri (qi, iid);
           if (NULL == iri)
