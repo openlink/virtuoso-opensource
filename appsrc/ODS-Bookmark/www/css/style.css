@@ -961,6 +961,10 @@ input.openID {
 }
 
 /* Tree */
+#pane_left li {
+  cursor: pointer;
+}
+
 #pane_left .tree_li_selected {
 font-weight:bold;
 }

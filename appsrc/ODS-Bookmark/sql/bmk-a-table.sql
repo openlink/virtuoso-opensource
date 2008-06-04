@@ -208,7 +208,8 @@ create procedure BMK.WA.tags_update (
   oTags := split_and_decode (oTags, 0, '\0\0,');
   nTags := split_and_decode (nTags, 0, '\0\0,');
 
-  foreach (any tag in oTags) do {
+  foreach (any tag in oTags) do 
+  {
     if (not BMK.WA.vector_contains (nTags, lcase (tag)))
       update BMK.WA.TAGS
          set T_COUNT = T_COUNT - 1
@@ -216,9 +217,11 @@ create procedure BMK.WA.tags_update (
          and T_TAG = lcase (tag)
          and T_COUNT > 0;
   }
-  foreach (any tag in nTags) do {
+  foreach (any tag in nTags) do 
+  {
     if (not BMK.WA.vector_contains (oTags, lcase (tag)))
-      if (exists (select 1 from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_TAG = lcase (tag))) {
+      if (exists (select 1 from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_TAG = lcase (tag))) 
+      {
         update BMK.WA.TAGS
            set T_COUNT = T_COUNT + 1
          where T_DOMAIN_ID = domain_id

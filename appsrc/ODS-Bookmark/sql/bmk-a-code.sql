@@ -756,7 +756,8 @@ create procedure BMK.WA.bookmark_update (
   declare bookmark_id integer;
 
   bookmark_id := (select B_ID from BMK.WA.BOOKMARK where B_URI = uri);
-  if (is_empty_or_null(bookmark_id)) {
+  if (is_empty_or_null (bookmark_id))
+  {
     insert into BMK.WA.BOOKMARK (B_URI, B_NAME, B_DESCRIPTION, B_CREATED)
       values (uri, name, description, now());
     bookmark_id := identity_value ();
@@ -765,7 +766,8 @@ create procedure BMK.WA.bookmark_update (
     folder_id := null;
   if (id = -1)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
-  if (id <= 0) {
+  if (id <= 0)
+  {
     insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID)
       values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id);
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
@@ -1055,14 +1057,15 @@ create procedure BMK.WA.bookmark_export_tmp (
   declare id, type any;
 
   --  http (sprintf('<bookmark name="%V" desc="%V" uri="%V" id="f#%d" />', BD_NAME, coalesce(BD_DESCRIPTION, ''), B_URI, BD_ID), retValue);
-  for (select a.*, b.B_URI from BMK.WA.BOOKMARK_DOMAIN a, BMK.WA.BOOKMARK b where a.BD_BOOKMARK_ID = b.B_ID and a.BD_DOMAIN_ID = domain_id and coalesce(a.BD_FOLDER_ID, -1) = coalesce(folder_id, -1) order by a.BD_NAME) do {
+  for (select a.*, b.B_URI from BMK.WA.BOOKMARK_DOMAIN a, BMK.WA.BOOKMARK b where a.BD_BOOKMARK_ID = b.B_ID and a.BD_DOMAIN_ID = domain_id and coalesce(a.BD_FOLDER_ID, -1) = coalesce(folder_id, -1) order by a.BD_NAME) do
+  {
     http (sprintf('<bookmark name="%V" uri="%V" id="b#%d">', BMK.WA.utf2wide (BD_NAME), B_URI, BD_ID), retValue);
     if (coalesce(BD_DESCRIPTION, '') <> '')
       http (sprintf('<desc>%V</desc>', BD_DESCRIPTION), retValue);
     http ('</bookmark>', retValue);
   }
-
-  for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, -1) = coalesce(folder_id, -1) order by 2) do {
+  for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, -1) = coalesce(folder_id, -1) order by 2) do
+  {
     http (sprintf('<folder name="%V" id="f#%d">', F_NAME, F_ID), retValue);
     BMK.WA.bookmark_export_tmp(domain_id, F_ID, retValue);
     http ('</folder>', retValue);
@@ -2049,7 +2052,7 @@ create procedure BMK.WA.dav_content (
   declare N integer;
   declare oldUri, newUri, reqHdr, resHdr varchar;
 
-  newUri := uri;
+  newUri := replace (uri, ' ', '%20');
   reqHdr := null;
   if (isnull (auth_uid) or isnull (auth_pwd))
   BMK.WA.account_access (auth_uid, auth_pwd);

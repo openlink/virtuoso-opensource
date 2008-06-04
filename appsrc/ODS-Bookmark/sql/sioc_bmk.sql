@@ -80,7 +80,7 @@ create procedure bmk_links_to (inout content any)
 
   if (content is null)
     return null;
-  else if (isentity (content))
+  if (isentity (content))
     xt := content;
   else
     xt := xtree_doc (content, 2, '', 'UTF-8');
@@ -304,7 +304,7 @@ create procedure bookmark_domain_insert (
   if (not isnull (graph_iri))
   {
     bookmark_uri := (select B_URI from BMK.WA.BOOKMARK where B_ID = bookmark_id);
-    iri := bmk_post_iri (domain_id, bookmark_id);
+    iri := bmk_post_iri (domain_id, bd_id);
     linksTo := bmk_links_to (description);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, bookmark_uri, description, null, linksTo);
 		scot_tags_insert (domain_id, iri, tags);
@@ -356,7 +356,7 @@ create trigger BOOKMARK_DOMAIN_SIOC_I after insert on BMK.WA.BOOKMARK_DOMAIN ref
 create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N
 {
   bookmark_domain_delete (O.BD_DOMAIN_ID,
-                          O.BD_BOOKMARK_ID);
+                          O.BD_ID);
   bookmark_domain_insert (null,
                           null,
                           null,
@@ -376,7 +376,7 @@ create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN ref
 create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O
     {
   bookmark_domain_delete (O.BD_DOMAIN_ID,
-                          O.BD_BOOKMARK_ID);
+                          O.BD_ID);
     }
 ;
 

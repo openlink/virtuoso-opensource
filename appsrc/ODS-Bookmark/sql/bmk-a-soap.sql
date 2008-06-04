@@ -50,20 +50,21 @@ create procedure DBA.DB.bookmark_import (
 
 
   -- get content
-  if (lcase(pSourceType) = 'string') {
+  if (lcase(pSourceType) = 'string') 
+  {
     content := pSource;
-
-  } else if (lcase(pSourceType) = 'webdav') {
-    if (pSource not like (BMK.WA.dav_home (user_id) || '%'))
-      signal ('BMK04', sprintf('Please select file from your WebDAV home directory ''%s''!', BMK.WA.dav_home (user_id)));
+  } 
+  else if (lcase(pSourceType) = 'webdav') 
+  {
     content := BMK.WA.dav_content (BMK.WA.host_url () || pSource, pUser, pPassword);
-
-  } else if (lcase(pSourceType) = 'url') {
+  } 
+  else if (lcase(pSourceType) = 'url') 
+  {
     content := BMK.WA.dav_content (pSource);
-
-  } else {
+  } 
+  else 
+  {
 	  signal ('BMK04', 'The source type must be string, WebDAV or URL.');
-
   }
 
   pTags := trim (pTags);
@@ -107,7 +108,7 @@ create procedure DBA.DB.bookmark_export (
                     and WAI_ID   = domain_id))
   	signal ('BMK03', 'User not a member of the instance');
 
-  if (not ((lcase(pContentType) = 'netscape') or (lcase(pContentType) = 'netscape')))
+  if (not ((lcase (pContentType) = 'netscape') or (lcase (pContentType) = 'xbel')))
   	signal ('BMK05', 'The content type must be Netscape or XBEL.');
 
   set_user_id ('dba');
