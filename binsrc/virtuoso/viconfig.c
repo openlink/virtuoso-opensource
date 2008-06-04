@@ -1613,18 +1613,25 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
   char temp_string[2048];
   char *section = dbs->dbs_name;
   char *c_database_file;
+  char *s_db = "db";
+  char *s_trx = "trx";
+
   if (dbs->dbs_type == DBS_PRIMARY)
     section = "Database";
   else if (dbs->dbs_type == DBS_TEMP)
-    section = "TempDatabase";
+    {
+      section = "TempDatabase";
+      s_db = "tdb";
+      s_trx = "ttr";
+    }
   else if (dbs->dbs_type == DBS_RECOVER)
     section = "Database";
 
   if (cfg_getstring (pconfig, section, "DatabaseFile", &c_database_file) == -1)
-    c_database_file = s_strdup (setext (prefix, "db", EXT_SET));
+    c_database_file = s_strdup (setext (prefix, s_db, EXT_SET));
 
   if (cfg_getstring (pconfig, section, "TransactionFile", &c_txfile) == -1)
-    dbs->dbs_log_name = s_strdup (setext (prefix, "trx", EXT_SET));
+    c_txfile = s_strdup (setext (prefix, s_trx, EXT_SET));
 
   if (cfg_getlong (pconfig, section, "FileExtend", &c_file_extend) == -1)
     c_file_extend = 100;
@@ -1720,8 +1727,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
   c_stripes = NULL;
   if (c_striping)
     {
-      int indx;
-      int nsegs;
+      int indx, nsegs;
       disk_segment_t *seg;
       disk_stripe_t *dst;
       char *segszstr;
@@ -1831,7 +1837,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      /* Check for queue name */
 	      if ((sep = strrchr (value, '=')) != NULL)
 		{
-		  s_ioq = (char *) ltrim ((const char *)(sep + 1));
+		  s_ioq = (char *) ltrim ((const char *) (sep + 1));
 		  *sep = '\0';
 		}
 	      rtrim (value);
@@ -1863,32 +1869,28 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
   dbs->dbs_disks = c_stripes;
 }
 
+
 dk_set_t
-new_cfg_read_storages (caddr_t **temp_storage)
+new_cfg_read_storages (caddr_t ** temp_storage)
 {
   int n_storage;
   dk_set_t res = NULL;
-  char storage_name[50], *c_temp_storage;
-  for (n_storage = 1; ; n_storage++)
+  char storage_name[50];
+
+  for (n_storage = 1;; n_storage++)
     {
       sprintf (storage_name, "Storage%d", n_storage);
       if (cfg_find (pconfig, "Database", storage_name) != 0)
-  break;
+	break;
       dk_set_push (&res, list (2, box_string (pconfig->value), NULL));
     }
-  if (cfg_getstring (pconfig, "Database", "TempStorage", &c_temp_storage) == -1 ||
-      cfg_find (pconfig, c_temp_storage, "DatabaseFile"))
-    {
-      cfg_write (pconfig, "TempDatabase", "DatabaseFile", setext (prefix, "tdb", EXT_SET));
-      cfg_write (pconfig, "TempDatabase", "TransactionFile", setext (prefix, "ttr", EXT_SET));
-      cfg_write (pconfig, "TempDatabase", "FileExtend", "200");
-      cfg_write (pconfig, "Database", "TempStorage", "TempDatabase");
-      cfg_commit (pconfig);
-      c_temp_storage = "TempDatabase";
-    }
-  *temp_storage = (caddr_t *) list (2, box_string (c_temp_storage), NULL);
+
+  *temp_storage = (caddr_t *) list (2, box_string ("TempDatabase"), NULL);
+
   return res;
 }
+
+
 /*
  *  Checks if the database is in use
  *  TODO Use file locking
