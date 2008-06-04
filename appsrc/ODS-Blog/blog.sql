@@ -2209,7 +2209,7 @@ procedure "blogger_auth" (in req "blogRequest")
               else if (isstring (req.postId))
                 {
       whenever not found goto nfpost;
-      select BI_HOME, BI_OWNER, BI_BLOG_ID into home, own, bid from SYS_BLOG_INFO, SYS_BLOGS
+		  select BI_HOME, BI_OWNER, BI_BLOG_ID, BI_WAI_NAME into home, own, bid, inst_name from SYS_BLOG_INFO, SYS_BLOGS
       where B_POST_ID = req.postId and BI_BLOG_ID = B_BLOG_ID with (prefetch 1);
 		  req.blogid := bid;
       nfpost:;
@@ -6166,10 +6166,15 @@ GET_URL_AND_REDIRECTS (inout url varchar, inout hdr any)
       {
   if (hdr[0] like 'HTTP/1._ 30_ %')
     {
+	    declare base varchar;
+	    base := url;
       url := http_request_header (hdr, 'Location');
       if (isstring (url))
+	      {
+		url := WS.WS.EXPAND_URL (base, url);
       goto again;
     }
+	  }
   signal ('22023', trim(hdr[0], '\r\n'), 'BLOG1');
   return NULL;
       }

@@ -26,6 +26,10 @@ create procedure ODS.ODS_API."weblog.post.new" (
   declare rc int;
   declare struct BLOG.DBA."MTWeblogPost";
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
@@ -59,23 +63,23 @@ ret:
 
 create procedure ODS.ODS_API."weblog.post.edit" (
     in post_id int,
-    in categories any,
-    in date_created datetime,
+    in categories any := null,
+    in date_created datetime := null,
     in description varchar,
-    in enclosure any,
-    in source any,
+    in enclosure any := null,
+    in source any := null,
     in title varchar,
-    in link varchar,
-    in author varchar,
-    in comments varchar,
-    in allow_comments smallint,
-    in allow_pings smallint,
-    in convert_breaks smallint,
-    in excerpt varchar,
-    in tb_ping_urls any,
-    in text_more varchar,
-    in keywords varchar,
-    in publish smallint
+    in link varchar := null,
+    in author varchar := null,
+    in comments varchar := null,
+    in allow_comments smallint := 1,
+    in allow_pings smallint := 1,
+    in convert_breaks smallint := 0,
+    in excerpt varchar := null,
+    in tb_ping_urls any := null,
+    in text_more varchar := null,
+    in keywords varchar := null,
+    in publish smallint := 1
     ) __soap_http 'text/xml'
 {
   declare uname, passwd, blog_id varchar;
@@ -83,6 +87,10 @@ create procedure ODS.ODS_API."weblog.post.edit" (
   declare struct BLOG.DBA."MTWeblogPost";
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
   select WAI_ID into inst_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
@@ -122,6 +130,10 @@ create procedure ODS.ODS_API."weblog.post.delete" (in post_id varchar) __soap_ht
   declare rc int;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
   select WAI_ID into inst_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
@@ -143,6 +155,10 @@ create procedure ODS.ODS_API."weblog.post.get" (in post_id varchar) __soap_http 
   declare q, iri, blog_id varchar;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
   select WAI_ID, BI_BLOG_ID into inst_id, blog_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
@@ -165,14 +181,27 @@ create procedure ODS.ODS_API."weblog.comment.get" (in post_id varchar, in commen
   declare q, iri, blog_id varchar;
   declare inst_id int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
   select WAI_ID, BI_BLOG_ID into inst_id, blog_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
 
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
+
+  if (comment_id is null)
+    {
+      iri := sioc..blog_post_iri (blog_id, post_id);
+      q := sprintf ('describe ?x from <%s> where { <%s> sioc:has_reply ?x }', sioc..get_graph (), iri);
+    }
+  else
+    {
   iri := sioc..blog_comment_iri (blog_id, post_id, comment_id);
   q := sprintf ('describe <%s> from <%s>', iri, sioc..get_graph ());
+    }
   exec_sparql (q);
 ret:
   return '';
@@ -184,8 +213,15 @@ create procedure ODS.ODS_API."weblog.comment.approve" (in post_id int, in commen
   declare uname, blog_id varchar;
   declare rc int;
   declare inst_id int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
+  msg := 'No such post';
+  rc := -1;
   select WAI_ID, BI_BLOG_ID into inst_id, blog_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
 
@@ -193,7 +229,10 @@ create procedure ODS.ODS_API."weblog.comment.approve" (in post_id int, in commen
     return ods_auth_failed ();
 
   if (flag not in (-1, 0, 1))
-    rc := 0;
+    {
+      rc := -1;
+      msg := 'Flag must be 0, 1 or -1.';
+    }
   else
     {
       declare spam int;
@@ -203,9 +242,10 @@ create procedure ODS.ODS_API."weblog.comment.approve" (in post_id int, in commen
       update BLOG..BLOG_COMMENTS set BM_IS_PUB = abs(flag), BM_IS_SPAM = spam
 	  where BM_BLOG_ID = blog_id and BM_POST_ID = post_id and BM_ID = comment_id;
       rc := row_count ();
+      msg := '';
     }
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -214,8 +254,15 @@ create procedure ODS.ODS_API."weblog.comment.delete" (in post_id int, in comment
   declare uname, blog_id varchar;
   declare rc int;
   declare inst_id int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
+  msg := 'No such post';
+  rc := -1;
   select WAI_ID, BI_BLOG_ID into inst_id, blog_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_BLOGS where
       BI_BLOG_ID = B_BLOG_ID and B_POST_ID = post_id and BI_WAI_NAME = WAI_NAME;
 
@@ -224,26 +271,35 @@ create procedure ODS.ODS_API."weblog.comment.delete" (in post_id int, in comment
   delete from BLOG..BLOG_COMMENTS
 	  where BM_BLOG_ID = blog_id and BM_POST_ID = post_id and BM_ID = comment_id;
   rc := row_count ();
+  msg := '';
 ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
 create procedure ODS.ODS_API."weblog.comment.new" (
-	in post_id int,
+	in post_id varchar,
 	in name varchar,
 	in title varchar,
 	in email varchar,
 	in url varchar,
-	in text int
+	in text varchar
 	) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
+  declare msg varchar;
 
-  rc := MT.MT.comments (post_id, title, sprintf ('%s <%s>', name, email), url, text);
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  msg := MT.MT.comments (post_id, title, sprintf ('%s <%s>', name, email), url, text);
+  rc := -1;
+  if (strstr (msg, 'success') is not null)
+    rc := 1;
 ret:
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -253,6 +309,10 @@ create procedure ODS.ODS_API."weblog.get" (in inst_id int) __soap_http 'text/xml
   declare rc int;
   declare iri, q varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
@@ -271,9 +331,15 @@ create procedure ODS.ODS_API."weblog.options.set" (in inst_id int, in options an
 {
   declare uname varchar;
   declare rc int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+  msg := '';
 
   -- TODO: not implemented
 ret:
@@ -286,6 +352,10 @@ create procedure ODS.ODS_API."weblog.options.get" (in inst_id int) __soap_http '
   declare uname varchar;
   declare rc int;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
@@ -314,11 +384,18 @@ create procedure ODS.ODS_API."weblog.upstreaming.set" (
   declare uname, blog_id varchar;
   declare rc int;
   declare jid int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No such blog';
+  rc := -1;
   select BI_BLOG_ID into blog_id from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where WAI_NAME = BI_WAI_NAME and WAI_ID = inst_id;
 
   jid := coalesce((select top 1 R_JOB_ID from BLOG.DBA.SYS_ROUTING order by R_JOB_ID desc), 0)+1;
@@ -356,7 +433,10 @@ create procedure ODS.ODS_API."weblog.upstreaming.set" (
 			      max_retransmits
 			      );
     if (row_count ())
+      {
       rc := jid;
+	msg := 'Created';
+      }
 
     if (initialize_log)
       {
@@ -372,12 +452,19 @@ ret:
 ;
 
 create procedure ODS.ODS_API."weblog.upstreaming.get" (
-    in inst_id int,
     in job_id int := null
     ) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc, inst_id int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  whenever not found goto ret;
+  select WAI_ID into inst_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_ROUTING where
+      R_JOB_ID = job_id and BI_WAI_NAME = WAI_NAME and R_ITEM_ID = BI_BLOG_ID;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
@@ -396,8 +483,15 @@ create procedure ODS.ODS_API."weblog.upstreaming.remove" (
   declare uname varchar;
   declare rc int;
   declare inst_id int;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   whenever not found goto ret;
+  msg := 'No such blog';
+  rc := -1;
   select WAI_ID into inst_id from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO, BLOG.DBA.SYS_ROUTING where
       R_JOB_ID = job_id and BI_WAI_NAME = WAI_NAME and R_ITEM_ID = BI_BLOG_ID;
 
@@ -405,6 +499,8 @@ create procedure ODS.ODS_API."weblog.upstreaming.remove" (
     return ods_auth_failed ();
 
   delete from BLOG.DBA.SYS_ROUTING where R_JOB_ID = job_id;
+  rc := row_count ();
+  msg := '';
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -417,14 +513,18 @@ create procedure ODS.ODS_API."weblog.tagging.set" (
 {
   declare uname, blog_id varchar;
   declare rc int;
+  declare msg varchar;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No such blog';
+  rc := -1;
   select BI_BLOG_ID into blog_id from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where WAI_NAME = BI_WAI_NAME and WAI_ID = inst_id;
   update BLOG.DBA.SYS_BLOG_INFO set BI_AUTO_TAGGING = flag where BI_BLOG_ID = blog_id;
   rc := row_count ();
+  msg := '';
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -438,11 +538,18 @@ create procedure ODS.ODS_API."weblog.tagging.retag" (
   declare uname, blog_id varchar;
   declare rc, flag, job, user_id int;
   declare dummy, ruls any;
+  declare msg varchar;
 
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
   whenever not found goto ret;
+  msg := 'No such blog';
+  rc := -1;
   select BI_BLOG_ID into blog_id from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where WAI_NAME = BI_WAI_NAME and WAI_ID = inst_id;
   job := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING where R_ITEM_ID = blog_id and R_TYPE_ID = 3 and R_PROTOCOL_ID = 6);
   select U_ID into user_id from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -457,6 +564,8 @@ create procedure ODS.ODS_API."weblog.tagging.retag" (
 	  insert replacing BLOG..SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE) values (job, B_POST_ID, flag);
 	}
     }
+  rc := 1;
+  msg := '';
 ret:
   return ods_serialize_int_res (rc);
 }

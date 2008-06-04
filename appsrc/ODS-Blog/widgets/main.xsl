@@ -3166,7 +3166,11 @@ window.onload = function (e)
 	      </div>
 	      <div class="comment-footer">
 		  <span class="comment-user">
+		      <?vsp if (_bm_home_page <> '#') { ?>
 		      Posted by <a href="<?V _bm_home_page ?>" rel="nofollow"><?V BLOG..blog_utf2wide (_bm_name) ?></a>
+		      <?vsp } else { ?>
+		      Posted by <?V BLOG..blog_utf2wide (_bm_name) ?>
+		      <?vsp } ?>
 		  </span>
 		  <span class="comment-date"> on <?V _bm_ts ?></span>
 	      </div>
@@ -3381,6 +3385,9 @@ window.onload = function (e)
           <a href="<?V sprintf('index.vspx?page=bridge&sid=%s&realm=wa', self.sid) ?>">Upstreams</a>
         </li>
         <li>
+          <a href="<?V sprintf('index.vspx?page=import&sid=%s&realm=wa', self.sid) ?>">Downstream (Import)</a>
+        </li>
+        <li>
           <a href="<?V sprintf('index.vspx?page=routing_queue&sid=%s&realm=wa', self.sid) ?>">Upstreaming Log</a>
         </li>
         <li>
@@ -3429,9 +3436,6 @@ window.onload = function (e)
         </li>
         <li>
           <a href="<?V sprintf('index.vspx?page=tags&sid=%s&realm=wa', self.sid) ?>">Tagging Settings</a>
-        </li>
-        <li>
-          <a href="<?V sprintf('index.vspx?page=import&sid=%s&realm=wa', self.sid) ?>">Import</a>
         </li>
     </vm:if>
       </ul>
