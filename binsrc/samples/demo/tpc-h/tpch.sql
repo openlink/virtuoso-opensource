@@ -1667,3 +1667,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/tpch', ppath=>'/DAV/home/demo/tpch/', vsp_user=>'d
 DB.DBA.VHOST_REMOVE (lpath=>'/tpch/linkeddata');
 DB.DBA.VHOST_DEFINE (lpath=>'/tpch/linkeddata', ppath=>'/DAV/home/demo/tpch/', vsp_user=>'dba', is_dav=>1,
           is_brws=>1);
+
+DB.DBA.VHOST_REMOVE (lpath=>'/tpc-h');
+DB.DBA.VHOST_DEFINE (lpath=>'/tpc-h', ppath=>'/DAV/home/demo/tpch/', vsp_user=>'dba', is_dav=>1, is_brws=>1);
+
