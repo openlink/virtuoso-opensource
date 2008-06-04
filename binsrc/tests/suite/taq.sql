@@ -98,3 +98,19 @@ create procedure INS1_ERR (in q int, in w int)
 
 taq1err (1);
 
+create procedure TAQ_OVER_SRV (in q int)
+{
+  delay (0.1);
+}
+
+create procedure taq_over ()
+{
+  declare i int;
+  declare aq any;
+  aq := async_queue (100);
+  for (i := 0; i < 150; i := i + 1)
+	aq_request (aq, 'DB.DBA.TAQ_OVER_SRV', vector (0));
+  aq_wait_all (aq);
+}
+
+taq_over ();
