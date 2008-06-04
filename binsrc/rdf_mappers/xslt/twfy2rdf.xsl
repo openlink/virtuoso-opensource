@@ -97,21 +97,45 @@
     <xsl:template match="*">
         <xsl:variable name="gid" select="../gid" />
         <xsl:variable name="about" select="concat($baseUri, '#', $gid)" />
+        <xsl:variable name="about2" select="concat($baseUri, '#this')" />
         <xsl:variable name="canonicalname" select="local-name(.)" />
-        <foaf:Document rdf:about="{vi:proxyIRI()}{$about}">
-            <xsl:if test="$canonicalname = 'full_name'">
+	<xsl:variable name="prop_value" select="."/>
+        <foaf:Document rdf:about="{$about}">
             <foaf:primaryTopic>
-                <foaf:Person rdf:about="{$baseUri}">
+                <foaf:Person rdf:about="{$about2}">
+                   <xsl:if test="$canonicalname = 'full_name'">
                     <owl:sameAs>
                         <xsl:attribute name="rdf:resource">
-                            <xsl:value-of select="concat('http://dbpedia.org/resource/', .)"/>
+                           <xsl:value-of select="replace(concat('http://dbpedia.org/resource/', .), ' ', '_')"/>
                         </xsl:attribute>
                     </owl:sameAs>
+                   </xsl:if>
+                   <xsl:if test="$canonicalname = 'full_name'">
+                   <foaf:name>
+                       <xsl:value-of select="."/>
+                   </foaf:name>
+                   </xsl:if>
+                   <xsl:if test="$canonicalname = 'first_name'">
+                   <foaf:firstName>
+                       <xsl:value-of select="."/>
+                   </foaf:firstName>
+                   </xsl:if>
+                   <xsl:if test="$canonicalname = 'last_name'">
+                   <foaf:family_name>
+                       <xsl:value-of select="."/>
+                   </foaf:family_name>
+                   <foaf:surname>
+                       <xsl:value-of select="."/>
+                   </foaf:surname>
+                   </xsl:if>
+                   <xsl:if test="$canonicalname = 'image'">
+                     <foaf:img rdf:resource="{concat('http://www.theyworkforyou.com', .)}"/>
+                   </xsl:if>
                 </foaf:Person>
             </foaf:primaryTopic>
-            </xsl:if>
         </foaf:Document>
-        <rdf:Description rdf:about="{vi:proxyIRI()}{$about}">
+	<xsl:if test="string-length($prop_value) &gt; 0">
+        <rdf:Description rdf:about="{$about}">
             <xsl:element namespace="{$ns}" name="{$canonicalname}">
               <xsl:choose>
                 <xsl:when test="$canonicalname = 'image'">
@@ -123,6 +147,7 @@
               </xsl:choose>
             </xsl:element>
         </rdf:Description>
+	</xsl:if>
     </xsl:template>
 
 </xsl:stylesheet>
