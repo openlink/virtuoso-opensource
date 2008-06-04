@@ -80,20 +80,15 @@ public class VirtGraph extends GraphBase
 	if(this.graphName == null)
 		this.graphName = DEFAULT;
 
-	String exec_text ="create procedure jena_remove (in _G any, in _S any, in _P any, in _O any){delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME (_G) and S=DB.DBA.RDF_MAKE_IID_OF_QNAME (_S) and P=DB.DBA.RDF_MAKE_IID_OF_QNAME (_P) and O=DB.DBA.RDF_MAKE_IID_OF_QNAME (_O);}";
-
 	if (connection == null)
 	{
 	    try
 	    {
 		Class.forName("virtuoso.jdbc3.Driver");
 		connection = DriverManager.getConnection(url, user, password);
-		java.sql.Statement stmt = connection.createStatement();
-		stmt.executeUpdate(exec_text);
 	    }
 	    catch(Exception e)
 	    {
-//		System.out.println("Connection to " + url + " is FAILED.");
 	        throw new JenaException(e);
 	    }
 	}
@@ -145,6 +140,32 @@ public class VirtGraph extends GraphBase
 
 
 // GraphBase overrides
+    String Node2Str(Node n)
+    {
+      if (n instanceof Node_URI) {
+        return "<"+n+">";
+      } else if (n instanceof Node_Blank) {
+        return "<_:"+n+">"; 
+      } else {
+        String s;
+        StringBuilder sb = new StringBuilder();
+        sb.append("\"");
+        sb.append(n.getLiteralValue());
+        sb.append("\"");
+        s = n.getLiteralLanguage();
+        if (s != null && s.length() > 0) {
+          sb.append("@");
+          sb.append(s);
+        }
+        s = n.getLiteralDatatypeURI();
+        if (s != null && s.length() > 0) {
+          sb.append("^^<");
+          sb.append(s);
+          sb.append(">");
+        }
+        return sb.toString();
+      }
+    }
 
     @Override
     public void performAdd(Triple t)
@@ -152,15 +173,12 @@ public class VirtGraph extends GraphBase
 	String S, P, O;
 	String exec_text;
 
-	S = t.getSubject().toString();
-	P = t.getPredicate().toString();
-	O = t.getObject().toString();
+      S = Node2Str(t.getSubject());
+      P = Node2Str(t.getPredicate());
+      O = Node2Str(t.getObject());
 
-	exec_text ="DB.DBA.RDF_QUAD_URI ('" + this.graphName +
-	    				  "', '" + S +
-	    				  "', '" + P +
-	    				  "', '" + O +
-					  "')";
+      exec_text = "sparql insert into graph <"+this.graphName+"> { "+
+      		    S+" "+P+" "+O+" }";
 
 	try
 	{
@@ -179,15 +197,12 @@ public class VirtGraph extends GraphBase
 	String S, P, O;
 	String exec_text;
 
-	S = t.getSubject().toString();
-	P = t.getPredicate().toString();
-	O = t.getObject().toString();
+      S = Node2Str(t.getSubject());
+      P = Node2Str(t.getPredicate());
+      O = Node2Str(t.getObject());
 
-	exec_text ="jena_remove (" +
-	    	   "'" + this.graphName + "', " +
-		   "'" + S + "', " +
-		   "'" + P + "', " +
-		   "'" + O + "')";
+      exec_text = "sparql delete from graph <"+this.graphName+"> { "+
+      		    S+" "+P+" "+O+" }";
 
 	try
 	{
@@ -240,16 +255,17 @@ public class VirtGraph extends GraphBase
 	O = " ?o ";
 
 	if (!Node.ANY.equals(t.getSubject()))
-		S = " <" + t.getSubject().toString() + "> ";
+		S = Node2Str(t.getSubject());
 
 	if (!Node.ANY.equals(t.getPredicate()))
-		P = " <" + t.getPredicate().toString() + "> ";
+		P = Node2Str(t.getPredicate());
 
 	if (!Node.ANY.equals(t.getObject()))
-		O = " <" + t.getObject().toString() + "> ";
+		O = Node2Str(t.getObject());
 
 	exec_text = "select count (*) from (sparql select * from <"
-			+ this.graphName + "> where { " + S +  P + O + " })f";
+			+ this.graphName + "> where { " 
+			+ S +" "+ P +" "+ O +" })f";
 
 	try {
 		java.sql.Statement stmt = connection.createStatement();
@@ -273,16 +289,16 @@ public class VirtGraph extends GraphBase
 	O = " ?o ";
 
 	if (tm.getMatchSubject() != null)
-		S = " <" + tm.getMatchSubject().toString() + "> ";
+		S = Node2Str(tm.getMatchSubject());
 
 	if (tm.getMatchPredicate() != null)
-		P = " <" + tm.getMatchPredicate().toString() + "> ";
+		P = Node2Str(tm.getMatchPredicate());
 
 	if (tm.getMatchObject() != null)
-		O = " <" + tm.getMatchObject().toString() + "> ";
+		O = Node2Str(tm.getMatchObject());
 
-	exec_text = "SPARQL SELECT * from <" + graphName + "> WHERE { " + S + P
-			+ O + " }";
+	exec_text = "sparql select * from <" + this.graphName + "> where { " 
+			+ S +" "+ P +" "+ O + " }";
 
 	try {
 		java.sql.PreparedStatement stmt = connection
@@ -309,13 +325,14 @@ public class VirtGraph extends GraphBase
 
     public void clear()
     {
-	String exec_text ="delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('" + this.graphName + "')";
+	String exec_text ="sparql clear graph <" + this.graphName + ">";
 
 	checkOpen();
+
 	try
 	{
 	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeUpdate(exec_text);
+	    stmt.executeQuery(exec_text);
 	}
 	catch(Exception e)
 	{

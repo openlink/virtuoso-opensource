@@ -79,15 +79,12 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	    for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
 	        {
 	            Triple t = (Triple)i;
-	            S = t.getSubject().toString();
-	            P = t.getPredicate().toString();
-	            O = t.getObject().toString();
+	            S = Node2Str(t.getSubject());
+	            P = Node2Str(t.getPredicate());
+	            O = Node2Str(t.getObject());
 
-	            exec_text ="DB.DBA.RDF_QUAD_URI ('" + name +
-	    				  "', '" + S +
-	    				  "', '" + P +
-	    				  "', '" + O +
-					  "')";
+	            exec_text ="sparql insert into graph <"+name+"> { "+
+	    			 S+" "+P+" "+O+" }";
 	            java.sql.Statement stmt = getConnection().createStatement();
 	            stmt.executeQuery(exec_text);
 	        }
@@ -99,12 +96,12 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
     /** Remove a named graph. */
     public void removeNamedModel(String name) {
-	    String exec_text ="delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('" + name + "')";
+	    String exec_text ="sparql clear graph <"+ name + ">";
 
 	    checkOpen();
 	try {
 	    java.sql.Statement stmt = getConnection().createStatement();
-	    stmt.executeUpdate(exec_text);
+	    stmt.executeQuery(exec_text);
 	} catch (Exception e) {
 		throw new JenaException(e);
 	}

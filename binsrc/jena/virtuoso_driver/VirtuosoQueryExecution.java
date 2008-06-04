@@ -90,7 +90,6 @@ public class VirtuosoQueryExecution
 	}
 	catch(Exception e)
 	{
-//	    System.out.println("Convert results are FAILED.");
             throw new JenaException("Convert results are FAILED.:"+e);
 	}
     }
@@ -116,7 +115,6 @@ public class VirtuosoQueryExecution
 	}
 	catch(Exception e)
 	{
-//	    System.out.println("ViruosoResultBindingsToJenaResults is FAILED.");
             throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:"+e);
 	}
 

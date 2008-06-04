@@ -25,9 +25,12 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+import virtuoso.jdbc3.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.*;
+import com.hp.hpl.jena.datatypes.*;
+import com.hp.hpl.jena.rdf.model.*;
 
 public class VirtResSetIter implements ExtendedIterator
 {
@@ -111,6 +114,40 @@ public class VirtResSetIter implements ExtendedIterator
 	}
     }
 
+
+    private Node Object2Node(Object o)
+    {
+      if (o instanceof VirtuosoExtendedString) 
+        {
+          VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
+          if (vs.iriType == VirtuosoExtendedString.IRI) {
+            if (vs.str.indexOf ("_:") == 0)
+              return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
+            else
+              return Node.createURI(vs.str);
+          } else if (vs.iriType == VirtuosoExtendedString.BNODE) {
+            return Node.createAnon(AnonId.create(vs.str.substring(9))); // nodeID://
+          } else {
+            return Node.createLiteral(vs.str); 
+          }
+        }
+      else if (o instanceof VirtuosoRdfBox)
+        {
+          VirtuosoRdfBox rb = (VirtuosoRdfBox)o;
+          String rb_type = rb.getType();
+          RDFDatatype dt = null;
+
+          if ( rb_type != null)
+            dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
+          return Node.createLiteral(rb.toString(), rb.getLang(), dt);
+        }
+      else 
+        {
+          return Node.createLiteral(o.toString());
+        }
+
+    }
+
     protected void extractRow() throws Exception
     {
        Node NodeS, NodeP, NodeO;
@@ -118,17 +155,17 @@ public class VirtResSetIter implements ExtendedIterator
        if (v_in.getMatchSubject() != null)
 	   NodeS = v_in.getMatchSubject();
        else
-	   NodeS = Node.createURI (v_resultSet.getString("s"));
+           NodeS = Object2Node(v_resultSet.getObject("s"));
 
        if (v_in.getMatchPredicate() != null)
 	   NodeP = v_in.getMatchPredicate();
        else
-	   NodeP = Node.createURI (v_resultSet.getString("p"));
+           NodeP = Object2Node(v_resultSet.getObject("p"));
 
        if (v_in.getMatchObject() != null)
 	   NodeO = v_in.getMatchObject();
        else
-	   NodeO = Node.createURI (v_resultSet.getString("o"));
+           NodeO = Object2Node(v_resultSet.getObject("o"));
 
        v_row = new Triple(NodeS, NodeP, NodeO);
     }
