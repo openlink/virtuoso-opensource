@@ -322,7 +322,7 @@ create procedure PHOTO.WA.edit_album_settings(
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
   if(auth_uid = '')
   {
-    return vector();
+    return 'false';
   }
 
   declare exit handler for sqlstate '*'

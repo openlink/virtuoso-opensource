@@ -222,7 +222,7 @@ returns photo_exif array
   ind := 0;
   while (ind < length(result))
   {
-    if(result[ind] <> '')
+    if(length (result[ind]) and length (result[ind+1]))
     {
       exif := photo_exif(result[ind],result[ind+1]);
       result_out := vector_concat(result_out,vector(exif));

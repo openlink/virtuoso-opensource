@@ -81,6 +81,11 @@ create procedure photo_insert (
     return;
   };
 
+  if (res_full_path is null)
+    {
+      res_full_path := (select r.RES_FULL_PATH from WS.WS.SYS_DAV_RES r where r.RES_ID = res_id);
+    }
+
   pos := strrchr (res_full_path, '/');
   if (pos is null)
     return;

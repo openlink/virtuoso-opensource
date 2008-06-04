@@ -292,12 +292,12 @@
               <iframe width="100%" height="750" src="" border="0" frameborder="0" ></iframe>
             </div>
               <div id="images_import" style="display:none;">
-                <div id="images_import_flickr" class="link">Sing in</div>
+                    <div id="images_import_flickr" class="link">Sign in</div>
                 <div id="images_import_flickr_list" class="link_disabled">View and select images</div>
                 <div id="images_import_flickr_save" class="link_disabled">Import</div>
               </div>
               <div id="images_export" style="display:none;">
-                <div id="images_export_flickr" class="link">Sing in Flickr</div>
+                    <div id="images_export_flickr" class="link">Sign in Flickr</div>
                 <div id="images_export_flickr_send" class="link_disabled">Upload selected images to Flickr</div>
               </div>
             <div id="images" style="display:none;">
