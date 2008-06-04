@@ -118,6 +118,7 @@ create procedure fill_ods_calendar_sioc (
                 WAI_NAME,
                 WAM_USER,
                 E_ID,
+                E_UID,
                 E_DOMAIN_ID,
                 E_KIND,
                 E_SUBJECT,
@@ -150,6 +151,7 @@ create procedure fill_ods_calendar_sioc (
                     c_iri,
                     creator_iri,
                     E_ID,
+                    E_UID,
                     E_DOMAIN_ID,
                     E_KIND,
                     E_SUBJECT,
@@ -261,6 +263,7 @@ create procedure event_insert (
   in c_iri varchar,
   in creator_iri varchar,
   inout event_id integer,
+  inout uid integer,
   inout domain_id integer,
   inout kind integer,
   inout subject varchar,
@@ -309,16 +312,18 @@ create procedure event_insert (
     if (kind = 0)
     {
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vevent'));
+      if (not isnull (uid))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), CAL.WA.dt_iso8601 (now ()));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
       if (not isnull (created))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), CAL.WA.dt_iso8601 (created));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
       if (not isnull (updated))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), CAL.WA.dt_iso8601 (updated));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
       if (not isnull (eventStart))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), CAL.WA.dt_iso8601 (eventStart));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
       if (not isnull (eventEnd))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), CAL.WA.dt_iso8601 (eventEnd));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
     if (not isnull (subject))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
     if (not isnull (description))
@@ -331,18 +336,20 @@ create procedure event_insert (
     if (kind = 1)
     {
       DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
+      if (not isnull (uid))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), CAL.WA.dt_iso8601 (now ()));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
       if (not isnull (completed))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('completed'), CAL.WA.dt_iso8601 (completed));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('completed'), completed);
       if (not isnull (created))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), CAL.WA.dt_iso8601 (created));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
       if (not isnull (updated))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), CAL.WA.dt_iso8601 (updated));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
     if (not isnull (eventStart))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), CAL.WA.dt_iso8601 (eventStart));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
     if (not isnull (eventEnd))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), CAL.WA.dt_iso8601 (eventEnd));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
       if (not isnull (subject))
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
       if (not isnull (description))
@@ -391,6 +398,7 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
                 null,
                 null,
                 N.E_ID,
+                N.E_UID,
                 N.E_DOMAIN_ID,
                 N.E_KIND,
                 N.E_SUBJECT,
@@ -423,6 +431,7 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
                 null,
                 null,
                 N.E_ID,
+                N.E_UID,
                 N.E_DOMAIN_ID,
                 N.E_KIND,
                 N.E_SUBJECT,

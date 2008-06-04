@@ -1238,7 +1238,7 @@ create procedure CAL.WA.banner_links (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dav_content (
-  inout uri varchar,
+  in uri varchar,
   in auth_uid varchar := null,
   in auth_pwd varchar := null)
 {
@@ -1251,7 +1251,7 @@ create procedure CAL.WA.dav_content (
   declare content, oldUri, newUri, reqHdr, resHdr varchar;
   declare xt any;
 
-  newUri := uri;
+  newUri := replace (uri, ' ', '%20');
   reqHdr := null;
   if (is_empty_or_null (auth_uid))
   CAL.WA.account_access (auth_uid, auth_pwd);
@@ -5027,7 +5027,7 @@ create procedure CAL.WA.exchange_exec_internal (
           {
             permissions := '110100000RR';
           }
-          _name := http_physical_path_resolve (_name);
+          _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {

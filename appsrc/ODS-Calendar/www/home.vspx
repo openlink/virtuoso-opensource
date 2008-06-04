@@ -1105,6 +1105,7 @@
                             if (cParams[1] = 'day')
                             {
                         self.cMonth := self.cnMonth;
+                              self.cDays := self.initDays (self.cMonth);
                         N := atoi (cParams[2]) * 7 + atoi (cParams[3]);
                         self.cDay := self.calcDate (N);
                         if ((cParams[0] = 'd') or ((self.cDay >= self.cStart) and (self.cDay <= self.cEnd)) or (self.cScope = 'events'))
@@ -3551,7 +3552,8 @@
                       {
                         self.icSource := 1;
                         self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-                        content := CAL.WA.dav_content (CAL.WA.host_url () || self.f_dav.ufl_value, self.icUser, self.icPassword);
+                        tmp := http_physical_path_resolve (replace (self.f_dav.ufl_value, ' ', '%20'));
+                        content := CAL.WA.dav_content (CAL.WA.host_url () || tmp, self.icUser, self.icPassword);
                           if (isnull(content))
                           {
                       self.vc_error_message := 'Bad import source!';
