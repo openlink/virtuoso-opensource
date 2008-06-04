@@ -924,19 +924,32 @@ create procedure up_isparql (in q_num integer, in q_text any)
 {
    declare file_name, res, uriqa_str, xml_query any;
    declare uriqa_str varchar;
+   declare dav_pwd varchar;
 
    file_name := sprintf ('tpch/Q%02d', q_num);
 
    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+   if (uriqa_str is null)
+     {
+       if (server_http_port () <> '80')
+	 uriqa_str := 'localhost:'||server_http_port ();
+       else
+         uriqa_str := 'localhost';
+     }
 
    q_text := replace (q_text, '__URIQA__', uriqa_str);
 
    xml_query := sprintf ('<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/isparql/xslt/dynamic-page.xsl"?><iSPARQL xmlns="urn:schemas-openlink-com:isparql"><ISparqlDynamicPage><proxy>true</proxy><query><![CDATA[#service:/sparql\r\n#should-sponge:soft\r\n%s]]></query><graph>http://%s/tpch</graph></ISparqlDynamicPage><should_sponge>soft</should_sponge><service>/sparql</service></iSPARQL>',
   q_text, uriqa_str);
 
+  dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
    res := DB.DBA.DAV_RES_UPLOAD ('/DAV/home/demo/' || file_name || '.isparql', xml_query, '', '111101101R',
-			  http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');
-
+			  http_dav_uid(), http_dav_uid() + 1, 'dav', dav_pwd);
+  if (res <= 0)
+    {
+      signal ('42000',DB.DBA.DAV_PERROR (res));
+    }
 }
 ;
 
@@ -944,7 +957,9 @@ create procedure up_isparql (in q_num integer, in q_text any)
 create procedure
 tpch_check_status_2 ()
 {
-    if (connection_get ('DATA') = 'OK') return;
+   declare dav_pwd varchar;
+    if (connection_get ('DATA') = 'OK')
+      goto make_isparql;
 
     randomize(1);
     fill_supplier (1, 100);
@@ -976,7 +991,10 @@ tpch_check_status_2 ()
     fill_nation(0);
     fill_region(0);
 
-    DB.DBA.DAV_COL_CREATE ('/DAV/home/demo/tpch/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');
+make_isparql:
+
+  dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+    DB.DBA.DAV_COL_CREATE ('/DAV/home/demo/tpch/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', dav_pwd);
 
 up_isparql (1, '
 define sql:signal-void-variables 1
