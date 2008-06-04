@@ -141,6 +141,61 @@ public class VirtResSetIter implements ExtendedIterator
             dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
           return Node.createLiteral(rb.toString(), rb.getLang(), dt);
         }
+      else if (o instanceof java.lang.Integer)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Short)
+        {
+          RDFDatatype dt = null;
+//          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#short");
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Float)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#float");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Double)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#double");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.math.BigDecimal)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#decimal");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Blob)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Date)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Timestamp)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Time)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
       else 
         {
           return Node.createLiteral(o.toString());

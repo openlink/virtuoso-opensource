@@ -6,7 +6,7 @@
  *
  * Based in part on rdf_storage_virtuoso
  *
- * Copyright (C) 2000-2006, Openlink Software,  http://www.openlinksw.com/
+ * Copyright (C) 2000-2008, Openlink Software,  http://www.openlinksw.com/
  *
  * This package is Free Software and part of Redland http://librdf.org/
  *
@@ -313,6 +313,10 @@ typedef unsigned int64 iri_id_t;
 #define DV_NUMERIC 219
 #define DV_DATETIME 211
 #define DV_IRI_ID 243
+#define DV_TIMESTAMP 128
+#define DV_TIMESTAMP_OBJ 208
+#define DV_DATE  129
+#define DV_TIME  210
 
 
 typedef struct numeric_s *numeric_t;
@@ -752,11 +756,14 @@ end:
 
 static char*
 rdf2string(librdf_storage_virtuoso_connection *handle, void *data, vType *type, 
-	   short *l_lang, short *l_type)
+	   short *l_lang, short *l_type, int *dv_type)
 {
   caddr_t result = (caddr_t)data;
   dtp_t dtp = DV_TYPE_OF (result);
   char tmp[NUMERIC_MAX_STRING_BYTES + 100];
+
+  if (dv_type) 
+    *dv_type = dtp;
 
   switch (dtp)
     {
@@ -765,8 +772,16 @@ rdf2string(librdf_storage_virtuoso_connection *handle, void *data, vType *type,
 	      int flags = box_flags (result);
 	      if (flags)
 	        {
-	          if (type) *type = vIRI;
-	          return strdup(result);
+	          if (strncmp((char*)result, "_:",2)==0)
+	            {
+	              if (type) *type = vBNODE;
+	              return strdup(result+2);
+	            }
+	          else
+	            {
+	              if (type) *type = vIRI;
+	              return strdup(result);
+	            }
 		}
 	      else
 	        {
@@ -786,34 +801,38 @@ rdf2string(librdf_storage_virtuoso_connection *handle, void *data, vType *type,
       case DV_RDF:
 	    {
 	      rdf_box_t * rb = (rdf_box_t *) result;
-	      char *rdata = rdf2string(handle, rb->rb_box, NULL, NULL, NULL);
+	      char *rdata = rdf2string(handle, rb->rb_box, NULL, NULL, NULL, NULL);
 	      if (l_lang)  *l_lang = rb->rb_lang;
 	      if (l_type)  *l_type = rb->rb_type;
               if (type)    *type = vTLiteral;
 	      return rdata;
 	    }
-      case DV_LONG_INT:
+      case DV_LONG_INT: /* integer */
 	  sprintf (tmp, "%lld", unbox(result));
           if (type) *type = vLiteral;
           return strdup(tmp);
 
-      case DV_SINGLE_FLOAT:
+      case DV_SINGLE_FLOAT: /* float */
 	  sprintf (tmp, "%f", unbox_float(result));
           if (type) *type = vLiteral;
           return strdup(tmp);
 
-      case DV_DOUBLE_FLOAT:
+      case DV_DOUBLE_FLOAT: /* double */
 	  sprintf (tmp, "%f", unbox_double(result));
           if (type) *type = vLiteral;
           return strdup(tmp);
 
-      case DV_NUMERIC:
+      case DV_NUMERIC: /* decimal */
 	    {
 	      numeric_to_string ( (numeric_t) result, tmp, sizeof (tmp));
               if (type) *type = vLiteral;
               return strdup(tmp);
 	    }
-      case DV_DATETIME:
+      case DV_TIMESTAMP: /* datetime */
+      case DV_TIMESTAMP_OBJ:
+      case DV_DATE: 
+      case DV_TIME: 
+      case DV_DATETIME: 
 	    {
 	      dt_to_iso8601_string (result, tmp, sizeof (tmp));
               if (type) *type = vLiteral;
@@ -840,8 +859,10 @@ rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle,
   char *val;
   librdf_node *node = NULL;
   short l_lang, l_type;
+  int dvtype;
 
-  val = rdf2string(handle, data, &type, &l_lang, &l_type);
+
+  val = rdf2string(handle, data, &type, &l_lang, &l_type, &dvtype);
   if (val)
     {
       if (type == vIRI)
@@ -851,9 +872,66 @@ rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle,
         }
       else if (type == vLiteral)
         {
-          node = librdf_new_node_from_literal(storage->world, 
-                             (const unsigned char *)val, 
-                             NULL, 0); 
+          librdf_uri *u_type = NULL;
+
+          switch (dvtype)
+            {
+            case DV_LONG_INT: /* integer */
+              u_type = librdf_new_uri(storage->world, 
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#integer");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_SINGLE_FLOAT: /* float */
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#float");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_DOUBLE_FLOAT: /* double */
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#double");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_NUMERIC: /* decimal */
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#decimal");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_TIMESTAMP: /* datetime */
+            case DV_TIMESTAMP_OBJ:
+            case DV_DATETIME: 
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#dateTime");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_DATE: /* date */
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#date");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+            case DV_TIME: /* time */
+              u_type = librdf_new_uri(storage->world,
+              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#time");
+
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                             (const unsigned char *)val, NULL, u_type); 
+              break;
+	    default:
+              node = librdf_new_node_from_literal(storage->world, 
+                             (const unsigned char *)val, NULL, 0); 
+              break;
+            }
         }
       else if (type == vTLiteral)
         {
@@ -865,8 +943,7 @@ rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle,
             u_type = librdf_new_uri(storage->world, (unsigned char *)s_type);
 
           node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, 
-                             s_lang, u_type); 
+                             (const unsigned char *)val, s_lang, u_type); 
         }
       else if (type == vBNODE)
         {
@@ -972,11 +1049,17 @@ librdf_storage_virtuoso_node2string(librdf_storage *storage,
   } else if(type==LIBRDF_NODE_TYPE_BLANK) {
     char *value = (char *)librdf_node_get_blank_identifier(node);
 
-    if(!(ret=(char*)LIBRDF_MALLOC(cstring, strlen(value)+3)))
+    if(!(ret=(char*)LIBRDF_MALLOC(cstring, strlen(value)+5)))
       goto end;
 
+#if 1
+    strcpy(ret, "<_:");
+    strcat(ret, value);
+    strcat(ret, ">");
+#else
     strcpy(ret, "_:");
     strcat(ret, value);
+#endif
   }
 
 end:
@@ -1292,6 +1375,7 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
 {
   int rc;
   librdf_storage_virtuoso_context* context=(librdf_storage_virtuoso_context*)storage->context;
+  int len = 0;
 
   /* Must have connection parameters passed as options */
   if(!options)
@@ -1349,7 +1433,7 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
 //??    status=librdf_storage_virtuoso_context_remove_statements(storage, NULL);
 #endif
 
-  if(!context->model_name || !context->user || !context->dsn || !context->password)
+  if(!context->model_name || !context->user || !context->password)
     return 1;
 
   strcpy(context->conn_str, "");
@@ -1464,7 +1548,7 @@ librdf_storage_virtuoso_open(librdf_storage* storage,
 
 
 /**
- * librdf_storage_mysql_close:
+ * librdf_storage_virtuoso_close:
  * @storage: the storage
  *
  * .
@@ -2844,7 +2928,7 @@ librdf_storage_virtuoso_transaction_commit(librdf_storage* storage)
 
 
 /**
- * librdf_storage_mysql_transaction_rollback:
+ * librdf_storage_virtuoso_transaction_rollback:
  * @storage: the storage object
  * 
  * Rollback a transaction.
