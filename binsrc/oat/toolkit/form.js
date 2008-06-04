@@ -219,6 +219,7 @@ OAT.Form = function(targetElm,optObj) {
 						index++;
 					} /* if column is used */
 				} /* for all used columns */
+				if (!q.length) { alert("There are no used data fields in the form."); }
 				ds.options.query = "SELECT "+q.join(", ")+" FROM "+OAT.SqlQueryData.qualifyMulti(ds.options.table);
 			} else {
 				for (var j=0;j<ds.usedFields.length;j++) {

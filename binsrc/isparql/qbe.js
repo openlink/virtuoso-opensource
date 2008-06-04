@@ -1058,6 +1058,7 @@ iSPARQL.QBE = function () {
 		$('query').value = self.QueryGenerate();
 		$('default-graph-uri').value = '';
 		$('adv_sponge').value = $v('qbe_sponge');
+		iSPARQL.Common.setQuery($('query').value);
 	}
 	
 	this.func_get_from_adv = function() {

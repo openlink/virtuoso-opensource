@@ -329,7 +329,7 @@ var QueryExec = function(optObj) {
 		var wasError = item.wasError;
 		var data = item.data;
 		
-		if (self.options.executeCallback) { self.options.executeCallback(opts.query); }
+		if (self.options.executeCallback) { self.options.executeCallback(item); }
 		
 		var r = decodeURIComponent(request);
 		var parts = r.split("&");

@@ -458,11 +458,11 @@ function init() {
 	window.qbe = new iSPARQL.QBE();
 	window.adv = new iSPARQL.Advanced();
 
-	var execCB = function(query) {
-			if (qbe.QueryGenerate() == query) { return; }
-			qbe.loadFromString(query);
+	var execCB = function(req) {
+		if (qbe.QueryGenerate() == req.opts.query) { return; }
+		qbe.loadFromString(req.opts.query);
 		qbe.svgsparql.reposition();
-			$("query").value = query;
+		$("query").value = req.opts.query;
 		}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 
