@@ -1279,8 +1279,8 @@ caddr_t* bif_backup_dirs_arg (caddr_t* qst, state_slot_t** args, int num, const 
 	    goto err;
 	}
       END_DO_BOX;
-    }
   return ba;
+    }
  err:
   sqlr_new_error ("42001", BACKUP_DIR_ARG_ERR_CODE, "The argument %d of %s must be array of strings", num+1, func_name);
   return 0; /* keeps compiler happy */
