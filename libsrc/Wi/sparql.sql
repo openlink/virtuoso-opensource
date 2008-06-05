@@ -1148,7 +1148,8 @@ retry_unrdf:
           v := rdf_box_data (v);
           goto retry_unrdf;
         }
-    signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
+      -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() should accept only string representations of typed values, real arguments are ', v, dt_iid, lang);
+      return v;
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1178,7 +1179,8 @@ retry_unrdf:
           v := rdf_box_data (v);
           goto retry_unrdf;
         }
-    signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
+      -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT() should accept only string representations of typed values, real arguments are ', v, dt_iid, lang, g_iid, p_iid);
+      return v;
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
