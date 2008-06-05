@@ -158,6 +158,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
   char method_name[100];
   int inx = 0;
   blob_handle_t *bh = NULL;
+  char *content_transfer_encoding = ws_mime_header_field (ws->ws_lines, "Transfer-Encoding", NULL, 0);
 
   log_dav (ws, 0);
 
@@ -201,11 +202,23 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
       if (ts1)
 	dk_free_box (ts1);
     }
+
+  dk_set_push (&parts, box_dv_short_string ("Content"));
+  if (ws->ws_req_len == 0 && content_transfer_encoding &&  0 == strnicmp (content_transfer_encoding, "chunked", 7))
+    {	
+       caddr_t chunks = http_read_chunked_content (ws->ws_session, &err, "", 1);
+       if (err)
+	 goto err_ret;
+       dk_set_push (&parts, chunks);
+    }
+  else
+    {
   bh = bh_alloc (DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (DV_BLOB_BIN));
   bh->bh_ask_from_client = 2;
   bh->bh_bytes_coming = ws->ws_req_len;
-  dk_set_push (&parts, box_dv_short_string ("Content"));
   dk_set_push (&parts, bh);
+    }
+
   if (ws->ws_params != NULL)
     {
       DO_BOX (char *, line, inx, ws->ws_params)
@@ -251,6 +264,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
       ":2", ws->ws_params, QRP_RAW,
       ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
 
+err_ret:  
   if (IS_BOX_POINTER (err) && 0 != strcmp (ERR_STATE (err), "VSPRT"))
     {
       dk_free_box (ws->ws_header);
@@ -264,6 +278,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
   dk_free_tree ((box_t) ws->ws_path);
   ws->ws_path = NULL;
   ws->ws_params = NULL;
+  dk_free_tree (content_transfer_encoding);
   return err;
 }
 
