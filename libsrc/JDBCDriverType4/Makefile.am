@@ -53,14 +53,14 @@ jdk3-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl3
 
 install-data-local:
-	-mkdir "$(DESTDIR)${libdir}/jdbc-2.0"
-	-mkdir "$(DESTDIR)${libdir}/jdbc-3.0"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-2.0"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-3.0"
 	-cp virtjdbc2.jar virtjdbc2ssl.jar "$(DESTDIR)${libdir}/jdbc-2.0"
 	-cp virtjdbc3.jar virtjdbc3ssl.jar "$(DESTDIR)${libdir}/jdbc-3.0"
 
 uninstall-local:
-	-rm -rf ${libdir}/jdbc-2.0
-	-rm -rf ${libdir}/jdbc-3.0
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-2.0"
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-3.0"
 
 MAINTAINERCLEANFILES = *.jar
 clean-local:

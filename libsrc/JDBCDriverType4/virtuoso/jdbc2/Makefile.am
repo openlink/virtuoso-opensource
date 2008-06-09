@@ -54,7 +54,7 @@ VirtuosoPreparedStatement.java VirtuosoResultSet.java \
 VirtuosoResultSetMetaData.java VirtuosoRow.java \
 VirtuosoStatement.java VirtuosoTypes.java \
 VirtuosoNullParameter.java VirtuosoExplicitString.java \
-VirtuosoExtendedString.java
+VirtuosoExtendedString.java VirtuosoRdfBox.java
 
 in3files= \
 VirtuosoParameterMetaData.java \
