@@ -454,18 +454,22 @@ ric_iri_to_sub (rdf_inf_ctx_t * ctx, caddr_t iri)
 
 
 void
-dk_set_pushnew_equal (dk_set_t * s, id_hash_t * ht, void* box, int check_exists)
+dk_set_pushnew_equal (dk_set_t * s, id_hash_t * ht, caddr_t box, int check_exists)
 {
   caddr_t place;
+  caddr_t new_box;
   ptrlong one = 1;
   if (check_exists)
     {
       place = id_hash_get (ht, (caddr_t)&box);
       if (place)
 	return;
-      id_hash_set (ht, (caddr_t)&box, (caddr_t)&one);
+      new_box = box_copy (box);
+      id_hash_set (ht, (caddr_t)&new_box, (caddr_t)&one);
     }
-  dk_set_push (s, box);
+  else
+    new_box = box_copy (box);
+  dk_set_push (s, new_box);
 }
 
 
@@ -496,13 +500,13 @@ bif_rdf_inf_super (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   super_rs = ric_iri_to_sub (ctx, super);
   if (is_cl)
     {
-      dk_set_pushnew_equal (&super_rs->rs_subclasses, super_rs->rs_subclasses_ht, box_copy (sub), check_exists);
-      dk_set_pushnew_equal (&sub_rs->rs_superclasses, sub_rs->rs_superclasses_ht, box_copy (super), check_exists);
+      dk_set_pushnew_equal (&super_rs->rs_subclasses, super_rs->rs_subclasses_ht, sub, check_exists);
+      dk_set_pushnew_equal (&sub_rs->rs_superclasses, sub_rs->rs_superclasses_ht, super, check_exists);
     }
   else
     {
-      dk_set_pushnew_equal (&super_rs->rs_subproperties, super_rs->rs_subproperties_ht, box_copy (sub), check_exists);
-      dk_set_pushnew_equal (&sub_rs->rs_superproperties, sub_rs->rs_superproperties_ht, box_copy (super), check_exists);
+      dk_set_pushnew_equal (&super_rs->rs_subproperties, super_rs->rs_subproperties_ht, sub, check_exists);
+      dk_set_pushnew_equal (&sub_rs->rs_superproperties, sub_rs->rs_superproperties_ht, super, check_exists);
     }
   return 0;
 }
