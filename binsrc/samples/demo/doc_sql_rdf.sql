@@ -134,6 +134,19 @@ create iri class doc:property_iri using
     function DB.DBA.PROP_IRI_INVERSE (in customer_iri varchar) returns varchar.
 ;
 
+DB.DBA.exec_no_error('create view WS.WS.SYS_DAV_RES_VIEW(
+RES_ID, RES_NAME, RES_OWNER, RES_GROUP, RES_COL, RES_CONTENT,
+RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_PERMS, RES_FULL_PATH,
+ROWGUID, RES_ACL, RES_IID, RES_STATUS, RES_VCR_ID, RES_VCR_CO_VERSION, RES_VCR_STATE
+)
+as select
+RES_ID, RES_NAME, RES_OWNER, RES_GROUP, RES_COL, RES_CONTENT,
+RES_TYPE, cast(RES_CR_TIME as varchar), RES_MOD_TIME, RES_PERMS, RES_FULL_PATH,
+ROWGUID, RES_ACL, RES_IID, RES_STATUS, RES_VCR_ID, RES_VCR_CO_VERSION, RES_VCR_STATE
+from WS.WS.SYS_DAV_RES');
+
+GRANT SELECT ON "WS"."WS"."SYS_DAV_RES_VIEW" TO "SPARQL";
+
 SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
 prefix bibo: <http://purl.org/ontology/bibo/>
@@ -143,7 +156,7 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 alter quad storage virtrdf:DefaultQuadStorage
-from WS.WS.SYS_DAV_RES as resources text literal RES_CONTENT
+from WS.WS.SYS_DAV_RES_VIEW as resources text literal RES_CONTENT
 from WS.WS.SYS_DAV_COL as collections
 from WS.WS.SYS_DAV_PROP as properties
 from DB.DBA.SYS_USERS as users
