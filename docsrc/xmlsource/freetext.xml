@@ -882,8 +882,8 @@ In this case, all matches are fetched, including the row in the article
 table and all are sorted and the top 10 are returned.
 This differs from the first by the fact that this accesses the article table
 for each of the text hits, not only the top 10.  This can easily make a 3x
-speed difference when running in memory and much greater when IO is
-involved, not to mention the adverse impact of more IO on the working set.
+speed difference when running in memory and much greater when I/O is
+involved, not to mention the adverse impact of more I/O on the working set.
 	</para>
 	</sect2>
 

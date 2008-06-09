@@ -4244,7 +4244,7 @@ create bitmap index c_gender on customer (c_gender);
 create bitmap index c_state on customer (c_state);
 </programlisting>
         <para>
-Bitmap indices offer space savings of up to 1000 x in some cases and specially for large tables the savings in IO can be very significant.
+Bitmap indices offer space savings of up to 1000 x in some cases and specially for large tables the savings in I/O can be very significant.
 </para>
         <para>
 A bitmap index can only be used on tables with an integer primary key or in other situations where the last effective key part of the
@@ -4296,7 +4296,7 @@ In all other respects, locking and transactional behavior are identical with oth
                 <sect2 id="bitmapindandperfmimpl">
 			<title>Performance Implications</title>
         <para>
-The main advantage of a bitmap index is more compact size, reflected in less IO. Inserting an entry takes on the average
+The main advantage of a bitmap index is more compact size, reflected in less I/O. Inserting an entry takes on the average
 10% longer than for another type of index, likewise for random lookups with exact key values. Sequential access is usually faster.
 Space savings and thereby improved working set behavior can produce dramatic gains for large tables.
 </para>

@@ -1023,7 +1023,7 @@ My simple test with Virtuoso
 	<sect1 id="ASYNCEXECMULTITHREAD">
           <title>Asynchronous Execution and Multithreading in Virtuoso/PL</title>
           <para>
-Many application tasks benefit from parallel execution. This is specially true of IO intensive workloads
+Many application tasks benefit from parallel execution. This is specially true of I/O intensive workloads
 where each thread spends a large amount of time waiting for the network or disks. Typical tasks include
 crawling the web and importing large data sets. The whole process must not stop just because there is a
 file cache miss or because there is round trip latency or a name resolution delay on the net.

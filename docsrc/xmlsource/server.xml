@@ -460,7 +460,7 @@ the thread queue after thread clean-up interval has expired.</para>
           <formalpara>
 						<title>O_DIRECT</title>
 						<para>If this is non-zero, the database file(s) will be opened with the
-O_DIRECT option on platforms where this is supported. This has the effect of doing file system IO
+O_DIRECT option on platforms where this is supported. This has the effect of doing file system I/O
 from application buffers directly, bypassing caching by the operating system. This may be useful
 if a large fraction of RAM is configured as database buffers. If this is on, the file system cache
 will not grow at the expense of the database process, for example it is less likely to swap out
@@ -822,7 +822,7 @@ JavaVMOption5  = -Ddt5=val5
             <para>Controls the number of file descriptors per file to be
             obtained from the OS.  The default and minimum value is 1.
             This parameter only effects databases that use striping.
-			Having multiple FDs per file means that as many concurrent IO operations
+			Having multiple FDs per file means that as many concurrent I/O operations
 			may simultaneously be pending per file. This allows more flexibility for
 			the OS to schedule the operations, potentially improving file I/O
 			throughput</para>

@@ -156,7 +156,7 @@ One will remember that each buffer takes
 to swap.
 </para>
 <para>
-Striping should be used if there are multiple independent disks, one stripe per physically independent volume.  Each stripe should have its own IO queue.   If there is a RAID, then striping is less beneficial.  Also one should have multiple handles per files, see FDSPerFile in the configuration file. 
+Striping should be used if there are multiple independent disks, one stripe per physically independent volume.  Each stripe should have its own I/O queue.   If there is a RAID, then striping is less beneficial.  Also one should have multiple handles per files, see FDSPerFile in the configuration file.
 </para>
 </sect1>
 
@@ -262,7 +262,7 @@ Segment1 = 24G,  /disk1/tpcc-1-1.db q1, /disk2/tpcc-1-2.db q2,  /disk3/tpcc-1-3.
 </screen>
 
 	<para>
-Assuming we have file systems.  Note the IO queue names q1...q6, meaning that each stripe gets processed on a separate thread for IO.
+Assuming we have file systems.  Note the I/O queue names q1...q6, meaning that each stripe gets processed on a separate thread for I/O.
 </para>
 <tip><title>See</title>
 <para>Disk Configuration for more on this.</para>
@@ -384,7 +384,7 @@ with a high integrity requirement.
 </para>
 	<para>
 The procedure begins by updating the stock levels. This is the part
-with lowest locality and thus most likely to cause IO and least likely
+with lowest locality and thus most likely to cause I/O and least likely
 to cause lock contention. Most of the transaction's real time will be
 spent inside ol_stock. If the order lines are sorted in order of item id,
 new order transactions will never deadlock on the stock level part. This

@@ -21,7 +21,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_ttlp_mt">
     <title>Description</title>
-    <para>Loads the TTL (TURTLE or N3 resource) file on multiple threads, using parallel IO and multiprocessing if available. The function does not leave a transaction log. Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe out the results.</para>
+    <para>Loads the TTL (TURTLE or N3 resource) file on multiple threads, using parallel I/O and multiprocessing if available. The function does not leave a transaction log. Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe out the results.</para>
   </refsect1>
   <refsect1 id="params_ttlp_mt">
     <title>Parameters</title>

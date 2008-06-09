@@ -532,7 +532,7 @@ Note that this example folder is a subfolder of the Virtuoso Server working dire
 SQL> ttlp (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
 </programlisting>
 <para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads,
-using parallel IO and multiprocessing if available. The functions does not leave a transaction log.
+using parallel I/O and multiprocessing if available. The functions does not leave a transaction log.
 Hence, after successful load, one should execute the checkpoint statement to make sure that a
 server restart does not wipe out the results.
 </para>
@@ -4474,14 +4474,14 @@ a subpredicate of c, then a is also a subpredicate of c.
 Virtuoso has limited support for the OWL same-as predicate.
 </para>
 <para>
-In the following, the abbreviation owl:same-as is used for  the IRI http://www.w3.org/2002/07/owl#same-as .
+In the following, the abbreviation owl:sameAs is used for  the IRI http://www.w3.org/2002/07/owl#same-as .
 </para>
 <para>
 If same-as traversal is enabled and a triple pattern with a given
 subject or object is being matched, all the synonyms of the S and O
 will be tried and results generated for all the tried bindings of S
 and O.  The set of synonyms is generated at run time by following all
-owl:same-as triples where the IRI in question is either the subject or
+owl:sameAs triples where the IRI in question is either the subject or
 the object.  These are followed recursively from object to subject and
 subject to object until the complete transitive closure is generated.
 All same-as triples from all the graphs applicable to instantiating
@@ -4491,7 +4491,7 @@ the triple pattern at hand are considered.
 Thus, if we have
 </para>
 <programlisting><![CDATA[
-<thing> <owl:same-as> <gizmo> .
+<thing> <owl:sameAs> <gizmo> .
 <thing> <label> "thingy" .
 ]]></programlisting>
 <para>
@@ -4532,7 +4532,7 @@ also takes subclasses and subproperties into account when determining the approx
 all implied triples but rather looks for the basic facts implying these triples at query evaluation time.
 </para>
 </sect2>
-<sect2 id="rdfsparqlruleintro"><title>Enabling Inference</title>
+<sect2 id="rdfsparqlruleintro"><title>Enabling Inferencing</title>
 <para>In a SPARQL query, the define input:inference clause is used to instruct the compiler to use the rules in the named rule set. For example:
 </para>
 <programlisting>
@@ -4758,6 +4758,58 @@ http://dbpedia.org/resource/Johann_Grugger
 http://dbpedia.org/resource/Chiara_Costazza
 ...
 155287 Rows. -- 342179 msec.
+
+]]></programlisting>
+<emphasis>Loading of the Yago Class hierarchy as inference rules example</emphasis>
+<programlisting><![CDATA[
+SQL>select ttlp_mt (file_to_string_output ('yago_linkeddata.nt'), '',
+'http://localhost:8890/class/yago')
+callret
+VARCHAR
+_______________________________________________________________________________
+
+http://localhost:8890/class/yago
+
+1 Rows. -- 1001075 msec.
+
+SQL>ttlp ('
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+<http://localhost:8890/class/yago/Fabric103309808>
+rdfs:subClassOf
+<http://localhost:8890/class/yago/Overgarment103863923> .
+',
+'','http://localhost:8890/schema/subclassof_rules#')
+
+Done. -- 269 msec.
+
+rdfs_rule_set
+('http://localhost:8890/schema/subclassof_rules#',
+'http://localhost:8890/class/yago')
+
+Done. -- 15452 msec.
+
+SQL>sparql
+select count (*) from <http://localhost:8890/class/yago> where
+{?s ?p <http://localhost:8890/class/yago/Overgarment103863923> }
+callret-0
+INTEGER
+_______________________________________________________________________________
+
+5
+
+1 Rows. -- 176 msec.
+
+SQL>sparql
+select  count (*) from <http://localhost:8890/class/yago> where
+{?s ?p <http://localhost:8890/class/yago/Fabric103309808> }
+callret-0
+INTEGER
+_______________________________________________________________________________
+
+169
+
+1 Rows. -- 174 msec.
+
 
 ]]></programlisting>
 </sect2>

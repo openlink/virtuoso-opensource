@@ -51,7 +51,7 @@ Usually it is the job of the Server itself who
 decides whether a cutting operation should be performed or not, without any specific
 activity at application level.
 The CPU time occupied due to cutting is up to 10 times greater than the CPU time of plain copying of LONG VARCHAR,
-but the amount of disk IO is about the same, so the optimization rules discussed below are
+but the amount of disk I/O is about the same, so the optimization rules discussed below are
 important only for time-critical, memory-located database applications.</para>
 		<para>
 The Virtuoso Server tries to reduce the number of cuttings to an absolute minimum.
