@@ -7335,7 +7335,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
                 http (sprintf ('\n   <binding name="%s"><literal>',
 		    _name), ses);
 	    }
-	  sql_val := DB.DBA.RDF_SQLVAL_OF_LONG (_val);
+	  sql_val := __rdf_sqlval_of_obj (_val, 1);
 	  if (isentity (sql_val))
 	    is_xml_lit := 1;
 	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
@@ -7451,7 +7451,12 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
           if (__tag of datetime = rdf_box_data_tag (_val))
             __rdf_long_to_ttl (_val, ses);
           else
-	    http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, ses);
+	    {
+	      _val := __rdf_sqlval_of_obj (_val, 1);
+	      if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+		_val := charset_recode (_val, 'UTF-8', '_WIDE_');
+	      http_value (_val, 0, ses);
+	    }
           http ('</res:value></res:binding>', ses);
         }
 end_of_binding: ;
