@@ -560,6 +560,7 @@ void log_sc_change_2 (lock_trx_t * lt);
 void log_text (lock_trx_t * lt, char * text);
 
 void log_text_array (lock_trx_t * lt, caddr_t box);
+void log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box);
 int log_text_array_sync (lock_trx_t * lt, caddr_t box);
 
 void log_sequence (lock_trx_t * lt, char * text, boxint count);

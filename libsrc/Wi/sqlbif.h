@@ -198,7 +198,6 @@ void sqls_arfw_define_vdb (void);
 int restore_from_files (const char* prefix);
 void ddl_init_plugin (void);
 void pldbg_init (void);
-int set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual);
 
 /* sqlbif2 */
 void sqlbif2_init (void);

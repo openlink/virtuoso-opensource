@@ -33,6 +33,7 @@
 #include "repl.h"
 /* IvAn/XperUpdate/000904 Xper support added. */
 #include "xmltree.h"
+#include "security.h"
 
 #ifdef WIN32
 # include "wiservic.h"
@@ -571,6 +572,20 @@ log_text_array (lock_trx_t * lt, caddr_t box)
   mutex_leave (lt->lt_log_mtx);
 }
 
+void
+log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+  session_buffered_write_char (LOG_USER_TEXT, lt->lt_log);
+  print_long (usr->usr_id, lt->lt_log);
+  print_object (box, lt->lt_log, NULL, NULL);
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
 
 void
 log_sequence (lock_trx_t * lt, char *text, boxint count)
@@ -819,9 +834,8 @@ log_replay_update (lock_trx_t * lt, dk_session_t * in)
   return err;
 }
 
-
 caddr_t
-log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
+log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_stmt_cache)
 {
   int n_args = 0;
   caddr_t *entry = (caddr_t *) scan_session (in);
@@ -830,6 +844,7 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
   caddr_t err = NULL;
   caddr_t stmt_id = box_dv_short_string ("repl_stmt");
   query_t *qr;
+  int qr_is_allocated = 0;
   srv_stmt_t * sst;
   int inx;
   caddr_t *arr = NULL;
@@ -1134,6 +1149,8 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
     }
 
 cr_done:
+  if (use_stmt_cache)
+    {
   sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE);
   err = stmt_set_query (sst, lt->lt_client, text, opts);
   LEAVE_CLIENT (lt->lt_client);
@@ -1148,6 +1165,23 @@ cr_done:
       return ((caddr_t) SQL_SUCCESS);
     }
   qr = sst->sst_query;
+      qr_is_allocated = 0;
+    }
+  else
+    {
+      int cr_type = (int) SO_CURSOR_TYPE (opts);
+      qr = eql_compile_2 (text, lt->lt_client, &err, cr_type);
+      if (!qr)
+	{
+	  dk_free_tree ((box_t) entry);
+	  if (is_pushback)
+	    return err;
+	  err_log_error (err);
+	  dk_free_tree (err);
+	  return ((caddr_t) SQL_SUCCESS);
+	}
+      qr_is_allocated = 1;
+    }
   if (n_args > 0)
     {
       arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -1163,10 +1197,34 @@ cr_done:
   if (IS_BOX_POINTER (err)) /* err != SQL_SUCCESS */
     {
       if (is_pushback)
+	{
+	  if (qr_is_allocated)
+	    qr_free (qr);
         return err;
+	}
       err_log_error (err);
     }
+  if (qr_is_allocated)
+    qr_free (qr);
   return ((caddr_t) SQL_SUCCESS);
+}
+
+caddr_t
+log_replay_text_as_user (lock_trx_t * lt, dk_session_t * in, int is_pushback)
+{
+  client_connection_t * cli = lt->lt_client;
+  oid_t usr_id = (oid_t) read_long (in);
+  user_t * save = cli->cli_user;
+  caddr_t saved_qual = box_string (cli->cli_qualifier);
+  user_t * usr = sec_id_to_user (usr_id);
+  caddr_t ret = NULL;
+  
+  set_user_id (cli, usr->usr_name, NULL);
+  ret = log_replay_text (lt, in, is_pushback, 0);
+  cli->cli_user = save;
+  dk_free_tree (cli->cli_qualifier);
+  cli->cli_qualifier = saved_qual;
+  return ret;
 }
 
 
@@ -1227,7 +1285,9 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
       isp_read_schema (lt);
       break;
     case LOG_TEXT:
-      return (log_replay_text (lt, in, is_pushback));
+      return (log_replay_text (lt, in, is_pushback, 1));
+    case LOG_USER_TEXT:  
+      return (log_replay_text_as_user (lt, in, is_pushback));
     case LOG_SEQUENCE:
       return (log_replay_sequence (lt, in));
     case LOG_SEQUENCE_64:

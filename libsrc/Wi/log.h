@@ -46,6 +46,7 @@
 #define LOG_TEXT	10 /* SQL string follows */
 #define LOG_SEQUENCE	11 /* series name, count */
 #define LOG_SEQUENCE_64	12 /* series name, count */
+#define LOG_USER_TEXT   14 /* SQL string log'd by an user */
 
 #define LOGH_TIME		0
 #define LOGH_USER		1

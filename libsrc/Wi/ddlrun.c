@@ -3493,7 +3493,7 @@ sql_error_if_remote_table (dbe_table_t *tb)
 
 
 void
-sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
+sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 {
   query_instance_t *qi = (query_instance_t *) inst;
   ST *tree = (ST *) ddl->ddl_stmt;
@@ -3733,6 +3733,28 @@ sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 #endif
 }
 
+void
+sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
+{
+  query_instance_t *qi = (query_instance_t *) inst;
+  caddr_t repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate);
+  qi->qi_trx->lt_replicate = box_copy_tree ((box_t) qi->qi_client->cli_replicate);
+
+  QR_RESET_CTX
+    {
+      sql_ddl_node_input_1 (ddl, inst, state);
+    }
+  QR_RESET_CODE
+    {
+      caddr_t err = NULL;
+      POP_QR_RESET;
+      err = thr_get_error_code (THREAD_CURRENT_THREAD);
+      qi->qi_trx->lt_replicate = (caddr_t *)repl;
+      sqlr_resignal (err);
+    }
+  END_QR_RESET;
+  qi->qi_trx->lt_replicate = (caddr_t *)repl;
+}
 
 const char *proc_dd_text =
 "(seq "

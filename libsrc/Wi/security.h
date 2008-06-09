@@ -100,6 +100,7 @@ int change_thread_user (user_t * user);
 int sec_set_user_os_struct (caddr_t u_name, caddr_t u_sys_name, caddr_t u_sys_pwd);
 caddr_t sec_get_user_by_cert (caddr_t u_cert);
 void sec_user_disable (caddr_t u_name, int flag);
+int set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual);
 
 #ifdef WIN32
 #ifndef IGNORE_SERVER_IMP_TOKEN

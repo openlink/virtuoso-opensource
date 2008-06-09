@@ -7280,7 +7280,6 @@ row_str_check (db_buf_t str)
 caddr_t
 row_str_table (caddr_t * qst, db_buf_t str)
 {
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   dbe_schema_t *sc = isp_schema (qi->qi_space);
   dbe_key_t *key;
   key_id_t k_id;
@@ -9356,8 +9355,7 @@ bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   int inx, len = BOX_ELEMENTS (args);
   caddr_t *arr;
   dk_set_t temp_blobs = NULL;
-
-  sec_check_dba (qi, "log_text");
+  client_connection_t * cli = qi->qi_client;
 
   arr = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < len; inx++)
@@ -9369,7 +9367,10 @@ bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 	  dk_set_push (&temp_blobs, arr[inx]);
       }
   }
+  if (sec_bif_caller_is_dba (qi) || !cli->cli_user)
   log_text_array (qi->qi_trx, (caddr_t) arr);
+  else
+    log_text_array_as_user (cli->cli_user, qi->qi_trx, (caddr_t) arr);
   dk_free_box ((caddr_t) arr);
   dk_free_tree (list_to_array (temp_blobs));
 
@@ -9451,8 +9452,6 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long flag = (long) bif_long_or_null_arg (qst, args, 0, "log_enable", &flag_is_null);
   long quiet;
   long old_value;
-
-  sec_check_dba (qi, "log_enable");
 
   old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) | /* not || */
       (qi->qi_client->cli_row_autocommit ? 2 : 0));
