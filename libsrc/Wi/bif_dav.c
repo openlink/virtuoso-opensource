@@ -158,7 +158,7 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
   char method_name[100];
   int inx = 0;
   blob_handle_t *bh = NULL;
-  char *content_transfer_encoding = ws_mime_header_field (ws->ws_lines, "Transfer-Encoding", NULL, 0);
+  caddr_t content_transfer_encoding = ws_mime_header_field (ws->ws_lines, "Transfer-Encoding", NULL, 0);
 
   log_dav (ws, 0);
 
