@@ -51,6 +51,15 @@ OAT.ApiKeys = {
 		}
 	},
 
+	addKey:function(service,url,key) {
+		if (service in this.services) { 
+			this.services[service][url] = key;
+		} else {
+			var entry = { url : key };
+			this.services[service] = entry 
+		}
+	},
+
 	getKey:function(service) {
 		var services = OAT.ApiKeys.services;
 		var href = window.location.href;

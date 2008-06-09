@@ -42,6 +42,10 @@ OAT.Calendar = function(optObj) {
 	this.textYear = false;
 	this.textMonth = false;
 	
+	this.allowFuture = true;
+	this.allowToday = true;
+	this.allowPast = true;
+
 	this.yearB = function() {
 		self.date[0]--;
 		self.setYear();
@@ -75,6 +79,23 @@ OAT.Calendar = function(optObj) {
 	this.attach = function(td,day) {
 		var callback = function(event) {
 			self.date[2] = day;
+
+			var now = new Date();
+			var today = new Date(now.getYear()+1900, now.getMonth() , now.getDay()+1 ); /* today's 00:00:00 hrs */
+			var selected = new Date(self.date[0], self.date[1]-1, self.date[2]);
+
+			var notAllowed = function(msg) {
+				var notify = new OAT.Notify;
+				notify.send(msg);
+			}
+
+			if (!self.allowPast && selected.getTime() < today.getTime())
+				return notAllowed("Picking dates in the past is not allowed.");
+			if (!self.allowToday && selected.getTime() == today.getTime())
+				return notAllowed("Picking today's date is now allowed.");
+			if (!self.allowFuture && selected.getTime() > today.getTime())
+				return notAllowed("Picking dates in the future is not allowed.");
+
 			self.oldDate[0] = self.date[0];
 			self.oldDate[1] = self.date[1];
 			self.oldDate[2] = self.date[2];

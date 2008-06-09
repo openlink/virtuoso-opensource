@@ -33,7 +33,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	menu:"animation",
 	panelbar:"animation",
 	dock:["animation","ghostdrag","resize"],
-	calendar:"drag",
+	calendar:["drag","notify"],
 	graph:"canvas",
 	dav:["grid","tree","toolbar","ajax2","xml","dialog"],
 	dialog:["window","dimmer"],

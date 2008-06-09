@@ -442,6 +442,8 @@ function init() {
 
 	$('default-graph-uri').value = default_dgu;
 	$('query').value = default_qry;
+	iSPARQL.Common.setQuery(default_qry);
+	iSPARQL.Common.setDefaultGraph(default_dgu);
 	if (!fixed_sponge) {
 		fixed_sponge = '';
 	} else {
@@ -459,6 +461,7 @@ function init() {
 	window.adv = new iSPARQL.Advanced();
 
 	var execCB = function(req) {
+		tab.go(2); /* go to results after query execution */
 		if (qbe.QueryGenerate() == req.opts.query) { return; }
 		qbe.loadFromString(req.opts.query);
 		qbe.svgsparql.reposition();

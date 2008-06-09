@@ -24,8 +24,12 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 	self.height = false;
 	self.delay = (delay ? delay : 30);
 	self.noanim = (noanim ? true : false);
+	self.animA = false;
+	self.animB = false;
 	
 	this.go = function(index, noanim) {
+		if (self.animA) self.animA.stop();
+		if (self.animB) self.animB.stop();
 		OAT.Dom.addClass(self.panels[index][0],"panelbar_option_selected");
 		for (var i=0;i<self.panels.length;i++) {
 			OAT.Dom.removeClass(self.panels[i][0],"panelbar_option_selected");
@@ -35,12 +39,16 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 			if (i == index) { /* show the selected */
 				OAT.Dom.show(self.panels[i][1]);
 				if (OAT.Browser.isIE6) {
-					OAT.Dom.show(self.panels[i][1]);
+					;
 				} else if (!noanim) {
-					var a = new OAT.AnimationOpacity(self.panels[i][1],{delay:self.delay,opacity:1});
-					var b = new OAT.AnimationSize(self.panels[i][1],{delay:self.delay,height:self.height,speed:self.delay});
-					a.start();
-					b.start();
+					self.animA = new OAT.AnimationOpacity(self.panels[i][1],{delay:self.delay,opacity:1});
+					self.animB = new OAT.AnimationSize(self.panels[i][1],{	
+								delay:self.delay,
+								height:self.height,
+								speed:self.delay
+					});
+					self.animA.start();
+					self.animB.start();
 				} else {
 					OAT.Style.opacity(self.panels[i][1], 1);
 					self.panels[i][1].style.height = self.height+'px';
@@ -62,6 +70,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 			}
 		}
 		self.selectedIndex = index;
+		self.indexRunning = false;
 	}
 
 
@@ -82,7 +91,9 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 		this.div.appendChild(content_elm);
 		if (!self.height)
 			self.height = parseInt(OAT.Style.get(content_elm,"height"));
-		this.go(this.panels.length-1, true);
+		//this.go(this.panels.length-1, true);
+		OAT.Style.opacity(content_elm, 1);
+		content_elm.style.height = '0px';
 	}
 	
 	
