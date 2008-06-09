@@ -2375,7 +2375,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
           if (DV_STRING == DV_TYPE_OF (rb->rb_box))
             {
 	  str = rb->rb_box;
-	  len = box_length (rb->rb_box);
+	      len = box_length (rb->rb_box) - 1;
             }
           else
             return dv_to_str_place (rb->rb_box, DV_TYPE_OF (rb->rb_box), max, place,
