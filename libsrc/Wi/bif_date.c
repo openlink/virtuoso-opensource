@@ -81,6 +81,172 @@ bif_date_string_GMT (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_dv_short_string (temp));
 }
 
+int
+dt_print_to_buffer (char *buf, caddr_t arg, int mode)
+{
+  char dt[DT_LENGTH];
+  int res = 0;
+  int arg_dt_type = DT_DT_TYPE (arg);
+  if (0 == ((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode))
+    mode |= ((DT_TYPE_TIME == arg_dt_type) ? DT_PRINT_MODE_HMS :
+      ((DT_TYPE_DATE == arg_dt_type) ? DT_PRINT_MODE_YMD : (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS)) );
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_TYPE_TIME == arg_dt_type))
+    sqlr_new_error ("22023", "SR592", "Bit 4 in print mode requires DATE or DATETIME argument, not TIME");
+  if ((DT_PRINT_MODE_HMS & mode) && (DT_TYPE_DATE == arg_dt_type))
+    sqlr_new_error ("22023", "SR593", "Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
+  memcpy (dt, arg, DT_LENGTH);
+  DT_SET_TZ (dt, 0);
+  TIMESTAMP_STRUCT ts;
+  dt_to_timestamp_struct (dt, &ts);
+  if (DT_PRINT_MODE_YMD & mode)
+    res += sprintf (buf, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
+    buf[res++] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
+  if (DT_PRINT_MODE_HMS & mode)
+    res += sprintf (buf + res, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
+  if (DT_PRINT_MODE_XML & mode)
+    {
+      strcpy (buf + res, "Z");
+      return res + 1;
+    }
+  else
+    {
+      strcpy (buf + res, " GMT");
+      return res + 4;
+    }
+}
+
+int /* Returns number of chars parsed. */
+dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret)
+{
+  char *tail = buf;
+  int fld_len, acc, ymd_found = 0, hms_found = 0;
+  TIMESTAMP_STRUCT ts;
+  memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));
+  dt_ret[0] = NULL;
+  err_msg_ret[0] = NULL;
+  fld_len = 0; acc = 0; while (isdigit (tail[0]) && (4 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+  if ('-' == tail[0])
+    { /* Date delimiter, let's parse date part */
+      if (((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode) && !(DT_PRINT_MODE_YMD & mode))
+        {
+          err_msg_ret[0] = "Time field is expected but date field delimiter is found";
+          return 0;
+        }
+      if (4 != fld_len)
+        {
+          err_msg_ret[0] = "Year field should have 4 digits";
+          return 0;
+        }
+      ymd_found = 1;
+      ts.year = acc;
+      tail++;
+      fld_len = 0; acc = 0; while (isdigit (tail[0]) && (2 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+      if (2 != fld_len)
+        {
+          err_msg_ret[0] = "Month field should have 2 digits";
+          return 0;
+        }
+      if ('-' != tail[0])
+        {
+          err_msg_ret[0] = "Minus sign is expected after month";
+          return 0;
+        }
+      ts.month = acc;
+      tail++;
+      fld_len = 0; acc = 0; while (isdigit (tail[0]) && (2 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+      if (2 != fld_len)
+        {
+          err_msg_ret[0] = "Day of month field should have 2 digits";
+          return 0;
+        }
+      ts.day = acc;
+      if ('T' != tail[0])
+        goto scan_tz; /* see below */
+      tail++;
+      fld_len = 0; acc = 0; while (isdigit (tail[0]) && (2 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+    }
+  if (':' == tail[0])
+    { /* Time delimiter, let's parse time part */
+      if (((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode) && !(DT_PRINT_MODE_HMS & mode))
+        {
+          err_msg_ret[0] = "Date field is expected but time field delimiter is found";
+          return 0;
+        }
+      if (2 != fld_len)
+        {
+          err_msg_ret[0] = "Hour field should have 2 digits";
+          return 0;
+        }
+      hms_found = 1;
+      ts.hour = acc;
+      tail++;
+      fld_len = 0; acc = 0; while (isdigit (tail[0]) && (2 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+      if (2 != fld_len)
+        {
+          err_msg_ret[0] = "Minute field should have 2 digits";
+          return 0;
+        }
+      if (':' != tail[0])
+        {
+          err_msg_ret[0] = "Colon is expected after minute";
+          return 0;
+        }
+      ts.minute = acc;
+      tail++;
+      fld_len = 0; acc = 0; while (isdigit (tail[0]) && (2 > fld_len)) { acc = acc * 10 + (tail++)[0] - '0'; fld_len++; }
+      if (2 != fld_len)
+        {
+          err_msg_ret[0] = "Second field should have 2 digits";
+          return 0;
+        }
+      ts.second = acc;
+    }
+  else
+    {
+      err_msg_ret[0] = "Generic syntax error in date/time";
+      return 0;
+    }
+
+scan_tz:
+/* Now HMS part is complete (or skipped) */
+  if ('Z' == tail[0])
+    tail++;
+  else if (!strncmp (tail, " GMT", 4))
+    tail += 4;
+  else
+    {
+      err_msg_ret[0] = "Generic syntax error in date/time";
+      return 0;
+    }
+  if ((DT_PRINT_MODE_YMD & mode) && !ymd_found)
+    {
+      err_msg_ret[0] = "Datetime expected but time-only string is found";
+      return 0;
+    }
+  if ((DT_PRINT_MODE_HMS & mode) && !hms_found)
+    {
+      err_msg_ret[0] = "Datetime expected but date-only string is found";
+      return 0;
+    }
+  dt_ret[0] = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  {
+    uint32 day;
+/*    ts_add (ts, -dt_local_tz, "minute");*/
+    day = date2num (ts.year, ts.month, ts.day);
+    DT_SET_DAY (dt_ret[0], day);
+    DT_SET_HOUR (dt_ret[0], ts.hour);
+    DT_SET_MINUTE (dt_ret[0], ts.minute);
+    DT_SET_SECOND (dt_ret[0], ts.second);
+    DT_SET_FRACTION (dt_ret[0], ts.fraction);
+    DT_SET_TZ (dt_ret[0], 0);
+  }
+
+/*  timestamp_struct_to_dt (&ts, dt_ret[0]);
+  DT_SET_TZ (dt_ret[0], 0);*/
+  SET_DT_TYPE_BY_DTP (dt_ret[0], (ymd_found ? (hms_found ? DV_DATETIME : DV_DATE) : DV_TIME));
+  return (tail - buf);
+}
 
 /*
 static char *weekday_names[7] =

@@ -55,12 +55,20 @@ int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (char *dt, char *str, int len);
 void dt_to_iso8601_string (char *dt, char *str, int len);
 void dt_to_rfc1123_string (char *dt, char *str, int len);
+int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
 int string_to_dt (char *str, char *dt, const char **str_err);
 int string_to_time_dt (char *str, char *dt);
 void dt_to_tv (char *dt, char *dv);
 void dt_make_day_zero (char *dt);
 void dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz);
 int days_in_february (const int year);
+
+#define DT_PRINT_MODE_YMD 0x4
+#define DT_PRINT_MODE_HMS 0x2
+#define DT_PRINT_MODE_XML 0x1
+
+extern int dt_print_to_buffer (char *buf, caddr_t arg, int mode);
+extern int dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret);
 
 extern int dt_local_tz;
 

@@ -28,6 +28,7 @@
 
 #include "CLI.h"
 #include "util/strfuns.h"
+#include "datesupp.h"
 
 /*
  *  Important preprocessor symbols for the internal ranges

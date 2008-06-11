@@ -2958,7 +2958,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (ptr && *ptr && strchr ("hlLq", *ptr))
 	ptr++;
 
-      if (!ptr || !*ptr || !strchr ("diouxXeEfgcsSIVU", *ptr))
+      if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsSIVU", *ptr))
 	{
 	  sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
 	}
@@ -3152,17 +3152,29 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  }
 	  break;
 
+	case 'D':
+	  {
+	    caddr_t arg = bif_date_arg (qst, args, arg_inx, szMe);
+
+	    dt_print_to_buffer (tmp, arg, arg_len);
+
+	    break;
+	  }
+
 	default:
 	  sqlr_new_error ("22023", "SR038", "Invalid format string for sprintf: '%.1000s'", str);
 	}
 
       if (tmp[SPRINTF_BUF_SPACE])	/* Was: (strlen (tmp) > sizeof (tmp) - 1) */
 	{
-	  GPF_T1 ("SQL sprintf buffer overflowed. " "sprintf of over 2000 characters caused this.");
+	  GPF_T1 ("SQL sprintf buffer overflowed. sprintf of over 2000 characters caused this.");
 	}
+
       session_buffered_write (ses, tmp, strlen (tmp));
+
     get_next:
       arg_inx++;
+
     get_next_no_arg_inx_increment:
       ptr++;
       len -= (int) (ptr - start);
@@ -3315,19 +3327,23 @@ next_field:
       /* skip the size modifier */
       if (('\0' != fmt_tail[0]) && (NULL != strchr ("hlLq", fmt_tail[0])))
         fmt_tail++;
-      if (('\0' != fmt_tail[0]) && (NULL != strchr ("diouxXeEfgcsSIVU", fmt_tail[0])))
+
+      if (('\0' != fmt_tail[0]) && (NULL != strchr ("dDiouxXeEfgcsSIVU", fmt_tail[0])))
         fmt_tail++;
       else
         sqlr_new_error ("22023", "SR523",
-          "Invalid format string for sscanf at field %d (column %ld of format '%.1000s')", field_ctr, (long)(fmt_tail-fmt), fmt );
+	    "Invalid format string for sscanf at field %d (column %ld of format '%.1000s')", field_ctr, (long) (fmt_tail - fmt), fmt);
+
       field_end = fmt_tail;
       val_start = val_end = str_tail;
   
-check_val_end:
+  check_val_end:
       next_field_start = field_end;
       if ('\0' == fmt_tail[0])
         {
-          while ('\0' != val_end[0]) val_end++;
+	  while ('\0' != val_end[0])
+	    val_end++;
+
           str_scan_tail = val_end;
           goto val_end_found;
         }
@@ -3513,8 +3529,23 @@ val_end_found:
             val = box_dv_short_nchars (buf, out - buf);
             dk_free_box (buf);
             dk_set_push (&res, val);
+	  }
           break;
+
+        case 'D':
+	  {
+	    const char *err_msg = NULL;
+	    int skip_len = dt_scan_from_buffer (val_start, field_len, &val, &err_msg);
+
+	    if ((NULL == val) || (skip_len != (val_end - val_start)))
+	      {
+		dk_free_box (val);
+		goto POP_format_mismatch_mid_field;
           }
+
+	    dk_set_push (&res, val);
+	  }
+	  break;
 
         case 'V': /* via http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT); */
           goto sorry_unsupported;
