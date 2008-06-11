@@ -941,10 +941,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	    else if(val instanceof VirtuosoExtendedString) {
 			VirtuosoExtendedString ves = (VirtuosoExtendedString) val;
 			String valueString = ves.str;
-			// String type = ves.
 		    if (ves.iriType == VirtuosoExtendedString.IRI) {
-		    	if (valueString.startsWith("_:")) valueString = valueString.substring(2);
-//		        return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
+		          if (valueString.startsWith("_:")) {
+				try {
+                		valueString = valueString.substring(2); // parse bnode id
+	                	return getRepository().getValueFactory().createBNode(valueString);
+	        	    }
+		            catch(IllegalArgumentException iaex) {
+        		        System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+		            }
+		          }
+	        	  else {
 		try {
 					return getRepository().getValueFactory().createURI(valueString);
 		}
@@ -952,8 +959,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 				}
 		    }
+		    }
 		    else if (ves.iriType == VirtuosoExtendedString.BNODE) {
-				if(valueString.startsWith("nodeID://")) {
+//				if(valueString.startsWith("nodeID://")) {
 					try {
 						valueString = valueString.substring(9); // parse bnode id
 						return getRepository().getValueFactory().createBNode(valueString);
@@ -961,7 +969,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					catch(IllegalArgumentException iaex) {
 						System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 					}
-				}
+//				}
 		    }
 		    else {
 			try {
@@ -972,30 +980,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 		    }
 		}
-		else { //if(val instanceof String) {
-		String s = (String) val;
+		else { 
+		        String s = (String) val.toString();
 			if(s.length() == 0) return null;
 			try {
-				return getRepository().getValueFactory().createURI(s);					
-			}
-			catch(IllegalArgumentException iaex) {
-				try {
 					return getRepository().getValueFactory().createLiteral(s);
 			}
 			catch(IllegalArgumentException iaex2) {
-				try {
-						return getRepository().getValueFactory().createBNode(s);					
-				}
-				catch(IllegalArgumentException iaex3) {
 						System.out.println("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + s);
 					}
 				}
-			}
-		}
-//		else {
-//			Literal lit = getRepository().getValueFactory().createLiteral(val.toString());
-//			return lit;
-//		}
 		return null;
 	}
 	
