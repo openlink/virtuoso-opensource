@@ -116,7 +116,7 @@ OAT.WebDav = {
 			}
 			var url = path + '?'+ new Date().getMilliseconds();
 			var o = {
-				headers:this.connectionHeaders,
+				headers:OAT.WebDav.options.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
@@ -155,7 +155,7 @@ OAT.WebDav = {
 				alert('Error while trying to save file.\n'+desc);
 			}
 			var o = {
-				headers:this.connectionHeaders,
+				headers:OAT.WebDav.options.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
@@ -190,8 +190,8 @@ OAT.WebDav = {
 			alert('Error while creating new directory.\n'+desc);
 		}
 		var o = {
-			type:OAT.AJAX.TYPE_TEXT,
 			headers:OAT.WebDav.options.connectionHeaders,
+			type:OAT.AJAX.TYPE_TEXT,
 			onerror:error
 		}
  		OAT.WebDav.updateOptions(o);
@@ -999,8 +999,8 @@ OAT.WebDav = {
 	updateOptions:function(o) {
 		if (!o.headers.Authorization)	{
 			o.auth = OAT.AJAX.AUTH_BASIC;
-			o.user = this.options.user;
-			o.password = this.options.pass;
+			o.user = OAT.WebDav.options.user;
+			o.password = OAT.WebDav.options.pass;
 		}
 	}
 }
