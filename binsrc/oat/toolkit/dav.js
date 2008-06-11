@@ -116,13 +116,11 @@ OAT.WebDav = {
 			}
 			var url = path + '?'+ new Date().getMilliseconds();
 			var o = {
-				auth:OAT.AJAX.AUTH_BASIC,
-				user:this.options.user,
-				password:this.options.pass,
 				headers:this.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
+			OAT.WebDav.updateOptions(o);
 			var response = function(data) {
 				OAT.Dom.hide(OAT.WebDav.window.div);
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f,data); }
@@ -157,13 +155,11 @@ OAT.WebDav = {
 				alert('Error while trying to save file.\n'+desc);
 			}
 			var o = {
-				auth:OAT.AJAX.AUTH_BASIC,
-				user:this.options.user,
-				password:this.options.pass,
 				headers:this.connectionHeaders,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
 			}
+			OAT.WebDav.updateOptions(o);
 			var r = f.match(/\.([^\.]+)$/); /* content type */
 			if (r) { /* has extension */
 				var ext = r[1];
@@ -194,13 +190,11 @@ OAT.WebDav = {
 			alert('Error while creating new directory.\n'+desc);
 		}
 		var o = {
-			auth:OAT.AJAX.AUTH_BASIC,
-			user:OAT.WebDav.options.user,
-			password:OAT.WebDav.options.pass,
 			type:OAT.AJAX.TYPE_TEXT,
 			headers:OAT.WebDav.options.connectionHeaders,
 			onerror:error
 		}
+ 		OAT.WebDav.updateOptions(o);
 
 		var afterPerms = function() {
 			delete OAT.WebDav.cache[OAT.WebDav.options.path];
@@ -466,14 +460,12 @@ OAT.WebDav = {
 
 		var o = {
 			headers:headers,
-			auth:OAT.AJAX.AUTH_BASIC,
-			user:OAT.WebDav.options.user,
-			password:OAT.WebDav.options.pass,
 			type:OAT.AJAX.TYPE_XML,
 			onerror:error,
 			onend:onend,
 			onstart:onend ? function(){} : false
 		}
+		OAT.WebDav.updateOptions(o);
 		
 		var ref = function(data) {
 			OAT.WebDav.parse(directory,data); /* add to cache */
@@ -918,11 +910,9 @@ OAT.WebDav = {
 
 		var o = {
 			headers:headers,
-			auth:OAT.AJAX.AUTH_BASIC,
-			user:OAT.WebDav.options.user,
-			password:OAT.WebDav.options.pass,
 			type:OAT.AJAX.TYPE_XML
 		}
+		OAT.WebDav.updateOptions(o);
 		var ref = function(xmlDoc) {
 			/* extract existing, apply new */
 			var pnode = OAT.Xml.getElementsByLocalName(xmlDoc.documentElement,"virtpermissions")[0];
@@ -1004,6 +994,14 @@ OAT.WebDav = {
 			callback:callback
 		}
 		OAT.WebDav.saveDialog(o);
+	},
+
+	updateOptions:function(o) {
+		if (!o.headers.Authorization)	{
+			o.auth = OAT.AJAX.AUTH_BASIC;
+			o.user = this.options.user;
+			o.password = this.options.pass;
+		}
 	}
 }
 
