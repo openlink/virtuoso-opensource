@@ -1,7 +1,7 @@
 diff -ur ./redland-1.0.7/configure.ac ./redland-1.0.7.new/configure.ac
 --- ./redland-1.0.7/configure.ac	2007-12-17 17:48:47.000000000 +1000
-+++ ./redland-1.0.7.new/configure.ac	2008-05-31 11:19:36.000000000 +1100
-@@ -723,6 +723,82 @@
++++ ./redland-1.0.7.new/configure.ac	2008-06-11 22:07:55.000000000 +1100
+@@ -723,6 +723,94 @@
  fi
  
  
@@ -13,21 +13,8 @@ diff -ur ./redland-1.0.7/configure.ac ./redland-1.0.7.new/configure.ac
 +
 +storages_available="$storages_available virtuoso"
 +
-+AC_ARG_WITH(virtuoso, [  --with-virtuoso(=yes|no|2|3) Enable Virtuoso store with version (default=auto)], sqlite_api_version="$withval", sqlite_api_version="auto")
-+
-+with_virtuoso="no"
-+AC_ARG_ENABLE(virtuoso, [dnl
-+AC_HELP_STRING([--enable-virtuoso], [enable OpenLink Virtuoso storage support])
-+AC_HELP_STRING([--disable-virtuoso], [disable OpenLink Virtuoso storage support (default)])dnl
-+], [
-+     case "${enableval}" in
-+       yes)      with_virtuoso="yes" ;;
-+       no)       with_virtuoso="no" ;;
-+       /*)       with_virtuoso="${enableval}" ;;
-+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-virtuoso) ;;
-+     esac
-+  ],
-+  [ with_virtuoso="no" ])
++AC_ARG_WITH(virtuoso, [  --with-virtuoso(=yes|no) Enable Virtuoso RDF store (default=no)], with_virtuoso="$withval", with_virtuoso="no")
++AC_ARG_WITH(iODBC, [  --with-iODBC=DIR    iODBC directory(need for Virtuoso) (default=/usr/local/iODBC)], iODBC_dir="$withval", iODBC_dir="/usr/local/iODBC") 
 +
 +if test "x$with_virtuoso" != "xno" 
 +then
@@ -35,134 +22,134 @@ diff -ur ./redland-1.0.7/configure.ac ./redland-1.0.7.new/configure.ac
 +    save_CPPFLAGS="$CPPFLAGS"
 +    save_LIBS="$LIBS"
 +    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
++    save_CFLAGS="$CFLAGS"
 +    case "$with_virtuoso" in
 +	yes) 
-+	   virt_CFLAGS=""
-+	   virt_LDFLAGS="$with_virtuoso/lib/virtodbc_r.a"
-+	   ;;
-+	*) 
-+	   virt_CFLAGS="-I$with_virtuoso/include"
-+	   virt_LDFLAGS="$with_virtuoso/lib/virtodbc_r.a"
-+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_virtuoso/lib" 
++	   virt_CFLAGS="-I$iODBC_dir/include"
++	   virt_LDFLAGS="-L$iODBC_dir/lib -liodbc"
++	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$iODBC_dir/lib" 
 +	   export LD_LIBRARY_PATH 
 +	   ;;
++	*) 
++	   virt_CFLAGS=""
++	   virt_LDFLAGS=""
++	   ;;
 +    esac
++
 +    CPPFLAGS="$CPPFLAGS $virt_CFLAGS" 
 +    LIBRDF_CPPFLAGS="$LIBRDF_CPPFLAGS $virt_CFLAGS" 
 +    LIBS="$LIBS $virt_LDFLAGS"
 +    LIBRDF_LDFLAGS="$LIBRDF_LDFLAGS $virt_LDFLAGS"
-+    AC_TRY_RUN([
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <time.h>
-+#include <odbcinst.h>  
-+int 
-+main ()
-+{
++    CFLAGS="$CFLAGS $virt_CFLAGS" 
++
++    AC_TRY_RUN([#include <stdio.h>
++		#include <iodbcinst.h>  
++		int 
++		main ()
++		{
 +  return 0;  
-+}],
-+[
++		}],
++		[
 + AC_MSG_RESULT(good)
 + AC_DEFINE(STORAGE_VIRTUOSO,  1, [Building Virtuoso storage])
 + with_virtuoso="yes"
-+],
-+[
++		],
++		[
++		 AC_MSG_WARN(Can't found iODBC include files)
 + AC_MSG_RESULT(bad)
 + with_virtuoso="no"
 + exit
-+])
++		])
++
++#    AC_TRY_LINK([#include <stdio.h>
++#    		 void dt_to_string(char *dt, char *str, int len);], 
++#    		[ char *dt={"00"};
++#    		  char str[20];
++#    		  dt_to_string(dt, str, sizeof(str));],
++#     		[AC_MSG_RESULT(good)
++#     		 AC_DEFINE(STORAGE_VIRTUOSO,  1, [Building Virtuoso storage])
++#     		 with_virtuoso="yes"
++#     		],
++#     		[ AC_MSG_WARN(Can't found Virtuoso library virtodbc_r.la)
++#     		  AC_MSG_RESULT(bad)
++#     		  with_virtuoso="no"
++#     		  exit
++#     		])
++    
 +    LIBS="$save_LIBS"
 +    CPPFLAGS="$save_CPPFLAGS"
++    CFLAGS="$save_CFLAGS"
 +    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
 +    export LD_LIBRARY_PATH
++    virtuoso_storage_available=yes
 +fi
 +AC_SUBST(virt_CFLAGS)
 +AC_SUBST(virt_LDFLAGS)
 +
++##########################################################################
++#                                                                        #
++# OpenLink Virtuoso storage support   ***END***                          #
++#                                                                        #
++##########################################################################
 +
 +
  
  AC_ARG_WITH(sqlite, [  --with-sqlite(=yes|no|2|3) Enable SQLite store with version (default=auto)], sqlite_api_version="$withval", sqlite_api_version="auto")
  AC_ARG_WITH(sqlite-version, [  --with-sqlite-version(=yes|no|2|3) SQLite version to use (default=auto)], sqlite_api_version="$withval")
-@@ -813,6 +889,7 @@
-   AC_DEFINE(STORAGE_MYSQL,  1, [Building MySQL storage])
+@@ -814,6 +902,7 @@
    AC_DEFINE(STORAGE_SQLITE, 1, [Building SQLite storage])
    AC_DEFINE(STORAGE_TSTORE, 1, [Building 3store storage])
-+  AC_DEFINE(STORAGE_VIRTUOSO, 1, [Building Virtuoso storage])
    AC_DEFINE(STORAGE_POSTGRESQL, 1, [Building PostgreSQL storage])
++  AC_DEFINE(STORAGE_VIRTUOSOL, 1, [Building Virtuoso storage])
  fi
  
-@@ -852,6 +929,7 @@
- AM_CONDITIONAL(STORAGE_HASHES, test $hashes_storage = yes)
- AM_CONDITIONAL(STORAGE_MEMORY, test $memory_storage = yes)
- AM_CONDITIONAL(STORAGE_MYSQL,  test $mysql_storage  = yes)
-+AM_CONDITIONAL(STORAGE_VIRTUOSO,  test $with_virtuoso  = yes)
+ 
+@@ -855,6 +944,7 @@
  AM_CONDITIONAL(STORAGE_SQLITE, test $sqlite_storage = yes)
  AM_CONDITIONAL(STORAGE_TSTORE, test $tstore_storage = yes)
  AM_CONDITIONAL(STORAGE_POSTGRESQL, test $postgresql_storage = yes)
-diff -ur ./redland-1.0.7/librdf/Makefile.am ./redland-1.0.7.new/librdf/Makefile.am
---- ./redland-1.0.7/librdf/Makefile.am	2007-12-17 16:51:58.000000000 +1000
-+++ ./redland-1.0.7.new/librdf/Makefile.am	2008-05-06 20:28:47.000000000 +1100
-@@ -150,6 +150,10 @@
- librdf_la_SOURCES += rdf_storage_mysql.c
- endif
++AM_CONDITIONAL(STORAGE_VIRTUOSO,  test $with_virtuoso  = yes)
  
-+if STORAGE_VIRTUOSO
-+librdf_la_SOURCES += rdf_storage_virtuoso.c
-+endif
-+
- if STORAGE_SQLITE
- librdf_la_SOURCES += rdf_storage_sqlite.c
- endif
-diff -ur ./redland-1.0.7/librdf/rdf_internal.h ./redland-1.0.7.new/librdf/rdf_internal.h
---- ./redland-1.0.7/librdf/rdf_internal.h	2007-09-22 01:23:33.000000000 +1100
-+++ ./redland-1.0.7.new/librdf/rdf_internal.h	2008-05-06 20:28:47.000000000 +1100
-@@ -82,6 +82,7 @@
- #endif
- 
- 
-+#define LIBRDF_ASSERT_MESSAGES 1
- #ifdef LIBRDF_ASSERT_MESSAGES
- #define LIBRDF_ASSERT_REPORT(msg) fprintf(stderr, "%s:%d: (%s) assertion failed: " msg "\n", __FILE__, __LINE__, __func__);
- #else
+ if test $mysql_storage  = yes; then
+   MYSQL_CPPFLAGS=`$MYSQL_CONFIG --cflags | sed -e "s/'//g" -e "s/-O[A-Za-z0-9]*//" `
 diff -ur ./redland-1.0.7/librdf/rdf_storage.c ./redland-1.0.7.new/librdf/rdf_storage.c
 --- ./redland-1.0.7/librdf/rdf_storage.c	2007-12-21 07:39:42.000000000 +1000
-+++ ./redland-1.0.7.new/librdf/rdf_storage.c	2008-05-31 11:37:49.000000000 +1100
-@@ -106,6 +106,13 @@
-     if (module)
++++ ./redland-1.0.7.new/librdf/rdf_storage.c	2008-06-11 21:59:56.000000000 +1100
+@@ -114,6 +114,13 @@
        raptor_sequence_push(world->storage_modules, module);
    #endif
-+
+   
 +  #ifdef STORAGE_VIRTUOSO
 +    module = librdf_storage_load_module(world, "librdf_storage_virtuoso",
 +                                        "librdf_init_storage_virtuoso");
 +    if (module)
 +      raptor_sequence_push(world->storage_modules, module);
 +  #endif
-   
++  
+   #ifdef STORAGE_POSTGRESQL
+     module = librdf_storage_load_module(world, "librdf_storage_postgresql",
+                                         "librdf_init_storage_postgresql");
+@@ -143,6 +150,9 @@
    #ifdef STORAGE_MYSQL
-     module = librdf_storage_load_module(world, "librdf_storage_mysql",
-@@ -140,6 +147,9 @@
-   #ifdef STORAGE_FILE
-     librdf_init_storage_file(world);
+     librdf_init_storage_mysql(world);
    #endif
 +  #ifdef STORAGE_VIRTUOSO
 +   librdf_init_storage_virtuoso(world);
 +  #endif
-   #ifdef STORAGE_MYSQL
-     librdf_init_storage_mysql(world);
+   #ifdef STORAGE_POSTGRESQL
+     librdf_init_storage_postgresql(world);
    #endif
 diff -ur ./redland-1.0.7/librdf/rdf_storage_internal.h ./redland-1.0.7.new/librdf/rdf_storage_internal.h
 --- ./redland-1.0.7/librdf/rdf_storage_internal.h	2007-11-03 18:14:01.000000000 +1000
-+++ ./redland-1.0.7.new/librdf/rdf_storage_internal.h	2008-05-06 20:28:47.000000000 +1100
-@@ -175,6 +175,10 @@
- 
- void librdf_init_storage_file(librdf_world *world);
++++ ./redland-1.0.7.new/librdf/rdf_storage_internal.h	2008-06-06 17:51:26.000000000 +1100
+@@ -179,6 +179,10 @@
+ void librdf_init_storage_mysql(librdf_world *world);
+ #endif
  
 +#ifdef STORAGE_VIRTUOSO
 +void librdf_init_storage_virtuoso(librdf_world *world);
 +#endif
 +
- #ifdef STORAGE_MYSQL
- void librdf_init_storage_mysql(librdf_world *world);
+ #ifdef STORAGE_POSTGRESQL
+ void librdf_init_storage_postgresql(librdf_world *world);
  #endif

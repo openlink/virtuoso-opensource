@@ -227,82 +227,8 @@ htadd (HTTABLE *table, short key, char *data)
 
 
 /******************* Virtuoso defines *******************/
-#ifdef HAVE_STDINT_H
-#include <stdint.h> /* for INT64_MAX etc */
-#endif
-#ifdef _MSC_VER
-#include <limits.h>
-#endif
 
-#ifndef _ITYPES_H
-# if SIZEOF_LONG == 4
-#  define int32		long
-#  define uint32	unsigned long
-# elif SIZEOF_INT == 4
-#  define int32		int
-#  define uint32	unsigned int
-# elif defined (ULONG_MAX) && ULONG_MAX == 4294967295U /* (4 bytes) */
-#  define int32		long
-#  define uint32	unsigned long
-# elif defined (UINT_MAX) && UINT_MAX == 4294967295U /* (4 bytes) */
-#  define int32	int
-#  define uint32	unsigned int
-# elif defined (MAXLONG) && MAXLONG == 2147483647U /* (4 bytes) */
-#  define int32		long
-#  define uint32	unsigned long
-# else
-#  error Unable to guess the int32/uint32 types. Try including the <limits.h>
-# endif
-#endif
-
-typedef unsigned char   dtp_t;
-typedef char *		caddr_t;
-typedef const char *	ccaddr_t;
-
-#ifndef int64
-#ifdef WIN32
-#define int64 __int64
-#else
-#define int64 long long
-#endif
-#endif
-
-#if defined (_WIN64)
-#define ptrlong int64	/* integer type with size of pointer */
-#else
-#define ptrlong long	/* integer type with size of pointer */
-#endif
-
-typedef int64 boxint;
-typedef unsigned int64 iri_id_t;
-
-#define SQL_C_BOX 22
 #define DV_LONG_INT 189
-
-#define SMALLEST_POSSIBLE_POINTER ((ptrlong)(0x10000))
-
-#define IS_BOX_POINTER(n) \
-	(((unsigned ptrlong) (n)) >= (unsigned ptrlong)SMALLEST_POSSIBLE_POINTER)
-
-#define box_tag_aux_const(box) (*((const dtp_t *) &(((const unsigned char *)(box))[-1])))
-#define box_flags(b) (((uint32*)(b))[-2])
-
-#define box_tag(box) box_tag_aux_const((box))
-
-#define DV_TYPE_OF(x) \
-	(IS_BOX_POINTER (x) \
-		? (dtp_t) box_tag(x) \
-		: ((dtp_t)(DV_LONG_INT)) )
-
-#define unbox_float(f) (*((float *)f))
-#define unbox_double(f) (*((double *)f))
-#define unbox_string(s) ((char *)s)
-#define unbox_iri_id(i) (*(iri_id_t*)(i))
-
-
-#define NUMERIC_MAX_PRECISION		40
-/* bytes needed for string conversion buffer allocation (+sign, dot, 0) */
-#define NUMERIC_MAX_STRING_BYTES	(NUMERIC_MAX_PRECISION + 3)
 
 #define DV_STRING 182
 #define DV_RDF 246		/*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
@@ -319,31 +245,15 @@ typedef unsigned int64 iri_id_t;
 #define DV_TIME  210
 
 
-typedef struct numeric_s *numeric_t;
-
-typedef struct rdf_box_s
-{
-  int32		rb_ref_count;
-  short		rb_type;
-  short		rb_lang;
-  unsigned	rb_is_complete:1;
-  unsigned	rb_is_outlined:1;
-  unsigned	rb_chksum_tail:1;
-  int64		rb_ro_id;
-  caddr_t	rb_box;
-} rdf_box_t;
+#define DT_TYPE_DATETIME 1
+#define DT_TYPE_DATE 2
+#define DT_TYPE_TIME 3
 
 
-int numeric_to_string (numeric_t n, char *pvalue, size_t max_pvalue);
-boxint unbox (ccaddr_t box);
-void dt_to_iso8601_string (char *dt, char *str, int len);
-
-typedef enum {
-  vIRI = 0,
-  vLiteral = 1,
-  vBNODE = 2,
-  vTLiteral = 3
-} vType;
+#define SQL_DESC_COL_DV_TYPE		1057L
+#define SQL_DESC_COL_DT_DT_TYPE		1058L
+#define SQL_DESC_COL_LITERAL_ATTR	1059L
+#define SQL_DESC_COL_BOX_FLAGS		1060L
 
 /******************************************************************/
 
@@ -528,35 +438,6 @@ rdf_virtuoso_ODBC_Errors (char *where, librdf_world *world,
     }
 
   return -1;
-}
-
-
-static caddr_t
-vGetDataBOX(librdf_world *world, librdf_storage_virtuoso_connection *handle, 
-	short col, int *is_null)
-{
-  int rc;
-  SQLLEN len;
-  char *data = NULL;
-  SQLCHAR buf[255];
-
-  *is_null = 0;
-
-  rc = SQLGetData(handle->hstmt, col, SQL_C_BOX, buf, sizeof(buf), &len);
-  if (!SQL_SUCCEEDED(rc))
-    {
-      rdf_virtuoso_ODBC_Errors("SQLGetData()", world, handle);
-      return NULL;
-    }
-  if (len == SQL_NULL_DATA)
-    {
-      *is_null = 1;
-      return NULL;
-    }
-  else
-    {
-      return *(caddr_t*)buf;
-    }
 }
 
 
@@ -754,204 +635,147 @@ end:
 }
 
 
-static char*
-rdf2string(librdf_storage_virtuoso_connection *handle, void *data, vType *type, 
-	   short *l_lang, short *l_type, int *dv_type)
+
+static librdf_node *
+rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle, 
+	 short col, char *data)
 {
-  caddr_t result = (caddr_t)data;
-  dtp_t dtp = DV_TYPE_OF (result);
-  char tmp[NUMERIC_MAX_STRING_BYTES + 100];
+  librdf_node *node = NULL;
+  short l_lang, l_type;
+  SQLHDESC hdesc = NULL;
+  librdf_uri *u_type = NULL;
+  int dvtype = 0;
+  int dv_dt_type = 0;
+  int flag = 0;
+  int rc;
 
-  if (dv_type) 
-    *dv_type = dtp;
+  rc = SQLGetStmtAttr(handle->hstmt, SQL_ATTR_IMP_ROW_DESC, &hdesc, SQL_IS_POINTER, NULL);
+  if (!SQL_SUCCEEDED(rc))
+    {
+      return NULL;
+    }
 
-  switch (dtp)
+  rc = SQLGetDescField(hdesc, col, SQL_DESC_COL_DV_TYPE, &dvtype, SQL_IS_INTEGER, NULL);
+  if (!SQL_SUCCEEDED(rc))
+     return NULL;
+  rc = SQLGetDescField(hdesc, col, SQL_DESC_COL_DT_DT_TYPE, &dv_dt_type, SQL_IS_INTEGER, NULL);
+  if (!SQL_SUCCEEDED(rc))
+     return NULL;
+  rc = SQLGetDescField(hdesc, col, SQL_DESC_COL_LITERAL_ATTR, &flag, SQL_IS_INTEGER, NULL);
+  if (!SQL_SUCCEEDED(rc))
+     return NULL;
+  l_lang =(short)((flag >> 16) & 0xFFFF);
+  l_type =(short)(flag & 0xFFFF);
+  rc = SQLGetDescField(hdesc, col, SQL_DESC_COL_BOX_FLAGS, &flag, SQL_IS_INTEGER, NULL);
+  if (!SQL_SUCCEEDED(rc))
+     return NULL;
+
+  switch (dvtype)
     {
       case DV_STRING:
 	    {
-	      int flags = box_flags (result);
-	      if (flags)
+	      if (flag)
 	        {
-	          if (strncmp((char*)result, "_:",2)==0)
+	          if (strncmp((char*)data, "_:",2)==0)
 	            {
-	              if (type) *type = vBNODE;
-	              return strdup(result+2);
+                      node = librdf_new_node_from_blank_identifier(storage->world,
+                                        (const unsigned char*)data+2);
 	            }
 	          else
 	            {
-	              if (type) *type = vIRI;
-	              return strdup(result);
+                      node = librdf_new_node_from_uri_string(storage->world,
+                                        (const unsigned char*)data);
 	            }
 		}
 	      else
 	        {
-	          if (strncmp((char*)result, "nodeID://",9)==0)
+	          if (strncmp((char*)data, "nodeID://",9)==0)
 	            {
-	              if (type) *type = vBNODE;
-	              return strdup(result+9);
+                      node = librdf_new_node_from_blank_identifier(storage->world,
+                                        (const unsigned char*)data+9);
 	            }
 	          else
 	            {
-	              if (type) *type = vLiteral;
-	              return strdup(result);
+                      node = librdf_new_node_from_literal(storage->world, 
+                                        (const unsigned char *)data, NULL, 0); 
 	            }
 		}
 	      break;
 	    }
       case DV_RDF:
 	    {
-	      rdf_box_t * rb = (rdf_box_t *) result;
-	      char *rdata = rdf2string(handle, rb->rb_box, NULL, NULL, NULL, NULL);
-	      if (l_lang)  *l_lang = rb->rb_lang;
-	      if (l_type)  *l_type = rb->rb_type;
-              if (type)    *type = vTLiteral;
-	      return rdata;
-	    }
-      case DV_LONG_INT: /* integer */
-	  sprintf (tmp, "%lld", unbox(result));
-          if (type) *type = vLiteral;
-          return strdup(tmp);
+              char *s_type = rdf_type2string(storage->world, handle, l_type);
+              char *s_lang = rdf_lang2string(storage->world, handle, l_lang);
 
-      case DV_SINGLE_FLOAT: /* float */
-	  sprintf (tmp, "%f", unbox_float(result));
-          if (type) *type = vLiteral;
-          return strdup(tmp);
+              if (s_type)
+                u_type = librdf_new_uri(storage->world, (unsigned char *)s_type);
 
-      case DV_DOUBLE_FLOAT: /* double */
-	  sprintf (tmp, "%f", unbox_double(result));
-          if (type) *type = vLiteral;
-          return strdup(tmp);
-
-      case DV_NUMERIC: /* decimal */
-	    {
-	      numeric_to_string ( (numeric_t) result, tmp, sizeof (tmp));
-              if (type) *type = vLiteral;
-              return strdup(tmp);
-	    }
-      case DV_TIMESTAMP: /* datetime */
-      case DV_TIMESTAMP_OBJ:
-      case DV_DATE: 
-      case DV_TIME: 
-      case DV_DATETIME: 
-	    {
-	      dt_to_iso8601_string (result, tmp, sizeof (tmp));
-              if (type) *type = vLiteral;
-              return strdup(tmp);
-	    }
-      case DV_IRI_ID:
-	    {
-	      iri_id_t iid = unbox_iri_id (result);
-	      sprintf (tmp, "#i%lld", (boxint)(iid));
-              if (type) *type = vLiteral;
-              return strdup(tmp);
-	    }
-      default:
-	  return NULL; /***printf ("*unexpected result type %d*", dtp);***/
-    }
-}
-
-
-static librdf_node *
-rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle, 
-	 void *data)
-{
-  vType type;
-  char *val;
-  librdf_node *node = NULL;
-  short l_lang, l_type;
-  int dvtype;
-
-
-  val = rdf2string(handle, data, &type, &l_lang, &l_type, &dvtype);
-  if (val)
-    {
-      if (type == vIRI)
-        {
-          node = librdf_new_node_from_uri_string(storage->world,
-                                                (const unsigned char*)val);
+              node = librdf_new_node_from_typed_literal(storage->world, 
+                         (const unsigned char *)data, s_lang, u_type); 
+	      break;
         }
-      else if (type == vLiteral)
-        {
-          librdf_uri *u_type = NULL;
-
-          switch (dvtype)
-            {
             case DV_LONG_INT: /* integer */
               u_type = librdf_new_uri(storage->world, 
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#integer");
 
               node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
+                         (const unsigned char *)data, NULL, u_type); 
               break;
+
             case DV_SINGLE_FLOAT: /* float */
               u_type = librdf_new_uri(storage->world,
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#float");
 
               node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
+                             (const unsigned char *)data, NULL, u_type); 
               break;
+
             case DV_DOUBLE_FLOAT: /* double */
               u_type = librdf_new_uri(storage->world,
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#double");
 
               node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
+                         (const unsigned char *)data, NULL, u_type); 
               break;
+
             case DV_NUMERIC: /* decimal */
               u_type = librdf_new_uri(storage->world,
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#decimal");
 
               node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
+                             (const unsigned char *)data, NULL, u_type); 
               break;
-            case DV_TIMESTAMP: /* datetime */
-            case DV_TIMESTAMP_OBJ:
-            case DV_DATETIME: 
-              u_type = librdf_new_uri(storage->world,
-              	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#dateTime");
 
-              node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
-              break;
-            case DV_DATE: /* date */
+            case DV_TIMESTAMP: /* datetime */
+      case DV_DATE: 
+      case DV_TIME: 
+            case DV_DATETIME: 
+          switch(dv_dt_type)
+            {
+            case DT_TYPE_DATE:
               u_type = librdf_new_uri(storage->world,
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#date");
-
-              node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
               break;
-            case DV_TIME: /* time */
+            case DT_TYPE_TIME:
               u_type = librdf_new_uri(storage->world,
               	   (unsigned char *)"http://www.w3.org/2001/XMLSchema#time");
-
-              node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, NULL, u_type); 
               break;
 	    default:
-              node = librdf_new_node_from_literal(storage->world, 
-                             (const unsigned char *)val, NULL, 0); 
+                u_type = librdf_new_uri(storage->world,
+          	     (unsigned char *)"http://www.w3.org/2001/XMLSchema#dateTime");
               break;
             }
-        }
-      else if (type == vTLiteral)
-        {
-          char *s_type = rdf_type2string(storage->world, handle, l_type);
-          char *s_lang = rdf_lang2string(storage->world, handle, l_lang);
-          librdf_uri *u_type = NULL;
-
-          if (s_type)
-            u_type = librdf_new_uri(storage->world, (unsigned char *)s_type);
-
           node = librdf_new_node_from_typed_literal(storage->world, 
-                             (const unsigned char *)val, s_lang, u_type); 
-        }
-      else if (type == vBNODE)
-        {
-          node = librdf_new_node_from_blank_identifier(storage->world,
-                                           (const unsigned char*)val);
-        }
-      free(val);
+                         (const unsigned char *)data, NULL, u_type); 
+          break;
+      case DV_IRI_ID:
+          node = librdf_new_node_from_literal(storage->world, 
+                             (const unsigned char *)data, NULL, 0); 
+          break;
+      default:
+	  return NULL; /***printf ("*unexpected result type %d*", dtp);***/
     }
+
   return node;
 }
 
@@ -995,7 +819,7 @@ static char *
 librdf_storage_virtuoso_node2string(librdf_storage *storage,
                                      librdf_node *node)
 {
-  librdf_node_type type=librdf_node_get_type(node);
+  librdf_node_type type = librdf_node_get_type(node);
   size_t nodelen;
   char *ret = NULL;
 
@@ -1433,7 +1257,7 @@ librdf_storage_virtuoso_init(librdf_storage* storage, const char *name,
 //??    status=librdf_storage_virtuoso_context_remove_statements(storage, NULL);
 #endif
 
-  if(!context->model_name || !context->user || !context->password)
+  if(!context->model_name || !context->dsn || !context->user || !context->password)
     return 1;
 
   strcpy(context->conn_str, "");
@@ -2519,17 +2343,18 @@ librdf_storage_virtuoso_find_statements_in_context_next_statement (void* context
   } else {
 
       colNum = 1;
-      caddr_t data;
+      char * data;
       int is_null;
 
       if (sos->query_context) {
         sos->current_context=librdf_new_node_from_node(sos->query_context);
       } else {
-        data = vGetDataBOX(sos->storage->world, sos->handle, colNum, &is_null);
+        data = vGetDataCHAR(sos->storage->world, sos->handle, colNum, &is_null);
         if (!data || is_null)
           return 1; 
       
-        sos->current_context=rdf2node(sos->storage, sos->handle, data);
+        sos->current_context=rdf2node(sos->storage, sos->handle, colNum, data);
+        LIBRDF_FREE(cstring,(char *)data);
         if (!sos->current_context)
           return 1;
 
@@ -2540,11 +2365,12 @@ librdf_storage_virtuoso_find_statements_in_context_next_statement (void* context
         librdf_statement_set_subject(sos->current_statement,librdf_new_node_from_node(subject));
       } else {
 
-        data = vGetDataBOX(sos->storage->world, sos->handle, colNum, &is_null);
+        data = vGetDataCHAR(sos->storage->world, sos->handle, colNum, &is_null);
         if (!data || is_null)
           return 1; 
       
-        node=rdf2node(sos->storage, sos->handle, data);
+        node=rdf2node(sos->storage, sos->handle, colNum, data);
+        LIBRDF_FREE(cstring,(char *)data);
         if (!node)
           return 1;
 
@@ -2555,11 +2381,12 @@ librdf_storage_virtuoso_find_statements_in_context_next_statement (void* context
       if(predicate) {
         librdf_statement_set_predicate(sos->current_statement,librdf_new_node_from_node(predicate));
       } else {
-        data = vGetDataBOX(sos->storage->world, sos->handle, colNum, &is_null);
+        data = vGetDataCHAR(sos->storage->world, sos->handle, colNum, &is_null);
         if (!data || is_null)
           return 1; 
       
-        node=rdf2node(sos->storage, sos->handle, data);
+        node=rdf2node(sos->storage, sos->handle, colNum, data);
+        LIBRDF_FREE(cstring,(char *)data);
         if (!node)
           return 1;
 
@@ -2570,11 +2397,12 @@ librdf_storage_virtuoso_find_statements_in_context_next_statement (void* context
       if(object) {
         librdf_statement_set_object(sos->current_statement,librdf_new_node_from_node(object));
       } else {
-        data = vGetDataBOX(sos->storage->world, sos->handle, colNum, &is_null);
+        data = vGetDataCHAR(sos->storage->world, sos->handle, colNum, &is_null);
         if (!data || is_null)
           return 1; 
       
-        node=rdf2node(sos->storage, sos->handle, data);
+        node=rdf2node(sos->storage, sos->handle, colNum, data);
+        LIBRDF_FREE(cstring,(char *)data);
         if (!node)
           return 1;
 
@@ -2792,11 +2620,12 @@ librdf_storage_virtuoso_get_contexts_next_context(void* context)
     librdf_free_node(gccontext->current_context);
 
   colNum = 1;
-  data = vGetDataBOX(gccontext->storage->world, gccontext->handle, colNum, &is_null);
+  data = vGetDataCHAR(gccontext->storage->world, gccontext->handle, colNum, &is_null);
   if (!data || is_null)
     return 1; 
 
-  gccontext->current_context=rdf2node(gccontext->storage, gccontext->handle, data);
+  gccontext->current_context=rdf2node(gccontext->storage, gccontext->handle, colNum, data);
+  LIBRDF_FREE(cstring,(char *)data);
   if (!gccontext->current_context)
     return 1;
     
