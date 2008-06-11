@@ -99,13 +99,13 @@ public class VirtuosoTest {
 			// test query data
 			String query = "sparql SELECT * WHERE {?s ?p ?o} LIMIT 1";
 			Value[][] results = doQuery(con, query);
-			System.out.println("TEST 1a Passed: " + (results.length > 0)); // should return true
+			System.out.println("RESULT 1a " + ((results.length > 0) ? "Passed" : "Failed")); // should return true
 
 			con.clear();
 			System.out.println("TEST 1b: Clearing triple store");
 			// long sz = con.size();
 			// System.out.println("TEST 1b: Passed: " + (sz == 0)); // should return sz == 0
-			System.out.println("TEST 1b: Passed: N/A"); // should return sz == 0
+			System.out.println("RESULT 1b: Passed: N/A"); // should return sz == 0
 
 			// test add data from a flat file
 			String fstr = "virtuoso_driver" + File.separator + "data.nt";
@@ -114,7 +114,7 @@ public class VirtuosoTest {
 			con.add(dataFile, "", RDFFormat.NTRIPLES, context);
 			query = "sparql SELECT * WHERE {?s ?p ?o} LIMIT 1";
 			results = doQuery(con, query);
-			System.out.println("TEST 1c Passed: " + (results.length > 0)); // should return true
+			System.out.println("RESULT 1c " + ((results.length > 0) ? "Passed" : "Failed")); // should return true
 
 			con.clear();
 			System.out.println("TEST 1d: Loading single triple");
@@ -125,38 +125,45 @@ public class VirtuosoTest {
 			con.add(snode, name, nameValue, context);
 			query = "sparql SELECT * WHERE {?s ?p ?o} LIMIT 1";
 			results = doQuery(con, query);
-			System.out.println("TEST 1d Passed: " + (results.length > 0)); // should return true
+			System.out.println("RESULT 1d " + ((results.length > 0) ? "Passed" : "Failed")); // should return true
 			if (results.length > 0) {
 				System.out.println("TEST 1e: Casted value type");
-				System.out.println("TEST 1e Passed: " + ((results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))); // should return true
+				System.out.println("TEST 1e " + (((results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))  ? "Passed" : "Failed")); // should return true
 				if (!((results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))) {
-					System.out.println("TEST 1e Value types: " + ((results[0][0] == null) ? null : results[0][0].getClass().getName()) + ", " + ((results[0][1] == null) ? null : results[0][1].getClass().getName()) + ", " + ((results[0][2] == null) ? null : results[0][2].getClass().getName())); // should
-																																																																										// return
-																																																																										// true
+					System.out.println("RESULT 1e Value types: " + ((results[0][0] == null) ? null : results[0][0].getClass().getName()) + ", " + ((results[0][1] == null) ? null : results[0][1].getClass().getName()) + ", " + ((results[0][2] == null) ? null : results[0][2].getClass().getName())); // should
 				}
+				else System.out.println("RESULT 1e: Failed");
 			}
+			else System.out.println("RESULT 1e: Failed");
 
 			System.out.println("TEST 2: Selecting property");
 			query = "sparql SELECT * WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
 			results = doQuery(con, query);
-			System.out.println("Test 2 Passed: " + (results.length > 0)); // should return true
+			System.out.println("RESULT 2 " + ((results.length > 0) ? "Passed" : "Failed")); // should return true
+
+			con.add(shermanmonroe, name, nameValue, context);
+
+			// test statement added
+			System.out.println("TEST 3: Add statement (hasStatement())");
+			boolean exists = con.hasStatement(shermanmonroe, name, null, false, context);
+			System.out.println("RESULT 3 " + (exists ? "Passed" : "Failed")); // should return false
+
+			System.out.println("TEST 4: Add statement (select query)");
+			query = "sparql SELECT * WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 2";
+			results = doQuery(con, query);
+			System.out.println("RESULT 4 " + ((results.length == 2) ? "Passed" : "Failed")); // should return true
 
 			// test remove a statement
-			con.remove(shermanmonroe, name, nameValue, (Resource) null);
+			con.remove(shermanmonroe, name, null, (Resource) null);
 
-			// test statement removed
-			System.out.println("TEST 3: Statement does not exists");
-			boolean exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			System.out.println("TEST 3 Passed: " + !exists); // should return false
+			System.out.println("TEST 5: Remove statement (hasStatement())");
+			exists = con.hasStatement(shermanmonroe, name, null, false, context);
+			System.out.println("RESULT 5 " + (!exists ? "Passed" : "Failed")); // should return true
 
-			System.out.println("TEST 4: Statement exists");
+			System.out.println("TEST 5b: Remove statement (select query)");
 			query = "sparql SELECT * WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
 			results = doQuery(con, query);
-			System.out.println("Test 4 Passed: " + (results.length > 0)); // should return true
-
-			System.out.println("TEST 5: Statement exists");
-			exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			System.out.println("Test 5 Passed: " + exists); // should return true
+			System.out.println("RESULT 5b " + ((results.length <= 0) ? "Passed" : "Failed")); // should return true
 
 			// test getNamespace
 			Namespace testns = null;
@@ -173,13 +180,17 @@ public class VirtuosoTest {
 			if (testns != null) {
 				// System.out.println("Retrieving namespace (" + testns.getName() + " " + testns.getPrefix() + ")");
 				String ns = con.getNamespace(testns.getPrefix());
-				if (hasNamespaces) System.out.println("TEST 6 Passed: " + (ns != null)); // should return true
+				if (hasNamespaces) System.out.println("RESULT 6 " + ((ns != null) ? "Passed" : "Failed")); // should return true
+				else System.out.println("RESULT 6 Failed");
+			}
+			else {
+				System.out.println("RESULT 6 Failed"); // should return true
 			}
 
 			// test getStatements and RepositoryResult implementation
 			System.out.println("TEST 7: Retrieving statement (" + shermanmonroe + " " + name + " " + null + ")");
 			RepositoryResult<Statement> statements = con.getStatements(shermanmonroe, name, null, false);
-			System.out.println("TEST 7 Passed: " + statements.hasNext()); // should return true
+			System.out.println("RESULT 7 " + (statements.hasNext() ? "Passed" : "Failed")); // should return true
 			while (statements.hasNext()) {
 				Statement st = statements.next();
 				// System.out.println("Statement found: (" + st.getSubject() + " " + st.getPredicate() + " " + st.getObject() + ")");
@@ -190,12 +201,12 @@ public class VirtuosoTest {
 			System.out.println("TEST 8: Writing the statements to file: (" + f.getAbsolutePath() + ")");
 			RDFHandler ntw = new NTriplesWriter(new FileOutputStream(f));
 			con.exportStatements(shermanmonroe, name, null, false, ntw);
-			System.out.println("TEST 8 Passed: " + f.exists()); // should return true
+			System.out.println("RESULT 8 " + (f.exists() ? "Passed" : "Failed")); // should return true
 
 			// test retrieve graph ids
 			System.out.println("TEST 9: Retrieving graph ids");
 			RepositoryResult<Resource> contexts = con.getContextIDs();
-			System.out.println("TEST 9: Passed: " + contexts.hasNext()); // should return true
+			System.out.println("RESULT 9: " + (contexts.hasNext() ? "Passed" : "Failed")); // should return true
 			while (contexts.hasNext()) {
 				Value id = contexts.next();
 				if ((id instanceof Literal)) System.out.println("Literal value for graphid found: (" + ((Literal) id).getLabel() + ")");
@@ -203,10 +214,9 @@ public class VirtuosoTest {
 
 			// test get size
 			System.out.println("TEST 10: Retrieving triple store size");
-			// sz = con.size();
-			// System.out.println("TEST 10: Passed: " + (sz > 0)); // should return sz > 0 results
-			System.out.println("TEST 10: Passed: N/A"); // should return sz > 0 results
-
+			long sz = con.size();
+			System.out.println("TEST 10: Passed: " + (sz > 0)); // should return sz > 0 results
+//			System.out.println("RESULT 10: Passed: N/A"); // should return sz > 0 results
 		}
 		catch (Exception e) {
 			System.out.println("ERROR Test Failed.");
