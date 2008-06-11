@@ -71,8 +71,8 @@ public class VirtuosoRepository implements Repository {
 		}
 		catch (Exception e) {
 			System.out.println("Connection to " + url + " is FAILED.");
-			e.printStackTrace();
-			System.exit(-1);
+//			e.printStackTrace();
+//			System.exit(-1);
 		}
 	}
 
