@@ -87,6 +87,7 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
   char dt[DT_LENGTH];
   int res = 0;
   int arg_dt_type = DT_DT_TYPE (arg);
+  TIMESTAMP_STRUCT ts;
   if (0 == ((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode))
     mode |= ((DT_TYPE_TIME == arg_dt_type) ? DT_PRINT_MODE_HMS :
       ((DT_TYPE_DATE == arg_dt_type) ? DT_PRINT_MODE_YMD : (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS)) );
@@ -96,7 +97,6 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
     sqlr_new_error ("22023", "SR593", "Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
   memcpy (dt, arg, DT_LENGTH);
   DT_SET_TZ (dt, 0);
-  TIMESTAMP_STRUCT ts;
   dt_to_timestamp_struct (dt, &ts);
   if (DT_PRINT_MODE_YMD & mode)
     res += sprintf (buf, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
