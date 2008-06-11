@@ -1967,6 +1967,7 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
   int bop_has_bool_args = ((BOP_AND == ttype) || (BOP_OR == ttype));
   int bop_is_comparison = ((BOP_LT == ttype) || (BOP_LTE == ttype) || (BOP_GT == ttype) || (BOP_GTE == ttype));
   ssg_valmode_t left_vmode, right_vmode, min_mode;
+  ptrlong left_restr_bits = -1, right_restr_bits = -1;
   if (bop_has_bool_args)
     {
       left_vmode = right_vmode = min_mode = SSG_VALMODE_BOOL;
@@ -1974,6 +1975,21 @@ ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, c
     }
   left_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, left);
   right_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, right);
+/* There exists a special popular case for a filter for GRAPH `iri(my_expression)` { ... } where graph is made by mapping with a fixed graph.
+Without the special optization it becomes iri_to_id ('graph iri string from view declaration') = DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (my_expression) */
+  if ((BOP_EQ == ttype) &&
+    ((SSG_VALMODE_SQLVAL == left_vmode) || (SSG_VALMODE_SQLVAL == right_vmode)) &&
+    ((SSG_VALMODE_LONG == left_vmode) || (SSG_VALMODE_LONG == right_vmode)) )
+    {
+      left_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, left);
+      right_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, right);
+      if ((SPART_VARR_IS_REF & left_restr_bits) && (SPART_VARR_IS_REF & right_restr_bits))
+        {
+          min_mode = SSG_VALMODE_SQLVAL;
+          goto vmodes_found; /* see below */
+        }
+    }
+/* Valmode of global expressions does not really matter because they're calculated only once, hence the comparison prefers valmode of the non-global expression argument */
   if (!bop_is_comparison && (SSG_VALMODE_SQLVAL == right_vmode) &&
     ((SSG_VALMODE_LONG == left_vmode) ||
       (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection) ) &&
