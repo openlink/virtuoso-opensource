@@ -2355,6 +2355,132 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*StringLengthPtr = sizeof (SQLSMALLINT);
       break;
 
+    case SQL_DESC_COL_DV_TYPE:
+      if (StringLengthPtr)
+	*StringLengthPtr = sizeof (SQLINTEGER);
+
+      if (RecNumber > desc_count || RecNumber == 0)
+	return (SQL_NO_DATA_FOUND);
+
+      if (!bAppDesc && bRowDesc)
+	{
+          caddr_t *row;
+          caddr_t col;
+
+          row = desc->d_stmt->stmt_current_row;
+	  if (!row)  /* "Statement not fetched in SQLGetData."); */
+	    return SQL_ERROR;
+
+          col = row[RecNumber];
+          *(SQLINTEGER *) ValuePtr = (int) DV_TYPE_OF(col);
+        }
+      else
+	return (SQL_ERROR);
+      break;
+
+    case SQL_DESC_COL_DT_DT_TYPE:
+      if (StringLengthPtr)
+	*StringLengthPtr = sizeof (SQLINTEGER);
+
+      if (RecNumber > desc_count || RecNumber == 0)
+	return (SQL_NO_DATA_FOUND);
+
+      if (!bAppDesc && bRowDesc)
+	{
+          caddr_t *row;
+          caddr_t col;
+
+          row = desc->d_stmt->stmt_current_row;
+	  if (!row)  /* "Statement not fetched in SQLGetData."); */
+	    return SQL_ERROR;
+
+          col = row[RecNumber];
+          switch (DV_TYPE_OF(col))
+            {
+            case DV_TIMESTAMP: /* datetime */
+            case DV_DATE: 
+            case DV_TIME: 
+            case DV_DATETIME: 
+               *(SQLINTEGER *) ValuePtr = (int) DT_DT_TYPE(col);
+               break;
+            default:
+               *(SQLINTEGER *) ValuePtr = 0;
+               break;
+            }
+        }
+      else
+	return (SQL_ERROR);
+      break;
+
+
+    case SQL_DESC_COL_LITERAL_ATTR:
+      if (StringLengthPtr)
+	*StringLengthPtr = sizeof (SQLINTEGER);
+
+      if (RecNumber > desc_count || RecNumber == 0)
+	return (SQL_NO_DATA_FOUND);
+
+      if (!bAppDesc && bRowDesc)
+	{
+          caddr_t *row;
+          caddr_t col;
+
+          row = desc->d_stmt->stmt_current_row;
+	  if (!row)  /* "Statement not fetched in SQLGetData."); */
+	    return SQL_ERROR;
+
+          col = row[RecNumber];
+          if (DV_TYPE_OF(col) == DV_RDF)
+            {
+              int val;
+              unsigned short lang, type;
+	      rdf_box_t * rb = (rdf_box_t *) col;
+	      lang = rb->rb_lang;
+	      type = rb->rb_type;
+              val =lang << 16 | type; 
+              *(SQLINTEGER *) ValuePtr = val;
+            }
+          else
+            {
+              *(SQLINTEGER *) ValuePtr = 0;
+            }
+        }
+      else
+	return (SQL_ERROR);
+      break;
+
+    
+    case SQL_DESC_COL_BOX_FLAGS:
+      if (StringLengthPtr)
+	*StringLengthPtr = sizeof (SQLINTEGER);
+
+      if (RecNumber > desc_count || RecNumber == 0)
+	return (SQL_NO_DATA_FOUND);
+
+      if (!bAppDesc && bRowDesc)
+	{
+          caddr_t *row;
+          caddr_t col;
+
+          row = desc->d_stmt->stmt_current_row;
+	  if (!row)  /* "Statement not fetched in SQLGetData."); */
+	    return SQL_ERROR;
+
+          col = row[RecNumber];
+          if (DV_TYPE_OF(col) == DV_STRING)
+            {
+              *(SQLINTEGER *) ValuePtr = box_flags(col);
+            }
+          else
+            {
+              *(SQLINTEGER *) ValuePtr = 0;
+            }
+        }
+      else
+	return (SQL_ERROR);
+      break;
+
+    
     default:
       cli_dbg_printf ((": SQLGetDescField(...,Field %d, UNKNOWN (%d), ...) called\n", RecNumber, FieldIdentifier));
       break;

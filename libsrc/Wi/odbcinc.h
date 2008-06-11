@@ -159,3 +159,15 @@ typedef void * SQLHANDLE;
     ((0 == strncmp(rcon->rc_driver_name, "SQORA", 5)) || \
      (0 == strncmp(rcon->rc_driver_name, "SQOCI", 5))))
 #endif
+
+
+/*
+ * Added extensions for retrieving RDF literal/type  meta data
+ * through ODBC interface
+ */
+#ifndef SQL_DESC_COL_DV_TYPE
+#define SQL_DESC_COL_DV_TYPE           1057L
+#define SQL_DESC_COL_DT_DT_TYPE        1058L
+#define SQL_DESC_COL_LITERAL_ATTR      1059L
+#define SQL_DESC_COL_BOX_FLAGS         1060L
+#endif
