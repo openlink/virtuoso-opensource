@@ -33,6 +33,9 @@ extern "C" {
 }
 #endif
 
+#define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
+#define isURIescapedchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c)))
+
 int
 sprintff_is_proven_bijection (const char *f)
 {
@@ -52,7 +55,7 @@ sprintff_is_proven_bijection (const char *f)
           continue;
         }
       tail++;
-      if (NULL == strchr ("Udusc", tail[0]))
+      if (NULL == strchr ("DUdusc", tail[0]))
         return 0; /* Unknown format so the bijection is not proven */
       fmt_type = tail[0];
       tail++;
@@ -66,6 +69,10 @@ sprintff_is_proven_bijection (const char *f)
         return 0; /* Can't read two concatenated formats if the first one is not '%c' */
       switch (fmt_type)
         {
+          case 'D':
+            if (isdatechar (next))
+              return 0;
+            continue;
           case 'd': case 'u':
             if (isdigit (next))
               return 0;
@@ -323,7 +330,7 @@ again:
   f1_v = (f1_tail++)[0];
   switch (f1_v)
     {
-    case 'U': case 'd': case 's': break;
+    case 'D': case 'U': case 'd': case 's': case 'u': break;
     default: goto generic_tails; /* see below */
     }
   if ('%' == f2[0])
@@ -341,7 +348,7 @@ again:
           f2_v = (f2_tail++)[0];
           switch (f2_v)
             {
-            case 'U': case 'd': case 's': case 'u': break;
+            case 'D': case 'U': case 'd': case 's': case 'u': break;
             default: goto generic_tails; /* see below */
             }
           f2_fix = '\0';
@@ -367,6 +374,7 @@ again:
 
   switch (f1_v)
     {
+    case 'D': goto f1_v_is_D; /* see below */
     case 'U': goto f1_v_is_U; /* see below */
     case 'd': goto f1_v_is_d; /* see below */
     case 's': goto f1_v_is_s; /* see below */
@@ -374,8 +382,56 @@ again:
     default: GPF_T;
     }
 
+f1_v_is_D:
+  if (isdatechar (f1_tail[0]))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%D' in f1 may match any %D-like chars, f2 vars (%U to %D, %s to %D) */
+  f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
+  for (;;)
+    {
+      if (!isdatechar (f2_tail[0]))
+        {
+          if (f1_tail[0] == f2_tail[0]) /* unambiguous synchronisation between f1 and f2 */
+            goto tails_are_in_sync; /* see below */
+          if ('\0' == f1_tail[0])
+            return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+          return SFF_ISECT_DISJOIN;
+        }
+      if ('%' == f2_tail[0])
+        {
+          f2_tail++;
+          if ('%' == f2_tail[0])
+            {
+              (res_buf++)[0] = '%'; (res_buf++)[0] = '%'; f2_tail++;
+              continue;
+            }
+          while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
+        }
+      else
+        {
+          (res_buf++)[0] = (f2_tail++)[0];
+          continue;
+        }
+      switch (f2_tail[0])
+        {
+        case '%': strcpy (res_buf, "%s"); return SFF_ISECT_OK;  /* Syntax error in f2, format like %01% */
+        case 'D': (res_buf++)[0] = '%'; (res_buf++)[0] = 'D'; f2_tail++; continue;
+        case 'U':
+          if (isURIescapedchar (f1_tail[0]))
+            goto generic_tails; /* see below */
+          (res_buf++)[0] = '%'; (res_buf++)[0] = 'U'; f2_tail++; continue;
+        case 'd': (res_buf++)[0] = '%'; (res_buf++)[0] = 'd'; f2_tail++; continue;
+        case 's': goto generic_tails; /* see below */
+        case 'u': (res_buf++)[0] = '%'; (res_buf++)[0] = 'u'; f2_tail++; continue;
+        default: goto generic_tails; /* see below */
+        }
+    }
+
+  /*NOTREACHED*/
+  GPF_T;
+
 f1_v_is_U:
-  if (!(('\0' == f1_tail[0]) || ('/' == f1_tail[0]) || ('?' == f1_tail[0]) || ('=' == f1_tail[0]) || ('#' == f1_tail[0])))
+  if (isURIescapedchar (f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f1 may match any %U-like chars, f2 vars (%U to %U, %d to %d, %s to %U) */
   f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
@@ -401,10 +457,11 @@ f1_v_is_U:
         }
       switch (f2_tail[0])
         {
-        case '%': strcpy (res_buf, "%s"); return SFF_ISECT_OK;  /* Syntax error in f2, format like %01% */
+        case '%': goto generic_tails; /* see below */  /* Syntax error in f2, format like %01% */
         case 'U': (res_buf++)[0] = '%'; (res_buf++)[0] = 'U'; f2_tail++; continue;
         case 'd': (res_buf++)[0] = '%'; (res_buf++)[0] = 'd'; f2_tail++; continue;
         case 's': goto generic_tails; /* see below */
+        case 'u': (res_buf++)[0] = '%'; (res_buf++)[0] = 'u'; f2_tail++; continue;
         default: goto generic_tails; /* see below */
         }
     }
@@ -602,7 +659,7 @@ sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
   return res;
 }
 
-/*! This function gets a string \c s1 and asprintf_format string \c f2.
+/*! This function gets a string \c s1 and a sprintf_format string \c f2.
 The function returns nonzero if it is proven that \c s1 can not be printed by \c f2.
 If it can be printed or if the function is in doubt then it returns zero. */
 static int sff_dislike (const char *s1, const char *f2)
@@ -637,6 +694,7 @@ again:
   f2_v = (f2_tail++)[0];
   switch (f2_v)
     {
+    case 'D': goto f2_v_is_D; /* see below */
     case 'U': goto f2_v_is_U; /* see below */
     case 'd': goto f2_v_is_d; /* see below */
     case 's': goto f2_v_is_s; /* see below */
@@ -644,8 +702,28 @@ again:
     default: goto generic_tails; /* see below */
     }
 
+f2_v_is_D:
+  if (isdatechar (f2_tail[0]))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%D' in f2 may match any %D-like chars */
+  s1_tail = s1;
+  for (;;)
+    {
+      if (!isdatechar (s1_tail[0]))
+        {
+          if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
+            goto tails_are_in_sync; /* see below */
+          if ('\0' == f2_tail[0])
+            return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+          return SFF_ISECT_DISJOIN;
+        }
+      else
+        s1_tail++;
+    }
+  GPF_T; /* never reached */
+
 f2_v_is_U:
-  if (!(('\0' == f2_tail[0]) || ('/' == f2_tail[0]) || ('?' == f2_tail[0]) || ('=' == f2_tail[0]) || ('#' == f2_tail[0])))
+  if (isURIescapedchar (f2_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f2 may match any %U-like chars */
   s1_tail = s1;
