@@ -505,11 +505,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 
-			if (contexts == null || contexts.length == 0) {
+		if(contexts == null || contexts.length == 0) {
 			contexts = new Resource[] {new ValueFactoryImpl().createURI("virt:DEFAULT")};
-			}
+		}
 		addTriplesToEachContext:
-				for (int i = 0; i < contexts.length; i++) {
+		for(int i = 0; i < contexts.length; i++) {
 			String g = "from graph <virt:DEFAULT>";
 			if(contexts[i] != null) {
 				// TODO need to pass a wildcard for context
@@ -533,7 +533,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				try {
 					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 					stmt.executeUpdate(query.toString());
-		}
+				}
 				catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -712,8 +712,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					e.printStackTrace();
 				}
 //			}
-			}
 		}
+	}
 
 	private void addToQuadStore(URL dataURL, Resource ... contexts) {
 		if(contexts == null) {
@@ -767,9 +767,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				try {
 					StringBuffer query = new StringBuffer();
 					// updated to use SPARUL
-// query.append("delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('");
-// query.append(context.stringValue());
-// query.append("')");
+					// query.append("delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('");
+					// query.append(context.stringValue());
+					// query.append("')");
 					
 					query.append("sparql ");
 					query.append("clear graph <");
@@ -1006,7 +1006,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private Value castValue(Object val) {		
+	private Value castValue(Object val) {
 		if(val == null) return null;
 	    if (val instanceof VirtuosoRdfBox) {
 			VirtuosoRdfBox rb = (VirtuosoRdfBox) val;
@@ -1082,17 +1082,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 				}
 		    }
-		    }
 		    else if (ves.iriType == VirtuosoExtendedString.BNODE) {
-//				if(valueString.startsWith("nodeID://")) {
+				if(valueString.startsWith("nodeID://")) {
 					try {
 						valueString = valueString.substring(9); // parse bnode id
 						return getRepository().getValueFactory().createBNode(valueString);
 					}
 					catch(IllegalArgumentException iaex) {
 						System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+					}
 				}
-//				}
 		    }
 		    else {
 				try {
@@ -1103,16 +1102,30 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 		    }
 		}
-		else { 
-		        String s = (String) val.toString();
+		else { //if(val instanceof String) {
+		String s = (String) val;
 			if(s.length() == 0) return null;
 			try {
+				return getRepository().getValueFactory().createURI(s);					
+			}
+			catch(IllegalArgumentException iaex) {
+				try {
 					return getRepository().getValueFactory().createLiteral(s);
 				}
 				catch(IllegalArgumentException iaex2) {
+					try {
+						return getRepository().getValueFactory().createBNode(s);					
+					}
+					catch(IllegalArgumentException iaex3) {
 						System.out.println("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + s);
 					}
 				}
+			}
+		}
+//		else {
+//			Literal lit = getRepository().getValueFactory().createLiteral(val.toString());
+//			return lit;
+//		}
 		return null;
 	}
 	
