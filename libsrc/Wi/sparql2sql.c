@@ -4001,6 +4001,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
       ssg_valmode_t field_valmode = SSG_VALMODE_AUTO;
       SPART *field_expn = triple->_.triple.tr_fields[field_ctr];
       rdf_val_range_t acc_rvr;
+      int all_cases_make_only_refs = 1;
       memset (&acc_rvr, 0, sizeof (rdf_val_range_t));
       acc_rvr.rvrRestrictions = SPART_VARR_CONFLICT;
       for (ctr = 0; ctr < new_cases_count; ctr++)
@@ -4013,6 +4014,8 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
           if (NULL != qmv)
             {
               qm_format_t *qmv_fmt = qmv->qmvFormat;
+              if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & qmv_fmt->qmfValRange.rvrRestrictions))
+                all_cases_make_only_refs = 0;
               field_valmode = ssg_smallest_union_valmode (field_valmode, qmv_fmt);
               sparp_rvr_copy (sparp, &qmv_rvr, &(qmv->qmvRange));
               if (SPART_VARR_SPRINTFF & qmv_fmt->qmfValRange.rvrRestrictions)
@@ -4040,6 +4043,8 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
                 GPF_T1("sparp_" "refresh_triple_cases(): const GRAPH field of qm is not a UNAME");
 #endif
               qmv_rvr.rvrFixedValue = fld_const;
+              if (all_cases_make_only_refs && (DV_UNAME != DV_TYPE_OF (fld_const)))
+                all_cases_make_only_refs = 0;
             }
           else
             spar_internal_error (sparp, "Invalid quad map storage metadata: neither quad map value nor a constant is set for a field of a quad map.");
@@ -4054,6 +4059,8 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
             sparp_rvr_tighten (sparp, &qmv_rvr, &(qmv->qmvFormat->qmfValRange), ~SPART_VARR_IRI_CALC);
           sparp_rvr_loose (sparp, &acc_rvr, &qmv_rvr, ~0);
         }
+      if (all_cases_make_only_refs && (SSG_VALMODE_LONG == field_valmode))
+        field_valmode = SSG_VALMODE_SQLVAL;
       sparp_jso_validate_format (sparp, field_valmode);
       triple->_.triple.native_formats[field_ctr] = field_valmode;
       if (SPAR_IS_BLANK_OR_VAR (field_expn))

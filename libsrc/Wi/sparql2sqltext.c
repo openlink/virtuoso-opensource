@@ -988,6 +988,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
     {
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;
       int var_miss_in_some_members = 0;
+      int all_cases_make_only_refs = 1;
   DO_BOX_FAST (SPART *, gp_member, gp_member_idx, gp->_.gp.members)
     {
       sparp_equiv_t *member_eq;
@@ -1010,7 +1011,11 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
                 member_valmode = dflt_qm->qmSubjectMap->qmvFormat;
             }
           else
+            {
             member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
+              if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions))
+                all_cases_make_only_refs = 0;
+            }
       if (NULL == member_valmode)
         continue;
           smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode);
@@ -1024,10 +1029,12 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
         IS_BOX_POINTER (smallest_union) )
         { /* Missing variable in union will be printed as single NULL so... */
           if (1 != smallest_union->qmfColumnCount)
-            return SSG_VALMODE_LONG; /* ... non-missing multi-column format is not appropriate */
-          if (SPART_VARR_NOT_NULL & smallest_union->qmfValRange.rvrRestrictions)
-            return ssg_find_nullable_superformat (smallest_union); /* ... format that does not support NULLs is not appropriate, too */
+            smallest_union = SSG_VALMODE_LONG; /* ... non-missing multi-column format is not appropriate */
+          else if (SPART_VARR_NOT_NULL & smallest_union->qmfValRange.rvrRestrictions)
+            smallest_union = ssg_find_nullable_superformat (smallest_union); /* ... format that does not support NULLs is not appropriate, too */
         }
+      if (all_cases_make_only_refs && (SSG_VALMODE_LONG == smallest_union))
+        smallest_union = SSG_VALMODE_SQLVAL;
       return smallest_union;
         }
   largest_intersect = SSG_VALMODE_AUTO;
@@ -2172,11 +2179,15 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
   left_native = sparp_expn_native_valmode (ssg->ssg_sparp, left);
   right_native = sparp_expn_native_valmode (ssg->ssg_sparp, right);
   smallest_union = ssg_smallest_union_valmode (left_native, right_native);
-  if (((SSG_VALMODE_LONG == smallest_union) ||
-       (IS_BOX_POINTER (smallest_union) && smallest_union->qmfIsSubformatOfLong) ) &&
-    (SPART_VARR_LONG_EQ_SQL & sparp_restr_bits_of_expn (ssg->ssg_sparp, left)) &&
-    (SPART_VARR_LONG_EQ_SQL & sparp_restr_bits_of_expn (ssg->ssg_sparp, right)) )
+  if ((SSG_VALMODE_LONG == smallest_union) ||
+    (IS_BOX_POINTER (smallest_union) && smallest_union->qmfIsSubformatOfLong) )
     {
+      ptrlong left_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, left);
+      ptrlong right_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, right);
+      if ((SPART_VARR_LONG_EQ_SQL & left_restr_bits) && (SPART_VARR_LONG_EQ_SQL & right_restr_bits))
+        smallest_union = SSG_VALMODE_SQLVAL;
+      else if ((SSG_VALMODE_LONG == smallest_union) &&
+        (SPART_VARR_IS_REF & left_restr_bits) && (SPART_VARR_IS_REF & right_restr_bits) )
       smallest_union = SSG_VALMODE_SQLVAL;
     }
   if (SSG_VALMODE_LONG == smallest_union)
