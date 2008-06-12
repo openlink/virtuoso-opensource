@@ -142,6 +142,8 @@ sas_ensure ()
 caddr_t same_as_iri;
 caddr_t owl_sub_class_iri = NULL;
 caddr_t owl_sub_property_iri = NULL;
+caddr_t owl_equiv_class_iri = NULL;
+caddr_t owl_equiv_property_iri = NULL;
 
 
 void
@@ -544,19 +546,37 @@ bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!owl_sub_class_iri)
     {
       caddr_t name;
+      /* owl:subClass */
       name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subClassOf");
       owl_sub_class_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
       dk_free_box (name);
       if (err) sqlr_resignal (err);
+      /* owl:subProperty */
       name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subPropertyOf");
       owl_sub_property_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
       dk_free_box (name);
       if (err) sqlr_resignal (err);
+      /* owl:equivalentClass */
+      name = box_dv_short_string ("http://www.w3.org/2002/07/owl#equivalentClass");
+      owl_equiv_class_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
+      dk_free_box (name);
+      if (err) sqlr_resignal (err);
+      /* owl:equivalentProperty */
+      name = box_dv_short_string ("http://www.w3.org/2002/07/owl#equivalentProperty");
+      owl_equiv_property_iri = iri_to_id (qst, name, IRI_TO_ID_WITH_CREATE, &err);
+      dk_free_box (name);
+      if (err) sqlr_resignal (err);
     }
-  if (flag)
-    return box_copy_tree (owl_sub_class_iri);
-  else
+  if (flag == 0)
     return box_copy_tree (owl_sub_property_iri);
+  else if (flag == 1)
+    return box_copy_tree (owl_sub_class_iri);
+  else if (flag == 2)
+    return box_copy_tree (owl_equiv_property_iri);
+  else if (flag == 3)
+    return box_copy_tree (owl_equiv_class_iri);
+  sqlr_new_error ("22023", "OWL01",  "The function rdf_owl_iri supports 0-3 as argument.");
+  return NULL;
 }
 
 

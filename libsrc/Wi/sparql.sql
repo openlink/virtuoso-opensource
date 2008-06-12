@@ -10751,13 +10751,43 @@ create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id
 }
 ;
 
-create procedure rdfs_closure_1
-(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, in pos int)
+create procedure rdf_owl_equiv_1
+(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, inout pos int)
 {
-  declare i int;
   if (dict_get (visited, c))
     return;
   dict_put (visited, c, 1);
+  if (pos >= length (supers))
+    supers := vector_concat (supers, make_array (100, 'any'));
+  rdf_owl_equiv (gr, name, super_c, c, is_class, visited, supers, pos);
+  supers [pos] := c;
+  pos := pos + 1;
+  for select o from rdf_quad where g = gr and p = rdf_owl_iri (is_class) and s = c do
+    {
+      rdf_owl_equiv_1 (gr, name, super_c, o, is_class, visited, supers, pos);
+    }
+}
+;
+
+create procedure rdf_owl_equiv
+(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, inout pos int)
+{
+  for select o from rdf_quad where g = gr and p = rdf_owl_iri (is_class + 2) and s = c do
+    {
+      rdf_owl_equiv_1 (gr, name, super_c, o, is_class, visited, supers, pos);
+    }
+}
+;
+
+create procedure rdfs_closure_1
+(in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in is_class int, in visited any, inout supers any, in pos int)
+{
+  declare i, save int;
+  if (dict_get (visited, c))
+    return;
+  dict_put (visited, c, 1);
+  save := pos;
+  rdf_owl_equiv (gr, name, super_c, c, is_class, dict_new (), supers, pos);
   if (pos >= length (supers))
     supers := vector_concat (supers, make_array (100, 'any'));
   supers [pos] := c;
@@ -10772,7 +10802,7 @@ create procedure rdfs_closure_1
       if (not is_class)
 	rdf_owl_sas_p (gr, name, super_c, s, visited, supers, pos + 1);
     }
-  supers[pos] := 0;
+  supers[save] := 0;
 }
 ;
 
