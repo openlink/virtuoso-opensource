@@ -1,17 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<!ENTITY stock "http://xbrlontology.com/ontology/finance/stock_market#">
-<!ENTITY ifrs-gp 'http://rhizomik.net/ontologies/2007/11/ifrs-gp-2005-05-15.owl#'>
-<!ENTITY ifrs-gp-typ 'http://rhizomik.net/ontologies/2007/11/ifrs-gp-types-2005-05-15.owl#'>
-<!ENTITY link 'http://rhizomik.net/ontologies/2007/11/xbrl-linkbase-2003-12-31.owl#'>
-<!ENTITY xbrli 'http://rhizomik.net/ontologies/2007/11/xbrl-instance-2003-12-31.owl#'>
-<!ENTITY xlink 'http://rhizomik.net/ontologies/2007/11/xlink-2003-12-31.owl#'>
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
+<!ENTITY sioct 'http://rdfs.org/sioc/types#'>
+<!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
 ]>
-
 <!--
  -
  -  $Id$
@@ -34,162 +28,123 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<xsl:stylesheet
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-  xmlns:dc="http://purl.org/dc/elements/1.1/"
-  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-  xmlns:foaf="http://xmlns.com/foaf/0.1/"
-  xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
-  xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-  xmlns:owl="http://www.w3.org/2002/07/owl#"
-  xmlns:mem="http://www.microsoft.com/xbrl/mem#"
-  xmlns:usfr-mda="http://www.xbrl.org/us/fr/rpt/seccert/2005-02-28#"
-  xmlns:usfr-ar="http://www.xbrl.org/us/fr/rpt/ar/2005-02-28#"
-  xmlns:usfr-pte="http://www.xbrl.org/us/fr/common/pte/2005-02-28#"
-  xmlns:ref="http://www.xbrl.org/2004/ref#"
-  xmlns:usfr-mr="http://www.xbrl.org/us/fr/rpt/mr/2005-02-28#"
-  xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#"
-  xmlns:msft="http://www.microsoft.com/10q/industrial/msft/2005-02-28"
   xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
   xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl/"
-  xmlns:ifrs-gp="&ifrs-gp;"
-  xmlns:stock="&stock;"
-  xmlns:ifrs-gp-typ="&ifrs-gp-typ;"
-  xmlns:link="&link;"
-  xmlns:xbrli="&xbrli;"
   xmlns:v="http://www.openlinksw.com/xsltext/"
+	xmlns:sioct="&sioct;"
+	xmlns:sioc="&sioc;"
   version="1.0">
   
-  <xsl:output method="xml" indent="yes"/>
+	<xsl:output method="xml" indent="yes" />
   <xsl:param name="baseUri" />
-
   <xsl:variable name="ns">http://demo.openlinksw.com/schemas/xbrl/</xsl:variable>
-
   <xsl:template match="/">
       <rdf:RDF>
-	  	<xsl:apply-templates select="xbrl"/>
+			<xsl:apply-templates select="xbrl" />
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="xbrl">
-      <!--xsl:apply-templates select="context"/-->
-      <xsl:apply-templates select="*"/>
-      <!--xsl:apply-templates select="unit"/-->
+		<sioc:Space rdf:about="{$baseUri}">
+			<xsl:for-each select="context">
+				<sioc:space_of rdf:resource="{concat('#', @id)}"/>
+			</xsl:for-each>
+		</sioc:Space>
+		<xsl:apply-templates select="*" />
   </xsl:template>
-
   <xsl:template match="context">
-    <xsl:variable name="id" select="@id"/>
-    <rdf:Description rdf:ID="{$id}">
-        <rdf:type>
-          <xsl:attribute name="rdf:resource">
-            <xsl:value-of select="concat($ns, 'context')"/>
-          </xsl:attribute>
-        </rdf:type>
-        <xsl:apply-templates select="entity"/>
-        <xsl:apply-templates select="period"/>
-    </rdf:Description>
+		<xsl:variable name="id" select="concat('#', @id)" />		
+		<sioc:Container rdf:about="{$id}">
+			<sioc:has_space rdf:resource="{$baseUri}"/>
+			<xsl:apply-templates select="entity" />
+			<xsl:apply-templates select="period" />
+		</sioc:Container>
   </xsl:template>
-  
   <xsl:template match="unit">
-    <xsl:variable name="id" select="@id"/>
-    <rdf:Description rdf:ID="{$id}">
-        <rdf:type>
-          <xsl:attribute name="rdf:resource">
-            <xsl:value-of select="concat($ns, 'context')"/>
-          </xsl:attribute>
-        </rdf:type>
+		<xsl:variable name="id" select="concat('#', @id)" />
+		<sioc:Item rdf:about="{$id}">
           <virt-xbrl:measure>
               <xsl:value-of select="measure" />
           </virt-xbrl:measure>
-    </rdf:Description>
+		</sioc:Item>
   </xsl:template>
-  
   <xsl:template match="entity">
+		<xsl:variable name="identifier_value" select="identifier" />
+		<xsl:variable name="segment_value" select="segment" />
       <virt-xbrl:scheme rdf:datatype="&xsd;string">
-        <xsl:apply-templates select="identifier"/>
+			<xsl:apply-templates select="identifier" />
       </virt-xbrl:scheme>
+		<xsl:if test="string-length($identifier_value) &gt; 0">
       <virt-xbrl:identifier rdf:datatype="&xsd;string">
         <xsl:value-of select="identifier" />
       </virt-xbrl:identifier>
+		</xsl:if>
+		<xsl:if test="string-length($segment_value) &gt; 0">
       <virt-xbrl:segment rdf:datatype="&xsd;string">
           <xsl:value-of select="segment" />
       </virt-xbrl:segment>
+		</xsl:if>
   </xsl:template>
-    
   <xsl:template match="identifier">
     <xsl:value-of select="@scheme" />
   </xsl:template>
-
   <xsl:template match="period">
-        <xsl:apply-templates select="instant"/>
-        <xsl:apply-templates select="startDate"/>
-        <xsl:apply-templates select="endDate"/>
+		<xsl:apply-templates select="instant" />
+		<xsl:apply-templates select="startDate" />
+		<xsl:apply-templates select="endDate" />
   </xsl:template>
-  
   <xsl:template match="instant">
+		<xsl:variable name="prop_value" select="." />
+		<xsl:if test="string-length($prop_value) &gt; 0">
     <virt-xbrl:instant rdf:datatype="&xsd;date">
-        <xsl:value-of select="."/>
+				<xsl:value-of select="." />
     </virt-xbrl:instant>
+		</xsl:if>
   </xsl:template>
-
   <xsl:template match="startDate">
+		<xsl:variable name="prop_value" select="." />
+		<xsl:if test="string-length($prop_value) &gt; 0">
     <virt-xbrl:startDate rdf:datatype="&xsd;date">
-        <xsl:value-of select="."/>
+				<xsl:value-of select="." />
     </virt-xbrl:startDate>
+		</xsl:if>
   </xsl:template>
-
   <xsl:template match="endDate">
+		<xsl:variable name="prop_value" select="." />
+		<xsl:if test="string-length($prop_value) &gt; 0">
     <virt-xbrl:endDate rdf:datatype="&xsd;date">
-        <xsl:value-of select="."/>
+				<xsl:value-of select="." />
     </virt-xbrl:endDate>
+		</xsl:if>
   </xsl:template>
-
-  <!--xsl:template match="text()|@*">
-  <xsl:value-of select="."/>
-  </xsl:template-->
-
-  <!--xsl:template match="msft:*|usfr-mda:*|*">
-    <xsl:variable name="contextRef" select="@contextRef"/>
-    <xsl:variable name="name1" select="local-name(.)"/>    
-    <xsl:variable name="id" select="concat(namespace-uri(.), '#', $name1)"/>
-    <rdf:Description rdf:about="{$id}">
-        <xbrli:contextRef>
-            <xsl:value-of select="$contextRef"/>
-        </xbrli:contextRef>
-        <rdf:value>
-            <xsl:value-of select="."/>
-        </rdf:value>
-    </rdf:Description>
-  </xsl:template-->
-
   <xsl:template match="*">
     <xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
     <xsl:variable name="canonical_datatype" select="virt:xbrl_canonical_datatype(local-name(.))" />
     <xsl:variable name="canonicallabelname" select="virt:xbrl_canonical_label_name(local-name(.))" />
-    <xsl:variable name="contextRef" select="@contextRef"/>
-    <xsl:variable name="label" select="concat($ns, $canonicalname)"/>
-    <xsl:variable name="dt"/>
+		<xsl:variable name="contextRef" select="@contextRef" />
+		<xsl:variable name="label" select="concat($ns, $canonicalname)" />
+		<xsl:variable name="dt" />
     <xsl:if test="$canonicalname">
+			<sioc:Item rdf:about="{$label}">
+				<sioc:has_container rdf:resource="{concat('#', $contextRef)}"/>
+			</sioc:Item>
       <rdf:Description rdf:ID="{$contextRef}">
-        <rdf:type>
-          <xsl:attribute name="rdf:resource">
-            <xsl:value-of select="concat($ns, 'context')"/>
+				<xsl:element namespace="{$ns}" name="{$canonicalname}">
+					<xsl:attribute name="rdf:type">
+						<xsl:value-of select="concat('&sioc;', 'Item')" />
           </xsl:attribute>
-        </rdf:type>
-        <xsl:element namespace="{$ns}" name="{$canonicalname}" >
                   <xsl:attribute name="rdf:datatype">
-                    <xsl:value-of select="concat('&xsd;', $canonical_datatype)"/>
+						<xsl:value-of select="concat('&xsd;', $canonical_datatype)" />
                   </xsl:attribute>
-            <xsl:value-of select="."/>
+					<xsl:value-of select="." />
         </xsl:element>
       </rdf:Description>
       <rdf:Description rdf:about="{$label}">
         <rdfs:label>
-            <xsl:value-of select="$canonicallabelname"/>
+					<xsl:value-of select="$canonicallabelname" />
         </rdfs:label>
       </rdf:Description>
     </xsl:if>
