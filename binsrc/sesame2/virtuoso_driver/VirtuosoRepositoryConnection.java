@@ -98,7 +98,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			this.repository.initialize();
 		}
 		catch (RepositoryException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e.toString());
 		}
     	
     }
@@ -197,7 +197,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.executeUpdate(query.toString());
+			stmt.execute(query.toString());
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -210,7 +210,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			getQuadStoreConnection().close();
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
 	}
 
@@ -220,7 +220,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			getQuadStoreConnection().commit();
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
 	}
 
@@ -262,15 +262,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 							v.add(graphId);
 						}
 						catch(IllegalArgumentException iiaex) {
-							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + obj);
-							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Ignoring context: " + obj);
+							throw new RepositoryException("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + obj);
+//							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Ignoring context: " + obj);
 						}
 					}
 				}
 			}
 		}
 		catch (Exception e) {
-// System.out.println(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString());
 			throw new RepositoryException(": SPARQL execute failed." + "\n" + query.toString(), e);
 		}
 		return createRepositoryResult(v);
@@ -295,7 +294,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
 		return null;
 	}
@@ -331,7 +330,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
 		return  createRepositoryResult(namespaceList);// new RepositoryResult<Namespace>(new IteratorWrapper(v.iterator()));
 	}
@@ -361,9 +360,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return getQuadStoreConnection().getAutoCommit();
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
-		return false;
+//		return false;
 	}
 
 	public boolean isEmpty() throws RepositoryException {
@@ -532,10 +531,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				query.append(" }");
 				try {
 					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.executeUpdate(query.toString());
+					stmt.execute(query.toString());
 				}
 				catch (Exception e) {
-					e.printStackTrace();
+					throw new RepositoryException(e.toString());
 				}
 //			}
 		}
@@ -546,7 +545,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX('" + prefix + "', 1)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.executeUpdate(query.toString());
+			stmt.execute(query.toString());
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -567,7 +566,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			getQuadStoreConnection().setAutoCommit(autoCommit);
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+			throw new RepositoryException(e.toString());
 		}
 	}
 
@@ -575,7 +574,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "DB.DBA.XML_SET_NS_DECL('" + prefix + "','" + name + "', 1)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.executeUpdate(query.toString());
+			stmt.execute(query.toString());
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -706,10 +705,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				query.append(" }");
 				try {
 					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.executeQuery(query.toString());
+					stmt.execute(query.toString());
 				}
 				catch (Exception e) {
-					e.printStackTrace();
+					throw new RuntimeException(e.toString());
 				}
 //			}
 		}
@@ -739,10 +738,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				query.append(">");
 				try {
 					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.executeUpdate(query.toString());
+					stmt.execute(query.toString());
 				}
 				catch (Exception e) {
-					e.printStackTrace();
+					throw new RuntimeException(e.toString());
 				}
 			}
 		}
@@ -776,10 +775,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					query.append(context.stringValue());
 					query.append(">");
 					java.sql.Statement stmt = quadStoreConnection.createStatement();
-					stmt.executeUpdate(query.toString());
+					stmt.execute(query.toString());
 				}
 				catch (Exception e) {
-					e.printStackTrace();
+					throw new RuntimeException(e.toString());
 				}
 			}
 		}
@@ -816,8 +815,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 							subject = (Resource) castValue(value);
 						}
 						catch(ClassCastException ccex) {
-							System.out.println("Unexpected resource type encountered. Was expecting Resource: " + value);
-							ccex.printStackTrace();
+							throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + value);
+//							ccex.printStackTrace();
 						}
 					}
 					else if(data.getColumnName(meta_count).equals("p")) {
@@ -825,8 +824,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 							predicate = (URI) castValue(value);
 						}
 						catch(ClassCastException ccex) {
-							System.out.println("Unexpected resource type encountered. Was expecting URI: " + value);
-							ccex.printStackTrace();
+							throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + value);
+//							ccex.printStackTrace();
 						}
 					}
 					else if(data.getColumnName(meta_count).equals("o")) {
@@ -837,8 +836,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			System.out.println(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString());
-			e.printStackTrace();
+                        throw new RuntimeException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString()+"["+e+"]");
+//			e.printStackTrace();
 		}
 		return g;
 	}
@@ -999,7 +998,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+		        throw new RuntimeException(e.toString());
 		}
 		TupleQueryResult tqr = new TupleQueryResultImpl(names, bindings.iterator());
 		return tqr;
@@ -1068,37 +1067,35 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	    else if(val instanceof VirtuosoExtendedString) {
 			VirtuosoExtendedString ves = (VirtuosoExtendedString) val;
 			String valueString = ves.str;
-			// String type = ves.
 		    if (ves.iriType == VirtuosoExtendedString.IRI) {
 		    	if (valueString.startsWith("_:")) {
 		    		valueString = valueString.substring(2);
 					return getRepository().getValueFactory().createBNode(valueString);
 		    	}
-//		        return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
 				try {
 					return getRepository().getValueFactory().createURI(valueString);
 				}
 				catch(IllegalArgumentException iaex) {
-					System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+				        throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 				}
 		    }
 		    else if (ves.iriType == VirtuosoExtendedString.BNODE) {
-				if(valueString.startsWith("nodeID://")) {
+//				if(valueString.startsWith("nodeID://")) {
 					try {
 						valueString = valueString.substring(9); // parse bnode id
 						return getRepository().getValueFactory().createBNode(valueString);
 					}
 					catch(IllegalArgumentException iaex) {
-						System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+						throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 					}
-				}
+//				}
 		    }
 		    else {
 				try {
 					return getRepository().getValueFactory().createLiteral(valueString);
 				}
 				catch(IllegalArgumentException iaex) {
-					System.out.println("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+					throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
 				}
 		    }
 		}
@@ -1106,27 +1103,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String s = (String) val;
 			if(s.length() == 0) return null;
 			try {
-				return getRepository().getValueFactory().createURI(s);					
+				return getRepository().getValueFactory().createLiteral(s);
 			}
-			catch(IllegalArgumentException iaex) {
-				try {
-					return getRepository().getValueFactory().createLiteral(s);
-				}
-				catch(IllegalArgumentException iaex2) {
-					try {
-						return getRepository().getValueFactory().createBNode(s);					
-					}
-					catch(IllegalArgumentException iaex3) {
-						System.out.println("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + s);
-					}
-				}
+			catch(IllegalArgumentException iaex2) {
+				throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + s);
 			}
 		}
-//		else {
-//			Literal lit = getRepository().getValueFactory().createLiteral(val.toString());
-//			return lit;
-//		}
-		return null;
+//		return null;
 	}
 	
 	public void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
@@ -1154,7 +1137,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			throw new RuntimeException(e.toString());
 // System.exit(-1);
 		}
 	}
