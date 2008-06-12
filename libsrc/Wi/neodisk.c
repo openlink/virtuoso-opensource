@@ -982,6 +982,8 @@ cpt_uncommitted_dps (int clear)
 	    {
 	      /* for a blob that is uncommitted, do not record the pages as occupied in the cpt.  But do this only insofar there is a filled page dir.  And do not extend this beyond the first page of the page dir. 
 	       * So there will be a possible leak of a few pages if roll fwd from the cpt, otherwise no leak. */
+	      if (!bl->bl_it || bl->bl_it->it_storage != cpt_dbs)
+		continue;
 	      if (bl->bl_delete_later == BL_DELETE_AT_ROLLBACK)
 		{
 		  if (bl->bl_pages)
