@@ -2377,6 +2377,11 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	  str = rb->rb_box;
 	      len = box_length (rb->rb_box) - 1;
             }
+          else if (!IS_BOX_POINTER (rb->rb_box))
+            {
+	      snprintf (temp, sizeof (temp), "%ld", (long)((ptrlong)(rb->rb_box)));
+              break;
+            }
           else
             return dv_to_str_place (rb->rb_box, DV_TYPE_OF (rb->rb_box), max, place,
               len_ret, str_from_pos, stmt, nth_col, box_length (rb->rb_box), c_type, sql_type);
