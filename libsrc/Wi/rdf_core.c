@@ -33,6 +33,7 @@
 #include "sqlcmps.h"
 #include "rdf_core.h"
 #include "security.h" /* for sec_proc_check() */
+#include "http.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,6 +47,28 @@ extern "C" {
 #else
 #define rdf_dbg_printf(x)
 #endif
+
+int uriqa_dynamic_local = 0;
+
+const char *
+uriqa_get_host_for_dynamic_local (query_instance_t *qi)
+{
+  const char *res = NULL;
+  ASSERT_IN_TXN;
+  if (NULL != qi->qi_client->cli_http_ses)
+    {
+      ws_connection_t *ws = qi->qi_client->cli_ws;
+      res = ws_header_field (ws->ws_lines, "Host:", NULL);
+    }
+  if (NULL == res)
+    {
+      const char *regname = "URIQADefaultHost";
+      caddr_t *place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      if (place)
+        res = place[0];
+    }
+  return res;
+}
 
 triple_feed_t *
 tf_alloc (void)
@@ -1545,6 +1568,30 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
         dk_free_box (box_to_delete);
       return box_iri_int64 (acc, DV_IRI_ID);
     }
+/*                                             01234567 */
+  if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
+    {
+      const char *host;
+      IN_TXN;
+      host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst);
+      if (NULL != host)
+        {
+          int host_strlen = strlen (host);
+          if (!strncmp (name + 7, host, host_strlen) && ('/' == name[7+host_strlen]))
+            {
+              int name_box_len = box_length (name);
+/*  0123456 */
+/* "local:" */
+              caddr_t localized_name = dk_alloc_box (6 + name_box_len - (7+host_strlen), DV_STRING);
+              memcpy (localized_name, "local:", 6);
+              memcpy (localized_name + 6, name + 7+host_strlen, name_box_len - (7+host_strlen));
+              if (box_to_delete == name)
+                dk_free_box (name);
+              box_to_delete = name = localized_name;
+            }
+        }
+      LEAVE_TXN;
+    }
   switch (mode)
     {
     case IRI_TO_ID_IF_KNOWN:
@@ -1677,6 +1724,27 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
   dk_free_box (prefix);
   dk_free_box (local);
+
+/*                    0123456 */
+  if (!strncmp (name, "local:", 6))
+    {
+      const char *host;
+      IN_TXN;
+      host = uriqa_get_host_for_dynamic_local (qi);
+      if (NULL != host)
+        {
+          int name_box_len = box_length (name);
+          int host_strlen = strlen (host);
+          caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7+host_strlen), DV_STRING);
+/*                                01234567 */
+          memcpy (expanded_name, "http://", 7);
+          memcpy (expanded_name + 7, host, host_strlen);
+          memcpy (expanded_name + 7+host_strlen, name + 6, name_box_len - 6);
+          dk_free_box (name);
+          name = expanded_name;
+        }
+      LEAVE_TXN;
+    }
   return name;
 }
 

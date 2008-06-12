@@ -168,6 +168,7 @@ extern int default_txn_isolation;
 extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
 extern long iri_cache_size;
+extern int uriqa_dynamic_local;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -316,6 +317,7 @@ char *c_ucm_load_path = 0;
 char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
 int32 c_iri_cache_size = 0;
+int c_uriqa_dynamic_local = 0;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -1226,6 +1228,10 @@ cfg_setup (void)
 
 #endif
 
+  section = "URIQA";
+  if (cfg_getlong (pconfig, section, "DynamicLocal", &c_uriqa_dynamic_local) == -1)
+    c_uriqa_dynamic_local = 0;
+
   /* Now open the HTTP log */
   if (http_log_file)
     {
@@ -1604,6 +1610,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   temp_db_size = c_temp_db_size;
   dbev_enable = c_dbev_enable;
   iri_cache_size = c_iri_cache_size;
+  uriqa_dynamic_local = c_uriqa_dynamic_local;
 }
 
 
