@@ -1500,10 +1500,16 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
       }
     else
       {
+	declare exit handler for sqlstate '*'
+	  {
+	    return 0;
+	  };
 	fallback:;
     body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
-    return DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
       }
+    return 0;
 }
 ;
 
