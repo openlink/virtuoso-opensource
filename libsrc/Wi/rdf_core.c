@@ -50,22 +50,22 @@ extern "C" {
 
 int uriqa_dynamic_local = 0;
 
-const char *
+caddr_t
 uriqa_get_host_for_dynamic_local (query_instance_t *qi)
 {
-  const char *res = NULL;
+  caddr_t res = NULL;
   ASSERT_IN_TXN;
   if (NULL != qi->qi_client->cli_http_ses)
     {
       ws_connection_t *ws = qi->qi_client->cli_ws;
-      res = ws_header_field (ws->ws_lines, "Host:", NULL);
+      res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
     }
   if (NULL == res)
     {
       const char *regname = "URIQADefaultHost";
       caddr_t *place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
       if (place)
-        res = place[0];
+        res = box_copy (place[0]);
     }
   return res;
 }
@@ -1571,7 +1571,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
 /*                                             01234567 */
   if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
     {
-      const char *host;
+      caddr_t host;
       IN_TXN;
       host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst);
       if (NULL != host)
@@ -1589,6 +1589,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
                 dk_free_box (name);
               box_to_delete = name = localized_name;
             }
+	  dk_free_box (host);
         }
       LEAVE_TXN;
     }
@@ -1728,7 +1729,7 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
 /*                    0123456 */
   if (!strncmp (name, "local:", 6))
     {
-      const char *host;
+      caddr_t host;
       IN_TXN;
       host = uriqa_get_host_for_dynamic_local (qi);
       if (NULL != host)
@@ -1742,6 +1743,7 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
           memcpy (expanded_name + 7+host_strlen, name + 6, name_box_len - 6);
           dk_free_box (name);
           name = expanded_name;
+	  dk_free_box (host);
         }
       LEAVE_TXN;
     }
