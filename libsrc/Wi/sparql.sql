@@ -7279,14 +7279,10 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
       _val := dta[x];
       if (_val is null)
         goto end_of_binding;
-      if (isstring (_val) and (1 = __box_flags (_val)))
-        _val := iri_to_id (_val);
       if (isiri_id (_val))
         {
           if (_val >= min_bnode_iri_id ())
-	    {
 	      http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, id_to_iri (_val)), ses);
-	    }
 	  else
 	    {
               declare res varchar;
@@ -7299,6 +7295,13 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
               http ('</uri></binding>', ses);
 	    }
 	}
+      else if (isstring (_val) and (1 = __box_flags (_val)))
+        {
+          if (_val like 'nodeID://%')
+            http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
+          else
+            http (sprintf ('\n   <binding name="%s"><uri>%s</uri></binding>', _name, _val), ses);
+        }
       else
         {
 	  declare lang, dt varchar;
@@ -7403,8 +7406,6 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
       _val := dta[rowno][x];
       if (_val is null)
         goto end_of_binding;
-      if (isstring (_val) and (1 = __box_flags (_val)))
-        _val := iri_to_id (_val);
       http (sprintf ('\n      <res:binding rdf:nodeID="r%dc%d"><res:variable>%V</res:variable><res:value', rowno, x, _name), ses);
       if (isiri_id (_val))
         {
@@ -7422,6 +7423,13 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
               http (sprintf (' rdf:resource="%V"/></res:binding>', res), ses);
 	    }
 	}
+      else if (isstring (_val) and (1 = __box_flags (_val))
+        {
+          if (_val like 'nodeID://%')
+            http (sprintf (' rdf:nodeID="%s"/></res:binding>', _val), ses);
+          else
+            http (sprintf (' rdf:resource="%V"/></res:binding>', _val), ses);
+        }
       else
         {
 	  declare lang, dt varchar;
@@ -7579,9 +7587,9 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
             }
           http('\n    <td>', ses);
           if (isiri_id (val))
-            {
-              http_escape (id_to_iri (val), esc_mode, ses, 0, 1);
-            }
+            http_escape (id_to_iri (val), esc_mode, ses, 1, 1);
+          else if (isstring (val) and (1 = __box_flags (val)))
+            http_escape (val, esc_mode, ses, 1, 1);
           else if (__tag of varchar = __tag (val))
             {
               http_escape (val, esc_mode, ses, 1, 1);
@@ -7653,7 +7661,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               else
                 {
                   http ('"type": "uri", "value": "', ses);
-                  http_escape (id_to_iri (val), 11, ses, 0, 1);
+                  http_escape (id_to_iri (val), 11, ses, 1, 1);
                 }
             }
           else if (__tag of rdf_box = __tag (val))
@@ -7693,8 +7701,21 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             }
           else if (__tag of varchar = __tag (val))
             {
+              if (1 = __box_flags (val))
+                {
+                  if (val like 'nodeID://%')
+                    http (sprintf ('"type": "bnode", "value": "%s', val), ses);
+                  else
+                    {
+                      http ('"type": "uri", "value": "', ses);
+                      http_escape (val, 11, ses, 1, 1);
+                    }
+                }
+              else
+                {
               http ('"type": "literal", "value": "', ses);
               http_escape (val, 11, ses, 1, 1);
+            }
             }
           else if (__tag of varbinary = __tag (val))
             {
@@ -7824,7 +7845,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if (('callretRDF/XML-0' = singlefield) or ('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
         {
           http('"', ses);
-          http_escape (cast (rset[0][0] as varchar), 11, ses, 0, 1);
+          http_escape (cast (rset[0][0] as varchar), 11, ses, 1, 1);
           http('"', ses);
         }
       else
@@ -8502,7 +8523,7 @@ host_found:
     full_query := concat ('define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 200 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
   else if (should_sponge = 'grab-everything')
     full_query := concat ('define input:grab-all "yes" define input:grab-intermediate "yes" define input:grab-depth 5 define input:grab-limit 500 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
-  full_query := concat ('define output:valmode "LONG" ', full_query);
+--  full_query := concat ('define output:valmode "LONG" ', full_query);
   if (debug <> '')
     full_query := concat ('define sql:signal-void-variables 1 ', full_query);
   if (get_user <> '')
