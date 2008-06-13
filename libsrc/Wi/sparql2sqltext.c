@@ -1447,7 +1447,13 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           lang = lit->_.lit.language;
         }
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
+        {
         value = lit->_.lit.val;
+          ssg_puts (" /* QNAME as sql atom */ __box_flags_tweak (");
+          ssg_print_box_as_sql_atom (ssg, value, 0);
+          ssg_puts (", 1)");
+          return;
+        }
       else
         {
           spar_sqlprint_error ("ssg_" "print_literal_as_sql_atom (): non-lit tree as argument");
@@ -1475,7 +1481,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   caddr_t value;
   caddr_t dt = NULL;
   caddr_t lang = NULL;
-  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
+  dtp_t lit_dtp = DV_TYPE_OF (lit);
+  if (DV_ARRAY_OF_POINTER == lit_dtp)
     {
       if (SPAR_LIT == lit->type)
         {
@@ -1484,12 +1491,25 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           lang = lit->_.lit.language;
         }
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
+        {
         value = lit->_.lit.val;
+          ssg_puts (" /* QName as sqlval */ __box_flags_tweak (");
+          ssg_print_box_as_sql_atom (ssg, value, 0);
+          ssg_puts (", 1)");
+          return;
+        }
       else
         {
           spar_sqlprint_error ("ssg_" "print_literal_as_sqlval (): non-lit tree as argument");
           value = BADBEEF_BOX; /* To keep gcc 4.0 happy */
         }
+    }
+  else if (DV_UNAME == lit_dtp)
+    {
+      ssg_puts (" /* UNAME as sqlval */ __box_flags_tweak (");
+      ssg_print_box_as_sql_atom (ssg, lit, 0);
+      ssg_puts (", 1)");
+      return;
     }
   else
     value = (caddr_t)lit;
