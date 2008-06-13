@@ -1,5 +1,5 @@
-
-
+sparql clear graph <gr>;
+sparql clear graph <sc>;
 
 
 ttlp ('
@@ -223,4 +223,38 @@ sparql define input:inference 'sas-p' define input:same-as "yes"
 select * from <sas-p> where { ?s <sas-p1> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for sameAs property\n";
+
+sparql clear graph <gr>;
+sparql clear graph <sc>;
+
+ttlp ('
+<ic1> a <c1> .
+<ic2> a <c2> .
+<ic3> a <c3> .
+<ic1> <p1> <ic1p1> .
+<ic2> <p1> <ic2p1>.
+<ic3> <p1> <ic3p1> .
+<ic1> <cl2> <c2> .
+', '', 'gr');
+
+
+ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+<c2> rdfs:subClassOf <c1> .
+<c2> owl:equivalentClass <c5> .
+<c3> rdfs:subClassOf <c2> .
+<c5> rdfs:subClassOf <c4> .
+<p1> rdfs:subPropertyOf <p0> .
+<p0> owl:equivalentProperty <p2> .
+', '', 'sc');
+
+rdfs_rule_set ('inft', 'sc');
+
+sparql define input:inference "inft" select ?s from <gr> where { ?s a <c4> . };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": " $rowcnt " subjects belongs to c4 via equivalent class\n";
+
+sparql define input:inference "inft" select ?s ?o from <gr> where { ?s a <c2> . ?s <p2> ?o };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": " $rowcnt " triples with equivalent property p2\n";
 
