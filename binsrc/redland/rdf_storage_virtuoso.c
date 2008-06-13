@@ -134,7 +134,7 @@ hthash (HTTABLE *table, short data)
   int total = 0;
   int c;
   int i;
-  char *s = (char *)data;
+  char *s = (char *)&data;
 
   for (total = i = 0; i < sizeof(short); i++, s++)
     {
@@ -651,10 +651,7 @@ rdf2node(librdf_storage *storage, librdf_storage_virtuoso_connection *handle,
 
   rc = SQLGetStmtAttr(handle->hstmt, SQL_ATTR_IMP_ROW_DESC, &hdesc, SQL_IS_POINTER, NULL);
   if (!SQL_SUCCEEDED(rc))
-    {
       return NULL;
-    }
-
   rc = SQLGetDescField(hdesc, col, SQL_DESC_COL_DV_TYPE, &dvtype, SQL_IS_INTEGER, NULL);
   if (!SQL_SUCCEEDED(rc))
      return NULL;
