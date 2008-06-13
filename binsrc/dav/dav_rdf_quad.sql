@@ -55,7 +55,8 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
   uriqa_default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA','DefaultHost');
   if (uriqa_default_host is null or uriqa_default_host = '')
     signal ('OBLOM', 'No uriqa_default_host!');
-  new_dav_graph := sprintf ('http://%s/DAV', uriqa_default_host);
+  --new_dav_graph := sprintf ('http://%s/DAV', uriqa_default_host);
+  new_dav_graph := 'local:/DAV';
   exec ('checkpoint');
   __atomic (1);
   DB.DBA.RDF_DELETE_ENTIRE_GRAPH (new_dav_graph, 1);
