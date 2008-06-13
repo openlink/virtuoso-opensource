@@ -726,6 +726,7 @@ LoadPath = $PLUGINDIR
 Load1 = plain, wbxml2
 
 [URIQA]
+DynamicLocal = 1
 DefaultHost = localhost:$HTTPPORT
 END_HTTP1
 ;;

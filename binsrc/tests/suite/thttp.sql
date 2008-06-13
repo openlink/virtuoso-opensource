@@ -369,7 +369,7 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": trying to retrieve pages after definition removal : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-VHOST_DEFINE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', '/DAV/', 1, 1, 'index.html', 'DB.DBA.HP_AUTH_DAV_PROTOCOL', 'DAV', null, null, null, 'Basic', 0);
+VHOST_DEFINE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', '/DAV/', 1, 1, 'index.html', 'DB.DBA.HP_AUTH_DAV_PROTOCOL', 'DAV', null, 'dba', null, 'Basic', 0);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": WebDAV domain and " $U{HTTPPORT1} " listen host added again : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -378,6 +378,16 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Listening host on : " $U{HTTPPORT1} " started & tested\n";
 
+select DAV_RES_UPLOAD ('/DAV/iri.vsp', '<?vsp http (id_to_iri (iri_to_id (\'local:/resource/Paris\'))); ?>', '', '111101101N',
+    	'dav', 'administrators', 'dav', 'dav');
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": iri.vsp upload : RET=" $LAST[1] "\n";
+
+select equ (get ('http://localhost:$U{HTTPPORT1}/iri.vsp', 'dav:dav'), 'http://localhost:$U{HTTPPORT1}/resource/Paris');
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": IRI returned from HTTP context\n";
 
 get ('http://localhost:$U{HTTPPORT1}/', 'dav:dav');
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -611,5 +621,9 @@ ECHO BOTH $IF $EQU $LAST[1] '<?vsp http (user); ?>' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": runex.vsp test via /DAV : RET=[" $LAST[1] "]\n";
 
+select equ (iri_to_id ('http://localhost:'||server_http_port ()||'/resource/Paris'), iri_to_id ('local:/resource/Paris')) ;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": IRI of local:/resource/Paris\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: HTTP server tests\n";
