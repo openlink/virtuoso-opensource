@@ -4760,57 +4760,147 @@ http://dbpedia.org/resource/Chiara_Costazza
 155287 Rows. -- 342179 msec.
 
 ]]></programlisting>
-<emphasis>Loading of the Yago Class hierarchy as inference rules example</emphasis>
+<emphasis>Loading script of the Yago Class hierarchy as inference rules example</emphasis>
 <programlisting><![CDATA[
-SQL>select ttlp_mt (file_to_string_output ('yago_linkeddata.nt'), '',
-'http://localhost:8890/class/yago')
-callret
+--- Load Class Hierarchy into a Named Graph
+select ttlp_mt (file_to_string_output ('yago-class-hierarchy_en.nt'),
+'', 'http://dbpedia.org/resource/classes/yago#');
+
+-- Create an  Inference Rule that references the Yago Class Hierarchy
+Named Graph
+
+SQL>rdfs_rule_set ('http://dbpedia.org/resource/inference/rules/yago#',
+'http://dbpedia.org/resource/classes/yago#');
+
+-- Query for the "The Lord of the Rings" which is a "Book" as
+-- explicitly claimed in the DBpedia data set (instance data)
+
+SQL>SPARQL
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+
+SELECT ?s
+FROM <http://dbpedia.org>
+WHERE {
+?s a yago:Book106410904 .
+?s dbpedia:name "The Lord of the Rings"@en .
+};
+
+s
 VARCHAR
 _______________________________________________________________________________
 
-http://localhost:8890/class/yago
+http://dbpedia.org/resource/The_Lord_of_the_Rings
 
-1 Rows. -- 1001075 msec.
+1 Rows. -- 321 msec.
 
-SQL>ttlp ('
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-<http://localhost:8890/class/yago/Fabric103309808>
-rdfs:subClassOf
-<http://localhost:8890/class/yago/Overgarment103863923> .
-',
-'','http://localhost:8890/schema/subclassof_rules#')
+-- Query aimed at Books via query scoped to the "Publication" class
+-- of which it is a subclass in the Yago Hierarchy
+SQL>SPARQL
+define input:inference
+'http://dbpedia.org/resource/inference/rules/yago#'
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
 
-Done. -- 269 msec.
+SELECT ?s
+FROM <http://dbpedia.org>
+WHERE {
+?s a yago:Publication106589574 .
+?s dbpedia:name "The Lord of the Rings"@en .
+};
 
-rdfs_rule_set
-('http://localhost:8890/schema/subclassof_rules#',
-'http://localhost:8890/class/yago')
-
-Done. -- 15452 msec.
-
-SQL>sparql
-select count (*) from <http://localhost:8890/class/yago> where
-{?s ?p <http://localhost:8890/class/yago/Overgarment103863923> }
-callret-0
-INTEGER
+s
+VARCHAR
 _______________________________________________________________________________
 
-5
+http://dbpedia.org/resource/The_Lord_of_the_Rings
 
-1 Rows. -- 176 msec.
 
-SQL>sparql
-select  count (*) from <http://localhost:8890/class/yago> where
-{?s ?p <http://localhost:8890/class/yago/Fabric103309808> }
-callret-0
-INTEGER
+-- # Variant of query with Virtuoso's Full Text Index extension: bif:contains
+SQL>SPARQL
+define input:inference
+'http://dbpedia.org/resource/inference/rules/yago#'
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+
+SELECT ?s ?n
+FROM <http://dbpedia.org>
+WHERE {
+?s a yago:Publication106589574 .
+?s dbpedia:name ?n .
+?n bif:contains 'Lord and Rings'
+};
+
+s                                                                                 n
+VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-169
+http://dbpedia.org/resource/The_Lord_of_the_Rings                                 The Lord of the Rings
+http://dbpedia.org/resource/Journeys_of_Frodo                                     Journeys of Frodo: An Atlas of J. R. R. Tolkien's The Lord of the Ri
+ngs
+http://dbpedia.org/resource/The_Lord_of_the_Rings:_A_Reader%27s_Companion         The Lord of the Rings: A Reader's Companion
+http://dbpedia.org/resource/Tolkien:_A_Look_Behind_%22The_Lord_of_the_Rings%22    A Look Behind "The Lord of the Rings""
 
-1 Rows. -- 174 msec.
+4 Rows. -- 29573 msec.
 
+-- Retrieve all individuals instances of the Book Class
+SQL>SPARQL
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
 
+SELECT ?s ?n
+FROM <http://dbpedia.org>
+WHERE {
+?s a yago:Book106410904 .
+?s dbpedia:name ?n .
+}
+limit 10;
+s                                                                                 n
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/.hack//AI_buster                                      .hack// AI buster
+http://dbpedia.org/resource/1000_Love_and_Sex_Quiz                                1000 Love and Sex Quiz
+http://dbpedia.org/resource/1491:_New_Revelations_of_the_Americas_Before_Columbus  1491: New Revelations of the Americas Before Columbus
+http://dbpedia.org/resource/.hack//AI_buster_2                                    .hack// AI buster 2
+http://dbpedia.org/resource/100_Books_by_August_Derleth                           100 Books by August Derleth
+http://dbpedia.org/resource/1634:_The_Baltic_War                                  1634: The Baltic War
+http://dbpedia.org/resource/003%C2%BD:_The_Adventures_of_James_Bond_Junior        003-+: The Adventures of James Bond Junior"
+http://dbpedia.org/resource/1001_Movies_You_Must_See_Before_You_Die               1001 Movies You Must See Before You Die
+http://dbpedia.org/resource/1066_and_All_That                                     1066 and All That
+http://dbpedia.org/resource/14%2C000_Things_to_be_Happy_About                     14,000 Things to be Happy About
+
+10 Rows. -- 1422 msec.
+
+-- Retrieve all individuals instances of Publication Class which
+-- should include all Books.
+SQL>SPARQL
+define input:inference
+'http://dbpedia.org/resource/inference/rules/yago#'
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+
+SELECT ?s ?n
+FROM <http://dbpedia.org>
+WHERE {
+?s a yago:Publication106589574 .
+?s dbpedia:name ?n .
+};
+s                                                                                 n
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/461_Ocean_Boulevard                                   461 Ocean Boulevard
+http://dbpedia.org/resource/A_Love_Supreme                                        A Love Supreme
+http://dbpedia.org/resource/A_Night_at_Red_Rocks_with_the_Colorado_Symphony_Orchestra  A Night at Red Rocks with the Colorado Symphony Orchestra
+http://dbpedia.org/resource/At_Fillmore_East                                      At Fillmore East
+http://dbpedia.org/resource/August_and_Everything_After                           August and Everything After
+...
 ]]></programlisting>
 </sect2>
 </sect1>

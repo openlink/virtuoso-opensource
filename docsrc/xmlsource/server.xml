@@ -1318,6 +1318,12 @@ This section should stay commented out as long as URIQA is not in use.
 	<para>Do not use this without an explicit need, to let server configure itself. Please refer to <link linkend="uriqainifile">detailed description</link> before use.</para>
     </formalpara>
 </listitem>
+<listitem id="ini_URIQA_DynamicLocal">
+    <formalpara>
+	<title>DynamicLocal = 1/0 default 0, allow dynamic hostname translation in the IRIs</title>
+	<para>If DynamicLocal is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.</para>
+    </formalpara>
+</listitem>
 			</itemizedlist>
 		</sect4>
 		
