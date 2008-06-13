@@ -25,9 +25,9 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-
 LOGFILE=`pwd`/tpcd.output
 export LOGFILE
+TEST_SPARQL=${TEST_SPARQL-1}
 . ./test_fn.sh
 
 DS1=$PORT
@@ -51,6 +51,37 @@ rm -rf tpcdremote1
 mkdir tpcdremote1
 cd tpcdremote1
 MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
+
+case $SERVER in
+*[Mm]2*)
+cat >> $CFGFILE <<END_HTTP
+HTTPLogFile: http.log
+http_port: $HTTPPORT
+http_threads: 3
+http_keep_alive_timeout: 15
+http_max_keep_alives: 6
+http_max_cached_proxy_connections: 10
+http_proxy_connection_cache_timeout: 15
+END_HTTP
+;;
+*virtuoso*)
+cat >> $CFGFILE <<END_HTTP1
+[HTTPServer]
+HTTPLogFile = http.log
+ServerPort = $HTTPPORT
+ServerRoot = .
+ServerThreads = 3
+MaxKeepAlives = 6
+KeepAliveTimeout = 15
+MaxCachedProxyConnections = 10
+ProxyConnectionCacheTimeout = 15
+
+[URIQA]
+DefaultHost = localhost:$HTTPPORT
+END_HTTP1
+;;
+esac
+
 START_SERVER $DS1 1000
 cd ..
 
@@ -132,12 +163,49 @@ then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_endpoint.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_phy_cmp.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_phy_cmp.sql"
+    exit 1
+fi
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_translations.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_translations.sql"
+    exit 1
+fi
+
+lcount=` ( curl --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj . filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'subj.*uri.*customer/1' | wc -l `
+if test $lcount -eq 2
+then
+  echo 'PASSED: constant URI variable is <uri> in XML SPARQL result-set'
+else
+  echo '***FAILED: constant URI variable is <uri> in XML SPARQL result-set'
+fi
+
+lcount=` ( curl --form-string 'format=application/sparql-results+json' --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj . filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'subj.*type.*uri.*customer/1' | wc -l `
+if test 2 -eq $lcount
+then
+  echo 'PASSED: constant URI variable is type:uri in JSON SPARQL result-set'
+else
+  echo '***FAILED: constant URI variable is type:uri in JSON SPARQL result-set'
+fi
+
+lcount=` ( curl --form-string 'format=application/javascript' --form-string 'query=select * from <http://example.com/tpcd> where { ?subj a ?obj filter (?subj = <http://example.com/tpcd/customer/1>) } limit 10' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep 'td.*customer/1' | wc -l `
+if test 2 -eq $lcount
+then
+  echo 'PASSED: constant URI variable is in javascript result-set'
+else
+  echo '***FAILED: constant URI variable is in javascript result-set'
+fi
+
 else
 echo ***SKIPPED: SPARQL tests of RDF Views and materialized quads; can be enabled if TEST_SPARQL is set to nonempty string.
 fi
