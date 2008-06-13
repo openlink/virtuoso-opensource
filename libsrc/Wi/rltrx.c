@@ -313,6 +313,11 @@ itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t dv)
   if (IE_ISSET (page + pos, IEF_DELETE))
     {
       itc->itc_row_key = sch_id_to_key (wi_inst.wi_schema, itc->itc_row_key_id);
+      if (!itc->itc_pl)
+	{
+	  log_error ("insert on a deleted row not of this transaction.  Can be the deleted flag is left on from before, from a finished transaction or cpt kill recovery");
+	  itc_set_lock_on_row (itc, &buf);
+	}
       upd_refit_row (itc, &buf, dv);
       return 1;
     }

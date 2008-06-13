@@ -387,9 +387,18 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
   itc_delta_this_buffer (itc, *buf, DELTA_MAY_LEAVE);
       ITC_LEAVE_MAP_NC (itc);
     }
-  if (ITC_IS_LTRX (itc) && !is_leaf_ptr
-      && (((*buf)->bd_page != itc->itc_page || itc->itc_page != itc->itc_pl->pl_page)))
-    GPF_T1 ("inconsistent pl_page, bd_page and itc_page in upd_refit_row");
+  if (ITC_IS_LTRX (itc) && !is_leaf_ptr)
+    {
+      if ((*buf)->bd_page != itc->itc_page)
+	GPF_T1 ("inconsistent bd_page and itc_page in upd_refit_row");
+      if (itc->itc_pl)
+	{
+	  if (itc->itc_page != itc->itc_pl->pl_page)
+	    GPF_T1 ("inconsistent itc_page and pl_page in refit row");
+	}
+      else
+	GPF_T1 ("replacing a row without lock.  It is possible that delete flag is left on in a row even though the deleteing transaction commetted");
+    }
   page = (*buf)->bd_buffer;
   ol = row_reserved_length (page + itc->itc_position, itc->itc_row_key);
   nl = row_length (new_image, new_key);
