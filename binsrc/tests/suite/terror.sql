@@ -1112,3 +1112,22 @@ echo both "Error messages about reading free pages and bad blobs are expected ne
 
 echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
+-- foreach integer between 0 7001 select deserialize (chr (?));
+-- ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+-- ECHO BOTH ": select deserialize (chr (?)) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- foreach integer between 0 7001 select deserialize (chr1 (?));
+-- ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+-- ECHO BOTH ": select deserialize (chr1 (?)) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select deserialize ('');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize ('') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select deserialize ('''');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize ('''') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select deserialize (NULL);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": select deserialize (NULL) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
