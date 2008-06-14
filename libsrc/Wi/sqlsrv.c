@@ -2537,7 +2537,12 @@ sf_make_auto_cp(void)
     ? 1 : 0;
   LEAVE_TXN;
   if (make_cp)
+    {
+      long now;
     sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
+      now = approx_msec_real_time (); 
+      checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
+    }
 }
 
 long c_checkpoint_vdb_abort = 0;
