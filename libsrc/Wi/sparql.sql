@@ -122,6 +122,12 @@ create table DB.DBA.SYS_XML_PERSISTENT_NS_DECL
 )
 ;
 
+create table DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH
+(
+  REC_GRAPH_IID IRI_ID not null primary key
+)
+;
+
 sequence_set ('RDF_URL_IID_NAMED', 1000000, 1)
 ;
 
@@ -3442,6 +3448,67 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar) retur
 }
 ;
 
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0) returns varchar
+{
+  if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
+    {
+      if (silent)
+        return sprintf ('Create silent graph <%s> -- already exists', graph_iri);
+      else
+        signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> has been explicitly created before');
+    }
+  if (silent)
+    {
+      insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
+      commit work;
+      return sprintf ('Create silent graph <%s> -- done', graph_iri);
+    }
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
+    signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> contains triples already');
+  if (exists (sparql define input:storage ""
+    ask from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
+    signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
+  insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
+  commit work;
+  return sprintf ('Create graph <%s> -- done', graph_iri);
+}
+;
+
+create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0) returns varchar
+{
+  if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
+    {
+      if (silent)
+        {
+          if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
+            {
+              DB.DBA.SPARUL_CLEAR (graph_iri);
+              return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
+            }
+          return sprintf ('Drop silent graph <%s> -- nothing to do', graph_iri);
+        }
+      else
+        signal ('22023', 'SPARUL_DROP() failed: graph <' || graph_iri || '> has not been explicitly created before');
+    }
+  if (silent)
+    {
+      DB.DBA.SPARUL_CLEAR (graph_iri);
+      delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
+      commit work;
+      return sprintf ('Drop silent graph <%s> -- done', graph_iri);
+    }
+  if (exists (sparql define input:storage ""
+    ask from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
+    signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
+  DB.DBA.SPARUL_CLEAR (graph_iri);
+  delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
+  commit work;
+  return sprintf ('Drop graph <%s> -- done', graph_iri);
+}
+;
+
 create function DB.DBA.SPARUL_RUN (in results any) returns varchar
 {
   declare ses any;
@@ -3453,6 +3520,48 @@ create function DB.DBA.SPARUL_RUN (in results any) returns varchar
     }
   http ('Commit -- done\n', ses);
   return string_output_string (ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS ()
+{
+  declare specials any;
+  declare last_iri_id, cur_iri_id IRI_ID;
+  declare cr cursor for select G from DB.DBA.RDF_QUAD where G > last_iri_id and not (dict_get (specials, G, 0));
+  declare GRAPH_IRI varchar;
+  declare ctr, len integer;
+  result_names (GRAPH_IRI);
+  specials := dict_new (50);
+  set isolation = 'repeatable';
+  for (sparql define input:storage ""
+    select distinct ?graph_rvr_fixed
+    from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed } ) do
+    {
+      dict_put (specials, iri_to_id ("graph_rvr_fixed"), 1);
+    }
+  for (select REC_GRAPH_IID from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH) do
+    {
+      dict_put (specials, REC_GRAPH_IID, 2);
+    }
+  last_iri_id := #i0;
+  whenever not found goto done_rdf_quad;
+  open cr (prefetch 1);
+
+next_fetch_cr:
+  fetch cr into cur_iri_id;
+  result (id_to_iri (cur_iri_id));
+  last_iri_id := cur_iri_id;
+  goto next_fetch_cr;
+
+done_rdf_quad:
+  close cr;
+
+  specials := dict_list_keys (specials, 1);
+  len := length (specials);
+  for (ctr := 0; ctr < len; ctr := ctr + 1)
+    result (id_to_iri (specials[ctr]));
+
 }
 ;
 
@@ -10356,6 +10465,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant all on DB.DBA.RDF_LANGUAGE to SPARQL_UPDATE',
     'grant select on DB.DBA.SYS_SPARQL_HOST to SPARQL_SELECT',
     'grant all on DB.DBA.SYS_SPARQL_HOST to SPARQL_UPDATE',
+    'grant select on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_SELECT',
+    'grant all on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_GLOBAL_RESET to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to SPARQL_SELECT',
@@ -10432,7 +10543,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_CLEAR to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_CREATE to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_DROP to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_RUN to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_FIN to SPARQL_SELECT',

@@ -304,7 +304,7 @@ caddr_t spar_charref_to_strliteral (sparp_t *sparp, const char *strg)
 */
 
 caddr_t
-sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname)
+sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
 {
   char *lname = strchr (qname, ':');
   dk_set_t ns_dict;
@@ -1557,6 +1557,36 @@ spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode)
   top = spar_make_top (sparp, LOAD_L,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_LOAD",
         (SPART **)t_list (2, graph_precode, src_precode) ) ),
+    spar_selid_pop (sparp),
+    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+  return top;
+}
+
+SPART *
+spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent)
+{
+  SPART **fake_sol;
+  SPART *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  top = spar_make_top (sparp, CLEAR_L,
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CREATE",
+        (SPART **)t_list (2, graph_precode, t_box_num_nonull(silent)) ) ),
+    spar_selid_pop (sparp),
+    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+  return top;
+}
+
+SPART *
+spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent)
+{
+  SPART **fake_sol;
+  SPART *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  top = spar_make_top (sparp, CLEAR_L,
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_DROP",
+        (SPART **)t_list (2, graph_precode, t_box_num_nonull(silent)) ) ),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
   return top;

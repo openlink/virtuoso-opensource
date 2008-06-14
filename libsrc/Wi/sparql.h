@@ -574,6 +574,8 @@ extern SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **o
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode);
+extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent);
+extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions);
 extern SPART **spar_make_fake_action_solution (sparp_t *sparp);
 

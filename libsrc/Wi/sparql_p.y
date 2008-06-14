@@ -335,14 +335,14 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_sparul_modify
 %type <tree> spar_sparul_clear
 %type <tree> spar_sparul_load
+%type <tree> spar_sparul_create
 %type <tree> spar_sparul_drop
-%type <tree> spar_sparul_fake_create
 %type <trees> spar_action_solution
 %type <tree> spar_in_graph_precode_opt
 %type <tree> spar_from_graph_precode_opt
 %type <tree> spar_graph_precode_opt
 %type <nothing> spar_in_or_into
-%type <nothing> spar_silent_opt
+%type <token_type> spar_silent_opt
 /* nonterminals from part 2: */
 %type <nothing> spar_qm_stmts
 %type <nothing> spar_qm_stmt
@@ -1199,9 +1199,7 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 
 spar_sparul_actions
 	: spar_sparul_action	{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_sparul_fake_create	{ $$ = NULL; }
 	| spar_sparul_actions spar_sparul_action	{ $$ = $1; t_set_push (&($$), $2); }
-	| spar_sparul_actions spar_sparul_fake_create	{ $$ = $1; }
 	;
 
 spar_sparul_action		/* [DML]	SparulAction	 ::=  */
@@ -1215,11 +1213,8 @@ spar_sparul_action		/* [DML]	SparulAction	 ::=  */
 	| spar_sparul_modify
 	| spar_sparul_clear
 	| spar_sparul_load
+	| spar_sparul_create
 	| spar_sparul_drop
-	;
-
-spar_sparul_fake_create	/* [DML]*	CreateAction	 ::=  'CREATE' 'SILENT' ? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
-	: CREATE_L spar_silent_opt spar_graph_identified_by spar_precode_expn { }
 	;
 
 spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
@@ -1297,11 +1292,17 @@ spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' '
 
 spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
 	: LOAD_L spar_precode_expn spar_in_graph_precode_opt {
-		$$ = spar_make_sparul_load (sparp_arg, $3, $2 /* yes, $3 after $2 */); }
+		$$ = spar_make_sparul_load (sparp_arg, $3, $2 /* yes, $2 after $3 */); }
 	;
 
-spar_sparul_drop	/* [DML]*	DropAction	 ::=  'DROP' 'SILENT'? ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
-	: DROP_L spar_silent_opt spar_graph_precode_opt { $$ = spar_make_sparul_clear (sparp_arg, $3); }
+spar_sparul_create	/* [DML]*	CreateAction	 ::=  'CREATE' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
+	: CREATE_L spar_silent_opt spar_graph_identified_by spar_precode_expn {
+		$$ = spar_make_sparul_create (sparp_arg, $4, $2 /* yes, $2 after $4 */); }
+	;
+
+spar_sparul_drop	/* [DML]*	DropAction	 ::=  'DROP' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
+	: DROP_L spar_silent_opt spar_graph_identified_by spar_precode_expn {
+		$$ = spar_make_sparul_drop (sparp_arg, $4, $2 /* yes, $2 after $4 */); }
 	;
 
 spar_action_solution
@@ -1351,8 +1352,8 @@ spar_in_or_into
 	;
 
 spar_silent_opt
-	: /* empty */   {}
-	| SILENT_L	{}
+	: /* empty */   { $$ = 0; }
+	| SILENT_L	{ $$ = 1; }
 	;
 
 /* PART 2. Quad Map definition statements */
