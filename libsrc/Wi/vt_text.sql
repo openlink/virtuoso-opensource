@@ -474,3 +474,6 @@ create procedure DB.DBA.vt_drop_ftt (in tb varchar, in dbcol varchar)
 }
 ;
 
+--!AFTER
+grant execute on DB.DBA.vt_create_text_index to public
+;
