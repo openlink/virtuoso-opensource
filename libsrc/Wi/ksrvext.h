@@ -72,8 +72,7 @@ typedef void * state_slot_t;
 
 typedef struct query_instance_s query_instance_t;
 
-typedef caddr_t (*bif_t) (
-    caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+typedef caddr_t (*bif_t) (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 
 typedef struct local_cursor_s
@@ -101,6 +100,7 @@ typedef struct stmt_options_s {
   ptrlong	  so_use_bookmarks;
   ptrlong	  so_isolation;
   ptrlong	  so_prefetch_bytes;
+  ptrlong		so_unique_rows;
 } stmt_options_t;
 
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
@@ -290,15 +290,15 @@ END_CPLUSPLUS
 
 struct timer_s
   {
-    timer_t *		tmr_next;
-    timer_t *		tmr_prev;
-    timer_queue_t *	tmr_queue;
-    int			tmr_ref;
-    int32		tmr_remain;
-    TVAL		tmr_interval;
-    int			tmr_calling;
-    timer_callback_t	tmr_callout;
-    void *		tmr_call_arg;
+    timer_t *		tmr_next;	/* chain for activated timers */
+    timer_t *		tmr_prev;	/* chain for activated timers */
+    timer_queue_t *	tmr_queue;	/* owner */
+    int			tmr_ref;	/* reference counter */
+    int32		tmr_remain;	/* remaining time, if activated */
+    TVAL		tmr_interval;	/* interval time for autorepeat */
+    int			tmr_calling;	/* to avoid recursive locks */
+    timer_callback_t	tmr_callout;	/* function to call when fired */
+    void *		tmr_call_arg;	/* argument to tmr_callout */
   };
 
 typedef struct thread_hdr_s thread_hdr_t;
@@ -315,34 +315,74 @@ struct thread_queue_s
     int			thq_count;
   };
 
+typedef struct
+  {
+    jmp_buf buf;
+  } jmp_buf_splice;
 
 struct thread_s
 {
+    /* pointers for a thread queue */
     thread_hdr_t	thr_hdr;
+
+    /* running status, see below */
     int			thr_status;
+
+    /* current priority */
     int			thr_priority;
+
+    /* thread specific attributes (thread local storage) */
     void *		thr_attributes;
+
+    /* thread specific errno */
     int			thr_err;
+
+    /* if WAITING, thr_timer can interrupt */
     void *		thr_event;
     timer_t *		thr_timer;
+
+    /* used in thread_select */
     int			thr_retcode;
     int			thr_nfds;
     fd_set		thr_rfds;
     fd_set		thr_wfds;
+
+    /* restart context for a "dead" or new thread */
     jmp_buf		thr_init_context;
     thread_init_func	thr_initial_function;
     void *		thr_initial_argument;
+
+    /* stack size, if applicable */
     unsigned long	thr_stack_size;
-    void *		thr_stack_base;
-    jmp_buf		thr_context;
-    unsigned int *	thr_stack_marker;
-    void *		thr_cv;
-    void *		thr_handle;
+    void *		thr_stack_base; /* address near bottom, use for overflow detection */
+
+    /* saved during a context switch */
+    jmp_buf		thr_context;		/* simulated threads */
+
+    /* stack protection */
+    unsigned int *	thr_stack_marker;	/* simulated threads */
+
+    void *		thr_cv;			/* condition variable */
+
+    void *		thr_handle;		/* os specific handle */
+
+#ifdef WIN32
+    void *		thr_sec_token;		/* Win security token */
+#endif
+
+    /* Compatibility dk_thread */
     semaphore_t	*	thr_sem;
+    semaphore_t	*	thr_schedule_sem;
     void *		thr_client_data;
     void *		thr_alloc_cache;
+  /* preallocated thread attributes */
+  jmp_buf_splice *	thr_reset_ctx;
+  caddr_t		thr_reset_code;
+  caddr_t		thr_func_value;
+  void *		thr_tmp_pool;
+  int                   thr_attached;
+  caddr_t		thr_dbg;
 };
-
 
 #define MAX_NESTED_FUTURES      20
 typedef struct future_request_s future_request_t;
@@ -357,15 +397,43 @@ struct dk_thread_s
 };
 
 struct mutex_s
-{
+  {
+    /* os specific handle */
+#ifdef WITH_PTHREADS
+#ifdef HAVE_SPINLOCK
+#define mtx_mtx l.mtx
+    union {
+      pthread_mutex_t	mtx;
+      pthread_spinlock_t 	spinl;
+    } l;
+#else
+    pthread_mutex_t	mtx_mtx;
+#endif
+#endif
     void *              mtx_handle;
+#ifdef APP_SPIN
+    int			mtx_spins;
+#endif
+#if defined (MTX_DEBUG) || defined (MTX_METER)
+    caddr_t		mtx_name;
+#endif
+
 #ifdef MTX_DEBUG
     thread_t *          mtx_owner;
+    char *	mtx_entry_file;
+    int		mtx_entry_line;
+    char *	mtx_leave_file;
+    int		mtx_leave_line;
+    mtx_entry_check_t	mtx_entry_check;
+    void *		mtx_entry_check_cd;
 #endif
-#ifdef WIN32
-    int                 mtx_type;
+#ifdef MTX_METER
+    long		mtx_spin_waits;
+    long		mtx_waits;
+    long		mtx_enters;
 #endif
-};
+    int			mtx_type;
+  };
 
 dk_thread_t * PrpcThreadAllocate (thread_init_func init, unsigned long stack_size, void *init_arg);
 dk_thread_t * PrpcThreadAttach (void);
@@ -405,38 +473,105 @@ struct buffer_elt_s
     buffer_elt_t *	next;
   };
 
+typedef enum { DKST_IDLE = 0, DKST_RUN, DKST_FINISH, DKST_BURST } dks_thread_state_t;
+
+typedef struct basket_s basket_t;
+
+struct basket_s
+  {
+    basket_t *		bsk_next;
+    basket_t *		bsk_prev;
+    union
+      {
+        long		longval;
+	void *		ptrval;
+      }			bsk_data;
+  };
+
+typedef struct hash_elt_s hash_elt_t;
+
+struct hash_elt_s
+  {
+    const void *	key;
+    void *		data;
+    hash_elt_t *	next;
+  };
+
+typedef struct
+  {
+    hash_elt_t *	ht_elements;
+    uint32		ht_count;
+    uint32		ht_actual_size;
+    uint32		ht_rehash_threshold;
+#ifdef MTX_DEBUG
+    dk_mutex_t *	ht_required_mtx;
+#endif
+#ifdef HT_STATS
+    uint32		ht_max_colls;
+    uint32		ht_stats[30];
+    uint32		ht_ngets;
+    uint32		ht_nsets;
+#endif
+  } dk_hash_t;
+
 struct dk_session_s
   {
     session_t *		dks_session;
+
     dk_mutex_t *	dks_mtx;
-    char *		dks_in_buffer;
+
+    int			dks_refcount;
     int			dks_in_length;
     int			dks_in_fill;
     int			dks_in_read;
+
+    char *		dks_in_buffer;
+
     buffer_elt_t *	dks_buffer_chain;
     buffer_elt_t *	dks_buffer_chain_tail;
+
     char *		dks_out_buffer;
     int			dks_out_length;
     int			dks_out_fill;
-    int			dks_out_written;
-    struct scheduler_io_data_s *dks_client_data;
-    void *		dks_object_data;
-    void *		dks_object_temp;
-    OFF_T		dks_bytes_sent;
-    OFF_T		dks_bytes_received;
+
+    struct scheduler_io_data_s *dks_client_data;	/*!< Used by scheduler */
+    void *		dks_object_data;  /*!< Used by Distributed Objects */
+    void *		dks_object_temp;  /*!< Used by Distributed Objects */
+    OFF_T		dks_bytes_sent;   /*!< Used by Administration server */
+    OFF_T		dks_bytes_received;/*!< Used by Administration server */
+
+
     char *		dks_peer_name;
     char *		dks_own_name;
+    caddr_t *		dks_caller_id_opts;
+
     void *		dks_dbs_data;
-    void *		dks_write_temp;
-    int			dks_n_threads;
-    int			dks_to_close;
-    int			dks_is_read_select_ready;
+    void *		dks_write_temp;	/* Used by Distributed Objects */
+
+        /*! max msecs to block on a read */
     timeout_t		dks_read_block_timeout;
-    int			dks_is_server;
-    long		dks_last_used;
+    /*! Is this a client or server initiated session */
+    char		dks_is_server;
+    char		dks_to_close;
+    char		dks_is_read_select_ready; /*! Is the next read known NOT to block */
+    char		dks_ws_status;
+    
+    short		dks_n_threads;
+    /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
+    uint32		dks_last_used;
+    /*! burst mode */
+    dks_thread_state_t  dks_thread_state;
+    /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */
     void *		dks_ws_pending;
-    int			dks_ws_status;
+
+    /*! fixed server thread per client */
+    du_thread_t *	dks_fixed_thread; /*!< note: also used to pass the http ses for chunked write */
+    basket_t		dks_fixed_thread_reqs;
+
+    du_thread_t *	dks_waiting_http_recall_session;
+    dk_hash_t *		dks_pending_futures;
   };
+
 
 void session_buffered_write_char (int c, dk_session_t * ses);
 void print_long (long l, dk_session_t * session);
