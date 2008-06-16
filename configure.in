@@ -2361,6 +2361,7 @@ AC_CONFIG_FILES([
 	binsrc/tests/oracle_tpcc/Makefile
 	binsrc/tests/rdf/Makefile
 	binsrc/tests/suite/Makefile
+	binsrc/tests/suite/tpc-d/Makefile
 	binsrc/tests/tpcrun/Makefile
 	binsrc/tests/wb/Makefile
 	binsrc/tutorial/apps/Makefile

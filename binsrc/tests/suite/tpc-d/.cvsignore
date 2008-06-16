@@ -1,3 +1,7 @@
+tpcd.db
 tpcd.ini
-*.tdb
-*.output
+tpcd.log
+tpcd.output
+tpcd.pxa
+tpcd.tdb
+tpcd.trx

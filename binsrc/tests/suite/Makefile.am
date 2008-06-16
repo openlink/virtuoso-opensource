@@ -19,6 +19,8 @@
 #  
 #  
 
+SUBDIRS	= tpc-d .
+
 TOP=@TOP@
 
 TESTS=test_server.sh
@@ -80,12 +82,6 @@ EXTRA_DIST= \
 	timsg.sh \
 	tjdbc.sh \
 	tpcd.sh \
-	tpc-d/LOAD.sh \
-	tpc-d/*.sql \
-	tpc-d/*.sh \
-	tpc-d/*.ora \
-	tpc-d/tpc-d.remotes.default \
-	tpc-d/test.awk \
 	tproxy.sh \
 	tp.sh \
 	trecov_schema.sh \
