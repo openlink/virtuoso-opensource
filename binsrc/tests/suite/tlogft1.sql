@@ -63,3 +63,45 @@ select count(*) from XTLOG;
 ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows in XTLOG with serialized XML_ENTITY\n";
 ECHO BOTH "COMPLETED: XML_ENTITY  interaction with transaction log, part 1\n";
+
+DELETE USER USR1;
+CREATE USER USR1;
+
+create procedure usr_file_to_string (in f any)
+{
+  return file_to_string (f);
+}
+;
+
+grant execute on usr_file_to_string to USR1;
+
+RECONNECT USR1;
+
+select USER;
+ECHO BOTH $IF $EQU $LAST[1] USR1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " connected as USR1\n";
+
+
+drop table UFTTEST;
+create table UFTTEST (ID integer not null primary key, DATA long varchar);
+create text index on UFTTEST (DATA) WITH KEY ID;
+
+sequence_set ('ufts', 0, 0);
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/dbconcepts.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/intl.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/odbcimplementation.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/ptune.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/repl.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/server.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/sqlfunctions.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/sqlprocedures.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/sqlreference.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/tsales.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/user.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/vdbconcepts.xml'));
+INSERT INTO UFTTEST (ID, DATA) values (sequence_next ('ufts'),    usr_file_to_string ('docsrc/virtdocs.xml'));
+
+select count(*) from UFTTEST where contains (DATA, 'EXPLAIN');
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in contains : EXPLAIN in table of USR1 user\n";
+
