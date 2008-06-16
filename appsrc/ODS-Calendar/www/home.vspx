@@ -189,8 +189,6 @@
 
   <v:method name="showTimeZone" arglist="inout fValue any">
     <![CDATA[
-      if (is_empty_or_null (fValue))
-         return '';
       return sprintf ('GMT %s%02d:00', case when cast (fValue as integer) < 0 then '-' else '+' end,  abs(cast (fValue as integer)));
     ]]>
   </v:method>
@@ -431,19 +429,41 @@
 
   <v:method name="viewField" arglist="inout fValue any">
     <![CDATA[
-      if (self.cAction <> 'view')
-       return;
-
+      if (self.cAction = 'view')
          if (is_empty_or_null (fValue))
          {
            http ('&nbsp;');
          } else {
-           if (internal_type (fValue) = 211) {
+          if (internal_type (fValue) = 211)
+          {
              http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
            } else {
          http (cast (fValue as varchar));
            }
          }
+    ]]>
+  </v:method>
+
+  <v:method name="viewTags" arglist="inout fValue any">
+    <![CDATA[
+      if (self.cAction = 'view')
+        if (is_empty_or_null (fValue))
+        {
+          http ('&nbsp;');
+        } else {
+          declare N integer;
+          declare delimiter varchar;
+          declare tags any;
+
+          delimiter := '';
+          tags := CAL.WA.tags2vector (fValue);
+          for (N := 0; N < length (tags); N := N + 1)
+          {
+            http (delimiter);
+            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (CAL.WA.domain_iri (self.domain_id), tags[N]), tags[N]));
+            delimiter := ', ';
+          }
+        }
     ]]>
   </v:method>
 
@@ -2918,7 +2938,7 @@
                 Tags
               </th>
               <td>
-                <?vsp self.viewField (self.v_tags); ?>
+                      <?vsp self.viewTags (self.v_tags); ?>
               </td>
             </tr>
             <tr>
@@ -3396,7 +3416,7 @@
                 Tags
               </th>
               <td>
-                <?vsp self.viewField (self.v_tags); ?>
+                      <?vsp self.viewTags (self.v_tags); ?>
               </td>
             </tr>
             <tr>
@@ -4669,7 +4689,7 @@
                   </tr>
                   <tr>
                         <th>
-                              Current timezone
+                              Timezone
                     </th>
                     <td>
                               <v:select-list name="s_timeZone">
@@ -4678,10 +4698,12 @@
                                     declare i, j integer;
                                     declare x, y any;
 
-                                    x := make_array (25, 'any');
-                                    y := make_array (25, 'any');
+                                    x := make_array (26, 'any');
+                                    y := make_array (26, 'any');
+                                    x[0] := '';
+                                    y[0] := '- Not selected -';
                                     i := -12;
-                                    j := 0;
+                                    j := 1;
                                     while (i <= 12)
                                     {
                                       x[j] := cast (i*60 as varchar);
@@ -4691,17 +4713,25 @@
                                     }
                                     control.vsl_item_values := x;
                                     control.vsl_items := y;
-                                    control.ufl_value := '0';
+                                    control.ufl_value := '';
                                   ]]>
                                 </v:on-init>
                                 <v:before-data-bind>
                                   <![CDATA[
-                                    control.ufl_value := CAL.WA.settings_timeZone (self.settings);
+                                    control.ufl_value := CAL.WA.settings_timeZone (self.settings, 'timeZone', null);
                                   ]]>
                                 </v:before-data-bind>
                               </v:select-list>
                     </td>
                   </tr>
+                          <tr>
+                            <th>
+                              Effective timezone
+                            </th>
+                            <td>
+                              <?vsp http (self.showTimeZone (self.cTimeZone / 60)); ?>
+                            </td>
+                          </tr>
                         </table>
                       </div>
                       <div id="s_content_3" class="tabContent" style="display: none;">
@@ -4756,7 +4786,7 @@
                     <v:on-post>
                       <![CDATA[
                           declare rows, chars any;
-                          declare conv, s_conv, s_conv_init, params any;
+                          declare tmp, conv, s_conv, s_conv_init, params any;
 
                           params := self.vc_page.vc_event.ve_params;
 
@@ -4790,6 +4820,8 @@
                           self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
                           self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
                           self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
+                          CAL.WA.remove_keyword ('timeZone', self.settings);
+                          if (not is_empty_or_null (self.s_timeZone.ufl_value))
                           self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
                           self.settings := CAL.WA.set_keyword ('showTasks', self.settings, self.s_showTasks.ufl_selected);
 
@@ -4811,6 +4843,14 @@
                           insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
                             values(self.domain_id, serialize (self.settings), self.account_id);
                           commit work;
+
+                          tmp := CAL.WA.settings_usedTimeZone (self.domain_id, self.owner_id);
+                          CAL.WA.set_keyword ('usedTimeZone', self.settings, tmp);
+
+                          self.cWeekStarts := CAL.WA.settings_weekStarts (self.settings);
+                          self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
+                          self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
+                          self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
 
                           -- CAL.WA.domain_gems_create (self.domain_id, self.account_id);
                       		if (CAL.WA.discussion_check ())

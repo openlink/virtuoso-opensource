@@ -753,6 +753,15 @@ create procedure CAL.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.domain_iri (
+  in domain_id integer)
+{
+  return sprintf ('http://%s/dataspace/%U/calendar/%U', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -816,6 +825,15 @@ create procedure CAL.WA.account_name (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.account_fullName (
   in account_id integer)
 {
@@ -841,8 +859,22 @@ create procedure CAL.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (CAL.WA.domain_owner_id (domain_id)));
   return CAL.WA.url_fix (S, sid, realm);
+}
+;
+
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := CAL.WA.account_name (account_id);
+  account_password := CAL.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
@@ -1713,6 +1745,25 @@ create procedure CAL.WA.set_keyword (
 
 _end:
   return params;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.remove_keyword (
+  in    name   varchar,
+  inout params any)
+{
+  declare N integer;
+  declare V any;
+
+  V := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+    if (params[N] <> name)
+      V := vector_concat (V, vector(params[N], params[N+1]));
+
+  params := V;
+  return V;
 }
 ;
 
@@ -3005,6 +3056,39 @@ create procedure CAL.WA.settings (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.settings_init (
+  inout settings any)
+{
+  CAL.WA.set_keyword ('chars', settings, cast (get_keyword ('chars', settings, '60') as integer));
+  CAL.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
+  CAL.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
+
+  CAL.WA.set_keyword ('defaultView', settings, get_keyword ('defaultView', settings, 'week'));
+  CAL.WA.set_keyword ('weekStarts', settings, get_keyword ('weekStarts', settings, 'm'));
+  CAL.WA.set_keyword ('timeFormat', settings, get_keyword ('timeFormat', settings, 'e'));
+  CAL.WA.set_keyword ('dateFormat', settings, get_keyword ('dateFormat', settings, 'dd.MM.yyyy'));
+  CAL.WA.set_keyword ('timeZone', settings, cast (get_keyword ('timeZone', settings, '0') as integer));
+  CAL.WA.set_keyword ('showTasks', settings, cast (get_keyword ('showTasks', settings, '0') as integer));
+
+  CAL.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
+  CAL.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
+
+  CAL.WA.set_keyword ('event_E_UPDATED', settings, cast (get_keyword ('event_E_UPDATED', settings, '0') as integer));
+  CAL.WA.set_keyword ('event_E_CREATED', settings, cast (get_keyword ('event_E_CREATED', settings, '0') as integer));
+  CAL.WA.set_keyword ('event_E_LOCATION', settings, cast (get_keyword ('event_E_LOCATION', settings, '0') as integer));
+
+  CAL.WA.set_keyword ('task_E_STATUS', settings, cast (get_keyword ('task_E_STATUS', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_PRIORITY', settings, cast (get_keyword ('task_E_PRIORITY', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_START', settings, cast (get_keyword ('task_E_START', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_END', settings, cast (get_keyword ('task_E_END', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_COMPLETED', settings, cast (get_keyword ('task_E_COMPLETED', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_UPDATED', settings, cast (get_keyword ('task_E_UPDATED', settings, '0') as integer));
+  CAL.WA.set_keyword ('task_E_CREATED', settings, cast (get_keyword ('task_E_CREATED', settings, '0') as integer));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.settings_rows (
   in settings any)
 {
@@ -3053,16 +3137,18 @@ create procedure CAL.WA.settings_weekStarts (
 create procedure CAL.WA.settings_weekStarts2 (
   in domain_id integer)
 {
-  CAL.WA.settings_weekStarts (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+  CAL.WA.settings_weekStarts (CAL.WA.settings (domain_id));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_timeZone (
-  in settings any)
+  in settings any,
+  in tzSetting varchar := 'usedTimeZone',
+  in defaultValue any := '0')
 {
-  return cast (get_keyword ('timeZone', settings, '0') as integer);
+  return cast (get_keyword (tzSetting, settings, defaultValue) as integer);
 }
 ;
 
@@ -3071,9 +3157,38 @@ create procedure CAL.WA.settings_timeZone (
 create procedure CAL.WA.settings_timeZone2 (
   in domain_id integer)
 {
-  return CAL.WA.settings_timeZone (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+  return CAL.WA.settings_timeZone (CAL.WA.settings (domain_id));
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_usedTimeZone (
+  in domain_id integer,
+  in account_id integer := null)
+{
+  declare tmp any;
+
+  tmp := CAL.WA.settings_timeZone (CAL.WA.settings (domain_id), 'timeZone', null);
+  if (isnull (tmp))
+  {
+    if (isnull (account_id))
+      account_id := CAL.WA.domain_owner_id (domain_id);
+    tmp := (select WAUI_HTZONE from DB.DBA.WA_USER_INFO where WAUI_U_ID = account_id);
+    if (isnull (tmp))
+    {
+      tmp := (select WAUI_BTZONE from DB.DBA.WA_USER_INFO where WAUI_U_ID = account_id);
+    }
+    if (isnull (tmp))
+    {
+      tmp := 0;
+    }
+    tmp := cast (tmp as integer) * 60;
+  }
+  return tmp;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_dateFormat (
@@ -3086,7 +3201,7 @@ create procedure CAL.WA.settings_dateFormat (
 create procedure CAL.WA.settings_dateFormat2 (
   in domain_id integer)
 {
-  return CAL.WA.settings_dateFormat (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+  return CAL.WA.settings_dateFormat (CAL.WA.settings (domain_id));
 }
 ;
 
@@ -3104,7 +3219,7 @@ create procedure CAL.WA.settings_timeFormat (
 create procedure CAL.WA.settings_timeFormat2 (
   in domain_id integer)
 {
-  return CAL.WA.settings_timeFormat (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+  return CAL.WA.settings_timeFormat (CAL.WA.settings (domain_id));
 }
 ;
 
@@ -4717,8 +4832,10 @@ create procedure CAL.WA.import_vcal (
           tmp := cast (xquery_eval (sprintf ('IMC-VTIMEZONE[%d]/IMC-STANDARD/TZOFFSETTO/val', N), xmlItem, 1) as varchar);
           CAL.WA.tz_decode (tmp, tzOffset);
           if (not isnull (tzOffset))
+          {
             dict_put (tzDict, tzID, tzOffset);
         }
+      }
       }
 
       -- events

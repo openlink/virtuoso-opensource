@@ -80,8 +80,9 @@
           // WebDAV
           var options = { imagePath: OAT.Preferences.imagePath,
                           pathHome: '/home/',
-                          path: '<?V CAL.WA.dav_logical_home (self.owner_id) ?>',
-			  user: '<?V self.ownerName ?>'
+                          path: '<?V CAL.WA.dav_logical_home (self.account_id) ?>',
+                          user: '<?V CAL.WA.account_name (self.account_id) ?>',
+                          connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
           OAT.WebDav.init(options);
 
@@ -183,6 +184,8 @@
       <v:variable persist="0" name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
       <v:on-init>
         <![CDATA[
+          declare tmp any;
+
           set ISOLATION = 'Committed';
           set http_charset = 'utf-8';
 
@@ -197,7 +200,10 @@
           self.ownerName := CAL.WA.domain_owner_name (self.domain_id);
           self.access_role := get_keyword ('user_role', aSessInfo, '');
 
-          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), CAL.WA.settings (self.domain_id));
+          self.settings := CAL.WA.settings (self.domain_id);
+          self.settings := CAL.WA.set_keyword ('app', self.settings, DB.DBA.WA_USER_APP_ENABLE (self.account_id));
+          tmp := CAL.WA.settings_usedTimeZone (self.domain_id, self.owner_id);
+          CAL.WA.set_keyword ('usedTimeZone', self.settings, tmp);
 
           self.cWeekStarts := CAL.WA.settings_weekStarts (self.settings);
           self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
