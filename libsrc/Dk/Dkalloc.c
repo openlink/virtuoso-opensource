@@ -87,8 +87,8 @@ int nth_memblock;
 
 #define AV_NOT_IN_USE 0xffff /* in av_fill */
 
-#define AV_FREE_MARK 0x00deadbeeffeedba00 /* in 2nd word of free of over 8 b*/
-#define AV_ALLOC_MARK 0x00a110cfcacfe00 
+#define AV_FREE_MARK 0x00deadbeeffeedba00LL /* in 2nd word of free of over 8 b*/
+#define AV_ALLOC_MARK 0x00a110cfcacfe00LL
 
 #define AV_CHECK_DOUBLE_FREE(av, thing, len)	\
   { \
@@ -367,7 +367,7 @@ thr_free_alloc_cache (thread_t * thr)
     thr = THREAD_CURRENT_THREAD; \
   if (thr) \
     { \
-      blocks = (av_list_t **) thr->thr_alloc_cache; \
+      blocks = (av_list_t *) thr->thr_alloc_cache; \
       if (blocks) \
 	    { \
 	  blocks += align_sz / 8; \
