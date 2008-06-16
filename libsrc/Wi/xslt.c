@@ -2134,7 +2134,7 @@ xslt_number (xparse_ctx_t * xp, caddr_t * xstree)
 	dk_free_box (n);
       }
 /* The longest printed number is QMMMDCCCLXXXVIII - 16 chars, let's put 18 :) */
-    tail_max_fill = box_length (format) * 18 * res_len;
+    tail_max_fill = (strlen (format)  + 1) * 18 * res_len;
     tmp_buf = (caddr_t) dk_alloc (tail_max_fill);
     tmp_buf_tail = xslt_fmt_print_numbers (tmp_buf, tail_max_fill, nums, res_len, format);
     dk_free (nums, -1);
