@@ -4,46 +4,32 @@
  *  $Id$
  *
  *  TCP/IP sessions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #define NO_DBG_PRINTF
 
 #include "Dk.h"
 #include "Dksestcp.h"
-
-#ifdef _SSL
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#endif
-
-#ifndef WIN32
-#define closesocket	close
-#define ioctlsocket	ioctl
-#endif
+#include "Dksestcpint.h"
 
 int last_errno;
 static int tcpdev_free (device_t * dev);
@@ -66,13 +52,11 @@ static void set_array_status (int count, session_t ** sesarr, int status);
 
 static int fileses_write (session_t * ses, char *buffer, int n_bytes);
 static int fileses_read (session_t * ses, char *buffer, int n_bytes);
-int tcpses_select (int ses_count, session_t ** reads,
-    session_t ** writes, timeout_t * timeout);
+int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
 
 
-#define TCP_HOSTNAMELEN     100  /* Something */
 
-#define TCP_CHECKVALUE     313  /* Donald Duck registration number */
+#define TCP_CHECKVALUE     313	/* Donald Duck registration number */
 
 #define TCP_CHK(sesp)       \
 	if ((sesp == NULL) || \
@@ -82,38 +66,6 @@ int tcpses_select (int ses_count, session_t ** reads,
 		return (SER_ILLSESP); \
 	  }
 
-typedef struct sockaddr_in saddrin_t;
-typedef struct sockaddr    saddr_t;
-#ifdef COM_UNIXSOCK
-typedef struct sockaddr_un saddrun_t;
-#endif
-
-typedef union
-{
-  saddrin_t t;
-#ifdef COM_UNIXSOCK
-  saddrun_t u;
-#endif
-  saddr_t   a;
-} usaddr_t;
-
-
-struct addresstruct {
-  usaddr_t    a_serveraddr;
-  char        a_hostname[TCP_HOSTNAMELEN];
-  int         a_port;
-};
-
-
-struct connectionstruct {
-  int      con_s;          /* socket descriptor, must be first field */
-  usaddr_t con_clientaddr;
-  int      con_is_file;
-#ifdef _SSL
-  void *   ssl;
-  void *   ssl_ctx; /* SSL context, setted only for https listeners */
-#endif
-};
 
 #define LISTEN_QLEN 50
 
@@ -274,7 +226,7 @@ dk_parse_address (char *str)
 }
 
 
-static char addrinfo [100];
+static char addrinfo[100];
 
 #define SEPARATOR " :"
 
@@ -304,7 +256,7 @@ extern int h_errno;
 #endif
 
 static int
-tcpses_set_address (session_t *ses, char *addrinfo1)
+tcpses_set_address (session_t * ses, char *addrinfo1)
 {
   char *strs = NULL;
   saddrin_t *p_addr;		/* address information */
@@ -374,9 +326,9 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
 	  if (-1 != gethostbyname_r (p_name, &ht, &hted))
 	    host = &ht;
 #else
-	  /* 
-	   * gethostbyname and gethostbyaddr is a threadsafe on AIX4.3 
-	   * HP-UX WindowsNT 
+	  /*
+	   * gethostbyname and gethostbyaddr is a threadsafe on AIX4.3
+	   * HP-UX WindowsNT
 	   */
 	  host = gethostbyname (p_name);
 #endif
@@ -437,8 +389,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
 
   buf[0] = 0;
 
-  if (ses->ses_class == SESCLASS_TCPIP ||
-      ses->ses_class == SESCLASS_UDPIP)
+  if (ses->ses_class == SESCLASS_TCPIP || ses->ses_class == SESCLASS_UDPIP)
     {
       struct sockaddr_in sa;
       socklen_t len = sizeof (sa);
@@ -446,8 +397,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
       if (!getsockname (s, (struct sockaddr *) &sa, &len))
 	{
 	  unsigned char *addr = (unsigned char *) &sa.sin_addr;
-	  snprintf (buf, sizeof (buf), "%d.%d.%d.%d:%u",
-	      addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
+	  snprintf (buf, sizeof (buf), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
 	}
       else
 	return -1;
@@ -522,7 +472,7 @@ tcpses_set_reuse_address (int f)
 }
 
 static int
-tcpses_listen (session_t *ses)
+tcpses_listen (session_t * ses)
 {
   int s;
   int rc;
@@ -545,16 +495,14 @@ tcpses_listen (session_t *ses)
   if (reuse_address)
     {
       int f = 1;
-      setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (void *)&f, sizeof (f));
+      setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (void *) &f, sizeof (f));
     }
 
   dbg_printf_2 (("Created socket %d", s));
 
   ses->ses_device->dev_connection->con_s = s;
 
-  dbg_printf_2 (("Calling bind: s=%d, addr=%p, len=%d",
-	  s, &(ses->ses_device->dev_address->a_serveraddr.t),
-	  sizeof (saddrin_t)));
+  dbg_printf_2 (("Calling bind: s=%d, addr=%p, len=%d", s, &(ses->ses_device->dev_address->a_serveraddr.t), sizeof (saddrin_t)));
 
   rc = ses_control_all (ses);
   if (rc != SER_SUCC)
@@ -563,9 +511,7 @@ tcpses_listen (session_t *ses)
       return (SER_CNTRL);
     }
 
-  if ((rc = bind (s,
-      (struct sockaddr *) &(ses->ses_device->dev_address->a_serveraddr.t),
-      sizeof (saddrin_t))) < 0)
+  if ((rc = bind (s, (struct sockaddr *) &(ses->ses_device->dev_address->a_serveraddr.t), sizeof (saddrin_t))) < 0)
     {
 
       test_eintr (ses, rc, errno);
@@ -629,7 +575,7 @@ tcpses_listen (session_t *ses)
  * Globals used : none
  */
 static int
-tcpses_accept (session_t *ses, session_t *new_ses)
+tcpses_accept (session_t * ses, session_t * new_ses)
 {
   int rc;
   int new_socket;
@@ -655,8 +601,7 @@ tcpses_accept (session_t *ses, session_t *new_ses)
   SESSTAT_CLR (new_ses, SST_OK);
 
   new_socket = (int) accept (ses->ses_device->dev_connection->con_s,
-      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.t),
-      &addrlen);
+      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.t), &addrlen);
 
   if (new_socket < 0)
     {
@@ -690,7 +635,7 @@ tcpses_accept (session_t *ses, session_t *new_ses)
 
 
 int
-tcpses_client_port (session_t *ses)
+tcpses_client_port (session_t * ses)
 {
   if (ses->ses_class == SESCLASS_UNIX)
     return (unsigned short) -1;
@@ -750,7 +695,7 @@ tcpses_print_client_ip (session_t * ses, char *buf, int buf_len)
  * Globals used : none
  */
 static int
-tcpses_connect (session_t *ses)
+tcpses_connect (session_t * ses)
 {
   saddrin_t *p_addr;		/* shortcut to address information */
   int s;
@@ -842,7 +787,7 @@ tcpses_connect (session_t *ses)
  * Globals used :
  */
 static int
-tcpses_disconnect (session_t *ses)
+tcpses_disconnect (session_t * ses)
 {
   int rc;
 
@@ -922,7 +867,7 @@ tcpses_get_last_w_errno ()
 }
 
 static int
-tcpses_write (session_t *ses, char *buffer, int n_bytes)
+tcpses_write (session_t * ses, char *buffer, int n_bytes)
 {
   int flags = 0;		/* no flags used, one could use MSG_OOB  */
   int n_out;
@@ -1002,7 +947,7 @@ tcpses_get_last_r_errno ()
 }
 
 static int
-tcpses_read (session_t *ses, char *buffer, int n_bytes)
+tcpses_read (session_t * ses, char *buffer, int n_bytes)
 {
   int n_in;
 
@@ -1056,7 +1001,7 @@ tcpses_read (session_t *ses, char *buffer, int n_bytes)
 }
 
 
-extern char *build_thread_model; /* from Thread */
+extern char *build_thread_model;	/* from Thread */
 int
 tcpses_is_read_ready (session_t * ses, timeout_t * to)
 {
@@ -1075,7 +1020,7 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
-  if (fd < 0) /* the sequential read will throw exception */
+  if (fd < 0)			/* the sequential read will throw exception */
     return SER_SUCC;
 
   FD_ZERO (&fds);
@@ -1085,8 +1030,7 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 
 #ifndef FOR_GTK_TESTS
 
-  if (to && to->to_sec == dks_fibers_blocking_read_default_to.to_sec
-      && to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
+  if (to && to->to_sec == dks_fibers_blocking_read_default_to.to_sec && to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
     return SER_SUCC;
 
   if (ses->ses_reads)
@@ -1106,7 +1050,7 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 
 
 static int
-fileses_read (session_t *ses, char *buffer, int n_bytes)
+fileses_read (session_t * ses, char *buffer, int n_bytes)
 {
   int n_in;
 
@@ -1132,7 +1076,7 @@ fileses_read (session_t *ses, char *buffer, int n_bytes)
 
 
 static int
-fileses_write (session_t *ses, char *buffer, int n_bytes)
+fileses_write (session_t * ses, char *buffer, int n_bytes)
 {
   int n_out;
 
@@ -1163,8 +1107,8 @@ fileses_write (session_t *ses, char *buffer, int n_bytes)
 extern "C" int _rpc_dtablesize ();
 extern "C" fd_set svc_fdset;
 #else
-extern  int _rpc_dtablesize ();
-extern  fd_set svc_fdset;
+extern int _rpc_dtablesize ();
+extern fd_set svc_fdset;
 #endif
 
 int sun_rpcs_pending = 0;
@@ -1207,8 +1151,7 @@ svc_run_3 (timeout_t * to)
       tv.tv_usec = to->to_usec;
     }
 
-  switch (select (_rpc_dtablesize (), &readfds, 0, 0,
-      to == NULL ? NULL : &tv))
+  switch (select (_rpc_dtablesize (), &readfds, 0, 0, to == NULL ? NULL : &tv))
     {
     case -1:
       if (errno == SYS_EINTR)
@@ -1217,8 +1160,10 @@ svc_run_3 (timeout_t * to)
 	}
       perror ("svc_run: - select failed");
       return;
+
     case 0:
       return;
+
     default:
       svc_getreqset (&readfds);
     }
@@ -1257,8 +1202,7 @@ tcpses_process_sun_rpc_sockets (fd_set * all_fds)
   any_sun = 0;
   for (n = 2; n < max; n++)
     {
-      if (FD_ISSET (n, all_fds)
-	  && FD_ISSET (n, &svc_fdset))
+      if (FD_ISSET (n, all_fds) && FD_ISSET (n, &svc_fdset))
 	{
 	  FD_SET (n, &srpc_fd_set);
 	  any_sun = 1;
@@ -1302,11 +1246,7 @@ tcpses_process_sun_rpc_sockets (fd_set * all_fds)
  * Globals used :
  */
 int
-tcpses_select (
-     int ses_count,
-     session_t **reads,
-     session_t **writes,
-     timeout_t *timeout)
+tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout)
 {
   fd_set read_set;
   fd_set write_set;
@@ -1368,8 +1308,7 @@ tcpses_select (
   s = tcpses_add_sun_rpc_sockets (&read_set);
   s_max = MAX (s_max, s);
 #endif
-  rc = select (s_max + 1, &read_set, &write_set, &excep_set,
-      timeout == NULL ? NULL : &to);
+  rc = select (s_max + 1, &read_set, &write_set, &excep_set, timeout == NULL ? NULL : &to);
 
   dbg_printf_2 (("select() : rc=%d.", rc));
   switch (rc)
@@ -1409,8 +1348,7 @@ tcpses_select (
 	    {
 	      dbg_printf_2 (("i=%d", i));
 	      s = reads[i]->ses_device->dev_connection->con_s;
-	      dbg_printf_2 (("reads[i] : FD_ISSET=%d",
-		      FD_ISSET (s, &read_set)));
+	      dbg_printf_2 (("reads[i] : FD_ISSET=%d", FD_ISSET (s, &read_set)));
 
 	      if (FD_ISSET (s, &read_set) || FD_ISSET (s, &excep_set))
 		{
@@ -1489,7 +1427,7 @@ tcpses_select (
  * Globals used :
  */
 static int
-tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
+tcpses_set_control (session_t * ses, int fieldtoset, char *p_value, int size)
 {
   int opt;
   int ctrl;
@@ -1577,18 +1515,14 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
 	  /* timeout = ((timeout_t *)p_value)->to_usec; */
 	}
 
-      dbg_printf_2 (("Setting recv timeout to %ld.%ld.",
-	  timeout.to_sec, timeout.to_usec));
+      dbg_printf_2 (("Setting recv timeout to %ld.%ld.", timeout.to_sec, timeout.to_usec));
 #ifdef SO_RCVTIMEO
-      rc = setsockopt (s, SOL_SOCKET, SO_RCVTIMEO,
-	  (char *) &timeout, sizeof (timeout));
+      rc = setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof (timeout));
 #endif
       /* opt = timeout; */
-      dbg_printf_2 (("Setting send timeout to %ld.%ld.",
-	  timeout.to_sec, timeout.to_usec));
+      dbg_printf_2 (("Setting send timeout to %ld.%ld.", timeout.to_sec, timeout.to_usec));
 #ifdef SO_SNDTIMEO
-      rc = setsockopt (s, SOL_SOCKET, SO_SNDTIMEO,
-	  (char *) &timeout, sizeof (timeout));
+      rc = setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof (timeout));
 #endif
       *(sescontrol->ctrl_timeout) = *(timeout_t *) p_value;
 #ifdef TCP_DEBUG
@@ -1615,16 +1549,14 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
 	  /* opt = *(int *)p_value; */
 	}
       if (opt > 0)
-        {
+	{
 	  dbg_printf_2 (("Setting recv bufsize to %d.", opt));
-	  rc = setsockopt (s, SOL_SOCKET, SO_RCVBUF,
-	      (char *) &opt, sizeof (opt));
+	  rc = setsockopt (s, SOL_SOCKET, SO_RCVBUF, (char *) &opt, sizeof (opt));
 
 	  opt = *(int *) p_value;
 	  dbg_printf_2 (("Setting send bufsize to %d.", opt));
-	  rc = setsockopt (s, SOL_SOCKET, SO_SNDBUF,
-	      (char *) &opt, sizeof (opt));
-        }
+	  rc = setsockopt (s, SOL_SOCKET, SO_SNDBUF, (char *) &opt, sizeof (opt));
+	}
       sescontrol->ctrl_msg_length = *(int *) p_value;
       rc = SER_SUCC;
       break;
@@ -1661,7 +1593,7 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
  * Globals used : -
  */
 static int
-fill_fdset (int sescount, session_t **sestable, fd_set *p_fdset)
+fill_fdset (int sescount, session_t ** sestable, fd_set * p_fdset)
 {
   int i;
   int s, s_max = 0;
@@ -1718,7 +1650,7 @@ fill_fdset (int sescount, session_t **sestable, fd_set *p_fdset)
  * Globals used :
  */
 static int
-test_eintr (session_t *ses, int retcode, int eno)
+test_eintr (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_eintr. rc=%d, eno=%d", retcode, eno));
 
@@ -1763,7 +1695,7 @@ test_eintr (session_t *ses, int retcode, int eno)
  * Globals used :
  */
 static int
-test_readblock (session_t *ses, int retcode, int eno)
+test_readblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_readblock. rc=%d, eno=%d", retcode, eno));
 
@@ -1814,7 +1746,7 @@ test_readblock (session_t *ses, int retcode, int eno)
  * Globals used :
  */
 static int
-test_writeblock (session_t *ses, int retcode, int eno)
+test_writeblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_writeblock. rc=%d, eno=%d", retcode, eno));
 
@@ -1864,7 +1796,7 @@ test_writeblock (session_t *ses, int retcode, int eno)
  * Globals used :
  */
 static int
-test_timeout (session_t *ses, int retcode, int eno)
+test_timeout (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_timeout. rc=%d, eno=%d", retcode, eno));
 
@@ -1907,7 +1839,7 @@ test_timeout (session_t *ses, int retcode, int eno)
  * Globals used :
  */
 static int
-test_broken (session_t *ses, int retcode, int eno)
+test_broken (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_broken. rc=%d, eno=%d", retcode, eno));
 
@@ -1933,7 +1865,7 @@ test_broken (session_t *ses, int retcode, int eno)
  *
  */
 static void
-set_array_status (int count, session_t **sesarr, int status)
+set_array_status (int count, session_t ** sesarr, int status)
 {
   int i;
 
@@ -1954,26 +1886,19 @@ set_array_status (int count, session_t **sesarr, int status)
  *
  */
 static int
-ses_control_all (session_t *ses)
+ses_control_all (session_t * ses)
 {
   int rc = 0;
 
   dbg_printf_3 (("ses_control_all."));
 
   rc = session_set_control (ses,
-      SC_BLOCKING,
-      (char *) &(ses->ses_control->ctrl_blocking),
-      sizeof (ses->ses_control->ctrl_blocking));
+      SC_BLOCKING, (char *) &(ses->ses_control->ctrl_blocking), sizeof (ses->ses_control->ctrl_blocking));
+
+  rc |= session_set_control (ses, SC_TIMEOUT, (char *) (ses->ses_control->ctrl_timeout), sizeof (timeout_t));
 
   rc |= session_set_control (ses,
-      SC_TIMEOUT,
-      (char *) (ses->ses_control->ctrl_timeout),
-      sizeof (timeout_t));
-
-  rc |= session_set_control (ses,
-      SC_MSGLEN,
-      (char *) &(ses->ses_control->ctrl_msg_length),
-      sizeof (ses->ses_control->ctrl_msg_length));
+      SC_MSGLEN, (char *) &(ses->ses_control->ctrl_msg_length), sizeof (ses->ses_control->ctrl_msg_length));
 
   dbg_printf_4 (("%d", rc));
 
@@ -2002,8 +1927,7 @@ init_pctcp ()
    * than 1.1 in addition to 1.1, it will still return
    * 1.1 in wVersion since that is the version we requested.
    */
-  if (LOBYTE (wsaData.wVersion) != 1 ||
-      HIBYTE (wsaData.wVersion) != 1)
+  if (LOBYTE (wsaData.wVersion) != 1 || HIBYTE (wsaData.wVersion) != 1)
     {
       /* Tell the user that we couldn't find a usable winsock.dll. */
       WSACleanup ();
@@ -2011,13 +1935,12 @@ init_pctcp ()
     }
 
   /* The Windows Sockets DLL is acceptable.  Proceed.  */
-  if (LOBYTE (wVersionRequested) < 1 ||
-      (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
+  if (LOBYTE (wVersionRequested) < 1 || (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
     {
       return WSAVERNOTSUPPORTED;
     }
 
-  /*WSASetBlockingHook ((FARPROC) Yield);*/
+  /*WSASetBlockingHook ((FARPROC) Yield); */
   return 0;
 }
 #endif
@@ -2031,8 +1954,8 @@ tcpses_get_port (session_t * ses)
     }
   else
     {
-      unsigned short *p = (unsigned short *) & (ses->ses_device->dev_address->a_port);
-      return (unsigned int)(*p);
+      unsigned short *p = (unsigned short *) &(ses->ses_device->dev_address->a_port);
+      return (unsigned int) (*p);
     }
 }
 
@@ -2045,8 +1968,8 @@ tcpses_get_accepted_port (session_t * ses)
     }
   else
     {
-      unsigned short *p = (unsigned short *) & (ses->ses_device->dev_accepted_address->a_port);
-      return (unsigned int)(*p);
+      unsigned short *p = (unsigned short *) &(ses->ses_device->dev_accepted_address->a_port);
+      return (unsigned int) (*p);
     }
 }
 
@@ -2059,11 +1982,11 @@ tcpses_get_accepted_port (session_t * ses)
  * from - 1 from listening session / 0 - from accepted session
  */
 int
-tcpses_addr_info (session_t * ses, char * buf, size_t max_buf, int deflt, int from)
+tcpses_addr_info (session_t * ses, char *buf, size_t max_buf, int deflt, int from)
 {
 /*  unsigned char ip [sizeof (unsigned long)];*/
   unsigned long h;
-  char * hn;
+  char *hn;
   unsigned short *p1 = NULL;
   unsigned short int p = 0;
   if (!ses || !ses->ses_device || !ses->ses_device->dev_accepted_address)
@@ -2092,11 +2015,11 @@ tcpses_addr_info (session_t * ses, char * buf, size_t max_buf, int deflt, int fr
     {
 /*      memcpy (&(ip[0]), (unsigned char *)&h, sizeof (unsigned long));
       snprintf (buf, max_buf, "%u.%u.%u.%u:%d", ip[3], ip[2], ip[1], ip[0], p);*/
-     snprintf (buf, max_buf, "%s:%d", hn, p);
+      snprintf (buf, max_buf, "%s:%d", hn, p);
     }
   else if (buf && p)
     snprintf (buf, max_buf, ":%d", p);
-  return (int)(p);
+  return (int) (p);
 }
 
 void
@@ -2111,67 +2034,214 @@ tcpses_error_message (int saved_errno, char *msgbuf, int size)
 #ifdef PCTCP
   switch (saved_errno)
     {
-      case WSAEACCES: 		strncpy (msgbuf, "Permission denied", size - 1); break;
-      case WSAEADDRINUSE: 	strncpy (msgbuf, "Address already in use", size - 1); break;
-      case WSAEADDRNOTAVAIL: 	strncpy (msgbuf, "Cannot assign requested address", size - 1); break;
-      case WSAEAFNOSUPPORT: 	strncpy (msgbuf, "Address family not supported by protocol family", size - 1);
-				break;
-      case WSAEALREADY: 	strncpy (msgbuf, "Operation already in progress", size - 1); break;
-      case WSAECONNABORTED: 	strncpy (msgbuf, "Software caused connection error", size - 1); break;
-      case WSAECONNREFUSED: 	strncpy (msgbuf, "Connection refused", size - 1); break;
-      case WSAECONNRESET: 	strncpy (msgbuf, "Connection reset by peer", size - 1); break;
-      case WSAEDESTADDRREQ: 	strncpy (msgbuf, "Destination address required", size - 1); break;
-      case WSAEFAULT: 		strncpy (msgbuf, "Bad address", size - 1); break;
-      case WSAEHOSTDOWN: 	strncpy (msgbuf, "Host is down", size - 1); break;
-      case WSAEINPROGRESS: 	strncpy (msgbuf, "Operation now in progress", size - 1); break;
-      case WSAEINTR: 		strncpy (msgbuf, "Interrupted function call", size - 1); break;
-      case WSAEINVAL: 		strncpy (msgbuf, "Invalid argument", size - 1); break;
-      case WSAEISCONN: 		strncpy (msgbuf, "Socket already connected", size - 1); break;
-      case WSAEMFILE: 		strncpy (msgbuf, "Too many open files", size - 1); break;
-      case WSAEMSGSIZE: 	strncpy (msgbuf, "Message too long", size - 1); break;
-      case WSAENETDOWN: 	strncpy (msgbuf, "Network is down", size - 1); break;
-      case WSAENETRESET: 	strncpy (msgbuf, "Network dropped connection on reset", size - 1); break;
-      case WSAENETUNREACH: 	strncpy (msgbuf, "Network is unreachable", size - 1); break;
-      case WSAENOBUFS: 		strncpy (msgbuf, "No buffer space available", size - 1); break;
-      case WSAENOPROTOOPT: 	strncpy (msgbuf, "Bad protocol option", size - 1); break;
-      case WSAENOTCONN: 	strncpy (msgbuf, "Socket is not connected", size - 1); break;
-      case WSAENOTSOCK: 	strncpy (msgbuf, "Socket operation on nonsocket", size - 1); break;
-      case WSAEOPNOTSUPP: 	strncpy (msgbuf, "Operation not supported", size - 1); break;
-      case WSAEPFNOSUPPORT: 	strncpy (msgbuf, "Protocol family not supported", size - 1); break;
-      case WSAEPROCLIM: 	strncpy (msgbuf, "Too many processes", size - 1); break;
-      case WSAEPROTONOSUPPORT: 	strncpy (msgbuf, "Protocol not supported", size - 1); break;
-      case WSAEPROTOTYPE: 	strncpy (msgbuf, "Protocol wrong type for socket", size - 1); break;
-      case WSAESHUTDOWN: 	strncpy (msgbuf, "Cannot send after socket shutdown", size - 1); break;
-      case WSAESOCKTNOSUPPORT: 	strncpy (msgbuf, "Socket type not supported", size - 1); break;
-      case WSAETIMEDOUT: 	strncpy (msgbuf, "Connection timed out", size - 1); break;
-      case WSATYPE_NOT_FOUND: 	strncpy (msgbuf, "Class type not found", size - 1); break;
-      case WSAEWOULDBLOCK: 	strncpy (msgbuf, "Resource temporarily unavailable", size - 1); break;
-      case WSAHOST_NOT_FOUND: 	strncpy (msgbuf, "Host not found", size - 1); break;
-      case WSA_INVALID_HANDLE: 	strncpy (msgbuf, "Specified event object handle is invalid", size - 1); break;
-      case WSA_INVALID_PARAMETER: 	strncpy (msgbuf, "One or more parameters are invalid", size - 1); break;
-      case WSA_IO_INCOMPLETE:	strncpy (msgbuf, "Overlapped I/O event object not in signaled state", size - 1); break;
-      case WSA_IO_PENDING:	strncpy (msgbuf, "Overlapped operations will complete later", size - 1); break;
-      case WSA_NOT_ENOUGH_MEMORY:	strncpy (msgbuf, "Insufficient memory available", size - 1); break;
-      case WSANOTINITIALISED:	strncpy (msgbuf, "Successful WSAStartup not yet performed", size - 1); break;
-      case WSANO_DATA:		strncpy (msgbuf, "Valid name, no data record of requested type", size - 1); break;
-      case WSANO_RECOVERY:	strncpy (msgbuf, "This is a nonrecoverable error", size - 1); break;
-      case WSASYSCALLFAILURE:	strncpy (msgbuf, "System call failure", size - 1); break;
-      case WSASYSNOTREADY:	strncpy (msgbuf, "Network subsystem is unavailable", size - 1); break;
-      case WSATRY_AGAIN:	strncpy (msgbuf, "Non-authoritative host not found", size - 1); break;
-      case WSAVERNOTSUPPORTED:	strncpy (msgbuf, "Winsock.dll version out of range", size - 1); break;
-      case WSAEDISCON:		strncpy (msgbuf, "Graceful shutdown in progress", size - 1); break;
-      case WSA_OPERATION_ABORTED: strncpy (msgbuf, "Overlapped operation aborted", size - 1); break;
-      default: msgbuf[0] = 0;
+    case WSAEACCES:
+      strncpy (msgbuf, "Permission denied", size - 1);
+      break;
+
+    case WSAEADDRINUSE:
+      strncpy (msgbuf, "Address already in use", size - 1);
+      break;
+
+    case WSAEADDRNOTAVAIL:
+      strncpy (msgbuf, "Cannot assign requested address", size - 1);
+      break;
+
+    case WSAEAFNOSUPPORT:
+      strncpy (msgbuf, "Address family not supported by protocol family", size - 1);
+      break;
+
+    case WSAEALREADY:
+      strncpy (msgbuf, "Operation already in progress", size - 1);
+      break;
+
+    case WSAECONNABORTED:
+      strncpy (msgbuf, "Software caused connection error", size - 1);
+      break;
+
+    case WSAECONNREFUSED:
+      strncpy (msgbuf, "Connection refused", size - 1);
+      break;
+
+    case WSAECONNRESET:
+      strncpy (msgbuf, "Connection reset by peer", size - 1);
+      break;
+
+    case WSAEDESTADDRREQ:
+      strncpy (msgbuf, "Destination address required", size - 1);
+      break;
+
+    case WSAEFAULT:
+      strncpy (msgbuf, "Bad address", size - 1);
+      break;
+
+    case WSAEHOSTDOWN:
+      strncpy (msgbuf, "Host is down", size - 1);
+      break;
+
+    case WSAEINPROGRESS:
+      strncpy (msgbuf, "Operation now in progress", size - 1);
+      break;
+
+    case WSAEINTR:
+      strncpy (msgbuf, "Interrupted function call", size - 1);
+      break;
+
+    case WSAEINVAL:
+      strncpy (msgbuf, "Invalid argument", size - 1);
+      break;
+
+    case WSAEISCONN:
+      strncpy (msgbuf, "Socket already connected", size - 1);
+      break;
+
+    case WSAEMFILE:
+      strncpy (msgbuf, "Too many open files", size - 1);
+      break;
+
+    case WSAEMSGSIZE:
+      strncpy (msgbuf, "Message too long", size - 1);
+      break;
+
+    case WSAENETDOWN:
+      strncpy (msgbuf, "Network is down", size - 1);
+      break;
+
+    case WSAENETRESET:
+      strncpy (msgbuf, "Network dropped connection on reset", size - 1);
+      break;
+
+    case WSAENETUNREACH:
+      strncpy (msgbuf, "Network is unreachable", size - 1);
+      break;
+
+    case WSAENOBUFS:
+      strncpy (msgbuf, "No buffer space available", size - 1);
+      break;
+
+    case WSAENOPROTOOPT:
+      strncpy (msgbuf, "Bad protocol option", size - 1);
+      break;
+
+    case WSAENOTCONN:
+      strncpy (msgbuf, "Socket is not connected", size - 1);
+      break;
+
+    case WSAENOTSOCK:
+      strncpy (msgbuf, "Socket operation on nonsocket", size - 1);
+      break;
+
+    case WSAEOPNOTSUPP:
+      strncpy (msgbuf, "Operation not supported", size - 1);
+      break;
+
+    case WSAEPFNOSUPPORT:
+      strncpy (msgbuf, "Protocol family not supported", size - 1);
+      break;
+
+    case WSAEPROCLIM:
+      strncpy (msgbuf, "Too many processes", size - 1);
+      break;
+
+    case WSAEPROTONOSUPPORT:
+      strncpy (msgbuf, "Protocol not supported", size - 1);
+      break;
+
+    case WSAEPROTOTYPE:
+      strncpy (msgbuf, "Protocol wrong type for socket", size - 1);
+      break;
+
+    case WSAESHUTDOWN:
+      strncpy (msgbuf, "Cannot send after socket shutdown", size - 1);
+      break;
+
+    case WSAESOCKTNOSUPPORT:
+      strncpy (msgbuf, "Socket type not supported", size - 1);
+      break;
+
+    case WSAETIMEDOUT:
+      strncpy (msgbuf, "Connection timed out", size - 1);
+      break;
+
+    case WSATYPE_NOT_FOUND:
+      strncpy (msgbuf, "Class type not found", size - 1);
+      break;
+
+    case WSAEWOULDBLOCK:
+      strncpy (msgbuf, "Resource temporarily unavailable", size - 1);
+      break;
+
+    case WSAHOST_NOT_FOUND:
+      strncpy (msgbuf, "Host not found", size - 1);
+      break;
+
+    case WSA_INVALID_HANDLE:
+      strncpy (msgbuf, "Specified event object handle is invalid", size - 1);
+      break;
+
+    case WSA_INVALID_PARAMETER:
+      strncpy (msgbuf, "One or more parameters are invalid", size - 1);
+      break;
+
+    case WSA_IO_INCOMPLETE:
+      strncpy (msgbuf, "Overlapped I/O event object not in signaled state", size - 1);
+      break;
+
+    case WSA_IO_PENDING:
+      strncpy (msgbuf, "Overlapped operations will complete later", size - 1);
+      break;
+
+    case WSA_NOT_ENOUGH_MEMORY:
+      strncpy (msgbuf, "Insufficient memory available", size - 1);
+      break;
+
+    case WSANOTINITIALISED:
+      strncpy (msgbuf, "Successful WSAStartup not yet performed", size - 1);
+      break;
+
+    case WSANO_DATA:
+      strncpy (msgbuf, "Valid name, no data record of requested type", size - 1);
+      break;
+
+    case WSANO_RECOVERY:
+      strncpy (msgbuf, "This is a nonrecoverable error", size - 1);
+      break;
+
+    case WSASYSCALLFAILURE:
+      strncpy (msgbuf, "System call failure", size - 1);
+      break;
+
+    case WSASYSNOTREADY:
+      strncpy (msgbuf, "Network subsystem is unavailable", size - 1);
+      break;
+
+    case WSATRY_AGAIN:
+      strncpy (msgbuf, "Non-authoritative host not found", size - 1);
+      break;
+
+    case WSAVERNOTSUPPORTED:
+      strncpy (msgbuf, "Winsock.dll version out of range", size - 1);
+      break;
+
+    case WSAEDISCON:
+      strncpy (msgbuf, "Graceful shutdown in progress", size - 1);
+      break;
+
+    case WSA_OPERATION_ABORTED:
+      strncpy (msgbuf, "Overlapped operation aborted", size - 1);
+      break;
+
+    default:
+      msgbuf[0] = 0;
     }
   msgbuf[size - 1] = 0;
 #else
-  msg_len = strlen (strerror(saved_errno));
+  msg_len = strlen (strerror (saved_errno));
   if (!msgbuf || size < 1)
     return;
   if (msg_len > size - 1)
     msg_len = size - 1;
   if (msg_len > 0)
-    memcpy (msgbuf, strerror(saved_errno), msg_len);
+    memcpy (msgbuf, strerror (saved_errno), msg_len);
   msgbuf[msg_len] = 0;
 #endif
 }
@@ -2180,7 +2250,7 @@ tcpses_error_message (int saved_errno, char *msgbuf, int size)
 
 /* SSL support */
 static int
-sslses_read (session_t *ses, char *buffer, int n_bytes)
+sslses_read (session_t * ses, char *buffer, int n_bytes)
 {
   int n_in;
   if (ses->ses_class == SESCLASS_UNIX)
@@ -2191,7 +2261,7 @@ sslses_read (session_t *ses, char *buffer, int n_bytes)
     }
   ses->ses_status = 0;
   SESSTAT_SET (ses, SST_OK);
-  n_in = SSL_read ((SSL *)(ses->ses_device->dev_connection->ssl), buffer, n_bytes);
+  n_in = SSL_read ((SSL *) (ses->ses_device->dev_connection->ssl), buffer, n_bytes);
   if (n_in <= 0)
     {
       SESSTAT_CLR (ses, SST_OK);
@@ -2203,7 +2273,7 @@ sslses_read (session_t *ses, char *buffer, int n_bytes)
 
 
 static int
-sslses_write (session_t *ses, char *buffer, int n_bytes)
+sslses_write (session_t * ses, char *buffer, int n_bytes)
 {
   int n_out;
   if (ses->ses_class == SESCLASS_UNIX)
@@ -2214,7 +2284,7 @@ sslses_write (session_t *ses, char *buffer, int n_bytes)
     }
   SESSTAT_SET (ses, SST_OK);
   SESSTAT_CLR (ses, SST_BLOCK_ON_WRITE);
-  n_out = SSL_write ((SSL *)(ses->ses_device->dev_connection->ssl), buffer, n_bytes);
+  n_out = SSL_write ((SSL *) (ses->ses_device->dev_connection->ssl), buffer, n_bytes);
   if (n_out <= 0)
     {
       SESSTAT_CLR (ses, SST_OK);
@@ -2264,7 +2334,7 @@ tcpses_get_sslctx (session_t * ses)
 }
 
 void
-tcpses_set_sslctx (session_t * ses, void * ssl_ctx)
+tcpses_set_sslctx (session_t * ses, void *ssl_ctx)
 {
   if (ses->ses_class == SESCLASS_UNIX)
     return;
@@ -2281,7 +2351,7 @@ sslses_to_tcpses (session_t * ses)
   if (ses->ses_class == SESCLASS_UNIX)
     return;
   if (ses->ses_device->dev_connection->ssl)
-    SSL_free ((SSL *)(ses->ses_device->dev_connection->ssl));
+    SSL_free ((SSL *) (ses->ses_device->dev_connection->ssl));
   ses->ses_device->dev_funs->dfp_read = tcpses_read;
   ses->ses_device->dev_funs->dfp_write = tcpses_write;
   ses->ses_device->dev_funs->dfp_free = tcpdev_free;
@@ -2289,7 +2359,7 @@ sslses_to_tcpses (session_t * ses)
 }
 
 void
-tcpses_to_sslses (session_t * ses, void * s_ssl)
+tcpses_to_sslses (session_t * ses, void *s_ssl)
 {
   if (ses->ses_class == SESCLASS_UNIX)
     return;
@@ -2298,13 +2368,14 @@ tcpses_to_sslses (session_t * ses, void * s_ssl)
   ses->ses_device->dev_funs->dfp_free = ssldev_free;
   ses->ses_device->dev_connection->ssl = (SSL *) s_ssl;
 }
+
 /* END SSL support*/
 #endif
 
 
 #ifdef COM_UNIXSOCK
 static int
-unixses_listen (session_t *ses)
+unixses_listen (session_t * ses)
 {
   int s;
   int rc;
@@ -2329,9 +2400,7 @@ unixses_listen (session_t *ses)
 
   ses->ses_device->dev_connection->con_s = s;
 
-  dbg_printf_2 (("Calling bind: s=%d, addr=%s, len=%d",
-	  s, p_addr->sun_path,
-	  sizeof (saddrun_t)));
+  dbg_printf_2 (("Calling bind: s=%d, addr=%s, len=%d", s, p_addr->sun_path, sizeof (saddrun_t)));
 
   rc = ses_control_all (ses);
   if (rc != SER_SUCC)
@@ -2340,7 +2409,7 @@ unixses_listen (session_t *ses)
       return (SER_CNTRL);
     }
 
-  if ((rc = bind (s,(saddr_t *) p_addr, sizeof(saddrun_t))) < 0)
+  if ((rc = bind (s, (saddr_t *) p_addr, sizeof (saddrun_t))) < 0)
     {
 
       test_eintr (ses, rc, errno);
@@ -2373,7 +2442,7 @@ unixses_listen (session_t *ses)
 
 
 static int
-unixses_set_address (session_t *ses, char *addrinfo1)
+unixses_set_address (session_t * ses, char *addrinfo1)
 {
   saddrun_t *p_addr;		/* address information */
   address_t *uaddr;
@@ -2385,7 +2454,7 @@ unixses_set_address (session_t *ses, char *addrinfo1)
   memset (p_addr, '\0', sizeof (saddrun_t));
   p_addr->sun_family = AF_UNIX;
   strncpy (p_addr->sun_path, addrinfo1, sizeof (p_addr->sun_path));
-  p_addr->sun_path [ sizeof (p_addr->sun_path) - 1 ] = 0;
+  p_addr->sun_path[sizeof (p_addr->sun_path) - 1] = 0;
   SESSTAT_SET (ses, SST_OK);
   return (SER_SUCC);
 }
@@ -2423,7 +2492,7 @@ unixses_set_address (session_t *ses, char *addrinfo1)
  * Globals used : none
  */
 static int
-unixses_accept (session_t *ses, session_t *new_ses)
+unixses_accept (session_t * ses, session_t * new_ses)
 {
   int rc;
   int new_socket;
@@ -2449,8 +2518,7 @@ unixses_accept (session_t *ses, session_t *new_ses)
   SESSTAT_CLR (new_ses, SST_OK);
 
   new_socket = accept (ses->ses_device->dev_connection->con_s,
-      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.u),
-      &addrlen);
+      (struct sockaddr *) &(new_ses->ses_device->dev_connection->con_clientaddr.u), &addrlen);
 
   if (new_socket < 0)
     {
@@ -2512,7 +2580,7 @@ unixses_accept (session_t *ses, session_t *new_ses)
  * Globals used : none
  */
 static int
-unixses_connect (session_t *ses)
+unixses_connect (session_t * ses)
 {
   address_t *uaddr;
   saddrun_t *p_addr;		/* shortcut to address information */
@@ -2552,7 +2620,7 @@ unixses_connect (session_t *ses)
   if (rc < 0)
     {
 #else
-  if ((rc = connect (s, (struct sockaddr *) p_addr, sizeof(struct sockaddr_un))) < 0)
+  if ((rc = connect (s, (struct sockaddr *) p_addr, sizeof (struct sockaddr_un))) < 0)
     {
 #endif
       test_eintr (ses, rc, errno);
@@ -2604,7 +2672,7 @@ unixses_connect (session_t *ses)
  * Globals used :
  */
 static int
-unixses_disconnect (session_t *ses)
+unixses_disconnect (session_t * ses)
 {
   int rc;
   address_t *uaddr;
