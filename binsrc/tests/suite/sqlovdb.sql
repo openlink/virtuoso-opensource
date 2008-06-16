@@ -690,6 +690,14 @@ echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
 echo both ": ibid verify with loop\n";
 
 
+select fi2, ct from (select fi2, count (*) as ct from r1..t1 group by fi2) xx where ct = (select max (ct2) from (select fi2, count (*) as ct2 from r1..t1 group by fi2) qq);
+echo both $if $equ $last[2] 1000 "PASSED" "***FAILED";
+echo both " count gb where count  is max count gb\n";
+
+select fi2, ct from (select fi2, count (*) as ct from r1..t1 group by fi2) xx where ct = f ((select max (ct2) from (select fi2, count (*) as ct2 from r1..t1 group by fi2) qq));
+echo both $if $equ $last[2] 1000 "PASSED" "***FAILED";
+echo both " count gb where count  is max count gb break with f\n";
+
 
 
 --
