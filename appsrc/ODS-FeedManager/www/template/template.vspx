@@ -70,8 +70,9 @@
           // WebDAV
           var options = { imagePath: OAT.Preferences.imagePath,
                           pathHome: '/home/',
-                          path: '<?V ENEWS.WA.dav_logical_home (self.owner_id) ?>',
-			  user: '<?V self.ownerName ?>'
+                          path: '<?V ENEWS.WA.dav_logical_home (self.account_id) ?>',
+                          user: '<?V ENEWS.WA.account_name (self.account_id) ?>',
+                          connectionHeaders: {Authorization: '<?V ENEWS.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
           OAT.WebDav.init(options);
 

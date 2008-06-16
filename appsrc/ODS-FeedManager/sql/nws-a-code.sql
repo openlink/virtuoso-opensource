@@ -748,6 +748,15 @@ create procedure ENEWS.WA.account_name(
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.account_fullName (
   in account_id integer)
 {
@@ -773,8 +782,21 @@ create procedure ENEWS.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (ENEWS.WA.domain_owner_id (domain_id)));
   return ENEWS.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := ENEWS.WA.account_name (account_id);
+  account_password := ENEWS.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
