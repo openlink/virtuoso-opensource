@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
+<!ENTITY sioct 'http://rdfs.org/sioc/types#'>
+<!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+]>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+-->
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt" 
+	xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl/"
+	xmlns:v="http://www.openlinksw.com/xsltext/"
+	xmlns:sioct="&sioct;"
+	xmlns:sioc="&sioc;"	
+	xmlns:foaf="&foaf;"
+	xmlns:bibo="&bibo;"
+	xmlns:dcterms="&dcterms;"
+	version="1.0">
+	
+	<xsl:output method="xml" indent="yes" />
+	<xsl:param name="baseUri" />
+	<xsl:template match="/">
+		<rdf:RDF>
+			<xsl:if test="//html/head/script[@src = 'slidy.js']">
+				<xsl:apply-templates select="html" />
+			</xsl:if>
+		</rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="html">
+			<rdf:Description rdf:about="{$baseUri}#this">
+				<rdfs:label>
+					<xsl:value-of select="//html/head/title"/>
+				</rdfs:label>
+				<rdf:type rdf:resource="&bibo;Slideshow"/>
+			</rdf:Description>
+			<xsl:if test="//html/head/script[@src = 'slidy.js']">
+				<xsl:apply-templates select="*"/>
+			</xsl:if>
+	</xsl:template>
+
+	<xsl:template match="body">
+		<xsl:for-each select="div">
+			<xsl:if test="contains(@class, 'slide')">
+				<rdf:Description rdf:about="{$baseUri}#this">
+					<xsl:attribute name="rdf:about">#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]"/>)</xsl:attribute>
+					<rdf:type rdf:resource="&bibo;Slide"/>
+					<dcterms:isPartOf rdf:resource="{$baseUri}#this"/>
+					<bibo:uri>
+						<xsl:attribute name="rdf:resource">
+							<xsl:value-of select="$baseUri"/>#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]"/>)
+						</xsl:attribute>
+					</bibo:uri>
+					<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
+					<bibo:content><xsl:value-of select="."/></bibo:content>
+				</rdf:Description>
+			</xsl:if>
+		</xsl:for-each>
+	</xsl:template>
+	
+	<xsl:template match="*|text()"/>
+
+</xsl:stylesheet>
