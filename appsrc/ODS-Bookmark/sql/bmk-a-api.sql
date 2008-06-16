@@ -123,6 +123,12 @@ create procedure ODS.ODS_API."bookmark.edit" (
 create procedure ODS.ODS_API."bookmark.delete" (
   in bookmark_id integer) __soap_http 'text/xml'
 {
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
   declare rc integer;
   declare uname varchar;
   declare inst_id integer;
@@ -278,50 +284,6 @@ create procedure ODS.ODS_API."bookmark.export" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."bookmark.options.set" (
-  in inst_id int, in options any) __soap_http 'text/xml'
-{
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-
-  declare rc integer;
-  declare uname varchar;
-
-  if (not ods_check_auth (uname, inst_id, 'author'))
-    return ods_auth_failed ();
-
-  -- TODO: not implemented
-  return ods_serialize_int_res (rc);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODS.ODS_API."bookmark.options.get" (
-  in inst_id int) __soap_http 'text/xml'
-{
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-
-  declare rc integer;
-  declare uname varchar;
-
-  if (not ods_check_auth (uname, inst_id, 'author'))
-    return ods_auth_failed ();
-
-  -- TODO: not implemented
-  return ods_serialize_int_res (rc);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODS.ODS_API."bookmark.comment.get" (
   in comment_id integer) __soap_http 'text/xml'
 {
@@ -428,6 +390,79 @@ create procedure ODS.ODS_API."bookmark.comment.delete" (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.options.set" (
+  in inst_id int, in options any) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, account_id integer;
+  declare uname varchar;
+  declare optionsParams, settings any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+  optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
+
+  settings := BMK.WA.settings (inst_id);
+  BMK.WA.settings_init (settings);
+  settings := BMK.WA.set_keyword ('chars', settings, get_keyword('chars', optionsParams, get_keyword('chars', settings)));
+  settings := BMK.WA.set_keyword ('rows', settings, get_keyword('rows', optionsParams, get_keyword('rows', settings)));
+  settings := BMK.WA.set_keyword ('tbLabels', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
+  settings := BMK.WA.set_keyword ('atomVersion', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
+  settings := BMK.WA.set_keyword ('conv', settings, get_keyword('conv', optionsParams, get_keyword('conv', settings)));
+  settings := BMK.WA.set_keyword ('conv_init', settings, get_keyword('conv_init', optionsParams, get_keyword('conv_init', settings)));
+  settings := BMK.WA.set_keyword ('panes', settings, get_keyword('panes', optionsParams, get_keyword('panes', settings)));
+  settings := BMK.WA.set_keyword ('bookmarkOpen', settings, get_keyword('bookmarkOpen', optionsParams, get_keyword('bookmarkOpen', settings)));
+  insert replacing BMK.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
+
+  return ods_serialize_int_res (1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.options.get" (
+  in inst_id int) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare settings any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  settings := BMK.WA.settings (inst_id);
+  BMK.WA.settings_init (settings);
+
+  http ('<settings>');
+  http (sprintf ('<chars>%d</chars>', get_keyword ('chars', settings)));
+  http (sprintf ('<rows>%d</rows>', get_keyword ('rows', settings)));
+  http (sprintf ('<tbLabels>%d</tbLabels>', get_keyword ('tbLabels', settings)));
+  http (sprintf ('<atomVersion>%s</atomVersion>', get_keyword ('atomVersion', settings)));
+  http (sprintf ('<conv>%d</conv>', get_keyword ('conv', settings)));
+  http (sprintf ('<conv_init>%d</conv_init>', get_keyword ('conv_init', settings)));
+  http (sprintf ('<panes>%d</panes>', get_keyword ('panes', settings)));
+  http (sprintf ('<bookmarkOpen>%d</bookmarkOpen>', get_keyword ('bookmarkOpen', settings)));
+  http ('</settings>');
+
+  return '';
+}
+;
+
 grant execute on ODS.ODS_API."bookmark.get" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.edit" to ODS_API;
@@ -436,10 +471,11 @@ grant execute on ODS.ODS_API."bookmark.folder.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.folder.delete" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.import" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.export" to ODS_API;
-grant execute on ODS.ODS_API."bookmark.options.get" to ODS_API;
-grant execute on ODS.ODS_API."bookmark.options.set" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."bookmark.options.get" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.options.set" to ODS_API;
 
 use DB;

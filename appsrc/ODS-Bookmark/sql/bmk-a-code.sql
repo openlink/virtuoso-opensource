@@ -611,6 +611,15 @@ create procedure BMK.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.domain_iri (
+  in domain_id integer)
+{
+  return sprintf ('http://%s/dataspace/%U/bookmark/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id), BMK.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -697,6 +706,15 @@ create procedure BMK.WA.account_name (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.account_fullName (
   in account_id integer)
 {
@@ -722,8 +740,21 @@ create procedure BMK.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (BMK.WA.domain_owner_id (domain_id)));
   return BMK.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := BMK.WA.account_name (account_id);
+  account_password := BMK.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
@@ -1810,6 +1841,22 @@ create procedure BMK.WA.settings (
   inout domain_id integer)
 {
   return coalesce((select deserialize (blob_to_string (S_DATA)) from BMK.WA.SETTINGS where S_DOMAIN_ID = domain_id), vector ());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.settings_init (
+  inout settings any)
+{
+  BMK.WA.set_keyword ('chars', settings, cast (get_keyword ('chars', settings, '60') as integer));
+  BMK.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
+  BMK.WA.set_keyword ('tbLabels', settings, cast (get_keyword ('tbLabels', settings, '1') as integer));
+  BMK.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
+  BMK.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
+  BMK.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
+  BMK.WA.set_keyword ('panes', settings, cast (get_keyword ('panes', settings, '0') as integer));
+  BMK.WA.set_keyword ('bookmarkOpen', settings, cast (get_keyword ('bookmarkOpen', settings, '0') as integer));
 }
 ;
 
@@ -3831,7 +3878,7 @@ create procedure BMK.WA.nntp_root (
   name := BMK.WA.account_fullName (owner_id);
   mail := BMK.WA.account_mail (owner_id);
 
-  select BD_NAME, BD_DESCRIPTION into title, comment from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id;
+  select coalesce (BD_NAME, ''), coalesce (BD_DESCRIPTION, '') into title, comment from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id;
   insert into BMK.WA.BOOKMARK_COMMENT (BC_PARENT_ID, BC_DOMAIN_ID, BC_BOOKMARK_ID, BC_TITLE, BC_COMMENT, BC_U_NAME, BC_U_MAIL, BC_CREATED, BC_UPDATED)
     values (null, domain_id, bookmark_id, title, comment, name, mail, now (), now ());
 }

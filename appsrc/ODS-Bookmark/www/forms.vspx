@@ -117,6 +117,31 @@
     ]]>
   </v:method>
 
+  <v:method name="viewTags" arglist="inout fValue any">
+    <![CDATA[
+      if (self.v_form like '%/View')
+      {
+        if (is_empty_or_null (fValue))
+        {
+          http ('&nbsp;');
+        } else {
+          declare N integer;
+          declare delimiter varchar;
+          declare tags any;
+
+          delimiter := '';
+          tags := CAL.WA.tags2vector (fValue);
+          for (N := 0; N < length (tags); N := N + 1)
+          {
+            http (delimiter);
+            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (BMK.WA.domain_iri (self.domain_id), tags[N]), tags[N]));
+            delimiter := ', ';
+          }
+        }
+      }
+    ]]>
+  </v:method>
+
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
       return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'bookmarks_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', BMK.WA.url_fix (sprintf ('%s%s', BMK.WA.bookmarks_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
@@ -1320,7 +1345,7 @@
                   <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
                   <input type="button" value="Clear" onClick="javascript: document.F1.elements['b_tags'].value = ''" class="button" />
                 </vm:if>
-                <?vsp self.viewField (self.v_tags); ?>
+                <?vsp self.viewTags (self.v_tags); ?>
               </td>
             </tr>
             <vm:if test="self.v_form <> 'Bookmark/View'">

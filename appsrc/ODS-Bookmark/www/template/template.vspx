@@ -69,8 +69,9 @@
                           pathHome: '/home/',
                       		width:650,
                       		height:400,
-                          path: '<?V BMK.WA.dav_logical_home (self.owner_id) ?>',
-			                    user: '<?V BMK.WA.account_name (self.owner_id) ?>'
+                          path: '<?V BMK.WA.dav_logical_home (self.account_id) ?>',
+                          user: '<?V BMK.WA.account_name (self.account_id) ?>',
+                          connectionHeaders: {Authorization: '<?V BMK.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
           OAT.WebDav.init(options);
 
