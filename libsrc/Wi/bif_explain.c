@@ -464,8 +464,10 @@ ts_print (table_source_t * ts)
   int inx;
   if (ts->ts_inx_op)
     {
+      char card[30];
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
       inx_op_t * iop = ts->ts_inx_op;
-      stmt_printf (("  Index AND {\n"));
+      stmt_printf (("  Index AND %s {\n", card));
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
 	  stmt_printf (("from %s by %s\n",
@@ -489,12 +491,14 @@ ts_print (table_source_t * ts)
     }
   else 
     {
+      char card[30];
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
       if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
 	stmt_printf (("from %s by %s %s %s\n",
 		      ts->ts_order_ks->ks_key->key_table->tb_name,
 		      ts->ts_order_ks->ks_key->key_name,
 		      ts->ts_is_outer ? "OUTER" : "",
-		      ts->ts_is_unique ? "Unique" : ""));
+		      ts->ts_is_unique ? "Unique" : card));
       ks_print (ts->ts_order_ks);
     }
   if (ts->ts_main_ks)
@@ -546,6 +550,15 @@ node_print (data_source_t * node)
       in == (qn_input_fn) table_source_input_unique)
     {
       ts_print ((table_source_t *) node);
+    }
+  else if (in == (qn_input_fn) skip_node_input)
+    {
+      skip_node_t *sel = (skip_node_t *) node;
+      stmt_printf (("skip node  \n"));
+    }
+  else if (in == (qn_input_fn) sort_read_input)
+    {
+      stmt_printf (("top order by node  \n"));
     }
   else if (in == (qn_input_fn) select_node_input)
     {

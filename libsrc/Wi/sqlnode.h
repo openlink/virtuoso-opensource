@@ -500,6 +500,7 @@ typedef struct table_source_s
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
     bitf_t 		ts_no_blobs:1;
+    float		ts_cardinality;
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
@@ -745,6 +746,13 @@ typedef struct select_node_s
   sel->sel_total_rows = cc_new_instance_slot (cc); \
   cc->cc_query->qr_select_node = sel;
 
+
+typedef struct skip_node_s
+{
+  data_source_t 	src_gen;
+  state_slot_t *	sk_top_skip;
+  state_slot_t *	sk_row_ctr;
+} skip_node_t;
 
 typedef struct ddl_node_s
   {

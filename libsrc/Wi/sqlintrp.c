@@ -701,8 +701,10 @@ subq_init (query_t * subq, caddr_t * inst)
 	    }
 	  END_DO_SET();
 	}
-
-
+      if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
+	{
+	  qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
+	}
     }
   END_DO_SET ();
   if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr)
@@ -1868,12 +1870,20 @@ again:
 	      case IN_VRET:
 		  POP_QR_RESET;
 		    {
-		      caddr_t value = ins->_.vret.value ?
-			  box_copy_tree (qst_get (qst, ins->_.vret.value)) :
-			  NULL;
+		      caddr_t value;
 #ifndef ROLLBACK_XQ
 		      dk_free_tree (qi->qi_thread->thr_func_value); /* IvAn/010801/LeakOnReturn: this line added */
 #endif
+		      if (ins->_.vret.value)
+			{
+			  value = qst_get (qst, ins->_.vret.value);
+			  if (ins->_.vret.value->ssl_is_callret)
+			    qst[ins->_.vret.value->ssl_index] = NULL;
+			  else 
+			    value = box_copy_tree (value);
+			}
+		      else
+			value = NULL;
 		      qi->qi_thread->thr_func_value = value;
 		      qi_check_buf_writers ();
 		      return value;

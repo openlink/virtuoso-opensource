@@ -8388,10 +8388,19 @@ cvt_error:
 
 caddr_t
 box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
-    dtp_t to_dtp, ptrlong prec, ptrlong scale, caddr_t *err_ret)
+    dtp_t to_dtp, ptrlong prec, unsigned char scale, caddr_t *err_ret)
 {
-  sql_tree_tmp *proposed = (sql_tree_tmp *) list (3, to_dtp, box_num (prec), box_num (scale));
+  caddr_t tmp[6];
+  caddr_t * ptmp;
   caddr_t volatile string_value = NULL;
+  caddr_t prec_box = box_num (prec);
+  sql_tree_tmp *proposed;
+
+  BOX_AUTO (ptmp, tmp, 3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  proposed = (sql_tree_tmp *) ptmp;
+  ptmp[0] = (uptrlong) to_dtp;
+  ptmp[1] = prec_box;
+  ptmp[2] = (uptrlong) scale;
 
   QR_RESET_CTX
     {
@@ -8401,7 +8410,8 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
     {
       caddr_t err;
       POP_QR_RESET;
-      dk_free_tree ((box_t) proposed);
+      if (IS_BOX_POINTER (prec_box))
+	dk_free_box ((box_t) prec_box);
       err = thr_get_error_code (THREAD_CURRENT_THREAD);
       if (err_ret)
 	{
@@ -8412,7 +8422,8 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
 	sqlr_resignal (err);
     }
   END_QR_RESET;
-  dk_free_tree ((box_t) proposed);
+  if (IS_BOX_POINTER (prec_box))
+    dk_free_box ((box_t) prec_box);
   return string_value;
 }
 

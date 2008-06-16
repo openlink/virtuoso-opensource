@@ -163,6 +163,7 @@ void select_node_input (select_node_t * ins, caddr_t * inst, caddr_t * state);
 void select_node_input_subq (select_node_t * sel, caddr_t * inst,
     caddr_t * state);
 void select_node_input_scroll (select_node_t * sel, caddr_t * inst, caddr_t * state);
+void skip_node_input (skip_node_t * ins, caddr_t * inst, caddr_t * state);
 
 
 void qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state);

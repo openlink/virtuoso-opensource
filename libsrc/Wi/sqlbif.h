@@ -132,7 +132,7 @@ typedef struct sql_tree_s sql_tree_tmp;
 
 EXE_EXPORT (caddr_t, box_cast, (caddr_t * qst, caddr_t data, sql_tree_tmp * dtp, dtp_t arg_dtp));
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
-    dtp_t to_dtp, ptrlong prec, ptrlong scale, caddr_t *err_ret);
+    dtp_t to_dtp, ptrlong prec, unsigned char  scale, caddr_t *err_ret);
 
 extern sql_tree_tmp * st_varchar;
 extern sql_tree_tmp * st_nvarchar;

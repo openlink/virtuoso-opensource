@@ -510,17 +510,31 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 }
 
 
+caddr_t
+sqlo_iri_constant_name_1 (ST* tree)
+{
+  if (DV_STRINGP (tree))
+    return (caddr_t)tree;
+  if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) 
+      && nc_strstr (tree->_.call.name, "_tweak")
+      && DV_STRINGP (tree->_.call.params[0]))
+    return (caddr_t) tree->_.call.params[0];
+  return NULL;
+}
+
 
 caddr_t
 sqlo_iri_constant_name (ST* tree)
 {
+  caddr_t name;
   if (DV_IRI_ID == DV_TYPE_OF (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name) && 
       (nc_strstr (tree->_.call.name, "iid_of_qname") || nc_strstr (tree->_.call.name, "IRI_TO_ID"))
-      && DV_STRINGP (tree->_.call.params[0]))
-    return (caddr_t) tree->_.call.params[0];
+      && DV_STRINGP ((name = sqlo_iri_constant_name_1 (tree->_.call.params[0]))))
+    return name;
   return NULL;
 }
 

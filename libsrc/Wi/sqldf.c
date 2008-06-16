@@ -4500,6 +4500,23 @@ sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
     }
 }
 
+
+void
+sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top_exp)
+{
+  so->so_place_code_forr_cond = 0;
+  if (IS_BOX_POINTER (top_exp) && top_exp->_.top.skip_exp)
+    {
+      if (ot->ot_group_dfe || ot->ot_fun_refs)
+	return;
+      if (ot->ot_oby_dfe && ot->ot_oby_dfe->dfe_is_placed)
+	return;
+      so->so_place_code_forr_cond = 1;
+      return;
+    }
+}
+
+
 int sqlo_max_layouts = 1000;
 int32 sqlo_max_mp_size = 10485760;
 
@@ -4974,7 +4991,12 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		      dfe_loc_result (ot->ot_work_dfe->dfe_locus, select_super, sel_dfe);
 		    }
 		  else
+		    {
+		      int old_mode = so->so_place_code_forr_cond;
+		      sqlo_set_select_mode (so, ot, sel_dfe, top_exp);
 		    sqlo_place_exp (so, select_super, sel_dfe);
+		      so->so_place_code_forr_cond = old_mode;
+		    }
 		}
 	      END_DO_BOX;
 	      if (NULL != top_exp)

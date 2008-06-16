@@ -854,7 +854,7 @@ void sched_run_at_start (void);
 void sched_set_thread_count (void);
 
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
-    dtp_t to_dtp, ptrlong prec, ptrlong scale, caddr_t *err_ret);
+    dtp_t to_dtp, ptrlong prec, unsigned char scale, caddr_t *err_ret);
 
 caddr_t box_sprintf_escaped (caddr_t str, int is_id);
 

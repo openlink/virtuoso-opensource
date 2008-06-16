@@ -932,6 +932,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
       sqlo_opt_value (ot->ot_opts, OPT_VACUUM);
       ts->ts_order_ks->ks_is_vacuum = 1;
     }
+  ts->ts_cardinality = tb_dfe->dfe_arity;
   return (data_source_t *) ts;
 }
 
@@ -3147,6 +3148,48 @@ qn_next (data_source_t * qn)
 
 
 void
+qr_skip_node (sqlo_t * so, query_t * qr)
+{
+  /* if the query is a select with a top with skip, put a skip node before the last after code */
+  int post_nodes = 0;
+  sql_comp_t * sc = so->so_sc;
+  select_node_t * sel = NULL;
+  data_source_t * prev = NULL, * qn;
+  for (qn = qr->qr_head_node; qn; qn = qn_next (qn))
+    {
+      qn_input_fn f = qn->src_input;
+      if ((qn_input_fn) select_node_input_subq  == f || (qn_input_fn)select_node_input == f)
+	{
+	  sel = (select_node_t *) qn;
+	  break;
+	}
+      if ((qn_input_fn)end_node_input == f
+#if KEYCOMP
+	  || (qn_input_fn)dpipe_node_input == f
+#endif 
+	  )
+	{
+	  post_nodes = 1;
+	  continue;
+	}
+      post_nodes = 0;
+      prev = qn;
+    }
+  if (sel && sel->sel_top_skip && (prev->src_after_code || post_nodes))
+    {
+      SQL_NODE_INIT (skip_node_t, sk, skip_node_input, NULL);
+      sk->sk_top_skip = sel->sel_top_skip;
+      sel->sel_top_skip = NULL;
+      sk->sk_row_ctr = ssl_new_inst_variable (sc->sc_cc, "ctr", DV_LONG_INT);
+      sk->src_gen.src_continuations = prev->src_continuations;
+      prev->src_continuations = dk_set_cons ((void*)sk, NULL);
+      sk->src_gen.src_after_code = prev->src_after_code;
+      prev->src_after_code = NULL;
+    }
+}
+
+
+void
 dfe_loc_ensure_out_cols (df_elt_t * dfe)
 {
   /* if a remote table is a hash filler, it can be that its out cols are not out cols of the locus but they must be. */
@@ -3358,6 +3401,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   sc->sc_cc->cc_query = old_qr;
   if (!ext_query)
     qr_set_local_code_and_funref_flag (qr);
+  qr_skip_node (so, qr);
   return qr;
 }
 

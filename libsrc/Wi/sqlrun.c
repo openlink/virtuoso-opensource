@@ -2121,14 +2121,28 @@ qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
 }
 
 
+void
+skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
+{
+  int64 rows = unbox (QST_GET_V (qst, sk->sk_row_ctr));
+  int64 skip = unbox (QST_GET (qst, sk->sk_top_skip));
+  if (skip < 0)
+    sqlr_new_error ("22023", "SR349", "SKIP parameter < 0");
+  qst_set_long (qst, sk->sk_row_ctr, 1 + rows);
+  if (rows < skip)
+    return;
+  qn_send_output ((data_source_t *)sk, inst);
+}
+
+
 int
 sel_top_count (select_node_t * sel, caddr_t * qst)
 {
   if (sel->sel_row_ctr)
     {
-      long rows = (long) unbox (QST_GET_V (qst, sel->sel_row_ctr));
-      long skip = sel->sel_top_skip ? (long) unbox (QST_GET (qst, sel->sel_top_skip)) : 0;
-      long top = (long) unbox (QST_GET (qst, sel->sel_top));
+      int64 rows = unbox (QST_GET_V (qst, sel->sel_row_ctr));
+      int64 skip = sel->sel_top_skip ? (int64) unbox (QST_GET (qst, sel->sel_top_skip)) : 0;
+      int64 top = unbox (QST_GET (qst, sel->sel_top));
       if (skip < 0)
 	sqlr_new_error ("22023", "SR349", "SKIP parameter < 0");
       if (top < 0)
