@@ -654,7 +654,7 @@ In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of
 	    return DVC_GREATER;
 	}
   /* the first is a rdf string and the second a sql one.  First max inlined chars are eq.
-   * If the rdf string is complete, ity is eq if no language.  */
+   * If the rdf string is complete, it is eq if no language.  */
   if (RBS_COMPLETE & flags1)
     {
       int64 ro1;
@@ -682,7 +682,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
   dtp_t data_dtp1, data_dtp2;
   int len1, len2, cmp_len, cmp_headlen, mcmp;
   caddr_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, trhe one that is a box is first */
+  /* arrange so that if both are not rdf boxes, the one that is a box is first */
   if (DV_RDF != dtp1)
     {
       int res = rdf_box_compare (a2, a1);
