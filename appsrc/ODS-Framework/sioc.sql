@@ -357,6 +357,11 @@ create procedure calendar_iri (in wai_name varchar)
   return forum_iri ('Calendar', wai_name);
 };
 
+create procedure tag_iri (in forum_iri varchar, in tag varchar)
+{
+  return forum_iri || '/tag/' || tag;
+};
+
 create procedure ods_sioc_clean_all ()
 {
   declare graph_iri varchar;

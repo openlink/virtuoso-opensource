@@ -186,7 +186,7 @@ create procedure exec_sparql (in qr varchar)
   qr := 'SPARQL define output:valmode "LONG" ' ||
   ' define input:inference "' || sioc..get_graph() || '"' ||
   sioc..std_pref_declare () || qr;
-  dbg_printf ('%s', qr);
+  -- dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, metas, rset);
   if (stat <> '00000')
     {
@@ -203,6 +203,70 @@ reporterr:
 create procedure ods_auth_failed ()
 {
   return '<failed>Authentication failed</failed>';
+}
+;
+
+create procedure obj2json (
+  in o any,
+  in d integer := 2)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+	if (d = 0)
+	  return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
+	retValue := '';
+	if (isnumeric (o))
+	{
+		retValue := cast (o as varchar);
+	}
+	else if (isstring (o))
+	{
+		for (N := 0; N < length(o); N := N + 1)
+		{
+			R := chr (o[N]);
+		  for (M := 0; M < length(T); M := M + 2)
+		  {
+				if (R = T[M])
+				  R := T[M+1];
+			}
+			retValue := retValue || R;
+		}
+		retValue := '"' || retValue || '"';
+	}
+	else if (isarray (o))
+	{
+		retValue := '[';
+		for (N := 0; N < length(o); N := N + 1)
+		{
+		  retValue := retValue || obj2json (o[N], d-1);
+		  if (N <> length(o)-1)
+			  retValue := retValue || ',\n';
+		}
+		retValue := retValue || ']';
+	}
+	return retValue;
+}
+;
+
+create procedure params2json (in o any)
+{
+  declare N integer;
+  declare retValue any;
+
+	retValue := '{';
+	for (N := 0; N < length(o); N := N + 2)
+	{
+	  retValue := retValue || o[N] || ':' || obj2json (o[N+1]);
+	  if (N <> length(o)-2)
+		  retValue := retValue || ', ';
+	}
+	retValue := retValue || '}';
+
+	return retValue;
 }
 ;
 
@@ -781,6 +845,109 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
 }
 ;
 
+create procedure ODS.ODS_API.appendProperty (
+  inout V any,
+  in propertyName varchar,
+  in propertyValue any,
+  in propertyNS varchar := '')
+{
+  if (not isnull (propertyValue))
+  {
+    if (propertyNS <> '')
+    {
+      if (propertyValue like propertyNS || '%')
+        propertyValue := substring (propertyValue, length (propertyNS) + 1, length (propertyValue));
+    }
+    V := vector_concat (V, vector (propertyName, propertyValue));
+  }
+  return V;
+}
+;
+
+create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http 'application/json'
+{
+  declare exit handler for sqlstate '*' {
+    goto _exit;
+  };
+
+  foafIRI := trim (foafIRI);
+  exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', foafIRI), null, null, vector (), 0);
+
+  for (select * from
+                 (sparql
+                  prefix foaf: <http://xmlns.com/foaf/0.1/>
+                  prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                  select ?title
+                         ?name
+                         ?nick
+                         ?firstName
+                         ?givenname
+                         ?family_name
+                         ?mbox
+                         ?gender
+                         ?birthday
+                         ?lat
+                         ?lng
+                         ?icqChatID
+                         ?msnChatID
+                         ?aimChatID
+                         ?yahooChatID
+                         ?workplaceHomepage
+                         ?homepage
+                         ?phone
+                   where {graph ?:foafIRI
+                           {
+                             [] a foaf:PersonalProfileDocument ;
+                             foaf:primaryTopic ?person .
+                             optional { ?person foaf:name ?name } .
+                             optional { ?person foaf:title ?title } .
+                             optional { ?person foaf:nick ?nick } .
+                             optional { ?person foaf:firstName ?firstName } .
+                             optional { ?person foaf:givenname ?givenname } .
+                             optional { ?person foaf:family_name ?family_name } .
+                             optional { ?person foaf:mbox ?mbox } .
+                             optional { ?person foaf:gender ?gender } .
+                             optional { ?person foaf:birthday ?birthday } .
+                             optional { ?person foaf:based_near ?b1 . ?b1 geo:lat ?lat ; geo:long ?lng . } .
+                             optional { ?person foaf:icqChatID ?icqChatID } .
+                             optional { ?person foaf:msnChatID ?msnChatID } .
+                             optional { ?person foaf:aimChatID ?aimChatID } .
+                             optional { ?person foaf:yahooChatID ?yahooChatID } .
+                             optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
+                             optional { ?person foaf:homepage ?homepage } .
+                             optional { ?person foaf:phone ?phone } .
+                           }
+                         }
+                 ) sub) do
+  {
+    declare V vector;
+
+    V := vector ();
+    appendProperty (V, 'nick', coalesce ("nick", "name"));
+    appendProperty (V, 'title', "title");
+    appendProperty (V, 'name', "name");
+    appendProperty (V, 'firstName', coalesce ("firstName", "givenname"));
+    appendProperty (V, 'family_name', "family_name");
+    appendProperty (V, 'mbox', "mbox", 'mailto:');
+    appendProperty (V, 'birthday', "birthday");
+    appendProperty (V, 'gender', "gender");
+    appendProperty (V, 'lat', "lat");
+    appendProperty (V, 'lng', "lng");
+    appendProperty (V, 'icqChatID', "icqChatID");
+    appendProperty (V, 'msnChatID', "msnChatID");
+    appendProperty (V, 'aimChatID', "aimChatID");
+    appendProperty (V, 'yahooChatID', "yahooChatID");
+    appendProperty (V, 'workplaceHomepage', "workplaceHomepage");
+    appendProperty (V, 'homepage', "homepage");
+    appendProperty (V, 'phone', "phone", 'tel:');
+
+    return params2json (V);
+  }
+
+_exit:
+  return obj2json (null);
+}
+;
 
 
 -- Application instance activity
@@ -1138,6 +1305,7 @@ grant execute on ODS.ODS_API."user.tagging_rules.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.add" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.update" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."instance.create" to ODS_API;
 grant execute on ODS.ODS_API."instance.update" to ODS_API;
 grant execute on ODS.ODS_API."instance.delete" to ODS_API;
