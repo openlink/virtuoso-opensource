@@ -101,16 +101,29 @@ taq1err (1);
 create procedure TAQ_OVER_SRV (in q int)
 {
   delay (0.1);
+  if (q) 
+    signal ('AQTST', 'aq test error');
 }
 
-create procedure taq_over ()
+create procedure taq_over (in n int, in make_error int)
 {
   declare i int;
   declare aq any;
   aq := async_queue (100);
-  for (i := 0; i < 150; i := i + 1)
-	aq_request (aq, 'DB.DBA.TAQ_OVER_SRV', vector (0));
+  for (i := 0; i < n; i := i + 1)
+	aq_request (aq, 'DB.DBA.TAQ_OVER_SRV', vector (make_error));
   aq_wait_all (aq);
 }
 
-taq_over ();
+taq_over (150, 0);
+taq_over (3, 0);
+
+taq_over (3, 1);
+echo both $if $equ $sqlstate AQTST "PASSED" "***FAILED";
+echo both ": aq signalled error via wait all 1\n";
+
+taq_over (150, 1);
+echo both $if $equ $sqlstate AQTST "PASSED" "***FAILED";
+echo both ": aq signalled error via wait all 2\n";
+
+
