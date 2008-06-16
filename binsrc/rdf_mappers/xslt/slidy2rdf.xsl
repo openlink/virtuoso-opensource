@@ -71,12 +71,12 @@
 		<xsl:for-each select="div">
 			<xsl:if test="contains(@class, 'slide')">
 				<rdf:Description rdf:about="{$baseUri}#this">
-					<xsl:attribute name="rdf:about">#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]"/>)</xsl:attribute>
+					<xsl:attribute name="rdf:about">#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]" format="1"/>)</xsl:attribute>
 					<rdf:type rdf:resource="&bibo;Slide"/>
 					<dcterms:isPartOf rdf:resource="{$baseUri}#this"/>
 					<bibo:uri>
 						<xsl:attribute name="rdf:resource">
-							<xsl:value-of select="$baseUri"/>#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]"/>)
+							<xsl:value-of select="$baseUri"/>#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]" format="1"/>)
 						</xsl:attribute>
 					</bibo:uri>
 					<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
