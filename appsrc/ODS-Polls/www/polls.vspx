@@ -35,7 +35,7 @@
       self.pPoll := get_keyword ('id', params, '');
       if (self.pPoll <> '') {
         self.v_id := cast (self.pPoll as integer);
-        if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id))
+        if (POLLS.WA.poll_enable_edit (self.v_id, self.account_role))
         {
           self.v_step := '';
           self.pAction := 'edit';
@@ -88,17 +88,20 @@
       tmp := trim (get_keyword ('pq_text', params, ''));
       if (self.v_mode = 'M')
         POLLS.WA.test (tmp, vector('name', 'Question ' || cast (self.v_number as varchar), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
-      if (not isnull (self.v_questions)) {
+      if (not isnull (self.v_questions))
+      {
         for (N := 0; N < length (self.v_questions); N := N + 1)
           if ((N+1 <> self.v_number) and (tmp = get_keyword('$text', self.v_questions[N], '')))
             signal ('TEST', sprintf ('Questions %d and %d are duplicated!<>', self.v_number, N+1));
       }
       qParams := vector_concat (qParams, vector ('$text', tmp));
-      if (self.pq_type.ufl_value = 'M') {
+      if (self.pq_type.ufl_value = 'M')
+      {
         qParams := vector_concat (qParams, vector ('choices', self.pq_choices.ufl_value));
         qParams := vector_concat (qParams, vector ('allowed', self.pq_allowed.ufl_value));
         answers := vector ();
-        for (N := 1; N <= cast(self.pq_choices.ufl_value as integer); N := N + 1) {
+        for (N := 1; N <= cast (self.pq_choices.ufl_value as integer); N := N + 1)
+        {
           tmp := trim (get_keyword ('pq_answer_' || cast (N as varchar), params));
           POLLS.WA.test (tmp, vector('name', 'Answer ' || cast (N as varchar), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
           if (POLLS.WA.vector_contains (answers, tmp))
@@ -107,7 +110,9 @@
           answers := vector_concat (answers, vector (tmp));
           qParams := vector_concat (qParams, vector ('answer_' || cast (N as varchar), tmp));
         }
-      } else if (self.pq_type.ufl_value = 'N') {
+      }
+      else if (self.pq_type.ufl_value = 'N')
+      {
         tmp := get_keyword ('pq_range_start', params, '0');
         tmp := POLLS.WA.test(tmp, vector('name', 'Number range start', 'class', 'integer', 'type', 'integer', 'minValue', 1));
         qParams := vector_concat (qParams, vector ('range_start', tmp));
@@ -125,7 +130,8 @@
     <![CDATA[
       if (isnull (self.v_questions))
         self.v_questions := vector ();
-      if (self.v_number <= length (self.v_questions)) {
+      if (self.v_number <= length (self.v_questions))
+      {
         self.v_questions := POLLS.WA.vector_set (self.v_questions, self.v_number-1, qParams);
       } else {
         self.v_questions := vector_concat (self.v_questions, vector (qParams));
@@ -263,28 +269,29 @@
                 <![CDATA[
                   declare cmd any;
                   cmd := get_keyword ('tbHidden', e.ve_params, '');
-                  if (cmd = 'MyPolls') {
+                if (cmd = 'MyPolls')
+                {
                     self.ds.vc_reset ();
                     self.pMode := cmd;
                     self.pAction := 'browse';
                     self.pTag := '';
                   }
-
-                  if (cmd = 'PublicPolls') {
+                if (cmd = 'PublicPolls')
+                {
                     self.ds.vc_reset ();
                     self.pMode := cmd;
                     self.pAction := 'browse';
                     self.pTag := '';
                   }
-
-                  if (cmd = 'Poll/Create') {
+                if (cmd = 'Poll/Create')
+                {
                     self.pAction := 'create';
                     self.v_step := '';
                     self.v_id := -1;
                     self.v_tags := '';
                   }
-
-                  if (cmd = 'tag') {
+                if (cmd = 'tag')
+                {
                     declare N integer;
 
                     self.pAction := 'tag';
@@ -294,12 +301,14 @@
                         self.pSelected := vector_concat(self.pSelected, vector(e.ve_params[N+1]));
                     }
                   }
-
-                  if (cmd = 'delete') {
+                if (cmd = 'delete')
+                {
                     declare N, id integer;
 
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
-                      if (e.ve_params[N] = 'cb_item') {
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  {
+                    if (e.ve_params[N] = 'cb_item')
+                    {
                         id := cast(e.ve_params[N+1] as integer);
                         POLLS.WA.poll_delete(id, self.domain_id);
                       }
@@ -388,33 +397,44 @@
 
                   -- action
                   action := get_keyword ('pt_action', e.ve_params, '');
-                  if (action <> '') {
+                  if (action <> '')
+                  {
                     self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
-                    if (action = 'delete') {
-                      POLLS.WA.poll_delete(self.v_id, self.domain_id);
+                    if (action = 'delete')
+                    {
+                      POLLS.WA.poll_delete (self.v_id);
                     }
-                    if (action = 'active') {
-                      POLLS.WA.poll_active (self.v_id, self.domain_id);
+                    else if (action = 'active')
+                    {
+                      POLLS.WA.poll_active (self.v_id);
                     }
-                    if (action = 'close') {
-                      POLLS.WA.poll_close (self.v_id, self.domain_id);
+                    else if (action = 'close')
+                    {
+                      POLLS.WA.poll_close (self.v_id);
                     }
-                    if (action = 'edit') {
+                    else if (action = 'edit')
+                    {
                       self.v_step := '';
                       self.pAction := action;
                     }
-                    if (action = 'vote') {
+                    else if (action = 'vote')
+                    {
                       self.pAction := action;
                     }
-                    if (action = 'clear') {
-                      POLLS.WA.poll_clear (self.v_id, self.domain_id);
+                    else if (action = 'clear')
+                    {
+                      POLLS.WA.poll_clear (self.v_id);
                     }
-                    if (action = 'result') {
+                    else if (action = 'result')
+                    {
                       self.pAction := action;
                     }
-                    if (action = 'number') {
-                      declare exit handler for SQLSTATE '*' {
-                        if (__SQL_STATE = 'TEST') {
+                    else if (action = 'number')
+                    {
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
                           self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
                           self.vc_is_valid := 0;
                           return;
@@ -439,7 +459,8 @@
               declare tMin, tMax integer;
               declare tClass, tStyle varchar;
 
-              if (self.pMode = 'MyPolls') {
+              if (self.pMode = 'MyPolls')
+              {
                 select max(T_COUNT),
                        min(T_COUNT)
                   into tMax, tMin
@@ -460,7 +481,8 @@
                   http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..poll_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
               }
-              if (self.pMode = 'PublicPolls') {
+              if (self.pMode = 'PublicPolls')
+              {
                 select max(T_COUNT),
                        min(T_COUNT)
                   into tMax, tMin
@@ -589,7 +611,7 @@
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
-                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id))
+                          if (POLLS.WA.poll_enable_edit (id, self.account_role))
                           {
                             http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
                           } else {
@@ -600,19 +622,19 @@
                           if (POLLS.WA.poll_enable_vote (id))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
 
-                          if (POLLS.WA.poll_enable_clear (self.domain_id, self.account_role, id))
+                          if (POLLS.WA.poll_enable_clear (id, self.account_role))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link_ed">clear</a>', id, title);
 
                           if (POLLS.WA.poll_enable_result (id) > 0)
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link_ed">result</a>', id, title);
 
-                          if (POLLS.WA.poll_enable_activate (self.domain_id, self.account_role, id))
+                          if (POLLS.WA.poll_enable_activate (id, self.account_role))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link_ed">activate</a>', id, title);
 
-                          if (POLLS.WA.poll_enable_close (self.domain_id, self.account_role, id))
+                          if (POLLS.WA.poll_enable_close (id, self.account_role))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link_ed">close</a>', id, title);
 
-                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id) = 1)
+                          if (POLLS.WA.poll_enable_edit (id, self.account_role) = 1)
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
 
                           if (POLLS.WA.discussion_check () and POLLS.WA.conversation_enable (self.domain_id))
@@ -622,10 +644,12 @@
                           http (actions);
                           http ('</div>');
 
-                          if (not is_empty_or_null(tags)) {
+                          if (not is_empty_or_null(tags))
+                          {
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
-                            for (N := 0; N < length(tags); N := N + 1) {
+                            for (N := 0; N < length(tags); N := N + 1)
+                            {
                               http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, POLLS.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
@@ -733,7 +757,8 @@
                 declare N integer;
                 params := self.vc_page.vc_event.ve_params;
 
-                if ((self.pAction = 'edit') and (self.v_step = '')) {
+                if ((self.pAction = 'edit') and (self.v_step = ''))
+                {
                   select P_NAME,
                          P_DESCRIPTION,
                          P_TAGS,
@@ -777,7 +802,8 @@
                 }
 
               _end:
-                if ((self.pAction = 'create') and (self.v_step = '')) {
+                if ((self.pAction = 'create') and (self.v_step = ''))
+                {
                   self.v_step := '0';
                   self.v_name := '';
                   self.v_description := '';
@@ -1483,18 +1509,23 @@
                       http (sprintf ('<input name="answer_%d" value="" onblur="javascript: checkRange (this);" size="7"/> <i style="font-size: 0.8em"> (Number in range [%d, %d])</i>', M, range_start, range_end));
                       http ('</p>');
                     }
-                    if (qType = 'M')
+                    else if (qType = 'M')
+                    {
                       http (sprintf ('<p class="vote-question">%d. %s?</p>', M+1, qText));
+                    }
 
                     http ('<p class="vote-answer">');
                     http (sprintf ('<input type="hidden" name="id_%d" value="%d" />', M, M));
                     http (sprintf ('<input type="hidden" name="type_%d" value="%s" />', M, qType));
                     http (sprintf ('<input type="hidden" name="required_%d" value="%d" />', M, qRequired));
-                    if (qType = 'N') {
+                    if (qType = 'N')
+                    {
                       http (sprintf ('<input type="hidden" name="range_start_%d" value="%d" />', M, range_start));
                       http (sprintf ('<input type="hidden" name="range_end_%d" value="%d" />', M, range_end));
                       http (sprintf ('<input type="hidden" name="range_decimals_%d" value="%d" />', M, range_decimals));
-                    } else if (qType = 'M') {
+                    }
+                    else if (qType = 'M')
+                    {
                       choices := cast (get_keyword ('choices', question, '1') as integer);
                       allowed := cast (get_keyword ('allowed', question, '2') as integer);
                       http (sprintf ('<input type="hidden" name="choices_%d" value="%d" />', M, choices));
@@ -1607,13 +1638,15 @@
 
                     client_id := client_attr ('client_ip');
                     vote_id := POLLS.WA.vote_insert (self.v_id, client_id);
-                    for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do {
+                    for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do
+                    {
                       question_id := Q_ID;
-                      if (Q_TYPE = 'N') {
+                      if (Q_TYPE = 'N')
+                      {
                         answer := trim(get_keyword ('answer_'||cast (Q_ID as varchar), params, ''));
                         POLLS.WA.answer_insert (vote_id, question_id, 1, answer);
                       }
-                      if (Q_TYPE = 'M')
+                      else if (Q_TYPE = 'M')
                       {
                         choices := cast (get_keyword ('choices_'||cast (Q_ID as varchar), params, '0') as integer);
                         allowed := cast (get_keyword ('allowed_'||cast (Q_ID as varchar), params, '0') as integer);
@@ -1709,7 +1742,8 @@
 
                     aValue := 0;
                     aCount := 0;
-                    for (select A_VALUE from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = 1) do {
+                    for (select A_VALUE from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = 1) do
+                    {
                       aCount := aCount + 1;
                       aValue := aValue + cast (A_VALUE as float);
                     }

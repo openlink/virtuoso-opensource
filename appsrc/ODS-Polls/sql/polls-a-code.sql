@@ -814,6 +814,15 @@ create procedure POLLS.WA.account_name (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.account_fullName (
   in account_id integer)
 {
@@ -839,8 +848,21 @@ create procedure POLLS.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (POLLS.WA.domain_owner_id (domain_id)));
   return POLLS.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := POLLS.WA.account_name (account_id);
+  account_password := POLLS.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
@@ -990,6 +1012,20 @@ create procedure POLLS.WA.settings (
   inout domain_id integer)
 {
   return coalesce ((select deserialize (blob_to_string (S_DATA)) from POLLS.WA.SETTINGS where S_DOMAIN_ID = domain_id), vector());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.settings_init (
+  inout settings any)
+{
+  POLLS.WA.set_keyword ('chars', settings, cast (get_keyword ('chars', settings, '60') as integer));
+  POLLS.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
+  POLLS.WA.set_keyword ('tbLabels', settings, cast (get_keyword ('tbLabels', settings, '1') as integer));
+  POLLS.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
+  POLLS.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
+  POLLS.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
 }
 ;
 
@@ -1651,7 +1687,8 @@ create procedure POLLS.WA.set_keyword (
   declare N integer;
 
   for (N := 0; N < length(params); N := N + 2)
-    if (params[N] = name) {
+    if (params[N] = name)
+    {
       aset(params, N + 1, value);
       goto _end;
     }
@@ -2369,50 +2406,43 @@ create procedure POLLS.WA.poll_update (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_delete (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
-  delete from POLLS.WA.POLL where P_ID = id and P_DOMAIN_ID = domain_id;
+  delete from POLLS.WA.POLL where P_ID = id;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_active (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
   update POLLS.WA.POLL
      set P_STATE = 'AC'
-   where P_ID = id and
-         P_DOMAIN_ID = domain_id;
+   where P_ID = id;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_close (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
   update POLLS.WA.POLL
      set P_STATE = 'CL'
-   where P_ID = id and
-         P_DOMAIN_ID = domain_id;
+   where P_ID = id;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_clear (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
   update POLLS.WA.POLL
      set P_VOTES = 0,
          P_VOTED = null
-   where P_ID = id and
-         P_DOMAIN_ID = domain_id;
+   where P_ID = id;
   delete from POLLS.WA.VOTE where V_POLL_ID = id;
 }
 ;
@@ -2529,14 +2559,13 @@ create procedure POLLS.WA.poll_is_voted (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_edit (
-  in domain_id integer,
-  in user_role varchar,
-  in poll_id integer)
+  in poll_id integer,
+  in user_role varchar := 'owner')
 {
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
     if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, now ()))
       return 1;
 
@@ -2547,14 +2576,13 @@ create procedure POLLS.WA.poll_enable_edit (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_delete (
-  in domain_id integer,
-  in user_role varchar,
-  in poll_id integer)
+  in poll_id integer,
+  in user_role varchar := 'owner')
 {
   if (user_role in ('public', 'guest'))
     return 0;
 
-  if (exists (select 1 from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id))
+  if (exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return 1;
 
   return 0;
@@ -2564,14 +2592,13 @@ create procedure POLLS.WA.poll_enable_delete (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_activate (
-  in domain_id integer,
-  in user_role varchar,
-  in poll_id integer)
+  in poll_id integer,
+  in user_role varchar := 'owner')
 {
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
     if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START))
       return 1;
 
@@ -2582,14 +2609,13 @@ create procedure POLLS.WA.poll_enable_activate (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_close (
-  in domain_id integer,
-  in user_role varchar,
-  in poll_id integer)
+  in poll_id integer,
+  in user_role varchar := 'owner')
 {
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
     if (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END))
       return 1;
 
@@ -2600,14 +2626,13 @@ create procedure POLLS.WA.poll_enable_close (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_clear (
-  in domain_id integer,
-  in user_role varchar,
-  in poll_id integer)
+  in poll_id integer,
+  in user_role varchar := 'owner')
 {
   if (user_role in ('public', 'guest'))
     return 0;
 
-  for (select P_VOTES, P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id and P_DOMAIN_ID = domain_id) do
+  for (select P_VOTES, P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
     if ((P_VOTES > 0) and (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END)))
         return 1;
 
@@ -2622,7 +2647,8 @@ create procedure POLLS.WA.poll_enable_vote (
 {
   declare client_id varchar;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id) do {
+  for (select * from POLLS.WA.POLL where P_ID = poll_id) do
+  {
     if (not (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END)))
       return 0;
     if (P_MULTI_VOTE = 1)
@@ -2709,6 +2735,7 @@ create procedure POLLS.WA.question_update (
            Q_ANSWER = answer
      where Q_ID = id;
   }
+  return (select Q_ID from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = seqNo);
 }
 ;
 
@@ -2718,6 +2745,16 @@ create procedure POLLS.WA.question_delete (
   in id integer)
 {
   delete from POLLS.WA.QUESTION where Q_ID = id;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.question_delete2 (
+  in poll_id integer,
+  in seqNo integer)
+{
+  delete from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = seqNo;
 }
 ;
 
@@ -3029,7 +3066,7 @@ create procedure POLLS.WA.nntp_root (
   name := POLLS.WA.account_fullName (owner_id);
   mail := POLLS.WA.account_mail (owner_id);
 
-  select P_NAME, P_DESCRIPTION into title, comment from POLLS.WA.POLL where P_ID = poll_id;
+  select coalesce (P_NAME, ''), coalesce (P_DESCRIPTION, '') into title, comment from POLLS.WA.POLL where P_ID = poll_id;
   insert into POLLS.WA.POLL_COMMENT (PC_PARENT_ID, PC_DOMAIN_ID, PC_POLL_ID, PC_TITLE, PC_COMMENT, PC_U_NAME, PC_U_MAIL, PC_CREATED, PC_UPDATED)
     values (null, domain_id, poll_id, title, comment, name, mail, now (), now ());
 }
