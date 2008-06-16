@@ -164,6 +164,7 @@ void  dbs_rev_h_blob_dir (dbe_storage_t * dbs, buffer_desc_t * buf);
 void dbs_rev_h_incbackup (dbe_storage_t * dbs, buffer_desc_t * buf);
 
 int dbs_reverse_db = 0;
+int dbs_cpt_recov_in_progress = 0;
 
 dbs_reverse_header_func_f dbs_reverse_page_header[DPF_LAST_DPF] =
 {
@@ -1529,6 +1530,8 @@ buf_disk_read (buffer_desc_t * buf)
   if (dbs->dbs_type == DBS_PRIMARY)
     d_check_read (buf->bd_physical_page, buf->bd_buffer);
 #endif
+  if (dbs_cpt_recov_in_progress)
+    return WI_OK;
   if (DPF_INDEX == flags)
     pg_make_map (buf);
   else if (buf->bd_content_map)
@@ -1562,7 +1565,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 
   if (0 == dest)
     GPF_T1 ("cannot write buffer to 0 page.");
-  if (flags == DPF_INDEX)
+  if (flags == DPF_INDEX && 0 == dbs_cpt_recov_in_progress)
     if (KI_TEMP != (key_id_t)SHORT_REF (buf->bd_buffer + DP_KEY_ID)
 	&& !sch_id_to_key (wi_inst.wi_schema, SHORT_REF (buf->bd_buffer + DP_KEY_ID)))
       GPF_T1 ("Writing index page with no key");
