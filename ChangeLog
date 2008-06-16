@@ -1,3 +1,384 @@
+2008-06-16 15:39  source
+
+	* Updated version to 5.0.7-rc11
+
+2008-06-16 15:38  source
+
+	* Aded output:valmode '_JAVA_' which returns three columns
+
+2008-06-16 15:36  source
+
+	* Added top skip exps check; not if gb or sorted gb
+	* Added show card guess in explain
+	* Added explain of notes and exec of skip
+	* Fixed alloc for cast
+	* Fixed skip node before select exps and select exps generated at end
+	  and not outside loops if skip.
+	* Fixed top query with no order by
+	* Fixed no copy when returning value of func from proc
+	* Fixed cost calculation sparql iri literal since this uses 2 function
+	  calls not 1; Compiler cannot determine the constant value at compiler
+	  time which crews up cost model.
+
+2008-06-16 15:16  source
+
+	* Added support for cpt recovery for killed during cpt
+
+2008-06-16 14:01  source
+
+	* Fixed compiler warnings
+
+2008-06-16 13:39  source
+
+	* Added new caching code
+
+2008-06-16 13:39  source
+
+	* Moved internal structs etc to Dksestcpint.h
+	* Reindented code
+
+2008-06-16 13:30  source
+
+	* Removed deprecated code
+
+2008-06-16 13:30  source
+
+	* Fixed allocation checks for non debug builds
+
+2008-06-16 13:29  source
+
+	* Fixed MAX_CACHED_MALLOC_SIZE to be divideable by 8
+
+2008-06-16 13:21  source
+
+	* Fixed typos
+
+2008-06-16 12:23  source
+
+	* Fixed indentation
+
+2008-06-16 12:21  source
+
+	* Fixed code not to ignore errors across aq_wait_all
+
+2008-06-16 10:44  source
+
+	* Fixed banner user's URI
+
+2008-06-16 10:44  source
+
+	* Added new API
+	* Fixed banner user's URI
+	* Fixed webdav user/pwd
+
+2008-06-16 10:42  source
+
+	* Added get FOAF properties based on URI
+	* Added tag_iri function
+	* Added more controllers
+	* Fixed mixed case mode when sparql is in DT
+
+2008-06-16 10:41  source
+
+	* Fixed banner user's URI
+	* Fixed webdav user/pwd
+
+2008-06-16 10:40  source
+
+	* Fixed webdav user/pwd
+	* Added new images for annotations
+	* Fixed effective timezone
+	* Fixed default timezone
+	* Fixed webdav user/pwd
+
+2008-06-16 10:39  source
+
+	* Fixxed banner user's URI
+
+2008-06-16 10:38  source
+
+	* Added tag IRIs
+	* Fixed webdav user/pwd
+	* Fixed banner user's URI
+	* Fixed API errors with options
+	* Fixed API errors with export and comments
+
+2008-06-16 10:37  source
+
+	* Added get contact properties based on FOAF uri
+	* Added tag IRIs
+	* Fixed webdav user/pwd
+	* Fixed banner user's URI
+	* Fixed API errors with options
+	* Fixed API errors with import and comments
+
+2008-06-16 10:21  source
+
+	* Updated version of vad package
+
+2008-06-16 08:29  source
+
+	* Added test for skip node in inx order top and with exp selection
+
+2008-06-16 08:28  source
+
+	* Added test for aq wait all with errors
+
+2008-06-16 08:23  source
+
+	* Added Slidy rdf mapper
+
+2008-06-14 07:08  source
+
+	* Added latest struct into to header file
+
+2008-06-14 07:02  source
+
+	* Fixed set checkpoint last time after checkpoint has finished
+
+2008-06-14 07:01  source
+
+	* Added grant to public to create freetext-index on own tables
+
+2008-06-14 07:00  source
+
+	* Added SPARUL_CREATE, SPARUL_DROP and related infrastructure in the
+	  SPARQL frontend
+	* Added DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS
+
+2008-06-13 15:17  source
+
+	* Added endpoint tests
+	* Added extra sparql tests
+
+2008-06-13 15:15  source
+
+	* Added tests for local:/
+
+2008-06-13 15:15  source
+
+	* Added tests for equivalent class and property
+
+2008-06-13 15:14  source
+
+	* Initial tests for bif_deserialize
+
+2008-06-13 15:10  source
+
+	* Fixed problem binding to data buffer
+
+2008-06-13 15:09  source
+
+	* Fixed problem in wikipedia cardridge
+
+2008-06-13 15:08  source
+
+	* Added support for local:/ for IRIs
+
+2008-06-13 15:06  source
+
+	* Updated documentation
+
+2008-06-13 12:28  source
+
+	* Fixed redundant conversion calls to iri_to_id and id_to_iri in SPARQL
+	  web service endpoint
+
+2008-06-13 12:26  source
+
+	* Fixed use of  ws_get_mime_header instead of old ws_header function
+	  that does not handle spaces
+	* Fixed memory leak
+
+2008-06-13 12:23  source
+
+	* Added call of __box_flag_tweak() to sql code generated for SQL valmode
+	  for IRI variables that have proven constant value.
+
+2008-06-13 12:23  source
+
+	* Fixed problem with deleted flag left on post commit; make a note about
+	  it but no GPF. Like error in cpt rb or cpt recov or such could make
+	  these in principle
+
+2008-06-12 14:46  source
+
+	* Fixed testsuite
+
+2008-06-12 13:28  source
+
+	* Merged from upstream project
+
+2008-06-12 13:17  source
+
+	* Added support of equivalent class and property
+
+2008-06-12 13:16  source
+
+	* Fixed problem in checkpoint of uncommitted blob; do not alter allocated
+	  items if no tree associated or if temp tree
+
+2008-06-12 10:56  source
+
+	* Added initial support for DynamicLocal
+
+2008-06-12 10:56  source
+
+	* Fixed bug in xbrl mapper causing other mappers to fail
+
+2008-06-12 10:27  source
+
+	* Fixed DV_RDF for inlinded integers when rb_box is not a pointer
+
+2008-06-12 08:16  source
+
+	* Added thow exception on error
+	* Fixed castValue
+	* Replaced executeUpdate with execute
+
+2008-06-11 15:41  source
+
+	* Regenerated driver
+
+2008-06-11 15:41  source
+
+	* Reverted partial patch
+
+2008-06-11 15:31  source
+
+	* Updated sesame2 provider
+
+2008-06-11 12:38  source
+
+	* Fixed problem passing auth parameters
+
+2008-06-11 12:35  source
+
+	* Fixed redland provider to use ODBC Driver Manager
+
+2008-06-11 12:35  source
+
+	* Fixed problem with bnode
+
+2008-06-11 12:35  source
+
+	* Provider should not call exit
+
+2008-06-11 10:15  source
+
+	* Improved selection of union valmode for when all variants produce
+	  references only (not literals) and the smallest common valmode is
+	  SSG_VALMODE_LONG. In that case we are making SSG_VALMODE_SQLVAL instead
+	  so we do not call iri_to_id without the strong need
+
+2008-06-11 10:14  source
+
+	* Move declaration to start of function
+
+2008-06-11 10:14  source
+
+	* Added extention for SQLGetFieldDesc to retrieve RDF metadata
+
+2008-06-11 08:50  source
+
+	* Improved sff_isect and LIKE for pattern and actual string
+
+2008-06-11 08:49  source
+
+	* Added support for %D into bif_sprintf and bif_sprintf_inverse
+
+2008-06-11 08:48  source
+
+	* Improved code generation for a filter for GRAPH `iri(my_expression)` { ... }
+	  where graph is made by mapping with a fixed graph. Without the
+	  special optization it becomes iri_to_id ('graph iri string from view
+	  declaration') = DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (my_expression)
+
+2008-06-11 08:45  source
+
+	* Merged from upstream project
+
+2008-06-11 08:38  source
+
+	* Added testsuite
+
+2008-06-09 14:57  source
+
+	* Fixed memory leak
+
+2008-06-09 14:09  source
+
+	* Added missing files
+
+2008-06-09 13:27  source
+
+	* Added support for running log_nnn as user
+
+2008-06-09 13:17  source
+
+	* Fixed problem with foaf:person
+
+2008-06-09 12:57  source
+
+	* Fixed typo
+
+2008-06-09 12:56  source
+
+	* Fixed use of rb_box to handle itf-8
+
+2008-06-09 12:55  source
+
+	* Fixed calc length of a string rb_box
+
+2008-06-09 12:53  source
+
+	* Fixes for SPARUL constructions
+
+2008-06-09 12:53  source
+
+	* Fixed date type
+
+2008-06-09 12:51  source
+
+	* Merged from upstream project
+
+2008-06-09 12:51  source
+
+	* Merged documentation
+
+2008-06-05 10:49  source
+
+	* Suppressed errors for non-string values
+
+2008-06-05 10:48  source
+
+	* Added support for chunked transfer input in PUT method, which some
+	  clients use to store large files
+
+2008-06-05 10:47  source
+
+	* Fixed problem with checking 4th argument which should be an array
+
+2008-06-04 14:23  source
+
+	* Regenerated
+
+2008-06-04 14:17  source
+
+	* Fixed handling of Literals that are sent without a type
+
+2008-06-04 11:22  source
+
+	* Fixed running tpc-h on db with non-default pw
+
+2008-06-04 11:20  source
+
+	* Added sparql optimizations
+
+2008-06-04 11:19  source
+
+	* Fixed named bnode in obj not shown
+
 2008-06-04 08:29  source
 
 	* Updated LICENSE to add Jena, Sesame and RedLand providers in Client
