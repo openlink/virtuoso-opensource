@@ -1,4 +1,6 @@
 
+set timeout 15;
+
 -- Q1
 sparql
 define input:inference 'inft'

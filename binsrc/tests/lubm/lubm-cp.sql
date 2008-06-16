@@ -1,3 +1,5 @@
+set timeout 15;
+
 -- materialize:
 -- ub:Professor
 -- ub:Person

@@ -1,3 +1,4 @@
+set timeout 15;
 
 -- Q1
 sparql prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>

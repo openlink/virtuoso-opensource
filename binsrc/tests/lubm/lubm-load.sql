@@ -1,3 +1,5 @@
+set timeout 15;
+
 create procedure load_lubm (in dir any)
 {
   declare arr, src, stat any;
