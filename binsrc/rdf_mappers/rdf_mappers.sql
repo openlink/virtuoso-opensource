@@ -1644,7 +1644,7 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
 
   -- we limit up to 100
   if (lev > 100)
-    return;
+    return null;
 
   lev := lev + 1;
 
