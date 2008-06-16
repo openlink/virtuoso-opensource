@@ -105,6 +105,11 @@ select top 1,1 concat (word) from words order by 1 desc;
 echo both $if $equ $last[1] "úvea" "PASSED" "*** FAILED";
 echo both ": 2nd from end sorted is " $last[1] "\n";
 
+select top 1,1 concat (word) from words order by word;
+echo both $if $equ $last[1] "aarónica" "PASSED" "*** FAILED";
+echo both ": 2nd skip exp from start " $last[1] "\n";
+
+
 select top 5 len, word from words order by 1 desc;
 
 -- XXX: with ties sorted oby not supported
