@@ -254,7 +254,7 @@ then
     exit 1
 fi
 
-RUN $ISQL $DS1 '"EXEC=drop table T1;"' ERRORS=STDOUT
+RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 200000 100
 
 RUN_BG_CHECK()
