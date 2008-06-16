@@ -246,6 +246,12 @@ const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subty
       case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL";
       default: return NULL;
       }
+  if (!strcmp (name, "_JAVA_"))
+    switch (subtype)
+      {
+      case ASK_L: return "COUNT";
+      default: return NULL;
+      }
   spar_error (NULL, "Unsupported format name '%.30s', only 'RDF/XML' and 'TURTLE' are supported", name);
   return NULL; /* to keep compiler happy */
 }
@@ -5620,7 +5626,10 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:
-      if ((NULL == formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
+      if ((NULL != tree->_.req_top.formatmode_name) &&
+        !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
+        ssg_puts ("DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
+      else if ((NULL == formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
         {
           formatter = ssg_find_formatter_by_name_and_subtype ("TTL", subtype);
           if ((NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
@@ -5679,7 +5688,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_puts (".__ask_retval)\nFROM (");
           ssg->ssg_indent += 1;
         }
-      ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
+      ssg_puts ("SELECT TOP 1 1 as __ask_retval");
       break;
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
@@ -5745,6 +5754,10 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           break;
         }
     }
+  else if (((CONSTRUCT_L == subtype) || (DESCRIBE_L == subtype)) &&
+    (NULL != tree->_.req_top.formatmode_name) &&
+    !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
+    ssg_puts ("))");
 }
 
 void

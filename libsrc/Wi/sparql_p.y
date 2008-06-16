@@ -297,8 +297,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_cons_collection
 %type <tree> spar_graph_node
 %type <tree> spar_var_or_term
-%type <backstack> spar_var_or_iriref_or_backquoteds
+%type <backstack> spar_var_or_iriref_or_pexpn_or_backquoteds
 %type <tree> spar_var_or_blank_node_or_iriref_or_backquoted
+%type <tree> spar_var_or_iriref_or_pexpn_or_backquoted
 %type <tree> spar_var_or_iriref_or_backquoted
 %type <backstack> spar_retcols
 %type <tree> spar_retcol
@@ -538,7 +539,8 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
                 spar_compose_retvals_of_construct (sparp_arg, $$, $3, formatter); }
 	;
 
-spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier	*/
+spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( ( Var | IRIref | Backquoted | ( '(' Expn ')' ) )+ | '*' )
+			/*... DatasetClause* WhereClause? SolutionModifier	*/
 	: DESCRIBE_L {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
@@ -553,9 +555,9 @@ spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackqu
 		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
 	;
 
-spar_describe_rset	/* ::=  ( VarOrIRIrefOrBackquoted+ | '*' )	*/
+spar_describe_rset	/* ::=  ( ( Var | IRIref | Backquoted | ( '(' Expn ')' ) )+ | '*' )	*/
 	: _STAR			{ $$ = (SPART **) _STAR; }
-	| spar_var_or_iriref_or_backquoteds	{ $$ = (SPART **) t_list_to_array ($1); }
+	| spar_var_or_iriref_or_pexpn_or_backquoteds	{ $$ = (SPART **) t_list_to_array ($1); }
 	;
 
 spar_ask_query		/* [8]  	AskQuery	  ::=  	'ASK' DatasetClause* WhereClause	*/
@@ -889,9 +891,16 @@ spar_var_or_term	/* [38]  	VarOrTerm	  ::=  	Var | GraphTerm	*/
 	|  spar_graph_term
 	;
 
-spar_var_or_iriref_or_backquoteds	/* ::=  VarOrIRIrefOrBackquoted+	*/
-	: spar_var_or_iriref_or_backquoted					{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_var_or_iriref_or_backquoteds spar_var_or_iriref_or_backquoted	{ $$ = $1; t_set_push (&($$), $2); }
+spar_var_or_iriref_or_pexpn_or_backquoteds	/* ::=  VarOrIRIrefOrBackquoted+	*/
+	: spar_var_or_iriref_or_pexpn_or_backquoted						{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_var_or_iriref_or_pexpn_or_backquoteds spar_var_or_iriref_or_pexpn_or_backquoted	{ $$ = $1; t_set_push (&($$), $2); }
+	;
+
+spar_var_or_iriref_or_pexpn_or_backquoted
+	: spar_var
+	| spar_iriref
+	| spar_backquoted
+	| _LPAR spar_expn _RPAR	{ $$ = $2; }
 	;
 
 spar_var_or_iriref_or_backquoted	/* [39]*	VarOrIRIrefOrBackquoted	 ::=  Var | IRIref | Backquoted	*/
