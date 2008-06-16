@@ -1337,7 +1337,7 @@ create procedure ODRIVE.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), ODRIVE.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id)));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
