@@ -475,12 +475,10 @@ dk_free_box (box_t box)
       }
     case DV_REFERENCE:
       return 0;
-#ifndef NDEBUG
     case TAG_FREE:
       GPF_T1 ("Double free");
     case TAG_BAD:
       GPF_T1 ("free of box marked bad");
-#endif
     default:
       if (box_destr[tag])
         if (0 != box_destr[tag] (box))
