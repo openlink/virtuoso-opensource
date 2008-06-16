@@ -238,10 +238,24 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
       while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
 	{
 	  if (AQR_DONE == aqr->aqr_state)
+	    {
+	      if (aqr->aqr_error && err_ret)
+		{
+		  *err_ret = aqr->aqr_error;
+		  aqr->aqr_error = NULL;
+		  mutex_leave (aq->aq_mtx);
+		  return NULL;
+		}
 	    continue;
+	    }
 	  mutex_leave (aq->aq_mtx);
 	  v = aq_wait (aq, (int) req_no, &err, 1);
 	  dk_free_tree (v);
+	  if (err_ret)
+	    {
+	      *err_ret = err;
+	      return NULL;
+	    }
 	  dk_free_tree (err);
 	  waited = 1;
 	  mutex_enter (aq->aq_mtx);
@@ -512,6 +526,8 @@ bif_aq_wait_all  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   IO_SECT (qst);
   val = aq_wait_all (aq, &err);
   END_IO_SECT (err_ret);
+  if (err)
+    sqlr_resignal (err);
     return val;
 }
 
