@@ -3931,7 +3931,8 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
   declare S, P, O_DT, O_LANG varchar;
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
   dict := dict_list_keys (dict, destructive);
-  result_names (S, P, O, O_IS_IRI, O_DT, O_LANG);
+  result_names (S, P, O --, O_IS_IRI, O_DT, O_LANG
+  );
   len := length (dict);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -3940,20 +3941,22 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
       O := dict[ctr][2];
       if (isiri_id (O))
         {
-          result (S, P, id_to_iri (O), 1, NULL, NULL);
+          result (S, P, id_to_iri (O) --, 1, NULL, NULL
+          );
         }
-      else if (is_rdf_box (O))
-        {
-          dt_twobyte := rdf_box_type (O);
-          O_DT := case (dt_twobyte) when 257 then NULL else coalesce (
-            (select id_to_iri (RDT_IID) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte) ) end;
-          lang_twobyte := rdf_box_lang (O);
-          O_LANG := case (lang_twobyte) when 257 then NULL else coalesce (
-            (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
-          result (S, P, O, 0, O_DT, O_LANG);
-        }
+--      else if (is_rdf_box (O))
+--        {
+--          dt_twobyte := rdf_box_type (O);
+--          O_DT := case (dt_twobyte) when 257 then NULL else coalesce (
+--            (select id_to_iri (RDT_IID) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte) ) end;
+--          lang_twobyte := rdf_box_lang (O);
+--          O_LANG := case (lang_twobyte) when 257 then NULL else coalesce (
+--            (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
+--          result (S, P, O, 0, O_DT, O_LANG);
+--        }
       else
-        result (S, P, O, 0, __xsd_type (O, NULL), NULL);
+        result (S, P, O --, 0, __xsd_type (O, NULL), NULL
+        );
     }
 }
 ;
