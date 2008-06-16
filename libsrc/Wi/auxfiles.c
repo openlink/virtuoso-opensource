@@ -749,7 +749,10 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
   dbs->dbs_file = cfg_get_parm (wholefile, "\ndatabase_file:", 1);
   log_file = cfg_get_parm (wholefile, "\nlog_file:", 1);
   if (log_file)
+    {
     dbs->dbs_log_name = log_file;
+      dbs->dbs_cpt_file_name = box_string (setext (log_file, "cpt", EXT_SET));
+    }
 
   file_extend = (long) (ptrlong) cfg_get_parm (wholefile, "\nfile_extend:", 0);
   if (file_extend < DP_INSERT_RESERVE + 1)

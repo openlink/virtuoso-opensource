@@ -29,6 +29,7 @@
 #include "sqlnode.h"
 #include "sqlfn.h"
 #include "srvstat.h"
+#include "recovery.h"
 
 #ifdef MAP_DEBUG
 # define dbg_map_printf(a) printf a
@@ -537,6 +538,53 @@ pl_needs_cpt_rb (page_lock_t * pl)
 int cpt_out_of_space = 0;
 
 void
+cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_t * ht)
+{
+  static caddr_t image;
+  dtp_t save[PAGE_SZ];
+  dk_hash_iterator_t hit;
+  page_lock_t * pl;
+  void * dp;
+  if (NULL == image)
+    image = dk_alloc_box (PAGE_SZ + 1, DV_STRING);
+  dk_hash_iterator (&hit, &it->it_maps[inx].itm_locks);
+  while (dk_hit_next (&hit, &dp, (void**) &pl))
+    {
+      buffer_desc_t * buf;
+      if (!pl_needs_cpt_rb (pl))
+	continue;
+      mcp_itc->itc_itm1 = &it->it_maps[inx]; /*fool the assert and itc_leave_maps in page_wait_access */
+      page_wait_access (mcp_itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
+      mutex_enter (&IT_DP_MAP (it, inx)->itm_mtx);
+      if (!buf || PF_OF_DELETED == buf)
+	{
+	  log_error ("in cpt uncommitted_backup, pl on deleted dp %d .", pl->pl_page);
+	  continue;
+	}
+      memcpy (save, buf->bd_buffer, PAGE_SZ);
+      if (PAGE_NOT_CHANGED == pl_cpt_rollback_page (pl, mcp_itc, buf))
+	{
+	  page_leave_inner (buf);
+	  continue;
+	}
+      memcpy (image, buf->bd_buffer, PAGE_SZ);
+      memcpy (buf->bd_buffer, save, PAGE_SZ);
+      page_leave_inner (buf);
+      CATCH_WRITE_FAIL (ses)
+	{
+	  print_int (pl->pl_page, ses);
+	  print_string (image, ses);
+	}
+      FAILED
+	{
+	}
+      END_WRITE_FAIL (ses);
+      sethash (DP_ADDR2VOID (pl->pl_page),  ht, DP_ADDR2VOID (pl->pl_page));
+    }
+}
+
+
+void
 cpt_uncommitted (index_tree_t * it, int inx)
 {
   dp_addr_t cpt_remap, committed_remap, new_remap;
@@ -603,7 +651,7 @@ cpt_uncommitted (index_tree_t * it, int inx)
 	       * The next checkpoint will write the page as if it were new again and all writes between checkpoints  will in fact go to the checkpoint, against the rules.  
 	       * To rectify this, force some unremaps at the end.  */
 	      new_remap = dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
-	      if (!new_remap)
+	      if (!new_remap || dbs_stop_cp == 3)
 		{
 		  log_error ("In checkpoint of uncommitted, there is a new page %d for which no remap can be allocated because out of space."
 			     " Will try unremap and new cpt. ", buf->bd_page);
@@ -1016,6 +1064,300 @@ cpt_uncommitted_dps (int clear)
 }
 
 
+static void 
+dbs_cpt_recov_obackup_reset (dbe_storage_t * dbs)
+{
+  buffer_desc_t * fs = dbs->dbs_free_set;
+  buffer_desc_t * is = dbs->dbs_incbackup_set;
+  dk_hash_iterator_t hit;
+  void *dp, *remap_dp;
+
+  memset (&bp_ctx, 0, sizeof (ol_backup_ctx_t));
+  while (fs && is)
+    {
+      memcpy (is->bd_buffer + DP_DATA, fs->bd_buffer + DP_DATA, PAGE_DATA_SZ);
+      page_set_checksum_init (is->bd_buffer + DP_DATA);
+      fs = fs->bd_next;
+      is = is->bd_next;
+    }
+  ol_write_registry (wi_inst.wi_master, NULL, ol_regist_unmark);
+  dk_hash_iterator (&hit, dbs->dbs_cpt_remap);
+  while (dk_hit_next (&hit, &dp, &remap_dp))
+    dp_set_backup_flag (dbs, (dp_addr_t) (ptrlong) remap_dp, 0);
+
+  /* cp remap pages will be ignored, so do not leave trash
+     for dbs_count_pageset_items_2 */
+  DO_SET (caddr_t, _page, &dbs->dbs_cp_remap_pages)
+    {
+      dp_set_backup_flag (dbs, (dp_addr_t)(ptrlong) _page, 0);
+    }
+  END_DO_SET();
+  dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+  dbs_write_cfg_page (dbs, 0);
+}
+
+void 
+dbs_cpt_recov (void)
+{
+  int cpt_recov_file_complete = 0;
+  int cpt_log_fd;
+  dk_session_t * ses = dk_session_allocate (SESCLASS_TCPIP);
+  long npages = 0, unpages = 0;
+  int rc = 0, exit_after_recov = 0;
+  char * new_name;
+
+  dbs_cpt_recov_in_progress = 1;
+
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      if (!dbs->dbs_cpt_file_name)
+	continue;
+      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS_RO);
+      if (cpt_log_fd < 0) /* no cpt backup */
+	continue;
+      log_info ("Starting a database that was killed during checkpoint.  Recovering using checkpoint recov file.");
+      LSEEK (cpt_log_fd, 0, SEEK_SET);
+      tcpses_set_fd (ses->dks_session, cpt_log_fd);
+      CATCH_READ_FAIL (ses)
+	{
+	  long stat = read_int (ses);
+	  if (!DKSESSTAT_ISSET (ses, SST_OK))
+	    goto err_end;
+	  if (stat == 0)
+	    {
+	      log_error ("The checkpoint was stopped in the middle of making cpt recov file, recov file ignored");
+	      goto err_end;
+	    }
+	  cpt_recov_file_complete = 1;
+	  while (DKSESSTAT_ISSET (ses, SST_OK))
+	    {
+	      dp_addr_t logical;
+	      caddr_t l = read_object (ses);
+	      caddr_t obj = read_object (ses);
+	      if (!DKSESSTAT_ISSET (ses, SST_OK))
+		break;
+	      logical = (dp_addr_t) unbox (l);
+	      dk_free_box (l);
+	      dtp_t dtp = DV_TYPE_OF (obj);
+	      switch (dtp)
+		{
+		  case DV_LONG_INT:
+			{
+			  dp_addr_t physical = (dp_addr_t)(uptrlong)unbox (obj);
+
+			  if (physical == DP_DELETED)
+			    dbs_free_disk_page (dbs, logical);
+			  else
+			    {
+			      cp_buf->bd_page = logical;
+			      cp_buf->bd_physical_page = physical;
+			      cp_buf->bd_storage = dbs;
+			      buf_disk_read (cp_buf);
+			      cp_buf->bd_physical_page = logical;
+			      cp_buf->bd_is_dirty = 1;
+			      buf_disk_write (cp_buf, logical);
+			      cp_buf->bd_is_dirty = 0;
+			      npages ++;
+			      /*fprintf (stderr, "remap l=%d p=%d\n", logical, physical);*/
+			      if (physical != logical)
+				dbs_free_disk_page (dbs, physical);
+			      /*remhash (DP_ADDR2VOID (logical), dbs->dbs_cpt_remap);*/
+			    }
+			  break;
+			}
+		  case DV_STRING:
+			{
+			  memcpy (cp_buf->bd_buffer, obj, PAGE_SZ);
+			  cp_buf->bd_page = logical;
+			  cp_buf->bd_physical_page = logical;
+			  cp_buf->bd_storage = dbs;
+			  /*fprintf (stderr, "**remap l=%d\n", logical);*/
+			  cp_buf->bd_is_dirty = 1;
+			  buf_disk_write (cp_buf, logical);
+			  cp_buf->bd_is_dirty = 0;
+			  unpages ++;
+			  break;
+			}
+		  default:
+			{
+			  log_error ("Unknown object in checkpoint recovery file");
+			  dk_free_tree (obj);
+			  goto err_end;
+			}
+		}
+	      dk_free_box (obj);
+	    }
+	err_end:
+	  session_flush_1 (ses);
+	}
+      FAILED 
+	{
+	}
+      END_READ_FAIL (ses);
+      fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
+      new_name = setext (dbs->dbs_cpt_file_name, "cpt-after-recov", EXT_SET);
+      log_info ("Moving %s to %s for future reference.", dbs->dbs_cpt_file_name, new_name);
+      rc = rename (dbs->dbs_cpt_file_name, new_name);
+      if (0 != rc)
+        {
+	  exit_after_recov = 1;
+	}	  
+      if (cpt_recov_file_complete && dbs->dbs_log_name)
+	{
+	  new_name = setext (dbs->dbs_log_name, "trx-after-recov", EXT_SET);
+	  log_info ("Database recovery done from checkpoint recovery file, hence ignoring transaction log %s.", dbs->dbs_log_name);
+	  log_info ("Moving %s to %s for future reference.", dbs->dbs_log_name, new_name);
+          rc = rename (dbs->dbs_log_name, new_name);
+	  if (0 != rc)
+	    {
+	      exit_after_recov = 1;
+	    }	  
+	}
+      if (!cpt_recov_file_complete)
+	log_error ("The checkpoint recov file was not complete, hence will roll forward from log.");
+      if (npages || unpages)
+	{
+	  clrhash (dbs->dbs_cpt_remap);
+	  dk_set_free (dbs->dbs_cp_remap_pages);
+	  dbs->dbs_cp_remap_pages = NULL;
+	  dbs_cpt_recov_obackup_reset (dbs); /* this write the cfg page also */
+	  dbs_sync_disks (dbs);
+	  log_info ("%ld pages processed based on checkpoint recov file, %ld had uncommitted data at time of checkpoint.", npages, unpages);
+	}
+    }
+  END_DO_SET();
+  PrpcSessionFree (ses);
+  if (exit_after_recov)
+    {
+      log_error ("The cpt backup file or transaction log file cannot be renamed, must do this manually, exiting.");
+      call_exit (-1);
+    }
+  dbs_cpt_recov_in_progress = 0;
+}
+
+void 
+dbs_cpt_backup (void)
+{
+  dk_set_t rem;
+  int inx;
+  int cpt_log_fd;
+  dk_session_t * ses = dk_session_allocate (SESCLASS_TCPIP);
+
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      dk_hash_t * cpt_bkp = hash_table_allocate (101);
+      if (!dbs->dbs_cpt_file_name)
+	continue;
+
+      cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);  
+      LSEEK (cpt_log_fd, 0, SEEK_SET);
+      tcpses_set_fd (ses->dks_session, cpt_log_fd);
+
+      CATCH_WRITE_FAIL (ses)
+	{
+	  print_int (0, ses);
+	  session_flush_1 (ses);
+	}
+      END_WRITE_FAIL (ses);
+      cpt_uncommitted_remap = hash_table_allocate (101);
+      cpt_uncommitted_lt = hash_table_allocate (11);
+      cpt_uncommitted_remap_dp = hash_table_allocate (101); 
+      DO_SET (index_tree_t *, it, &dbs->dbs_trees)
+	{
+	  mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
+	  itc_from_it (mcp_itc, it);
+	  it_from_g = it;
+	  for (inx = 0; inx < IT_N_MAPS; inx++)
+	    {
+	      mutex_enter (&it->it_maps[inx].itm_mtx);
+	      cpt_uncommitted_backup (it, inx, ses, cpt_bkp);
+	      mutex_leave (&it->it_maps[inx].itm_mtx);
+	    }
+	}
+      END_DO_SET();
+      DO_SET (index_tree_t *, it, &dbs->dbs_trees)
+	{
+	  for (inx = 0; inx < IT_N_MAPS; inx++)
+	    {
+	      mutex_enter (&it->it_maps[inx].itm_mtx);
+	      DO_HT (void *, k, void *, d, &it->it_maps[inx].itm_remap)
+		{
+		  dp_addr_t logical = (dp_addr_t)(uptrlong) k;
+		  dp_addr_t physical = (dp_addr_t)(uptrlong) d;
+		  if (gethash (DP_ADDR2VOID(logical), cpt_bkp))
+		    {
+		      /*fprintf (stderr, "already in backup %d, phys=%d\n", logical, physical);*/
+		      continue;
+		    }
+		  CATCH_WRITE_FAIL (ses)
+		    {
+		      print_int (logical, ses);
+		      print_int (physical, ses);
+		    }
+		  END_WRITE_FAIL (ses);
+		  sethash (DP_ADDR2VOID (logical),  cpt_bkp, DP_ADDR2VOID (physical));
+		}
+	      END_DO_HT;
+	      mutex_leave (&it->it_maps[inx].itm_mtx);
+	    }
+	}
+      END_DO_SET();
+      DO_HT (void *, k, void *, d, dbs->dbs_cpt_remap)
+	{
+	  dp_addr_t logical = (dp_addr_t)(uptrlong) k;
+	  dp_addr_t physical = (dp_addr_t)(uptrlong) d;
+	  dp_addr_t prev;
+	  if (0 != (prev = (dp_addr_t)(uptrlong)gethash (DP_ADDR2VOID(logical), cpt_bkp)))
+	    {
+	      /*fprintf (stderr, "already in backup set %d, phys=%d, prev phys=%d\n", logical, physical, prev);*/
+	      continue;
+	    }
+	  CATCH_WRITE_FAIL (ses)
+	    {
+	      print_int (logical, ses);
+	      print_int (physical, ses);
+	    }
+	  END_WRITE_FAIL (ses);
+	}
+      END_DO_HT;
+      session_flush (ses);
+      if (dbs_stop_cp == 2)
+	{
+	  call_exit (-1);
+	}
+
+
+      sch_save_roots (wi_inst.wi_schema);
+      dbs_write_registry (dbs);
+      dbs_write_page_set (dbs, dbs->dbs_free_set);
+      dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
+      rem = dbs->dbs_cp_remap_pages;
+      dbs->dbs_cp_remap_pages = NULL;
+      dbs_write_cfg_page (dbs, 0);
+      dbs->dbs_cp_remap_pages = rem;
+      LSEEK (cpt_log_fd, 0, SEEK_SET);
+      CATCH_WRITE_FAIL (ses)
+	{
+	  print_int (1, ses);
+	  session_flush_1 (ses);
+	}
+      END_WRITE_FAIL (ses);
+      fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
+      dbs_sync_disks (dbs);
+      hash_table_free (cpt_uncommitted_remap);
+      hash_table_free (cpt_uncommitted_lt);
+      hash_table_free (cpt_uncommitted_remap_dp);
+      cpt_uncommitted_remap = NULL;
+      cpt_uncommitted_lt = NULL;
+      cpt_uncommitted_remap_dp = NULL;
+      hash_table_free (cpt_bkp);
+    }
+  END_DO_SET();
+  PrpcSessionFree (ses);
+}
+
+int dbs_stop_cp = 0;
+
 void
 dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 {
@@ -1074,12 +1416,23 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 		get_msec_real_time ());
 	fclose(checkpoint_flag_fd);
       }
+      start_atomic = get_msec_real_time ();
 
+      /* sync */
     mcp_itc = itc_create (NULL, NULL);
+      wi_write_dirty ();
+      dbs_sync_disks (dbs);
+      dbs_cpt_backup ();
+      if (dbs_stop_cp == 1)
+	{
+	  call_exit (-1);
+	}
+      if (dbs_stop_cp == 4)
+        virtuoso_sleep (60, 0);
+
     rdbg_printf (("\nCheckpoint atomic.\n"));
     sch_save_roots (wi_inst.wi_schema);
     dbs_write_registry (dbs);
-    start_atomic = get_msec_real_time ();
     DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
       {
 	index_tree_t *del_it;
@@ -1177,6 +1530,13 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
     dk_free ((caddr_t) mcp_remaps, mcp_batch * sizeof (remap_t));
     dk_free ((caddr_t) mcp_remap_ptrs, mcp_batch * sizeof (caddr_t));
     unlink(CHECKPOINT_IN_PROGRESS_FILE);
+      DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+	{
+	  if (!dbs->dbs_cpt_file_name)
+	    continue;
+	  unlink (dbs->dbs_cpt_file_name); /* remove cpt backup file */
+	}
+      END_DO_SET();
     rdbg_printf (("Checkpoint atomic over.\n"));
   }
   RESTORE_SIGNALS;

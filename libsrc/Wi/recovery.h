@@ -20,6 +20,8 @@
  *  
  *  
 */
+#ifndef _RECOVERY_H
+#define _RECOVERY_H
 
 #define FILEN_BUFSIZ		256
 #define MIN_BACKUP_PAGES	100
@@ -141,4 +143,9 @@ char* bp_curr_date();
 
 extern caddr_t * backup_patha;
 
+typedef int (*ol_regist_callback_f) (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx);
+int ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx);
+int ol_write_registry (dbe_storage_t * dbs, ol_backup_context_t * ctx, ol_regist_callback_f callback);
+extern ol_backup_ctx_t bp_ctx;
 
+#endif

@@ -1384,6 +1384,23 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy (res);
 }
 
+/*
+   __stop_cpt (0,1,2,3)
+   for testing cpt recovery only,
+   the flag == 1 will cause server to exit after cpt recov file is done
+   flag == 2 will exit before recov file is markd as complete
+   flag == 3 will simulate out of space
+ */
+static caddr_t
+bif_stop_cpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int flag = (int) bif_long_arg (qst, args, 0, "__stop_cpt");
+  if (!QI_IS_DBA (qst))
+    return 0;
+  dbs_stop_cp = flag; 
+  return box_num (flag);
+}
+
 void
 sqlbif2_init (void)
 {
@@ -1408,6 +1425,7 @@ sqlbif2_init (void)
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
+  bif_define ("__stop_cpt", bif_stop_cpt);
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }

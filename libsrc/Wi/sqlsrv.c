@@ -3584,6 +3584,7 @@ srv_global_init (char *mode)
   html_hash_init ();
 #endif
   wi_open (mode);
+  dbs_cpt_recov ();
   sql_bif_init ();
 #ifdef VIRTTP
   tp_main_queue_init();

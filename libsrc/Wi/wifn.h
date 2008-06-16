@@ -725,6 +725,7 @@ extern int page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_des
 /* neodisk.c */
 
 void dbs_checkpoint (dbe_storage_t * dbs, char * log_name, int shutdown);
+void dbs_cpt_recov (void);
 #define CPT_NORMAL 0
 #define CPT_SHUTDOWN 1
 #define CPT_INC_RESET 2
@@ -877,6 +878,8 @@ char *virt_strerror (int eno);
 #define BYTE_ORDER_REV_SUPPORT
 
 extern int dbs_reverse_db; /* global flag, indicates reverse order of database */
+extern int dbs_cpt_recov_in_progress; /* cpt recovery in progress */
+extern int dbs_stop_cp;
 extern void dbs_write_reverse_db (dbe_storage_t * dbs);
 
 extern int32 cf_lock_in_mem;

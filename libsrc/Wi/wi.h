@@ -256,6 +256,7 @@ struct dbe_storage_s
   dp_addr_t		dbs_dp_sort_offset; /* when sorting buffers for flush, offset by this so as not to mix file groups */
   int			dbs_extend; /* size extend increment in pages */
   dk_hash_t *		dbs_unfreeable_dps;
+  char * 		dbs_cpt_file_name;
 } ;
 
 

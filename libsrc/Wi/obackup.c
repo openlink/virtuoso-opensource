@@ -67,12 +67,6 @@ typedef struct ob_err_ctx_s
   char		oc_file[FILEN_BUFSIZ];
 } ob_err_ctx_t;
 
-typedef int (*file_check_f) (caddr_t file, caddr_t ctx, caddr_t dir);
-
-
-
-const char* recover_file_prefix = 0;
-
 ol_backup_ctx_t bp_ctx = {
   {
     0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -100,8 +94,10 @@ ol_backup_ctx_t bp_ctx = {
   0, /* written bytes */
 };
 
-static dp_addr_t dir_first_page = 0;
+typedef int (*file_check_f) (caddr_t file, caddr_t ctx, caddr_t dir);
 
+const char* recover_file_prefix = 0;
+static dp_addr_t dir_first_page = 0;
 
 static time_t db_bp_date = 0;
 static long ol_max_dir_sz = 0;
@@ -517,7 +513,6 @@ ol_write_free_set (ol_backup_context_t * backup_ctx, dbe_storage_t * storage)
   return res;
 }
 
-typedef int (*ol_regist_callback_f) (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx);
 
 int ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_t * ctx)
 {
