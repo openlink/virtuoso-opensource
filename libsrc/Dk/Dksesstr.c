@@ -1639,21 +1639,12 @@ caddr_t strses_string (dk_session_t * ses) { return dbg_strses_string (__FILE__,
 caddr_t
 strses_fake_copy (caddr_t orig)
 {
-#if 0
-  dk_session_t swap_buf;
-  dk_session_t *res = strses_allocate ();
-  memcpy (&swap_buf, res, sizeof (dk_session_t));
-  memcpy (res, orig, sizeof (dk_session_t));
-  memcpy (orig, &swap_buf, sizeof (dk_session_t));
-  return (caddr_t) res;
-#else
   dk_session_t *orig_ses = (dk_session_t *)orig;
 #ifndef NDEBUG
   if (0 >= orig_ses->dks_refcount)
     GPF_T1 ("Invalid dks_refcount in strses_fake_copy()");
 #endif
   orig_ses->dks_refcount += 1;
-#endif
   return orig;
 }
 
