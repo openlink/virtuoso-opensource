@@ -411,13 +411,7 @@ create procedure contact_insert (
 	if (not isnull (graph_iri))
 	{
     -- SocialNetwork
-		if (length (ext_iri))
-		{
-		  iri := ext_iri;
-    } else {
     iri := socialnetwork_contact_iri (domain_id, contact_id);
-		}
-		--ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
 		scot_tags_insert (inst_id, iri, tags);
 
 		person_iri := person_iri (creator_iri);
@@ -427,8 +421,15 @@ create procedure contact_insert (
   		DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
 		if (not DB.DBA.is_empty_or_null (fullName))
 		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
+		if (not DB.DBA.is_empty_or_null (ext_iri))
+		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), ext_iri);
 		if (not DB.DBA.is_empty_or_null (foaf))
-		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
+      if (foaf like 'http://%')
+      {
+  		  DB.DBA.RDF_QUAD_URI (graph_iri, foaf, rdf_iri ('type'), foaf_iri ('Document'));
+  		  DB.DBA.RDF_QUAD_URI (graph_iri, foaf, foaf_iri ('topic'), iri);
+  		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('page'), foaf);
+      }
 		DB.DBA.RDF_QUAD_URI   (graph_iri, sc_iri, sioc_iri ('container_of'), iri);
 		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), sc_iri);
 

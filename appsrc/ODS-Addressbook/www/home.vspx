@@ -122,6 +122,29 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="viewTags" arglist="inout fValue any">
+    <![CDATA[
+      if (self.abAction = 'view')
+        if (is_empty_or_null (fValue))
+        {
+          http ('&nbsp;');
+        } else {
+          declare N integer;
+          declare delimiter varchar;
+          declare tags any;
+
+          delimiter := '';
+          tags := CAL.WA.tags2vector (fValue);
+          for (N := 0; N < length (tags); N := N + 1)
+          {
+            http (delimiter);
+            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (AB.WA.domain_iri (self.domain_id), tags[N]), tags[N]));
+            delimiter := ', ';
+          }
+        }
+    ]]>
+  </v:method>
+
   <v:method name="viewTimeZone" arglist="inout fValue any">
     <![CDATA[
       if (is_empty_or_null (fValue))
@@ -1424,6 +1447,17 @@
                 <div id="a_content_0" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
+                        <th>
+                          <v:label for="ab_iri" value="Contact URI" />
+                        </th>
+                        <td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:text name="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_onblur="javascript: AB.getFOAFData(this.value);" xhtml_size="60" />
+                          </vm:if>
+                          <?vsp self.viewField (self.v_iri); ?>
+                        </td>
+                      </tr>
+                      <tr>
                       <th width="25%">
                         <v:label for="ab_name" value="Name (*)" />
                       </th>
@@ -1539,17 +1573,6 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_foaf" value="Identity IRI" />
-                      </th>
-                      <td>
-                        <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
-                        </vm:if>
-                        <?vsp self.viewField (self.v_iri); ?>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>
                         <v:label for="ab_foaf" value="FOAF file URL" />
                       </th>
                       <td>
@@ -1617,7 +1640,7 @@
                           <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
                           <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_tags'].value = ''" class="button" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_tags); ?>
+                          <?vsp self.viewTags (self.v_tags); ?>
                       </td>
                     </tr>
                     <vm:if test="self.abAction <> 'view'">
@@ -1741,7 +1764,7 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_skype" value="State/Province"/>
+                          <v:label for="ab_hState" value="State/Province" />
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">

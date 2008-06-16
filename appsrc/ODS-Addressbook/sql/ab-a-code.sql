@@ -769,6 +769,15 @@ create procedure AB.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.domain_iri (
+  in domain_id integer)
+{
+  return sprintf ('http://%s/dataspace/%U/addressbook/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), AB.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -881,8 +890,21 @@ create procedure AB.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id));
+  S := SIOC..person_iri (SIOC..user_iri (AB.WA.domain_owner_id (domain_id)));
   return AB.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := AB.WA.account_name (account_id);
+  account_password := AB.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
@@ -2639,6 +2661,20 @@ create procedure AB.WA.settings (
   inout domain_id integer)
 {
   return coalesce ((select deserialize (blob_to_string (S_DATA)) from AB.WA.SETTINGS where S_DOMAIN_ID = domain_id), vector());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.settings_init (
+  inout settings any)
+{
+  AB.WA.set_keyword ('chars', settings, cast (get_keyword ('chars', settings, '60') as integer));
+  AB.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
+  AB.WA.set_keyword ('tbLabels', settings, cast (get_keyword ('tbLabels', settings, '1') as integer));
+  AB.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
+  AB.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
+  AB.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
 }
 ;
 

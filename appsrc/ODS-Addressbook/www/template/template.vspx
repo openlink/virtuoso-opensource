@@ -50,7 +50,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "ws", "anchor", "panelbar", "combolist", "dav"];
+        var featureList=["ajax2", "json", "anchor", "panelbar", "combolist", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
@@ -63,12 +63,14 @@
         
         function myInit() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
 
           // WebDAV
           var options = { imagePath: OAT.Preferences.imagePath,
                           pathHome: '/home/',
-                          path: '<?V AB.WA.dav_logical_home (self.owner_id) ?>',
-			  user: '<?V self.ownerName ?>'
+                          path: '<?V AB.WA.dav_logical_home (self.account_id) ?>',
+                          user: '<?V AB.WA.account_name (self.account_id) ?>',
+                          connectionHeaders: {Authorization: '<?V AB.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
           OAT.WebDav.init(options);
 

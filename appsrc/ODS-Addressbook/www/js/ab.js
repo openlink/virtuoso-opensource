@@ -213,20 +213,6 @@ function coloriseRow(obj, checked) {
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString, sChar) {
-  if (sChar == null)
-    sChar = ' ';
-
-  while (sString.substring(0,1) == sChar)
-    sString = sString.substring(1, sString.length);
-
-  while (sString.substring(sString.length-1, sString.length) == sChar)
-    sString = sString.substring(0,sString.length-1);
-
-  return sString;
-}
-
-// ---------------------------------------------------------------------------
 function showTag(tag) {
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
@@ -358,9 +344,9 @@ function rowSelectValue(dstField, srcField, singleMode)
   {
     dstField.value = srcField.value;
   } else {
-    dstField.value = trim(dstField.value);
-    dstField.value = trim(dstField.value, ',');
-    dstField.value = trim(dstField.value);
+    dstField.value = AB.trim(dstField.value);
+    dstField.value = AB.trim(dstField.value, ',');
+    dstField.value = AB.trim(dstField.value);
     if (dstField.value.indexOf(srcField.value) == -1)
     {
       if (dstField.value == '')
@@ -418,9 +404,9 @@ function updateChecked (obj, objName)
 {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = trim(objForm.s1.value);
-  objForm.s1.value = trim(objForm.s1.value, ',');
-  objForm.s1.value = trim(objForm.s1.value);
+  objForm.s1.value = AB.trim(objForm.s1.value);
+  objForm.s1.value = AB.trim(objForm.s1.value, ',');
+  objForm.s1.value = AB.trim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
   for (var i = 0; i < objForm.elements.length; i = i + 1)
   {
@@ -436,7 +422,7 @@ function updateChecked (obj, objName)
       }
     }
   }
-  objForm.s1.value = trim(objForm.s1.value, ',');
+  objForm.s1.value = AB.trim(objForm.s1.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -493,9 +479,9 @@ function addChecked (form, txt, selectionMsq)
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
-  obj.value = trim(obj.value);
-  obj.value = trim(obj.value, ',');
-  obj.value = trim(obj.value);
+  obj.value = AB.trim(obj.value);
+  obj.value = AB.trim(obj.value, ',');
+  obj.value = AB.trim(obj.value);
   obj.value = (obj.value).replace('  ', ' ');
   obj.value = (obj.value).replace(' ,', ',');
   obj.value = obj.value + ',';
@@ -504,7 +490,7 @@ function addTag(tag, objName)
   } else {
     obj.value = (obj.value).replace(tag+',', '');
   }
-  obj.value = trim(obj.value, ',');
+  obj.value = AB.trim(obj.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -514,9 +500,9 @@ function addCheckedTags (openerName, checkName)
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
 
-    objOpener.value = trim(objOpener.value);
-    objOpener.value = trim(objOpener.value, ',');
-    objOpener.value = trim(objOpener.value);
+    objOpener.value = AB.trim(objOpener.value);
+    objOpener.value = AB.trim(objOpener.value, ',');
+    objOpener.value = AB.trim(objOpener.value);
     objOpener.value = objOpener.value + ',';
     for (var i = 0; i < objForm.elements.length; i = i + 1)
     {
@@ -532,7 +518,7 @@ function addCheckedTags (openerName, checkName)
         }
       }
     }
-    objOpener.value = trim(objOpener.value, ',');
+    objOpener.value = AB.trim(objOpener.value, ',');
   }
   window.close();
 }
@@ -708,4 +694,69 @@ function destinationChange(obj, actions)
       if (o && o.value) {o.value = '';}
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+var AB = new Object();
+
+AB.trim = function (sString, sChar)
+{
+
+  if (sString)
+  {
+    if (sChar == null)
+    {
+      sChar = ' ';
+    }
+    while (sString.substring(0,1) == sChar)
+    {
+      sString = sString.substring(1, sString.length);
+    }
+    while (sString.substring(sString.length-1, sString.length) == sChar)
+    {
+      sString = sString.substring(0,sString.length-1);
+    }
+  }
+  return sString;
+}
+
+AB.getFOAFData = function (iri)
+{
+  var S = '/ods/api/user.getFOAFData?foafIRI='+encodeURIComponent(iri);
+  var x = function(data) {
+    var o;
+    try {
+      o = OAT.JSON.parse(data);
+    } catch (e) { o = null; }
+    if (o)
+    {
+      if (confirm('New data for \''+iri+'\' is founded. Do you like to fill in the corresponding fields?'))
+      {
+        AB.setFOAFValue(o.nick, 'ab_name');
+        AB.setFOAFValue(o.tirle, 'ab_title');
+        AB.setFOAFValue(o.name, 'ab_fullName');
+        AB.setFOAFValue(o.firstName, 'ab_fName');
+        AB.setFOAFValue(o.family_name, 'ab_lName');
+        AB.setFOAFValue(o.mbox, 'ab_mail');
+        AB.setFOAFValue(o.birthday, 'ab_birthday');
+        AB.setFOAFValue(o.gender, 'ab_gender');
+        AB.setFOAFValue(o.icqChatID, 'ab_icq');
+        AB.setFOAFValue(o.msnChatID, 'ab_msn');
+        AB.setFOAFValue(o.aimChatID, 'ab_aim');
+        AB.setFOAFValue(o.yahooChatID, 'ab_yahoo');
+        AB.setFOAFValue(o.homepage, 'ab_web');
+        AB.setFOAFValue(o.lat, 'ab_hLat');
+        AB.setFOAFValue(o.lng, 'ab_hLng');
+        AB.setFOAFValue(o.phone, 'ab_hPhone');
+        AB.setFOAFValue(o.workplaceHomepage, 'ab_wWeb');
+      }
+    }
+  }
+  OAT.AJAX.GET(S, '', x);
+}
+
+AB.setFOAFValue = function (fValue, fName)
+{
+  if (fValue && document.forms[0].elements[fName])
+    document.forms[0].elements[fName].value = fValue;
 }

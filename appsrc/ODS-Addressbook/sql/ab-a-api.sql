@@ -311,6 +311,12 @@ create procedure ODS.ODS_API."addressbook.edit" (
 create procedure ODS.ODS_API."addressbook.delete" (
   in contact_id integer) __soap_http 'text/xml'
 {
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
   declare rc integer;
   declare uname varchar;
   declare inst_id integer;
@@ -433,50 +439,6 @@ create procedure ODS.ODS_API."addressbook.export" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."addressbook.options.set" (
-  in inst_id int, in options any) __soap_http 'text/xml'
-{
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-
-  declare rc integer;
-  declare uname varchar;
-
-  if (not ods_check_auth (uname, inst_id, 'author'))
-    return ods_auth_failed ();
-
-  -- TODO: not implemented
-  return ods_serialize_int_res (rc);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODS.ODS_API."addressbook.options.get" (
-  in inst_id int) __soap_http 'text/xml'
-{
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-
-  declare rc integer;
-  declare uname varchar;
-
-  if (not ods_check_auth (uname, inst_id, 'author'))
-    return ods_auth_failed ();
-
-  -- TODO: not implemented
-  return ods_serialize_int_res (rc);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODS.ODS_API."addressbook.comment.get" (
   in comment_id integer) __soap_http 'text/xml'
 {
@@ -583,17 +545,88 @@ create procedure ODS.ODS_API."addressbook.comment.delete" (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.options.set" (
+  in inst_id int, in options any) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, account_id integer;
+  declare uname varchar;
+  declare optionsParams, settings any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+  optionsParams := split_and_decode (options, 0, '%\0,='); -- XXX: FIXME
+
+  settings := AB.WA.settings (inst_id);
+  AB.WA.settings_init (settings);
+  settings := AB.WA.set_keyword ('chars', settings, get_keyword('chars', optionsParams, get_keyword('chars', settings)));
+  settings := AB.WA.set_keyword ('rows', settings, get_keyword('rows', optionsParams, get_keyword('rows', settings)));
+  settings := AB.WA.set_keyword ('tbLabels', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
+  settings := AB.WA.set_keyword ('atomVersion', settings, get_keyword('atomVersion', optionsParams, get_keyword('atomVersion', settings)));
+  settings := AB.WA.set_keyword ('conv', settings, get_keyword('conv', optionsParams, get_keyword('conv', settings)));
+  settings := AB.WA.set_keyword ('conv_init', settings, get_keyword('conv_init', optionsParams, get_keyword('conv_init', settings)));
+  insert replacing AB.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
+
+  return ods_serialize_int_res (1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.options.get" (
+  in inst_id int) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare settings any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  settings := AB.WA.settings (inst_id);
+  AB.WA.settings_init (settings);
+
+  http ('<settings>');
+  http (sprintf ('<chars>%d</chars>', get_keyword ('chars', settings)));
+  http (sprintf ('<rows>%d</rows>', get_keyword ('rows', settings)));
+  http (sprintf ('<tbLabels>%d</tbLabels>', get_keyword ('tbLabels', settings)));
+  http (sprintf ('<atomVersion>%s</atomVersion>', get_keyword ('atomVersion', settings)));
+  http (sprintf ('<conv>%d</conv>', get_keyword ('conv', settings)));
+  http (sprintf ('<conv_init>%d</conv_init>', get_keyword ('conv_init', settings)));
+  http ('</settings>');
+
+  return '';
+}
+;
+
 grant execute on ODS.ODS_API."addressbook.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.edit" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.delete" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.import" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.export" to ODS_API;
-grant execute on ODS.ODS_API."addressbook.options.get" to ODS_API;
-grant execute on ODS.ODS_API."addressbook.options.set" to ODS_API;
+
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."addressbook.options.get" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.options.set" to ODS_API;
 
 use DB;
