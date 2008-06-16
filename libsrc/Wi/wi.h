@@ -200,6 +200,7 @@ typedef struct wi_inst_s
 
   dbe_storage_t *	wi_temp;  /* file group for temp db, sort temps, hash indices etc. */
   short			wi_temp_allocation_pct;
+  id_hash_t * 		wi_files;
 } wi_inst_t;
 
 extern wi_inst_t	wi_inst;

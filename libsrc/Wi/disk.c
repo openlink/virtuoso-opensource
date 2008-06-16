@@ -50,6 +50,10 @@
 #include "srvstat.h"
 #include "recovery.h"
 
+#ifdef WIN32
+#define PATH_MAX	 MAX_PATH
+#endif
+
 static void dbs_extend_pagesets (dbe_storage_t * dbs);
 
 #ifdef BYTE_ORDER_REV_SUPPORT
@@ -426,7 +430,33 @@ it_temp_tree_check ()
 #endif 
 
 
+void
+dbs_sys_db_check (caddr_t file)
+{
+  static char abs_path[PATH_MAX + 1];
+  char *p_abs_path = abs_path;
+  caddr_t ** already_open;
+  caddr_t name_save;
+  id_hash_t * virt_sys_files = wi_inst.wi_files;
 
+  if (!rel_to_abs_path (p_abs_path, file, sizeof (abs_path)))
+    return;
+
+  if (!virt_sys_files)
+    return;
+
+  name_save = box_dv_short_string (abs_path);
+
+  already_open = (caddr_t **) id_hash_get (virt_sys_files, (caddr_t)&name_save);
+
+  if (already_open)
+    {
+      log_error ("The file %s is already open. Check %s settings.", file, f_config_file);
+      call_exit (1);
+    }
+
+  id_hash_set (virt_sys_files, (caddr_t) & name_save, (caddr_t) & file);
+}
 
 
 index_tree_t *
@@ -2568,6 +2598,11 @@ dbs_open_disks (dbe_storage_t * dbs)
       if (!dst->dst_fds)
 	{
 	  int inx;
+	  int inxl;
+	  for (inxl = 0; inxl < n_fds_per_file; inxl++)
+	    {
+	      dbs_sys_db_check (dst->dst_file);
+	    }
 	  file_set_rw (dst->dst_file);
 	  dst->dst_sem = semaphore_allocate (0);
 	  dst->dst_fds = (int*) dk_alloc_box_zero (sizeof (int) * n_fds_per_file, DV_CUSTOM);
@@ -3206,6 +3241,9 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
   if (!file)
     file = CFG_FILE;
   dbs_read_cfg ((caddr_t *) dbs, file);
+
+  dbs_sys_db_check (dbs->dbs_file);
+
   if (dbs->dbs_disks)
     {
       *exists = dbs_open_disks (dbs);
@@ -3375,6 +3413,7 @@ wi_open_dbs ()
   NEW_VARZ (wi_db_t, wd);
   wi_inst.wi_master_wd = wd;
   dk_set_push (&wi_inst.wi_dbs, (void*) wd);
+  wi_inst.wi_files = id_str_hash_create (11);;
   wd->wd_qualifier = box_dv_short_string ("DB");
   this_wd = wd;
   master_dbs = dbs_from_file ("master", NULL, DBS_PRIMARY, &db_exists);
