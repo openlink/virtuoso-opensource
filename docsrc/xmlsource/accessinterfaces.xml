@@ -369,6 +369,65 @@ the Virtuoso server running on the same computer on port 1111:</para>
           <computeroutput>virtuoso.javax.OPLJdbcRowset</computeroutput> class 
           spans the rest of the JDBC API to implement it's methods.</para>
 				</sect3>
+  <sect3 id="jdbcrdf">
+      <title>Extension datatype for RDF</title>
+      <para>The IRIs and RDF literals, kept in the Virtuoso RDF store are represented by a strings and structures. Thus accessing RDF objects needs special datatypes in order to distinguish strings from IRIs and to get language and datatype of the RDF literals.</para>
+      <para>Therefore Virtuoso JDBC driver provides following classes for accessing RDF store: <computeroutput>virtuoso.jdbc3.VirtuosoExtendedString</computeroutput> for IRIs and <computeroutput>virtuoso.jdbc3.VirtuosoRdfBox</computeroutput> for RDF literal objects.</para>
+      <para>
+	  The class <computeroutput>virtuoso.jdbc3.VirtuosoExtendedString</computeroutput> will be returned when a string representing an IRI is returned to the client. It has two members "str" and "iriType", the "str" member keeps string representation of the IRI, "iriType" denote regular IRI or blank node with enum values VirtuosoExtendedString.IRI and VirtuosoExtendedString.BNODE. 
+      </para>
+      <para>
+	  If the RDF literal object have language or datatype specified then <computeroutput>virtuoso.jdbc3.VirtuosoRdfBox</computeroutput> will be returned. The following methods could be used :
+      </para>
+      <programlisting>
+	  String toString () : returns string representation of the listeral
+	  String getType () : returns string containing the datatype  of the literal
+	  String getLang () : returns language code for the literal
+      </programlisting>
+      <para>
+	  The following code snippet demonstrates how to use extension datatypes for RDF
+      </para>
+      <programlisting><![CDATA[
+    ... initialization etc. skipped for brevity 
+    boolean more = stmt.execute("sparql select * from <gr> where { ?x ?y ?z }");
+    ResultSetMetaData data = stmt.getResultSet().getMetaData();
+    while(more)
+    {
+	rs = stmt.getResultSet();
+	while(rs.next())
+	{
+	    for(int i = 1;i <= data.getColumnCount();i++)
+	    {
+		String s = rs.getString(i);
+		Object o = ((VirtuosoResultSet)rs).getRdfObject(i);
+		if (o instanceof VirtuosoExtendedString) // String representing an IRI
+		  {
+		    VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
+		    if (vs.iriType == VirtuosoExtendedString.IRI)
+			System.out.println ("<" + vs.str +">");  
+		    else if (vs.iriType == VirtuosoExtendedString.BNODE)
+			System.out.println ("<" + vs.str +">");  
+		  }  
+		else if (o instanceof VirtuosoRdfBox) // Typed literal
+		  { 
+		    VirtuosoRdfBox rb = (VirtuosoRdfBox) o;
+		    System.out.println (rb.rb_box + " lang=" + rb.getLang() + " type=" + rb.getType());
+		    
+		  }	      
+		else if(stmt.getResultSet().wasNull())
+		    System.out.println("NULL");
+		else //  
+		{
+		    System.out.println(s);
+		}
+		    
+	    }
+	}
+	more = stmt.getMoreResults();
+    }
+    ...
+	    ]]></programlisting>
+  </sect3>
                                 </sect2>
 				<sect2 id="JDBCDriverInstallConfig">
 					<title>Installation &amp; Configuration Steps</title>

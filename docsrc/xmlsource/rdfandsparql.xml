@@ -143,6 +143,28 @@ select ... from .... option (QUIETCAST)
 </programlisting>
 <para>This option is automatically added by the SPARQL to SQL translator. The scope is the enclosing procedure body.</para>
 </sect2>
+<sect2 id="rdfdynamiclocal"><title>Dynamic Renaming of Local IRI's</title>
+<para>
+    There are cases where it is desirable to have IRI's in RDF storage
+    that will change to reflect a change of the host name of the containing
+    store.  This is specifically true of DAV resource metadata for local
+    DAV resources.
+    Such IRI's must be stored prefixed with <computeroutput>local:</computeroutput>.  
+</para>
+<para>
+    If a user application makes statements with such a URI, then these statements will be returned with local:
+    substituted with a prefix taken from the context as described below.
+</para>
+<para>
+    When returning IRI's from id's, this prefix is replaced by the Host header of the HTTP request 
+    and if not running with HTTP, with the DefaultHost from URIQA.  This behavior is always in effect.
+</para>
+
+<para>
+    When converting strings to IRI id's, the <computeroutput>local:</computeroutput> prefix may or may not be introduced depending on ini file and other context factors.
+    If <link linkend="VIRTINI">DynamicLocal</link> defined in the [URIQA] section of the Virtuoso INI file is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.  Even if DynamicLocal is not on and the <computeroutput>local:</computeroutput> prefix occurs in the IRI string being translated to id, the translating the ID back to the IRI name will depend on the context as described above.
+</para>
+</sect2>
 </sect1>
 <sect1 id="rdfapiandsql"><title>RDF and SPARQL API and SQL</title>
 <para>

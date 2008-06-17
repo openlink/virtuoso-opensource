@@ -70,7 +70,7 @@ Specifying a cursor type of -5 produces a diagnostic dump to the server's standa
 </para>
   </refsect1>
   <refsect1 id="seealso_explain"><title>See Also</title>
-    <para></para>
+    <para><link linkend="perfdiagqueryplans">Query Plans.</link></para>
   </refsect1>
 </refentry>
 
