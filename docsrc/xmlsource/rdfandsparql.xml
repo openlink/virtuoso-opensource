@@ -6286,8 +6286,8 @@ create bitmap index rdf_quad_pogs on rdf_quad (p, o, g, s);
 </tbody>
 </tgroup>
 </table>
-<para>Now let us do it without a graph being specified. For all platforms, we drop any existing
-indices, and:</para>
+<para>Now let us do it without a graph being specified. Note that alter index is valid for v6 or higher.
+For all platforms, we drop any existing indices, and:</para>
 <programlisting><![CDATA[
 create table r2 (g iri_id_8, s, iri_id_8, p iri_id_8, o any, primary key (s, p, o, g))
 alter index R2 on R2 partition (s int (0hexffff00));
