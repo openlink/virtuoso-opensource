@@ -211,6 +211,7 @@ rm -f audit.txt core debug.txt
 #
 ./tvsp.sh
 #./tupgrade_recov.sh
+./tcpt.sh
 ./trecov.sh
 ./trecov_schema.sh
 ./tsql.sh
@@ -245,6 +246,7 @@ fi
 ./ttutorial.sh
 ./bpel.sh
 ./tdav_meta.sh
+TEST_SPARQL=yes ./tpcd.sh
 
 #XXX: not tested yet on Win32
 if [ "x$HOST_OS" != "x" ]
@@ -252,6 +254,7 @@ then
   touch inprocess.output
   touch tvspxex.output
   touch tsoap12.output
+  touch tlubm.output
   if [ ! -f ../../../autogen.sh ]
   then
   ./treplh.sh
@@ -262,8 +265,9 @@ else
   touch inprocess.output
   ./tsoap12.sh
   ./tvspxex.sh
+  (cd ../lubm; ./tlubm.sh)
+  cp -f ../lubm/tlubm.output .
 fi  
-./tcpt.sh
 #
 #  Start the server again
 #
@@ -474,17 +478,32 @@ sqlo_outputs=tsqlo.output
 	ECHO "***ABORTED: No tsqlo.output"
 	exit 3
     fi
+if test \! -f tpcd.output
+then
+    ECHO "***ABORTED: No tpcd.output"
+    exit 3
+fi
+if test \! -f tlubm.output
+then
+    ECHO "***ABORTED: No tlubm.output"
+    exit 3
+fi
+if test \! -f tcpt.output
+then
+    ECHO "***ABORTED: No tcpt.output"
+    exit 3
+fi
 #fi
 #
 #  Check if the tests logged any failures
 #
-RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
+RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output tpcd.output tlubm.output tcpt.output # tupgrade_recov.output 
 if test $STATUS -eq 0
 then
     ECHO ""
     LINE
     ECHO "=  WARNING: Some tests failed. See *.output in this directory" `pwd`
-    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
+    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output tpcd.output tlubm.output tcpt.output # tupgrade_recov.output 
     LINE
     rm -f audit.txt
  
