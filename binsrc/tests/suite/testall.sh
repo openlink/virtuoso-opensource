@@ -263,7 +263,7 @@ else
   ./tsoap12.sh
   ./tvspxex.sh
 fi  
-
+./tcpt.sh
 #
 #  Start the server again
 #
