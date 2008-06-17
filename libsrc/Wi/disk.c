@@ -2598,11 +2598,7 @@ dbs_open_disks (dbe_storage_t * dbs)
       if (!dst->dst_fds)
 	{
 	  int inx;
-	  int inxl;
-	  for (inxl = 0; inxl < n_fds_per_file; inxl++)
-	    {
 	      dbs_sys_db_check (dst->dst_file);
-	    }
 	  file_set_rw (dst->dst_file);
 	  dst->dst_sem = semaphore_allocate (0);
 	  dst->dst_fds = (int*) dk_alloc_box_zero (sizeof (int) * n_fds_per_file, DV_CUSTOM);
@@ -3243,6 +3239,8 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
   dbs_read_cfg ((caddr_t *) dbs, file);
 
   dbs_sys_db_check (dbs->dbs_file);
+  if (dbs->dbs_log_name)
+    dbs_sys_db_check (dbs->dbs_log_name);
 
   if (dbs->dbs_disks)
     {
