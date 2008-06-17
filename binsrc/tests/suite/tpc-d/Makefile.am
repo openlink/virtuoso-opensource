@@ -39,6 +39,7 @@ EXTRA_DIST= \
 	create.ora \
 	LOAD.sh \
 	res.sh \
+	runtests.sh \
 	test.awk \
 	tpc-d.remotes.default \
 	tpcd.sh

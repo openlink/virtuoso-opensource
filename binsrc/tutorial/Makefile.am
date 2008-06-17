@@ -133,6 +133,7 @@ EXTRA_DIST= \
 	repl/re_xb_4/*.xml \
 	root_filelist \
 	semweb/*.xml \
+	semweb/sem_s_1/*.xml \
 	syntax/*.css \
 	syntax/*.js \
 	vad_version \

@@ -27,7 +27,7 @@ noinst_HEADERS = \
 	Dkdevice.h Dkernel.h Dkhashext.h Dkhash.h Dkmarshal.h \
 	Dkparam.h Dkpool.h Dkresource.h Dksession.h Dksesstr.h \
 	Dksestcp.h Dksets.h Dkstubs.h Dksystem.h Dktrace.h \
-	Dktypes.h Dkutil.h Dkhash64.h Dkword.h
+	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h
 
 #############################################
 #DKSRV

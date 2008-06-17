@@ -66,6 +66,7 @@ EXTRA_DIST= \
 	spotlight_test.tar.gz \
 	*.sql \
 	tblob_recode.sh \
+	tcpt.sh \
 	tdav_meta_050512.zip \
 	tdav_meta_050528.zip \
 	tdav_meta.sh \
