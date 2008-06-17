@@ -42,3 +42,6 @@ ODRIVE.WA.exec_no_error('
   )
 ');
 
+ODRIVE.WA.exec_no_error ('
+  create index SYS_USERS_HOME on DB.DBA.SYS_USERS (U_HOME)
+');

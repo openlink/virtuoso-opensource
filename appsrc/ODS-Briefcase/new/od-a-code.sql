@@ -1319,12 +1319,30 @@ create procedure ODRIVE.WA.account_name (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
 ----------------------------------------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.account_fullName (
   in account_id integer)
 {
   return coalesce ((select ODRIVE.WA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_mail(
+  in account_id integer)
+{
+  return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -1339,6 +1357,19 @@ create procedure ODRIVE.WA.account_sioc_url (
 
   S := SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id)));
   return ODRIVE.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := ODRIVE.WA.account_name (account_id);
+  account_password := ODRIVE.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 

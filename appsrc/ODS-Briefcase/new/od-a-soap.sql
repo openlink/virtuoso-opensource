@@ -95,7 +95,8 @@ create procedure DBA.SOAPODRIVE.Browse (
   sStream := string_output();
   http ('<?xml version="1.0"?>\n', sStream);
   http ('<rows>\n', sStream);
-  for (N := 0; N < length(rows); N := N + 1) {
+  for (N := 0; N < length(rows); N := N + 1)
+  {
     resource := DB.DBA.DAV_DIR_LIST(rows[N][0], -1, uName, uPassword);
     if (ODRIVE.WA.DAV_ERROR (resource))
       goto _end;
@@ -137,10 +138,12 @@ create procedure DBA.SOAPODRIVE.Browse (
         http_value (ODRIVE.WA.tags_join(tags, tags2), null, sStream);
       http ('</tags>\n', sStream);
       sVersions := DB.DBA.DAV_PROP_GET(ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH(rows[N][0]), 'DAV:version-set', uName, uPassword);
-      if (isstring(sVersions)) {
+      if (isstring(sVersions))
+      {
         http ('<versions>\n', sStream);
         aVersions := xpath_eval ('/href', xtree_doc(sVersions), 0);
-        for (M := 0; M < length(aVersions); M := M + 1) {
+        for (M := 0; M < length(aVersions); M := M + 1)
+        {
           http (sprintf('<version number="%d">', M+1), sStream);
             http_value (cast(aVersions[M] as varchar), null, sStream);
           http ('</version>\n', sStream);

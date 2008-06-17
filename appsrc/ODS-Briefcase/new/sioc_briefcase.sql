@@ -174,8 +174,6 @@ create procedure ods_briefcase_sioc_tags (in path varchar, in res_id int, in own
 }
 ;
 
--------------------------------------------------------------------------------
---
 create procedure briefcase_sioc_insert (
   inout r_id integer,
   inout r_full_path varchar,
@@ -186,24 +184,25 @@ create procedure briefcase_sioc_insert (
   inout r_updated datetime,
   inout r_content any)
 {
+  --pl_debug+
   declare graph_iri, iri, c_iri, creator_iri, t_iri, link varchar;
-  declare path, linksTo, tags, content any;
+  declare linksTo, tags, content any;
 
   declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_MESSAGE);
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  if (r_full_path not like '/DAV/home/%' or r_name[0] = ascii ('.'))
+  if (r_full_path is null)
+  {
+    r_full_path := (select r.RES_FULL_PATH from WS.WS.SYS_DAV_RES r where r.RES_ID = r_id);
+  }
+  --dbg_obj_print (r_id, r_full_path);
+  if (r_full_path not like '/DAV/%/Public/%' or r_name[0] = ascii ('.'))
     return;
 
-  path := split_and_decode (r_full_path, 0, '\0\0/');
-  if (length (path) < 6)
-    return;
-  if (path [4] <> 'Public')
-    return;
-
-  for (select WAI_NAME, WAI_ID
+  for (select WAI_NAME, WAI_ID, U_NAME
          from DB.DBA.WA_INSTANCE,
               DB.DBA.WA_MEMBER,
               DB.DBA.SYS_USERS
@@ -211,10 +210,12 @@ create procedure briefcase_sioc_insert (
           and WAM_INST = WAI_NAME
           and WAM_USER = U_ID
           and WAM_IS_PUBLIC = 1
-          and U_NAME = path[3]
+	  and length (U_HOME)
+	  and r_full_path like U_HOME || 'Public/%'
           and U_ACCOUNT_DISABLED = 0
           and U_DAV_ENABLE = 1) do
   {
+    --dbg_obj_print ('here');
     graph_iri := get_graph ();
     creator_iri := user_iri (r_owner);
 
@@ -240,7 +241,7 @@ create procedure briefcase_sioc_insert (
     scot_tags_insert (WAI_ID, iri, tags);
 
     -- SIOC data for 'application/foaf+xml' and AddressBook application
-    briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, path[3], r_content);
+    briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, U_NAME, r_content);
   }
 }
 ;
@@ -304,35 +305,43 @@ create procedure briefcase_sioc_insert_ex (
                                             w_iri
                                            )
                                   );
-      if (length (persons)) {
+      if (length (persons))
+      {
         ldapServer := LDAP..ldap_default (r_owner);
         if (not isnull (ldapServer))
           ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
         DB.DBA.RDF_LOAD_RDFXML (r_content, '', g_iri);
         r_iri := role_iri (instance_id, r_owner, 'contact');
-        foreach (any pers_iri in persons) do {
+        foreach (any pers_iri in persons) do
+        {
    		    DB.DBA.RDF_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
    		    DB.DBA.RDF_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), pers_iri[0]);
           DB.DBA.RDF_QUAD_URI (g_iri, pers_iri[0], rdfs_iri ('seeAlso'), also_iri);
           DB.DBA.RDF_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), pers_iri[0]);
           DB.DBA.RDF_QUAD_URI (g_iri, pers_iri[0], foaf_iri ('knows'), creator_iri);
-          if (not isnull (ldapServer)) {
+          if (not isnull (ldapServer))
+          {
             personName := briefcase_sparql (sprintf (' SPARQL ' ||
                                                      ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
                                                      ' SELECT ?x ' ||
                                                      '   FROM <%s> ' ||
                                                      '  WHERE {<%s> foaf:name ?x.} ', w_iri, pers_iri[0]));
-            if (length (personName)) {
+            if (length (personName))
+            {
               personName := personName [0][0];
               ldapData := LDAP..ldap_search (r_owner, ldapServer, sprintf ('(cn=%s)', personName));
-              for (N := 0; N < length (ldapData); N := N + 2) {
-            	  if (ldapData[N] = 'entry') {
+              for (N := 0; N < length (ldapData); N := N + 2)
+              {
+            	  if (ldapData[N] = 'entry')
+            	  {
             	    data := ldapData [N+1];
-            	    for (M := 0; M < length (data); M := M + 2) {
+            	    for (M := 0; M < length (data); M := M + 2)
+            	    {
             		    ldapName := data[M];
             		    ldapValue := case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end;
             		    snName := get_keyword (ldapName, ldapMaps);
-            		    if (not isnull (snName)) {
+            		    if (not isnull (snName))
+            		    {
             		      foafName :=  LDAP..foaf_propName (snName);
             		      if (not isnull (foafName))
                         DB.DBA.RDF_QUAD_URI_L (g_iri, pers_iri[0], foaf_iri (foafName), ldapValue);
@@ -362,18 +371,21 @@ create procedure briefcase_sioc_insert_ex (
 
     -- using DAV parser
     --
-    if (not isstring (r_content)) {
+    if (not isstring (r_content))
+    {
       xmlData := DB.DBA.IMC_TO_XML (cast (r_content as varchar));
     } else {
       xmlData := DB.DBA.IMC_TO_XML (r_content);
     }
     xmlData := xml_tree_doc (xmlData);
     xmlItems := xpath_eval ('/*', xmlData, 0);
-    foreach (any xmlItem in xmlItems) do  {
+    foreach (any xmlItem in xmlItems) do
+    {
       declare itemName varchar;
 
       itemName := xpath_eval ('name(.)', xmlItem);
-      if (itemName = 'IMC-VCARD') {
+      if (itemName = 'IMC-VCARD')
+      {
         -- instance ID
         appType := 'AddressBook';
         instance_id := ODRIVE.WA.check_app (appType, r_owner);
@@ -409,16 +421,20 @@ create procedure briefcase_sioc_insert_ex (
 
       p_iri := null;
         r_iri := role_iri (instance_id, r_owner, 'contact');
-      for (L := 0; L < length (Meta); L := L + 2) {
+        for (L := 0; L < length (Meta); L := L + 2)
+        {
         declare V varchar;
 
         K := 0;
         V := xquery_eval (Meta [L+1], xmlItem, 0);
         if (not isnull (V))
-          foreach (any T in V) do {
+            foreach (any T in V) do
+            {
             T := cast (T as varchar);
-            if (not DB.DBA.is_empty_or_null (T)) {
-              if (Meta[L] = foaf_iri ('name')) {
+              if (not DB.DBA.is_empty_or_null (T))
+              {
+                if (Meta[L] = foaf_iri ('name'))
+                {
                 p_iri := briefcase_person_iri (c_iri, T);
                 DB.DBA.RDF_QUAD_URI (g_iri, p_iri, rdf_iri ('type'), foaf_iri ('Person'));
 
@@ -427,16 +443,21 @@ create procedure briefcase_sioc_insert_ex (
                 DB.DBA.RDF_QUAD_URI (g_iri, p_iri, rdfs_iri ('seeAlso'), also_iri);
                 DB.DBA.RDF_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), p_iri);
                 DB.DBA.RDF_QUAD_URI (g_iri, p_iri, foaf_iri ('knows'), creator_iri);
-                if (not isnull (ldapServer)) {
+                  if (not isnull (ldapServer))
+                  {
                   ldapData := LDAP..ldap_search (r_owner, ldapServer, sprintf ('(cn=%s)', T));
-                  for (N := 0; N < length (ldapData); N := N + 2) {
-                	  if (ldapData[N] = 'entry') {
+                    for (N := 0; N < length (ldapData); N := N + 2)
+                    {
+                  	  if (ldapData[N] = 'entry')
+                  	  {
                 	    data := ldapData [N+1];
-                	    for (M := 0; M < length (data); M := M + 2) {
+                  	    for (M := 0; M < length (data); M := M + 2)
+                  	    {
                 		    ldapName := data[M];
                 		    ldapValue := case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end;
                 		    snName := get_keyword (ldapName, ldapMaps);
-                		    if (not isnull (snName)) {
+                  		    if (not isnull (snName))
+                  		    {
                 		      foafName :=  LDAP..foaf_propName (snName);
                 		      if (not isnull (foafName))
                             DB.DBA.RDF_QUAD_URI_L (g_iri, p_iri, foaf_iri (foafName), ldapValue);
@@ -448,9 +469,12 @@ create procedure briefcase_sioc_insert_ex (
                   }
                 }
               }
-              if (not isnull (p_iri)) {
-                if (Meta[L] like vcard_iri ('%')) {
-                  if (K <= 1) {
+                if (not isnull (p_iri))
+                {
+                  if (Meta[L] like vcard_iri ('%'))
+                  {
+                    if (K <= 1)
+                    {
                     a_iri := p_iri || '#addr' || case when (K = 0) then '' else '1' end;
                     DB.DBA.RDF_QUAD_URI (g_iri, p_iri, vcard_iri ('ADR'), a_iri);
                     DB.DBA.RDF_QUAD_URI_L (g_iri, a_iri, Meta[L], T);
@@ -463,19 +487,24 @@ create procedure briefcase_sioc_insert_ex (
             K := K + 1;
           }
       }
-      } else if (itemName = 'IMC-VCALENDAR') {
+      }
+      else if (itemName = 'IMC-VCALENDAR')
+      {
         -- instance iri
         appType := 'Calendar';
         instance_id := ODRIVE.WA.check_app (appType, r_owner);
         if (not instance_id)
           instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
         c_iri := calendar_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
+
         M := xpath_eval('count (IMC-VEVENT)', xmlItem);
-        for (N := 1; N <= M; N := N + 1) {
+        for (N := 1; N <= M; N := N + 1)
+        {
           declare eUID, eLink, eSummary, eDescription, eCreated, eProperty any;
 
           eUID := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/UID/val', N), xmlItem, 1) as varchar);
-          if (not isnull (eUID)) {
+          if (not isnull (eUID))
+          {
             e_iri := briefcase_event_iri (c_iri, eUID);
             eLink := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/URL/val', N), xmlItem, 1) as varchar);
             eSummary := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
@@ -507,7 +536,8 @@ create procedure briefcase_sioc_insert_ex (
                             'DTEND', 'dtend'
                            );
 
-            for (K := 0; K < length (meta); K := K + 2) {
+            for (K := 0; K < length (meta); K := K + 2)
+            {
               eProperty := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/%s/val', N, meta[K]), xmlItem, 1) as varchar);
               if (not isnull (eProperty))
                 DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri (meta [K+1]), eProperty);
@@ -527,14 +557,12 @@ create procedure briefcase_sioc_delete (
   inout r_full_path varchar)
 {
   declare iri, graph_iri, addr_iri, also_iri varchar;
-  declare path any;
 
-  if (r_full_path not like '/DAV/home/%')
+  if (r_full_path not like '/DAV/%/Public/%')
     return;
 
   graph_iri := get_graph ();
-  path := split_and_decode (r_full_path, 0, '\0\0/');
-  if (length (path) > 5 and path [4] = 'Public') {
+  {
       declare forum_iri any;
       for (select WAI_NAME
 	     from DB.DBA.WA_INSTANCE,
@@ -544,7 +572,8 @@ create procedure briefcase_sioc_delete (
 	      and WAM_INST = WAI_NAME
 	      and WAM_USER = U_ID
 	      and WAM_IS_PUBLIC = 1
-	      and U_NAME = path[3]
+	      and length (U_HOME)
+    	      and r_full_path like U_HOME || 'Public/%'
 	      and U_ACCOUNT_DISABLED = 0
     	      and U_DAV_ENABLE = 1) do {
 	forum_iri := briefcase_iri (WAI_NAME);
@@ -564,7 +593,8 @@ create procedure briefcase_sioc_delete (
                                      '   FROM <%s> ' ||
                                      '  WHERE {?x rdf:type foaf:Person. ?x rdfs:seeAlso <%s>.} ', graph_iri, also_iri));
     _g := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-    foreach (any p_iri in persons) do {
+    foreach (any p_iri in persons) do
+    {
       _p := DB.DBA.RDF_MAKE_IID_OF_QNAME (p_iri[0]);
       delete from DB.DBA.RDF_QUAD where G = _g and S = _p;
       delete from DB.DBA.RDF_QUAD where G = _g and O = _p;
