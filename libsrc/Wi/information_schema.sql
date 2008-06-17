@@ -4,26 +4,26 @@
 --  $Id$
 --
 --  INFORMATION schema support
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2006 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2008 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 --!AWK UPGRADE TABLE INFORMATION_SCHEMA.TABLES.TABLES do_it_every_time
@@ -61,7 +61,6 @@ where
 grant select on INFORMATION_SCHEMA.TABLES to public
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.COLUMNS do_it_every_time
 create view INFORMATION_SCHEMA.COLUMNS as
 select
  k.TABLE_CATALOG		AS TABLE_CATALOG 		VARCHAR(128),
@@ -184,7 +183,6 @@ where
 grant select on INFORMATION_SCHEMA.COLUMNS to public
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.SCHEMATA do_it_every_time
 create view INFORMATION_SCHEMA.SCHEMATA as
 select distinct
  TABLE_CATALOG			AS CATALOG_NAME			VARCHAR(128),
@@ -196,7 +194,6 @@ from INFORMATION_SCHEMA.TABLES
 grant select on INFORMATION_SCHEMA.SCHEMATA to public
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.CHECK_CONSTRAINTS do_it_every_time
 create view INFORMATION_SCHEMA.CHECK_CONSTRAINTS as
 select
  name_part (C_TABLE, 0)		AS CONSTRAINT_CATALOG		VARCHAR(128),
@@ -217,7 +214,6 @@ where
 grant select on INFORMATION_SCHEMA.CHECK_CONSTRAINTS to public
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.COLUMN_DOMAIN_USAGE do_it_every_time
 create view INFORMATION_SCHEMA.COLUMN_DOMAIN_USAGE as
 select
  DOMAIN_CATALOG			AS DOMAIN_CATALOG		VARCHAR(128),
@@ -236,7 +232,6 @@ grant select on INFORMATION_SCHEMA.COLUMN_DOMAIN_USAGE to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.COLUMN_PRIVILEGES do_it_every_time
 create view INFORMATION_SCHEMA.COLUMN_PRIVILEGES as
 select
  case
@@ -467,7 +462,6 @@ done:
 }
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.KEY_COLUMN_USAGE do_it_every_time
 create view INFORMATION_SCHEMA.KEY_COLUMN_USAGE as
 select
  name_part(KEY_NAME,0, name_part(KEY_TABLE,0))	AS CONSTRAINT_CATALOG 	VARCHAR(128),
@@ -496,7 +490,6 @@ grant select on INFORMATION_SCHEMA.KEY_COLUMN_USAGE to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.ROUTINES do_it_every_time
 create view INFORMATION_SCHEMA.ROUTINES as
 select
  name_part(P_NAME,0)	AS SPECIFIC_CATALOG 		VARCHAR(128),
@@ -613,7 +606,6 @@ grant select (
   on INFORMATION_SCHEMA.KEY_COLUMN_USAGE to public
 ;
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.PARAMETERS do_it_every_time
 create view INFORMATION_SCHEMA.PARAMETERS as
 select
  PROCEDURE_CAT		AS SPECIFIC_CATALOG		VARCHAR(128),
@@ -688,7 +680,6 @@ grant select on INFORMATION_SCHEMA.PARAMETERS to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS do_it_every_time
 create view INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS as
 select
  name_part(FK_NAME,0,name_part(FK_TABLE,0))	AS CONSTRAINT_CATALOG 		VARCHAR(128),
@@ -723,7 +714,6 @@ grant select on INFORMATION_SCHEMA.PARAMETERS to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.TABLE_CONSTRAINTS do_it_every_time
 create view INFORMATION_SCHEMA.TABLE_CONSTRAINTS as
 select
   CONSTRAINT_CATALOG,
@@ -770,7 +760,6 @@ grant select on INFORMATION_SCHEMA.TABLE_CONSTRAINTS to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.TABLE_PRIVILEGES do_it_every_time
 create view INFORMATION_SCHEMA.TABLE_PRIVILEGES as
 select distinct
  case
@@ -812,7 +801,6 @@ grant select on INFORMATION_SCHEMA.TABLE_PRIVILEGES to public
 ;
 
 
---!AWK UPGRADE TABLE INFORMATION_SCHEMA.VIEWS do_it_every_time
 create view INFORMATION_SCHEMA.VIEWS as
 select
  name_part(V_NAME,0) 	AS TABLE_CATALOG 	VARCHAR(128),
