@@ -813,7 +813,7 @@ cfg_setup (void)
     c_sqlo_max_layouts = 1000;
 
   if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
-    sqlo_max_mp_size = 10485760;
+    sqlo_max_mp_size = 500000000;
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
