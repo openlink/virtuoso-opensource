@@ -46,7 +46,6 @@ char *build_opsys_id = OPSYS;			/* eg. Linux */
 #endif
 
 const char *build_special_server_model = " "
-;
 ; /* eg. empty or integration binaries */
 #if 0
 char *build_thread_model;			/* eg. Threads or Fibers */
