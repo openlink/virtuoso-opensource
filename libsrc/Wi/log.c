@@ -1797,7 +1797,6 @@ log_init (dbe_storage_t * dbs)
     {
       int log_fd;
       file_set_rw (dbs->dbs_log_name);
-      /* dbs_sys_db_check (dbs->dbs_log_name); */
       log_fd = fd_open (dbs->dbs_log_name, LOG_OPEN_FLAGS);
       if (log_fd == -1)
 	{
