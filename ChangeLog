@@ -1,3 +1,110 @@
+2008-06-17 12:12  source
+
+	* Updated version to 5.0.7-rc12
+
+2008-06-17 12:11  source
+
+	* Fixed SIOC data
+	* Fixed banner user's URI
+
+2008-06-17 12:08  source
+
+	* Fixed order running various tests
+	* Fixed checking for failures during testsuite
+
+2008-06-17 12:07  source
+
+	* Fixed running TPC-D suite
+
+2008-06-17 12:06  source
+
+	* Added check for run local
+
+2008-06-17 12:05  source
+
+	* Fixed typo
+
+2008-06-17 12:04  source
+
+	* Fixed timeout as slow boxes cannot load the data in time
+
+2008-06-17 12:03  source
+
+	* Fixed GET request to ask for RDF when looking for rdf data
+
+2008-06-17 12:03  source
+
+	* Fixed problem with slidy mapper
+
+2008-06-17 07:59  source
+
+	* Added checkpoint / db recovery tests
+
+2008-06-17 07:54  source
+
+	* Added new files
+
+2008-06-17 07:23  source
+
+	* Added claims to annotations
+
+2008-06-17 07:10  source
+
+	* Increased default MaxMempoolSize
+
+2008-06-17 07:08  source
+
+	* Fixed duplicate check for dbs_log_name
+	* Fixed check for many FD per file
+
+2008-06-17 07:07  source
+
+	* Fixed var decls should be at beginning of block
+
+2008-06-16 20:32  source
+
+	* Added tpc-d run as part of testsuite
+
+2008-06-16 19:55  source
+
+	* Added more tests
+
+2008-06-16 19:54  source
+
+	* Fixed bad DSN from drop table
+
+2008-06-16 19:54  source
+
+	* Added free-text test as ordinary user
+
+2008-06-16 19:53  source
+
+	* Added simple free-text test
+
+2008-06-16 19:51  source
+
+	* Added timeout on tests since these should not take more than 15s
+
+2008-06-16 19:41  source
+
+	* Fixed error when limiting results
+
+2008-06-16 19:41  source
+
+	* Fixed format argument
+
+2008-06-16 19:39  source
+
+	* Added new test to check for duplicate segment/database names
+
+2008-06-16 19:36  source
+
+	* Fixed _JAVA_ format to only return three columns
+
+2008-06-16 19:35  source
+
+	* Fixed calculating length when no format is given
+
 2008-06-16 15:39  source
 
 	* Updated version to 5.0.7-rc11
