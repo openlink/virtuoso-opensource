@@ -33,6 +33,7 @@ BANNER "STARTED CPT TEST (tcpt.sh)"
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
+rm -f *.cpt-after-recov *.trx-after-recov *.cpt
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 STOP_SERVER
@@ -57,6 +58,7 @@ fi
 STOP_SERVER
 rm -f $DBLOGFILE
 rm -f $DBFILE
+rm -f *.cpt-after-recov *.trx-after-recov *.cpt
 
 START_SERVER $PORT 1000
 
@@ -77,4 +79,5 @@ fi
 
 STOP_SERVER
 CHECK_LOG
+rm -f *.cpt-after-recov *.trx-after-recov *.cpt
 BANNER "COMPLETED CPT TEST (tcpt.sh)"
