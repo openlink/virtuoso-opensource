@@ -465,8 +465,8 @@ ts_print (table_source_t * ts)
   if (ts->ts_inx_op)
     {
       char card[30];
-      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
       inx_op_t * iop = ts->ts_inx_op;
+      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality); 
       stmt_printf (("  Index AND %s {\n", card));
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{

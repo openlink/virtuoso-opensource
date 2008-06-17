@@ -1134,11 +1134,11 @@ dbs_cpt_recov (void)
 	      dp_addr_t logical;
 	      caddr_t l = read_object (ses);
 	      caddr_t obj = read_object (ses);
+	      dtp_t dtp = DV_TYPE_OF (obj);
 	      if (!DKSESSTAT_ISSET (ses, SST_OK))
 		break;
 	      logical = (dp_addr_t) unbox (l);
 	      dk_free_box (l);
-	      dtp_t dtp = DV_TYPE_OF (obj);
 	      switch (dtp)
 		{
 		  case DV_LONG_INT:
