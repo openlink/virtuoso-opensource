@@ -268,6 +268,7 @@ else
   (cd ../lubm; ./tlubm.sh)
   cp -f ../lubm/tlubm.output .
 fi  
+./tstriping.sh
 #
 #  Start the server again
 #
