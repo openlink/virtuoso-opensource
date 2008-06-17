@@ -49,7 +49,7 @@
 	<xsl:param name="baseUri" />
 	<xsl:template match="/">
 		<rdf:RDF>
-			<xsl:if test="//html/head/script[@src = 'slidy.js']">
+			<xsl:if test="//html/head/script[contains(@src, 'slidy.js')]">
 				<xsl:apply-templates select="html" />
 			</xsl:if>
 		</rdf:RDF>
@@ -62,27 +62,22 @@
 				</rdfs:label>
 				<rdf:type rdf:resource="&bibo;Slideshow"/>
 			</rdf:Description>
-			<xsl:if test="//html/head/script[@src = 'slidy.js']">
-				<xsl:apply-templates select="*"/>
-			</xsl:if>
+			<xsl:apply-templates select="body"/>
 	</xsl:template>
 
 	<xsl:template match="body">
-		<xsl:for-each select="div">
-			<xsl:if test="contains(@class, 'slide')">
+		<xsl:for-each select="//div[contains(@class, 'slide')]">
+			<xsl:variable name="pos" select="position()"/>
 				<rdf:Description rdf:about="{$baseUri}#this">
-					<xsl:attribute name="rdf:about">#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]" format="1"/>)</xsl:attribute>
+				<xsl:attribute name="rdf:about">#(<xsl:value-of select="$pos"/>)</xsl:attribute>
 					<rdf:type rdf:resource="&bibo;Slide"/>
 					<dcterms:isPartOf rdf:resource="{$baseUri}#this"/>
 					<bibo:uri>
-						<xsl:attribute name="rdf:resource">
-							<xsl:value-of select="$baseUri"/>#(<xsl:number level="multiple" count="div[contains(@class, 'slide')]" format="1"/>)
-						</xsl:attribute>
+					<xsl:attribute name="rdf:resource"><xsl:value-of select="$baseUri"/>#(<xsl:value-of select="$pos"/>)</xsl:attribute>
 					</bibo:uri>
 					<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
 					<bibo:content><xsl:value-of select="."/></bibo:content>
 				</rdf:Description>
-			</xsl:if>
 		</xsl:for-each>
 	</xsl:template>
 	
