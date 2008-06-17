@@ -90,10 +90,10 @@ LOG "Loading the TPC-D tables into $DS1"
 LOG
 
 cd tpc-d
-. ./LOAD.sh $DS1 dba dba tables
-. ./LOAD.sh $DS1 dba dba procedures
-. ./LOAD.sh $DS1 dba dba load
-. ./LOAD.sh $DS1 dba dba indexes
+sh ./LOAD.sh $DS1 dba dba tables
+sh ./LOAD.sh $DS1 dba dba procedures
+sh ./LOAD.sh $DS1 dba dba load
+sh ./LOAD.sh $DS1 dba dba indexes
 cd ..
 
 LOG
@@ -123,7 +123,7 @@ LOG "Attaching the TPC-D tables from $DS1 into $DS2"
 LOG
 
 cd tpc-d
-. ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
+sh ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
 cd ..
 
 LOG
@@ -139,6 +139,7 @@ fi
 
 if test -n "$TEST_SPARQL"
 then
+LOG "SPARQL test of mapped TPCD tables"
 RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/sql_rdf.sql
 if test $STATUS -ne 0
 then
@@ -220,6 +221,8 @@ RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
 #  Cleanup
 #
 # rm -rf repl1 repl2
+cat $LOGFILE | grep -v 'ECHO BOTH \*\*\*FAILED;' > tmp.tmp
+mv tmp.tmp $LOGFILE
 
 CHECK_LOG
 BANNER "COMPLETED SERIES OF TPC-D TESTS (tpc-d.sh)"
