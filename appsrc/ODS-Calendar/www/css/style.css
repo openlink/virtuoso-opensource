@@ -725,14 +725,14 @@ div.boxHeader {
 }
 
 /*====== Grids ======*/
-.grid
+.CAL_grid
 {
   width: 100%;
   border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
 }
 
-.grid tr td {
+.CAL_grid tr td {
   border-bottom: 1px solid #fff;
 }
 
@@ -1372,6 +1372,20 @@ td.cpDayColumnHeader
 	height: 14px;
 	border: 1px solid #000;
 	cursor: pointer;
+}
+
+/* ComboList */
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #99b3c5;
+  color: white;
 }
 
 /* Comments */

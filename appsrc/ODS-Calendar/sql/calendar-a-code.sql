@@ -3157,7 +3157,7 @@ create procedure CAL.WA.settings_timeZone (
 create procedure CAL.WA.settings_timeZone2 (
   in domain_id integer)
 {
-  return CAL.WA.settings_timeZone (CAL.WA.settings (domain_id));
+  return CAL.WA.settings_usedTimeZone (domain_id);
 }
 ;
 

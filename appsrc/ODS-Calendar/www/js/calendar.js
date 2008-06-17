@@ -249,21 +249,6 @@ function coloriseRow(obj, checked)
 }
 
 // ---------------------------------------------------------------------------
-function myTrim(sString, sChar)
-{
-  if (sChar == null)
-    sChar = ' ';
-
-  while (sString.substring(0,1) == sChar)
-    sString = sString.substring(1, sString.length);
-
-  while (sString.substring(sString.length-1, sString.length) == sChar)
-    sString = sString.substring(0,sString.length-1);
-
-  return sString;
-}
-
-// ---------------------------------------------------------------------------
 function showTag(tag)
 {
   createHidden2(parent.document, 'F1', 'tag', tag);
@@ -433,9 +418,9 @@ function rowSelectValue(dstField, srcField, singleMode)
   {
     dstField.value = srcField.value;
   } else {
-    dstField.value = myTrim(dstField.value);
-    dstField.value = myTrim(dstField.value, ',');
-    dstField.value = myTrim(dstField.value);
+    dstField.value = CAL.trim(dstField.value);
+    dstField.value = CAL.trim(dstField.value, ',');
+    dstField.value = CAL.trim(dstField.value);
     if (dstField.value.indexOf(srcField.value) == -1)
     {
       if (dstField.value == '')
@@ -572,9 +557,9 @@ function updateChecked (obj, objName)
 {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = myTrim(objForm.s1.value);
-  objForm.s1.value = myTrim(objForm.s1.value, ',');
-  objForm.s1.value = myTrim(objForm.s1.value);
+  objForm.s1.value = CAL.trim(objForm.s1.value);
+  objForm.s1.value = CAL.trim(objForm.s1.value, ',');
+  objForm.s1.value = CAL.trim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
   for (var i = 0; i < objForm.elements.length; i = i + 1)
   {
@@ -592,7 +577,7 @@ function updateChecked (obj, objName)
       }
     }
   }
-  objForm.s1.value = myTrim(objForm.s1.value, ',');
+  objForm.s1.value = CAL.trim(objForm.s1.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -649,10 +634,10 @@ function addChecked (form, txt, selectionMsq)
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
-  obj.value = myTrim(obj.value);
-  obj.value = myTrim(obj.value, ',');
-  obj.value = myTrim(obj.value);
-  obj.value = myTrim(obj.value, ',');
+  obj.value = CAL.trim(obj.value);
+  obj.value = CAL.trim(obj.value, ',');
+  obj.value = CAL.trim(obj.value);
+  obj.value = CAL.trim(obj.value, ',');
   obj.value = (obj.value).replace('  ', ' ');
   obj.value = (obj.value).replace(' ,', ',');
   obj.value = obj.value + ',';
@@ -662,9 +647,9 @@ function addTag(tag, objName)
   } else {
     obj.value = (obj.value).replace(tag+',', '');
   }
-  obj.value = myTrim(obj.value);
-  obj.value = myTrim(obj.value, ',');
-  obj.value = myTrim(obj.value);
+  obj.value = CAL.trim(obj.value);
+  obj.value = CAL.trim(obj.value, ',');
+  obj.value = CAL.trim(obj.value);
 }
 
 // ---------------------------------------------------------------------------
@@ -676,9 +661,9 @@ function addCheckedTags (openerName, checkName)
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
 
-    objOpener.value = myTrim(objOpener.value);
-    objOpener.value = myTrim(objOpener.value, ',');
-    objOpener.value = myTrim(objOpener.value);
+    objOpener.value = CAL.trim(objOpener.value);
+    objOpener.value = CAL.trim(objOpener.value, ',');
+    objOpener.value = CAL.trim(objOpener.value);
     objOpener.value = objOpener.value + ',';
     for (var i = 0; i < objForm.elements.length; i = i + 1)
     {
@@ -693,7 +678,7 @@ function addCheckedTags (openerName, checkName)
         }
       }
     }
-    objOpener.value = myTrim(objOpener.value, ',');
+    objOpener.value = CAL.trim(objOpener.value, ',');
   }
   window.close();
 }
@@ -942,5 +927,83 @@ function destinationChange(obj, actions)
       var o = $(a[i])
       if (o && o.value) {o.value = '';}
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+var CAL = new Object();
+
+CAL.trim = function (sString, sChar)
+{
+
+  if (sString)
+  {
+    if (sChar == null)
+    {
+      sChar = ' ';
+    }
+    while (sString.substring(0,1) == sChar)
+    {
+      sString = sString.substring(1, sString.length);
+    }
+    while (sString.substring(sString.length-1, sString.length) == sChar)
+    {
+      sString = sString.substring(0,sString.length-1);
+    }
+  }
+  return sString;
+}
+
+CAL.updateClaim = function (claimNo)
+{
+  if (claimNo == 'xxx')
+  {
+    if (($v('c_iri_xxx') == '') || ($v('c_relation_xxx') == '') || ($v('c_value_xxx') == ''))
+    {
+      alert ('The IRI, relation and value fileld can not be empty|');
+    }
+    else
+    {
+      var tr = $('c_tr_xxx');
+      if (tr)
+      {
+        var seqNo = parseInt($v('c_seqNo'));
+
+        var tr_add = OAT.Dom.create('tr');
+        tr_add.id = 'c_tr_'+seqNo;
+
+        var S = tr.innerHTML;
+        S = S.replace(/xxx/g, ''+seqNo);
+        S = S.replace(/add_16/g, 'del_16');
+
+        var tr_parent = $('c_tr').parentNode;
+        tr_parent.insertBefore(tr_add, $('c_tr'));
+        tr_add.innerHTML = S;
+
+        var cl = new OAT.Combolist([], 'rdfs:seeAlso');
+        cl.input.name = 'c_relation_'+seqNo;
+        cl.input.id = 'c_relation_'+seqNo;
+        cl.input.style.width = "80%";
+        var td = $('c_td_'+seqNo);
+        td.innerHTML = '';
+        td.appendChild(cl.div);
+        cl.addOption('rdfs:seeAlso');
+        cl.addOption('foaf:made');
+        cl.addOption('foaf:maker');
+
+        $('c_iri_'+seqNo).value = $v('c_iri_xxx');
+        $('c_relation_'+seqNo).value = $v('c_relation_xxx');
+        $('c_value_'+seqNo).value = $v('c_value_xxx');
+
+        $('c_seqNo').value = seqNo + 1;
+        $('c_iri_xxx').value = '';
+        $('c_relation_xxx').value = '';
+        $('c_value_xxx').value = '';
+      }
+    }
+  }
+  else
+  {
+    OAT.Dom.unlink('c_tr_'+claimNo);
   }
 }
