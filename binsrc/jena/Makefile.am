@@ -36,10 +36,13 @@ JENA_SRC= \
 	virtuoso_driver/VirtDataSource.java \
 	virtuoso_driver/VirtGraph.java \
 	virtuoso_driver/VirtModel.java \
+	virtuoso_driver/VirtPrefixMapping.java \
 	virtuoso_driver/VirtResSetIter.java \
 	virtuoso_driver/VirtTransactionHandler.java \
 	virtuoso_driver/VirtuosoQueryExecutionFactory.java \
-	virtuoso_driver/VirtuosoQueryExecution.java
+	virtuoso_driver/VirtuosoQueryExecution.java \
+	virtuoso_driver/VirtuosoUpdateFactory.java \
+	virtuoso_driver/VirtuosoUpdateRequest.java
 
 JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 

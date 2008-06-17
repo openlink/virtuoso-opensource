@@ -40,6 +40,8 @@ import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.db.impl.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.graph.query.*;
+import com.hp.hpl.jena.datatypes.*;
+import com.hp.hpl.jena.rdf.model.*;
 
 
 public class VirtGraph extends GraphBase
@@ -170,8 +172,8 @@ public class VirtGraph extends GraphBase
     @Override
     public void performAdd(Triple t)
     {
-	String S, P, O;
-	String exec_text;
+      String S, P, O;
+      String exec_text;
 
       S = Node2Str(t.getSubject());
       P = Node2Str(t.getPredicate());
@@ -180,12 +182,12 @@ public class VirtGraph extends GraphBase
       exec_text = "sparql insert into graph <"+this.graphName+"> { "+
       		    S+" "+P+" "+O+" }";
 
-	try
+      try
 	{
 	    java.sql.Statement stmt = connection.createStatement();
 	    stmt.executeQuery(exec_text);
 	}
-	catch(Exception e)
+      catch(Exception e)
 	{
             throw new JenaException(e);
 	}
@@ -194,8 +196,8 @@ public class VirtGraph extends GraphBase
 
     public void performDelete (Triple t)
     {
-	String S, P, O;
-	String exec_text;
+      String S, P, O;
+      String exec_text;
 
       S = Node2Str(t.getSubject());
       P = Node2Str(t.getPredicate());
@@ -204,12 +206,12 @@ public class VirtGraph extends GraphBase
       exec_text = "sparql delete from graph <"+this.graphName+"> { "+
       		    S+" "+P+" "+O+" }";
 
-	try
+      try
 	{
 	    java.sql.Statement stmt = connection.createStatement();
 	    stmt.executeQuery(exec_text);
 	}
-	catch(Exception e)
+      catch(Exception e)
 	{
             throw new JenaException(e);
 	}
@@ -227,6 +229,7 @@ public class VirtGraph extends GraphBase
 	int ret = 0;
 
 	checkOpen();
+
 	try {
 		java.sql.Statement stmt = connection.createStatement();
 		rs = stmt.executeQuery(exec_text);
@@ -284,6 +287,7 @@ public class VirtGraph extends GraphBase
 	String exec_text;
 
 	checkOpen();
+
 	S = " ?s ";
 	P = " ?p ";
 	O = " ?o ";
@@ -423,6 +427,104 @@ public class VirtGraph extends GraphBase
         if (bulkHandler == null) 
         	bulkHandler = new VirtBulkUpdateHandler(this); 
         return bulkHandler;
+    }
+
+    protected VirtPrefixMapping m_prefixMapping = null;
+
+    public PrefixMapping getPrefixMapping() 
+    { 
+	if( m_prefixMapping == null)
+		m_prefixMapping = new VirtPrefixMapping( this );
+	return m_prefixMapping; 
+    }
+
+
+    public static Node Object2Node(Object o)
+    {
+      if (o instanceof VirtuosoExtendedString) 
+        {
+          VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
+          if (vs.iriType == VirtuosoExtendedString.IRI) {
+            if (vs.str.indexOf ("_:") == 0)
+              return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
+            else
+              return Node.createURI(vs.str);
+          } else if (vs.iriType == VirtuosoExtendedString.BNODE) {
+            return Node.createAnon(AnonId.create(vs.str.substring(9))); // nodeID://
+          } else {
+            return Node.createLiteral(vs.str); 
+          }
+        }
+      else if (o instanceof VirtuosoRdfBox)
+        {
+          VirtuosoRdfBox rb = (VirtuosoRdfBox)o;
+          String rb_type = rb.getType();
+          RDFDatatype dt = null;
+
+          if ( rb_type != null)
+            dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
+          return Node.createLiteral(rb.toString(), rb.getLang(), dt);
+        }
+      else if (o instanceof java.lang.Integer)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Short)
+        {
+          RDFDatatype dt = null;
+//          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#short");
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Float)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#float");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.lang.Double)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#double");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.math.BigDecimal)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#decimal");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Blob)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Date)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Timestamp)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else if (o instanceof java.sql.Time)
+        {
+          RDFDatatype dt = null;
+          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+          return Node.createLiteral(o.toString(), null, dt);
+        }
+      else 
+        {
+          return Node.createLiteral(o.toString());
+        }
+
     }
 
 }

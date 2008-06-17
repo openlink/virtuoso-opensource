@@ -32,6 +32,7 @@ import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
+
 public class VirtResSetIter implements ExtendedIterator
 {
     protected ResultSet 	v_resultSet;
@@ -115,94 +116,6 @@ public class VirtResSetIter implements ExtendedIterator
     }
 
 
-    private Node Object2Node(Object o)
-    {
-      if (o instanceof VirtuosoExtendedString) 
-        {
-          VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
-          if (vs.iriType == VirtuosoExtendedString.IRI) {
-            if (vs.str.indexOf ("_:") == 0)
-              return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
-            else
-              return Node.createURI(vs.str);
-          } else if (vs.iriType == VirtuosoExtendedString.BNODE) {
-            return Node.createAnon(AnonId.create(vs.str.substring(9))); // nodeID://
-          } else {
-            return Node.createLiteral(vs.str); 
-          }
-        }
-      else if (o instanceof VirtuosoRdfBox)
-        {
-          VirtuosoRdfBox rb = (VirtuosoRdfBox)o;
-          String rb_type = rb.getType();
-          RDFDatatype dt = null;
-
-          if ( rb_type != null)
-            dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
-          return Node.createLiteral(rb.toString(), rb.getLang(), dt);
-        }
-      else if (o instanceof java.lang.Integer)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.lang.Short)
-        {
-          RDFDatatype dt = null;
-//          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#short");
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.lang.Float)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#float");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.lang.Double)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#double");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.math.BigDecimal)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#decimal");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.sql.Blob)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.sql.Date)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.sql.Timestamp)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else if (o instanceof java.sql.Time)
-        {
-          RDFDatatype dt = null;
-          dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
-          return Node.createLiteral(o.toString(), null, dt);
-        }
-      else 
-        {
-          return Node.createLiteral(o.toString());
-        }
-
-    }
-
     protected void extractRow() throws Exception
     {
        Node NodeS, NodeP, NodeO;
@@ -210,17 +123,17 @@ public class VirtResSetIter implements ExtendedIterator
        if (v_in.getMatchSubject() != null)
 	   NodeS = v_in.getMatchSubject();
        else
-           NodeS = Object2Node(v_resultSet.getObject("s"));
+           NodeS = VirtGraph.Object2Node(v_resultSet.getObject("s"));
 
        if (v_in.getMatchPredicate() != null)
 	   NodeP = v_in.getMatchPredicate();
        else
-           NodeP = Object2Node(v_resultSet.getObject("p"));
+           NodeP = VirtGraph.Object2Node(v_resultSet.getObject("p"));
 
        if (v_in.getMatchObject() != null)
 	   NodeO = v_in.getMatchObject();
        else
-           NodeO = Object2Node(v_resultSet.getObject("o"));
+           NodeO = VirtGraph.Object2Node(v_resultSet.getObject("o"));
 
        v_row = new Triple(NodeS, NodeP, NodeO);
     }

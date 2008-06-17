@@ -167,7 +167,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
     /** List the names */
     public Iterator listNames() {
-        String exec_text = "sparql SELECT distinct ?g WHERE { graph ?g { ?s ?p ?o } }";
+        String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
  	ResultSet rs = null;
 	int ret = 0;
 

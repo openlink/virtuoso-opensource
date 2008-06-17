@@ -44,26 +44,20 @@ import com.hp.hpl.jena.sparql.util.Context;
 
 public class VirtuosoQueryExecutionFactory
 {
-    private String ExecString;
 
     private VirtuosoQueryExecutionFactory()
     {
     }
 
-    public void create(String queryStr)
-    {
-	ExecString = queryStr;
-    }
-
-    static public VirtuosoQueryExecution create(Query query)
-    {
-	VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query.toString());
-        return ret;
-    }
-
     static public VirtuosoQueryExecution create(Query query, VirtGraph graph)
     {
 	VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query.toString(), graph);
+        return ret;
+    }
+
+    static public VirtuosoQueryExecution create(String query, VirtGraph graph)
+    {
+	VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query, graph);
         return ret;
     }
 
