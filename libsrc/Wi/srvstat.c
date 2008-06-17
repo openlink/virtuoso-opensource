@@ -1079,6 +1079,8 @@ static long st_has_vdb =
   0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
+static long oneL = 1;
+
 
 stat_desc_t stat_descs [] =
 {
@@ -1116,6 +1118,7 @@ stat_desc_t stat_descs [] =
     {"tc_key_sample_reset", &tc_key_sample_reset},
     {"tc_pl_moved_in_reentry", &tc_pl_moved_in_reentry},
     {"tc_enter_transiting_bm_inx", &tc_enter_transiting_bm_inx},
+    {"cl_run_local_only", &oneL},
     {"tc_aio_seq_write", &tc_aio_seq_write},
     {"tc_aio_seq_read", &tc_aio_seq_read},
     {"tc_read_absent_while_finalize", &tc_read_absent_while_finalize},
