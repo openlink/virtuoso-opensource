@@ -72,30 +72,24 @@
       <v:variable name="dav_content" type="varchar" default="'Can not find file'" />
       <v:variable name="chars" type="integer" default="60" />
 
-      <v:on-init>
-        <![CDATA[
-          declare settings any;
-
-          settings := ODRIVE.WA.odrive_settings(self.vc_page.vc_event.ve_params);
-
-          self.tbLabels := cast(get_keyword('tbLabels', settings, '1') as integer);
-          self.chars := cast(get_keyword('chars', settings, '60') as integer);
-
-          self.dir_columns := vector();
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#1', 'c0', 'Name',          1, 0, vector(cast(get_keyword('column_#1', settings, '1') as integer), 1), 'width="50%"')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#2',   '', 'Tags',          0, 0, vector(cast(get_keyword('column_#2', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#3', 'c2', 'Size',          1, 1, vector(cast(get_keyword('column_#3', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#4', 'c3', 'Date Modified', 1, 1, vector(cast(get_keyword('column_#4', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#5', 'c4', 'Mime Type',     1, 1, vector(cast(get_keyword('column_#5', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#6', 'c9', 'Kind',          1, 1, vector(cast(get_keyword('column_#6', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#7', 'c5', 'Owner',         1, 1, vector(cast(get_keyword('column_#7', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#8', 'c6', 'Group',         1, 1, vector(cast(get_keyword('column_#8', settings, '1') as integer), 0), '')));
-          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#9', 'c7', 'Permissions',   0, 0, vector(cast(get_keyword('column_#9', settings, '1') as integer), 0), '')));
-        ]]>
-      </v:on-init>
       <v:before-data-bind>
         <![CDATA[
-          if (get_keyword ('id', self.vc_page.vc_event.ve_params, '') <> '') {
+          self.tbLabels := cast (get_keyword('tbLabels', self.settings, '1') as integer);
+          self.chars := cast (get_keyword('chars', self.settings, '60') as integer);
+
+          self.dir_columns := vector();
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#1', 'c0', 'Name',          1, 0, vector(cast(get_keyword('column_#1', self.settings, '1') as integer), 1), 'width="50%"')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#2',   '', 'Tags',          0, 0, vector(cast(get_keyword('column_#2', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#3', 'c2', 'Size',          1, 1, vector(cast(get_keyword('column_#3', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#4', 'c3', 'Date Modified', 1, 1, vector(cast(get_keyword('column_#4', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#5', 'c4', 'Mime Type',     1, 1, vector(cast(get_keyword('column_#5', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#6', 'c9', 'Kind',          1, 1, vector(cast(get_keyword('column_#6', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#7', 'c5', 'Owner',         1, 1, vector(cast(get_keyword('column_#7', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#8', 'c6', 'Group',         1, 1, vector(cast(get_keyword('column_#8', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#9', 'c7', 'Permissions',   0, 0, vector(cast(get_keyword('column_#9', self.settings, '1') as integer), 0), '')));
+
+          if (get_keyword ('id', self.vc_page.vc_event.ve_params, '') <> '')
+          {
             self.vc_redirect (sprintf ('%s/view.vsp?file=%U&mode=download', ODRIVE.WA.odrive_url (self.domain_id), DB.DBA.DAV_SEARCH_PATH (cast (get_keyword ('id', self.vc_page.vc_event.ve_params) as integer), 'R')));
             return;
           }
@@ -113,14 +107,16 @@
           if ((self.command = 0) and (self.command_mode = 2))
             self.search_simple := trim(get_keyword('simple', self.vc_page.vc_event.ve_params, self.search_simple));
 
-          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'simple') {
+          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'simple')
+          {
             self.command_set(0, 2);
             if (self.dir_path = '')
               self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
             self.search_simple := trim(get_keyword('keywords', self.vc_page.vc_event.ve_params));
           }
 
-          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'advanced') {
+          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'advanced')
+          {
             self.command_set(0, 3);
             if (self.dir_path = '')
               self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
@@ -386,8 +382,10 @@
           self.need_overwrite := 0;
           tmp_vec := vector();
           i := 0;
-          while (i < length(self.item_array)) {
-            if (self.command = 23) {
+          while (i < length (self.item_array))
+          {
+            if (self.command = 23)
+            {
               retValue := ODRIVE.WA.DAV_DELETE(self.item_array[i]);
             } else {
               _item := ODRIVE.WA.DAV_INIT(self.item_array[i]);
@@ -403,8 +401,8 @@
                   retValue := ODRIVE.WA.DAV_MOVE(self.item_array[i], _target, need_overwrite);
               }
             }
-
-            if (retValue < 0) {
+            if (retValue < 0)
+            {
               self.need_overwrite := 1;
               tmp_vec := vector_concat(tmp_vec, vector(self.item_array[i], ODRIVE.WA.DAV_PERROR(retValue)));
             }
@@ -1098,7 +1096,7 @@
                     <span id="label_dav_rdf" style="display: none;"><v:label for="dav_name" value="--'RDF graph name'" /></span>
                     </th>
                     <td>
-                    <v:text name="dav_name" xhtml_id="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:text name="dav_name" xhtml_id="dav_name" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'name'))" format="%s" fmt-function="ODRIVE.WA.wide2utf" xhtml_disabled="disabled" xhtml_class="field-short" />
                     <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path)))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                     </td>
                   </tr>
@@ -2285,7 +2283,7 @@
             }
           ?>
 
-          <v:data-source name="dsrc_items" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+        <v:data-source name="dsrc_items" expression-type="sql" nrows="0" initial-offset="0">
             <v:before-data-bind>
               <![CDATA[
                 self.sortChange(get_keyword('sortColumn', self.vc_page.vc_event.ve_params, ''));
@@ -2303,8 +2301,11 @@
                 } else {
                   control.add_parameter(null);
                 }
-                control.ds_sql := 'select rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+              control.add_parameter (ODRIVE.WA.settings_hiddens (self.settings));
+
+              control.ds_sql := 'select rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
                 control.ds_sql := concat(control.ds_sql, ' order by c1');
+
                 if (self.dir_details = 0) {
                   declare dir_order, dir_grouping any;
 
@@ -2317,6 +2318,7 @@
                 } else {
                   control.ds_sql := concat(control.ds_sql, ', c0');
                 }
+              control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
                 self.dir_tags := vector();
                 if (self.dir_cloud = 1) {
                   declare state, msg, meta, result any;
@@ -2387,7 +2389,7 @@
             <div style="padding-bottom: 5px;">
               <?vsp
         			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
-              if (ODRIVE.WA.odrive_settings_atomVersion(self.vc_page.vc_event.ve_params) = '1.0')
+              if (ODRIVE.WA.settings_atomVersion (self.settings) = '1.0')
               {
         			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
         			  } else {

@@ -138,7 +138,7 @@
             </v:on-post>
           </v:button>
         </div>
-      	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+        <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
           <v:before-data-bind>
             <![CDATA[
               declare user_sql, group_sql varchar;
@@ -173,6 +173,7 @@
               }
               self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
               control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
+              control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
             ]]>
           </v:before-data-bind>
         </v:data-source>

@@ -44,11 +44,14 @@
       declare N, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
       declare dav_filename, dav_file, rdf_content any;
-      declare itemList any;
+      declare params, itemList any;
 
+      params := self.vc_page.vc_event.ve_params;
       msg := '';
-      declare exit handler for SQLSTATE '*' {
-        if (__SQL_STATE = 'TEST') {
+      declare exit handler for SQLSTATE '*'
+      {
+        if (__SQL_STATE = 'TEST')
+        {
           self.vc_error_message := concat(msg, ODRIVE.WA.test_clear(__SQL_MESSAGE));
        		self.vc_is_valid := 0;
     		  return;
@@ -60,16 +63,14 @@
       {
 	      self.odrive_login.vc_data_bind(e);
 	      self.odrive_login.vc_data_bound := 1;
-        if (ODRIVE.WA.DAV_GET (self.dav_item, 'autoversion') <> get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''))
+        if (ODRIVE.WA.DAV_GET (self.dav_item, 'autoversion') <> get_keyword ('dav_autoversion', params, ''))
         {
-          retValue := ODRIVE.WA.DAV_SET(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'autoversion', get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''));
+          retValue := ODRIVE.WA.DAV_SET (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'autoversion', get_keyword ('dav_autoversion', params, ''));
           if (ODRIVE.WA.DAV_ERROR(retValue))
             signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
         }
       }
-      if (e.ve_button is not null)
-      {
-        if (e.ve_button.vc_name = 'Create')
+      if ((e.ve_button is not null) and (e.ve_button.vc_name = 'Create'))
         {
   	      self.odrive_login.vc_data_bind(e);
   	      self.odrive_login.vc_data_bound := 1;
@@ -85,17 +86,16 @@
             msg := 'Can not update resource. ';
           }
 
-          if ((self.command_mode = 5) and (get_keyword('dav_destination', self.vc_page.vc_event.ve_params, '') = '1'))
+        if ((self.command_mode = 5) and (get_keyword('dav_destination', params, '') = '1'))
           {
             -- RDF Triple Store
-            declare pos integer;
-            declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_base, rdf_graph any;
 
-            rdf_graph := trim(get_keyword('dav_name_rdf', self.vc_page.vc_event.ve_params));
-            if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '0')
+            declare pos integer;
+          declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_graph any;
+
+          if (get_keyword ('dav_source', params, '-1') = '0')
             {
-              dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', self.vc_page.vc_event.ve_params));
-              rdf_base := rdf_graph;
+            dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', params));
               if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
               {
                 rdf_data := http_get(dav_filename);
@@ -103,16 +103,13 @@
                 pos := position ('dav_file', params);
                 rdf_data := aref_set_0 (params, pos);
               }
-            }
-            else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1')
-            {
-              dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
-              rdf_base := dav_filename;
+          } else if (get_keyword ('dav_source', params, '-1') = '1') {
+            dav_filename := get_keyword('dav_url', params, '');
               rdf_data := http_get(dav_filename);
             }
+          rdf_graph := trim (get_keyword('dav_name_rdf', params));
             {
-              declare continue handler for SQLSTATE '*'
-              {
+            declare continue handler for SQLSTATE '*' {
                 is_ttl := 0;
               };
               is_ttl := 1;
@@ -121,8 +118,7 @@
             if (not is_ttl)
             {
               {
-                declare continue handler for SQLSTATE '*'
-              {
+              declare continue handler for SQLSTATE '*' {
                   is_xml := 0;
                 };
                 is_xml := 1;
@@ -132,16 +128,13 @@
             if (is_xml = 0 and is_ttl = 0)
               signal ('TEST', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.<>');
 
-            declare continue handler for SQLSTATE '*'
-            {
-              signal('TEST', 'Bad RDF data!<>');
-            };
             if (is_ttl)
             {
-              retValue := DB.DBA.TTLP (rdf_data, rdf_base, rdf_graph);
+            retValue := DB.DBA.TTLP (rdf_data, '', rdf_graph);
             } else {
-              retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, rdf_base, rdf_graph);
+            retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, '', rdf_graph);
             }
+
           } else {
             -- WebDAV
 
@@ -152,7 +145,7 @@
               signal('TEST', 'Folder/File could not be found!<>');
           }
 
-          dav_name := trim(get_keyword('dav_name', self.vc_page.vc_event.ve_params));
+          dav_name := trim (get_keyword('dav_name', params));
           if (is_empty_or_null(dav_name))
             signal('TEST', 'Folder/File name can not be empty!<>');
 
@@ -166,15 +159,15 @@
             declare delim integer;
 
             N := 0;
-              while (N < length(self.vc_page.vc_event.ve_params))
+            while (N < length(params))
               {
-                if (self.vc_page.vc_event.ve_params[N] like 'vmd_edit_property%')
+              if (params[N] like 'vmd_edit_property%')
                 {
-                param := replace(self.vc_page.vc_event.ve_params[N], 'vmd_edit_property$0', '');
+                param := replace(params[N], 'vmd_edit_property$0', '');
                 delim := strstr (param, '$0');
                 uri := subseq (param, 0, delim);
                 property := subseq (param, delim+2);
-                value := self.vc_page.vc_event.ve_params[N+1];
+                value := params[N+1];
                 if (not ODRIVE.WA.rdf_validate_property(uri, property, value))
                   signal('TEST', 'Bad metadata value!<>');
               }
@@ -182,11 +175,11 @@
             }
           }
 
-          dav_fullPath := WS.WS.FIXPATH(concat(ODRIVE.WA.odrive_real_path(self.dir_path), dav_name));
+          dav_fullPath := concat(ODRIVE.WA.odrive_real_path (self.dir_path), dav_name);
             if (self.dav_type = 'C')
             {
             dav_fullPath := concat(dav_fullPath, '/');
-            dav_detType := get_keyword('dav_det', self.vc_page.vc_event.ve_params);
+            dav_detType := get_keyword ('dav_det', params);
               if (isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath))
               {
               retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
@@ -207,7 +200,7 @@
               {
               declare search_path varchar;
 
-              search_path := ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, '/DAV/'));
+              search_path := ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', params, '/DAV/'));
               retValue := DB.DBA.DAV_SEARCH_ID(search_path, 'C');
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', 'Search path does not exists!<>');
@@ -216,9 +209,9 @@
 
             if (self.command_mode = 5)
             {
-              if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '0')
+            if (get_keyword ('dav_source', params, '-1') = '0')
               {
-              dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', self.vc_page.vc_event.ve_params));
+              dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', params));
                 if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
                 {
                 dav_file := http_get(dav_filename);
@@ -228,37 +221,37 @@
                 pos := position ('dav_file', params);
                 dav_file := aref_set_0 (params, pos);
               }
-            } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
-              dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
+            } else if (get_keyword ('dav_source', params, '-1') = '1') {
+              dav_filename := get_keyword('dav_url', params, '');
               dav_file := http_get(dav_filename);
-              } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '2') {
-                dav_filename := get_keyword('dav_rdf', self.vc_page.vc_event.ve_params, '');
+            } else if (get_keyword ('dav_source', params, '-1') = '2') {
+              dav_filename := get_keyword('dav_rdf', params, '');
                 dav_file := ODRIVE.WA.get_rdf (dav_filename);
             }
           }
             if (self.dav_type = 'R')
             {
-            dav_mime := trim(get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ''));
+            dav_mime := trim(get_keyword('dav_mime', params, ''));
             if (not (dav_mime like '%/%' or dav_mime like 'link:%'))
               dav_mime := http_mime_type(dav_name);
           }
 
-          dav_owner := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_owner', self.vc_page.vc_event.ve_params, '')));
+          dav_owner := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_owner', params, '')));
           if (dav_owner < 0)
             dav_owner := null;
 
-          dav_group := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_group', self.vc_page.vc_event.ve_params, '')));
+          dav_group := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_group', params, '')));
           if (dav_group < 0)
             dav_group := null;
-          if (not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)))
+          if (not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(params)))
             if ((ODRIVE.WA.DAV_GET(self.dav_item, 'groupID') <> dav_group) or isnull(dav_group))
-              if (not ODRIVE.WA.odrive_group_own(trim(get_keyword('dav_group', self.vc_page.vc_event.ve_params, ''))))
+              if (not ODRIVE.WA.odrive_group_own(trim(get_keyword('dav_group', params, ''))))
                 signal('TEST', 'Only own groups or ''dba'' group are allowed!<>');
 
           dav_perms := '';
             for (N := 0; N < 9; N := N + 1)
             {
-            _p := get_keyword(sprintf('dav_perm%i', N), self.vc_page.vc_event.ve_params, '');
+            _p := get_keyword(sprintf('dav_perm%i', N), params, '');
             if (_p <> '')
               dav_perms := concat(dav_perms, '1');
             else
@@ -272,8 +265,8 @@
             dav_perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
           }
           dav_perms := concat (dav_perms,
-                               get_keyword ('dav_index', self.vc_page.vc_event.ve_params, 'N'),
-                               get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, 'N')
+                               get_keyword ('dav_index', params, 'N'),
+                               get_keyword ('dav_metagrab', params, 'N')
                               );
 
           -- Update
@@ -291,18 +284,19 @@
             if ((ODRIVE.WA.DAV_GET(self.dav_item, 'groupID') <> dav_group) or isnull(dav_group))
               ODRIVE.WA.DAV_SET(self.dav_path, 'groupID', dav_group);
 
-            if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
-              ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
-
             -- ACL
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'acl') <> self.dav_acl)
                 ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl);
 
             -- Tags
-            if (self.dav_type = 'R') {
+            if (self.dav_type = 'R')
+            {
               ODRIVE.WA.DAV_SET(self.dav_path, 'privatetags', self.dav_tags);
               ODRIVE.WA.DAV_SET(self.dav_path, 'publictags', self.dav_tags2);
             }
+
+            if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
+              ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
           }
 
           -- Folder
@@ -315,16 +309,16 @@
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
               self.dav_path := dav_fullPath;
             } else {
-                if (get_keyword ('dav_recursive', self.vc_page.vc_event.ve_params, '') <> '')
+              if (get_keyword ('dav_recursive', params, '') <> '')
                   self.set_recursive (self.dav_path, dav_perms, dav_owner, dav_group);
 
                 if (dav_detType <> 'Versioning')
                 {
                   -- clear old properties
-                  itemList := DB.DBA.DAV_PROP_LIST_INT (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C'), 'C', 'virt:%', 0);
+                itemList := DB.DBA.DAV_PROP_LIST_INT (DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), 'C', 'virt:%', 0);
                   foreach (any item in itemList) do
                   {
-                    DB.DBA.DAV_PROP_REMOVE_INT (self.dav_path, item[0], null, null, 0, 0, 0);
+                  DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                   }
                 }
               }
@@ -376,23 +370,23 @@
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
 
               } else if (dav_detType = 'rdfSink') {
-                  ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:rdf_graph', get_keyword('dav_rdfSink_rdfGraph', self.vc_page.vc_event.ve_params));
-                  ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:rdf_sponger', get_keyword('dav_rdfSink_rdfSponger', self.vc_page.vc_event.ve_params));
+              ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_graph', get_keyword('dav_rdfSink_rdfGraph', params));
+              ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_sponger', get_keyword('dav_rdfSink_rdfSponger', params));
 
               } else if (dav_detType <> 'Versioning') {
               retValue := ODRIVE.WA.DAV_SET(self.dav_path, 'detType', either(equ(dav_detType, ''), null, dav_detType));
                 if (dav_detType = 'oMail')
                 {
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-DomainId', get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:oMail-DomainId', get_keyword('dav_oMail_DomainId', params));
                   ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-UserName', ODRIVE.WA.account());
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-FolderName', get_keyword('dav_oMail_FolderName', self.vc_page.vc_event.ve_params));
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-NameFormat', get_keyword('dav_oMail_NameFormat', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:oMail-FolderName', get_keyword('dav_oMail_FolderName', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:oMail-NameFormat', get_keyword('dav_oMail_NameFormat', params));
               }
                 if (dav_detType = 'PropFilter')
                 {
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, '/DAV/')));
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropName', get_keyword('dav_PropFilter_PropName', self.vc_page.vc_event.ve_params));
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropValue' , get_keyword('dav_PropFilter_PropValue', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', params, '/DAV/')));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropName', get_keyword('dav_PropFilter_PropName', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropValue', get_keyword('dav_PropFilter_PropValue', params));
               }
                 }
             }
@@ -420,12 +414,12 @@
                 declare param, property any;
                 declare delim integer;
 
-                for (N := 0; N < length(self.vc_page.vc_event.ve_params); N := N + 4)
-                  if (self.vc_page.vc_event.ve_params[N] like 'vmd_edit_property%') {
-                    param := replace(self.vc_page.vc_event.ve_params[N], 'vmd_edit_property$0', '');
+                for (N := 0; N < length(params); N := N + 4)
+                  if (params[N] like 'vmd_edit_property%') {
+                    param := replace(params[N], 'vmd_edit_property$0', '');
                     delim := strstr (param, '$0');
                     property := subseq (param, delim+2);
-                    ODRIVE.WA.dav_rdf_set_property(self.dav_metadata, property, self.vc_page.vc_event.ve_params[N+1]);
+                    ODRIVE.WA.dav_rdf_set_property(self.dav_metadata, property, params[N+1]);
                   }
                   retValue := ODRIVE.WA.dav_rdf_set_metadata (self.dav_path, self.dav_metadata);
               }
@@ -435,9 +429,9 @@
           -- Auto versioning
             if ((self.dav_type = 'C') or (self.command_mode <> 10))
             {
-              if (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''))
+            if (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', params, ''))
               {
-              retValue := ODRIVE.WA.DAV_SET(dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''));
+              retValue := ODRIVE.WA.DAV_SET (dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', params, ''));
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
               if ((self.dav_type = 'R') and (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) = ''))
@@ -450,7 +444,6 @@
           self.command_acl := 0;
           self.vc_data_bind(e);
   		  }
-  	  }
     ]]>
   </v:on-init>
   <vm:pagetitle>Briefcase Home</vm:pagetitle>

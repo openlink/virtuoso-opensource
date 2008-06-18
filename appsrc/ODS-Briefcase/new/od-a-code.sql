@@ -986,18 +986,59 @@ create procedure ODRIVE.WA.tagsDictionary2rs(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.hiddens_prepare (
+  inout hiddens any)
+{
+  declare exit handler for SQLSTATE '*'
+  {
+    return vector ();
+  };
+
+  declare V any;
+
+  V := split_and_decode ( hiddens, 0 , '\0\0,');
+
+  return V;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.hiddens_check (
+  inout hiddens any,
+  inout name varchar)
+{
+  if (length (name) = 0)
+    return 0;
+  if (length (hiddens) = 0)
+    return 0;
+
+  declare N integer;
+
+  for (N := 0; N < length (hiddens); N := N + 1)
+  {
+    if (strstr (name, trim (hiddens[N])) = 0)
+      return 1;
+  }
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.odrive_proc(
   in path varchar,
   in dir_select integer := 0,
   in dir_mode integer := 0,
   in dir_params any := null,
+  in dir_hiddens any := null,
   in dir_account any := null,
-  in dir_psw any := null) returns any
+  in dir_password any := null) returns any
 {
   declare
     i, pos integer;
   declare
-    tmp, dirFilter, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
+    tmp, dirFilter, dirHiddens, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
   declare
     vspx_user, user_name, group_name varchar;
   declare
@@ -1017,14 +1058,17 @@ create procedure ODRIVE.WA.odrive_proc(
     return;
   }
 
-  declare exit handler for SQLSTATE '*' {
+  declare exit handler for SQLSTATE '*'
+  {
     result(__SQL_STATE, __SQL_MESSAGE, 0, '', '', '', '', '', '');
     return;
   };
 
   dirList := vector();
-  if ((dir_mode = 0) or (dir_select = 1)) {
-    if (path = ODRIVE.WA.shared_name()) {
+  if ((dir_mode = 0) or (dir_select = 1))
+  {
+    if (path = ODRIVE.WA.shared_name())
+    {
       vspx_user := ODRIVE.WA.account();
       dirList := ODRIVE.WA.odrive_sharing_dir_list(vspx_user);
     } else {
@@ -1032,8 +1076,9 @@ create procedure ODRIVE.WA.odrive_proc(
       dirList := ODRIVE.WA.DAV_DIR_LIST(path, 0);
     }
     dirFilter := '%';
-
-  } else if (dir_mode = 1) {
+  }
+  else if (dir_mode = 1)
+  {
     path := ODRIVE.WA.odrive_real_path(path);
     dirList := ODRIVE.WA.DAV_DIR_LIST(path, 0);
     dirFilter := dir_params;
@@ -1042,9 +1087,11 @@ create procedure ODRIVE.WA.odrive_proc(
     dirFilter := trim(dirFilter, '*');
     dirFilter := '%' || dirFilter || '%';
     dirFilter := replace(dirFilter, '%%', '%');
-
-  } else if ((dir_mode = 2) or (dir_mode = 3)) {
-    if (dir_mode = 2) {
+  }
+  else if ((dir_mode = 2) or (dir_mode = 3))
+  {
+    if (dir_mode = 2)
+    {
       path := ODRIVE.WA.odrive_real_path(path);
       dirFilter := vector();
       ODRIVE.WA.dav_dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
@@ -1053,14 +1100,18 @@ create procedure ODRIVE.WA.odrive_proc(
       dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
     }
     --dbg_obj_print(dirFilter);
-    if (trim(path, '/') = ODRIVE.WA.shared_name()) {
+    if (trim(path, '/') = ODRIVE.WA.shared_name())
+    {
       sharedRoot := ODRIVE.WA.odrive_sharing_dir_list(ODRIVE.WA.account());
-      foreach (any item in sharedRoot) do {
-        if (item[1] = 'C') {
+      foreach (any item in sharedRoot) do
+      {
+        if (item[1] = 'C')
+        {
           sharedList := ODRIVE.WA.DAV_DIR_FILTER(item[0], 1, dirFilter);
         } else {
           pos := strrchr (item[0], '/');
-          if (not isnull(pos)) {
+          if (not isnull(pos))
+          {
             sharedPath := subseq (item[0], 0, pos+1);
             sharedFilter := dirFilter;
             ODRIVE.WA.dav_dc_subfilter(sharedFilter, 'RES_NAME', '=', item[10]);
@@ -1075,39 +1126,48 @@ create procedure ODRIVE.WA.odrive_proc(
       dirList := ODRIVE.WA.DAV_DIR_FILTER(path, 1, dirFilter);
     }
     dirFilter := '%';
-
-  } else if (dir_mode = 10) {
+  }
+  else if (dir_mode = 10)
+  {
     dirFilter := vector();
     ODRIVE.WA.dav_dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, ODRIVE.WA.DAV_API_PWD(dir_account));
     dirFilter := '%';
-
-  } else if (dir_mode = 11) {
+  }
+  else if (dir_mode = 11)
+  {
     path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/'));
     dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, ODRIVE.WA.DAV_API_PWD(dir_account));
     dirFilter := '%';
-
-  } else if (dir_mode = 20) {
+  }
+  else if (dir_mode = 20)
+  {
     path := ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/');
     dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
-    dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, dir_psw);
+    dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, dir_password);
     dirFilter := '%';
   }
-
-  if (isarray(dirList)) {
+  if (isarray(dirList))
+  {
+    dirHiddens := ODRIVE.WA.hiddens_prepare (dir_hiddens);
     user_id := -1;
     group_id := -1;
     user_name := '';
     group_name := '';
-    foreach (any item in dirList) do {
+    foreach (any item in dirList) do
+    {
       if (isarray(item))
-        if ((item[1] = 'C') or ((dir_select = 0) and (item[10] like dirFilter))) {
-          if (user_id <> item[7]) {
+      {
+        if (((item[1] = 'C') or ((dir_select = 0) and (item[10] like dirFilter))) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
+        {
+          if (user_id <> item[7])
+          {
             user_id := item[7];
             user_name := ODRIVE.WA.odrive_user_name(user_id);
           }
-          if (group_id <> item[6]) {
+          if (group_id <> item[6])
+          {
             group_id := item[6];
             group_name := ODRIVE.WA.odrive_user_name(group_id);
           }
@@ -1116,6 +1176,7 @@ create procedure ODRIVE.WA.odrive_proc(
         }
     }
   }
+}
 }
 ;
 
@@ -2083,40 +2144,42 @@ create procedure ODRIVE.WA.odrive_settings (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_settings_rows (
-  inout params any)
+create procedure ODRIVE.WA.settings_rows (
+  inout settings any)
 {
-  declare settings any;
-
-  settings := ODRIVE.WA.odrive_settings(params);
   return cast(get_keyword('rows', settings, '10') as integer);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_settings_atomVersion (
-  inout params any)
+create procedure ODRIVE.WA.settings_atomVersion (
+  inout settings any)
 {
-  declare settings any;
-
-  settings := ODRIVE.WA.odrive_settings(params);
   return get_keyword('atomVersion', settings, '1.0');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_settings_chars (
-  inout params any)
+create procedure ODRIVE.WA.settings_chars (
+  inout settings any)
 {
-  declare settings any;
-
-  settings := ODRIVE.WA.odrive_settings(params);
   return cast(get_keyword('chars', settings, '60') as integer);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.settings_hiddens (
+  inout settings any)
+{
+  return get_keyword('hiddens', settings, '.');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.auto_version_full (
   in value varchar)
 {
@@ -2212,7 +2275,6 @@ create procedure ODRIVE.WA.det_action_enable(
       }
     }
   }
-  --dbg_obj_print(path, action, det_class, det_category, ' -> ', retValue);
   return retValue;
 }
 ;

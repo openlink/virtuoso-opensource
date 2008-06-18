@@ -81,8 +81,8 @@ create procedure DBA.SOAPODRIVE.Browse (
   ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate21',  '<=');
   ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate22',  cast(dateEnd as varchar));
 
-  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? order by c9, c3, c1';
-  params := vector(path, 0, 20, data, uName, uPassword);
+  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5, rs6)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? and rs6 = ?order by c9, c3, c1';
+  params := vector(path, 0, 20, data, null, uName, uPassword);
 
   set_user_id('dba');
   state := '00000';

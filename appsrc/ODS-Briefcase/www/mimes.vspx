@@ -77,12 +77,13 @@
             self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
           ]]>
         </v:before-data-bind>
-      	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+      <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
           <v:before-data-bind>
             <![CDATA[
               self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
               control.ds_sql := 'select MT_IDENT, MT_DEFAULT_EXT, MT_DESCRIPTION from WS.WS.SYS_MIME_TYPES';
               control.ds_sql := concat(control.ds_sql, ' order by ', self.mimes_order, ' ', self.mimes_direction);
+            control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
             ]]>
           </v:before-data-bind>
         </v:data-source>

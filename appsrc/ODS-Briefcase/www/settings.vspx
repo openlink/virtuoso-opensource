@@ -91,6 +91,14 @@
               </tr>
               <tr>
                 <th>
+                  <v:label for="f_hiddens" value="Hide files with prefixes (comma separated)"/>
+                </th>
+                <td>
+                  <v:text name="f_hiddens" null-value="--''" value="--get_keyword('hiddens', self.settings, '.')" xhtml_size="10" />
+                </td>
+              </tr>
+              <tr>
+                <th>
                     <v:label for="f_atomVersion" value="Atom File Version"/>
                   </th>
                   <td>
@@ -175,7 +183,6 @@
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare uid integer;
                 declare tmp, rows, chars any;
 
                 declare exit handler for SQLSTATE '*' {
@@ -196,6 +203,7 @@
               self.settings := ODRIVE.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('hiddens', self.settings, self.f_hiddens.ufl_value);
               self.settings := ODRIVE.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
               self.settings := ODRIVE.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);
@@ -206,8 +214,8 @@
               self.settings := ODRIVE.WA.set_keyword('column_#8', self.settings, self.f_column_8.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#9', self.settings, self.f_column_9.ufl_selected);
 
-                uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params));
-              insert replacing ODRIVE.WA.SETTINGS(USER_ID, USER_SETTINGS) values(uid, serialize(self.settings));
+              insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS)
+                values(self.account_id, serialize(self.settings));
 
               self.vc_redirect('home.vspx');
         	    ]]>

@@ -62,12 +62,13 @@
     </vm:variables>
     <vm:pagebody>
       <v:template type="simple">
-      	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+      	<v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
           <v:before-data-bind>
             <![CDATA[
               self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
               control.ds_sql := sprintf('select a.U_ID, a.U_NAME, a.U_FULL_NAME from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where a.U_ID=b.GROUP_ID and a.U_IS_ROLE=1 and b.USER_ID=c.U_ID and c.U_NAME=\'%s\'', ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params));
               control.ds_sql := concat(control.ds_sql, ' order by ', self.grp_order, ' ', self.grp_direction);
+              control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
             ]]>
           </v:before-data-bind>
         </v:data-source>
@@ -162,7 +163,8 @@
                     <v:button value="Delete" action="simple" xhtml_onClick="javascript: return confirmAction(\'Are you sure that you want to delete all groups?\');" xhtml_class="button" xhtml_alt="Delete all groups">
                       <v:on-post>
                         <![CDATA[
-                          for (select a.U_ID, a.U_NAME, b.GROUP_ID gid from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where a.U_ID=b.GROUP_ID and a.U_IS_ROLE=1 and b.USER_ID=c.U_ID and c.U_NAME=ODRIVE.WA.session_user(params)) do {
+                          for (select a.U_ID, a.U_NAME, b.GROUP_ID gid from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where a.U_ID=b.GROUP_ID and a.U_IS_ROLE=1 and b.USER_ID=c.U_ID and c.U_NAME=ODRIVE.WA.session_user(params)) do
+                          {
                             delete from ODRIVE.WA.GROUPS where GROUP_ID = gid;
                             USER_ROLE_DROP(U_NAME);
                           }

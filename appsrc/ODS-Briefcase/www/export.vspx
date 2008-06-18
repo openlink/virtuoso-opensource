@@ -41,10 +41,12 @@
       http_request_status ('HTTP/1.1 200 OK');
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
-      if (self.v_output = 'about') {
+      if (self.v_output = 'about')
+      {
         http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
         http ('<channel>\n');
-        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
+        {
           http ('<title>');
             http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
           http ('</title>\n');
@@ -113,14 +115,17 @@
    	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
 
         goto _end;
-      } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+      }
+      else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
+      {
         declare data, sql, params, state, msg, meta, result any;
 
-        if (self.v_mode = 's') {
+        if (self.v_mode = 's')
+        {
           params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 10, get_keyword('b2', self.vc_page.vc_event.ve_params, ''), ODRIVE.WA.account_name (self.account_id));
         }
-
-        if (self.v_mode = 'a') {
+        if (self.v_mode = 'a')
+        {
           ODRIVE.WA.dav_dc_set_base(data, 'path',    get_keyword('b1', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_base(data, 'name',    get_keyword('b2', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_base(data, 'content', get_keyword('b3', self.vc_page.vc_event.ve_params, ''));
@@ -142,7 +147,8 @@
           ODRIVE.WA.dav_dc_set_advanced(data, 'privateTags12', get_keyword('a15', self.vc_page.vc_event.ve_params, ''));
 
           N := 1;
-          while (get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, '') <> '') {
+          while (get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, '') <> '')
+          {
             ODRIVE.WA.dav_dc_set_metadata(data,
                                           cast(N as varchar),
                                           get_keyword(sprintf('mt%d', N), self.vc_page.vc_event.ve_params, ''),
@@ -153,10 +159,10 @@
                                          );
             N := N + 1;
           }
-          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, ODRIVE.WA.account_name (self.account_id));
+          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, '', ODRIVE.WA.account_name (self.account_id));
         }
 
-        sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
+        sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
         sql := replace(sql, '<MAX>', 'TOP ' || self.v_max);
         sql := concat(sql, ' order by c1, ', self.v_order, ' ', self.v_direction);
 
@@ -168,7 +174,8 @@
         http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
           http ('<rss version="2.0">\n');
         http ('<channel>\n');
-        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
+        {
           http ('<title>');
             http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
           http ('</title>\n');
@@ -191,7 +198,8 @@
             http_value (ODRIVE.WA.odrive_url (self.domain_id));
           http ('</link>\n');
         }
-        foreach (any row in result) do {
+        foreach (any row in result) do
+        {
           http ('<item>\n');
             http ('<title>');
               http_value (ODRIVE.WA.utf2wide(row[8]));
@@ -205,7 +213,8 @@
             http ('<pubDate>');
               http_value (ODRIVE.WA.dt_rfc1123 (stringdate(row[3])));
             http ('</pubDate>\n');
-            if (self.v_output <> 'rss') {
+            if (self.v_output <> 'rss')
+            {
               http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                 http_value (ODRIVE.WA.dt_iso8601 (stringdate(row[3])));
               http ('</ods:modified>\n');
