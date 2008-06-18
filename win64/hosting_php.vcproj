@@ -51,7 +51,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
-				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
+				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -120,110 +120,9 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\hosting_php"
-			ConfigurationType="2"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions=""
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/hosting_php.tlb"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
-				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\hosting_php/hosting_php.pch"
-				AssemblerListingLocation="$(ConfigurationName)\hosting_php/"
-				ObjectFile="$(ConfigurationName)\hosting_php/"
-				ProgramDataBaseFileName="$(ConfigurationName)\hosting_php/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions=""
-				Culture="1049"
-				AdditionalIncludeDirectories="..\libsrc\Wi"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib php5ts.lib"
-				OutputFile="$(ConfigurationName)/hosting_php.dll"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,.\php5"
-				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
-				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -254,7 +153,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
-				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
+				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -324,9 +223,110 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\hosting_php"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions=""
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName="$(ConfigurationName)/hosting_php.tlb"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
+				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="1"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile="$(ConfigurationName)\hosting_php/hosting_php.pch"
+				AssemblerListingLocation="$(ConfigurationName)\hosting_php/"
+				ObjectFile="$(ConfigurationName)\hosting_php/"
+				ProgramDataBaseFileName="$(ConfigurationName)\hosting_php/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions=""
+				Culture="1049"
+				AdditionalIncludeDirectories="..\libsrc\Wi"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib php5ts.lib"
+				OutputFile="$(ConfigurationName)/hosting_php.dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,.\php5"
+				IgnoreDefaultLibraryNames="LIBCD.lib"
+				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -357,7 +357,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
-				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32"
+				PreprocessorDefinitions="INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
