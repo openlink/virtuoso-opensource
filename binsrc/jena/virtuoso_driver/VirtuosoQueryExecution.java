@@ -37,6 +37,7 @@ import com.hp.hpl.jena.query.QueryExecution;
 
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.*;
 
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
@@ -71,7 +72,13 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	virt_pass = graph.getGraphPassword ();
 	virt_user = graph.getGraphUser ();
 
-        virt_query = "sparql\n " + query;
+	StringTokenizer tok = new StringTokenizer(query);
+	String s = tok.nextToken().toLowerCase();
+	if (s.equals("describe") || s.equals("construct")) {
+           virt_query = "sparql\n define output:format '_JAVA_'\n " + query;
+        } else {
+      	   virt_query = "sparql\n " + query;
+        }
     }
 
 
@@ -172,7 +179,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public Model execConstruct(Model model)
     {
-/************
 	try {
 	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
@@ -186,7 +192,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	      Node s = VirtGraph.Object2Node(rs.getObject(1));
 	      Node p = VirtGraph.Object2Node(rs.getObject(2));
 	      Node o = VirtGraph.Object2Node(rs.getObject(3));
-	      Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+	      com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
 	      if (st != null)
 	        model.add(st);
 	    }	
@@ -198,7 +204,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	} catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:"+e);
 	}
-*****************/
 	return model;
     }
 
@@ -210,7 +215,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public Model execDescribe(Model model)
     {
-/***************
 	try {
 	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
@@ -218,13 +222,13 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    stmt = connection.createStatement();
 	    VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(virt_query);
 	    ResultSetMetaData rsmd = rs.getMetaData();
-
 	    while(rs.next())
 	    {
 	      Node s = VirtGraph.Object2Node(rs.getObject(1));
 	      Node p = VirtGraph.Object2Node(rs.getObject(2));
 	      Node o = VirtGraph.Object2Node(rs.getObject(3));
-	      Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+
+	      com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
 	      if (st != null)
 	        model.add(st);
 	    }	
@@ -236,7 +240,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	} catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:"+e);
 	}
-******************/
 	return model;
     }
 

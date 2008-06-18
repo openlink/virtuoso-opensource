@@ -78,7 +78,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
 	    for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
 	        {
-	            Triple t = (Triple)i;
+	            Triple t = (Triple)i.next();
 	            S = Node2Str(t.getSubject());
 	            P = Node2Str(t.getPredicate());
 	            O = Node2Str(t.getObject());
@@ -186,9 +186,12 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     }
 
 
+    Lock lock = null ;
     /** Get the lock for this dataset */
     public Lock getLock() {
-	throw new JenaException("Lock are not implemented yet, in VirtDataSource.java .");
+        if (lock == null)
+          lock = new com.hp.hpl.jena.shared.LockNone();
+        return lock;
     }
 
 
