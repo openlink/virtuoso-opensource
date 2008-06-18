@@ -1,3 +1,59 @@
+2008-06-18 11:25  source
+
+	* Fixed win64 build
+
+2008-06-18 10:17  source
+
+	* Skip part of tpcd remote tests
+
+2008-06-18 08:53  source
+
+	* Updated version to 5.0.7-rc14
+
+2008-06-18 08:42  source
+
+	* Fixed SIOC data
+
+2008-06-18 08:41  source
+
+	* Added claims to annotations
+
+2008-06-18 08:22  source
+
+	* Regenerated driver
+
+2008-06-18 08:21  source
+
+	* Added optimizations
+
+2008-06-17 18:21  source
+
+	* Fixed projects for building on Windows
+
+2008-06-17 18:19  source
+
+	* Added striping test
+
+2008-06-17 18:18  source
+
+	* Fixed cleanup of temp files
+
+2008-06-17 18:15  source
+
+	* Fixed unneeded re-create of information schema on startup
+
+2008-06-17 13:13  source
+
+	* Added files to distribution
+
+2008-06-17 12:58  source
+
+	* Updated documentation
+
+2008-06-17 12:41  source
+
+	* Added enhancements to Jena provider
+
 2008-06-17 12:12  source
 
 	* Updated version to 5.0.7-rc12
