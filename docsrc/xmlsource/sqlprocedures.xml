@@ -1121,7 +1121,7 @@ If the blocking flag was zero and the request was not complete, then the error o
 Once aq_wait has retrieved a state, the state is no longer retained in the queue.
                         </para>
                         <para>
-The aq_wait_all function allows waiting for all activity to complete but discards individual return states.
+The aq_wait_all function allows waiting for all activity to complete but discards individual return states. If some of running activities is terminated by sql error, this error will be raised in the thread executing aq_wait_all function call. 
                         </para>
                         <para>
 Note that it is possible to get a deadlock between the requesting thread and a worker thread and that this deadlock
