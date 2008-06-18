@@ -902,6 +902,20 @@ span.toolbarLabel
   font-size: 0.8em;
 }
 
+/* ComboList */
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #99b3c5;
+  color: white;
+}
+
 /* Comments */
 div.cm_node_top
 {

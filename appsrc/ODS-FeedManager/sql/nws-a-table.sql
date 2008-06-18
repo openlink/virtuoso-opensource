@@ -538,6 +538,7 @@ ENEWS.WA.exec_no_error('
     A_DOMAIN_ID integer not null,
     A_OBJECT_ID integer not null,
     A_BODY long varchar,
+    A_CLAIMS long varchar,
     A_CONTEXT varchar,
     A_AUTHOR varchar,
     A_CREATED datetime,
@@ -548,6 +549,10 @@ ENEWS.WA.exec_no_error('
     primary key (A_ID)
   )
 ');
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.ANNOTATIONS add A_CLAIMS long varchar', 'C', 'ENEWS.WA.ANNOTATIONS', 'A_CLAIMS'
+);
 
 ENEWS.WA.exec_no_error ('
   create index SK_ENEWS_ANNOTATIONS_01 on ENEWS.WA.ANNOTATIONS (A_OBJECT_ID, A_DOMAIN_ID, A_ID)

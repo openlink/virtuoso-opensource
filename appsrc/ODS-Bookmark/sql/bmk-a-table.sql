@@ -346,6 +346,7 @@ BMK.WA.exec_no_error('
     A_DOMAIN_ID integer not null,
     A_OBJECT_ID integer not null,
     A_BODY long varchar,
+    A_CLAIMS long varchar,
     A_CONTEXT varchar,
     A_AUTHOR varchar,
     A_CREATED datetime,
@@ -356,6 +357,10 @@ BMK.WA.exec_no_error('
     primary key (A_ID)
   )
 ');
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.ANNOTATIONS add A_CLAIMS long varchar', 'C', 'BMK.WA.ANNOTATIONS', 'A_CLAIMS'
+);
 
 BMK.WA.exec_no_error ('
   create index SK_BMK_ANNOTATIONS_01 on BMK.WA.ANNOTATIONS (A_OBJECT_ID, A_ID)

@@ -266,8 +266,9 @@ create procedure fill_ods_addressbook_sioc (
 			for (select A_ID,
 									A_DOMAIN_ID,
 									A_OBJECT_ID,
-									A_BODY,
 									A_AUTHOR,
+		              A_BODY,
+                  A_CLAIMS,
 									A_CREATED,
 									A_UPDATED
 						 from AB.WA.ANNOTATIONS
@@ -278,8 +279,9 @@ create procedure fill_ods_addressbook_sioc (
 													 A_ID,
 													 A_DOMAIN_ID,
 													 A_OBJECT_ID,
-													 A_BODY,
 													 A_AUTHOR,
+            		                       A_BODY,
+                                       A_CLAIMS,
 													 A_CREATED,
 													 A_UPDATED);
 			}
@@ -859,6 +861,7 @@ create procedure addressbook_annotation_insert (
 	inout master_id integer,
 	inout author varchar,
 	inout body varchar,
+  inout claims any,
 	inout created datetime,
 	inout updated datetime)
 {
@@ -891,6 +894,8 @@ create procedure addressbook_annotation_insert (
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+
+	  addressbook_claims_insert (graph_iri, annotattion_iri, claims);
 	}
 	return;
 }
@@ -901,9 +906,10 @@ create procedure addressbook_annotation_insert (
 create procedure addressbook_annotation_delete (
 	inout annotation_id integer,
 	inout domain_id integer,
-	inout master_id integer)
+  inout master_id integer,
+  inout claims any)
 {
-	declare graph_iri, iri varchar;
+	declare graph_iri, annotattion_iri varchar;
 
 	declare exit handler for sqlstate '*' {
 		sioc_log_message (__SQL_MESSAGE);
@@ -911,8 +917,56 @@ create procedure addressbook_annotation_delete (
 	};
 
 	graph_iri := get_graph ();
-	iri := contact_annotation_iri (domain_id, master_id, annotation_id);
-	delete_quad_s_or_o (graph_iri, iri, iri);
+	annotattion_iri := contact_annotation_iri (domain_id, master_id, annotation_id);
+	delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+
+	addressbook_claims_delete (graph_iri, annotattion_iri, claims);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure addressbook_claims_insert (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI, cPedicate, cValue any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    cPedicate := V[N][1];
+    cValue := V[N][2];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+
+    if (0 = length (cPedicate))
+      cPedicate := rdfs_iri ('seeAlso');
+
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, cPedicate, cURI);
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure addressbook_claims_delete (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+  }
 }
 ;
 
@@ -925,8 +979,9 @@ create trigger ANNOTATIONS_SIOC_I after insert on AB.WA.ANNOTATIONS referencing 
 										 N.A_ID,
 										 N.A_DOMAIN_ID,
 										 N.A_OBJECT_ID,
-										 N.A_BODY,
 										 N.A_AUTHOR,
+           										   N.A_BODY,
+                                 N.A_CLAIMS,
 										 N.A_CREATED,
 										 N.A_UPDATED);
 }
@@ -938,14 +993,16 @@ create trigger ANNOTATIONS_SIOC_U after update on AB.WA.ANNOTATIONS referencing 
 {
 	addressbook_annotation_delete (O.A_ID,
 										 O.A_DOMAIN_ID,
-										 O.A_OBJECT_ID);
+										             O.A_OBJECT_ID,
+                                 O.A_CLAIMS);
 	addressbook_annotation_insert (null,
 										 null,
 										 N.A_ID,
 										 N.A_DOMAIN_ID,
 										 N.A_OBJECT_ID,
-										 N.A_BODY,
 										 N.A_AUTHOR,
+										             N.A_BODY,
+                                 N.A_CLAIMS,
 										 N.A_CREATED,
 										 N.A_UPDATED);
 }
@@ -957,7 +1014,8 @@ create trigger ANNOTATIONS_SIOC_D before delete on AB.WA.ANNOTATIONS referencing
 {
 	addressbook_annotation_delete (O.A_ID,
 										 O.A_DOMAIN_ID,
-										 O.A_OBJECT_ID);
+										             O.A_OBJECT_ID,
+                                 O.A_CLAIMS);
 }
 ;
 

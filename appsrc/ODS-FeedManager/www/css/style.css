@@ -607,13 +607,23 @@ table#feed
   border-width: 1px 0px 1px 0px;
 }
 
-.td_row0
+.tr_0
 {
   background-color: #EFEFEF;
 }
 
-.td_row1
+.tr_1
 {
+}
+
+.tr_1:hover, .tr_0:hover
+{
+ 	background-color: #eec;
+}
+
+.tr_select
+{
+  background-color: #FFFFCC;
 }
 
 /*====== forms ======*/
@@ -865,6 +875,11 @@ div.boxHeader {
   border-width: 1px 1px 2px 1px;
 }
 
+FM_grid td
+{
+  padding: 2px 4px 2px 4px;
+}
+
 thead.sortHeader tr
 {
   background-image: url(../image/stl_blu1_grad.gif);
@@ -919,11 +934,6 @@ thead.sortHeader a:hover
 	display: block;
 	text-decoration: underline;
 	width: 100%
-}
-
-table.FM_grid td
-{
-  padding: 2px 4px 2px 4px;
 }
 
 /*====== New forms ======*/
@@ -1127,6 +1137,20 @@ div.menu div.menuItemSep {
   border-top: 1px solid #7f94a5;
   border-bottom: 1px solid #f0f0f0;
   margin: 4px 2px;
+}
+
+/* ComboList */
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #99b3c5;
+  color: white;
 }
 
 /* Comments */

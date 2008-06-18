@@ -46,6 +46,9 @@
       <v:variable persist="0" name="v_id" type="integer" />
       <v:variable persist="0" name="v_author" type="varchar" default="''" />
       <v:variable persist="0" name="v_body" type="varchar" default="''" />
+      <v:variable persist="0" name="v_claims" type="any" default="null" />
+
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="0" />
     </vm:variables>
     <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
@@ -70,7 +73,7 @@
                 </v:on-post>
               </v:button>
             </div>
-            <table id="annotations" class="grid1" cellspacing="0" style="border: 0;">
+            <table id="annotations" class="BMK_grid" cellspacing="0" style="border: 0;">
             </table>
           </v:template>
 
@@ -143,16 +146,28 @@
             <![CDATA[
               self.v_author := BMK.WA.account_fullName (self.account_id);
               self.v_body := '';
-              if (self.v_mode = 'edit') {
+              self.v_claims := vector ();
+              if (self.v_mode = 'edit')
+              {
                 select A_AUTHOR,
-                       A_BODY
+                       A_BODY,
+                       deserialize (A_CLAIMS)
                   into self.v_author,
-                       self.v_body
+                       self.v_body,
+                       self.v_claims
                   from BMK.WA.ANNOTATIONS
                  where A_ID = self.v_id;
               }
             ]]>
           </v:before-data-bind>
+          <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
+          <div id="a" class="c1">
+            <div class="tabs">
+              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="0" caption="Main" />
+              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="1" caption="Claims" />
+            </div>
+            <div class="contents">
+              <div id="a_content_0" class="tabContent" style="display: none;">
           <table width="90%" cellspacing="0">
             <tr>
               <th>
@@ -170,28 +185,131 @@
               </td>
             </tr>
             <tr>
-              <th>
+                    <th valign="top">
                 Annotation
               </th>
               <td>
                 <v:textarea name="f_body" null-value="--''" value="--self.v_body" fmt-function="BMK.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
               </td>
             </tr>
+                </table>
+              </div>
+              <div id="a_content_1" class="tabContent" style="display: none;">
+                <v:text name="c_seqNo" xhtml_id="c_seqNo" type="hidden" value="--length (self.v_claims)" />
+                <table id="c_table" width="90%" cellspacing="0">
+                  <thead class="sortHeader">
             <tr>
-              <td colspan="2" align="center">
-                <div class="comment-button">
+                      <th style="text-align: left;">URI</th>
+                      <th style="text-align: left;">Relation</th>
+                      <th style="text-align: left;">Value</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <?vsp
+                    declare N integer;
+
+                    for (N := 0; N < length (self.v_claims); N := N + 1)
+                    {
+                  ?>
+                    <tr id="c_tr_<?V cast (N as varchar) ?>">
+                      <td width="40%">
+                        <input name="c_iri_<?V cast (N as varchar) ?>" value="<?V self.v_claims[N][0] ?>" style="width: 97%;" />
+                      </td>
+                      <td id="c_td_<?V cast (N as varchar) ?>" width="20%">
+                  		  <![CDATA[
+                  		    <script type="text/javascript">
+                  	        function categoryCombo_<?V cast (N as varchar) ?> ()
+                            {
+                              var cl = new OAT.Combolist([], '<?V self.v_claims[N][1] ?>');
+                  		        cl.input.name = "c_relation_<?V cast (N as varchar) ?>";
+                  		        cl.input.id = "c_relation_<?V cast (N as varchar) ?>";
+                              cl.input.style.width = "80%";
+                   		        $('c_td_<?V cast (N as varchar) ?>').appendChild(cl.div);
+                  		        cl.addOption('rdfs:seeAlso');
+                  		        cl.addOption('foaf:made');
+                  		        cl.addOption('foaf:maker');
+                  		      }
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo_<?V cast (N as varchar) ?>);
+                  		    </script>
+                  		  ]]>
+                      </td>
+                      <td width="40%">
+                        <input name="c_value_<?V cast (N as varchar) ?>" value="<?V self.v_claims[N][2] ?>" style="width: 97%;" />
+                      </td>
+                      <td>
+                        &nbsp;<a onclick="javascript: BMK.updateClaim('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0"/></a>
+                      </td>
+                    </tr>
+                  <?vsp
+                    }
+                  ?>
+                  <tr id="c_tr">
+                    <td colspan="4">
+                      <hr />
+                    </td>
+                  </tr>
+                  <tr id="c_tr_xxx">
+                    <td width="40%">
+                      <input id="c_iri_xxx" name="c_iri_xxx" style="width: 97%;" />
+                    </td>
+                    <td id="c_td_xxx" width="20%">
+                		  <![CDATA[
+                		    <script type="text/javascript">
+                	        function categoryCombo_xxx ()
+                          {
+                		        var cl = new OAT.Combolist([], '');
+                		        cl.input.name = "c_relation_xxx";
+                		        cl.input.id = "c_relation_xxx";
+                            cl.input.style.width = "80%";
+                 		        $("c_td_xxx").appendChild(cl.div);
+                		        cl.addOption('rdfs:seeAlso');
+                		        cl.addOption('foaf:made');
+                		        cl.addOption('foaf:maker');
+                		      }
+                          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo_xxx);
+                		    </script>
+                		  ]]>
+		                </td>
+                    <td width="40%">
+                      <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
+                    </td>
+                    <td>
+                      &nbsp;<a onclick="javascript: BMK.updateClaim('xxx');"><img src="image/add_16.png" border="0"/></a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="new-form-footer">
                   <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
-                        self.v_body := trim (self.f_body.ufl_value);
+                  declare N, M integer;
+                  declare params any;
 
-                        if (self.v_mode = 'create') {
+                  params := self.vc_page.vc_event.ve_params;
+
+                        self.v_body := trim (self.f_body.ufl_value);
+                  self.v_claims := vector ();
+                  for (N := 0; N < length (params); N := N + 2)
+                  {
+                    if ((params[N] like 'c_iri_%') and (params[N] <> 'c_iri_xxx'))
+                    {
+                      M := replace (params[N], 'c_iri_', '');
+                      self.v_claims := vector_concat (self.v_claims, vector (vector (get_keyword ('c_iri_'||M, params), get_keyword ('c_relation_'||M, params), get_keyword ('c_value_'||M, params))));
+                    }
+                  }
+
+                  if (self.v_mode = 'create')
+                  {
                           self.v_author := trim (self.f_author.ufl_value);
-                          insert into BMK.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
-                            values (self.domain_id, self.v_oid, self.v_body, self.v_author, now (), now ());
+                    insert into BMK.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CLAIMS, A_CREATED, A_UPDATED)
+                      values (self.domain_id, self.v_oid, self.v_body, self.v_author, serialize (self.v_claims), now (), now ());
                         } else {
                           update BMK.WA.ANNOTATIONS
                              set A_BODY = self.v_body,
+                           A_CLAIMS = serialize (self.v_claims),
                                  A_UPDATED = now ()
                            where A_ID = self.v_id;
                         }
@@ -210,9 +328,6 @@
                     </v:on-post>
                   </v:button>
                 </div>
-              </td>
-            </tr>
-          </table>
         </vm:if>
       </div>
       <script>

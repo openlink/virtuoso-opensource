@@ -342,6 +342,7 @@ AB.WA.exec_no_error('
     A_DOMAIN_ID integer not null,
     A_OBJECT_ID integer not null,
     A_BODY long varchar,
+    A_CLAIMS long varchar,
     A_CONTEXT varchar,
     A_AUTHOR varchar,
     A_CREATED datetime,
@@ -352,6 +353,10 @@ AB.WA.exec_no_error('
     primary key (A_ID)
   )
 ');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.ANNOTATIONS add A_CLAIMS long varchar', 'C', 'AB.WA.ANNOTATIONS', 'A_CLAIMS'
+);
 
 AB.WA.exec_no_error ('
   create index SK_AB_ANNOTATIONS_01 on AB.WA.ANNOTATIONS (A_OBJECT_ID, A_ID)

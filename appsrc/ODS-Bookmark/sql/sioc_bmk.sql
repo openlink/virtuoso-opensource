@@ -194,8 +194,9 @@ create procedure fill_ods_bookmark_sioc (
 			for (select A_ID,
 									A_DOMAIN_ID,
 									A_OBJECT_ID,
-									A_BODY,
 									A_AUTHOR,
+									A_BODY,
+      					  A_CLAIMS,
 									A_CREATED,
 									A_UPDATED
 						 from BMK.WA.ANNOTATIONS
@@ -205,8 +206,9 @@ create procedure fill_ods_bookmark_sioc (
     													 A_ID,
     													 A_DOMAIN_ID,
     													 A_OBJECT_ID,
-    													 A_BODY,
     													 A_AUTHOR,
+    													 A_BODY,
+    													 A_CLAIMS,
     													 A_CREATED,
     													 A_UPDATED
     													);
@@ -513,10 +515,10 @@ create procedure bmk_annotation_insert (
 	inout master_id integer,
 	inout author varchar,
 	inout body varchar,
+  inout claims any,
 	inout created datetime,
 	inout updated datetime)
 {
-  declare bookmark_id integer;
 	declare master_iri, annotattion_iri varchar;
 
 	declare exit handler for sqlstate '*'
@@ -538,15 +540,16 @@ create procedure bmk_annotation_insert (
 
 	if (not isnull (graph_iri))
 	{
-    bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = master_id);
-		master_iri := bmk_post_iri (domain_id, bookmark_id);
-		annotattion_iri := bmk_annotation_iri (domain_id, bookmark_id, annotation_id);
+		master_iri := bmk_post_iri (domain_id, master_id);
+		annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
 		DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
 		DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
 		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+
+	  bmk_claims_insert (graph_iri, annotattion_iri, claims);
 	}
 	return;
 }
@@ -557,10 +560,10 @@ create procedure bmk_annotation_insert (
 create procedure bmk_annotation_delete (
 	inout annotation_id integer,
 	inout domain_id integer,
-	inout master_id integer)
+	inout master_id integer,
+  inout claims any)
 {
-  declare bookmark_id integer;
-	declare graph_iri, iri varchar;
+	declare graph_iri, annotattion_iri varchar;
 
 	declare exit handler for sqlstate '*'
 	{
@@ -569,9 +572,56 @@ create procedure bmk_annotation_delete (
 	};
 
 	graph_iri := get_graph ();
-  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = master_id);
-	iri := bmk_annotation_iri (domain_id, bookmark_id, annotation_id);
-	delete_quad_s_or_o (graph_iri, iri, iri);
+	annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
+	delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+
+	bmk_claims_delete (graph_iri, annotattion_iri, claims);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bmk_claims_insert (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI, cPedicate, cValue any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    cPedicate := V[N][1];
+    cValue := V[N][2];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+
+    if (0 = length (cPedicate))
+      cPedicate := rdfs_iri ('seeAlso');
+
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, cPedicate, cURI);
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bmk_claims_delete (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+  }
 }
 ;
 
@@ -583,8 +633,9 @@ create trigger ANNOTATIONS_SIOC_I after insert on BMK.WA.ANNOTATIONS referencing
     										 N.A_ID,
     										 N.A_DOMAIN_ID,
     										 N.A_OBJECT_ID,
-    										 N.A_BODY,
     										 N.A_AUTHOR,
+    										 N.A_BODY,
+    										 N.A_CLAIMS,
     										 N.A_CREATED,
     										 N.A_UPDATED);
 }
@@ -596,13 +647,15 @@ create trigger ANNOTATIONS_SIOC_U after update on BMK.WA.ANNOTATIONS referencing
 {
 	bmk_annotation_delete (O.A_ID,
     										 O.A_DOMAIN_ID,
-    										 O.A_OBJECT_ID);
+    										 O.A_OBJECT_ID,
+    										 O.A_CLAIMS);
 	bmk_annotation_insert (null,
     										 N.A_ID,
     										 N.A_DOMAIN_ID,
     										 N.A_OBJECT_ID,
-    										 N.A_BODY,
     										 N.A_AUTHOR,
+    										 N.A_BODY,
+    										 N.A_CLAIMS,
     										 N.A_CREATED,
     										 N.A_UPDATED);
 }
@@ -614,7 +667,8 @@ create trigger ANNOTATIONS_SIOC_D before delete on BMK.WA.ANNOTATIONS referencin
 {
 	bmk_annotation_delete (O.A_ID,
     										 O.A_DOMAIN_ID,
-    										 O.A_OBJECT_ID);
+    										 O.A_OBJECT_ID,
+    										 O.A_CLAIMS);
 }
 ;
 

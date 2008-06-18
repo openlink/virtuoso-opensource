@@ -1516,3 +1516,57 @@ BMK.formPostAfter = function (action)
   if (formDialog)
     formDialog.hide();
 }
+
+BMK.updateClaim = function (claimNo)
+{
+  if (claimNo == 'xxx')
+  {
+    if (($v('c_iri_xxx') == '') || ($v('c_relation_xxx') == '') || ($v('c_value_xxx') == ''))
+    {
+      alert ('The IRI, relation and value fileld can not be empty|');
+    }
+    else
+    {
+      var tr = $('c_tr_xxx');
+      if (tr)
+      {
+        var seqNo = parseInt($v('c_seqNo'));
+
+        var tr_add = OAT.Dom.create('tr');
+        tr_add.id = 'c_tr_'+seqNo;
+
+        var S = tr.innerHTML;
+        S = S.replace(/xxx/g, ''+seqNo);
+        S = S.replace(/add_16/g, 'del_16');
+
+        var tr_parent = $('c_tr').parentNode;
+        tr_parent.insertBefore(tr_add, $('c_tr'));
+        tr_add.innerHTML = S;
+
+        var cl = new OAT.Combolist([], 'rdfs:seeAlso');
+        cl.input.name = 'c_relation_'+seqNo;
+        cl.input.id = 'c_relation_'+seqNo;
+        cl.input.style.width = "80%";
+        var td = $('c_td_'+seqNo);
+        td.innerHTML = '';
+        td.appendChild(cl.div);
+        cl.addOption('rdfs:seeAlso');
+        cl.addOption('foaf:made');
+        cl.addOption('foaf:maker');
+
+        $('c_iri_'+seqNo).value = $v('c_iri_xxx');
+        $('c_relation_'+seqNo).value = $v('c_relation_xxx');
+        $('c_value_'+seqNo).value = $v('c_value_xxx');
+
+        $('c_seqNo').value = seqNo + 1;
+        $('c_iri_xxx').value = '';
+        $('c_relation_xxx').value = '';
+        $('c_value_xxx').value = '';
+      }
+    }
+  }
+  else
+  {
+    OAT.Dom.unlink('c_tr_'+claimNo);
+  }
+}

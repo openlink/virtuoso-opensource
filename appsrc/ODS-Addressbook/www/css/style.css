@@ -453,6 +453,11 @@ table#list thead input {
   border-width: 0px 0px 1px 0px;
 }
 
+.tr_1:hover, .tr_0:hover
+{
+ 	background-color: #eec;
+}
+
 .tr_select
 {
   background-color: #FFFFCC;
@@ -1069,6 +1074,7 @@ div.panelbar_option:hover
   overflow: auto;
 }
 
+/* ComboList */
 .combo_list_list {
   background-color: white;
   border: 1px solid black;

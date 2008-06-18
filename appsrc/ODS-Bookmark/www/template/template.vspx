@@ -51,7 +51,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "json", "tree", "anchor", "dialog", "dav"];
+        var featureList=["ajax2", "json", "ws", "tree", "anchor", "dialog", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>

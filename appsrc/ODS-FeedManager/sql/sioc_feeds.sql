@@ -65,7 +65,17 @@ create procedure feed_item_iri2 (
   declare feed_id integer;
 
   feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
-  return sprintf ('http://%s%s/feed/%d/%d', get_cname(), get_base_path (), feed_id, item_id);
+  return feed_item_iri (feed_id, item_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feed_item_url (
+  inout domain_id integer,
+  inout item_id integer)
+{
+  return sprintf('http://%s/enews2/%d/news.vspx?link=%d', get_cname(), domain_id, item_id);
 }
 ;
 
@@ -104,16 +114,6 @@ create procedure feed_annotation_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure feed_item_url (
-  inout domain_id integer,
-  inout item_id integer)
-{
-  return sprintf('http://%s/enews2/%d/news.vspx?link=%d', get_cname(), domain_id, item_id);
-}
-;
-
--------------------------------------------------------------------------------
---
 -- this represents author in the diven post
 create procedure author_iri (inout feed_id integer, inout author any, inout content any)
 {
@@ -122,7 +122,8 @@ create procedure author_iri (inout feed_id integer, inout author any, inout cont
   a_uri := null;
   if (isnull(author))
     goto _end;
-  if (xpath_eval ('/item', content) is not null) {
+  if (xpath_eval ('/item', content) is not null)
+  {
     -- RSS
     ENEWS.WA.mail_address_split (author, a_name, a_email);
   } else if (xpath_eval ('/entry', content) is not null) {
@@ -133,7 +134,8 @@ create procedure author_iri (inout feed_id integer, inout author any, inout cont
     a_name := cast(xpath_eval ('/entry/author/name', content, 1) as varchar);
     a_email := cast(xpath_eval ('/entry/author/email', content, 1) as varchar);
   }
-  if (not isnull(a_name)) {
+  if (not isnull(a_name))
+  {
     f_uri := (select EF_URI from ENEWS.WA.FEED where EF_ID = feed_id);
     a_uri := f_uri || '#' || replace (sprintf ('%U', a_name), '+', '%2B');
   }
@@ -321,8 +323,9 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
       for (select A_ID,
                   A_DOMAIN_ID,
                   A_OBJECT_ID,
-                  A_BODY,
                   A_AUTHOR,
+                  A_BODY,
+                  A_CLAIMS,
                   A_CREATED,
                   A_UPDATED
              from ENEWS.WA.ANNOTATIONS
@@ -333,8 +336,9 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
                                  A_ID,
                                  A_DOMAIN_ID,
                                  A_OBJECT_ID,
-                                 A_BODY,
                                  A_AUTHOR,
+                                 A_BODY,
+                                 A_CLAIMS,
                                  A_CREATED,
                                  A_UPDATED);
       }
@@ -638,6 +642,7 @@ create procedure feeds_annotation_insert (
   inout master_id integer,
   inout author varchar,
   inout body varchar,
+  inout claims any,
   inout created datetime,
   inout updated datetime)
 {
@@ -676,6 +681,8 @@ create procedure feeds_annotation_insert (
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+
+	  feeds_claims_insert (graph_iri, annotattion_iri, claims);
   }
   return;
 }
@@ -686,9 +693,10 @@ create procedure feeds_annotation_insert (
 create procedure feeds_annotation_delete (
   inout annotation_id integer,
   inout domain_id integer,
-  inout master_id integer)
+  inout master_id integer,
+  inout claims any)
 {
-  declare graph_iri, iri varchar;
+  declare graph_iri, annotattion_iri varchar;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -696,8 +704,56 @@ create procedure feeds_annotation_delete (
   };
 
   graph_iri := get_graph ();
-  iri := feed_annotation_iri (domain_id, master_id, annotation_id);
-  delete_quad_s_or_o (graph_iri, iri, iri);
+  annotattion_iri := feed_annotation_iri (domain_id, master_id, annotation_id);
+  delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
+
+	feeds_claims_delete (graph_iri, annotattion_iri, claims);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feeds_claims_insert (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI, cPedicate, cValue any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    cPedicate := V[N][1];
+    cValue := V[N][2];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+
+    if (0 = length (cPedicate))
+      cPedicate := rdfs_iri ('seeAlso');
+
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, cPedicate, cURI);
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feeds_claims_delete (
+  in graph_iri varchar,
+  in iri varchar,
+  in claims any)
+{
+  declare N integer;
+  declare V, cURI any;
+
+  V := deserialize (claims);
+  for (N := 0; N < length (V); N := N +1)
+  {
+    cURI := V[N][0];
+    delete_quad_s_or_o (graph_iri, cURI, cURI);
+  }
 }
 ;
 
@@ -710,8 +766,9 @@ create trigger ANNOTATIONS_SIOC_I after insert on ENEWS.WA.ANNOTATIONS referenci
                            N.A_ID,
                            N.A_DOMAIN_ID,
                            N.A_OBJECT_ID,
-                           N.A_BODY,
                            N.A_AUTHOR,
+                           N.A_BODY,
+                           N.A_CLAIMS,
                            N.A_CREATED,
                            N.A_UPDATED);
 }
@@ -723,14 +780,16 @@ create trigger ANNOTATIONS_SIOC_U after update on ENEWS.WA.ANNOTATIONS referenci
 {
   feeds_annotation_delete (O.A_ID,
                            O.A_DOMAIN_ID,
-                           O.A_OBJECT_ID);
+                           O.A_OBJECT_ID,
+                           O.A_CLAIMS);
   feeds_annotation_insert (null,
                            null,
                            N.A_ID,
                            N.A_DOMAIN_ID,
                            N.A_OBJECT_ID,
-                           N.A_BODY,
                            N.A_AUTHOR,
+                           N.A_BODY,
+                           N.A_CLAIMS,
                            N.A_CREATED,
                            N.A_UPDATED);
 }
@@ -742,7 +801,8 @@ create trigger ANNOTATIONS_SIOC_D before delete on ENEWS.WA.ANNOTATIONS referenc
 {
   feeds_annotation_delete (O.A_ID,
                            O.A_DOMAIN_ID,
-                           O.A_OBJECT_ID);
+                           O.A_OBJECT_ID,
+                           O.A_CLAIMS);
 }
 ;
 
