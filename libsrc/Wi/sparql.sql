@@ -4437,13 +4437,12 @@ create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
         jso_pin (j[0], j[1]);
     }
 /* Pass 6. Load all separate triples */
-  for (sparql
+  exec ('sparql
       define input:storage ""
-      define sql:table-option "LOOP, index RDF_QUAD"
+      define sql:table-option "LOOP"
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-      select ?s ?p ?o
-      where { graph ?:jgraph_iid { ?p virtrdf:loadAs virtrdf:jsoTriple . ?s ?p ?o } } ) do
-    jso_triple_add ("s", "p", "o");
+      select (bif:jso_triple_add (?s, ?p, ?o))
+      where { graph <' || id_to_iri (jgraph_iid) || '> { ?p virtrdf:loadAs virtrdf:jsoTriple . ?s ?p ?o } }');
   chk := jso_triple_get_objs (
     UNAME'http://www.openlinksw.com/schemas/virtrdf#loadAs',
     UNAME'http://www.openlinksw.com/schemas/virtrdf#loadAs' );
