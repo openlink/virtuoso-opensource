@@ -196,8 +196,8 @@ create procedure fill_ods_calendar_sioc (
       for (select A_ID,
                   A_DOMAIN_ID,
                   A_OBJECT_ID,
-                  A_BODY,
                   A_AUTHOR,
+                  A_BODY,
                   A_CLAIMS,
                   A_CREATED,
                   A_UPDATED
