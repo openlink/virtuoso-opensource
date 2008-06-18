@@ -107,6 +107,8 @@ then
     exit 1
 fi
 
+if [ ! -f ../../../autogen.sh ] # non-VOS
+then
 LOG
 LOG "Starting the server on $DS2"
 LOG
@@ -136,6 +138,7 @@ then
     LOG "***ABORTED: tpcd.sh: tpc-d/Q.sql"
     exit 1
 fi
+fi # END non-VOS
 
 if test -n "$TEST_SPARQL"
 then
