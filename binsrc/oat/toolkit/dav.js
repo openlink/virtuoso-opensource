@@ -33,6 +33,7 @@ OAT.WebDav = {
 		imageExt:'png',
 		confirmOverwrite:true,
 		isDav:true,
+		hiddenPrefixes:'.',
 		connectionHeaders:{},
 		extensionFilters:[], /* ['id','ext','my extension description','content type'],... */
 		callback:function(path,file,content){}, /* what to do after selection */
@@ -420,6 +421,15 @@ OAT.WebDav = {
 			if(!silentStart || (user === false && pass === false)) { this.connectDialog.show(); }
 		}
 		
+		if (this.options.hiddenPrefixes)
+		{
+			this.hiddens = this.options.hiddenPrefixes.split(",");
+			for (var i = 0; i < this.hiddens.length; i++) {
+				this.hiddens[i] = this.hiddens[i].trim();
+			}
+		} else {
+			this.hiddens = [];
+		}
 	},
 	
 	initPermissions:function(parentDiv) { /* draw the permissions table */
@@ -488,7 +498,11 @@ OAT.WebDav = {
 			var node = data.childNodes[i];
 			if (node.nodeType != 1) { continue; }
 			var item = OAT.WebDav.parseNode(node);
-			if (item.fullName != directory) { items.push(item); }
+			if (item.fullName != directory) {
+				if (OAT.WebDav.hiddenCheck(item.name)) {
+					items.push(item);
+				}
+			}
 		}
 		
 		var arr = [];
@@ -1002,6 +1016,16 @@ OAT.WebDav = {
 			o.user = OAT.WebDav.options.user;
 			o.password = OAT.WebDav.options.pass;
 		}
+	},
+
+	hiddenCheck:function(name) {
+		if (OAT.WebDav.hiddens.length == 0)
+			return true;
+		for (var i = 0; i < OAT.WebDav.hiddens.length; i++) {
+			if (name.indexOf(OAT.WebDav.hiddens[i]) == 0)
+				return false;
+		}
+		return true;
 	}
 }
 
