@@ -128,6 +128,7 @@ LOG()
 
 RUN()
 {
+    echo "# $*"
     echo "+ $*"		>> $LOGFILE
 
     STATUS=1
@@ -467,6 +468,49 @@ MAKECFG_FILE ()
   _port=$2
   _cfgfile=$3
   cat $_testcfgfile | sed -e "s/PORT/$_port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" > $_cfgfile
+}
+
+MAKECFG_FILE_WITH_HTTP()
+{
+  template=$1
+  port=$2
+  httpport=$3
+  cfgfile=$4
+  MAKECFG_FILE $template $port $cfgfile
+  case $SERVER in
+   *[Mm]2*)
+   cat >> $cfgfile <<END_HTTP
+HTTPLogFile: http.log
+http_port: $httpport
+http_threads: 3
+http_keep_alive_timeout: 15 
+http_max_keep_alives: 6
+http_max_cached_proxy_connections: 10
+http_proxy_connection_cache_timeout: 15
+END_HTTP
+   ;;
+   *virtuoso*)
+   cat >> $cfgfile <<END_HTTP1
+[HTTPServer]
+HTTPLogFile = http.log
+ServerPort = $httpport
+ServerRoot = .
+ServerThreads = 3 
+MaxKeepAlives = 6
+KeepAliveTimeout = 15
+MaxCachedProxyConnections = 10
+ProxyConnectionCacheTimeout = 15
+
+[Plugins]
+LoadPath = $PLUGINDIR
+Load1 = plain, wbxml2
+
+[URIQA]
+DynamicLocal = 1
+DefaultHost = localhost:$httpport
+END_HTTP1
+;;
+esac
 }
 
 #===========================================================================

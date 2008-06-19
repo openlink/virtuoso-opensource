@@ -28,10 +28,12 @@ LOGFILE=trecov.output
 export LOGFILE
 . ./test_fn.sh
 
+sh tcpt.sh
+
 BANNER "STARTED RECOVERY TEST (trecov.sh)"
 
-rm -f $DBLOGFILE
-rm -f $DBFILE
+#rm -f $DBLOGFILE
+#rm -f $DBFILE
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 SHUTDOWN_SERVER

@@ -597,7 +597,7 @@ cat > hdr.xml <<END_hdr
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
   <SOAP-ENV:Header>
     <echoMeStringRequest SOAP-ENV:mustUnderstand="1" xmlns="http://soapinterop.org/">
-      <varString xmlns="http://soapinterop.org/echoheader/">I'm in a header</varString>
+      <varString xmlns="http://soapinterop.org/echoheader/">I&apos;m in a header</varString>
     </echoMeStringRequest>
   </SOAP-ENV:Header>
   <SOAP-ENV:Body>
@@ -695,43 +695,9 @@ DoCommand()
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
-   case $SERVER in
-   *[Mm]2*)
-   cat >> $CFGFILE <<END_HTTP
-HTTPLogFile: http.log
-http_port: $HTTPPORT
-http_threads: 3
-http_keep_alive_timeout: 15 
-http_max_keep_alives: 6
-http_max_cached_proxy_connections: 10
-http_proxy_connection_cache_timeout: 15
-END_HTTP
-   ;;
-   *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
-   cat >> $CFGFILE <<END_HTTP1
-[HTTPServer]
-HTTPLogFile = http.log
-ServerPort = $HTTPPORT
-ServerRoot = .
-ServerThreads = 3 
-MaxKeepAlives = 6
-KeepAliveTimeout = 15
-MaxCachedProxyConnections = 10
-ProxyConnectionCacheTimeout = 15
-
-[Plugins]
-LoadPath = $PLUGINDIR
-Load1 = plain, wbxml2
-
-[URIQA]
-DynamicLocal = 1
-DefaultHost = localhost:$HTTPPORT
-END_HTTP1
-;;
-esac
+   MAKECFG_FILE_WITH_HTTP ../$TESTCFGFILE $PORT $HTTPPORT $CFGFILE
 }
+
 BANNER "STARTED SERIES OF HTTP SERVER TESTS"
 ECHO "HTTP Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"

@@ -37,7 +37,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Rows inserted in TXV = " $LAST[1]  " : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-backup_online ('ts_#', 10000);
+backup_online ('ts_#', 100000);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": backup_online : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

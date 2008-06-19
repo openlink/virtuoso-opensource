@@ -80,4 +80,5 @@ fi
 STOP_SERVER
 CHECK_LOG
 rm -f *.cpt-after-recov *.trx-after-recov *.cpt
+# DO NOT REMOVE DBFILE we want trecov to start with same file
 BANNER "COMPLETED CPT TEST (tcpt.sh)"
