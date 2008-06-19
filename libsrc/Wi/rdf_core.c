@@ -1217,6 +1217,8 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
   sequence_set (iri_seq[nth], id + 1, SET_ALWAYS, INSIDE_MAP);
   sequence_set (iri_seq_max[nth], id + IRI_RANGE_SZ, SET_ALWAYS, INSIDE_MAP);
   LEAVE_TXN;
+  if (!in_srv_global_init) 
+    {
   log_array = list (5, box_string ("DB.DBA.ID_RANGE_REPLAY (?, ?, ?, ?)"),
 		    box_dv_short_string (iri_seq[nth]), box_dv_short_string (iri_seq_max[nth]),
 		    box_num (id), box_num (id + IRI_RANGE_SZ));
@@ -1229,11 +1231,11 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
   dk_free_tree (log_array);
   if (rc != LTE_OK)
     {
-static caddr_t details = NULL;
+	  static caddr_t details = NULL;
       if (NULL == details)
         details = box_dv_short_string ("while writing new IRI_ID range allocation to log file");
-/*      if (lt->lt_client != bootstrap_cli) */
       sqlr_resignal (srv_make_trx_error (rc, details));
+    }
     }
 
   *value_seq_ret = iri_seq[nth];
