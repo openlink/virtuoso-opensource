@@ -325,8 +325,6 @@ lt_start ()
 void
 lt_restart (lock_trx_t * lt, int leave_flag)
 {
-  lt->lt_status = LT_PENDING;
-  lt->lt_error = LTE_OK;
   lt_threads_set_inner (lt, 0);
 
   if (TRX_CONT == leave_flag)
@@ -388,8 +386,14 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   DBG_PT_PRINTF (("Reallocated T=%ld \n", lt->lt_trx_no));
 #endif
   }
-  if (TRX_CONT == leave_flag)
+  if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
+    {
     IN_TXN;
+      lt->lt_status = LT_PENDING;
+      lt->lt_error = LTE_OK;
+      if (TRX_CONT_LT_LEAVE == leave_flag)
+	LEAVE_TXN;
+    }
 }
 
 
@@ -423,6 +427,7 @@ lt_done (lock_trx_t * lt)
 #if 0
   lt_free (lt);
 #else
+  lt->lt_threads = 0;
   resource_store (trx_rc, (void *) lt);
 #endif
 }
