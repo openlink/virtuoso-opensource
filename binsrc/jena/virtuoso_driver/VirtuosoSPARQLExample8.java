@@ -39,16 +39,19 @@ public class VirtuosoSPARQLExample8 {
 		VirtGraph set = new VirtGraph ("jdbc:virtuoso://localhost:1111", "dba", "dba");
 
 /*			STEP 2			*/
+System.out.println("\nexecute: CLEAR GRAPH <http://test1>");
                 String str = "CLEAR GRAPH <http://test1>";
                 VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, set);
                 vur.exec();                  
 
+System.out.println("\nexecute: INSERT INTO GRAPH <http://test1> { <aa> <bb> 'cc' . <aa1> <bb1> 123. }");
                 str = "INSERT INTO GRAPH <http://test1> { <aa> <bb> 'cc' . <aa1> <bb1> 123. }";
                 vur = VirtuosoUpdateFactory.create(str, set);
                 vur.exec();                  
 
 /*			STEP 3			*/
 /*		Select all data in virtuoso	*/
+System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
 		Query sparql = QueryFactory.create("SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
 
 /*			STEP 4			*/
@@ -64,10 +67,12 @@ public class VirtuosoSPARQLExample8 {
 		}
 
 
-                str = "DELETE GRAPH <http://test1> { <aa> <bb> 'cc' }";
+System.out.println("\nexecute: DELETE FROM GRAPH <http://test1> { <aa> <bb> 'cc' }");
+                str = "DELETE FROM GRAPH <http://test1> { <aa> <bb> 'cc' }";
                 vur = VirtuosoUpdateFactory.create(str, set);
                 vur.exec();                  
 
+System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
 		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
                 results = vqe.execSelect();
 		while (results.hasNext()) {
