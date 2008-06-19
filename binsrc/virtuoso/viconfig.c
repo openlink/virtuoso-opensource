@@ -158,7 +158,6 @@ extern char *temp_aspx_dir;
 
 extern char *java_classpath;
 extern dk_set_t old_backup_dirs;
-extern long stripe_growth_ratio;
 
 /* Do automatic checkpoint approximately every N milliseconds. */
 /* If zero, don't do it. */
@@ -233,7 +232,6 @@ extern int prpc_disable_burst_mode;
 extern int prpc_forced_fixed_thread;
 extern int prpc_force_burst_mode;
 
-int32 c_stripe_growth_ratio;
 extern long sqlc_add_views_qualifiers;
 int32 c_sqlc_add_views_qualifiers;
 
@@ -1589,8 +1587,6 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   cfg_thread_threshold = c_cfg_thread_threshold;
   cfg_resources_clear_interval = c_cfg_resources_clear_interval * 60000L;
   wi_inst.wi_max_dirty = c_max_dirty_buffers;
-  /* Ruslan, check this twice!
-  stripe_growth_ratio = c_stripe_growth_ratio;*/
 
   wi_inst.wi_open_mode = mode;
   wi_inst.wi_temp_allocation_pct = (short) c_temp_allocation_pct;
@@ -1743,30 +1739,6 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
       long n_pages;
       int n_stripes;
       int modifier;
-
-      char *c_stripe_growth_ratio_sz;
-
-      if (cfg_getstring (pconfig, section, "GrowthRatio", &c_stripe_growth_ratio_sz) == -1)
-	c_stripe_growth_ratio = 20;	/* 20% */
-      else
-	{
-	  size_t sz_len = strlen (c_stripe_growth_ratio_sz);
-	  if (!sz_len || c_stripe_growth_ratio_sz[sz_len - 1] != '%')
-	    {
-	    growth_ratio_format_err:
-	      log_error ("The GrowthRatio value format [N%%] error, default value is used (20%)");
-	      c_stripe_growth_ratio = 20;
-	    }
-	  else
-	    {
-	      char buf[1024];
-	      c_stripe_growth_ratio_sz[sz_len - 1] = 0;
-	      c_stripe_growth_ratio = atol (c_stripe_growth_ratio_sz);
-	      sprintf (buf, "%ld", (long) c_stripe_growth_ratio);
-	      if (strcmp (c_stripe_growth_ratio_sz, buf))
-		goto growth_ratio_format_err;
-	    }
-	}
 
       for (nsegs = 1;; nsegs++)
 	{

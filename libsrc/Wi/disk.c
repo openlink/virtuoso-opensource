@@ -2069,6 +2069,66 @@ dbs_extend_pagesets (dbe_storage_t * dbs)
   dbs_extend_pageset (dbs, & dbs->dbs_incbackup_set, 1);
 }
 
+int 
+fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
+{
+  OFF_T n;
+  OFF_T org_len;
+  static ALIGNED_PAGE_ZERO (zero);
+  ASSERT_IN_DBS (dbs);
+  org_len = LSEEK (fd, 0, SEEK_END);
+  for (n = 0; n < n_pages; n++)
+    {
+      int rc = write (fd, (char *) zero, PAGE_SZ);
+      if (PAGE_SZ != rc)
+	{
+	  FTRUNCATE (fd, org_len);
+	  return 0;
+	}
+    }
+  return n_pages;
+}
+
+OFF_T
+dbs_seg_extend (dbe_storage_t * dbs, OFF_T n)
+{
+  /* extend each stripe of the last segment of dbs by n */
+  disk_segment_t * ds;
+  dk_set_t last = dbs->dbs_disks;
+  int fd, inx, rc;
+  OFF_T org_sz;
+  while (last->next)
+    last = last->next;
+  ds = (disk_segment_t*)last->data;
+  fd = dst_fd (ds->ds_stripes[0]);
+  org_sz = lseek (fd, 0, SEEK_END);
+  dst_fd_done (ds->ds_stripes[0], fd);
+  if (((n * ds->ds_n_stripes)  % BITS_ON_PAGE) == 1)
+    n++;
+  DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
+    {
+      fd = dst_fd (dst);
+      rc = fd_extend (dbs, fd, n);
+      dst_fd_done (dst, fd); 
+      if (rc != n)
+	{
+	  int inx2;
+	  for (inx2 = 0; inx2 < inx; inx2++) 
+	    {
+	      fd = dst_fd (ds->ds_stripes[inx2]);
+	      FTRUNCATE (fd, org_sz);
+	      dst_fd_done (ds->ds_stripes[inx2], fd);
+	    }
+	  return 0;
+	}
+    }
+  END_DO_BOX;
+  ds->ds_size += n * ds->ds_n_stripes;
+  dbs->dbs_n_pages += n * ds->ds_n_stripes;
+  dbs->dbs_n_free_pages += n * ds->ds_n_stripes;
+  dbs_extend_pagesets (dbs);
+  return n;
+}
 
 OFF_T
 dbs_extend_file (dbe_storage_t * dbs)
@@ -2077,7 +2137,7 @@ dbs_extend_file (dbe_storage_t * dbs)
   OFF_T new_file_length;
   static ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
-    return dbs_extend_stripes (dbs);
+    return dbs_seg_extend (dbs, dbs->dbs_extend);
 
   ASSERT_IN_DBS (dbs);
   mutex_enter (dbs->dbs_file_mtx);
@@ -2112,83 +2172,6 @@ For safety, integer overflow check added. */
   mutex_leave (dbs->dbs_file_mtx);
   return n;
 }
-
-OFF_T growup_stripe_size (OFF_T x, double ratio, long n, long min_ext)
-{
-  OFF_T newx = (OFF_T) (x * ratio);
-
-  if (newx%n)
-    newx = (newx + (n-(newx%n)));
-  if ((newx-x) < min_ext)
-    return x+min_ext;
-  return newx;
-}
-
-
-long stripe_growth_ratio;
-
-static OFF_T
-dbs_next_size (dbe_storage_t* dbs, disk_segment_t * ds, OFF_T * n)
-{
-  OFF_T new_size =  growup_stripe_size (ds->ds_size , (100.0 + stripe_growth_ratio) / 100, ds->ds_n_stripes, dbs->dbs_extend);
-  n[0] = new_size - ds->ds_size;
-  return new_size / ds->ds_n_stripes * PAGE_SZ;
-}
-
-
-OFF_T
-dbs_extend_stripes (dbe_storage_t * dbs)
-{
-  disk_segment_t * ds = dbs->dbs_last_segment;
-  OFF_T n = 0;
-  OFF_T stripe_next_size = dbs_next_size(dbs,ds,&n);
-  long inx;
-  long new_pages = 0;
-  ALIGNED_PAGE_ZERO (zero);
-  if (!stripe_growth_ratio)
-    {
-      log_error ("Cannot extend stripe with ratio %ld", stripe_growth_ratio);
-      return -1;
-    }
-  DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
-    {
-      OFF_T stripe_size = (OFF_T) (ds->ds_size / ds->ds_n_stripes) * PAGE_SZ;
-      if (!ds)
-	{
-	  log_error ("The segment has too few stripes.");
-	  exit (1);
-	}
-      LSEEK (dst->dst_fds[0], 0, SEEK_END);
-      while (stripe_size < stripe_next_size)
-	{
-	  int rc;
-	  rc = write (dst->dst_fds[0], zero, PAGE_SZ);
-	  if (rc != PAGE_SZ)
-	    {
-	 	char * err;
-	      FTRUNCATE (dst->dst_fds[0], stripe_size);
-	      err = strerror (errno);
-	      log_error ("Cannot extend stripe on %s to %ld", dst->dst_file, stripe_next_size);
-	      return -1;
-	    }
-	  stripe_size += PAGE_SZ;
-	  new_pages ++;
-	}
-    }
-  END_DO_BOX;
-#if 1
-  dbs->dbs_n_pages += new_pages / ds->ds_n_stripes;
-  dbs->dbs_n_free_pages += new_pages / ds->ds_n_stripes;
-#else
-  dbs->dbs_n_pages += new_pages;
-  dbs->dbs_n_free_pages += new_pages;
-#endif
-  ds->ds_size = (dp_addr_t) ( stripe_next_size / PAGE_SZ * ds->ds_n_stripes);
-  dbs_extend_pagesets (dbs);
-  return n;
-}
-
-
 
 void
 itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)

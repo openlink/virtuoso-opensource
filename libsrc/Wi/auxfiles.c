@@ -768,15 +768,6 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
     cp_unremap_quota = 500;
   /* dbs->dbs_cp_unremap_quota = cp_unremap_quota; */
 
-  if (DBS_PRIMARY == dbs->dbs_type)
-    stripe_growth_ratio = (int) (ptrlong) cfg_get_parm (wholefile, "\ngrowth_ratio:", 0);
-
-  if (stripe_growth_ratio > 100 || stripe_growth_ratio < 0)
-    {
-      log_error ("There value of growth_ratio (%ld) must be between 1 to 100", stripe_growth_ratio);
-      stripe_growth_ratio = 0;
-    }
-
   cfg_parse_disks (dbs, NULL, 0, file);
   cfg_parse_backup_dirs();
 }
