@@ -1481,6 +1481,12 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
 }
 ;
 
+create function DB.DBA.RDF_QNAME_OF_LONG_SAFE (in longobj any) returns varchar -- DEPRECATED
+{
+  return id_to_iri_nosignal (longobj);
+}
+;
+
 create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any -- DEPRECATED
 {
   return __rdf_sqlval_of_obj (longobj);
@@ -10421,7 +10427,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-05-21 0001'
+                virtrdf:version '2008-06-19 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -10535,6 +10541,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_QNAME_OF_LONG_SAFE to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_SQLVAL_OF_LONG to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_BOOL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_DATATYPE_OF_LONG to SPARQL_SELECT',
