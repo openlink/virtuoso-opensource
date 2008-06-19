@@ -4424,6 +4424,7 @@ To detect more typos, an alias used in quad map values can not appear in <emphas
 </sect2>
 <sect2 id="rdfmetadatarecovery"><title>RDF Metadata Maintenance and Recovery</title>
    <para>
+This section refers to checking and backing up RDF view and storage declarations only.  The checks and backup/restore do not affect physical quads, relational schema or tables or data therein.  For general backup and restore, see server administration.
      To detect and fix automatically most popular sorts of RDF metadata corruption use <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>.
 It is also possible to backup RDF data by
     <link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link>
@@ -4436,12 +4437,15 @@ It is convenient to make a backup before any modification of quad storages, quad
 <sect1 id="rdfsparqlrule"><title>RDF Inference in Virtuoso</title>
 <sect2 id="rdfsparqlruleintro"><title>Introduction</title>
 <para>Virtuoso SPARQL can use an inference context for inferring triples that are not physically stored.
+This functionality applies to physically stored quads and not to virtual triples generated from relational data with RDF views.
 Such an inference context can be built from one or more graphs containing RDF Schema triples. The supported
 RDF Schema or OWL constraints are imported from these graphs and are grouped together into rule bases.
 A rule base is a persistent entity that can be referenced by a SPARQL query or end point. Queries running
 with a given rule base work as if the triples asserted by this rule base were included in the graph or graphs accessed by the query.
 </para>
 <para>As of version 5.0, Virtuoso recognizes <emphasis>rdfs:subClassOf</emphasis> and <emphasis>rdfs:subPropertyOf</emphasis>.
+owl:sameAs is considered for arbitrary subjects and objects if specially enabled by a pragme in the query.
+As of 5.00.3031, owl:sameAs, owl:equivalentClass and owl:equivalentProperty are also considered when determining subclass or subproperty relations.  If two  classes are equivalent, they share all instances, subclasses and superclasses directly or indirectly stated in the data for either class.
 Other RDF Schema or OWL information is not taken into account.
 </para>
 </sect2>
@@ -5723,9 +5727,10 @@ etc ...
 </sect1>
 <sect1 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
 <para>
-We have extended SPARQL with expressions in results, subqueries, aggregates and grouping.
+Virtuoso extends SPARQL with expressions in results, subqueries, aggregates and grouping.
 These extensions allow a straightforward translation of arbitrary SQL queries to SPARQL.
-We call this extended SPARQL "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
+This extension is called  "SPARQL BI", because the primary objective is to match needs of Business Intelligence.
+The extended features apply equally to querying physical quads or relational tables mapped through RDF views.
 </para>
 <note><para>In this section, many examples use TPC-H namespace. You may test them on your local demo database.
 They use data from TPC-H dataset that is mapped into graph with IRI like
@@ -5865,9 +5870,9 @@ The <emphasis>?subject*&gt;propertyname</emphasis> notation is introduced in ord
 </sect2>
 <sect2 id="rdfsparqlnesting"><title>Subqueries in SPARQL</title>
 <para>
-Pure SPARQL does not allow binding value that is not retrieved through a triple pattern.
+Pure SPARQL does not allow binding a value that is not retrieved through a triple pattern.
 We lift this restriction by allowing expressions in the result set and providing names for result columns.
-We also let a sparql SELECT statement to appear in other sparql statement in any place where group pattern may appear,
+We also let a sparql SELECT statement to appear in other sparql statement in any place where a group pattern may appear,
 so names of result columns become names of variables bound using values from returned rows.
 This resembles derived tables in SQL.</para>
 <para>
@@ -5919,7 +5924,7 @@ Looking at the result we can see that customers in question are really big so ev
 <para>
 The inner select finds 1000 biggest (in absolute value) discounts and their order lines. For each line we find order of that line and the customer. For every found customers we find all orders he made and all lines of that orders (variable ?line2). The rest is trivial.</para>
 <para>
-Note that inner select does not contains FROM clauses. It is not required because inner select inherits access permissions of all outer queries. It is also important that internal variable bindings of subquery are not visible in outer query, only result set variables are bound, similarly, variables bound in outer query are not accessible inside.</para>
+Note that the inner select does not contains FROM clauses. It is not required because inner select inherits access permissions of all outer queries. It is also important that internal variable bindings of subquery are not visible in outer query, only result set variables are bound, similarly, variables bound in outer query are not accessible inside.</para>
 <para>
 Note also the declaration <emphasis>define sql:signal-void-variables 1</emphasis> that forces SPARQL compiler to signal errors if some variables can not be bound due to typos in names or attempts of making joins of disjoint domains. This diagnostics is especially important when the query is long.</para>
 </sect2>
