@@ -1,3 +1,70 @@
+2008-06-19 16:07  source
+
+	* Updated version to 5.0.7-rc15
+
+2008-06-19 16:06  source
+
+	* Depricated but not removed  DB.DBA.RDF_QNAME_OF_LONG_SAFE()
+
+2008-06-19 16:05  source
+
+	* Invocation of DB.DBA.RDF_QNAME_OF_LONG_SAFE is replaced with
+	  id_to_iri_nosignal()
+
+2008-06-19 15:53  source
+
+	* Merged latest documentation fixes
+
+2008-06-19 12:41  source
+
+	* Added uriqa_get_default_for_connvad for sprintg/sprintf_inverse with
+	  connection variables
+	* Added support for connecion variables syntax in sprintf plus related
+	  support in SPARQL front-end optimizer
+
+2008-06-19 12:40  source
+
+	* Added access control check
+
+2008-06-19 12:17  source
+
+	* Added new code for stripe extend
+
+2008-06-19 12:12  source
+
+	* Fixed set lt_status to pending at the end of lt_restart otherwise there
+	  is a window when kill_other_trx may mark to wait
+
+2008-06-19 12:09  source
+
+	* Fixed disable log iri when server initializes
+
+2008-06-19 11:35  source
+
+	* Added quick check for connection vars
+	* Fixed SPARQL testing
+	* Moved cpt tests inside trecov.sh
+
+2008-06-19 11:32  source
+
+	* Merged from upstream project
+
+2008-06-19 07:39  source
+
+	* Fixed example
+
+2008-06-18 13:38  source
+
+	* Fixed JSO_LOAD_GRAPH to run with any indexes
+
+2008-06-18 13:20  source
+
+	* Fixed Apple resource fork files should be hidden by default
+
+2008-06-18 11:58  source
+
+	* Merged latest documentation fixes
+
 2008-06-18 11:25  source
 
 	* Fixed win64 build
