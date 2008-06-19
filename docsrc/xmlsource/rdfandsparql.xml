@@ -162,7 +162,18 @@ select ... from .... option (QUIETCAST)
 
 <para>
     When converting strings to IRI id's, the <computeroutput>local:</computeroutput> prefix may or may not be introduced depending on ini file and other context factors.
-    If <link linkend="VIRTINI">DynamicLocal</link> defined in the [URIQA] section of the Virtuoso INI file is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.  Even if DynamicLocal is not on and the <computeroutput>local:</computeroutput> prefix occurs in the IRI string being translated to id, the translating the ID back to the IRI name will depend on the context as described above.
+    If <link linkend="VIRTINI">DynamicLocal</link> defined in the [URIQA] section of the Virtuoso INI file is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.  Even if DynamicLocal is not on and the <computeroutput>local:</computeroutput> prefix occurs in the IRI string being translated to id, the translating the IRI_ID back to the IRI name will depend on the context as described above.
+</para>
+<para>
+    The effects of DynamicLocal = 1 can be very confusing since many names
+    can refer to the exact same thing.  For example, if the DefaultHost is
+    http://dbpedia.org,
+    <computeroutput>iri_to_id ('http://dbpedia.org/resource/Paris') = iri_to_id ('local:///resource/Paris) </computeroutput>
+    is true and so is  
+    <computeroutput>'http://dbpedia.org/resource/Paris' = id_to_iri (iri_to_id ('local:///resource/Paris'))</computeroutput>
+    These hold in a SQL client context, i.e. also when connected through RDF frameworks like Jena or Sesame.
+    When runnning a SPARQL protocol request, the Host: header influences the behavior, likewise when using web interactive SQL in Conductor.
+    Also be careful when loading RDF files that may have URI's corresponding to the local host name.
 </para>
 </sect2>
 </sect1>

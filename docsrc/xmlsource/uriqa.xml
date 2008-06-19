@@ -209,6 +209,11 @@ response locally. Such behavior indicates configuration error, and the use of fi
 because suspicious URIQA requests become signed by all intermediate Virtuoso proxies. If this parameter is not specified then a random unique
 string is created and stored in the database, so you don&apos;t have to specify this parameter for typical installations.
 </member>
+<member>
+    &quot;DynamicLocal&quot; is a flag (1 or 0), when it is on and the host part of the IRI matches the Host header of the HTTP request in context or the DefaulltHost if outside of HTTP context, then this is replaced with local: before looking up the IRI ID.  Even if DynamicLocal is not on and the <computeroutput>local:</computeroutput> prefix occurs in the IRI string being translated to IRI_ID, the translating the IRI_ID back to the IRI name will depend on the context as described as follows: When returning IRI's from id's, this prefix is replaced by the Host header of the HTTP request 
+    and if not running with HTTP, with the DefaultHost from this section.
+    The effects of DynamicLocal = 1 can be very confusing since many names can refer to the exact same thing.  For example, if the DefaultHost is http://dbpedia.org, <computeroutput>iri_to_id ('http://dbpedia.org/resource/Paris') = iri_to_id ('local:///resource/Paris) </computeroutput> is true and so is  <computeroutput>'http://dbpedia.org/resource/Paris' = id_to_iri (iri_to_id ('local:///resource/Paris'))</computeroutput> These hold in a SQL client context, i.e. also when connected through RDF frameworks like Jena or Sesame.  When runnning a SPARQL protocol request, the Host: header influences the behavior, likewise when using web interactive SQL in Conductor.
+</member>
 </simplelist>
 <para>
 These configuration parameters are &quot;sticky&quot;. If they&apos;re found in configuration file then they are preserved in the database registry.

@@ -63,7 +63,30 @@ and store procedures stored within that catalog.</para>
 
     <figure float="1"><title>Viewing Views details for the Demo catalogue in the Demo Database</title>
       <graphic fileref="ui/admviews_01.png"/></figure>
-
+    	<sect3 id="demodbinstallsteps">
+	  <title>Demo Database Installation</title>
+          <para>The Virtuoso Demonstration database can be installed with the Conductor by navigating to
+the "System Admin" -> "Packages" tab where a list of available Virtuoso applications are
+displayed, one of which is for the "Demo" database package as shown below:
+          </para>
+          <figure float="1"><title>Install Demo db using Conductor UI: "System Admin" -> "Packages"</title>
+            <graphic fileref="ui/demodbinstall_01.png"/></figure>
+          <para>Select the "Demo" package and click on the "Install" button to commence the
+installation process:
+          </para>
+          <figure float="1"><title>Install Demo db: confirmation</title>
+            <graphic fileref="ui/demodbinstall_02.png"/></figure>
+          <para>Click on the "proceed" button to install the indicated "Demo Database"
+application package:
+          </para>
+          <figure float="1"><title>Install Demo db: proceed</title>
+            <graphic fileref="ui/demodbinstall_03.png"/></figure>
+          <para>Once installed the demo database schema can be viewed from the
+"Database" -> "Schema Objects" tab of the Conductor:
+          </para>
+          <figure float="1"><title>Install Demo db: view schema objects</title>
+            <graphic fileref="ui/demodbinstall_04.png"/></figure>
+    	</sect3>
      	<sect3 id="triggers">
 	      		<title>Editing Triggers</title>
 	<para>
