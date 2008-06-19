@@ -5448,13 +5448,41 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_rlo");
   caddr_t *ret;
-  FILE *fp;
+  int fp;
+#ifdef HAVE_DIRECT_H
+  char *fname_cvt, *fname_tail;
+  size_t fname_cvt_len;
+#endif
 
   sec_check_dba ((query_instance_t *) qst, "file_rlo");
 
-  fp = fopen (fname,"r");
+#ifdef HAVE_DIRECT_H
+  fname_cvt_len = strlen (fname) + 1;
+  fname_cvt = dk_alloc (fname_cvt_len);
+  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
+  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
+    {
+      if ('/' == fname_tail[0])
+	fname_tail[0] = '\\';
+    }
+  if (!is_allowed (fname_cvt))
+    {
+      dk_free (fname_cvt, fname_cvt_len);
+      sqlr_new_error ("42000", "FA003",
+	  "Access to %s is denied due to access control in ini file", fname);
+    }
 
-  if (!fp)
+  fp = open (fname_cvt, OPEN_FLAGS_RO);
+  dk_free (fname_cvt, fname_cvt_len);
+#else
+  if (!is_allowed (fname))
+    sqlr_new_error ("42000", "FA004",
+	"Access to %s is denied due to access control in ini file", fname);
+
+  fp = open (fname, OPEN_FLAGS_RO);
+#endif
+
+  if (fp == -1)
     sqlr_new_error ("42000", "FA003", "Can't open file (%s)", fname);
 
   ret = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_NUMERIC);
