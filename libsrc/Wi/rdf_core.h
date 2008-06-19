@@ -169,4 +169,8 @@ extern caddr_t rdf_load_turtle (
 /* Metadata about free-text index on DB.DBA.RDF_OBJ */
 extern id_hash_t *rdf_obj_ft_rules;
 
+extern int uriqa_dynamic_local;
+extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi);
+extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
+
 #endif

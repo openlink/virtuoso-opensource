@@ -330,6 +330,11 @@ the order of columns in dks_charclasses, file dks_esc.c */
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200
 
+extern unsigned char dks_esc_char_props[0x100];
+typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
+extern dks_charclass_props_t dks_charclasses['Q'+1-'>'];
+#define DKS_ESC_CHARCLASS_ACTION(wc,mode) (dks_charclasses[((wc & ~0xff) ? 0 : (dks_esc_char_props[wc] - '>'))][mode])
+
 extern void
 dks_esc_write (dk_session_t * ses, char * str, size_t len,
   wcharset_t * tgt_charset, wcharset_t * src_charset, int dks_esc_mode);

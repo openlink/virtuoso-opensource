@@ -70,6 +70,53 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi)
   return res;
 }
 
+caddr_t
+uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
+{
+  if (!strcmp ("URIQADefaultHost", varname))
+    {
+      const char *regname = "URIQADefaultHost";
+      caddr_t *place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      if (place)
+        return box_copy (place[0]);
+      return NULL;
+    }
+  if (!strcmp ("WSHost", varname))
+    return uriqa_get_host_for_dynamic_local (qi);
+  if (!strcmp ("WSHostName", varname))
+    {
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi);
+      const char *colon;
+      caddr_t res;
+      if (NULL == host)
+        return NULL;
+      colon = strchr (host, ':');
+      if (NULL == colon)
+        return host;
+      res = box_dv_short_nchars (host, colon - host);
+      dk_free_box (host);
+      return res;
+    }
+  if (!strcmp ("WSHostPort", varname))
+    {
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi);
+      const char *colon;
+      caddr_t res;
+      if (NULL == host)
+        return box_dv_short_string ("80");
+      colon = strchr (host, ':');
+      if (NULL == colon)
+        {
+          dk_free_box (host);
+          return box_dv_short_string ("80");
+        }
+      res = box_dv_short_string (colon + 1);
+      dk_free_box (host);
+      return res;
+    }
+  return NULL;
+}
+
 triple_feed_t *
 tf_alloc (void)
 {

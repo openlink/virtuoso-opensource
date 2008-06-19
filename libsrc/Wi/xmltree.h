@@ -489,7 +489,7 @@ I hope that these sequences are senseless in any encoding. */
 #define XPACK_START_DTD		0xFF	/* Byte that indicates that next datum is DTD serialization as a single string */
 /* More #define XPACK_START_xxx may appear here in the future. Their values _must_ be greater than 0xE0. */
 
-void xpi_free (xp_instance_t * xqi);
+extern void xpi_free (xp_instance_t * xqi);
 
 
 #define XPI_OK 0
@@ -582,11 +582,11 @@ do { \
   (&(((caddr_t *)(xqi))[cell_idx]))
 
 
-xp_instance_t * xp_eval (xp_query_t * xqr, xml_entity_t * ctx);
-void xqi_eval (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe);
-caddr_t xqi_value (xp_instance_t * xqi, XT * tree, dtp_t dtp);
-caddr_t xqi_raw_value (xp_instance_t * xqi, XT * tree);
-int xqi_next (xp_instance_t * xqi, XT * tree);
+extern xp_instance_t * xp_eval (xp_query_t * xqr, xml_entity_t * ctx);
+extern void xqi_eval (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe);
+extern caddr_t xqi_value (xp_instance_t * xqi, XT * tree, dtp_t dtp);
+extern caddr_t xqi_raw_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_next (xp_instance_t * xqi, XT * tree);
 
 #define XI_INITIAL 1  /* the step's init is the context node to init the iterator */
 #define XI_AT_END 2  /* upon next, get next of input and init the iterator by that */
@@ -595,17 +595,15 @@ int xqi_next (xp_instance_t * xqi, XT * tree);
 
 int xi_next (xp_instance_t * xqi, XT * tree);
 #if 0
-int xt_is_ret_boolean (XT * tree);
-int xt_is_ret_node_set (XT * tree);
+extern int xt_is_ret_boolean (XT * tree);
+extern int xt_is_ret_node_set (XT * tree);
 #endif
-int xt_predict_returned_type (XT * tree);
-
-caddr_t  xp_box_number (caddr_t n);
-
+extern int xt_predict_returned_type (XT * tree);
+extern caddr_t xp_box_number (caddr_t n);
 
 typedef void (* xp_func_t) (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe);
 
-caddr_t xp_box_number (caddr_t n);
+extern caddr_t xp_box_number (caddr_t n);
 
 
 typedef struct xp_node_s
@@ -802,7 +800,7 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
 #define XTE_HEAD(x) (((caddr_t **)x)[0])
 #define XTE_HEAD_NAME(x) (((caddr_t *)x)[0])
 
-void xn_xslt_attributes (xp_node_t * xn);
+extern void xn_xslt_attributes (xp_node_t * xn);
 
 typedef struct xp_query_env_s
 {
@@ -819,8 +817,8 @@ typedef struct xp_query_env_s
 
 extern xp_query_env_t xqre_default;
 
-xp_query_t * xp_query_parse (query_instance_t * qi, char * str, ptrlong predicate_type, caddr_t * err_ret, xp_query_env_t *xqre);
-caddr_t xp_query_lex_analyze (caddr_t str, char predicate_type, xp_node_t * nsctx, wcharset_t *query_charset);
+extern xp_query_t * xp_query_parse (query_instance_t * qi, char * str, ptrlong predicate_type, caddr_t * err_ret, xp_query_env_t *xqre);
+extern caddr_t xp_query_lex_analyze (caddr_t str, char predicate_type, xp_node_t * nsctx, wcharset_t *query_charset);
 
 /* IvAn/SmartXContains/001025 WR-optimization added */
 /* \brief Enables WR-optimization for given xpath subtree, if it's possible
@@ -828,33 +826,33 @@ caddr_t xp_query_lex_analyze (caddr_t str, char predicate_type, xp_node_t * nsct
 \arg subtree - current xpath tree to try to optimize
 \arg target_is_wr - flags if current tree is an input for wr-optimized xpath step,
 If so, it may be optimized even if it is has no optimization hints by itself. */
-void xp_query_enable_wr (xp_query_t * xqr, XT *subtree, int target_is_wr);
+extern void xp_query_enable_wr (xp_query_t * xqr, XT *subtree, int target_is_wr);
 
 extern caddr_t bif_xslt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 extern caddr_t bif_xtree_doc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 extern void xpf_processXSLT (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe);
 
-xml_entity_t * xte_copy (xml_entity_t * xe);
-void xslt_init (void);
+extern xml_entity_t * xte_copy (xml_entity_t * xe);
+extern void xslt_init (void);
 
-int xqi_truth_value (xp_instance_t * xqi, XT * tree);
-int xqi_pred_truth_value (xp_instance_t * xqi, XT * tree);
-xp_instance_t *xqr_instance (xp_query_t * xqr, query_instance_t * qi);
-void xn_error (xp_node_t * xn, const char * msg);
-int  xqi_is_next_value (xp_instance_t * xqi, XT * tree);
-int  xqi_is_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_truth_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_pred_truth_value (xp_instance_t * xqi, XT * tree);
+extern xp_instance_t *xqr_instance (xp_query_t * xqr, query_instance_t * qi);
+extern void xn_error (xp_node_t * xn, const char * msg);
+extern int xqi_is_next_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_is_value (xp_instance_t * xqi, XT * tree);
 
-void xslt_instantiate_1 (xparse_ctx_t * xp, caddr_t * xstree);
-void xslt_process_children (xparse_ctx_t * xp, xml_entity_t * xe);
-void xp_free (xparse_ctx_t * xp);
+extern void xslt_instantiate_1 (xparse_ctx_t * xp, caddr_t * xstree);
+extern void xslt_process_children (xparse_ctx_t * xp, xml_entity_t * xe);
+extern void xp_free (xparse_ctx_t * xp);
 #define xqi_free(q) dk_free_box ((caddr_t) q)
 
 
-int xe_destroy (caddr_t box);
-void xe_sqlnarrow_string_value (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
+extern int xe_destroy (caddr_t box);
+extern void xe_sqlnarrow_string_value (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 
-int xe_down_transit (xml_entity_t * xe);
-int xe_destroy (caddr_t box);
+extern int xe_down_transit (xml_entity_t * xe);
+extern int xe_destroy (caddr_t box);
 extern const char * xe_get_sysid (xml_entity_t *xe, const char *ref_name);
 extern const char * xe_get_sysid_base_uri(xml_entity_t *xe);
 
@@ -863,21 +861,21 @@ int dv_is_node_set (caddr_t x);
 #define DV_IS_NODE_SET(q) dv_is_node_set((caddr_t) q)
 #endif
 
-caddr_t xte_attr_value (caddr_t * xte, char * name, int reqd);
-caddr_t xp_string (query_instance_t * qi, caddr_t val);
+extern caddr_t xte_attr_value (caddr_t * xte, char * name, int reqd);
+extern caddr_t xp_string (query_instance_t * qi, caddr_t val);
 
-void DBG_NAME(xe_string_value_1) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
-xml_tree_ent_t *DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi);
+extern void DBG_NAME(xe_string_value_1) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
+extern xml_tree_ent_t *DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi);
 #ifdef MALLOC_DEBUG
 #define xe_string_value_1(XE,RET,DTP) dbg_xe_string_value_1(__FILE__, __LINE__, (XE), (RET), (DTP))
 #define xte_from_tree(TREE,QI) dbg_xte_from_tree(__FILE__, __LINE__, (TREE), (QI))
 #endif
 
-void xte_copy_output_elements (struct xml_tree_ent_s *xte, struct xslt_sheet_s *sheet);
+extern void xte_copy_output_elements (struct xml_tree_ent_s *xte, struct xslt_sheet_s *sheet);
 
 extern ptrlong xqi_set_debug_start;	/* Value of xqi_set_odometer where rigorous memory testing must be started */
 extern ptrlong xqi_set_odometer;	/* Debugging counter of xqi_set operations, set to negative to avoid counting */
-caddr_t xqi_set (xp_instance_t * xqi, int n, caddr_t v);
+extern caddr_t xqi_set (xp_instance_t * xqi, int n, caddr_t v);
 
 extern shuric_vtable_t shuric_vtable__xmlschema;
 extern shuric_vtable_t shuric_vtable__xqr;
@@ -887,11 +885,11 @@ extern shuric_t *shuric_load_xml_by_qi (query_instance_t * qi, caddr_t base, cad
 	    caddr_t * err_ret, shuric_t *loaded_by, shuric_vtable_t *vt, const char *caller);
 extern xslt_sheet_t * xslt_sheet (query_instance_t * qi, caddr_t base, caddr_t ref,
 	    caddr_t * err_ret, shuric_t *loaded_by);
-caddr_t xte_attr_value_eval (xparse_ctx_t * xp, caddr_t * xte, char * name, int reqd);
-caddr_t xn_ns_name (xp_node_t * xn, char * name, int use_default);
-void xslt_traverse_inner (xparse_ctx_t * xp, xslt_sheet_t * first_xsh);
-xslt_sheet_t * xslt_compiled_sheet (caddr_t href, caddr_t base_uri);
-void xslt_instantiate (xparse_ctx_t * xp, xslt_template_t * xst, xml_entity_t * xe);
+extern caddr_t xte_attr_value_eval (xparse_ctx_t * xp, caddr_t * xte, char * name, int reqd);
+extern caddr_t xn_ns_name (xp_node_t * xn, char * name, int use_default);
+extern void xslt_traverse_inner (xparse_ctx_t * xp, xslt_sheet_t * first_xsh);
+extern xslt_sheet_t * xslt_compiled_sheet (caddr_t href, caddr_t base_uri);
+extern void xslt_instantiate (xparse_ctx_t * xp, xslt_template_t * xst, xml_entity_t * xe);
 
 #define xslt_traverse_1(XP) xslt_traverse_inner ((XP), NULL)
 
@@ -977,39 +975,39 @@ extern caddr_t uname_xmlschema_ns_uri_hash_time;
 extern caddr_t unames_colon_number[20];
 
 
-void DBG_NAME(xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * ret, dtp_t dtp);
+extern void DBG_NAME(xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * ret, dtp_t dtp);
 #ifdef MALLOC_DEBUG
 #define xte_string_value_from_tree(C,RET,DTP) dbg_xte_string_value_from_tree (__FILE__,__LINE__,(C),(RET),(DTP))
 #endif
-dk_set_t xn_namespace_scope (xp_node_t * xn);
-void xte_serialize (xml_entity_t * xe, dk_session_t * ses);
-query_instance_t * qi_top_qi (query_instance_t * qi);
+extern dk_set_t xn_namespace_scope (xp_node_t * xn);
+extern void xte_serialize (xml_entity_t * xe, dk_session_t * ses);
+extern query_instance_t * qi_top_qi (query_instance_t * qi);
 
 #define xte_is_entity(e) (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((e)))
 
-int xsl_is_qnames_attr (char * attr);
-int xslt_non_whitespace (caddr_t elt);
+extern int xsl_is_qnames_attr (char * attr);
+extern int xslt_non_whitespace (caddr_t elt);
 
 /* \brief Finds if there are any hits in current row between two given positions */
 extern int txs_is_hit_in (text_node_t * txs, caddr_t * qst, xml_entity_t * xe);
 
-void bif_text_init (void);
-void bif_ap_init (void);
-void xml_tree_init (void);
+extern void bif_text_init (void);
+extern void bif_ap_init (void);
+extern void xml_tree_init (void);
 
-void xn_free (xpath_node_t * xn);
-void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
+extern void xn_free (xpath_node_t * xn);
+extern void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
 
-caddr_t xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str);
+extern caddr_t xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str);
 
 xml_schema_t * xs_allocate (void);
 
-void xmls_set_view_def (void * sc, xml_view_t * xv);
-int xml_is_sch_qname (char *tag, char *attr); /* What of attribute values to be expanded as QName */
-int xml_is_soap_qname (char *tag, char *attr);
-int xml_is_wsdl_qname (char *tag, char *attr);
-char * xml_find_attribute (caddr_t *entity, const char *szName, const char *szURI);
-char * xte_output_method (xml_tree_ent_t * xte);
+extern void xmls_set_view_def (void * sc, xml_view_t * xv);
+extern int xml_is_sch_qname (char *tag, char *attr); /* What of attribute values to be expanded as QName */
+extern int xml_is_soap_qname (char *tag, char *attr);
+extern int xml_is_wsdl_qname (char *tag, char *attr);
+extern char * xml_find_attribute (caddr_t *entity, const char *szName, const char *szURI);
+extern char * xte_output_method (xml_tree_ent_t * xte);
 
 extern xqi_binding_t *xqi_find_binding (xp_instance_t * xqi, caddr_t name);
 extern xqi_binding_t *xqi_push_internal_binding (xp_instance_t * xqi, caddr_t name);
@@ -1018,7 +1016,7 @@ extern void xqi_pop_internal_bindings (xp_instance_t * xqi, xqi_binding_t *botto
 extern void xqi_remove_internal_binding (xp_instance_t * xqi, caddr_t name);
 extern caddr_t list_to_array_of_xqval (dk_set_t l);
 
-caddr_t xml_deserialize_from_blob (caddr_t bh, lock_trx_t *lt, caddr_t *qst, caddr_t uri);
+extern caddr_t xml_deserialize_from_blob (caddr_t bh, lock_trx_t *lt, caddr_t *qst, caddr_t uri);
 
 extern void xte_serialize_packed (caddr_t *tree, dtd_t *dtd, dk_session_t * ses);
 extern void xte_deserialize_packed (dk_session_t *ses, caddr_t **ret_tree, dtd_t **ret_dtd);
@@ -1029,10 +1027,11 @@ extern void dtd_load_from_buffer (dtd_t *res, caddr_t dtd_string);
 extern void xe_insert_external_dtd (xml_entity_t *xe);
 extern caddr_t xte_sum64 (caddr_t *curr);
 
-caddr_t xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
+extern caddr_t xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     const char *enc, lang_handler_t *lh, struct dtd_s **ret_dtd);
 
-int xe_strses_serialize_utf8 (xml_entity_t * xe, dk_session_t * strses, int set_encoding);
+extern int xe_strses_serialize_utf8 (xml_entity_t * xe, dk_session_t * strses, int set_encoding);
+extern void xe_serialize (xml_entity_t * xe, dk_session_t * ses);
 
 extern void xte_replace_strings_with_unames (caddr_t **tree);
 

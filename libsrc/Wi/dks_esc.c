@@ -81,8 +81,6 @@ unsigned char dks_esc_char_props[0x100] = {
 #define REPEAT  'R'
 
 
-typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
-
 dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
 /*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	*/
 /*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	*/
@@ -148,7 +146,7 @@ dks_esc_write (dk_session_t * ses, char * src_str, size_t src_len,
   unsigned char *src_tail = (unsigned char *)src_str;
   unsigned char *str_end = (unsigned char *)(src_str+src_len);
   wchar_t wc;
-  unsigned char wc_class, action;
+  unsigned char action;
   int dks_esc_mode_base = dks_esc_mode & 0xFF;
   wchar_t out_buf[0x80];
   int out_buf_idx = 2;
@@ -193,12 +191,7 @@ again:
       wc = src_charset->chrs_table[src_tail[0]];
       src_tail++;
     }
-
-  if (wc & ~0xff)
-    wc_class = ('>' - '>');
-  else
-    wc_class = dks_esc_char_props[wc] - '>';
-  action = dks_charclasses[wc_class][dks_esc_mode_base];
+  action = DKS_ESC_CHARCLASS_ACTION(wc,dks_esc_mode_base);
   switch (action)
     {
       case ASIS:	goto out_byte_asis;

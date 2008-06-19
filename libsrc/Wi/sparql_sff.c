@@ -54,6 +54,17 @@ sprintff_is_proven_bijection (const char *f)
           tail += 2;
           continue;
         }
+      if ('{' == tail[1])
+        {
+          tail += 2;
+          while (isalnum (tail[0]) || ('_' == tail[0])) tail++;
+          if ('}' != tail[0])
+            return 0; /* Syntax error in placeholder for connection variable so the bijection is not proven */
+          if (NULL == strchr ("U", tail[1]))
+            return 0; /* Unknown format so the bijection is not proven */
+          tail += 2;
+          continue;
+        }
       tail++;
       if (NULL == strchr ("DUdusc", tail[0]))
         return 0; /* Unknown format so the bijection is not proven */
@@ -97,6 +108,7 @@ static const char *full_f2 = NULL;
 static char *full_res_buf = NULL;
 
 #ifdef SSF_WEIGHTED_ISECT
+!!! Should not be used because it does not support %{connvarname}U in format strings and is poorly tested so it is probably buggy
 
 static const char *full_f1_end = NULL;
 static const char *full_f2_end = NULL;
@@ -129,7 +141,7 @@ any text that can be printed both using \c f1 and using \c f2
 The function returns positive weight (i.e. quality) of the intersection format, negative value nonzero if \c f1 and \c f2 are proven to be 'disjoint'
 so no one string can be printed using both of them. */
 static int
-sff_isect (const char *f1, const char *f1_end, const char *f2, const char *f2_end, char *res_buf, int depth)
+sff_weighted_isect (const char *f1, const char *f1_end, const char *f2, const char *f2_end, char *res_buf, int depth)
 {
   char fmt;
   const char *f1_var, *f1_var_end, *f1_rest, *f1_aux;
@@ -274,24 +286,55 @@ any text that can be printed both using \c f1 and using \c f2
 (with appropriate trailing sprintf data).
 The function returns nonzero if \c f1 and \c f2 are proven to be 'disjoint'
 so no one string can be printed using both of them. */
-static int sff_isect (const char *f1, const char *f2, char *res_buf)
+static int
+sff_isect (const char *f1, const char *f2, char *res_buf)
 {
-  const char *f1_tail, *f2_tail, *f1_after_v, *f2_after_v;
-  char f1_v, f2_v, f2_fix;
-  int f2_shifted;
+#ifdef SFF_DEBUG
+  const char *f1_initial = f1; /* f1 is shifed to the right so that each time label "again" is passed f1 points to the text that is not yet intersected into res_buf */
+  const char *f2_initial = f2; /* and that is true for f2 as well */
+  int dbg_ctr;
+#endif
+  const char *f1_tail = NULL, *f2_tail = NULL;
+  char *res_tail = res_buf; /* pointer to the end of filled part of res_buf */
+  char f1_v, f2_v; /* Formatting chars of current variable parts in \c f1 and \c f2 */
+  char f2_fix; /* Current fixed char in \c f2 . There's no f1_fix because the beginning of f2 is always kept "more fixed" that the beginning of f1 */
+  const char *f1_last_replaced = NULL; /* The beginning of last fragment in f1 that is replaced with fixed chars or vars from f2. */
+  const char *f2_last_replaced = NULL; /* The beginning of last fragment in f2 that is replaced with fixed chars or vars from f1. */
+  int strcmp_res;
 again:
+#ifdef SFF_DEBUG
+  printf ("sff_isect: f1 = %s\n''''''''''''''''", f1_initial);
+  for (dbg_ctr = f1 - f1_initial; dbg_ctr--; /* no step */) putchar ('~');
+  printf ("\n");
+  printf ("sff_isect: f2 = %s\n''''''''''''''''", f2_initial);
+  for (dbg_ctr = f2 - f2_initial; dbg_ctr--; /* no step */) putchar ('~');
+  printf ("\n");
+  printf ("sff_isect: res= ");
+  for (dbg_ctr = 0; (dbg_ctr < (res_tail - res_buf)); dbg_ctr++) putchar (res_buf[dbg_ctr]);
+  printf ("\n");
+#endif
   while ((f1[0] == f2[0]) && ('\0' != f1[0]) && ('%' != f1[0]))
     {
-      (res_buf++)[0] = f1[0]; f1++; f2++;
+      (res_tail++)[0] = f1[0]; f1++; f2++;
     }
-  if (!strcmp (f1, f2))
+  strcmp_res = strcmp (f1, f2);
+  if (!strcmp_res)
     {
-      strcpy (res_buf, f1); return SFF_ISECT_OK;
+      strcpy (res_tail, f1); return SFF_ISECT_OK;
     }
-  if (('%' == f2[0]) && /* if f2 starts from '%' and f1 does not OR f2 starts from single '%' and f1 starts from double '%' */
-    (('%' != f1[0]) || (('%' != f2[1]) && ('%' == f1[1]))) )
+  if ((('%' != f1[0]) && ('%' != f2[0]) && (0 < strcmp_res)) || /* If both v1 and f2 starts from fixed chars and 2nd is greater than 1st */
+    (('%' == f2[0]) && /* OR if f2 starts from '%' and f1 does not OR f2 starts from single '%' and f1 starts from double '%' OR f2 starts from plain '%' and f1 starts from %{connvarname}U */
+    (('%' != f1[0]) ? 1 :
+      ((('%' != f2[1]) && ('%' == f1[1])) ||
+        (('{' != f2[1]) && ('{' == f1[1])) ) ) ) )
     {
-      const char *swap = f2; f2 = f1; f1 = swap;
+      const char *swap;
+      swap = f2; f2 = f1; f1 = swap;
+      swap = f2_tail; f2_tail = f1_tail; f1_tail = swap;
+      swap = f2_last_replaced; f2_last_replaced = f1_last_replaced; f1_last_replaced = swap;
+#ifdef SFF_DEBUG
+      swap = f2_initial; f2_initial = f1_initial; f1_initial = swap;
+#endif
     }
 /* Now f2 is 'more fixed' than f1 */
   if ('%' != f1[0])
@@ -304,7 +347,7 @@ again:
         {
           if ('\0' == f2[0])
             {
-              res_buf[0]  = '\0';
+              res_tail[0]  = '\0';
               return SFF_ISECT_OK; /* Reached end of both formats */
             }
           return SFF_ISECT_DISJOIN; /* Disjoint: f2 is longer than f1 */
@@ -316,7 +359,7 @@ again:
     {
       if (('%' == f2[0]) && ('%' == f2[1]))
         {
-          (res_buf++)[0] = '%'; (res_buf++)[0] = '%';
+          (res_tail++)[0] = '%'; (res_tail++)[0] = '%';
           f1 += 2; f2 += 2;
           goto again; /* see above */
         }
@@ -325,14 +368,29 @@ again:
       return SFF_ISECT_DISJOIN; /* Disjoint: f1 starts with '%%' and f2 starts with other fixed char */
     }
 /* Now we know that f1 starts with variable part, f2 is either fixed or variable part */
+  if(f1_tail <= f1)
+    {
   f1_tail = f1 + 1;
+      if ('{' == f1_tail[0])
+        {
+          f1_tail++;
+          while (isalnum (f1_tail[0]) || ('_' == f1_tail[0])) f1_tail++;
+          if ('}' != f1_tail[0])
+            goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
+          f1_tail++;
   while (!isalpha (f1_tail[0]) && ('\0' != f1_tail[0])) f1_tail++;
   f1_v = (f1_tail++)[0];
-  switch (f1_v)
+          if ('U' != f1_v)
+            goto generic_tails; /* Syntax error -- no 'U' after "%{connvar}" */
+        }
+      else
     {
-    case 'D': case 'U': case 'd': case 's': case 'u': break;
-    default: goto generic_tails; /* see below */
+          while (!isalpha (f1_tail[0]) && ('\0' != f1_tail[0])) f1_tail++;
+          f1_v = (f1_tail++)[0];
+        }
     }
+  if (f2_tail <= f2)
+    {
   if ('%' == f2[0])
     {
       if ('%' == f2[1])
@@ -341,17 +399,34 @@ again:
           f2_v = '\0';
           f2_fix = '%';
         }
+          else if ('{' == f2[1])
+            {
+              f2_tail = f2 + 2;
+              while (isalnum (f2_tail[0]) || ('_' == f2_tail[0])) f2_tail++;
+              if ('}' != f2_tail[0])
+                goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
+              f2_tail++;
+              while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
+              f2_v = (f2_tail++)[0];
+              f2_fix = '\0';
+              if ('U' != f2_v)
+                goto generic_tails; /* Syntax error -- no 'U' after "%{connvar}" */
+              /* There exists one special case that does not depend on format type and contex: identical connecton variables with identical formatting will always match */
+              if (((f1_tail - f1) == (f2_tail - f2)) &&
+                  !memcpy (f1, f2, (f1_tail - f1)) )
+                goto res_tail_gets_f2_v;
+            }
       else
         {
           f2_tail = f2 + 1;
           while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
           f2_v = (f2_tail++)[0];
+              f2_fix = '\0';
           switch (f2_v)
             {
             case 'D': case 'U': case 'd': case 's': case 'u': break;
             default: goto generic_tails; /* see below */
             }
-          f2_fix = '\0';
         }
     }
   else
@@ -360,17 +435,25 @@ again:
       f2_v = '\0';
       f2_fix = f2[0];
     }
-/* Now we slightly normalize the rest of processing to write code only for a half of f1_v and f2_v combinations */
-  if (f2_v > f1_v)
-    {
-      const char *ccswap;
-      char cswap;
-      ccswap = f2; f2 = f1; f1 = ccswap;
-      ccswap = f2_tail; f2_tail = f1_tail; f1_tail = ccswap;
-      cswap = f2_v; f2_v = f1_v; f1_v = cswap;
     }
-  f1_after_v = f1_tail;
-  f2_after_v = f2_tail;
+  switch (f1_v)
+    {
+    case 'D': case 'U': case 'd': case 's': case 'u': break;
+    default: goto generic_tails; /* see below */
+    }
+/* Now we slightly normalize the rest of processing to write code only for a half of f1_v and f2_v combinations */
+  if (('\0' != f2_v) && (f1_v > f2_v))
+    { /* This never swaps when f2_fix is not zero, because f2_v is 0 in than case and not greater than f1_v */
+      const char *swap;
+      char cswap;
+      swap = f2; f2 = f1; f1 = swap;
+      swap = f2_tail; f2_tail = f1_tail; f1_tail = swap;
+      swap = f2_last_replaced; f2_last_replaced = f1_last_replaced; f1_last_replaced = swap;
+      cswap = f2_v; f2_v = f1_v; f1_v = cswap;
+#ifdef SFF_DEBUG
+      swap = f2_initial; f2_initial = f1_initial; f1_initial = swap;
+#endif
+    }
 
   switch (f1_v)
     {
@@ -386,143 +469,133 @@ f1_v_is_D:
   if (isdatechar (f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%D' in f1 may match any %D-like chars, f2 vars (%U to %D, %s to %D) */
-  f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
-  for (;;)
+  if ('\0' == f2_v)
     {
-      if (!isdatechar (f2_tail[0]))
+      if (isdatechar (f2_fix))
+        goto res_tail_gets_f2_fix; /* see below */
+      if ((f1_tail[0] == f2_fix) && /* unambiguous synchronisation between f1 and f2... */
+        (f1_last_replaced == f1) ) /*... but date output can not be empty so should make if result contains something for the field */
         {
-          if (f1_tail[0] == f2_tail[0]) /* unambiguous synchronisation between f1 and f2 */
+          f2_tail = f2;
             goto tails_are_in_sync; /* see below */
+        }
           if ('\0' == f1_tail[0])
             return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
           return SFF_ISECT_DISJOIN;
         }
-      if ('%' == f2_tail[0])
-        {
-          f2_tail++;
-          if ('%' == f2_tail[0])
+  switch (f2_v)
             {
-              (res_buf++)[0] = '%'; (res_buf++)[0] = '%'; f2_tail++;
-              continue;
-            }
-          while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
-        }
-      else
+    case 'D': goto res_tail_gets_f2_v; /* see below */
+    case 'U':
+      if (isURIescapedchar (f1_tail[0]) || isURIescapedchar (f2_tail[0]))
+        goto res_tail_gets_f1_v; /* see below */
+      if (('%' != f1_tail[0]) && ('%' != f2_tail[0]))
         {
-          (res_buf++)[0] = (f2_tail++)[0];
-          continue;
+          f2 = f2_tail;
+          goto res_tail_gets_f1_v; /* see below */
         }
-      switch (f2_tail[0])
-        {
-        case '%': strcpy (res_buf, "%s"); return SFF_ISECT_OK;  /* Syntax error in f2, format like %01% */
-        case 'D': (res_buf++)[0] = '%'; (res_buf++)[0] = 'D'; f2_tail++; continue;
-        case 'U':
-          if (isURIescapedchar (f1_tail[0]))
-            goto generic_tails; /* see below */
-          (res_buf++)[0] = '%'; (res_buf++)[0] = 'U'; f2_tail++; continue;
-        case 'd': (res_buf++)[0] = '%'; (res_buf++)[0] = 'd'; f2_tail++; continue;
+      goto res_tail_gets_f1_v; /* see below */
+    case 'd': case 'u':
+      goto res_tail_gets_f2_v; /* see below */
         case 's': goto generic_tails; /* see below */
-        case 'u': (res_buf++)[0] = '%'; (res_buf++)[0] = 'u'; f2_tail++; continue;
+    goto res_tail_gets_f2_v; /* see below */
         default: goto generic_tails; /* see below */
         }
-    }
-
-  /*NOTREACHED*/
-  GPF_T;
 
 f1_v_is_U:
   if (isURIescapedchar (f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f1 may match any %U-like chars, f2 vars (%U to %U, %d to %d, %s to %U) */
-  f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
-  for (;;)
+  if ('\0' == f2_v)
     {
-      switch (f2_tail[0])
+      if (isURIescapedchar (f2_fix))
+        goto res_tail_gets_f2_fix; /* see below */
+      if (f1_tail[0] == f2_fix) /* unambiguous synchronisation between f1 and f2... */
         {
-        case '\0': case '/': case '?': case '=': case '#':
-          if (f1_tail[0] == f2_tail[0]) /* unambiguous synchronisation between f1 and f2 */
+          f2_tail = f2;
             goto tails_are_in_sync; /* see below */
-          if ('\0' == f1_tail[0])
-            return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
-          return SFF_ISECT_DISJOIN;
-        case '%':
-          f2_tail++;
-          if ('%' == f2_tail[0])
-            {
-              (res_buf++)[0] = '%'; (res_buf++)[0] = '%'; f2_tail++; continue;
-            }
-          while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
-          break;
-        default: (res_buf++)[0] = (f2_tail++)[0]; continue;
         }
-      switch (f2_tail[0])
+          if ('\0' == f1_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
+          return SFF_ISECT_DISJOIN;
+            }
+  switch (f2_v)
         {
-        case '%': goto generic_tails; /* see below */  /* Syntax error in f2, format like %01% */
-        case 'U': (res_buf++)[0] = '%'; (res_buf++)[0] = 'U'; f2_tail++; continue;
-        case 'd': (res_buf++)[0] = '%'; (res_buf++)[0] = 'd'; f2_tail++; continue;
+    case 'U': goto res_tail_gets_f2_v; /* see below */
+    case 'd': goto res_tail_gets_f2_v; /* see below */
         case 's': goto generic_tails; /* see below */
-        case 'u': (res_buf++)[0] = '%'; (res_buf++)[0] = 'u'; f2_tail++; continue;
+    case 'u': goto res_tail_gets_f2_v; /* see below */
         default: goto generic_tails; /* see below */
         }
-    }
-
-  /*NOTREACHED*/
-  GPF_T;
 
 f1_v_is_d:
 f1_v_is_u:
-  if (isdigit (f1_tail[0]) || ('%' == f1_tail[0]))
+  if (isdigit (f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%d' in f1 may match any %d-like chars, f2 vars (%u to %u) */
-  f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
-  f2_shifted = 0;
-  for (;;)
+  if ('\0' == f2_v)
     {
-      if ('%' == f2_tail[0])
+      if (isdigit (f2_fix))
+        goto res_tail_gets_f2_fix; /* see below */
+      if (('d' == f1_v) && (f1_last_replaced != f1) && (('-' == f2_fix) || ('+' == f2_fix)))
+        goto res_tail_gets_f2_fix; /* see below */
+      if ((f1_tail[0] == f2_fix) && /* unambiguous synchronisation between f1 and f2... */
+        (f1_last_replaced == f1) ) /*... but integer output can not be empty so should make if result contains something for the field */
         {
-          f2_tail++;
-          if ('%' == f2_tail[0])
-            return SFF_ISECT_DISJOIN;
-          while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
-        }
-      else if (isdigit (f2_tail[0]))
-        {
-          (res_buf++)[0] = (f2_tail++)[0];
-          f2_shifted = 1; continue;
-        }
-      else if (!f2_shifted && ('-' == f2_tail[0]) && isdigit (f2_tail[0]) && ('-' != f1_tail[0]) && ('d' == f1_v))
-        {
-          (res_buf++)[0] = (f2_tail++)[0];
-          (res_buf++)[0] = (f2_tail++)[0];
-          f2_shifted = 1; continue;
-        }
-      else if (f1_tail[0] == f2_tail[0]) /* unambiguous synchronisation between f1 and f2 */
+          f2_tail = f2;
         goto tails_are_in_sync; /* see below */
-      else if ('\0' == f1_tail[0])
-        return SFF_ISECT_DIFF_END; /* One string ends with %d, other with non-%d fixed char */
-      else
+        }
+      if ('\0' == f1_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %D, other with non-%D fixed char */
         return SFF_ISECT_DISJOIN;
-      switch (f2_tail[0])
+    }
+  switch (f2_v)
         {
-        case '%': strcpy (res_buf, "%s"); return SFF_ISECT_OK;  /* Syntax error in f2, format like %01% */
-        case 'u': (res_buf++)[0] = '%'; (res_buf++)[0] = 'u'; f2_tail++; f2_shifted = 1; continue;
-        case 'd':
-          if (f2_shifted && ('-' != f1_tail[0]) && ('u' == f1_v)) goto generic_tails; /* see below */
-          (res_buf++)[0] = '%'; (res_buf++)[0] = f1_v; f2_tail++; f2_shifted = 1; continue;
+    case 'd': goto res_tail_gets_f2_v; /* see below */
+    case 's': goto generic_tails; /* see below */
+    case 'u': goto res_tail_gets_f2_v; /* see below */
         default: goto generic_tails; /* see below */
         }
-    }
-
-  /*NOTREACHED*/
-  GPF_T;
 
 f1_v_is_s:
+  if ('\0' == f2_v)
+    {
+      if (('\0' != f2_fix) && ('%' != f2_fix) && (f1_tail[0] != f2_fix))
+        goto res_tail_gets_f2_fix; /* see below */
+    }
   if ('\0' == f1_tail[0])
     { /* %s at the end of f1 intersects with any f2 and the intersection is f2 */
-      strcpy (res_buf, f2);
+      strcpy (res_tail, f2);
       return SFF_ISECT_OK;
     }
   goto generic_tails; /* see below */
+
+res_tail_gets_f1_v:
+  while (f1 < f1_tail)
+    (res_tail++)[0] = (f1++)[0];
+  f2_last_replaced = f2;
+  goto again; /* see above */
+
+res_tail_gets_f2_v:
+#ifndef NDEBUG
+  if ('\0' != f2_fix)
+    GPF_T1("res_tail_gets_f2 with f2_fix");
+#endif
+  while (f2 < f2_tail)
+    (res_tail++)[0] = (f2++)[0];
+  f1_last_replaced = f1;
+  goto again; /* see above */
+
+res_tail_gets_f2_fix:
+#ifndef NDEBUG
+  if ('\0' == f2_fix)
+    GPF_T1("res_tail_gets_f2_fix without f2_fix");
+#endif
+  if ('%' == f2_fix)
+    (res_tail++)[0] = '%';
+  (res_tail++)[0] = (f2++)[0];
+  f1_last_replaced = f1;
+  goto again; /* see above */
 
 tails_are_in_sync:
   f1 = f1_tail;
@@ -530,7 +603,10 @@ tails_are_in_sync:
   goto again;
 
 generic_tails:
-  strcpy (res_buf, "%s");
+  if (('\0' != f2_fix) || ('U' == f2_v) || ('d' == f2_v) || ('u' == f2_v))
+    strcpy (res_tail, f2);
+  else
+    strcpy (res_tail, "%s");
   return SFF_ISECT_OK;
 }
 #endif
@@ -604,11 +680,11 @@ sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
         }
       chk_pos++;
     }
-  if (!ignore_cache)
-    {
       fmt_strcmp = strcmp (f1 + chk_pos, f2 + chk_pos);
       if (0 < fmt_strcmp)
         { ccaddr_t swap = f2; f2 = f1; f1 = swap; }
+  if (!ignore_cache)
+    {
       mutex_enter (sprintff_intersect_mtx);
       key_pair [0] = f1;
       key_pair [1] = f2;
@@ -690,6 +766,14 @@ again:
     }
 /* Now we know that f2 starts with variable part */
   f2_tail = f2 + 1;
+  if ('{' == f2_tail[0])
+    {
+      f2_tail++;
+      while (isalnum (f2_tail[0]) || ('_' == f2_tail[0])) f2_tail++;
+      if ('}' != f2_tail[0])
+        goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
+      f2_tail++;
+    }
   while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
   f2_v = (f2_tail++)[0];
   switch (f2_v)
@@ -908,8 +992,8 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
       res = sparp->sparp_sprintff_isect_buf = (caddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
       res_buf_len = newsize;
     }
-#ifdef DEBUG
-  memset (res, 0, res_buf_len * sizeof (caddr_t));
+#ifdef SFF_DEBUG
+  memset (res, '~', res_buf_len * sizeof (caddr_t));
 #endif
   res_count = 0;
   for (old_ctr = old_len; old_ctr--; /* no step */)
@@ -944,7 +1028,7 @@ skip_save_f12: ;
       new_buf = rvr->rvrSprintffs = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
     }
 #ifdef DEBUG
-  memset (rvr->rvrSprintffs, 0, box_length (rvr->rvrSprintffs));
+  memset (rvr->rvrSprintffs, -1, box_length (rvr->rvrSprintffs));
 #endif
   memcpy (rvr->rvrSprintffs, res, res_count * sizeof (caddr_t));
   rvr->rvrSprintffCount = res_count;

@@ -2914,11 +2914,92 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  len -= (int) (start - ptr);
 	}
       ptr = start + 1;
-      if (ptr && *ptr == '%')	/* double % */
+
+      switch (ptr[0])
 	{
-	  session_buffered_write_char (*ptr, ses);
+	case '\0':
+	  goto format_char_found;	/* see below */
+
+	case '%':
+	  session_buffered_write_char ('%', ses);
+	  goto get_next_no_arg_inx_increment;	/* see below */
+
+	case '{':
+	  {
+	    caddr_t connvar_name, connvar_value, *connvar_valplace;
+	    dtp_t connvar_dtp;
+	    query_instance_t *qi = (query_instance_t *) qst;
+	    client_connection_t *cli = qi->qi_client;
+
+	    ptr++;
+
+	    while (isalnum (ptr[0]) || ('_' == ptr[0]))
+	      ptr++;
+
+	    if ('}' != ptr[0])
+	      sqlr_new_error ("22026", "SR585",
+		  "sprintf format %%{ should have '}' immediately after the name of connection variable");
+
+	    ptr++;
+
+	    if (!*ptr || !strchr ("U" /*"diouxXeEfgcsSIVU" */ , *ptr))
+	      sqlr_new_error ("22023", "SR586",
+		  "Invalid format string for sprintf at escape %d", arg_inx);
+
+	    memset (format, 0, sizeof (format));
+	    memcpy (format, start + 2, MIN ((ptr - start) - 3, sizeof (format) - 1));
+
+	    connvar_name = box_dv_short_string (format);
+	    connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
+
+	    dk_free_box (connvar_name);
+
+	    if (NULL != connvar_valplace)
+	      connvar_value = connvar_valplace[0];
+	    else
+	{
+		connvar_value = uriqa_get_default_for_connvar (qi, format);
+		if (NULL == connvar_value)
+		  sqlr_new_error ("22023", "SR587",
+		      "Connection variable is mentioned by sprintf format %%{%s} but it does not exist",
+		      format);
+	      }
+
+	    connvar_dtp = DV_TYPE_OF (connvar_value);
+
+	    switch (*ptr)
+	      {
+	      case 'U':
+		if (DV_STRING != connvar_dtp)
+		  {
+		    if (NULL == connvar_valplace)
+		      dk_free_box (connvar_value);
+
+		    sqlr_new_error ("22023", "SR588",
+			"Connection variable is mentioned by sprintf format %%{%s}U but its value is not a string",
+			format);
+		  }
+
+		http_value_esc (qst, ses, connvar_value, NULL, DKS_ESC_URI);
+
+		if (NULL == connvar_valplace)
+		  dk_free_box (connvar_value);
+
+		break;
+
+	      default:
+		if (NULL == connvar_valplace)
+		  dk_free_box (connvar_value);
+
+		sqlr_new_error ("22023", "SR595",
+		    "Current implmentation of sprintf() supports only %%U sprintf() format for connection variables, %%{%.200s}%c is not supported",
+		    format, ptr[0]);
+	      }
+
 	  goto get_next_no_arg_inx_increment;	/* see below */
 	}
+	}
+
       /* Now we know that we process a real format specifier */
       if (arg_inx >= BOX_ELEMENTS_INT (args))
 	sqlr_new_error ("22026", "SR352",
@@ -2958,6 +3039,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (ptr && *ptr && strchr ("hlLq", *ptr))
 	ptr++;
 
+  format_char_found:
       if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsSIVU", *ptr))
 	{
 	  sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
@@ -3010,8 +3092,9 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      snprintf (tmp, SPRINTF_BUF_SPACE, format, (long double) bif_double_arg (qst, args, arg_inx, szMe));
 	    else
 	      snprintf (tmp, SPRINTF_BUF_SPACE, format, bif_double_arg (qst, args, arg_inx, szMe));
-	    break;
 	  }
+	  break;
+
 	case 'c':
 	  snprintf (tmp, SPRINTF_BUF_SPACE, format, (int) bif_long_arg (qst, args, arg_inx, szMe));
 	  break;
@@ -3155,11 +3238,9 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	case 'D':
 	  {
 	    caddr_t arg = bif_date_arg (qst, args, arg_inx, szMe);
-
 	    dt_print_to_buffer (tmp, arg, arg_len);
-
-	    break;
 	  }
+	  break;
 
 	default:
 	  sqlr_new_error ("22023", "SR038", "Invalid format string for sprintf: '%.1000s'", str);
@@ -3275,14 +3356,109 @@ retry_unrdf:
     }
   QR_RESET_CTX
     {
+find_next_format:
       while ('\0' != fmt_tail[0])
         {
           if ('%' == fmt_tail[0])
             {
-              if ('%' == fmt_tail[1])
+              switch (fmt_tail[1])
+                {
+                case '%':
                 fmt_tail++;
-              else
-                goto next_field; /* see below */
+                  break;
+                case '{':
+                  {
+                    caddr_t connvar_name, connvar_value, *connvar_valplace;
+                    dtp_t connvar_dtp;
+                    query_instance_t * qi = (query_instance_t *)qst;
+                    client_connection_t * cli = qi->qi_client;
+                    const char *val_tail, *val_end;
+                    field_start = fmt_tail;
+                    fmt_tail++;
+                    fmt_tail++;
+                    while (isalnum (fmt_tail[0]) || ('_' == fmt_tail[0])) fmt_tail++;
+                    if ('}' != fmt_tail[0])
+                      sqlr_new_error ("22026", "SR589",
+                        "sprintf_inverse format %%{ should have '}' immediately after the name of connection variable" );
+                    fmt_tail++;
+                    if (!*fmt_tail || !strchr ("U"/*"diouxXeEfgcsSIVU"*/, *fmt_tail))
+                      sqlr_new_error ("22023", "SR590",
+                        "Invalid format string for sprintf_inverse at escape %d", field_ctr);
+                    memset (field_fmt_buf, 0, sizeof (field_fmt_buf));
+                    memcpy (field_fmt_buf, field_start+2, MIN ((fmt_tail - field_start) - 3, sizeof (field_fmt_buf) - 1));
+                    connvar_name = box_dv_short_string (field_fmt_buf);
+                    connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &connvar_name);
+                    dk_free_box (connvar_name);
+                    if (NULL != connvar_valplace)
+                      connvar_value = connvar_valplace[0];
+                    else
+                      {
+                        connvar_value = uriqa_get_default_for_connvar (qi, field_fmt_buf);
+                        if (NULL == connvar_value)
+                          {
+                            sqlr_new_error ("22023", "SR591",
+                              "Connection variable is mentioned by sprintf_inverse format %%{%.200s} but it does not exist", field_fmt_buf);
+                          }
+                      }
+                    connvar_dtp = DV_TYPE_OF (connvar_value);
+                    switch (*fmt_tail)
+                      {
+                      case 'U':
+                        if (DV_STRING != connvar_dtp)
+                          {
+                            if (NULL == connvar_valplace)
+                              dk_free_box (connvar_value);
+                            sqlr_new_error ("22023", "SR588",
+                              "Connection variable is mentioned by sprintf_inverse format %%{%.200s}U but its value is not a string", field_fmt_buf);
+                          }
+                        val_end = connvar_value + box_length (connvar_value) - 1;
+                        for (val_tail = connvar_value; val_tail < val_end; val_tail++)
+                          {
+                            if (str_tail[0] == val_tail[0])
+                              {
+                                str_tail++;
+                                continue;
+                              }
+                            if (DKS_ESC_CHARCLASS_ACTION((unsigned char)(val_tail[0]), DKS_ESC_URI))
+                              {
+                                ws_connection_t * ws = ((query_instance_t *)qst)->qi_client->cli_ws;
+                                dk_session_t *ses = strses_allocate ();
+                                caddr_t converted;
+                                dks_esc_write (ses, val_tail, val_end - val_tail, WS_CHARSET (ws, qst), default_charset, DKS_ESC_URI);
+                                converted = strses_string (ses);
+                                dk_free_box (ses);
+                                if (NULL == connvar_valplace)
+                                  dk_free_box (connvar_value);
+                                val_end = converted + box_length (converted) - 1;
+                                for (val_tail = converted; val_tail < val_end; val_tail++)
+                                  {
+                                    if (str_tail[0] != val_tail[0])
+                                      {
+                                        dk_free_box (converted);
+                                        goto POP_format_mismatch;
+                                      }
+                                    str_tail++;
+                                  }
+                                dk_free_box (converted);
+                                fmt_tail++;
+                                goto find_next_format; /* see above */
+                              }
+                            goto POP_format_mismatch;
+                          }
+                        if (NULL == connvar_valplace)
+                          dk_free_box (connvar_value);
+                        break;
+                      default:
+                        if (NULL == connvar_valplace)
+                          dk_free_box (connvar_value);
+                        sqlr_new_error ("22023", "SR594",
+                          "Current implementation of sprintf_inverse() supports only %%U format for connection variables, %%{%.200s}%c is not supported", field_fmt_buf, fmt_tail[0]);
+                      }
+                    fmt_tail++;
+                    goto find_next_format; /* see above */
+                  }
+                default: goto next_field; /* see below */
+              }
             }
           if (str_tail[0] != fmt_tail[0])
             goto POP_format_mismatch; /* see below */
@@ -3600,7 +3776,7 @@ format_mismatch:
         {
           if ('%' == fmt_tail[0])
             {
-              if ('%' == fmt_tail[1])
+              if (('%' == fmt_tail[1]) || ('{' == fmt_tail[1]))
                 fmt_tail++;
               else
                 dk_set_push (&res, NEW_DB_NULL);
