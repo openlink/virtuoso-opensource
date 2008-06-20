@@ -32,6 +32,7 @@ import virtuoso.jdbc3.*;
 
 import com.hp.hpl.jena.update.*;
 import com.hp.hpl.jena.sparql.util.IndentedWriter;
+import com.hp.hpl.jena.shared.*;
 
 
 public class VirtuosoUpdateRequest 
@@ -44,6 +45,15 @@ public class VirtuosoUpdateRequest
     String virt_pass = null;
 
     java.sql.Statement stmt = null;
+
+    static {
+	try {
+		Class.forName("virtuoso.jdbc3.Driver");
+	}
+	catch (ClassNotFoundException e) {
+            throw new JenaException("Can't load class 'virtuoso.jdbc3.Driver' :"+e);
+	}
+    }
 
     public VirtuosoUpdateRequest (VirtGraph graph)
     {
@@ -63,7 +73,6 @@ public class VirtuosoUpdateRequest
     { 
 	try
 	{
-	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();

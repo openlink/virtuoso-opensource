@@ -65,6 +65,15 @@ public class VirtuosoQueryExecution  implements QueryExecution
     String virt_pass = null;
     java.sql.Statement stmt = null;
 
+    static {
+	try {
+		Class.forName("virtuoso.jdbc3.Driver");
+	}
+	catch (ClassNotFoundException e) {
+            throw new JenaException("Can't load class 'virtuoso.jdbc3.Driver' :"+e);
+	}
+    }
+
     public VirtuosoQueryExecution (String query, VirtGraph graph)
     {
 	virt_graph = graph.getGraphName ();
@@ -88,7 +97,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	try
 	{
-	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
@@ -180,7 +188,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execConstruct(Model model)
     {
 	try {
-	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
@@ -216,7 +223,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
     public Model execDescribe(Model model)
     {
 	try {
-	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
@@ -248,7 +254,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
         boolean ret = false;
 
 	try {
-	    Class.forName("virtuoso.jdbc3.Driver");
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
