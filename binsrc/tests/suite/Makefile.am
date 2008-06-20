@@ -23,6 +23,59 @@ SUBDIRS	= tpc-d .
 
 TOP=@TOP@
 
+check_SCRIPTS = \
+	bpel.sh \
+	byteorder.sh \
+	clean.sh \
+	gtkbench.sh \
+	inprocess.sh \
+	large_db.sh \
+	lowerall.sh \
+	msdtc.sh \
+	nwxml.sh \
+	obackup.sh \
+	oledb.sh \
+	rtest.sh \
+	tblob_recode.sh \
+	tcpt.sh \
+	tdav_meta.sh \
+	tdav.sh \
+	tdbp.sh \
+	tdconv.sh \
+	tdrop.sh \
+	testall.sh \
+	test_fn.sh \
+	test_server.sh \
+	thttp.sh \
+	timsg.sh \
+	tjdbc.sh \
+	tpcd.sh \
+	tproxy.sh \
+	tp.sh \
+	trecov_schema.sh \
+	trecov.sh \
+	treplh.sh \
+	trepl.sh \
+	tsec.sh \
+	tsoap12.sh \
+	tsparql.sh \
+	tsql2.sh \
+	tsql3.sh \
+	tsqlo.sh \
+	tsql.sh \
+	tstriping.sh \
+	tsxml.sh \
+	ttutorial.sh \
+	tupgrade_recov.sh \
+	tvad2.sh \
+	tvad.sh \
+	tvsp.sh \
+	tvspxex.sh \
+	tvspx.sh \
+	twcopy.sh \
+	twiki.sh \
+	txslt.sh
+
 TESTS=test_server.sh
 TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) HOME="$(TOP)" JDK2="$(JDK2)" JDK3="$(JDK3)" HOST=localhost SERVER=virtuoso-t
@@ -37,25 +90,20 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
-	bpel.sh \
-	byteorder.sh \
+	$(check_SCRIPTS) \
+	*.dtd \
+	*.sql \
+	*.txt \
+	*.vsp \
+	*.xml \
+	*.xsl \
 	cert.pem \
-	clean.sh \
 	docsrc/*.xml \
 	docsrc/*.xsl \
-	*.dtd \
 	eml1.eml \
 	eml2.eml \
 	etalon_ouput_gz \
-	gtkbench.sh \
 	grddl-tests.tar.gz \
-	inprocess.sh \
-	large_db.sh \
-	lowerall.sh \
-	msdtc.sh \
-	nwxml.sh \
-	obackup.sh \
-	oledb.sh \
 	pdd_txt.gz \
 	pk.pem \
 	r4/r4.tmp \
@@ -64,67 +112,24 @@ EXTRA_DIST= \
 	rtest.sh \
 	spanish.coll \
 	spotlight_test.tar.gz \
-	*.sql \
-	tblob_recode.sh \
-	tcpt.sh \
 	tdav_meta_050512.zip \
 	tdav_meta_050528.zip \
-	tdav_meta.sh \
-	tdav.sh \
-	tdbp.sh \
-	tdconv.sh \
-	tdrop.sh \
 	test_1947.db.test \
-	testall.sh \
-	test_fn.sh \
 	test_news_server_file \
-	test_server.sh \
-	thttp.sh \
-	timsg.sh \
-	tjdbc.sh \
-	tpcd.sh \
-	tproxy.sh \
-	tp.sh \
-	trecov_schema.sh \
-	trecov.sh \
 	treplh-dsn-odbc.cfg \
-	treplh.sh \
 	treplh-test-odbc.cfg \
-	trepl.sh \
-	tsec.sh \
-	tsoap12.sh \
-	tsql2.sh \
-	tsql3.sh \
-	tsqlo.sh \
-	tsql.sh \
-	tstriping.sh \
-	tsxml.sh \
-	ttutorial.sh \
-	tupgrade_recov.sh \
-	tvad2.sh \
-	tvad.sh \
-	tvsp.sh \
 	tvspxex.awk \
-	tvspxex.sh \
-	tvspx.sh \
-	twiki.sh \
-	twcopy.sh \
 	txslt.cmp \
-	txslt.sh \
-	*.txt \
 	vad_test/vsp/vad_test1/*.sql \
 	vad_test/vsp/vad_test1/*.vsp \
 	vad_test/vsp/vad_test2/*.sql \
 	vad_test/vsp/vad_test2/*.vsp \
 	virtuoso-1111.ini \
 	virtuoso-striping.ini \
-	*.vsp \
 	wi-striping-1-large.cfg \
 	wi-striping.cfg \
 	wi-striping-large.cfg \
 	witest.cfg \
 	words.esp \
-	*.xml \
-	*.xsl \
 	xsl_samples/*.xml \
 	xsl_samples/*.xsl
