@@ -37,6 +37,11 @@ public class VirtuosoSPARQLExample4
 
     public static void main(String[] args)
     {
+	String url;
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
 
 	Node foo1 = Node.createURI("http://example.org/#foo1");
 	Node bar1 = Node.createURI("http://example.org/#bar1");
@@ -50,7 +55,7 @@ public class VirtuosoSPARQLExample4
 	Node bar3 = Node.createURI("http://example.org/#bar3");
 	Node baz3 = Node.createURI("http://example.org/#baz3");
 
-	VirtGraph graph = new VirtGraph ("Example4", "jdbc:virtuoso://localhost:1111", "dba", "dba");
+	VirtGraph graph = new VirtGraph ("Example4", url, "dba", "dba");
 
 	graph.clear ();
 

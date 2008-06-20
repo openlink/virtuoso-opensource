@@ -35,8 +35,14 @@ public class VirtuosoSPARQLExample8 {
 	 */
 	public static void main(String[] args) {
 
+		String url;
+		if(args.length == 0)
+		    url = "jdbc:virtuoso://localhost:1111";
+		else
+		    url = args[0];
+
 /*			STEP 1			*/
-		VirtGraph set = new VirtGraph ("jdbc:virtuoso://localhost:1111", "dba", "dba");
+		VirtGraph set = new VirtGraph (url, "dba", "dba");
 
 /*			STEP 2			*/
 System.out.println("\nexecute: CLEAR GRAPH <http://test1>");
