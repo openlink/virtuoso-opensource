@@ -1693,6 +1693,11 @@ page is presented:
     </itemizedlist>
     <para>The installation is now ready for use.</para>
 </sect2>
+        <sect2 id="installdemopersonaledition">
+		<title>Demo Database</title>
+           <para><link linkend="demodbinstallsteps">Installation steps</link>.</para>
+        </sect2>
+
 </sect1>
 <sect1 id="installmacosx"><title>Virtuoso for Mac OS X</title>
 
@@ -1950,6 +1955,10 @@ http://a_virtuoso_server.org:8890</programlisting>
 		<para>See the following Quick Start chapter for very important information about
 		<link linkend="defpasschange">changing the default passwords</link>.</para>
 	</sect2>
+        <sect2 id="installdemomac">
+		<title>Demo Database</title>
+<para><link linkend="demodbinstallsteps">Installation steps</link>.</para>
+        </sect2>
 
 </sect1>
 
