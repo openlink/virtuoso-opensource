@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
+import java.util.StringTokenizer;
 
 import org.openrdf.model.BNode;
 import org.openrdf.model.Graph;
@@ -88,12 +89,13 @@ import virtuoso.jdbc3.VirtuosoRdfBox;
 import virtuoso.jdbc3.VirtuosoResultSet;
 
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
-    private Connection quadStoreConnection;
-    protected VirtuosoRepository repository;
+        private Resource  nilContext = new ValueFactoryImpl().createURI("urn:nil");
+	private Connection quadStoreConnection;
+	protected VirtuosoRepository repository;
 
-    public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
-    	this.quadStoreConnection = connection;
-    	this.repository = repository;
+	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
+    		this.quadStoreConnection = connection;
+    		this.repository = repository;
 		try {
 			this.repository.initialize();
 		}
@@ -101,26 +103,232 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RuntimeException(e.toString());
 		}
     	
-    }
+	}
     
     
-	public void add(Statement statement, Resource... contexts) throws RepositoryException {
-		add(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
-
+	/**
+	 * Returns the Repository object to which this connection belongs.
+	 */
+	public Repository getRepository() {
+		return repository;
 	}
 
-	public void add(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
-		Iterator it = statements.iterator();
-		while(it.hasNext()) {
-			Statement st = (Statement) it.next();
-			add(st, contexts);
+
+	/**
+	 * Checks whether this connection is open. A connection is open from the
+	 * moment it is created until it is closed.
+	 * 
+	 * @see #close()
+	 */
+	public boolean isOpen() throws RepositoryException {
+		try {
+			return !this.getQuadStoreConnection().isClosed();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException("Problem inspecting connection", e);
 		}
 	}
 
-	public <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
-		while(statements.hasNext()) {
-			Statement st = (Statement) statements.next();
-			add(st, contexts);
+
+	public void close() throws RepositoryException {
+		try {
+			if (!getQuadStoreConnection().isClosed())
+				getQuadStoreConnection().close();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e.toString());
+		}
+	}
+
+
+	public Query prepareQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
+		return prepareQuery(language, query, null);
+	}
+
+	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
+		Query q = new VirtuosoQuery();
+		return q;
+	}
+
+	public TupleQuery prepareTupleQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
+		return prepareTupleQuery(language, query, null);
+	}
+
+	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
+		TupleQuery q = new VirtuosoTupleQuery() {
+			public TupleQueryResult evaluate() throws QueryEvaluationException {
+				return executeSPARQLForQueryResult(query);
+			}
+			
+			public void evaluate(TupleQueryResultHandler handler) throws QueryEvaluationException, TupleQueryResultHandlerException {
+				executeSPARQLForHandler(handler, query);
+			}
+		};
+		return q;
+	}
+
+	public GraphQuery prepareGraphQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
+		return prepareGraphQuery(language, query, null);
+	}
+
+	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
+		GraphQuery q = new VirtuosoGraphQuery();
+		return q;
+	}
+
+	public BooleanQuery prepareBooleanQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
+		return prepareBooleanQuery(language, query, null);
+	}
+
+	public BooleanQuery prepareBooleanQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
+		BooleanQuery q = new VirtuosoBooleanQuery();
+		return q;
+	}
+
+	public RepositoryResult<Resource> getContextIDs() throws RepositoryException {
+		// this function performs SLOWLY, use with caution
+		
+		verifyIsOpen();
+		Vector v = new Vector();
+		String query = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
+		try {
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+
+			// begin at onset one
+			while(rs.next()) {
+				Object obj = rs.getObject(1);
+				try {
+					Value graphId = castValue(obj);
+					// add that graph to the results
+					v.add(graphId);
+				} catch(IllegalArgumentException iiaex) {
+					throw new RepositoryException("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + obj);
+				}
+			}
+		}
+		catch (Exception e) {
+			throw new RepositoryException(": SPARQL execute failed." + "\n" + query.toString(), e);
+		}
+		return createRepositoryResult(v);
+	}	
+
+	public RepositoryResult<Statement> getStatements(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
+		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
+		return createRepositoryResult(g);
+	}
+
+	public boolean hasStatement(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
+		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
+		return g.iterator().hasNext();
+	}
+
+	public boolean hasStatement(Statement statement, boolean includeInferred, Resource... contexts) throws RepositoryException {
+		if(contexts != null && contexts.length == 0) {
+			if(statement.getContext() != null) {
+				contexts = new Resource[] {statement.getContext()}; // try the context given by the statement
+			}
+			else {
+				contexts = new Resource[] {nilContext};
+			}
+		}
+		Graph g = selectFromQuadStore(statement.getSubject(), statement.getPredicate(), statement.getObject(), includeInferred, contexts);
+		return g.iterator().hasNext();
+	}
+
+	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
+		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
+		handler.startRDF();
+		Iterator<Statement> it = g.iterator();
+		while(it.hasNext()) handler.handleStatement(it.next());
+		handler.endRDF();
+	}
+
+	public void export(RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
+		exportStatements(null, null, null, false, handler, contexts);
+	}
+
+	public long size(Resource... contexts) throws RepositoryException {
+		int ret = 0;
+
+		verifyIsOpen();
+		if(contexts == null || contexts.length == 0)
+			contexts = new Resource[] {nilContext};
+
+		for(int i = 0; i < contexts.length; i++) {
+			StringBuffer query = new StringBuffer("select count (*) from (sparql select * from <");
+			if(contexts[i] != null)
+				query.append(contexts[i].stringValue());
+			else
+				query.append(nilContext.stringValue());
+
+			query.append(">  where {?s ?p ?o})f");
+
+			ResultSet rs = null;
+
+			try {
+				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+				rs = stmt.executeQuery(query.toString());
+				rs.next();
+				ret += rs.getInt(1);
+			}
+			catch (Exception e) {
+				throw new RepositoryException(e);
+			}
+		}
+		return ret;
+	}
+
+	public boolean isEmpty() throws RepositoryException {
+		verifyIsOpen();
+		String query = "sparql select * where {?s ?o ?p} limit 1";
+		try {
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			VirtuosoResultSet result_set = (VirtuosoResultSet) stmt.executeQuery(query);
+			return result_set.next();
+		}
+		catch (Exception e) {
+			throw new RepositoryException("Problem executing query: " + query, e);
+		}
+	}
+
+	public void setAutoCommit(boolean autoCommit) throws RepositoryException {
+		verifyIsOpen();
+		try {
+			getQuadStoreConnection().setAutoCommit(autoCommit);
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e.toString());
+		}
+	}
+
+	public boolean isAutoCommit() throws RepositoryException {
+		verifyIsOpen();
+		try {
+			return getQuadStoreConnection().getAutoCommit();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e.toString());
+		}
+	}
+
+	public void commit() throws RepositoryException {
+		verifyIsOpen();
+		try {
+			getQuadStoreConnection().commit();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e.toString());
+		}
+	}
+
+	public void rollback() throws RepositoryException {
+		verifyIsOpen();
+		try {
+			this.getQuadStoreConnection().rollback();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException("Problem with rollback", e);
 		}
 	}
 
@@ -129,7 +337,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		add(reader, baseURI, format, contexts);
 	}
 
-	public void add(Reader reader, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
+	public void add(Reader reader, String baseURI, RDFFormat format, final Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		try {
 			RDFParser parser = null;
 			if(format.equals(RDFFormat.NTRIPLES)) {
@@ -156,7 +364,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			parser.setRDFHandler(new RDFHandlerBase() {
 				public void handleStatement(Statement st) {
 					try {
-						add(st); // send the parsed triple to the quad store
+						add(st, contexts); // send the parsed triple to the quad store
 					}
 					catch (RepositoryException e) {
 						e.printStackTrace();
@@ -189,140 +397,123 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		addToQuadStore(subject, predicate, object, contexts);
 	}
 
+	public void add(Statement statement, Resource... contexts) throws RepositoryException {
+		if(contexts != null && contexts.length == 0) {
+			if(statement.getContext() != null) {
+				contexts = new Resource[] {statement.getContext()}; // try the context given by the statement
+			}
+			else {
+				contexts = new Resource[] {nilContext};
+			}
+		}
+		add(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
+	}
+
+	public void add(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
+		Iterator it = statements.iterator();
+		while(it.hasNext()) {
+			Statement st = (Statement) it.next();
+			add(st, contexts);
+		}
+	}
+
+	public <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
+		while(statements.hasNext()) {
+			Statement st = (Statement) statements.next();
+			add(st, contexts);
+		}
+	}
+
+	public void remove(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
+		verifyIsOpen();
+		String s = "?s";
+		String p = "?p";
+		String o = "?o";
+		
+		if (subject != null) 
+		   s = Resource2Str(subject);
+
+		if (predicate != null) 
+		   p = URI2Str(predicate);
+
+		if(object != null) 
+		   o = Value2Str(object);
+
+		if(contexts == null || contexts.length == 0) 
+			contexts = new Resource[] {nilContext};
+
+		for(int i = 0; i < contexts.length; i++) {
+		        StringBuffer query = new StringBuffer("sparql delete from graph <");
+			if(contexts[i] != null)
+				query.append(contexts[i].stringValue());
+			else
+				query.append(nilContext.stringValue());
+			query.append("> { ");
+
+//			s = s.replaceAll("'", "''");
+//			p = p.replaceAll("'", "''");
+//			o = o.replaceAll("'", "''");
+			query.append(s);
+			query.append(" ");
+			query.append(p);
+			query.append(" ");
+			query.append(o);
+			query.append(" }");
+
+			try {
+				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+				stmt.execute(query.toString());
+			} catch (Exception e) {
+				throw new RepositoryException(e.toString());
+			}
+		}
+	}
+
+	public void remove(Statement statement, Resource... contexts) throws RepositoryException {
+		if(contexts != null && contexts.length == 0) {
+			if(statement.getContext() != null) {
+				contexts = new Resource[] {statement.getContext()}; // try the context given by the statement
+			}
+			else {
+				contexts = new Resource[] {nilContext};
+			}
+		}
+		remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
+	}
+
+	public void remove(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
+		Iterator<? extends Statement> it = statements.iterator();
+		while(it.hasNext()) {
+			Statement st = it.next();
+			remove(st, contexts);
+		}
+	}
+
+	public <E extends Exception> void remove(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
+		while(statements.hasNext()) {
+			Statement st = statements.next();
+			remove(st, contexts);
+		}
+	}
+
+
 	public void clear(Resource... contexts) throws RepositoryException {
 		clearQuadStore(contexts);
 	}
 
-	public void clearNamespaces() throws RepositoryException {
-		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
-		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.execute(query.toString());
-		}
-		catch (SQLException e) {
-			throw new RepositoryException("Problem executing query: " + query, e);
-		}
-	}
-
-	public void close() throws RepositoryException {
-		// TODO check close() implementation
-		try {
-			getQuadStoreConnection().close();
-		}
-		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
-		}
-	}
-
-	public void commit() throws RepositoryException {
-		// TODO check commit() implementation
-		try {
-			getQuadStoreConnection().commit();
-		}
-		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
-		}
-	}
-
-	public void export(RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
-		exportStatements(null, null, null, false, handler, contexts);
-	}
-
-	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
-		handler.startRDF();
-		Iterator<Statement> it = g.iterator();
-		while(it.hasNext()) handler.handleStatement(it.next());
-		handler.endRDF();
-	}
-
-	public RepositoryResult<Resource> getContextIDs() throws RepositoryException {
-		// this function performs SLOWLY, use with caution
-		
-		Vector v = new Vector();
-		StringBuffer query = new StringBuffer();
-		query.append("sparql select distinct ?g where {graph ?g {?s ?o ?p.}}");		
-		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query.toString());
-
-			ResultSetMetaData data = results.getMetaData();
-			String[] col_names = new String[data.getColumnCount()];
-			
-			// begin at onset one
-			while(results.next()) {
-				for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-					String col = data.getColumnName(meta_count);
-					Object obj = results.getObject(col);
-					if(col.equals("g")) {
-						// TODO need to be able to parse BNode value also
-						try {
-							Value graphId = castValue(obj);
-							// add that graph to the results
-							v.add(graphId);
-						}
-						catch(IllegalArgumentException iiaex) {
-							throw new RepositoryException("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + obj);
-//							System.out.println("VirtuosoRepositoryConnection.getContextIDs() Ignoring context: " + obj);
-						}
-					}
-				}
-			}
-		}
-		catch (Exception e) {
-			throw new RepositoryException(": SPARQL execute failed." + "\n" + query.toString(), e);
-		}
-		return createRepositoryResult(v);
-	}	
-
-	public String getNamespace(String prefix) throws RepositoryException {
-		// TODO verify that this query is correct
-		// SELECT distinct RP_NAME, RP_ID from DB.DBA.RDF_PREFIX
-		StringBuffer query = new StringBuffer();
-		query.append("SELECT __xml_get_ns_uri ('");
-		query.append(prefix);
-		query.append("', 3)");
-		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query.toString());
-
-			ResultSetMetaData data = results.getMetaData();
-// String[] col_names = new String[data.getColumnCount()];
-			// begin at onset one
-			while(results.next()) {
-				return results.getString(data.getColumnName(1));
-			}
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e.toString());
-		}
-		return null;
-	}
-	
-	
 	public RepositoryResult<Namespace> getNamespaces() throws RepositoryException {
+		verifyIsOpen();
 		List<Namespace> namespaceList = new ArrayList<Namespace>();
 		StringBuffer query = new StringBuffer();
 		query.append("DB.DBA.XML_SELECT_ALL_NS_DECLS (3)");
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
 
-			ResultSetMetaData data = results.getMetaData();
 			// begin at onset one
-			while (results.next()) {
-				String name = null;
-				String prefix = null;
-				for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-					// TODO need to parse these into appropriate resource values
-					String col = data.getColumnName(meta_count);
-					if(col.equals("URI")) {
-						name = results.getString(col);
-					}
-					else if(col.equals("PREFIX")) {
-						prefix = results.getString(col);
-					}
-				}
+			while (rs.next()) {
+				String prefix = rs.getString(1);
+				String name = rs.getString(2);
 				if(name != null && prefix != null) {
 					Namespace ns =  new NamespaceImpl(prefix, name);
 					namespaceList.add(ns);
@@ -335,243 +526,55 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return  createRepositoryResult(namespaceList);// new RepositoryResult<Namespace>(new IteratorWrapper(v.iterator()));
 	}
 
-	public Repository getRepository() {
-		// TODO is this the repository connected to this connection?
-		return repository;
-	}
-
-	public RepositoryResult<Statement> getStatements(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
-		return createRepositoryResult(g);
-	}
-
-	public boolean hasStatement(Statement statement, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		Graph g = selectFromQuadStore(statement.getSubject(), statement.getPredicate(), statement.getObject(), includeInferred, contexts);
-		return g.iterator().hasNext();
-	}
-
-	public boolean hasStatement(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
-		return g.iterator().hasNext();
-	}
-
-	public boolean isAutoCommit() throws RepositoryException {
-		try {
-			return getQuadStoreConnection().getAutoCommit();
-		}
-		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
-		}
-//		return false;
-	}
-
-	public boolean isEmpty() throws RepositoryException {
-		String query = "sparql select * where {?s ?o ?p} limit 1";
+	public String getNamespace(String prefix) throws RepositoryException {
+		verifyIsOpen();
+		StringBuffer query = new StringBuffer();
+		query.append("SELECT __xml_get_ns_uri ('");
+		query.append(prefix);
+		query.append("', 3)");
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet result_set = (VirtuosoResultSet) stmt.executeQuery(query);
-			return result_set.next();
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+
+			// begin at onset one
+			while(rs.next()) {
+				return rs.getString(1);
+			}
 		}
 		catch (Exception e) {
-			throw new RepositoryException("Problem executing query: " + query, e);
+			throw new RepositoryException(e.toString());
 		}
+		return null;
 	}
-
-	public boolean isOpen() throws RepositoryException {
+	
+	
+	public void setNamespace(String prefix, String name) throws RepositoryException {
+		verifyIsOpen();
+		String query = "DB.DBA.XML_SET_NS_DECL('" + prefix + "','" + name + "', 1)";
 		try {
-			return !this.getQuadStoreConnection().isClosed();
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.execute(query);
 		}
 		catch (SQLException e) {
-			throw new RepositoryException("Problem inspecting connection", e);
-		}
-	}
-
-	public BooleanQuery prepareBooleanQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
-		return prepareBooleanQuery(language, query, null);
-	}
-
-	public BooleanQuery prepareBooleanQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
-		BooleanQuery q = new VirtuosoBooleanQuery();
-		return q;
-	}
-
-	public GraphQuery prepareGraphQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
-		return prepareGraphQuery(language, query, null);
-	}
-
-	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
-		GraphQuery q = new VirtuosoGraphQuery();
-		return q;
-	}
-
-	public Query prepareQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
-		return prepareQuery(language, query, null);
-	}
-
-	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
-		Query q = new VirtuosoQuery();
-		return q;
-	}
-
-	public TupleQuery prepareTupleQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
-		return prepareTupleQuery(language, query, null);
-	}
-
-	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
-		TupleQuery q = new VirtuosoTupleQuery() {
-			public TupleQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForQueryResult(query);
-			}
-			
-			public void evaluate(TupleQueryResultHandler handler) throws QueryEvaluationException, TupleQueryResultHandlerException {
-				executeSPARQLForHandler(handler, query);
-			}
-		};
-		return q;
-	}
-
-	public void remove(Statement statement, Resource... contexts) throws RepositoryException {
-		remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
-	}
-
-	public void remove(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
-		Iterator<? extends Statement> it = statements.iterator();
-		while(it.hasNext()) {
-			Statement statement = it.next();
-			remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
-		}
-	}
-
-	public <E extends Exception> void remove(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
-		while(statements.hasNext()) {
-			Statement statement = statements.next();
-			remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
-		}
-	}
-
-	public void remove(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-//		String S, P, O;
-//		StringBuffer query = new StringBuffer();
-//
-//		S = subject.toString();
-//		P = predicate.toString();
-//		O = object.toString();
-//		
-//		java.sql.Statement stmt;
-//		try {
-//			if (contexts == null || contexts.length == 0) {
-//				query.append("jena_remove (" + "'?g', " + "'" + S + "', " + "'" + P + "', " + "'" + O + "')");
-//// query.append("sparql ");
-//// query.append("delete graph <");
-//// query.append(context.stringValue());
-//// query.append(">");
-//				stmt = getQuadStoreConnection().createStatement();
-//				stmt.executeUpdate(query.toString());
-//			}
-//			else {
-//				for (int i = 0; i < contexts.length; i++) {
-//					// TODO check this jena_remove procedure, looks fishy
-//					// TODO insert the procedure before using it
-//					query.append("jena_remove (" + "'" + contexts[i] + "', " + "'" + S + "', " + "'" + P + "', " + "'" + O + "')");
-//					stmt = getQuadStoreConnection().createStatement();
-//					stmt.executeUpdate(query.toString());
-//				}
-//			}
-//		}
-//		catch (SQLException e) {
-//			throw new RepositoryException("Problem executing 'remove' query: " + query, e);
-//		}
-		String s = "";
-		String p = "";
-		String o = "";
-		StringBuffer query = new StringBuffer();
-		if(subject == null) s = "?s";
-		else if(subject instanceof URI) s = "<" + ((URI)subject).stringValue() + ">";
-		else if(subject instanceof BNode) s = "<_:" + ((BNode)subject).stringValue() + ">";
-		else if(predicate == null) p = "?p";
-		if(predicate instanceof URI) p = "<" + ((URI)predicate).stringValue() + ">";
-		if(object == null) o = "?o";
-		else if(object instanceof URI) o = "<" + ((URI)object).stringValue() + ">";
-		else if(object instanceof BNode) o = "<_:" + ((BNode)object).stringValue() + ">";
-		else if(object instanceof Literal) {
-			Literal lit = (Literal) object;
-			o = "\"" + lit.stringValue() + "\"";
-			if(lit.getLanguage() != null) {
-				o = "@" + lit.getLanguage();
-			}
-			else if(lit.getDatatype() != null) {
-				o = "^^" + "<" + lit.getDatatype() + ">";
-			}
-		}
-
-		if(contexts == null || contexts.length == 0) {
-			contexts = new Resource[] {new ValueFactoryImpl().createURI("virt:DEFAULT")};
-		}
-		addTriplesToEachContext:
-		for(int i = 0; i < contexts.length; i++) {
-			String g = "from graph <virt:DEFAULT>";
-			if(contexts[i] != null) {
-				// TODO need to pass a wildcard for context
-//				continue addTriplesToEachContext;
-				if(contexts[i] instanceof URI) {
-					g = "from graph <" + contexts[i].stringValue() + ">";
-				}
-			}
-//			else if(contexts[i] instanceof URI) {
-//				URI context = (URI)contexts[i];
-				s = s.replaceAll("'", "''");
-				p = p.replaceAll("'", "''");
-				o = o.replaceAll("'", "''");
-				query.append("sparql delete " + g + "{ ");
-				query.append(s);
-				query.append(" ");
-				query.append(p);
-				query.append(" ");
-				query.append(o);
-				query.append(" }");
-				try {
-					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.execute(query.toString());
-				}
-				catch (Exception e) {
-					throw new RepositoryException(e.toString());
-				}
-//			}
+			throw new RepositoryException("Problem executing query: " + query, e);
 		}
 	}
 
 	public void removeNamespace(String prefix) throws RepositoryException {
-// String query = "delete from table DB.DBA.RDF_PREFIX WHERE RP_ID = '" + prefix + "'";
+		verifyIsOpen();
 		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX('" + prefix + "', 1)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.execute(query.toString());
+			stmt.execute(query);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
 		}
 	}
 
-	public void rollback() throws RepositoryException {
-		try {
-			this.getQuadStoreConnection().rollback();
-		}
-		catch (SQLException e) {
-			throw new RepositoryException("Problem with rollback", e);
-		}
-	}
-
-	public void setAutoCommit(boolean autoCommit) throws RepositoryException {
-		try {
-			getQuadStoreConnection().setAutoCommit(autoCommit);
-		}
-		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
-		}
-	}
-
-	public void setNamespace(String prefix, String name) throws RepositoryException {
-		String query = "DB.DBA.XML_SET_NS_DECL('" + prefix + "','" + name + "', 1)";
+	public void clearNamespaces() throws RepositoryException {
+		verifyIsOpen();
+		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.execute(query.toString());
@@ -581,416 +584,29 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	public long size(Resource... contexts) throws RepositoryException {
-		int ret = 0;
-		for(int i = 0; i < contexts.length; i++) {
-			String exec_text = "select count (*) from (sparql select * from <"
-				+ contexts[i] + ">  where {?s ?p ?o})f";
-			ResultSet rs = null;
 
-//			checkOpen();
-
-			try {
-				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-				rs = stmt.executeQuery(exec_text);
-				rs.next();
-				ret += rs.getInt(1);
-			}
-			catch (Exception e) {
-				throw new RepositoryException(e);
-			}
-		}
-		return ret;
-//		return new Integer(selectFromQuadStore(contexts).size()).longValue();
-	}
-
-	private void addToQuadStore(Statement st, Resource ... contexts) {
-		if(contexts != null && contexts.length == 0) {
-			if(st.getContext() != null) {
-				contexts = new Resource[] {st.getContext()}; // try the context given by the statement
-			}
-			else {
-			}
-		}
-		addToQuadStore(st.getSubject(), st.getPredicate(), st.getObject(), contexts);
-	}
-	
-	private void addToQuadStore(Resource subject, URI predicate, Value object, Resource ... contexts) {
-		if(contexts == null) {
-			contexts = new Resource[] {new ValueFactoryImpl().createURI("virt:DEFAULT")}; // retrieve all statements under no context
-		}
-		else if(contexts.length == 0) {
-			contexts = new Resource[] {new ValueFactoryImpl().createURI("virt:DEFAULT")}; // retrieve all statements under no context
-		}
-		
-//		String S;
-//		String P;
-//		String O;
-//		StringBuffer query = new StringBuffer();
-//		S = subject.stringValue();
-//		P = predicate.stringValue();
-//		O = object.stringValue();
-//		S = S.replaceAll("'", "''");
-//		P = P.replaceAll("'", "''");
-//		O = O.replaceAll("'", "''");
-//
-//		addTriplesToEachContext:
-//		for(int i = 0; i < contexts.length; i++) {
-//			if(contexts[i] == null) {
-//				// TODO need to pass a wildcard for context
-//				continue addTriplesToEachContext;
-//			}
-//			else if(contexts[i] instanceof URI) {
-//				URI context = (URI)contexts[i];
-//				query.append("DB.DBA.RDF_QUAD_URI ('");
-//				query.append(context.stringValue());
-//				query.append("', '");
-//				query.append(S);
-//				query.append("', '");
-//				query.append(P);
-//				query.append("', '");
-//				query.append(O);
-//				query.append("')");
-//				try {
-//					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-//					stmt.executeUpdate(query.toString());
-//				}
-//				catch (Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-		
-		
-
-		String s = "";
-		String p = "";
-		String o = "";
-		StringBuffer query = new StringBuffer();
-		if(subject instanceof URI) s = "<" + ((URI)subject).stringValue() + ">";
-		else if(subject instanceof BNode) s = "<_:" + ((BNode)subject).stringValue() + ">";
-		if(predicate instanceof URI) p = "<" + ((URI)predicate).stringValue() + ">";
-		if(object instanceof URI) o = "<" + ((URI)object).stringValue() + ">";
-		else if(object instanceof BNode) o = "<_:" + ((BNode)object).stringValue() + ">";
-		else if(object instanceof Literal) {
-			Literal lit = (Literal) object;
-			o = "\"" + lit.stringValue() + "\"";
-			if(lit.getLanguage() != null) {
-				o = "@" + lit.getLanguage();
-			}
-			else if(lit.getDatatype() != null) {
-				o = "^^" + "<" + lit.getDatatype() + ">";
-			}
-		}
-
-		addTriplesToEachContext:
-		for(int i = 0; i < contexts.length; i++) {
-			String g = "";
-			if(contexts[i] != null) {
-				// TODO need to pass a wildcard for context
-				if(contexts[i] instanceof URI) g = "into graph <" + contexts[i].stringValue() + ">";
-//				continue addTriplesToEachContext;
-			}
-//			else if(contexts[i] instanceof URI) {
-//				URI context = (URI)contexts[i];
-				s = s.replaceAll("'", "''");
-				p = p.replaceAll("'", "''");
-				o = o.replaceAll("'", "''");
-				query.append("sparql insert " + g + " { ");
-				query.append(s);
-				query.append(" ");
-				query.append(p);
-				query.append(" ");
-				query.append(o);
-				query.append(" }");
-				try {
-					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.execute(query.toString());
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e.toString());
-				}
-//			}
-		}
-	}
-
-	private void addToQuadStore(URL dataURL, Resource ... contexts) {
-		if(contexts == null) {
-			contexts = new Resource[] {null}; // retrieve all statements under no context
-		}
-		else if(contexts.length == 0) {
-			// TODO need to pass a wildcard context
-		}
-		
-		loadEachContext:
-		for(int i = 0; i < contexts.length; i++) {
-			if(contexts[i] == null) {
-				// TODO need to pass a wildcard for context
-				continue loadEachContext;
-			}
-			else if(contexts[i] instanceof URI) {
-				URI context = (URI) contexts[i];
-				StringBuffer query = new StringBuffer();
-				query.append("sparql load \"");
-				query.append(dataURL);
-				query.append("\" into graph <");
-				query.append(context.stringValue());
-				query.append(">");
-				try {
-					java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-					stmt.execute(query.toString());
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e.toString());
-				}
-			}
-		}
-	}
-		
-	private void clearQuadStore(Resource ... contexts) {
-		if(contexts == null) {
-			contexts = new Resource[] {null}; // retrieve all statements under no context
-		}
-		else if(contexts.length == 0) {
-			// TODO need to pass a wildcard context
-		}
-		
-		clearEachContext:
-		for (int i = 0; i < contexts.length; i++) {
-			if(contexts[i] == null) {
-				// TODO need to pass a wildcard for context
-				continue clearEachContext;
-			}
-			else if (contexts[i] instanceof URI) {
-				URI context = (URI) contexts[i];
-				try {
-					StringBuffer query = new StringBuffer();
-					// updated to use SPARUL
-					// query.append("delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME ('");
-					// query.append(context.stringValue());
-					// query.append("')");
-					
-					query.append("sparql ");
-					query.append("clear graph <");
-					query.append(context.stringValue());
-					query.append(">");
-					java.sql.Statement stmt = quadStoreConnection.createStatement();
-					stmt.execute(query.toString());
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e.toString());
-				}
-			}
-		}
-	}
-	
-	private Graph selectFromQuadStore(Resource ... contexts) {
-		return selectFromQuadStore(null, null, null, false, contexts);
-	}
-	
-	private Graph selectFromQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, Resource ... contexts) {
-		if(contexts == null) {
-			contexts = new Resource[] {null}; // retrieve all statements under no context
-		}
-		else if(contexts.length == 0) {
-			// TODO need to pass a wildcard context
-		}
-		
-		Graph g = new GraphImpl();
-		StringBuffer query = buildQuery(VirtuosoRepositoryConnection.TRANSACTION_SELECT, subject, predicate, object, contexts);
-		
-		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query.toString());
-
-			ResultSetMetaData data = results.getMetaData();
-			
-			// begin at onset one
-			while(results.next()) {
-				for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-					// TODO need to parse these into appropriate resource values
-					Object value = results.getObject(meta_count);
-					if(data.getColumnName(meta_count).equals("s")) {
-						try {
-							subject = (Resource) castValue(value);
-						}
-						catch(ClassCastException ccex) {
-							throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + value);
-//							ccex.printStackTrace();
-						}
-					}
-					else if(data.getColumnName(meta_count).equals("p")) {
-						try {
-							predicate = (URI) castValue(value);
-						}
-						catch(ClassCastException ccex) {
-							throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + value);
-//							ccex.printStackTrace();
-						}
-					}
-					else if(data.getColumnName(meta_count).equals("o")) {
-						object = castValue(value);
-					}
-				}
-				g.add(subject, predicate, object);
-			}
-		}
-		catch (Exception e) {
-                        throw new RuntimeException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString()+"["+e+"]");
-//			e.printStackTrace();
-		}
-		return g;
-	}
-	
-	private boolean deleteFromQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, Resource ... contexts) {
-		StringBuffer query = buildQuery(VirtuosoRepositoryConnection.TRANSACTION_DELETE, subject, predicate, object, contexts);
-		return false;
-	}
-	
-	private boolean insertInQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, Resource ... contexts) {
-		StringBuffer query = buildQuery(VirtuosoRepositoryConnection.TRANSACTION_INSERT, subject, predicate, object, contexts);
-		return false;
-	}
-	
-	final static int TRANSACTION_SELECT = 100;
-	final static int TRANSACTION_DELETE = 110;
-	final static int TRANSACTION_INSERT = 120;
-
-	private StringBuffer buildQuery(int transactionType, Resource subject, URI predicate, Value object, Resource... contexts) {
-		StringBuffer query = new StringBuffer();
-		
-		String s = "", p = "<" + predicate + ">", o = "";
-		Vector<String> vars = new Vector<String>();
-		
-		if(subject == null || subject instanceof BNode) {
-			s = "?s";
-			vars.add(s);
-		}
-		else if(subject instanceof URI) {
-			s = "<" + ((URI) subject).toString() + ">";
-		}
-
-		if(predicate == null || predicate instanceof BNode) {
-			p = "?p";
-			vars.add(p);
-		}
-		
-		if(object == null || object instanceof BNode) {
-			o = "?o";
-			vars.add(o);
-		}
-		else if(object instanceof URI) {
-			o = "<" + ((URI) object).toString() + ">";
-		}
-		else if(object instanceof Literal) {
-			Literal lit = ((Literal)object);
-			String label = lit.getLabel();
-			String lang = lit.getLanguage();
-			URI datatype = lit.getDatatype();
-			try {
-				o = Integer.parseInt(label) + "";
-			}
-			catch(NumberFormatException nfex) {
-				o = "\"" + label + "\"";
-				if(lang != null) o += "@" + lang;
-				else if(datatype != null) o += "^^" + "<" + datatype + ">";
-			}
-			
-		}		
-		
-		switch(transactionType) {
-			case VirtuosoRepositoryConnection.TRANSACTION_SELECT: query.append("sparql select "); break;
-			case VirtuosoRepositoryConnection.TRANSACTION_DELETE: query.append("sparql delete "); break;
-			case VirtuosoRepositoryConnection.TRANSACTION_INSERT: query.append("sparql insert "); break;
-		}
-		
-		// if no variables, use the 'data' keyword to insert/delete explicit triples
-// if(vars.size() == 0) {
-		if(transactionType == VirtuosoRepositoryConnection.TRANSACTION_SELECT) {
-			for(int i = 0; i < vars.size(); i++) query.append(vars.elementAt(i) + " ");
-		}
-		else {
-			query.append(" data ");
-			if(transactionType == VirtuosoRepositoryConnection.TRANSACTION_DELETE) {
-				query.append(" from ");
-			}
-			else if(transactionType == VirtuosoRepositoryConnection.TRANSACTION_INSERT) {
-				query.append(" into ");
-			}
-			s = s.replaceAll("'", "''");
-			p = p.replaceAll("'", "''");
-			o = o.replaceAll("'", "''");
-			query.append("{");
-			query.append(s);
-			query.append(" ");
-			query.append(p);
-			query.append(" ");
-			query.append(o);
-			query.append("}");
-		}
-// }
-		
-		query.append("where { ");
-		
-		boolean addGraphClause = false;
-// for (int i = 0; i < contexts.length; i++) {
-// if(contexts[i] == null) {
-// query.append("graph ?g {");
-// addGraphClause = true;
-// }
-// else if (contexts[i] instanceof URI) {
-// URI context = (URI) contexts[i];
-// query.append("graph <" + context + "> {");
-// addGraphClause = true;
-// }
-// }
-		if(contexts != null && contexts.length == 1) {
-			if(!addGraphClause) addGraphClause = true;
-			query.append("graph <" + contexts[0] + "> {");
-		}
-		query.append(s);
-		query.append(" ");
-		query.append(p);
-		query.append(" ");
-		query.append(o);
-		if(addGraphClause) query.append(".} "); // close graph
-		query.append("} "); // close where
-		
-		if(vars.size() == 0) {
-			try {
-				throw new RepositoryException("No projection found: " + query);
-			}
-			catch (RepositoryException e) {
-				e.printStackTrace();
-				return new StringBuffer();
-			}
-		}
-		return query;
-	}
-
-	
-	
 	public TupleQueryResult executeSPARQLForQueryResult(String query) {
+
 		Vector<String> names = new Vector();
 		Vector<BindingSet> bindings = new Vector();
 		try {
+			verifyIsOpen();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query);
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
 
-			ResultSetMetaData data = results.getMetaData();
-			String[] col_names = new String[data.getColumnCount()];
+			ResultSetMetaData rsmd = rs.getMetaData();
 			
 			// begin at onset one
-			for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-				String col = data.getColumnName(meta_count);
-				if(names.indexOf(col) < 0) names.add(col); // no duplicates
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				String col = rsmd.getColumnName(i);
+				if (names.indexOf(col) < 0) 
+					names.add(col); // no duplicates
 			}
-			while(results.next()) {
+			while(rs.next()) {
 				QueryBindingSet qbs = new QueryBindingSet();
-				for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-					// TODO need to parse these into appropriate resource values
-					String col = data.getColumnName(meta_count);
-					Object val = results.getObject(col);
+				for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+					String col = rsmd.getColumnName(i);
+					Object val = rs.getObject(i);
 					Value v = castValue(val);
 					qbs.setBinding(col, v);
 				}
@@ -1005,131 +621,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private Value castValue(Object val) {
-		if(val == null) return null;
-	    if (val instanceof VirtuosoRdfBox) {
-			VirtuosoRdfBox rb = (VirtuosoRdfBox) val;
-			Literal lit = getRepository().getValueFactory().createLiteral(rb.rb_box.toString());
-			if(rb.getLang() != null) {
-				lit = getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), rb.getLang());
-			}
-			else if(rb.getType() != null) {
-				lit = getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), this.getRepository().getValueFactory().createURI(rb.getType()));
-			}
-			// System.out.println(rb.rb_box + " lang=" + rb.getLang() + " type=" + rb.getType() + " ro_id=" + rb.rb_ro_id);
-			return lit;
-	    }
-		else if (val instanceof java.lang.Integer) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#integer");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.lang.Short) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#integer");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.lang.Float) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#float");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.lang.Double) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#double");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.math.BigDecimal) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#decimal");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.sql.Blob) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#hexBinary");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.sql.Date) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.sql.Timestamp) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-		else if (val instanceof java.sql.Time) {
-			 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
-			 Literal lit = getRepository().getValueFactory().createLiteral(val.toString(), type);
-		     return lit;
-		}
-	    else if(val instanceof VirtuosoExtendedString) {
-			VirtuosoExtendedString ves = (VirtuosoExtendedString) val;
-			String valueString = ves.str;
-		    if (ves.iriType == VirtuosoExtendedString.IRI) {
-		    	if (valueString.startsWith("_:")) {
-		    		valueString = valueString.substring(2);
-					return getRepository().getValueFactory().createBNode(valueString);
-		    	}
-				try {
-					return getRepository().getValueFactory().createURI(valueString);
-				}
-				catch(IllegalArgumentException iaex) {
-				        throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
-				}
-		    }
-		    else if (ves.iriType == VirtuosoExtendedString.BNODE) {
-//				if(valueString.startsWith("nodeID://")) {
-					try {
-						valueString = valueString.substring(9); // parse bnode id
-						return getRepository().getValueFactory().createBNode(valueString);
-					}
-					catch(IllegalArgumentException iaex) {
-						throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
-					}
-//				}
-		    }
-		    else {
-				try {
-					return getRepository().getValueFactory().createLiteral(valueString);
-				}
-				catch(IllegalArgumentException iaex) {
-					throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
-				}
-		    }
-		}
-		else { //if(val instanceof String) {
-		String s = (String) val;
-			if(s.length() == 0) return null;
-			try {
-				return getRepository().getValueFactory().createLiteral(s);
-			}
-			catch(IllegalArgumentException iaex2) {
-				throw new RuntimeException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + s);
-			}
-		}
-//		return null;
-	}
-	
 	public void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet results = (VirtuosoResultSet) stmt.executeQuery(query);
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
 
-			ResultSetMetaData data = results.getMetaData();
-			String[] col_names = new String[data.getColumnCount()];
+			ResultSetMetaData rsmd = rs.getMetaData();
 			
 			// begin at onset one
-			for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
-				col_names[meta_count - 1] = data.getColumnLabel(meta_count);
-			}
-			while(results.next()) {
+			while(rs.next()) {
 				QueryBindingSet qbs = new QueryBindingSet();
-				for (int meta_count = 1; meta_count <= data.getColumnCount(); meta_count++) {
+				for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 					// TODO need to parse these into appropriate resource values
-					String col = data.getColumnName(meta_count);
-					Object val = results.getObject(col);
+					String col = rsmd.getColumnName(i);
+					Object val = rs.getObject(i);
 					Value v = castValue(val);
 					qbs.addBinding(col, v);
 				}
@@ -1138,9 +643,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e.toString());
-// System.exit(-1);
 		}
 	}
+
+	public int executeSPARUL(String query) {
+
+		try {
+			verifyIsOpen();
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.execute("sparql\n "+query);
+			return stmt.getUpdateCount();
+		}
+		catch (Exception e) {
+		        throw new RuntimeException(e.toString());
+		}
+	}
+
 
 	public Connection getQuadStoreConnection() {
 		return quadStoreConnection;
@@ -1150,12 +668,347 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
+	private String fixQuery(String query) {
+		StringTokenizer tok = new StringTokenizer(query);
+		String s = tok.nextToken().toLowerCase();
+		if (s.equals("describe") || s.equals("construct") || s.equals("ask"))
+           		return "sparql\n define output:format '_JAVA_'\n " + query;
+        	else
+      	   		return "sparql\n " + query;
+	}
+
+	
+	private void addToQuadStore(Statement st, Resource ... contexts) throws RepositoryException {
+		if(contexts != null && contexts.length == 0) {
+			if(st.getContext() != null) {
+				contexts = new Resource[] {st.getContext()}; // try the context given by the statement
+			}
+			else {
+				contexts = new Resource[] {nilContext};
+			}
+		}
+		addToQuadStore(st.getSubject(), st.getPredicate(), st.getObject(), contexts);
+	}
+	
+
+	private void addToQuadStore(Resource subject, URI predicate, Value object, Resource ... contexts) throws RepositoryException {
+		verifyIsOpen();
+		if(contexts == null || contexts.length == 0)
+			contexts = new Resource[] {nilContext};
+		
+		String s = "";
+		String p = "";
+		String o = "";
+
+		if (subject != null) 
+		   s = Resource2Str(subject);
+
+		if (predicate != null) 
+		   p = URI2Str(predicate);
+
+		if(object != null) 
+		   o = Value2Str(object);
+
+
+		for(int i = 0; i < contexts.length; i++) {
+		        StringBuffer query = new StringBuffer("sparql insert into graph <");
+			if(contexts[i] != null)
+				query.append(contexts[i].stringValue());
+			else
+				query.append(nilContext.stringValue());
+			query.append("> { ");
+
+//			s = s.replaceAll("'", "''");
+//			p = p.replaceAll("'", "''");
+//			o = o.replaceAll("'", "''");
+			query.append(s);
+			query.append(" ");
+			query.append(p);
+			query.append(" ");
+			query.append(o);
+			query.append(" }");
+
+			try {
+				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+				stmt.execute(query.toString());
+			} catch (Exception e) {
+				throw new RuntimeException(e.toString());
+			}
+		}
+	}
+
+	private void addToQuadStore(URL dataURL, Resource ... contexts) throws RepositoryException {
+		verifyIsOpen();
+		if(contexts == null || contexts.length == 0)
+			contexts = new Resource[] {nilContext};
+		
+		for(int i = 0; i < contexts.length; i++) {
+		        StringBuffer query = new StringBuffer("sparql load \"");
+		        query.append(dataURL);
+			query.append("\" into graph <");
+
+			if(contexts[i] != null)
+				query.append(contexts[i].stringValue());
+			else
+				query.append(nilContext.stringValue());
+
+			query.append(">");
+
+			try {
+				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+				stmt.execute(query.toString());
+			} catch (Exception e) {
+				throw new RepositoryException(e.toString());
+			}
+		}
+	}
+		
+	private void clearQuadStore(Resource ... contexts) throws RepositoryException {
+		verifyIsOpen();
+		if(contexts == null || contexts.length == 0)
+			contexts = new Resource[] {nilContext};
+
+		for (int i = 0; i < contexts.length; i++) {
+		        StringBuffer query = new StringBuffer("sparql clear graph <");
+			if(contexts[i] != null)
+				query.append(contexts[i].stringValue());
+			else
+				query.append(nilContext.stringValue());
+
+			query.append(">");
+
+
+			try {
+				java.sql.Statement stmt = quadStoreConnection.createStatement();
+				stmt.execute(query.toString());
+			} catch (Exception e) {
+				throw new RepositoryException(e.toString());
+			}
+		}
+	}
+	
+	private Graph selectFromQuadStore(Resource ... contexts) throws RepositoryException {
+		return selectFromQuadStore(null, null, null, false, contexts);
+	}
+	
+	private Graph selectFromQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, Resource ... contexts) throws RepositoryException {
+		verifyIsOpen();
+		if(contexts == null || contexts.length == 0)
+			contexts = new Resource[] {nilContext};
+		
+		Graph g = new GraphImpl();
+		String S = "?s";
+		String P = "?p";
+		String O = "?o";
+
+		if (subject != null)
+		  S = Resource2Str(subject);
+		if (predicate != null)
+		  P = URI2Str(predicate);
+		if (object != null)
+		  O = Value2Str(object);
+
+		for (int i = 0; i < contexts.length; i++) {
+		  
+		  StringBuffer query = new StringBuffer("sparql select * from <");
+		  Resource context = contexts[i];
+
+		  if (context == null)
+			context = nilContext;
+
+		  query.append(context.stringValue());
+		  query.append("> where { ");
+		  query.append(S);
+		  query.append(" ");
+		  query.append(P);
+		  query.append(" ");
+		  query.append(O);
+		  query.append(" }");
+
+		  try {
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+
+			// begin at onset one
+			while(rs.next()) {
+				Resource _subject = subject;
+				URI _predicate = predicate;
+				Value _object = object;
+				Object val = null;
+
+				if (_subject == null)
+				   try {
+				     val = rs.getObject("s");
+				     _subject = (Resource) castValue(val);
+				   }
+				   catch(ClassCastException ccex) {
+					throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
+				   }
+
+				if (_predicate == null)
+				   try {
+				     val = rs.getObject("p");
+				     _predicate = (URI) castValue(val);
+				   }
+				   catch(ClassCastException ccex) {
+					throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val);
+				   }
+				
+				if (_object == null)
+				     _object = castValue(rs.getObject("o"));
+
+				g.add(_subject, _predicate, _object, context);
+			}
+		  }
+		  catch (Exception e) {
+                        throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString()+"["+e+"]");
+		  }
+		}
+		return g;
+	}
+	
+	
+        private String Resource2Str(Resource n) {
+           if (n instanceof URI)
+             return "<"+n.stringValue()+">";
+           else if (n instanceof BNode)
+             return "<_:"+n.stringValue()+">";
+           else 
+             return "<"+n.stringValue()+">";
+        }
+
+        private String URI2Str(URI n) {
+             return "<"+n.stringValue()+">";
+        }
+
+        private String Value2Str(Value n) {
+           if (n instanceof BNode)
+             return "<_:"+n.stringValue()+">";
+           else if (n instanceof URI)
+             return "<"+n.stringValue()+">";
+           else if (n instanceof Literal)
+             {
+	       Literal lit = (Literal) n;
+	       String o = "\"" + lit.stringValue() + "\"";
+	       if (lit.getLanguage() != null)
+                 o = "@" + lit.getLanguage();
+               else if (lit.getDatatype() != null)
+                 o = "^^" + "<" + lit.getDatatype() + ">";
+               return o;
+             }
+           else
+             return "\""+n.stringValue()+"\"";
+        }
+
+	
+	private Value castValue(Object val) throws RepositoryException {
+	    if (val == null) 
+	      return null;
+	    if (val instanceof VirtuosoRdfBox) {
+		VirtuosoRdfBox rb = (VirtuosoRdfBox) val;
+		if (rb.getLang() != null) {
+		   return getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), rb.getLang());
+		}
+		else if(rb.getType() != null) {
+		   return getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), this.getRepository().getValueFactory().createURI(rb.getType()));
+		}
+		else {
+		   return getRepository().getValueFactory().createLiteral(rb.rb_box.toString());
+		}
+	    }
+	    else if (val instanceof java.lang.Integer) {
+		 return getRepository().getValueFactory().createLiteral(((Integer)val).intValue());
+	    }
+	    else if (val instanceof java.lang.Short) {
+		 return getRepository().getValueFactory().createLiteral(((Short)val).intValue());
+	    }
+	    else if (val instanceof java.lang.Float) {
+		 return getRepository().getValueFactory().createLiteral(((Float)val).floatValue());
+	    }
+	    else if (val instanceof java.lang.Double) {
+		 return getRepository().getValueFactory().createLiteral(((Double)val).doubleValue());
+	    }
+	    else if (val instanceof java.math.BigDecimal) {
+		 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#decimal");
+		 return getRepository().getValueFactory().createLiteral(val.toString(), type);
+	    }
+	    else if (val instanceof java.sql.Blob) {
+		 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#hexBinary");
+		 return getRepository().getValueFactory().createLiteral(val.toString(), type);
+	    }
+	    else if (val instanceof java.sql.Date) {
+		 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
+		 return getRepository().getValueFactory().createLiteral(val.toString(), type);
+	    }
+	    else if (val instanceof java.sql.Timestamp) {
+		 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
+		 return getRepository().getValueFactory().createLiteral(val.toString(), type);
+	    }
+	    else if (val instanceof java.sql.Time) {
+		 URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
+		 return getRepository().getValueFactory().createLiteral(val.toString(), type);
+	    }
+	    else if(val instanceof VirtuosoExtendedString) {
+		VirtuosoExtendedString ves = (VirtuosoExtendedString) val;
+		String valueString = ves.str;
+		if (ves.iriType == VirtuosoExtendedString.IRI) {
+			if (valueString.startsWith("_:")) {
+		    		valueString = valueString.substring(2);
+				return getRepository().getValueFactory().createBNode(valueString);
+		    	}
+			try {
+			        if (valueString.indexOf(':') < 0)
+				  return getRepository().getValueFactory().createURI(":"+valueString);
+				else
+				  return getRepository().getValueFactory().createURI(valueString);
+			}
+			catch(IllegalArgumentException iaex) {
+			        throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"");
+			}
+		}
+		else if (ves.iriType == VirtuosoExtendedString.BNODE) {
+			try {
+				valueString = valueString.substring(9); // "nodeID://"
+				return getRepository().getValueFactory().createBNode(valueString);
+			}
+			catch(IllegalArgumentException iaex) {
+				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"");
+			}
+		}
+		else {
+			try {
+				return getRepository().getValueFactory().createLiteral(valueString);
+			}
+			catch(IllegalArgumentException iaex) {
+				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+			}
+		}
+	    }
+	    else { //if(val instanceof String) {
+		try {
+			return getRepository().getValueFactory().createLiteral((String)val);
+		}
+		catch(IllegalArgumentException iaex2) {
+			throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + val);
+		}
+	    }
+	}
+	
 	/**
 	 * Creates a RepositoryResult for the supplied element set.
 	 */
 	protected <E> RepositoryResult<E> createRepositoryResult(Iterable<? extends E> elements) {
 		return new RepositoryResult<E>(new CloseableIteratorIteration<E, RepositoryException>(
 				elements.iterator()));
+	}
+
+	private void verifyIsOpen() throws RepositoryException {
+		try {
+			if (this.getQuadStoreConnection().isClosed())
+				throw new IllegalStateException("Connection has been closed");
+		} catch (SQLException e) {
+		   throw new RepositoryException(e);
+		}
 	}
 
 }

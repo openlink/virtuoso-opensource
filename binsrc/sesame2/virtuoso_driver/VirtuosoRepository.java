@@ -44,14 +44,14 @@ public class VirtuosoRepository implements Repository {
 	private int connection_status = 0;
 	public int resultsHandlerType = 0;
     
-    static {
+        static {
 		try {
 			Class.forName("virtuoso.jdbc3.Driver");
 		}
 		catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-    }
+        }
 	
 	public VirtuosoRepository(String url, String user, String password) {
 		this.url = url;
@@ -63,16 +63,9 @@ public class VirtuosoRepository implements Repository {
 			connection_status = 1;
 			
 			this.connection = new VirtuosoRepositoryConnection(this, connection);
-			
-			// insert the jena_remove procedure
-			String query = "create procedure jena_remove (in _G any, in _S any, in _P any, in _O any){delete from RDF_QUAD where G=DB.DBA.RDF_MAKE_IID_OF_QNAME (_G) and S=DB.DBA.RDF_MAKE_IID_OF_QNAME (_S) and P=DB.DBA.RDF_MAKE_IID_OF_QNAME (_P) and O=DB.DBA.RDF_MAKE_IID_OF_QNAME (_O);}";
-			java.sql.Statement stmt = connection.createStatement();
-			stmt.executeUpdate(query);
 		}
 		catch (Exception e) {
 			System.out.println("Connection to " + url + " is FAILED.");
-//			e.printStackTrace();
-//			System.exit(-1);
 		}
 	}
 

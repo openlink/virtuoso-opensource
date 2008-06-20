@@ -34,13 +34,14 @@ public class VirtuosoQuery implements org.openrdf.query.Query {
 
 	QueryBindingSet bindingSet = new QueryBindingSet();
 	boolean includeInferred = false;
+	Dataset dataset = null;
 	
 	public BindingSet getBindings() {
 		return this.bindingSet;
 	}
 
 	public Dataset getDataset() {
-		return null;
+		return dataset;
 	}
 
 	public boolean getIncludeInferred() {
@@ -55,7 +56,8 @@ public class VirtuosoQuery implements org.openrdf.query.Query {
 		this.bindingSet.setBinding(name, value);
 	}
 
-	public void setDataset(Dataset arg0) {
+	public void setDataset(Dataset dataset) {
+		this.dataset = dataset;
 	}
 
 	public void setIncludeInferred(boolean includeInferred) {

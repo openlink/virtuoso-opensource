@@ -84,7 +84,6 @@
 <http://dbpedia.org/resource/Boeing_767> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/Boeing767> . 
 <http://dbpedia.org/resource/Planetary_body> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/PlanetaryBody> . 
 <http://dbpedia.org/resource/Azimuthal_projection> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/AzimuthalProjection> . 
-<http://dbpedia.org/resource/It's_your_Move> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/ItsYourMove-TheTVShow> . 
 <http://dbpedia.org/resource/Enhancement> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/EnhancingAppearance> . 
 <http://dbpedia.org/resource/Rescue> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/RescuingSomeone> . 
 <http://dbpedia.org/resource/Leonard_Nimoy> <http://www.w3.org/2002/07/owl#sameAs> <http://sw.cyc.com/2006/07/27/cyc/LeonardNimoy> . 
