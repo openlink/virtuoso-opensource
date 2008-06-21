@@ -165,7 +165,7 @@ public class VirtuosoTest {
 			  e.printStackTrace();
 			  OK = false;
 			}
-			END("TEST 1c", (results != null && results.length > 0)); // should return true
+			END("TEST 1c", OK && (results != null && results.length > 0)); // should return true
 
 			URI shermanmonroe = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/shermanMonroe");
 			BNode snode = repository.getValueFactory().createBNode("smonroeNode");
