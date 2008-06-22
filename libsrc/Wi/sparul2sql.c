@@ -50,6 +50,12 @@ extern "C" {
 #define CTOR_DISJOIN_WHERE 1
 #define CTOR_MAY_INTERSECTS_WHERE 0
 
+caddr_t
+spar_compose_report_flag (sparp_t *sparp)
+{
+  const char *fmtname = sparp->sparp_env->spare_output_format_name;
+  return t_box_num (((NULL != fmtname) && !strcmp (fmtname, "_JAVA_")) ? 0 : 1);
+}
 
 int
 sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields)
@@ -322,7 +328,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     &(top->_.req_top.retvals), &cve, NULL );
   rv = top->_.req_top.retvals;
   rv[0] = spar_make_funcall (sparp, 0, top_fname,
-    (SPART **)t_list (3, graph_to_patch, rv[0], log_mode) );
+    (SPART **)t_list (4, graph_to_patch, rv[0], log_mode, spar_compose_report_flag (sparp)) );
 }
 
 void
@@ -365,7 +371,7 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
     &ins, &cve, NULL );
   rv = top->_.req_top.retvals;
   rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
-    (SPART **)t_list (4, graph_to_patch, rv[0], ins[0], log_mode) );
+    (SPART **)t_list (5, graph_to_patch, rv[0], ins[0], log_mode, spar_compose_report_flag (sparp)) );
 }
 
 SPART *
@@ -402,11 +408,12 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dk_set_t bad_triples = NULL;
   int all_triple_count, bad_triple_count, tctr;
   const char *fname;
-  SPART *graph_expn, *log_mode_expn, *good_ctor_call;
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (3 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   graph_expn	= retvals[0]->_.funcall.argtrees[0];
   ctor		= retvals[0]->_.funcall.argtrees[1];
   log_mode_expn	= retvals[0]->_.funcall.argtrees[2];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[3];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (3 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
@@ -479,12 +486,13 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   dk_set_t bad_ins_triples = NULL;
   int all_del_triple_count, bad_del_triple_count, del_const_count, del_tctr;
   int all_ins_triple_count, bad_ins_triple_count, ins_tctr;
-  SPART *graph_expn, *log_mode_expn, *good_ctor_call;
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   graph_expn	= retvals[0]->_.funcall.argtrees[0];
   del_ctor	= retvals[0]->_.funcall.argtrees[1];
   ins_ctor	= retvals[0]->_.funcall.argtrees[2];
   log_mode_expn	= retvals[0]->_.funcall.argtrees[3];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (3 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (3 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
   del_var_triples = del_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;

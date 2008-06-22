@@ -611,6 +611,7 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );
 
+extern void ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compose_report);
 extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname);
 
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);

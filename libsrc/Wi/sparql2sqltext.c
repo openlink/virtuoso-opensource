@@ -252,7 +252,7 @@ const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subty
       case ASK_L: return "COUNT";
       default: return NULL;
       }
-  spar_error (NULL, "Unsupported format name '%.30s', only 'RDF/XML' and 'TURTLE' are supported", name);
+  spar_error (NULL, "Unsupported format name '%.30s', only 'RDF/XML', 'TURTLE' and '_JAVA_' are supported", name);
   return NULL; /* to keep compiler happy */
 }
 
@@ -4420,8 +4420,40 @@ sqlval_operation:
   ssg_puts (s3);
 }
 
+void
+ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compose_report)
+{ /* Very special case. Arguments are texts of queries. */
+  int arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+  ssg_puts (" DB.DBA.SPARUL_RUN ( vector (");
+  ssg->ssg_indent += 2;
+  for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
+    {
+      SPART *arg = tree->_.funcall.argtrees[arg_ctr];
+      if (arg_ctr > 0)
+        ssg_putchar (',');
+      ssg_newline (0);
+      /*ssg_puts (" coalesce ((");*/
+      ssg_puts (" (");
+      ssg->ssg_indent += 2;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg) && SPAR_LIT == arg->type &&
+        DV_STRING == DV_TYPE_OF (arg->_.lit.val) )
+        ssg_puts (arg->_.lit.val);
+      else
+        ssg_print_retval_simple_expn (ssg, gp, arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (")");
+      /*ssg_puts ("))");*/
+      ssg->ssg_indent -= 2;
+    }
+  ssg_puts (")");
+  if (compose_report)
+    ssg_puts (", 1 /* to compose report */");
+  ssg_puts (")");
+  ssg->ssg_indent -= 2;
 
-void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname)
+}
+
+void
+ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
   switch (SPART_TYPE (tree))
     {
@@ -4516,29 +4548,8 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
             goto print_asname;
           }
         if (!strcmp (tree->_.funcall.qname, "sql:SPARUL_RUN"))
-          { /* Very special case. Arguments are texts of queries. */
-            ssg_puts (" DB.DBA.SPARUL_RUN ( vector (");
-            ssg->ssg_indent += 2;
-            for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
               {
-                SPART *arg = tree->_.funcall.argtrees[arg_ctr];
-                if (arg_ctr > 0)
-                  ssg_putchar (',');
-                ssg_newline (0);
-                /*ssg_puts (" coalesce ((");*/
-                ssg_puts (" (");
-                ssg->ssg_indent += 2;
-		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg) && SPAR_LIT == arg->type &&
-		  DV_STRING == DV_TYPE_OF (arg->_.lit.val) )
-                  ssg_puts (arg->_.lit.val);
-                else
-                  ssg_print_retval_simple_expn (ssg, gp, arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-                ssg_puts (")");
-                /*ssg_puts ("))");*/
-                ssg->ssg_indent -= 2;
-              }
-            ssg_puts ("))");
-            ssg->ssg_indent -= 2;
+            ssg_print_sparul_run_call (ssg, gp, tree, 1);
             goto print_asname;
           }
         bigtext =
@@ -5641,6 +5652,14 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case MODIFY_L:
     case CLEAR_L:
     case LOAD_L:
+    case CREATE_L:
+    case DROP_L:
+    case SPARUL_RUN_SUBTYPE:
+      if ((SPARUL_RUN_SUBTYPE == subtype) && !unbox (spar_compose_report_flag (ssg->ssg_sparp)))
+        {
+          ssg_print_sparul_run_call (ssg, tree->_.req_top.pattern, retvals[0], 0);
+          return;
+        }
       ssg_puts ("SELECT TOP 1");
       if (NULL != formatter)
         {

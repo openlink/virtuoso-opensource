@@ -1541,7 +1541,7 @@ spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode)
   fake_sol = spar_make_fake_action_solution (sparp);
   top = spar_make_top (sparp, CLEAR_L,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CLEAR",
-        (SPART **)t_list (1, graph_precode) ) ),
+        (SPART **)t_list (3, graph_precode, t_box_num_nonull (0), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
   return top;
@@ -1556,7 +1556,7 @@ spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode)
   fake_sol = spar_make_fake_action_solution (sparp);
   top = spar_make_top (sparp, LOAD_L,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_LOAD",
-        (SPART **)t_list (2, graph_precode, src_precode) ) ),
+        (SPART **)t_list (3, graph_precode, src_precode, spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
   return top;
@@ -1569,9 +1569,9 @@ spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent)
   SPART *top;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, CLEAR_L,
+  top = spar_make_top (sparp, CREATE_L,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CREATE",
-        (SPART **)t_list (2, graph_precode, t_box_num_nonull(silent)) ) ),
+        (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
   return top;
@@ -1584,9 +1584,9 @@ spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent)
   SPART *top;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, CLEAR_L,
+  top = spar_make_top (sparp, DROP_L,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_DROP",
-        (SPART **)t_list (2, graph_precode, t_box_num_nonull(silent)) ) ),
+        (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
   return top;
@@ -1601,7 +1601,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   SPART *top;
   SPART **action_sqls;
   int action_ctr, action_count = BOX_ELEMENTS (actions);
-  if (1 == action_count)
+  if ((1 == action_count) && (spar_compose_report_flag (sparp)))
     return actions[0]; /* No need to make grouping around single action. */
 /* First of all, every tree for every action is compiled into string literal containing SQL text. */
   action_sqls = (SPART **)t_alloc_box (action_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
@@ -1640,7 +1640,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   sparp->sparp_env->spare_output_valmode_name = saved_valmode_name;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, LOAD_L,
+  top = spar_make_top (sparp, SPARUL_RUN_SUBTYPE,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );

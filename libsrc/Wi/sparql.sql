@@ -3246,7 +3246,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
           arg := opcodes[triple_ctr][fld_ctr * 2 + 1];
           if (1 = op)
             {
-              declare i IRI_ID;
+              declare i any;
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
@@ -3346,7 +3346,7 @@ create aggregate DB.DBA.SPARQL_MODIFY_CTOR (in graph_iri any, in del_opcodes any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_MODIFY_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
-create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null) returns varchar
+create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare triples any;
   declare ins_count integer;
@@ -3361,11 +3361,14 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
   DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (compose_report)
   return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
+  else
+    return ins_count;
 }
 ;
 
-create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null) returns varchar
+create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare triples any;
   declare del_count integer;
@@ -3380,11 +3383,14 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (compose_report)
   return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
+  else
+    return del_count;
 }
 ;
 
-create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_triples_dict any, in ins_triples_dict any, in log_mode integer := null) returns varchar
+create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_triples_dict any, in ins_triples_dict any, in log_mode integer := null, in compose_report integer := 0) returns any
 {
   declare del_count, ins_count integer;
   del_count := 0;
@@ -3407,11 +3413,14 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
     }
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (compose_report)
   return sprintf ('Modify <%s>, delete %d and insert %d triples -- done', graph_iri, del_count, ins_count);
+  else
+    return del_count + ins_count;
 }
 ;
 
-create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer := 0) returns varchar
+create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer := 0, in compose_report integer := 0) returns any
 {
   commit work;
   delete from DB.DBA.RDF_QUAD
@@ -3429,14 +3438,18 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer 
   commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  if (compose_report)
   return sprintf ('Clear <%s> -- done', graph_iri);
+  else
+    return 1;
 }
 ;
 
-create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar) returns varchar
+create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in compose_report integer := 0) returns any
 {
   declare grab_params any;
   declare grabbed any;
+  declare res integer;
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -3447,19 +3460,35 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar) retur
     'get:error-recovery', 'signal',
     -- 'flags', flags,
     'grabbed', grabbed );
-  if (DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params))
+  res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
+  if (res)
+    {
+      if (compose_report)
     return sprintf ('Load <%s> into graph <%s> -- done', resource, graph_iri);
   else
+        return 1;
+    }
+  else
+    {
+      if (compose_report)
     return sprintf ('Load <%s> into graph <%s> -- failed', resource, graph_iri);
+      else
+        return 0;
+    }
 }
 ;
 
-create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0) returns varchar
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0, in compose_report integer := 0) returns any
 {
   if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
+        {
+          if (compose_report)
         return sprintf ('Create silent graph <%s> -- already exists', graph_iri);
+      else
+            return 0;
+        }
       else
         signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> has been explicitly created before');
     }
@@ -3467,7 +3496,10 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0) 
     {
       insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
       commit work;
+      if (compose_report)
       return sprintf ('Create silent graph <%s> -- done', graph_iri);
+      else
+        return 1;
     }
   if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> contains triples already');
@@ -3477,11 +3509,14 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer := 0) 
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
   insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
   commit work;
+  if (compose_report)
   return sprintf ('Create graph <%s> -- done', graph_iri);
+  else
+    return 1;
 }
 ;
 
-create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0) returns varchar
+create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in compose_report integer := 0) returns any
 {
   if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
@@ -3490,9 +3525,15 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0) re
           if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
             {
               DB.DBA.SPARUL_CLEAR (graph_iri);
+              if (compose_report)
               return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
+              else
+                return 2;
             }
+          if (compose_report)
           return sprintf ('Drop silent graph <%s> -- nothing to do', graph_iri);
+          else
+            return 0;
         }
       else
         signal ('22023', 'SPARUL_DROP() failed: graph <' || graph_iri || '> has not been explicitly created before');
@@ -3502,7 +3543,10 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0) re
       DB.DBA.SPARUL_CLEAR (graph_iri);
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
       commit work;
+      if (compose_report)
       return sprintf ('Drop silent graph <%s> -- done', graph_iri);
+      else
+        return 1;
     }
   if (exists (sparql define input:storage ""
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
@@ -3511,14 +3555,19 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0) re
   DB.DBA.SPARUL_CLEAR (graph_iri);
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   commit work;
+  if (compose_report)
   return sprintf ('Drop graph <%s> -- done', graph_iri);
+  else
+    return 1;
 }
 ;
 
-create function DB.DBA.SPARUL_RUN (in results any) returns varchar
+create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 0) returns varchar
 {
-  declare ses any;
   commit work;
+  if (compose_report)
+    {
+      declare ses any;
   ses := string_output ();
   foreach (varchar r in results) do
     {
@@ -3526,6 +3575,17 @@ create function DB.DBA.SPARUL_RUN (in results any) returns varchar
     }
   http ('Commit -- done\n', ses);
   return string_output_string (ses);
+    }
+  else
+    {
+      declare res integer;
+      res := 0;
+      foreach (integer c in results) do
+        {
+          res := res + c;
+        }
+      set_row_count (res, 1);
+   }
 }
 ;
 
@@ -3639,7 +3699,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
           arg := opcodes[triple_ctr][fld_ctr * 2 + 1];
           if (1 = op)
             {
-              declare i IRI_ID;
+              declare i any;
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
@@ -7574,7 +7634,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
               http (sprintf (' rdf:resource="%V"/></res:binding>', res), ses);
 	    }
 	}
-      else if (isstring (_val) and (1 = __box_flags (_val))
+      else if (isstring (_val) and (1 = __box_flags (_val)))
         {
           if (_val like 'nodeID://%')
             http (sprintf (' rdf:nodeID="%s"/></res:binding>', _val), ses);

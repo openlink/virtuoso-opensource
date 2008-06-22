@@ -207,6 +207,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 
 %token START_OF_SPARQL_TEXT	/*:: FAKE("the beginning of SPARQL text"), SPAR, NULL ::*/
 %token END_OF_SPARQL_TEXT	/*:: FAKE("the end of SPARQL text"), SPAR, NULL ::*/
+%token SPARUL_RUN_SUBTYPE	/*:: FAKE("subtype for request top of SPARUL statement"), SPAR, NULL ::*/
 
 %token __SPAR_NONPUNCT_START	/* Delimiting value for syntax highlighting */
 
@@ -622,7 +623,8 @@ spar_where_clause	/* [13]  	WhereClause	  ::=  	'WHERE'? GroupGraphPattern	*/
 	    spar_gp _RBRA {;}
 	;
 
-spar_solution_modifier	/* [14]	SolutionModifier	 ::=  OrderClause? ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
+spar_solution_modifier	/* [14]	SolutionModifier	 ::=  OrderClause? */
+			/*... ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
 	: spar_order_clause_opt		{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), t_box_num (SPARP_MAXLIMIT), t_box_num (0)); }
 	| spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), $2, $3); }
 	| spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), $3, $2); }
@@ -643,7 +645,8 @@ spar_order_conditions	/* ::=  OrderCondition+	*/
 	| spar_order_conditions spar_order_condition	{ $$ = $1; t_set_push (&($$), $2); }
 	;
 
-spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )	*/
+spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? */
+			/*... ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )	*/
 	: spar_asc_or_desc_opt _LPAR spar_expn _RPAR		{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
 	| spar_asc_or_desc_opt _LSQBRA spar_expn _RSQBRA	{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
 	| spar_built_in_call					{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
@@ -955,14 +958,16 @@ spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRI
 	| spar_var spar_arrow_iriref	{ $$ = spar_add_propvariable (sparp_arg, $1, (ptrlong)($2[0]), $2[1], (ptrlong)($2[2]), (caddr_t)($2[3]) ); }
 	;
 
-spar_global_var		/* [Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME | QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM	*/
+spar_global_var		/* [Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME	*/
+			/*... | QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM	*/
 	: QUEST_COLON_PARAMNAME		{ $$ = spar_make_variable (sparp_arg, $1); }
 	| DOLLAR_COLON_PARAMNAME	{ $$ = spar_make_variable (sparp_arg, $1); }
 	| QUEST_COLON_PARAMNUM		{ $$ = spar_make_variable (sparp_arg, $1); }
 	| DOLLAR_COLON_PARAMNUM		{ $$ = spar_make_variable (sparp_arg, $1); }
 	;
 
-spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | BlankNode | NIL | Backquoted	*/
+spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral	*/
+			/*... | BooleanLiteral | BlankNode | NIL | Backquoted	*/
 	: spar_iriref			{ $$ = $1; }
 	| spar_rdf_literal		{ $$ = $1; }
 	| spar_numeric_literal		{ $$ = $1; }
@@ -993,9 +998,12 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 	: spar_expn _BAR_BAR spar_expn { /* [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_OR, $1, $3); }
-	| spar_expn _AMP_AMP spar_expn { /* [45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	[46]	ValueLogical	 ::=  RelationalExpn	*/
+	| spar_expn _AMP_AMP spar_expn { /* [45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	*/
+					/* [46]	ValueLogical	 ::=  RelationalExpn	*/
 		  SPAR_BIN_OP ($$, BOP_AND, $1, $3); }
-	| spar_expn _EQ spar_expn {	/* [47]*	RelationalExpn	 ::=  NumericExpn ( ( ('='|'!='|'<'|'>'|'<='|'>='|'LIKE') NumericExpn ) | ( 'IN' '(' Expns ')' ) )?	*/
+	| spar_expn _EQ spar_expn {	/* [47]*	RelationalExpn	 ::=  NumericExpn	*/
+					/*... ( ( ('='|'!='|'<'|'>'|'<='|'>='|'LIKE') NumericExpn ) */
+					/*...   | ( 'IN' '(' Expns ')' ) )?	*/
 		  SPAR_BIN_OP ($$, BOP_EQ, $1, $3); }
 	| spar_expn _NOT_EQ spar_expn	{ SPAR_BIN_OP ($$, BOP_NEQ, $1, $3); }
         | spar_expn LIKE_L spar_expn	{	/* Virtuoso-specific extension of [47] */
@@ -1299,7 +1307,8 @@ spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' '
 	: CLEAR_L spar_graph_precode_opt { $$ = spar_make_sparul_clear (sparp_arg, $2); }
 	;
 
-spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
+spar_sparul_load	/* [DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn */
+			/*... ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
 	: LOAD_L spar_precode_expn spar_in_graph_precode_opt {
 		$$ = spar_make_sparul_load (sparp_arg, $3, $2 /* yes, $2 after $3 */); }
 	;
