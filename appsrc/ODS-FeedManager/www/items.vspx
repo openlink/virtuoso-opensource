@@ -170,7 +170,7 @@
             else if ((node_type = 'c') and (self.domain_id > 0))
             {
               control.ds_sql := 'select EFI_ID,
-                                        ENEWS.WA.show_title(EFI_TITLE) EFI_TITLE,
+                                        EFI_TITLE,
                                         ENEWS.WA.show_author(EFI_AUTHOR) EFI_AUTHOR,
                                         EFI_PUBLISH_DATE,
                                         EFID_READ_FLAG,
@@ -428,8 +428,10 @@
                     declare title, href, nodeType, onclick, appIri, linkClass varchar;
 
                     id := (control as vspx_row_template).te_column_value('EFI_ID');
-                    title := (control as vspx_row_template).te_column_value('EFI_TITLE');
+                    title := ENEWS.WA.show_title ((control as vspx_row_template).te_column_value('EFI_TITLE'));
                     linkClass := self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG'));
+                    href := '';
+                    if (ENEWS.WA.node_id (self.fNode) = 'c')
                     href := SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id);
                     nodeType := ENEWS.WA.node_type (self.fNode);
                     onclick := sprintf ('javascript: loadIFrame(\'%d\', \'%s\'); return false;', id, nodeType);

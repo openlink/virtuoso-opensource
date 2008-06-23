@@ -373,7 +373,8 @@
                 ENEWS.WA.test(self.v_port, vector('name', 'Port', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 9999));
 
                 self.v_port := cast(self.v_port as integer);
-    		        if (self.v_mode = 'create') {
+                if (self.v_mode = 'create')
+                {
       	          insert into ENEWS.WA.WEBLOG(EW_DOMAIN_ID, EW_NAME, EW_API, EW_URI, EW_PORT, EW_ENDPOINT, EW_USER, EW_PASSWORD)
       	            values(self.domain_id, self.v_name, self.v_api, self.v_uri, self.v_port, self.v_endpoint, self.v_user, self.v_password);
       	        } else {

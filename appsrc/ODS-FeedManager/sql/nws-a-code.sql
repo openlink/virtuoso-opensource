@@ -1845,21 +1845,25 @@ create procedure ENEWS.WA.channel_create(
 
   uri := get_keyword('rss', channel);
   id := (select EF_ID from ENEWS.WA.FEED where EF_URI = uri);
-  if (isnull (id)) {
+  if (isnull (id))
+  {
     declare tmp, imageUri any;
 
     imageUri := get_keyword('imageUrl', channel);
-    if (get_keyword('type', channel, 'short') = 'short') {
+    if (get_keyword ('type', channel, 'short') = 'short')
+    {
       tmp := ENEWS.WA.channels_uri (get_keyword('rss', channel, ''));
-      if (length(tmp) and (tmp[0] = 'channel')) {
+      if (length (tmp) and (tmp[0] = 'channel'))
+      {
         imageUri := get_keyword('imageUrl', tmp[1]);
       }
     }
-
     iconContent := null;
-    if (get_keyword('type', channel, '') <> 'install') {
+    if (get_keyword ('type', channel, '') <> 'install')
+    {
     tmp := get_keyword('home', channel);
-    if (not isnull (tmp)) {
+      if (not isnull (tmp))
+      {
       declare exit handler for sqlstate '*' { iconContent := null; goto _skip; };
       declare content, retCode any;
 
@@ -1867,12 +1871,15 @@ create procedure ENEWS.WA.channel_create(
       tmp := tmp[0] || '://' || tmp[1];
       iconUri := trim(tmp, '/') || '/favicon.ico';
       retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, 0, 'image/%');
-      if (retCode <> '') {
+        if (retCode <> '')
+        {
         retCode := ENEWS.WA.channel_retrieve (tmp, content);
-        if (retCode = '') {
+          if (retCode = '')
+          {
           if (not isnull (xpath_eval ('/html', content, 1)))
             iconUri := cast (xpath_eval ('//head/link[ @rel="shortcut icon" or @type="image/x-icon" ]/@href', content, 1) as varchar);
-          if (not is_empty_or_null (iconUri)) {
+            if (not is_empty_or_null (iconUri))
+            {
             if (iconUri not like 'http://%')
               iconUri := concat(trim(tmp, '/'), '/', ltrim(iconUri, '/'));
             retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, 0, 'image/%');
@@ -1913,10 +1920,13 @@ create procedure ENEWS.WA.channel_create(
             imageUri
            );
   }
-  if (isnull (id)) {
+  if (isnull (id))
+  {
     id := (select EF_ID from ENEWS.WA.FEED where EF_URI = uri);
-    if (not isnull (iconContent)) {
-      declare exit handler for SQLSTATE '*' {
+    if (not isnull (iconContent))
+    {
+      declare exit handler for SQLSTATE '*'
+      {
         goto _end;
       };
 
@@ -1924,7 +1934,8 @@ create procedure ENEWS.WA.channel_create(
       iconContent2 := "IM ResizeImageBlob" (iconContent2, length (iconContent2), 16, 16, 1, 13);
 
     iconsId := DB.DBA.DAV_SEARCH_ID('/DAV/VAD/enews2/www/icons/', 'C');
-    if (iconsId < 0) {
+      if (iconsId < 0)
+      {
       DB.DBA.DAV_MAKE_DIR ('/DAV/VAD/enews2/', http_dav_uid (), http_dav_uid () + 1, '110100100R');
       DB.DBA.DAV_MAKE_DIR ('/DAV/VAD/enews2/www/', http_dav_uid (), http_dav_uid () + 1, '110100100R');
       DB.DBA.DAV_MAKE_DIR ('/DAV/VAD/enews2/www/icons/', http_dav_uid (), http_dav_uid () + 1, '110100100R');
@@ -2012,7 +2023,8 @@ create procedure ENEWS.WA.channel_domain(
   in folder_id any)
 {
   folder_name := trim(folder_name);
-  if (folder_name <> '') {
+  if (folder_name <> '')
+  {
     folder_id := ENEWS.WA.folder_id(domain_id, folder_name);
   } else {
     folder_id := cast(folder_id as integer);
@@ -2021,9 +2033,11 @@ create procedure ENEWS.WA.channel_domain(
     folder_id := null;
   if (id = -1)
     id := coalesce((select EFD_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = feed_id and coalesce(EFD_FOLDER_ID, 0) = coalesce(folder_id, 0)), -1);
-  if (id = -1) {
+  if (id = -1)
+  {
     insert replacing ENEWS.WA.FEED_DOMAIN (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EFD_TAGS, EFD_FOLDER_ID)
       values (domain_id, feed_id, title, tags, folder_id);
+    id := (select max (EFD_ID) from ENEWS.WA.FEED_DOMAIN);
     ENEWS.WA.channel_reindex(feed_id);
   } else {
     update ENEWS.WA.FEED_DOMAIN
@@ -2032,6 +2046,7 @@ create procedure ENEWS.WA.channel_domain(
            EFD_FOLDER_ID = folder_id
      where EFD_ID = id;
   }
+  return id;
 }
 ;
 
@@ -2054,7 +2069,8 @@ create procedure ENEWS.WA.channel_directory(
   in directory_id any)
 {
   directory_name := trim(directory_name);
-  if (is_empty_or_null(directory_name)) {
+  if (is_empty_or_null(directory_name))
+  {
     directory_id := cast(directory_id as integer);
   } else {
     directory_id := ENEWS.WA.directory_id(directory_name);
@@ -2103,23 +2119,35 @@ create procedure ENEWS.WA.channel_icon (
 --
 create procedure ENEWS.WA.folder_id(
   in domain_id integer,
-  in folder_name varchar)
+  in folder_name varchar,
+  in checkOnly integer := 0)
 {
   declare N, L, folder_id integer;
   declare aPath any;
 
   folder_id := null;
-  if (not is_empty_or_null(folder_name)) {
+  if (not is_empty_or_null(folder_name))
+  {
     aPath := split_and_decode(trim(folder_name, '/'),0,'\0\0/');
     L := length(aPath);
-    for (N := 0; N < L; N := N + 1) {
-      if (N = 0) {
+    for (N := 0; N < L; N := N + 1)
+    {
+      if (N = 0)
+      {
         if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID is null))
+        {
+          if (checkOnly)
+            return null;
           insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_NAME) values (domain_id, aPath[N]);
+        }
         folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID is null);
       } else {
         if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID = folder_id))
+        {
+          if (checkOnly)
+            return null;
           insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_PARENT_ID, EFO_NAME) values (domain_id, folder_id, aPath[N]);
+        }
         folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID = folder_id);
       }
     }
@@ -2565,6 +2593,39 @@ create procedure ENEWS.WA.directory_check_parent(
 -- Weblogs
 --
 -------------------------------------------------------------------------------
+create procedure ENEWS.WA.weblog_update (
+  in id integer,
+  in domain_id integer,
+  in pName varchar,
+  in pApi varchar,
+  in pUri varchar,
+  in pPort varchar,
+  in pEndpoint varchar,
+  in pUser varchar,
+  in pPassword varchar)
+{
+  if (id = -1)
+  {
+    insert into ENEWS.WA.WEBLOG(EW_DOMAIN_ID, EW_NAME, EW_API, EW_URI, EW_PORT, EW_ENDPOINT, EW_USER, EW_PASSWORD)
+      values(domain_id, pName, pApi, pUri, pPort, pEndpoint, pUser, pPassword);
+    id := (select max (EW_ID) from ENEWS.WA.WEBLOG);
+  } else {
+    update ENEWS.WA.WEBLOG
+       set EW_NAME = pName,
+           EW_API = pApi,
+           EW_URI = pUri,
+           EW_PORT = pPort,
+           EW_ENDPOINT = pEndpoint,
+           EW_USER = pUser,
+           EW_PASSWORD = pPassword
+      where EW_ID = id;
+  }
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.weblog_tree(
   in path varchar)
 {
@@ -2620,7 +2681,8 @@ create procedure ENEWS.WA.weblog_delete(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.weblog_refresh(
-  in weblog_id integer)
+  in weblog_id integer,
+  in blog_name varchar := null)
 {
   declare exit handler for sqlstate '*' { return __SQL_STATE; };
 
@@ -2654,7 +2716,12 @@ create procedure ENEWS.WA.weblog_refresh(
 
   L := length(blogs);
   for (N := 0; N < L; N :=  N + 1)
+  {
+    if (isnull (blog_name) or (blog_name = get_keyword ('blogname', blogs[N])))
+    {
     ENEWS.WA.blog_create(weblog_id, get_keyword ('blogid', blogs[N]), get_keyword ('blogname', blogs[N]), get_keyword ('url', blogs[N]));
+    }
+  }
   return '';
 }
 ;
@@ -2976,7 +3043,8 @@ create procedure ENEWS.WA.blog_refresh(
 
   posts := BLOG.blogger.get_Recent_Posts(ENEWS.WA.weblog_uri(v_uri, v_port, v_endpoint), req, v_limit);
 
-  for (N := 0; N < length(posts); N :=  N + 1) {
+  for (N := 0; N < length (posts); N :=  N + 1)
+  {
     if (v_api = 'Blogger') {
       ENEWS.WA.process_blogger_post(posts[N], blog_id);
     } else if (v_api = 'MetaWeblog') {
@@ -3934,6 +4002,24 @@ create procedure ENEWS.WA.settings (
                      from ENEWS.WA.SETTINGS
                     where ES_DOMAIN_ID = domain_id
                       and ES_ACCOUNT_ID = account_id), vector());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.settings_init (
+  inout settings any)
+{
+  ENEWS.WA.set_keyword ('favourites', settings, cast (get_keyword ('favourites', settings, '0') as integer));
+  ENEWS.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
+  ENEWS.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
+
+  ENEWS.WA.set_keyword ('updateFeeds', settings, cast (get_keyword ('updateFeeds', settings, '0') as integer));
+  ENEWS.WA.set_keyword ('updateBlogs', settings, cast (get_keyword ('updateBlogs', settings, '0') as integer));
+  ENEWS.WA.set_keyword ('feedIcons', settings, cast (get_keyword ('feedIcons', settings, '0') as integer));
+
+  ENEWS.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
+  ENEWS.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
 }
 ;
 
@@ -5123,7 +5209,8 @@ create procedure ENEWS.WA.enews_path2_int(
     path := sprintf('%s/%s', ENEWS.WA.make_node(node_type, -1), path);
 
   if (node_type = 'b')
-    for (select EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EB_ID = node_id and EW_DOMAIN_ID = domain_id and EB_WEBLOG_ID = EW_ID) do {
+    for (select EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EB_ID = node_id and EW_DOMAIN_ID = domain_id and EB_WEBLOG_ID = EW_ID) do
+    {
       path := sprintf('%s/%s', ENEWS.WA.make_node('w', EW_ID), path);
       ENEWS.WA.enews_path2_int(domain_id, ENEWS.WA.make_node('w', EW_ID), path);
   }
