@@ -21,6 +21,7 @@
  *
  */
 
+
 //package virtuoso.sesame.driver;
 
 import java.io.File;
@@ -30,17 +31,23 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
 import org.openrdf.model.BNode;
+import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Namespace;
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
+import org.openrdf.model.impl.GraphImpl;
 import org.openrdf.query.BindingSet;
+import org.openrdf.query.BooleanQuery;
+import org.openrdf.query.GraphQuery;
+import org.openrdf.query.GraphQueryResult;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
@@ -56,44 +63,42 @@ import org.openrdf.rio.ntriples.NTriplesWriter;
 
 import virtuoso.jdbc3.VirtuosoExtendedString;
 import virtuoso.jdbc3.VirtuosoRdfBox;
-
 import virtuoso.sesame2.driver.*;
 
 public class VirtuosoTest {
 
-	public static final String VIRTUOSO_INSTANCE = "localhost"; 
+	public static final String VIRTUOSO_INSTANCE = "localhost";
 	public static final int VIRTUOSO_PORT = 1111;
 	public static final String VIRTUOSO_USERNAME = "dba";
 	public static final String VIRTUOSO_PASSWORD = "dba";
 
 	static int PASSED = 0;
 	static int FAILED = 0;
+	static int testCounter = 0;
 
-	public static void START(String mess) {
-	  System.out.println("== "+mess+" : Start");
+	public static void startTest() {
+		testCounter++;
+		System.out.println("== TEST " + testCounter + ": " + " : Start");
 	}
 
-	public static void LOG(String mess) {
-	  System.out.println("   "+mess);
+	public static void log(String mess) {
+		System.out.println("   " + mess);
 	}
 
-	public static void END(String mess, boolean OK) {
-	  System.out.println("== "+mess+" : End");
-	  System.out.println("**"+(OK? "PASSED":"FAILED")+"**\n");
-	  if (OK)
-	    PASSED++;
-	  else
-	    FAILED++;
+	public static void endTest(boolean OK) {
+		System.out.println("== TEST " + testCounter + ": " + " : End");
+		System.out.println("**" + (OK ? "PASSED" : "FAILED") + "**\n");
+		if (OK) PASSED++;
+		else FAILED++;
 	}
 
-	public static void TOTAL() {
-	  System.out.println("============================");
-	  System.out.println("PASSED:"+PASSED+" FAILED:"+FAILED);
+	public static void getTotal() {
+		System.out.println("============================");
+		System.out.println("PASSED:" + PASSED + " FAILED:" + FAILED);
 	}
 
 	public static void main(String[] args) {
-		
-		
+
 		String[] sa = new String[4];
 		sa[0] = VIRTUOSO_INSTANCE;
 		sa[1] = VIRTUOSO_PORT + "";
@@ -113,150 +118,155 @@ public class VirtuosoTest {
 			// doQuery(con, ask);
 
 			// test add data to the repository
-			boolean OK = true;
+			boolean ok = true;
 			String query = null;
 			String strurl = "http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf";
 			URL url = new URL(strurl);
 			URI context = repository.getValueFactory().createURI("http://demo.openlinksw.com/demo#this");
-                        Value[][] results = null;
+			Value[][] results = null;
 
-
-                        START("TEST 1a");
+			startTest();
 			// test query data
-			query = "SELECT * FROM <"+context+"> WHERE {?s ?p ?o} LIMIT 1";
+			query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
 			try {
-			  LOG("TEST 1a: Loading data from URL: " + strurl);
-			  con.add(url, "", RDFFormat.RDFXML, context);
-			  OK = true;
-			  results = doQuery(con, query);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				log("Loading data from URL: " + strurl);
+				con.add(url, "", RDFFormat.RDFXML, context);
+				ok = true;
+				results = doTupleQuery(con, query);
 			}
-			END("TEST 1a", (OK && (results.length > 0))); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && (results.length > 0))); // should return true
 
-                        START("TEST 1b");
+			startTest();
 			try {
-			  OK = true;
-			  con.clear(context);
-			  LOG("TEST 1b: Clearing triple store");
-			  long sz = con.size(context);
-			  OK = (sz == 0);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				con.clear(context);
+				log("Clearing triple store");
+				long sz = con.size(context);
+				ok = (sz == 0);
 			}
-			END("TEST 1b", OK); // should return sz == 0
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok); // should return sz == 0
 
 			// test add data from a flat file
-			START("TEST 1c");
+			startTest();
 			String fstr = "virtuoso_driver" + File.separator + "data.nt";
-			LOG("TEST 1c: Loading data from file: " + fstr);
+			log("Loading data from file: " + fstr);
 			try {
-			  OK = true;
-			  File dataFile = new File(fstr);
-			  con.add(dataFile, "", RDFFormat.NTRIPLES, context);
-			  query = "SELECT * FROM <"+context+"> WHERE {?s ?p ?o} LIMIT 1";
-			  results = doQuery(con, query);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				File dataFile = new File(fstr);
+				con.add(dataFile, "", RDFFormat.NTRIPLES, context);
+				query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
+				results = doTupleQuery(con, query);
 			}
-			END("TEST 1c", OK && (results != null && results.length > 0)); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((results != null && results.length > 0)); // should return true
 
 			URI shermanmonroe = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/shermanMonroe");
 			BNode snode = repository.getValueFactory().createBNode("smonroeNode");
 			URI name = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/name");
 			Literal nameValue = repository.getValueFactory().createLiteral("Sherman Monroe");
 
-			START("TEST 1d");
+			startTest();
 			try {
-			  OK = true;
-			  con.clear(context);
-			  LOG("TEST 1d: Loading single triple");
-			  con.add(snode, name, nameValue, context);
-			  query = "SELECT * FROM <"+context+"> WHERE {?s ?p ?o} LIMIT 1";
-			  results = doQuery(con, query);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				con.clear(context);
+				log("Loading single triple");
+				con.add(snode, name, nameValue, context);
+				query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
+				results = doTupleQuery(con, query);
 			}
-			END("TEST 1d", (OK && (results.length > 0))); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && (results.length > 0))); // should return true
 
 			if (results.length > 0) {
-			        START("TEST 1e");
-				LOG("TEST 1e: Casted value type");
+				startTest();
+				log("Casted value type");
 				if (!((results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))) {
-					LOG("TEST 1e Value types: " + (OK &&(results[0][0] == null) ? null : results[0][0].getClass().getName()) + ", " + ((results[0][1] == null) ? null : results[0][1].getClass().getName()) + ", " + ((results[0][2] == null) ? null : results[0][2].getClass().getName())); // should
+					log("TEST 1e Value types: " + (ok && (results[0][0] == null) ? null : results[0][0].getClass().getName()) + ", " + ((results[0][1] == null) ? null : results[0][1].getClass().getName()) + ", " + ((results[0][2] == null) ? null : results[0][2].getClass().getName())); // should
 				}
-				END("TEST 1e", (OK && (results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))); // should return true
+				endTest((ok && (results[0][0] instanceof BNode) && (results[0][1] instanceof URI) && (results[0][2] instanceof Literal))); // should return true
 			}
 
-                        START("TEST 2");
+			startTest();
 			try {
-			  OK = true;
-			  LOG("TEST 2: Selecting property");
-			  query = "SELECT * FROM <"+context+"> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
-			  results = doQuery(con, query);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Selecting property");
+				query = "SELECT * FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
+				results = doTupleQuery(con, query);
 			}
-			END("Test 2", (OK && (results.length > 0))); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && (results.length > 0))); // should return true
 
-		        boolean exists = false;
-                        START("TEST 3");
+			boolean exists = false;
+			startTest();
 			try {
-			  OK = true;
-			  con.add(shermanmonroe, name, nameValue, context);
-			  exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			  if (!exists)
-			    throw new Exception("Triple wasn't added");
-			  // test remove a statement
-			  con.remove(shermanmonroe, name, nameValue, (Resource) context);
-			  // test statement removed
-			  LOG("TEST 3: Statement does not exists");
-			  exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				con.add(shermanmonroe, name, nameValue, context);
+				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				if (!exists) throw new Exception("Triple wasn't added");
+				// test remove a statement
+				con.remove(shermanmonroe, name, nameValue, (Resource) context);
+				// test statement removed
+				log("Statement does not exists");
+				exists = con.hasStatement(shermanmonroe, name, null, false, context);
 			}
-			END("TEST 3", (OK && !exists)); // should return false
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && !exists)); // should return false
 
-                        START("TEST 4");
+			startTest();
 			try {
-			  OK = true;
-			  LOG("TEST 4: Statement exists");
-			  con.add(shermanmonroe, name, nameValue, context);
-			  exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			  if (!exists)
-			    throw new Exception("Triple wasn't added");
-			  query = "SELECT * FROM <"+context+"> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
-			  results = doQuery(con, query);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Statement exists (by resultset size)");
+				con.add(shermanmonroe, name, nameValue, context);
+				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				if (!exists) throw new Exception("Triple wasn't added");
+				query = "SELECT * FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
+				results = doTupleQuery(con, query);
 			}
-			END("Test 4", (OK && (results.length > 0))); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && (results.length > 0))); // should return true
 
-                        START("TEST 5");
+			startTest();
 			try {
-			  OK = true;
- 			  LOG("TEST 5: Statement exists");
-			  exists = con.hasStatement(shermanmonroe, name, null, false, context);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Statement exists (by hasStatement())");
+				exists = con.hasStatement(shermanmonroe, name, null, false, context);
 			}
-			END("Test 5", (OK && exists)); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && exists)); // should return true
 
 			// test getNamespace
 			Namespace testns = null;
@@ -264,108 +274,172 @@ public class VirtuosoTest {
 			boolean hasNamespaces = false;
 
 			try {
-			  namespaces = con.getNamespaces();
-			  hasNamespaces = namespaces.hasNext();
-			  while (namespaces.hasNext()) {
-				Namespace ns = namespaces.next();
-				// LOG("Namespace found: (" + ns.getName() + " " + ns.getPrefix() + ")");
-				testns = ns;
-			  }
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				namespaces = con.getNamespaces();
+				hasNamespaces = namespaces.hasNext();
+				while (namespaces.hasNext()) {
+					Namespace ns = namespaces.next();
+					// LOG("Namespace found: (" + ns.getName() + " " + ns.getPrefix() + ")");
+					testns = ns;
+				}
+			}
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
 			}
 
 			// test getNamespaces and RepositoryResult implementation
-                        START("TEST 6");
+			startTest();
 			try {
-			  OK = true;
-			  LOG("TEST 6: Retrieving namespaces");
-			  if (testns != null) {
-				// LOG("Retrieving namespace (" + testns.getName() + " " + testns.getPrefix() + ")");
-				String ns = con.getNamespace(testns.getPrefix());
-				if (hasNamespaces) 
-				  OK = (ns != null);
-				else
-				  OK = false;
-			  }
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Retrieving namespaces");
+				if (testns != null) {
+					// LOG("Retrieving namespace (" + testns.getName() + " " + testns.getPrefix() + ")");
+					String ns = con.getNamespace(testns.getPrefix());
+					if (hasNamespaces) ok = (ns != null);
+					else ok = false;
+				}
 			}
-			END("TEST 6", OK); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok); // should return true
 
 			RepositoryResult<Statement> statements = null;
 			// test getStatements and RepositoryResult implementation
-                        START("TEST 7");
+			startTest();
 			try {
-			  OK = true;
-			  LOG("TEST 7: Retrieving statement (" + shermanmonroe + " " + name + " " + null + ")");
-			  statements = con.getStatements(shermanmonroe, name, null, false, context);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Retrieving statement (" + shermanmonroe + " " + name + " " + null + ")");
+				statements = con.getStatements(shermanmonroe, name, null, false, context);
 			}
-			END("TEST 7", (OK && statements.hasNext())); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && statements.hasNext())); // should return true
 			while (statements.hasNext()) {
 				Statement st = statements.next();
 				// System.out.println("Statement found: (" + st.getSubject() + " " + st.getPredicate() + " " + st.getObject() + ")");
 			}
 
-                        START("TEST 8");
+			startTest();
 			// test export and handlers
 			File f = new File("results.n3.txt");
 			try {
-			  OK = true;
-			  LOG("TEST 8: Writing the statements to file: (" + f.getAbsolutePath() + ")");
-			  RDFHandler ntw = new NTriplesWriter(new FileOutputStream(f));
-			  con.exportStatements(shermanmonroe, name, null, false, ntw);
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Writing the statements to file: (" + f.getAbsolutePath() + ")");
+				RDFHandler ntw = new NTriplesWriter(new FileOutputStream(f));
+				con.exportStatements(shermanmonroe, name, null, false, ntw);
 			}
-			END("TEST 8", (OK && f.exists())); // should return true
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && f.exists())); // should return true
 
-                        START("TEST 9");
+			startTest();
 			RepositoryResult<Resource> contexts = null;
 			// test retrieve graph ids
 			try {
-			  OK = true;
-			  LOG("TEST 9: Retrieving graph ids");
-			  contexts = con.getContextIDs();
-			} catch (Exception e) { 
-			  LOG("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Retrieving graph ids");
+				contexts = con.getContextIDs();
 			}
-			END("TEST 9", (OK && contexts != null ? contexts.hasNext():false)); // should return true
-			if (contexts != null)
-			  while (contexts.hasNext()) {
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((ok && contexts != null ? contexts.hasNext() : false)); // should return true
+			if (contexts != null) while (contexts.hasNext()) {
 				Value id = contexts.next();
-				if ((id instanceof Literal)) 
-				  LOG("Literal value for graphid found: (" + ((Literal) id).getLabel() + ")");
-			  }
+				if ((id instanceof Literal)) log("Literal value for graphid found: (" + ((Literal) id).getLabel() + ")");
+			}
 
-                        START("TEST 10");
+			startTest();
 			// test get size
 			try {
-			  OK = true;
-			  LOG("TEST 10: Retrieving triple store size");
-			  // sz = con.size(context);
-			  // System.out.println("TEST 10: Passed: " + (sz > 0)); // should return sz > 0 results
-			} catch (Exception e) { 
-			  System.out.println("Error["+e+"]");
-			  e.printStackTrace();
-			  OK = false;
+				ok = true;
+				log("Retrieving triple store size");
+				// sz = con.size(context);
+				// System.out.println("TEST 10: Passed: " + (sz > 0)); // should return sz > 0 results
 			}
-			END("TEST 10", OK); // should return sz > 0 results
+			catch (Exception e) {
+				System.out.println("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok); // should return sz > 0 results
 
-                        TOTAL();
-
+			// do ask
+			startTest();
+			boolean result = false;
+			try {
+				ok = true;
+				log("Sending ask query");
+				query = "ASK FROM <" + context + "> {?s <http://mso.monrai.com/foaf/name> ?o}";
+				result = doBooleanQuery(con, query);
+			}
+			catch (Exception e) {
+				System.out.println("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok && result); // should return sz > 0 results	
+			
+			// do construct
+			startTest();
+			Graph g = new GraphImpl();
+			boolean statementFound = false;
+			try {
+				ok = true;
+				log("Sending construct query");
+				query = "CONSTRUCT {?s <http://mso.monrai.com/mlo/handle> ?o} FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o}";
+				g = doGraphQuery(con, query);
+				Iterator<Statement> it = g.iterator();
+				statementFound = true;
+				while(it.hasNext()) {
+					Statement st = it.next();
+					if( !st.getPredicate().stringValue().equals("http://mso.monrai.com/mlo/handle")) statementFound = false;
+				}
+			}
+			catch (Exception e) {
+				System.out.println("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok && g.size() > 0); // should return sz > 0 results	
+			
+			// do describe
+			startTest();
+			g = new GraphImpl();
+			statementFound = false;
+			try {
+				ok = true;
+				log("Sending describe query");
+				query = "DESCRIBE ?s FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o}";
+				g = doGraphQuery(con, query);
+				Iterator<Statement> it = g.iterator();
+				statementFound = it.hasNext();
+//				while(it.hasNext()) {
+//					Statement st = it.next();
+//					if( !st.getPredicate().stringValue().equals("http://mso.monrai.com/mlo/handle")) statementFound = false;
+//				}
+			}
+			catch (Exception e) {
+				System.out.println("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok && statementFound); // should return sz > 0 results	
+			
+			// get total passed and failed
+			getTotal();
 		}
 		catch (Exception e) {
 			System.out.println("ERROR Test Failed.");
@@ -381,13 +455,37 @@ public class VirtuosoTest {
 		}
 	}
 
-	private static Value[][] doQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+	private static boolean doBooleanQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		BooleanQuery resultsTable = con.prepareBooleanQuery(QueryLanguage.SPARQL, query);
+		return resultsTable.evaluate();
+//
+//		Vector<Value[]> results = new Vector<Value[]>();
+//		for (int row = 0; bindings.hasNext(); row++) {
+//			// System.out.println("RESULT " + (row + 1) + ": ");
+//			BindingSet pairs = bindings.next();
+//			List<String> names = bindings.getBindingNames();
+//			Value[] rv = new Value[names.size()];
+//			for (int i = 0; i < names.size(); i++) {
+//				String name = names.get(i);
+//				Value value = pairs.getValue(name);
+//				rv[i] = value;
+//				// if(column > 0) System.out.print(", ");
+//				// System.out.println("\t" + name + "=" + value);
+//				// vars.add(value);
+//				// if(column + 1 == names.size()) System.out.println(";");
+//			}
+//			results.add(rv);
+//		}
+//		return (Value[][]) results.toArray(new Value[0][0]);
+	}	
+	
+	private static Value[][] doTupleQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
 		TupleQuery resultsTable = con.prepareTupleQuery(QueryLanguage.SPARQL, query);
 		TupleQueryResult bindings = resultsTable.evaluate();
 
 		Vector<Value[]> results = new Vector<Value[]>();
 		for (int row = 0; bindings.hasNext(); row++) {
-//			System.out.println("RESULT " + (row + 1) + ": ");
+			// System.out.println("RESULT " + (row + 1) + ": ");
 			BindingSet pairs = bindings.next();
 			List<String> names = bindings.getBindingNames();
 			Value[] rv = new Value[names.size()];
@@ -405,6 +503,28 @@ public class VirtuosoTest {
 		return (Value[][]) results.toArray(new Value[0][0]);
 	}
 
+	private static Graph doGraphQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		GraphQuery resultsTable = con.prepareGraphQuery(QueryLanguage.SPARQL, query);
+		GraphQueryResult statements = resultsTable.evaluate();
+		Graph g = new GraphImpl();
+
+		Vector<Value[]> results = new Vector<Value[]>();
+		for (int row = 0; statements.hasNext(); row++) {
+			Statement pairs = statements.next();
+			g.add(pairs);
+//			List<String> names = statements.getBindingNames();
+//			Value[] rv = new Value[names.size()];
+//			for (int i = 0; i < names.size(); i++) {
+//				String name = names.get(i);
+//				Value value = pairs.getValue(name);
+//				rv[i] = value;
+//			}
+//			results.add(rv);
+		}
+//		return (Value[][]) results.toArray(new Value[0][0]);
+		return g;
+	}
+	
 	public static void test(String args[]) {
 		try {
 			String url;
@@ -434,7 +554,7 @@ public class VirtuosoTest {
 					for (int i = 1; i <= data.getColumnCount(); i++) {
 						String s = stmt.getResultSet().getString(i);
 						Object o = stmt.getResultSet().getObject(i);
-//						Value casted = 
+						// Value casted =
 						System.out.print("Object type is " + o.getClass().getName() + " ");
 						System.out.print(data.getColumnLabel(i) + " = ");
 						if (o instanceof VirtuosoRdfBox) // Typed literal

@@ -33,7 +33,6 @@ import org.openrdf.query.algebra.evaluation.QueryBindingSet;
 public class VirtuosoBooleanQuery implements BooleanQuery {
 
 	public boolean evaluate() throws QueryEvaluationException {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

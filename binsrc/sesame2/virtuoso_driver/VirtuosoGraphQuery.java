@@ -35,12 +35,10 @@ import org.openrdf.rio.RDFHandlerException;
 public class VirtuosoGraphQuery implements org.openrdf.query.GraphQuery {
 
 	public GraphQueryResult evaluate() throws QueryEvaluationException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	public void evaluate(RDFHandler handler) throws QueryEvaluationException, RDFHandlerException {
-	// TODO Auto-generated method stub
 
 	}
 	
