@@ -87,7 +87,7 @@ public class VirtuosoTest {
 
 	public static void endTest(boolean OK) {
 		System.out.println("== TEST " + testCounter + ": " + " : End");
-		System.out.println("**" + (OK ? "PASSED" : "FAILED") + "**\n");
+		System.out.println("***" + (OK ? "PASSED:" : "FAILED:") + " TEST " + testCounter + "\n");
 		if (OK) PASSED++;
 		else FAILED++;
 	}
