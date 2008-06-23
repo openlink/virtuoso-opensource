@@ -1509,7 +1509,15 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	    return 0;
 	  };
 	fallback:;
-    body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
+	body := sprintf('<?xml version=\"1.0\" encoding=\"utf-8\"?>
+	        <rdf:RDF
+	        xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"
+	        xmlns:foaf=\"http://xmlns.com/foaf/0.1/\">
+	        <foaf:Document rdf:about=\"%s\">
+            <foaf:primaryTopic rdf:resource=\"http://dbpedia.org/resource/%s\"/>
+            </foaf:Document>
+            </rdf:RDF>', new_origin_uri, get_uri);
+	--body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
 	DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
       }
