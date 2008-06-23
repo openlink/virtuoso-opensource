@@ -4,6 +4,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <!--
  -
@@ -34,7 +35,8 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:aws="http://soap.amazon.com/"
     xmlns:foaf="&foaf;"
-    xmlns:bibo="&bibo;">
+    xmlns:bibo="&bibo;"
+    xmlns:dcterms="&dcterms;">
 
     <xsl:output method="xml" indent="yes" />
 
@@ -79,21 +81,21 @@
 
     <xsl:template match="Authors" mode="bibo">
 	<xsl:for-each select="Author">
-	    <bibo:contributor rdf:parseType="Resource">
+        <dcterms:contributor rdf:parseType="Resource">
 		<rdf:type rdf:resource="&foaf;Person"/>
 		<foaf:name><xsl:value-of select="."/></foaf:name>
 		<bibo:role rdf:resource="&bibo;author"/>
 		<bibo:position><xsl:value-of select="position(.)"/></bibo:position>
-	    </bibo:contributor>
+        </dcterms:contributor>
 	</xsl:for-each>
     </xsl:template>
 
     <xsl:template match="Manufacturer" mode="bibo">
-	<bibo:contributor rdf:parseType="Resource">
+    <dcterms:publisher rdf:parseType="Resource">
 	    <rdf:type rdf:resource="&foaf;Organization"/>
 	    <foaf:name><xsl:value-of select="."/></foaf:name>
 	    <bibo:role rdf:resource="&bibo;publisher"/>
-	</bibo:contributor>
+    </dcterms:publisher>
     </xsl:template>
 
     <xsl:template match="*" mode="bibo">
