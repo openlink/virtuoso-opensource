@@ -1,4 +1,4 @@
- <chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
+<chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
 <abstract>
 <para>
 Starting with version 4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.
@@ -10,6 +10,24 @@ Adoption of SPARQL with Virtuoso is effortless, as any  existing SQL client appl
 This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and SQL API's, protocol support and standard compliance notes.
 </para>
 </abstract>
+<sect1 id="rdfoverview"><title>Overview</title>
+<para>The support of SPARQL in Virtuoso consists of two &quot;layers&quot; -- RDF support in SQL engine and SPARQL front-end compiler that translates SPARQL queries to SQL.</para>
+<para>In its core, Virtuoso extends relational storage and SQL language with datatypes and language constructs required for handling RDF data like any &quot;traditional&quot; SQL datatype. There exist datatypes for RDF references (IRIs and blank nodes) and for RDF literals with types and languages. These datatypes are widely supported by built-in functions and there exists convenient conversions between RDF literals and other SQL datatypes.</para>
+<para>SQL query language is extended with constructs that are convenient for &quot;very heterogenious&quot; data of RDF graph. In traditional SQL queries, data types of retrieved values are mostly known in advance from the database schema via explicitly declared column types and types of return values of functions. An RDF graph contains mix of literals of all types, so cast errors are very frequent and a typical query should not terminate after some occasional type error in a huge data set.</para>
+<para>SQL &quot;user-defined aggregate&quot; feature is used to support SPARQL DESCRIBE and CONSTRUCT statements, so many RDF triples about a subject can be converted into single &quot;dictionary of triples&quot; or can be written into single RDF/XML or TURTLE document.</para>
+<para>SQL query language is also extended with BREAKUP construct that is somewhat &quot;inverse&quot; to aggregate functions. While aggregate functions are useful to convert big number of table rows into one or few rows of aggregated data, BREAKUP turns each &quot;wide&quot; and complete row of a relational table into many &quot;narrow&quot; rows of RDF result set.</para>
+<para>The listed features form a solid background for second part of implementation -- a preprocessor that is called as soon as an input of SQL compiler contains SPARQL keyword. The preprocessor expects that the fragment after SPARQL keyword with well-parenthresized code is a SPARQL query (or SPARUL statiemt). SPARQL front-end compiler creates a text of SQL SELECT statement that replaces the original SPARQL fragment and SQL compiler continues to read its input without seeing any difference between the replaced part and any other SQL SELECT, so one may not only send SPARQL queries over all supported protocols like ODBC and JDBC but place them inside Virtuoso?PL stored procedures or use them inside SQL SELECT statements where subqueries are allowed by syntax.</para>
+<para>RDF data can be added to the storage by parsing texts of RDF documents (functions
+<link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link>,
+<link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link>,
+<link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link>,
+<link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link>), by loading remote RDF resources by SPARUL <link linkend="rdfinsertmethodsload">LOAD</link> statement, by extracting and storing metadata while <link linkend="rdfinsertmethodvirtuosocrawler">crawling non-RDF resources</link> and many other <link linkend="rdfinsertmethods">RDF insert methods</link>. After bulk loading, RDF data can be edited using <link linkend="rdfsparul">SPARUL</link> update language.</para>
+<para>The most important feature of Virtuoso SPARQL is that relational data may stay unchanged and not be loaded into RDF storage and they still can be accessed by SPARQL queries after creating appropriate <link linkend="rdfviews">RDF Views</link>. This is the best tool for adding RDF capabilities to existing database applications.</para>
+<para>Virtuoso is a &quot;quad store&quot;, not a &quot;triple store&quot;. Instead of storing subject-predicate-object triples of each individual graph in a separate storage (and the storage is explicitly created before first use), Virtuoso stores graph-subject-predicate-object quads in one common table (<link linkend="rdfquadtables">DB.DBA.RDF_QUAD</link>). This simplifies querying when &quot;interesting&quot; graphs are not known in advance. E.g., while a SPARQL query is running, Virtuoso <link linkend="virtuososponger">Sponger</link> can iteratively download additional data in order to provide as complete answer as possible.</para>
+<para>Quads stored in DB.DBA.RDF_QUAD are usually referred to as &quot;physical quads&quod; as oppsed to &quot;mapped quads&quot; that do not really stored in any table at all but still accessible by SPARQL queries via RDF views. SPARQL processor see no big difference between querying physical and mapped quads so a query may operate with mix of data of all sorts. Thus, an application can easy provide both access to relational data for SPARQL clients (HTTP and WSDL via <link linkend="rdfsparqlprotocolendpoint">SPARQL protocol endpoint</link>) and access to RDF data for traditional RDBMS clients (by passing SPARQL queries via ODBC, JDBC and the like).</para>
+<para>RDF is for data integration. This implies the need of resolving both inconsistencies in RDF data that comes from various sources of different nature and problems with queries that work fine on some sample data from local data warehouse but fail on massive and/or unexpected data from third party sources. <link linkend="rdfsparqlrule">RDF inference</link> helps to support variety of synonims when different data sources uses different names for same classes, properties and subjects. Queries can be debugged using all methods that are traditional for SQL (what's executed is SQL), with paying some attention to RDF-specific <link linkend="rdfperformancetuning">performance tuning</link>.</para>
+<para>The whole purpose of SPARQL is to let application developers write simple queries faster than equivalent SQL code. A short SPARQL query on mix of physical quads and RDF views of few applications may sometimes replace pages of SQL text. On the other hand, SQL has more expressive power than SPARQL so complicated business intelligence queries should be written in a mixed style, as an SQL query with SPARQL subqueries. Debugging of mixed-style queries is inconvenient, reducing overall benefit in development time, so <link linkend="sparqlbi">Business Intelligence Extensions for SPARQL</link> can be used in order to greatly reduce the need for wrapping SQL around SPARQL. <link linkend="rdfsparqlrulefulltext">Full-text search in SPARQL</link> eliminates one more reason for mixing SQL and SPARQL. In addition, extending SPARQL let SPARQL clients to delegate more business intelligence calculations to the server without any changes in the infrastructure; this is especially important for web applications that use AJAX tools (say, <ulink url="http://oat.openlinksw.com">OAT OpenLink AJAX Toolkit</ulink>).</para>
+</sect1>
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
 <para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
 <sect2 id="rdfiriidtype"><title>IRI_ID Type</title>
@@ -19,7 +37,7 @@ Small databases can use 32 bit values but if database becomes big then the admin
 <function>DB.DBA.RDF_64BIT_UPGRADE</function>() procedure that will switch to 64-bit values. This procedure takes time so if it is known in advance that the database will grow to billions of nodes then it could be convenient to upgrade it while it is empty.
 An IRI_ID is never equal to any instance of any other type.</para>
 <para>Thus, the object column of a table storing triples can be declared as ANY and IRI values will be distinguishable without recourse to any extra flag and IRI's will naturally occupy their own contiguous segment in the ANY type collation sequence. Indices can be defined over such columns. An IRI_ID is never automatically cast into any other type nor any other type into IRI_ID.</para>
-<para>The functions iri_id_num (in i IRI_ID) and iri_id_from_num (in n INT) convert between signed integers and IRI_ID's. The function isiri_id (in i any) returns nonzero if the argument is of type IRI_ID, zero otherwise. That functions are Nevertheless applications </para>
+<para>The functions iri_id_num (in i IRI_ID) and iri_id_from_num (in n INT) convert between signed integers and IRI_ID's. The function isiri_id (in i any) returns nonzero if the argument is of type IRI_ID, zero otherwise.</para>
 <para>The syntax for an IRI_ID literal is <emphasis>#i&lt;NNN&gt;</emphasis> or <emphasis>#ib&lt;NNN&gt;</emphasis>, where <emphasis>&lt;NNN&gt;</emphasis> is up to 20 decimal digits. <emphasis>#i12345</emphasis> is equal to <emphasis>iri_id_from_num (12345)</emphasis> and <emphasis>#ib12345</emphasis> is equal to <emphasis>iri_id_from_num (12345) + min_64bit_bnode_iri_id ()</emphasis>.</para>	
 <para>When received by a SQL client application, the ODBC driver or
 interactive SQL will bind an IRI_ID to a character buffer, producing
@@ -32,12 +50,12 @@ internal tables directly.</para>
 <note><para>Nobody, even DBA, should write directly to iternal RDF tables, because some data from that tables are cached in a special way and cache is not automatically updated when content of tables has changed.</para></note>
 </sect2>
 <sect2 id="rdfboxtype"><title>RDF_BOX Type</title>
-<para>While strings, numbers, dates and XML entities are &quot;native&quoat; SQL datatypes,
+<para>While strings, numbers, dates and XML entities are &quot;native&quot; SQL datatypes,
 RDF literal with non-default type or language have no exact matches among standard SQL types.
 Virtuoso introduces a special data type called "RDF_BOX" in order to handle that cases.
 Instance of RDF_BOX consists of data type, language, the content (or beginning characters of a long content)
 and a possible reference to DB.DBA.RDF_OBJ table if the object is too long to be held in-line in some table or should be outlined for free-text indexing.</para>
-<para>Usually applications do not need to access internals of an RDF boxes. This datatype is used in system tables but almost all SPARQL and RDF operations use standard SQL datatypers for arguments and return values.</para>
+<para>Usually applications do not need to access internals of an RDF boxes. This datatype is used in system tables but almost all SPARQL and RDF operations use standard SQL datatypes for arguments and return values.</para>
 </sect2>
 <sect2 id="rdfquadtables"><title>RDF_QUAD and other tables</title>
 <para>The main tables of the default RDF storage system are:</para>
@@ -405,9 +423,9 @@ LONG VARCHAR
 _______________________________________________________________________________
 
 @prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
- @prefix :rs <http://www.w3.org/2005/sparql-results#> .
- @prefix :xsd <http://www.w3.org/2001/XMLSchema#> .
- [ rdf:type rs:results ;
+@prefix :rs <http://www.w3.org/2005/sparql-results#> .
+@prefix :xsd <http://www.w3.org/2001/XMLSchema#> .
+[ rdf:type rs:results ;
   rs:result [
       rs:binding [ rs:name "g" ; rs:value <http://local.virt/DAV/bound/manifest.rdf> ] ;
       rs:binding [ rs:name "s" ; rs:value _:nodeID1000000000 ] ;
@@ -1113,6 +1131,1235 @@ Delete from <http://BookStore.com>, 3 triples -- done
 ]]></programlisting>
    </sect2>
    </sect1>
+<sect1 id="rdfinsertmethods"><title>RDF Insert Methods in Virtuoso</title>
+    <sect2 id="rdfinsertmethodshttppost"><title>HTTP Post using Content-Type: application/sparql-query</title>
+	<para>With POST can be accomplished SPARQL Insert/Update etc.</para>
+	<para>The result is in the rdf_quiad.</para>
+	<para>With GET Methods you can get the triples which are saved.</para>
+        <para><emphasis>Examples:</emphasis></para>
+        <para><emphasis>Example 1:</emphasis></para>
+        <para>Create a DAV collection xx for user demo with password demo.</para>
+        <para>Execute the following command:</para>
+<programlisting><![CDATA[
+curl -i -d "INSERT {<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}" -u "demo:demo"
+-H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
+]]></programlisting>
+        <para>The response should be:</para>
+<programlisting><![CDATA[
+HTTP/1.1 201 Created
+Server: Virtuoso/05.00.3023 (Win32) i686-generic-win-32  VDB
+Connection: Keep-Alive
+Content-Type: text/html; charset=ISO-8859-1
+Date: Fri, 28 Dec 2007 12:50:12 GMT
+Accept-Ranges: bytes
+MS-Author-Via: SPARQL
+Content-Length: 0
+]]></programlisting>
+        <para>The result in the DAV/xx location will be a new WebDAV resource with name "yy" containing the following:</para>
+<itemizedlist>
+<listitem>if opened with Conductor:
+<programlisting><![CDATA[
+CONSTRUCT { ?s ?p ?o } FROM <http://localhost:8890/DAV/xx/yy> WHERE { ?s ?p ?o }
+]]></programlisting>
+</listitem>
+<listitem>if opened with GET, then the content will be RDF representation of what was inserted into the graph, i.e.
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description
+rdf:about="http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this">
+<ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdf:resource="http://rdfs.org/sioc/ns#User"/>
+</rdf:Description>
+</rdf:RDF>
+]]></programlisting>
+</listitem>
+</itemizedlist>
+        <para><emphasis>Example 2:</emphasis></para>
+        <para>Create a DAV collection, for ex. with name "test" for user ( for ex. demo).</para>
+        <para>Execute the following command:</para>
+<programlisting><![CDATA[
+curl -i -d "INSERT IN GRAPH <http://mygraph.com>
+{ <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.w3.org/2000/01/rdf-schema#label>
+  <Kingsley Uyi Idehen> .
+  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://rdfs.org/sioc/ns#creator_of>
+
+<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300>
+  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/demo/test/myrq
+]]></programlisting>
+        <para>As result the response will be:</para>
+<programlisting><![CDATA[
+HTTP/1.1 201 Created
+Server: Virtuoso/05.00.3023 (Win32) i686-generic-win-32  VDB
+Connection: Keep-Alive
+Content-Type: text/html; charset=ISO-8859-1
+Date: Thu, 20 Dec 2007 16:25:25 GMT
+Accept-Ranges: bytes
+MS-Author-Via: SPARQL
+Content-Length: 0
+]]></programlisting>
+        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://localhost:8890/sparql and:</para>
+<itemizedlist>
+<listitem>Enter for Default Graph URI:
+<programlisting><![CDATA[
+http://mygraph.com
+]]></programlisting>
+</listitem>
+<listitem>Enter in the Query area:
+<programlisting><![CDATA[
+SELECT * WHERE {?s ?p ?o}
+]]></programlisting>
+</listitem>
+<listitem>Click the button "Run Query"</listitem>
+<listitem>As result will be shown the inserted triples:
+<programlisting><![CDATA[
+s  	                                                          p                                                 o
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://rdfs.org/sioc/ns#User
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/2000/01/rdf-schema#label 	    Kingsley
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://rdfs.org/sioc/ns#creator_of                http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</sect2>
+     <sect2 id="rdfinsertmethodshttpput"><title>HTTP PUT using Content-Type: application/rdf+xml</title>
+	<para>The URI in a PUT request identifies the entity enclosed with the request. Therefore using HTTP PUT is a more useful and meaningful command than using POST (which is more about submitting data to a script).</para>
+        <para><emphasis>Example:</emphasis></para>
+        <para>Suppose there is myfoaf.rdf file with the following content:</para>
+<programlisting><![CDATA[
+<rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:myfoaf="http://www.example/jose/foaf.rdf#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#jose">
+        <foaf:homepage rdf:resource="http://www.example/jose/"/>
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#juan"/>
+        <foaf:name>Jose Jimen~ez</foaf:name>
+        <foaf:nick>Jo</foaf:nick>
+        <foaf:workplaceHomepage rdf:resource="http://www.corp.example/"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#juan">
+        <foaf:mbox rdf:resource="mailto:juan@mail.example"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#julia">
+        <foaf:mbox rdf:resource="mailto:julia@mail.example"/>
+    </foaf:Person>
+
+    <rdf:Description rdf:about="http://www.example/jose/foaf.rdf#kendall">
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#edd"/>
+    </rdf:Description>
+</rdf:RDF>
+]]></programlisting>
+        <para>Now let's upload the myfoaf.rdf file to destination server demo.openlinksw.com for user demo:</para>
+<programlisting><![CDATA[
+curl -T myfoaf.rdf http://demo.openlinksw.com/DAV/home/demo/rdf_sink/myfoaf.rdf -u demo:demo
+]]></programlisting>
+        <para>As result the response should be:</para>
+<programlisting><![CDATA[
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<HTML>
+<HEAD>
+  <TITLE>201 Created</TITLE>
+</HEAD>
+<BODY>
+  <H1>Created</H1>
+  Resource /DAV/home/demo/rdf_sink/ myfoaf.rdf has been created.
+</BODY>
+</HTML>
+]]></programlisting>
+    </sect2>
+     <sect2 id="rdfinsertmethodsload"><title>SPARQL Insert using LOAD</title>
+        <para>SPARQL INSERT operation can be done using the LOAD feature.</para>
+        <para><emphasis>Example:</emphasis></para>
+        <para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+sparql insert in graph <http://mygraph.com>
+{
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Kingsley> .
+
+  <http://myopenlink.net/dataspace/Caroline#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+ <http://myopenlink.net/dataspace/Caroline#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Caroline> .
+
+   <http://myopenlink.net/dataspace/Matt#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/Matt#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Matt> .
+
+   <http://myopenlink.net/dataspace/demo#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/demo#this>
+  <http://rdfs.org/sioc/ns#id>
+  <demo> .};
+]]></programlisting>
+        <para>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</para>
+        <para>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:</para>
+<programlisting><![CDATA[
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sioc: <http://rdfs.org/sioc/ns#>
+SELECT ?x ?p ?o
+FROM <http://mygraph.com>
+WHERE
+  {
+    ?x rdf:type sioc:User .
+    ?x ?p ?o.
+    ?x sioc:id ?id .
+    FILTER REGEX(str(?id), "^King")
+  }
+ORDER BY ?x
+]]></programlisting>
+        <para>Now from ISQL execute the following command:</para>
+<programlisting><![CDATA[
+sparql
+load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
+]]></programlisting>
+        <para>As result should be shown:</para>
+<programlisting><![CDATA[
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
+
+1 Rows. -- 321 msec.
+]]></programlisting>
+    </sect2>
+     <sect2 id="rdfindertmethodsparqlendpoint"><title>SPARQL Insert via /sparql endpoint</title>
+        <para>SPARQL INSERT operation can be sent to a web service endpoint as a single statement and executed in sequence.</para>
+        <para><emphasis>Example:</emphasis></para>
+        <para>Using the Virtuoso ISQL tool or using the /sparql UI at http://host:port/sparql, execute the following:</para>
+<itemizedlist>
+<listitem>Insert into graph http://example/bookStore 3 triples:
+<programlisting><![CDATA[
+sparql insert in graph <http://BookStore.com>
+{ <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00> };
+]]></programlisting>
+</listitem>
+<listitem>As result will be shown the message:
+<programlisting><![CDATA[
+Insert into <http://BookStore.com>, 3 triples -- done
+]]></programlisting>
+</listitem>
+<listitem>Next we will select all triples from the graph http://example/bookStore:
+<programlisting><![CDATA[
+sparql select * from <http://BookStore.com> where {?s ?p ?o};
+]]></programlisting>
+</listitem>
+<listitem>As result will be shown:
+<programlisting><![CDATA[
+s                                              p                                       o
+VARCHAR                                        VARCHAR                                 VARCHAR
+_______________________________________________________________________________
+
+http://www.w3.org/People/Berners-Lee/card#i    http://purl.org/dc/elements/1.1/date    1998-05-03T00:00:00
+http://www.w3.org/People/Connolly/#me          http://purl.org/dc/elements/1.1/date    2001-02-08T00:00:00
+http://www.dajobe.org/foaf.rdf#i               http://purl.org/dc/elements/1.1/date    1999-04-01T00:00:00
+
+3 Rows. -- 0 msec.
+
+]]></programlisting>
+</listitem>
+<listitem>Now let's insert into graph another http://NewBookStore.com graph's values:
+<programlisting><![CDATA[
+sparql
+PREFIX dc:  <http://purl.org/dc/elements/1.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
+WHERE
+  { GRAPH  <http://BookStore.com>
+   { ?book dc:date ?date
+     FILTER ( xsd:dateTime(?date) < xsd:dateTime("2000-01-01T00:00:00")).
+     ?book ?p ?v.
+   }
+  };
+]]></programlisting>
+</listitem>
+<listitem>As result will be shown:
+<programlisting><![CDATA[
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://NewBookStore.com>, 2 triples -- done
+]]></programlisting>
+</listitem>
+<listitem>Finally we will check the triples from the graph NewBookStore.com:
+<programlisting><![CDATA[
+SQL> sparql select * from <http://NewBookStore.com> where {?s ?p ?o};
+]]></programlisting>
+</listitem>
+<listitem>As result will be shown:
+<programlisting><![CDATA[
+s                                             p                                      o
+VARCHAR                                                 VARCHAR    VARCHAR
+_______________________________________________________________________________
+
+http://www.w3.org/People/Berners-Lee/card#i   http://purl.org/dc/elements/1.1/date   1998-05-03T00:00:00
+http://www.dajobe.org/foaf.rdf#i              http://purl.org/dc/elements/1.1/date   1999-04-01T00:00:00
+
+2 Rows. -- 10 msec.
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</sect2>
+     <sect2 id="rdfinsertmethodsparqlqueryandodswiki"><title>SPARQL Insert via HTTP Post using Content-Type: application/sparql-query and ODS wiki</title>
+        <para>With HTTP Post and ODS wiki can be written an rdf document and respectively to be performed over it INSERT/UPDATE action.</para>
+        <para>You can write to a file using SIOC terms for ODS-Wiki</para>
+        <para>You can check with sparql the inserted / updated triples in the Quad Store.</para>
+        <para><emphasis>Example:</emphasis></para>
+        <para>Suppose there is ODS user test3 with ODS password 1, which has testWiki wiki instance.</para>
+        <para>Execute the following:</para>
+<programlisting><![CDATA[
+curl -i -d "INSERT {<http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
+]]></programlisting>
+        <para>As result we should have 2 files created:</para>
+<itemizedlist>
+<listitem>In the user DAV folder "DAV/home/test3/wiki/testWiki/" will be created a file "MyTest" with type "application/sparql-query". You can view the content of this file from from the Conductor UI or from the user's Briefcase UI, path "DAV/home/test3/wiki/testWiki". Its content will be:
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+</rdf:RDF>
+]]></programlisting>
+</listitem>
+<listitem>To the user's wiki instance will be added a new WikiWord "MyTest" with content the value of the SIOC term attribute "content":
+<programlisting><![CDATA[
+<http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
+i.e. the content will be "test".
+]]></programlisting>
+</listitem>
+</itemizedlist>
+        <para>Now let's check what data was inserted in the Quad Store:</para>
+<itemizedlist>
+<listitem>Go to the sparql endpoint, i.e. for ex. to http://localhost:8890/sparql</listitem>
+<listitem>Enter for Default Graph URI:
+<programlisting><![CDATA[
+http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
+]]></programlisting>
+</listitem>
+<listitem>Enter for Query text:
+<programlisting><![CDATA[
+SELECT * WHERE {?s ?p ?o}
+]]></programlisting>
+</listitem>
+<listitem>Click the "Run Query" button.</listitem>
+<listitem>As result will be shown the inserted triples:
+<programlisting><![CDATA[
+s                                 p                                           o
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://rdfs.org/sioc/ns#container_of 	     http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#entry      http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#contains   http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://rdfs.org/sioc/types#Comment
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Entry
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Link
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/2000/01/rdf-schema#label 	     MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#has_container 	     http://localhost:8890/dataspace/test3/wiki/testWiki
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#content 	             test
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#topic 	             http://localhost:8890/dataspace/test3/wiki/testWiki
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/ontologies/atomrdf#source     http://localhost:8890/dataspace/test3/wiki/testWiki
+]]></programlisting>
+</listitem>
+</itemizedlist>
+    </sect2>
+    <sect2 id="rdfinsertmethodwebdav">
+      <title>Using WebDAV</title>
+      <para> Example using WebDAV (mount folder to DAV and dump; if this is the rdf_sink
+the Quad Store is updated automatically, or you can load from DAV manually to quad store)</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para><emphasis>Example 1: Using ODS Briefcase</emphasis></para>
+      <para>Go to your ods location, for ex. http://localhost:8890/ods</para>
+      <para>Register user, for ex. user test1</para>
+      <para>Login if not already in ods</para>
+      <para>Go to ODS ->Briefcase</para>
+      <para>Create new instance</para>
+      <para>Go to the briefcase instance by clicking its name link</para>
+      <para>Upload file in a new created folder mytest or in the rdf_sink folder with:</para>
+      <itemizedlist>
+        <listitem>checked option "RDF Store"</listitem>
+        <listitem>set RDF Graph Name, for ex. http://localhost:8890/DAV/home/test1/ of
+the current folder>/ for ex. http://localhost:8890/DAV/home/test1/mytest/ or
+http://localhost:8890/DAV/home/test1/rdf_sink/</listitem>
+        <listitem>For ex. upload the following file with name jose.rdf.</listitem>
+<programlisting><![CDATA[
+<rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:myfoaf="http://www.example/jose/foaf.rdf#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#jose">
+        <foaf:homepage rdf:resource="http://www.example/jose/"/>
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#juan"/>
+        <foaf:name>Jose Jimen~ez</foaf:name>
+        <foaf:nick>Jo</foaf:nick>
+        <foaf:workplaceHomepage rdf:resource="http://www.corp.example/"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#juan">
+        <foaf:mbox rdf:resource="mailto:juan@mail.example"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#julia">
+        <foaf:mbox rdf:resource="mailto:julia@mail.example"/>
+    </foaf:Person>
+
+    <rdf:Description rdf:about="http://www.example/jose/foaf.rdf#kendall">
+
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#edd"/>
+    </rdf:Description>
+</rdf:RDF>
+]]></programlisting>
+      </itemizedlist>
+      <para>Execute the following query:</para>
+<programlisting><![CDATA[
+select * from <>
+where {?s ?p ?o}
+]]></programlisting>
+      <para>As result should be shown:</para>
+<programlisting><![CDATA[
+s  	                                  p  	                                            o
+http://www.example/jose/foaf.rdf#jose 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/nick 	            Jo
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/name 	            Jose Jimen~ez
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#juan
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/homepage 	            http://www.example/jose/
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/workplaceHomepage 	    http://www.corp.example/
+http://www.example/jose/foaf.rdf#kendall  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#edd
+http://www.example/jose/foaf.rdf#julia 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#julia 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:julia@mail.example
+http://www.example/jose/foaf.rdf#juan 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:juan@mail.example
+]]></programlisting>
+      <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
+      <para>Go to Conductor UI, for ex. at http://localhost:8890/conductor</para>
+      <para>Login as dba user</para>
+      <para>Go to WebDAV&amp;HTTP and create new folder, for ex. test</para>
+      <para>Upload in the folder test a file, for ex. the file jose.rdf from above with options:</para>
+      <itemizedlist>
+        <listitem>Destination: RDF Store</listitem>
+        <listitem>Set the RDF IRI</listitem>
+      </itemizedlist>
+    </sect2>
+    <sect2 id="rdfinsertmethodvirtuosocrawler">
+      <title>Using Virtuoso Crawler</title>
+      <para>Using Virtuoso Crawler (which includes the Sponger options so you crawl
+non-RDF but get RDF and this can go to the Quad Store)</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Go to Conductor UI. For ex. at http://localhost:8890/conductor</para>
+      <para>Login as dba user</para>
+      <para>Go to tab WebDAV&amp;HTTP</para>
+      <para>Go to tab Content Imports</para>
+      <para>Click the "New Target" button</para>
+      <para>In the shown form:</para>
+      <itemizedlist>
+        <listitem>Enter for "Target description": Tim Berners-Lee's electronic Business Card</listitem>
+        <listitem>Enter for "Target URL": http://www.w3.org/People/Berners-Lee</listitem>
+        <listitem>Enter for "Copy to local DAV collection" for ex.: /DAV/home/demo/rdf_sink/</listitem>
+        <listitem>Choose from the list "Local resources owner": demo</listitem>
+        <listitem>Check the check.box with label "Store metadata".</listitem>
+        <listitem>Check all the check-boxes shown below the check-box "Store metadata".</listitem>
+        <listitem>Click the button "Create".
+          <figure id="rdfinsertwebdav1" float="1">
+	    <title>Using Virtuoso Crawler</title>
+	    <graphic fileref="ui/rdfinsert1.png"/>
+          </figure>
+        </listitem>
+      </itemizedlist>
+      <para>Click the button "Import Queues".</para>
+      <para>For "Robot target" with label "Tim Berners-Lee's electronic Business Card"
+click the start link.</para>
+      <para>As result should be shown t he number of the pages retrieved.</para>
+      <figure id="rdfinsertwebdav2" float="1">
+        <title>Using Virtuoso Crawler</title>
+	<graphic fileref="ui/rdfinsert2.png"/>
+      </figure>
+      <para>Now using the sparql endpoint with sponger option "Use only local data"
+enter for Default Graph URI: http://www.w3.org/People/Berners-Lee and execute the following query: </para>
+<programlisting><![CDATA[
+select *
+where {?s ?p ?o}
+]]></programlisting>
+      <para>As result should be shown the following triples:</para>
+<programlisting><![CDATA[
+s                                                      p                                                 o
+http://www.w3.org/People/Berners-Lee 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://xmlns.com/foaf/0.1/Document
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Answers for young people - Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Berners-Lee: Weaving the Web
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Declaration by Tim BL 28 Feb 1996 w.r.t. CDA challenge
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Errata - Berners-Lee: Weaving the Web
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Frequently asked questions by the Press - Tim BL
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Glossary - Weaving the Web - Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Longer Bio for Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Michael Dertouzos has left us
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The Future of the Web and Europe
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: Past, Present and Future
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: A very short personal history
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee - 3Com Founders chair
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: Disclosures
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WWW and UU and I
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WorldWideWeb, the first Web client
+]]></programlisting>
+    </sect2>
+    <sect2 id="rdfinsertmethodsparqlqueryandsponger">
+      <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Execute the following query: </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?id
+FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+ OPTION (get:soft "soft", get:method "GET")
+WHERE { GRAPH ?g { ?id a ?o } }
+limit 10;
+]]></programlisting>
+      <para>As result will be shown the retrieved triples:</para>
+<programlisting><![CDATA[
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
+
+10 Rows. -- 20 msec.
+]]></programlisting>
+    </sect2>
+    <sect2 id="rdfinsertmethodplapis">
+      <title>Using Virtuoso PL APIs</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>In the example script we implement a basic mapper which maps a text/plain mime type
+to an imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
+and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
+<programlisting><![CDATA[
+use DB;
+
+create procedure DB.DBA.RDF_LOAD_TXT_META
+	(
+	 in graph_iri varchar,
+	 in new_origin_uri varchar,
+	 in dest varchar,
+         inout ret_body any,
+	 inout aq any,
+	 inout ps any,
+	 inout ser_key any
+	 )
+{
+  declare words, chars int;
+  declare vtb, arr, subj, ses, str any;
+  declare ses any;
+  -- if any error we just say nothing can be done
+  declare exit handler for sqlstate '*'
+ {
+      return 0;
+ };
+  subj := coalesce (dest, new_origin_uri);
+  vtb := vt_batch ();
+  chars := length (ret_body);
+  -- using the text index procedures we get a list of words
+  vt_batch_feed (vtb, ret_body, 1);
+  arr := vt_batch_strings_array (vtb);
+  -- the list has 'word' and positions array , so we must divide by 2
+  words := length (arr) / 2;
+  ses := string_output ();
+  -- we compose a N3 literal
+  http (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> .\n', subj), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:UniqueWords> "%d" .\n', subj, words), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:Chars> "%d" .\n', subj, chars), ses);
+  str := string_output_string (ses);
+  -- we push the N3 text into the local store
+  DB.DBA.TTLP (str, new_origin_uri, subj);
+  return 1;
+}
+;
+
+--
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(text/plain)', 'MIME', 'DB.DBA.RDF_LOAD_TXT_META', null, 'Text Files (demo)');
+
+-- here we set order to some large number so don't break existing mappers
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+]]></programlisting>
+      <para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote
+RDF data for all missing source graphs' to execute:</para>
+<programlisting><![CDATA[
+select * from <http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt>
+where { ?s ?p ?o }
+]]></programlisting>
+      <para>To check the results:</para>
+      <itemizedlist>
+        <listitem>Make sure the initial state of tutorial <ulink url="http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp">RD_S_1</ulink> is set.</listitem>
+        <listitem>Go to http://demo.openlinksw.com/sparql</listitem>
+        <listitem>Enter for Default Graph URI this value:</listitem>
+<programlisting><![CDATA[
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt
+]]></programlisting>
+        <listitem>Enter for Query text:</listitem>
+<programlisting><![CDATA[
+select *
+where {?s ?p ?o}
+]]></programlisting>
+        <listitem>Click the "Run Query" button.</listitem>
+        <listitem>As result should be shown the following triples:</listitem>
+<programlisting><![CDATA[
+s  	                                                                    p  	                                            o
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://xmlns.com/foaf/0.1/Document
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:UniqueWords 	                    47
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:Chars 	                            625
+]]></programlisting>
+      </itemizedlist>
+      <para><emphasis>Important: Setting Sponger Permissions</emphasis></para>
+      <para>In order to allow the Sponger to update the local RDF quad store with triples
+constituting the sponged structured data, the role "SPARQL_SPONGE" must be granted to the
+account "SPARQL", i.e., to the owner account of /sparql web service endpoint.
+This should normally be the case. If not, you must manually grant this
+permission. As with most Virtuoso DBA tasks, the Conductor provides the simplest means of
+doing this.</para>
+    </sect2>
+    <sect2 id="rdfinsertmethodsimilerdfbankapi">
+      <title>Using SIMILE RDF Bank API</title>
+      <para>Virtuoso implements the HTTP-based Semantic Bank API that enables client
+applications to post to its RDF Triple Store. This method offers an alternative to
+using Virtuoso/PL functions or WebDAV uploads as the triples-insertion mechanism.</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para>From your machine go to Firefox->Tools->PiggyBank->My Semantic Bank Accounts</para>
+      <para>Add in the shown form:</para>
+      <itemizedlist>
+        <listitem>For bank: address: http://demo.openlinksw.com/bank</listitem>
+        <listitem>For account id: demo</listitem>
+        <listitem>For password: demo</listitem>
+      </itemizedlist>
+      <para>Go to http://demo.openlinksw.com/ods</para>
+      <para>Log in as user demo, password: demo</para>
+      <para>Go to the Weblog tab from the main ODS Navigation</para>
+      <para>Click on weblog instance name, for ex. "demo's Weblog".</para>
+      <para>When the weblog home page is loaded, click Alt + P.</para>
+      <para>As result is shown the "My PiggyBank" page with all the collected information
+presented in items.</para>
+      <para>For several of the items add Tags from the form "Tag" shown for each of them.</para>
+      <para>As result should be shown the message "Last updated: [here goes the date value].</para>
+      <para>You can also click "Save" and "Publish" for these items.</para>
+      <para>Go to http://demo.openlinksw.com/sparql</para>
+      <para>Enter for the "Default Graph URI" field: http://simile.org/piggybank/demo</para>
+      <para>Enter for the "Query text" text-area:</para>
+<programlisting><![CDATA[
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+select *
+from <http://simile.org/piggybank/demo>
+where {?s ?p  ?o}
+]]></programlisting>
+      <para>Click "Run Query".</para>
+      <para>As results are shown the found results.</para>
+    </sect2>
+    <sect2 id="rdfinsertmethodrdfnet">
+      <title>Using RDF NET</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Execute the following query:</para>
+<programlisting><![CDATA[
+SQL> select DB.DBA.HTTP_RDF_NET ('sparql load
+"http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com"
+into graph <http://www.openlinksw.com/>');
+]]></programlisting>
+      <para>As result should be shown:</para>
+<programlisting><![CDATA[
+callret
+VARCHAR
+_______________________________________________________
+
+<?xml version="1.0" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+xmlns="http://example.org/book/" xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:ns="http://example.org/ns#">
+<rdf:Description>
+<callret-0>Load <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com>
+into graph <http://www.openlinksw.com/> -- done</callret-0>
+</rdf:Description>
+</rdf:RDF>
+
+1 Rows. -- 1982 msec.
+]]></programlisting>
+    </sect2>
+</sect1>
+<sect1 id="virtuososponger"><title>Virtuoso Sponger</title>
+<para>The Virtuoso Sponger is a middleware component of Virtuoso that generates RDF Linked Data from
+a variety of data sources. The sponger is transparently integrated into the Virtuoso SPARQL Query
+Processor, where it serves as part of the URI/IRI dereferencing functionality. It is also optionally
+used by the Virtuoso Content Crawler.
+</para>
+<para>
+A majority of the worlds data naturally resides in non RDF form at the current time. The Sponger
+delivers middleware that accelerates the bootstrap of the Semantic Data Web by generating RDF
+from non RDF data sources, unobtrusively.
+</para>
+<para>
+When an RDF aware client requests data from a network accessible resource via the Sponger
+the following events occur:
+</para>
+<itemizedlist>
+<listitem>A requests in made for data in RDF form, and if RDF is returned nothing further happens</listitem>
+<listitem>If RDF isn't returned, then the Sponger passes the data through a Metadata Extraction
+Pipeline process (using Metadata Extractors)</listitem>
+<listitem>The extracted data is transformed to RDF via a Mapping Pipeline process (RDF is extracted by way
+of Ontology matching and mapping) that results in RDF Entities (instance data) generation</listitem>
+<listitem>RDF Entities are returned to the client</listitem>
+</itemizedlist>
+<para>The imported data forms a local cache and its invalidation rules conform to those of traditional
+HTTP clients (Web Browsers). Thus, expiration time is determined based on subsequent data fetches of
+the same resource (note: the first data load will record the 'expires' header) with current time
+compared to expiration time stored in the local cache. If HTTP 'expires' header data isn't returned
+by the source data server, then the "Sponger" will derive it's own invalidation time frame by
+evaluating the 'date' header and 'last-modified' HTTP headers. Irrespective of path taken,
+local cache invalidation is driven by an assessment of current time relative to recorded expiration time.
+</para>
+<para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Catridges.
+Each catridge includes Data Extractors which extract data from one or more data sources, and Ontology
+Mappers which map the extracted data to one or more ontologies/schemas, and route to producing RDF
+Linked Data.
+</para>
+<para>The Schema Mappers are typically XSLT (e.g. GRDDL and other OpenLink Mapping Schemes) or
+Virtuoso PL based. The Metadata Extractors may be developed in Virtuoso PL, C/C++, Java, or any
+other language that can be integrated into the Virtuoso via it's server extensions APIs.
+</para>
+<para>
+The Sponger also includes a pluggable name resolution mechanism that enables the development of
+Custom Resolvers for naming schemes (e.g. URNs) associated with protocols beyond HTTP.
+Examples of custom resolvers include:
+</para>
+<itemizedlist>
+<listitem>LSID</listitem>
+<listitem>DOI</listitem>
+</itemizedlist>
+<sect2 id="virtuosospongercartridges"><title>Virtuoso Cartridge-Supported Data Sources</title>
+<itemizedlist>
+<listitem>RDF that doesn't contain Linked Data URIs</listitem>
+<listitem>Non-RDF Data Sources
+  <itemizedlist>
+    <listitem>Data Portability formats
+      <itemizedlist>
+        <listitem>RSS</listitem>
+        <listitem>ATOM</listitem>
+        <listitem>OPML</listitem>
+        <listitem>XBEL</listitem>
+        <listitem>XBRL</listitem>
+        <listitem>APML</listitem>
+        <listitem>XR-XML</listitem>
+        <listitem>hCalendar</listitem>
+        <listitem>iCalendar</listitem>
+        <listitem>hCard</listitem>
+        <listitem>vCard</listitem>
+        <listitem>XFN</listitem>
+        <listitem>OAI</listitem>
+        <listitem>GRDDL</listitem>
+        <listitem>RDFa</listitem>
+        <listitem>DOI</listitem>
+      </itemizedlist>
+    </listitem>
+    <listitem>Vendor specific XML Web Services
+      <itemizedlist>
+        <listitem>Facebook</listitem>
+        <listitem>Amazon</listitem>
+        <listitem>eBay</listitem>
+        <listitem>Musicbrainz</listitem>
+        <listitem>Freebase</listitem>
+        <listitem>Calais</listitem>
+        <listitem>Yahoo! Finance</listitem>
+        <listitem>Flickr</listitem>
+        <listitem>Del.icio.us</listitem>
+        <listitem>Bugzilla</listitem>
+        <listitem>others</listitem>
+      </itemizedlist>
+    </listitem>
+  </itemizedlist>
+</listitem>
+</itemizedlist>
+</sect2>
+<sect2 id="virtuosospongercartridgesextractor"><title>Virtuoso Sponger Cartridge RDF Extractor</title>
+<para>
+Used to extract RDF from a Web Data Source it consumes services from: Virtuoso PL, C/C++, Java
+based RDF Extractors</para>
+<para>The RDF mappers provide a way to extract metadata from non-RDF documents such as HTML pages,
+images Office documents etc. and pass to SPARQL sponger (crawler which retrieve missing
+source graphs). For brevity further in this article the "RDF mapper" we simply will call "mapper".
+</para>
+<para>The mappers consist of PL procedure (hook) and extractor, where extractor itself can be built
+using PL, C or any external language supported by Virtuoso server.</para>
+<para>Once the mapper is developed it must be plugged into the SPARQL engine by adding a record
+in the table DB.DBA.SYS_RDF_MAPPERS.</para>
+<para>If a SPARQL query instructs the SPARQL processor to retrieve target graph into local storage,
+then the SPARQL sponger will be invoked. If the target graph IRI represents a deferencable URL
+then content will be retrieved using content negotiation. The next step is the content type
+to be detected:</para>
+<itemizedlist>
+<listitem>If RDF and no further transformation such as GRDDL is needed, then the process would stop.</listitem>
+<listitem>If such as 'text/plain' and is not known to have metadata, then the SPARQL sponger will
+look in the DB.DBA.SYS_RDF_MAPPERS table by order of RM_ID and for every matching URL or MIME
+type pattern (depends on column RM_TYPE) will call the mapper hook.
+  <itemizedlist>
+    <listitem>If hook returns zero the next mapper will be tried;</listitem>
+    <listitem>If result is negative the process would stop instructing the SPARQL nothing was retrieved;</listitem>
+    <listitem>If result is positive the process would stop instructing the SPARQL that metadata was retrieved.</listitem>
+  </itemizedlist>
+</listitem>
+</itemizedlist>
+<sect3 id="virtuosospongercartridgesextractorpl"><title>Virtuoso Sponger Cartridge RDF Extractor PL Requirements</title>
+<para><emphasis>PL hook requirements:</emphasis></para>
+<para>Every PL function used to plug a mapper into SPARQL engine must have following parameters in
+the same order:</para>
+<itemizedlist>
+<listitem>in graph_iri varchar: the graph IRI which is currently retrieved</listitem>
+<listitem>in new_origin_uri varchar: the URL of the document retrieved</listitem>
+<listitem>in destination varchar: the destination graph IRI</listitem>
+<listitem>inout content any: the content of the document retrieved by SPARQL sponger </listitem>
+<listitem>inout async_queue any: an asynchronous queue, can be used to push something to execute
+on background if needed.</listitem>
+<listitem>inout ping_service any: the value of [SPARQL] - PingService INI parameter, could be used
+to configure a service notification such as pingthesemanticweb.com</listitem>
+<listitem>inout api_key any: a plain text id single key value or serialized vector of key structure,
+basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table.</listitem>
+</itemizedlist>
+<para>Note: the names of the parameters are not important, but their order and presence are!</para>
+<para><emphasis>Example Implementation:</emphasis></para>
+<para>In the example script bellow we implement a basic mapper, which maps a text/plain mime type to an
+imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
+and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
+<programlisting><![CDATA[
+use DB;
+
+create procedure DB.DBA.RDF_LOAD_TXT_META
+ (
+  in graph_iri varchar,
+  in new_origin_uri varchar,
+  in dest varchar,
+  inout ret_body any,
+  inout aq any,
+  inout ps any,
+  inout ser_key any
+  )
+{
+  declare words, chars int;
+  declare vtb, arr, subj, ses, str any;
+  declare ses any;
+  -- if any error we just say nothing can be done
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  subj := coalesce (dest, new_origin_uri);
+  vtb := vt_batch ();
+  chars := length (ret_body);
+
+  -- using the text index procedures we get a list of words
+  vt_batch_feed (vtb, ret_body, 1);
+  arr := vt_batch_strings_array (vtb);
+
+  -- the list has 'word' and positions array, so we must divide by 2
+  words := length (arr) / 2;
+  ses := string_output ();
+
+  -- we compose a N3 literal
+  http (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> .\n', subj), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:UniqueWords> "%d" .\n', subj, words), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:Chars> "%d" .\n', subj, chars), ses);
+  str := string_output_string (ses);
+
+  -- we push the N3 text into the local store
+  DB.DBA.TTLP (str, new_origin_uri, subj);
+  return 1;
+};
+
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+values ('(text/plain)', 'MIME', 'DB.DBA.RDF_LOAD_TXT_META', null, 'Text Files (demo)');
+
+-- here we set order to some large number so don't break existing mappers
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+]]></programlisting>
+<para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote RDF data
+for all missing source graphs' to execute:</para>
+<programlisting><![CDATA[
+select * from <URL-of-a-txt-file> where { ?s ?p ?o }
+]]></programlisting>
+<para>It is important that the SPARQL_UPDATE role to be granted to "SPARQL" account in order
+to allow local repository update via sponge feature.</para>
+<para><emphasis>Authentication in Sponger</emphasis></para>
+<para>To enable usage of user defined authentication, there are added more parameters to the
+/proxy/rdf and /sparql endpoints. So to use it, the RDF browser and iSPARQL should send following
+url parameters:</para>
+<itemizedlist>
+<listitem>for /proxy/rdf endpoint:
+<programlisting><![CDATA[
+'login=<account name>'
+]]></programlisting>
+</listitem>
+<listitem>for /sparql endpoint:
+<programlisting><![CDATA[
+get-login=<account name>
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="virtuosospongercartridgesextractorusecases"><title>RDF Cartridges Use Cases</title>
+<para>This section contains examples of Web resources which can be transformed by RDF Cartridges.
+It also states where additional setup for given cartrides is needed i.e. keys account names etc.
+</para>
+<para><emphasis>Service based:</emphasis></para>
+<itemizedlist>
+<listitem>amazon
+<programlisting><![CDATA[
+needs: api key
+example: http://www.amazon.com/gp/product/0553383043
+]]></programlisting>
+</listitem>
+<listitem>ebay
+<programlisting><![CDATA[
+needs: account, api-key
+example: http://cgi.ebay.com/RARE-DAY-IN-FAIRY-LAND-ELEPHANT-FOLIO-20-FULL-COLOR_W0QQitemZ140209597189QQihZ004QQcategoryZ29223QQssPageNameZWDVWQQrdZ1QQcmdZViewItem
+]]></programlisting>
+</listitem>
+<listitem>flickr
+needs: api-key
+example: http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg
+<programlisting><![CDATA[
+]]></programlisting>
+</listitem>
+<listitem>mbz
+<programlisting><![CDATA[
+example: http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html
+]]></programlisting>
+</listitem>
+<listitem>mql (freebase)
+<programlisting><![CDATA[
+example: http://www.freebase.com/view/en/beta_ursae_majoris
+]]></programlisting>
+</listitem>
+<listitem>facebook
+<programlisting><![CDATA[
+needs: api-key, secret, persistent-session-id
+example: http://www.facebook.com/profile.php?id=841100003
+]]></programlisting>
+</listitem>
+<listitem>yahoo-stock
+<programlisting><![CDATA[
+example: http://finance.yahoo.com/q?s=AAPL
+]]></programlisting>
+</listitem>
+<listitem>yahoo-traffic
+<programlisting><![CDATA[
+example: http://local.yahooapis.com/MapsService/V1/trafficData?appid=YahooDemo&street=701+First+Street&city=Sunnyvale&state=CA
+]]></programlisting>
+</listitem>
+<listitem>Bugzilla
+<programlisting><![CDATA[
+example: https://bugzilla.mozilla.org/show_bug.cgi?id=251714
+]]></programlisting>
+</listitem>
+<listitem>SVG</listitem>
+<listitem>OO document
+<programlisting><![CDATA[
+needs: unzip plugin
+]]></programlisting>
+</listitem>
+<listitem>Wikipedia
+<programlisting><![CDATA[
+needs: php plugin & dbpedia extractor
+example: http://wikipedia.org/wiki/London
+]]></programlisting>
+</listitem>
+<listitem>Opencalais</listitem>
+<listitem>iCalendar</listitem>
+</itemizedlist>
+<para><emphasis>GRDDL</emphasis></para>
+<itemizedlist>
+<listitem>Google Base (google)
+<programlisting><![CDATA[
+example: http://www.google.com/base/feeds/snippets/17891817243016304554
+]]></programlisting>
+</listitem>
+<listitem>eRDF</listitem>
+<listitem>RDFa</listitem>
+<listitem>hCard</listitem>
+<listitem>hCalendar</listitem>
+<listitem>hReview</listitem>
+<listitem>relLicense</listitem>
+<listitem>XBRL</listitem>
+<listitem>HR-XML</listitem>
+<listitem>DC</listitem>
+<listitem>geoURL</listitem>
+<listitem>Ning</listitem>
+<listitem>XFN</listitem>
+<listitem>xFolk</listitem>
+</itemizedlist>
+<para><emphasis>URN handlers</emphasis></para>
+<itemizedlist>
+<listitem>LSID
+<programlisting><![CDATA[
+example: urn:lsid:ubio.org:namebank:12292
+]]></programlisting>
+</listitem>
+<listitem>DOI
+<programlisting><![CDATA[
+needs: hslookup plugin, relevant html, pdf, xml etc. mappers enabled
+example: doi:10.1038/35057062
+]]></programlisting>
+</listitem>
+<listitem>OAI
+<programlisting><![CDATA[
+example: oai:dcmi.ischool.washington.edu:article/8
+]]></programlisting>
+</listitem>
+</itemizedlist>
+</sect3>
+</sect2>
+<sect2 id="virtuosospongerrdfmappers"><title>Extending SPARQL IRI Dereferencing with RDF Mappers</title>
+<para>The Virtuoso SPARQL engine (called for brevity just SPARQL bellow) supports IRI Dereferencing,
+however it understands only RDF data, that is it can retrieve only files containing RDF/XML, turtle
+or N3 serialized RDF data, if format is unknown it will try mapping with built-in WebDAV metadata
+extractor. In order to extend this feature with dereferencing web or file resources which naturally
+don't have RDF data (like PDF, JPEG files for example) is provided a special mechanism in SPARQL
+engine. This mechanism is called RDF mappers for translation of non-RDF data files to RDF.</para>
+<para>In order to instruct the SPARQL to call a RDF mapper it needs to be registered and it will
+be called for a given URL or MIME type pattern. In other words, when unknown for SPARQL format is
+received during URL dereferencing process, it will look into a special registry (a table) to match
+either the MIME type or IRI using a regular expression, if match is found the mapper function will
+be called.</para>
+<sect3 id="virtuosospongerrdfmappersregistry"><title>Regsitry</title>
+<para>The table DB.DBA.SYS_RDF_MAPPERS is used as registry for registering RDF mappers.</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_RDF_MAPPERS (
+    RM_ID integer identity,         -- mapper ID, designate order of execution
+    RM_PATTERN varchar,             -- a REGEX pattern to match URL or MIME type
+    RM_TYPE varchar default 'MIME', -- what property of the current resource to match: MIME or URL are supported at present
+    RM_HOOK varchar,                -- fully qualified PL function name e.q. DB.DBA.MY_MAPPER_FUNCTION
+    RM_KEY  long varchar,           -- API specific key to use
+    RM_DESCRIPTION long varchar,    -- Mapper description, free text
+    RM_ENABLED integer default 1,   -- a flag 0 or 1 integer to include or exclude the given mapper from processing chain
+    primary key (RM_TYPE, RM_PATTERN))
+;
+]]></programlisting>
+<para>The current way to register/update/unregister a mapper is just a DML statement e.g.
+NSERT/UPDATE/DELETE.</para>
+</sect3>
+<sect3 id="virtuosospongerrdfmappersexec"><title>Execution order and processing</title>
+<para>When SPARQL retrieves a resource with unknown content it will look in the mappers registry
+and will loop over every record having RM_ENABLED flag true. The sequence of look-up is based on
+ordering by RM_ID column. For every record it will either try matching the MIME type or URL against
+RM_PATTERN value and if there is match the function specified in RM_HOOK column will be called.
+If the function doesn't exists or signal an error the SPARQL will look at next record.</para>
+<para>When it stops looking? It will stop if value returned by mapper function is positive or
+negative number, if the return is negative processing stops with meaning no RDF was supplied,
+if return is positive the meaning is that RDF data was extracted, if zero integer is returned
+then SPARQL will look for next mapper. The mapper function also can return zero if it is expected
+next mapper in the chain to get more RDF data.</para>
+<para>If none of the mappers matches the signature (MIME type nor URL) the built-in WebDAV
+metadata extractor will be called.</para>
+</sect3>
+<sect3 id="virtuosospongerrdfmappersextfunc"><title>Extension function</title>
+<para>The mapper function is a PL stored procedure with following signature:</para>
+<programlisting><![CDATA[
+THE_MAPPER_FUNCTION_NAME (
+        in graph_iri varchar,
+        in origin_uri varchar,
+        in destination_uri varchar,
+        inout content varchar,
+        inout async_notification_queue any,
+        inout ping_service any,
+        inout keys any
+        )
+{
+   -- do processing here
+   -- return -1, 0 or 1 (as explained above in Execution order and processing section)
+}
+;
+]]></programlisting>
+<para><emphasis>Parameters</emphasis></para>
+<itemizedlist>
+<listitem>graph_iri - the target graph IRI</listitem>
+<listitem>origin_uri - the current URI of processing</listitem>
+<listitem>destination_uri - get:destination value</listitem>
+<listitem>content - the resource content</listitem>
+<listitem>async_notification_queue - if INI parameter PingService is specified in SPARQL
+section in the INI file, this is a pre-allocated asynchronous queue to be used to call
+ping service</listitem>
+<listitem>ping_service - the URL of the ping service configured in SPARQL section in the
+INI in PingService parameter</listitem>
+<listitem>keys - a string value contained in the RM_KEY column for given mapper, can be
+single string or serialized array, generally can be used as mapper specific data.</listitem>
+</itemizedlist>
+<para><emphasis>Return value</emphasis></para>
+<itemizedlist>
+<listitem>0 - no data was retrieved or some next matching mapper must extract more data</listitem>
+<listitem>1 - data is retrieved, stop looking for other mappers</listitem>
+<listitem>-1 - no data is retrieved, stop looking for more data</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="virtuosospongerrdfmapperspackage"><title>RDF Mappers package content</title>
+<para>The Virtuoso supply as a rdf_mappers_dav VAD package a cartridge for extracting RDF data
+from certain popular Web resources and file types. It can be installed (if not already) using
+VAD_INSTALL function, see the VAD chapter in documentation on how to do that.</para>
+<para><emphasis>HTTP-in-RDF</emphasis></para>
+<para>Maps the HTTP request response to HTTP Vocabulary in RDF, see http://www.w3.org/2006/http#.</para>
+<para>This mapper is disabled by default. If it's enabled , it must be first in order of execution.</para>
+<para>Also it always will return 0, which means any other mapper should push more data.</para>
+<para><emphasis>HTML</emphasis></para>
+<para>This mapper is composite, it looking for metadata which can specified in a HTML pages as
+follows:</para>
+<itemizedlist>
+<listitem>Embedded/linked RDF
+  <itemizedlist>
+    <listitem>scan for meta in RDF
+<programlisting><![CDATA[
+<link rel="meta" type="application/rdf+xml"
+]]></programlisting></listitem>
+    <listitem>RDF embedded in xHTML (as markup or inside XML comments)</listitem>
+  </itemizedlist>
+</listitem>
+<listitem>Micro-formats
+      <itemizedlist>
+    <listitem>GRDDL - GRDDL Data Views: RDF expressed in XHTML and XML: http://www.w3.org/2003/g/data-view#</listitem>
+    <listitem>eRDF - http://purl.org/NET/erdf/profile</listitem>
+    <listitem>RDFa</listitem>
+    <listitem>hCard - http://www.w3.org/2006/03/hcard</listitem>
+    <listitem>hCalendar - http://dannyayers.com/microformats/hcalendar-profile</listitem>
+    <listitem>hReview - http://dannyayers.com/micromodels/profiles/hreview</listitem>
+    <listitem>relLicense - CC license: http://web.resource.org/cc/schema.rdf</listitem>
+    <listitem>Dublin Core (DCMI) - http://purl.org/dc/elements/1.1/</listitem>
+    <listitem>geoURL - http://www.w3.org/2003/01/geo/wgs84_pos#</listitem>
+    <listitem>Google Base - OpenLink Virtuoso specific mapping</listitem>
+    <listitem>Ning Metadata </listitem>
+      </itemizedlist>
+</listitem>
+<listitem>Feeds extraction
+      <itemizedlist>
+    <listitem>RSS/RDF - SIOC &amp; AtomOWL</listitem>
+    <listitem>RSS 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
+    <listitem>Atom 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
+      </itemizedlist>
+</listitem>
+<listitem>xHTML metadata transformation using FOAF (foaf:Document) and Dublin Core
+properties (dc:title, dc:subject etc.)</listitem>
+</itemizedlist>
+<para>The HTML page mapper will look for RDF data in order as listed above, it will try to extract
+metadata on each step and will return positive flag if any of the above step give a RDF data. In
+case where page URL matches some of other RDF mappers listed in registry it will return 0 so
+next mapper to extract more data. In order to function properly, this mapper must be executed
+before any other specific mappers.</para>
+<para><emphasis>Flickr URLs</emphasis></para>
+<para>This mapper extracts metadata of the Flickr images, using Flickr REST API. To function
+properly it must have configured key. The Flickr mapper extracts metadata using: CC license,
+Dublin Core, Dublin Core Metadata Terms, GeoURL, FOAF, EXIF: http://www.w3.org/2003/12/exif/ns/ ontology.
+</para>
+<para><emphasis>Amazon URLs</emphasis></para>
+<para>This mapper extracts metadata for Amazon articles, using Amazon REST API. It needs a Amazon
+API key in order to be functional.</para>
+<para><emphasis>eBay URLs</emphasis></para>
+<para>Implements eBay REST API for extracting metadata of eBay articles, it needs a key and user
+name to be configured in order to work.</para>
+<para><emphasis>Open Office (OO) documents</emphasis></para>
+<para>The OO documents contains metadata which can be extracted using UNZIP, so this extractor
+needs Virtuoso unzip plugin to be configured on the server.</para>
+<para><emphasis>Yahoo traffic data URLs</emphasis></para>
+<para>Implements transformation of the result of Yahoo traffic data to RDF.
+</para>
+<para><emphasis>iCal files</emphasis></para>
+<para>Transform iCal files to RDF as per http://www.w3.org/2002/12/cal/ical# .</para>
+<para><emphasis>Binary content, PDF, PowerPoint</emphasis></para>
+<para>The unknown binary content, PDF and MS PowerPoint files can be transformed to RDF using
+Aperture framework (http://aperture.sourceforge.net/). This mapper needs Virtuoso with Java hosting
+support, Aperture framework and MetaExtractor.class installed on the host system in order to work.</para>
+<para>The Aperture framework &amp; MetaExtractor.class must be installed on the system before to
+install the RDF mappers package. If the package is already installed, then to activate this mapper
+you can just re-install the VAD.</para>
+<para><emphasis>Setting-up Virtuoso with Java hosting to run Aperture framework</emphasis></para>
+<itemizedlist>
+<listitem>Install Virtuoso with Java hosting</listitem>
+<listitem>Download the Aperture framework from http://aperture.sourceforge.net</listitem>
+<listitem>unpack in the Virtuoso working directory e.q. where database file is, make a symbolic link 'lib' to it</listitem>
+<listitem>configure in the INI Parametres section:
+<programlisting><![CDATA[
+JavaClasspath = lib/sesame-2.0-alpha-3.jar:lib/openrdf-util-crazy-debug.jar:lib/htmlparser-1.6.jar:lib/activation-1.0.2-upd2.jar:lib/bcmail-jdk14-132.jar:lib/poi-scratchpad-3.0-alpha2-20060616.jar:lib/openrdf-model-2.0-alpha-3.jar:lib/jacob-1.10-pre4.jar:lib/bcprov-jdk14-132.jar:lib/demork-2.0.jar:lib/commons-codec.jar:lib/fontbox-0.1.0-dev.jar:lib/pdfbox-0.7.3.jar:lib/applewrapper-0.1.jar:lib/junit-3.8.1.jar:lib/winlaf-0.5.1.jar:lib/aperture-test-2006.1-alpha-3.jar:lib/openrdf-util-fixed-locking.jar:lib/commons-logging-1.1.jar:lib/mail-1.4.jar:lib/aperture-2006.1-alpha-3.jar:lib/poi-3.0-alpha2-20060616.jar:lib/ical4j-cvs20061019.jar:lib/openrdf-util-2.0-alpha-3.jar:lib/rio-2.0-alpha-3.jar:lib/poi-contrib-3.0-alpha2-20060616.jar:lib/aperture-examples-2006.1-alpha-3.jar:.
+]]></programlisting>
+</listitem>
+<listitem>Make sure MetaExtractor.class is in the Virtuoso working directory</listitem>
+<listitem>Start the Virtuoso server with java hosting support</listitem>
+<listitem>connect with ISQL tool and check if installation is complete:
+<programlisting><![CDATA[
+SQL> DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
+
+Done. -- 466 msec.
+SQL> select "MetaExtractor"().getMetaFromFile ('some_pdf_in_server_working_dir.pdf', 5);
+... some RDF must be returned ...
+]]></programlisting>
+</listitem>
+</itemizedlist>
+<para>Important: the above is verified to work with aperture-2006.1-alpha-3 on Linux system.
+For different version of Aperture of operation system this may need some adjustments e.g. to
+re-build MetaExtractor.class &amp; changes to CLASSPATH etc.</para>
+<para><emphasis>Examples &amp; tutorials</emphasis></para>
+<para>How to write own RDF mapper? Look at Virtuoso tutorial on this subject
+http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp .
+</para>
+</sect3>
+<sect3 id="virtuosospongerproxy"><title>Sponger Proxy service</title>
+<para>Sponger functionality is also exposed via Virtuoso's "/proxy/rdf/" endpoint, as an in-built
+REST style Web service available in any Virtuoso standard installation. This web service takes
+a target URL and either returns the content "as is" or tries to transform (by sponging) to RDF.
+Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.
+</para>
+<para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
+</sect3>
+</sect2>
+</sect1>
 <sect1 id="rdfiridereferencing"><title>Dereferencable IRIs and RDF Linked Data</title>
 <para>There are many cases when RDF data should be retrieved from remote sources only when really needed.
 E.g., a scheduling application may read personal calendars from personal sites of its users.
@@ -1787,1234 +3034,6 @@ SQL>
 ]]></programlisting>
 </sect2>
 </sect1>
-<sect1 id="rdfinsertmethods"><title>RDF Insert Methods in Virtuoso</title>
-    <sect2 id="rdfinsertmethodshttppost"><title>HTTP Post using Content-Type: application/sparql-query</title>
-	<para>With POST can be accomplished SPARQL Insert/Update etc.</para>
-	<para>The result is in the rdf_quiad.</para>
-	<para>With GET Methods you can get the triples which are saved.</para>
-        <para><emphasis>Examples:</emphasis></para>
-        <para><emphasis>Example 1:</emphasis></para>
-        <para>Create a DAV collection xx for user demo with password demo.</para>
-        <para>Execute the following command:</para>
-<programlisting><![CDATA[
-curl -i -d "INSERT {<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
-<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}" -u "demo:demo"
--H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
-]]></programlisting>
-        <para>The response should be:</para>
-<programlisting><![CDATA[
-HTTP/1.1 201 Created
-Server: Virtuoso/05.00.3023 (Win32) i686-generic-win-32  VDB
-Connection: Keep-Alive
-Content-Type: text/html; charset=ISO-8859-1
-Date: Fri, 28 Dec 2007 12:50:12 GMT
-Accept-Ranges: bytes
-MS-Author-Via: SPARQL
-Content-Length: 0
-]]></programlisting>
-        <para>The result in the DAV/xx location will be a new WebDAV resource with name "yy" containing the following:</para>
-<itemizedlist>
-<listitem>if opened with Conductor:
-<programlisting><![CDATA[
-CONSTRUCT { ?s ?p ?o } FROM <http://localhost:8890/DAV/xx/yy> WHERE { ?s ?p ?o }
-]]></programlisting>
-</listitem>
-<listitem>if opened with GET, then the content will be RDF representation of what was inserted into the graph, i.e.
-<programlisting><![CDATA[
-<?xml version="1.0" encoding="utf-8" ?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description
-rdf:about="http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this">
-<ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-rdf:resource="http://rdfs.org/sioc/ns#User"/>
-</rdf:Description>
-</rdf:RDF>
-]]></programlisting>
-</listitem>
-</itemizedlist>
-        <para><emphasis>Example 2:</emphasis></para>
-        <para>Create a DAV collection, for ex. with name "test" for user ( for ex. demo).</para>
-        <para>Execute the following command:</para>
-<programlisting><![CDATA[
-curl -i -d "INSERT IN GRAPH <http://mygraph.com>
-{ <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
-  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-  <http://rdfs.org/sioc/ns#User> .
-  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
-  <http://www.w3.org/2000/01/rdf-schema#label>
-  <Kingsley Uyi Idehen> .
-  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
-  <http://rdfs.org/sioc/ns#creator_of>
-
-<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300>
-  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/demo/test/myrq
-]]></programlisting>
-        <para>As result the response will be:</para>
-<programlisting><![CDATA[
-HTTP/1.1 201 Created
-Server: Virtuoso/05.00.3023 (Win32) i686-generic-win-32  VDB
-Connection: Keep-Alive
-Content-Type: text/html; charset=ISO-8859-1
-Date: Thu, 20 Dec 2007 16:25:25 GMT
-Accept-Ranges: bytes
-MS-Author-Via: SPARQL
-Content-Length: 0
-]]></programlisting>
-        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://localhost:8890/sparql and:</para>
-<itemizedlist>
-<listitem>Enter for Default Graph URI:
-<programlisting><![CDATA[
-http://mygraph.com
-]]></programlisting>
-</listitem>
-<listitem>Enter in the Query area:
-<programlisting><![CDATA[
-SELECT * WHERE {?s ?p ?o}
-]]></programlisting>
-</listitem>
-<listitem>Click the button "Run Query"</listitem>
-<listitem>As result will be shown the inserted triples:
-<programlisting><![CDATA[
-s  	                                                          p                                                 o
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://rdfs.org/sioc/ns#User
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/2000/01/rdf-schema#label 	    Kingsley
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://rdfs.org/sioc/ns#creator_of                http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
-]]></programlisting>
-</listitem>
-</itemizedlist>
-</sect2>
-     <sect2 id="rdfinsertmethodshttpput"><title>HTTP PUT using Content-Type: application/rdf+xml</title>
-	<para>The URI in a PUT request identifies the entity enclosed with the request. Therefore using HTTP PUT is a more useful and meaningful command than using POST (which is more about submitting data to a script).</para>
-        <para><emphasis>Example:</emphasis></para>
-        <para>Suppose there is myfoaf.rdf file with the following content:</para>
-<programlisting><![CDATA[
-<rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    xmlns:log="http://www.w3.org/2000/10/swap/log#"
-    xmlns:myfoaf="http://www.example/jose/foaf.rdf#"
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#jose">
-        <foaf:homepage rdf:resource="http://www.example/jose/"/>
-        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#juan"/>
-        <foaf:name>Jose Jimen~ez</foaf:name>
-        <foaf:nick>Jo</foaf:nick>
-        <foaf:workplaceHomepage rdf:resource="http://www.corp.example/"/>
-    </foaf:Person>
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#juan">
-        <foaf:mbox rdf:resource="mailto:juan@mail.example"/>
-    </foaf:Person>
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#julia">
-        <foaf:mbox rdf:resource="mailto:julia@mail.example"/>
-    </foaf:Person>
-
-    <rdf:Description rdf:about="http://www.example/jose/foaf.rdf#kendall">
-        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#edd"/>
-    </rdf:Description>
-</rdf:RDF>
-]]></programlisting>
-        <para>Now let's upload the myfoaf.rdf file to destination server demo.openlinksw.com for user demo:</para>
-<programlisting><![CDATA[
-curl -T myfoaf.rdf http://demo.openlinksw.com/DAV/home/demo/rdf_sink/myfoaf.rdf -u demo:demo
-]]></programlisting>
-        <para>As result the response should be:</para>
-<programlisting><![CDATA[
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<HTML>
-<HEAD>
-  <TITLE>201 Created</TITLE>
-</HEAD>
-<BODY>
-  <H1>Created</H1>
-  Resource /DAV/home/demo/rdf_sink/ myfoaf.rdf has been created.
-</BODY>
-</HTML>
-]]></programlisting>
-    </sect2>
-     <sect2 id="rdfinsertmethodsload"><title>SPARQL Insert using LOAD</title>
-        <para>SPARQL INSERT operation can be done using the LOAD feature.</para>
-        <para><emphasis>Example:</emphasis></para>
-        <para>Execute from ISQL:</para>
-<programlisting><![CDATA[
-sparql insert in graph <http://mygraph.com>
-{
-  <http://myopenlink.net/dataspace/Kingsley#this>
-  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-  <http://rdfs.org/sioc/ns#User> .
-
-  <http://myopenlink.net/dataspace/Kingsley#this>
-  <http://rdfs.org/sioc/ns#id>
-  <Kingsley> .
-
-  <http://myopenlink.net/dataspace/Caroline#this>
-  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-  <http://rdfs.org/sioc/ns#User> .
-
- <http://myopenlink.net/dataspace/Caroline#this>
-  <http://rdfs.org/sioc/ns#id>
-  <Caroline> .
-
-   <http://myopenlink.net/dataspace/Matt#this>
-  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-  <http://rdfs.org/sioc/ns#User> .
-
-  <http://myopenlink.net/dataspace/Matt#this>
-  <http://rdfs.org/sioc/ns#id>
-  <Matt> .
-
-   <http://myopenlink.net/dataspace/demo#this>
-  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
-  <http://rdfs.org/sioc/ns#User> .
-
-  <http://myopenlink.net/dataspace/demo#this>
-  <http://rdfs.org/sioc/ns#id>
-  <demo> .};
-]]></programlisting>
-        <para>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</para>
-        <para>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:</para>
-<programlisting><![CDATA[
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX sioc: <http://rdfs.org/sioc/ns#>
-SELECT ?x ?p ?o
-FROM <http://mygraph.com>
-WHERE
-  {
-    ?x rdf:type sioc:User .
-    ?x ?p ?o.
-    ?x sioc:id ?id .
-    FILTER REGEX(str(?id), "^King")
-  }
-ORDER BY ?x
-]]></programlisting>
-        <para>Now from ISQL execute the following command:</para>
-<programlisting><![CDATA[
-sparql
-load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
-]]></programlisting>
-        <para>As result should be shown:</para>
-<programlisting><![CDATA[
-callret-0
-VARCHAR
-_______________________________________________________________________________
-
-Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
-
-1 Rows. -- 321 msec.
-]]></programlisting>
-    </sect2>
-     <sect2 id="rdfindertmethodsparqlendpoint"><title>SPARQL Insert via /sparql endpoint</title>
-        <para>SPARQL INSERT operation can be sent to a web service endpoint as a single statement and executed in sequence.</para>
-        <para><emphasis>Example:</emphasis></para>
-        <para>Using the Virtuoso ISQL tool or using the /sparql UI at http://host:port/sparql, execute the following:</para>
-<itemizedlist>
-<listitem>Insert into graph http://example/bookStore 3 triples:
-<programlisting><![CDATA[
-sparql insert in graph <http://BookStore.com>
-{ <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
-  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
-  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00> };
-]]></programlisting>
-</listitem>
-<listitem>As result will be shown the message:
-<programlisting><![CDATA[
-Insert into <http://BookStore.com>, 3 triples -- done
-]]></programlisting>
-</listitem>
-<listitem>Next we will select all triples from the graph http://example/bookStore:
-<programlisting><![CDATA[
-sparql select * from <http://BookStore.com> where {?s ?p ?o};
-]]></programlisting>
-</listitem>
-<listitem>As result will be shown:
-<programlisting><![CDATA[
-s                                              p                                       o
-VARCHAR                                        VARCHAR                                 VARCHAR
-_______________________________________________________________________________
-
-http://www.w3.org/People/Berners-Lee/card#i    http://purl.org/dc/elements/1.1/date    1998-05-03T00:00:00
-http://www.w3.org/People/Connolly/#me          http://purl.org/dc/elements/1.1/date    2001-02-08T00:00:00
-http://www.dajobe.org/foaf.rdf#i               http://purl.org/dc/elements/1.1/date    1999-04-01T00:00:00
-
-3 Rows. -- 0 msec.
-
-]]></programlisting>
-</listitem>
-<listitem>Now let's insert into graph another http://NewBookStore.com graph's values:
-<programlisting><![CDATA[
-sparql
-PREFIX dc:  <http://purl.org/dc/elements/1.1/>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
-WHERE
-  { GRAPH  <http://BookStore.com>
-   { ?book dc:date ?date
-     FILTER ( xsd:dateTime(?date) < xsd:dateTime("2000-01-01T00:00:00")).
-     ?book ?p ?v.
-   }
-  };
-]]></programlisting>
-</listitem>
-<listitem>As result will be shown:
-<programlisting><![CDATA[
-callret-0
-VARCHAR
-_______________________________________________________________________________
-
-Insert into <http://NewBookStore.com>, 2 triples -- done
-]]></programlisting>
-</listitem>
-<listitem>Finally we will check the triples from the graph NewBookStore.com:
-<programlisting><![CDATA[
-SQL> sparql select * from <http://NewBookStore.com> where {?s ?p ?o};
-]]></programlisting>
-</listitem>
-<listitem>As result will be shown:
-<programlisting><![CDATA[
-s                                             p                                      o
-VARCHAR                                       VARCHAR                                VARCHAR
-_______________________________________________________________________________
-
-http://www.w3.org/People/Berners-Lee/card#i   http://purl.org/dc/elements/1.1/date   1998-05-03T00:00:00
-http://www.dajobe.org/foaf.rdf#i              http://purl.org/dc/elements/1.1/date   1999-04-01T00:00:00
-
-2 Rows. -- 10 msec.
-]]></programlisting>
-</listitem>
-</itemizedlist>
-</sect2>
-     <sect2 id="rdfinsertmethodsparqlqueryandodswiki"><title>SPARQL Insert via HTTP Post using Content-Type: application/sparql-query and ODS wiki</title>
-        <para>With HTTP Post and ODS wiki can be written an rdf document and respectively to be performed over it INSERT/UPDATE action.</para>
-        <para>You can write to a file using SIOC terms for ODS-Wiki</para>
-        <para>You can check with sparql the inserted / updated triples in the Quad Store.</para>
-        <para><emphasis>Example:</emphasis></para>
-        <para>Suppose there is ODS user test3 with ODS password 1, which has testWiki wiki instance.</para>
-        <para>Execute the following:</para>
-<programlisting><![CDATA[
-curl -i -d "INSERT {<http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' .  <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
-]]></programlisting>
-        <para>As result we should have 2 files created:</para>
-<itemizedlist>
-<listitem>In the user DAV folder "DAV/home/test3/wiki/testWiki/" will be created a file "MyTest" with type "application/sparql-query". You can view the content of this file from from the Conductor UI or from the user's Briefcase UI, path "DAV/home/test3/wiki/testWiki". Its content will be:
-<programlisting><![CDATA[
-<?xml version="1.0" encoding="utf-8" ?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
-</rdf:RDF>
-]]></programlisting>
-</listitem>
-<listitem>To the user's wiki instance will be added a new WikiWord "MyTest" with content the value of the SIOC term attribute "content":
-<programlisting><![CDATA[
-<http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
-i.e. the content will be "test".
-]]></programlisting>
-</listitem>
-</itemizedlist>
-        <para>Now let's check what data was inserted in the Quad Store:</para>
-<itemizedlist>
-<listitem>Go to the sparql endpoint, i.e. for ex. to http://localhost:8890/sparql</listitem>
-<listitem>Enter for Default Graph URI:
-<programlisting><![CDATA[
-http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
-]]></programlisting>
-</listitem>
-<listitem>Enter for Query text:
-<programlisting><![CDATA[
-SELECT * WHERE {?s ?p ?o}
-]]></programlisting>
-</listitem>
-<listitem>Click the "Run Query" button.</listitem>
-<listitem>As result will be shown the inserted triples:
-<programlisting><![CDATA[
-s  	                                                    p  	                                             o
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://rdfs.org/sioc/ns#container_of 	     http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#entry      http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#contains   http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://rdfs.org/sioc/types#Comment
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Entry
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Link
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/2000/01/rdf-schema#label 	     MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#has_container 	     http://localhost:8890/dataspace/test3/wiki/testWiki
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#content 	             test
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#topic 	             http://localhost:8890/dataspace/test3/wiki/testWiki
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/ontologies/atomrdf#source     http://localhost:8890/dataspace/test3/wiki/testWiki
-]]></programlisting>
-</listitem>
-</itemizedlist>
-    </sect2>
-    <sect2 id="rdfinsertmethodwebdav">
-      <title>Using WebDAV</title>
-      <para> Example using WebDAV (mount folder to DAV and dump; if this is the rdf_sink
-the Quad Store is updated automatically, or you can load from DAV manually to quad store)</para>
-      <para><emphasis>Example:</emphasis></para>
-      <para><emphasis>Example 1: Using ODS Briefcase</emphasis></para>
-      <para>Go to your ods location, for ex. http://localhost:8890/ods</para>
-      <para>Register user, for ex. user test1</para>
-      <para>Login if not already in ods</para>
-      <para>Go to ODS ->Briefcase</para>
-      <para>Create new instance</para>
-      <para>Go to the briefcase instance by clicking its name link</para>
-      <para>Upload file in a new created folder mytest or in the rdf_sink folder with:</para>
-      <itemizedlist>
-        <listitem>checked option "RDF Store"</listitem>
-        <listitem>set RDF Graph Name, for ex. http://localhost:8890/DAV/home/test1/ of
-the current folder>/ for ex. http://localhost:8890/DAV/home/test1/mytest/ or
-http://localhost:8890/DAV/home/test1/rdf_sink/</listitem>
-        <listitem>For ex. upload the following file with name jose.rdf.</listitem>
-<programlisting><![CDATA[
-<rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    xmlns:log="http://www.w3.org/2000/10/swap/log#"
-    xmlns:myfoaf="http://www.example/jose/foaf.rdf#"
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#jose">
-        <foaf:homepage rdf:resource="http://www.example/jose/"/>
-        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#juan"/>
-        <foaf:name>Jose Jimen~ez</foaf:name>
-        <foaf:nick>Jo</foaf:nick>
-        <foaf:workplaceHomepage rdf:resource="http://www.corp.example/"/>
-    </foaf:Person>
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#juan">
-        <foaf:mbox rdf:resource="mailto:juan@mail.example"/>
-    </foaf:Person>
-
-    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#julia">
-        <foaf:mbox rdf:resource="mailto:julia@mail.example"/>
-    </foaf:Person>
-
-    <rdf:Description rdf:about="http://www.example/jose/foaf.rdf#kendall">
-
-        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#edd"/>
-    </rdf:Description>
-</rdf:RDF>
-]]></programlisting>
-      </itemizedlist>
-      <para>Execute the following query:</para>
-<programlisting><![CDATA[
-select * from <>
-where {?s ?p ?o}
-]]></programlisting>
-      <para>As result should be shown:</para>
-<programlisting><![CDATA[
-s  	                                  p  	                                            o
-http://www.example/jose/foaf.rdf#jose 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
-http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/nick 	            Jo
-http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/name 	            Jose Jimen~ez
-http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#juan
-http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/homepage 	            http://www.example/jose/
-http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/workplaceHomepage 	    http://www.corp.example/
-http://www.example/jose/foaf.rdf#kendall  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#edd
-http://www.example/jose/foaf.rdf#julia 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
-http://www.example/jose/foaf.rdf#julia 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:julia@mail.example
-http://www.example/jose/foaf.rdf#juan 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
-http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:juan@mail.example
-]]></programlisting>
-      <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
-      <para>Go to Conductor UI, for ex. at http://localhost:8890/conductor</para>
-      <para>Login as dba user</para>
-      <para>Go to WebDAV&amp;HTTP and create new folder, for ex. test</para>
-      <para>Upload in the folder test a file, for ex. the file jose.rdf from above with options:</para>
-      <itemizedlist>
-        <listitem>Destination: RDF Store</listitem>
-        <listitem>Set the RDF IRI</listitem>
-      </itemizedlist>
-    </sect2>
-    <sect2 id="rdfinsertmethodvirtuosocrawler">
-      <title>Using Virtuoso Crawler</title>
-      <para>Using Virtuoso Crawler (which includes the Sponger options so you crawl
-non-RDF but get RDF and this can go to the Quad Store)</para>
-      <para><emphasis>Example:</emphasis></para>
-      <para>Go to Conductor UI. For ex. at http://localhost:8890/conductor</para>
-      <para>Login as dba user</para>
-      <para>Go to tab WebDAV&amp;HTTP</para>
-      <para>Go to tab Content Imports</para>
-      <para>Click the "New Target" button</para>
-      <para>In the shown form:</para>
-      <itemizedlist>
-        <listitem>Enter for "Target description": Tim Berners-Lee's electronic Business Card</listitem>
-        <listitem>Enter for "Target URL": http://www.w3.org/People/Berners-Lee</listitem>
-        <listitem>Enter for "Copy to local DAV collection" for ex.: /DAV/home/demo/rdf_sink/</listitem>
-        <listitem>Choose from the list "Local resources owner": demo</listitem>
-        <listitem>Check the check.box with label "Store metadata".</listitem>
-        <listitem>Check all the check-boxes shown below the check-box "Store metadata".</listitem>
-        <listitem>Click the button "Create".
-          <figure id="rdfinsertwebdav1" float="1">
-	    <title>Using Virtuoso Crawler</title>
-	    <graphic fileref="ui/rdfinsert1.png"/>
-          </figure>
-        </listitem>
-      </itemizedlist>
-      <para>Click the button "Import Queues".</para>
-      <para>For "Robot target" with label "Tim Berners-Lee's electronic Business Card"
-click the start link.</para>
-      <para>As result should be shown t he number of the pages retrieved.</para>
-      <figure id="rdfinsertwebdav2" float="1">
-        <title>Using Virtuoso Crawler</title>
-	<graphic fileref="ui/rdfinsert2.png"/>
-      </figure>
-      <para>Now using the sparql endpoint with sponger option "Use only local data"
-enter for Default Graph URI: http://www.w3.org/People/Berners-Lee and execute the following query: </para>
-<programlisting><![CDATA[
-select *
-where {?s ?p ?o}
-]]></programlisting>
-      <para>As result should be shown the following triples:</para>
-<programlisting><![CDATA[
-s                                       p  	                                            o
-http://www.w3.org/People/Berners-Lee 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://xmlns.com/foaf/0.1/Document
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Answers for young people - Tim Berners-Lee
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Berners-Lee: Weaving the Web
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Declaration by Tim BL 28 Feb 1996 w.r.t. CDA challenge
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Errata - Berners-Lee: Weaving the Web
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Frequently asked questions by the Press - Tim BL
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Glossary - Weaving the Web - Berners-Lee
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Longer Bio for Tim Berners-Lee
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Michael Dertouzos has left us
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The Future of the Web and Europe
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: Past, Present and Future
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: A very short personal history
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee - 3Com Founders chair
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: Disclosures
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WWW and UU and I
-http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WorldWideWeb, the first Web client
-]]></programlisting>
-    </sect2>
-    <sect2 id="rdfinsertmethodsparqlqueryandsponger">
-      <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
-      <para><emphasis>Example:</emphasis></para>
-      <para>Execute the following query: </para>
-<programlisting><![CDATA[
-sparql
-SELECT ?id
-FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
- OPTION (get:soft "soft", get:method "GET")
-WHERE { GRAPH ?g { ?id a ?o } }
-limit 10;
-]]></programlisting>
-      <para>As result will be shown the retrieved triples:</para>
-<programlisting><![CDATA[
-id
-VARCHAR
-_______________________________________________________________________________
-
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
-http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
-
-10 Rows. -- 20 msec.
-]]></programlisting>
-    </sect2>
-    <sect2 id="rdfinsertmethodplapis">
-      <title>Using Virtuoso PL APIs</title>
-      <para><emphasis>Example:</emphasis></para>
-      <para>In the example script we implement a basic mapper which maps a text/plain mime type
-to an imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
-and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
-<programlisting><![CDATA[
-use DB;
-
-create procedure DB.DBA.RDF_LOAD_TXT_META
-	(
-	 in graph_iri varchar,
-	 in new_origin_uri varchar,
-	 in dest varchar,
-         inout ret_body any,
-	 inout aq any,
-	 inout ps any,
-	 inout ser_key any
-	 )
-{
-  declare words, chars int;
-  declare vtb, arr, subj, ses, str any;
-  declare ses any;
-  -- if any error we just say nothing can be done
-  declare exit handler for sqlstate '*'
-        {
-      return 0;
-    };
-  subj := coalesce (dest, new_origin_uri);
-  vtb := vt_batch ();
-  chars := length (ret_body);
-  -- using the text index procedures we get a list of words
-  vt_batch_feed (vtb, ret_body, 1);
-  arr := vt_batch_strings_array (vtb);
-  -- the list has 'word' and positions array , so we must divide by 2
-  words := length (arr) / 2;
-  ses := string_output ();
-  -- we compose a N3 literal
-  http (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> .\n', subj), ses);
-  http (sprintf ('<%s> <urn:txt:v0.0:UniqueWords> "%d" .\n', subj, words), ses);
-  http (sprintf ('<%s> <urn:txt:v0.0:Chars> "%d" .\n', subj, chars), ses);
-  str := string_output_string (ses);
-  -- we push the N3 text into the local store
-  DB.DBA.TTLP (str, new_origin_uri, subj);
-  return 1;
-}
-;
-
---
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
-
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(text/plain)', 'MIME', 'DB.DBA.RDF_LOAD_TXT_META', null, 'Text Files (demo)');
-
--- here we set order to some large number so don't break existing mappers
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
-]]></programlisting>
-      <para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote
-RDF data for all missing source graphs' to execute:</para>
-<programlisting><![CDATA[
-select * from <http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt>
-where { ?s ?p ?o }
-]]></programlisting>
-      <para>To check the results:</para>
-      <itemizedlist>
-        <listitem>Make sure the initial state of tutorial <ulink url="http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp">RD_S_1</ulink> is set.</listitem>
-        <listitem>Go to http://demo.openlinksw.com/sparql</listitem>
-        <listitem>Enter for Default Graph URI this value:</listitem>
-<programlisting><![CDATA[
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt
-]]></programlisting>
-        <listitem>Enter for Query text:</listitem>
-<programlisting><![CDATA[
-select *
-where {?s ?p ?o}
-]]></programlisting>
-        <listitem>Click the "Run Query" button.</listitem>
-        <listitem>As result should be shown the following triples:</listitem>
-<programlisting><![CDATA[
-s  	                                                                    p  	                                            o
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://xmlns.com/foaf/0.1/Document
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:UniqueWords 	                    47
-http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:Chars 	                            625
-]]></programlisting>
-      </itemizedlist>
-      <para><emphasis>Important: Setting Sponger Permissions</emphasis></para>
-      <para>In order to allow the Sponger to update the local RDF quad store with triples
-constituting the sponged structured data, the role "SPARQL_UPDATE" must be granted to the
-account "SPARQL". This should normally be the case. If not, you must manually grant this
-permission. As with most Virtuoso DBA tasks, the Conductor provides the simplest means of
-doing this.</para>
-    </sect2>
-    <sect2 id="rdfinsertmethodsimilerdfbankapi">
-      <title>Using SIMILE RDF Bank API</title>
-      <para>Virtuoso implements the HTTP-based Semantic Bank API that enables client
-applications to post to its RDF Triple Store. This method offers an alternative to
-using Virtuoso/PL functions or WebDAV uploads as the triples-insertion mechanism.</para>
-      <para><emphasis>Example:</emphasis></para>
-      <para>From your machine go to Firefox->Tools->PiggyBank->My Semantic Bank Accounts</para>
-      <para>Add in the shown form:</para>
-      <itemizedlist>
-        <listitem>For bank: address: http://demo.openlinksw.com/bank</listitem>
-        <listitem>For account id: demo</listitem>
-        <listitem>For password: demo</listitem>
-      </itemizedlist>
-      <para>Go to http://demo.openlinksw.com/ods</para>
-      <para>Log in as user demo, password: demo</para>
-      <para>Go to the Weblog tab from the main ODS Navigation</para>
-      <para>Click on weblog instance name, for ex. "demo's Weblog".</para>
-      <para>When the weblog home page is loaded, click Alt + P.</para>
-      <para>As result is shown the "My PiggyBank" page with all the collected information
-presented in items.</para>
-      <para>For several of the items add Tags from the form "Tag" shown for each of them.</para>
-      <para>As result should be shown the message "Last updated: [here goes the date value].</para>
-      <para>You can also click "Save" and "Publish" for these items.</para>
-      <para>Go to http://demo.openlinksw.com/sparql</para>
-      <para>Enter for the "Default Graph URI" field: http://simile.org/piggybank/demo</para>
-      <para>Enter for the "Query text" text-area:</para>
-<programlisting><![CDATA[
-prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-select *
-from <http://simile.org/piggybank/demo>
-where {?s ?p  ?o}
-]]></programlisting>
-      <para>Click "Run Query".</para>
-      <para>As results are shown the found results.</para>
-    </sect2>
-    <sect2 id="rdfinsertmethodrdfnet">
-      <title>Using RDF NET</title>
-      <para><emphasis>Example:</emphasis></para>
-      <para>Execute the following query:</para>
-<programlisting><![CDATA[
-SQL> select DB.DBA.HTTP_RDF_NET ('sparql load
-"http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com"
-into graph <http://www.openlinksw.com/>');
-]]></programlisting>
-      <para>As result should be shown:</para>
-<programlisting><![CDATA[
-callret
-VARCHAR
-_______________________________________________________
-
-<?xml version="1.0" ?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-xmlns="http://example.org/book/" xmlns:dc="http://purl.org/dc/elements/1.1/"
-xmlns:ns="http://example.org/ns#">
-<rdf:Description>
-<callret-0>Load <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com>
-into graph <http://www.openlinksw.com/> -- done</callret-0>
-</rdf:Description>
-</rdf:RDF>
-
-1 Rows. -- 1982 msec.
-]]></programlisting>
-    </sect2>
-</sect1>
-<sect1 id="virtuososponger"><title>Virtuoso Sponger</title>
-<para>The Virtuoso Sponger is a middleware component of Virtuoso that generates RDF Linked Data from
-a variety of data sources. The sponger is transparently integrated into the Virtuoso SPARQL Query
-Processor, where it serves as part of the URI/IRI dereferencing functionality. It is also optionally
-used by the Virtuoso Content Crawler.
-</para>
-<para>
-A majority of the worlds data naturally resides in non RDF form at the current time. The Sponger
-delivers middleware that accelerates the bootstrap of the Semantic Data Web by generating RDF
-from non RDF data sources, unobtrusively.
-</para>
-<para>
-When an RDF aware client requests data from a network accessible resource via the Sponger
-the following events occur:
-</para>
-<itemizedlist>
-<listitem>A requests in made for data in RDF form, and if RDF is returned nothing further happens</listitem>
-<listitem>If RDF isn't returned, then the Sponger passes the data through a Metadata Extraction
-Pipeline process (using Metadata Extractors)</listitem>
-<listitem>The extracted data is transformed to RDF via a Mapping Pipeline process (RDF is extracted by way
-of Ontology matching and mapping) that results in RDF Entities (instance data) generation</listitem>
-<listitem>RDF Entities are returned to the client</listitem>
-</itemizedlist>
-<para>The imported data forms a local cache and its invalidation rules conform to those of traditional
-HTTP clients (Web Browsers). Thus, expiration time is determined based on subsequent data fetches of
-the same resource (note: the first data load will record the 'expires' header) with current time
-compared to expiration time stored in the local cache. If HTTP 'expires' header data isn't returned
-by the source data server, then the "Sponger" will derive it's own invalidation time frame by
-evaluating the 'date' header and 'last-modified' HTTP headers. Irrespective of path taken,
-local cache invalidation is driven by an assessment of current time relative to recorded expiration time.
-</para>
-<para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Catridges.
-Each catridge includes Data Extractors which extract data from one or more data sources, and Ontology
-Mappers which map the extracted data to one or more ontologies/schemas, and route to producing RDF
-Linked Data.
-</para>
-<para>The Schema Mappers are typically XSLT (e.g. GRDDL and other OpenLink Mapping Schemes) or
-Virtuoso PL based. The Metadata Extractors may be developed in Virtuoso PL, C/C++, Java, or any
-other language that can be integrated into the Virtuoso via it's server extensions APIs.
-</para>
-<para>
-The Sponger also includes a pluggable name resolution mechanism that enables the development of
-Custom Resolvers for naming schemes (e.g. URNs) associated with protocols beyond HTTP.
-Examples of custom resolvers include:
-</para>
-<itemizedlist>
-<listitem>LSID</listitem>
-<listitem>DOI</listitem>
-</itemizedlist>
-<sect2 id="virtuosospongercartridges"><title>Virtuoso Cartridge-Supported Data Sources</title>
-<itemizedlist>
-<listitem>RDF that doesn't contain Linked Data URIs</listitem>
-<listitem>Non-RDF Data Sources
-  <itemizedlist>
-    <listitem>Data Portability formats
-      <itemizedlist>
-        <listitem>RSS</listitem>
-        <listitem>ATOM</listitem>
-        <listitem>OPML</listitem>
-        <listitem>XBEL</listitem>
-        <listitem>XBRL</listitem>
-        <listitem>APML</listitem>
-        <listitem>XR-XML</listitem>
-        <listitem>hCalendar</listitem>
-        <listitem>iCalendar</listitem>
-        <listitem>hCard</listitem>
-        <listitem>vCard</listitem>
-        <listitem>XFN</listitem>
-        <listitem>OAI</listitem>
-        <listitem>GRDDL</listitem>
-        <listitem>RDFa</listitem>
-        <listitem>DOI</listitem>
-      </itemizedlist>
-    </listitem>
-    <listitem>Vendor specific XML Web Services
-      <itemizedlist>
-        <listitem>Facebook</listitem>
-        <listitem>Amazon</listitem>
-        <listitem>eBay</listitem>
-        <listitem>Musicbrainz</listitem>
-        <listitem>Freebase</listitem>
-        <listitem>Calais</listitem>
-        <listitem>Yahoo! Finance</listitem>
-        <listitem>Flickr</listitem>
-        <listitem>Del.icio.us</listitem>
-        <listitem>Bugzilla</listitem>
-        <listitem>others</listitem>
-      </itemizedlist>
-    </listitem>
-  </itemizedlist>
-</listitem>
-</itemizedlist>
-</sect2>
-<sect2 id="virtuosospongercartridgesextractor"><title>Virtuoso Sponger Cartridge RDF Extractor</title>
-<para>
-Used to extract RDF from a Web Data Source it consumes services from: Virtuoso PL, C/C++, Java
-based RDF Extractors</para>
-<para>The RDF mappers provide a way to extract metadata from non-RDF documents such as HTML pages,
-images Office documents etc. and pass to SPARQL sponger (crawler which retrieve missing
-source graphs). For brevity further in this article the "RDF mapper" we simply will call "mapper".
-</para>
-<para>The mappers consist of PL procedure (hook) and extractor, where extractor itself can be built
-using PL, C or any external language supported by Virtuoso server.</para>
-<para>Once the mapper is developed it must be plugged into the SPARQL engine by adding a record
-in the table DB.DBA.SYS_RDF_MAPPERS.</para>
-<para>If a SPARQL query instructs the SPARQL processor to retrieve target graph into local storage,
-then the SPARQL sponger will be invoked. If the target graph IRI represents a deferencable URL
-then content will be retrieved using content negotiation. The next step is the content type
-to be detected:</para>
-<itemizedlist>
-<listitem>If RDF and no further transformation such as GRDDL is needed, then the process would stop.</listitem>
-<listitem>If such as 'text/plain' and is not known to have metadata, then the SPARQL sponger will
-look in the DB.DBA.SYS_RDF_MAPPERS table by order of RM_ID and for every matching URL or MIME
-type pattern (depends on column RM_TYPE) will call the mapper hook.
-  <itemizedlist>
-    <listitem>If hook returns zero the next mapper will be tried;</listitem>
-    <listitem>If result is negative the process would stop instructing the SPARQL nothing was retrieved;</listitem>
-    <listitem>If result is positive the process would stop instructing the SPARQL that metadata was retrieved.</listitem>
-  </itemizedlist>
-</listitem>
-</itemizedlist>
-<sect3 id="virtuosospongercartridgesextractorpl"><title>Virtuoso Sponger Cartridge RDF Extractor PL Requirements</title>
-<para><emphasis>PL hook requirements:</emphasis></para>
-<para>Every PL function used to plug a mapper into SPARQL engine must have following parameters in
-the same order:</para>
-<itemizedlist>
-<listitem>in graph_iri varchar: the graph IRI which is currently retrieved</listitem>
-<listitem>in new_origin_uri varchar: the URL of the document retrieved</listitem>
-<listitem>in destination varchar: the destination graph IRI</listitem>
-<listitem>inout content any: the content of the document retrieved by SPARQL sponger </listitem>
-<listitem>inout async_queue any: an asynchronous queue, can be used to push something to execute
-on background if needed.</listitem>
-<listitem>inout ping_service any: the value of [SPARQL] - PingService INI parameter, could be used
-to configure a service notification such as pingthesemanticweb.com</listitem>
-<listitem>inout api_key any: a plain text id single key value or serialized vector of key structure,
-basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table.</listitem>
-</itemizedlist>
-<para>Note: the names of the parameters are not important, but their order and presence are!</para>
-<para><emphasis>Example Implementation:</emphasis></para>
-<para>In the example script bellow we implement a basic mapper, which maps a text/plain mime type to an
-imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
-and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
-<programlisting><![CDATA[
-use DB;
-
-create procedure DB.DBA.RDF_LOAD_TXT_META
- (
-  in graph_iri varchar,
-  in new_origin_uri varchar,
-  in dest varchar,
-  inout ret_body any,
-  inout aq any,
-  inout ps any,
-  inout ser_key any
-  )
-{
-  declare words, chars int;
-  declare vtb, arr, subj, ses, str any;
-  declare ses any;
-  -- if any error we just say nothing can be done
-  declare exit handler for sqlstate '*'
-    {
-      return 0;
-    };
-  subj := coalesce (dest, new_origin_uri);
-  vtb := vt_batch ();
-  chars := length (ret_body);
-
-  -- using the text index procedures we get a list of words
-  vt_batch_feed (vtb, ret_body, 1);
-  arr := vt_batch_strings_array (vtb);
-
-  -- the list has 'word' and positions array, so we must divide by 2
-  words := length (arr) / 2;
-  ses := string_output ();
-
-  -- we compose a N3 literal
-  http (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> .\n', subj), ses);
-  http (sprintf ('<%s> <urn:txt:v0.0:UniqueWords> "%d" .\n', subj, words), ses);
-  http (sprintf ('<%s> <urn:txt:v0.0:Chars> "%d" .\n', subj, chars), ses);
-  str := string_output_string (ses);
-
-  -- we push the N3 text into the local store
-  DB.DBA.TTLP (str, new_origin_uri, subj);
-  return 1;
-};
-
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
-
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-values ('(text/plain)', 'MIME', 'DB.DBA.RDF_LOAD_TXT_META', null, 'Text Files (demo)');
-
--- here we set order to some large number so don't break existing mappers
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
-]]></programlisting>
-<para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote RDF data
-for all missing source graphs' to execute:</para>
-<programlisting><![CDATA[
-select * from <URL-of-a-txt-file> where { ?s ?p ?o }
-]]></programlisting>
-<para>It is important that the SPARQL_UPDATE role to be granted to "SPARQL" account in order
-to allow local repository update via sponge feature.</para>
-<para><emphasis>Authentication in Sponger</emphasis></para>
-<para>To enable usage of user defined authentication, there are added more parameters to the
-/proxy/rdf and /sparql endpoints. So to use it, the RDF browser and iSPARQL should send following
-url parameters:</para>
-<itemizedlist>
-<listitem>for /proxy/rdf endpoint:
-<programlisting><![CDATA[
-'login=<account name>'
-]]></programlisting>
-</listitem>
-<listitem>for /sparql endpoint:
-<programlisting><![CDATA[
-get-login=<account name>
-]]></programlisting>
-</listitem>
-</itemizedlist>
-</sect3>
-<sect3 id="virtuosospongercartridgesextractorusecases"><title>RDF Cartridges Use Cases</title>
-<para>This section contains examples of Web resources which can be transformed by RDF Cartridges.
-It also states where additional setup for given cartrides is needed i.e. keys account names etc.
-</para>
-<para><emphasis>Service based:</emphasis></para>
-<itemizedlist>
-<listitem>amazon
-<programlisting><![CDATA[
-needs: api key
-example: http://www.amazon.com/gp/product/0553383043
-]]></programlisting>
-</listitem>
-<listitem>ebay
-<programlisting><![CDATA[
-needs: account, api-key
-example: http://cgi.ebay.com/RARE-DAY-IN-FAIRY-LAND-ELEPHANT-FOLIO-20-FULL-COLOR_W0QQitemZ140209597189QQihZ004QQcategoryZ29223QQssPageNameZWDVWQQrdZ1QQcmdZViewItem
-]]></programlisting>
-</listitem>
-<listitem>flickr
-needs: api-key
-example: http://farm1.static.flickr.com/212/496684670_7122c831ed.jpg
-<programlisting><![CDATA[
-]]></programlisting>
-</listitem>
-<listitem>mbz
-<programlisting><![CDATA[
-example: http://musicbrainz.org/release/37e955d4-a53c-45aa-a812-1b23b88dbc13.html
-]]></programlisting>
-</listitem>
-<listitem>mql (freebase)
-<programlisting><![CDATA[
-example: http://www.freebase.com/view/en/beta_ursae_majoris
-]]></programlisting>
-</listitem>
-<listitem>facebook
-<programlisting><![CDATA[
-needs: api-key, secret, persistent-session-id
-example: http://www.facebook.com/profile.php?id=841100003
-]]></programlisting>
-</listitem>
-<listitem>yahoo-stock
-<programlisting><![CDATA[
-example: http://finance.yahoo.com/q?s=AAPL
-]]></programlisting>
-</listitem>
-<listitem>yahoo-traffic
-<programlisting><![CDATA[
-example: http://local.yahooapis.com/MapsService/V1/trafficData?appid=YahooDemo&street=701+First+Street&city=Sunnyvale&state=CA
-]]></programlisting>
-</listitem>
-<listitem>Bugzilla
-<programlisting><![CDATA[
-example: https://bugzilla.mozilla.org/show_bug.cgi?id=251714
-]]></programlisting>
-</listitem>
-<listitem>SVG</listitem>
-<listitem>OO document
-<programlisting><![CDATA[
-needs: unzip plugin
-]]></programlisting>
-</listitem>
-<listitem>Wikipedia
-<programlisting><![CDATA[
-needs: php plugin & dbpedia extractor
-example: http://wikipedia.org/wiki/London
-]]></programlisting>
-</listitem>
-<listitem>Opencalais</listitem>
-<listitem>iCalendar</listitem>
-</itemizedlist>
-<para><emphasis>GRDDL</emphasis></para>
-<itemizedlist>
-<listitem>Google Base (google)
-<programlisting><![CDATA[
-example: http://www.google.com/base/feeds/snippets/17891817243016304554
-]]></programlisting>
-</listitem>
-<listitem>eRDF</listitem>
-<listitem>RDFa</listitem>
-<listitem>hCard</listitem>
-<listitem>hCalendar</listitem>
-<listitem>hReview</listitem>
-<listitem>relLicense</listitem>
-<listitem>XBRL</listitem>
-<listitem>HR-XML</listitem>
-<listitem>DC</listitem>
-<listitem>geoURL</listitem>
-<listitem>Ning</listitem>
-<listitem>XFN</listitem>
-<listitem>xFolk</listitem>
-</itemizedlist>
-<para><emphasis>URN handlers</emphasis></para>
-<itemizedlist>
-<listitem>LSID
-<programlisting><![CDATA[
-example: urn:lsid:ubio.org:namebank:12292
-]]></programlisting>
-</listitem>
-<listitem>DOI
-<programlisting><![CDATA[
-needs: hslookup plugin, relevant html, pdf, xml etc. mappers enabled
-example: doi:10.1038/35057062
-]]></programlisting>
-</listitem>
-<listitem>OAI
-<programlisting><![CDATA[
-example: oai:dcmi.ischool.washington.edu:article/8
-]]></programlisting>
-</listitem>
-</itemizedlist>
-</sect3>
-</sect2>
-<sect2 id="virtuosospongerrdfmappers"><title>Extending SPARQL IRI Dereferencing with RDF Mappers</title>
-<para>The Virtuoso SPARQL engine (called for brevity just SPARQL bellow) supports IRI Dereferencing,
-however it understands only RDF data, that is it can retrieve only files containing RDF/XML, turtle
-or N3 serialized RDF data, if format is unknown it will try mapping with built-in WebDAV metadata
-extractor. In order to extend this feature with dereferencing web or file resources which naturally
-don't have RDF data (like PDF, JPEG files for example) is provided a special mechanism in SPARQL
-engine. This mechanism is called RDF mappers for translation of non-RDF data files to RDF.</para>
-<para>In order to instruct the SPARQL to call a RDF mapper it needs to be registered and it will
-be called for a given URL or MIME type pattern. In other words, when unknown for SPARQL format is
-received during URL dereferencing process, it will look into a special registry (a table) to match
-either the MIME type or IRI using a regular expression, if match is found the mapper function will
-be called.</para>
-<sect3 id="virtuosospongerrdfmappersregistry"><title>Regsitry</title>
-<para>The table DB.DBA.SYS_RDF_MAPPERS is used as registry for registering RDF mappers.</para>
-<programlisting><![CDATA[
-create table DB.DBA.SYS_RDF_MAPPERS (
-    RM_ID integer identity,         -- mapper ID, designate order of execution
-    RM_PATTERN varchar,             -- a REGEX pattern to match URL or MIME type
-    RM_TYPE varchar default 'MIME', -- what property of the current resource to match: MIME or URL are supported at present
-    RM_HOOK varchar,                -- fully qualified PL function name e.q. DB.DBA.MY_MAPPER_FUNCTION
-    RM_KEY  long varchar,           -- API specific key to use
-    RM_DESCRIPTION long varchar,    -- Mapper description, free text
-    RM_ENABLED integer default 1,   -- a flag 0 or 1 integer to include or exclude the given mapper from processing chain
-    primary key (RM_TYPE, RM_PATTERN))
-;
-]]></programlisting>
-<para>The current way to register/update/unregister a mapper is just a DML statement e.g.
-NSERT/UPDATE/DELETE.</para>
-</sect3>
-<sect3 id="virtuosospongerrdfmappersexec"><title>Execution order and processing</title>
-<para>When SPARQL retrieves a resource with unknown content it will look in the mappers registry
-and will loop over every record having RM_ENABLED flag true. The sequence of look-up is based on
-ordering by RM_ID column. For every record it will either try matching the MIME type or URL against
-RM_PATTERN value and if there is match the function specified in RM_HOOK column will be called.
-If the function doesn't exists or signal an error the SPARQL will look at next record.</para>
-<para>When it stops looking? It will stop if value returned by mapper function is positive or
-negative number, if the return is negative processing stops with meaning no RDF was supplied,
-if return is positive the meaning is that RDF data was extracted, if zero integer is returned
-then SPARQL will look for next mapper. The mapper function also can return zero if it is expected
-next mapper in the chain to get more RDF data.</para>
-<para>If none of the mappers matches the signature (MIME type nor URL) the built-in WebDAV
-metadata extractor will be called.</para>
-</sect3>
-<sect3 id="virtuosospongerrdfmappersextfunc"><title>Extension function</title>
-<para>The mapper function is a PL stored procedure with following signature:</para>
-<programlisting><![CDATA[
-THE_MAPPER_FUNCTION_NAME (
-        in graph_iri varchar,
-        in origin_uri varchar,
-        in destination_uri varchar,
-        inout content varchar,
-        inout async_notification_queue any,
-        inout ping_service any,
-        inout keys any
-        )
-{
-   -- do processing here
-   -- return -1, 0 or 1 (as explained above in Execution order and processing section)
-}
-;
-]]></programlisting>
-<para><emphasis>Parameters</emphasis></para>
-<itemizedlist>
-<listitem>graph_iri - the target graph IRI</listitem>
-<listitem>origin_uri - the current URI of processing</listitem>
-<listitem>destination_uri - get:destination value</listitem>
-<listitem>content - the resource content</listitem>
-<listitem>async_notification_queue - if INI parameter PingService is specified in SPARQL
-section in the INI file, this is a pre-allocated asynchronous queue to be used to call
-ping service</listitem>
-<listitem>ping_service - the URL of the ping service configured in SPARQL section in the
-INI in PingService parameter</listitem>
-<listitem>keys - a string value contained in the RM_KEY column for given mapper, can be
-single string or serialized array, generally can be used as mapper specific data.</listitem>
-</itemizedlist>
-<para><emphasis>Return value</emphasis></para>
-<itemizedlist>
-<listitem>0 - no data was retrieved or some next matching mapper must extract more data</listitem>
-<listitem>1 - data is retrieved, stop looking for other mappers</listitem>
-<listitem>-1 - no data is retrieved, stop looking for more data</listitem>
-</itemizedlist>
-</sect3>
-<sect3 id="virtuosospongerrdfmapperspackage"><title>RDF Mappers package content</title>
-<para>The Virtuoso supply as a rdf_mappers_dav VAD package a cartridge for extracting RDF data
-from certain popular Web resources and file types. It can be installed (if not already) using
-VAD_INSTALL function, see the VAD chapter in documentation on how to do that.</para>
-<para><emphasis>HTTP-in-RDF</emphasis></para>
-<para>Maps the HTTP request response to HTTP Vocabulary in RDF, see http://www.w3.org/2006/http#.</para>
-<para>This mapper is disabled by default. If it's enabled , it must be first in order of execution.</para>
-<para>Also it always will return 0, which means any other mapper should push more data.</para>
-<para><emphasis>HTML</emphasis></para>
-<para>This mapper is composite, it looking for metadata which can specified in a HTML pages as
-follows:</para>
-<itemizedlist>
-<listitem>Embedded/linked RDF
-  <itemizedlist>
-    <listitem>scan for meta in RDF
-<programlisting><![CDATA[
-<link rel="meta" type="application/rdf+xml"
-]]></programlisting></listitem>
-    <listitem>RDF embedded in xHTML (as markup or inside XML comments)</listitem>
-  </itemizedlist>
-</listitem>
-<listitem>Micro-formats
-  <itemizedlist>
-    <listitem>GRDDL - GRDDL Data Views: RDF expressed in XHTML and XML: http://www.w3.org/2003/g/data-view#</listitem>
-    <listitem>eRDF - http://purl.org/NET/erdf/profile</listitem>
-    <listitem>RDFa</listitem>
-    <listitem>hCard - http://www.w3.org/2006/03/hcard</listitem>
-    <listitem>hCalendar - http://dannyayers.com/microformats/hcalendar-profile</listitem>
-    <listitem>hReview - http://dannyayers.com/micromodels/profiles/hreview</listitem>
-    <listitem>relLicense - CC license: http://web.resource.org/cc/schema.rdf</listitem>
-    <listitem>Dublin Core (DCMI) - http://purl.org/dc/elements/1.1/</listitem>
-    <listitem>geoURL - http://www.w3.org/2003/01/geo/wgs84_pos#</listitem>
-    <listitem>Google Base - OpenLink Virtuoso specific mapping</listitem>
-    <listitem>Ning Metadata </listitem>
-  </itemizedlist>
-</listitem>
-<listitem>Feeds extraction
-  <itemizedlist>
-    <listitem>RSS/RDF - SIOC &amp; AtomOWL</listitem>
-    <listitem>RSS 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
-    <listitem>Atom 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
-  </itemizedlist>
-</listitem>
-<listitem>xHTML metadata transformation using FOAF (foaf:Document) and Dublin Core
-properties (dc:title, dc:subject etc.)</listitem>
-</itemizedlist>
-<para>The HTML page mapper will look for RDF data in order as listed above, it will try to extract
-metadata on each step and will return positive flag if any of the above step give a RDF data. In
-case where page URL matches some of other RDF mappers listed in registry it will return 0 so
-next mapper to extract more data. In order to function properly, this mapper must be executed
-before any other specific mappers.</para>
-<para><emphasis>Flickr URLs</emphasis></para>
-<para>This mapper extracts metadata of the Flickr images, using Flickr REST API. To function
-properly it must have configured key. The Flickr mapper extracts metadata using: CC license,
-Dublin Core, Dublin Core Metadata Terms, GeoURL, FOAF, EXIF: http://www.w3.org/2003/12/exif/ns/ ontology.
-</para>
-<para><emphasis>Amazon URLs</emphasis></para>
-<para>This mapper extracts metadata for Amazon articles, using Amazon REST API. It needs a Amazon
-API key in order to be functional.</para>
-<para><emphasis>eBay URLs</emphasis></para>
-<para>Implements eBay REST API for extracting metadata of eBay articles, it needs a key and user
-name to be configured in order to work.</para>
-<para><emphasis>Open Office (OO) documents</emphasis></para>
-<para>The OO documents contains metadata which can be extracted using UNZIP, so this extractor
-needs Virtuoso unzip plugin to be configured on the server.</para>
-<para><emphasis>Yahoo traffic data URLs</emphasis></para>
-<para>Implements transformation of the result of Yahoo traffic data to RDF.
-</para>
-<para><emphasis>iCal files</emphasis></para>
-<para>Transform iCal files to RDF as per http://www.w3.org/2002/12/cal/ical# .</para>
-<para><emphasis>Binary content, PDF, PowerPoint</emphasis></para>
-<para>The unknown binary content, PDF and MS PowerPoint files can be transformed to RDF using
-Aperture framework (http://aperture.sourceforge.net/). This mapper needs Virtuoso with Java hosting
-support, Aperture framework and MetaExtractor.class installed on the host system in order to work.</para>
-<para>The Aperture framework &amp; MetaExtractor.class must be installed on the system before to
-install the RDF mappers package. If the package is already installed, then to activate this mapper
-you can just re-install the VAD.</para>
-<para><emphasis>Setting-up Virtuoso with Java hosting to run Aperture framework</emphasis></para>
-<itemizedlist>
-<listitem>Install Virtuoso with Java hosting</listitem>
-<listitem>Download the Aperture framework from http://aperture.sourceforge.net</listitem>
-<listitem>unpack in the Virtuoso working directory e.q. where database file is, make a symbolic link 'lib' to it</listitem>
-<listitem>configure in the INI Parametres section:
-<programlisting><![CDATA[
-JavaClasspath = lib/sesame-2.0-alpha-3.jar:lib/openrdf-util-crazy-debug.jar:lib/htmlparser-1.6.jar:lib/activation-1.0.2-upd2.jar:lib/bcmail-jdk14-132.jar:lib/poi-scratchpad-3.0-alpha2-20060616.jar:lib/openrdf-model-2.0-alpha-3.jar:lib/jacob-1.10-pre4.jar:lib/bcprov-jdk14-132.jar:lib/demork-2.0.jar:lib/commons-codec.jar:lib/fontbox-0.1.0-dev.jar:lib/pdfbox-0.7.3.jar:lib/applewrapper-0.1.jar:lib/junit-3.8.1.jar:lib/winlaf-0.5.1.jar:lib/aperture-test-2006.1-alpha-3.jar:lib/openrdf-util-fixed-locking.jar:lib/commons-logging-1.1.jar:lib/mail-1.4.jar:lib/aperture-2006.1-alpha-3.jar:lib/poi-3.0-alpha2-20060616.jar:lib/ical4j-cvs20061019.jar:lib/openrdf-util-2.0-alpha-3.jar:lib/rio-2.0-alpha-3.jar:lib/poi-contrib-3.0-alpha2-20060616.jar:lib/aperture-examples-2006.1-alpha-3.jar:.
-]]></programlisting>
-</listitem>
-<listitem>Make sure MetaExtractor.class is in the Virtuoso working directory</listitem>
-<listitem>Start the Virtuoso server with java hosting support</listitem>
-<listitem>connect with ISQL tool and check if installation is complete:
-<programlisting><![CDATA[
-SQL> DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
-
-Done. -- 466 msec.
-SQL> select "MetaExtractor"().getMetaFromFile ('some_pdf_in_server_working_dir.pdf', 5);
-... some RDF must be returned ...
-]]></programlisting>
-</listitem>
-</itemizedlist>
-<para>Important: the above is verified to work with aperture-2006.1-alpha-3 on Linux system.
-For different version of Aperture of operation system this may need some adjustments e.g. to
-re-build MetaExtractor.class &amp; changes to CLASSPATH etc.</para>
-<para><emphasis>Examples &amp; tutorials</emphasis></para>
-<para>How to write own RDF mapper? Look at Virtuoso tutorial on this subject
-http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp .
-</para>
-</sect3>
-<sect3 id="virtuosospongerproxy"><title>Sponger Proxy service</title>
-<para>Sponger functionality is also exposed via Virtuoso's "/proxy/rdf/" endpoint, as an in-built
-REST style Web service available in any Virtuoso standard installation. This web service takes
-a target URL and either returns the content "as is" or tries to transform (by sponging) to RDF.
-Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-RDF sources.
-</para>
-<para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
-</sect3>
-</sect2>
-</sect1>
 <sect1 id="rdfviews"><title>RDF Views -- Mapping Relational Data to RDF</title>
 <para>
 RDF Views map relational data into RDF and allow customizing RDF representation of locally stored RDF data.
@@ -3151,68 +3170,6 @@ create table SYS_ROLE_GRANTS (
 . . .
   primary key (GI_SUPER, GI_SUB, GI_DIRECT));
 ]]></programlisting>
-<para>
-The following example demonstrates two things: function-based IRI class and the idea of IRI subclasses.
-Classes <emphasis>oplsioc:user_iri</emphasis> and <emphasis>oplsioc:group_iri</emphasis> work fine for quad maps of <emphasis>U_ID</emphasis> if and only if the value of <emphasis>U_IS_ROLE</emphasis> is accordingly restricted to FALSE or TRUE, otherwise one may occasionally generate, say, user IRI for a group.
-To create and parse IRIs that correspond to any U_IDs, two functions should be created:
-</para>
-<programlisting><![CDATA[
-create function DB.DBA.GRANTEE_URI (in id integer)
-returns varchar
-{
-  declare isrole integer;
-  isrole := coalesce ((select top 1 U_IS_ROLE
-      from DB.DBA.SYS_USERS where U_ID = id ) );
-  if (isrole is null)
-    return NULL;
-  else if (isrole)
-    return sprintf ('http://%s/sys/group?id=%d', id);
-  else
-    return sprintf ('http://%s/sys/user?id=%d', id);
-};
-]]></programlisting>
-<programlisting><![CDATA[
-create function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
-returns integer
-{
-  declare parts any;
-  parts := sprintf_inverse (id_iri,
-      'http://myhost/sys/user?id=%d', 1 );
-  if (parts is not null)
-    {
-      if (exists (select top 1 1 from DB.DBA.SYS_USERS
-          where U_ID = parts[0] and not U_IS_ROLE ) )
-        return parts[0];
-    }
-  parts := sprintf_inverse (id_iri,
-      'http://myhost/sys/group?id=%d', 1 );
-  if (parts is not null)
-    {
-      if (exists (select top 1 1 from DB.DBA.SYS_USERS
-          where U_ID = parts[0] and U_IS_ROLE ) )
-        return parts[0];
-    }
-  return NULL;
-};
-]]></programlisting>
-<para>
-The next declaration creates an IRI class based on these two functions:
-</para>
-<programlisting><![CDATA[
-create iri class oplsioc:grantee_iri using
-  function DB.DBA.GRANTEE_URI (in id integer)
-    returns varchar,
-  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
-    returns integer .
-]]></programlisting>
-<para>
-In common case, IRI class declaration contains an N-array function that composes IRIs and N inverse functions that gets an IRI as an argument and extracts the Nth SQL value.
-IRI composing function should silently return NULL on incorrect arguments instead of error signal.
-Inverse functions should return NULL if the argument has an incorrect type or value.
-</para>
-<para>
-It is possible to specify only composing function without any of inverse functions. However <emphasis>option (bijection)</emphasis> can not be used in that case, obviously.
-</para>
 </sect3>
 <sect3 id="rdfviewliteralclasses"><title>Literal Classes</title>
 <para>
@@ -3227,70 +3184,6 @@ Columns of types <emphasis>ANY</emphasis> and <emphasis>IRI_ID</emphasis> are no
 </para><para>
 The SPARQL optimizer knows that RDF literal types are pairwise disjoint so literal classes that produce literals of different types are known to be pairwise disjoint.
 The optimizer will replace a join on two disjoint literal classes with an empty statement, to simplify the resulting query.
-</para>
-</sect3>
-<sect3 id="rdfviewbijandreturns"><title>BIJECTION and RETURNS Options</title>
-<para>
-There is one subtle problem with IRI class declarations.
-To get benefit from a relational index, SPARQL optimizer should compose equality between table column and some known SQL value, not between return value of IRI class and a known composed IRI.
-In addition, redundant calculations of IRIs takes time.
-To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause.
-</para>
-<para>
-The SPARQL compiler may produce big amounts of SQL code when the query contains equality of two calculated IRIs and these IRIs may come from many different IRI classes.
-It is possible to provide hints that will let the compiler check if two IRI classes form disjoint sets of possible IRI values. The more disjoint sets are found the less possible combinations remain so the resulting SQL query will contain fewer unions of joins.
-The SPARQL compiler can prove some properties of sprintf format strings. E.g., it can prove that set of all strings printed by &quot;http://example.com/item%d&quot; and the set of strings printed by &quot;http://example.com/item%d/&quot; are disjoint.
-It can prove some more complicated statements about unions and intersections of sets of strings.
-The IRI or literal class declaration may contain <emphasis>option (returns ...)</emphasis> clause that will specify one or more sprintf patterns that cover the set of generated values.
-Consider a better version of IRI class declaration listed above:
-</para>
-<programlisting><![CDATA[
-create iri class oplsioc:grantee_iri using
-  function DB.DBA.GRANTEE_URI (in id integer)
-    returns varchar,
-  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
-    returns integer
-  option ( bijection,
-    returns "http://myhost/sys/group?id=%d"
-    union   "http://myhost/sys/user?id=%d" ) .
-]]></programlisting>
-<para>
-It is very important to keep IRI classes easily distinguishable by the text of IRI string and easy to parse.
-</para>
-<itemizedlist mark="bullet" spacing="compact">
-<listitem>Format <emphasis>%U</emphasis> is better than <emphasis>%s</emphasis>, especially in the middle of IRI, because the <emphasis>%U</emphasis> fragment can not contain characters like &quot;/&quot; or &quot;=&quot;; one may prove that <emphasis>/%U/</emphasis> and <emphasis>/abra%d/cadabra/</emphasis> are disjoint but <emphasis>/%s/</emphasis> and <emphasis>/abra%d/cadabra/</emphasis> are not disjoint.
-</listitem><listitem>It is better when the variable part like <emphasis>%U</emphasis> or <emphasis>%d</emphasis> is placed between characters that may not occur in the <emphasis>%U</emphasis> or <emphasis>%d</emphasis> output, i.e. <emphasis>%U</emphasis> is placed between &quot;/&quot;, &quot;&amp;&quot; or &quot;=&quot; and <emphasis>%d</emphasis> is placed between non-digits; <emphasis>order_line_%d</emphasis> is better than <emphasis>order-line-%d</emphasis> because minus may be part of <emphasis>%d</emphasis> output.
-</listitem><listitem>End-of-line is treated as a special character, so placing <emphasis>%U</emphasis> or <emphasis>%d</emphasis> between &quot;/&quot; and end of line is as good as placing it between two &quot;/&quot;.
-</listitem></itemizedlist>
-<para>
-In some cases <emphasis>option (returns ...)</emphasis> can be used for IRI classes that are declared using sprintf format, but actual data have more specific format.
-Consider a literal class declaration that is used to output strings and the application knows that all these strings are ISBN numbers:
-</para>
-<programlisting><![CDATA[
-create literal class example:isbn_ref "%s" (in isbn varchar not null)
-  option ( bijection, returns "%u-%u-%u-%u" union "%u-%u-%u-X" )
-]]></programlisting>
-<para>
-Sometimes interoperability restrictions will force you to violate these rules but please try to follow them as often as possible.
-</para>
-</sect3>
-<sect3 id="rdfviewsubclasses"><title>Subclasses</title>
-<para>
-Additional problem appears when the equality is between two IRIs of two different IRI classes.
-Even if both of them are bijections, the compiler does not know if these IRI classes behave identically on the intersection of their domains.
-To let the optimizer know this fact, one IRI class can be explicitly declared as a subclass of another:
-</para>
-<programlisting><![CDATA[
-make oplsioc:user_iri subclass of oplsioc:grantee_iri .
-make oplsioc:group_iri subclass of oplsioc:grantee_iri .
-]]></programlisting>
-<para>
-The SPARQL compiler can not check the validity of a subclass declaration.
-The developer should carefully test functions to ensure that transformations are really subclasses, as well as to ensure that functions of an IRI class declarations are really inverse to each other.
-</para><para>
-When declaring that a table's primary key is converted into a IRI according to one IRI class, one usually declares that all foreign keys referring to this class also get converted into an IRI as per this same class, or subclass of same class.
-</para><para>
-Subclasses can be declared for literal classes as well as for IRI classes, but this case is rare. The reason is that most of literals are made by identity literal classes that are disjoint to each other even if values may be equal in SQL sense, such as <emphasis>"2"</emphasis> of type <emphasis>xsd:integer</emphasis> and <emphasis>"2.0"</emphasis> of type <emphasis>xsd:double</emphasis>.
 </para>
 </sect3>
 <sect3 id="rdfviewsimplequadmappatterns"><title>Simple Quad Map Patterns</title>
@@ -4431,6 +4324,139 @@ To fix the problem, <emphasis>option (using alias-name)</emphasis> tells the com
 </para><para>
 It is an error to use an alias only in <emphasis>where</emphasis> clause of the quad map pattern but neither in values or in <emphasis>option (using alias-name)</emphasis>.
 To detect more typos, an alias used in quad map values can not appear in <emphasis>option (using alias-name)</emphasis> clause.
+</para>
+</sect2>
+<sect2><title>Function-Based IRI Classes</title>
+<para>Most of IRI classes can be declared by a sprintf format string, but sophisticated cases may require calculations, not only printing the string. <emphasis>create IRI class using function</emphasis> allows the application transform relational values to IRIs by any custom routines.</para>
+<para>
+Let us extend the previous example about users and groups by a new class for grantees. Both users and groups are grantees and we have defined two IRI classes for them. Classes <emphasis>oplsioc:user_iri</emphasis> and <emphasis>oplsioc:group_iri</emphasis> work fine for quad maps of <emphasis>U_ID</emphasis> if and only if the value of <emphasis>U_IS_ROLE</emphasis> is accordingly restricted to FALSE or TRUE, otherwise one may occasionally generate, say, user IRI for a group.
+To create and parse IRIs that correspond to any U_IDs, two functions should be created:
+</para>
+<programlisting><![CDATA[
+create function DB.DBA.GRANTEE_URI (in id integer)
+returns varchar
+{
+  declare isrole integer;
+  isrole := coalesce ((select top 1 U_IS_ROLE
+      from DB.DBA.SYS_USERS where U_ID = id ) );
+  if (isrole is null)
+    return NULL;
+  else if (isrole)
+    return sprintf ('http://%s/sys/group?id=%d', id);
+  else
+    return sprintf ('http://%s/sys/user?id=%d', id);
+};
+]]></programlisting>
+<programlisting><![CDATA[
+create function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+returns integer
+{
+  declare parts any;
+  parts := sprintf_inverse (id_iri,
+      'http://myhost/sys/user?id=%d', 1 );
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS
+          where U_ID = parts[0] and not U_IS_ROLE ) )
+        return parts[0];
+    }
+  parts := sprintf_inverse (id_iri,
+      'http://myhost/sys/group?id=%d', 1 );
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS
+          where U_ID = parts[0] and U_IS_ROLE ) )
+        return parts[0];
+    }
+  return NULL;
+};
+]]></programlisting>
+<para>These functions may be more useful if the SPARQL web service endpoint is allowed to use them:</para>
+<programlisting><![CDATA[
+grant execute on DB.DBA.GRANTEE_URI to "SPARQL";
+grant execute on DB.DBA.GRANTEE_URI_INVERSE to "SPARQL";
+]]></programlisting>
+<para>
+The next declaration creates an IRI class based on these two functions:
+</para>
+<programlisting><![CDATA[
+create iri class oplsioc:grantee_iri using
+  function DB.DBA.GRANTEE_URI (in id integer)
+    returns varchar,
+  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+    returns integer .
+]]></programlisting>
+<para>
+In common case, IRI class declaration contains an N-array function that composes IRIs and N inverse functions that gets an IRI as an argument and extracts the Nth SQL value.
+IRI composing function should silently return NULL on incorrect arguments instead of error signal.
+Inverse functions should return NULL if the argument has an incorrect type or value.
+</para>
+<para>
+It is possible to specify only composing function without any of inverse functions. However <emphasis>option (bijection)</emphasis> can not be used in that case, obviously.
+</para>
+</sect2>
+<sect2 id="rdfviewbijandreturns"><title>Lookup Optimization -- BIJECTION and RETURNS Options</title>
+<para>
+There is one subtle problem with IRI class declarations.
+To get benefit from a relational index, SPARQL optimizer should compose equality between table column and some known SQL value, not between return value of IRI class and a known composed IRI.
+In addition, redundant calculations of IRIs takes time.
+To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause.
+</para>
+<para>
+The SPARQL compiler may produce big amounts of SQL code when the query contains equality of two calculated IRIs and these IRIs may come from many different IRI classes.
+It is possible to provide hints that will let the compiler check if two IRI classes form disjoint sets of possible IRI values. The more disjoint sets are found the less possible combinations remain so the resulting SQL query will contain fewer unions of joins.
+The SPARQL compiler can prove some properties of sprintf format strings. E.g., it can prove that set of all strings printed by &quot;http://example.com/item%d&quot; and the set of strings printed by &quot;http://example.com/item%d/&quot; are disjoint.
+It can prove some more complicated statements about unions and intersections of sets of strings.
+The IRI or literal class declaration may contain <emphasis>option (returns ...)</emphasis> clause that will specify one or more sprintf patterns that cover the set of generated values.
+Consider a better version of IRI class declaration listed above:
+</para>
+<programlisting><![CDATA[
+create iri class oplsioc:grantee_iri using
+  function DB.DBA.GRANTEE_URI (in id integer)
+    returns varchar,
+  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+    returns integer
+  option ( bijection,
+    returns "http://myhost/sys/group?id=%d"
+    union   "http://myhost/sys/user?id=%d" ) .
+]]></programlisting>
+<para>
+It is very important to keep IRI classes easily distinguishable by the text of IRI string and easy to parse.
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>Format <emphasis>%U</emphasis> is better than <emphasis>%s</emphasis>, especially in the middle of IRI, because the <emphasis>%U</emphasis> fragment can not contain characters like &quot;/&quot; or &quot;=&quot;; one may prove that <emphasis>/%U/</emphasis> and <emphasis>/abra%d/cadabra/</emphasis> are disjoint but <emphasis>/%s/</emphasis> and <emphasis>/abra%d/cadabra/</emphasis> are not disjoint.
+</listitem><listitem>It is better when the variable part like <emphasis>%U</emphasis> or <emphasis>%d</emphasis> is placed between characters that may not occur in the <emphasis>%U</emphasis> or <emphasis>%d</emphasis> output, i.e. <emphasis>%U</emphasis> is placed between &quot;/&quot;, &quot;&amp;&quot; or &quot;=&quot; and <emphasis>%d</emphasis> is placed between non-digits; <emphasis>order_line_%d</emphasis> is better than <emphasis>order-line-%d</emphasis> because minus may be part of <emphasis>%d</emphasis> output.
+</listitem><listitem>End-of-line is treated as a special character, so placing <emphasis>%U</emphasis> or <emphasis>%d</emphasis> between &quot;/&quot; and end of line is as good as placing it between two &quot;/&quot;.
+</listitem></itemizedlist>
+<para>
+In some cases <emphasis>option (returns ...)</emphasis> can be used for IRI classes that are declared using sprintf format, but actual data have more specific format.
+Consider a literal class declaration that is used to output strings and the application knows that all these strings are ISBN numbers:
+</para>
+<programlisting><![CDATA[
+create literal class example:isbn_ref "%s" (in isbn varchar not null)
+  option ( bijection, returns "%u-%u-%u-%u" union "%u-%u-%u-X" )
+]]></programlisting>
+<para>
+Sometimes interoperability restrictions will force you to violate these rules but please try to follow them as often as possible.
+</para>
+</sect2>
+<sect2 id="rdfviewsubclasses"><title>Join Optimization -- Declaring IRI Subclasses</title>
+<para>
+Additional problem appears when the equality is between two IRIs of two different IRI classes.
+Even if both of them are bijections, the compiler does not know if these IRI classes behave identically on the intersection of their domains.
+To let the optimizer know this fact, one IRI class can be explicitly declared as a subclass of another:
+</para>
+<programlisting><![CDATA[
+make oplsioc:user_iri subclass of oplsioc:grantee_iri .
+make oplsioc:group_iri subclass of oplsioc:grantee_iri .
+]]></programlisting>
+<para>
+The SPARQL compiler can not check the validity of a subclass declaration.
+The developer should carefully test functions to ensure that transformations are really subclasses, as well as to ensure that functions of an IRI class declarations are really inverse to each other.
+</para><para>
+When declaring that a table's primary key is converted into a IRI according to one IRI class, one usually declares that all foreign keys referring to this class also get converted into an IRI as per this same class, or subclass of same class.
+</para><para>
+Subclasses can be declared for literal classes as well as for IRI classes, but this case is rare. The reason is that most of literals are made by identity literal classes that are disjoint to each other even if values may be equal in SQL sense, such as <emphasis>"2"</emphasis> of type <emphasis>xsd:integer</emphasis> and <emphasis>"2.0"</emphasis> of type <emphasis>xsd:double</emphasis>.
 </para>
 </sect2>
 <sect2 id="rdfmetadatarecovery"><title>RDF Metadata Maintenance and Recovery</title>
@@ -6520,7 +6546,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' )
 			DatasetClause* WhereClause SolutionModifier
 [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier
-[7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier
+			DatasetClause* WhereClause? SolutionModifier
 [8]	AskQuery	 ::=  'ASK' DatasetClause* WhereClause
 [9]	DatasetClause	 ::=  'FROM' ( DefaultGraphClause | NamedGraphClause )
 [10]*	DefaultGraphClause	 ::=  SourceSelector SpongeOptionList?
@@ -6529,15 +6555,25 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	SpongeOption	 ::=  QNAME PrecodeExpn
 [Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can occur in Expn, local can not *)
 [13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern
-[14]	SolutionModifier	 ::=  OrderClause? LimitClause? OffsetClause?
+[14]	SolutionModifier	 ::=  OrderClause?
+			((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?
 [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+
-[16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )
+[16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )?
+			( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )
+[17]	LimitClause	 ::=  'LIMIT' INTEGER
 [17]	LimitClause	 ::=  'LIMIT' INTEGER
 [18]	OffsetClause	 ::=  'OFFSET' INTEGER
-[19]	GroupGraphPattern	 ::=  '{' GraphPattern '}'
+[18]	OffsetClause	 ::=  'OFFSET' INTEGER
+[19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery ) '}'
 [20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? GraphPattern )?
-[21]	GraphPatternNotTriples	 ::=  OptionalGraphPattern | GroupOrUnionGraphPattern | GraphGraphPattern | Constraint
+[21]*	GraphPatternNotTriples	 ::=
+			QuadMapGraphPattern
+			| OptionalGraphPattern
+			| GroupOrUnionGraphPattern
+			| GraphGraphPattern
+			| Constraint
 [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern
+[Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*' ) GroupGraphPattern
 [23]	GraphGraphPattern	 ::=  'GRAPH' VarOrBlankNodeOrIRIref GroupGraphPattern
 [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern ( 'UNION' GroupGraphPattern )*
 [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )
@@ -6554,8 +6590,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'
 [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList
 [35]	BlankNodePropertyList	 ::=  '[' PropertyListNotEmpty ']'
-[36]	Collection	 ::=  '(' GraphNode+ ')'
-[32]	ObjectList	 ::=  GraphNode ( ',' ObjectList )?
+[36]	Collection	 ::=  '(' GraphNode* ')'
 [37]	GraphNode	 ::=  VarOrTerm | TriplesNode
 [38]	VarOrTerm	 ::=  Var | GraphTerm
 [39]*	VarOrIRIrefOrBackquoted	 ::=  Var | IRIref | Backquoted
@@ -6563,14 +6598,19 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	Retcol	 ::=  ( Var | ( '(' Expn ')' ) | RetAggCall ) ( 'AS' ( VAR1 | VAR2 ) )?
 [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'
 [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'
-[41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar
-[Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME | QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM
-[42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | BlankNode | NIL | Backquoted
+[41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRIref )
+[Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME
+			| QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM
+[42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral
+			| BooleanLiteral | BlankNode | NIL | Backquoted
 [Virt]	Backquoted	 ::=  '`' Expn '`'
 [43]	Expn		 ::=  ConditionalOrExpn
 [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*
-[45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	[46]	ValueLogical	 ::=  RelationalExpn
-[47]*	RelationalExpn	 ::=  NumericExpn ( ( ('='|'!='|'<'|'>'|'<='|'>='|'LIKE') NumericExpn ) | ( 'IN' '(' Expns ')' ) )?
+[45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*
+[46]	ValueLogical	 ::=  RelationalExpn
+[47]*	RelationalExpn	 ::=  NumericExpn
+			( ( ('='|'!='|'<'|'>'|'<='|'>='|'LIKE') NumericExpn )
+			| ( 'IN' '(' Expns ')' ) )?
 [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*
 [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*
 [51]	UnaryExpn	 ::=   ('!'|'+'|'-')? PrimaryExpn
@@ -6585,6 +6625,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 			| ( 'LANGMATCHES' '(' Expn ',' Expn ')' )
 			| ( 'DATATYPE' '(' Expn ')' )
 			| ( 'BOUND' '(' Var ')' )
+			| ( 'sameTERM' '(' Expn ',' Expn ')' )
 			| ( 'isIRI' '(' Expn ')' )
 			| ( 'isURI' '(' Expn ')' )
 			| ( 'isBLANK' '(' Expn ')' )
@@ -6602,21 +6643,29 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )
 [DML]	SparulAction	 ::=
 			CreateAction | DropAction | LoadAction
-			| InsertAction | DeleteAction | ModifyAction | ClearAction
-[DML]*	CreateAction	 ::=  'CREATE' 'SILENT' ? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn
+			| InsertAction | InsertDataAction | DeleteAction | DeleteDataAction
+			| ModifyAction | ClearAction
 [DML]*	InsertAction	 ::=
 			'INSERT' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn
 			ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?
+[DML]*	InsertDataAction	 ::=
+			'INSERT' 'DATA' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )?
+			PrecodeExpn ConstructTemplate
 [DML]*	DeleteAction	 ::=
 			'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn
 			ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?
+[DML]*	DeleteDataAction	 ::=
+			'DELETE' 'DATA' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )?
+			PrecodeExpn ConstructTemplate
 [DML]*	ModifyAction	 ::=
 			'MODIFY' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn?
 			'DELETE' ConstructTemplate 'INSERT' ConstructTemplate
 			( DatasetClause* WhereClause SolutionModifier )?
 [DML]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?
-[DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?
-[DML]*	DropAction	 ::=  'DROP' 'SILENT'? ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?
+[DML]*	LoadAction	 ::=  'LOAD' PrecodeExpn
+			( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?
+[DML]*	CreateAction	 ::=  'CREATE' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn
+[DML]*	DropAction	 ::=  'DROP' 'SILENT'? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn
 [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterStorage
 [Virt]	QmSimpleStmt	 ::=
 			QmCreateIRIClass | QmCreateLiteralClass | QmDropIRIClass | QmDropLiteralClass
@@ -6632,6 +6681,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	QmIRIClassOptions	 ::=  'OPTION' '(' QmIRIClassOption (',' QmIRIClassOption)* ')'
 [Virt]	QmIRIClassOption	 ::=
 			'BIJECTION'
+			| 'DEREF'
 			| 'RETURNS' STRING ('UNION' STRING)*
 [Virt]	QmLiteralClassOptions	 ::=  'OPTION' '(' QmLiteralClassOption (',' QmLiteralClassOption)* ')'
 [Virt]	QmLiteralClassOption	 ::=
@@ -6639,6 +6689,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 			| ( 'LANG' STRING )
 			| ( 'LANG' STRING )
 			| 'BIJECTION'
+			| 'DEREF'
 			| 'RETURNS' STRING ('UNION' STRING)*
 [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup
 [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAGE' QmIRIrefConst QmSourceDecl* QmMapTopGroup
@@ -6676,7 +6727,7 @@ asterisk means that the rule differs from W3C grammar due to Virtuoso extensions
 			| QmSqlCol
 [Virt]	QmCondition	 ::=  'WHERE' ( ( '(' SQLTEXT ')' ) | String )
 [Virt]	QmOptions	 ::=  'OPTION' '(' QmOption ( ',' QmOption )* ')'
-[Virt]	QmOption	 ::=  'EXCLUSIVE' | ( 'ORDER' INTEGER ) | ( 'USING' PLAIN_ID )
+[Virt]	QmOption	 ::=  ( 'SOFT'? 'EXCLUSIVE' ) | ( 'ORDER' INTEGER ) | ( 'USING' PLAIN_ID )
 [Virt]	QmSqlfuncHeader	 ::=  'FUNCTION' SQL_QTABLECOLNAME QmSqlfuncArglist 'RETURNS' QmSqltype
 [Virt]	QmSqlfuncArglist	 ::=  '(' ( QmSqlfuncArg ( ',' QmSqlfuncArg )* )? ')'
 [Virt]	QmSqlfuncArg	 ::=  ('IN' | QmSqlId) QmSqlId QmSqltype
