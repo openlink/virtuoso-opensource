@@ -92,10 +92,10 @@ ECHO BOTH ": SELECT a FROM SEC_TEST_2 ORDER BY c; (WITHOUT permission to c) STAT
 --
 -- Should produce: *** Error 42000: _ROW requires select grant on the entire table.
 --
-select row_table(_ROW) from SEC_TEST_2;
+select length(_ROW) from SEC_TEST_2;
 ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": SELECT row_table(_ROW) FROM SEC_TEST_2; (WITHOUT permission) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": SELECT length(_ROW) FROM SEC_TEST_2; (WITHOUT permission) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- Shouldn't work anymore because of revoking of the execute grant from

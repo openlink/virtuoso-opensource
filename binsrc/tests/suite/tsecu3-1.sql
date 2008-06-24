@@ -80,10 +80,10 @@ ECHO BOTH ": SELECT * FROM sec_test_2; (WITHOUT permission) STATE=" $STATE " MES
 --
 -- Should produce: *** Error 42000: _ROW requires select grant on the entire table.
 --
-select row_table(_ROW) from sec_test_2;
+select length(_ROW) from sec_test_2;
 ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": SELECT row_table(_ROW) FROM sec_test_2; (WITHOUT permission) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": SELECT length(_ROW) FROM sec_test_2; (WITHOUT permission) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- Should work for all users:

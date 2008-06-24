@@ -1131,3 +1131,87 @@ ECHO BOTH ": select deserialize ('''') STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 select deserialize (NULL);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": select deserialize (NULL) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+create procedure f1()
+{
+  declare x any;
+  x := N' ';
+  x [0] := 1000;
+  return x;
+};
+
+select length (cast (repeat ('x', 6000000) as nvarchar));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
+
+select length (cast (make_string (6000000) as nvarchar));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": len of cast to long nvarchar  state " $STATE "\n";
+
+select cast (make_string (6000000) as nvarchar);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
+
+select subseq ('asasa', -2, 3);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": wrong subseq params  state " $STATE "\n";
+
+select subseq ('asasa', 2, -3);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": wrong subseq params  state " $STATE "\n";
+
+select log10 (-1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": log10 (-1) state " $STATE "\n";
+
+select log (-1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": log10 (-1) state " $STATE "\n";
+
+select sqrt (-1) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": sqrt (-1) state " $STATE "\n";
+
+lisp_read ('nosense');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": lisp_read (nosense) state " $STATE "\n";
+
+lisp_read ('');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": lisp_read ('') state " $STATE "\n";
+
+select charset_recode ('\xff\xff', 'UTF-8', '_WIDE_');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": charset_recode with bad utf8 state " $STATE "\n";
+
+select mod (1,0);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": mod (1,0) state " $STATE "\n";
+
+select 1/0;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": div by zero state " $STATE "\n";
+
+select deserialize ('\xb6\xff\xff\xff\xff\xff');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": deserialize of bad string state " $STATE "\n";
+
+select charset_recode (repeat (charset_recode (f1(), '_WIDE_', 'UTF-8'), 4000000), 'UTF-8', '_WIDE_');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": recode of long wide state " $STATE "\n";
+
+select sqrt (null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": sqrt(null) return " $LAST[1] "\n";
+
+select power (null, 1);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": power(null,1) return " $LAST[1] "\n";
+
+select power (1, null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": power(1, null) return " $LAST[1] "\n";
+
+select floor (null);
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+ECHO BOTH ": floor(null) return " $LAST[1] "\n";
+
