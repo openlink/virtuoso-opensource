@@ -659,7 +659,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		}
 		/* give a list of items for navigation */
 		var obj = self.getTypeObject();
-		self.drawSpotlight("Pick a starting resource",obj);
+		self.drawSpotlight("Click on a Data Entity to Explore it's Linked Data Web",obj);
 		self.redrawTop();
 	}
 
