@@ -5611,8 +5611,10 @@ bif_xml_init (void)
   bif_define_typed ("xtree_doc_vdb", bif_xtree_doc_vdb, &bt_xml_entity);
   bif_set_uses_index (bif_xtree_doc_vdb);
   bif_define ("xml_expand_refs", bif_xml_expand_refs);
+#if 0  
   bif_define ("xml_store_tree", bif_xml_store_tree);
   bif_set_uses_index (bif_xml_store_tree);
+#endif  
   bif_define_typed ("number", bif_number, &bt_numeric);
   bif_define_typed ("xml_cut", bif_xml_cut, &bt_xml_entity);
   bif_define ("__vt_index", bif_vt_index);

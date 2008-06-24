@@ -13113,11 +13113,12 @@ sql_bif_init (void)
   bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any);
   bif_define_typed ("position", bif_position, &bt_integer);
   bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
+#if 0  
   bif_define_typed ("row_table", bif_row_table, &bt_varchar);
   bif_define_typed ("row_column", bif_row_column, &bt_any);
   bif_define ("row_identity", bif_row_identity);
   bif_define ("row_deref", bif_row_deref);
-
+#endif
 
 #ifndef NDEBUG
   bif_define_typed ("dbg_row_deref_page", bif_dbg_row_deref_page, &bt_integer);
