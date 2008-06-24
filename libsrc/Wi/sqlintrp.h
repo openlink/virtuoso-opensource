@@ -306,6 +306,7 @@ void cv_qnode (dk_set_t * code, data_source_t * mode);
 void cv_bret (dk_set_t * code, int val);
 void cv_vret (dk_set_t * code, state_slot_t * ssl);
 void cv_call (dk_set_t * code, state_slot_t * fun_exp, caddr_t name, state_slot_t * ret, state_slot_t ** params);
+void cv_bif_call (dk_set_t * code, bif_t bif, caddr_t name, state_slot_t * ret, state_slot_t ** params);
 void cv_handler (dk_set_t * code, caddr_t *states, long label, state_slot_t *throw_loc,
     state_slot_t *nest, state_slot_t *sql_state, state_slot_t *sql_message);
 void cv_handler_end (dk_set_t * code, long type, state_slot_t *throw_loc, state_slot_t *nest);

@@ -13231,7 +13231,7 @@ sql_bif_init (void)
   bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
   bif_define ("__assert_found", bif_assert_found);
   bif_define ("__atomic", bif_atomic);
-  bif_define ("__reset_temp", bif_clear_temp);
+  /*bif_define ("__reset_temp", bif_clear_temp);*/
   bif_define ("__trx_disk_log_length", bif_trx_disk_log_length);
   bif_define ("checkpoint_interval", bif_checkpoint_interval);
   bif_define ("sql_lex_analyze", bif_sql_lex_analyze);

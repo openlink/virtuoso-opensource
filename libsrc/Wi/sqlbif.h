@@ -234,5 +234,6 @@ char * rel_to_abs_path (char *p, const char *path, long len);
 
 caddr_t bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);
 
 #endif /* _SQLBIF_H */

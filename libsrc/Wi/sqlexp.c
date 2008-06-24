@@ -1128,6 +1128,18 @@ cv_call (dk_set_t * code, state_slot_t * fun_exp, caddr_t proc,
 }
 
 void
+cv_bif_call (dk_set_t * code, bif_t bif, caddr_t proc, state_slot_t * ret, state_slot_t ** params)
+{
+  NEW_INSTR (ins, INS_CALL, code);
+  if (proc)
+    ins->_.call.proc = box_dv_uname_string (proc);
+  ins->_.call.ret = ret;
+  ins->_.call.params = params;
+  ins->_.bif.bif = bif;
+  ins->ins_type = INS_CALL_BIF;
+}
+
+void
 cv_aref (dk_set_t * code, state_slot_t * ret, state_slot_t * arr, state_slot_t * inx, state_slot_t * val)
 {
   NEW_INSTR (ins, val ? INS_SET_AREF : INS_AREF, code);

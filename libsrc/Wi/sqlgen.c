@@ -1324,7 +1324,7 @@ sqlg_generate_proc_ts (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
   cv_artm (precompute,box_identity,
       (state_slot_t *) setp.setp_keys->data,
       ssl_new_constant (sc->sc_cc, t_box_num (0)), NULL);
-  cv_call (precompute, NULL, t_sqlp_box_id_upcase ("__reset_temp"), NULL,
+  cv_bif_call (precompute, bif_clear_temp, t_sqlp_box_id_upcase ("__reset_temp"), NULL,
       (state_slot_t **) sc_list (1, ssl_new_constant (sc->sc_cc, t_box_num ((ptrlong) setp.setp_ha))));
   cv_call (precompute,
       ssl_new_constant (sc->sc_cc,
