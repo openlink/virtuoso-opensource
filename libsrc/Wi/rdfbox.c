@@ -927,6 +927,75 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t)((ptrlong)val_dtp);
 }
 
+static query_t *rdf_long_from_batch_params_qr3 = NULL;
+static query_t *rdf_long_from_batch_params_qr4 = NULL;
+static query_t *rdf_long_from_batch_params_qr5 = NULL;
+static const char *rdf_long_from_batch_params_text3 = "SELECT DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (?)";
+static const char *rdf_long_from_batch_params_text4 = "SELECT DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (?, ?, NULL)";
+static const char *rdf_long_from_batch_params_text5 = "SELECT DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (?, NULL, ?)";
+
+caddr_t
+bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ptrlong mode = bif_long_arg (qst, args, 0, "__rdf_long_from_batch_params");
+  query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t res, err = NULL;
+  local_cursor_t *lc;
+  if (NULL == rdf_long_from_batch_params_qr3)
+    sql_compile_many (3, 1,
+      rdf_long_from_batch_params_text3	, &rdf_long_from_batch_params_qr3	,
+      rdf_long_from_batch_params_text4	, &rdf_long_from_batch_params_qr4	,
+      rdf_long_from_batch_params_text5	, &rdf_long_from_batch_params_qr5	,
+      NULL );
+  switch (mode)
+    {
+    case 1:
+      {
+        caddr_t iri = bif_string_or_uname_arg (qst, args, 1, "__rdf_long_from_batch_params");
+        res = iri_to_id (qst, iri, IRI_TO_ID_WITH_CREATE, &err);
+        if (NULL != err)
+          sqlr_resignal (err);
+        return res;
+      }
+    case 2:
+      {
+        iri_id_t num = sequence_next ("RDF_URL_IID_BLANK", 0);
+        return box_iri_id (num);
+      }
+    case 3:
+      {
+        caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
+        err = qr_quick_exec (rdf_long_from_batch_params_qr3, qi->qi_client, "", &lc, 1,
+          ":0", box_copy_tree (val), QRP_RAW );
+        break;
+      }
+    case 4:
+      {
+        caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
+        caddr_t dt = bif_string_or_uname_arg (qst, args, 2, "__rdf_long_from_batch_params");
+        err = qr_quick_exec (rdf_long_from_batch_params_qr4, qi->qi_client, "", &lc, 2,
+          ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (dt), QRP_RAW );
+        break;
+      }
+    case 5:
+      {
+        caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
+        caddr_t lang = bif_string_arg (qst, args, 2, "__rdf_long_from_batch_params");
+        err = qr_quick_exec (rdf_long_from_batch_params_qr5, qi->qi_client, "", &lc, 2,
+          ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (lang), QRP_RAW );
+        break;
+      }
+    }
+  if (NULL != err)
+    sqlr_resignal (err);
+  if (lc_next (lc))
+    res = box_copy_tree (lc_nth_col (lc, 0));
+  else
+    res = NEW_DB_NULL;
+  lc_free (lc);
+  return res;
+}
+
 caddr_t
 rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, const char *fun_name)
 {
@@ -1188,6 +1257,8 @@ rdf_box_init ()
   bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
+  bif_define ("__rdf_long_from_batch_params", bif_rdf_long_from_batch_params);
+
   bif_define_typed ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, &bt_varchar);
   bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
   bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);

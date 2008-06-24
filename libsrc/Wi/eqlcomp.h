@@ -114,7 +114,7 @@ extern query_t *sql_compile_static (const char *string2, client_connection_t * c
 #define static_qr_dllist_append(qr,g)
 #define static_qr_dllist_remove(qr)
 #endif
-
+extern void sql_compile_many (int count, int compile_static, ...);
 
 void sqlc_set_client (client_connection_t * cli);
 
