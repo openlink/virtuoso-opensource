@@ -592,6 +592,37 @@ bif_double_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   return 0;
 }
 
+double
+bif_double_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int * isnull)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  *isnull = 0;
+  if (DV_DB_NULL == dtp)
+    {
+      *isnull = 1;
+      return 0;
+    }
+  if (dtp == DV_SHORT_INT || dtp == DV_LONG_INT)
+  return ((double) unbox (arg));
+  else if (dtp == DV_SINGLE_FLOAT)
+  return ((double) unbox_float (arg));
+  else if (dtp == DV_DOUBLE_FLOAT)
+  return (unbox_double (arg));
+  else if (dtp == DV_NUMERIC)
+  {
+    double dt;
+    numeric_to_double ((numeric_t) arg, &dt);
+    return dt;
+  }
+
+  sqlr_new_error ("22023", "SR010",
+  "Function %s needs a double as argument %d, "
+  "not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
+  return 0;
+}
+
 caddr_t
 bif_varchar_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
@@ -5826,8 +5857,9 @@ bif_pi (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define GENERAL_DOUBLE_FUNC(BIF_NAME, NAMESTR, OPERATION)\
 caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 {\
-  double x = bif_double_arg (qst, args, 0, NAMESTR);\
-  return(box_double(OPERATION));\
+  int isnull = 0; \
+  double x = bif_double_or_null_arg (qst, args, 0, NAMESTR, &isnull);\
+  return(isnull ? NEW_DB_NULL : box_double(OPERATION));\
 }
 
 
@@ -5856,9 +5888,10 @@ GENERAL_DOUBLE_FUNC (bif_sqrt, "sqrt", sqrt (x))
 #define GENERAL_DOUBLE2_FUNC(BIF_NAME, NAMESTR, OPERATION)\
 caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 {\
-  double x = bif_double_arg (qst, args, 0, NAMESTR);\
-  double y = bif_double_arg (qst, args, 1, NAMESTR);\
-  return (box_double(OPERATION));\
+  int isnull1 = 0, isnull2 = 0; \
+  double x = bif_double_or_null_arg (qst, args, 0, NAMESTR, &isnull1);\
+  double y = bif_double_or_null_arg (qst, args, 1, NAMESTR, &isnull2);\
+  return ((isnull1 || isnull2) ? NEW_DB_NULL : box_double(OPERATION));\
 }
 
 GENERAL_DOUBLE2_FUNC (bif_atan2, "atan2", atan2 (x, y))
@@ -5867,8 +5900,9 @@ GENERAL_DOUBLE2_FUNC (bif_power, "power", pow (x, y))
 #define GENERAL_DOUBLE_TO_INT_FUNC(BIF_NAME, NAMESTR, OPERATION)\
 caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 {\
-  double x = bif_double_arg (qst, args, 0, NAMESTR);\
-  return(box_num(((long int)(OPERATION))));\
+  int isnull = 0; \
+  double x = bif_double_or_null_arg (qst, args, 0, NAMESTR, &isnull);\
+  return(isnull ? NEW_DB_NULL : box_num(((long int)(OPERATION))));\
 }
 
 GENERAL_DOUBLE_TO_INT_FUNC (bif_ceiling, "ceiling", ceil (x))
