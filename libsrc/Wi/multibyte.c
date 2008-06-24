@@ -69,7 +69,7 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
   else
     {
       wide_boxsize = (int) (wide_len + 1) * sizeof (wchar_t);
-      if (wide_boxsize > MAX_BOX_LENGTH)
+      if (wide_boxsize > MAX_READ_STRING)
         return NULL; /* Prohibitively long UTF-8 string as a source */
       dest = dk_alloc_box (wide_boxsize, dtp);
     }

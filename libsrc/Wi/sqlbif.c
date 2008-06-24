@@ -2591,7 +2591,8 @@ bif_vector_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (DK_MEM_RESERVE)
     qi_signal_if_trx_error (qi);
-
+  if ((len * sizeof (caddr_t)) & ~0xffffff)
+    sqlr_new_error ("22023", "SR486", "The result vector is too large"); 
   res = (caddr_t *) dk_try_alloc_box (len * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_args; inx++)
   {
