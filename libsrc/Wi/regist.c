@@ -288,6 +288,15 @@ registry_exec ()
     }
 }
 
+void 
+registry_set_sequence (caddr_t name, boxint value, caddr_t * err_ret)
+{
+  char temp[2000];
+  caddr_t the_id = box_sprintf_escaped (name, 0);
+  snprintf (temp, sizeof (temp), "X sequence_set ('%s', " BOXINT_FMT ", 1)", the_id, value);
+  dk_free_box (the_id);
+  registry_set_1 (name, temp, 0, err_ret);
+}
 
 void
 registry_update_sequences (void)
@@ -299,13 +308,7 @@ registry_update_sequences (void)
   ASSERT_IN_TXN;
   while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & value))
     {
-      char temp[2000];
-      caddr_t the_id = box_sprintf_escaped (*name, 0);
-
-      snprintf (temp, sizeof (temp), "X sequence_set ('%s', " BOXINT_FMT ", 1)", the_id, *value);
-      dk_free_box (the_id);
-
-      registry_set (*name, temp);
+      registry_set_sequence (*name, *value, NULL);
     }
 }
 
@@ -417,9 +420,10 @@ db_log_registry (dk_session_t * log)
   LEAVE_TXN;
 }
 
+#define REGISTRY_SIZE_LIMIT 500000
 
 void
-registry_set_1 (const char *name, const char *value, int is_boxed)
+registry_set_1 (const char *name, const char *value, int is_boxed, caddr_t * err_ret)
 {
   caddr_t *place;
   ASSERT_IN_TXN;
@@ -435,8 +439,18 @@ registry_set_1 (const char *name, const char *value, int is_boxed)
     }
   else
     {
-      caddr_t copy_name = box_string (name);
-      caddr_t copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
+      caddr_t copy_name, copy_value;
+
+      if (registry->ht_count > REGISTRY_SIZE_LIMIT)
+	{
+	  if (err_ret)
+	    *err_ret = srv_make_new_error ("42000", "SQ487", "Registry overflow");
+	  else
+	    return;
+	}
+
+      copy_name = box_string (name);
+      copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
       id_hash_set (registry, (caddr_t) & copy_name, (caddr_t) & copy_value);
     }
 }
@@ -456,7 +470,7 @@ registry_get (const char *name)
 
 
 boxint
-sequence_next_inc (char *name, int in_map, boxint inc_by)
+sequence_next_inc_1 (char *name, int in_map, boxint inc_by, caddr_t * err_ret)
 {
   boxint  res;
   if (INSIDE_MAP != in_map)
@@ -468,6 +482,7 @@ sequence_next_inc (char *name, int in_map, boxint inc_by)
       {
 	caddr_t name_copy = box_string (name);
 	boxint init = 1;
+	registry_set_sequence (name, init, err_ret);
 	id_hash_set (sequences, (caddr_t) & name_copy, (caddr_t) & init);
 	res = 0;
       }
@@ -508,7 +523,7 @@ sequence_next (char *name, int in_map)
 
 
 boxint
-sequence_set (char *name, boxint value, int mode, int in_map)
+sequence_set_1 (char *name, boxint value, int mode, int in_map, caddr_t * err_ret)
 {
   boxint res;
   if (INSIDE_MAP != in_map)
@@ -523,6 +538,7 @@ sequence_set (char *name, boxint value, int mode, int in_map)
 	else
 	  {
 	    caddr_t name_copy = box_string (name);
+	    registry_set_sequence (name, value, err_ret);
 	    id_hash_set (sequences, (caddr_t) & name_copy, (caddr_t) & value);
 	    res = value;
 	  }

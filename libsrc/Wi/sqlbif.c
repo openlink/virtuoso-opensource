@@ -8844,7 +8844,9 @@ bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_set");
   boxint count = (boxint) bif_long_arg (qst, args, 1, "sequence_set");
   long mode = (long) bif_long_arg (qst, args, 2, "sequence_set");
-  res = sequence_set (name, count, mode, OUTSIDE_MAP);
+  res = sequence_set_1 (name, count, mode, OUTSIDE_MAP, err_ret);
+  if (*err_ret)
+    return NULL;
   if (mode == SET_IF_GREATER)
     log_sequence (qi->qi_trx, name, res);
   else if (mode == SET_ALWAYS)
@@ -8875,7 +8877,9 @@ bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("22023", "SR376",
 	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
-  res = sequence_next_inc (name, OUTSIDE_MAP, inc_by);
+  res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
+  if (*err_ret)
+    return NULL;
   log_sequence (qi->qi_trx, name, res + inc_by);
   return (box_num (res));
 }
@@ -9041,7 +9045,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("42000", "SR484", "Function registry_set can not modify protected registry variable '%.300s'.", name);
     }
   IN_TXN;
-  registry_set_1 (name, val, 1);
+  registry_set_1 (name, val, 1, err_ret);
   LEAVE_TXN;
   if (in_log_replay && DV_STRINGP (val))
     {

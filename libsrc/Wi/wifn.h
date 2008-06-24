@@ -758,15 +758,17 @@ int cpt_is_global_lock (void);
 
 
 void registry_exec (void);
-boxint sequence_set (char * name, boxint value, int mode, int in_map);
+boxint sequence_set_1 (char * name, boxint value, int mode, int in_map, caddr_t * err_ret);
 boxint sequence_next (char * name, int in_map);
-boxint sequence_next_inc (char *name, int in_map, boxint inc_by);
+boxint sequence_next_inc_1 (char *name, int in_map, boxint inc_by, caddr_t * err_ret);
 int sequence_remove (char *name, int in_map);
 box_t sequence_get_all ( void ); /* returns the name,value, name,value array */
+#define sequence_set(name,value,mode,in_map) sequence_set_1(name,value,mode,in_map, NULL)
+#define sequence_next_inc(name,in_map,inc_by) sequence_next_inc_1(name,in_map,inc_by, NULL)
 
 EXE_EXPORT(caddr_t, registry_get, (const char *name));
-void registry_set_1 (const char * name, const char * value, int is_boxed);
-#define registry_set(name,value) registry_set_1(name,value,0)
+void registry_set_1 (const char * name, const char * value, int is_boxed, caddr_t * err_ret);
+#define registry_set(name,value) registry_set_1(name,value,0, NULL)
 EXE_EXPORT(box_t, registry_get_all, ( void )); /* returns the name,value, name,value array */
 caddr_t registry_remove (char *name);
 
