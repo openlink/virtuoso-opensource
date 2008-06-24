@@ -1818,7 +1818,7 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
 };
 
 --
--- GRDDL filters, if signature changed web robot needs to be updated too
+-- /* GRDDL filters, if signature changed web robot needs to be updated too */
 --
 create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -1864,9 +1864,9 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   }
 
   -- this maybe is not need to be here, as it's a kind of content negotiation
-  rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" and @type="application/rdf+xml" ]/@href', xt, 0);
+  rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" and contains (@type, "/rdf+") ]/@href', xt, 0);
   if (not length (rdf_url_arr))
-    rdf_url_arr  := xpath_eval ('//head/link[ @rel="alternate" and @type="application/rdf+xml" ]/@href', xt, 0);
+    rdf_url_arr  := xpath_eval ('//head/link[ @rel="alternate" and contains (@type, "/rdf+") ]/@href', xt, 0);
   if (not length (rdf_url_arr))
     rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" ]/@href', xt, 0);
   if (length (rdf_url_arr))
@@ -1875,6 +1875,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
       rdf_url_inx := 0;
       foreach (any rdf_url in rdf_url_arr) do
 	{
+      declare ret_content_type any;
 	  declare exit handler for sqlstate '*' { goto try_next_link; };
 	  rdf_url := cast (rdf_url as varchar);
 	  if (RDF_MAPPER_CACHE_CHECK (rdf_url, new_origin_uri, old_etag, old_last_modified))
@@ -1884,7 +1885,12 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
       content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri, hdr, 'GET', 'Accept: application/rdf+xml, text/rdf+n3, */*');
 	  load_msec := msec_time () - load_msec;
 	  download_size := length (content);
+      ret_content_type := http_request_header (hdr, 'Content-Type', null, null);
+      ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (new_origin_uri, ret_content_type, content);
+      if (strstr (ret_content_type, 'application/rdf+xml') is not null)
 	  DB.DBA.RDF_LOAD_RDFXML (content, new_origin_uri, coalesce (dest, graph_iri));
+      else
+         DB.DBA.TTLP (content, new_origin_uri, coalesce (dest, graph_iri));
       mdta := mdta + 1;
 	  RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	  rdf_url_inx := rdf_url_inx + 1;
@@ -1964,6 +1970,7 @@ try_grddl:
 	      mdta := mdta + 1;
 	    }
 	  xd := serialize_to_UTF8_xml (xd);
+      --dbg_obj_princ('Result: ', xd);
 	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	  profs_done := vector_concat (profs_done, vector (prof));
 	}
@@ -1988,6 +1995,7 @@ try_grddl:
 	      mdta := mdta + 1;
 	      --dbg_obj_print ('plan B:', GM_XSLT, xd);
 	      xd := serialize_to_UTF8_xml (xd);
+          --dbg_obj_princ('Result2: ', xd);
 	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	    }
 	  try_next1:;
