@@ -2523,9 +2523,9 @@ ddl_build_index (query_instance_t * qi, char *table, char *name)
   if (!qr)
     sqlr_new_error ("42S02", "SQ021", "bad table or index for build key");
 
-  err = qr_rec_exec (qr, cli, &lc, qi, NULL, 2,
+  AS_DBA (qi, err = qr_rec_exec (qr, cli, &lc, qi, NULL, 2,
       ":0", tb->tb_name, QRP_STR,
-      ":1", name, QRP_STR);
+      ":1", name, QRP_STR));
   if (lc)
     lc_free (lc);
   qr_free (qr);

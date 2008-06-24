@@ -319,6 +319,7 @@ bif_sinv_read_invers_sys (caddr_t * qst, caddr_t * err_ret,
   caddr_t arr = NULL;
   char nm[3 * MAX_NAME_LEN + 3];
 
+  sec_check_dba (qi, "sinv_read_invers_sys");
   if (!sinv_normalize_func_name (fname, qi->qi_client, nm, sizeof (nm)))
       sqlr_new_error ("22023", "SR461", "Procedure %.*s not found in sinv_read_invers_sys",
 	3 * MAX_NAME_LEN, fname);

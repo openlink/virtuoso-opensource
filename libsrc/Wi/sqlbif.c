@@ -777,6 +777,7 @@ caddr_t
 bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
 {
   hash_area_t * ha = (hash_area_t *) (ptrlong) bif_long_arg (qst, args, 0, "__clear_temp");
+  /*sec_check_dba ((query_instance_t *) qst, "__clear_temp");*/
   setp_temp_clear (NULL, ha, qst);
   return NULL;
 }
@@ -9275,8 +9276,10 @@ bif_key_insert (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t k_name = bif_string_arg (inst, args, 2, "key_insert");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   dbe_key_t *key = tb_name_to_key (tb, k_name, 1);
-  it_cursor_t *it = itc_create (qi->qi_space, qi->qi_trx);
+  it_cursor_t * it;
 
+  sec_check_dba (qi, "key_insert");
+  it = itc_create (qi->qi_space, qi->qi_trx);
   ITC_FAIL (it)
   {
   itc_row_key_insert (it, row, key);
@@ -11774,6 +11777,7 @@ caddr_t
 bif_sqlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong sqlo_enable = bif_long_arg (qst, args, 0, "sqlo");
+  sec_check_dba ((query_instance_t *) qst, "sqlo");
   hash_join_enable = (int) (2 & sqlo_enable);
   sqlo_print_debug_output = (int) (4 & sqlo_enable);
   return NULL;
@@ -11783,6 +11787,7 @@ bif_sqlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_hic_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  sec_check_dba ((query_instance_t *) qst, "sqlo");
   hic_clear ();
   return NULL;
 }

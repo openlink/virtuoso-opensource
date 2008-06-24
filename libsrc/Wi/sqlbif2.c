@@ -345,6 +345,7 @@ bif_os_chmod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int is_allocated = 0;
   caddr_t res;
 
+  sec_check_dba ((query_instance_t *) qst, "os_chmod");
 #if defined (HAVE_CHMOD)
   fname_cvt = file_canonical_name (fname, &is_allocated);
   if (!is_allowed (fname_cvt))
