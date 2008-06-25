@@ -10863,20 +10863,19 @@ bif_set_row_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) qst;
   long increment = (long) bif_long_arg (qst, args, 0, "set_row_count");
   long what = BOX_ELEMENTS (args) > 1 ? (long) bif_long_arg (qst, args, 1, "set_row_count") : 0;
-  long affected = -1;
-  if (!what && IS_BOX_POINTER (qi))
-    {
-      qi->qi_n_affected += increment;
-      affected = qi->qi_n_affected;
-    }
-  else if (what && IS_BOX_POINTER (qi->qi_caller))
-    {
-      qi->qi_caller->qi_n_affected += increment;
-      affected = qi->qi_caller->qi_n_affected;
-    }
-  return (caddr_t) box_num(affected);
+  long *affected_ptr;
+  if (!(what & 0x1) && IS_BOX_POINTER (qi))
+    affected_ptr = &(qi->qi_n_affected);
+  else if ((what & 0x1) && IS_BOX_POINTER (qi->qi_caller))
+    affected_ptr = &(qi->qi_caller->qi_n_affected);
+  else
+    return box_num (-1);
+  if (what & 0x2)
+    affected_ptr[0] = increment;
+  else
+    affected_ptr[0] += increment;
+  return box_num (affected_ptr[0]);
 }
-
 
 caddr_t
 bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)

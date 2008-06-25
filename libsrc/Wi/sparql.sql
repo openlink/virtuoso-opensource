@@ -3562,7 +3562,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
 }
 ;
 
-create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 0) returns varchar
+create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 0) returns any
 {
   commit work;
   if (compose_report)
@@ -3584,7 +3584,7 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
         {
           res := res + c;
         }
-      set_row_count (res, 1);
+      return res;
    }
 }
 ;

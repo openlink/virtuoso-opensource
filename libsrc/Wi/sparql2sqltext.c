@@ -5657,7 +5657,12 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case SPARUL_RUN_SUBTYPE:
       if ((SPARUL_RUN_SUBTYPE == subtype) && !unbox (spar_compose_report_flag (ssg->ssg_sparp)))
         {
+          ssg_puts ("set_row_count (");
+          ssg->ssg_indent += 1;
           ssg_print_sparul_run_call (ssg, tree->_.req_top.pattern, retvals[0], 0);
+          ssg_newline (0);
+          ssg_puts (" )");
+          ssg->ssg_indent -= 1;
           return;
         }
       ssg_puts ("SELECT TOP 1");
