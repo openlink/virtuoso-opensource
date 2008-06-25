@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_rdf_class" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso define RDF views</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable name="is_popup" persist="0" type="integer" default="0" />
+  </vm:variables>
+  <vm:menu>
+  </vm:menu>
+  <vm:variables>
+      <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
+      <v:variable persist="0" name="base_url" type="any" default="null"/>
+      <v:variable persist="0" name="body_c" type="any" default="null"/>
+      <v:variable persist="0" name="body_v" type="any" default="null"/>
+      <v:variable persist="0" name="text_e" type="integer" default="0"/>
+  </vm:variables>
+
+  <vm:header caption="Virtuoso define RDF views"/>
+  <vm:pagebody>
+      <table>
+      <v:form name="account_form" type="simple" method="POST" action="">
+      <v:before-data-bind><v:script><![CDATA[
+	  declare _base_url, _db_object_to_process, e_array any;
+
+	  if (self.db_object_to_process is NULL)
+	    {
+	       self.db_object_to_process := get_keyword('list', self.vc_event.ve_params, NULL);
+	       self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
+	    }
+
+	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
+	  self.body_c := get_keyword('cr_class', self.vc_event.ve_params, NULL);
+	  self.body_v := get_keyword('cr_view', self.vc_event.ve_params, NULL);
+
+	  if (self.body_c is NULL)
+	    {
+	      e_array := DB.DBA.view_from_tbl (_base_url, self.db_object_to_process);
+	      self.body_c := e_array[0];
+	      self.body_v := e_array[1];
+	    }
+
+	  if (get_keyword('exec', self.vc_event.ve_params, NULL) is not NULL)
+	    {
+	        self.text_e := 1;
+	    }
+
+	  ]]></v:script></v:before-data-bind>
+      <tr><td>
+      <v:textarea name="cr_class" xhtml_cols="80" xhtml_rows="25" value="-- self.body_c"/>
+      </td></tr>
+      <tr><td>
+	      <v:label name="exec_1" enabled="-- equ(self.text_e, 1)" value="Executed." format="%s"/>
+      </td></tr>
+      <tr><td>
+      <v:textarea name="cr_view" xhtml_cols="80" xhtml_rows="25" value="-- self.body_v"/>
+      <input type="hidden" name="host" value="<?= get_keyword('host', control.vc_page.vc_event.ve_params) ?>"/>
+      <v:button action="simple" name="exec" value="Execute">
+	  <v:on-post><![CDATA[
+	      declare stat, msg any;
+
+	      stat := '00000';
+	      exec(self.body_c, stat, msg);
+	      if (stat <> '00000')
+	        {
+		  signal ('.....', msg);
+		}
+
+	      exec(self.body_v, stat, msg);
+	      if (stat <> '00000')
+	        {
+	      	  dbg_obj_print (msg);
+		  signal ('.....', msg);
+		}
+
+	    ]]></v:on-post>
+      </v:button>
+      </td></tr>
+      <tr><td>
+	      <v:label name="exec_2" enabled="-- equ(self.text_e, 1)" value="Executed." format="%s"/>
+      </td></tr>
+      </v:form>
+      </table>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

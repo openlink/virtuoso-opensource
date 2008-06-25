@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_rdf_objects" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  button-anchors="1">
+  <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable persist="1" name="browse_cat" type="varchar" default="'DB'"/>
+    <v:variable persist="1" name="browse_sch" type="varchar" default="'%'"/>
+    <v:variable persist="1" name="q_mask" type="varchar" default="'%'"/>
+    <v:variable persist="1" name="browse_mask" type="varchar" default="'%'"/>
+    <v:variable persist="1" name="browse_table" type="integer" default="0"/>
+    <v:variable persist="1" name="base_start" type="varchar" default="''"/>
+    <v:variable persist="1" name="tn_open" type="integer" default="1"/>
+    <v:variable persist="temp" name="row_count" type="integer" default="1"/>
+    <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
+    <v:variable name="db_tree_state" persist="session" type="any" default="null" />
+    <v:variable name="db_ds_state" persist="session" type="any" default="null" />
+    <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
+  </vm:variables>
+  <vm:menu>
+    <vm:menuitem value="RDF Schema Objects Management"/>
+  </vm:menu>
+  <vm:header caption="RDF Schema Objects"/>
+  <vm:pagebody>
+	<v:method name="open_tmpl" arglist="inout node vspx_tree_node, in cmp any">
+	  if (node.tn_open and node.tn_level and node.tn_value = cmp)
+	    return 1;
+	  return 0;
+	</v:method>
+	<v:on-init>
+	  if (self.db_ds_state is null)
+	    {
+	      self.db_ds_state := vector (
+	    	null, null,
+	    	null, null,
+	    	null, null,
+	    	null, null
+		);
+            }
+
+	    declare ds vspx_data_set;
+	    declare cb vspx_check_box;
+	    declare chil vspx_control;
+	    declare tb varchar;
+
+     	    ds := self."ds_tables";
+
+	    if (ds is not null)
+	    if (ds.ds_iterate_rows (0) is not null)
+	      {
+		chil := ds.ds_iterate_rows (0);
+		cb := chil.vc_find_control ('cb_tables_select');
+		tb := get_keyword (cb.vc_instance_name, e.ve_params);
+	      }
+
+	</v:on-init>
+
+	<v:on-post><![CDATA[
+
+	  if (e.ve_button is not null)
+	    {
+	      declare btn vspx_button;
+	      btn := null;
+	      if (e.ve_button.vc_name = 'tr1_toggle')
+	        btn := e.ve_button;
+	      else
+	        {
+	          declare tnode vspx_tree_node;
+		  tnode := e.ve_button.vc_find_parent (e.ve_button, 'vspx_tree_node');
+		  if (tnode is not null)
+		    btn := tnode.vc_find_control ('tr1_toggle');
+		}
+	      if (btn is not null)
+	        self.btn_bmk := 'btn_' || btn.vc_get_name ();
+	      else
+	        self.btn_bmk := null;
+		}
+
+              self.base_start := self.browse_cat;
+
+		]]>
+	</v:on-post>
+	<v:after-data-bind>
+	  if (not e.ve_is_post)
+	    {
+	      declare refr, hf any;
+	      refr := http_request_header (e.ve_lines, 'Referer');
+	      if (refr is not null and isstring (refr))
+	        {
+		  hf := WS.WS.PARSE_URI (refr);
+		  if (adm_belongs_to (http_path (), hf[2]))
+		    {
+		      self.btn_bmk := self.last_bmk;
+		    }
+	        }
+              else
+                self.last_bmk := null;
+	    }
+	</v:after-data-bind>
+        <![CDATA[
+	<script language="JavaScript" src="admin_utils.js"></script>
+        ]]>
+    <table class="sub_page_area">
+      <tr>
+	<td align="left" colspan="2">
+        </td>
+      </tr>
+    </table>
+      <v:form name="f1" method="POST" type="simple">
+    <table class="listing">
+      <tr class="listing_header_row">
+	      <td>Base URL</td>
+	      <td><?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?><input type="text" name="base_start" value="<?=self.base_start?>"/></td>
+      </tr>
+      <tr class="listing_header_row">
+	  <td colspan="2">
+	      <v:button action="simple" value="Generate" name="create_basic">
+		  <v:on-post>
+		      <v:script>
+			  <![CDATA[
+			  declare i, arr any;
+			  declare chil vspx_control;
+			  declare cb vspx_check_box;
+			  declare tb varchar;
+			  declare ds vspx_data_set;
+			  declare host varchar;
+
+			  ds := self."ds_tables";
+			  i := 0;
+			  arr := vector ();
+			  while ((chil := ds.ds_iterate_rows (i)) is not null)
+			    {
+			      cb := chil.vc_find_control ('cb_tables_select');
+			      tb := get_keyword (cb.vc_instance_name, e.ve_params);
+			      if (tb is not null)
+			        arr := vector_concat (arr, vector (tb));
+			    }
+
+			  host := get_keyword ('base_start', e.ve_params, '');
+
+			  if (length (arr) > 1)
+			   {
+			     arr := encode_base64 (serialize (arr));
+			     self.db_object_to_process := arr;
+			     http_request_status ('HTTP/1.1 302 Found');
+			     http_header (sprintf ('Location: db_rdf_class.vspx?sid=%s&realm=%s&host=%U&list=%U\r\n',
+			     		self.sid, self.realm, host, arr));
+--			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%s', arr));
+			   }
+			 else
+			   {
+			     self.vc_error_message := 'There are no object selected to perform operation.';
+			     self.vc_is_valid := 0;
+			   }
+			  ]]>
+		      </v:script>
+		  </v:on-post>
+
+	      </v:button>
+
+	  </td>
+      </tr>
+      <tr class="listing_header_row">
+	<th> </th>
+	<th>Catalog/Object Type</th>
+      </tr>
+      <v:tree name="tr1" orientation="vertical" multi-branch="0"
+	start-path="--self.q_mask"
+	root="rdf_db_root"
+	child-function="rdf_db_child">
+	    <v:before-render>
+		self.db_tree_state := control.vc_get_state ();
+	    </v:before-render>
+	    <v:before-data-bind>
+	      if (self.db_tree_state is not null and not e.ve_is_post)
+	        {
+	          control.vc_set_control_state (self.db_tree_state);
+		}
+	    </v:before-data-bind>
+	<v:node-template name="nt1">
+	  <tr>
+	    <td colspan="2"><div style="margin-left: <?V control.tn_level*16 ?>px;">
+	    <v:button name="tr1_toggle" action="simple" style="image"
+	      value="--concat('images/icons/', case (control.vc_parent as vspx_tree_node).tn_open
+	      when 0 then 'foldr_16.png' else 'open_16.png' end)"
+	      xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
+	      <v:on-post>
+		if ((control.vc_parent as vspx_tree_node).tn_level = 0)
+		  {
+		    self.browse_cat := cast ((control.vc_parent as vspx_tree_node).tn_value as varchar);
+		    self.base_start := self.browse_cat;
+		  }
+	      </v:on-post>
+	    </v:button>
+	    <a name="<?V control.vc_instance_name ?>">
+	    <v:label name="tr1_l1" value="--(control.vc_parent as vspx_tree_node).tn_value"/>
+	    </a>
+	    </div>
+	    </td>
+	  </tr>
+	  <!-- MAIN -->
+      <v:template name="tp_all" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'CFA')">
+                        <!--v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: db_rdf_class.vspx\n'));
+                        ]]></v:script></v:on-post-->
+      </v:template>
+      <v:template name="tp_tables" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Tables')">
+      <tr>
+	<td>
+	</td>
+	<td align="left">
+	  <div class="scroll_area">
+          <v:data-set name="ds_tables"
+            sql="select distinct KEY_TABLE as table_name from SYS_KEYS
+            where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat) and upper(name_part (KEY_TABLE, 1)) like upper(:self.browse_sch)
+            and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and not exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = KEY_TABLE) order by 1"
+	    nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
+            <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+              <table class="listing" rules="groups">
+                <colgroup/><colgroup/><colgroup/>
+                <thead>
+                  <tr class="listing_row_odd">
+		     <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>All</th>
+                     <th>Name</th>
+                     <th>Action</th>
+                  </tr>
+                </thead>
+              </table>
+            </v:template>
+            <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
+              <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                  <tr>
+                    <td colspan="10" class="Attention">No tables match the criteria</td>
+                  </tr>
+                </table>
+              </v:template>
+
+              <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                  <?vsp self.row_count := self.row_count + 1;
+                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                  ?>
+                    <td class="listing_col">
+                      <v:check-box name="cb_tables_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                    </td>
+                    <td class="listing_col">
+                      <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                    </td>
+                    <td class="listing_col">
+		      <v:button name="b_table_def" value="Define RDF class" action="simple" style="url">
+                        <v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: db_rdf_class.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:script></v:on-post>
+                      </v:button>
+                    </td>
+                  <?vsp http ('</tr>'); ?>
+                </table>
+              </v:template>
+            </v:template>
+            <v:template name="temp_ds_tables_footer" type="simple" name-to-remove="table" set-to-remove="top">
+              <table>
+              </table>
+            </v:template>
+	  </v:data-set>
+	</div>
+        </td>
+      </tr>
+    </v:template>
+	  <!-- END -->
+	 <v:node/>
+       </v:node-template>
+     </v:tree>
+      <tr>
+	<td colspan="2">
+	</td>
+      </tr>
+    </table>
+   </v:form>
+    <?vsp
+    if (self.btn_bmk is not null and self.vc_is_valid)
+      {
+        self.last_bmk := self.btn_bmk;
+        http ('\n<script type="text/javascript">\n');
+        http (sprintf ('location.hash = "%s";\n', self.btn_bmk));
+        http ('</script>\n');
+      }
+    ?>
+      <table style="display:none">
+        <tr>
+          <td>$Id$</td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

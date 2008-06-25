@@ -262,7 +262,7 @@ create procedure adm_menu_tree ()
    </node>
  </node>
  <node name="Database" url="databases.vspx"  id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
-   <node name="Schema Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
+   <node name="SQL Schema Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
      <node name="Databases-drop" url="databases_drop.vspx" id="45" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_conf.vspx" id="46" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_errs.vspx" id="47" place="1" allowed="yacutia_databases_page"/>
@@ -311,6 +311,8 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
+   <node name="RDF Schema Objects" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="RDF Schema Objects" url="db_rdf_class.vspx"  id="272" place="1"/>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx"  id="8001" >
@@ -592,7 +594,8 @@ adm_rdf_db_tree ()
     {
        i := i + 1;
        http (sprintf ('<node name="%V" id="%d">', TABLE_QUAL, i), ses);
-         http (sprintf ('<node name="Tables" id="1-%d"/>\n', i), ses);
+--       http (sprintf ('<node name="Create for all tables" id="1-%d" value="%V"/>\n', i, TABLE_QUAL), ses);
+         http (sprintf ('<node name="Tables" id="2-%d"/>\n', i), ses);
        http ('</node>\n', ses);
      }
   http ('</db_tree>\n', ses);
@@ -5527,17 +5530,15 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
 
 -- RDF Schema objects
 
-create procedure view_from_tbl (in _dir varchar, in _tbls varchar)
+create procedure view_from_tbl (in _dir varchar, in _tbls any)
 {
-   declare create_class_stmt, create_view_stmt, prefix, ns, uriqa_str any;
+   declare create_class_stmt, create_view_stmt, prefix, ns, uriqa_str, ret any;
 
+   ret := make_array (2, 'any');
    prefix := 'SPARQL\n';
--- FIXME ns generation;
-   ns := '
-prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix Nort_test: <http://demo.openlinksw.com/schemas/northwind#>
-prefix WEX_test: <http://demo.openlinksw.com/schemas/wex#>
+
+   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), _dir);
+   ns := ns || 'prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix demo: <http://www.openlinksw.com/schemas/demo#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
@@ -5551,14 +5552,15 @@ prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n';
      create_class_stmt := create_class_stmt || view_create_class (_tbls[xx], uriqa_str, _dir);
 
    create_class_stmt := prefix || ns || create_class_stmt;
-   string_to_file ('class.sql', create_class_stmt || ';', -2);
-   exec (create_class_stmt);
+--   exec (create_class_stmt);
+   aset (ret, 0, create_class_stmt);
 
    create_view_stmt := view_create_view (_tbls, _dir);
    create_view_stmt := prefix || ns || create_view_stmt;
--- string_to_file ('view.sql', create_view_stmt || ';', -2);
 -- exec (create_view_stmt);
+   aset (ret, 1, create_view_stmt);
 
+   return ret;
 }
 ;
 
@@ -5602,13 +5604,9 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
 
 	    for select "COLUMN" from SYS_COLS where "TABLE" = tbl do
 	       {
---			dbg_obj_print ("COLUMN");
---			dbg_obj_print (sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;',
---				_dir, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") ));
 			ret := ret || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
 				_dir, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") );
 
--- northwind:has_customer northwind:Customer (orders.CustomerID) as virtrdf:Order-order_has_customer ;
 			-- If col is FK?
 			if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME= "COLUMN"
 				AND position (PK_TABLE, _tbls) <> 0))
@@ -5651,8 +5649,6 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
 
    ret := ret || ' } }';
 
-   --string_to_file ('gen.sql', 'sparql ' || ret || ';', -2);
-
    return ret;
 
 }
@@ -5685,6 +5681,9 @@ create procedure view_create_class (in _tbl varchar, in _host varchar, in _f var
 
    pk_text := '';
    sk_len := '';
+
+   if (length (pks) = 0)
+     return '';
 
    for (declare xx any, xx := 0; xx < length (pks) ; xx := xx + 1)
        {
