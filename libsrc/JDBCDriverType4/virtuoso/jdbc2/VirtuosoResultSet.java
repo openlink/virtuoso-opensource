@@ -593,8 +593,10 @@ public class VirtuosoResultSet implements ResultSet
 			      (String)result.elementAt(1),
 			      VirtuosoException.SQLERROR));
                case VirtuosoTypes.QA_PROC_RETURN:
-                  //System.out.println("---> QA_PROC_RETURN");
+                  //System.out.println("---> QA_PROC_RETURN " + result + " " + statement.objparams);
                   // Copy out parameters in the parameter vector
+		  if (statement.objparams != null && statement.objparams.size() != (result.size() - 2))
+		      statement.objparams = new openlink.util.Vector(result.size() - 2);
                   for(int j = 2;j < result.size();j++)
                    {
                      if (statement.objparams == null)
