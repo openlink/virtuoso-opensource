@@ -389,6 +389,9 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readlongint();
                      byte[] array = new byte[(int)n];
                      for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+		     if (connection.charset_utf8)
+			 res = new String(array, "UTF-8");
+		     else
                      res = new String(array, "8859_1");
                      //System.out.print("DV_LONG_STRING: ");
 		     //System.out.println (res.toString());
@@ -420,6 +423,9 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readshortint();
                      byte[] array = new byte[n];
                      for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+		     if (connection.charset_utf8)
+			 res = new String(array, "UTF-8");
+		     else
                      res = new String(array, "8859_1");
                      //System.out.print("DV_SHORT_STRING_SERIAL: " + res.toString());
 		     //System.out.println (res.toString());

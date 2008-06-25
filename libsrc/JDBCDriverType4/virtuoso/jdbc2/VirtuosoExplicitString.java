@@ -65,7 +65,9 @@ public class VirtuosoExplicitString
 	      dtp == VirtuosoTypes.DV_BLOB)
 	    {
 	      // If it's an narrow parameter
-	      if (con != null && con.charset != null)
+ 	      if (con != null && con.charset_utf8)
+	        bytes = str.getBytes ("UTF8");   	  
+	      else if (con != null && con.charset != null)
 		{
 		  bytes = con.charsetBytes(str);
 		  //System.out.println ("after charsetBytes len=" + bytes.length);

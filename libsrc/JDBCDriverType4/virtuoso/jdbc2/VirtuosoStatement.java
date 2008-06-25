@@ -416,7 +416,8 @@ public class VirtuosoStatement implements Statement
    public int executeUpdate(String sql) throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_UPDATE;
-      return sendQuery(sql).getUpdateCount();
+      vresultSet = sendQuery(sql);
+      return vresultSet.getUpdateCount();
    }
 
    /**
@@ -544,6 +545,7 @@ public class VirtuosoStatement implements Statement
          switch(vresultSet.kindop())
          {
             case VirtuosoTypes.QT_UPDATE:
+	    case VirtuosoTypes.QT_PROC_CALL: // since we can set row count from a stored procedure
                return vresultSet.getUpdateCount();
             default:
                return -1;

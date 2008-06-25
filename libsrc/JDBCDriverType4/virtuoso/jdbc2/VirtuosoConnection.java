@@ -125,6 +125,7 @@ public class VirtuosoConnection implements Connection
 #endif
 
    protected String charset;
+   protected boolean charset_utf8 = false;
 
    protected Hashtable rdf_type_hash = null;
    protected Hashtable rdf_lang_hash = null;
@@ -150,7 +151,16 @@ public class VirtuosoConnection implements Connection
       this.con_no = global_con_no++;
       // Check properties
       if (prop.get("charset") != null)
+      {
 	charset = (String)prop.get("charset");
+	//System.out.println ("VirtuosoConnection " + charset);
+	if (charset.indexOf("UTF-8") != -1) // special case all will go as UTF-8
+	{
+	    this.charset = null;
+	    this.charset_utf8 = true;
+	    //utf8_execs = true;
+	}
+      }
       user = (String)prop.get("user");
       if(user == null || user.equals(""))
          user = "anonymous";
@@ -1251,6 +1261,11 @@ public class VirtuosoConnection implements Connection
 	   sql1 = new VirtuosoExplicitString (bytes, VirtuosoTypes.DV_STRING);
 	   return sql1;
 	 }
+       if (this.charset_utf8)
+       {
+	  sql1 = new VirtuosoExplicitString (sql, VirtuosoTypes.DV_STRING, this);
+	  return sql1;
+       }
        if (this.utf8_execs)
 	 {
 	   /* use UTF8 encodings */
@@ -1276,6 +1291,7 @@ public class VirtuosoConnection implements Connection
    protected VirtuosoExplicitString escapeSQLString (String sql) throws VirtuosoException
      {
        VirtuosoExplicitString sql1;
+       //System.out.println ("in escapeSQLString SQL charset = " + this.charset);
        if (this.charset != null)
 	 {
 	   byte [] bytes = charsetBytes(sql);
@@ -1308,7 +1324,7 @@ public class VirtuosoConnection implements Connection
    protected byte[] charsetBytes1(String source, String from, String to) throws VirtuosoException
     {
        byte ans[] = new byte[0];
-       //System.err.println ("charsetBytes1(" + from + " , " + to);
+       System.err.println ("charsetBytes1(" + from + " , " + to);
        //System.err.println ("charsetBytes1 src len=" + source.length());
        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream( source.length() );
        try
