@@ -282,7 +282,7 @@ box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wchar
       return NULL;
     }
   box = (wchar_t *) (wide ? wide : dk_alloc_box_zero (wide_len, DV_WIDE));
-  for (i = 0; i < len && str[i]; i++)
+  for (i = 0; i < len; i++)
     box[i] = CHAR_TO_WCHAR(str[i], charset);
   box[len] = L'\0';
   return ((caddr_t) box);
