@@ -639,7 +639,7 @@ ECHO BOTH ": inserting \\x0 into nvarchar column STATE=" $STATE " MESSAGE=" $MES
 
 insert into WIDEZTEST (ID, DATA) values (3, cast ('\x5\x0\x1\x0\x2\x0\x3\x0\x4' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 3;
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "*** FAILED";
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
 ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 insert into WIDEZTEST (ID, DATA) values (4, 0x81);
@@ -1140,16 +1140,20 @@ create procedure f1()
 };
 
 select length (cast (repeat ('x', 6000000) as nvarchar));
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
 
 select length (cast (make_string (6000000) as nvarchar));
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": len of cast to long nvarchar  state " $STATE "\n";
 
 select cast (make_string (6000000) as nvarchar);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": cast to long nvarchar  state " $STATE "\n";
+
+select cast (make_string (6) as nvarchar);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": cast to nvarchar  state " $STATE "\n";
 
 select subseq ('asasa', -2, 3);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
@@ -1214,4 +1218,27 @@ ECHO BOTH ": power(1, null) return " $LAST[1] "\n";
 select floor (null);
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
 ECHO BOTH ": floor(null) return " $LAST[1] "\n";
+
+
+create procedure seqov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_set (sprintf ('%d', i), 1, 0);};
+seqov ();
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": seq overflow state " $STATE "\n";
+
+create procedure regov () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_set (sprintf ('%d', i), '1');};
+regov ();
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": registry overflow state " $STATE "\n";
+
+
+
+create procedure rov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) registry_remove (sprintf ('%d', i));};
+rov_rev ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": reg removal state " $STATE "\n";
+
+create procedure sov_rev () {declare i int; for (i:= 0; i < 1000000; i:= i+1) sequence_remove (sprintf ('%d', i));};
+sov_rev ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": seq removal state " $STATE "\n";
 
