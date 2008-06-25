@@ -7484,13 +7484,17 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     val_dtp = DV_TYPE_OF (value);
     if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
   {
-    caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst));
+	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	  if (*err_ret)
+	    return NULL;
     they_match = boxes_match (item, wide);
     dk_free_box (wide);
   }
     else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
   {
-    caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst));
+	  caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	  if (*err_ret)
+	    return NULL;
     they_match = boxes_match (wide, value);
     dk_free_box (wide);
   }
