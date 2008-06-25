@@ -444,9 +444,11 @@ registry_set_1 (const char *name, const char *value, int is_boxed, caddr_t * err
       if (registry->ht_count > REGISTRY_SIZE_LIMIT)
 	{
 	  if (err_ret)
-	    *err_ret = srv_make_new_error ("42000", "SQ487", "Registry overflow");
-	  else
-	    return;
+	    {
+	      *err_ret = srv_make_new_error ("42000", "SQ487", "Registry overflow");
+	      return;
+	    }
+	  /* else return; */
 	}
 
       copy_name = box_string (name);
