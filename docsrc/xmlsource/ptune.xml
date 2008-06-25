@@ -83,12 +83,12 @@ on different disks share one queue.
 </para>
 			<para>
 A queue is declared in the striping section by specifying a stripe
-id after the path of the file.
+id after the path of the file, separated by an equal sign.
 </para>
 			<programlisting>
 [Striping]
-Segment1 = 200M, (disk1/db-seg1-1.db iq1, (disk2/db-seg1-2.db iq2
-Segment2 = 200M, (disk1/db-seg2-1.db iq1, (disk2/db-seg2-2.db iq2
+Segment1 = 200M, disk1/db-seg1-1.db = iq1, disk2/db-seg1-2.db = iq2
+Segment2 = 200M, disk1/db-seg2-1.db = iq1, (disk2/db-seg2-2.db = iq2
 </programlisting>
 			<para>
 In the above example the first stripes of the segments form one queue

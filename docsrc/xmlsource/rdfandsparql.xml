@@ -24,7 +24,7 @@ This chapter discusses Virtuoso's RDF triple storage and query capabilities. Thi
 <link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link>), by loading remote RDF resources by SPARUL <link linkend="rdfinsertmethodsload">LOAD</link> statement, by extracting and storing metadata while <link linkend="rdfinsertmethodvirtuosocrawler">crawling non-RDF resources</link> and many other <link linkend="rdfinsertmethods">RDF insert methods</link>. After bulk loading, RDF data can be edited using <link linkend="rdfsparul">SPARUL</link> update language.</para>
 <para>The most important feature of Virtuoso SPARQL is that relational data may stay unchanged and not be loaded into RDF storage and they still can be accessed by SPARQL queries after creating appropriate <link linkend="rdfviews">RDF Views</link>. This is the best tool for adding RDF capabilities to existing database applications.</para>
 <para>Virtuoso is a &quot;quad store&quot;, not a &quot;triple store&quot;. Instead of storing subject-predicate-object triples of each individual graph in a separate storage (and the storage is explicitly created before first use), Virtuoso stores graph-subject-predicate-object quads in one common table (<link linkend="rdfquadtables">DB.DBA.RDF_QUAD</link>). This simplifies querying when &quot;interesting&quot; graphs are not known in advance. E.g., while a SPARQL query is running, Virtuoso <link linkend="virtuososponger">Sponger</link> can iteratively download additional data in order to provide as complete answer as possible.</para>
-<para>Quads stored in DB.DBA.RDF_QUAD are usually referred to as &quot;physical quads&quod; as oppsed to &quot;mapped quads&quot; that do not really stored in any table at all but still accessible by SPARQL queries via RDF views. SPARQL processor see no big difference between querying physical and mapped quads so a query may operate with mix of data of all sorts. Thus, an application can easy provide both access to relational data for SPARQL clients (HTTP and WSDL via <link linkend="rdfsparqlprotocolendpoint">SPARQL protocol endpoint</link>) and access to RDF data for traditional RDBMS clients (by passing SPARQL queries via ODBC, JDBC and the like).</para>
+<para>Quads stored in DB.DBA.RDF_QUAD are usually referred to as &quot;physical quads&quot; as oppsed to &quot;mapped quads&quot; that do not really stored in any table at all but still accessible by SPARQL queries via RDF views. SPARQL processor see no big difference between querying physical and mapped quads so a query may operate with mix of data of all sorts. Thus, an application can easy provide both access to relational data for SPARQL clients (HTTP and WSDL via <link linkend="rdfsparqlprotocolendpoint">SPARQL protocol endpoint</link>) and access to RDF data for traditional RDBMS clients (by passing SPARQL queries via ODBC, JDBC and the like).</para>
 <para>RDF is for data integration. This implies the need of resolving both inconsistencies in RDF data that comes from various sources of different nature and problems with queries that work fine on some sample data from local data warehouse but fail on massive and/or unexpected data from third party sources. <link linkend="rdfsparqlrule">RDF inference</link> helps to support variety of synonims when different data sources uses different names for same classes, properties and subjects. Queries can be debugged using all methods that are traditional for SQL (what's executed is SQL), with paying some attention to RDF-specific <link linkend="rdfperformancetuning">performance tuning</link>.</para>
 <para>The whole purpose of SPARQL is to let application developers write simple queries faster than equivalent SQL code. A short SPARQL query on mix of physical quads and RDF views of few applications may sometimes replace pages of SQL text. On the other hand, SQL has more expressive power than SPARQL so complicated business intelligence queries should be written in a mixed style, as an SQL query with SPARQL subqueries. Debugging of mixed-style queries is inconvenient, reducing overall benefit in development time, so <link linkend="sparqlbi">Business Intelligence Extensions for SPARQL</link> can be used in order to greatly reduce the need for wrapping SQL around SPARQL. <link linkend="rdfsparqlrulefulltext">Full-text search in SPARQL</link> eliminates one more reason for mixing SQL and SPARQL. In addition, extending SPARQL let SPARQL clients to delegate more business intelligence calculations to the server without any changes in the infrastructure; this is especially important for web applications that use AJAX tools (say, <ulink url="http://oat.openlinksw.com">OAT OpenLink AJAX Toolkit</ulink>).</para>
 </sect1>
@@ -3249,16 +3249,10 @@ Group may contain both quad map patterns and other groups.
 A group can be manipulated as a whole, e.g. <emphasis>drop quad map virtrdf:SysUsers</emphasis> will remove all three map patterns.
 </para>
 </sect3>
-<sect3 id="rdfviewnorthwindexample"><title>Northwind RDF Views</title>
-<para>Here is example of the Basic Northwind RDF Views Deployment and Demo Scripts:</para>
+<sect2 id="rdfviewnorthwindexample1"><title>Northwind RDF Views</title>
+<para>Here is example of the basic Northwind RDF Views deployment:</para>
 <programlisting><![CDATA[
 use DB;
-
-DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'')
-;
-
-DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'')
-;
 
 --GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
@@ -3271,233 +3265,6 @@ GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
-
-create function DB.DBA.NORTHWIND_ID_TO_IRI(in _prefix varchar,in _id varchar)
-{
-  declare iri, uriqa_host any;
-  uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  iri := 'http://' || uriqa_host || '/Northwind/' || _prefix || '/' || _id || '#this';
-  return sprintf ('http://%s/DAV/home/demo/RDFData/All/iid%%20(%d).rdf', uriqa_host, iri_id_num (iri_to_id (iri)));
-}
-;
-
-create function DB.DBA.NORTHWIND_IRI_TO_ID(in _iri varchar)
-{
-    declare parts any;
-    parts := sprintf_inverse (_iri, 'http://%s/DAV/home/demo/RDFData/All/iid (%d).rdf', 1 );
-    if (parts is not null)
-    {
-        declare uriqa_host, iri any;
-        uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-        if (parts[0] = uriqa_host)
-        {
-            iri := id_to_iri(iri_id_from_num(parts[1]));
-            parts := sprintf_inverse (iri, 'http://%s/Northwind/%s/%s#this', 1 );
-            if (parts[0] = uriqa_host)
-            {
-                return parts[2];
-            }
-        }
-    }
-    return NULL;
-}
-;
-
-create function DB.DBA.CATEGORY_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Category', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CATEGORY_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SHIPPER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Shipper', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SHIPPER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SUPPLIER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Supplier', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SUPPLIER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.PRODUCT_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Product', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.PRODUCT_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CUSTOMER_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Customer', _id);
-}
-;
-
-create function DB.DBA.CUSTOMER_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.EMPLOYEE_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Employee', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.EMPLOYEE_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Order', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.ORDER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CUSTOMERCONTACT_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CustomerContact', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINE_IRI (in _id1 integer, in _id2 integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('OrderLine', sprintf('%d/%d', _id1, _id2));
-}
-;
-
-create function DB.DBA.ORDERLINE_IRI_INV_1 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINE_IRI_INV_2 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-
-create function DB.DBA.PROVINCE_IRI (in _id1 varchar, in _id2 varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Province', sprintf('%s/%s', _id1, _id2));
-}
-;
-
-create function DB.DBA.PROVINCE_IRI_INV_1 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.PROVINCE_IRI_INV_2 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.COUNTRY_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Country', _id);
-}
-;
-
-create function DB.DBA.COUNTRY_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.FLAG_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Flag', _id);
-}
-;
-
-create function DB.DBA.FLAG_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.EMPLOYEEPHOTO_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('EmployeePhoto', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CATEGORYPHOTO_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CategoryPhoto', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-grant execute on DB.DBA.CATEGORY_IRI to "SPARQL";
-grant execute on DB.DBA.CATEGORY_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SHIPPER_IRI to "SPARQL";
-grant execute on DB.DBA.SHIPPER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SUPPLIER_IRI to "SPARQL";
-grant execute on DB.DBA.SUPPLIER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.PRODUCT_IRI to "SPARQL";
-grant execute on DB.DBA.PRODUCT_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMER_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.EMPLOYEE_IRI to "SPARQL";
-grant execute on DB.DBA.EMPLOYEE_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.ORDER_IRI to "SPARQL";
-grant execute on DB.DBA.ORDER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACT_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACT_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.COUNTRY_IRI to "SPARQL";
-grant execute on DB.DBA.COUNTRY_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.FLAG_IRI to "SPARQL";
-grant execute on DB.DBA.FLAG_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEPHOTO_IRI to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CATEGORYPHOTO_IRI to "SPARQL";
-grant execute on DB.DBA.CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
 
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
@@ -3558,61 +3325,6 @@ prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 
-create iri class northwind:category_iri using
-    function DB.DBA.CATEGORY_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.CATEGORY_IRI_INVERSE (in customer_iri varchar) returns integer .
-create iri class northwind:shipper_iri using
-    function DB.DBA.SHIPPER_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.SHIPPER_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:supplier_iri using
-    function DB.DBA.SUPPLIER_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.SUPPLIER_IRI_INVERSE (in customer_iri varchar) returns varchar.
-create iri class northwind:product_iri using
-    function DB.DBA.PRODUCT_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.PRODUCT_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:customer_iri using
-    function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar.
-create iri class northwind:employee_iri using
-    function DB.DBA.EMPLOYEE_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.EMPLOYEE_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:order_iri using
-    function DB.DBA.ORDER_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.ORDER_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:customercontact_iri using
-    function DB.DBA.CUSTOMERCONTACT_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customer_iri varchar) returns varchar.
-create iri class northwind:orderline_iri using
-    function DB.DBA.ORDERLINE_IRI (in customer_id integer, in customer_id2 integer) returns varchar,
-    function DB.DBA.ORDERLINE_IRI_INV_1 (in customer_iri varchar) returns integer,
-    function DB.DBA.ORDERLINE_IRI_INV_2 (in customer_iri varchar) returns integer.
-create iri class northwind:province_iri using
-    function DB.DBA.PROVINCE_IRI (in customer_id varchar, in customer_id2 varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_1 (in customer_iri varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_2 (in customer_iri varchar) returns varchar.
-create iri class northwind:country_iri using
-    function DB.DBA.COUNTRY_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.COUNTRY_IRI_INVERSE (in customer_iri varchar) returns varchar.
-create iri class northwind:employeephoto_iri using
-    function DB.DBA.EMPLOYEEPHOTO_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:categoryphoto_iri using
-    function DB.DBA.CATEGORYPHOTO_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
-create iri class northwind:flag_iri using
-    function DB.DBA.FLAG_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.FLAG_IRI_INVERSE (in customer_iri varchar) returns varchar.
-;
-
-SPARQL
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-
 alter quad storage virtrdf:DefaultQuadStorage
 from Demo.demo.Products as products
 from Demo.demo.Suppliers as suppliers
@@ -3646,7 +3358,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
                                 as virtrdf:CustomerContact-country ;
-                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) ;
                         rdfs:isDefinedBy northwind:CustomerContact (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
@@ -3674,7 +3385,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
                                 as virtrdf:Product-discontinued ;
-                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) ;
                         rdfs:isDefinedBy northwind:Product (products.ProductID) .
 
                 northwind:Category (products.CategoryID)
@@ -3710,7 +3420,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
                                 as virtrdf:Supplier-home_page ;
-                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) ;
                         rdfs:isDefinedBy northwind:Supplier (suppliers.SupplierID) .
 
                 northwind:Country (suppliers.Country)
@@ -3726,13 +3435,11 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Category-description ;
                         foaf:img northwind:CategoryPhoto(categories.CategoryID)
                                 as virtrdf:Category-categories.CategoryPhoto ;
-                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) ;
                         rdfs:isDefinedBy northwind:Category (categories.CategoryID) .
 
                 northwind:CategoryPhoto(categories.CategoryID)
                         a northwind:CategoryPhoto
                                 as virtrdf:Category-categories.CategoryPhotoID ;
-                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) ;
                         rdfs:isDefinedBy northwind:CategoryPhoto(categories.CategoryID) .
 
                 northwind:Shipper (shippers.ShipperID)
@@ -3742,7 +3449,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Shipper-company_name ;
                         northwind:phone shippers.Phone
                                 as virtrdf:Shipper-phone ;
-                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) ;
                         rdfs:isDefinedBy northwind:Shipper (shippers.ShipperID) .
 
                 northwind:Customer (customers.CustomerID)
@@ -3778,7 +3484,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-phone ;
                         northwind:fax customers.Fax
                                 as virtrdf:Customer-fax ;
-                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) ;
                         rdfs:isDefinedBy northwind:Customer (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
@@ -3830,13 +3535,11 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-reports_to ;
                         foaf:img northwind:EmployeePhoto(employees.EmployeeID)
                                 as virtrdf:Employee-employees.EmployeePhoto ;
-                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) ;
                         rdfs:isDefinedBy northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) .
 
                 northwind:EmployeePhoto(employees.EmployeeID)
                         a northwind:EmployeePhoto
                                 as virtrdf:Employee-employees.EmployeePhotoId ;
-                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) ;
                         rdfs:isDefinedBy northwind:EmployeePhoto (employees.EmployeeID) .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
@@ -3880,7 +3583,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country ;
-                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) ;
                         rdfs:isDefinedBy northwind:Order (orders.OrderID) .
 
                 northwind:Customer (orders.CustomerID)
@@ -3902,7 +3604,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
                                 as virtrdf:OrderLine-discount ;
-                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
                         rdfs:isDefinedBy northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) .
 
                 northwind:Country (countries.Name)
@@ -3927,7 +3628,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng ;
-                        rdfs:isDefinedBy northwind:country_iri (countries.Name) ;
                         rdfs:isDefinedBy northwind:Country (countries.Name) .
 
                 northwind:Country (countries.Name)
@@ -3941,7 +3641,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
                                 as virtrdf:Province-ProvinceName ;
-                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) ;
                         rdfs:isDefinedBy northwind:Province (provinces.CountryCode, provinces.Province) .
 
                 northwind:Province (provinces.CountryCode, provinces.Province)
@@ -3950,186 +3649,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
         }.
 }.
 ;
-
-delete from db.dba.url_rewrite_rule_list where urrl_list like 'demo_nw%';
-delete from db.dba.url_rewrite_rule where urr_rule like 'demo_nw%';
-
-create procedure demo_nw_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
-
-create procedure demo_nw_html_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*#', path);
-  return subseq (r, 0, length (r)-1);
-};
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule2',
-    1,
-    '(/[^#]*)',
-    vector('path'),
-    1,
-    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
-    vector('path', 'path', '*accept*'),
-    null,
-    '(text/rdf.n3)|(application/rdf.xml)',
-    0,
-    null
-    );
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule1',
-    1,
-    '(/[^#]*)',
-    vector('path'),
-    1,
-    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
-    vector('path'),
-    null,
-    '(text/html)|(\\*/\\*)',
-    0,
-    303
-    );
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule3',
-    1,
-    '(/[^#]*)/\x24',
-    vector('path'),
-    1,
-    '%s',
-    vector('path'),
-    null,
-    null,
-    0,
-    null
-    );
-
-create procedure DB.DBA.REMOVE_DEMO_RDF_DET()
-{
-  declare colid int;
-  colid := DAV_SEARCH_ID('/DAV/home/demo/', 'C');
-  if (colid < 0)
-    return;
-  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
-}
-;
-
-DB.DBA.REMOVE_DEMO_RDF_DET();
-
-drop procedure DB.DBA.REMOVE_DEMO_RDF_DET;
-
-create procedure DB.DBA.NORTHWIND_MAKE_RDF_DET()
-{
-    declare uriqa_str varchar;
-    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-    uriqa_str := 'http://' || uriqa_str || '/Northwind';
-    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/RDFData/', uriqa_str, NULL);
-    VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
-    DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
-}
-;
-
-DB.DBA.NORTHWIND_MAKE_RDF_DET();
-
-drop procedure DB.DBA.NORTHWIND_MAKE_RDF_DET;
-
--- procedure to convert path to DET resource name
-create procedure DB.DBA.NORTHWIND_DET_REF (in par varchar, in fmt varchar, in val varchar)
-{
-  declare res, iri any;
-  declare uriqa_str varchar;
-  uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  uriqa_str := 'http://' || uriqa_str || '/Northwind';
-  iri := uriqa_str || val;
-  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
-  return sprintf (fmt, res);
-}
-;
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('demo_nw_rdf', 1,
-    '/Northwind/(.*)', vector('path'), 1,
-    '/Northwind/data/rdf/%U', vector('path'),
-    'DB.DBA.NORTHWIND_DET_REF',
-    'application/rdf.xml',
-    2,
-    303);
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule4',
-    1,
-    '/schemas/northwind#(.*)',
-    vector('path'),
-    1,
-    '/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/northwind%23%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/NorthwindOntology/1.0/%3E',
-    vector('path'),
-    null,
-    '(text/rdf.n3)|(application/rdf.xml)',
-    0,
-    null
-    );
-
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'demo_nw_rule_list1',
-    1,
-    vector (
-                'demo_nw_rule1',
-                'demo_nw_rule2',
-                'demo_nw_rule3',
-                'demo_nw_rule4',
-                'demo_nw_rdf'
-          ));
-
-
-VHOST_REMOVE (lpath=>'/Northwind');
-DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
-          is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
-
-create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
-{
-  declare content1, urihost varchar;
-  select cast (RES_CONTENT as varchar) into content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/demo/sql/nw.owl';
-  DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/northwind#', 'http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/');
-  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  if (urihost = 'demo.openlinksw.com')
-  {
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind#', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-  }
-};
-
-DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV();
-
-drop procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV;
-
-create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2()
-{
-  declare urihost varchar;
-  sparql base <http://demo.openlinksw.com/schemas/northwind#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/demo/sql/nw.owl")
-   into graph <http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/>;
-  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  if (urihost = 'demo.openlinksw.com')
-  {
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind#', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-  }
-};
-
---DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2();
-
-drop procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2;
-
 ]]></programlisting>
-</sect3>
+</sect2>
 </sect2>
 <sect2 id="rdfviewconfiguringrdfstorages"><title>Configuring RDF Storages</title>
 <para>
@@ -5998,23 +5519,203 @@ select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
 ]]></programlisting>
 </sect2>	
 </sect1>
+
 <sect1 id="rdfperformancetuning"><title>Virtuoso RDF Performance Tuning</title>
-    <sect2 id="rdfperfgeneral"><title>General</title>
+<para>For RDF query performance, we have the following possible questions:</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>Is the Virtuoso process properly configured to handle big data sets?</listitem>
+<listitem>Is the graph always specified?</listitem>
+<listitem>Are public web service endpoints protected agains bad queries?</listitem>
+<listitem>Are there patterns where only a predicate is given?</listitem>
+<listitem>Is there a bad query plan because of cost model error?</listitem>
+</itemizedlist>
+<sect2 id="rdfperfgeneral"><title>General</title>
 	<para>For running with large data sets, one should configure the Virtuoso process to use between 2/3 to  3/5 of system RAM and to stripe storage on all available disks.  See <link linkend="VIRTINI">NumberOfBuffers</link> and <link linkend="VIRTINI">Striping</link> ini parameters.</para>
 <para> Also, if running with a large database, setting <link linkend="VIRTINI">MaxCheckpointRemap</link> to 1/4th of
  the database size is recommended.  This is in pages, 8K per page.</para>
     </sect2>
+    <sect2 id="rdfperfindexes"><title>Index Scheme Selection</title>
+<para>If the graph is always given, as one or more <emphasis>FROM</emphasis> or <emphasis>FROM NAMED</emphasis>, and there are no patterns where only graph and predicate are given, then the default indices should be appropriate.
+If the predicate and graph are given but subject is not, then it is sometimes useful to add</para>
+
+<programlisting><![CDATA[
+create bitmap index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
+]]></programlisting>
+
+<note><para>If the server is pre 5.7, leave out the partitioning clause.</para></note>
+
+<para>Making the PGOS index can help in some cases even if it is not readily apparent from the queries that one is needed.  This is so for example if the predicate by itself is selective, i.e. there is a predicate that occurs in only a few triples.</para>
+<para>If the graph itself is not given in the queries, then the default index scheme will be unworkable.
+For this, the appropriate scheme is:</para>
+
+<programlisting><![CDATA[
+create table RDF_QUAD (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (S, P, O, G))
+alter index RDF_QUAD on RDF_QUAD partition (S int (0hexffff00));
+create bitmap index RDF_QUAD_OPGS on DB.DBA.RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_POGS on DB.DBA.RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_GPOS on DB.DBA.RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
+]]></programlisting>
+
+<note><para>For a pre 5.7 server, leave the partition clauses and the alter index statement out.</para></note>
+
+<para>If there are existing triples and one does not wish to reload them, then the following sequence will convert the data:</para>
+
+<programlisting><![CDATA[
+log_enable (2);
+drop index RDF_QUAD_OGPS;
+checkpoint;
+create table R2 (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (S, P, O, G))
+alter index R2 on R2 partition (S int (0hexffff00));
+
+insert into r2 (g, s, p, o) select g, s, p, o from rdf_quad;
+
+drop table RDF_QUAD;
+checkpoint;
+alter table r2 rename RDF_QUAD;
+create bitmap index RDF_QUAD_OPGS on DB.DBA.RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff));
+create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
+checkpoint;
+log_enable (1);
+]]></programlisting>
+
+<para>First drop the OGPS index to make space.  Then, in row autocommit mode
+and without logging, copy the quads into a new primary key layout.
+Drop the old and rename the new over the old.  Make the additional
+indices.  Do a checkpoint after the drops so as to actually free the
+space also in the checkpointed state.  Finish with a checkpoint so as
+to finalize the changes, since logging was turned off.  Even if
+logging had been on, one would not wish to have to replay the
+reindexing if the server terminated abnormally.
+Finally turn logging back on for the session.</para>
+
+<note><para>This is all meant to be done with a SQL client like isql and not through a web interface.
+The web interface has no real session and the log_enables do nothing there.</para></note>
+
+<para>Other indexing schemes may be tried.  We note however that in all
+cases, one or other of the indices should begin with G.  This is
+because for schema operations it is necessary to read through a
+graph. If no index begins with G, this becomes a full table scan and
+is unworkable, leading to an extremely slow server start and making
+operations like drop graph as good as unusable.</para>
+
+<para>Public web service endpoints are proven to be sources of especially bad queries. While local application develpers can obtain instructions from database administrator and use ISQL access to the database in order to tune execution plans, &quot;external&quot; clients do not know details of configuration and/or lacks appropriate skills. The most common problem is that public endpoints usually get requests that does not mention the required graph, because that queries were initially written for use with triple stores. If the web service provides access to a single graph (or to a short list of graphs) then it is strongly recommended to configure it by adding a row into DB.DBA.SYS_SPARQL_HOST. The idea is that if the client specifies default graph in the request or uses named graphs and group graph patterns then he is probably smarter than average and will provide meaningful queries. If no graph names are specified then the query will benefit from preset graph because this will give the compiler some more indexes to choose from -- indexes taht begin with G.</para>
+</sect2>
+<sect2 id="rdfperfcost"><title>Erroneous Cost Estimates and Explicit Join Order</title>
+
+	<para>The selectivity of triple patterns is determined at query compile time from sampling the data.
+It is possible that misleading data is produced.
+To see if the cardinality guesses are generally valid, look at the query plan with <link linkend="fn_explain"><function>explain</function> ()</link>.</para>
+<para>Below is a sample from the LUBM qualification data set in the Virtuoso distribution.
+After running <emphasis>make test</emphasis> in <emphasis>binsrc/tets/lubm</emphasis>, there is a loaded database with the data.
+Start a server in the same directory to see the data.</para>
+
+<programlisting><![CDATA[
+SQL> explain ('sparql prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select * from <lubm>
+where { ?x rdf:type ub:GraduateStudent }');
+
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+{ 
+ 
+Precode:
+      0: $25 "callret" := Call __BOX_FLAGS_TWEAK (<constant (lubm)>, <constant (1)>)
+      5: $26 "lubm" := Call DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE ($25 "callret")
+      12: $27 "callret" := Call __BOX_FLAGS_TWEAK (<constant (http://www.w3.org/1999/02/22-rdf-syntax-ns#type)>, <constant (1)>)
+      17: $28 "-ns#type" := Call DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE ($27 "callret")
+      24: $29 "callret" := Call __BOX_FLAGS_TWEAK (<constant (http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#GraduateStudent)>, <constant (1)>)
+      29: $30 "owl#GraduateStudent" := Call DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE ($29 "callret")
+      36: BReturn 0
+from DB.DBA.RDF_QUAD by RDF_QUAD_OGPS    1.9e+03 rows
+Key RDF_QUAD_OGPS  ASC ($32 "s-3-1-t0.S")
+<col=415 O = $30 "owl#GraduateStudent"> , <col=412 G = $26 "lubm"> , <col=414 P = $28 "-ns#type">
+row specs: <col=415 O LIKE <constant (T)>>
+ 
+Current of: <$34 "<DB.DBA.RDF_QUAD s-3-1-t0>" spec 5>
+ 
+After code:
+      0: $35 "x" := Call ID_TO_IRI ($32 "s-3-1-t0.S")
+      5: BReturn 0
+Select ($35 "x", <$34 "<DB.DBA.RDF_QUAD s-3-1-t0>" spec 5>)
+}
+
+22 Rows. -- 1 msec.
+]]></programlisting>
+<para>
+This finds the graduate student instances in the lubm graph.  First
+the query converts the IRI literals to id's.  Then, using a match of
+OG on OGPS it finds the IRI's of the graduate students.  Then it
+converts the IRI id to return to the string form.</para>
+<para>The cardinality estimate of 1.9e+03 rows is on the FROM line.</para>
+<para>Doing an explain on the queries will show the cardinality estimates.  To drill down further, one can split the query into smaller chunks and see the estimates for these, up to doing it at the triple pattern level.  
+To indicate a variable that is bound but whose value is not a literal known at compile time, one can use the parameter marker <emphasis>??</emphasis>.</para>
+
+<programlisting><![CDATA[
+explain ('sparql define sql:table-option "order"  prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select * from <lubm>
+where { ?x rdf:type ?? }');
+]]></programlisting>
+
+<para>This will not know the type but will know that a type will be
+provided.  So instead of guessing 1900 matches, this will guess a
+smaller number, which is obviously less precise.  Thus literals are generally better.</para>
+<para>In some cases, generally to work around an optimization error, one can specify an explicit join order. 
+This is done with the sql:select-option "order"  clause in the SPARQL query prefix.</para>
+
+<programlisting><![CDATA[
+select sparql_to_sql_text (' define sql:select-option "order" prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select * from <lubm>
+where { ?x rdf:type ub:GraduateStudent . ?x ub:takesCourse <http://www.Department0.University0.edu/GraduateCourse0> }');
+]]></programlisting>
+
+<para>shows the SQL text with the order option at the end.</para>
+<para>If an estimate is radically wrong then this should be reported as a bug.</para>
+<para>If there is a FROM with a KEY on the next line and no column specs then this is a full table scan. The more columns are specified the less rows will be passed to the next operation in the chain. In the example above, there are three columns whose values are known before  reading the table and these columns are leading columns of the index in use so column specs are</para>
+<programlisting><![CDATA[
+<col=415 O = $30 "owl#GraduateStudent"> , <col=412 G = $26 "lubm"> , <col=414 P = $28 "-ns#type">
+]]></programlisting>
+<note><para>A KEY with only a row spec is a full table scan with the row spec applied as a filter.
+This is usually not good unless this is specifically intended.</para></note>
+<para>If queries are compiled to make full table scans when this is not specifically intended, this should be reported as a bug.
+The explain output and the query text should be included in the report.</para>
+<para>An explicit join order is specified by the <emphasis>define sql:select-option "order"</emphasis> clause in the SPARQL query prefix:
+Consider:</para>
+
+<programlisting><![CDATA[
+explain ('sparql define sql:select-option "order, loop" prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select * from <lubm>
+where { ?x ub:takesCourse ?c . ?x rdf:type ub:GraduateStudent   }');
+]]></programlisting>
+
+<para>One will see in the output that the first table access is to retrieve
+all in the lubm graph which take some course and then later to check
+if this is a graduate student.  This is obviously not the preferred
+order but the <emphasis>sql:select-option "order"</emphasis> forces the optimizer to join
+from left to right.</para>
+<para>It is very easy to end up with completely unworkable query plans in
+this manner but if the optimizer really is in error, then this is the
+only way of overriding its prefrences.  The effect of <emphasis>sql:select-option</emphasis> is pervasive, extending inside unions, optionals, subqueries etc within the statement.</para>
+<para>We note that if, in the above query, both the course taken by the
+student and the type of the student are given, the query compilation
+will be, at least for all non-cluster cases, an index intersection.
+This is not overridden by the sql:select-option clause since an index
+intersection is always a safe guess, regardless of the correctness of
+the cardinality guesses of the patterns involved.</para>
+</sect2>
     <sect2 id="rdfperfloading"><title>Loading</title>
 	<para>There are many functions for loading RDF text, in RDF/XML and Turtle.</para>
 	<para>For loading RDF/XML, the best way is to ssplit the data to be loaded into multiple streams and load these in parallel using <link linkend="fn_rdf_load_rdfxml"><function>rdf_load_rdfxml ()</function></link>. To avoid running out of rollback space for large files and in order to have multiple concurrent loads not interfere with each other, the row autocommit mode should be enabled.</para>
 	<para>For example, </para>
-<programlisting>
+<programlisting><![CDATA[
 log_enable (2);
 -- switch row-by-row autocommit on and logging off for this session
 db..rdf_load_rdfxml (file_to_string_output ('file.xml'), 'base_uri', 'target_graph');
 -- more files here ...
 checkpoint;
-</programlisting>
+]]></programlisting>
 <para>Loading a file with text like the above with isql will load the data.  Since the transaction logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server restart since there is no roll forward log.</para>
 <para>If large amounts of data are to be loaded, run multiple such streams in parallel. One may have for example 6 streams for 4 cores. This
 means that if up to two threads wait for disk, there is still work

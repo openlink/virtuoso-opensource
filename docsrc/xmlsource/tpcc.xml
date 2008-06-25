@@ -258,7 +258,7 @@ as we have disks. For 6 4 GB disks, we would have:
 
 <screen>
 [Striping]
-Segment1 = 24G,  /disk1/tpcc-1-1.db q1, /disk2/tpcc-1-2.db q2,  /disk3/tpcc-1-3.db q3,  /disk4/tpcc-1-4.db q4,  /disk5/tpcc-1-5.db q5,  /disk6/tpcc-1-6.db q6
+Segment1 = 24G,  /disk1/tpcc-1-1.db = q1, /disk2/tpcc-1-2.db = q2,  /disk3/tpcc-1-3.db = q3,  /disk4/tpcc-1-4.db = q4,  /disk5/tpcc-1-5.db = q5,  /disk6/tpcc-1-6.db = q6
 </screen>
 
 	<para>
