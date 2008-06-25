@@ -3033,7 +3033,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?oa foaf:accountName ?an .
 	    ?person foaf:made ?made .
 	    ?made foaf:maker ?person .
-	    ?made dc:title ?made_title .'
+	    ?made dc:title ?made_title .
+	    ?made a ?made_type . '
 	    || cons ||
 	    '
 	  }
@@ -3058,7 +3059,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
-	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title } .
+	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } } .
 	      '
 	      || vars ||
 	      '

@@ -202,7 +202,7 @@ reporterr:
 ;
 create procedure ods_auth_failed ()
 {
-  return '<failed>Authentication failed</failed>';
+  return ods_serialize_int_res (-12);
 }
 ;
 
@@ -864,12 +864,8 @@ create procedure ODS.ODS_API.appendProperty (
 }
 ;
 
-create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http 'application/json'
+create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
 {
-  declare exit handler for sqlstate '*' {
-    goto _exit;
-  };
-
   foafIRI := trim (foafIRI);
   exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', foafIRI), null, null, vector (), 0);
 
@@ -923,29 +919,38 @@ create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http
     declare V vector;
 
     V := vector ();
-    appendProperty (V, 'nick', coalesce ("nick", "name"));
-    appendProperty (V, 'title', "title");
-    appendProperty (V, 'name', "name");
-    appendProperty (V, 'firstName', coalesce ("firstName", "givenname"));
-    appendProperty (V, 'family_name', "family_name");
-    appendProperty (V, 'mbox', "mbox", 'mailto:');
-    appendProperty (V, 'birthday', "birthday");
-    appendProperty (V, 'gender', "gender");
-    appendProperty (V, 'lat', "lat");
-    appendProperty (V, 'lng', "lng");
-    appendProperty (V, 'icqChatID', "icqChatID");
-    appendProperty (V, 'msnChatID', "msnChatID");
-    appendProperty (V, 'aimChatID', "aimChatID");
-    appendProperty (V, 'yahooChatID', "yahooChatID");
-    appendProperty (V, 'workplaceHomepage', "workplaceHomepage");
-    appendProperty (V, 'homepage', "homepage");
-    appendProperty (V, 'phone', "phone", 'tel:');
+    appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
+    appendProperty (V, 'title', "title");		   -- WAUI_TITLE
+    appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
+    appendProperty (V, 'firstName', coalesce ("firstName", "givenname")); -- WAUI_FIRST_NAME
+    appendProperty (V, 'family_name', "family_name");	   -- WAUI_LAST_NAME
+    appendProperty (V, 'mbox', "mbox", 'mailto:');	   -- E_MAIL
+    appendProperty (V, 'birthday', "birthday");		   -- WAUI_BIRTHDAY
+    appendProperty (V, 'gender', "gender");		   -- WAUI_GENDER
+    appendProperty (V, 'lat', "lat");			   -- WAUI_LAT
+    appendProperty (V, 'lng', "lng");			   -- WAUI_LNG
+    appendProperty (V, 'icqChatID', "icqChatID");	   -- WAUI_ICQ
+    appendProperty (V, 'msnChatID', "msnChatID");	   -- WAUI_MSN
+    appendProperty (V, 'aimChatID', "aimChatID");	   -- WAUI_AIM
+    appendProperty (V, 'yahooChatID', "yahooChatID");	   -- WAUI_YAHOO
+    appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
+    appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
+    appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
 
-    return params2json (V);
+    return V;
   }
+  }
+;
 
-_exit:
+create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http 'application/json'
+{
+  declare ret any;
+  declare exit handler for sqlstate '*' {
   return obj2json (null);
+  };
+
+  ret := params2json (ODS.ODS_API.get_foaf_data_array (foafIRI));
+  return ret;
 }
 ;
 
