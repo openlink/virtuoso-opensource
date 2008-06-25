@@ -417,7 +417,7 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
 	  if (res == NUMERIC_STS_OVERFLOW)
 	    XQI_SET (xqi, slot, box_wide_string (numeric_sign (nval) ? L"-Infinity" : L"Infinity"));
 	  else
-	    XQI_SET (xqi, slot, box_narrow_string_as_wide ((unsigned char *) tmp, NULL, -1, NULL));
+	    XQI_SET (xqi, slot, box_narrow_string_as_wide ((unsigned char *) tmp, NULL, -1, NULL, NULL, 0));
 	}
       else
 	XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));

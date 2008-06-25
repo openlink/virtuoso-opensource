@@ -2436,7 +2436,9 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t x = bif_string_or_wide_or_null_arg (qst, args, 1, "trim");
       if (IS_WIDE_STRING_DTP (dtp1) && !DV_WIDESTRINGP (x))
 	{
-	  to_free = (caddr_t) box_narrow_string_as_wide ((unsigned char *) x, NULL, 0, QST_CHARSET (qst));
+	  to_free = (caddr_t) box_narrow_string_as_wide ((unsigned char *) x, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+	  if (!to_free)
+	    return NULL;
 	  skip_str = to_free;
 	}
       else if (!IS_WIDE_STRING_DTP (dtp1) && DV_WIDESTRINGP (x))
@@ -2552,7 +2554,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (!IS_WIDE_STRING_DTP (dtp1) && haveWides)
   {
     alen = box_length (a) - 1;
-    box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst));
+          box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst), err_ret, 1);
   }
     else
   {
@@ -8527,10 +8529,17 @@ do_bin_again:
 do_wide:
     {
       char tmp[NUMERIC_MAX_STRING_BYTES + 100];
+      caddr_t err = NULL;
+      caddr_t ret;
       switch (arg_dtp)
 	{
 	  case DV_STRING:
-	      return box_narrow_string_as_wide ((unsigned char *) data, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
+		{
+	          ret = box_narrow_string_as_wide ((unsigned char *) data, NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 1);
+		  if (err)
+		    sqlr_resignal (err);
+		  return ret;
+		}
 	  case DV_DATETIME:
 	  case DV_DATE:
 	  case DV_TIME:
@@ -8579,8 +8588,10 @@ do_wide:
 		  if (arg_dtp == DV_BLOB_HANDLE)
 		    {
 		      caddr_t wide_ret = box_narrow_string_as_wide ((unsigned char *) ret,
-			  NULL, 0, qst ? QST_CHARSET (qst) : NULL);
+			  NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 1);
 		      dk_free_box (ret);
+		      if (err)
+			sqlr_resignal (err);
 		      return wide_ret;
 		    }
 		  return ret;
@@ -8589,7 +8600,10 @@ do_wide:
 	  default:
 	      goto cvt_error;
 	}
-      return box_narrow_string_as_wide ((unsigned char *) tmp, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
+      ret = box_narrow_string_as_wide ((unsigned char *) tmp, NULL, 0, qst ? QST_CHARSET (qst) : NULL, &err, 0);
+      if (err) 
+	sqlr_resignal (err);
+      return ret;
     }
 
 

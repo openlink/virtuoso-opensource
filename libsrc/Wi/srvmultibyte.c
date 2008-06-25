@@ -255,10 +255,11 @@ out:;
 }
 
 caddr_t
-box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wcharset_t *charset)
+box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox)
 {
-  long len = (long) strlen((const char *) str), i;
+  long i, len = (long)(isbox ? (box_length ((box_t) str) - 1) : strlen((const char *) str));
   wchar_t *box;
+  size_t wide_len;
   if (!charset)
     {
       client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
@@ -273,7 +274,14 @@ box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wchar
     len = max_len;
 /*  if (len == 0)
     return NULL; - explicit bug */
-  box = (wchar_t *) (wide ? wide : dk_alloc_box ((len + 1) * sizeof(wchar_t), DV_WIDE));
+  wide_len = (len + 1) * sizeof(wchar_t);
+  if (wide_len > MAX_READ_STRING)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("22023", "SR578", "The expected result length of wide string is too large");
+      return NULL;
+    }
+  box = (wchar_t *) (wide ? wide : dk_alloc_box_zero (wide_len, DV_WIDE));
   for (i = 0; i < len && str[i]; i++)
     box[i] = CHAR_TO_WCHAR(str[i], charset);
   box[len] = L'\0';
@@ -942,7 +950,7 @@ t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharse
 }
 
 caddr_t
-DBG_NAME(box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
+DBG_NAME(box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox)
 {
   caddr_t box = NULL, tmp;
   if (!charset)
@@ -954,7 +962,7 @@ DBG_NAME(box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, lo
   if (!charset)
     charset = default_charset;
 
-  tmp = box_narrow_string_as_wide ((unsigned char *) narrow, NULL, 0, charset);
+  tmp = box_narrow_string_as_wide ((unsigned char *) narrow, NULL, 0, charset, err_ret, isbox); 
   if (tmp)
     {
       box = DBG_NAME (box_wide_as_utf8_char) (DBG_ARGS tmp, box_length (tmp) / sizeof (wchar_t) - 1, DV_STRING);

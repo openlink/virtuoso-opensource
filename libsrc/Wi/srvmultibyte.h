@@ -39,11 +39,11 @@ int compare_utf8_with_collation (caddr_t dv1, long n1, caddr_t dv2, long n2, col
 
 caddr_t box_wide_char_string (caddr_t data, size_t len, dtp_t dtp);
 
-caddr_t box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wcharset_t *charset);
+caddr_t box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox);
 caddr_t box_wide_string_as_narrow (caddr_t str, caddr_t narrow, long max_len, wcharset_t *charset);
 caddr_t box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
 caddr_t t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
-caddr_t DBG_NAME (box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
+caddr_t DBG_NAME (box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox);
 #ifdef MALLOC_DEBUG
 #define box_narrow_string_as_utf8(s,n,m,c) dbg_box_narrow_string_as_utf8 (__FILE__, __LINE__, (s), (n), (m), (c))
 #endif

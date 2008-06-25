@@ -3571,6 +3571,7 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 {
   dtp_t dtp = DV_TYPE_OF (data);
   caddr_t result;
+  caddr_t err = NULL;
   static caddr_t varchar = NULL;
   if (dtp == DV_BLOB_XPER_HANDLE)
     sqlr_error ("42000", "Unable to convert a persistent XML object into a node of an XML tree entity");
@@ -3612,7 +3613,10 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	  return literal_as_utf8 (eh, data, box_length (data) - 1);
 	else
 	*/
-	  return DBG_NAME (box_narrow_string_as_utf8) (DBG_ARGS NULL, data, 0, QST_CHARSET (qst));
+	  result = DBG_NAME (box_narrow_string_as_utf8) (DBG_ARGS NULL, data, 0, QST_CHARSET (qst), &err, 1);
+	  if (err)
+	    sqlr_resignal (err);
+	  return result;
       }
     default:
       {
@@ -3626,7 +3630,9 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	  res = literal_as_utf8 (eh, result, box_length (result) - 1);
 	else
 	*/
-	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst));
+	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst), &err, 1);
+	if (err)
+	  sqlr_resignal (err);
 	dk_free_tree (result);
 	return res;
       }

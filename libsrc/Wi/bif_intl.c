@@ -392,9 +392,9 @@ charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, c
   else
     {
       if (cs2 == CHARSET_WIDE)
-	ret = box_narrow_string_as_wide ((unsigned char *) narrow, NULL, 0, cs1);
+	ret = box_narrow_string_as_wide ((unsigned char *) narrow, NULL, 0, cs1, err_ret, 1);
       else if (cs2 == CHARSET_UTF8)
-	ret = box_narrow_string_as_utf8 (NULL, narrow, 0, cs1);
+	ret = box_narrow_string_as_utf8 (NULL, narrow, 0, cs1, err_ret, 1);
       else
 	{
 	  caddr_t output = box_copy (narrow);
@@ -521,8 +521,10 @@ bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
     sqlr_new_error ("2C000", "IN017", "First argument of uname() function shuld be a narrow or wide string, or NULL or a UNAME");
   else if (cs1 != CHARSET_UTF8)
     {
-      caddr_t strg = box_narrow_string_as_utf8 (NULL, narrow, 0, cs1);
-      caddr_t res = box_dv_uname_nchars (strg, box_length (strg) - 1);
+      caddr_t res = NULL;
+      caddr_t strg = box_narrow_string_as_utf8 (NULL, narrow, 0, cs1, err_ret, 1);
+      if (!*err_ret)
+	res = box_dv_uname_nchars (strg, box_length (strg) - 1);
       dk_free_box (strg);
       return res;
     }
