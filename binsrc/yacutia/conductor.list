@@ -207,7 +207,6 @@ conductor/images/Empty-folder.gif
 conductor/images/folder_full.gif
 conductor/images/Folder.gif
 conductor/images/folder_up.gif
-conductor/images/icons/about_32.png
 conductor/images/icons/add_16.png
 conductor/images/icons/add_script_16.png
 conductor/images/icons/add_table_16.png
@@ -246,12 +245,10 @@ conductor/images/icons/previous_16.png
 conductor/images/icons/ref_16.png
 conductor/images/icons/rewnd_16.png
 conductor/images/icons/script_16.png
-conductor/images/icons/security_16.png
 conductor/images/icons/skipb_16.png
 conductor/images/icons/skipf_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
-conductor/images/icons/stop_32.png
 conductor/images/icons/table_16.png
 conductor/images/icons/tour_16.png
 conductor/images/icons/trash_16.png
