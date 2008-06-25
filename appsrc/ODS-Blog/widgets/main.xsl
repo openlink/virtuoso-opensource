@@ -1172,6 +1172,8 @@ window.onload = function (e)
     </xsl:if>
     <link rel="alternate" type="application/rss+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> RSS" href="&lt;?vsp http (sprintf ('http://%s%sgems/%s', self.host, self.base, self.rssfile)); ?>"/>
       <xsl:text>&#10;</xsl:text>
+    <link rel="meta" type="application/rdf+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> RDF" href="&lt;?vsp http (sprintf ('http://%s%sgems/index.rdf', self.host, self.base)); ?>"/>
+      <xsl:text>&#10;</xsl:text>
   </xsl:template>
   <xsl:template match="vm:disco-atom-link">
       <link rel="alternate" type="application/atom+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> Atom" href="&lt;?vsp http (sprintf ('http://%s%sgems/atom.xml', self.host, self.base)); ?>"/>
@@ -2790,7 +2792,7 @@ window.onload = function (e)
   <xsl:template match="vm:e-mail">
     <vm:if test="email">
       <a rel="foaf:mbox" href="mailto:&lt;?V self.email ?>">
-        <img border="0" alt="E-mail" rel="foaf:depicition">
+        <img border="0" alt="E-mail">
           <xsl:if test="@image">
             <xsl:attribute name="src">&lt;?vsp
               if (self.custom_img_loc)

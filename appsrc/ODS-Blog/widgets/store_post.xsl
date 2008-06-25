@@ -49,6 +49,11 @@
 	</div>
     </xsl:template>
 
+    <!-- special tag to stop automatic hyperlinking -->
+    <xsl:template match="no-auto-href">
+	<xsl:apply-templates />
+    </xsl:template>
+
     <xsl:template match="a[@rel='tag' and @style='display:none;']"/>
 
     <xsl:template match="*">

@@ -3478,7 +3478,7 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
 	  apa_hpcount := length (apa[5]);
 	  http (subseq (source_UTF8, prev_end, apa_beg), res_out);
 
-	  if (bit_and (0hex00000004, apa[3])) -- inside HREF
+	  if (bit_and (0hex00000004, apa[3]) or bit_and (0hex80000000, apa[3])) -- inside HREF or XMP
 	    {
 	    add_href := 0;
 	      inside_href := 1;
@@ -3546,7 +3546,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   declare title, author, authorid, home varchar;
   declare mid, rfc, author_mail, enc_type, _wai_name varchar;
   declare post_iri varchar;
-  declare inst_id, auto_tag int;
+  declare inst_id, auto_tag, auto_href int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID
   where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3565,6 +3565,9 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   nf:
 
   xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
+  auto_href := 1;
+  if (xpath_eval ('//no-auto-href', xt, 1) is not null)
+    auto_href := 0;
 
   RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
   BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
@@ -3582,6 +3585,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
     is_act := 1;
 
   ss := string_output_string (ss);
+  if (auto_href)
   ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
 
   title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
@@ -3651,7 +3655,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
   declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type, _wai_name any;
   declare ver int;
   declare post_iri, graph_iri varchar;
-  declare inst_id, auto_tag int;
+  declare inst_id, auto_tag, auto_href int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
 
@@ -3666,6 +3670,9 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
   if (is_http_ctx () and  upper(http_current_charset ()) = 'UTF-8')
     {
       xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
+      auto_href := 1;
+      if (xpath_eval ('//no-auto-href', xt, 1) is not null)
+	auto_href := 0;
 
       graph_iri := sioc..get_graph ();
       sioc.DBA.delete_quad_s_or_o (graph_iri, post_iri, post_iri);
@@ -3684,6 +3691,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	is_act := 1;
 
       ss := string_output_string (ss);
+      if (auto_href)
       ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
