@@ -1732,7 +1732,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String  query = "sparql clear graph iri(??)";
 
 		try {
-			PrepareStatement ps = quadStoreConnection.prepareStatement(query);
+			PreparedStatement ps = quadStoreConnection.prepareStatement(query);
 			for (int i = 0; i < contexts.length; i++) {
 				if (contexts[i] != null) 
 					ps.setString(1, contexts[i].stringValue());
