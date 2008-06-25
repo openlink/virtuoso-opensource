@@ -36,6 +36,8 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,10 +94,57 @@ import virtuoso.jdbc3.VirtuosoExtendedString;
 import virtuoso.jdbc3.VirtuosoRdfBox;
 import virtuoso.jdbc3.VirtuosoResultSet;
 
+
+/**
+ * Main interface for updating data in and performing queries on a Sesame
+ * repository. By default, a RepositoryConnection is in autoCommit mode, meaning
+ * that each operation corresponds to a single transaction on the underlying
+ * store. autoCommit can be switched off in which case it is up to the user to
+ * handle transaction commit/rollback. Note that care should be taking to always
+ * properly close a RepositoryConnection after one is finished with it, to free
+ * up resources and avoid unnecessary locks.
+ * <p>
+ * Several methods take a vararg argument that optionally specifies a (set of)
+ * context(s) on which the method should operate. Note that a vararg parameter
+ * is optional, it can be completely left out of the method call, in which case
+ * a method either operates on a provided statements context (if one of the
+ * method parameters is a statement or collection of statements), or operates on
+ * the repository as a whole, completely ignoring context. A vararg argument may
+ * also be 'null' (cast to Resource) meaning that the method operates on those
+ * statements which have no associated context only.
+ * <p>
+ * Examples:
+ * 
+ * <pre>
+ * // Ex 1: this method retrieves all statements that appear in either context1 or context2, or both.
+ * RepositoryConnection.getStatements(null, null, null, true, context1, context2);
+ * 
+ * // Ex 2: this method retrieves all statements that appear in the repository (regardless of context).
+ * RepositoryConnection.getStatements(null, null, null, true);
+ * 
+ * // Ex 3: this method retrieves all statements that have no associated context in the repository.
+ * // Observe that this is not equivalent to the previous method call.
+ * RepositoryConnection.getStatements(null, null, null, true, (Resource)null);
+ * 
+ * // Ex 4: this method adds a statement to the store. If the statement object itself has 
+ * // a context (i.e. statement.getContext() != null) the statement is added to that context. Otherwise,
+ * // it is added without any associated context.
+ * RepositoryConnection.add(statement);
+ * 
+ * // Ex 5: this method adds a statement to context1 in the store. It completely ignores any
+ * // context the statement itself has.
+ * RepositoryConnection.add(statement, context1);
+ * </pre>
+ * 
+ */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private Resource nilContext = new ValueFactoryImpl().createURI("urn:nil");
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
+	PreparedStatement psI;
+	static final String sinsert = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+	static final int BATCH_SIZE = 1000;
+
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
 		this.quadStoreConnection = connection;
@@ -130,20 +179,68 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Closes the connection, freeing resources. If the connection is not in
+	 * autoCommit mode, all non-committed operations will be lost.
+	 * 
+	 * @throws RepositoryException
+	 *         If the connection could not be closed.
+	 */
 	public void close() throws RepositoryException {
 		try {
-			if (!getQuadStoreConnection().isClosed()) 
+			if (!getQuadStoreConnection().isClosed()) {
+				closeStatements();
 				getQuadStoreConnection().close();
+			}
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(e.toString());
 		}
 	}
 
+	/**
+	 * Prepares a query for evaluation on this repository (optional operation).
+	 * In case the query contains relative URIs that need to be resolved against
+	 * an external base URI, one should use
+	 * {@link #prepareQuery(QueryLanguage, String, String)} instead.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @return A query ready to be evaluated on this repository.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 * @throws UnsupportedOperationException
+	 *         If the <tt>prepareQuery</tt> method is not supported by this
+	 *         repository.
+	 */
 	public Query prepareQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
 		return prepareQuery(language, query, null);
 	}
 
+	/**
+	 * Prepares a query for evaluation on this repository (optional operation).
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the query
+	 *        against, can be <tt>null</tt> if the query does not contain any
+	 *        relative URIs.
+	 * @return A query ready to be evaluated on this repository.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 * @throws UnsupportedOperationException
+	 *         If the <tt>prepareQuery</tt> method is not supported by this
+	 *         repository.
+	 */
 	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		Query q = new VirtuosoQuery();
 		
@@ -162,10 +259,45 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	/**
+	 * Prepares a query that produces sets of value tuples. In case the query
+	 * contains relative URIs that need to be resolved against an external base
+	 * URI, one should use
+	 * {@link #prepareTupleQuery(QueryLanguage, String, String)} instead.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a tuple query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public TupleQuery prepareTupleQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
 		return prepareTupleQuery(language, query, null);
 	}
 
+	/**
+	 * Prepares a query that produces sets of value tuples.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the query
+	 *        against, can be <tt>null</tt> if the query does not contain any
+	 *        relative URIs.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a tuple query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
@@ -179,10 +311,45 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	/**
+	 * Prepares queries that produce RDF graphs. In case the query contains
+	 * relative URIs that need to be resolved against an external base URI, one
+	 * should use {@link #prepareGraphQuery(QueryLanguage, String, String)}
+	 * instead.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a graph query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public GraphQuery prepareGraphQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
 		return prepareGraphQuery(language, query, null);
 	}
 
+	/**
+	 * Prepares queries that produce RDF graphs.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the query
+	 *        against, can be <tt>null</tt> if the query does not contain any
+	 *        relative URIs.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a graph query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
@@ -196,10 +363,45 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	/**
+	 * Prepares <tt>true</tt>/<tt>false</tt> queries. In case the query
+	 * contains relative URIs that need to be resolved against an external base
+	 * URI, one should use
+	 * {@link #prepareBooleanQuery(QueryLanguage, String, String)} instead.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a boolean query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, String query) throws RepositoryException, MalformedQueryException {
 		return prepareBooleanQuery(language, query, null);
 	}
 
+	/**
+	 * Prepares <tt>true</tt>/<tt>false</tt> queries.
+	 * 
+	 * @param ql
+	 *        The query language in which the query is formulated.
+	 * @param query
+	 *        The query string.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the query
+	 *        against, can be <tt>null</tt> if the query does not contain any
+	 *        relative URIs.
+	 * @throws IllegalArgumentException
+	 *         If the supplied query is not a boolean query.
+	 * @throws MalformedQueryException
+	 *         If the supplied query is malformed.
+	 * @throws UnsupportedQueryLanguageException
+	 *         If the supplied query language is not supported.
+	 */
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
@@ -209,6 +411,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	/**
+	 * Gets all resources that are used as content identifiers. Care should be
+	 * taken that the returned {@link RepositoryResult} is closed to free any
+	 * resources that it keeps hold of.
+	 * 
+	 * @return a RepositoryResult object containing Resources that are used as
+	 *         context identifiers.
+	 */
 	public RepositoryResult<Resource> getContextIDs() throws RepositoryException {
 		// this function performs SLOWLY, use with caution
 
@@ -231,7 +441,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					throw new RepositoryException("VirtuosoRepositoryConnection.getContextIDs() Non-URI context encountered: " + obj);
 				}
 			}
-			stmt.close();
+			rs.close();
 
 		}
 		catch (Exception e) {
@@ -240,16 +450,79 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return createRepositoryResult(v);
 	}
 
+	/**
+	 * Gets all statements with a specific subject, predicate and/or object from
+	 * the repository. The result is optionally restricted to the specified set
+	 * of named contexts.
+	 * 
+	 * @param subj
+	 *        A Resource specifying the subject, or <tt>null</tt> for a
+	 *        wildcard.
+	 * @param pred
+	 *        A URI specifying the predicate, or <tt>null</tt> for a wildcard.
+	 * @param obj
+	 *        A Value specifying the object, or <tt>null</tt> for a wildcard.
+	 * @param contexts
+	 *        The context(s) to get the data from. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @param includeInferred
+	 *        if false, no inferred statements are returned; if true, inferred
+	 *        statements are returned if available. The default is true.
+	 * @return The statements matching the specified pattern. The result object
+	 *         is a {@link RepositoryResult} object, a lazy Iterator-like object
+	 *         containing {@link Statement}s and optionally throwing a
+	 *         {@link RepositoryException} when an error when a problem occurs
+	 *         during retrieval.
+	 */
 	public RepositoryResult<Statement> getStatements(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		return createRepositoryResult(g);
 	}
 
+	/**
+	 * Checks whether the repository contains statements with a specific subject,
+	 * predicate and/or object, optionally in the specified contexts.
+	 * 
+	 * @param subj
+	 *        A Resource specifying the subject, or <tt>null</tt> for a
+	 *        wildcard.
+	 * @param pred
+	 *        A URI specifying the predicate, or <tt>null</tt> for a wildcard.
+	 * @param obj
+	 *        A Value specifying the object, or <tt>null</tt> for a wildcard.
+	 * @param contexts
+	 *        The context(s) the need to be searched. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @param includeInferred
+	 *        if false, no inferred statements are considered; if true, inferred
+	 *        statements are considered if available
+	 * @return true If a matching statement is in the repository in the specified
+	 *         context, false otherwise.
+	 */
 	public boolean hasStatement(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		return g.iterator().hasNext();
 	}
 
+	/**
+	 * Checks whether the repository contains the specified statement, optionally
+	 * in the specified contexts.
+	 * 
+	 * @param st
+	 *        The statement to look for. Context information in the statement is
+	 *        ignored.
+	 * @param contexts
+	 *        The context(s) to get the data from. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @param includeInferred
+	 *        if false, no inferred statements are considered; if true, inferred
+	 *        statements are considered if available
+	 * @return true If the repository contains the specified statement, false
+	 *         otherwise.
+	 */
 	public boolean hasStatement(Statement statement, boolean includeInferred, Resource... contexts) throws RepositoryException {
 		if (contexts != null && contexts.length == 0) {
 			if (statement.getContext() != null) {
@@ -263,6 +536,28 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return g.iterator().hasNext();
 	}
 
+	/**
+	 * Exports all statements with a specific subject, predicate and/or object
+	 * from the repository, optionally from the specified contexts.
+	 * 
+	 * @param subj
+	 *        The subject, or null if the subject doesn't matter.
+	 * @param pred
+	 *        The predicate, or null if the predicate doesn't matter.
+	 * @param obj
+	 *        The object, or null if the object doesn't matter.
+	 * @param contexts
+	 *        The context(s) to get the data from. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @param handler
+	 *        The handler that will handle the RDF data.
+	 * @param includeInferred
+	 *        if false, no inferred statements are returned; if true, inferred
+	 *        statements are returned if available
+	 * @throws RDFHandlerException
+	 *         If the handler encounters an unrecoverable error.
+	 */
 	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		handler.startRDF();
@@ -272,42 +567,72 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		handler.endRDF();
 	}
 
+	/**
+	 * Exports all explicit statements in the specified contexts to the supplied
+	 * RDFHandler.
+	 * 
+	 * @param contexts
+	 *        The context(s) to get the data from. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @param handler
+	 *        The handler that will handle the RDF data.
+	 * @throws RDFHandlerException
+	 *         If the handler encounters an unrecoverable error.
+	 */
 	public void export(RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
 		exportStatements(null, null, null, false, handler, contexts);
 	}
 
+	/**
+	 * Returns the number of (explicit) statements that are in the specified
+	 * contexts in this repository.
+	 * 
+	 * @param contexts
+	 *        The context(s) to get the data from. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @return The number of explicit statements from the specified contexts in
+	 *         this repository.
+	 */
 	public long size(Resource... contexts) throws RepositoryException {
 		int ret = 0;
+		String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
 
 		verifyIsOpen();
 		if (contexts == null || contexts.length == 0) 
 			contexts = new Resource[] { nilContext };
 
-		for (int i = 0; i < contexts.length; i++) {
-			StringBuffer query = new StringBuffer("select count (*) from (sparql select * from <");
-			if (contexts[i] != null) 
-				query.append(contexts[i].stringValue());
-			else 
-				query.append(nilContext.stringValue());
+		try {
+		        PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
 
-			query.append(">  where {?s ?p ?o})f");
+			for (int i = 0; i < contexts.length; i++) {
+				if (contexts[i] != null) 
+					ps.setString(1, contexts[i].stringValue());
+				else 
+					ps.setString(1, nilContext.stringValue());
 
-			ResultSet rs = null;
-
-			try {
-				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-				rs = stmt.executeQuery(query.toString());
+				ResultSet rs = ps.executeQuery();
 				rs.next();
 				ret += rs.getInt(1);
-                                stmt.close();
+                                rs.close();
 			}
-			catch (Exception e) {
-				throw new RepositoryException(e);
-			}
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
 		}
 		return ret;
 	}
 
+	/**
+	 * Returns <tt>true</tt> if this repository does not contain any (explicit)
+	 * statements.
+	 * 
+	 * @return <tt>true</tt> if this repository is empty, <tt>false</tt>
+	 *         otherwise.
+	 * @throws RepositoryException
+	 *         If the repository could not be checked to be empty.
+	 */
 	public boolean isEmpty() throws RepositoryException {
 	        //return size() <= 0;
 		verifyIsOpen();
@@ -315,9 +640,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "sparql select * where {?s ?o ?p} limit 1";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet result_set = (VirtuosoResultSet) stmt.executeQuery(query);
-			result = result_set.next();
-                        stmt.close();
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+			result = rs.next();
+                        rs.close();
                         return result;
 		}
 		catch (Exception e) {
@@ -325,6 +650,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Enables or disables auto-commit mode for the connection. If a connection
+	 * is in auto-commit mode, then all updates will be executed and committed as
+	 * individual transactions. Otherwise, the updates are grouped into
+	 * transactions that are terminated by a call to either {@link #commit} or
+	 * {@link #rollback}. By default, new connections are in auto-commit mode.
+	 * <p>
+	 * <b>NOTE:</b> If this connection is switched to auto-commit mode during a
+	 * transaction, the transaction is committed.
+	 * 
+	 * @throws RepositoryException
+	 *         In case the mode switch failed, for example because a currently
+	 *         active transaction failed to commit.
+	 * @see #commit
+	 */
 	public void setAutoCommit(boolean autoCommit) throws RepositoryException {
 		verifyIsOpen();
 		try {
@@ -335,6 +675,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Checks whether the connection is in auto-commit mode.
+	 * 
+	 * @see #setAutoCommit
+	 */
 	public boolean isAutoCommit() throws RepositoryException {
 		verifyIsOpen();
 		try {
@@ -345,6 +690,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Commits all updates that have been performed as part of this connection
+	 * sofar.
+	 * 
+	 * @throws RepositoryException
+	 *         If the connection could not be committed.
+	 */
 	public void commit() throws RepositoryException {
 		verifyIsOpen();
 		try {
@@ -355,6 +707,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Rolls back all updates that have been performed as part of this connection
+	 * sofar.
+	 * 
+	 * @throws RepositoryException
+	 *         If the connection could not be rolled back.
+	 */
 	public void rollback() throws RepositoryException {
 		verifyIsOpen();
 		try {
@@ -365,11 +724,66 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Adds RDF data from an InputStream to the repository, optionally to one or
+	 * more named contexts.
+	 * 
+	 * @param in
+	 *        An InputStream from which RDF data can be read.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the data
+	 *        against.
+	 * @param dataFormat
+	 *        The serialization format of the data.
+	 * @param contexts
+	 *        The contexts to add the data to. If one or more contexts are
+	 *        supplied the method ignores contextual information in the actual
+	 *        data. If no contexts are supplied the contextual information in the
+	 *        input stream is used, if no context information is available the
+	 *        data is added without any context.
+	 * @throws IOException
+	 *         If an I/O error occurred while reading from the input stream.
+	 * @throws UnsupportedRDFormatException
+	 *         If no parser is available for the specified RDF format.
+	 * @throws RDFParseException
+	 *         If an error was found while parsing the RDF data.
+	 * @throws RepositoryException
+	 *         If the data could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(InputStream dataStream, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		Reader reader = new InputStreamReader(dataStream);
 		add(reader, baseURI, format, contexts);
 	}
 
+	/**
+	 * Adds RDF data from a Reader to the repository, optionally to one or more
+	 * named contexts. <b>Note: using a Reader to upload byte-based data means
+	 * that you have to be careful not to destroy the data's character encoding
+	 * by enforcing a default character encoding upon the bytes. If possible,
+	 * adding such data using an InputStream is to be preferred.</b>
+	 * 
+	 * @param reader
+	 *        A Reader from which RDF data can be read.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the data
+	 *        against.
+	 * @param dataFormat
+	 *        The serialization format of the data.
+	 * @param contexts
+	 *        The contexts to add the data to. If one or more contexts are
+	 *        specified the data is added to these contexts, ignoring any context
+	 *        information in the data itself.
+	 * @throws IOException
+	 *         If an I/O error occurred while reading from the reader.
+	 * @throws UnsupportedRDFormatException
+	 *         If no parser is available for the specified RDF format.
+	 * @throws RDFParseException
+	 *         If an error was found while parsing the RDF data.
+	 * @throws RepositoryException
+	 *         If the data could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(Reader reader, String baseURI, RDFFormat format, final Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		try {
 			RDFParser parser = null;
@@ -392,20 +806,78 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				parser = new TriXParserFactory().getParser();
 			}
 
+			verifyIsOpen();
 			// set up a handler for parsing the data from reader
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
+			final PreparedStatement _ps = quadStoreConnection.prepareStatement(sinsert);
+			final Resource[] _contexts = contexts;
+
 			parser.setRDFHandler(new RDFHandlerBase() {
-				public void handleStatement(Statement st) {
+				
+				PreparedStatement ps = _ps;
+				int count = 0;
+				Resource[] contexts = _contexts;
+
+				public void startRDF() {
+					if (contexts == null || contexts.length == 0) 
+						contexts = new Resource[] { nilContext };
+				}
+
+				public void endRDF() throws RDFHandlerException {
 					try {
-						add(st, contexts); // send the parsed triple to the quad store
+						if (count > 0) {
+							ps.executeBatch();
+							ps.clearBatch();
+							count = 0;
+						}
 					}
-					catch (RepositoryException e) {
-						e.printStackTrace();
+					catch (SQLException e) {
+						throw new RDFHandlerException("Problem executing query: ", e);
 					}
+				}
+
+//				public void handleNamespace(String prefix, String name) throws RDFHandlerException {
+//					String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+//					try {
+//						PreparedStatement psn = getQuadStoreConnection().prepareStatement(query);
+//						psn.setString(1, prefix);
+//						psn.setString(2, name);
+//						psn.execute();
+//					}
+//					catch (SQLException e) {
+//						throw new RDFHandlerException("Problem executing query: " + query, e);
+//					}
+//				}
+
+				public void handleStatement(Statement st) throws RDFHandlerException {
+				   try {
+					for (int i = 0; i < contexts.length; i++) {
+
+						if (contexts[i] != null) 
+							ps.setString(1, contexts[i].stringValue());
+						else 
+							ps.setString(1, nilContext.stringValue());
+
+						bindResource(ps, 2, st.getSubject());
+						bindURI(ps, 3, st.getPredicate());
+						bindValue(ps, 4, st.getObject());
+						ps.addBatch();
+						count++;
+					}
+					if (count > BATCH_SIZE) {
+						ps.executeBatch();
+						ps.clearBatch();
+						count = 0;
+					}
+				   }	
+				   catch(Exception e) {
+				   	throw new RDFHandlerException(e);
+				   }
 				}
 			});
 
 			parser.parse(reader, ""); // parse out each tripled to be handled by the handler above
+
 		}
 		catch (Exception e) {
 			throw new RepositoryException("Problem parsing triples", e);
@@ -415,21 +887,117 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Adds the RDF data that can be found at the specified URL to the
+	 * repository, optionally to one or more named contexts.
+	 * 
+	 * @param url
+	 *        The URL of the RDF data.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the data
+	 *        against. This defaults to the value of {@link
+	 *        java.net.URL#toExternalForm() url.toExternalForm()} if the value is
+	 *        set to <tt>null</tt>.
+	 * @param dataFormat
+	 *        The serialization format of the data.
+	 * @param contexts
+	 *        The contexts to add the data to. If one or more contexts are
+	 *        specified the data is added to these contexts, ignoring any context
+	 *        information in the data itself.
+	 * @throws IOException
+	 *         If an I/O error occurred while reading from the URL.
+	 * @throws UnsupportedRDFormatException
+	 *         If no parser is available for the specified RDF format.
+	 * @throws RDFParseException
+	 *         If an error was found while parsing the RDF data.
+	 * @throws RepositoryException
+	 *         If the data could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(URL dataURL, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		// add data to Sesame
 		Reader reader = new InputStreamReader(dataURL.openStream());
 		add(reader, baseURI, format, contexts);
 	}
 
+	/**
+	 * Adds RDF data from the specified file to a specific contexts in the
+	 * repository.
+	 * 
+	 * @param file
+	 *        A file containing RDF data.
+	 * @param baseURI
+	 *        The base URI to resolve any relative URIs that are in the data
+	 *        against. This defaults to the value of
+	 *        {@link java.io.File#toURI() file.toURI()} if the value is set to
+	 *        <tt>null</tt>.
+	 * @param dataFormat
+	 *        The serialization format of the data.
+	 * @param contexts
+	 *        The contexts to add the data to. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are specified, the
+	 *        data is added to any context specified in the actual data file, or
+	 *        if the data contains no context, it is added without context. If
+	 *        one or more contexts are specified the data is added to these
+	 *        contexts, ignoring any context information in the data itself.
+	 * @throws IOException
+	 *         If an I/O error occurred while reading from the file.
+	 * @throws UnsupportedRDFormatException
+	 *         If no parser is available for the specified RDF format.
+	 * @throws RDFParseException
+	 *         If an error was found while parsing the RDF data.
+	 * @throws RepositoryException
+	 *         If the data could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(File file, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		InputStream reader = new FileInputStream(file);
 		add(reader, baseURI, format, contexts);
 	}
 
+	/**
+	 * Adds a statement with the specified subject, predicate and object to this
+	 * repository, optionally to one or more named contexts.
+	 * 
+	 * @param subject
+	 *        The statement's subject.
+	 * @param predicate
+	 *        The statement's predicate.
+	 * @param object
+	 *        The statement's object.
+	 * @param contexts
+	 *        The contexts to add the data to. Note that this parameter is a
+	 *        vararg and as such is optional. If no contexts are specified, the
+	 *        data is added to any context specified in the actual data file, or
+	 *        if the data contains no context, it is added without context. If
+	 *        one or more contexts are specified the data is added to these
+	 *        contexts, ignoring any context information in the data itself.
+	 * @throws RepositoryException
+	 *         If the data could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		addToQuadStore(subject, predicate, object, contexts);
 	}
 
+	/**
+	 * Adds the supplied statement to this repository, optionally to one or more
+	 * named contexts.
+	 * 
+	 * @param st
+	 *        The statement to add.
+	 * @param contexts
+	 *        The contexts to add the statements to. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are specified, the
+	 *        statement is added to any context specified in each statement, or
+	 *        if the statement contains no context, it is added without context.
+	 *        If one or more contexts are specified the statement is added to
+	 *        these contexts, ignoring any context information in the statement
+	 *        itself.
+	 * @throws RepositoryException
+	 *         If the statement could not be added to the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void add(Statement statement, Resource... contexts) throws RepositoryException {
 		if (contexts != null && contexts.length == 0) {
 			if (statement.getContext() != null) {
@@ -442,21 +1010,144 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		add(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
 	}
 
+	/**
+	 * Adds the supplied statements to this repository, optionally to one or more
+	 * named contexts.
+	 * 
+	 * @param statements
+	 *        The statements that should be added.
+	 * @param contexts
+	 *        The contexts to add the statements to. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are specified,
+	 *        each statement is added to any context specified in the statement,
+	 *        or if the statement contains no context, it is added without
+	 *        context. If one or more contexts are specified each statement is
+	 *        added to these contexts, ignoring any context information in the
+	 *        statement itself. ignored.
+	 * @throws RepositoryException
+	 *         If the statements could not be added to the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public void add(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
 		Iterator it = statements.iterator();
-		while (it.hasNext()) {
-			Statement st = (Statement) it.next();
-			add(st, contexts);
+
+		if (contexts == null || contexts.length == 0) 
+			contexts = new Resource[] { nilContext };
+
+		try {
+			PreparedStatement ps = quadStoreConnection.prepareStatement(sinsert);
+			int count = 0;
+
+			while (it.hasNext()) {
+				Statement st = (Statement) it.next();
+
+				for (int i = 0; i < contexts.length; i++) {
+
+					if (contexts[i] != null) 
+						ps.setString(1, contexts[i].stringValue());
+					else 
+						ps.setString(1, nilContext.stringValue());
+
+					bindResource(ps, 2, st.getSubject());
+					bindURI(ps, 3, st.getPredicate());
+					bindValue(ps, 4, st.getObject());
+					ps.addBatch();
+					count++;
+				}
+				if (count > BATCH_SIZE) {
+					ps.executeBatch();
+					ps.clearBatch();
+					count = 0;
+				}
+			}
+			if (count > 0) {
+				ps.executeBatch();
+				ps.clearBatch();
+			}
+		}	
+		catch(Exception e) {
+		   	throw new RepositoryException(e);
 		}
 	}
 
+	/**
+	 * Adds the supplied statements to this repository, optionally to one or more
+	 * named contexts.
+	 * 
+	 * @param statementIter
+	 *        The statements to add. In case the iterator is a
+	 *        {@link CloseableIteration}, it will be closed before this method
+	 *        returns.
+	 * @param contexts
+	 *        The contexts to add the statements to. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are specified,
+	 *        each statement is added to any context specified in the statement,
+	 *        or if the statement contains no context, it is added without
+	 *        context. If one or more contexts are specified each statement is
+	 *        added to these contexts, ignoring any context information in the
+	 *        statement itself. ignored.
+	 * @throws RepositoryException
+	 *         If the statements could not be added to the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
-		while (statements.hasNext()) {
-			Statement st = (Statement) statements.next();
-			add(st, contexts);
+		if (contexts == null || contexts.length == 0)
+			contexts = new Resource[] { nilContext };
+
+		try {
+			PreparedStatement ps = quadStoreConnection.prepareStatement(sinsert);
+			int count = 0;
+
+			while (statements.hasNext()) {
+				Statement st = (Statement) statements.next();
+
+				for (int i = 0; i < contexts.length; i++) {
+
+					if (contexts[i] != null)
+						ps.setString(1, contexts[i].stringValue());
+					else
+						ps.setString(1, nilContext.stringValue());
+
+					bindResource(ps, 2, st.getSubject());
+					bindURI(ps, 3, st.getPredicate());
+					bindValue(ps, 4, st.getObject());
+					ps.addBatch();
+					count++;
+				}
+				if (count > BATCH_SIZE) {
+					ps.executeBatch();
+					ps.clearBatch();
+					count = 0;
+				}
+			}
+			if (count > 0) {
+				ps.executeBatch();
+				ps.clearBatch();
+			}
+		}
+		catch(Exception e) {
+		   	throw new RepositoryException(e);
 		}
 	}
 
+	/**
+	 * Removes the statement(s) with the specified subject, predicate and object
+	 * from the repository, optionally restricted to the specified contexts.
+	 * 
+	 * @param subject
+	 *        The statement's subject, or <tt>null</tt> for a wildcard.
+	 * @param predicate
+	 *        The statement's predicate, or <tt>null</tt> for a wildcard.
+	 * @param object
+	 *        The statement's object, or <tt>null</tt> for a wildcard.
+	 * @param contexts
+	 *        The context(s) to remove the data from. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @throws RepositoryException
+	 *         If the statement(s) could not be removed from the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public void remove(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
 		String s = "?s";
@@ -504,6 +1195,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Removes the supplied statement from the specified contexts in the
+	 * repository.
+	 * 
+	 * @param st
+	 *        The statement to remove.
+	 * @param contexts
+	 *        The context(s) to remove the data from. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the contexts associated with the statement
+	 *        itself, and if no context is associated with the statement, on the
+	 *        entire repository.
+	 * @throws RepositoryException
+	 *         If the statement could not be removed from the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public void remove(Statement statement, Resource... contexts) throws RepositoryException {
 		if (contexts != null && contexts.length == 0) {
 			if (statement.getContext() != null) {
@@ -516,6 +1223,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
 	}
 
+	/**
+	 * Removes the supplied statements from the specified contexts in this
+	 * repository.
+	 * 
+	 * @param statements
+	 *        The statements that should be added.
+	 * @param contexts
+	 *        The context(s) to remove the data from. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the contexts associated with the statement
+	 *        itself, and if no context is associated with the statement, on the
+	 *        entire repository.
+	 * @throws RepositoryException
+	 *         If the statements could not be added to the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public void remove(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
 		Iterator<? extends Statement> it = statements.iterator();
 		while (it.hasNext()) {
@@ -524,6 +1247,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Removes the supplied statements from a specific context in this
+	 * repository, ignoring any context information carried by the statements
+	 * themselves.
+	 * 
+	 * @param statementIter
+	 *        The statements to remove. In case the iterator is a
+	 *        {@link CloseableIteration}, it will be closed before this method
+	 *        returns.
+	 * @param contexts
+	 *        The context(s) to remove the data from. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the contexts associated with the statement
+	 *        itself, and if no context is associated with the statement, on the
+	 *        entire repository.
+	 * @throws RepositoryException
+	 *         If the statements could not be removed from the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public <E extends Exception> void remove(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
 		while (statements.hasNext()) {
 			Statement st = statements.next();
@@ -531,18 +1273,37 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+	/**
+	 * Removes all statements from a specific contexts in the repository.
+	 * 
+	 * @param contexts
+	 *        The context(s) to remove the data from. Note that this parameter is
+	 *        a vararg and as such is optional. If no contexts are supplied the
+	 *        method operates on the entire repository.
+	 * @throws RepositoryException
+	 *         If the statements could not be removed from the repository, for
+	 *         example because the repository is not writable.
+	 */
 	public void clear(Resource... contexts) throws RepositoryException {
 		clearQuadStore(contexts);
 	}
 
+	/**
+	 * Gets all declared namespaces as a RepositoryResult of {@link Namespace}
+	 * objects. Each Namespace object consists of a prefix and a namespace name.
+	 * 
+	 * @return A RepositoryResult containing Namespace objects. Care should be
+	 *         taken to close the RepositoryResult after use.
+	 * @throws RepositoryException
+	 *         If the namespaces could not be read from the repository.
+	 */
 	public RepositoryResult<Namespace> getNamespaces() throws RepositoryException {
 		verifyIsOpen();
 		List<Namespace> namespaceList = new ArrayList<Namespace>();
-		StringBuffer query = new StringBuffer();
-		query.append("DB.DBA.XML_SELECT_ALL_NS_DECLS (3)");
+		String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
 
 			// begin at onset one
 			while (rs.next()) {
@@ -553,7 +1314,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					namespaceList.add(ns);
 				}
 			}
-                        stmt.close();
+                        rs.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(e.toString());
@@ -561,64 +1322,106 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return createRepositoryResult(namespaceList);// new RepositoryResult<Namespace>(new IteratorWrapper(v.iterator()));
 	}
 
+	/**
+	 * Gets the namespace that is associated with the specified prefix, if any.
+	 * 
+	 * @param prefix
+	 *        A namespace prefix.
+	 * @return The namespace name that is associated with the specified prefix,
+	 *         or <tt>null</tt> if there is no such namespace.
+	 * @throws RepositoryException
+	 *         If the namespace could not be read from the repository.
+	 */
 	public String getNamespace(String prefix) throws RepositoryException {
 		verifyIsOpen();
-		StringBuffer query = new StringBuffer();
-		query.append("SELECT __xml_get_ns_uri ('");
-		query.append(prefix);
-		query.append("', 3)");
+		String retVal = null;
+		String query = "SELECT __xml_get_ns_uri (?, 3)";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			ps.setString(1, prefix);
+			VirtuosoResultSet rs = (VirtuosoResultSet) ps.executeQuery();
 
 			// begin at onset one
 			while (rs.next()) {
-				return rs.getString(1);
+				retVal = rs.getString(1);
 			}
+			rs.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(e.toString());
 		}
-		return null;
+		return retVal;
 	}
 
+	/**
+	 * Sets the prefix for a namespace.
+	 * 
+	 * @param prefix
+	 *        The new prefix.
+	 * @param name
+	 *        The namespace name that the prefix maps to.
+	 * @throws RepositoryException
+	 *         If the namespace could not be set in the repository, for example
+	 *         because the repository is not writable.
+	 */
 	public void setNamespace(String prefix, String name) throws RepositoryException {
 		verifyIsOpen();
-		String query = "DB.DBA.XML_SET_NS_DECL('" + prefix + "','" + name + "', 1)";
+//??TODO bug in DBproc
+		String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.execute(query);
+			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			ps.setString(1, prefix);
+			ps.setString(2, name);
+			ps.execute();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
 		}
 	}
 
+	/**
+	 * Removes a namespace declaration by removing the association between a
+	 * prefix and a namespace name.
+	 * 
+	 * @param prefix
+	 *        The namespace prefix of which the assocation with a namespace name
+	 *        is to be removed.
+	 * @throws RepositoryException
+	 *         If the namespace prefix could not be removed.
+	 */
 	public void removeNamespace(String prefix) throws RepositoryException {
 		verifyIsOpen();
-		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX('" + prefix + "', 1)";
+//??TODO bug in DBproc
+		String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
 		try {
-			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.execute(query);
+			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+			ps.setString(1, prefix);
+			ps.execute(query);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
 		}
 	}
 
+	/**
+	 * Removes all namespace declarations from the repository.
+	 * 
+	 * @throws RepositoryException
+	 *         If the namespace declarations could not be removed.
+	 */
 	public void clearNamespaces() throws RepositoryException {
 		verifyIsOpen();
 		String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			stmt.execute(query.toString());
+			stmt.execute(query);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
 		}
 	}
 
-	public TupleQueryResult executeSPARQLForTupleResult(String query) {
+	protected TupleQueryResult executeSPARQLForTupleResult(String query) {
 
 		Vector<String> names = new Vector();
 		Vector<BindingSet> bindings = new Vector();
@@ -654,7 +1457,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return tqr;
 	}
 	
-	public GraphQueryResult executeSPARQLForGraphResult(String query) {
+	protected GraphQueryResult executeSPARQLForGraphResult(String query) {
 
 		HashMap<String,Integer> names = new HashMap();
 		Vector<Statement> statements = new Vector<Statement>();
@@ -704,7 +1507,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return gqr;
 	}
 
-	public boolean executeSPARQLForBooleanResult(String query) {
+	protected boolean executeSPARQLForBooleanResult(String query) {
 		Vector<String> names = new Vector();
 		Vector<BindingSet> bindings = new Vector();
 		boolean result = false;
@@ -728,7 +1531,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	public void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
+	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
@@ -755,7 +1558,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	public void executeSPARQLForHandler(RDFHandler tqrh, String query) {
+	protected void executeSPARQLForHandler(RDFHandler tqrh, String query) {
 		HashMap<String,Integer> names = new HashMap();
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
@@ -799,7 +1602,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
-	public int executeSPARUL(String query) {
+	/**
+	 * Execute SPARUL query on this repository.
+	 * 
+	 * @param query
+	 *        The query string.
+	 * @return A rowUpdateCount.
+	 * @throws RepositoryException
+	 *         If the <tt>prepareQuery</tt> method is not supported by this
+	 *         repository.
+	 */
+	public int executeSPARUL(String query) throws RepositoryException {
 
 		try {
 			verifyIsOpen();
@@ -808,16 +1621,28 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return stmt.getUpdateCount();
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
+	/**
+	 * Get Reposetory Connection.
+	 * 
+	 * @return Repository Connection
+	 */
 	public Connection getQuadStoreConnection() {
 		return quadStoreConnection;
 	}
 
+	/**
+	 * Set Repository Connection.
+	 * 
+	 * @param quadStoreConnection
+	 *        The Repository Connection.
+	 */
 	public void setQuadStoreConnection(Connection quadStoreConnection) {
 		this.quadStoreConnection = quadStoreConnection;
+		closeStatements();
 	}
 
 	private String fixQuery(String query) {
@@ -843,47 +1668,32 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	private void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
-		if (contexts == null || contexts.length == 0) contexts = new Resource[] { nilContext };
+		if (contexts == null || contexts.length == 0) 
+			contexts = new Resource[] { nilContext };
 
-		String s = "";
-		String p = "";
-		String o = "";
+		try {
+		        if (psI == null)
+				psI = getQuadStoreConnection().prepareStatement(sinsert);
 
-		if (subject != null) 
-			s = stringForResource(subject);
+			for (int i = 0; i < contexts.length; i++) {
 
-		if (predicate != null) 
-			p = stringForURI(predicate);
+				if (contexts[i] != null) 
+					psI.setString(1, contexts[i].stringValue());
+				else 
+					psI.setString(1, nilContext.stringValue());
 
-		if (object != null) 
-			o = stringForValue(object);
+				bindResource(psI, 2, subject);
+				bindURI(psI, 3, predicate);
+				bindValue(psI, 4, object);
 
-		for (int i = 0; i < contexts.length; i++) {
-			StringBuffer query = new StringBuffer("sparql insert into graph <");
-			if (contexts[i] != null) 
-				query.append(contexts[i].stringValue());
-			else 
-				query.append(nilContext.stringValue());
-
-			query.append("> { ");
-
-			// s = s.replaceAll("'", "''");
-			// p = p.replaceAll("'", "''");
-			// o = o.replaceAll("'", "''");
-			query.append(s);
-			query.append(" ");
-			query.append(p);
-			query.append(" ");
-			query.append(o);
-			query.append(" }");
-
-			try {
-				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-				stmt.execute(query.toString());
+				psI.addBatch();
 			}
-			catch (Exception e) {
-				throw new RuntimeException(e.toString());
-			}
+			psI.executeBatch();
+			psI.clearBatch();
+		}
+		catch (Exception e) {
+		        psI = null;
+			throw new RuntimeException(e.toString());
 		}
 	}
 
@@ -919,22 +1729,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (contexts == null || contexts.length == 0) 
 			contexts = new Resource[] { nilContext };
 
-		for (int i = 0; i < contexts.length; i++) {
-			StringBuffer query = new StringBuffer("sparql clear graph <");
-			if (contexts[i] != null) 
-				query.append(contexts[i].stringValue());
-			else 
-				query.append(nilContext.stringValue());
+		String  query = "sparql clear graph iri(??)";
 
-			query.append(">");
-
-			try {
-				java.sql.Statement stmt = quadStoreConnection.createStatement();
-				stmt.execute(query.toString());
+		try {
+			PrepareStatement ps = quadStoreConnection.prepareStatement(query);
+			for (int i = 0; i < contexts.length; i++) {
+				if (contexts[i] != null) 
+					ps.setString(1, contexts[i].stringValue());
+				else 
+					ps.setString(1, nilContext.stringValue());
+				ps.execute();
 			}
-			catch (Exception e) {
-				throw new RepositoryException(e.toString());
-			}
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -1018,6 +1826,65 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return g;
 	}
 
+
+	private void bindResource(PreparedStatement ps, int col, Resource n) throws SQLException {
+		if (n == null)
+			return;
+		if (n instanceof URI) 
+			ps.setString(col, n.stringValue());
+		else if (n instanceof BNode) 
+			ps.setString(col, "_:"+((BNode)n).getID());
+		else 
+			ps.setString(col, n.stringValue());
+	}
+
+	
+	private void bindURI(PreparedStatement ps, int col, URI n) throws SQLException {
+		if (n == null)
+			return;
+		ps.setString(col, n.stringValue());
+	}
+
+	
+	private void bindValue(PreparedStatement ps, int col, Value n) throws SQLException {
+		if (n == null)
+			return;
+		if (n instanceof URI) {
+			ps.setInt(col, 1);
+			ps.setString(col+1, n.stringValue());
+			ps.setNull(col+2, java.sql.Types.VARCHAR);
+		}
+		else if (n instanceof BNode) {
+			ps.setInt(col, 1);
+			ps.setString(col+1, "_:"+((BNode)n).getID());
+			ps.setNull(col+2, java.sql.Types.VARCHAR);
+		}
+		else if (n instanceof Literal) {
+			Literal lit = (Literal) n;
+			if (lit.getLanguage() != null) {
+				ps.setInt(col, 5);
+				ps.setString(col+1, lit.stringValue());
+				ps.setString(col+2, lit.getLanguage());
+			} 
+			else if (lit.getDatatype() != null) {
+				ps.setInt(col, 4);
+				ps.setString(col+1, lit.stringValue());
+				ps.setString(col+2, lit.getDatatype().toString());
+		 	}
+		 	else {
+				ps.setInt(col, 3);
+				ps.setString(col+1, n.stringValue());
+				ps.setNull(col+2, java.sql.Types.VARCHAR);
+		 	}	
+		}
+		else {
+			ps.setInt(col, 3);
+			ps.setString(col+1, n.stringValue());
+			ps.setNull(col+2, java.sql.Types.VARCHAR);
+		}
+	}
+	
+
 	private String stringForResource(Resource n) {
 		if (n instanceof URI) 
 			return stringForURI((URI) n);
@@ -1027,14 +1894,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return "<" + n.stringValue() + ">";
 	}
 
+	
 	private String stringForURI(URI n) {
 		return "<" + n.stringValue() + ">";
 	}
 
+	
 	private String stringForBNode(BNode n) {
 		return "<_:" + n.getID() + ">";
 	}
 
+	
 	private String stringForValue(Value n) {
 		if (n instanceof Resource) 
 			return stringForResource((Resource) n);
@@ -1050,6 +1920,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		else return "\"" + n.stringValue() + "\"";
 	}
 
+	
 	private Value castValue(Object val) throws RepositoryException {
 		if (val == null) 
 			return null;
@@ -1143,12 +2014,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
+	private void closeStatements() {
+		try {
+		   if (psI != null)
+		      psI.close();
+		   psI = null;
+		}
+		catch (Exception e) { }
+	}
+
+
 	/**
 	 * Creates a RepositoryResult for the supplied element set.
 	 */
 	protected <E> RepositoryResult<E> createRepositoryResult(Iterable<? extends E> elements) {
 		return new RepositoryResult<E>(new CloseableIteratorIteration<E, RepositoryException>(elements.iterator()));
 	}
+
 
 	private void verifyIsOpen() throws RepositoryException {
 		try {
@@ -1159,5 +2042,4 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException(e);
 		}
 	}
-
 }

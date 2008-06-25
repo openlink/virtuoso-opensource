@@ -36,30 +36,76 @@ public class VirtuosoQuery implements org.openrdf.query.Query {
 	boolean includeInferred = false;
 	Dataset dataset = null;
 	
+	/**
+	 * Retrieves the bindings that have been set on this query.
+	 * 
+	 * @return A (possibly empty) set of query variable bindings.
+	 * @see #setBinding(String, Value)
+	 */
 	public BindingSet getBindings() {
 		return this.bindingSet;
 	}
 
+	/**
+	 * Gets the dataset that has been set using {@link #setDataset(Dataset)}, if
+	 * any.
+	 */
 	public Dataset getDataset() {
 		return dataset;
 	}
 
+	/**
+	 * Returns whether or not this query will return inferred statements (if any
+	 * are present in the repository).
+	 * 
+	 * @return <tt>true</tt> if inferred statements will be returned,
+	 *         <tt>false</tt> otherwise.
+	 */
 	public boolean getIncludeInferred() {
 		return this.includeInferred;
 	}
 
+	/**
+	 * Removes a previously set binding on the supplied variable. Calling this
+	 * method with an unbound variable name has no effect.
+	 * 
+	 * @param name
+	 *        The name of the variable from which the binding is to be removed.
+	 */
 	public void removeBinding(String name) {
 		this.bindingSet.removeBinding(name);
 	}
 
+	/**
+	 * Binds the specified variable to the supplied value. Any value that was
+	 * previously bound to the specified value will be overwritten.
+	 * 
+	 * @param name
+	 *        The name of the variable that should be bound.
+	 * @param value
+	 *        The (new) value for the specified variable.
+	 */
 	public void setBinding(String name, Value value) {
 		this.bindingSet.setBinding(name, value);
 	}
 
+	/**
+	 * Specifies the dataset against which to evaluate a query, overriding any
+	 * dataset that is specified in the query itself.
+	 */
 	public void setDataset(Dataset dataset) {
 		this.dataset = dataset;
 	}
 
+	/**
+	 * Determine whether evaluation results of this query should include inferred
+	 * statements (if any inferred statements are present in the repository). The
+	 * default setting is 'true'.
+	 * 
+	 * @param includeInferred
+	 *        indicates whether inferred statements should included in the
+	 *        result.
+	 */
 	public void setIncludeInferred(boolean includeInferred) {
 		this.includeInferred = includeInferred;
 	}
