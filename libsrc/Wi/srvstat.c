@@ -1408,6 +1408,11 @@ bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     strcpy_ck (host, "localhost");
 
   srv_ip (ip_addr, sizeof (ip_addr), host);
+  if (0 == strlen (ip_addr) && strcmp (host, "localhost"))
+    {
+      strcpy_ck (host, dns_host_name);
+      srv_ip (ip_addr, sizeof (ip_addr), host);
+    }
 
   return (caddr_t) (list (4,
 	box_dv_short_string (host),
