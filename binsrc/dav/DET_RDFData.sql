@@ -356,7 +356,10 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
     {
       declare cs any;
       declare qr, rset, mdta, h, dict, is_all any;
+      declare inc, limit int;
 
+      limit := 1000;
+      inc := 0;
       is_all := 0;
       cs := top_id[2];
       cs := id_to_iri (cs);
@@ -443,8 +446,12 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
 		   tit)
 		 );
 	  dict_put (dict, X, 1);
+	  inc := inc + 1;
+	  if (inc > limit)
+	    goto end_loop;
 	  next_row:;
 	}
+	end_loop:;
 	exec_close (h);
     }
 finalize_res:
@@ -493,7 +500,8 @@ create function RDFData_std_pref (in iri varchar, in rev int := 0)
     }
   else
    return get_keyword (iri, v, null);
-};
+}
+;
 
 create function "RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path varchar, inout compilation any, in recursive integer, in auth_uid integer) returns any
 {
