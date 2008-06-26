@@ -4451,11 +4451,13 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
 }
 ;
 
+
 create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
-  -- dbg_obj_princ ('JSO_LIST_INSTANCES_OF_GRAPH (', jgraph, '...)');
-  instances := (
-    select vector_agg (
+  declare md, res, st, msg any;
+  st:= '00000';
+  exec (
+    'select vector_agg (
       vector (
         id_to_iri ("jclass"),
         id_to_iri ("jinst"),
@@ -4463,10 +4465,9 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
     from ( sparql
       define output:valmode "LONG"
       define input:storage ""
-      define sql:table-option "LOOP, index RDF_QUAD"
       select ?jclass ?jinst ?s
       where {
-        graph ?:jgraph {
+        graph ?? {
           { ?jinst rdf:type ?jclass .
             filter (!isBLANK (?jinst)) }
           union
@@ -4474,8 +4475,10 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
             ?s rdf:name ?jinst .
             filter (isBLANK (?s))
             } } }
-      ) as inst );
-  -- dbg_obj_princ ('... gets ', instances);
+      ) as inst',
+    st, msg, vector (jgraph), 1, md, res);
+  if (st <> '00000') signal (st, msg);
+ 	instances := res[0][0];
 }
 ;
 
