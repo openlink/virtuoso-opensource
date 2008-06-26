@@ -47,7 +47,7 @@
     <title>Parameters</title>
     <refsect2>
       <title>audit_mode</title>
-      <para>(0|1 default 0) - 0 = for read-only audit operation; 1 = for audit and fix</para>
+      <para>(0|1|2 default 0) - 0 = read-only audit operation; 1 = audit and fix; 2 = audit, fix and garbage collection for all incomplete declarations</para>
     </refsect2>
     <refsect2>
       <title>str_value</title>
