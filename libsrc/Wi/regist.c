@@ -174,7 +174,7 @@ id_hash_t *registry;
 id_hash_t *sequences;
 
 #define ENSURE_REGISTRY \
-  if (!registry) registry = id_str_hash_create (101);
+  if (!registry) registry = id_str_hash_create (7001);
 
 #define ENSURE_SEQUENCES \
   if (!sequences)  \
