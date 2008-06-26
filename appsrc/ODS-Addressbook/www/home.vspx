@@ -81,6 +81,26 @@
     ]]>
   </v:method>
 
+  <v:method name="toolbarShow" arglist="in cmd varchar, in cmdLabel varchar, in cmdOnClick varchar, in cmdImageSrc varchar, in cmdImageGraySrc varchar">
+    <![CDATA[
+      declare imageSrc, onclickEvent, styleStr varchar;
+
+      if (self.toolbarEnable(cmd))
+      {
+        onclickEvent := cmdOnClick;
+        imageSrc := cmdImageSrc;
+        styleStr := 'style="cursor: pointer;"';
+      } else {
+        onclickEvent := '';
+        imageSrc := cmdImageGraySrc;
+        styleStr := '';
+      }
+      http (sprintf ('<span %s class="toolbar" %s title="%s">', onclickEvent, styleStr, cmdLabel));
+        http (sprintf ('<img src="image/%s" border="0" alt="%s" />%s', imageSrc, cmdLabel, self.toolbarLabel(cmdLabel)));
+      http ('</span>');
+    ]]>
+  </v:method>
+
   <v:method name="render_select" arglist="inout name any">
     <![CDATA[
       declare N any;
@@ -632,102 +652,49 @@
           }
         ?>
         <div class="toolbar">
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MyContacts'');'" xhtml_title="My Contacts" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/ab_32.png" border="0" alt="My Contacts" />' || self.toolbarLabel('My Contacts');
-              ]]>
-            </v:before-render>
-          </v:url>
-
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MySharedContacts'');'" xhtml_title="Shared Contacts" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/ab_shared_32.png" border="0" alt="Shared Contacts" />' || self.toolbarLabel('Shared Contacts');
-              ]]>
-            </v:before-render>
-          </v:url>
+        <?vsp
+          self.toolbarShow ('', 'My Contacts', 'onclick="javascript: toolbarPost(\'MyContacts\');"', 'ab_32.png', '');
+          self.toolbarShow ('', 'Shared Contacts', 'onclick="javascript: toolbarPost(\'MySharedContacts\');"', 'ab_shared_32.png', '');
+        ?>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''import'');'" enabled="--self.toolbarEnable('import')" xhtml_title="Import" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/impt_32.png" border="0" alt="Import" />' || self.toolbarLabel('Import');
-              ]]>
-            </v:before-render>
-          </v:url>
-          <v:template type="simple" enabled="--case when self.toolbarEnable('import') then 0 else 1 end">
-            <span class="toolbar">
-              <img src="image/grey_impt_32.png" border="0" alt="Import" /><?vsp http(self.toolbarLabel('Import'));?>
-            </span>
-          </v:template>
-
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''export'');'" enabled="--self.toolbarEnable('export')" xhtml_title="Export" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/exp_32.png" border="0" alt="Export" />' || self.toolbarLabel('Export');
-              ]]>
-            </v:before-render>
-          </v:url>
-          <v:template type="simple" enabled="--case when self.toolbarEnable('export') then 0 else 1 end">
-            <span class="toolbar">
-              <img src="image/grey_exp_32.png" border="0" alt="Export" /><?vsp http(self.toolbarLabel('Export'));?>
-            </span>
-          </v:template>
+        <?vsp
+          self.toolbarShow ('import', 'Import', 'onclick="javascript: toolbarPost(\'import\');"', 'impt_32.png', 'grey_impt_32.png');
+          self.toolbarShow ('export', 'Export', 'onclick="javascript: toolbarPost(\'export\');"', 'exp_32.png', 'grey_exp_32.png');
+        ?>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''create'');'" enabled="--self.toolbarEnable('create')" xhtml_title="Create New Contact" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/ab_add_32.png" border="0" alt="New Contact" />' || self.toolbarLabel('New Contact');
-              ]]>
-            </v:before-render>
-          </v:url>
-          <v:template type="simple" enabled="--case when self.toolbarEnable('create') then 0 else 1 end">
-            <span class="toolbar">
-              <img src="image/grey_ab_add_32.png" border="0" alt="New Contact" /><?vsp http (self.toolbarLabel('New Contact'));?>
-            </span>
-          </v:template>
+        <?vsp
+          self.toolbarShow ('create', 'New Contact', 'onclick="javascript: toolbarPost(\'create\');"', 'ab_add_32.png', 'grey_ab_add_32.png');
+        ?>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-          <span id="tbTag" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/tag_32.png" border="0" alt="Tag" />' || self.toolbarLabel('Tag');
-                ]]>
-              </v:before-render>
-            </v:url>
+        <vm:if test="self.toolbarEnable('tag')">
+          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('tag');" title="Tag">
+            <img src="image/tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
+        </vm:if>
           <span id="tbTag_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
 
-          <span id="tbSharing" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''grants'');'" enabled="--self.toolbarEnable('grants')" xhtml_title="Sharing">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/grants_32.png" border="0" alt="Sharing" />' || self.toolbarLabel('Sharing');
-                ]]>
-              </v:before-render>
-            </v:url>
+        <vm:if test="self.toolbarEnable('grants')">
+          <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('grants');" title="Sharing">
+            <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http (self.toolbarLabel('Sharing'));?>
           </span>
+        </vm:if>
           <span id="tbSharing_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
           </span>
 
-          <span id="tbDelete" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: if (confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, ''cb_'', ''No items were selected for deletion.'')) toolbarPost(''delete'');'" xhtml_title="Delete">
-            <v:before-render>
-              <![CDATA[
-                  control.ufl_value := '<img src="image/del_32.png" border="0" alt="Delete" />' || self.toolbarLabel('Delete');
-              ]]>
-            </v:before-render>
-          </v:url>
+        <vm:if test="self.toolbarEnable('delete')">
+          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
+            <img src="image/del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
+        </vm:if>
           <span id="tbDelete_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
