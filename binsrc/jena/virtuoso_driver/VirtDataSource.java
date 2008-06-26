@@ -54,17 +54,18 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     /** Set a named graph. */
     public void addNamedModel(String name, Model model)
 			throws LabelExistsException {
-        String exec_text = "select count (*) from (sparql select * from <"
-			+ name + ">  where {?s ?p ?o})f";
+	String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
  	ResultSet rs = null;
 	int ret = 0;
 
         checkOpen();
         try {
-  	    java.sql.Statement stmt = getConnection().createStatement();
-	    rs = stmt.executeQuery(exec_text);
+  	    java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
+  	    ps.setString(1, name);
+	    rs = ps.executeQuery();
 	    rs.next();
 	    ret = rs.getInt(1);
+	    rs.close();
 	} catch (Exception e) {
 	    throw new JenaException(e);
         }
@@ -74,20 +75,29 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	        throw new LabelExistsException("A model with ID '" + name
 					+ "' already exists.");
  	    Graph g = model.getGraph();
-	    String S, P, O;
+ 	    int count = 0;
+            java.sql.PreparedStatement ps = getConnection().prepareStatement(sinsert);
 
 	    for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
 	        {
 	            Triple t = (Triple)i.next();
-	            S = Node2Str(t.getSubject());
-	            P = Node2Str(t.getPredicate());
-	            O = Node2Str(t.getObject());
 
-	            exec_text ="sparql insert into graph <"+name+"> { "+
-	    			 S+" "+P+" "+O+" }";
-	            java.sql.Statement stmt = getConnection().createStatement();
-	            stmt.executeQuery(exec_text);
+	            ps.setString(1, name);
+        	    bindSubject(ps, 2, t.getSubject());
+	            bindPredicate(ps, 3, t.getPredicate());
+	            bindObject(ps, 4, t.getObject());
+	            ps.addBatch();
+	            count++;
+	            if (count > BATCH_SIZE) {
+	              ps.executeBatch();
+	              ps.clearBatch();
+	              count = 0;
+	            }
 	        }
+	     if (count > 0) {
+	         ps.executeBatch();
+	         ps.clearBatch();
+	     }
 	} catch (Exception e) {
 	    throw new JenaException(e);
 	}
@@ -98,7 +108,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public void removeNamedModel(String name) {
 	    String exec_text ="sparql clear graph <"+ name + ">";
 
-	    checkOpen();
+	checkOpen();
 	try {
 	    java.sql.Statement stmt = getConnection().createStatement();
 	    stmt.executeQuery(exec_text);
@@ -146,17 +156,18 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
     /** Does the dataset contain a model with the name supplied? */ 
     public boolean containsNamedModel(String name) {
-        String exec_text = "select count (*) from (sparql select * from <"
-			+ name + ">  where {?s ?p ?o})f";
+	String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
  	ResultSet rs = null;
 	int ret = 0;
 
         checkOpen();
         try {
-  	    java.sql.Statement stmt = getConnection().createStatement();
-	    rs = stmt.executeQuery(exec_text);
+  	    java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
+  	    ps.setString(1, name);
+	    rs = ps.executeQuery();
 	    rs.next();
 	    ret = rs.getInt(1);
+	    rs.close();
 	} catch (Exception e) {
 	    throw new JenaException(e);
         }

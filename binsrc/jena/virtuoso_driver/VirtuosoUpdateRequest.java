@@ -79,7 +79,7 @@ public class VirtuosoUpdateRequest
 
             for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
             {
-                String query = "sparql\n "+ (String)iter.next();
+                String query = "sparql\n define output:format '_JAVA_'\n "+ (String)iter.next();
                 stmt.execute(query);
             }
 
@@ -95,9 +95,13 @@ public class VirtuosoUpdateRequest
     }
 
 
-    public void addUpdate(String update) { requests.add(update); }
+    public void addUpdate(String update) { 
+    	requests.add(update); 
+    }
 
-    public Iterator iterator() { return requests.iterator(); }
+    public Iterator iterator() { 
+    	return requests.iterator(); 
+    }
 
     public String toString() {
       StringBuffer b = new StringBuffer();
@@ -125,7 +129,5 @@ public class VirtuosoUpdateRequest
         }
 
     }
-
-
 
 }

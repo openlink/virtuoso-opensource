@@ -52,7 +52,9 @@ public class VirtGraph extends GraphBase
     private String user;
     private String password;
     private Connection connection = null;
-
+    static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+    static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+    static final int BATCH_SIZE = 1000;
 
 
     public VirtGraph()
@@ -131,7 +133,7 @@ public class VirtGraph extends GraphBase
 
     public void remove(List triples)
     {
-        delete(triples);
+        delete(triples.iterator(), null);
     }
 
     public void remove(Triple t)
@@ -144,16 +146,17 @@ public class VirtGraph extends GraphBase
 // GraphBase overrides
     String Node2Str(Node n)
     {
-      if (n instanceof Node_URI) {
+      if (n.isURI()) {
         return "<"+n+">";
-      } else if (n instanceof Node_Blank) {
+      } else if (n.isBlank()) {
         return "<_:"+n+">"; 
-      } else {
+      } else if (n.isLiteral()) {
         String s;
         StringBuilder sb = new StringBuilder();
         sb.append("\"");
         sb.append(n.getLiteralValue());
         sb.append("\"");
+
         s = n.getLiteralLanguage();
         if (s != null && s.length() > 0) {
           sb.append("@");
@@ -166,54 +169,107 @@ public class VirtGraph extends GraphBase
           sb.append(">");
         }
         return sb.toString();
+      } else {
+        return "<"+n+">";
       }
     }
 
+    void bindSubject(PreparedStatement ps, int col, Node n) throws SQLException 
+    {
+      if (n == null)
+	return;
+      if (n.isURI()) 
+	ps.setString(col, n.toString());
+      else if (n.isBlank()) 
+        ps.setString(col, "_:"+n.toString());
+      else 
+	ps.setString(col, n.toString());
+    }
+
+	
+    void bindPredicate(PreparedStatement ps, int col, Node n) throws SQLException 
+    {
+      if (n == null)
+        return;
+      ps.setString(col, n.toString());
+    }
+
+    void bindObject(PreparedStatement ps, int col, Node n) throws SQLException 
+    {
+      if (n == null)
+        return;
+      if (n.isURI()) {
+	ps.setInt(col, 1);
+        ps.setString(col+1, n.toString());
+	ps.setNull(col+2, java.sql.Types.VARCHAR);
+      } else if (n .isBlank()) {
+	ps.setInt(col, 1);
+	ps.setString(col+1, "_:"+n.toString());
+	ps.setNull(col+2, java.sql.Types.VARCHAR);
+      }	else if (n.isLiteral()) {
+        String llang = n.getLiteralLanguage();
+        String ltype = n.getLiteralDatatypeURI();
+	if (llang != null && llang.length() > 0) {
+          ps.setInt(col, 5);
+          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+2, n.getLiteralLanguage());
+        } else if (ltype != null && ltype.length() > 0) {
+          ps.setInt(col, 4);
+          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+2, n.getLiteralDatatypeURI());
+        } else {
+          ps.setInt(col, 3);
+          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setNull(col+2, java.sql.Types.VARCHAR);
+        }	
+      }	else {
+	ps.setInt(col, 3);
+        ps.setString(col+1, n.toString());
+	ps.setNull(col+2, java.sql.Types.VARCHAR);
+      }
+    }
+
+    
+    
     @Override
     public void performAdd(Triple t)
     {
-      String S, P, O;
-      String exec_text;
-
-      S = Node2Str(t.getSubject());
-      P = Node2Str(t.getPredicate());
-      O = Node2Str(t.getObject());
-
-      exec_text = "sparql insert into graph <"+this.graphName+"> { "+
-      		    S+" "+P+" "+O+" }";
+      java.sql.PreparedStatement ps;
 
       try
 	{
-	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeQuery(exec_text);
+            ps = connection.prepareStatement(sinsert);
+            ps.setString(1, this.graphName);
+            bindSubject(ps, 2, t.getSubject());
+            bindPredicate(ps, 3, t.getPredicate());
+            bindObject(ps, 4, t.getObject());
+
+	    ps.execute();
 	}
       catch(Exception e)
 	{
-            throw new JenaException(e);
+            throw new AddDeniedException(e.toString());
 	}
     }
 
 
     public void performDelete (Triple t)
     {
-      String S, P, O;
-      String exec_text;
-
-      S = Node2Str(t.getSubject());
-      P = Node2Str(t.getPredicate());
-      O = Node2Str(t.getObject());
-
-      exec_text = "sparql delete from graph <"+this.graphName+"> { "+
-      		    S+" "+P+" "+O+" }";
+      java.sql.PreparedStatement ps;
 
       try
 	{
-	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeQuery(exec_text);
+            ps = connection.prepareStatement(sdelete);
+            ps.setString(1, this.graphName);
+            bindSubject(ps, 2, t.getSubject());
+            bindPredicate(ps, 3, t.getPredicate());
+            bindObject(ps, 4, t.getObject());
+
+	    ps.execute();
 	}
       catch(Exception e)
 	{
-            throw new JenaException(e);
+            throw new DeleteDeniedException(e.toString());
 	}
     }
 
@@ -223,18 +279,19 @@ public class VirtGraph extends GraphBase
      */
     @Override
     protected int graphBaseSize() {
-	String exec_text = "select count (*) from (sparql select * from <"
-			+ this.graphName + ">  where {?s ?p ?o})f";
+	String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
 	ResultSet rs = null;
 	int ret = 0;
 
 	checkOpen();
 
 	try {
-		java.sql.Statement stmt = connection.createStatement();
-		rs = stmt.executeQuery(exec_text);
+		java.sql.PreparedStatement ps = connection.prepareStatement(query);
+		ps.setString(1, graphName);
+		rs = ps.executeQuery();
 		rs.next();
 		ret = rs.getInt(1);
+		rs.close();
 	} catch (Exception e) {
 	        throw new JenaException(e);
 	}
@@ -266,9 +323,8 @@ public class VirtGraph extends GraphBase
 	if (!Node.ANY.equals(t.getObject()))
 		O = Node2Str(t.getObject());
 
-	exec_text = "select count (*) from (sparql select * from <"
-			+ this.graphName + "> where { " 
-			+ S +" "+ P +" "+ O +" })f";
+	exec_text = "select count (*) from (sparql select * where { graph <"+ 
+			this.graphName +"> { " + S +" "+ P +" "+ O +" }})f";
 
 	try {
 		java.sql.Statement stmt = connection.createStatement();
@@ -329,20 +385,8 @@ public class VirtGraph extends GraphBase
 
     public void clear()
     {
-	String exec_text ="sparql clear graph <" + this.graphName + ">";
-
-	checkOpen();
-
-	try
-	{
-	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeQuery(exec_text);
-	}
-	catch(Exception e)
-	{
-            throw new JenaException(e);
-	}
-	;
+        clearGraph(this.graphName);
+        getEventManager().notifyEvent( this, GraphEvents.removeAll );
     }
 
 
@@ -356,7 +400,7 @@ public class VirtGraph extends GraphBase
 	try
 	{
 	    java.sql.Statement stmt = connection.createStatement();
-	    stmt.executeQuery(exec_text);
+	    stmt.execute(exec_text);
 	}
 	catch(Exception e)
 	{
@@ -367,17 +411,39 @@ public class VirtGraph extends GraphBase
 
 
     @SuppressWarnings("unchecked")
-    public void add(List triples)
+    void add(Iterator it, List list) 
     {
-	Iterator it = triples.iterator();
-
 	try
 	{
+            PreparedStatement ps = connection.prepareStatement(sinsert);
+            int count = 0;
+	    
 	    while (it.hasNext())
 	    {
-		Triple triple = (Triple) it.next();
-		add (triple);
+		Triple t = (Triple) it.next();
+
+		if (list != null)
+		  list.add(t);
+
+                ps.setString(1, this.graphName);
+                bindSubject(ps, 2, t.getSubject());
+                bindPredicate(ps, 3, t.getPredicate());
+                bindObject(ps, 4, t.getObject());
+                ps.addBatch();
+                count++;
+
+                if (count > BATCH_SIZE) {
+                  ps.executeBatch();
+                  ps.clearBatch();
+                  count = 0;
+                }
 	    }
+
+            if (count > 0) 
+            {
+                ps.executeBatch();
+                ps.clearBatch();
+            }
 	}
 	catch(Exception e)
 	{
@@ -387,16 +453,18 @@ public class VirtGraph extends GraphBase
 
 
 
-    public void delete(List triples)
+    void delete(Iterator it, List list)
     {
-	Iterator it = triples.iterator();
-
 	try
 	{
 	    while (it.hasNext())
 	    {
 		Triple triple = (Triple) it.next();
-		delete (triple);
+
+		if (list != null)
+		  list.add(triple);
+
+		performDelete (triple);
 	    }
 	}
 	catch(Exception e)
@@ -405,6 +473,59 @@ public class VirtGraph extends GraphBase
 	}
     }
 
+
+    void delete_match(TripleMatch tm)
+    {
+	String S, P, O;
+
+	checkOpen();
+
+	S = " ?s ";
+	P = " ?p ";
+	O = " ?o ";
+
+	if (tm.getMatchSubject() != null)
+		S = Node2Str(tm.getMatchSubject());
+
+	if (tm.getMatchPredicate() != null)
+		P = Node2Str(tm.getMatchPredicate());
+
+	if (tm.getMatchObject() != null)
+		O = Node2Str(tm.getMatchObject());
+
+        String query = "sparql delete from graph <"+this.graphName+
+  		"> {?s ?p ?o} where {?s ?p ?o . "+
+  		""+S+" ?p ?o . ?s "+P+" ?o . ?s ?p "+O+" .}";
+
+        try
+	{
+	    java.sql.Statement stmt = connection.createStatement();
+	    stmt.execute(query);
+	}
+      catch(Exception e)
+	{
+            throw new DeleteDeniedException(e.toString());
+	}
+    }
+
+
+    void clearGraph(String name)
+    {
+        String query = "sparql clear graph iri(??)";
+
+	checkOpen();
+
+	try
+	{
+	    java.sql.PreparedStatement ps = connection.prepareStatement(query);
+	    ps.setString(1, name);
+	    ps.execute();
+	}
+	catch(Exception e)
+	{
+            throw new JenaException(e);
+	}
+    }
 
 
     public ExtendedIterator reifierTriples( TripleMatch m )

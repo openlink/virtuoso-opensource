@@ -65,21 +65,22 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	        super.setNsPrefix(prefix, uri);
 	    }
 	  } catch (Exception e) {
-	     throw new JenaException(e.toString());
+	     throw new JenaException(e);
 	  } 
 	}
 
         public PrefixMapping removeNsPrefix( String prefix )
         {
 	  Connection conn = m_graph.getConnection();
-	  String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX('" + prefix + "', 1)";
+	  String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
           super.removeNsPrefix( prefix );
 
 	  try {
-	    Statement stmt = conn.createStatement();
-	    stmt.execute(query);
+	    PreparedStatement ps = conn.prepareStatement(query);
+	    ps.setString(1, prefix);
+	    ps.execute();
 	  } catch (Exception e) {
-	     throw new JenaException(e.toString());
+	     throw new JenaException(e);
 	  } 
 
           return this;
@@ -95,14 +96,16 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	  super.setNsPrefix(prefix, uri);
 
 	  Connection conn = m_graph.getConnection();
-	  String query = "DB.DBA.XML_SET_NS_DECL('" + prefix + "','" + uri + "', 1)";
+	  String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
 		
 	  // All went well, so persist the prefix by adding it to the graph properties
 	  // (the addPrefix call will overwrite any existing mapping with the same prefix
 	  // so it matches the behaviour of the prefixMappingImpl).
 	  try {
-	    Statement stmt = conn.createStatement();
-	    stmt.execute(query);
+	    PreparedStatement ps = conn.prepareStatement(query);
+	    ps.setString(1, prefix);
+	    ps.setString(2, uri);
+	    ps.execute();
 	  } catch (Exception e) {
 	     throw new JenaException(e.toString());
 	  } 

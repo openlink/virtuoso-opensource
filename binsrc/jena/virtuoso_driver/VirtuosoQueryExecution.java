@@ -83,7 +83,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	StringTokenizer tok = new StringTokenizer(query);
 	String s = tok.nextToken().toLowerCase();
-	if (s.equals("describe") || s.equals("construct")) {
+	if (s.equals("describe") || s.equals("construct") || s.equals("ask")) {
            virt_query = "sparql\n define output:format '_JAVA_'\n " + query;
         } else {
       	   virt_query = "sparql\n " + query;

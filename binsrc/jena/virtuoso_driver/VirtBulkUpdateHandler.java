@@ -25,15 +25,15 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
 
 
 import com.hp.hpl.jena.shared.*;
-import com.hp.hpl.jena.graph.Graph;
-import com.hp.hpl.jena.graph.GraphUtil;
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.graph.impl.SimpleBulkUpdateHandler;
 import com.hp.hpl.jena.util.iterator.ExtendedIterator;
+import com.hp.hpl.jena.util.IteratorCollection;
 
 
 public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
@@ -42,86 +42,83 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	super(parent);
     }
 
+    @Override
     public void add( Triple [] triples ) { 
-	VirtGraph _graph=(VirtGraph)this.graph;
-	try {
-		boolean autoCommit = _graph.getConnection().getAutoCommit();
-	        if (autoCommit) 
-		_graph.getConnection().setAutoCommit(false);
-
-        	for (int i = 0; i < triples.length; i += 1) 
-        		_graph.performAdd( triples[i] ); 
-        	if (autoCommit) {
-		_graph.getConnection().commit();
-		_graph.getConnection().setAutoCommit(true);
-		}
-	} catch (Exception e) {
-		throw new JenaException("Couldn't create transaction:"+e);
-	}
+        addIterator(Arrays.asList(triples).iterator(), false);
         manager.notifyAddArray( graph, triples );
     }
 
     @Override
     protected void add(List triples, boolean notify) {
+        addIterator(triples.iterator(), false);
+        if (notify)
+        	manager.notifyAddList( graph, triples );
+    }
+
+    @Override
+    public void addIterator(Iterator it, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
+	List list = notify ? new ArrayList() : null;
+
 	try {
 		boolean autoCommit = _graph.getConnection().getAutoCommit();
-	        if (autoCommit) 
-		_graph.getConnection().setAutoCommit(false);
-		for (Iterator i = triples.iterator(); i.hasNext(); ) {
-			Triple trip = (Triple) i.next();
-			_graph.performAdd(trip);
-		}
+	        if (autoCommit)
+		    _graph.getConnection().setAutoCommit(false);
+		_graph.add(it, list);
 	        if (autoCommit)  {
-		_graph.getConnection().commit();
-		_graph.getConnection().setAutoCommit(true);
+		    _graph.getConnection().commit();
+		    _graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
 		throw new JenaException("Couldn't create transaction:"+e);
 	}
-	if (notify) 
-		manager.notifyAddList( graph, triples );
+	if (notify)
+		manager.notifyAddIterator( graph, list);
     }
-
     
 
     public void delete( Triple [] triples ) { 
-	VirtGraph _graph=(VirtGraph)this.graph;
-	try {
-		boolean autoCommit = _graph.getConnection().getAutoCommit();
-		if (autoCommit) 
-		_graph.getConnection().setAutoCommit(false);
-        	for (int i = 0; i < triples.length; i += 1) 
-        		_graph.performDelete( triples[i] ); 
-	        if (autoCommit) {
-		_graph.getConnection().commit();
-		_graph.getConnection().setAutoCommit(true);
-		}
-	} catch (Exception e) {
-		throw new JenaException("Couldn't create transaction:"+e);
-	}
+	deleteIterator(Arrays.asList(triples).iterator(), false);
         manager.notifyDeleteArray( graph, triples );
     }
     
 
     protected void delete( List triples, boolean notify ) { 
+        deleteIterator(triples.iterator(), false);
+        if (notify)
+        	manager.notifyDeleteList( graph, triples );
+    }
+    
+
+    public void deleteIterator( Iterator it, boolean notify ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
+	List list = notify ? new ArrayList() : null;
+
 	try {
 		boolean autoCommit = _graph.getConnection().getAutoCommit();
 		if (autoCommit) 
-		_graph.getConnection().setAutoCommit(false);
-        	for (int i = 0; i < triples.size(); i += 1) 
-        		graph.performDelete( (Triple) triples.get(i) );
+		    _graph.getConnection().setAutoCommit(false);
+		_graph.delete(it, list);
 		if (autoCommit) {
-		_graph.getConnection().commit();
-		_graph.getConnection().setAutoCommit(true);
+		    _graph.getConnection().commit();
+		    _graph.getConnection().setAutoCommit(true);
 		}
 	} catch (Exception e) {
 		throw new JenaException("Couldn't create transaction:"+e);
 	}
         if (notify) 
-        	manager.notifyDeleteList( graph, triples );
+        	manager.notifyDeleteIterator( graph, list);
     }
     
+    public void removeAll() { 
+	VirtGraph _graph=(VirtGraph)this.graph;
+        _graph.clearGraph(_graph.getGraphName()); 
+        notifyRemoveAll(); 
+    }
 
+    public void remove( Node s, Node p, Node o ) { 
+	VirtGraph _graph=(VirtGraph)this.graph;
+        _graph.delete_match(Triple.createMatch(s, p, o));
+        manager.notifyEvent( graph, GraphEvents.remove( s, p, o ) ); 
+    }
 }
