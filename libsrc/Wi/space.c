@@ -163,8 +163,14 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 				       buf->bd_physical_page);
   if (!remap_to)
     {
+      if (LT_CLOSING == itc->itc_ltrx->lt_status)
+	{
+	  log_error ("Out if disk during commit.  The transaction is in effect and will be replayed from the log at restart.  Exiting due to no disk space, thus cannot maintain separtation of checkpoint and commit space and transactional semantic."
+		     "This happens due to running out of safety margin, which is not expected to happen.  If this takes place without in fact being out of disk on the database or consistently in a given situationj, the condition may be reported to support.   This is a planned exit and not a database corruption.  A core will be made for possible support.");
+	  GPF_T1 ("Deliberately made core for possible support");
+	}
       if (itc->itc_n_pages_on_hold)
-	GPF_T1 ("pages on hold exceeded");
+	GPF_T1 ("The database is out of disk during an insert.  The insert has exceeded its space safety margin.  This does not normally happen.  This is a planned exit and not a corruption. Make more disk space available.  If this occurs continuously or without in fact running out of space, this may be reported to support.");
       if (DELTA_STAY_INSIDE == stay_in_map)
 	GPF_T1 ("out of disk on reloc_right_leaves.");
       log_error ("Out of disk space for database");

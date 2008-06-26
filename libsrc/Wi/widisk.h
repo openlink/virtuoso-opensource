@@ -86,7 +86,7 @@ typedef unsigned char * db_buf_t;
 #define N_CFG_PAGE_WORDS	5	/* Highest value of the above */
 
 /* min free pages before insert */
-#define DP_INSERT_RESERVE 150
+#define DP_INSERT_RESERVE 350
 
 
 
