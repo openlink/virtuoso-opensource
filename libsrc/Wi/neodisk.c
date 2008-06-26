@@ -536,8 +536,27 @@ pl_needs_cpt_rb (page_lock_t * pl)
 
 
 int cpt_out_of_space = 0;
+dk_set_t cpt_new_pages = NULL;
 
 void
+cpt_out_of_disk ()
+{
+  dp_addr_t dp;
+  while ((dp = (dp_addr_t)(ptrlong)dk_set_pop (&cpt_new_pages)))
+    dbs_free_disk_page (cpt_dbs, dp);
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_rb_hash && lt->lt_rb_hash->ht_count)
+	lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+    }
+  END_DO_SET();
+}
+
+
+#define CPT_RB_NO_DISK -1
+
+
+int 
 cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_t * ht)
 {
   static caddr_t image;
@@ -550,6 +569,7 @@ cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_
   dk_hash_iterator (&hit, &it->it_maps[inx].itm_locks);
   while (dk_hit_next (&hit, &dp, (void**) &pl))
     {
+      dp_addr_t cpt_remap, committed_remap, new_remap;
       buffer_desc_t * buf;
       if (!pl_needs_cpt_rb (pl))
 	continue;
@@ -579,8 +599,22 @@ cpt_uncommitted_backup (index_tree_t * it, int inx, dk_session_t * ses, dk_hash_
 	{
 	}
       END_WRITE_FAIL (ses);
+      cpt_remap = DP_CHECKPOINT_REMAP (cpt_dbs, pl->pl_page);
+      committed_remap = buf->bd_physical_page;
+      if (!cpt_remap && committed_remap == pl->pl_page)
+	{
+	  new_remap = dbs_stop_cp == 3 ? 0 : dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
+	  if (!new_remap) 
+	    {
+	      return CPT_RB_NO_DISK;
+	    }
+	  dk_set_push (&cpt_new_pages, (void*)(uptrlong)new_remap);
+	}
+
+
       sethash (DP_ADDR2VOID (pl->pl_page),  ht, DP_ADDR2VOID (pl->pl_page));
     }
+  return 0;
 }
 
 
@@ -650,6 +684,8 @@ cpt_uncommitted (index_tree_t * it, int inx)
 	       * Get a remap.  If not remap can be had, then do not give it a remap but this makes for a bad checkpoint.
 	       * The next checkpoint will write the page as if it were new again and all writes between checkpoints  will in fact go to the checkpoint, against the rules.  
 	       * To rectify this, force some unremaps at the end.  */
+	      new_remap = (dp_addr_t)(ptrlong) dk_set_pop (&cpt_new_pages);
+	      if (!new_remap)
 	      new_remap = dbs_get_free_disk_page (cpt_dbs, buf->bd_page);
 	      if (!new_remap || dbs_stop_cp == 3)
 		{
@@ -1238,18 +1274,21 @@ dbs_cpt_recov (void)
 void 
 dbs_cpt_backup (void)
 {
+  int second_round = 0;
   dk_set_t rem;
   int inx;
   int cpt_log_fd;
   dk_session_t * ses = dk_session_allocate (SESCLASS_TCPIP);
-
+ retry:
+  cpt_new_pages = NULL;
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
     {
-      dk_hash_t * cpt_bkp = hash_table_allocate (101);
+      dk_hash_t * cpt_bkp;
       if (!dbs->dbs_cpt_file_name)
 	continue;
-
+      cpt_bkp = hash_table_allocate (101);
       cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);  
+      ftruncate (cpt_log_fd, 0);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
 
@@ -1264,14 +1303,26 @@ dbs_cpt_backup (void)
       cpt_uncommitted_remap_dp = hash_table_allocate (101); 
       DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	{
+	  int rc;
 	  mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
 	  itc_from_it (mcp_itc, it);
 	  it_from_g = it;
 	  for (inx = 0; inx < IT_N_MAPS; inx++)
 	    {
 	      mutex_enter (&it->it_maps[inx].itm_mtx);
-	      cpt_uncommitted_backup (it, inx, ses, cpt_bkp);
+	      rc = cpt_uncommitted_backup (it, inx, ses, cpt_bkp);
 	      mutex_leave (&it->it_maps[inx].itm_mtx);
+	      if (CPT_RB_NO_DISK  == rc && !second_round)
+		{
+		  second_round = 1;
+		  log_error ("checkpoint ran out of disk space for rb of uncommitted.  Server exiting without starting the checkpoint.  Upon restart will recover from roll forward log.  More disk space should be made available");
+		  ftruncate (cpt_log_fd, 0);
+		  fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
+		  unlink (dbs->dbs_cpt_file_name);
+		  call_exit (-1);
+		  cpt_out_of_disk ();
+		  goto retry;
+		}
 	    }
 	}
       END_DO_SET();
@@ -1328,7 +1379,11 @@ dbs_cpt_backup (void)
 
 
       sch_save_roots (wi_inst.wi_schema);
-      dbs_write_registry (dbs);
+      if (LTE_OK != dbs_write_registry (dbs))
+	{
+	  log_error ("Since registry could not be written, checkpoint not started.  Server exiting.  Make more disk space available and restart, which will roll forward from log.");
+	  call_exit (-1);
+	}
       dbs_write_page_set (dbs, dbs->dbs_free_set);
       dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
       rem = dbs->dbs_cp_remap_pages;
@@ -1342,6 +1397,7 @@ dbs_cpt_backup (void)
 	  session_flush_1 (ses);
 	}
       END_WRITE_FAIL (ses);
+      fsync (cpt_log_fd);
       fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
       dbs_sync_disks (dbs);
       hash_table_free (cpt_uncommitted_remap);

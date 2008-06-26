@@ -772,7 +772,7 @@ void registry_set_1 (const char * name, const char * value, int is_boxed, caddr_
 EXE_EXPORT(box_t, registry_get_all, ( void )); /* returns the name,value, name,value array */
 caddr_t registry_remove (char *name);
 
-void dbs_write_registry (dbe_storage_t * dbs);
+int dbs_write_registry (dbe_storage_t * dbs);
 void dbs_init_registry (dbe_storage_t * dbs);
 void db_replay_registry_sequences (void);
 

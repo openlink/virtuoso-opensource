@@ -38,21 +38,43 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 {
   int err;
   long copy_bytes;
-  long bytes_left = strses_length (ses);
+  long prev_size = 0, bytes_left = strses_length (ses);
+  int n_pages = _RNDUP (bytes_left, PAGE_DATA_SZ) / PAGE_DATA_SZ, n_prev_pages;
+  dk_set_t new_dps = NULL;
   long byte_from = 0;
   dp_addr_t first = dbs->dbs_registry;
   dp_addr_t any_page = first;
   if (first)
     {
       dk_session_t * strses = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry, &err);
-      dk_free_box (strses);
       if (err)
 	{
 	  log_error ("A bad registry has been detected in cpt.  Making new registry.");
-	  first = any_page = 0;
+	  prev_size = first = any_page = 0;
 	}
+      else 
+	prev_size = strses_length (strses);
+      dk_free_box (strses);
     }
 
+  n_prev_pages = _RNDUP (prev_size, PAGE_DATA_SZ) / PAGE_DATA_SZ;
+  if (n_pages > n_prev_pages)
+    {
+      int ctr;
+      for (ctr = n_prev_pages; ctr < n_pages; ctr++)
+	{
+	  dp_addr_t dp = dbs_get_free_disk_page (dbs, 0);
+	  if (!dp)
+	    {
+	      log_error ("out of disk for writing registry.  Checkpoint not started.");
+	      while ((dp = (dp_addr_t)(uptrlong)dk_set_pop (&new_dps)))
+		dbs_free_disk_page (dbs, dp);
+	      return LTE_NO_DISK;
+	    }
+	  dk_set_push (&new_dps, (void*)(uptrlong)dp);
+	}
+      new_dps = dk_set_nreverse (new_dps);
+    }
   if (!reg_buf)
     {
       reg_buf = buffer_allocate (DPF_BLOB);
@@ -64,7 +86,7 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 	{
 	  if (!first)
 	    {
-	      dp_addr_t new_dp = dbs_get_free_disk_page (dbs, 0);
+	      dp_addr_t new_dp = (dp_addr_t)(uptrlong)dk_set_pop (&new_dps);
 	      if (!any_page)
 		{
 		  dbs->dbs_registry = new_dp;
@@ -316,9 +338,10 @@ registry_update_sequences (void)
 caddr_t list (long n,...);
 
 
-void
+int
 dbs_write_registry (dbe_storage_t * dbs)
 {
+  int rc;
   scheduler_io_data_t iod;
   dk_set_t ents = NULL;
   int inx;
@@ -340,7 +363,7 @@ dbs_write_registry (dbe_storage_t * dbs)
   memset (&iod, 0, sizeof (iod));
   CATCH_WRITE_FAIL (ses)
       print_object ((caddr_t) arr, ses, NULL, NULL);
-  cpt_write_registry (dbs, ses);
+  rc = cpt_write_registry (dbs, ses);
   strses_free (ses);
   DO_BOX (caddr_t, elt, inx, arr)
     {
@@ -348,6 +371,7 @@ dbs_write_registry (dbe_storage_t * dbs)
     }
   END_DO_BOX;
   dk_free_box ((box_t) arr);
+  return rc;
 }
 
 
