@@ -792,8 +792,13 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
 
 #define XP_STRSES_FLUSH(xp) \
   do { \
-    if (0 != strses_length ((xp)->xp_strses)) \
+    size_t xp_strses_length = strses_length ((xp)->xp_strses); \
+    if (0 != xp_strses_length) \
+      { \
+        if (xp_strses_length & ~0xffffff) \
+          sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", xp_strses_length); \
       XP_STRSES_FLUSH_NOCHECK(xp); \
+      } \
     } while (0)
 
 
