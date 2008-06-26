@@ -473,8 +473,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
 
   file_extend = (long) (ptrlong) cfg_get_parm (wholefile, "\nfile_extend:", 0);
-  if (!file_extend)
-    file_extend = 100;
+  if (file_extend < DP_INSERT_RESERVE)
+    file_extend = DP_INSERT_RESERVE + 5;
 
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);

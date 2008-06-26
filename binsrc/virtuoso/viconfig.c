@@ -1639,6 +1639,9 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
   if (cfg_getlong (pconfig, section, "FileExtend", &c_file_extend) == -1)
     c_file_extend = 100;
 
+  if (c_file_extend < DP_INSERT_RESERVE + 5)
+    c_file_extend = DP_INSERT_RESERVE + 5;
+
   if (cfg_getlong (pconfig, section, "MaxCheckpointRemap", &c_max_checkpoint_remap) == -1)
     {
       if (dbs->dbs_type != DBS_PRIMARY || cfg_getlong (pconfig, "Parameters", "MaxCheckpointRemap", &c_max_checkpoint_remap) == -1)
