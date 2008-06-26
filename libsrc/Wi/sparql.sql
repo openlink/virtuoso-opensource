@@ -1684,6 +1684,8 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
+  else if ((t = __tag of varchar) and (1 = __box_flags (v)))
+    return iri_to_id (v);
   return rdf_box (v, 257, 257, 0, 1);
 }
 ;
