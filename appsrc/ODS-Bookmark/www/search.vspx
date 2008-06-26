@@ -280,6 +280,32 @@
       <v:variable name="ds_tags" type="any" default="null"/>
     </vm:variables>
     <vm:pagebody>
+      <?vsp
+        if (0)
+        {
+      ?>
+          <v:button name="command" action="simple" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare params, action any;
+
+                params := e.ve_params;
+
+                action := get_keyword ('action', params, '');
+                if (action = 'search')
+                {
+                dbg_obj_print ('gogo', get_keyword ('keywords', params, ''));
+                  self.vc_redirect (sprintf ('search.vspx?keywords=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
+                  return;
+                }
+
+                self.vc_data_bind(e);
+               ]]>
+             </v:on-post>
+          </v:button>
+      <?vsp
+        }
+      ?>
       <v:before-data-bind>
         <![CDATA[
           declare settings any;
@@ -682,28 +708,9 @@
                 <b><v:label for="" value="Search" /></b>
                 <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60"/>
                 |
-                <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
-                  <v:on-post>
-                    <![CDATA[
-                      self.vc_is_valid := 1;
-                      self.v_step := 0;
-                      self.v_mode := 'advanced';
-                      self.ds_data := vector();
-                      self.ds_meta := vector();
-                      self.ds_tags := vector();
-                      self.f_own.ufl_selected := 1;
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
+                <v:url url="search.vspx?mode=advanced" value="Advanced" xhtml_title="Advanced Search"/>
                 |
-                <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
-                  <v:on-post>
-                    <![CDATA[
-                      self.vc_redirect('bookmarks.vspx');
-                    ]]>
-                  </v:on-post>
-                </v:button>
+                <v:url url="bookmarks.vspx" value="Cancel" xhtml_title="Cancel"/>
               </td>
             </tr>
           </table>

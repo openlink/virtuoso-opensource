@@ -35,10 +35,14 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue, f2Name, f2Value)
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
+  if (fName)
   createHidden('F1', fName, fValue);
+  if (f2Name)
   createHidden('F1', f2Name, f2Value);
+  if (f3Name)
+    createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
 }
 
@@ -50,7 +54,6 @@ function toolbarPost(value)
 }
 
 // ---------------------------------------------------------------------------
-//
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -67,6 +70,27 @@ function submitEnter(myForm, myButton, e) {
     } else
     document.forms[myForm].submit();
   }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+function checkNotEnter(e)
+{
+  var key;
+
+  if (window.event)
+  {
+    key = window.event.keyCode;
+  } else {
+    if (e)
+    {
+      key = e.which;
+    } else {
+      return true;
+    }
+  }
+  if (key == 13)
+    return false;
   return true;
 }
 

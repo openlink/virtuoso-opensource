@@ -109,7 +109,7 @@
     </xsl:for-each>
     <xsl:if test="not @clean or @clean = 'no'">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        &amp;nbsp;<a href="" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
         <hr />
       </div>
     </xsl:if>
@@ -149,19 +149,11 @@
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
+              <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('command', 'action', 'search', 'mode', 'simple'); return false;" />
             <xsl:call-template name="nbsp"/>
-            <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
-            	<v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=simple&amp;step=1', self.keywords.ufl_value));
-            	</v:on-post>
-  	        </v:button>
+              <v:url url="search.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'command\', \'action\', \'search\', \'mode\', \'simple\'); return false;" value="Search" xhtml_title="simple Search"/>
             |
-            <v:button action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
-            	<v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=advanced', self.keywords.ufl_value));
-            	</v:on-post>
-  	        </v:button>
+              <v:url url="search.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'command\', \'action\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>
           </div>
       	</v:template>
         <br style="clear: left;"/>
@@ -175,7 +167,7 @@
               <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
-          <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
+            <v:button action="simple" url="#" style="url" value="Help" xhtml_alt="Help"/>
       </div>
         </div>
       <v:include url="bmk_login.vspx"/>
