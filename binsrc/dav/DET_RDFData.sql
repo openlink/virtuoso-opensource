@@ -23,14 +23,14 @@
 use DB
 ;
 
-create procedure RDFData_log_message (in x varchar)
+create procedure DB.DBA.RDFData_log_message (in x varchar)
 {
   if (0)
   log_message (cast (x as varchar));
 }
 ;
 
-create function "RDFData_DAV_AUTHENTICATE" (in id any, in what char(1), in req varchar, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer)
+create function DB.DBA."RDFData_DAV_AUTHENTICATE" (in id any, in what char(1), in req varchar, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer)
 {
   RDFData_log_message (current_proc_name ());
   --log_message (sprintf ('RDFData_DAV_AUTHENTICATE req=%s uname=%s uid=%d', req, auth_uname, auth_uid));
@@ -53,7 +53,7 @@ create function "RDFData_DAV_AUTHENTICATE" (in id any, in what char(1), in req v
 }
 ;
 
-create function "RDFData_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
+create function DB.DBA."RDFData_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_print (current_proc_name (), id, what, _perms);
@@ -101,28 +101,28 @@ nf_col_or_res:
 ;
 
 
-create function "RDFData_DAV_GET_PARENT" (in id any, in st char(1), in path varchar) returns any
+create function DB.DBA."RDFData_DAV_GET_PARENT" (in id any, in st char(1), in path varchar) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_COL_CREATE" (in detcol_id any, in path_parts any, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_COL_CREATE" (in detcol_id any, in path_parts any, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in full_mount_path varchar, in mount_det varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in full_mount_path varchar, in mount_det varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
@@ -130,14 +130,14 @@ create function "RDFData_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_pa
 ;
 
 
-create function "RDFData_DAV_DELETE" (in detcol_id any, in path_parts any, in what char(1), in silent integer, in auth_uid integer) returns integer
+create function DB.DBA."RDFData_DAV_DELETE" (in detcol_id any, in path_parts any, in what char(1), in silent integer, in auth_uid integer) returns integer
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, inout content any, in type varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, inout content any, in type varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('RDFData_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   return -20;
@@ -145,14 +145,14 @@ create function "RDFData_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, i
 ;
 
 
-create function "RDFData_DAV_PROP_REMOVE" (in id any, in what char(0), in propname varchar, in silent integer, in auth_uid integer) returns integer
+create function DB.DBA."RDFData_DAV_PROP_REMOVE" (in id any, in what char(0), in propname varchar, in silent integer, in auth_uid integer) returns integer
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_PROP_SET" (in id any, in what char(0), in propname varchar, in propvalue any, in overwrite integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_PROP_SET" (in id any, in what char(0), in propname varchar, in propvalue any, in overwrite integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   if (propname[0] = 58)
@@ -163,7 +163,7 @@ create function "RDFData_DAV_PROP_SET" (in id any, in what char(0), in propname 
 }
 ;
 
-create function "RDFData_DAV_PROP_GET" (in id any, in what char(0), in propname varchar, in auth_uid integer)
+create function DB.DBA."RDFData_DAV_PROP_GET" (in id any, in what char(0), in propname varchar, in auth_uid integer)
 {
   RDFData_log_message (current_proc_name ());
   return -11;
@@ -171,14 +171,14 @@ create function "RDFData_DAV_PROP_GET" (in id any, in what char(0), in propname 
 ;
 
 
-create function "RDFData_DAV_PROP_LIST" (in id any, in what char(0), in propmask varchar, in auth_uid integer)
+create function DB.DBA."RDFData_DAV_PROP_LIST" (in id any, in what char(0), in propmask varchar, in auth_uid integer)
 {
   RDFData_log_message (current_proc_name ());
   return vector ();
 }
 ;
 
-create function "RDFData_ACCESS_PARAMS" (in detcol_id any, out access varchar, out gid integer, out uid integer)
+create function DB.DBA."RDFData_ACCESS_PARAMS" (in detcol_id any, out access varchar, out gid integer, out uid integer)
 {
   declare access_tmp varchar;
   whenever not found goto ret;
@@ -196,7 +196,7 @@ ret:
 }
 ;
 
-create procedure RDFData_cast_dt_silent (in d any)
+create procedure DB.DBA.RDFData_cast_dt_silent (in d any)
 {
   if (__tag (d) = 211)
     return d;
@@ -211,7 +211,7 @@ create procedure RDFData_cast_dt_silent (in d any)
 }
 ;
 
-create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
@@ -219,7 +219,7 @@ create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
   declare access, ownergid, owner_uid, mime any;
   declare len int;
 
-  "RDFData_ACCESS_PARAMS" (id[1], access, ownergid, owner_uid);
+  DB.DBA."RDFData_ACCESS_PARAMS" (id[1], access, ownergid, owner_uid);
 
   if (isstring (path))
     path_parts := split_and_decode (path, 0, '\0\0/');
@@ -241,7 +241,7 @@ create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
 ;
 
 
-create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in detcol_path varchar, in name_mask varchar, in recursive integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in detcol_path varchar, in name_mask varchar, in recursive integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   declare top_davpath varchar;
@@ -254,7 +254,7 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
 
   vectorbld_init (res);
 
-  "RDFData_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
+  DB.DBA."RDFData_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
 
 --  dbg_obj_princ ('RDFData_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
 
@@ -265,7 +265,7 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
   if ('C' = what and 1 = length(path_parts))
     top_id := vector (UNAME'RDFData', detcol_id, null, owner_uid, null, null); -- may be a fake id because top_id[4] may be NULL
   else
-    top_id := "RDFData_DAV_SEARCH_ID" (detcol_id, path_parts, what);
+    top_id := DB.DBA."RDFData_DAV_SEARCH_ID" (detcol_id, path_parts, what);
   if (DAV_HIDE_ERROR (top_id) is null)
     {
       return vector();
@@ -273,7 +273,7 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
   top_davpath := DAV_CONCAT_PATH (detcol_path, path_parts);
   if ('R' = what)
     {
-      return vector ("RDFData_DAV_DIR_SINGLE" (top_id, what, top_davpath, auth_uid));
+      return vector (DB.DBA."RDFData_DAV_DIR_SINGLE" (top_id, what, top_davpath, auth_uid));
     }
   gr := DAV_PROP_GET_INT (detcol_id, 'C', 'virt:rdfdata_graph', 0);
   filt_lg := DAV_PROP_GET_INT (detcol_id, 'C', 'virt:rdfdata_lang', 0);
@@ -503,7 +503,7 @@ create function RDFData_std_pref (in iri varchar, in rev int := 0)
 }
 ;
 
-create function "RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path varchar, inout compilation any, in recursive integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path varchar, inout compilation any, in recursive integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
@@ -511,14 +511,14 @@ create function "RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, i
 }
 ;
 
-create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
+create function DB.DBA."RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
 {
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
   declare orig_id, ctr, len integer;
   declare r_id, cl_id, cl any;
   declare access, ownergid, owner_uid any;
-  "RDFData_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
+  DB.DBA."RDFData_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
 
   if (path_parts[0] = '' or path_parts[0] is null)
     return -1;
@@ -552,6 +552,8 @@ create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
       declare t, arr any;
       t := path_parts[1];
       arr := sprintf_inverse (t, '%s (%d).%s', 1);
+      if (3 > length (arr))
+        return -1;
       r_id := iri_id_from_num (arr [1]);
 --      dbg_obj_print (arr, r_id);
       return vector (UNAME'RDFData', detcol_id, cl_id, owner_uid, r_id);
@@ -560,7 +562,7 @@ create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
 }
 ;
 
-create function "RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
+create function DB.DBA."RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
   declare col_path varchar;
   declare ret any;
@@ -573,21 +575,21 @@ create function "RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) returns a
 }
 ;
 
-create function "RDFData_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
+create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
   RDFData_log_message (current_proc_name ());
   declare iri, url, qr, _from any;
@@ -678,27 +680,27 @@ ret_place2:
 }
 ;
 
-create function "RDFData_DAV_SYMLINK" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_SYMLINK" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_DEREFERENCE_LIST" (in detcol_id any, inout report_array any) returns any
+create function DB.DBA."RDFData_DAV_DEREFERENCE_LIST" (in detcol_id any, inout report_array any) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function "RDFData_DAV_RESOLVE_PATH" (in detcol_id any, inout reference_item any, inout old_base varchar, inout new_base varchar) returns any
+create function DB.DBA."RDFData_DAV_RESOLVE_PATH" (in detcol_id any, inout reference_item any, inout old_base varchar, inout new_base varchar) returns any
 {
   return -20;
 }
 ;
 
-create function "RDFData_DAV_LOCK" (in path any, in id any, in type char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_LOCK" (in path any, in id any, in type char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
@@ -706,14 +708,14 @@ create function "RDFData_DAV_LOCK" (in path any, in id any, in type char(1), ino
 ;
 
 
-create function "RDFData_DAV_UNLOCK" (in id any, in type char(1), in token varchar, in auth_uid integer)
+create function DB.DBA."RDFData_DAV_UNLOCK" (in id any, in type char(1), in token varchar, in auth_uid integer)
 {
   RDFData_log_message (current_proc_name ());
   return -27;
 }
 ;
 
-create function "RDFData_DAV_IS_LOCKED" (inout id any, inout type char(1), in owned_tokens varchar) returns integer
+create function DB.DBA."RDFData_DAV_IS_LOCKED" (inout id any, inout type char(1), in owned_tokens varchar) returns integer
 {
   RDFData_log_message (current_proc_name ());
   return 0;
@@ -721,14 +723,14 @@ create function "RDFData_DAV_IS_LOCKED" (inout id any, inout type char(1), in ow
 ;
 
 
-create function "RDFData_DAV_LIST_LOCKS" (in id any, in type char(1), in recursive integer) returns any
+create function DB.DBA."RDFData_DAV_LIST_LOCKS" (in id any, in type char(1), in recursive integer) returns any
 {
   RDFData_log_message (current_proc_name ());
   return vector ();
 }
 ;
 
-create procedure "RDFData_MAKE_DET_COL" (in path varchar, in gr varchar := null, in lg varchar := null)
+create procedure DB.DBA."RDFData_MAKE_DET_COL" (in path varchar, in gr varchar := null, in lg varchar := null)
 {
   declare colid int;
   colid := DAV_MAKE_DIR (path, http_dav_uid (), null, '110100100N');

@@ -600,17 +600,18 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/dav_meta.sql \
 	$(top_srcdir)/binsrc/dav/dav_rdf_quad.sql \
 	$(top_srcdir)/binsrc/dav/dav.sql \
+	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
+	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
 	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
 	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
 	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
+	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
+	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
 	$(top_srcdir)/binsrc/dav/uriqa.sql \
 	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
-	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
-	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
-	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
-	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl
+	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
