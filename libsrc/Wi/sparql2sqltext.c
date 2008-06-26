@@ -4344,7 +4344,16 @@ print_field_and_retval_equalities:
             }
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
           sub2_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub2_gp, sub2_eq);
+#ifdef DEBUG
+          if (0 == BOX_ELEMENTS_0 (sub_gp->_.gp.members))
+            common_native = sub2_native;
+          else if (0 == BOX_ELEMENTS_0 (sub2_gp->_.gp.members))
+            common_native = sub_native;
+          else
           common_native = ssg_largest_eq_valmode (sub_native, sub2_native);
+#else
+          common_native = ssg_largest_eq_valmode (sub_native, sub2_native);
+#endif
           if (SSG_VALMODE_LONG == common_native)
             common_native = SSG_VALMODE_SQLVAL;
           else if (SSG_VALMODE_AUTO == common_native)
