@@ -66,6 +66,26 @@
     ]]>
   </v:method>
 
+  <v:method name="toolbarShow" arglist="in cmd varchar, in cmdLabel varchar, in cmdOnClick varchar, in cmdImageSrc varchar, in cmdImageGraySrc varchar">
+    <![CDATA[
+      declare imageSrc, onclickEvent, styleStr varchar;
+
+      if (self.toolbarEnable(cmd))
+      {
+        onclickEvent := cmdOnClick;
+        imageSrc := cmdImageSrc;
+        styleStr := 'style="cursor: pointer;"';
+      } else {
+        onclickEvent := '';
+        imageSrc := cmdImageGraySrc;
+        styleStr := '';
+      }
+      http (sprintf ('<span %s class="toolbar" %s title="%s">', onclickEvent, styleStr, cmdLabel));
+        http (sprintf ('<img src="image/%s" border="0" alt="%s" />%s', imageSrc, cmdLabel, self.toolbarLabel(cmdLabel)));
+      http ('</span>');
+    ]]>
+  </v:method>
+
   <v:method name="qValue" arglist="in fName varchar">
     <![CDATA[
       if (self.v_number <= length (self.v_questions))
@@ -310,7 +330,7 @@
                     if (e.ve_params[N] = 'cb_item')
                     {
                         id := cast(e.ve_params[N+1] as integer);
-                        POLLS.WA.poll_delete(id, self.domain_id);
+                      POLLS.WA.poll_delete(id);
                       }
                     }
                   }
@@ -323,61 +343,35 @@
           }
         ?>
         <div class="toolbar">
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MyPolls'');'" xhtml_title="My Polls" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/polls_32.png" border="0" alt="My Polls" />' || self.toolbarLabel('My Polls');
-              ]]>
-            </v:before-render>
-          </v:url>
-
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''PublicPolls'');'" xhtml_title="Public Polls" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/polls_public_32.png" border="0" alt="Public Polls" />' || self.toolbarLabel('Public Polls');
-              ]]>
-            </v:before-render>
-          </v:url>
+        <span class="toolbar" style="cursor: pointer;" onclick="javascript: toolbarPost('MyPolls'); return false;" alt="My Polls">
+          <img src="image/polls_32.png" border="0" alt="My Polls" /><br /><span class="toolbarLabel">My Polls</span>
+        </span>
+        <span class="toolbar" style="cursor: pointer;" onclick="javascript: toolbarPost('PublicPolls'); return false;" alt="Public Polls">
+          <img src="image/polls_public_32.png" border="0" alt="Public Polls" /><br /><span class="toolbarLabel">Public Polls</span>
+        </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Poll/Create'');'" enabled="--self.toolbarEnable('Poll/Create')" xhtml_title="New Poll" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/polls_add_32.png" border="0" alt="New Poll" />' || self.toolbarLabel('New Poll');
-              ]]>
-            </v:before-render>
-          </v:url>
-          <v:template type="simple" enabled="--case when self.toolbarEnable('Poll/Create') then 0 else 1 end">
-            <span class="toolbar">
-              <img src="image/grey_polls_add_32.png" border="0" alt="New Poll" /><?vsp http (self.toolbarLabel('New Poll'));?>
-            </span>
-          </v:template>
+        <?vsp
+          self.toolbarShow ('Poll/Create', 'New Poll', 'onclick="javascript: toolbarPost(\'Poll/Create\');"', 'polls_add_32.png', 'grey_polls_add_32.png');
+        ?>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-          <span id="tbTag" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/tag_32.png" border="0" alt="Tag" />' || self.toolbarLabel('Tag');
-                ]]>
-              </v:before-render>
-            </v:url>
+        <vm:if test="self.toolbarEnable('tag')">
+          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('tag');" title="Tag">
+            <img src="image/tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
+        </vm:if>
           <span id="tbTag_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
 
-          <span id="tbDelete" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: if (confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, ''cb_'', ''No items were selected for deletion.'')) toolbarPost(''delete'');'" xhtml_title="Delete">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/del_32.png" border="0" alt="Delete" />' || self.toolbarLabel('Delete');
-                ]]>
-              </v:before-render>
-            </v:url>
+        <vm:if test="self.toolbarEnable('tag')">
+          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
+            <img src="image/del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
           </span>
+        </vm:if>
           <span id="tbDelete_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
           </span>

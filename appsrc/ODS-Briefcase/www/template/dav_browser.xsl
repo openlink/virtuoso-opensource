@@ -416,28 +416,37 @@
 
       <v:method name="toolbarEnable" arglist="in cmd varchar">
         <![CDATA[
+          if (cmd = 'refresh')
+            return 1;
+
+          if (cmd = 'home')
+            return 1;
+
           if (is_empty_or_null(self.dir_path))
             return 0;
           if (self.dir_path = ODRIVE.WA.shared_name())
             return 0;
           if (not ((self.dir_select = 1) or ((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced)))))
             return 0;
-          if (cmd = 'new') {
+          if (cmd = 'new')
+          {
             if (not (self.command_mode in (0,1)))
               return 0;
             if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
               return 0;
           }
-
           if (cmd = 'shared')
+          {
             if (self.account_role = 'public')
               return 0;
-
+          }
           if (cmd = 'up')
+          {
             if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), '/')))
               return 0;
-
-          if (cmd = 'upload') {
+          }
+          if (cmd = 'upload')
+          {
             if (not (self.command_mode in (0,1)))
               return 0;
             if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
@@ -445,13 +454,16 @@
             if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
               return 0;
           }
+
           if (cmd = 'new')
+          {
             if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
               return 0;
-
+          }
           if (cmd = 'mail')
+          {
             return ODRIVE.WA.oMail_check();
-
+          }
           return 1;
         ]]>
       </v:method>
@@ -461,6 +473,26 @@
           if (self.tbLabels = 0)
             return '';
           return sprintf('<br /><span class="toolbarLabel">%s</span>', cmd);
+        ]]>
+      </v:method>
+
+      <v:method name="toolbarShow" arglist="in cmd varchar, in cmdLabel varchar, in cmdOnClick varchar, in cmdImageSrc varchar, in cmdImageGraySrc varchar">
+        <![CDATA[
+          declare imageSrc, onclickEvent, styleStr varchar;
+
+          if (self.toolbarEnable(cmd))
+          {
+            onclickEvent := cmdOnClick;
+            imageSrc := cmdImageSrc;
+            styleStr := 'style="cursor: pointer;"';
+          } else {
+            onclickEvent := '';
+            imageSrc := cmdImageGraySrc;
+            styleStr := '';
+          }
+          http (sprintf ('<span %s class="toolbar" %s title="%s">', onclickEvent, styleStr, cmdLabel));
+            http (sprintf ('<img src="image/%s" border="0" alt="%s" />%s', imageSrc, cmdLabel, self.toolbarLabel(cmdLabel)));
+          http ('</span>');
         ]]>
       </v:method>
 
@@ -499,7 +531,8 @@
 
           dir_column := self.getColumn(columnId);
           http(sprintf('<th nowrap="nowrap" %s>', dir_column[6]));
-          if ((dir_column[3] = 1) and (self.dir_path <> '')) {
+          if ((dir_column[3] = 1) and (self.dir_path <> ''))
+          {
             self.sortColumn(dir_column[2], dir_column[0]);
           } else {
             http(dir_column[2]);
@@ -651,12 +684,14 @@
           declare tmp, T varchar;
 
           tmp := sprintf ('&did=%d&aid=%d', self.domain_id, self.account_id);
-          if (self.command_mode = 2) {
+          if (self.command_mode = 2)
+          {
             tmp := concat(tmp, '&mode=s');
             tmp := concat(tmp, sprintf('&b1=%U', ODRIVE.WA.odrive_real_path(self.dir_path)));
             tmp := concat(tmp, sprintf('&b2=%U', trim(self.search_simple)));
           }
-          if (self.command_mode = 3) {
+          if (self.command_mode = 3)
+          {
             tmp := concat(tmp, self.do_url_int('b1',  'base',     'path', ''));
             tmp := concat(tmp, self.do_url_int('b2',  'base',     'name', ''));
             tmp := concat(tmp, self.do_url_int('b3',  'base',     'content', ''));
@@ -678,7 +713,8 @@
             tmp := concat(tmp, self.do_url_int('a15', 'advanced', 'privateTags12', ''));
 
             N := 1;
-            for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar) rs where rs0 = self.search_dc) do {
+            for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar) rs where rs0 = self.search_dc) do
+            {
               tmp := concat(tmp, sprintf('&mt%d=%U', N, c1));
               tmp := concat(tmp, sprintf('&ms%d=%U', N, c2));
               tmp := concat(tmp, sprintf('&mn%d=%U', N, c3));
@@ -708,6 +744,49 @@
           if (0)
           {
         ?>
+          <v:button name="action" action="simple" style="url" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare _action, _path, _item, params any;
+
+                params := e.ve_params;
+                _action := get_keyword ('_cmd', params, '');
+                if (_action = 'select')
+                {
+                  _path := get_keyword ('_path', params, '');
+                  if (_path <> '')
+                  {
+                    if (ODRIVE.WA.odrive_permission (_path) = '')
+                    {
+                      self.vc_error_message := 'You have not rights to read this folder/file!';
+                      self.vc_is_valid := 0;
+                      self.vc_data_bind (e);
+                      return;
+                    }
+                    _item := ODRIVE.WA.dav_init (_path);
+                    if (ODRIVE.WA.dav_get (_item, 'type') = 'R')
+                    {
+                      http_request_status ('HTTP/1.1 302 Found');
+                      http_header (sprintf ('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, _path));
+                    } else {
+                      if (self.dir_path <> '')
+                      {
+                        self.dir_path := rtrim (self.dir_path, '/') || '/';
+                      }
+                      self.dir_path := self.dir_path || ODRIVE.WA.dav_get (_item, 'name');
+
+                      self.ds_items.vc_reset();
+                      self.vc_data_bind (e);
+                    }
+                  }
+                }
+               ]]>
+             </v:on-post>
+          </v:button>
+        }
+        if (0)
+        {
+      ?>
             <v:button name="f_tag2_search" action="simple" style="url" value="Submit">
               <v:on-post>
                 <![CDATA[
@@ -2181,7 +2260,7 @@
           <div class="boxHeader">
             <b><v:label for="path" value="' Path '" /></b>
             <v:text name="path" value="--ODRIVE.WA.utf2wide(ODRIVE.WA.path_show(self.dir_path))" xhtml_onkeypress="return submitEnter(\'F1\', \'GO_Path\', event)" xhtml_id="path" xhtml_size="60" />
-            <v:button name="GO_Path" action="simple" style="image" value="image/go_16.png" xhtml_alt="Go">
+          <v:button name="GO_Path" action="simple" style="image" value="image/go_16.png" url="#" xhtml_alt="Go">
               <v:on-post>
                 <![CDATA[
                   self.path.ufl_value := ODRIVE.WA.path_show(self.path.ufl_value);
@@ -2488,40 +2567,13 @@
                             }
                             ?>
                             <td nowrap="nowrap">
-                            <v:button action="simple" style="url" value="''" xhtml_title="--ODRIVE.WA.utf2wide ((control.vc_parent as vspx_row_template).te_rowset[0])">
-                                <v:before-data-bind>
-                                  <![CDATA[
-                                    declare rowset any;
-                                    rowset := ((control.vc_parent) as vspx_row_template).te_rowset;
-                                  control.ufl_value := sprintf ('<img src="%s" border="0" /> %V', self.ui_image(rowset[8], rowset[1], rowset[4]), ODRIVE.WA.stringCut (rowset[0], self.chars));
-                                  if (rowset[1] = 'R') 
-                                    control.vc_add_attribute ('id', sprintf('%V', rowset[8]));
-                                  ]]>
-                                </v:before-data-bind>
-                                <v:on-post>
-                                  <![CDATA[
-                                  if (ODRIVE.WA.odrive_permission ((control.vc_parent as vspx_row_template).te_rowset[8]) = '')
-                                  {
-                                      self.vc_error_message := 'You have not rights to read this folder/file!';
-                                      self.vc_is_valid := 0;
-                                      self.vc_data_bind(e);
-                                      return;
-                                    }
+                            <?vsp
+                              declare id, rowset any;
 
-                                  if ((control.vc_parent as vspx_row_template).te_rowset[1] = 'C')
-                                  {
-                                      if (self.dir_path <> '')
-                                      self.dir_path := rtrim (self.dir_path, '/') || '/';
-                                    self.dir_path := self.dir_path || (control.vc_parent as vspx_row_template).te_rowset[0];
-                                    } else {
-                                      http_request_status ('HTTP/1.1 302 Found');
-                                    http_header (sprintf('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, (control.vc_parent as vspx_row_template).te_rowset[8]));
-                                    }
-                                    self.ds_items.vc_reset();
-                                    self.vc_data_bind(e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
+                              rowset := (control as vspx_row_template).te_rowset;
+                              id := case when (rowset[1] = 'R') then sprintf ('id=%V', rowset[8]) else '' end;
+                              http (sprintf ('<a %s href="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'select\', \'_path\', \'%s\'); return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, ODRIVE.WA.dav_url (rowset[8]), rowset[8], ODRIVE.WA.utf2wide (rowset[0]), self.ui_image(rowset[8], rowset[1], rowset[4]), ODRIVE.WA.stringCut (rowset[0], self.chars)));
+                            ?>
                               <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                 <br /><i><v:label value="--ODRIVE.WA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
                               </v:template>
@@ -3887,191 +3939,32 @@
       }
     ?>
     <div class="toolbar">
-      <v:url value="--''" format="%s" url="--'javascript: document.F1.submit()'" xhtml_title="Refresh" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/ref_32.png" border="0" />' || self.toolbarLabel('Refresh');
-          ]]>
-        </v:before-render>
-      </v:url>
-
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''up'');'" enabled="--self.toolbarEnable('up')" xhtml_title="Up" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/up_32.png" border="0" />' || self.toolbarLabel('Up');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('up') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_up_32.png" border="0" alt="Up" /><?vsp http(self.toolbarLabel('Up'));?>
-        </span>
-      </v:template>
-
+      <?vsp
+        self.toolbarShow ('refresh', 'Refresh', 'onclick="javascript: document.F1.submit();"', 'ref_32.png', '');
+        self.toolbarShow ('up', 'Up', 'onclick="javascript: toolbarPost(\'up\');"', 'up_32.png', 'grey_up_32.png');
+      ?>
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
-
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''home'');'" xhtml_title="Home" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/home_32.png" border="0" />' || self.toolbarLabel('Home');
-          ]]>
-        </v:before-render>
-      </v:url>
-
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Shared Folders" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/folder_violet.png" border="0" />' || self.toolbarLabel('Shared Folders');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('shared') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/folder_grey.png" border="0" alt="Shared Folders" /><?vsp http(self.toolbarLabel('Shared Folders'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''new'');'" enabled="--self.toolbarEnable('new')" xhtml_title="New Folder" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/new_fldr_32.png" border="0" />' || self.toolbarLabel('New Folder');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('new') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_new_fldr_32.png" border="0" alt="New Folder" /><?vsp http(self.toolbarLabel('New Folder'));?>
-        </span>
-      </v:template>
-
+      <?vsp
+        self.toolbarShow ('home', 'Home', 'onclick="javascript: toolbarPost(\'home\');"', 'home_32.png', '');
+        self.toolbarShow ('shared', 'Shared Folders', 'onclick="javascript: toolbarPost(\'shared\');"', 'folder_violet.png', 'folder_grey.png');
+        self.toolbarShow ('new', 'New Folder', 'onclick="javascript: toolbarPost(\'new\');"', 'new_fldr_32.png', 'grey_new_fldr_32.png');
+      ?>
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
-
-      <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'', 500, 250);'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/renm_32.png" border="0" />' || self.toolbarLabel('Rename');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('rename') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_renm_32.png" border="0" alt="Rename" /><?vsp http(self.toolbarLabel('Rename'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be copied.'')) toolbarPost(''copy'');'" enabled="--self.toolbarEnable('copy')" xhtml_title="Copy" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/copy_32.png" border="0" />' || self.toolbarLabel('Copy');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('copy') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_copy_32.png" border="0" alt="Copy" /><?vsp http(self.toolbarLabel('Copy'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be moved.'')) toolbarPost(''move'');'" enabled="--self.toolbarEnable('move')" xhtml_title="Move" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/move_32.png" border="0" />' || self.toolbarLabel('Move');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('move') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_move_32.png" border="0" alt="Move" /><?vsp http(self.toolbarLabel('Move'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for deletion.'')) toolbarPost(''delete'');'" enabled="--self.toolbarEnable('delete')" xhtml_title="Delete" xhtml_class="toolbar" >
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/del_32.png" border="0" />' || self.toolbarLabel('Delete');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('delete') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http(self.toolbarLabel('Delete'));?>
-        </span>
-      </v:template>
-
+      <?vsp
+        self.toolbarShow ('rename', 'Rename', 'onclick="javascript: if (singleSelected(document.F1, \'CB_\', \'No items were selected to be renamed. Please select an item before you click the Rename button.\', \'You can only rename one item at a time. Please deselect all but one.\')) renameShow(document.F1, \'CB_\', \'rename.vspx?src=s\', 500, 250);"', 'renm_32.png', 'grey_renm_32.png');
+        self.toolbarShow ('copy', 'Copy', 'onclick="javascript: if (anySelected(document.F1, \'CB_\', \'No resources were selected to be copied.\')) toolbarPost(\'copy\');"', 'copy_32.png', 'grey_copy_32.png');
+        self.toolbarShow ('move', 'Move', 'onclick="javascript: if (anySelected(document.F1, \'CB_\', \'No resources were selected to be moved.\')) toolbarPost(\'move\');"', 'move_32.png', 'grey_move_32.png');
+        self.toolbarShow ('delete', 'Delete', 'onclick="javascript: if (anySelected(document.F1, \'CB_\', \'No resources were selected for deletion.\')) toolbarPost(\'delete\');"', 'del_32.png', 'grey_del_32.png');
+      ?>
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Edit Properties" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/prop_32.png" border="0" />' || self.toolbarLabel('Edit Properties');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_prop_32.png" border="0" alt="Properties" /><?vsp http(self.toolbarLabel('Edit Properties'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be tagged.'')) toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/tag_32.png" border="0" />' || self.toolbarLabel('Tag');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('tag') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http(self.toolbarLabel('Tag'));?>
-        </span>
-      </v:template>
-
+      <?vsp
+        self.toolbarShow ('properties', 'Edit Properties', 'onclick="javascript: if (anySelected(document.F1, \'CB_\', \'No resources were selected for property changes.\')) toolbarPost(\'properties\');"', 'prop_32.png', 'grey_prop_32.png');
+        self.toolbarShow ('tag', 'Tag', 'onclick="if (anySelected(document.F1, \'CB_\', \'No resources were selected to be tagged.\')) toolbarPost(\'tag\');"', 'tag_32.png', 'grey_tag_32.png');
+      ?>
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
-
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''upload'');'" enabled="--self.toolbarEnable('upload')" xhtml_title="Upload" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/upld_32.png" border="0" />' || self.toolbarLabel('Upload');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('upload') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_upld_32.png" border="0" alt="Upload" /><?vsp http(self.toolbarLabel('Upload'));?>
-        </span>
-      </v:template>
-
-      <!--v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for download.'')) toolbarPost(''download'');'" enabled="--self.toolbarEnable('download')" xhtml_title="Download" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/dwnld_32.png" border="0" />' || self.toolbarLabel('Download');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('download') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_dwnld_32.png" border="0" alt="Download" /><?vsp http(self.toolbarLabel('Download'));?>
-        </span>
-      </v:template>
-
-      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
-
-      <vm:if test="ODRIVE.WA.oMail_check() <> 0">
-        <span id="tbMail" class="toolbar" style="display: none">
-          <v:url value="--''" format="%s" url="--'#'" xhtml_title="Mail">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/mail_32.png" border="0" />' || self.toolbarLabel('Mail');
-                control.vu_url := sprintf('javascript: mailShow(document.F1, "CB_", "../../oMail/%d/write.vspx?return=F1&html=0&subject=%U", 800, 500);', ODRIVE.WA.oMail_check(), 'Send files from DAV');
-          ]]>
-        </v:before-render>
-      </v:url>
-        </span>
-      </vm:if>
-      <span id="tbMail_gray" class="toolbar" style="display: inline;">
-          <img src="image/grey_mail_32.png" border="0" alt="Mail" /><?vsp http(self.toolbarLabel('Mail'));?>
-      </span-->
-
+      <?vsp
+        self.toolbarShow ('upload', 'Upload', 'onclick="javascript: toolbarPost(\'upload\');"', 'upld_32.png', 'grey_upld_32.png');
+      ?>
     </div>
     <div style="clear: both;" />
   </xsl:template>

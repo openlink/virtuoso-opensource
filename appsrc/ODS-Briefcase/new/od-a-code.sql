@@ -1579,6 +1579,17 @@ create procedure ODRIVE.WA.geo_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.dav_url (
+  in path varchar)
+{
+  if (path[length (path)-1] <> ascii('/'))
+    path := subseq (path, 4);
+  return ODRIVE.WA.host_url() || path;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.banner_links (
   in domain_id integer,
   in sid varchar := null,

@@ -33,7 +33,7 @@
 
   commit work;
 
-  uri := ODRIVE.WA.http_escape(ODRIVE.WA.host_url() || file, 7);
+  uri := ODRIVE.WA.http_escape (ODRIVE.WA.dav_url(file), 7);
   req_header := '';
   req_header := concat(req_header, 'Accept-Charset: UTF-8,*\n');
   req_header := concat(req_header, 'Keep-Alive: 300\n');
