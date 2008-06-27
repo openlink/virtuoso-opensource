@@ -51,6 +51,9 @@ export NIGHTLY_PORT
 
 START_SERVER $PORT 1000 
 
+#
+#   Run Jena tests
+#
 cd $JENADIR
 
 RUN make
@@ -61,26 +64,31 @@ else
     LOG "PASSED: Jena compile"
 fi
 
-tests=1
-while [ "$tests" -lt "8" ]
-  do
-      
-    RUN make "test"$tests
-    if test $STATUS -ne 0
-    then
-	LOG "***FAILED: Jena test:" $tests 
-    else
-	LOG "PASSED: Jena test:" $tests
-    fi
-
-    tests=`expr $tests + 1`
-
-  done 
+RUN make run-tests
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Jena provider JUnit tests"
+else
+    LOG "PASSED: Jena provider JUnit tests"
+fi
 
 cd $CURRDIR
+
+
+#
+#   Run Sesame2 tests
+#
 cd $SESAME2DIR
 
-RUN make check
+RUN make
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Sesame2 compile"
+else
+    LOG "PASSED: Sesame2 compile"
+fi
+
+RUN make run-tests
 if test $STATUS -ne 0
 then
     LOG "***FAILED: Sesame2 suite"
