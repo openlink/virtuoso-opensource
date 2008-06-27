@@ -23,7 +23,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-export TSUITE_CLASSPATH=".:../lib/arq.jar:../lib/axis.jar:../lib/commons-logging-1.1.1.jar:../lib/icu4j_3_4.jar:../lib/iri.jar:../lib/jena.jar:../lib/jenatest.jar:../lib/junit.jar:../lib/openrdf-model.jar:../lib/openrdf-util.jar:../lib/xercesImpl.jar:../virt_jena.jar:../../../libsrc/JDBCDriverType4/virtjdbc3.jar"
+export TSUITE_CLASSPATH=".:../lib/arq.jar:../lib/commons-logging-1.1.1.jar:../lib/icu4j_3_4.jar:../lib/iri.jar:../lib/jena.jar:../lib/jenatest.jar:../lib/junit.jar:../lib/xercesImpl.jar:../virt_jena.jar:../../../libsrc/JDBCDriverType4/virtjdbc3.jar"
 
 
 #

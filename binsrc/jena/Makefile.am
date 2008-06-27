@@ -49,7 +49,7 @@ JENA_SRC= \
 TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
-JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am:	lib virt_jena.jar
 
