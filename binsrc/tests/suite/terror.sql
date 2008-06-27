@@ -1082,6 +1082,10 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": search param changed on oppened cursor STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
+select top 10 * from (select row_no, b1 from (select row_no, blob_to_string (b1) || 'qq' as b1 long varchar from blobs) i order by -row_no) f;
+echo both $if $equ $state "22026" "PASSED" "***FAILED";
+echo both ": calculated str too long in oby temp\n";
+
 
 create procedure bf ()
 {
@@ -1103,12 +1107,12 @@ create procedure bf2 ()
   return blob_to_string (_b1);
 }
 echo both "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
-
---bf();
---bf2();
-
---echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
---echo both ": deleted blob read in blob_to_string\n";
+log_message ('Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.');
+bf();
+bf2();
+echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
+echo both ": deleted blob read in blob_to_string\n";
+log_message ('Error messages about bad blobs or reading free pages are not expected after this point.');
 
 echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
