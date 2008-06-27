@@ -138,11 +138,11 @@ import virtuoso.jdbc3.VirtuosoResultSet;
  * 
  */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
-	private Resource nilContext = new ValueFactoryImpl().createURI("urn:nil");
+	private static Resource nilContext = new ValueFactoryImpl().createURI("urn:nil");
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String sinsert = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-        static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+	static final String S_INSERT = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+        static final String S_DELETE = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
 	static final int BATCH_SIZE = 1000;
 
 
@@ -473,8 +473,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         during retrieval.
 	 */
 	public RepositoryResult<Statement> getStatements(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0)
-			contexts = getContexts();
+		contexts = checkContext(contexts);
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		return createRepositoryResult(g);
 	}
@@ -501,8 +500,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         context, false otherwise.
 	 */
 	public boolean hasStatement(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0)
-			contexts = getContexts();
+		contexts = checkContext(contexts);
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		return g.iterator().hasNext();
 	}
@@ -525,8 +523,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         otherwise.
 	 */
 	public boolean hasStatement(Statement statement, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0)
-			contexts = getContexts();
+		contexts = checkContext(contexts);
 		Graph g = selectFromQuadStore(statement.getSubject(), statement.getPredicate(), statement.getObject(), includeInferred, contexts);
 		return g.iterator().hasNext();
 	}
@@ -554,14 +551,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the handler encounters an unrecoverable error.
 	 */
 	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
-		if (contexts == null || contexts.length == 0)
-			contexts = getContexts();
+		contexts = checkContext(contexts);
 		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
 		handler.startRDF();
 		Iterator<Statement> it = g.iterator();
 		while (it.hasNext())
 			handler.handleStatement(it.next());
 		handler.endRDF();
+	}
+
+	private Resource[] checkContext(Resource... contexts) throws RepositoryException {
+		if(contexts != null && contexts.length == 1 && contexts[0] instanceof Resource && contexts[0] == null) {
+			contexts = new Resource[] {nilContext};
+		} else if (contexts == null || contexts.length == 0) {
+			contexts = getContexts();
+		}
+		return contexts;
 	}
 
 	/**
@@ -597,18 +602,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
 
 		verifyIsOpen();
-		if (contexts == null || contexts.length == 0) 
-			contexts = getContexts();
+		if(contexts == null || contexts.length == 0) contexts = getContexts(); // special check for RepositoryConnection.size()
 
 		try {
 		        PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
 
 			for (int i = 0; i < contexts.length; i++) {
-				if (contexts[i] != null) 
 					ps.setString(1, contexts[i].stringValue());
-				else 
-					ps.setString(1, nilContext.stringValue());
-
 				ResultSet rs = ps.executeQuery();
 				rs.next();
 				ret += rs.getInt(1);
@@ -805,18 +805,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			// set up a handler for parsing the data from reader
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
-			final PreparedStatement _ps = quadStoreConnection.prepareStatement(sinsert);
-			final Resource[] _contexts = contexts;
+			final PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			final Resource[] _contexts = checkContext(contexts);
 
 			parser.setRDFHandler(new RDFHandlerBase() {
 				
-				PreparedStatement ps = _ps;
 				int count = 0;
-				Resource[] contexts = _contexts;
 
 				public void startRDF() {
-					if (contexts == null || contexts.length == 0) 
-						contexts = new Resource[] { nilContext };
 				}
 
 				public void endRDF() throws RDFHandlerException {
@@ -847,13 +843,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 				public void handleStatement(Statement st) throws RDFHandlerException {
 				   try {
-					for (int i = 0; i < contexts.length; i++) {
-
-						if (contexts[i] != null) 
-							ps.setString(1, contexts[i].stringValue());
-						else 
-							ps.setString(1, nilContext.stringValue());
-
+					for (int i = 0; i < _contexts.length; i++) {
+						ps.setString(1, _contexts[i].stringValue());
 						bindResource(ps, 2, st.getSubject());
 						bindURI(ps, 3, st.getPredicate());
 						bindValue(ps, 4, st.getObject());
@@ -973,8 +964,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0)
-			contexts = getContexts();
+		contexts = checkContext(contexts);
 		addToQuadStore(subject, predicate, object, contexts);
 	}
 
@@ -997,11 +987,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(Statement statement, Resource... contexts) throws RepositoryException {
-		if (contexts != null && contexts.length == 0) {
-			if (statement.getContext() != null) {
+		if (contexts == null || contexts.length == 0 &&  statement.getContext() != null) {
 				contexts = new Resource[] { statement.getContext() }; // try the context given by the statement
 			}
-		}
 		add(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
 	}
 
@@ -1027,8 +1015,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		Iterator it = statements.iterator();
 
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(sinsert);
+			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
+
+			Resource[] _contexts = null;
 
 			while (it.hasNext()) {
 				Statement st = (Statement) it.next();
@@ -1048,13 +1038,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				    count++;
 				}
 				else {
-				    for (int i = 0; i < contexts.length; i++) {
+				    if (_contexts == null)
+				        _contexts = checkContext(contexts);
 
-					if (contexts[i] != null) 
-						ps.setString(1, contexts[i].stringValue());
-					else 
-						ps.setString(1, nilContext.stringValue());
+				    for (int i = 0; i < _contexts.length; i++) {
 
+					ps.setString(1, _contexts[i].stringValue());
 					bindResource(ps, 2, st.getSubject());
 					bindURI(ps, 3, st.getPredicate());
 					bindValue(ps, 4, st.getObject());
@@ -1101,8 +1090,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
 
 		try {
-			PreparedStatement ps = quadStoreConnection.prepareStatement(sinsert);
+			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
+
+			Resource[] _contexts = null;
 
 			while (statements.hasNext()) {
 				Statement st = (Statement) statements.next();
@@ -1110,11 +1101,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				if (contexts == null || contexts.length == 0) {
 				    Resource context = st.getContext();
 
-				    if (context != null)
 					ps.setString(1, context.stringValue());
-				    else
-					ps.setString(1, nilContext.stringValue());
-
 				    bindResource(ps, 2, st.getSubject());
 				    bindURI(ps, 3, st.getPredicate());
 				    bindValue(ps, 4, st.getObject());
@@ -1122,13 +1109,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				    count++;
 				}
 				else {
-				    for (int i = 0; i < contexts.length; i++) {
 
-					if (contexts[i] != null)
-						ps.setString(1, contexts[i].stringValue());
-					else
-						ps.setString(1, nilContext.stringValue());
+				    if (_contexts == null)
+				        _contexts = checkContext(contexts);
 
+				    for (int i = 0; i < _contexts.length; i++) {
+
+					ps.setString(1, _contexts[i].stringValue());
 					bindResource(ps, 2, st.getSubject());
 					bindURI(ps, 3, st.getPredicate());
 					bindValue(ps, 4, st.getObject());
@@ -1171,11 +1158,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void remove(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0) 
-	           contexts = getContexts();
+		contexts = checkContext(contexts);
 
 		for (int i = 0; i < contexts.length; i++)
-		     remove_ctx(subject, predicate, object, contexts[i]);
+		     removeContext(subject, predicate, object, contexts[i]);
 	}
 
 	/**
@@ -1195,7 +1181,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void remove(Statement statement, Resource... contexts) throws RepositoryException {
-		if (contexts != null && contexts.length == 0) {
+		if (contexts == null || contexts.length == 0) {
 			if (statement.getContext() != null)
 				contexts = new Resource[] { statement.getContext() }; // try the context given by the statement
 		}
@@ -1264,8 +1250,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void clear(Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0) 
-	            contexts = getContexts();
+		contexts = checkContext(contexts);
 
 		clearQuadStore(contexts);
 	}
@@ -1638,14 +1623,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 
 		try {
-			PreparedStatement ps = getQuadStoreConnection().prepareStatement(sinsert);
+			PreparedStatement ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+
+			contexts = checkContext(contexts);
 
 			for (int i = 0; i < contexts.length; i++) {
 
-				if (contexts[i] != null) 
 					ps.setString(1, contexts[i].stringValue());
-				else 
-					ps.setString(1, nilContext.stringValue());
 
 				bindResource(ps, 2, subject);
 				bindURI(ps, 3, predicate);
@@ -1669,10 +1653,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(query);
 			for (int i = 0; i < contexts.length; i++) {
-				if (contexts[i] != null) 
 					ps.setString(1, contexts[i].stringValue());
-				else 
-					ps.setString(1, nilContext.stringValue());
 				ps.execute();
 			}
 		}
@@ -1704,9 +1685,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 			StringBuffer query = new StringBuffer("sparql select * from <");
 			Resource context = contexts[i];
-
-			if (context == null) 
-				context = nilContext;
 
 			query.append(context.stringValue());
 			query.append("> where { ");
@@ -1761,7 +1739,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private void remove_ctx(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
+	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
 		verifyIsOpen();
 		PreparedStatement ps = null;
 
@@ -1779,12 +1757,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			o = stringForValue(object);
 
 		try {
-		    if (context == null) 
-		    	context = nilContext;
 
 		    if (subject != null && predicate != null && object != null && context != null) {
 
-		    	ps = getQuadStoreConnection().prepareStatement(sdelete);
+		    	ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
 			ps.setString(1, context.stringValue());
 			bindResource(ps, 2, subject);
@@ -1797,6 +1773,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// s = s.replaceAll("'", "''");
 			// p = p.replaceAll("'", "''");
 			// o = o.replaceAll("'", "''");
+		    	
+		    	// context should not be null at this point, at the least, it will be a wildcard
 		        String query = "sparql delete from graph <"+context+
   				"> {?s ?p ?o} where {?s ?p ?o . "
   				+ s + " ?p ?o . ?s "+ p +" ?o . ?s ?p "+ o +" .}";

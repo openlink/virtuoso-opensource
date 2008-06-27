@@ -174,6 +174,42 @@ public class VirtuosoTest {
 			}
 			endTest((results != null && results.length > 0)); // should return true
 
+
+			byte utf8data[] = { (byte)0xd0, (byte)0xbf, (byte)0xd1, (byte)0x80, 
+			   (byte)0xd0, (byte)0xb8, (byte)0xd0, (byte)0xb2, 
+			   (byte)0xd0, (byte)0xb5, (byte)0xd1, (byte)0x82 };
+			String utf8str = new String(utf8data, "UTF8");
+
+			URI un_testuri = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/unicodeTest");
+			URI un_name = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/name");
+			Literal un_Value = repository.getValueFactory().createLiteral(utf8str);
+
+			startTest();
+			try {
+				ok = true;
+				con.clear(context);
+				log("Loading UNICODE single triple");
+				con.add(un_testuri, un_name, un_Value, context);
+				query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
+				results = doTupleQuery(con, query);
+			}
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			if (ok && results.length > 0) {
+			  if (!results[0][0].toString().equals(un_testuri.toString())
+			       || !results[0][1].toString().equals(un_name.toString())
+			       || !results[0][2].toString().equals(un_Value.toString()))
+			  {
+			    ok = false;
+			  }
+			}
+			endTest((ok && (results.length > 0))); // should return true
+
+			
+			
 			URI shermanmonroe = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/shermanMonroe");
 			BNode snode = repository.getValueFactory().createBNode("smonroeNode");
 			URI name = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/name");

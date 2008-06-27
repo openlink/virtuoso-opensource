@@ -56,6 +56,7 @@ public class VirtuosoRepository implements Repository {
 	public String password;
 	private int connection_status = 0;
 	public int resultsHandlerType = 0;
+        static final String utf8 = "charset=UTF-8";
     
         static {
 		try {
@@ -66,8 +67,16 @@ public class VirtuosoRepository implements Repository {
 		}
         }
 	
-	public VirtuosoRepository(String url, String user, String password) {
-		this.url = url;
+	public VirtuosoRepository(String _url, String user, String password) {
+
+		this.url = _url.trim();
+		if (url.indexOf(utf8) == -1) {
+	   		if (url.charAt(url.length()-1) != '/')
+	     			url = url + "/" + utf8;
+	   		else
+	     			url = url + utf8;
+		}
+		
 		this.user = user;
 		this.password = password;
 		
