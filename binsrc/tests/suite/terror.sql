@@ -1242,3 +1242,90 @@ sov_rev ();
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": seq removal state " $STATE "\n";
 
+select xmlagg (xmlelement ('a', a.key_table), xmlelement ('b', b.key_table), xmlelement ('c', c.key_table)) from sys_keys a, sys_keys b, sys_keys c;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": xmlagg with too many members state " $STATE "\n";
+
+delete user TEST1;
+delete user TEST2;
+delete user TEST3;
+drop table tidn;
+
+
+create user TEST1;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test1 " $state "\n";
+
+create user TEST2;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test2 " $state "\n";
+
+create user TEST3;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create user test3 " $state "\n";
+
+
+RECONNECT TEST1;
+
+select user;
+echo both $if $equ $last[1] TEST1 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+registry_set ('RDF_RO_ID', 'bad');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": registry set for dba only sequence " $state "\n";
+
+registry_remove  ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": registry remove for dba only sequence " $state "\n";
+
+sequence_set ('RDF_RO_ID', 0, 1);
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence set for dba only sequence " $state "\n";
+
+sequence_next ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence next for dba only sequence " $state "\n";
+
+sequence_remove ('RDF_RO_ID');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": sequence remove for dba only sequence " $state "\n";
+
+
+create table tidn (id int identity primary key, dt varchar);
+
+insert into tidn (dt) values ('a');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create table&insert as user test1 " $state "\n";
+
+
+RECONNECT dba;
+
+grant insert on tidn to TEST2;
+
+RECONNECT TEST2;
+
+select user;
+echo both $if $equ $last[1] TEST2 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+insert into tidn (dt) values ('a');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": create insert as user test2 " $state "\n";
+
+RECONNECT TEST3;
+
+select user;
+echo both $if $equ $last[1] TEST3 "PASSED" "***FAILED";
+echo both ": connected as " $last[1] "\n";
+
+
+insert into tidn (dt) values ('a');
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": create insert as user test3 " $state "\n";
+
+reconnect dba;
+
+select * from tidn;
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": " $rowcnt " rows inserted \n";
