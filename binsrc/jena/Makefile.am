@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2007 OpenLink Software
+#  Copyright (C) 1998-2008 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,8 @@ if JDK3
 TARGETS		= virt_jena.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -Xlint -O -g:none
+
+JAVA		= $(JDK)/bin/java
 JAVAC		= $(JDK)/bin/javac
 JAVAH		= $(JDK)/bin/javah
 JAVADOC		= $(JDK)/bin/javadoc
@@ -44,7 +46,10 @@ JENA_SRC= \
 	virtuoso_driver/VirtuosoUpdateFactory.java \
 	virtuoso_driver/VirtuosoUpdateRequest.java
 
-JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+TESTSUITE_SRC= \
+	testsuite/VirtuosoTestGraph.java
+
+JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am:	lib virt_jena.jar
 
@@ -69,6 +74,20 @@ doc:
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
 	
+#
+#  Run testsuite if JDK was found
+#
+if JDK3
+run-tests: virt_jena.jar
+	$(JAVAC) $(JDK_FLAGS) \
+		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \
+		$(TESTSUITE_SRC)
+	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) start.sh
+else
+run-tests:
+	@echo "***WARNING: Disabled Jena test suite"
+endif
+
 
 # ----------------------------------------------------------------------
 #
@@ -78,4 +97,13 @@ doc:
 EXTRA_DIST = \
 	README \
 	virtuoso_driver/*.java \
-	virt_jena.jar
+	virt_jena.jar \
+	testsuite/*.java \
+	testsuite/start.bat \
+	testsuite/start.sh \
+	testsuite/testing/regression/testModelEquals/*.nt \
+	testsuite/testing/regression/testModelEquals/*.rdf \
+	testsuite/testing/regression/testNTripleReader/*.nt \
+	testsuite/testing/regression/testReaderInterface/*.nt \
+	testsuite/testing/regression/testReaderInterface/*.rdf \
+	testsuite/testing/regression/testWriterAndReader/*.rdf 
