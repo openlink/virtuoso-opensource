@@ -55,11 +55,12 @@ public class VirtGraph extends GraphBase
     static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 1000;
+    static final String utf8 = "charset=UTF-8";
 
 
     public VirtGraph()
     {
-	this(null, "jdbc:virtuoso://localhost:1111", null, null);
+	this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
     }
 
     public VirtGraph(String url, String user, String password)
@@ -69,15 +70,22 @@ public class VirtGraph extends GraphBase
 
     public VirtGraph(String graphName)
     {
-	this(graphName, "jdbc:virtuoso://localhost:1111", null, null);
+	this(graphName, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
     }
 
-    public VirtGraph(String graphName, String url, String user, String password)
+    public VirtGraph(String graphName, String _url, String user, String password)
     {
 	super();
 
+	this.url = _url.trim();
+	if (url.indexOf(utf8) == -1) {
+	   if (url.charAt(url.length()-1) != '/') 
+	     url = url + "/" + utf8;
+	   else
+	     url = url + utf8;
+	}
+
 	this.graphName = graphName;
-	this.url = url;
 	this.user = user;
 	this.password = password;
 
