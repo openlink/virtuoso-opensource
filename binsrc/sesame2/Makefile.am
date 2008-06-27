@@ -24,6 +24,7 @@ if JDK3
 TARGETS		= virt_sesame2.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -Xlint -O -g:none
+JAVA		= $(JDK)/bin/java
 JAVAC		= $(JDK)/bin/javac
 JAVAH		= $(JDK)/bin/javah
 JAVADOC		= $(JDK)/bin/javadoc
@@ -40,6 +41,9 @@ SESAME_SRC= \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoTupleQuery.java
 
+SAMPLES_SOURCE= \
+	virtuoso_driver/VirtuosoTest.java
+
 SESAME_CLASSPATH=lib/sesame-slf4j-api-1.3.0.jar:lib/openrdf-sesame-2.0.1-onejar.jar:lib/sesame-slf4j-jdk14-1.3.0.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am: lib virt_sesame2.jar
@@ -52,6 +56,7 @@ lib:
 	@test -d lib || touch virt_sesame2.jar
 	@echo "Please refer to README file for missing .jar files"
 
+
 virt_sesame2.jar: $(SESAME_SRC)
 	-rm -rf out.driver
 	@mkdir out.driver
@@ -60,11 +65,31 @@ virt_sesame2.jar: $(SESAME_SRC)
 		$(SESAME_SRC)
 	$(JAR) cvf virt_sesame2.jar -C out.driver virtuoso
 
+
 doc:
 	$(JAVADOC) -d doc \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
+
+
+out.examples: $(SAMPLES_SOURCE)
+	rm -rf out.examples
+	-mkdir out.examples
+	$(JAVAC) $(JAVA_FLAGS) \
+		-d out.examples \
+		-classpath "$(SESAME_CLASSPATH):virt_sesame2.jar" \
+		$(SAMPLES_SOURCE)
+
 	
+if JDK3
+run-tests: out.examples
+	$(JAVA) \
+		-classpath "$(SESAME_CLASSPATH):virt_sesame2.jar:out.examples" \
+		VirtuosoTest localhost $(PORT)
+else
+run-tests:
+	@echo "***WARNING: Disabled Sesame2 test suite"
+endif
 
 # ----------------------------------------------------------------------
 #
