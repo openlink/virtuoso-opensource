@@ -44,7 +44,7 @@ SESAME_SRC= \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH=lib/sesame-slf4j-api-1.3.0.jar:lib/openrdf-sesame-2.0.1-onejar.jar:lib/sesame-slf4j-jdk14-1.3.0.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+SESAME_CLASSPATH=lib/slf4j-api-1.5.0.jar:lib/openrdf-sesame-2.1.2-onejar.jar:lib/slf4j-jdk14-1.5.0.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am: lib virt_sesame2.jar
 
