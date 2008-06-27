@@ -2409,7 +2409,9 @@ ODS.Nav = function (navOptions)
 
         OAT.Event.attach ('searcT2', "click",
 			  function () {
-			      self.searchObj.map.obj.checkResize ();
+			searchDiv.style.position = 'relative';
+			searchDiv.style.height='400';
+			searchDiv.style.width='800px';
 			      if ($v ('search_textbox_searchC') == '')
 				  self.searchContacts ('', self.renderSearchResultsMap);
 			  });
@@ -2420,10 +2422,16 @@ ODS.Nav = function (navOptions)
 		      fixEpsilon:0.5
 	}
 
-        self.searchObj.map = new OAT.Map ('searchMap', OAT.MapData.TYPE_G, mapOpt);
-        self.searchObj.map.centerAndZoom (0, 0, 8); /* africa, middle zoom */
-        self.searchObj.map.obj.addControl (new GSmallMapControl ());
-        self.searchObj.map.setMapType (OAT.MapData.MAP_ORTO); /* aerial */
+    var searchDiv = document.getElementById('searchMap');
+    searchDiv.style.position = 'relative';
+    searchDiv.style.height='400px';
+    searchDiv.style.width='800px';
+    self.searchObj.map = new OAT.Map (searchDiv, OAT.MapData.TYPE_Y, mapOpt);
+    self.searchObj.map.centerAndZoom (0, 0, 0);
+    self.searchObj.map.setMapType (OAT.MapData.MAP_MAP);
+    self.searchObj.map.addMapControl();
+    self.searchObj.map.addTypeControl();
+    self.searchObj.map.addTrafficControl();
 
         self.searchObj.map.removeAllMarkers =
 	function () {
