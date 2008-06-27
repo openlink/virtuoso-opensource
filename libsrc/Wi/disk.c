@@ -597,6 +597,7 @@ it_temp_free (index_tree_t * it)
       clrhash (&itm->itm_dp_to_buf);
       ITC_LEAVE_MAPS (itc);
       dk_hash_iterator (&hit, &itm->itm_remap);
+      if (DBS_TEMP != it->it_storage->dbs_type) GPF_T1 ("temp tree free with a non temp dbs");
   IN_DBS (it->it_storage);
   while (dk_hit_next (&hit, (void**)&dp, (void**)&remap))
     {

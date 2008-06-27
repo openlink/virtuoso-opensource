@@ -1727,6 +1727,8 @@ row_set_col_temp (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, 
 	case DV_BLOB_WIDE_HANDLE:
 	case DV_BLOB_XPER_HANDLE:
 	  {
+	    if (KI_TEMP != key->key_id)
+	      GPF_T1 ("putting blob ref on non temp key");
 	    if ((int) (DV_BLOB_LEN + *v_fill) > max)
 	      {
 		*err_ret = srv_make_new_error ("22026", "SR319",
