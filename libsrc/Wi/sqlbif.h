@@ -235,5 +235,15 @@ char * rel_to_abs_path (char *p, const char *path, long len);
 caddr_t bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);
+#define AS_DBA(qi, exp) \
+{ \
+  oid_t old_u = qi->qi_u_id, old_g = qi->qi_g_id; \
+  qi->qi_u_id = U_ID_DBA; \
+  qi->qi_g_id = G_ID_DBA;\
+  exp; \
+  qi->qi_u_id = old_u;\
+  qi->qi_g_id = old_g;\
+}
+
 
 #endif /* _SQLBIF_H */

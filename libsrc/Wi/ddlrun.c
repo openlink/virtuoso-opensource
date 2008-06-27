@@ -57,16 +57,6 @@ static void sch_create_table_as (query_instance_t *qi, ST * tree);
 
 
 
-#define AS_DBA(qi, exp) \
-{ \
-  oid_t old_u = qi->qi_u_id, old_g = qi->qi_g_id; \
-  qi->qi_u_id = U_ID_DBA; \
-  qi->qi_g_id = G_ID_DBA;\
-  exp; \
-  qi->qi_u_id = old_u;\
-  qi->qi_g_id = old_g;\
-}
-
 const char *add_col_text =
 "insert into SYS_COLS (\"TABLE\", \"COLUMN\", COL_ID, COL_DTP, COL_PREC, COL_CHECK, COL_SCALE, COL_DEFAULT, COL_NULLABLE, COL_OPTIONS)"
 " values (?, ?, ?, ?, ?, ?, ?, serialize (?), ?, ?)";

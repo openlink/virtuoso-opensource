@@ -84,6 +84,7 @@ extern "C" {
 
 id_hash_t *icc_locks;
 dk_mutex_t *icc_locks_mutex;
+id_hash_t *dba_sequences;
 
 void qi_read_table_schema (query_instance_t * qi, char *read_tb);
 void ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *err_ret);
@@ -8888,6 +8889,86 @@ bif_raw_exit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL; /* dummy */
 }
 
+dbe_table_t *
+sequence_auto_increment_of (caddr_t name)
+{
+  char *dot = name, *start_pos = NULL, *end_pos = NULL;
+  char tb [MAX_NAME_LEN * 3];
+  int ndots = 0;
+  dbe_table_t * tbl = NULL;
+
+  for (dot = strchr (dot, '.'); NULL != dot; dot = strchr (dot, '.'))
+    {
+      dot++;
+      ndots++;
+      if (ndots == 2) start_pos = dot;   
+      if (ndots == 5) end_pos = dot;
+      if (ndots > 5) break;
+    } 
+  if (ndots == 5) /* look-like a autoincrement */
+    {
+      dbe_column_t *col = NULL;
+      memset (tb, 0, sizeof (tb));
+      strncpy (tb, start_pos, end_pos - start_pos - 1);
+      tbl = sch_name_to_table (wi_inst.wi_schema, tb);
+      if (tbl)
+	col = tb_name_to_column (tbl, end_pos);
+      if (!col)
+	tbl = NULL;
+    }
+  return tbl;
+}
+
+#if 0
+/* used to dump sequences created by dba */
+caddr_t
+bif_sequence_is_auto_increment (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  caddr_t name = bif_string_arg (qst, args, 0, "sequence_is_auto_increment");
+  dbe_table_t * tb;
+  sec_check_dba (qi, "sequence_is_auto_increment");
+  tb = sequence_auto_increment_of (name);
+  if (tb) 
+    return box_num (1);
+  return box_num (0);
+}
+#endif
+
+caddr_t
+bif_add_protected_sequence (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  caddr_t name = bif_string_arg (qst, args, 0, "add_protected_sequence");
+  caddr_t copy;
+  ptrlong one = 1;
+  sec_check_dba (qi, "add_protected_sequence");
+  copy = box_dv_short_string (name);
+  id_hash_set (dba_sequences, (caddr_t)&copy, (caddr_t)&one);
+  NO_CADDR_T;
+}
+
+void 
+check_sequence_grants (query_instance_t * qi, caddr_t name)
+{
+  dbe_table_t * tbl = NULL;
+  if (sec_bif_caller_is_dba (qi))
+    return;
+  if (id_hash_get (dba_sequences, (caddr_t)&name))
+    sqlr_new_error ("42000", "SR159", "Sequence %.300s restricted to dba group.", name);
+  tbl = sequence_auto_increment_of (name);
+  if (tbl && !sec_tb_check (tbl, qi->qi_u_id, qi->qi_g_id, GR_INSERT))
+    sqlr_new_error ("42000", "SR159", "No permission to write sequence %.300s.", name);
+}
+
+static int registry_name_is_protected (const caddr_t name)
+{
+  if (!strncmp (name, "__key__", 7))
+    return 2;
+  if (!strcmp (name, "__next_free_port"))
+    return 1;
+  return 0;
+}
 
 caddr_t
 bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -8897,6 +8978,10 @@ bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_set");
   boxint count = (boxint) bif_long_arg (qst, args, 1, "sequence_set");
   long mode = (long) bif_long_arg (qst, args, 2, "sequence_set");
+
+  if (mode != SEQUENCE_GET)
+    check_sequence_grants (qi, name);
+
   res = sequence_set_1 (name, count, mode, OUTSIDE_MAP, err_ret);
   if (*err_ret)
     return NULL;
@@ -8930,6 +9015,7 @@ bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("22023", "SR376",
 	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
+  check_sequence_grants (qi, name);
   res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
   if (*err_ret)
     return NULL;
@@ -8945,6 +9031,7 @@ bif_sequence_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_remove");
 
+  check_sequence_grants (qi, name);
   res = sequence_remove (name, OUTSIDE_MAP);
   log_sequence_remove (qi->qi_trx, name);
   return (box_num (res));
@@ -9055,16 +9142,6 @@ bif_identity_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-static int registry_name_is_protected (const caddr_t name)
-{
-  if (!strncmp (name, "__key__", 7))
-    return 2;
-  if (!strcmp (name, "__next_free_port"))
-    return 1;
-  return 0;
-}
-
-
 caddr_t
 bif_registry_name_is_protected (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -9097,6 +9174,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         return (box_num (0));
       sqlr_new_error ("42000", "SR484", "Function registry_set can not modify protected registry variable '%.300s'.", name);
     }
+  check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
   registry_set_1 (name, val, 1, err_ret);
   LEAVE_TXN;
@@ -9127,6 +9205,7 @@ bif_registry_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_string_arg (qst, args, 0, "registry_remove");
   if (registry_name_is_protected (name))
     sqlr_new_error ("42000", "SR485", "Function registry_remove can not remove protected registry variable '%.300s'.", name);
+  check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
   res = registry_remove (name);
   LEAVE_TXN;
@@ -12930,6 +13009,7 @@ sql_bif_init (void)
 
   icc_locks_mutex = mutex_allocate();
   icc_locks = id_str_hash_create (31);
+  dba_sequences = id_str_hash_create (11);
 /* For debugging */
   bif_define_typed ("dbg_printf", bif_dbg_printf, &bt_varchar);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
@@ -13375,6 +13455,10 @@ sql_bif_init (void)
   init_pwd_magic_users ();
   bif_define ("__grouping", bif_grouping);
   bif_define ("__grouping_set_bitmap", bif_grouping_set_bitmap);
+#if 0  
+  bif_define ("sequence_is_auto_increment", bif_sequence_is_auto_increment);
+#endif  
+  bif_define ("add_protected_sequence", bif_add_protected_sequence);
   bif_hosting_init ();
   bif_aq_init ();
   bif_diff_init();

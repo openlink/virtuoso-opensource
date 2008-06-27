@@ -795,8 +795,8 @@ udt_exec_class_def (query_instance_t * qi, ST * _tree)
     }
   else
     {
-      qr_rec_exec (udt_add_qr, cli, NULL, qi, NULL, 2, ":0", tree->_.type.name,
-	  QRP_STR, ":1", box_copy_tree ((box_t) tree), QRP_RAW);
+      AS_DBA (qi, qr_rec_exec (udt_add_qr, cli, NULL, qi, NULL, 2, ":0", tree->_.type.name,
+	  QRP_STR, ":1", box_copy_tree ((box_t) tree), QRP_RAW));
       ddl_type_changed (qi, tree->_.type.name, NULL, NULL);
       udt_free_class_def (udt);
     }

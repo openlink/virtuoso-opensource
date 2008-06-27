@@ -601,3 +601,103 @@ create procedure SYS_CREATE_TABLE_AS (
       return _stmt;
 }
 ;
+
+-- add all known sequences created by DBA
+add_protected_sequence ('/!URIQA/')
+;
+add_protected_sequence ('/!sparql/')
+;
+add_protected_sequence ('DAV_HOME_DIR_UPDATE')
+;
+add_protected_sequence ('DB.DBA.DAV_RDF_GRAPH_URI')
+;
+add_protected_sequence ('DB.DBA.RDF_QUAD_FT_UPGRADE')
+;
+add_protected_sequence ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2')
+;
+add_protected_sequence ('DB.DBA.__UPDATE_SOAP_USERS_ACCESS')
+;
+add_protected_sequence ('DB.DBA.virt_proxy_init_state')
+;
+add_protected_sequence ('DELAY_UPDATE_DB_DBA_RDF_OBJ')
+;
+add_protected_sequence ('DELAY_UPDATE_WS_WS_HOSTFS_RES_CACHE')
+;
+add_protected_sequence ('DELAY_UPDATE_WS_WS_HOSTFS_RES_META')
+;
+add_protected_sequence ('FK_UNIQUE_CHEK')
+;
+add_protected_sequence ('NNTP_SERVER_ID')
+;
+add_protected_sequence ('RDF_DATATYPE_TWOBYTE')
+;
+add_protected_sequence ('RDF_LANGUAGE_TWOBYTE')
+;
+add_protected_sequence ('RDF_PREF_SEQ')
+;
+add_protected_sequence ('RDF_RO_ID')
+;
+add_protected_sequence ('RDF_URL_IID_BLANK')
+;
+add_protected_sequence ('RDF_URL_IID_NAMED')
+;
+add_protected_sequence ('RDF_URL_IID_NAMED_BLANK')
+;
+add_protected_sequence ('UDDI_operator')
+;
+add_protected_sequence ('URIQADefaultHost')
+;
+add_protected_sequence ('URIQAFingerprint')
+;
+add_protected_sequence ('VAD_atomic')
+;
+add_protected_sequence ('VAD_errcount')
+;
+add_protected_sequence ('VAD_is_run')
+;
+add_protected_sequence ('VAD_msg')
+;
+add_protected_sequence ('VAD_wet_run')
+;
+add_protected_sequence ('WS.WS.SYS_DAV_INIT-status')
+;
+add_protected_sequence ('WSRMServerID')
+;
+add_protected_sequence ('__FTI_VERSION__')
+;
+add_protected_sequence ('__IRI8')
+;
+add_protected_sequence ('__IRI_MAX8')
+;
+add_protected_sequence ('__NEXT__vad_id')
+;
+add_protected_sequence ('__REPL_CREATE_UPDATABLE_SNAPSHOT_LOG_WS.WS.SYS_DAV_RES')
+;
+add_protected_sequence ('__http_vd_upgrade')
+;
+add_protected_sequence ('__nntp_from_header')
+;
+add_protected_sequence ('__nntp_organization_header')
+;
+add_protected_sequence ('__no_vspx_temp')
+;
+add_protected_sequence ('__repl_this_server')
+;
+add_protected_sequence ('__scheduler_do_now__')
+;
+add_protected_sequence ('__spam_filtering')
+;
+add_protected_sequence ('__wsrm_version__')
+;
+add_protected_sequence ('dbpump_id')
+;
+add_protected_sequence ('dbpump_temp')
+;
+add_protected_sequence ('uuid_state')
+;
+add_protected_sequence ('vad_id')
+;
+add_protected_sequence ('vad_tmp')
+;
+add_protected_sequence ('vdd_init')
+;
