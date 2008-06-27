@@ -59,6 +59,11 @@ virt_sesame2.jar: $(SESAME_SRC)
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
 	$(JAR) cvf virt_sesame2.jar -C out.driver virtuoso
+
+doc:
+	$(JAVADOC) -d doc \
+		-classpath "$(SESAME_CLASSPATH)" \
+		$(SESAME_SRC)
 	
 
 # ----------------------------------------------------------------------

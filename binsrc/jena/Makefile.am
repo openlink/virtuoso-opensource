@@ -63,6 +63,11 @@ virt_jena.jar: $(JENA_SRC)
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
 	$(JAR) cvf virt_jena.jar -C out.driver virtuoso
+
+doc:
+	$(JAVADOC) -d doc \
+		-classpath "$(JENA_CLASSPATH)" \
+		$(JENA_SRC)
 	
 
 # ----------------------------------------------------------------------
