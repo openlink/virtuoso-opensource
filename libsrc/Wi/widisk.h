@@ -414,6 +414,7 @@ struct log_segment_s
 
 # define DB_OPEN_FLAGS	OPEN_FLAGS
 # define LOG_OPEN_FLAGS OPEN_FLAGS
+# define fd_fsync(N)   _commit (N)
 
 #else
 
@@ -446,6 +447,7 @@ extern int c_use_o_direct;
 # define fd_open(N,M)	open (N, M, 0666)
 # define fd_close(f,n)	close (f)
 # define file_set_rw(N)
+# define fd_fsync(N)   fsync (N)
 
 #endif
 

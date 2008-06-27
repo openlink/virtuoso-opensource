@@ -2674,7 +2674,9 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	break;
 
     case 1:
+#ifndef WIN32	
       sync();
+#endif      
       break;
 
     case 2:
@@ -2685,7 +2687,7 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	    {
 	      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
 		{
-		  fsync (dst->dst_fds[0]);
+		  fd_fsync (dst->dst_fds[0]);
 		}
 	      END_DO_BOX;
 	    }
@@ -2693,7 +2695,7 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	}
       else
 	{
-	  fsync (dbs->dbs_fd);
+	  fd_fsync (dbs->dbs_fd);
 	}
     }
 #endif

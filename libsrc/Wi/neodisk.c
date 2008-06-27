@@ -1397,7 +1397,7 @@ dbs_cpt_backup (void)
 	  session_flush_1 (ses);
 	}
       END_WRITE_FAIL (ses);
-      fsync (cpt_log_fd);
+      fd_fsync (cpt_log_fd);
       fd_close (cpt_log_fd, dbs->dbs_cpt_file_name);
       dbs_sync_disks (dbs);
       hash_table_free (cpt_uncommitted_remap);
