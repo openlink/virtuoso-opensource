@@ -35,8 +35,8 @@ STATUS=$?
 
 if test $STATUS -ne 0
 then
-    echo "***WARNING: VirtuosoTestGraph with Jena provider fails some tests"
-    exit 0	# we can set this to 1 when all tests pass
+    echo "***FAILED: VirtuosoTestGraph with Jena provider failed some tests"
+    exit 1
 else
     echo "PASSED: VirtuosoTestGraph with Jena provider"
 fi
