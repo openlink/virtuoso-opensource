@@ -190,7 +190,25 @@
                 Annotation
               </th>
               <td>
-                <v:textarea name="f_body" null-value="--''" value="--self.v_body" fmt-function="ENEWS.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                      <?vsp
+                        declare tmpString any;
+
+                        tmpString := coalesce (self.v_body, '');
+                        tmpString := replace(tmpString, '\'', '&#39;');
+                        tmpString := replace(tmpString, '"', '&#34;');
+                        tmpString := replace(tmpString, chr(10), ' ');
+                        tmpString := replace(tmpString, chr(13), ' ');
+                      ?>
+                      <![CDATA[
+                        <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
+                        <script language="JavaScript" type="text/javascript">
+                          initRTE("/ods/rte/images/", "/ods/rte/", "", false);
+                        </script>
+                        <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                        <script language="JavaScript" type="text/javascript">
+                          writeRichText('f_body', '<?vsp http (tmpString); ?>', 400, 170, true, false);
+                        </script>
+                      ]]>
               </td>
             </tr>
                 </table>
@@ -283,15 +301,19 @@
             </div>
           </div>
           <div class="new-form-footer">
-                  <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
+            <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_body\')" xhtml_title="Post" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                   declare N, M integer;
-                  declare params any;
+                  declare params, xt any;
 
                   params := self.vc_page.vc_event.ve_params;
 
-                        self.v_body := trim (self.f_body.ufl_value);
+                  self.v_body := trim (get_keyword ('f_body', params, ''));
+                  xt := xml_tree_doc (xml_tree (self.v_body, 2, '', 'UTF-8'));
+                  if (xpath_eval ('//no-auto-href', xt, 1) is null)
+                    self.v_body := DB.DBA.wa_content_annotate (self.account_id, self.v_body);
+
                   self.v_claims := vector ();
                   for (N := 0; N < length (params); N := N + 2)
                   {

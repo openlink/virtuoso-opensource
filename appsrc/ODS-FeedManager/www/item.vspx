@@ -233,14 +233,13 @@
               if (not isnull(EFI_COMMENT_API))
                 ct := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment');
 
-              -- Discussion
-              if (ENEWS.WA.discussion_check ())
-                if (ENEWS.WA.conversation_enable(domain_id))
-                  cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, EFI_ID, 'Discussion', 'Discuss');
-
               -- Annotation
               if (account_id >= 0)
-                an := sprintf(' | <a href="#" onclick="javascript: window.open(\'annotea.vspx?sid=%s&realm=%s&did=%d&aid=%d&oid=%d\', \'\', \'width=600,height=500,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Annotate', 'Annotate');
+              an := sprintf(' | <a href="#" onclick="javascript: window.open(\'annotea.vspx?sid=%s&realm=%s&did=%d&aid=%d&oid=%d\', \'\', \'width=700,height=500,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Annotate', 'Annotate');
+
+            -- Discussion
+            if ((ENEWS.WA.discussion_check ()) and (ENEWS.WA.conversation_enable(domain_id)))
+              cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, EFI_ID, 'Discussion', 'Discuss');
 
               if (account_id >= 0)
               {
@@ -288,7 +287,7 @@
               }
 
               http(sprintf('<div id="feed_header">&nbsp;<b>Post</b>: <i>%s</i> | <b>Author</b>: <i>%s</i> | <b>Feed</b>: <i>%s</i>%s</div>', lt, author, ut, en));
-              http(sprintf('<div id="feed_subheader">&nbsp;<b>Posted on</b>: <i>%s</i>, <b>Updated on</b>: <i>%s</i>%s %s %s %s %s %s %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_PUBLISH_DATE, EFI_LAST_UPDATE, account_name), 'dct:created'), ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_LAST_UPDATE, null, account_name), 'dct:modified'), rt, ft, mt, bt, ct, cv, an));
+            http(sprintf('<div id="feed_subheader">&nbsp;<b>Posted on</b>: <i>%s</i>, <b>Updated on</b>: <i>%s</i>%s %s %s %s %s %s %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_PUBLISH_DATE, EFI_LAST_UPDATE, account_name), 'dct:created'), ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EFI_LAST_UPDATE, null, account_name), 'dct:modified'), rt, ft, mt, bt, ct, an, cv));
               if (tt <> '')
                 http(sprintf('<div id="feed_subheader">%s</div>', tt));
               http('<div id="feed_gems">');

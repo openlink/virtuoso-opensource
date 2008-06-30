@@ -351,7 +351,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link_ed">%s</a>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
