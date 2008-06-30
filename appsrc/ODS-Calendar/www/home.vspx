@@ -893,7 +893,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="%s %s" class="link_ed">%s</a>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link_ed">%s</a>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -2774,10 +2774,9 @@
                         tmpString := replace(tmpString, chr(13), ' ');
                       ?>
                       <![CDATA[
-                        <script language="JavaScript" type="text/javascript" src="js/rte/richtext.js"></script>
-                        <script language="JavaScript" type="text/javascript" src="js/rte/html2xhtml.js"></script>
+                            <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
                         <script language="JavaScript" type="text/javascript">
-                          initRTE("js/rte/images/", "js/rte/", "", true);
+                              initRTE("/ods/rte/images/", "/ods/rte/", "", false);
                         </script>
                         <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
                         <script language="JavaScript" type="text/javascript">
@@ -3255,10 +3254,9 @@
                       tmpString := replace(tmpString, chr(13), ' ');
                     ?>
                     <![CDATA[
-                      <script language="JavaScript" type="text/javascript" src="js/rte/richtext.js"></script>
-                      <script language="JavaScript" type="text/javascript" src="js/rte/html2xhtml.js"></script>
+                            <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
                       <script language="JavaScript" type="text/javascript">
-                        initRTE("js/rte/images/", "js/rte/", "", true);
+                              initRTE("/ods/rte/images/", "/ods/rte/", "", false);
                       </script>
                       <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
                       <script language="JavaScript" type="text/javascript">
