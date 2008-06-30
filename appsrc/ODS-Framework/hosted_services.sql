@@ -6662,3 +6662,137 @@ create procedure ods_iri_expand (in iri varchar)
 
 
 wa_exec_no_error_log('grant SPARQL_SPONGE to "SPARQL"');
+
+create procedure wa_content_annotate (
+  in ap_uid any,
+  in source_UTF8 varchar)
+{
+  declare ap_set_ids any;
+  declare res_out, script_out, match_list any;
+  declare m_apc, m_aps, m_app, m_apa, m_apa_w, m_aph any;
+  declare apa_w_ctr, apa_w_count integer;
+  declare app_ctr, app_count integer;
+  declare prev_end, prev_apa_id, prev_idx integer;
+  declare done any;
+
+  ap_set_ids := (select vector (APS_ID)
+                   from DB.DBA.SYS_ANN_PHRASE_SET
+                  where	APS_OWNER_UID = ap_uid and APS_NAME = sprintf ('Hyperlinking-%d', ap_uid));
+
+  if (not length (ap_set_ids))
+    return source_UTF8;
+
+  match_list := ap_build_match_list ( ap_set_ids, source_UTF8, 'x-any', 1, 0);
+  m_apc   := aref_set_0 (match_list, 0);
+  m_aps   := aref_set_0 (match_list, 1);
+  m_app   := aref_set_0 (match_list, 2);
+  m_apa   := aref_set_0 (match_list, 3);
+  m_apa_w := aref_set_0 (match_list, 4);
+  m_aph   := aref_set_0 (match_list, 5);
+
+  apa_w_count := length (m_apa_w);
+  app_count := length (m_app);
+  done := make_array (app_count, 'any');
+  if (0 = app_count)
+  {
+    return source_UTF8;
+  }
+  res_out := string_output ();
+  prev_apa_id := -1;
+  for (apa_w_ctr := 0; apa_w_ctr < apa_w_count; apa_w_ctr := apa_w_ctr + 1)
+  {
+    declare apa_idx, is_single_word integer;
+    declare apa any;
+
+    apa_idx := m_apa_w [apa_w_ctr];
+    apa := aref_set_0 (m_apa, apa_idx);
+
+    -- if current apa index is not next by previous, then we already in new match
+    if (apa_idx > 0 and (prev_idx + 1) <> apa_idx)
+	    prev_apa_id := -1;
+
+    if (6 = length (apa))
+    {
+      declare apa_beg, apa_end, apa_hpctr, apa_hpcount, add_href, inside_href, this_apa_id integer;
+      declare arr, dta any;
+
+	    if (position (prev_apa_id, apa[5]))
+	      this_apa_id := prev_apa_id;
+	    else
+	      this_apa_id := apa[5][0];
+
+	    if (strchr (m_app[this_apa_id][2], ' ') is not null)
+	    {
+	      is_single_word := 0;
+	    } else {
+	      is_single_word := 1;
+      }
+      apa_beg := apa [1];
+	    apa_end := apa [2];
+	    apa_hpcount := length (apa[5]);
+	    http (subseq (source_UTF8, prev_end, apa_beg), res_out);
+
+	    if (bit_and (0hex00000004, apa[3]) or bit_and (0hex80000000, apa[3])) -- inside HREF or XMP
+	    {
+	      add_href := 0;
+	      inside_href := 1;
+	    }
+	    else
+	    {
+	      add_href := 1;
+	      inside_href := 0;
+	    }
+
+	    -- if we are already on next word in phrase do not print start of HREF
+	    if (is_single_word = 0 and position (prev_apa_id, apa[5]))
+	    {
+	      add_href := 0;
+      }
+	    if (add_href and not done[this_apa_id]) -- if to print start and not already done with this phrase
+	    {
+	      arr := m_app[this_apa_id];
+	      dta := arr [3];
+	      http (sprintf ('<a href="%s">', dta), res_out);
+	    }
+
+	    -- print the matched content
+	    http (subseq (source_UTF8, apa_beg, apa_end), res_out);
+
+	    -- if we have next match and current match is not single word
+	    if ((apa_idx + 1) < length (m_apa) and is_single_word = 0)
+	    {
+	      declare n_apa any;
+	      n_apa := m_apa [apa_idx + 1];
+	      -- if next match is for same phrase do not print HREF closing tag
+	      if (length (n_apa) = 6 and position (this_apa_id, n_apa [5]))
+	      {
+          add_href := 0;
+        }
+        else if (not inside_href) -- if next match is some other phrase and we are not inside existing HREF, print closing tag
+        {
+		      add_href := 1;
+		    }
+	    }
+	    else if (not inside_href) -- if this is a last match, and no inside HREF, print closing tag
+	    {
+        add_href := 1;
+      }
+	    prev_apa_id := this_apa_id;
+	    if (add_href and not done[this_apa_id]) -- if this phrase is not printed yet
+	    {
+	      http ('</a>', res_out);
+	      done [this_apa_id] := 1;
+	      prev_apa_id := -1;
+	    }
+      prev_end := apa_end;
+    }
+    else
+    {
+	    prev_apa_id := -1;
+	  }
+    prev_idx := apa_idx;
+  }
+  http (subseq (source_UTF8, prev_end), res_out);
+  return string_output_string (res_out);
+}
+;
