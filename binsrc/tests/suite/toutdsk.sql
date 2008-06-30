@@ -75,6 +75,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": procedure to fill up to possible size created : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+__dbf_set ('dbf_no_disk', 1);
 toutdsk (7000);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -100,6 +101,7 @@ status ();
 
 drop table TX;
 
+__dbf_set ('dbf_no_disk', 0);
 create table tx (id int, dt long varchar);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -107,6 +109,7 @@ ECHO BOTH ": tx table created : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- XXX: cannot insert the same number of rows as pages are lost atm; must be fixed
 -- ideally we should expect to insert the same number of rows
+__dbf_set ('dbf_no_disk', 1);
 toutdsk (7000, atoi(registry_get ('tx')));
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;

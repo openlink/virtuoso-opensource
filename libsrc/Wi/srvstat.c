@@ -202,6 +202,10 @@ long tws_cached_connections;
 
 long vt_batch_size_limit = 1000000L;
 
+/* flags for simulated exceptions */
+long dbf_no_disk = 0;
+
+
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -1329,6 +1333,13 @@ stat_desc_t stat_descs [] =
 };
 
 
+stat_desc_t dbf_descs [] = 
+  {
+    {"dbf_no_disk", &dbf_no_disk},
+    {NULL, NULL, NULL}
+  };
+
+
 caddr_t
 bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1363,6 +1374,34 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sd++;
     }
   sqlr_new_error ("42S22", "SR242", "No system status variable %s", name);
+  return NULL; /*dummy*/
+}
+
+
+caddr_t
+bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "__dbf_set");
+  long v = bif_long_arg (qst, args, 1, "__dbf_set");
+  stat_desc_t *sd = &dbf_descs[0];
+  sec_check_dba ((query_instance_t*)qst, "__dbf_set");
+
+  while (sd->sd_name)
+    {
+      if (0 == strcmp (sd->sd_name, name))
+	{
+	  if (sd->sd_value)
+	    {
+	      long ov = *(sd->sd_value);
+	      *(sd->sd_value) = v;
+	      return (box_num (ov));
+	    }
+	  else 
+	    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter not settable");
+	}
+      sd++;
+    }
+  sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter does not exist");
   return NULL; /*dummy*/
 }
 
@@ -3091,6 +3130,7 @@ bif_status_init (void)
 #endif
   bif_define ("status", bif_status);
   bif_define ("sys_stat", bif_sys_stat);
+  bif_define ("__dbf_set", bif_dbf_set);
   bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
   bif_define_typed ("key_estimate", bif_key_estimate, &bt_integer);
   bif_define_typed ("col_stat", bif_col_stat, &bt_integer);

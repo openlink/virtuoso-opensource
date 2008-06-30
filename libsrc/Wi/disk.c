@@ -2131,12 +2131,17 @@ dbs_seg_extend (dbe_storage_t * dbs, OFF_T n)
   return n;
 }
 
+extern long dbf_no_disk;
+
+
 OFF_T
 dbs_extend_file (dbe_storage_t * dbs)
 {
   OFF_T n;
   OFF_T new_file_length;
   static ALIGNED_PAGE_ZERO (zero);
+  if (dbf_no_disk)
+    return 0;
   if (dbs->dbs_disks)
     return dbs_seg_extend (dbs, dbs->dbs_extend);
 
