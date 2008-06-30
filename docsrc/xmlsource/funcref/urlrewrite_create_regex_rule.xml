@@ -71,13 +71,16 @@
       <para>A vector of the names of the parsed parameters. The length of the vector should be equal to the number of '(...)' specifiers in the format string.</para>
     </refsect2>
     <refsect2><title><parameter>nice_min_params</parameter></title>
-      <para>Used to specify the minimum number of sprintf format patterns to be matched in order to trigger the given rule. It only affects sprintf rules and has no effect for regex rules.</para>
+      <para>Used to specify the minimum number of sprintf format patterns to be matched in order to trigger the given rule. In existing versions of Virtuoso it only affects sprintf rules and has no effect for regex rules.</para>
     </refsect2>
     <refsect2><title><parameter>target_compose</parameter></title>
       <para>A regex compose expression for the URL of the destination page.</para>
     </refsect2>
     <refsect2><title><parameter>target_params</parameter></title>
       <para>A vector of names of parameters that should be passed to the compose expression (target_compose) as $1, $2 and so on.</para>
+      <para>Special names can be used in addition to names from <parameter>nice_params</parameter>. That names start and end with asterick.
+Name '*accept*' is for required MIME type string, other names of the sort refer to values from HTTP request header lines.
+Note that '*Accept*' will return the whole &quot;Accept:&quot; line whereas '*accept*' is for the part that matches <parameter>accept_pattern</parameter>.</para>
     </refsect2>
     <refsect2><title><parameter>target_expn</parameter></title>
       <para>Optional SQL text that should be executed instead of a regex compose call.</para>

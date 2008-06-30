@@ -195,7 +195,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &smime_sign; &smime_verify; &smtp_send; &soap_box_xml_entity; &soap_dt_define;
 &soap_call; &soap_client; &soap_make_error; &soap_print_box; &soap_sdl;
 &soap_server; &soap_wsdl; &soap_wsdl_import; &soap_box_structure; &soap_current_url;
-&space; &split_decode; &sprintf; &sprintf_inverse; &sprintf_or_null;
+&space; &split_decode; &sprintf; &sprintf_inverse; &sprintf_iri; &sprintf_iri_or_null; &sprintf_or_null;
 &sql_columns; &sql_data_sources; &sql_gettypeinfo; &sql_primary_keys;
 &sql_statistics; &sql_tables; &sql_special_columns; &sql_procedures;
 &sql_write_private_profile_string; &sql_get_private_profile_string;

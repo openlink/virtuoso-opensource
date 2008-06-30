@@ -15,12 +15,14 @@
 	<paramdef>in <parameter>strg</parameter> varchar</paramdef>
 	<paramdef>in <parameter>base</parameter> varchar</paramdef>
         <paramdef>in <parameter>graph</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>log_mode</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>threads</parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_load_rdfxml_mt">
     <title>Description</title>
-    <para>For loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction).</para>
+    <para>For loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction). The function may or may not leave a transaction log, depending on <parameter>log_mode</parameter>. Hence, after successful load, one may need to execute the checkpoint statement to make sure that a server restart does not wipe out the results.</para>
   </refsect1>
   <refsect1 id="params_rdf_load_rdfxml_mt">
     <title>Parameters</title>
@@ -32,6 +34,12 @@
     </refsect2>
     <refsect2><title>graph</title>
       <para>target graph IRI, parsed triples will appear in that graph.</para>
+    </refsect2>
+    <refsect2><title>log_mode</title>
+      <para>detail level of writing the effect of loading to the transaction log. 0 means log nothing, 1 means log only allocations of internal IDs for new IRIs and literals, 2 means log everything. If database crashes when the loading is in progress or after the loading but before checkpoint is made, 0 will means that the database become inconsistent, 1 means that the database is consistent but loaded quads may disappear so the loading should be repeated and log replay may produce wrong results if actions in it depend on the content of quad store, 2 means no danger (so the default is 2). Hence loading with mode 1 and especially mode 0 are faster than usual mode 2 but they require checkpoints after data loadings and mode 0 additionally requires a checkpoint and database backup right before the loading.</para>
+    </refsect2>
+    <refsect2><title>threads</title>
+      <para>number of threads that insert quads into the database. It should not be less than 1, obviously; it is better to not set it greater than <emphasis>((N-2)/k)-1</emphasis> where <emphasis>N</emphasis> is the number of available CPU cores and <emphasis>k</emphasis> is the number of loadings that happen at the same time.</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_rdf_load_rdfxml_mt"><title>Return Types</title>
