@@ -1948,7 +1948,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
   target_bh = bh_alloc ((dtp_t)DV_TYPE_OF (source_bh));
 bh_is_ready:
 
-  if (replaced_version && replaced_version->bl_start == source_bh->bh_page)
+  if (0 && replaced_version && replaced_version->bl_start == source_bh->bh_page)
     {
       /* the blob is assigned to itself. Return, */
       bh_to_dv (source_bh, col, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (source_bh)));
