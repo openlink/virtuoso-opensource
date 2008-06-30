@@ -8971,7 +8971,7 @@ static int registry_name_is_protected (const caddr_t name)
 }
 
 caddr_t
-bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_sequence_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
   boxint res;
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
@@ -8979,7 +8979,7 @@ bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   boxint count = (boxint) bif_long_arg (qst, args, 1, "sequence_set");
   long mode = (long) bif_long_arg (qst, args, 2, "sequence_set");
 
-  if (mode != SEQUENCE_GET)
+  if (sec_check && mode != SEQUENCE_GET)
     check_sequence_grants (qi, name);
 
   res = sequence_set_1 (name, count, mode, OUTSIDE_MAP, err_ret);
@@ -9002,7 +9002,7 @@ bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_next");
@@ -9015,6 +9015,8 @@ bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("22023", "SR376",
 	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
+
+  if (sec_check)
   check_sequence_grants (qi, name);
   res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
   if (*err_ret)
@@ -9023,6 +9025,29 @@ bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (res));
 }
 
+caddr_t
+bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_sequence_set_impl (qst, err_ret, args, 1);
+}
+
+caddr_t
+bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_sequence_next_impl (qst, err_ret, args, 1);
+}
+
+caddr_t
+bif_sequence_set_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_sequence_set_impl (qst, err_ret, args, 0);
+}
+
+caddr_t
+bif_sequence_next_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_sequence_next_impl (qst, err_ret, args, 0);
+}
 
 caddr_t
 bif_sequence_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)

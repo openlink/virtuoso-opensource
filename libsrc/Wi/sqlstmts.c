@@ -40,6 +40,7 @@
 #include "sqlo.h"
 #include "sqltype_c.h"
 #include "xpathp_impl.h" /* for xml_view_name() */
+#include "sqlbif.h"
 
 
 ST**
@@ -320,7 +321,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl, 
 		    ssl_new_constant (sc->sc_cc, (caddr_t) (ptrlong) 1));
 		snext = t_sqlp_box_id_upcase ("sequence_set");
-		cv_call (code, NULL, snext, NULL, args);
+		cv_bif_call (code, bif_sequence_set_no_check, snext, NULL, args);
 		if (inc_by)
 		  {
 		    args = (state_slot_t **) sc_list (2, ssl_new_constant (sc->sc_cc, seq_name),
@@ -334,7 +335,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		  }
 		dk_free_box (seq_name);
 		snext = t_sqlp_box_id_upcase ("sequence_next");
-		cv_call (code, NULL, snext, NULL, args);
+		cv_bif_call (code, bif_sequence_next_no_check, snext, NULL, args);
 	      goto next_col;  /* given value overrides automatic if identity column. */
 	      }
 	    /* replace the slot in values with the autoinc value */
@@ -369,7 +370,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 	      }
 	    dk_free_box (seq_name);
 	    snext = t_sqlp_box_id_upcase ("sequence_next");
-	    cv_call (code, NULL, snext, sl1, args);
+	    cv_bif_call (code, bif_sequence_next_no_check, snext, sl1, args);
 
 	    args = (state_slot_t **) dk_alloc_box (sizeof (caddr_t),
 		DV_ARRAY_OF_POINTER);
