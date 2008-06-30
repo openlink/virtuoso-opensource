@@ -1892,6 +1892,14 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
     {
       if (!IS_BOX_POINTER (m1))
         return m1; /* !!!TBD: SSG_VALMODE_AUTO may be bad for LONG and LONG due to an error when native valmode is LONG but the printed expn is short */;
+      if (!m1->qmfIsBijection)
+        {
+          if (SPART_VARR_IS_REF & m1->qmfValRange.rvrRestrictions)
+            return SSG_VALMODE_SQLVAL;
+          if (SPART_VARR_IS_LIT & m1->qmfValRange.rvrRestrictions)
+            return SSG_VALMODE_SQLVAL;
+          return SSG_VALMODE_LONG;
+        }
       return SSG_VALMODE_AUTO;
     }
   if (m2 < m1)
@@ -1911,6 +1919,16 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
     {
       if ((SSG_VALMODE_SQLVAL == m1) && (m2->qmfOkForAnySqlvalue))
         return m2;
+      return SSG_VALMODE_LONG;
+    }
+  if (!(m1->qmfIsBijection) || !(m2->qmfIsBijection))
+    {
+      if ((SPART_VARR_IS_REF & m1->qmfValRange.rvrRestrictions) &&
+        (SPART_VARR_IS_REF & m2->qmfValRange.rvrRestrictions) )
+        return SSG_VALMODE_SQLVAL;
+      if ((SPART_VARR_IS_LIT & m1->qmfValRange.rvrRestrictions) &&
+        (SPART_VARR_IS_LIT & m2->qmfValRange.rvrRestrictions) )
+        return SSG_VALMODE_SQLVAL;
       return SSG_VALMODE_LONG;
     }
   DO_BOX_FAST (qm_format_t *, sup1, ctr1, m1->qmfSuperFormats)
