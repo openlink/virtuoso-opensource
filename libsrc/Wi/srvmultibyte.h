@@ -45,7 +45,7 @@ caddr_t box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, w
 caddr_t t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
 caddr_t DBG_NAME (box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox);
 #ifdef MALLOC_DEBUG
-#define box_narrow_string_as_utf8(s,n,m,c) dbg_box_narrow_string_as_utf8 (__FILE__, __LINE__, (s), (n), (m), (c))
+#define box_narrow_string_as_utf8(s,n,m,c,e,i) dbg_box_narrow_string_as_utf8 (__FILE__, __LINE__, (s), (n), (m), (c), (e), (i))
 #endif
 int parse_wide_string_literal (unsigned char **str_ptr, caddr_t box, wcharset_t *charset);
 
