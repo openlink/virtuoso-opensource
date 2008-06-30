@@ -561,9 +561,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 	private Resource[] checkContext(Resource... contexts) throws RepositoryException {
-		if(contexts != null && contexts.length == 1 && contexts[0] instanceof Resource && contexts[0] == null) {
+		if(contexts != null && contexts.length == 1 && contexts[0] == null && contexts[0] instanceof Resource) {
 			contexts = new Resource[] {nilContext};
-		} else if (contexts == null || contexts.length == 0) {
+		}
+		else if (contexts == null || contexts.length == 0) {
 			contexts = getContexts();
 		}
 		return contexts;
@@ -1017,40 +1018,27 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
-
-			Resource[] _contexts = null;
+			boolean useStatementContext = contexts == null || contexts.length == 0; // If no context are specified, each statement is added to statement context
+			Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 			while (it.hasNext()) {
 				Statement st = (Statement) it.next();
 
-				if (contexts == null || contexts.length == 0) {
-				    Resource context = st.getContext();
-
-				    if (context != null)
-					ps.setString(1, context.stringValue());
-				    else
-					ps.setString(1, nilContext.stringValue());
-
-				    bindResource(ps, 2, st.getSubject());
-				    bindURI(ps, 3, st.getPredicate());
-				    bindValue(ps, 4, st.getObject());
-				    ps.addBatch();
-				    count++;
+				if (st.getContext() != null && useStatementContext) {
+					contexts = new Resource[] {st.getContext()};
+				} else {
+					contexts = _contexts;
 				}
-				else {
-				    if (_contexts == null)
-				        _contexts = checkContext(contexts);
 
-				    for (int i = 0; i < _contexts.length; i++) {
-
-					ps.setString(1, _contexts[i].stringValue());
+				for (int i = 0; i < contexts.length; i++) {
+					ps.setString(1, contexts[i].stringValue());
 					bindResource(ps, 2, st.getSubject());
 					bindURI(ps, 3, st.getPredicate());
 					bindValue(ps, 4, st.getObject());
 					ps.addBatch();
 					count++;
-				    }
 				}
+
 				if (count > BATCH_SIZE) {
 					ps.executeBatch();
 					ps.clearBatch();
@@ -1092,28 +1080,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
-
-			Resource[] _contexts = null;
+			boolean useStatementContext = contexts == null || contexts.length == 0; // If no context are specified, each statement is added to statement context
+			Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 			while (statements.hasNext()) {
 				Statement st = (Statement) statements.next();
 
-				if (contexts == null || contexts.length == 0) {
-				    Resource context = st.getContext();
-
-					ps.setString(1, context.stringValue());
-				    bindResource(ps, 2, st.getSubject());
-				    bindURI(ps, 3, st.getPredicate());
-				    bindValue(ps, 4, st.getObject());
-				    ps.addBatch();
-				    count++;
+				if (st.getContext() != null && useStatementContext) {
+					contexts = new Resource[] {st.getContext()};
 				}
-				else {
 
-				    if (_contexts == null)
-				        _contexts = checkContext(contexts);
-
-				    for (int i = 0; i < _contexts.length; i++) {
+				for (int i = 0; i < _contexts.length; i++) {
 
 					ps.setString(1, _contexts[i].stringValue());
 					bindResource(ps, 2, st.getSubject());
@@ -1121,8 +1098,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					bindValue(ps, 4, st.getObject());
 					ps.addBatch();
 					count++;
-				    }
 				}
+
 				if (count > BATCH_SIZE) {
 					ps.executeBatch();
 					ps.clearBatch();
