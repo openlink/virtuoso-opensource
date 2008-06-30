@@ -1314,7 +1314,10 @@ rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
     {
       IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,query,"?",1,"",0);
     }
-  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,fragment,"#",1,"",0);
+  if (rel_split.fragment_end != rel_split.query_end)
+    { /* This is an exception because empty "#" is also meaningful */
+      TAIL_APPEND_CUT(rel,fragment,"#",1,"",0);
+    }
   buf_tail[0] = '\0';
 
 buffer_ready:
