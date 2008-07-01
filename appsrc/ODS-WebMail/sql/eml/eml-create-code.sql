@@ -1421,12 +1421,12 @@ create procedure OMAIL.WA.omail_delete_message(
 {
   declare N integer;
 
-  if (OMAIL.WA.omail_getp('folder_id',_params) = 110) {
-    N := 0;
-    while(N < length(params)) {
+  if (OMAIL.WA.omail_getp ('folder_id',_params) = 110)
+  {
+    for (N := 0; N < length (params); N := N + 2)
+    {
       if (params[N] = 'ch_msg')
         OMAIL.WA.omail_del_message(_domain_id, _user_id, cast(params[N + 1] as integer));
-      N := N + 2;
     }
   } else {
     OMAIL.WA.omail_setparam('fid', params, 110);
@@ -1775,7 +1775,7 @@ create procedure OMAIL.WA.omail_folder_create(
       values (_domain_id, _user_id, _folder_id, _parent_id, _folder_name);
 
     return _folder_id;
-  };
+  }
 }
 ;
 
@@ -3006,20 +3006,19 @@ create procedure OMAIL.WA.omail_move_msg(
   declare _sql varchar;
   declare _msgs,_sql_params,_pit any;
 
-  N  := 0;
   _msgs := vector();
   _pit  := vector();
   _folder_id  := cast(get_keyword('fid',_params,'') as integer);
-
-  while(N < length(_params)){
-    if (_params[N] = 'ch_msg') {
+  for (N := 0; N < length (_params); N := N + 2)
+  {
+    if (_params[N] = 'ch_msg')
+    {
       _msgs := vector_concat(_msgs,vector(cast(_params[N + 1] as integer)));
       _pit  := vector_concat(_pit,vector('?'));
     }
-    N := N + 2;
   }
-
-  if (length(_msgs) > 0) {
+  if (length (_msgs) > 0)
+  {
     _sql := sprintf ('update OMAIL.WA.MESSAGES set FOLDER_ID = ? where DOMAIN_ID = ? and USER_ID = ? and MSG_ID IN (%s)',OMAIL.WA.omail_array2string(_pit,','));
     _sql_params := vector_concat(vector(_folder_id,_domain_id,_user_id),_msgs); -- [0]folder_id,[1]domain_id,[2]user_id,[3][4]... -> MSG_IDs
     return OMAIL.WA.omail_select_exec(_sql,_sql_params);
@@ -4124,7 +4123,8 @@ create procedure OMAIL.WA.omail_save_msg(
   _subject := either(length(_subject), _subject, '~no subject~');
   _tags    := OMAIL.WA.tags_join(OMAIL.WA.tags_rules(_user_id, _pdata), get_keyword('tags', _params, ''));
 
-  if (_dcc <> '') {
+  if (_dcc <> '')
+  {
     declare _dcc_address, _dcc_addresses any;
 
     _dcc_address := OMAIL.WA.dcc_address(_dcc, _from);
@@ -4133,7 +4133,8 @@ create procedure OMAIL.WA.omail_save_msg(
         _cc := _dcc_address;
       else
         _cc := concat(_cc, ', ', _dcc_address);
-    if (_dcc_address <> '') {
+    if (_dcc_address <> '')
+    {
       _dcc_addresses := '';
       _dcc_addresses := _dcc_addresses || OMAIL.WA.omail_address2xml('to', _from,0);
       _dcc_addresses := _dcc_addresses || OMAIL.WA.omail_address2xml('to', _to,  0);
@@ -4155,7 +4156,8 @@ create procedure OMAIL.WA.omail_save_msg(
 
   _rfc_id  :=  get_keyword('rfc_id', _params,'');
   _rfc_references := get_keyword('rfc_references', _params,'');
-  if (_msg_id = 0) {
+  if (_msg_id = 0)
+  {
     _msg_id      := sequence_next ('OMAIL.WA.omail_seq_eml_msg_id');
     _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
 
@@ -6346,24 +6348,25 @@ create procedure OMAIL.WA.omail_api_message_send_recu(
   declare sRes, sNode, sValue varchar;
 
   sRes := '';
-  ind  := 0;
-  while(ind < length(pArray)) {
-    if (isstring(aref(pArray, ind))) {
+  for (ind  := 0; ind < length (pArray); ind := ind + 2)
+  {
+    if (isstring(aref(pArray, ind)))
+    {
       sNode  := lower(cast(aref(pArray, ind) as varchar));
-
-      if (isarray(aref(pArray,ind+1)) and not isstring(aref(pArray, ind+1))) {
+      if (isarray(aref(pArray,ind+1)) and not isstring(aref(pArray, ind+1)))
+      {
         sValue := OMAIL.WA.omail_api_message_create_recu(aref(pArray, ind+1), iLevel+1);
-
-      } else if (isnull(aref(pArray,ind+1))) {
+      }
+      else if (isnull (aref(pArray,ind+1)))
+      {
         sValue := '';
-
-      } else {
+      } else
+      {
         sValue := cast(aref(pArray,ind+1) as varchar);
         sValue := sprintf('<![CDATA[%s]]>',sValue);
       }
       sRes := sprintf('%s<%s>%s</%s>\n', sRes, sNode, sValue, sNode);
     }
-    ind := ind + 2;
   }
   return sRes;
 }
@@ -7714,7 +7717,8 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
 
   contentType := get_keyword_ucase ('Content-Type', head, 'text/plain');
   cset        := upper (get_keyword_ucase ('charset', head));
-  if (contentType like 'text/%') {
+  if (contentType like 'text/%')
+  {
     declare st, en int;
     declare last any;
 
@@ -7727,12 +7731,15 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
 	      en := en - 4;
 	  }
     content := subseq (N_NM_BODY, st, en);
-    if (cset is not null and cset <> 'UTF-8')	{
+    if (cset is not null and cset <> 'UTF-8')
+    {
 	    declare exit handler for sqlstate '2C000' { goto next_1;};
 	    content := charset_recode (content, cset, 'UTF-8');
 	  }
   next_1:;
-  } else if (contentType like 'multipart/%') {
+  }
+  else if (contentType like 'multipart/%')
+  {
     declare res, best_cnt any;
 
     declare exit handler for sqlstate '*' {	signal ('CONVX', __SQL_MESSAGE);};
@@ -7741,17 +7748,22 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
 
     best_cnt := null;
     content := null;
-    foreach (any elm in res) do {
-	    if (elm[1] = 'text/html' and (content is null or best_cnt = 'text/plain')) {
+    foreach (any elm in res) do
+    {
+      if (elm[1] = 'text/html' and (content is null or best_cnt = 'text/plain'))
+      {
 	      best_cnt := 'text/html';
 	      content := elm[2];
-	      if (elm[4] = 'quoted-printable') {
+        if (elm[4] = 'quoted-printable')
+        {
 		      content := uudecode (content, 12);
 		    } else if (elm[4] = 'base64') {
 		      content := decode_base64 (content);
 		    }
 		    cset := elm[5];
-	    } else if (best_cnt is null and elm[1] = 'text/plain') {
+      }
+      else if (best_cnt is null and elm[1] = 'text/plain')
+      {
 	      content := elm[2];
 	      best_cnt := 'text/plain';
 	      cset := elm[5];
@@ -7767,11 +7779,13 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
   } else
     signal ('CONVX', sprintf ('The content type [%s] is not supported', contentType));
 
-  if (not isnull (N_NM_REF)) {
+  if (not isnull (N_NM_REF))
+  {
     --declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
 
     refs := split_and_decode (N_NM_REF, 0, '\0\0 ');
-    if (length (refs)) {
+    if (length (refs))
+    {
       select C_DOMAIN_ID,
              C_USER_ID,
              C_ADDRESS,
@@ -7796,8 +7810,7 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
     _request := sprintf ('http://' || DB.DBA.http_get_host () || '/oMail/res/flush.vsp?did=%s&uid=%s&mid=%s&addr=%U', cast(_domain_id as varchar), cast(_user_id as varchar), cast(_msg_id as varchar), _address);
     http_get (_request, _respond);
     
-  }else
-  {
+  } else {
       declare  _to,_use_ngroup varchar;
       declare _ngroups any;
       declare i int;

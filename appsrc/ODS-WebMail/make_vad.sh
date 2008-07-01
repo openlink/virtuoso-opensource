@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.3.99"
+VERSION="1.3.100"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -264,6 +264,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/eml/eml-create-tables.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/eml/eml-create-code.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/wa_search_mail.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/omail-api.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/sioc_mail.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      OMAIL.WA.omail_install();" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oMail/sql/DET_oMail.sql', 1, 'report', $ISDAV);" >> $STICKER
