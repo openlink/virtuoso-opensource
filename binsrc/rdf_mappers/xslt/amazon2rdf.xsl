@@ -43,25 +43,25 @@
     <xsl:variable name="resourceURL">
 	<xsl:value-of select="vi:proxyIRI ()"/>
 	<xsl:text>http://www.amazon.com/exec/obidos/ASIN/</xsl:text>
-	<xsl:value-of select="//Asin"/>
+	<xsl:value-of select="//ASIN"/>
     </xsl:variable>
 
     <xsl:variable name="ns">http://soap.amazon.com/</xsl:variable>
 
-    <xsl:template priority="1" match="Request|TotalResults|TotalPages"/>
+    <xsl:template priority="1" match="OperationRequest|Request|TotalResults|TotalPages"/>
 
-    <xsl:template match="ProductInfo|Details|AsinSearchRequestResponse|return" priority="1">
+    <xsl:template match="ItemLookupResponse|ProductInfo|Details|AsinSearchRequestResponse|return" priority="1">
 	<xsl:apply-templates select="*"/>
     </xsl:template>
 
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$resourceURL}#this">
-		<rdfs:label><xsl:value-of select="//Details/ProductName"/></rdfs:label>
+		<rdfs:label><xsl:value-of select="//ItemAttributes/Title"/></rdfs:label>
 		<xsl:choose>
-		    <xsl:when test="//Details/Catalog[ . = 'Book']">
+		    <xsl:when test="//ProductGroup[ . = 'Book']">
 			<rdf:type rdf:resource="&bibo;Book"/>
-			<xsl:apply-templates select="//Details/*" mode="bibo"/>
+			<xsl:apply-templates select="//ItemAttributes/*" mode="bibo"/>
 		    </xsl:when>
 		    <xsl:otherwise>
 		<xsl:apply-templates/>
@@ -79,15 +79,13 @@
 	<bibo:shortTitle><xsl:value-of select="."/></bibo:shortTitle>
     </xsl:template>
 
-    <xsl:template match="Authors" mode="bibo">
-	<xsl:for-each select="Author">
+    <xsl:template match="Author" mode="bibo">
         <dcterms:contributor rdf:parseType="Resource">
 		<rdf:type rdf:resource="&foaf;Person"/>
 		<foaf:name><xsl:value-of select="."/></foaf:name>
 		<bibo:role rdf:resource="&bibo;author"/>
 		<bibo:position><xsl:value-of select="position(.)"/></bibo:position>
         </dcterms:contributor>
-	</xsl:for-each>
     </xsl:template>
 
     <xsl:template match="Manufacturer" mode="bibo">

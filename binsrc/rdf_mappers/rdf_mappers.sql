@@ -1186,12 +1186,9 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (asin is null or not isstring (api_key))
     return 0;
 
-  url := sprintf ('http://xml.amazon.com/onca/xml3?t=webservices-20&dev-t=%s&AsinSearch=%s&type=lite&f=xml',
+  url := sprintf ('http://ecs.amazonaws.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=%s&Operation=ItemLookup&ItemId=%s&ResponseGroup=ItemAttributes',
           api_key, asin);
 
---  tmp := xml_tree_doc (
---  	AmazonSearchService.AsinSearchRequest (
---	  soap_box_structure ('asin', asin, 'tag', 'webservices-20', 'type', 'lite', 'devtag', api_key)));
   tmp := http_get (url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
