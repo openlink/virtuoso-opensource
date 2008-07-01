@@ -215,6 +215,7 @@
               </div>
               <div id="a_content_1" class="tabContent" style="display: none;">
                 <v:text name="c_seqNo" xhtml_id="c_seqNo" type="hidden" value="--length (self.v_claims)" />
+                <div style="margin-bottom: 5px;"><b>Annotated URI: <i><?V SIOC..addressbook_contact_iri (self.domain_id, self.v_oid) ?></i></b></div>
                 <table id="c_table" width="90%" cellspacing="0">
                   <thead class="sortHeader">
             <tr>
