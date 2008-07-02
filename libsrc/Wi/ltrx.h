@@ -689,6 +689,7 @@ extern long tc_root_image_miss;
 extern long tc_root_image_ref_deleted;
 extern long tc_uncommit_cpt_page;
 extern long tc_root_cache_miss;
+extern long tc_aq_from_queue;
 extern long tc_aq_sleep;
 extern long  tc_release_pl_on_deleted_dp;
 extern long  tc_release_pl_on_absent_dp;

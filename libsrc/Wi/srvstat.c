@@ -1128,6 +1128,7 @@ stat_desc_t stat_descs [] =
     {"tc_read_absent_while_finalize", &tc_read_absent_while_finalize},
     {"tc_fix_outdated_leaf_ptr", &tc_fix_outdated_leaf_ptr},
     {"tc_bm_split_left_separate_but_no_split", &tc_bm_split_left_separate_but_no_split},
+    {"tc_aq_from_queue", &tc_aq_from_queue},
     {"tc_aq_sleep", &tc_aq_sleep},
     {"tc_root_image_miss", &tc_root_image_miss},
     {"tc_root_image_ref_deleted", &tc_root_image_ref_deleted},
