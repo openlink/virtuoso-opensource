@@ -155,6 +155,14 @@ spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl)
       strcpy (tail, cmd+20);
       return t_box_dv_uname_string (buf);
     }
+/*                     0         1         2  */
+/*                     01234567890123456789012*/
+  cmd = strstr (tmpl, "^{DynamicLocalFormat}^");
+  if (NULL != cmd)
+    {
+      spar_error (sparp, "%s: Unable to use ^{DynamicLocalFormat}^ outside format string of IRI class because it is expanded into sprintf format string",
+          spar_source_place (sparp, NULL) );
+    }
   return t_box_dv_uname_string (tmpl);
 }
 

@@ -237,6 +237,17 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
     {
       __xml_set_ns_decl (NS_PREFIX, NS_URL, 2);
     }
+  DB.DBA.XML_SET_NS_DECL (	'bif'	, 'bif:'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'dawgt'	, 'http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'dc'	, 'http://purl.org/dc/elements/1.1/'		, 2);
+  DB.DBA.XML_SET_NS_DECL (	'owl'	, 'http://www.w3.org/2002/07/owl#'		, 2);
+  DB.DBA.XML_SET_NS_DECL (	'mf'	, 'http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'rdf'	, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'rdfdf'	, 'http://www.openlinksw.com/virtrdf-data-formats#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'rdfs'	, 'http://www.w3.org/2000/01/rdf-schema#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'sql'	, 'sql:'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xsd'	, 'http://www.w3.org/2000/10/XMLSchema#'	, 2);
 }
 ;
 
@@ -2729,10 +2740,25 @@ res_for_pred:
             }
           else
             {
-              pred_tagname := 'ns0pred:' || subseq (res, delim+1);
+          declare p_ns_uri, p_ns_pref varchar;
+          p_ns_uri := subseq (res, 0, delim+1);
+          if (p_ns_uri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+            {
+              pred_tagname := 'rdf:' || subseq (res, delim+1);
               http ('<', ses); http (pred_tagname, ses);
-              http (' xmlns:ns0pred="', ses); http_value (subseq (res, 0, delim+1), 0, ses);
-              http ('"', ses);
+            }
+          else if (p_ns_uri = 'http://www.w3.org/2000/01/rdf-schema#')
+            {
+              pred_tagname := 'rdfs:' || subseq (res, delim+1);
+              http ('<', ses); http (pred_tagname, ses);
+            }
+          else
+            {
+              p_ns_pref := coalesce (__xml_get_ns_prefix (p_ns_uri, 3), 'n0pred');
+              pred_tagname := p_ns_pref || ':' || subseq (res, delim+1);
+              http ('<', ses); http (pred_tagname, ses);
+              http (' xmlns:' || p_ns_pref || '="', ses); http_value (p_ns_uri, 0, ses); http ('"', ses);
+            }
             }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_RDF_XML_TEXT(): object is NULL');
@@ -5423,13 +5449,39 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
 
 create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns varchar
 {
-  if (strstr (iritmpl, '^{URIQADefaultHost}^') is not null)
+  declare pos integer;
+  pos := strstr (iritmpl, '^{URIQADefaultHost}^');
+  if (pos is not null)
     {
       declare host varchar;
       host := registry_get ('URIQADefaultHost');
       if (not isstring (host))
         signal ('22023', 'Can not use ^{URIQADefaultHost}^ in IRI template if there is no DefaultHost parameter in [URIQA] section of Virtuoso configuration file');
       iritmpl := replace (iritmpl, '^{URIQADefaultHost}^', host);
+    }
+  pos := strstr (iritmpl, '^{DynamicLocalFormat}^');
+  if (pos is not null)
+    {
+      declare host varchar;
+      host := registry_get ('URIQADefaultHost');
+      if (not isstring (host))
+        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if there is no DefaultHost parameter in [URIQA] section of Virtuoso configuration file');
+      if (atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0')))
+        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if DynamicLocal is not set to 1 in [URIQA] section of Virtuoso configuration file');
+      if ((pos > 0) and (pos < 7) and strchr (subseq (iritmpl, 0, pos), ':') is not null)
+        signal ('22023', 'Misplaced ^{DynamicLocalFormat}^: its expansion will contain protocol prefix but the templace contains one already');
+      if (strchr (host, ':') is null)
+        iritmpl := replace (iritmpl, '^{DynamicLocalFormat}^', 'http://%{WSHostName}U:%{WSHostPort}U');
+      else
+        iritmpl := replace (iritmpl, '^{DynamicLocalFormat}^', 'http://%{WSHost}U');
+    }
+  pos := strstr (iritmpl, '^{');
+  if (pos is not null)
+    {
+      declare pos2 integer;
+      pos2 := strstr (subseq (iritmpl, pos), '^}');  
+      if (pos2 is not null)
+        signal ('22023', 'The macro ' || subseq (iritmpl, pos, pos + pos2 + 2) || ' is not known, supported names are ^{URIQADefaultHost}^ and ^{DynamicLocalFormat}^');
     }
   return iritmpl;
 }
@@ -8826,6 +8878,7 @@ again_11:
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, s_iid, p_iid, o_iid);
       commit work;
+      -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /1');
       return;
     }
   if (log_mode = 0)
@@ -8836,6 +8889,7 @@ again_0:
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1), iri_to_id (o_uri, 1));
       commit work;
+      -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /0');
       return;
     }
   whenever sqlstate '40001' goto deadlock_2;
@@ -8844,6 +8898,7 @@ again_2:
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1), iri_to_id (o_uri, 1));
   commit work;
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ') done /2');
   return;
 deadlock_10:
   rollback work;
@@ -8927,6 +8982,7 @@ again_quad:
     log_enable (0, 1);
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (g_iid, s_iid, p_iid, o_val);
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_W (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, env, ') done');
   commit work;
   return;
 deadlock_iid:
@@ -8950,7 +9006,6 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_A (', g_iid, s_uri, p_uri, o_uri, app_env, ')');
-  declare err any;
   app_env[1] := aq_request (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_W',
     vector (g_iid, s_uri, p_uri, o_uri, app_env[2]) );
@@ -8961,7 +9016,6 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
       if (ro_id_dict is not null)
         DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
       commit work;
-      aq_wait (app_env[0], app_env[1], err, 1);
       aq_wait_all (app_env[0]);
     }
 }
@@ -8973,7 +9027,6 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_A (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ')');
-  declare err any;
   if (__tag of XML = __tag (o_val))
     {
       DB.DBA.TTLP_EV_TRIPLE_L_W (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]);
@@ -8989,7 +9042,6 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
       if (ro_id_dict is not null)
         DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
       commit work;
-      aq_wait (app_env[0], app_env[1], err, 1);
       aq_wait_all (app_env[0]);
     }
 }
@@ -9007,7 +9059,7 @@ create procedure DB.DBA.TTLP_EV_COMMIT_A (
 create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
 				 in log_mode integer := 2, in threads integer := 3)
 {
-  declare ro_id_dict, app_env, err any;
+  declare ro_id_dict, app_env any;
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
@@ -9025,7 +9077,6 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
       'DB.DBA.TTLP_EV_COMMIT_A' ),
     app_env);
   commit work;
-  aq_wait (app_env[0], app_env[1], err, 1);
   aq_wait_all (app_env[0]);
   if (ro_id_dict is not null)
     DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (graph), ro_id_dict);
@@ -9037,7 +9088,7 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
 create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar,
   in log_mode integer := 2, in threads integer := 3 )
 {
-  declare ro_id_dict, app_env, err any;
+  declare ro_id_dict, app_env any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
@@ -9055,7 +9106,6 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
     app_env,
     base );
   commit work;
-  aq_wait (app_env[0], app_env[1], err, 1);
   aq_wait_all (app_env[0]);
   if (ro_id_dict is not null)
     DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (graph), ro_id_dict);
