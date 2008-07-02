@@ -115,14 +115,13 @@ if (not e.ve_is_post and self.del_oauth is not null)
 		  </v:template>
 	      </v:data-set>
 	  </table>
-	  <?vsp if (exists (select 1 from WA_MEMBER where WAM_USER = self.u_id and
-	  	not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST))) { ?>
+                	  <?vsp if ((exists (select 1 from WA_MEMBER where WAM_USER = self.u_id and not exists (select 1 from OAUTH.DBA.APP_REG where A_NAME = WAM_INST))) or (not exists (select 1 from OAUTH.DBA.APP_REG where A_OWNER = self.u_id and A_NAME = 'Discussion'))) { ?>
 	  <div class="fm">
 	      <fieldset>
 		  <label for="a_name">Application name</label>
 		  <v:data-list
 		      name="a_name"
-		      sql="select WAM_INST from WA_MEMBER where WAM_USER = self.u_id and not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST)"
+                  		      sql="select 'Discussion' as WAM_INST from DB.DBA.SYS_USERS where U_ID=self.u_id and not exists (select 1 from OAUTH.DBA.APP_REG where A_NAME = 'Discussion' and A_OWNER=self.u_id) union select WAM_INST from WA_MEMBER where WAM_USER = self.u_id and not exists (select 1 from OAUTH.DBA.APP_REG where a_name = WAM_INST)"
 		      key-column="WAM_INST"
 		      value-column="WAM_INST"
 		      xhtml_id="a_name" error-glyph="*">

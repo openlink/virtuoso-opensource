@@ -39,6 +39,9 @@ DB.DBA.wa_exec_no_error_log(
 	primary key (a_owner, a_name)
 	)');
 DB.DBA.wa_exec_no_error_log(
+'alter table APP_REG modify primary key (a_owner, a_name)');
+
+DB.DBA.wa_exec_no_error_log(
 'create unique index APP_REG_K1 on APP_REG (a_key)');
 
 create procedure app_reg_upgrade ()
@@ -457,7 +460,7 @@ create procedure check_authentication (in inparams any, in lines any, out uname 
   if (exists (select 1 from SESSIONS where s_nonce = oauth_nonce))
       signal ('42000', 'OAuth Verification Failed');
 
-  if (inst_id is not null and not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = app_name and WAI_ID = inst_id))
+  if ((inst_id is not null) and (inst_id <> -1) and not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = app_name and WAI_ID = inst_id))
     signal ('42000', 'OAuth Verification Failed');
 
   declare exit handler for not found {

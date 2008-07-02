@@ -123,6 +123,11 @@ create procedure ods_check_auth (out uname varchar, in inst_id int := null, in m
 	    where WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE <= member_type))
 	rc := 0;
     }
+  else if (inst_id = -1 and rc > 0)
+  {
+    if ((mode = 'owner') and (uname not in ('dba', 'dav')))
+      rc := 0;
+  }
 nf:
   return rc;
 }
