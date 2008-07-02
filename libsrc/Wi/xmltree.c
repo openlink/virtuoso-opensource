@@ -9645,6 +9645,8 @@ bif_xml_set_ns_decl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong persistent = bif_long_arg (qst, args, 2, "__xml_set_ns_decl");
   int res = 0;
   nsdecl_t decl;
+  if (('n' == pref[0]) && isdigit (pref[1]))
+    return 0; /* We never remember namespaces that are too somilar to our namespace prefixes */
   decl.nsd_prefix = pref;
   decl.nsd_uri = uri;
   if (persistent & 0x1)
@@ -9665,26 +9667,34 @@ bif_xml_set_ns_decl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-bif_xml_get_ns_prefix (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+xml_get_cli_or_global_ns_prefix (caddr_t * qst, const char *uri, ptrlong persistent)
 {
-  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, "__xml_get_ns_prefix");
-  ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_get_ns_prefix");
-  caddr_t res = NULL;
-  if (persistent & 0x1)
+  if ((NULL != qst) && (persistent & 0x1))
     {
       xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
       long iri_idx = ecm_find_name (uri, xn2->xn2_uri2prefix, xn2->xn2_size, sizeof (xml_name_assoc_t));
       if (ECM_MEM_NOT_FOUND != iri_idx)
-        res = box_copy (xn2->xn2_uri2prefix[iri_idx].xna_key);
+        return box_copy (xn2->xn2_uri2prefix[iri_idx].xna_value);
     }
-  if ((NULL == res) && (persistent & 0x2))
+  if (persistent & 0x2)
     {
+      caddr_t res = NULL;
       xml_ns_2dict_t *xn2 = xml_global_ns_2dict_get (NULL, NULL);
       long iri_idx = ecm_find_name (uri, xn2->xn2_uri2prefix, xn2->xn2_size, sizeof (xml_name_assoc_t));
       if (ECM_MEM_NOT_FOUND != iri_idx)
-        res = box_copy (xn2->xn2_uri2prefix[iri_idx].xna_key);
+        res = box_copy (xn2->xn2_uri2prefix[iri_idx].xna_value);
       xml_global_ns_2dict_release (xn2);
+      return res;
     }
+  return NULL;
+}
+
+caddr_t
+bif_xml_get_ns_prefix (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, "__xml_get_ns_prefix");
+  ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_get_ns_prefix");
+  caddr_t res = xml_get_cli_or_global_ns_prefix (qst, uri, persistent);
   if (NULL == res)
     return NEW_DB_NULL;
   return res;

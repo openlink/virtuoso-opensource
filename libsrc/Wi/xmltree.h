@@ -796,7 +796,7 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
     if (0 != xp_strses_length) \
       { \
         if (xp_strses_length & ~0xffffff) \
-          sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", xp_strses_length); \
+          sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", (long)xp_strses_length); \
       XP_STRSES_FLUSH_NOCHECK(xp); \
       } \
     } while (0)
@@ -1037,6 +1037,8 @@ extern caddr_t xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_
 
 extern int xe_strses_serialize_utf8 (xml_entity_t * xe, dk_session_t * strses, int set_encoding);
 extern void xe_serialize (xml_entity_t * xe, dk_session_t * ses);
+
+extern caddr_t xml_get_cli_or_global_ns_prefix (caddr_t * qst, const char *uri, ptrlong persistent);
 
 extern void xte_replace_strings_with_unames (caddr_t **tree);
 
