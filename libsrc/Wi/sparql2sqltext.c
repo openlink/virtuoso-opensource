@@ -2368,7 +2368,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
             ssg_puts (" 1 /* optimized BOUND */");
             return;
           }
-        if (arg1_restr_bits & SPART_VARR_ALWAYS_NULL)
+        if (arg1_restr_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
           {
             ssg_puts (" 0 /* optimized BOUND */");
             return;
@@ -2549,7 +2549,7 @@ IN_op_fnt_found:
       else
       {
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
-          if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL))
+          if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
               ssg_puts (" 0 /* optimized isBLANK */");
               return;
@@ -2593,7 +2593,7 @@ IN_op_fnt_found:
       else
       {
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
-          if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL))
+          if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
               ssg_puts (" 0 /* optimized isIRI */");
               return;
@@ -2627,7 +2627,7 @@ IN_op_fnt_found:
       else
       {
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
-          if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL))
+          if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
               ssg_puts (" 0 /* optimized isLITERAL */");
               return;
