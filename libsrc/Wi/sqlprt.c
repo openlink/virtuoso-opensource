@@ -56,7 +56,7 @@ trset_start (caddr_t * qst)
   sample.ssl_dtp = DV_SHORT_STRING;
   sample.ssl_prec = REPORT_BUF_MAX;
 
-  bif_result_names (qst, &err, sbox);
+  bif_result_names_impl (qst, &err, sbox, QT_SELECT);
 
   dk_free_box ((caddr_t) sbox);
   dk_free_box (sample.ssl_name);

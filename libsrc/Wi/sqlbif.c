@@ -1143,7 +1143,7 @@ bif_end_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_result_names_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int is_select)
 {
   long n_out = BOX_ELEMENTS (args), inx;
   caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
@@ -1183,7 +1183,7 @@ bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      desc->cd_updatable = box_num (0);
 	    }
 	  sc->sc_columns = (caddr_t *) cols;
-	  sc->sc_is_select = QT_PROC_CALL;
+	  sc->sc_is_select = is_select;
 	  if (!cli->cli_resultset_comp_ptr)
 	    {
 	      caddr_t *desc_box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -1204,6 +1204,11 @@ bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_result_names_impl (qst, err_ret, args, QT_PROC_CALL);
+}
 
 static caddr_t
 bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
