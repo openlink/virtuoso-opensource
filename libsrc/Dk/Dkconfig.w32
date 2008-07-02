@@ -164,6 +164,9 @@
 /* Define if you have the fchmod function.  */
 #define HAVE_FCHMOD 1
 
+/* The windows equivalent is _commit */
+#define HAVE_FSYNC 1
+
 /* Define if you have the ftruncate function.  */
 #define HAVE_FTRUNCATE 1
 
