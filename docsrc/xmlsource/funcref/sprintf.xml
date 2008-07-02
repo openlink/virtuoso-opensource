@@ -91,7 +91,7 @@
     42798,42798,42798,'la cadena',65)
  -&gt; 'Int=42798/123456/a72e, String=la cadena, Character=A'
 </screen>
-
+<para>In addition, <emphasis>%{varname}U</emphasis> syntax extension is supported, mostly for <link linkend="rdfconnvarsiniriclasses">uing connection variables in RDF IRI classes</link>. That syntax is to print the value of client connection variable <emphasis>varname</emphasis> using print format <emphasis>%U</emphasis>. Other format characters are not supported for that feature in current version of Virtuoso but might be supported in the future.</para>
 	</refsect1>
 </refentry>
 

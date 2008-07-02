@@ -3657,7 +3657,7 @@ Two quad storages are always defined:
 <para>
 Three statements for manipulating storages are
 </para>
-<itemizedlist mark="bullet" spacing="compact">
+<itemizedlist mark="number" spacing="compact">
 <listitem><emphasis>create quad storage storage-name { quad-map-decls } .</emphasis>
 </listitem><listitem><emphasis>alter quad storage storage-name { quad-map-decls-or-drops } .</emphasis>
 </listitem><listitem><emphasis>drop quad storage storage-name . </emphasis>
@@ -3911,12 +3911,32 @@ Inverse functions should return NULL if the argument has an incorrect type or va
 It is possible to specify only composing function without any of inverse functions. However <emphasis>option (bijection)</emphasis> can not be used in that case, obviously.
 </para>
 </sect2>
+<sect2 id="rdfconnvarsiniriclasses"><title>Connection Variabes in IRI Classes</title>
+<para>Writing function-based IRI class is overkill when the IRI can in principle be made by a <link linkend="fn_sprintf_iri"><function>sprintf_iri</function></link> but the format should contain some context-specific data, such as host name used for the <link linked="rdfdynamiclocal">dynamic renaming of local IRIs</link>.
+Format strings offer a special syntax for that cases.
+<emphasis>%{varname}U</emphasis> acts as <emphasis>%U</emphasis> but the function <link linkend="fn_sprintf"><function>sprintf</function></link> will take the value from client connection variable <emphasis>varname</emphasis>, not from list of arguments.
+Similarly, <link linkend="fn_sprintf_inverse"><function>sprintf_inverse</function></link> will not return fragment that match to <emphasis>%{varname}U</emphasis> in the vector of other fragments; instead it will get the value from connection environment and ensure that it matches the fragment of input; mismatch between printed and actual value of variable will means that the whole string do not match the format.</para>
+<para>SPARQL optimizer knows about this formatting feature and sometimes it makes more deductions from occurence of <emphasis>%{varname}U</emphasis> than from occurence of plain <emphasis>%U</emphasis>, so this notation may be used in <emphasis>option ( returns ...)</emphasis> when appropriate.
+Of course, the optimizer has no access to the actual value of conection variabe because it may vary from run to run or may change between the compilation and the run, but the value is supposed to be persistent during any single query run so <emphasis>%{myvariable}U</emphasis> in one place is equal to <emphasis>%{myvariable}U</emphasis> in other.</para>
+<para>Connection variables are set by <link linkend="fn_connection_set"><function>connection_set</function></link> and some of them have default values that are used if not overridden by application:</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem><emphasis>URIQADefaultHost</emphasis> is for default host as it is specified in Virtuoso configuration file.
+Note, however, that it will be escaped when printed so if it contains colon and port number then the colon is escaped.
+In addition, there are special variables that match dynamic renaming of local IRIs more accurately.</listitem>
+<listitem><emphasis>WSHost</emphasis> is for host and port as it is used by current client connection for dynamic renaming.
+The colon before port will be escaped.</listitem>
+<listitem><emphasis>WSHostName</emphasis> is for host name only, without port, as it is used by current client connection for dynamic renaming.</listitem>
+<listitem><emphasis>WSHostPort</emphasis> is for port part of host IRI. That is string, not integer. The only real use of the variable is in formats like <emphasis>http://%{WSHostName}U:%{WSHostPort}U/...</emphasis>.</listitem>
+</itemizedlist>
+<para>It is inconvenient to write different format strings for different cases. Two most common policies are different host names for default HTTP port of a publicly available service and different non-default ports for one or more host names of an intranet instalation; these two approaches are almost never used in a mix. So declaration of IRI classes may use shorthand <emphasis>^{DynamicLocalFormat}^</emphasis> in format strings that is expanded either to <emphasis>http://%{WSHost}U</emphasis> or to <emphasis>http://%{WSHostName}U:%{WSHostPort}U/...</emphasis>, depending on absence or presence of port number in the value of <emphasis>DefaultHost</emphasis> parameter of <emphasis>URIQA</emphasis> section of configuration file.</para>
+<note><para><emphasis>^{DynamicLocalFormat}^</emphasis> is for IRI class declarations only and is not expanded in any other place, so it is useful sometimes to create an IRI class with empty argument list in order to get &quot;almost constant&quot; IRIs calculated without writing special procedures.</para></note>
+</sect2>
 <sect2 id="rdfviewbijandreturns"><title>Lookup Optimization -- BIJECTION and RETURNS Options</title>
 <para>
 There is one subtle problem with IRI class declarations.
 To get benefit from a relational index, SPARQL optimizer should compose equality between table column and some known SQL value, not between return value of IRI class and a known composed IRI.
 In addition, redundant calculations of IRIs takes time.
-To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause.
+To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause. For some simple format strings the compier may recognize the bijection automatically but an explicit declaration is always a good idea.
 </para>
 <para>
 The SPARQL compiler may produce big amounts of SQL code when the query contains equality of two calculated IRIs and these IRIs may come from many different IRI classes.
@@ -3985,6 +4005,7 @@ and restore the saved state later by using
     <link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA</function></link>.
 It is convenient to make a backup before any modification of quad storages, quad map patterns or IRI classes, especially during debugging new RDF Views.
    </para>
+<note><para>In SQL, adding a new view can not break anything. This is because SQL lacks the ability of querying &quot;everything&quot; so data sources are always specified. This is not true for SPARQL, so please treat <emphasis>any</emphasis> metadata manipulation as potentially destructive operation. If an RDF storage is supposed to be used by more than one application then these applications should be tested together, not one after other, and they should be installed/upgraded on live database in the very same order as they were installed/upgraded on istrumental machine during testing. Always remember that these applications share RDF tables so they may interfere.</para></note>
 </sect2>
 </sect1>
 <sect1 id="rdfsparqlrule"><title>RDF Inference in Virtuoso</title>
@@ -6160,7 +6181,7 @@ do
 done
 ]]></programlisting>
        </sect3>
-       <sect3 id="rdfperfloadingbio2rdf"><title>Loading Bio RDF data</title>
+       <sect3 id="rdfperfloadingbio2rdf"><title>Loading Bio2RDF data</title>
 <para>The shell script below was used to import files in n3 notation into OpenLink Virtuoso RDF storage.</para>
 <para>When an syntax error it will cut content from next line and will retry. This was used on ubuntu linux to import bio2rdf and freebase dumps.</para>
 <para>Note it uses gawk, so it must be available on system where is tried. Also for recovery additional disk space is needed at max the size of original file.</para>
@@ -6682,5 +6703,387 @@ xsd:integer (in strg varchar) returns integer
 </programlisting>
 <para>(assuming that the query contains declaration 'PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;')</para>
 </sect2>
+</sect1>
+<sect1 id="rdfnativestorageproviders"><title>Native RDF Storage Providers</title>
+  <sect2 id="rdfnativestorageprovidersjena"><title>Virtuoso Jena RDF Data Provider</title>
+    <para>The Virtuoso Jena RDF Data Provider enables Semantic Web applications written using
+the Jena RDF Frameworks to query the Virtuoso RDF Quad store directly. The Provider has been
+tested against the <a href="http://jena.sourceforge.net/">Jena 2.5.5</a> version currently available.
+    </para>
+    <figure id="rdfnativestorageprovidersjena1" float="1">
+      <title>Virtuoso Jena RDF Data Provider</title>
+      <graphic fileref="ui/VirtJenaProvider.png"/>
+    </figure>
+    <sect3 id="rdfnativestorageprovidersjenareqfiles"><title>Required Files</title>
+    <itemizedlist mark="bullet">
+      <listitem>The Virtuoso Jena Provider packaged as a JAR file, virt_jena.jar</listitem>
+      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, virtjdbc3.jar</listitem>
+      <listitem>The Jena and associated classes, jenajars.zip</listitem>
+      <listitem>The sample programs, virtjenasamples.zip</listitem>
+    </itemizedlist>
+    </sect3>
+    <sect3 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>
+    <orderedlist>
+      <listitem>Edit the sample programs VirtuosoSPARQLExampleX.java, where X = 1 to 9. Set the JDBC connection strings within to point to a valid Virtuoso Server instance of the form:
+<programlisting><![CDATA[
+"jdbc:virtuoso://localhost:1111", "dba", "dba"
+]]></programlisting>
+      </listitem>
+      <listitem>Ensure that full paths to <emphasis>jena.jar, arq.jar,</emphasis> and
+<emphasis>virtjdbc3.jar</emphasis> are included in the active CLASSPATH setting.
+      </listitem>
+      <listitem>Compile the Jena Sample applications using the following command:
+<programlisting><![CDATA[
+javac -cp "jena.jar:arq.jar:virtjdbc3.jar:virt_jena.jar:." VirtuosoSPARQLExample1.java
+VirtuosoSPARQLExample2.java VirtuosoSPARQLExample3.java VirtuosoSPARQLExample4.java
+VirtuosoSPARQLExample5.java VirtuosoSPARQLExample6.java VirtuosoSPARQLExample7.java
+VirtuosoSPARQLExample8.java VirtuosoSPARQLExample9.java
+]]></programlisting>
+      </listitem>
+      <listitem></listitem>
+    </orderedlist>
+    </sect3>
+    <sect3 id="rdfnativestorageprovidersjenatesting"><title>Testing</title>
+    <para>Once the Provider classes and sample program have been successfully compiled,
+the Provider can be tested using the two sample providers included.
+    </para>
+    <orderedlist>
+      <listitem>Ensure your active CLASSPATH includes full paths to all
+of the following files, before executing the example commands:
+    <itemizedlist mark="bullet">
+      <listitem>icu4j_3_4.jar</listitem>
+      <listitem>iri.jar</listitem>
+      <listitem>xercesImpl.jar</listitem>
+      <listitem>axis.jar</listitem>
+      <listitem>commons-logging.jar</listitem>
+      <listitem>jena.jar</listitem>
+      <listitem>arq.jar</listitem>
+      <listitem>virtjdbc3.jar</listitem>
+      <listitem>virt_jena.jar</listitem>
+    </itemizedlist>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample1 returns the contents of the RDF Quad store of the targeted Virtuoso instance, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample1
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample2 reads in the contents of the following FOAF URIs --
+<programlisting><![CDATA[
+http://kidehen.idehen.net/dataspace/person/kidehen#this
+http://www.w3.org/People/Berners-Lee/card#i
+http://demo.openlinksw.com/dataspace/person/demo#this
+]]></programlisting>
+      <para>-- and returns the RDF data stored, with the following command:</para>
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample2
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample3 performs simple addition and deletion operation on
+the content of the triple store, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample3
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample4 demonstrates the use of the <emphasis>graph.contains</emphasis> method for searching triples, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample4
+]]></programlisting>
+</listitem>
+      <listitem>VirtuosoSPARQLExample5 demonstrates the use of the <emphasis>graph.find</emphasis> method for searching triples, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample5
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample6 demonstrates the use of the <emphasis>graph.getTransactionHandler</emphasis> method, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample6
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample7 demonstrates the use of the graph.getBulkUpdateHandler method, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample7
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample8 demonstrates how to insert triples into a graph, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample8
+]]></programlisting>
+      </listitem>
+      <listitem>VirtuosoSPARQLExample9 demonstrates the use of the <emphasis>CONSTRUCT, DESCRIBE,</emphasis> and <emphasis>ASK</emphasis> SPARQL query forms, with the following command:
+<programlisting><![CDATA[
+java VirtuosoSPARQLExample9
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+    </sect3>
+    <sect3 id="rdfnativestorageprovidersjenaimin"><title>Implemented interfaces</title>
+<programlisting><![CDATA[
+public class VirtGraph extends GraphBase
+{
+    public VirtGraph()
+
+    public VirtGraph(String url, String user, String password)
+
+    public VirtGraph(String graphName)
+
+    public VirtGraph(String graphName, String url, String user, String password)
+
+    public String getGraphName()
+
+    public String getGraphUrl()
+
+    public String getGraphUser()
+
+    public String getGraphPassword()
+
+    public Connection getConnection()
+
+    public int getCount()
+
+    public void remove(List triples)
+
+    public void remove(Triple t)
+
+    public void performAdd(Triple t)
+
+    public void performDelete (Triple t)
+
+    protected int graphBaseSize()
+
+    protected boolean graphBaseContains(Triple t)
+
+    public ExtendedIterator graphBaseFind(TripleMatch tm)
+
+    public void close()
+
+    public void clear()
+
+    public void read (String url, String type)
+
+    public void add(List triples)
+
+    public void delete(List triples)
+
+    public ExtendedIterator reifierTriples( TripleMatch m )
+
+    public int reifierSize()
+
+    public TransactionHandler getTransactionHandler()
+
+    public BulkUpdateHandler getBulkUpdateHandler()
+}
+
+
+public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
+
+    public VirtBulkUpdateHandler(VirtGraph parent)
+
+    public void add( Triple [] triples )
+
+    protected void add(List triples, boolean notify)
+
+    public void delete( Triple [] triples )
+
+    protected void delete( List triples, boolean notify )
+}
+
+
+public class VirtTransactionHandler extends TransactionHandlerBase {
+
+	public VirtTransactionHandler(VirtGraph _graph )
+
+	public boolean transactionsSupported()
+
+	public void begin()
+
+	public void abort()
+
+	public void commit()
+
+	private void notSupported(String opName)
+}
+
+
+public class VirtModel extends ModelCom {
+    public VirtModel(VirtGraph base)
+
+    public static VirtModel createDefaultModel(String url, String user,
+	String password)
+
+    public static Model createDatabaseModel(String graphName, String url,
+    	String user, String password)
+
+    public Model removeAll()
+}
+
+
+public class VirtuosoQueryExecution
+{
+    public VirtuosoQueryExecution (String query)
+
+    public VirtuosoQueryExecution (String query, VirtGraph graph)
+
+    public ResultSet execSelect()
+
+    public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (virtuoso.jdbc3.VirtuosoResultSet VirtuosoRes)
+
+    private void AddToRes (Binding b)
+}
+
+
+public class VirtDataSource extends VirtGraph implements DataSource {
+    public void setDefaultModel(Model model)
+
+    public void addNamedModel(String name, Model model)
+
+    public void removeNamedModel(String name)
+
+    public void replaceNamedModel(String name, Model model)
+
+    public Model getDefaultModel()
+
+    public boolean containsNamedModel(String name)
+
+    public Iterator listNames()
+
+    public Lock getLock()
+
+    /** TODO */
+    public DatasetGraph asDatasetGraph()
+}
+]]></programlisting>
+    </sect3>
+  </sect2>
+  <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame 2 RDF Data Provider</title>
+    <para>The Virtuoso Sesame 2 RDF Data Provider enables Semantic Web applications written using the Sesame RDF Frameworks to query the Virtuoso RDF Quad store directly.
+The Provider has been tested against the <a href="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</a> version currently available.
+    </para>
+    <figure id="rdfnativestorageprovidersjena1" float="1">
+      <title>Virtuoso Sesame 2 RDF Data Provider</title>
+      <graphic fileref="ui/VirtSesame2Provider.png"/>
+    </figure>
+    <sect3 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
+    <itemizedlist mark="bullet">
+      <listitem>The Virtuoso Sesame 2 Provider packaged as a JAR file, virt_sesame2.jar</listitem>
+      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, virtjdbc3.jar</listitem>
+      <listitem>The Sesame and associated classes, sesame2jars.zip</listitem>
+      <listitem>The sample programs, virtsesame2samples.zip</listitem>
+    </itemizedlist>
+    </sect3>
+    <sect3 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Jena Sample Programs</title>
+    <orderedlist>
+      <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
+    <itemizedlist mark="bullet">
+      <listitem>openrdf-sesame-2.1.2-onejar.jar</listitem>
+      <listitem>slf4j-api-1.5.0.jar</listitem>
+      <listitem>slf4j-jdk14-1.5.0.jar</listitem>
+      <listitem>virtjdbc3.jar</listitem>
+      <listitem>virt_sesame2.jar</listitem>
+   </itemizedlist>
+      </listitem>
+      <listitem>Execute the following command --
+<programlisting><![CDATA[
+javac VirtuosoTest.java
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+    </sect3>
+    <sect3 id="rdfnativestorageproviderssesametesting"><title>Compiling Jena Sample Programs</title>
+    <orderedlist>
+      <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
+    <itemizedlist mark="bullet">
+      <listitem>openrdf-sesame-2.1.2-onejar.jar</listitem>
+      <listitem>slf4j-api-1.5.0.jar</listitem>
+      <listitem>slf4j-jdk14-1.5.0.jar</listitem>
+      <listitem>virtjdbc3.jar</listitem>
+      <listitem>virt_sesame2.jar</listitem>
+      <listitem>virtuoso_driver</listitem>
+    </itemizedlist>
+      </listitem>
+      <listitem>Test the Sesame 2 Provider with the following command
+<programlisting><![CDATA[
+java VirtuosoTest <hostname> <port> <uid> <pwd>
+]]></programlisting>
+      </listitem>
+      <listitem>The test run should look like this --
+<programlisting><![CDATA[
+$ java VirtuosoTest localhost 1111 dba dba
+== TEST 1a : Start
+   TEST 1a: Loading data from URL: http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf
+== TEST 1a : End
+**PASSED**
+
+== TEST 1b : Start
+   TEST 1b: Clearing triple store
+== TEST 1b : End
+**PASSED**
+
+== TEST 1c : Start
+   TEST 1c: Loading data from file: virtuoso_driver/data.nt
+== TEST 1c : End
+**PASSED**
+
+== TEST 1d : Start
+   TEST 1d: Loading single triple
+== TEST 1d : End
+**PASSED**
+
+== TEST 1e : Start
+   TEST 1e: Casted value type
+== TEST 1e : End
+**PASSED**
+
+== TEST 2 : Start
+   TEST 2: Selecting property
+== Test 2 : End
+**PASSED**
+
+== TEST 3 : Start
+   TEST 3: Statement does not exists
+== TEST 3 : End
+**PASSED**
+
+== TEST 4 : Start
+   TEST 4: Statement exists
+== Test 4 : End
+**PASSED**
+
+== TEST 5 : Start
+   TEST 5: Statement exists
+== Test 5 : End
+**PASSED**
+
+== TEST 6 : Start
+   TEST 6: Retrieving namespaces
+== TEST 6 : End
+**PASSED**
+
+== TEST 7 : Start
+   TEST 7: Retrieving statement (http://mso.monrai.com/foaf/shermanMonroe http://mso.monrai.com/foaf/name null)
+== TEST 7 : End
+**PASSED**
+
+== TEST 8 : Start
+   TEST 8: Writing the statements to file: (/Users/hughwilliams/src/Sesame/virt-sesame2/results.n3.txt)
+== TEST 8 : End
+**PASSED**
+
+== TEST 9 : Start
+   TEST 9: Retrieving graph ids
+== TEST 9 : End
+**PASSED**
+
+== TEST 10 : Start
+   TEST 10: Retrieving triple store size
+== TEST 10 : End
+**PASSED**
+
+============================
+PASSED:14 FAILED:0
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+    </sect3>
+  </sect2>
 </sect1>
 </chapter>
