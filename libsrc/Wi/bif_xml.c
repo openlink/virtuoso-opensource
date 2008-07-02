@@ -2131,6 +2131,7 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
   caddr_t pref = NULL;
   size_t ns_len;
   dk_set_t ns_list;
+  char ns[10];
   char * local = strrchr (name, ':');
   if (NULL == local)
     {
@@ -2142,11 +2143,12 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
 	}
       return;
     }
+/* Now we know we have a namespace and we need a prefix */
   ns_len = local - name;
   if (bx_std_ns_pref (name, ns_len))
     {
       pref = uname_xml;
-      goto pref_is_set;
+      goto pref_is_set; /* see below */
     }
   if (!is_attr && (NULL != ct->ct_all_default_ns))
     {
@@ -2155,7 +2157,7 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
         && 0 == memcmp (dflt_ns, name, ns_len) )
         {
           pref = NULL;
-          goto pref_is_set;
+          goto pref_is_set; /* see below */
         }
     }
   for (ns_list = ct->ct_all_explicit_ns; NULL != ns_list; ns_list = ns_list->next->next)
@@ -2165,7 +2167,7 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
       if (strlen (ns) != (size_t) ns_len || memcmp (ns, name, ns_len))
         continue;
       pref = (caddr_t) ns_list->next->data;
-      goto pref_is_set;
+      goto pref_is_set; /* see below */
     }
   uri = box_dv_short_nchars (name, ns_len);
   if (0 != xsst->xsst_ns_2dict.xn2_size)
@@ -2174,41 +2176,48 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
       if (ECM_MEM_NOT_FOUND != idx)
         {
           pref = xsst->xsst_ns_2dict.xn2_uri2prefix[idx].xna_value;
-          if ('\0' == pref[0])
+          if ('\0' != pref[0])
             {
+              pref = box_copy (pref);
+              goto new_explicit_pref_is_set; /* see below */
+            }
               if (is_attr)
                 pref = NULL;
               else
                 {
+              dk_set_push (&ct->ct_all_default_ns, (void *)(box_copy (pref)));
                   dk_set_push (&ct->ct_all_default_ns, (void *)uri);
                   is_new_pref = 1;
-                  goto pref_is_set;
+              goto pref_is_set; /* see below */
                 }
             }
        }
-    }
-  if (NULL == pref)
-    {
-      char ns[10];
+#ifdef DEBUG
+  if (NULL != pref)
+    GPF_T1("bx_out_q_name: non-NULL pref before making a new one");
+#endif
+  pref = xml_get_cli_or_global_ns_prefix (qst, uri, ~0 /* get any appropriate, it can't be worse than nothing */);
+  if (NULL != pref)
+    goto new_explicit_pref_is_set; /* see below */
       if (xsst->xsst_default_ns && !is_attr)
         {
+      dk_set_push (&ct->ct_all_default_ns, NULL);
           dk_set_push (&ct->ct_all_default_ns, (void *)uri);
           pref = "";
           is_new_pref = 1;
-          goto pref_is_set;
+      goto pref_is_set; /* see below */
         }
       snprintf (ns, sizeof (ns), "n%d", n_ns);
       pref = box_dv_short_string (ns);
-    }
-  else
-    pref = box_copy (pref);
+
+new_explicit_pref_is_set:
   dk_set_push (&ct->ct_all_explicit_ns, (void*) pref);
   dk_set_push (&ct->ct_all_explicit_ns, (void*) uri);
   is_new_pref = 1;
 
 pref_is_set:
   if ((is_attr & 1) && is_new_pref)
-    goto dump_new_pref;
+    goto dump_new_pref; /* see below */
   if (pref && ('\0' != pref[0]))
     {
       dks_esc_write (out, pref, strlen (pref), QST_CHARSET (qst), CHARSET_UTF8, DKS_ESC_PTEXT);
@@ -2238,7 +2247,7 @@ dump_new_pref:
         {
           is_new_pref = 0;
           SES_PRINT (out, " ");
-          goto pref_is_set;
+          goto pref_is_set; /* see above */
         }      
     }
 }
