@@ -473,11 +473,8 @@ nntpf_article_list (in _group integer)
 registry_set ('__nntpf_ver', 'ODS Discussion ' || sys_stat ('st_dbms_ver'))
 ;
 
-create procedure
-nntpf_post_message (in params any, in auth_uname varchar :='')
+create procedure nntpf_post_message (in params any, in auth_uname varchar :='')
 {
-   
-
    declare new_body, old_hdr, new_subj, nfrom, nfrom_openid, new_ref, new_attachments any;
    declare _old_ref, _groups, _old_id any;
    declare new_mess any;
@@ -486,8 +483,6 @@ nntpf_post_message (in params any, in auth_uname varchar :='')
    new_subj := get_keyword ('post_subj_n', params, '');
    nfrom := get_keyword ('post_from_n', params);
    nfrom_openid :=get_keyword ('virified_openid_url', params,'');
-
-   
 
    new_ref := '';
 
@@ -511,7 +506,6 @@ nntpf_post_message (in params any, in auth_uname varchar :='')
 	_groups := '';
 	while (idx < length (params))
 	  {
---	    dbg_obj_print(idx,params[idx]);
 	    if (params[idx] = 'availble_groups')
 	      {
 		 if (_groups = '')
@@ -556,17 +550,14 @@ nntpf_post_message (in params any, in auth_uname varchar :='')
   {
      nfrom_openid:=sprintf('\r\n\Verified openID: %s \r\n',trim(nfrom_openid));
      new_mess := new_mess || new_body ||nfrom_openid ||new_attachments || '\r\n.\r\n';
-  }else
+  } else {
   new_mess := new_mess || new_body || new_attachments || '\r\n.\r\n';
-
+  }
 
   connection_set ('nntp_uid', auth_uname);
-
+--  connection_set ('nntp_uopenid', nfrom_openid);
 
   ns_post (new_mess);
-
-
-
 }
 ;
 
@@ -3322,5 +3313,15 @@ create procedure xmlstr_fix(in _str varchar)
 		  
     }
   return _corr_str;
+}
+;
+
+create procedure nntpf_account_basicAuthorization (
+  in account_name varchar)
+{
+  declare account_password varchar;
+
+  account_password := coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_NAME = account_name), '');;
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;

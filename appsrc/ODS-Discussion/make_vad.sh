@@ -262,6 +262,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/DET_nntp.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_tags.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_web_svc.sql', 1, 'report', 1);" >> $STICKER  
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/sioc_nntp.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/wa_install.sql', 1, 'report', 1);" >> $STICKER  
   echo "      vhost_remove (lpath=>'/nntpf');" >> $STICKER

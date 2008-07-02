@@ -43,32 +43,30 @@
 
   <script type="text/javascript">
     <![CDATA[
-    var _davBrowser=new Object;
     var _currDavRoot='<?V(case when self.u_name is not NULL then '/DAV/home/'||self.u_name||'/' else '/DAV/home/' end)?>';
 
     function davbrowseInit()
 	  {
-	   var options = {imagePath:toolkitImagesPath+'/',
+        var u_name = '<?V self.u_name ?>';
+        if (u_name != '')
+        {
+          var options = {
+                         imagePath: toolkitImagesPath+'/',
                     imageExt:'png',
-                    path:_currDavRoot
+                         user: u_name,
+                         connectionHeaders: {Authorization: '<?V DB.DBA.nntpf_account_basicAuthorization (self.u_name) ?>'}
                    };
-     
      OAT.WebDav.init(options);
-    
-     _davBrowser=OAT.WebDav;
 	  } 
-	  
+      }
                        
     function oatdav_browse (davfile_fieldname)
     {
           var options = {
           mode:'browser',
-          onConfirmClick :function(path,fname){
-                    $(davfile_fieldname).value = path + fname;
-                    }
+           onConfirmClick: function(path,fname) {$(davfile_fieldname).value = path + fname;}
           };
-          
-          _davBrowser.open(options);
+         OAT.WebDav.open(options);
     }
     
     function switchElementsByCheckbox(elmA,elmB,checkboxName)
@@ -124,7 +122,6 @@
 
 if(registry_get('nntpf_posts_enabled')='0')
 {
- 
   if (get_keyword ('back_to_home', params, '') <> '')
   {
        http_request_status ('HTTP/1.1 302 Found');
@@ -142,15 +139,10 @@ _isreply:=cast(get_keyword ('is_reply', params, 0) as integer);
 
 self.postprepare_err:='';
 
---if (self.grp_list is NULL)
---    self.postprepare_err:= 'There are no available group(s) for posting.';
-
-
 declare _selected_groups_arr,_tmp_params any;
 _selected_groups_arr:=vector();
 
-
-if(get_keyword ('availble_groups', params, NULL) is not null)
+       if (get_keyword ('availble_groups', params) is not null)
 {
   declare one_more_time integer;
   one_more_time:=1;
@@ -160,18 +152,16 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
   while(one_more_time)
   {
     declare tmp_val varchar;
-    tmp_val:=get_keyword ('availble_groups', _tmp_params, null);
+           tmp_val := get_keyword ('availble_groups', _tmp_params);
     if(tmp_val is not null)
     {
-     
      _selected_groups_arr:=vector_concat(_selected_groups_arr,vector(tmp_val));
      _tmp_params:=vector_concat(subseq( _tmp_params,0,position ( 'availble_groups', _tmp_params)-1),subseq( _tmp_params,position ( 'availble_groups', _tmp_params)+1));
-
-     
-    }else
+           } else {
      one_more_time:=0;
   }
 }
+       }
 	     declare _id varchar;
 	     self.grp_sel_no_thr := get_keyword ('group', params);
 	     self.article_list_lenght := get_keyword ('view', params);
@@ -191,19 +181,15 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 		  self.post_old_hdr := mess_parts[2];
           self.grp_list_enabled := 1;
          
-	       
           if(self.grp_sel_thr=0)
              select NG_GROUP into self.grp_sel_thr from NEWS_GROUPS, NNFE_THR where FTHR_MESS_ID=_id and FTHR_GROUP=NG_GROUP;
 
 	       if(not exists (select 1 from NEWS_GROUPS
 		                  where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_GROUP=self.grp_sel_thr))
 		        {
-
               self.postprepare_err:='Selected group is not available for posting.';
 		        }
-	       
 	       }
-
 	     if (self.u_name is not NULL)
 	       {
                  if (not nntpf_compose_post_from (self.u_name, self.post_from))
@@ -222,13 +208,10 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
             self.postprepare_err:='Please enter a valid email address.';
           }else
             self.post_from :=_mailaddress;
-          
-         }else
+         } else {
             self.postprepare_err:='Please enter e-mail address.';
-         
-       };
-
-
+         }
+       }
        
 	     if (get_keyword ('Post', params, '') <> '')
 	       {
@@ -238,15 +221,12 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
              self.postprepare_err:='Please fill in <b>Subject</b>.';
           }
 
-		  if ((get_keyword_ucase ('availble_groups', params, NULL) is NULL) and
+          if ((get_keyword_ucase ('availble_groups', params) is null) and
 		       (get_keyword_ucase ('post_old_hdr', params, '') = ''))
 		    {
---                signal ('NNTPF', 'Please supply a list of newsgroups to post to.');
              self.postprepare_err:='Please supply a list of newsgroups to post to.';
-
 		    }
 		  
-
           declare auth_uname varchar;
           auth_uname:=coalesce(self.u_name,'');
 
@@ -254,8 +234,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
           {
             if( _isreply=0)
             {
-
-              
               declare _ngrp_err,_checked_ngroups any;
               _ngrp_err:=vector();
               _checked_ngroups:=vector();
@@ -264,7 +242,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
               for(i:=0;i<length(_selected_groups_arr); i:=i+1)
               {
                 declare _ng_type varchar;
-              
                 {
                 declare exit handler for not found {
                                                     _ngrp_err:=vector_concat(_ngrp_err,vector('Group '||_selected_groups_arr[i]||' does not exist'));
@@ -276,10 +253,11 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                 if (_ng_type<>'NNTP')
                 {
                     if(self.u_name is NULL)
+                    {
                        _ngrp_err:=vector_concat(_ngrp_err,vector('Group '||_selected_groups_arr[i]||' is ODS Newsgroup. You can not post new posts to ODS Newsgroups when not logged in.'));
+                    }
                     else
                     {
-
                      declare isAuthor,zeroPostNA integer;
                      isAuthor:=0;
                      zeroPostNA:=0;
@@ -289,7 +267,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                      if(_ng_type='BLOG')
                      {
                         qry:='select BI_WAI_NAME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID=\''||_selected_groups_arr[i]||'\'';
-                        
                         if(length(nntpf_uudecode_file (1, params)) or length(nntpf_uudecode_file (2, params)) or length(nntpf_uudecode_file (3, params)) )
                             _ngrp_err:=vector_concat(_ngrp_err,vector('Inline attachments are not allowed for newsgroup <b>'||_selected_groups_arr[i]||'</b>. Attachments are truncated.'));
                      }
@@ -310,11 +287,11 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                      {
                         isAuthor:=1;
                         goto _skip;
---                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
+--                     qry:='select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME=\''||_selected_groups_arr[i]||'\'';
                      }
              
-                            
                      declare state,msg,metas,rset any;
+
                      rset := null;
                      state := '00000';
                      msg := '';
@@ -350,7 +327,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                     
                      _skip:
                                          
-                  
                      if (zeroPostNA)
                         _ngrp_err:=vector_concat(_ngrp_err,vector('ODS Discussion does not allow sending posts of 0 level for newsgroup <b>'||
                                                                    _selected_groups_arr[i]||'</b> with type '||
@@ -365,14 +341,10 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 
                     }
                  
-                }else
-                {
-                 
+                } else {
                  _checked_ngroups:=vector_concat(_checked_ngroups,vector(_selected_groups_arr[i]));
                 }
-                
               }
-              
               
               if(length(_checked_ngroups)>0)
               {
@@ -383,22 +355,16 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
               
               if(length(_ngrp_err)>0)
               {
-
                self.grplist_err:=(nntpf_implode(_ngrp_err,'<br/>'));
               }
-
-           }else
-           {
+           } else {
             _tmp_params:=coalesce(params,vector());
             auth_uname:=coalesce(self.u_name,'');
             self.grplist_succ:='<b>'||get_keyword ('availble_groups', params, '')||'</b>';
-            
            }
 
-            
            if(length(self.grplist_succ))
            {
-           
             nntpf_post_message (_tmp_params,auth_uname);
            }
 		  self.vc_post_ready := 1;
@@ -424,14 +390,11 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 
        self.grp_list:=vector();
 
-       
-       
        if(_isreply>0 or length(_id))
        {
              self.grp_list_size := 1;
              self.grp_list := self.grp_selected;
-       }else
-       {
+       } else {
 	     for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
             where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_TYPE not in ('OFM','oWiki')) do
 	           self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
