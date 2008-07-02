@@ -4,10 +4,12 @@
 Starting with version 4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.
 
 Adoption of SPARQL with Virtuoso is effortless, as any  existing SQL client applications and stored procedures can take advantage of SPARQL simply by using it in the place of or inside SQL queries.  Additionally, Virtuoso offers the standard SPARQL protocol to HTTP clients.
+From version 5.0.7, Virtuoso can be used  as the RDF store/query processor of the Jena and Sesame RDF frameworks.
 </para>
 
 <para>
-This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and SQL API's, protocol support and standard compliance notes.
+This chapter discusses Virtuoso's RDF triple storage and query capabilities. 
+This discusses storing RDF data as well as mappping existing relational data into RDF for SPARQL access.  Numerous  SPARQL language extensions and standard compliance are coverd.
 </para>
 </abstract>
 <sect1 id="rdfoverview"><title>Overview</title>
@@ -16,20 +18,93 @@ This chapter discusses Virtuoso's RDF triple storage and query capabilities. Thi
 <para>SQL query language is extended with constructs that are convenient for &quot;very heterogeneous&quot; data of RDF graph. In traditional SQL queries, data types of retrieved values are mostly known in advance from the database schema via explicitly declared column types and types of return values of functions. An RDF graph contains mix of literals of all types, so cast errors are very frequent and a typical query should not terminate after some occasional type error in a huge data set.</para>
 <para>SQL &quot;user-defined aggregate&quot; feature is used to support SPARQL DESCRIBE and CONSTRUCT statements, so many RDF triples about a subject can be converted into single &quot;dictionary of triples&quot; or can be written into single RDF/XML or TURTLE document.</para>
 <para>SQL query language is also extended with BREAKUP construct that is somewhat &quot;inverse&quot; to aggregate functions. While aggregate functions are useful to convert big number of table rows into one or few rows of aggregated data, BREAKUP turns each &quot;wide&quot; and complete row of a relational table into many &quot;narrow&quot; rows of RDF result set.</para>
-<para>The listed features form a solid background for second part of implementation -- a preprocessor that is called as soon as an input of SQL compiler contains SPARQL keyword. The preprocessor expects that the fragment after SPARQL keyword with well-parenthesized code is a SPARQL query (or SPARUL statement). SPARQL front-end compiler creates a text of SQL SELECT statement that replaces the original SPARQL fragment and SQL compiler continues to read its input without seeing any difference between the replaced part and any other SQL SELECT, so one may not only send SPARQL queries over all supported protocols like ODBC and JDBC but place them inside Virtuoso?PL stored procedures or use them inside SQL SELECT statements where subqueries are allowed by syntax.</para>
+<para>
+
+The listed features form a solid background for second part of
+implementation -- a preprocessor that is called as soon as an input of
+SQL compiler contains SPARQL keyword. The preprocessor expects that
+the fragment after SPARQL keyword with well-parenthesized code is a
+SPARQL query (or SPARUL statement). SPARQL front-end compiler creates
+a text of SQL SELECT statement that replaces the original SPARQL
+fragment and SQL compiler continues to read its input without seeing
+any difference between the replaced part and any other SQL SELECT, so
+one may not only send SPARQL queries over all supported protocols like
+ODBC and JDBC but place them inside Virtuoso?PL stored procedures or
+use them inside SQL SELECT statements where subqueries are allowed by
+syntax.</para>
+
+
 <para>RDF data can be added to the storage by parsing texts of RDF documents (functions
 <link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link>,
 <link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link>,
 <link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link>,
 <link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link>), by loading remote RDF resources by SPARUL <link linkend="rdfinsertmethodsload">LOAD</link> statement, by extracting and storing metadata while <link linkend="rdfinsertmethodvirtuosocrawler">crawling non-RDF resources</link> and many other <link linkend="rdfinsertmethods">RDF insert methods</link>. After bulk loading, RDF data can be edited using <link linkend="rdfsparul">SPARUL</link> update language.</para>
 <para>The most important feature of Virtuoso SPARQL is that relational data may stay unchanged and not be loaded into RDF storage and they still can be accessed by SPARQL queries after creating appropriate <link linkend="rdfviews">RDF Views</link>. This is the best tool for adding RDF capabilities to existing database applications.</para>
-<para>Virtuoso is a &quot;quad store&quot;, not a &quot;triple store&quot;. Instead of storing subject-predicate-object triples of each individual graph in a separate storage (and the storage is explicitly created before first use), Virtuoso stores graph-subject-predicate-object quads in one common table (<link linkend="rdfquadtables">DB.DBA.RDF_QUAD</link>). This simplifies querying when &quot;interesting&quot; graphs are not known in advance. E.g., while a SPARQL query is running, Virtuoso <link linkend="virtuososponger">Sponger</link> can iteratively download additional data in order to provide as complete answer as possible.</para>
-<para>Quads stored in DB.DBA.RDF_QUAD are usually referred to as &quot;physical quads&quot; as opposed to &quot;mapped quads&quot; that do not really stored in any table at all but still accessible by SPARQL queries via RDF views. SPARQL processor see no big difference between querying physical and mapped quads so a query may operate with mix of data of all sorts. Thus, an application can easy provide both access to relational data for SPARQL clients (HTTP and WSDL via <link linkend="rdfsparqlprotocolendpoint">SPARQL protocol endpoint</link>) and access to RDF data for traditional RDBMS clients (by passing SPARQL queries via ODBC, JDBC and the like).</para>
-<para>RDF is for data integration. This implies the need of resolving both inconsistencies in RDF data that comes from various sources of different nature and problems with queries that work fine on some sample data from local data warehouse but fail on massive and/or unexpected data from third party sources. <link linkend="rdfsparqlrule">RDF inference</link> helps to support variety of synonyms when different data sources uses different names for same classes, properties and subjects. Queries can be debugged using all methods that are traditional for SQL (what's executed is SQL), with paying some attention to RDF-specific <link linkend="rdfperformancetuning">performance tuning</link>.</para>
-<para>The whole purpose of SPARQL is to let application developers write simple queries faster than equivalent SQL code. A short SPARQL query on mix of physical quads and RDF views of few applications may sometimes replace pages of SQL text. On the other hand, SQL has more expressive power than SPARQL so complicated business intelligence queries should be written in a mixed style, as an SQL query with SPARQL subqueries. Debugging of mixed-style queries is inconvenient, reducing overall benefit in development time, so <link linkend="sparqlbi">Business Intelligence Extensions for SPARQL</link> can be used in order to greatly reduce the need for wrapping SQL around SPARQL. <link linkend="rdfsparqlrulefulltext">Full-text search in SPARQL</link> eliminates one more reason for mixing SQL and SPARQL. In addition, extending SPARQL let SPARQL clients to delegate more business intelligence calculations to the server without any changes in the infrastructure; this is especially important for web applications that use AJAX tools (say, <ulink url="http://oat.openlinksw.com">OAT OpenLink AJAX Toolkit</ulink>).</para>
+<para>
+
+Virtuoso is a &quot;quad store&quot;, not a &quot;triple
+store&quot;. Instead of storing subject-predicate-object triples of
+each individual graph in a separate storage (and the storage is
+explicitly created before first use), Virtuoso stores
+graph-subject-predicate-object quads in one common table (<link
+linkend="rdfquadtables">DB.DBA.RDF_QUAD</link>). This simplifies
+querying when &quot;interesting&quot; graphs are not known in
+advance. E.g., while a SPARQL query is running, Virtuoso <link
+linkend="virtuososponger">Sponger</link> can iteratively download
+additional data in order to provide as complete an answer as
+possible.</para>
+
+
+<para>Quads stored in DB.DBA.RDF_QUAD are usually referred to as
+&quot;physical quads&quot; as opposed to &quot;mapped quads&quot; that
+are not really stored in any table at all but still are accessible by
+SPARQL queries via RDF views.  The SPARQL processor sees no great  difference
+between querying physical and mapped quads so a query may operate with
+mix of data of all sorts. Thus, an application can easily provide both
+access to relational data for SPARQL clients (HTTP and WSDL via <link
+linkend="rdfsparqlprotocolendpoint">SPARQL protocol endpoint</link>)
+and access to RDF data for traditional RDBMS clients (by passing
+SPARQL queries via ODBC, JDBC and the like).</para>
+
+
+<para>RDF is for data integration. This implies the need of resolving
+both inconsistencies in RDF data that comes from various sources of
+different nature and problems with queries that work fine on some
+sample data from local data warehouse but fail on massive and/or
+unexpected data from third party sources. <link
+linkend="rdfsparqlrule">RDF inference</link> helps to support variety
+of synonyms when different data sources uses different names for same
+classes, properties and subjects. Queries can be debugged using all
+methods that are traditional for SQL (what's executed is SQL), with
+paying some attention to RDF-specific <link
+linkend="rdfperformancetuning">performance tuning</link>.</para>
+
+<para>
+
+The whole purpose of SPARQL is to let application developers write
+ queries faster than equivalent SQL code. A short SPARQL query
+on a mix of physical quads and RDF views of a number of  applications may
+sometimes replace pages of SQL text. On the other hand, SQL has more
+expressive power than SPARQL so complicated business intelligence
+queries should be written in a mixed style, as an SQL query with
+SPARQL subqueries. Debugging of mixed-style queries is inconvenient,
+reducing overall benefit in development time, so <link
+linkend="sparqlbi">Business Intelligence Extensions for SPARQL</link>
+can be used in order to greatly reduce the need for wrapping SQL
+around SPARQL. Further, SPARQL protocol clients get access to the functionality, without needing SQL privileges. <link linkend="rdfsparqlrulefulltext">Full-text search
+in SPARQL</link> eliminates one more reason for mixing SQL and
+SPARQL. In addition, extending SPARQL let SPARQL clients to delegate
+more business intelligence calculations to the server without any
+changes in the infrastructure; this is especially important for web
+applications that use AJAX tools (say, <ulink
+url="http://oat.openlinksw.com">OAT OpenLink AJAX
+Toolkit</ulink>).</para>
+
 </sect1>
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
-<para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
+<para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.
+These details are mostly hidden from users of RDF, thus this section is not necessary reading for typical use of Virtuoso with RDF.
+</para>
 <sect2 id="rdfiriidtype"><title>IRI_ID Type</title>
 <para>The central notion of RDF is the IRI, or URI, which serves as the globally unique label of named nodes. The subject and predicate of a triple are always IRI's and the object may be an IRI or any other XML Schema scalar data type. In any case, an IRI is always distinct from any instance of any other data type.</para>
 <para>Virtuoso supports a native IRI_ID data type, internally an unsigned 32 bit or unsigned 64 bit integer value.
@@ -188,7 +263,7 @@ select ... from .... option (QUIETCAST)
     dbpedia.org,
     <computeroutput>iri_to_id ('http://dbpedia.org/resource/Paris') = iri_to_id ('local:///resource/Paris) </computeroutput>
     is true and so is  
-    <computeroutput>'http://dbpedia.org/resource/Paris' = id_to_iri (iri_to_id ('local:///resource/Paris'))</computeroutput>
+    <computeroutput>'http://dbpedia.org/resource/Paris' = id_to_iri (iri_to_id ('local://resource/Paris'))</computeroutput>
     These hold in a SQL client context, i.e. also when connected through RDF frameworks like Jena or Sesame.
     When running a SPARQL protocol request, the Host: header influences the behavior, likewise when using web interactive SQL in Conductor.
     Also be careful when loading RDF files that may have URI's corresponding to the local host name.
@@ -3269,9 +3344,38 @@ GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 ]]></programlisting>
 
-<para>Interoperability is the next question. The example is not interoperable with anything so in can provide data of any form, real application will probably use some ontology from external source. Sometimes data should be converted from internal application's representation to something different (such as metric to imperial or ATT country code to two-character country id); sometimes composed IRIs should follow special rules; <link linkend="rdfviewiriusingfunction">function-based IRI classes</link> may help in that cases. As this is the first example, only plain format-string-based IRI classes are used.</para>
-<para>We should also ensure that data generated by new view will not be ocassionaly mixed with other data of the database. For that purpose the example will use unique graph name that includes both application name and host name. In addition, the script will drop declarations that might exit from previous run of same scipt. The script is executed many times during the development so erasing previous version is worth writing. It will report error if there's nothing to erase but it's better than unpredictable errors due to writing new declarations over existing.</para>
-<note><para>Making graph name unique for every host is not needed if the application is supposed to be &quot;local&quot; and nobody will access to more than one installation of the application. If this is the case, use some fixed graph IRI, not necessarily starting with hostname at all; this is much more convenient for querying because you don't have to calculate the graph name in each query. With fixed graph in use, it is still possible to clone the RDF View to map to a unique graph as soon as the application become &quot;public&quot; and require merging data from many installations.</para></note>
+<para>Interoperability is the next question. The example is not
+interoperable with anything so in can provide data of any form, a real
+application will probably use some ontology from external
+source. Sometimes data should be converted from internal application's
+representation to something different (such as metric to imperial or
+ATT country code to two-character country id); sometimes composed IRIs
+should follow special rules; <link
+linkend="rdfviewiriusingfunction">function-based IRI classes</link>
+may help in that cases. As this is the first example, only plain
+format-string-based IRI classes are used.</para>
+
+<para>We should also ensure that data generated by the new view will
+not be accidentally mixed with other data of the database. For that
+purpose the example will use a unique graph name that includes both
+application name and host name. In addition, the script will drop
+declarations that might remain  from a previous run of the same script. The
+script is executed many times during the development so erasing
+previous version is worth writing. It will report an error if there's
+nothing to erase but it's better than unpredictable errors due to
+writing new declarations over existing ones.</para>
+
+
+<note><para>Making graph name unique for every host is not needed if
+the application is supposed to be &quot;local&quot; and nobody will
+access more than one installation of the application. If this is
+the case, use some fixed graph IRI, not necessarily starting with
+hostname at all; this is much more convenient for querying because you
+don't have to calculate the graph name in each query. With fixed graph
+in use, it is still possible to clone the RDF View to map to a unique
+graph as soon as the application become &quot;public&quot; and requires
+merging data from many installations.</para></note>
+
 <programlisting><![CDATA[
 SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind")
 ;
@@ -3279,7 +3383,25 @@ SPARQL drop quad map virtrdf:NorthwindDemo
 ;
 ]]></programlisting>
 <note><para>The <emphasis>^{URIQADefaultHost}^</emphasis> macro is replaced with the value of <emphasis>DefaultHost</emphasis> parameter of <link linkend="ini_URIQA">[URIQA]</link> section of configuration file. The IRI is written as <emphasis>iri("http://^{URIQADefaultHost}^/Northwind")</emphasis>, not as <emphasis>&lt;http://^{URIQADefaultHost}^/Northwind&gt;</emphasis> because macro of this sort works only inside SPARQL string values.</para></note>
-<para>Now it's safe to create IRI classes needed for the view. If these classes are used only in the view we define then it is safe to create all of them in a single statement. If some of them are used across multiple declarations then errors may occur. it is impossible to redefine an IRI class that is in use; the compiler will try to avoid reporting errors by checking whether the new declaration is identical to the existing one and by trying garbage collection in hope that the IRI class is used only in garbage, but errors may occur anyway. Thus it is better to declare &quot;shared&quot; IRI classes by individual statements and group together only &quot;private&quot; IRI classes of a view. If a &quot;class redefinition&quot; error occurs in the middle of a group then &quot;undefined class&quot; errors may occur after because the processing of the group was interrupted before rest of group was not executed. When in trouble, try <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link> procedure.</para>
+
+<para>Now it's safe to create IRI classes needed for the view. If
+these classes are used only in the view we define then it is safe to
+create all of them in a single statement. If some of them are used
+across multiple declarations then errors may occur. it is impossible
+to redefine an IRI class that is in use; the compiler will try to
+avoid reporting errors by checking whether the new declaration is
+identical to the existing one and by trying garbage collection in hope
+that the IRI class is used only in garbage, but errors may occur
+anyway. Thus it is better to declare &quot;shared&quot; IRI classes by
+individual statements and group together only &quot;private&quot; IRI
+classes of a view. If a &quot;class redefinition&quot; error occurs in
+the middle of a group then &quot;undefined class&quot; errors may
+occur after because the processing of the group was interrupted before
+rest of group was not executed. When in trouble, try <link
+linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>
+procedure.</para>
+
+
 <programlisting><![CDATA[
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
@@ -3764,9 +3886,37 @@ The <emphasis>option (exclusive)</emphasis> trick is ugly, low-level and prone t
 When misused, it is as bad as &quot;red cut&quot; in PROLOG, but one must use this trick to build scalable storages.
 </para>
 <para>The <emphasis>option (exclusive)</emphasis> helps the SPARQL compiler to prepare better SQL queries, but sometimes it is &quot;too exclusive&quot;. For instance, if a grouping quad map pattern specify only quad map value for graph and no other fields then making it exclusive prohibits the use of all declarations of the storage after that one. Sometimes it is better to notify compiler that quads made by the given quad map pattern are supposed to be different from all quads made by declarations listed after the given one.</para>
-<para>Consider an application that exports users&apos; personal data as graphs whose IRIs looks like <emphasis>http://www.example.com/DAV/home/</emphasis>username<emphasis>/RDF/personal/</emphasis>; the application makes a query and a triple pattern is proven to be restrictive enough to filter out all quads that are not similar to quads generated by the given quad map pattern (say, the graph is constant <emphasis>http://www.example.com/DAV/home/JohnSmith/RDF/personal/</emphasis>). The application do not hope to find any quads that match the pattern but made by other applications, because graphs named like in the pattern are supposed to be solely for this single purpose; if, say, DB.DBA.RDF_QUAD occasionally contains some quads with graph equal to <emphasis>http://www.example.com/DAV/home/JohnSmith/RDF/personal/</emphasis> then they can be ignored.</para>
+
+<para>Consider an application that exports users&apos; personal data
+as graphs whose IRIs looks like
+<emphasis>http://www.example.com/DAV/home/</emphasis>username<emphasis>/RDF/personal/</emphasis>;
+the application makes a query and a triple pattern is proven to be
+restrictive enough to filter out all quads that are not similar to
+quads generated by the given quad map pattern (say, the graph is
+constant
+<emphasis>http://www.example.com/DAV/home/JohnSmith/RDF/personal/</emphasis>). The
+application do not hope to find any quads that match the pattern but
+made by other applications, because graphs named like in the pattern
+are supposed to be solely for this single purpose; if, say,
+DB.DBA.RDF_QUAD occasionally contains some quads with graph equal to
+<emphasis>http://www.example.com/DAV/home/JohnSmith/RDF/personal/</emphasis>
+then they can be ignored.</para>
+
 <para>Under this circumstances, the quad map pattern may have <emphasis>option (soft exclusive)</emphasis>. That grants a permission to the compiler to ignore rest of storage as soon as it is proven that the triple pattern can not access quads that does not match the pattern. So if that is proven then the pattern is exclusive and it makes the query faster; when unsure, the complier work like there is no option at all.</para>
-<note><para>The <emphasis>option (exclusive)</emphasis> can be used as a security measure, <emphasis>option (soft exclusive)</emphasis> can not. Say, if an financial application exports its data as a single graph <emphasis>http://www.example.com/front-office/cash/</emphasis> using <emphasis>exclusive</emphasis> then the query that explicitly refers to that graph will never access any quads written by the attacker into DB.DBA.RDF_QUAD using same graph IRI. The use of <emphasis>soft exclusive</emphasis> gives no such protection. From the compiler's perspective, the <emphasis>option (soft exclusive)</emphasis> is a hint that may be ignored, not an unambiguous order.</para></note>
+
+
+<note><para>The <emphasis>option (exclusive)</emphasis> can be used as
+a security measure, <emphasis>option (soft exclusive)</emphasis> can
+not. Say, if an financial application exports its data as a single
+graph <emphasis>http://www.example.com/front-office/cash/</emphasis>
+using <emphasis>exclusive</emphasis> then the query that explicitly
+refers to that graph will never access any quads written by the
+attacker into DB.DBA.RDF_QUAD using same graph IRI. The use of
+<emphasis>soft exclusive</emphasis> gives no such protection. From the
+compiler's perspective, the <emphasis>option (soft
+exclusive)</emphasis> is a hint that may be ignored, not an
+unambiguous order.</para></note>
+
 <para>
 There is one exception from the rules described above.
 This exception is for <emphasis>virtrdf:DefaultQuadStorage</emphasis> only.
@@ -3928,7 +4078,20 @@ The colon before port will be escaped.</listitem>
 <listitem><emphasis>WSHostName</emphasis> is for host name only, without port, as it is used by current client connection for dynamic renaming.</listitem>
 <listitem><emphasis>WSHostPort</emphasis> is for port part of host IRI. That is string, not integer. The only real use of the variable is in formats like <emphasis>http://%{WSHostName}U:%{WSHostPort}U/...</emphasis>.</listitem>
 </itemizedlist>
-<para>It is inconvenient to write different format strings for different cases. Two most common policies are different host names for default HTTP port of a publicly available service and different non-default ports for one or more host names of an intranet instalation; these two approaches are almost never used in a mix. So declaration of IRI classes may use shorthand <emphasis>^{DynamicLocalFormat}^</emphasis> in format strings that is expanded either to <emphasis>http://%{WSHost}U</emphasis> or to <emphasis>http://%{WSHostName}U:%{WSHostPort}U/...</emphasis>, depending on absence or presence of port number in the value of <emphasis>DefaultHost</emphasis> parameter of <emphasis>URIQA</emphasis> section of configuration file.</para>
+
+<para>It is inconvenient to write different format strings for
+different cases.  Two most common policies are different host names
+for default HTTP port of a publicly available service and different
+non-default ports for one or more host names of an intranet
+instalation; these two approaches are almost never used in a mix. So
+declaration of IRI classes may use shorthand
+<emphasis>^{DynamicLocalFormat}^</emphasis> in format strings that is
+expanded either to <emphasis>http://%{WSHost}U</emphasis> or to
+<emphasis>http://%{WSHostName}U:%{WSHostPort}U/...</emphasis>,
+depending on absence or presence of port number in the value of
+<emphasis>DefaultHost</emphasis> parameter of
+<emphasis>URIQA</emphasis> section of configuration file.</para>
+
 <note><para><emphasis>^{DynamicLocalFormat}^</emphasis> is for IRI class declarations only and is not expanded in any other place, so it is useful sometimes to create an IRI class with empty argument list in order to get &quot;almost constant&quot; IRIs calculated without writing special procedures.</para></note>
 </sect2>
 <sect2 id="rdfviewbijandreturns"><title>Lookup Optimization -- BIJECTION and RETURNS Options</title>
@@ -5673,18 +5836,75 @@ select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
 </sect2>	
 </sect1>
 <sect1 id="sparqldebug"><title>Debugging SPARQL queries</title>
-<para>A short SPARQL query can be compiled into long SQL statement, especially if data comes from many quad map petterns. Middle-size application with 50 tables and 10 columns per table may create thousand of quad map patterns for subjects of hundred different types. An attempt to &quot;select everything&quot; from RDF view of that complexity may easily create 5000 lines of SQL code. Thus it is known in advance that some queries will be rejected even if same queries work fine on default storage of &quot;physical quads&quot;.</para>
-<para>In addition, SQL compiler signals an error if table or column name is unknown, efficiently catching typos. SPARQL uses IRIs that are long and sometimes unreadable, but there is no &quot;closed world&quot; schema of the data so a typo in an IRI is not an error, it is simply some other IRI. So typo in a IRI or in a namespace prefix cause missing bindings of some triple patterns of the query and incomplete result, but no errors are usually reported. Typo in graph or predicate IRI may cause the SPARQL compiler to generate code that access deafult storage instead of relational source or to generate empty code that access nothing.</para>
-<para>SQL compiler does not signal casting errors when it runs the statement generated from SPARQL, because the generated SQL code contains <emphasis>option (QUIETCAST)</emphasis>. This means that mismatches between expected and actual datatypes of values stay invisible and may cause rounding errors (say, integer division instead of floating-point) and even empty joins (due to join conditions that silently return NULL instead of return comparison error).</para>
-<para>In two words, SPARQL queries are so laconic that there is no room for details that let the compiler distinguish between intention and a bug. This masquerades query complexity, misuse of names and mismatches in types. One may make debugging easier by making queries longer.</para>
-<para>Two most helpful debugging tools are automatic void variable recognition and plain old code inspection. &quot;Automatic&quot; means &quot;cheap&quot; so the very first step of debugging is to ensure that every triple pattern of the query may in principle return something.
-This helps in finding typos when the query gets data from RDF view, this also helps when query tries to join two disjoint sorts of subjects.
-If <emphasis>define sql:signal-void-variables 1</emphasis> directive is placed at the preamble of the SPARQL query, compiler will signal an error if if finds any triple pattern that can not bind variables or any variable that is proved to be always unbound. This is especially useful when data are supposed to come from <emphasis>option (exclusive)</emphasis> or <emphasis>option (soft exclusive)</emphasis> quad map. Without one of that options SPARQL compiler will usually bind variables using &quot;physical quad&quot;; the table of physical quads may  contain any rows that match any given triple pattern; thus many errors will remain undiscovered. If the name of quad map pattern is known then it is possible to force the SPARQL compiler to use only that quad map for a whole query or for a part. This is possible by using the following syntax:</para>
+
+<para>A short SPARQL query can be compiled into a long SQL statement,
+especially if data comes from many quad map petterns. Middle-size
+application with 50 tables and 10 columns per table may create
+thousand of quad map patterns for subjects of hundred different
+types. An attempt to &quot;select everything&quot; from RDF view of
+that complexity may easily create 5000 lines of SQL code. Thus it is
+known in advance that some queries will be rejected even if same
+queries work fine on default storage of &quot;physical
+quads&quot;.</para>
+
+<para>In addition, an SQL compiler signals an error if table or column
+name is unknown, efficiently catching typos. SPARQL uses IRIs that are
+long and sometimes unreadable, but there is no &quot;closed
+world&quot; schema of the data so a typo in an IRI is not an error, it
+is simply some other IRI. So typo in a IRI or in a namespace prefix
+cause missing bindings of some triple patterns of the query and
+incomplete result, but no errors are usually reported. Typo in graph
+or predicate IRI may cause the SPARQL compiler to generate code that
+access deafult storage instead of relational source or to generate
+empty code that accesses nothing.</para>
+
+<para>The SQL compiler does not signal casting errors when it runs the
+statement generated from SPARQL, because the generated SQL code
+contains <emphasis>option (QUIETCAST)</emphasis>. This means that
+mismatches between expected and actual datatypes of values stay
+invisible and may cause rounding errors (say, integer division instead
+of floating-point) and even empty joins (due to join conditions that
+silently return NULL instead of return comparison error).</para>
+
+<para>In two words, SPARQL queries are so laconic that there is no
+room for details that let the compiler distinguish between intention
+and a bug. This masquerades query complexity, misuse of names and
+mismatches in types. One may make debugging easier by making queries
+longer.</para>
+
+<para>Two most helpful debugging tools are automatic void variable
+recognition and plain old code inspection. &quot;Automatic&quot; means
+&quot;cheap&quot; so the very first step of debugging is to ensure
+that every triple pattern of the query may in principle return
+something.  This helps in finding typos when the query gets data from
+RDF views, this also helps when a query tries to join two disjoint
+sorts of subjects.  If <emphasis>define sql:signal-void-variables
+1</emphasis> directive is placed at the preambl e of the SPARQL query,
+compiler will signal an error if if finds any triple pattern that can
+not bind variables or any variable that is proved to be always
+unbound. This is especially useful when data are supposed to come from
+<emphasis>option (exclusive)</emphasis> or <emphasis>option (soft
+exclusive)</emphasis> quad map. Without one of that options SPARQL
+compiler will usually bind variables using &quot;physical quad&quot;;
+the table of physical quads may contain any rows that match any given
+triple pattern; thus many errors will remain undiscovered. If the name
+of quad map pattern is known then it is possible to force the SPARQL
+compiler to use only that quad map for a whole query or for a
+part. This is possible by using the following syntax:</para>
+
 <programlisting><![CDATA[
 QUAD MAP quad-map-name { group-pattern }
 ]]></programlisting>
 <para>If some triple pattern inside <emphasis>group-pattern</emphasis> can not be bound using <emphasis>quad-map-name</emphasis> or one of its descendants then <emphasis>define sql:signal-void-variables 1</emphasis> will force the compiler to signal the error.</para>
-<note><para>It is technically possible to use <emphasis>QUAD MAP</emphasis> to improve the performance of query that tries to access to redundant RDF Views but it is much better to achieve same effect by providing more restrictive query or by changing/extending RDF View. If an application needs this trick then interoperable SPARQL clients will experience problems -- they can not use Virtuoso-specific extension.</para></note>
+
+<note><para>It is technically possible to use <emphasis>QUAD
+MAP</emphasis> to improve the performance of query that tries to
+access redundant RDF Views but it is much better to achieve the same
+effect by providing a more restrictive query or by changing/extending
+the RDF View. If an application needs this trick then interoperable SPARQL
+clients will experience problems -- they can not use Virtuoso-specific
+extensions.</para></note>
+
 <para>
 If the automated query checking gives nothing, function <function>sparql_to_sql_text</function> can be used in order to get the SQL text generated from the given query. Its only argument is the text of SPARQL query to compile, without leading SPARQL keyword and semicolon at the end; the returned value is the SQL text. The output may be long but that is the most authoritative source of diagnostic data.
 </para>
@@ -5754,8 +5974,39 @@ WHERE /* two fields belong to same equiv */
 OPTION (QUIETCAST)
 ]]></programlisting>
 <para>The query is next to unreadable but some comments split it into meaningful expressions. Every triple (or list of similar triples) become a subquery that return fields needed to build values of bound variables. That fields are printed outside with comments like
-<emphasis>/*retval[*/ expression /* original variable name */ /*]retval*/</emphasis>. Names like<emphasis>"s-6-1-t0"</emphasis> contain source line number where a group pattern begin (6) and serial number of triple (0). Comment <emphasis>/* inter-alias join cond */</emphasis> means that the expression after that is the condition as it is written in the declaration of quad map pattern. Comment <emphasis>/* filter */</emphasis> is before expressions for FILTER expressions in the source SPARQL. The word &quot;equiv&quot; means &quot;equivalence class&quot;, i.e. group of occurencies of variables in the source query that all occurencies are bound to same value. E.g. when name repeates in many triples of a group, all its occurencies form an equivalence class. In sone cases compiler can prove that two variables are always equal even if names differ -- that variables are also placed into one &quot;equiv&quot;.</para>
-<para>Looking at this query, one may notice equality like <emphasis>sprintf_iri (...) = sprintf_iri (...)</emphasis>. That is bad because it means that no index will be used to optimize the join and that there will be one function call per row. When variable <emphasis>?emp</emphasis> appears in two different triples it means that the value of the variable is same in both triples. The query compares IRIs instead of comparing arguments of <link linkend="fn_sprintf_iri"><function>sprintf_iri</function></link> because the format string is not proven to be a bijection. Indeed it can not be bjection for arbitrary strings, but the database is about real world. If it is known that real names of persons never end with digit and digits of <emphasis>%U%U%d</emphasis> fragment will always come from unique identifier then the IRI class can be declared as a bijection even if it is not mathematically true. So the sample script can be edited to include <emphasis>option (bijection)</emphasis> as follows:</para>
+
+<emphasis>/*retval[*/ expression /* original variable name */
+/*]retval*/</emphasis>. Names like<emphasis>"s-6-1-t0"</emphasis>
+contain source line number where a group pattern begin (6) and serial
+number of triple (0). Comment <emphasis>/* inter-alias join cond
+*/</emphasis> means that the expression after that is the condition as
+it is written in the declaration of quad map pattern. Comment
+<emphasis>/* filter */</emphasis> is before expressions for FILTER
+expressions in the source SPARQL. The word &quot;equiv&quot; means
+&quot;equivalence class&quot;, i.e. group of occurencies of variables
+in the source query that all occurencies are bound to same
+value. E.g. when name repeates in many triples of a group, all its
+occurencies form an equivalence class. In sone cases compiler can
+prove that two variables are always equal even if names differ -- that
+variables are also placed into one &quot;equiv&quot;.</para>
+
+<para>Looking at this query, one may notice equality like
+<emphasis>sprintf_iri (...) = sprintf_iri (...)</emphasis>. That is
+bad because it means that no index will be used to optimize the join
+and that there will be one function call per row. When variable
+<emphasis>?emp</emphasis> appears in two different triples it means
+that the value of the variable is same in both triples. The query
+compares IRIs instead of comparing arguments of <link
+linkend="fn_sprintf_iri"><function>sprintf_iri</function></link>
+because the format string is not proven to be a bijection. Indeed it
+can not be bjection for arbitrary strings, but the database is about
+real world. If it is known that real names of persons never end with
+digit and digits of <emphasis>%U%U%d</emphasis> fragment will always
+come from unique identifier then the IRI class can be declared as a
+bijection even if it is not mathematically true. So the sample script
+can be edited to include <emphasis>option (bijection)</emphasis> as
+follows:</para>
+
 <programlisting><![CDATA[
 create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this"
   (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
@@ -5785,7 +6036,7 @@ If the predicate and graph are given but subject is not, then it is sometimes us
 create bitmap index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
 ]]></programlisting>
 
-<note><para>If the server is pre 5.7, leave out the partitioning clause.</para></note>
+<note><para>If the server is pre 5.0.7, leave out the partitioning clause.</para></note>
 
 <para>Making the PGOS index can help in some cases even if it is not readily apparent from the queries that one is needed.  This is so for example if the predicate by itself is selective, i.e. there is a predicate that occurs in only a few triples.</para>
 <para>If the graph itself is not given in the queries, then the default index scheme will be unworkable.
@@ -5799,7 +6050,7 @@ create bitmap index RDF_QUAD_POGS on DB.DBA.RDF_QUAD (P, O, G, S) partition (O v
 create bitmap index RDF_QUAD_GPOS on DB.DBA.RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff));
 ]]></programlisting>
 
-<note><para>For a pre 5.7 server, leave the partition clauses and the alter index statement out.</para></note>
+<note><para>For a pre 5.0.7 server, leave the partition clauses and the alter index statement out.</para></note>
 
 <para>If there are existing triples and one does not wish to reload them, then the following sequence will convert the data:</para>
 
