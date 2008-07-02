@@ -232,6 +232,7 @@ sqlo_select_deps (sqlo_t * so, df_elt_t * from_dfe)
 
   DO_SET (df_elt_t *, pred, &ot->ot_preds)
     {
+      if ((DFE_TRUE != pred) && (DFE_FALSE != pred))
       set = t_set_union (pred->dfe_tables, set);
     }
   END_DO_SET();
@@ -356,6 +357,23 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
     }
 }
 
+df_elt_t *
+sqlo_wrap_dfe_true_or_false (sqlo_t *so, df_elt_t *const_dfe)
+{
+  ST *eq;
+  df_elt_t *res;
+  if (DFE_TRUE == const_dfe)
+    eq = t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)1);
+  else if (DFE_FALSE == const_dfe)
+    eq = t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)2);
+  else
+    GPF_T1 ("sqlo_wrap_dfe_true_or_false for not a const cond");
+  res = sqlo_new_dfe (so, DFE_BOP_PRED, eq);
+  res->_.bin.op = (int) BOP_EQ;
+  res->_.bin.left = sqlo_df (so, eq->_.bin_exp.left);
+  res->_.bin.right = sqlo_df (so, eq->_.bin_exp.right);
+  return res;
+}
 
 void
 sqlo_push_pred (sqlo_t *so, df_elt_t *dfe)
@@ -364,7 +382,11 @@ sqlo_push_pred (sqlo_t *so, df_elt_t *dfe)
   if (DFE_TRUE == c)
     return;
   if (DFE_FALSE == c)
+    {
     so->so_this_dt->ot_is_contradiction = 1;
+      so->so_this_dt->ot_preds = NULL;
+      dfe = sqlo_wrap_dfe_true_or_false (so, c);
+    }
   t_set_push (&so->so_this_dt->ot_preds, (void*) dfe);
 }
 
@@ -683,6 +705,14 @@ sqlo_df (sqlo_t * so, ST * tree)
 	      dfe = c1;
 	    if (DFE_FALSE != dfe && DFE_TRUE != dfe)
 	      dfe->dfe_tables = t_set_union (dfe_tables (c1), dfe_tables (c2));
+	  }
+	else if (BOP_NOT == tree->type)
+	  {
+	    df_elt_t * c1 = sqlo_const_cond (so, dfe->_.bin.left);
+	    if (DFE_FALSE == c1)
+	      dfe = DFE_TRUE;
+	    else if (DFE_TRUE == c1)
+	      dfe = DFE_FALSE;
 	  }
 	if (was_top)
 	  sqlo_push_pred (so, dfe);
@@ -1066,6 +1096,8 @@ sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 dk_set_t
 sqlo_connective_list (df_elt_t * dfe, int op)
 {
+  if ((DFE_TRUE == dfe) || (DFE_FALSE == dfe))
+    return (t_cons (dfe, NULL));
   if ((DFE_BOP_PRED == dfe->dfe_type
        || DFE_BOP == dfe->dfe_type)
       && dfe->_.bin.op == op)
@@ -1686,6 +1718,8 @@ df_elt_t ** df_body_to_array (df_elt_t * dfe);
 df_elt_t **
 sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 {
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    pred = sqlo_wrap_dfe_true_or_false (so, pred);
   switch (pred->dfe_type)
     {
     case DFE_BOP_PRED:
@@ -2628,6 +2662,8 @@ sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * c
   if (!enable_iri_like || DFE_BOP != pred->dfe_type || BOP_NOT != pred->_.bin.op)
     return 0;
   pred = pred->_.bin.left;
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    return 0;
   if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op
       || 0 != unbox ((ccaddr_t) pred->_.bin.left->dfe_tree) || !st_is_call (pred->_.bin.right->dfe_tree, "isiri_id", 1))
     return 0;
@@ -2901,6 +2937,10 @@ sqlo_is_constant_pred_arg (sqlo_t *so, df_elt_t *pred, df_elt_t *cmp, int cmp_to
 int
 sqlo_pred_contradiction (sqlo_t *so, df_elt_t *pred, int do_constant_check)
 {
+  if (DFE_TRUE == pred)
+    return 0;
+  if (DFE_FALSE == pred)
+    return 1;
   if (DFE_BOP_PRED == pred->dfe_type)
     {
       if (sqlo_is_constant_in_pred (so, pred)
@@ -2972,10 +3012,18 @@ sqlo_pred_contradiction (sqlo_t *so, df_elt_t *pred, int do_constant_check)
     }
   else if (DFE_BOP == pred->dfe_type)
     {
-      if (ST_P (pred->dfe_tree, BOP_NOT) &&
-	  DFE_BOP == pred->_.bin.left->dfe_type &&
-	  ST_P (pred->dfe_tree, BOP_NOT)) /* NOT (NOT (x)) -> x */
-	return sqlo_pred_contradiction (so, pred->_.bin.left->_.bin.left, do_constant_check);
+      if (ST_P (pred->dfe_tree, BOP_NOT))
+        {
+          df_elt_t *left = sqlo_const_cond (so, pred->_.bin.left);
+          pred->_.bin.left = left;
+          if (DFE_TRUE == left)
+            return 1;
+          if (DFE_FALSE == left)
+            return 0;
+          if (DFE_BOP == left->dfe_type &&
+	    ST_P (left->dfe_tree, BOP_NOT)) /* NOT (NOT (x)) -> x */
+	    return sqlo_pred_contradiction (so, left->_.bin.left, do_constant_check);
+        }
       else if (ST_P (pred->dfe_tree, BOP_OR))
 	{ /* contr OR contr -> cont */
 	  if (sqlo_pred_contradiction (so, pred->_.bin.left, do_constant_check) &&
@@ -3595,6 +3643,8 @@ sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
 	  DO_SET (df_elt_t *, cond, &cond_list)
 	    {
 	      cond = sqlo_layout_copy_1 (so, cond, NULL);
+              if (DFE_TRUE == cond)
+                cond = sqlo_wrap_dfe_true_or_false (so, DFE_TRUE);
 	      if (!or_pred)
 		or_pred = cond;
 	      else
