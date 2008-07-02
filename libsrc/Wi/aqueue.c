@@ -251,7 +251,7 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	  mutex_leave (aq->aq_mtx);
 	  v = aq_wait (aq, (int) req_no, &err, 1);
 	  dk_free_tree (v);
-	  if (err_ret)
+	  if (err_ret && err)
 	    {
 	      *err_ret = err;
 	      return NULL;
@@ -500,6 +500,9 @@ bif_aq_wait (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_IO_SECT (err_ret);
   if (*err_ret)
     {
+#ifdef DEBUG
+      printf ("aq_wait () has got error %s %s\n", ERR_STATE (err_ret[0]), ERR_MESSAGE (err_ret[0]));
+#endif
       dk_free_tree (val);
       return NULL;
     }
@@ -525,6 +528,10 @@ bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   IO_SECT (qst);
   val = aq_wait_all (aq, &err);
   END_IO_SECT (err_ret);
+#ifdef DEBUG
+  if (*err_ret)
+    printf ("aq_wait_all () has got error %s %s\n", ERR_STATE (err_ret[0]), ERR_MESSAGE (err_ret[0]));
+#endif
   if (err)
     sqlr_resignal (err);
   return val;
