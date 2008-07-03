@@ -1029,7 +1029,19 @@ create procedure f (in x any)
 select count (*) from t1 a, t1 b where a.fi2 = b.fi2 and f(a.row_no) = f(b.row_no) and  f(b.row_no) < 1000  option (order, hash);
 ECHO BOTH $IF $EQU $LAST[1] 980 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count with hash j with expression hash  key reused in after join test\m";
+echo both ": count with hash j with expression hash  key reused in after join test\n";
+
+
+select count (*) from (select distinct row_no from t1) f where f.row_no is null or f.row_no is null;
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "*** FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": count of dt with inported false const preds\n";
+
+
+select count (*) from (select distinct row_no from t1) f where not (f.row_no is null or f.row_no is null);
+ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "*** FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": count of dt with inported true const preds\n";
 
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
