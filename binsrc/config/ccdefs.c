@@ -94,6 +94,9 @@ char **argv;
 # if defined (i386)
   strcat (CCOPT, "-fomit-frame-pointer ");
 # endif
+# if (__GNUC__ > 3)
+  strcat (CCOPT, "-fno-strict-aliasing ");
+# endif
   strcat (CCOPT, "-O2 ");
   strcat (CCWARN, "-Wall ");
   strcat (CCLIBS, "`gcc -print-libgcc-file-name` ");
