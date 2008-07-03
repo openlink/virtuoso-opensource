@@ -2470,27 +2470,13 @@ create procedure yac_syncml_version ()
 
 create procedure yac_syncml_version_get (in _dir any)
 {
-   declare ret any;
-   select CT_VER into ret from SYNC_COLS_TYPES where CT_PATH = _dir;
-   return ret;
+  return coalesce ((select CT_VER from SYNC_COLS_TYPES where CT_PATH = _dir), 'N');
 }
 ;
-
-
-create procedure yac_syncml_version_get (in _dir any)
-{
-   declare ret any;
-   select CT_VER into ret from SYNC_COLS_TYPES where CT_PATH = _dir;
-   return ret;
-}
-;
-
 
 create procedure yac_syncml_type_get (in _dir any)
 {
-   declare ret any;
-   select CT_TYPE into ret from SYNC_COLS_TYPES where CT_PATH = _dir;
-   return ret;
+  return coalesce ((select CT_TYPE from SYNC_COLS_TYPES where CT_PATH = _dir), 'N');
 }
 ;
 
@@ -2502,8 +2488,7 @@ create procedure yac_syncml_update_type (in sync_ver any, in sync_type any, in _
 ;
 
 
-create procedure
-sync_parse_in_data_get_prop (in _all any)
+create procedure sync_parse_in_data_get_prop (in _all any)
 {
    declare len, idx, pos integer;
    declare ret, part, _type varchar;
