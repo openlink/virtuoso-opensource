@@ -1570,8 +1570,22 @@ buf_disk_raw_write (buffer_desc_t* buf)
     GPF_T1 ("buf_disk_raw_write (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
-      disk_stripe_t *dst = dp_disk_locate (dbs, dest, &off);
-      int fd = dst_fd (dst);
+      disk_stripe_t *dst;
+      int fd, rc;
+
+      while (dest >= dbs->dbs_n_pages)
+	{
+	  rc = dbs_extend_file (dbs);
+	  if (!rc)
+	    {
+	      log_error ("Cannot extend database, please free disk space and try again.");
+	      call_exit (-1);
+	    }
+	}
+
+      dst = dp_disk_locate (dbs, dest, &off);
+      fd = dst_fd (dst);
+
       rc = LSEEK (fd, off, SEEK_SET);
       if (rc != off)
 	{
