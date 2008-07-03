@@ -1307,6 +1307,44 @@
                       </v:select-list>
                     </td>
                   </tr>
+                <v:template type="simple" enabled="-- case when ((self.dav_type = 'C') and isstring (DB.DBA.vad_check_version ('SyncML')) and ((self.command_mode = 0) or ((self.command_mode = 10) and (DB.DBA.yac_syncml_detect (self.dav_path) = 1)))) then 1 else 0 end">
+                  <tr>
+                    <th>SyncML version</th>
+                    <td>
+                    <select name="s_v">
+                      <?vsp
+                        declare aValues, aValue any;
+                        declare N integer;
+
+                        aValue := case when (self.command_mode = 0) then 'N' else DB.DBA.yac_syncml_version_get (self.dav_path) end;
+                        aValues := DB.DBA.yac_syncml_version ();
+                        for (N := 0; N < length (aValues); N := N + 2)
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>SyncML type</th>
+                    <td>
+                    <select name="s_t">
+                      <?vsp
+                        declare aValues, aValue any;
+                        declare N integer;
+
+                        aValue := case when (self.command_mode = 0) then 'N' else DB.DBA.yac_syncml_type_get (self.dav_path) end;
+                        aValues := DB.DBA.yac_syncml_type ();
+                        for (N := 0; N < length (aValues); N := N + 2)
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                </v:template>
                   <v:template type="simple" enabled="-- case when ((self.dav_type = 'C') and (self.command_mode = 10)) then 1 else 0 end">
                     <tr>
                       <th />

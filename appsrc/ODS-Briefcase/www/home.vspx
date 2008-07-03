@@ -179,6 +179,18 @@
             if (self.dav_type = 'C')
             {
             dav_fullPath := concat(dav_fullPath, '/');
+            if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
+            {
+              declare sync_version, sync_type any;
+
+              sync_version := get_keyword ('s_v', params, 'N');
+              sync_type := get_keyword ('s_t', params, 'N');
+
+              if (self.command_mode = 10)
+                delete from DB.DBA.SYNC_COLS_TYPES where CT_PATH = ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath');
+
+				      DB.DBA.SYNC_MAKE_DAV_DIR (sync_type, DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), dav_name, dav_fullPath, sync_version);
+            }
             dav_detType := get_keyword ('dav_det', params);
               if (isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath))
               {
