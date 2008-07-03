@@ -79,7 +79,7 @@ then
     exit 1
 fi
 
-../blobs $PORT
+RUN $BLOBS $DSN
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < terror.sql
 if test $STATUS -ne 0
