@@ -50,6 +50,7 @@ check_SCRIPTS = \
 	timsg.sh \
 	tjdbc.sh \
 	tpcd.sh \
+	tproviders.sh \
 	tproxy.sh \
 	tp.sh \
 	trecov_schema.sh \
@@ -58,6 +59,7 @@ check_SCRIPTS = \
 	trepl.sh \
 	tsec.sh \
 	tsoap12.sh \
+	tsparql_demo.sh \
 	tsparql.sh \
 	tsql2.sh \
 	tsql3.sh \
