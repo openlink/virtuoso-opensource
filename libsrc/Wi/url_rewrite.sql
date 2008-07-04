@@ -416,14 +416,23 @@ returns varchar
       else
         tmp := call (target_exp) (target_params[i], cur, val);
       long_path := concat (long_path, tmp);
-      --dbg_obj_princ('after sprintf: ', long_path);
+      -- dbg_obj_princ('after sprintf: ', long_path);
       i := i + 1;
     }
 end_scan:
   -- dbg_obj_princ('=======sprintf22: ', long_path);
   long_path := replace (long_path, '<PERCENT>', '%');
   if (isstring (host))
+    {
     long_path := replace (long_path, '^{URIQADefaultHost}^', host);
+      if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
+        {
+          if (strchr (host, ':') is not null)
+            long_path := replace (long_path, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHostName}U:%{WSHostPort}U'));
+          else
+            long_path := replace (long_path, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHost}U'));
+        }
+    }
   return long_path;
 }
 ;
