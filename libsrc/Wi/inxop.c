@@ -580,6 +580,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
     case IOP_START:
     case IOP_NEXT:
       is_nulls = ks_make_spec_list (itc, iop->iop_ks_start_spec.ksp_spec_array, qst);
+      itc->itc_search_params[itc->itc_insert_key->key_n_significant - 1] = NULL; /*otherwise uninited in itc_set_search_param later */
       itc->itc_search_par_fill = itc->itc_insert_key->key_n_significant;
       /* set the fill to be like full eq of all parts because the row spec is so laid out that it presupposes the full eq  search spec to precede it. */
       is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
