@@ -957,6 +957,9 @@ create procedure OMAIL.WA.omail_check_parent(
   declare _parent_loc integer;
   WHENEVER NOT FOUND GOTO ERR_EXIT;
 
+  if (_parent_id is null)
+    return 0;
+
   select PARENT_ID
     INTO _parent_loc
     from OMAIL.WA.FOLDERS
@@ -1543,11 +1546,17 @@ create procedure OMAIL.WA.omail_edit_folder(
     if (length(_folder_name) > 20)
     {
       _error := 1201;
-    } else if (length (_folder_name) < 2) {
+    }
+    else if (length (_folder_name) < 2)
+    {
       _error := 1202;
-    } else if (OMAIL.WA.omail_check_folder_name(_domain_id,_user_id,_parent_id,_folder_name, _folder_id)) {
+    }
+    else if (OMAIL.WA.omail_check_folder_name(_domain_id,_user_id,_parent_id,_folder_name, _folder_id))
+    {
       _error := 1203;
-    } else {
+    }
+    else
+    {
       _error := OMAIL.WA.omail_check_parent(_domain_id,_user_id,_folder_id,_parent_id);
       if (_error = 0)
       {
@@ -5417,24 +5426,29 @@ create procedure OMAIL.WA.omail_tools_action(
   _object_name := '';
   _parent_id := 0;
 
-  if (_action_id = 0){ -- edit folder
-    if (_object_id <= 130){
+  if (_action_id = 0)
+  { -- edit folder
+    if (_object_id <= 130)
+    {
        _error := 1301;
        return '';
-    };
+    }
 
     select NAME,PARENT_ID
       INTO _object_name,_parent_id
       from OMAIL.WA.FOLDERS
      where DOMAIN_ID = _domain_id and USER_ID = _user_id and FOLDER_ID = _object_id;
 
-    _sql_result1 := sprintf('<parent_id>%d</parent_id>',_parent_id);
+    _sql_result1 := sprintf ('<parent_id>%s</parent_id>', cast (coalesce (_parent_id, '') as varchar));
     _sql_statm   := vector ('select FOLDER_ID,NAME from OMAIL.WA.FOLDERS where DOMAIN_ID = ? and USER_ID = ? and PARENT_ID');
     _sql_params  := vector(vector(_domain_id,_user_id,''),vector(''));-- user_id
     _sql_result1 := sprintf('%s<folders>%s</folders>',_sql_result1,OMAIL.WA.omail_folders_list(_domain_id,_user_id,vector()));
 
-  } else if (_action_id = 1){ -- delete folder
-    if (_object_id <= 130) {
+  }
+  else if (_action_id = 1)
+  { -- delete folder
+    if (_object_id <= 130)
+    {
       _error := 1302;
       return '';
     }

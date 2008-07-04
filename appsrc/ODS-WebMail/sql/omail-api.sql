@@ -48,7 +48,7 @@ create procedure ODS.ODS_API.mail_folder_id (
   for (N := 0; N < length (vPath); N := N + 1)
   {
     _parent_id := _folder_id;
-    _folder_id := (select FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _account_id and coalesce (PARENT_ID, 0) = coalesce (_parent_id, 0) and NAME = vPath[N]);
+    _folder_id := (select FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _account_id and coalesce (PARENT_ID, 0) = coalesce (_parent_id, 0) and NAME = trim (vPath[N]));
     if (isnull (_folder_id))
       goto _exit;
   }
@@ -76,12 +76,12 @@ create procedure ODS.ODS_API.mail_folder_new (
   for (N := 0; N < length (vPath); N := N + 1)
   {
     parent_id := folder_id;
-    fPath := fPath || fDelimiter || vPath[N];
+    fPath := fPath || fDelimiter || trim (vPath[N]);
     fDelimiter := '/';
     folder_id := ODS.ODS_API.mail_folder_id (domain_id, account_id, fPath);
     if (isnull (folder_id))
     {
-      folder_id := OMAIL.WA.omail_folder_create (domain_id, account_id, parent_id, vPath[N], error);
+      folder_id := OMAIL.WA.omail_folder_create (domain_id, account_id, parent_id, trim (vPath[N]), error);
       if (error <> 0)
         return 0;
     }
@@ -269,7 +269,7 @@ create procedure ODS.ODS_API."mail.folder.new" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare domain_id, account_id integer;
+  declare domain_id, account_id, folder_id integer;
   declare rc integer;
   declare uname varchar;
 
@@ -278,6 +278,9 @@ create procedure ODS.ODS_API."mail.folder.new" (
 
   domain_id := 1;
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
+  folder_id := ODS.ODS_API.mail_folder_id (domain_id, account_id, path);
+  if (not isnull (folder_id))
+    signal ('MAIL', 'Folder already exists.');
   rc := ODS.ODS_API.mail_folder_new (domain_id, account_id, path);
 
   return ods_serialize_int_res (rc);
@@ -307,7 +310,9 @@ create procedure ODS.ODS_API."mail.folder.delete" (
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   folder_id := ODS.ODS_API.mail_folder_id (domain_id, account_id, path);
   if (isnull (folder_id))
-    return ods_serialize_int_res (0);
+    signal ('MAIL', 'Folder do not exists.');
+  if (folder_id < 130)
+    signal ('MAIL', 'System folder can not be deleted.');
 
   OMAIL.WA.omail_edit_folder (domain_id, account_id, folder_id, 1, null, null, rc);
 
@@ -340,7 +345,7 @@ create procedure ODS.ODS_API."mail.folder.rename" (
   account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname);
   folder_id := ODS.ODS_API.mail_folder_id (domain_id, account_id, oldPath);
   if (isnull (folder_id))
-    return ods_serialize_int_res (0);
+    signal ('MAIL', 'Folder do not exists.');
 
   vPath := split_and_decode (trim (newPath, '/'), 0, '\0\0/');
 
@@ -348,13 +353,13 @@ create procedure ODS.ODS_API."mail.folder.rename" (
   fDelimiter := '';
   for (N := 0; N < length (vPath)-1; N := N + 1)
   {
-    fPath := fPath || fDelimiter || vPath[N];
+    fPath := fPath || fDelimiter || trim (vPath[N]);
     fDelimiter := '/';
   }
   parrent_id := null;
   if (fPath <> '')
     parrent_id := ODS.ODS_API.mail_folder_new (domain_id, account_id, fPath);
-  OMAIL.WA.omail_edit_folder (domain_id, account_id, folder_id, 0, vPath[length(vPath)-1], parrent_id, rc);
+  OMAIL.WA.omail_edit_folder (domain_id, account_id, folder_id, 0, trim (vPath[length(vPath)-1]), parrent_id, rc);
 
   return ods_serialize_int_res (rc);
 }

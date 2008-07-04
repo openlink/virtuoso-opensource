@@ -254,13 +254,12 @@ create procedure ODS.ODS_API."poll.activate" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  rc := 0;
-  if (POLLS.WA.poll_enable_activate (poll_id))
+  if (not POLLS.WA.poll_enable_activate (poll_id))
   {
-    POLLS.WA.poll_active (poll_id);
-    rc := 1;
+    signal ('POLLS', 'The activation is not allowed');
   }
-  return ods_serialize_int_res (rc);
+  POLLS.WA.poll_active (poll_id);
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -283,13 +282,12 @@ create procedure ODS.ODS_API."poll.close" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  rc := 0;
-  if (POLLS.WA.poll_enable_close (poll_id))
+  if (not POLLS.WA.poll_enable_close (poll_id))
   {
-    POLLS.WA.poll_close (poll_id);
-    rc := 1;
+    signal ('POLLS', 'The close is not allowed');
   }
-  return ods_serialize_int_res (rc);
+  POLLS.WA.poll_close (poll_id);
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -313,12 +311,12 @@ create procedure ODS.ODS_API."poll.clear" (
     return ods_auth_failed ();
 
   rc := 0;
-  if (POLLS.WA.poll_enable_clear (poll_id))
+  if (not POLLS.WA.poll_enable_clear (poll_id))
   {
-    POLLS.WA.poll_clear (poll_id);
-    rc := 1;
+    signal ('POLLS', 'The clear is not allowed');
   }
-  return ods_serialize_int_res (rc);
+  POLLS.WA.poll_clear (poll_id);
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -335,10 +333,11 @@ create procedure ODS.ODS_API."poll.vote" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (POLLS.WA.poll_enable_vote (poll_id))
+  if (not POLLS.WA.poll_enable_vote (poll_id))
   {
-    rc := POLLS.WA.vote_insert (poll_id, client_attr ('client_ip'));
+    signal ('POLLS', 'The vote is not allowed');
   }
+  rc := POLLS.WA.vote_insert (poll_id, client_attr ('client_ip'));
   return ods_serialize_int_res (rc);
 }
 ;
@@ -388,8 +387,10 @@ create procedure ODS.ODS_API."poll.result" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (POLLS.WA.poll_enable_result (poll_id))
+  if (not POLLS.WA.poll_enable_result (poll_id))
   {
+    signal ('POLLS', 'The result is not allowed');
+  }
     declare N, S, choices, allowed, answers, answer, aValue, aCount any;
 
     for (select P_ID, P_NAME, P_MODE, P_VOTES from POLLS.WA.POLL where P_ID = poll_id) do
@@ -442,7 +443,6 @@ create procedure ODS.ODS_API."poll.result" (
       }
       http ('</poll>');
     }
-  }
   return '';
 }
 ;

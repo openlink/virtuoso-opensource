@@ -272,7 +272,7 @@ create procedure ODS.ODS_API."feeds.comment.new" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc integer;
+  declare rc, feed_id, feed_domain_id integer;
   declare uname varchar;
 
   rc := -1;
@@ -282,6 +282,11 @@ create procedure ODS.ODS_API."feeds.comment.new" (
 
   if (not (ENEWS.WA.discussion_check () and ENEWS.WA.conversation_enable (inst_id)))
     return signal('API01', 'Discussions must be enabled for this instance');
+
+  feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
+  feed_domain_id := (select EFD_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = inst_id and EFD_FEED_ID = feed_id);
+  if (isnull (feed_domain_id))
+    signal ('FEEDS', 'No such item.');
 
   if (isnull (parent_id))
   {
