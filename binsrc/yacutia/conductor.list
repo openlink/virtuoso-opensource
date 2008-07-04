@@ -55,6 +55,8 @@ conductor/db_drop_errs.vspx
 conductor/db_grant_errs.vspx
 conductor/db_grant_many.vspx
 conductor/db_rdf_class.vspx
+conductor/db_rdf_class.vspx
+conductor/db_rdf_objects.vspx
 conductor/db_rdf_objects.vspx
 conductor/db_repl_basic_create.vspx
 conductor/db_repl_basic_local_create.vspx
@@ -342,6 +344,7 @@ conductor/soap_services_edit.vspx
 conductor/soap_services_list.vspx
 conductor/soap_services.vspx
 conductor/sparql_filters.vspx
+conductor/sparql_graph.vspx
 conductor/sparql_input.vspx  
 conductor/sparql_load.vspx
 conductor/sqlbuilder.vsp

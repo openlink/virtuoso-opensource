@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2008 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="http_serv_mgmt" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <vm:pagetitle>Web Service Endpoints</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+      <v:variable persist="0" name="mode" type="varchar" default="''"/>
+  </vm:variables>
+  <vm:menu>
+    <vm:menuitem value="List of Graphs"/>
+  </vm:menu>
+  <vm:header caption="List of Graphs">
+  </vm:header>
+  <vm:pagebody>
+      <v:before-data-bind>
+        <v:script>
+	 <![CDATA[
+
+	         declare graph_name varchar;
+
+	         graph_name := get_keyword ('graph_name', self.vc_event.ve_params, NULL);
+	         self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
+
+		 dbg_obj_print ('self.mode ', self.mode);
+		 if (self.mode = 'delete')
+		   {
+		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_name);
+		   }
+
+	 ]]>
+         </v:script>
+       </v:before-data-bind>
+      <v:form name="frm1" method="POST" type="simple">
+        <table class="listing">
+	  <tr class="listing_header_row">
+	    <th>Graph:</th>
+	    <th> </th>
+	    <th> </th>
+	  </tr>
+<?vsp
+	     declare r_count any;
+	     r_count := 0;
+
+	     for (select GRAPH_IRI from DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS_T) do
+	     {
+	        r_count := r_count + 1;
+	        http (sprintf ('<tr class="%s">', case when mod (r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+		http (sprintf ('<td>%s</td><td class="listing_col_action">', GRAPH_IRI));
+		http (sprintf ('<a href="sparql_graph.vspx?mode=edit&graph_name=%U&sid=%s&realm=%s" ><img src="images/icons/edit_16.png" border="0"  alt="Rename" title="Rename" />Rename</a></td><td class="listing_col_action">', GRAPH_IRI, self.sid, self.realm));
+		http (sprintf ('<a href="sparql_graph.vspx?mode=delete&graph_name=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete" />Delete</a></td></tr>', GRAPH_IRI, self.sid, self.realm));
+	     }
+	  ?>
+        </table>
+      </v:form>
+
+  <table style="display:none"><tr><td>$Id$</td></tr></table>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

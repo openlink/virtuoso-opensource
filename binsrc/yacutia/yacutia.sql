@@ -432,6 +432,7 @@ create procedure adm_menu_tree ()
  <node name="RDF" url="sparql_input.vspx"  id="189" tip="RDF " allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
+     <node name="List of Graphs" url="sparql_graph.vspx" id="182" allowed="yacutia_sparql_page" />
    </node>',
 case when 0 and check_package('rdf_mappers') then
   '<node name="GRDDL Mappings" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
@@ -2180,6 +2181,14 @@ create procedure db.dba.sql_table_indexes( in tablename varchar )
   --end_result();
 }
 ;
+
+yacutia_exec_no_error('drop view DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS_T')
+;
+
+create procedure view DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS_T as
+DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS () (GRAPH_IRI varchar)
+;
+
 
 yacutia_exec_no_error('drop view db.dba.sql_table_indexes')
 ;
