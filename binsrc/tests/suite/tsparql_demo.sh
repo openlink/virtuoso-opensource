@@ -61,12 +61,65 @@ else
     LOG "DONE: tsparql_demo.sh: nwdynamic.sql RDF View"
 fi
 
-lcount=` ( curl --form-string 'format=text/rdf+n3' --form-string 'query=select distinct ?t ?g where { graph ?g { ?s a ?t } . filter (bif:strstr(str(?g), "Northwind"))}' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep "name \"t\" | wc -l `
+lcount=` ( curl --form-string 'format=text/rdf+n3' --form-string 'query=select distinct ?t ?g where { graph ?g { ?s a ?t } . filter (bif:strstr(str(?g), "Northwind"))}' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep "variable .t" | wc -l `
 if test 13 -eq $lcount
 then
   LOG "PASSED: $lcount types in Northwind graph"
 else
   LOG "***FAILED: $lcount types in Northwind graph, should be 13"
+fi
+
+wget --header "Accept: text/rdf+n3" --output-document tsparql_demo_wget1.log "http://localhost:$HTTPPORT/Northwind/Customer/ALFKI#this"
+lcount=` cat tsparql_demo_wget1.log | grep 'Alfreds Futterkiste' | wc -l`
+if test 2 -eq $lcount
+then
+  LOG "PASSED: ALFKI is about Alfreds Futterkiste in TTL"
+else
+  LOG "***FAILED: ALFKI is about Alfreds Futterkiste in TTL"
+fi
+
+wget --header "Accept: application/rdf+xml" --output-document tsparql_demo_wget2.log "http://localhost:$HTTPPORT/Northwind/Customer/ALFKI#this"
+lcount=` cat tsparql_demo_wget2.log | grep 'Maria Anders' | wc -l`
+if test 1 -eq $lcount
+then
+  LOG "PASSED: ALFKI is represented by Maria Anders"
+else
+  LOG "***FAILED: ALFKI is represented by Maria Anders"
+fi
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $HOME/binsrc/samples/demo/tpc-h/tpch.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tsparql_demo.sh: tpch data and RDF View"
+    exit 3
+else
+    LOG "DONE: tsparql_demo.sh: tpch data and RDF View"
+fi
+
+lcount=` ( curl --form-string 'format=text/rdf+n3' --form-string 'query=select distinct ?t ?g where { graph ?g { ?s a ?t } . filter (bif:strstr(str(?g), "tpch"))}' localhost:${HTTPPORT}/sparql/ 2>/dev/null ) | grep "variable .t" | wc -l `
+if test 9 -eq $lcount
+then
+  LOG "PASSED: $lcount types in TPC-H graph"
+else
+  LOG "***FAILED: $lcount types in TPC-H, should be 9"
+fi
+
+wget --header "Accept: text/rdf+n3" --output-document tsparql_demo_wget11.log "http://localhost:$HTTPPORT/tpch/customer/1#this"
+lcount=` cat tsparql_demo_wget11.log | grep '18-252-186-6265' | wc -l`
+if test 2 -eq $lcount
+then
+  LOG "PASSED: Phone of customer 1 is 18-252-186-6265 in TTL"
+else
+  LOG "***FAILED: Phone of customer 1 is 18-252-186-6265 in TTL"
+fi
+
+wget --header "Accept: text/rdf+n3" --output-document tsparql_demo_wget12.log "http://localhost:$HTTPPORT/Northwind/Customer/ALFKI#this"
+lcount=` cat tsparql_demo_wget12.log | grep 'Alfreds Futterkiste' | wc -l`
+if test 2 -eq $lcount
+then
+  LOG "PASSED: ALFKI is still about Alfreds Futterkiste in TTL after loading second view"
+else
+  LOG "***FAILED: ALFKI is still about Alfreds Futterkiste in TTL after loading second view"
 fi
 
 
