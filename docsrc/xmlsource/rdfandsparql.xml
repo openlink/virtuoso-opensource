@@ -6959,7 +6959,7 @@ xsd:integer (in strg varchar) returns integer
   <sect2 id="rdfnativestorageprovidersjena"><title>Virtuoso Jena RDF Data Provider</title>
     <para>The Virtuoso Jena RDF Data Provider enables Semantic Web applications written using
 the Jena RDF Frameworks to query the Virtuoso RDF Quad store directly. The Provider has been
-tested against the <a href="http://jena.sourceforge.net/">Jena 2.5.5</a> version currently available.
+tested against the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> version currently available.
     </para>
     <figure id="rdfnativestorageprovidersjena1" float="1">
       <title>Virtuoso Jena RDF Data Provider</title>
@@ -6967,10 +6967,10 @@ tested against the <a href="http://jena.sourceforge.net/">Jena 2.5.5</a> version
     </figure>
     <sect3 id="rdfnativestorageprovidersjenareqfiles"><title>Required Files</title>
     <itemizedlist mark="bullet">
-      <listitem>The Virtuoso Jena Provider packaged as a JAR file, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virt_jena.jar">virt_jena.jar</a></listitem>
-      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjdbc3.jar">virtjdbc3.jar</a></listitem>
-      <listitem>The Jena and associated classes, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/jenajars.zip">jenajars.zip</a></listitem>
-      <listitem>The sample programs, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjenasamples.zip">virtjenasamples.zip</a></listitem>
+      <listitem>The Virtuoso Jena Provider packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virt_jena.jar">virt_jena.jar</ulink></listitem>
+      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
+      <listitem>The Jena and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/jenajars.zip">jenajars.zip</ulink></listitem>
+      <listitem>The sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjenasamples.zip">virtjenasamples.zip</ulink></listitem>
     </itemizedlist>
     </sect3>
     <sect3 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>
@@ -7205,13 +7205,13 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 ]]></programlisting>
     </sect3>
     <sect3 id="rdfnativestorageprovidersjenajavadoc"><title>Javadoc API Documentation</title>
-    <para><a href="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</a> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
+    <para><ulink url="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
     </para>
     </sect3>
   </sect2>
   <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame 2 RDF Data Provider</title>
     <para>The Virtuoso Sesame 2 RDF Data Provider enables Semantic Web applications written using the Sesame RDF Frameworks to query the Virtuoso RDF Quad store directly.
-The Provider has been tested against the <a href="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</a> version currently available.
+The Provider has been tested against the <ulink url="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</ulink> version currently available.
     </para>
     <figure id="rdfnativestorageprovidersjena1" float="1">
       <title>Virtuoso Sesame 2 RDF Data Provider</title>
@@ -7219,10 +7219,10 @@ The Provider has been tested against the <a href="http://sourceforge.net/project
     </figure>
     <sect3 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
     <itemizedlist mark="bullet">
-      <listitem>The Virtuoso Sesame 2 Provider packaged as a JAR file, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virt_sesame2.jar">virt_sesame2.jar</a></listitem>
-      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtjdbc3.jar">virtjdbc3.jar</a></listitem>
-      <listitem>The Sesame and associated classes, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/sesame2jars.zip">sesame2jars.zip</a></listitem>
-      <listitem>The sample programs, <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtsesame2samples.zip">virtsesame2samples.zip</a></listitem>
+      <listitem>The Virtuoso Sesame 2 Provider packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virt_sesame2.jar">virt_sesame2.jar</ulink></listitem>
+      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
+      <listitem>The Sesame and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/sesame2jars.zip">sesame2jars.zip</ulink></listitem>
+      <listitem>The sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtsesame2samples.zip">virtsesame2samples.zip</ulink></listitem>
     </itemizedlist>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Jena Sample Programs</title>
@@ -7340,7 +7340,7 @@ PASSED:14 FAILED:0
     </orderedlist>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamejavadoc"><title>Javadoc API Documentation</title>
-    <para><a href="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</a> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
+    <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
     </para>
     </sect3>
   </sect2>
