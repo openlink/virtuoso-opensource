@@ -5466,11 +5466,11 @@ create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns 
       host := registry_get ('URIQADefaultHost');
       if (not isstring (host))
         signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if there is no DefaultHost parameter in [URIQA] section of Virtuoso configuration file');
-      if (atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0')))
-        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if DynamicLocal is not set to 1 in [URIQA] section of Virtuoso configuration file');
-      if ((pos > 0) and (pos < 7) and strchr (subseq (iritmpl, 0, pos), ':') is not null)
+--      if (atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0')))
+--        signal ('22023', 'Can not use ^{DynamicLocalFormat}^ in IRI template if DynamicLocal is not set to 1 in [URIQA] section of Virtuoso configuration file');
+      if ((pos > 0) and (pos < 10) and strchr (subseq (iritmpl, 0, pos), ':') is not null)
         signal ('22023', 'Misplaced ^{DynamicLocalFormat}^: its expansion will contain protocol prefix but the templace contains one already');
-      if (strchr (host, ':') is null)
+      if (strchr (host, ':') is not null)
         iritmpl := replace (iritmpl, '^{DynamicLocalFormat}^', 'http://%{WSHostName}U:%{WSHostPort}U');
       else
         iritmpl := replace (iritmpl, '^{DynamicLocalFormat}^', 'http://%{WSHost}U');
@@ -5541,6 +5541,9 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   isnotnull := 1;
   if (arglist_len <> 1)
     {
+      if (arglist_len = 0)
+        basetype := 'zeropart-uri';
+      else
       basetype := 'multipart-uri';
       for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
         {
@@ -5646,7 +5649,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
         rdf:type virtrdf:array-of-string .
       `iri(?:superformatsid)`
         rdf:type virtrdf:array-of-QuadMapFormat };
-  if (isnotnull)
+  if (isnotnull and (arglist_len > 0))
     {
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
@@ -5695,6 +5698,9 @@ fheaders is, say,
   arglist_len := length (arglist);
   if (arglist_len <> 1)
     {
+      if (arglist_len = 0)
+        basetype := 'zeropart-uri-fn-nullable';
+      else
       basetype := 'multipart-uri-fn-nullable';
       isnotnull := 0;
     }
@@ -5829,7 +5835,12 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
   arglist := uriprint[1];
   arglist_len := length (arglist);
   if (arglist_len <> 1)
+    {
+      if (arglist_len = 0)
+        basetype := 'zeropart-literal-fn-nullable';
+      else
     basetype := 'multipart-literal-fn-nullable';
+    }
   else
     {
       basetype := lower (arglist[0][2]);
@@ -10542,7 +10553,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-06-19 0001'
+                virtrdf:version '2008-07-02 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
