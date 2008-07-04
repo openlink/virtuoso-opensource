@@ -679,7 +679,11 @@ client_connection_reset (client_connection_t * cli)
       cli->cli_outp_worker = NULL;
     }
   if (NULL != cli->cli_ns_2dict)
-    xml_ns_2dict_clean (cli->cli_ns_2dict);
+    {
+      xml_ns_2dict_clean (cli->cli_ns_2dict);
+      dk_free (cli->cli_ns_2dict, sizeof (xml_ns_2dict_t));
+      cli->cli_ns_2dict = NULL;
+    }
 }
 
 
