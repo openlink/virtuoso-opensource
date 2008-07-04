@@ -248,6 +248,7 @@ fi
 ./tdav_meta.sh
 TEST_SPARQL=yes ./tpcd.sh
 ./tsparql.sh
+./tsparql_demo.sh
 
 #XXX: not tested yet on Win32
 if [ "x$HOST_OS" != "x" ]
