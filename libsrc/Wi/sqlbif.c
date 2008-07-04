@@ -3011,17 +3011,25 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    switch (*ptr)
 	      {
 	      case 'U':
+	    case 's':
 		if (DV_STRING != connvar_dtp)
 		  {
 		    if (NULL == connvar_valplace)
 		      dk_free_box (connvar_value);
-
 		    sqlr_new_error ("22023", "SR588",
-			"Connection variable is mentioned by sprintf format %%{%s}U but its value is not a string",
-			format);
+		      "Connection variable is mentioned by sprintf format %%{%s}%c but its value is not a string", format, ptr[0]);
 		  }
 
+	      switch (*ptr)
+		{
+		case 'U':
 		http_value_esc (qst, ses, connvar_value, NULL, DKS_ESC_URI);
+		  break;
+
+		case 's':
+		  session_buffered_write (ses, connvar_value, box_length (connvar_value) - 1);
+		  break;
+		}
 
 		if (NULL == connvar_valplace)
 		  dk_free_box (connvar_value);
@@ -3438,21 +3446,27 @@ find_next_format:
                         if (NULL == connvar_value)
                           {
                             sqlr_new_error ("22023", "SR591",
-                              "Connection variable is mentioned by sprintf_inverse format %%{%.200s} but it does not exist", field_fmt_buf);
+			      "Connection variable is mentioned by sprintf_inverse format %%{%.200s} but it does not exist",
+			      field_fmt_buf);
                           }
                       }
+
                     connvar_dtp = DV_TYPE_OF (connvar_value);
+
                     switch (*fmt_tail)
                       {
-                      case 'U':
+		    case 's':
                         if (DV_STRING != connvar_dtp)
                           {
                             if (NULL == connvar_valplace)
                               dk_free_box (connvar_value);
                             sqlr_new_error ("22023", "SR588",
-                              "Connection variable is mentioned by sprintf_inverse format %%{%.200s}U but its value is not a string", field_fmt_buf);
+			      "Connection variable is mentioned by sprintf_inverse format %%{%.200s}s but its value is not a string",
+			      field_fmt_buf);
                           }
+
                         val_end = connvar_value + box_length (connvar_value) - 1;
+
                         for (val_tail = connvar_value; val_tail < val_end; val_tail++)
                           {
                             if (str_tail[0] == val_tail[0])
@@ -3460,6 +3474,31 @@ find_next_format:
                                 str_tail++;
                                 continue;
                               }
+
+			  if (NULL == connvar_valplace)
+			    dk_free_box (connvar_value);
+
+			  goto POP_format_mismatch;
+			}
+
+		      if (NULL == connvar_valplace)
+			dk_free_box (connvar_value);
+		      break;
+
+		    case 'U':
+		      if (DV_STRING != connvar_dtp)
+			{
+			  if (NULL == connvar_valplace)
+			    dk_free_box (connvar_value);
+			  sqlr_new_error ("22023", "SR588",
+			      "Connection variable is mentioned by sprintf_inverse format %%{%.200s}U but its value is not a string",
+			      field_fmt_buf);
+			}
+
+		      val_end = connvar_value + box_length (connvar_value) - 1;
+
+		      for (val_tail = connvar_value; val_tail < val_end; val_tail++)
+			{
                             if (DKS_ESC_CHARCLASS_ACTION((unsigned char)(val_tail[0]), DKS_ESC_URI))
                               {
                                 ws_connection_t * ws = ((query_instance_t *)qst)->qi_client->cli_ws;
@@ -3484,8 +3523,18 @@ find_next_format:
                                 fmt_tail++;
                                 goto find_next_format; /* see above */
                               }
+
+			  if (str_tail[0] == val_tail[0])
+			    {
+			      str_tail++;
+			      continue;
+			    }
+
+			  if (NULL == connvar_valplace)
+			    dk_free_box (connvar_value);
                             goto POP_format_mismatch;
                           }
+
                         if (NULL == connvar_valplace)
                           dk_free_box (connvar_value);
                         break;
@@ -3509,6 +3558,10 @@ find_next_format:
         {
           goto POP_format_mismatch; /* see below */
         }
+    POP_QR_RESET;
+
+    return (caddr_t) (revlist_to_array (res));
+
 next_field:
       field_start = fmt_tail;
       field_len = field_prec = 0;
