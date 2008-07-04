@@ -6777,7 +6777,7 @@ DBG_NAME(xte_cut) (DBG_PARAMS xml_entity_t * xe, query_instance_t *qi)
   tgt_xte->xte_stack_max = newstack + stack_elems;
   tgt_xte->xte_current = tgt_xtd->xtd_tree = tree_copy;
   tgt_xte->xte_child_no = 0;
-  tgt_xtd->xd_qi = qi;
+  tgt_xtd->xd_qi = qi_top_qi (qi);
   tgt_xtd->xd_top_doc = (xml_doc_t *) tgt_xtd;
   tgt_xtd->xd_ref_count = 1;
   tgt_xtd->xd_default_lh = src_xtd->xd_default_lh;
