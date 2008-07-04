@@ -521,6 +521,10 @@ ts_print (table_source_t * ts)
 static void
 node_print (data_source_t * node)
 {
+  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
+  if (!qi || qi->qi_trx->lt_threads != 1)
+    GPF_T;
+  QI_CHECK_STACK (qi, &node, 10000);
   qn_input_fn in = node->src_input;
   if (node->src_pre_code)
     {
@@ -910,6 +914,10 @@ qr_print_params (query_t * qr)
 static void
 qr_print (query_t * qr)
 {
+  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
+  if (!qi || qi->qi_trx->lt_threads != 1)
+    GPF_T;
+  QI_CHECK_STACK (qi, &qr, 10000);
   stmt_printf (("{ %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
   qr_print_params (qr);
   node_print (qr->qr_head_node);

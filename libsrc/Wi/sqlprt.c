@@ -30,9 +30,6 @@
 #include "sqlbif.h"
 
 #define REPORT_BUF_MAX		4000
-#define TA_REPORT_BUFFER	1212
-#define TA_REPORT_PTR		1213
-
 
 void
 trset_start (caddr_t * qst)
@@ -46,6 +43,7 @@ trset_start (caddr_t * qst)
   buf[0] = 0;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, buf);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, buf);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST, qst);
 
   sbox = (state_slot_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   memset (&sample, 0, sizeof (sample));
@@ -56,7 +54,7 @@ trset_start (caddr_t * qst)
   sample.ssl_dtp = DV_SHORT_STRING;
   sample.ssl_prec = REPORT_BUF_MAX;
 
-  bif_result_names_impl (qst, &err, sbox, QT_SELECT);
+  bif_result_names_impl (qst, &err, sbox, QT_PROC_CALL);
 
   dk_free_box ((caddr_t) sbox);
   dk_free_box (sample.ssl_name);
@@ -121,6 +119,7 @@ trset_end (void)
   char *report_linebuf;
   char *report_ptr;
   char *line;
+  caddr_t ret;
 
   report_linebuf = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER);
   report_ptr = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR);
@@ -133,7 +132,11 @@ trset_end (void)
       dk_free_box (line);
     }
   dk_free_box (report_linebuf);
+  ret = list (2, (caddr_t) QA_PROC_RETURN, (caddr_t) 0);
+  PrpcAddAnswer ((caddr_t) ret, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+  dk_free_box (ret);
 
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, NULL);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, NULL);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST, NULL);
 }
