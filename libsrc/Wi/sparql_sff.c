@@ -25,6 +25,7 @@
 #include "sqlparext.h"
 #include "arith.h"
 #include "sqlcmps.h"
+#include "http.h" /* for DKS_ESC_CHARCLASS_ACTION and DKS_ESC_URI */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,8 +34,10 @@ extern "C" {
 }
 #endif
 
+
 #define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
-#define isURIescapedchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c)))
+/* This was: #define isplainURIchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c))) */
+#define isplainURIchar(c) ('\0' == DKS_ESC_CHARCLASS_ACTION((unsigned)(c), DKS_ESC_URI))
 
 int
 sprintff_is_proven_bijection (const char *f)
@@ -413,8 +416,9 @@ again:
                 goto generic_tails; /* Syntax error -- no 'U' after "%{connvar}" */
               /* There exists one special case that does not depend on format type and contex: identical connecton variables with identical formatting will always match */
               if (((f1_tail - f1) == (f2_tail - f2)) &&
-                  !memcpy (f1, f2, (f1_tail - f1)) )
-                goto res_tail_gets_f2_v;
+                  (f1_last_replaced != f1) && (f2_last_replaced != f2) &&
+                  !memcmp (f1, f2, (f1_tail - f1)) )
+                goto res_tail_shifts_f1_v_gets_f2_v; /* see below */
             }
       else
         {
@@ -487,7 +491,7 @@ f1_v_is_D:
             {
     case 'D': goto res_tail_gets_f2_v; /* see below */
     case 'U':
-      if (isURIescapedchar (f1_tail[0]) || isURIescapedchar (f2_tail[0]))
+      if (isplainURIchar (f1_tail[0]) || isplainURIchar (f2_tail[0]))
         goto res_tail_gets_f1_v; /* see below */
       if (('%' != f1_tail[0]) && ('%' != f2_tail[0]))
         {
@@ -503,12 +507,12 @@ f1_v_is_D:
         }
 
 f1_v_is_U:
-  if (isURIescapedchar (f1_tail[0]))
+  if (isplainURIchar (f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f1 may match any %U-like chars, f2 vars (%U to %U, %d to %d, %s to %U) */
   if ('\0' == f2_v)
     {
-      if (isURIescapedchar (f2_fix))
+      if (isplainURIchar (f2_fix))
         goto res_tail_gets_f2_fix; /* see below */
       if (f1_tail[0] == f2_fix) /* unambiguous synchronisation between f1 and f2... */
         {
@@ -571,9 +575,17 @@ f1_v_is_s:
   goto generic_tails; /* see below */
 
 res_tail_gets_f1_v:
-  while (f1 < f1_tail)
-    (res_tail++)[0] = (f1++)[0];
+  while (f1 < f1_tail) (res_tail++)[0] = (f1++)[0];
   f2_last_replaced = f2;
+  goto again; /* see above */
+
+res_tail_shifts_f1_v_gets_f2_v:
+#ifndef NDEBUG
+  if ('\0' != f2_fix)
+    GPF_T1("res_tail_shifts_f1_v_gets_f2_v with f2_fix");
+#endif
+  while (f2 < f2_tail) (res_tail++)[0] = (f2++)[0];
+  f1 = f1_tail;
   goto again; /* see above */
 
 res_tail_gets_f2_v:
@@ -581,8 +593,7 @@ res_tail_gets_f2_v:
   if ('\0' != f2_fix)
     GPF_T1("res_tail_gets_f2 with f2_fix");
 #endif
-  while (f2 < f2_tail)
-    (res_tail++)[0] = (f2++)[0];
+  while (f2 < f2_tail) (res_tail++)[0] = (f2++)[0];
   f1_last_replaced = f1;
   goto again; /* see above */
 
@@ -807,22 +818,22 @@ f2_v_is_D:
   GPF_T; /* never reached */
 
 f2_v_is_U:
-  if (isURIescapedchar (f2_tail[0]))
+  if (isplainURIchar (f2_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f2 may match any %U-like chars */
   s1_tail = s1;
   for (;;)
     {
-      switch (s1_tail[0])
+      if (!isplainURIchar (s1_tail[0]))
         {
-        case '\0': case '/': case '?': case '=': case '#':
           if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
             goto tails_are_in_sync; /* see below */
           if ('\0' == f2_tail[0])
             return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
           return SFF_ISECT_DISJOIN;
-        default: s1_tail++; continue;
         }
+      else
+        s1_tail++;
     }
   GPF_T; /* never reached */
 
