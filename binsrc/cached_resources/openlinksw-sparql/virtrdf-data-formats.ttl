@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2008-06-19 0001' ;
+  virtrdf:version '2008-07-02 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -39,6 +39,9 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
     rdfdf:multipart-uri ,			rdfdf:multipart-uri-nullable ,
     rdfdf:multipart-uri-fn-nullable ,
     rdfdf:multipart-literal-fn-nullable ,
+    rdfdf:zeropart-uri ,			rdfdf:zeropart-uri-nullable ,
+    rdfdf:zeropart-uri-fn-nullable ,
+    rdfdf:zeropart-literal-fn-nullable ,
     rdfdf:sql-varchar-uri-fn ,			rdfdf:sql-varchar-uri-fn-nullable ,
     rdfdf:sql-integer-uri-fn ,			rdfdf:sql-integer-uri-fn-nullable ,
     rdfdf:sql-numeric-uri-fn ,			rdfdf:sql-numeric-uri-fn-nullable ,
@@ -1039,6 +1042,172 @@ rdfdf:multipart-literal-fn-nullable
 .
 
 rdfdf:multipart-literal-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
+rdfdf:zeropart-uri
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:qmfName "zeropart-uri";
+  virtrdf:qmfShortTmpl "0 /*zeropart*/";					# STRING REQUIRED "short" value template, can be NULL
+  virtrdf:qmfLongTmpl " iri_to_id (sprintf_iri (^{custom-string-1}^))";		# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_iri (^{custom-string-1}^)";			# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
+# Templates of booleans that tell whether the short is of some sort:
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
+# Templates that convert short value into other types (can be applied to both field and not field expression)
+  virtrdf:qmfLongOfShortTmpl " iri_to_id (sprintf_iri (^{custom-string-1}^))";	# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_iri (^{custom-string-1}^)";		# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";	# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
+  virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
+  virtrdf:qmfIidOfShortTmpl " iri_to_id (sprintf_iri (^{custom-string-1}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_iri (^{custom-string-1}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_iri (^{custom-string-1}^)";		# STRING REQUIRED ... SQL representation of the STRING value of short
+# Templates of expressions that make short values from other representations
+  virtrdf:qmfShortOfTypedsqlvalTmpl "0 /*zeropart*/";				# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfSqlvalTmpl "0 /*zeropart*/";				# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
+  virtrdf:qmfShortOfLongTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by long
+  virtrdf:qmfShortOfUriTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by uri
+# Misc
+  virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
+  virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
+  virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " NULL";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+# Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 0;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
+  virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
+  virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_NOT_NULL;
+#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
+  virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
+  virtrdf:qmfSuperFormats rdfdf:zeropart-uri-SuperFormats
+.
+
+rdfdf:zeropart-uri-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+  rdf:_1 rdfdf:zeropart-uri-nullable;
+.
+
+rdfdf:zeropart-uri-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:zeropart-uri;
+  virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
+  virtrdf:qmfValRange-rvrRestrictions							# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI;
+  virtrdf:qmfName "zeropart-uri-nullable";
+  virtrdf:qmfLongTmpl " iri_to_id (sprintf_iri_or_null (^{custom-string-1}^))";		# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_iri_or_null (^{custom-string-1}^)";			# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfLongOfShortTmpl " iri_to_id (sprintf_iri_or_null (^{custom-string-1}^))";	# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_iri_or_null (^{custom-string-1}^)";		# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfIidOfShortTmpl " iri_to_id (sprintf_iri_or_null (^{custom-string-1}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_iri_or_null (^{custom-string-1}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_iri_or_null (^{custom-string-1}^)";		# STRING REQUIRED ... SQL representation of the STRING value of short
+  virtrdf:qmfSuperFormats rdfdf:zeropart-uri-nullable-SuperFormats
+.
+
+rdfdf:zeropart-uri-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
+rdfdf:zeropart-uri-fn-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:qmfName "zeropart-uri-fn-nullable";
+  virtrdf:qmfShortTmpl "0 /*zeropart*/";	# STRING REQUIRED "short" value template, can be NULL
+  virtrdf:qmfLongTmpl " iri_to_id (^{custom-verbatim-1}^ ())";			# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ ()";				# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
+# Templates of booleans that tell whether the short is of some sort:
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
+# Templates that convert short value into other types (can be applied to both field and not field expression)
+  virtrdf:qmfLongOfShortTmpl " iri_to_id (^{custom-verbatim-1}^ ())";		# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
+  virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
+  virtrdf:qmfIidOfShortTmpl " iri_to_id (^{custom-verbatim-1}^ ())";
+  virtrdf:qmfUriOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... SQL representation of the STRING value of short
+# Templates of expressions that make short values from other representations
+  virtrdf:qmfShortOfTypedsqlvalTmpl "0 /*zeropart*/";				# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfSqlvalTmpl "0 /*zeropart*/";				# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
+  virtrdf:qmfShortOfLongTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by long
+  virtrdf:qmfShortOfUriTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by uri
+# Misc
+  virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
+  virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
+  virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " NULL";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+# Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 0;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
+  virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
+  virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
+#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
+  virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
+  virtrdf:qmfSuperFormats rdfdf:zeropart-uri-fn-nullable-SuperFormats
+.
+
+rdfdf:zeropart-uri-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
+rdfdf:zeropart-literal-fn-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:qmfName "zeropart-literal-fn-nullable";
+  virtrdf:qmfShortTmpl "0 /*zeropart*/";	# STRING REQUIRED "short" value template, can be NULL
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{custom-verbatim-1}^ ())";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ ()";					# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfBoolTmpl " NULL";								# STRING REQUIRED Boolean value template, can be NULL
+# Templates of booleans that tell whether the short is of some sort:
+  virtrdf:qmfIsrefOfShortTmpl " 0";							# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";							# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsblankOfShortTmpl " 0";							# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";							# STRING REQUIRED ... whether the short is literal
+# Templates that convert short value into other types (can be applied to both field and not field expression)
+  virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_LONG_OF_SQLVAL (^{custom-verbatim-1}^ ())";	# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ ()";				# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfDatatypeOfShortTmpl " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{custom-verbatim-1}^ ())";# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfLanguageOfShortTmpl " NULL";						# STRING REQUIRED ... language ID STRING from short
+  virtrdf:qmfBoolOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";			# STRING REQUIRED ... boolean value from short
+  virtrdf:qmfIidOfShortTmpl " iri_to_id (cast (^{custom-verbatim-1}^ () as varchar))";
+  virtrdf:qmfUriOfShortTmpl " cast (^{custom-verbatim-1}^ ())";				# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{custom-verbatim-1}^ () as varchar)";	# STRING REQUIRED ... SQL representation of the STRING value of short
+# Templates of expressions that make short values from other representations
+  virtrdf:qmfShortOfTypedsqlvalTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfSqlvalTmpl "0 /*zeropart*/";					# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
+  virtrdf:qmfShortOfLongTmpl "0 /*zeropart*/";						# STRING REQUIRED ... makes short by long
+  virtrdf:qmfShortOfUriTmpl "0 /*zeropart*/";	# STRING REQUIRED ... makes short by literal
+# Misc
+  virtrdf:qmfIsBijection 0;								# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfIsStable 0;								# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
+  virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
+  virtrdf:qmfTypeminTmpl " NULL";							# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " NULL";							# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+# Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 0;								# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
+  virtrdf:qmfOkForAnySqlvalue 0;							# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
+  virtrdf:qmfValRange-rvrRestrictions							# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_LIT;
+#  virtrdf:qmfValRange-rvrDatatype "";							# STRING OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";						# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfFixedValue "";								# ANY OPTIONAL Value of stored values, if fixed
+  virtrdf:qmfUriIdOffset 0;								# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
+  virtrdf:qmfSuperFormats rdfdf:zeropart-literal-fn-nullable-SuperFormats
+.
+
+rdfdf:zeropart-literal-fn-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
 .
 
