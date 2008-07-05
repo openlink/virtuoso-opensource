@@ -44,7 +44,11 @@ public class VirtuosoStatement implements Statement
    // Parameters for a prepared statement
    protected openlink.util.Vector parameters, objparams;
 
+#if JDK_VER >= 12
+   protected LinkedList batch;
+#else
    protected openlink.util.Vector batch;
+#endif
 
    // The concurrency to use for this Statement
    private int concurrency;
@@ -770,9 +774,15 @@ public class VirtuosoStatement implements Statement
       if(sql == null)
          return;
       if(batch == null)
+#if JDK_VER >= 12
+         batch = new LinkedList();
+      // Add the sql request at the end
+      batch.add(sql);
+#else
          batch = new openlink.util.Vector(10,10);
       // Add the sql request at the end
       batch.addElement(sql);
+#endif
    }
 
    /**
@@ -784,7 +794,11 @@ public class VirtuosoStatement implements Statement
    {
       // Check if the batch vector exists
       if(batch != null)
+#if JDK_VER >= 12
+         batch.clear();
+#else
          batch.removeAllElements();
+#endif
    }
 
    /**
@@ -804,14 +818,23 @@ public class VirtuosoStatement implements Statement
       int[] result = new int[batch.size()];
       int[] outres = null;
       int outcount = 0;
+      int i;
       // Flag to say if there's a problem
       boolean error = false;
-      for(int i = 0;batch.size() != 0;i++)
+#if JDK_VER >= 12
+      i = 0;
+      for(ListIterator it = batch.listIterator(); it.hasNext(); )
+#else
+      for(i = 0; i < batch.size; i++)
+#endif
       {
          try
          {
-            String stmt = (String)batch.firstElement();
-            batch.removeElementAt(0);
+#if JDK_VER >= 12
+            String stmt =  (String)it.next();
+#else
+            String stmt = (String)batch.elementAt(i);
+#endif
             VirtuosoResultSet rset = sendQuery(stmt);
             result[i] = rset.getUpdateCount();
             if(rset.kindop()==VirtuosoTypes.QT_SELECT)
@@ -826,11 +849,19 @@ public class VirtuosoStatement implements Statement
             result[i] = -3;
          }
          outcount++;
+#if JDK_VER >= 12
+         i++;
+#endif
       }
+#if JDK_VER >= 12
+      batch.clear();
+#else
+      batch.removeAllElements();
+#endif
       if(error)
       {
          outres = new int[outcount];
-         for (int i=0;i<outcount;i++)
+         for (i=0; i<outcount; i++)
            outres[i]=result[i];
          throw new BatchUpdateException(outres);
       }
