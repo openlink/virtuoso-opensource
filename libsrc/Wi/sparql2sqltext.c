@@ -3691,9 +3691,9 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   else
             ssg_print_tmpl (ssg, field->qmvFormat, qmf->qmfShortOfSqlvalTmpl, tabid, field, (SPART *)litvalue, eq_asname);
     }
+      if (0 != col_count)
+        return;
     }
-  else
-    {
       ssg_print_where_or_and (ssg, "field equal to literal, full test");
       if (print_outer_filter)
         ssg_print_scalar_expn (ssg, rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -3701,7 +3701,6 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   ssg_puts (" =");
       ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)litvalue);
-    }
 }
 
 void
@@ -3745,8 +3744,10 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       ssg_puts (" =");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfShortOfUriTmpl, tabid, field, (SPART *)uri, eq_asname);
     }
+      if (0 != col_count)
+        return;
     }
-  else if (!(SPART_VARR_IS_REF & field_restr) ||
+  if (!(SPART_VARR_IS_REF & field_restr) ||
       (strlen (field->qmvFormat->qmfStrsqlvalOfShortTmpl) >
       strlen (field->qmvFormat->qmfLongOfShortTmpl) ) )
     {
@@ -4157,7 +4158,7 @@ if (NULL != jright_alias)
           ssg_puts (" =");
               ssg_print_scalar_expn (ssg, (SPART *)(eq->e_rvr.rvrFixedValue), vmode, eq_idx_asname);
             }
-          if (! (SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions))
+          if ((0 == col_count) || !(SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions))
             {
               ssg_print_where_or_and (ssg, "fixed value of equiv class (sqlval)");
               ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -4203,6 +4204,13 @@ if (NULL != jright_alias)
               ssg_print_tr_var_expn (ssg, var_rv, vmode, eq_idx_asname);
           ssg_puts (" =");
               ssg_print_scalar_expn (ssg, glob_rv, vmode, eq_idx_asname);
+            }
+          if (0 == col_count)
+            {
+              ssg_print_where_or_and (ssg, "global param value of equiv class (sqlval for 0 cols)");
+              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_puts (" =");
+              ssg_print_scalar_expn (ssg, glob_rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
         }
       if (SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions)
@@ -4253,7 +4261,7 @@ print_cross_equalities:
             ssg_puts (" /* note SSG_VALMODE_LONG: */");
 #endif
           if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))
-            {
+            { /* Note special zeropart case below */
               qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var);
               col_count = BOX_ELEMENTS (qmv->qmvColumns);
             }
@@ -4275,6 +4283,13 @@ print_cross_equalities:
               ssg_print_tr_var_expn (ssg, var, common_native, eq_idx_asname);
           ssg_puts (" =");
               ssg_print_tr_var_expn (ssg, var2, common_native, eq_idx_asname);
+            }
+          if ((0 == col_count) && (SSG_VALMODE_AUTO == common_native))
+            { /* Two zeropart values of same class are always equal, the check is needed only if (SSG_VALMODE_AUTO == common_native) */
+              ssg_print_where_or_and (ssg, "two fields belong to same equiv (sqlval for for zeropart)");
+              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_puts (" =");
+              ssg_print_tr_var_expn (ssg, var2, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
         }
 
@@ -4308,7 +4323,7 @@ print_field_and_retval_equalities:
             ssg_puts (" /* note SSG_VALMODE_LONG: */");
 #endif
           if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))
-            {
+            { /* Note special zeropart case below */
               qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var);
               col_count = BOX_ELEMENTS (qmv->qmvColumns);
             }
@@ -4321,6 +4336,13 @@ print_field_and_retval_equalities:
               ssg_print_tr_var_expn (ssg, var, common_native, eq_idx_asname);
           ssg_puts (" =");
               ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, common_native, eq_idx_asname);
+            }
+          if ((0 == col_count) && (SSG_VALMODE_AUTO == common_native))
+            { /* Two zeropart values of same class are always equal, the check is needed only if (SSG_VALMODE_AUTO == common_native) */
+              ssg_print_where_or_and (ssg, "field and retval belong to same equiv (sqlval for zeropart)");
+              ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_puts (" =");
+              ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_SQLVAL, NULL_ASNAME);
             }
         }
     }
@@ -4392,6 +4414,7 @@ print_field_and_retval_equalities:
           ssg_puts (" =");
               ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, common_native, eq_asname);
             }
+          /* There's no special zeropart case here because each returned subvalue is tested in sub gp, if needed */
         }
     }
 }
