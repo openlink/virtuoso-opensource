@@ -49,6 +49,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
 {
     create virtrdf:TPCH as graph iri ("http://^{URIQADefaultHost}^/tpch") option (exclusive)
     {
+# Customers
         tpch:customer (customers.C_NAME, customers.C_CUSTKEY)
             a  tpch:customer
                 as virtrdf:customer-tpch-type ;
@@ -61,7 +62,6 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             tpch:companyName customers.C_NAME
                 as virtrdf:customer-c_name ;
             tpch:has_nation tpch:nation (nations.N_NAME, customers.C_NATIONKEY)
-                where (^{nations.}^.N_NATIONKEY = ^{customers.}^.C_NATIONKEY)
                 as virtrdf:customer-c_nationkey ;
             tpch:address customers.C_ADDRESS
                 as virtrdf:customer-c_address ;
@@ -76,9 +76,9 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             tpch:comment customers.C_COMMENT
                 as virtrdf:customer-c_comment .
 
+# Nations
         tpch:nation (nations.N_NAME, customers.C_NATIONKEY)
             tpch:nation_of tpch:customer (customers.C_NAME, customers.C_CUSTKEY)
-            where (^{nations.}^.N_NATIONKEY = ^{customers.}^.C_NATIONKEY)
             as virtrdf:customer-nation_of .
 
         tpch:lineitem (lineitems.L_ORDERKEY, lineitems.L_LINENUMBER)
@@ -132,6 +132,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             where (^{suppliers.}^.S_SUPPKEY = ^{lineitems.}^.L_SUPPKEY)
             as virtrdf:lineitem-supplier_of .
 
+# Nation
         tpch:nation (nations.N_NAME, nations.N_NATIONKEY)
             a tpch:nation
                 as virtrdf:nation-nations ;
@@ -148,6 +149,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             where (^{regions.}^.R_REGIONKEY = ^{nations.}^.N_REGIONKEY)
             as virtrdf:nation-region_of .
 
+# Order
         tpch:order (orders.O_ORDERKEY)
             a tpch:order
                 as virtrdf:order-orders ;
@@ -176,6 +178,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             where (^{orders.}^.O_CUSTKEY = ^{customers.}^.C_CUSTKEY)
             as virtrdf:order-customer_of .
 
+# Part
         tpch:part (parts.P_NAME, parts.P_PARTKEY)
             a tpch:part
                 as virtrdf:part-parts ;
@@ -196,6 +199,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             tpch:comment parts.P_COMMENT
                 as virtrdf:part-p_comment .
 
+# Partsupp
         tpch:partsupp (partsupps.PS_PARTKEY, partsupps.PS_SUPPKEY)
             a tpch:partsupp
                 as virtrdf:partsupp-partsupps ;
@@ -222,6 +226,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             where (^{suppliers.}^.S_SUPPKEY = ^{partsupps.}^.PS_SUPPKEY)
             as virtrdf:partsupp-supplier_of .
 
+# Region
         tpch:region (regions.R_NAME, regions.R_REGIONKEY)
             a tpch:region
                 as virtrdf:region-regions ;
@@ -230,6 +235,7 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
             tpch:comment regions.R_COMMENT
                 as virtrdf:region-r_comment .
 
+# Supplier
         tpch:supplier (suppliers.S_NAME, suppliers.S_SUPPKEY)
             a tpch:supplier
                 as virtrdf:supplier-suppliers ;
