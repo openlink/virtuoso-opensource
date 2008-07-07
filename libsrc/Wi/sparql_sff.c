@@ -798,7 +798,7 @@ again:
     }
 
 f2_v_is_D:
-  if (isdatechar (f2_tail[0]))
+  if (isdatechar (f2_tail[0]) || ('%' == f2_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%D' in f2 may match any %D-like chars */
   s1_tail = s1;
@@ -818,7 +818,7 @@ f2_v_is_D:
   GPF_T; /* never reached */
 
 f2_v_is_U:
-  if (isplainURIchar (f2_tail[0]))
+  if (isplainURIchar (f2_tail[0]) || ('%' == f2_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%U' in f2 may match any %U-like chars */
   s1_tail = s1;
