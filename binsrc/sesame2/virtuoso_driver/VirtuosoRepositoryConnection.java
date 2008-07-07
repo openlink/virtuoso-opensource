@@ -1720,22 +1720,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		PreparedStatement ps = null;
 
-		String s = "?s";
-		String p = "?p";
-		String o = "?o";
-
-		if (subject != null)
-			s = stringForResource(subject);
-
-		if (predicate != null)
-			p = stringForURI(predicate);
-
-		if (object != null)
-			o = stringForValue(object);
+		String S = "";
+		String P = "";
+		String O = "";
 
 		try {
 
-		    if (subject != null && predicate != null && object != null && context != null) {
+		    if (subject == null && predicate == null && object == null && context != null) {
+			String  query = "sparql clear graph iri(??)";
+
+			ps = getQuadStoreConnection().prepareStatement(query);
+			ps.setString(1, context.stringValue());
+			ps.execute();
+
+		    } else if (subject != null && predicate != null && object != null && context != null) {
 
 		    	ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
@@ -1747,14 +1745,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		    } else {
 
+			if (subject != null)
+				S = stringForResource(subject)+" ?p ?o ."  ;
+
+			if (predicate != null)
+				P = "?s "+stringForURI(predicate)+" ?o .";
+
+			if (object != null)
+				O = "?s ?p "+stringForValue(object)+" .";
+
 			// s = s.replaceAll("'", "''");
 			// p = p.replaceAll("'", "''");
 			// o = o.replaceAll("'", "''");
 		    	
 		    	// context should not be null at this point, at the least, it will be a wildcard
+
 		        String query = "sparql delete from graph <"+context+
   				"> {?s ?p ?o} where {?s ?p ?o . "
-  				+ s + " ?p ?o . ?s "+ p +" ?o . ?s ?p "+ o +" .}";
+  				+ S +" "+ P +" "+ O +" }";
 
 		    	java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 		    	stmt.execute(query);
