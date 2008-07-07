@@ -34,8 +34,7 @@ create iri class northwind:Product   "http://^{URIQADefaultHost}^/Northwind/Prod
 create iri class northwind:Customer "http://^{URIQADefaultHost}^/Northwind/Customer/%U#this" (in customer_id varchar not null) .
 create iri class northwind:Employee
   "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this"
-  (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
-  option (bijection) .
+  (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class northwind:Order "http://^{URIQADefaultHost}^/Northwind/Order/%d#this" (in order_id integer not null) .
 create iri class northwind:CustomerContact
   "http://^{URIQADefaultHost}^/Northwind/CustomerContact/%U#this"

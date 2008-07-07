@@ -35,8 +35,7 @@ create iri class northwind:DLF-Product   "^{DynamicLocalFormat}^/Northwind/Produ
 create iri class northwind:DLF-Customer "^{DynamicLocalFormat}^/Northwind/Customer/%U#this" (in customer_id varchar not null) .
 create iri class northwind:DLF-Employee
   "^{DynamicLocalFormat}^/Northwind/Employee/%U%U%d#this"
-  (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
-  option (bijection) .
+  (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class northwind:DLF-Order "^{DynamicLocalFormat}^/Northwind/Order/%d#this" (in order_id integer not null) .
 create iri class northwind:DLF-CustomerContact
   "^{DynamicLocalFormat}^/Northwind/CustomerContact/%U#this"
@@ -270,7 +269,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as northwind:DLF-map-Employee-notes ;
                         northwind:employeeID employees.EmployeeID
                                 as northwind:DLF-map-Employee-key ;
-                        northwind:reportsTo northwind:DLF-Employee(employees2.FirstName, employees2.LastName, employees2.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees2.}^.EmployeeID)
+                        northwind:reportsTo northwind:DLF-Employee(employees2.FirstName, employees2.LastName, employees2.EmployeeID) where (^{employees.}^.ReportsTo = ^{employees2.}^.EmployeeID)
                                 as northwind:DLF-map-Employee-reports_to ;
                         foaf:img northwind:DLF-EmployeePhoto(employees.EmployeeID)
                                 as northwind:DLF-map-Employee-employees.EmployeePhoto ;
@@ -281,7 +280,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as northwind:DLF-map-Employee-employees.EmployeePhotoId ;
                         rdfs:isDefinedBy northwind:DLF-EmployeePhoto (employees.EmployeeID) .
 
-                northwind:DLF-Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
+                northwind:DLF-Employee (employees.FirstName, employees.LastName, employees.EmployeeID)
                         northwind:is_salesrep_of
                 northwind:DLF-Order (orders.OrderID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID) as northwind:DLF-map-Order-is_salesrep_of .
 
