@@ -3245,6 +3245,8 @@ create table SYS_ROLE_GRANTS (
 . . .
   primary key (GI_SUPER, GI_SUB, GI_DIRECT));
 ]]></programlisting>
+<para>One IRI class usually corresponds to one ontology class, because similar things are usually called similarly.
+One may wish to use identifiers of ontology classes as identifiers of related IRI classes, to not remember double number of names, e.g. <emphasis>create IRI class mybank:XpressXfer</emphasis> for subjects that will have <emphasis>rdf:type</emphasis> property <emphasis>mybank:XpressXfer</emphasis> made by mapping. That is technically possible but proven to become inconvenient and misleading as application evolves. While RDF types tend to persist, IRI classes may change over time or same subject may get more than one name via more than one IRI class, say, for exports to different systems. It is found to be more convenient to compose names of IRI classes by adding some common prefixes or suffixes to RDF classes (or to table names), say, write <emphasis>create IRI class mybank:XpressXfer_iri</emphasis>.</para>
 </sect3>
 <sect3 id="rdfviewliteralclasses"><title>Literal Classes</title>
 <para>
@@ -6000,15 +6002,29 @@ compares IRIs instead of comparing arguments of <link
 linkend="fn_sprintf_iri"><function>sprintf_iri</function></link>
 because the format string is not proven to be a bijection. Indeed it
 can not be bjection for arbitrary strings, but the database is about
-real world. If it is known that real names of persons never end with
-digit and digits of <emphasis>%U%U%d</emphasis> fragment will always
-come from unique identifier then the IRI class can be declared as a
-bijection even if it is not mathematically true. So the sample script
-can be edited to include <emphasis>option (bijection)</emphasis> as
+real world. If it is known that real names of persons never start with
+digit so digits of <emphasis>%d%U</emphasis> fragment will always
+be distinguishable from name then the IRI class can be declared as a
+bijection even if it is not true for arbitrary strings; the script
+can include &quot;suspicious&quot; <emphasis>option (bijection)</emphasis> as
 follows:</para>
-
+<programlisting><![CDATA[
+create iri class sample:Employee "http://example.com/Employee/%d%U#this"
+  (in employee_id integer not null, in employee_lastname varchar not null)
+  option (bijection) .
+]]></programlisting>
+<para>Unfortunately, the attempt of making same trick with the declaration from Northwind example will fail:</para>
 <programlisting><![CDATA[
 create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this"
+  (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
+  option (bijection) .
+]]></programlisting>
+<para>Bijection will allow the parsing but it will never give proper result, because first <emphasis>%U</emphasis> will read the whole concatenation of <emphasis>%U%U%d</emphasis>, leave nothing before <emphasis>#this</emphasis> for second <emphasis>%U</emphasis> (that is wrong) and leave nothing for <emphasis>%d</emphasis> (that is explicit parse error, as integer notation can not be empty)</para>.
+<para>The string parser will process the string from left to right so it will be unable to parse the string.
+The compiler might sometimes report an error if it can prove that the format string is not appropriate for bijection.</para>
+<para>The proper way of improving the Northwind example is to make true and reliable bijection by adding strong delimiters:</para>
+<programlisting><![CDATA[
+create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U/%U/%d#this"
   (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null)
   option (bijection) .
 ]]></programlisting>
