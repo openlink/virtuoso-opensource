@@ -62,11 +62,11 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 16;
+   protected static final int minor = 17;
 
    // Some variables
    private String host, port, user, password, database, charset, pwdclear;
-	private Integer timeout;
+	private Integer timeout, log_enable;
 #ifdef SSL
    private String keystore_cert, keystore_pass, keystore_path;
    private String ssl_provider;
@@ -152,6 +152,7 @@ public class Driver implements java.sql.Driver
             if(password!=null) info.put("password",password);
             if(database!=null) info.put("database",database);
             if(timeout!=null) info.put("timeout",timeout);
+            if(log_enable!=null) info.put("log_enable",log_enable);
             if(charset!=null) info.put("charset",charset);
             if(pwdclear!=null) info.put("pwdclear",pwdclear);
 #ifdef SSL
@@ -260,6 +261,9 @@ public class Driver implements java.sql.Driver
          if((j = part2.toLowerCase().indexOf("/timeout=")) >= 0)
             timeout = new Integer((part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
                 part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/")));
+         if((j = part2.toLowerCase().indexOf("/log_enable=")) >= 0)
+            log_enable = new Integer((part2.substring(j + 12).indexOf("/") < 0) ? part2.substring(j + 12) :
+                part2.substring(j + 12, j + 12 + part2.substring(j + 12).indexOf("/")));
          if((j = part2.toLowerCase().indexOf("/charset=")) >= 0)
             charset = (part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
                 part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/"));

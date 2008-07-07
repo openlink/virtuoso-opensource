@@ -188,7 +188,7 @@ public class VirtuosoConnection implements Connection
       rdf_type_rev = new Hashtable ();
       rdf_lang_rev = new Hashtable ();
       // Connect to the database
-      connect(host,port,(String)prop.get("database"));
+      connect(host,port,(String)prop.get("database"), (prop.get("log_enable") != null ? ((Number)prop.get("log_enable")).intValue() : -1));
    }
 
    /**
@@ -200,12 +200,15 @@ public class VirtuosoConnection implements Connection
     * @exception	virtuoso.jdbc2.VirtuosoException	An error occurred during the
     * connection.
     */
-   private void connect(String host, int port,String db) throws VirtuosoException
+   private void connect(String host, int port,String db, int log_enable) throws VirtuosoException
    {
       // Connect to the database
       connect(host,port);
       // Set database with statement
       if(db!=null) new VirtuosoStatement(this).executeQuery("use "+db);
+      //System.out.println  ("log enable="+log_enable);
+      if (log_enable >= 0 && log_enable <= 3)
+        new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")"); 
    }
 
    private long cdef_param (openlink.util.Vector cdefs, String name, long deflt)
@@ -411,6 +414,8 @@ public class VirtuosoConnection implements Connection
 			 socket.setSoTimeout(timeout*1000);
 			 txn_timeout = (int) (cdef_param (client_defaults, "SQL_TXN_TIMEOUT", txn_timeout * 1000)/ 1000);
 			 //System.err.println ("txn timeout = " + txn_timeout);
+			 trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
+			 //System.err.println ("txn isolation = " + trxisolation);
 
 			 utf8_execs = cdef_param (client_defaults, "SQL_UTF8_EXECS", 0) != 0;
 			 //System.err.println ("utf8_execs = " + utf8_execs);
