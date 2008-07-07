@@ -2659,13 +2659,13 @@ create procedure CAL.WA.d_decode (
   if (length (t_part) > 1)
   {
 	  secs := 0;
-	  regexp := regexp_parse ('P([0-9]+D)?([0-9]+M)?', t_part, 0);
+	  regexp := regexp_parse ('P([0-9]+D)?([0-9]+W)?', t_part, 0);
 	  if (regexp is null)
 	    return 0;
-	  if (aref (regexp, 2) <> -1)
+	  if (length (regexp) > 2 and regexp[2] <> -1)
 	    secs := secs + 24 * 3600 * atoi (subseq (t_part, regexp[2], regexp[3]));
-	  if (aref (regexp, 4) <> -1)
-	    secs := secs + 24 * 3600 * 30 * atoi (subseq (t_part, regexp[4], regexp[5]));
+	  if (length (regexp) > 4 and regexp[4] <> -1)
+	    secs := secs + 24 * 3600 * 7 * atoi (subseq (t_part, regexp[4], regexp[5]));
 	  retValue := retValue + secs;
   }
   retValue := retValue * t_sign;
