@@ -2,3 +2,5 @@ lib
 out.driver
 out.examples
 doc
+Makefile
+Makefile.in
