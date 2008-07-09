@@ -707,9 +707,9 @@ SQL>create procedure MY_SPARQL_REPORT(in strg varchar)
 {
   if (__tag(strg) <> 182)
     strg := cast (strg as varchar) || sprintf (' -- not a string, tag=%d', __tag(strg));
-  strg := replace (strg, SPARQL_DAV_DATA_URI(), '\044{SPARQL_DAV_DATA_URI()}');
-  strg := replace (strg, SPARQL_DAV_DATA_PATH(), '\044{SPARQL_DAV_DATA_PATH()}');
-  strg := replace (strg, SPARQL_FILE_DATA_ROOT(), '\044{SPARQL_FILE_DATA_ROOT()}');
+  strg := replace (strg, 'SPARQL_DAV_DATA_URI()', '\044{SPARQL_DAV_DATA_URI()}');
+  strg := replace (strg, 'SPARQL_DAV_DATA_PATH()', '\044{SPARQL_DAV_DATA_PATH()}');
+  strg := replace (strg, 'SPARQL_FILE_DATA_ROOT()', '\044{SPARQL_FILE_DATA_ROOT()}');
   result (strg);
 }
 ;
@@ -6993,8 +6993,16 @@ tested against the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> 
     <orderedlist>
       <listitem>Edit the sample programs VirtuosoSPARQLExampleX.java, where X = 1 to 9. Set the JDBC connection strings within to point to a valid Virtuoso Server instance of the form:
 <programlisting><![CDATA[
-"jdbc:virtuoso://localhost:1111", "dba", "dba"
+"jdbc:virtuoso://localhost:1111/charset=UTF-8/log_enable=2", "dba", "dba"
 ]]></programlisting>
+      <itemizedlist>
+         <listitem>charset=UTF-8: to work correctly with different encodings such as cirilic, etc.
+         </listitem>
+         <listitem>log_enable=2: to use row auto commit
+         </listitem>
+         <listitem>use these settings to process large rdf data.
+         </listitem>
+      </itemizedlist>
       </listitem>
       <listitem>Ensure that full paths to <emphasis>jena.jar, arq.jar,</emphasis> and
 <emphasis>virtjdbc3.jar</emphasis> are included in the active CLASSPATH setting.
@@ -7083,143 +7091,6 @@ java VirtuosoSPARQLExample9
       </listitem>
     </orderedlist>
     </sect3>
-    <sect3 id="rdfnativestorageprovidersjenaimin"><title>Implemented interfaces</title>
-<programlisting><![CDATA[
-public class VirtGraph extends GraphBase
-{
-    public VirtGraph()
-
-    public VirtGraph(String url, String user, String password)
-
-    public VirtGraph(String graphName)
-
-    public VirtGraph(String graphName, String url, String user, String password)
-
-    public String getGraphName()
-
-    public String getGraphUrl()
-
-    public String getGraphUser()
-
-    public String getGraphPassword()
-
-    public Connection getConnection()
-
-    public int getCount()
-
-    public void remove(List triples)
-
-    public void remove(Triple t)
-
-    public void performAdd(Triple t)
-
-    public void performDelete (Triple t)
-
-    protected int graphBaseSize()
-
-    protected boolean graphBaseContains(Triple t)
-
-    public ExtendedIterator graphBaseFind(TripleMatch tm)
-
-    public void close()
-
-    public void clear()
-
-    public void read (String url, String type)
-
-    public void add(List triples)
-
-    public void delete(List triples)
-
-    public ExtendedIterator reifierTriples( TripleMatch m )
-
-    public int reifierSize()
-
-    public TransactionHandler getTransactionHandler()
-
-    public BulkUpdateHandler getBulkUpdateHandler()
-}
-
-
-public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
-
-    public VirtBulkUpdateHandler(VirtGraph parent)
-
-    public void add( Triple [] triples )
-
-    protected void add(List triples, boolean notify)
-
-    public void delete( Triple [] triples )
-
-    protected void delete( List triples, boolean notify )
-}
-
-
-public class VirtTransactionHandler extends TransactionHandlerBase {
-
-	public VirtTransactionHandler(VirtGraph _graph )
-
-	public boolean transactionsSupported()
-
-	public void begin()
-
-	public void abort()
-
-	public void commit()
-
-	private void notSupported(String opName)
-}
-
-
-public class VirtModel extends ModelCom {
-    public VirtModel(VirtGraph base)
-
-    public static VirtModel createDefaultModel(String url, String user,
-	String password)
-
-    public static Model createDatabaseModel(String graphName, String url,
-    	String user, String password)
-
-    public Model removeAll()
-}
-
-
-public class VirtuosoQueryExecution
-{
-    public VirtuosoQueryExecution (String query)
-
-    public VirtuosoQueryExecution (String query, VirtGraph graph)
-
-    public ResultSet execSelect()
-
-    public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (virtuoso.jdbc3.VirtuosoResultSet VirtuosoRes)
-
-    private void AddToRes (Binding b)
-}
-
-
-public class VirtDataSource extends VirtGraph implements DataSource {
-    public void setDefaultModel(Model model)
-
-    public void addNamedModel(String name, Model model)
-
-    public void removeNamedModel(String name)
-
-    public void replaceNamedModel(String name, Model model)
-
-    public Model getDefaultModel()
-
-    public boolean containsNamedModel(String name)
-
-    public Iterator listNames()
-
-    public Lock getLock()
-
-    /** TODO */
-    public DatasetGraph asDatasetGraph()
-}
-]]></programlisting>
-    </sect3>
     <sect3 id="rdfnativestorageprovidersjenajavadoc"><title>Javadoc API Documentation</title>
     <para><ulink url="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
     </para>
@@ -7256,6 +7127,16 @@ The Provider has been tested against the <ulink url="http://sourceforge.net/proj
 <programlisting><![CDATA[
 javac VirtuosoTest.java
 ]]></programlisting>
+      <para>Note: to use utf-8 and to use row auto commit is recommended
+to add the following to the connect string:
+      </para>
+<programlisting><![CDATA[
+"/charset=UTF-8/log_enable=2"
+-- i.e. in VirtuosoTest.java the line:
+Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1], sa[2], sa[3]);
+-- should become:
+Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1]+ "/charset=UTF-8/log_enable=2", sa[2], sa[3]);
+]]></programlisting>
       </listitem>
     </orderedlist>
     </sect3>
@@ -7279,78 +7160,99 @@ java VirtuosoTest <hostname> <port> <uid> <pwd>
       <listitem>The test run should look like this --
 <programlisting><![CDATA[
 $ java VirtuosoTest localhost 1111 dba dba
-== TEST 1a : Start
-   TEST 1a: Loading data from URL: http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf
-== TEST 1a : End
-**PASSED**
 
-== TEST 1b : Start
-   TEST 1b: Clearing triple store
-== TEST 1b : End
-**PASSED**
+== TEST 1:  : Start
+   Loading data from URL: http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf
+== TEST 1:  : End
+PASSED: TEST 1
 
-== TEST 1c : Start
-   TEST 1c: Loading data from file: virtuoso_driver/data.nt
-== TEST 1c : End
-**PASSED**
+== TEST 2:  : Start
+   Clearing triple store
+== TEST 2:  : End
+PASSED: TEST 2
 
-== TEST 1d : Start
-   TEST 1d: Loading single triple
-== TEST 1d : End
-**PASSED**
+== TEST 3:  : Start
+   Loading data from file: virtuoso_driver/data.nt
+== TEST 3:  : End
+PASSED: TEST 3
 
-== TEST 1e : Start
-   TEST 1e: Casted value type
-== TEST 1e : End
-**PASSED**
+== TEST 4:  : Start
+   Loading UNICODE single triple
+== TEST 4:  : End
+PASSED: TEST 4
 
-== TEST 2 : Start
-   TEST 2: Selecting property
-== Test 2 : End
-**PASSED**
+== TEST 5:  : Start
+   Loading single triple
+== TEST 5:  : End
+PASSED: TEST 5
 
-== TEST 3 : Start
-   TEST 3: Statement does not exists
-== TEST 3 : End
-**PASSED**
+== TEST 6:  : Start
+   Casted value type
+== TEST 6:  : End
+PASSED: TEST 6
 
-== TEST 4 : Start
-   TEST 4: Statement exists
-== Test 4 : End
-**PASSED**
+== TEST 7:  : Start
+   Selecting property
+== TEST 7:  : End
+PASSED: TEST 7
 
-== TEST 5 : Start
-   TEST 5: Statement exists
-== Test 5 : End
-**PASSED**
+== TEST 8:  : Start
+   Statement does not exists
+== TEST 8:  : End
+PASSED: TEST 8
 
-== TEST 6 : Start
-   TEST 6: Retrieving namespaces
-== TEST 6 : End
-**PASSED**
+== TEST 9:  : Start
+   Statement exists (by resultset size)
+== TEST 9:  : End
+PASSED: TEST 9
 
-== TEST 7 : Start
-   TEST 7: Retrieving statement (http://mso.monrai.com/foaf/shermanMonroe http://mso.monrai.com/foaf/name null)
-== TEST 7 : End
-**PASSED**
+== TEST 10:  : Start
+   Statement exists (by hasStatement())
+== TEST 10:  : End
+PASSED: TEST 10
 
-== TEST 8 : Start
-   TEST 8: Writing the statements to file: (/Users/hughwilliams/src/Sesame/virt-sesame2/results.n3.txt)
-== TEST 8 : End
-**PASSED**
+== TEST 11:  : Start
+   Retrieving namespaces
+== TEST 11:  : End
+PASSED: TEST 11
 
-== TEST 9 : Start
-   TEST 9: Retrieving graph ids
-== TEST 9 : End
-**PASSED**
+== TEST 12:  : Start
+   Retrieving statement (http://mso.monrai.com/foaf/shermanMonroe http://mso.monrai.com/foaf/name null)
+== TEST 12:  : End
+PASSED: TEST 12
 
-== TEST 10 : Start
-   TEST 10: Retrieving triple store size
-== TEST 10 : End
-**PASSED**
+== TEST 13:  : Start
+   Writing the statements to file: (/Users/hughwilliams/src/virtuoso-opensource/binsrc/sesame2/results.n3.txt)
+== TEST 13:  : End
+PASSED: TEST 13
+
+== TEST 14:  : Start
+   Retrieving graph ids
+== TEST 14:  : End
+PASSED: TEST 14
+
+== TEST 15:  : Start
+   Retrieving triple store size
+== TEST 15:  : End
+PASSED: TEST 15
+
+== TEST 16:  : Start
+   Sending ask query
+== TEST 16:  : End
+PASSED: TEST 16
+
+== TEST 17:  : Start
+   Sending construct query
+== TEST 17:  : End
+PASSED: TEST 17
+
+== TEST 18:  : Start
+   Sending describe query
+== TEST 18:  : End
+PASSED: TEST 18
 
 ============================
-PASSED:14 FAILED:0
+PASSED:18 FAILED:0
 ]]></programlisting>
       </listitem>
     </orderedlist>

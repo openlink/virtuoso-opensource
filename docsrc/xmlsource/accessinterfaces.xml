@@ -103,7 +103,7 @@
 jdbc:virtuoso://&lt;Hostname&gt;:&lt;Port#&gt;/DATABASE=&lt;dbname&gt;/UID=&lt;user name&gt;/PWD=&lt;password&gt;/
   CERT=&lt;certificate_alias&gt;/KPATH=&lt;keystore_path&gt;/PASS=&lt;keystore_password&gt;/
   PROVIDER=&lt;ssl_provider_classname&gt;/SSL/CHARSET=&lt;character set&gt;/
-  TIMEOUT=&lt;timeout_secs&gt;/PWDTYPE=&lt;authentication_type&gt;
+  TIMEOUT=&lt;timeout_secs&gt;/PWDTYPE=&lt;authentication_type&gt;/log_enable=&lt;integer&gt;
 </programlisting>
 					<para>Each part of the URL is explained below:</para>
 					<formalpara>
@@ -177,6 +177,9 @@ jdbc:virtuoso://&lt;Hostname&gt;:&lt;Port#&gt;/DATABASE=&lt;dbname&gt;/UID=&lt;u
     <para>Specifies the authentication mode; how the user credentials may be 
     transmitted to the server.  This option can be one of the following 3 types: 
     cleartext, encrypt, digest. The default is digest.</para>
+  </formalpara>
+  <formalpara><title>/log_enable=&lt;integer&gt;</title>
+    <para>Set log_enable=2 in order to auto commit on every changed row. Out of memory cannot be caused as with this setting there is no image in the memory for rollback.</para>
   </formalpara>
     <para>"cleartext" will transfer the password to the server in cleartext</para>
     <para>"encrypt" will transfer the password to the server using Virtuoso's symmetric encryption technique.</para>
