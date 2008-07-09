@@ -256,6 +256,11 @@ public class VirtuosoResultSet implements ResultSet
       return updateCount;
    }
 
+   protected void setUpdateCount(int n)
+   {
+      updateCount = n;
+   }
+
    /**
     * Method uses with cursor scrollable (implementation of the ExtFetch RPC)
     *

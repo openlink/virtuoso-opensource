@@ -237,6 +237,38 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        }
    }
 
+   public int[] executeBatchUpdate() throws VirtuosoException
+   {
+     int[] res = new int[batch.size()];  
+     synchronized (connection)
+       {
+	 Object[] args = new Object[6];
+	 // Set arguments to the RPC function
+	 args[0] = statid;
+	 args[2] = (cursorName == null) ? args[0] : cursorName;
+	 args[1] = null;
+	 args[3] = objparams.clone();
+	 args[4] = null;
+	 try
+	   {
+	     // Put the options array in the args array
+	     args[5] = getStmtOpts();
+	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
+	     for (int inx = 0; inx < batch.size (); inx++)
+	     {
+		 vresultSet.setUpdateCount (0);
+		 vresultSet.getMoreResults ();
+		 res[inx] = vresultSet.getUpdateCount();
+	     }
+	   }
+	 catch(IOException e)
+	   {
+	     throw new VirtuosoException("Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
+	   }
+       }
+     return res;
+   }
+
    /**
     * Executes a SQL prepare statement that returns a single ResultSet.
     *
@@ -1057,31 +1089,35 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 
       try
 	{
+	  parameters = new openlink.util.Vector(batch.size());
+	  objparams = new openlink.util.Vector(batch.size());
 #if JDK_VER >= 12
           inx = 0;
           for(ListIterator it = batch.listIterator(); it.hasNext(); )
 	    {
 	      openlink.util.Vector vect = (openlink.util.Vector)it.next();
-#else
-	  for(inx = 0; inx < batch.size(); inx++)
-	    {
-	      openlink.util.Vector vect = (openlink.util.Vector)batch.elementAt(inx);
-#endif
-
-	      parameters = (openlink.util.Vector)vect.elementAt(0);
-	      objparams = (openlink.util.Vector)vect.elementAt(1);
+	      parameters.setElementAt (vect.elementAt(0), inx);
+	      objparams.setElementAt (vect.elementAt(1), inx);
 	      Integer kindop = (Integer)(vect.elementAt(2));
 	      vect.removeAllElements();
 	      if(kindop.intValue()==VirtuosoTypes.QT_SELECT)
 		throwBatchUpdateException (result, "Batch executes only update statements", inx);
-	      result[inx] = executeUpdate();
-#if JDK_VER >= 12
               inx++;
-#endif
 	    }
-#if JDK_VER >= 12
+	  result = executeBatchUpdate ();
 	  batch.clear();
 #else
+	  for(inx = 0; inx < batch.size(); inx++)
+	    {
+	      openlink.util.Vector vect = (openlink.util.Vector)batch.elementAt(inx);
+	      parameters.setElementAt (vect.elementAt(0), inx);
+	      objparams.setElementAt (vect.elementAt(1), inx);
+	      Integer kindop = (Integer)(vect.elementAt(2));
+	      vect.removeAllElements();
+	      if(kindop.intValue()==VirtuosoTypes.QT_SELECT)
+		throwBatchUpdateException (result, "Batch executes only update statements", inx);
+	    }
+	  result = executeBatchUpdate ();
 	  batch.removeAllElements();
 #endif
 	}
