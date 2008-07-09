@@ -44,7 +44,8 @@
 
   -- dbg_obj_print(get_keyword ('mode', params, ''), progressID, progressIndex);
   -- reset
-  if (get_keyword ('mode', params, '') = 'reset') {
+  if (get_keyword ('mode', params, '') = 'reset')
+  {
     registry_remove ('feed_' || progressID || '_index');
     registry_remove ('feed_' || progressID || '_action');
     registry_set ('feed_' || progressID || '_index', '0');
@@ -60,7 +61,8 @@
   }
 
   -- stop
-  if (get_keyword ('mode', params, '') = 'stop') {
+  if (get_keyword ('mode', params, '') = 'stop')
+  {
     registry_set ('feed_' || progressID || '_action', 'stop');
 
     connection_set('stop_execution', '1');
@@ -69,7 +71,8 @@
 
   -- state
   if (get_keyword ('mode', params, '') = 'state') {
-    if (not (isinteger(progressIndex) and (progressIndex = 0))) {
+    if (not (isinteger(progressIndex) and (progressIndex = 0)))
+    {
     http_rewrite ();
     http_header ('Content-Type: text/xml\r\n');
     http('<root>');
@@ -82,8 +85,8 @@
   }
 
   -- exec
-  if (get_keyword ('mode', params, '') = 'init') {
-
+  if (get_keyword ('mode', params, '') = 'init')
+  {
     -- flush and continue
     http_flush ();
 
@@ -98,8 +101,10 @@
     j := length(params);
     V := vector();
     dataLength := 0;
-    for (i := 0; i < j; i := i + 2) {
-      if (params[i] like 'cb_item%') {
+    for (i := 0; i < j; i := i + 2)
+    {
+      if (params[i] like 'cb_item%')
+      {
         dataLength := dataLength + 1;
         V := vector_concat(V, vector(params[i+1]));
       }
@@ -108,17 +113,19 @@
     -- dbg_obj_print('start: ', dataLength, now());
     -- exec subscriptions
     data := vector('rss', null, 'title', null, 'home', null, 'format', null, 'lang', null, 'type', 'long');
-    for (i := 0; i < dataLength; i := i + 1) {
+    for (i := 0; i < dataLength; i := i + 1)
+    {
       if  (cast(registry_get ('feed_' || progressID || '_action') as varchar) = 'stop')
         goto _stop;
 
       commit work;
-      registry_set('feed_' || progressID || '_index', cast ((i + 1) as varchar));
+      registry_set('feed_' || progressID || '_index', cast (i as varchar));
 
       N := V[i];
 
       rss := get_keyword ('$_rss_' || N, params, '');
-      if (rss <> '') {
+      if (rss <> '')
+      {
         title   := get_keyword ('$_title_'  || N, params);
 
         aset(data, 1, rss);
@@ -135,7 +142,8 @@
         if ((ENEWS.WA.channel_feeds(feed_id) <> 0) or (not R))
           goto _next;
           {
-          declare continue handler for sqlstate '*' {
+          declare continue handler for sqlstate '*'
+          {
             goto _next;
           };
               ENEWS.WA.feed_refresh(feed_id);
@@ -143,6 +151,7 @@
         }
       _next:;
       }
+    registry_set('feed_' || progressID || '_index', cast (dataLength as varchar));
   _stop:;
 
     -- update tags

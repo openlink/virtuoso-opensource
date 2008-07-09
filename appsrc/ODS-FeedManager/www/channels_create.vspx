@@ -178,7 +178,7 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Next" xhtml_class="form-button">
+          <v:button action="simple" name="Next0" value="Next" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 if (self.rb_0.ufl_selected) {
@@ -196,7 +196,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="Cancel0" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');
@@ -211,7 +211,7 @@
           <v:label format="%s" value="--'Subscribe feed(s)'" />
         </div>
         <div class="new-form-body">
-          <table cellspacing="0" id="feeds">
+          <table cellspacing="0">
             <tr>
               <th nowrap="nowrap">
                 <v:label value="--concat(self.source_label(self.v_source))" />
@@ -391,14 +391,14 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Back" xhtml_class="form-button">
+          <v:button action="simple" name="Back1" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect(sprintf('channels_create.vspx?rb=%d',self.v_source));
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Next" xhtml_alt="Next" enabled="-- case when (self.v_source = 0) then 0 else 1 end">
+          <v:button action="simple" name="Next1" value="Next" xhtml_alt="Next" enabled="-- case when (self.v_source = 0) then 0 else 1 end">
             <v:on-post>
               <![CDATA[
                 declare retValue varchar;
@@ -451,7 +451,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="Cancel1" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
               self.vc_redirect('channels.vspx');
              ]]></v:on-post>
@@ -567,14 +567,14 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Back" xhtml_class="form-button">
+          <v:button action="simple" name="Back2" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels_create.vspx?rb=4');
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Subscribe" xhtml_class="form-button">
+          <v:button action="simple" name="Subscribe2" value="Subscribe" xhtml_class="form-button">
             <v:before-render>
               <![CDATA[
                 control.vc_enabled := coalesce((select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_DIRECTORY_ID = self.v_directory_id), 0);
@@ -621,7 +621,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="Cancel2" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');
@@ -721,7 +721,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="Cancel3" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');
@@ -810,7 +810,7 @@
                ]]>
              </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="Cancel4" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
               self.vc_redirect('channels.vspx');
              ]]></v:on-post>
@@ -913,7 +913,7 @@
                ]]>
              </v:on-post>
           </v:button>
-          <v:button action="simple" xhtml_id="btn_Stop" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" xhtml_id="btn_Stop" name="Cancel5" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');

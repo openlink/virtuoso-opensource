@@ -1246,7 +1246,8 @@ function checkState()
 	var xmlhttp = initRequest();
 	xmlhttp.open("POST", URL+"?mode=state&id="+progressID+urlParams("sid")+urlParams("realm"), true);
 	xmlhttp.onreadystatechange = function() {
-	  if (xmlhttp.readyState == 4) {
+    if (xmlhttp.readyState == 4)
+    {
       var progressIndex;
 
       // progressIndex
@@ -1258,11 +1259,11 @@ function checkState()
       showProgress(progressIndex);
      	document.getElementById("btn_Background").disabled = false;
      	document.getElementById("btn_Stop").disabled = false;
-			if ((progressIndex != null) && (progressIndex != progressMax)) {
+      if ((progressIndex != null) && (progressIndex != progressMax))
+      {
         setTimeout("checkState()", 1000);
 			} else {
-       	document.getElementById("btn_Stop").value = 'Finish';
-       	document.getElementById("btn_Background").disabled = true;
+        doPost ('F1', 'btn_Stop');
 			  timer = null;
 			}
 	  }
@@ -1309,10 +1310,14 @@ function createProgressBar()
       centerCellName = "progress_" + x;
       tdText = "<font color=\"white\">" + 0 + '&nbsp;out&nbsp;of&nbsp;' + progressMax + "</font>"
     }
-    if (x == (size/2))
+    else if (x == (size/2))
+    {
       tdText = "<font color=\"white\">" + "Subscriptions</font>";
-    if (x == ((size/2)+1))
+    }
+    else if (x == ((size/2)+1))
+    {
       tdText = "<font color=\"white\">" + "Completed</font>";
+    }
     tableText += "<td id=\"progress_" + x + "\" width=\"" + increment + "%\" height=\"20\" bgcolor=\"blue\">"+tdText+"</td>";
   }
   var idiv = window.document.getElementById("progress");
@@ -1334,13 +1339,16 @@ function showProgress(progressIndex)
   for (x = 0; x < size; x++)
   {
     var cell = window.document.getElementById("progress_" + x);
-    if ((cell) && (percentage/x < increment))
+    if (cell)
+    {
+      if ((percentage == 0) || (percentage/x < increment))
     {
       cell.style.backgroundColor = "blue";
     } else {
       cell.style.backgroundColor = "red";
     }
   }
+}
 }
 
 // ---------------------------------------------------------------------------
