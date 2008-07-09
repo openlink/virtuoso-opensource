@@ -3955,15 +3955,24 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+              <v:button value="Delete" action="simple" xhtml_class="button">
+                <v:after-data-bind>
+                  <![CDATA[
+                    control.vc_add_attribute ('onclick', 'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');');
+                  ]]>
+                </v:after-data-bind>
                 <v:on-post>
                   <![CDATA[
+                    if (self.cAction = 'publishBrowse')
+                    {
                     declare N integer;
 
                     for (N := 0; N < length(e.ve_params); N := N + 4)
                       if (e.ve_params[N] = 'cb_item')
                         delete from CAL.WA.EXCHANGE where EX_ID = cast (e.ve_params[N+1] as integer);
-
+                    } else {
+                      self.cAction := 'subscribeDelete';
+                    }
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -4391,6 +4400,86 @@
             </v:on-post>
           </v:button>
                 </div>
+            </vm:if>
+
+            <vm:if test="self.cAction in ('subscribeDelete')">
+              <div class="new-form-header">
+                Subscriptions/Delete
+              </div>
+              <div class="new-form-body">
+                <br />
+                <b>The following subscription(s) will be deleted. For checked subscriptions corresponding enents/tasks will be deleted too.</b>
+                <br /><br />
+                <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                  <thead class="sortHeader">
+                    <tr>
+                      <th class="checkbox" width="1%">
+                        <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                      </th>
+                      <th style="text-align: left;">Name</th>
+                    </tr>
+                  </thead>
+                  <?vsp
+                    declare N integer;
+                    declare params any;
+
+                    params := self.vc_page.vc_event.ve_params;
+                    for (N := 0; N < length(params); N := N + 4)
+                    {
+                      if (params[N] = 'cb_item')
+                      {
+                  ?>
+                        <tr>
+                          <td align="center" valign="top">
+                            <input type="hidden" name="ex_item" value="<?V params[N+1] ?>" />
+                            <input type="checkbox" name="cb_item" value="<?V params[N+1] ?>" onclick="selectCheck(this, 'cb_item')" />
+                          </td>
+                          <td nowrap="nowrap">
+                            <?V CAL.WA.exchange_name (cast (params[N+1] as integer)) ?>
+                          </td>
+                        </tr>
+                  <?vsp
+                      }
+                    }
+                  ?>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Delete" name="exc_delete" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare N integer;
+                      declare params any;
+
+                      params := e.ve_params;
+                      for (N := 0; N < length(params); N := N + 4)
+                      {
+                        if (params[N] = 'cb_item')
+                        {
+                          delete from CAL.WA.EVENTS where E_EXCHANGE_ID = cast (params[N+1] as integer);
+                        }
+                      }
+                      for (N := 0; N < length(params); N := N + 4)
+                      {
+                        if (params[N] = 'ex_item')
+                        {
+                          delete from CAL.WA.EXCHANGE where EX_ID = cast (params[N+1] as integer);
+                        }
+                      }
+                      self.cAction := 'subscribeBrowse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" name="exc_delete_cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'subscribeBrowse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
             </vm:if>
 
             <vm:if test="self.cAction = 'settings'">

@@ -35,16 +35,6 @@ create procedure CAL.WA.upstream_event_update (
 
 -------------------------------------------------------------------------------
 --
--- Sequences
---
--------------------------------------------------------------------------------
-CAL.WA.exec_no_error (
-  'sequence_set (\'CAL.WA.event_id\', %d, 0)', 'S', 'CAL.WA.EVENTS', 'E_ID'
-)
-;
-
--------------------------------------------------------------------------------
---
 CAL.WA.exec_no_error ('
   create table CAL.WA.TAGS (
     T_DOMAIN_ID integer not null,
@@ -103,7 +93,7 @@ CAL.WA.exec_no_error ('
     S_COLOR varchar,
     S_OPTIONS long varchar,
 
-    constraint FK_SHARED_01 FOREIGN KEY (S_GRANT_ID) references CAL.WA.GRANTS (G_ID) ON DELETE CASCADE,
+    constraint FK_SHARED_01 FOREIGN KEY (S_GRANT_ID) references CAL.WA.GRANTS (G_ID) on delete cascade,
 
     PRIMARY KEY (S_ID)
   )
@@ -159,11 +149,49 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
+--  PUBLISH & SUBSCRIBE
+--
+-------------------------------------------------------------------------------
+CAL.WA.exec_no_error ('
+  create table CAL.WA.EXCHANGE (
+    EX_ID integer identity,
+    EX_DOMAIN_ID integer not null,
+    EX_TYPE integer not null,
+    EX_NAME varchar not null,
+    EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_INTERVAL integer,
+    EX_UPDATE_PERIOD varchar,
+    EX_UPDATE_FREQ integer,
+    EX_OPTIONS varchar,
+	  EX_EXEC_LOG long varchar,
+    EX_EXEC_TIME datetime,
+
+    primary key (EX_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create trigger EXCHANGE_AI AFTER INSERT ON CAL.WA.EXCHANGE referencing new as N
+  {
+    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+CAL.WA.exec_no_error ('
+  create trigger EXCHANGE_AU AFTER UPDATE on CAL.WA.EXCHANGE referencing old as O, new as N
+  {
+    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+-------------------------------------------------------------------------------
+--
 CAL.WA.exec_no_error ('
   create table CAL.WA.EVENTS (
     E_ID integer not null,
     E_UID varchar,
     E_DOMAIN_ID integer not null,
+    E_EXCHANGE_ID integer,
     E_KIND integer default 0,             -- 0 - Event
                                           -- 1 - Task
     E_PRIVACY integer default 0,          -- 0 - PRIVATE
@@ -222,7 +250,15 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error (
+  'sequence_set (\'CAL.WA.event_id\', %d, 0)', 'S', 'CAL.WA.EVENTS', 'E_ID'
+);
+
+CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_UID varchar', 'C', 'CAL.WA.EVENTS', 'E_UID'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_EXCHANGE_ID integer', 'C', 'CAL.WA.EVENTS', 'E_EXCHANGE_ID'
 );
 
 CAL.WA.exec_no_error (
@@ -243,6 +279,10 @@ CAL.WA.exec_no_error (
 
 CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_ATTENDEES integer default 0', 'C', 'CAL.WA.EVENTS', 'E_ATTENDEES'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add constraint FK_EVENTS_01 FOREIGN KEY (E_EXCHANGE_ID) references CAL.WA.EXCHANGE (EX_ID) on delete set null'
 );
 
 -------------------------------------------------------------------------------
@@ -473,7 +513,7 @@ CAL.WA.exec_no_error ('
     A_TRIGGER datetime,
     A_SHOWN datetime,
 
-    constraint FK_ALARMS_01 FOREIGN KEY (A_EVENT_ID) references CAL.WA.EVENTS (E_ID) ON DELETE CASCADE,
+    constraint FK_ALARMS_01 FOREIGN KEY (A_EVENT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade,
 
     primary key (A_ID)
   )
@@ -808,43 +848,6 @@ CAL.WA.exec_no_error ('
     values(\'Calendar Upstream Scheduler\', now(), \'CAL.WA.upstream_scheduler ()\', 10)
 ')
 ;
-
--------------------------------------------------------------------------------
---
---  PUBLISH & SUBSCRIBE
---
--------------------------------------------------------------------------------
-CAL.WA.exec_no_error ('
-  create table CAL.WA.EXCHANGE (
-    EX_ID integer identity,
-    EX_DOMAIN_ID integer not null,
-    EX_TYPE integer not null,
-    EX_NAME varchar not null,
-    EX_UPDATE_TYPE integer not null,
-    EX_UPDATE_INTERVAL integer,
-    EX_UPDATE_PERIOD varchar,
-    EX_UPDATE_FREQ integer,
-    EX_OPTIONS varchar,
-	  EX_EXEC_LOG long varchar,
-    EX_EXEC_TIME datetime,
-
-    primary key (EX_ID)
-  )
-');
-
-CAL.WA.exec_no_error ('
-  create trigger EXCHANGE_AI AFTER INSERT ON CAL.WA.EXCHANGE referencing new as N
-  {
-    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
-  }
-');
-
-CAL.WA.exec_no_error ('
-  create trigger EXCHANGE_AU AFTER UPDATE on CAL.WA.EXCHANGE referencing old as O, new as N
-  {
-    CAL.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
-  }
-');
 
 -------------------------------------------------------------------------------
 --

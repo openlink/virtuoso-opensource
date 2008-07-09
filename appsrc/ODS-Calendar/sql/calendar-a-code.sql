@@ -4763,7 +4763,8 @@ create procedure CAL.WA.export_vcal_reminder (
 create procedure CAL.WA.import_vcal (
   in domain_id integer,
   in content any,
-  in options any := null)
+  in options any := null,
+  in exchange_id integer := null)
 {
   declare N, nLength integer;
   declare oEvents, oTasks, oTags any;
@@ -4866,7 +4867,7 @@ create procedure CAL.WA.import_vcal (
         eReminder := CAL.WA.vcal_str2reminder (xmlItem, sprintf ('IMC-VEVENT[%d]/IMC-VALARM/TRIGGER/', N));
         updated := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTAMP/', N), tzDict);
         notes := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/NOTES/val', N), xmlItem, 1) as varchar);
-        CAL.WA.event_update
+          id := CAL.WA.event_update
           (
             id,
             uid,
@@ -4889,6 +4890,8 @@ create procedure CAL.WA.import_vcal (
             notes,
             updated
           );
+          if (not isnull (exchange_id))
+            update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
       }
       }
 
@@ -4919,7 +4922,7 @@ create procedure CAL.WA.import_vcal (
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
         updated := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTAMP/', N), tzDict);
         notes := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/VOTES/val', N), xmlItem, 1) as varchar);
-        CAL.WA.task_update
+          id := CAL.WA.task_update
           (
             id,
             uid,
@@ -4938,6 +4941,8 @@ create procedure CAL.WA.import_vcal (
             notes,
             updated
           );
+          if (not isnull (exchange_id))
+            update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
       }
     }
   }
@@ -5074,6 +5079,15 @@ create procedure CAL.WA.export_vcal (
 
 --------------------------------------------------------------------------------
 --
+create procedure CAL.WA.exchange_name (
+  in id integer)
+{
+  return (select EX_NAME from CAL.WA.EXCHANGE where EX_ID = id);
+}
+;
+
+--------------------------------------------------------------------------------
+--
 create procedure CAL.WA.exchange_exec (
   in _id integer,
   in _mode integer := 0)
@@ -5187,7 +5201,7 @@ create procedure CAL.WA.exchange_exec_internal (
       {
         signal ('CAL01', 'Bad import/subscription source!<>');
       }
-      CAL.WA.import_vcal (_domain_id, _content, _options);
+      CAL.WA.import_vcal (_domain_id, _content, _options, _id);
     }
   }
 }
