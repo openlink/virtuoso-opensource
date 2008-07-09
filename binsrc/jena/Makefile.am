@@ -63,7 +63,7 @@ lib:
 
 virt_jena.jar: $(JENA_SRC)
 	-rm -rf out.driver
-	@mkdir out.driver
+	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
@@ -87,6 +87,9 @@ else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"
 endif
+
+clean-local:
+	-rm -rf out.driver testsuite/*.class
 
 
 # ----------------------------------------------------------------------

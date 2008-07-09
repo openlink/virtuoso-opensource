@@ -59,7 +59,7 @@ lib:
 
 virt_sesame2.jar: $(SESAME_SRC)
 	-rm -rf out.driver
-	@mkdir out.driver
+	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
@@ -72,17 +72,14 @@ doc:
 		$(SESAME_SRC)
 
 
-out.examples: $(SAMPLES_SOURCE)
-	rm -rf out.examples
+if JDK3
+run-tests: virt_sesame2.jar
+	-rm -rf out.examples
 	-mkdir out.examples
 	$(JAVAC) $(JAVA_FLAGS) \
 		-d out.examples \
 		-classpath "$(SESAME_CLASSPATH):virt_sesame2.jar" \
 		$(SAMPLES_SOURCE)
-
-	
-if JDK3
-run-tests: out.examples
 	$(JAVA) \
 		-classpath "$(SESAME_CLASSPATH):virt_sesame2.jar:out.examples" \
 		VirtuosoTest localhost $(PORT)
@@ -90,6 +87,10 @@ else
 run-tests:
 	@echo "***WARNING: Disabled Sesame2 test suite"
 endif
+
+
+clean-local:
+	-rm -rf out.driver out.examples
 
 # ----------------------------------------------------------------------
 #
