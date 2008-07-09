@@ -23,6 +23,7 @@
 
 package virtuoso.sesame2.driver;
 
+import info.aduna.iteration.CloseableIteration;
 import info.aduna.iteration.CloseableIteratorIteration;
 import info.aduna.iteration.Iteration;
 
@@ -40,12 +41,15 @@ import java.sql.PreparedStatement;
 import java.sql.CallableStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.NoSuchElementException;
 
+import org.openrdf.OpenRDFUtil;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -82,6 +86,7 @@ import org.openrdf.rio.RDFHandler;
 import org.openrdf.rio.RDFHandlerException;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.RDFParser;
+import org.openrdf.rio.Rio;
 import org.openrdf.rio.helpers.RDFHandlerBase;
 import org.openrdf.rio.n3.N3ParserFactory;
 import org.openrdf.rio.ntriples.NTriplesParserFactory;
@@ -138,7 +143,7 @@ import virtuoso.jdbc3.VirtuosoResultSet;
  * 
  */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
-	private static Resource nilContext = new ValueFactoryImpl().createURI("urn:nil");
+	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
 	static final String S_INSERT = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
@@ -149,6 +154,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
 		this.quadStoreConnection = connection;
 		this.repository = repository;
+		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		try {
 			this.repository.initialize();
 		}
@@ -474,8 +480,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public RepositoryResult<Statement> getStatements(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
 		contexts = checkContext(contexts);
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
-		return createRepositoryResult(g);
+		return new RepositoryResult<Statement>(selectFromQuadStore(subject, predicate, object, includeInferred, false, contexts));
 	}
 
 	/**
@@ -501,8 +506,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public boolean hasStatement(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
 		contexts = checkContext(contexts);
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
-		return g.iterator().hasNext();
+                CloseableIteration<Statement, RepositoryException> it;
+                it = selectFromQuadStore(subject, predicate, object, includeInferred, true, contexts);
+                try {
+                	return it.hasNext();
+                } finally {
+                	it.close();
+                }
 	}
 
 	/**
@@ -523,9 +533,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         otherwise.
 	 */
 	public boolean hasStatement(Statement statement, boolean includeInferred, Resource... contexts) throws RepositoryException {
-		contexts = checkContext(contexts);
-		Graph g = selectFromQuadStore(statement.getSubject(), statement.getPredicate(), statement.getObject(), includeInferred, contexts);
-		return g.iterator().hasNext();
+	        return hasStatement(statement.getSubject(), statement.getPredicate(), statement.getObject(), includeInferred, contexts);
 	}
 
 	/**
@@ -552,20 +560,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public void exportStatements(Resource subject, URI predicate, Value object, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
 		contexts = checkContext(contexts);
-		Graph g = selectFromQuadStore(subject, predicate, object, includeInferred, contexts);
+                CloseableIteration<Statement, RepositoryException> it;
+                it = selectFromQuadStore(subject, predicate, object, includeInferred, false, contexts);
 		handler.startRDF();
-		Iterator<Statement> it = g.iterator();
 		while (it.hasNext())
 			handler.handleStatement(it.next());
 		handler.endRDF();
+		it.close();
 	}
 
-	private Resource[] checkContext(Resource... contexts) throws RepositoryException {
-		if(contexts != null && contexts.length == 1 && contexts[0] == null && contexts[0] instanceof Resource) {
+
+	private Resource[] checkDMLContext(Resource... contexts) throws RepositoryException {
+		OpenRDFUtil.verifyContextNotNull(contexts);
+		if(contexts != null && contexts.length == 1 && contexts[0] == null) {
 			contexts = new Resource[] {nilContext};
 		}
 		else if (contexts == null || contexts.length == 0) {
-			contexts = getContexts();
+			contexts = new Resource[] {nilContext};
+		}
+		return contexts;
+	}
+
+	private Resource[] checkContext(Resource... contexts) throws RepositoryException {
+		OpenRDFUtil.verifyContextNotNull(contexts);
+		if(contexts != null && contexts.length == 1 && contexts[0] == null) {
+			contexts = new Resource[] {nilContext};
+		}
+		else if (contexts == null || contexts.length == 0) {
+			contexts = new Resource[0]; //getContexts();
 		}
 		return contexts;
 	}
@@ -600,21 +622,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public long size(Resource... contexts) throws RepositoryException {
 		int ret = 0;
-		String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
-
 		verifyIsOpen();
-		if(contexts == null || contexts.length == 0) contexts = getContexts(); // special check for RepositoryConnection.size()
+
+		contexts = checkContext(contexts);
+		StringBuffer query = new StringBuffer("select count(*) from (sparql select * ");
+
+		for (int i = 0; i < contexts.length; i++) {
+			query.append("from named <");
+			query.append(contexts[i].stringValue());
+			query.append("> ");
+	        }
+		query.append("where { graph ?g {?s ?p ?o }})f");
 
 		try {
-		        PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
+		        java.sql.Statement st = getQuadStoreConnection().createStatement();
+		        VirtuosoResultSet rs = (VirtuosoResultSet)st.executeQuery(query.toString());
 
-			for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-				ResultSet rs = ps.executeQuery();
-				rs.next();
-				ret += rs.getInt(1);
-                                rs.close();
-			}
+			rs.next();
+			ret = rs.getInt(1);
+                        rs.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(e);
@@ -782,32 +808,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(Reader reader, String baseURI, RDFFormat format, final Resource... contexts) throws IOException, RDFParseException, RepositoryException {
-		try {
-			RDFParser parser = null;
-			if (format.equals(RDFFormat.NTRIPLES)) {
-				parser = new NTriplesParserFactory().getParser();
-			}
-			else if (format.equals(RDFFormat.N3)) {
-				parser = new N3ParserFactory().getParser();
-			}
-			else if (format.equals(RDFFormat.RDFXML)) {
-				parser = new RDFXMLParserFactory().getParser();
-			}
-			else if (format.equals(RDFFormat.TURTLE)) {
-				parser = new TurtleParserFactory().getParser();
-			}
-			else if (format.equals(RDFFormat.TRIG)) {
-				parser = new TriGParserFactory().getParser();
-			}
-			else if (format.equals(RDFFormat.TRIX)) {
-				parser = new TriXParserFactory().getParser();
-			}
+		verifyIsOpen();
 
-			verifyIsOpen();
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
+		try {
+			RDFParser parser = Rio.createParser(format, getRepository().getValueFactory());
+
 			// set up a handler for parsing the data from reader
+			parser.setVerifyData(true);
+			parser.setStopAtFirstError(true);
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
 			final PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
-			final Resource[] _contexts = checkContext(contexts);
+			final Resource[] _contexts = checkDMLContext(contexts);
 
 			parser.setRDFHandler(new RDFHandlerBase() {
 				
@@ -864,14 +878,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 			});
 
-			parser.parse(reader, ""); // parse out each tripled to be handled by the handler above
+			parser.parse(reader, baseURI); // parse out each tripled to be handled by the handler above
 
 		}
 		catch (Exception e) {
+			if (autoCommit)
+				rollback();
 			throw new RepositoryException("Problem parsing triples", e);
 		}
 		finally {
-			reader.close();
+			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -904,8 +920,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public void add(URL dataURL, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		// add data to Sesame
+		if (baseURI == null) {
+			baseURI = dataURL.toExternalForm();
+		}
 		Reader reader = new InputStreamReader(dataURL.openStream());
-		add(reader, baseURI, format, contexts);
+		try {
+			add(reader, baseURI, format, contexts);
+		} finally {
+			reader.close();
+		}
 	}
 
 	/**
@@ -939,8 +962,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(File file, String baseURI, RDFFormat format, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
+		if (baseURI == null) {
+			// default baseURI to file
+			baseURI = file.toURI().toString();
+		}
 		InputStream reader = new FileInputStream(file);
-		add(reader, baseURI, format, contexts);
+		try {
+			add(reader, baseURI, format, contexts);
+		} finally {
+			reader.close();
+		}
 	}
 
 	/**
@@ -965,7 +996,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-		contexts = checkContext(contexts);
+		contexts = checkDMLContext(contexts);
 		addToQuadStore(subject, predicate, object, contexts);
 	}
 
@@ -988,9 +1019,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         because the repository is not writable.
 	 */
 	public void add(Statement statement, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0 &&  statement.getContext() != null) {
+		if (contexts != null && contexts.length == 0 &&  statement.getContext() != null) {
 				contexts = new Resource[] { statement.getContext() }; // try the context given by the statement
-			}
+		}
 		add(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
 	}
 
@@ -1015,11 +1046,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public void add(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
 		Iterator it = statements.iterator();
 
+		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
+
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
 		try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
-			boolean useStatementContext = contexts == null || contexts.length == 0; // If no context are specified, each statement is added to statement context
-			Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 			while (it.hasNext()) {
 				Statement st = (Statement) it.next();
@@ -1051,7 +1086,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}	
 		catch(Exception e) {
+			if (autoCommit)
+				rollback();
 		   	throw new RepositoryException(e);
+		}
+		finally {
+			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1077,11 +1117,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
 
+		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+		Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
+
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
 		try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			int count = 0;
-			boolean useStatementContext = contexts == null || contexts.length == 0; // If no context are specified, each statement is added to statement context
-			Resource[] _contexts = checkContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 			while (statements.hasNext()) {
 				Statement st = (Statement) statements.next();
@@ -1112,7 +1156,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch(Exception e) {
+			if (autoCommit)
+				rollback();
 		   	throw new RepositoryException(e);
+		}
+		finally {
+			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1135,10 +1184,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void remove(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-		contexts = checkContext(contexts);
+		contexts = checkDMLContext(contexts);
 
-		for (int i = 0; i < contexts.length; i++)
-		     removeContext(subject, predicate, object, contexts[i]);
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
+		try {
+			for (int i = 0; i < contexts.length; i++)
+		     		removeContext(subject, predicate, object, contexts[i]);
+		}
+		catch(RepositoryException e) {
+			if (autoCommit)
+				rollback();
+		   	throw e;
+		}
+		finally {
+			setAutoCommit(autoCommit);
+		}
 	}
 
 	/**
@@ -1158,9 +1220,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void remove(Statement statement, Resource... contexts) throws RepositoryException {
-		if (contexts == null || contexts.length == 0) {
-			if (statement.getContext() != null)
-				contexts = new Resource[] { statement.getContext() }; // try the context given by the statement
+		if (contexts != null && contexts.length == 0 &&  statement.getContext() != null) {
+			contexts = new Resource[] { statement.getContext() }; // try the context given by the statement
 		}
 		remove(statement.getSubject(), statement.getPredicate(), statement.getObject(), contexts);
 	}
@@ -1182,10 +1243,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void remove(Iterable<? extends Statement> statements, Resource... contexts) throws RepositoryException {
+		OpenRDFUtil.verifyContextNotNull(contexts);
+		Resource[] _contexts;
 		Iterator<? extends Statement> it = statements.iterator();
-		while (it.hasNext()) {
-			Statement st = it.next();
-			remove(st, contexts);
+
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
+		try {
+			while (it.hasNext()) {
+				Statement st = it.next();
+				_contexts = contexts;
+
+				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
+					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
+				}
+				_contexts = checkDMLContext(_contexts);
+
+				for (int i = 0; i < contexts.length; i++)
+		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), contexts[i]);
+		     	}
+		}
+		catch(RepositoryException e) {
+			if (autoCommit)
+				rollback();
+		   	throw e;
+		}
+		finally {
+			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1209,9 +1294,33 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public <E extends Exception> void remove(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
-		while (statements.hasNext()) {
-			Statement st = statements.next();
-			remove(st, contexts);
+		OpenRDFUtil.verifyContextNotNull(contexts);
+		Resource[] _contexts;
+
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
+		try {
+			while (statements.hasNext()) {
+				Statement st = statements.next();
+				_contexts = contexts;
+
+				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
+					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
+				}
+				_contexts = checkDMLContext(_contexts);
+
+				for (int i = 0; i < contexts.length; i++)
+		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), contexts[i]);
+		     	}
+		}
+		catch(RepositoryException e) {
+			if (autoCommit)
+				rollback();
+		   	throw e;
+		}
+		finally {
+			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1227,9 +1336,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         example because the repository is not writable.
 	 */
 	public void clear(Resource... contexts) throws RepositoryException {
-		contexts = checkContext(contexts);
+		contexts = checkDMLContext(contexts);
 
-		clearQuadStore(contexts);
+		boolean autoCommit = isAutoCommit();
+		setAutoCommit(false);
+
+		try {
+			clearQuadStore(contexts);
+		}
+		catch(RepositoryException e) {
+			if (autoCommit)
+				rollback();
+		   	throw e;
+		}
+		finally {
+			setAutoCommit(autoCommit);
+		}
 	}
 
 	/**
@@ -1243,7 +1365,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public RepositoryResult<Namespace> getNamespaces() throws RepositoryException {
 		verifyIsOpen();
-		List<Namespace> namespaceList = new ArrayList<Namespace>();
+		List<Namespace> namespaceList = new LinkedList<Namespace>();
 		String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
@@ -1288,6 +1410,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// begin at onset one
 			while (rs.next()) {
 				retVal = rs.getString(1);
+				break;
 			}
 			rs.close();
 		}
@@ -1602,11 +1725,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			PreparedStatement ps = getQuadStoreConnection().prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
-			contexts = checkContext(contexts);
-
 			for (int i = 0; i < contexts.length; i++) {
 
-					ps.setString(1, contexts[i].stringValue());
+				ps.setString(1, contexts[i].stringValue());
 
 				bindResource(ps, 2, subject);
 				bindURI(ps, 3, predicate);
@@ -1618,7 +1739,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ps.clearBatch();
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -1627,26 +1748,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		String  query = "sparql clear graph iri(??)";
 
-		try {
+                if (contexts!=null && contexts.length > 0)
+		  try {
 			PreparedStatement ps = quadStoreConnection.prepareStatement(query);
 			for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
+				ps.setString(1, contexts[i].stringValue());
 				ps.execute();
 			}
-		}
-		catch (Exception e) {
+		  }
+		  catch (Exception e) {
 			throw new RepositoryException(e);
-		}
+		  }
 	}
 
-	private Graph selectFromQuadStore(Resource... contexts) throws RepositoryException {
-		return selectFromQuadStore(null, null, null, false, contexts);
-	}
 
-	private Graph selectFromQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, Resource... contexts) throws RepositoryException {
+	private CloseableIteration<Statement, RepositoryException> selectFromQuadStore(Resource subject, URI predicate, Value object, boolean includeInferred, boolean hasOnly, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
 
-		Graph g = new GraphImpl();
+		VirtuosoResultSet rs = null;
 		String s = "?s";
 		String p = "?p";
 		String o = "?o";
@@ -1658,61 +1777,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (object != null) 
 			o = stringForValue(object);
 
+		StringBuffer query = new StringBuffer("sparql select * ");
+
 		for (int i = 0; i < contexts.length; i++) {
 
-			StringBuffer query = new StringBuffer("sparql select * from <");
-			Resource context = contexts[i];
+			query.append("from named <");
+			query.append(contexts[i].stringValue());
+			query.append("> ");
+	        }
 
-			query.append(context.stringValue());
-			query.append("> where { ");
-			query.append(s);
-			query.append(" ");
-			query.append(p);
-			query.append(" ");
-			query.append(o);
-			query.append(" }");
+		query.append("where { graph ?g {");
+		query.append(s);
+		query.append(" ");
+		query.append(p);
+		query.append(" ");
+		query.append(o);
+		query.append(" }}");
+		if (hasOnly)
+			query.append(" LIMIT 1");
 
-			try {
-				java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-				VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
-
-				// begin at onset one
-				while (rs.next()) {
-					Resource _subject = subject;
-					URI _predicate = predicate;
-					Value _object = object;
-					Object val = null;
-
-					if (_subject == null) 
-					  try {
-						val = rs.getObject("s");
-						_subject = (Resource) castValue(val);
-					  }
-					  catch (ClassCastException ccex) {
-						throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
-					  }
-
-					if (_predicate == null) 
-					  try {
-						val = rs.getObject("p");
-						_predicate = (URI) castValue(val);
-					  }
-					  catch (ClassCastException ccex) {
-						throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val);
-					  }
-
-					if (_object == null) 
-					  _object = castValue(rs.getObject("o"));
-
-					g.add(_subject, _predicate, _object, context);
-				}
-                                stmt.close();
-			}
-			catch (Exception e) {
-				throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]");
-			}
+		try {
+			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
 		}
-		return g;
+		catch (Exception e) {
+			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]");
+		}
+
+		return new CloseableIterationImpl(rs, subject, predicate, object);
 	}
 
 
@@ -1979,6 +2071,136 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException(e);
 		}
 	}
+
+        public class CloseableIterationImpl implements CloseableIteration<Statement, RepositoryException> {
+                                           
+
+		Statement v_row;
+		boolean	  v_finished = false;
+		boolean	  v_prefetched = false;
+		Resource  subject;
+		URI       predicate;
+		Value 	  object;
+		VirtuosoResultSet v_rs;
+
+        	CloseableIterationImpl(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
+        	{
+        	  v_rs = rs;
+        	  this.subject = subject;
+        	  this.predicate = predicate;
+        	  this.object = object;	
+        	}
+
+
+		public boolean hasNext() throws RepositoryException 
+		{
+       			if (!v_finished && !v_prefetched) 
+       				moveForward();
+			return !v_finished;
+		}
+
+		public Statement next() throws RepositoryException 
+		{
+		        if (!v_finished && !v_prefetched)
+			    moveForward();
+
+		        v_prefetched = false;
+
+		        if (v_finished)
+		            throw new NoSuchElementException();
+
+		        return v_row;
+		}
+
+		public void remove() throws RepositoryException 
+		{
+		  throw new UnsupportedOperationException();
+		}
+
+		public void close() throws RepositoryException 
+		{
+			if (!v_finished)
+			{
+				try
+				{
+				    v_rs.close();
+				}
+				catch (SQLException e)
+				{
+				    throw new RepositoryException(e);
+				}
+			}
+			v_finished = true;
+		}
+
+		protected void finalize() throws Throwable
+		{
+			if (!v_finished) 
+				try {
+				    close();
+				} catch (Exception e) {}
+		}
+
+		protected void moveForward() throws RepositoryException
+		{
+			try
+			{
+			    if (!v_finished && v_rs.next())
+			    {
+				extractRow();
+				v_prefetched = true;
+			    }
+			    else
+				close();
+			}
+			catch (Exception e)
+			{
+			    throw new RepositoryException(e);
+			}
+		}
+
+		protected void extractRow() throws Exception 
+		{
+			Resource _graph;
+			Resource _subject = subject;
+			URI _predicate = predicate;
+			Value _object = object;
+			Object val = null;
+
+			try {
+				val = v_rs.getObject("g");
+				_graph = (Resource) castValue(val);
+			}
+			catch (ClassCastException ccex) {
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
+			}
+
+			if (_subject == null) 
+			  try {
+				val = v_rs.getObject("s");
+				_subject = (Resource) castValue(val);
+			  }
+			  catch (ClassCastException ccex) {
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
+			  }
+
+			if (_predicate == null) 
+			  try {
+				val = v_rs.getObject("p");
+				_predicate = (URI) castValue(val);
+			  }
+			  catch (ClassCastException ccex) {
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val);
+			  }
+
+			if (_object == null) 
+			  _object = castValue(v_rs.getObject("o"));
+
+			v_row = new ContextStatementImpl(_subject,_predicate,_object,_graph);
+		}
+	}
+
+
 
 	private Resource[] getContexts() throws RepositoryException {
 		Resource[] contexts;

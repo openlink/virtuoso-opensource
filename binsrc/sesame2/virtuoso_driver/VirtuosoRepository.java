@@ -47,16 +47,16 @@ import org.openrdf.repository.RepositoryException;
  */
 public class VirtuosoRepository implements Repository {
 	
-	VirtuosoRepositoryConnection connection;
 	ValueFactory valueFactory = new ValueFactoryImpl();
 	File dataDir;
 	
 	public String url;
 	public String user;
 	public String password;
-	private int connection_status = 0;
+	public String defGraph;
 	public int resultsHandlerType = 0;
         static final String utf8 = "charset=UTF-8";
+	private boolean initialized = false;
     
         static {
 		try {
@@ -67,8 +67,9 @@ public class VirtuosoRepository implements Repository {
 		}
         }
 	
-	public VirtuosoRepository(String _url, String user, String password) {
+	public VirtuosoRepository(String _url, String user, String password, String defGraph) {
 
+	        super();
 		this.url = _url.trim();
 		if (url.indexOf(utf8) == -1) {
 	   		if (url.charAt(url.length()-1) != '/')
@@ -79,16 +80,12 @@ public class VirtuosoRepository implements Repository {
 		
 		this.user = user;
 		this.password = password;
+		this.defGraph = defGraph;
 		
-		try {
-			java.sql.Connection connection = DriverManager.getConnection(url, user, password);
-			connection_status = 1;
-			
-			this.connection = new VirtuosoRepositoryConnection(this, connection);
-		}
-		catch (Exception e) {
-			System.out.println("Connection to " + url + " is FAILED.");
-		}
+	}
+
+	public VirtuosoRepository(String url, String user, String password) {
+	        this(url, user, password, "sesame:nil");
 	}
 
 	/**
@@ -112,7 +109,14 @@ public class VirtuosoRepository implements Repository {
 	 *         If something went wrong during the creation of the Connection.
 	 */
 	public RepositoryConnection getConnection() throws RepositoryException {
-		return this.connection;
+		try {
+			java.sql.Connection connection = DriverManager.getConnection(url, user, password);
+			return new VirtuosoRepositoryConnection(this, connection);
+		}
+		catch (Exception e) {
+			System.out.println("Connection to " + url + " is FAILED.");
+			throw new RepositoryException(e);
+		}
 	}
 
 	/**
@@ -141,6 +145,7 @@ public class VirtuosoRepository implements Repository {
 	 *         If the initialization failed.
 	 */
 	public void initialize() throws RepositoryException {
+		initialized = true;
 	}
 
 	/**
@@ -150,6 +155,10 @@ public class VirtuosoRepository implements Repository {
 	 * on.
 	 */
 	public boolean isWritable() throws RepositoryException {
+		if (!initialized) {
+			throw new IllegalStateException("VirtuosoRepository not initialized.");
+		}
+
 		return true; // user login has authenticated this connection
 	}
 
@@ -169,6 +178,7 @@ public class VirtuosoRepository implements Repository {
 	 * re-initialized.
 	 */
 	public void shutDown() throws RepositoryException {
+		initialized = false;
 	}
 
 	public int getResultsHandlerType() {
