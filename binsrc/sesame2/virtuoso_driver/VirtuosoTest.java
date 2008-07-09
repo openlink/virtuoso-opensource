@@ -114,7 +114,7 @@ public class VirtuosoTest {
 			con.setAutoCommit(true);
 
 			// // test ask query
-			// String ask = "ask { ?s <http://mso.monrai.com/foaf/name> ?o }";
+			// String ask = "ask { ?s <http://myopenlink.net/foaf/name> ?o }";
 			// doQuery(con, ask);
 
 			// test add data to the repository
@@ -180,8 +180,8 @@ public class VirtuosoTest {
 			   (byte)0xd0, (byte)0xb5, (byte)0xd1, (byte)0x82 };
 			String utf8str = new String(utf8data, "UTF8");
 
-			URI un_testuri = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/unicodeTest");
-			URI un_name = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/name");
+			URI un_testuri = repository.getValueFactory().createURI("http://myopenlink.net/foaf/unicodeTest");
+			URI un_name = repository.getValueFactory().createURI("http://myopenlink.net/foaf/name");
 			Literal un_Value = repository.getValueFactory().createLiteral(utf8str);
 
 			startTest();
@@ -210,10 +210,10 @@ public class VirtuosoTest {
 
 			
 			
-			URI shermanmonroe = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/shermanMonroe");
-			BNode snode = repository.getValueFactory().createBNode("smonroeNode");
-			URI name = repository.getValueFactory().createURI("http://mso.monrai.com/foaf/name");
-			Literal nameValue = repository.getValueFactory().createLiteral("Sherman Monroe");
+			URI kingsleyidehen = repository.getValueFactory().createURI("http://myopenlink.net/dataspace/person/kidehen");
+			BNode snode = repository.getValueFactory().createBNode("kidehenNode");
+			URI name = repository.getValueFactory().createURI("http://myopenlink.net/foaf/name");
+			Literal nameValue = repository.getValueFactory().createLiteral("Kingsley Idehen");
 
 			startTest();
 			try {
@@ -244,7 +244,7 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Selecting property");
-				query = "SELECT * FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
+				query = "SELECT * FROM <" + context + "> WHERE {?s <http://myopenlink.net/foaf/name> ?o} LIMIT 1";
 				results = doTupleQuery(con, query);
 			}
 			catch (Exception e) {
@@ -258,14 +258,14 @@ public class VirtuosoTest {
 			startTest();
 			try {
 				ok = true;
-				con.add(shermanmonroe, name, nameValue, context);
-				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				con.add(kingsleyidehen, name, nameValue, context);
+				exists = con.hasStatement(kingsleyidehen, name, null, false, context);
 				if (!exists) throw new Exception("Triple wasn't added");
 				// test remove a statement
-				con.remove(shermanmonroe, name, nameValue, (Resource) context);
+				con.remove(kingsleyidehen, name, nameValue, (Resource) context);
 				// test statement removed
 				log("Statement does not exists");
-				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				exists = con.hasStatement(kingsleyidehen, name, null, false, context);
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -278,10 +278,10 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Statement exists (by resultset size)");
-				con.add(shermanmonroe, name, nameValue, context);
-				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				con.add(kingsleyidehen, name, nameValue, context);
+				exists = con.hasStatement(kingsleyidehen, name, null, false, context);
 				if (!exists) throw new Exception("Triple wasn't added");
-				query = "SELECT * FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o} LIMIT 1";
+				query = "SELECT * FROM <" + context + "> WHERE {?s <http://myopenlink.net/foaf/name> ?o} LIMIT 1";
 				results = doTupleQuery(con, query);
 			}
 			catch (Exception e) {
@@ -295,7 +295,7 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Statement exists (by hasStatement())");
-				exists = con.hasStatement(shermanmonroe, name, null, false, context);
+				exists = con.hasStatement(kingsleyidehen, name, null, false, context);
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -348,8 +348,8 @@ public class VirtuosoTest {
 			startTest();
 			try {
 				ok = true;
-				log("Retrieving statement (" + shermanmonroe + " " + name + " " + null + ")");
-				statements = con.getStatements(shermanmonroe, name, null, false, context);
+				log("Retrieving statement (" + kingsleyidehen + " " + name + " " + null + ")");
+				statements = con.getStatements(kingsleyidehen, name, null, false, context);
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -369,7 +369,7 @@ public class VirtuosoTest {
 				ok = true;
 				log("Writing the statements to file: (" + f.getAbsolutePath() + ")");
 				RDFHandler ntw = new NTriplesWriter(new FileOutputStream(f));
-				con.exportStatements(shermanmonroe, name, null, false, ntw);
+				con.exportStatements(kingsleyidehen, name, null, false, ntw);
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -418,7 +418,7 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Sending ask query");
-				query = "ASK FROM <" + context + "> {?s <http://mso.monrai.com/foaf/name> ?o}";
+				query = "ASK FROM <" + context + "> {?s <http://myopenlink.net/foaf/name> ?o}";
 				result = doBooleanQuery(con, query);
 			}
 			catch (Exception e) {
@@ -435,13 +435,13 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Sending construct query");
-				query = "CONSTRUCT {?s <http://mso.monrai.com/mlo/handle> ?o} FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o}";
+				query = "CONSTRUCT {?s <http://myopenlink.net/mlo/handle> ?o} FROM <" + context + "> WHERE {?s <http://myopenlink.net/foaf/name> ?o}";
 				g = doGraphQuery(con, query);
 				Iterator<Statement> it = g.iterator();
 				statementFound = true;
 				while(it.hasNext()) {
 					Statement st = it.next();
-					if( !st.getPredicate().stringValue().equals("http://mso.monrai.com/mlo/handle")) statementFound = false;
+					if( !st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
 				}
 			}
 			catch (Exception e) {
@@ -458,13 +458,13 @@ public class VirtuosoTest {
 			try {
 				ok = true;
 				log("Sending describe query");
-				query = "DESCRIBE ?s FROM <" + context + "> WHERE {?s <http://mso.monrai.com/foaf/name> ?o}";
+				query = "DESCRIBE ?s FROM <" + context + "> WHERE {?s <http://myopenlink.net/foaf/name> ?o}";
 				g = doGraphQuery(con, query);
 				Iterator<Statement> it = g.iterator();
 				statementFound = it.hasNext();
 //				while(it.hasNext()) {
 //					Statement st = it.next();
-//					if( !st.getPredicate().stringValue().equals("http://mso.monrai.com/mlo/handle")) statementFound = false;
+//					if( !st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
 //				}
 			}
 			catch (Exception e) {
