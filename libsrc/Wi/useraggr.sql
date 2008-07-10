@@ -218,31 +218,31 @@ create procedure COVAR_FIN (inout _ctx varchar)
 }
 ;
 
-create aggregate VAR_POP (in val numeric) returns numeric from
+create aggregate DB.DBA.VAR_POP (in val numeric) returns numeric from
         STD12_INIT, VAR_ACC, VAR_POP_FIN
 ;
-create aggregate VAR_SAMP (in val numeric) returns numeric from
+create aggregate DB.DBA.VAR_SAMP (in val numeric) returns numeric from
 	STD12_INIT, VAR_ACC, VAR_SAMP_FIN
 ;
-create aggregate VAR (in val numeric) returns numeric from
+create aggregate DB.DBA.VAR (in val numeric) returns numeric from
 	STD12_INIT, VAR_ACC, VAR_FIN
 ;
-create aggregate STDDEV_POP (in val numeric) returns numeric from
+create aggregate DB.DBA.STDDEV_POP (in val numeric) returns numeric from
 	STD12_INIT, VAR_ACC, STDDEV_POP_FIN
 ;
-create aggregate STDDEV_SAMP (in val numeric) returns numeric from
+create aggregate DB.DBA.STDDEV_SAMP (in val numeric) returns numeric from
 	STD12_INIT, VAR_ACC, STDDEV_SAMP_FIN
 ;
-create aggregate STDDEV (in val numeric) returns numeric from
+create aggregate DB.DBA.STDDEV (in val numeric) returns numeric from
 	STD12_INIT, VAR_ACC, STDDEV_FIN
 ;
-create aggregate COVAR_SAMP (in expr1 numeric, in expr2 numeric) returns numeric from
+create aggregate DB.DBA.COVAR_SAMP (in expr1 numeric, in expr2 numeric) returns numeric from
 	STD13_INIT, COVAR_ACC, COVAR_SAMP_FIN
 ;
-create aggregate COVAR_POP (in expr1 numeric, in expr2 numeric) returns numeric from
+create aggregate DB.DBA.COVAR_POP (in expr1 numeric, in expr2 numeric) returns numeric from
 	STD13_INIT, COVAR_ACC, COVAR_POP_FIN
 ;
-create aggregate COVAR (in expr1 numeric, in expr2 numeric) returns numeric from
+create aggregate DB.DBA.COVAR (in expr1 numeric, in expr2 numeric) returns numeric from
 	STD13_INIT, COVAR_ACC, COVAR_FIN
 ;
 
@@ -320,7 +320,7 @@ create procedure REGR_SLOPE_FIN (inout _env varchar)
 }
 ;
 
-create aggregate REGR_SLOPE (in expr1 numeric, in expr2 numeric) returns numeric from REGR_SLOPE_INIT, REGR_SLOPE_ACC, REGR_SLOPE_FIN
+create aggregate DB.DBA.REGR_SLOPE (in expr1 numeric, in expr2 numeric) returns numeric from REGR_SLOPE_INIT, REGR_SLOPE_ACC, REGR_SLOPE_FIN
 ;
 
 --!AWK PUBLIC
@@ -373,7 +373,7 @@ create procedure REGR_INTERCEPT_FIN (inout _env varchar)
 }
 ;
 
-create aggregate REGR_INTERCEPT (in expr1 numeric, in expr2 numeric) returns numeric from REGR_INTERCEPT_INIT, REGR_INTERCEPT_ACC, REGR_INTERCEPT_FIN
+create aggregate DB.DBA.REGR_INTERCEPT (in expr1 numeric, in expr2 numeric) returns numeric from REGR_INTERCEPT_INIT, REGR_INTERCEPT_ACC, REGR_INTERCEPT_FIN
 ;
 
 --!AWK PUBLIC
@@ -406,7 +406,7 @@ create procedure REGR_COUNT_MERGE (inout _e1 integer, inout _e2 integer)
 }
 ;
 
-create aggregate REGR_COUNT (in expr1 numeric, in expr2 numeric) returns numeric from REGR_COUNT_INIT, REGR_COUNT_ACC, REGR_COUNT_FIN, REGR_COUNT_MERGE
+create aggregate DB.DBA.REGR_COUNT (in expr1 numeric, in expr2 numeric) returns numeric from REGR_COUNT_INIT, REGR_COUNT_ACC, REGR_COUNT_FIN, REGR_COUNT_MERGE
 ;
 
 --!AWK PUBLIC
@@ -454,11 +454,11 @@ create procedure REGR_AVGY_FIN (inout _env varchar)
 }
 ;
 
-create aggregate REGR_AVGX (in x numeric, in y numeric) returns numeric from
+create aggregate DB.DBA.REGR_AVGX (in x numeric, in y numeric) returns numeric from
 	STD12_INIT, REGR_AVG_ACC, REGR_AVGX_FIN
 ;
 
-create aggregate REGR_AVGY (in x numeric, in y numeric) returns numeric from
+create aggregate DB.DBA.REGR_AVGY (in x numeric, in y numeric) returns numeric from
 	STD12_INIT, REGR_AVG_ACC, REGR_AVGY_FIN
 ;
 
@@ -535,7 +535,7 @@ create procedure CORR_FIN (inout _env varchar)
 }
 ;
 
-create aggregate CORR (in x numeric, in y numeric) returns numeric from
+create aggregate DB.DBA.CORR (in x numeric, in y numeric) returns numeric from
 	CORR_INIT, CORR_ACC, CORR_FIN
 ;
 
@@ -609,7 +609,7 @@ create procedure REGR_R2_FIN (inout _env varchar)
 }
 ;
 
-create aggregate REGR_R2 (in e1 numeric, in e2 numeric) returns numeric from
+create aggregate DB.DBA.REGR_R2 (in e1 numeric, in e2 numeric) returns numeric from
 	REGR_R2_INIT, REGR_R2_ACC, REGR_R2_FIN
 ;
 
@@ -683,15 +683,15 @@ create procedure REGR_SXY_FIN (inout _env varchar)
 }
 ;
 
-create aggregate REGR_SXX (in e1 numeric, in e2 numeric) returns numeric from
+create aggregate DB.DBA.REGR_SXX (in e1 numeric, in e2 numeric) returns numeric from
 	STD12_INIT, REGR_SXX_ACC, REGR_S___FIN
 ;
 
-create aggregate REGR_SYY (in e1 numeric, in e2 numeric) returns numeric from
+create aggregate DB.DBA.REGR_SYY (in e1 numeric, in e2 numeric) returns numeric from
 	STD12_INIT, REGR_SYY_ACC, REGR_S___FIN
 ;
 
-create aggregate REGR_SXY (in e1 numeric, in e2 numeric) returns numeric from
+create aggregate DB.DBA.REGR_SXY (in e1 numeric, in e2 numeric) returns numeric from
 	STD13_INIT, REGR_SXY_ACC, REGR_SXY_FIN
 ;
 	
@@ -702,19 +702,19 @@ create procedure xte_nodebld_final_root (in acc any) returns any
 }
 ;
 
-create aggregate XMLAGG (in _child any) returns any
+create aggregate DB.DBA.XMLAGG (in _child any) returns any
   from xte_nodebld_init, xte_nodebld_xmlagg_acc, xte_nodebld_final_root
 ;
 
-create aggregate VECTOR_AGG (in _child any) returns any
+create aggregate DB.DBA.VECTOR_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
 ;
 
-create aggregate VECTOR_CONCAT_AGG (in _child any) returns any
+create aggregate DB.DBA.VECTOR_CONCAT_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_concat_agg_acc, vectorbld_agg_final
 ;
 
-create aggregate XQ_SEQUENCE_AGG (in _child any) returns any
+create aggregate DB.DBA.XQ_SEQUENCE_AGG (in _child any) returns any
   from xq_sequencebld_init, xq_sequencebld_agg_acc, xq_sequencebld_agg_final
 ;
 

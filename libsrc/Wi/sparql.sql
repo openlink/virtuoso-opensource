@@ -4483,7 +4483,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
   declare md, res, st, msg any;
   st:= '00000';
   exec (
-    'select vector_agg (
+    'select DB.DBA.VECTOR_AGG (
       vector (
         id_to_iri ("jclass"),
         id_to_iri ("jinst"),
@@ -4695,7 +4695,7 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
   declare inh_id IRI_ID;
   if (loading_status = 0)
     {
-      proplist := ((select VECTOR_AGG (vector ("sub"."s", "sub"."p", "sub"."o")) from (
+      proplist := ((select DB.DBA.VECTOR_AGG (vector ("sub"."s", "sub"."p", "sub"."o")) from (
             sparql define input:storage "" define output:valmode "LONG"
             select ?s ?p ?o from <http://www.openlinksw.com/schemas/virtrdf#>
              where { ?s ?p ?o } ) as "sub"));
@@ -4822,7 +4822,7 @@ create function DB.DBA.RDF_RESTORE_METADATA (in read_from_file integer, in backu
       proplist := dict_list_keys (DB.DBA.RDF_TTL2HASH (txt, ''), 1);
     }
   else
-    proplist := ((select VECTOR_AGG (vector ("sub"."s", "sub"."p", "sub"."o")) from (
+    proplist := ((select DB.DBA.VECTOR_AGG (vector ("sub"."s", "sub"."p", "sub"."o")) from (
           sparql define input:storage "" define output:valmode "LONG"
           select ?s ?p ?o where { graph `iri(?:backup_name)` { ?s ?p ?o } } ) as "sub"));
   if (0 = length (proplist))
@@ -5381,7 +5381,7 @@ nop_nod: ;
 create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in quick_gc integer) returns any
 {
   declare gc_res, submaps any;
-  submaps := (select VECTOR_AGG (s1."subm") from (
+  submaps := (select DB.DBA.VECTOR_AGG (s1."subm") from (
       sparql define input:storage ""
       select ?subm where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -6643,7 +6643,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
   if (qmorder is null)
     qmorder := 1999;
   iris_and_orders := (
-    select VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
+    select DB.DBA.VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
     from (
       select sp."id", sp."p", sp."ord1"
       from (
@@ -6733,7 +6733,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
           `iri(?:storage)` virtrdf:qsUserMaps ?lst } } );
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: storage=', storage, ', qmparent=', qmparent, ', lstiri=', lstiri);
   iris_and_orders := (
-    select VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
+    select DB.DBA.VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
     from (
       select sp."id", sp."p", sp."ord1"
       from (

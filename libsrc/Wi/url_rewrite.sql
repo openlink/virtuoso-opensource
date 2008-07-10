@@ -271,10 +271,10 @@ returns any
   declare iri_list, rule_list any;
   iri_list := vector ();
   if (not dump_details)
-    return (select VECTOR_AGG (URR_RULE) from DB.DBA.URL_REWRITE_RULE where URR_RULE like like_pattern_for_rule_iris);
+    return (select DB.DBA.VECTOR_AGG (URR_RULE) from DB.DBA.URL_REWRITE_RULE where URR_RULE like like_pattern_for_rule_iris);
   for select URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, URR_NICE_PARAMS, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS, URR_TARGET_EXPR from DB.DBA.URL_REWRITE_RULE where URR_RULE like like_pattern_for_rule_iris do
     {
-      rule_list := ( select VECTOR_AGG (d.URRL_LIST)
+      rule_list := ( select DB.DBA.VECTOR_AGG (d.URRL_LIST)
         from (select distinct a.URRL_LIST from DB.DBA.URL_REWRITE_RULE_LIST as a where a.URRL_MEMBER = URR_RULE) as d );
       iri_list := vector_concat (iri_list, vector (URR_RULE, vector (URR_RULE_TYPE, URR_NICE_FORMAT, deserialize(URR_NICE_PARAMS), URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS, URR_TARGET_EXPR), rule_list));
     }
@@ -290,12 +290,12 @@ returns any
   declare iri_list, rule_list, http_vec any;
   iri_list := vector ();
   if (not dump_details)
-    return (select VECTOR_AGG (d.URRL_LIST) from
+    return (select DB.DBA.VECTOR_AGG (d.URRL_LIST) from
       (select distinct a.URRL_LIST from DB.DBA.URL_REWRITE_RULE_LIST as a where URRL_LIST like like_pattern_for_rulelist_iris) as d);
   for select distinct URRL_LIST as cur_iri from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST like like_pattern_for_rulelist_iris do
     {
-      rule_list := (select VECTOR_AGG (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = cur_iri order by URRL_INX asc);
-      http_vec := (select VECTOR_AGG (vector (HP_LISTEN_HOST, HP_HOST, HP_LPATH)) from DB.DBA.HTTP_PATH where HP_OPTIONS is not null and get_keyword ('url_rewrite', deserialize (HP_OPTIONS), 0) = cur_iri);
+      rule_list := (select DB.DBA.VECTOR_AGG (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = cur_iri order by URRL_INX asc);
+      http_vec := (select DB.DBA.VECTOR_AGG (vector (HP_LISTEN_HOST, HP_HOST, HP_LPATH)) from DB.DBA.HTTP_PATH where HP_OPTIONS is not null and get_keyword ('url_rewrite', deserialize (HP_OPTIONS), 0) = cur_iri);
       iri_list := vector_concat (iri_list, vector (cur_iri, rule_list, http_vec));
     }
   return iri_list;
@@ -1284,7 +1284,7 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
   declare ses, rules any;
   ses := string_output ();
   http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \n\'%s\', 1, \n  vector (', rulelist_iri), ses);
-  rules := (select vector_agg (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX);
+  rules := (select DB.DBA.VECTOR_AGG (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX);
   http (SYS_SQL_VECTOR_PRINT (rules), ses);
   http ('));\n\n', ses);
 
