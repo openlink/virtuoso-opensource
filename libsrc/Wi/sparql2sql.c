@@ -6101,7 +6101,11 @@ again:
 /* Final processing: */
   switch (root->_.req_top.subtype)
     {
-    case INSERT_L: case DELETE_L:
+    case DELETE_L:
+      if (spar_optimize_delete_of_single_triple_pattern (sparp, root))
+        break; /* If optimized then there's nothing more to optimize. */
+      /* no break here */
+    case INSERT_L:
       spar_optimize_retvals_of_insert_or_delete (sparp, root);
       break;
     case MODIFY_L:

@@ -172,6 +172,43 @@ typedef struct ctor_var_enumerator_s
 }
 ctor_var_enumerator_t;
 
+int
+spar_cve_find_or_add_variable (sparp_t *sparp, ctor_var_enumerator_t *haystack_cve, SPART *needle_var)
+{
+  int var_ctr = haystack_cve->cve_vars_count;
+  dk_set_t var_iter;
+  for (var_iter = haystack_cve->cve_vars_acc; NULL != var_iter; var_iter = var_iter->next)
+    {
+      SPART *v = (SPART *)(var_iter->data);
+      var_ctr--;
+      if (!strcmp (needle_var->_.var.vname, v->_.var.vname))
+        return var_ctr;
+    }
+  t_set_push (&(haystack_cve->cve_vars_acc), needle_var);
+  var_ctr = haystack_cve->cve_vars_count;
+  haystack_cve->cve_vars_count++;
+  return var_ctr;
+}
+
+int
+sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{ /* This rewrites variables that are nested into backquoted expressions in ctor template when the query has limit or offset clause */
+  ctor_var_enumerator_t *cve = common_env;
+  int curr_type = SPART_TYPE (curr);
+  if (SPAR_BLANK_NODE_LABEL == curr_type)
+    spar_error (sparp, "Blank nodes can not be used in backquoted expressions of constructor template, consider using variables instead");
+  if (SPAR_VARIABLE != curr_type)
+    return SPAR_GPT_ENV_PUSH;
+  if (NULL != cve->cve_limofs_var_alias)
+    {
+      int var_ctr = spar_cve_find_or_add_variable (sparp, cve, curr);
+      SPART *limofs_aref = spar_make_funcall (sparp, 0, "bif:aref",
+        (SPART **)t_list (2, cve->cve_limofs_var, t_box_num_nonull (var_ctr)) );
+      sts_this->sts_curr_array [sts_this->sts_ofs_of_curr_in_array] = limofs_aref;
+    }
+  return SPAR_GPT_NODOWN;
+}
+
 #define CTOR_OPCODE_VARIABLE 1
 #define CTOR_OPCODE_BNODE 2
 #define CTOR_OPCODE_CONST_OR_EXPN 3
@@ -180,7 +217,6 @@ void
 spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve, const char *formatter)
 {
   int triple_ctr, fld_ctr, var_ctr;
-  dk_set_t var_iter;
   dk_set_t bnode_iter;
   SPART *ctor_call;
   SPART *var_vector_expn;
@@ -206,18 +242,7 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
           switch (fld_type)
             {
             case SPAR_VARIABLE:
-              var_ctr = cve->cve_vars_count;
-              for (var_iter = cve->cve_vars_acc; NULL != var_iter; var_iter = var_iter->next)
-                {
-                  SPART *v = (SPART *)(var_iter->data);
-                  var_ctr--;
-                  if (!strcmp (fld->_.var.vname, v->_.var.vname))
-                    goto var_found_or_added;
-                }
-              t_set_push (&(cve->cve_vars_acc), fld);
-              var_ctr = cve->cve_vars_count;
-              cve->cve_vars_count++;
-var_found_or_added: ;
+              var_ctr = spar_cve_find_or_add_variable (sparp, cve, fld);
               tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
               tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
               triple_is_const = 0;
@@ -240,9 +265,15 @@ bnode_found_or_added:
               tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
               triple_is_const = 0;
               break;
-            default:
+            case SPAR_LIT: case SPAR_QNAME:
               tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
               tvector_args [(fld_ctr-1)*2 + 1] = fld;
+            default:
+              {
+                sparp_gp_trav (sparp, fld, cve, NULL, NULL, sparp_gp_trav_ctor_var_to_limofs_aref, NULL, NULL, NULL);
+                tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+                tvector_args [(fld_ctr-1)*2 + 1] = fld;
+              }
               break;
             }
         }
@@ -392,6 +423,121 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
     }
   spar_internal_error (sparp, "spar_" "emulate_ctor_field(): bad opcode");
   return NULL; /* never reached */
+}
+
+SPART *
+spar_find_single_physical_triple_pattern (sparp_t *sparp, SPART *tree)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_TRIPLE:
+      if (1 == BOX_ELEMENTS (tree->_.triple.tc_list))
+        {
+          quad_map_t *qm = tree->_.triple.tc_list[0]->tc_qm;
+          if ((NULL != qm->qmTableName) && !strcmp (qm->qmTableName, "DB.DBA.RDF_QUAD"))
+            return tree;
+        }
+      return NULL;
+    case SPAR_GP:
+      if ((1 == BOX_ELEMENTS (tree->_.gp.members)) && (NULL == tree->_.gp.subquery))
+        return spar_find_single_physical_triple_pattern (sparp, tree->_.gp.members[0]);
+      return NULL;
+    default:
+      spar_internal_error (sparp, "spar_" "find_single_physical_triple_pattern(): unsupported subtree type");
+    }
+  return NULL;
+}
+
+int
+spar_tr_fields_are_similar (sparp_t *sparp, SPART *fld1, SPART *fld2)
+{
+  int fldtype = SPART_TYPE (fld1);
+  if (fldtype != SPART_TYPE (fld2))
+    return 0;
+  switch (fldtype)
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      return (strcmp (fld1->_.var.vname, fld2->_.var.vname) ? 0 : 1);
+    case SPAR_QNAME:
+      return (strcmp (fld1->_.lit.val, fld2->_.lit.val) ? 0 : 1);
+    case SPAR_LIT:
+      {
+        caddr_t v1 = SPAR_LIT_OR_QNAME_VAL (fld1);
+        caddr_t v2 = SPAR_LIT_OR_QNAME_VAL (fld2);
+        if ((DV_TYPE_OF (v1) != DV_TYPE_OF (v2)) ||
+          (DVC_MATCH != cmp_boxes_safe (v1, v2, NULL, NULL)) )
+          return 0;
+        if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (fld1)) ||
+          (DV_ARRAY_OF_POINTER != DV_TYPE_OF (fld2)) )
+          return 1;
+        if ((DV_TYPE_OF (fld1->_.lit.datatype) != DV_TYPE_OF (fld2->_.lit.datatype)) ||
+          (DV_TYPE_OF (fld1->_.lit.language) != DV_TYPE_OF (fld2->_.lit.language)) )
+          return 0;
+        if ((DVC_MATCH != cmp_boxes_safe (fld1->_.lit.datatype, fld2->_.lit.datatype, NULL, NULL)) ||
+          (DVC_MATCH != cmp_boxes_safe (fld2->_.lit.language, fld2->_.lit.language, NULL, NULL)) )
+          return 0;
+        return 1;
+      }
+    default:
+      spar_internal_error (sparp, "spar_" "tr_fields_are_similar(): unsuooprted type");
+    }
+  return 0; /* to keep compiler happy */
+}
+
+int
+spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
+{
+  SPART *triple;
+  SPART *ctor;
+  SPART **known_vars;
+  SPART **retvals = top->_.req_top.retvals;
+  int retvals_count = BOX_ELEMENTS (retvals);
+  SPART **var_triples, **args;
+  SPART *graph_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (4 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
+  triple = spar_find_single_physical_triple_pattern (sparp, top->_.req_top.pattern);
+  if (NULL == triple)
+    return 0; /* nontrivial pattern, can not be optimized this way */
+  graph_expn		= retvals[0]->_.funcall.argtrees[0];
+  ctor			= retvals[0]->_.funcall.argtrees[1];
+  log_mode_expn		= retvals[0]->_.funcall.argtrees[2];
+  compose_report_expn	= retvals[0]->_.funcall.argtrees[3];
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (3 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
+  dbg_assert (DELETE_L == top->_.req_top.subtype);
+  var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
+  if (1 < retvals_count)
+    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+  else
+    known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
+  if (1 != BOX_ELEMENTS (var_triples))
+    return 0; /* nontrivial constructor, can not be optimized this way */
+  args = var_triples[0]->_.funcall.argtrees;
+  if ((CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) ||
+    (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) ||
+    (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
+    return 0; /* bnodes in constructor can not be optimized this way (BTW that is blab when inside DELETE) */
+  if (!spar_tr_fields_are_similar (sparp, graph_expn,
+      triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) ||
+    !spar_tr_fields_are_similar (sparp,
+      spar_emulate_ctor_field (sparp, args[0], args[1], known_vars),
+      triple->_.triple.tr_fields[SPART_TRIPLE_SUBJECT_IDX] ) ||
+    !spar_tr_fields_are_similar (sparp,
+      spar_emulate_ctor_field (sparp, args[2], args[3], known_vars),
+      triple->_.triple.tr_fields[SPART_TRIPLE_PREDICATE_IDX] ) ||
+    !spar_tr_fields_are_similar (sparp,
+      spar_emulate_ctor_field (sparp, args[4], args[5], known_vars),
+      triple->_.triple.tr_fields[SPART_TRIPLE_OBJECT_IDX] ) )
+    return 0;
+  good_ctor_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DELETE_CTOR",
+    (SPART **)t_list (4,
+      graph_expn,
+      spar_make_funcall (sparp, 0, "bif:vector", var_triples),
+      ctor->_.funcall.argtrees[1],
+      log_mode_expn ) );
+  ctor->_.funcall.argtrees[0] = spar_make_funcall (sparp, 0, "bif:vector",
+        (SPART **)t_list (0) );
+  retvals[0]->_.funcall.argtrees[0] = good_ctor_call;
+  return 1;
 }
 
 void
