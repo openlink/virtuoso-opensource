@@ -3442,7 +3442,6 @@ procedure.</para>
 
 <programlisting><![CDATA[
 SPARQL
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 create iri class northwind:Category "http://^{URIQADefaultHost}^/Northwind/Category/%d#this" (in category_id integer not null) .
 create iri class northwind:Shipper "http://^{URIQADefaultHost}^/Northwind/Shipper/%d#this" (in shipper_id integer not null) .
 create iri class northwind:Supplier "http://^{URIQADefaultHost}^/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
@@ -3480,7 +3479,6 @@ from Demo.demo.Shippers as shippers
 from Demo.demo.Categories as categories
 from Demo.demo.Customers as customers
 from Demo.demo.Employees as employees
-from Demo.demo.Employees as employees2
 from Demo.demo.Orders as orders
 from Demo.demo.Order_Details as order_lines
 from Demo.demo.Countries as countries
@@ -3507,6 +3505,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
                                 as virtrdf:CustomerContact-country ;
+                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) ;
                         rdfs:isDefinedBy northwind:CustomerContact (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
@@ -3534,6 +3533,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
                                 as virtrdf:Product-discontinued ;
+                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) ;
                         rdfs:isDefinedBy northwind:Product (products.ProductID) .
 
                 northwind:Category (products.CategoryID)
@@ -3569,6 +3569,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
                                 as virtrdf:Supplier-home_page ;
+                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) ;
                         rdfs:isDefinedBy northwind:Supplier (suppliers.SupplierID) .
 
                 northwind:Country (suppliers.Country)
@@ -3584,11 +3585,13 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Category-description ;
                         foaf:img northwind:CategoryPhoto(categories.CategoryID)
                                 as virtrdf:Category-categories.CategoryPhoto ;
+                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) ;
                         rdfs:isDefinedBy northwind:Category (categories.CategoryID) .
 
                 northwind:CategoryPhoto(categories.CategoryID)
                         a northwind:CategoryPhoto
                                 as virtrdf:Category-categories.CategoryPhotoID ;
+                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) ;
                         rdfs:isDefinedBy northwind:CategoryPhoto(categories.CategoryID) .
 
                 northwind:Shipper (shippers.ShipperID)
@@ -3598,6 +3601,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Shipper-company_name ;
                         northwind:phone shippers.Phone
                                 as virtrdf:Shipper-phone ;
+                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) ;
                         rdfs:isDefinedBy northwind:Shipper (shippers.ShipperID) .
 
                 northwind:Customer (customers.CustomerID)
@@ -3633,6 +3637,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-phone ;
                         northwind:fax customers.Fax
                                 as virtrdf:Customer-fax ;
+                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) ;
                         rdfs:isDefinedBy northwind:Customer (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
@@ -3680,17 +3685,17 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-extension ;
                         northwind:notes employees.Notes
                                 as virtrdf:Employee-notes ;
-                        northwind:employeeID employees.EmployeeID
-                                as virtrdf:Employee-key ;
-                        northwind:reportsTo northwind:Employee(employees2.FirstName, employees2.LastName, employees2.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees2.}^.EmployeeID)
+                        northwind:reportsTo northwind:Employee(employees.FirstName, employees.LastName, employees.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees.}^.EmployeeID)
                                 as virtrdf:Employee-reports_to ;
                         foaf:img northwind:EmployeePhoto(employees.EmployeeID)
                                 as virtrdf:Employee-employees.EmployeePhoto ;
+                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) ;
                         rdfs:isDefinedBy northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) .
 
                 northwind:EmployeePhoto(employees.EmployeeID)
                         a northwind:EmployeePhoto
                                 as virtrdf:Employee-employees.EmployeePhotoId ;
+                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) ;
                         rdfs:isDefinedBy northwind:EmployeePhoto (employees.EmployeeID) .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
@@ -3706,9 +3711,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-Order ;
                         northwind:has_customer northwind:Customer (orders.CustomerID)
                                 as virtrdf:Order-order_has_customer ;
-                        northwind:has_salesrep northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
+                        northwind:has_salesrep northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:Customer-has_salesrep ;
-                        northwind:has_employee northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
+                        northwind:has_employee northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:Order-order_has_employee ;
                         northwind:orderDate orders.OrderDate
                                 as virtrdf:Order-order_date ;
@@ -3734,7 +3739,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country ;
+                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) ;
                         rdfs:isDefinedBy northwind:Order (orders.OrderID) .
+
+                northwind:Country (orders.ShipCountry)
+                        northwind:is_ship_country_of
+                northwind:Order (orders.OrderID) as virtrdf:Order-is_country_of .
 
                 northwind:Customer (orders.CustomerID)
                         northwind:has_order northwind:Order (orders.OrderID) as virtrdf:Order-has_order .
@@ -3755,7 +3765,16 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
                                 as virtrdf:OrderLine-discount ;
+                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
                         rdfs:isDefinedBy northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) .
+
+                northwind:Order (orders.OrderID)
+                        northwind:is_order_of
+                northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{orders.}^.OrderID = ^{order_lines.}^.OrderID) as virtrdf:Order-is_order_of .
+
+                northwind:Product (products.ProductID)
+                        northwind:is_product_of
+                northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) where (^{products.}^.ProductID = ^{order_lines.}^.ProductID) as virtrdf:Product-is_product_of .
 
                 northwind:Country (countries.Name)
                         a northwind:Country
@@ -3779,6 +3798,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng ;
+                        rdfs:isDefinedBy northwind:country_iri (countries.Name) ;
                         rdfs:isDefinedBy northwind:Country (countries.Name) .
 
                 northwind:Country (countries.Name)
@@ -3792,6 +3812,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
                                 as virtrdf:Province-ProvinceName ;
+                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) ;
                         rdfs:isDefinedBy northwind:Province (provinces.CountryCode, provinces.Province) .
 
                 northwind:Province (provinces.CountryCode, provinces.Province)
