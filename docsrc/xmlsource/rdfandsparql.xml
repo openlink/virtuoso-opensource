@@ -947,6 +947,42 @@ automatically add code for format conversion into the resulting SQL
 code so SQL functions can be used even if <emphasis>define output:valmode
 'LONG'</emphasis> forces the use of internal RDF representation in the
 result set.</para>
+<para><emphasis>Example:</emphasis></para>
+<programlisting><![CDATA[
+SQL>create procedure DB.DBA.ComposeInfo (
+  in pname varchar,
+  in pnick varchar := '',
+  in pbox  varchar := '')
+{
+   declare ss varchar;
+   ss := concat(pname, ' ', pnick, ' ', pbox);
+   ss := rtrim (ss, ' ');
+   return ss;
+
+};
+Done. -- 0 msec.
+
+SQL>sparql
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+select (sql:ComposeInfo (?name, ?nick, ?box))
+from <http://www.w3.org/People/Berners-Lee/card>
+where
+  {
+    ?s rdf:type foaf:Person .
+    optional{?s foaf:name ?name }.
+    optional{?s foaf:nick ?nick }.
+    optional{?s foaf:box ?box }.
+    filter (?nick like '%TimBL%') .
+  };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Timothy Berners-Lee TimBL
+
+1 Rows. -- 30 msec.
+]]></programlisting>
 </sect2>
 </sect1>
    <sect1 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
