@@ -24,7 +24,7 @@
 LOGDIR=`pwd`
 VERSION="1.00.00"  # see automatic versioning below "1.02.69"
 LOGFILE="${LOGDIR}/make_ods_vad.log"
-STICKER="${LOGDIR}/make_ods_vad.xml"
+STICKER="make_ods_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}

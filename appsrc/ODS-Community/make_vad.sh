@@ -24,7 +24,7 @@
 LOGDIR=`pwd`
 VERSION="0.0.996"
 LOGFILE="${LOGDIR}/make_vad.log"
-STICKER="${LOGDIR}/make_vad.xml"
+STICKER="make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}

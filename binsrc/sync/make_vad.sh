@@ -24,7 +24,7 @@
 VERSION="1.0"
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_syncml_vad.log"
-STICKER=`pwd`"/make_syncml_vad.xml"
+STICKER="make_syncml_vad.xml"
 STICKER_NAME="make_syncml_vad.xml"
 SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}

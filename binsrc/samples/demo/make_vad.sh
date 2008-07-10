@@ -24,7 +24,8 @@
 VERSION="1.00.00"
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make__demo_vad.log"
-STICKER="${LOGDIR}/make__demo_vad.xml"
+STICKER_NAME="make__demo_vad.xml"
+STICKER="${LOGDIR}/${STICKER_NAME}"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}
@@ -594,7 +595,7 @@ QueueMax     = 50000
 }
 
 vad_create() {
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'demo_dav.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_NAME', '.', 'demo_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }

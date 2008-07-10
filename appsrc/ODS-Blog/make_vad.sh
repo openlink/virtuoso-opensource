@@ -24,7 +24,7 @@
 VERSION="1.0.0"
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_ods_blog_vad.log"
-STICKER="${LOGDIR}/make_ods_blog_vad.xml"
+STICKER="make_ods_blog_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}

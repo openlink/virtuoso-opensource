@@ -2,8 +2,8 @@
 # $Id$
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_tutorial_vad.output"
-STICKER_DAV="${LOGDIR}/make_tutorial_dav_vad.xml"
-STICKER_FS="${LOGDIR}/make_tutorial_fs_vad.xml"
+STICKER_DAV="make_tutorial_dav_vad.xml"
+STICKER_FS="make_tutorial_fs_vad.xml"
 
 SERVER=${SERVER-}
 THOST=${THOST-localhost}
