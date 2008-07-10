@@ -274,6 +274,8 @@ void soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * 
        ((caddr_t **)(x))[n + 1] : \
        NULL)
 
+query_instance_t soap_fake_top_qi;
+
 static void
 ses_sprintf (dk_session_t *ses, const char *fmt, ...)
 {
@@ -1651,7 +1653,11 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 	   }
 	case DV_XML_ENTITY:
 	    {
-	      ((xml_entity_t *)object)->_->xe_serialize ((xml_entity_t *)object, out);
+              xml_entity_t *ent = (xml_entity_t *)object;
+              if (!XE_IS_TREE (ent))
+	        return srv_make_new_error ("42000", "SP038", "SOAP can not print persistent XML entity in the result, only XML trees are supported.");
+              ent->xe_doc.xd->xd_qi = &soap_fake_top_qi;
+	      ent->_->xe_serialize (ent, out);
 	      break;
 	    }
 /*        case DV_STRING_SESSION:
@@ -8847,7 +8853,6 @@ error:
   return NULL;
 }
 
-
 static caddr_t
 soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t type_ref, int elem,
     soap_ctx_t * ctx, sql_type_t * sqt)
@@ -9224,12 +9229,9 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	   if (!stricmp (udt->scl_name, "DB.DBA.XMLType") && !strcmp (fld->sfl_name, "xt_ent"))
 	     {
 	       xml_tree_ent_t * xte;
-	       query_instance_t auto_qi;
-
-	       memset (&auto_qi, 0, sizeof (query_instance_t));
 	       elem_entity = (caddr_t*) xml_element_nonspace_child ((caddr_t) entity, 0); 
 	       value = soap_box_xml_entity_validating_1 (elem_entity, err_ret, SOAP_XML_TYPE, 0, ctx, NULL);
-	       xte = xte_from_tree (value, &auto_qi);
+	       xte = xte_from_tree (value, &soap_fake_top_qi);
 	       if (*err_ret)
 		 goto error;
 	       dk_set_push (&ret_set, box_dv_short_string (extract_last_xml_name_part (soap_fld_name)));
@@ -11726,6 +11728,7 @@ bif_soap_udt_unpublish (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_soap_init (void)
 {
+  soap_fake_top_qi.qi_client = bootstrap_cli;
   ht_soap_dt = id_str_hash_create (101);
   ht_soap_elt = id_str_hash_create (101);
   ht_soap_attr = id_str_hash_create (101);

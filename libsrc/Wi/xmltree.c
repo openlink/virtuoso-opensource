@@ -9646,7 +9646,7 @@ bif_xml_set_ns_decl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int res = 0;
   nsdecl_t decl;
   if (('n' == pref[0]) && isdigit (pref[1]))
-    return 0; /* We never remember namespaces that are too somilar to our namespace prefixes */
+    return 0; /* We never remember namespaces that are too similar to our namespace prefixes */
   decl.nsd_prefix = pref;
   decl.nsd_uri = uri;
   if (persistent & 0x1)
@@ -9669,7 +9669,7 @@ bif_xml_set_ns_decl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 xml_get_cli_or_global_ns_prefix (caddr_t * qst, const char *uri, ptrlong persistent)
 {
-  return NULL; /* until crash is fixed */
+  /* return NULL; until crash is fixed */
   if ((NULL != qst) && (persistent & 0x1))
     {
       xml_ns_2dict_t *xn2 = xml_cli_ns_2dict (((query_instance_t *)qst)->qi_client);
