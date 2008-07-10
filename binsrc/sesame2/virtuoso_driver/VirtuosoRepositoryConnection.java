@@ -77,6 +77,7 @@ import org.openrdf.query.TupleQueryResultHandlerException;
 import org.openrdf.query.algebra.evaluation.QueryBindingSet;
 import org.openrdf.query.impl.GraphQueryResultImpl;
 import org.openrdf.query.impl.TupleQueryResultImpl;
+import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
@@ -1486,10 +1487,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
 	protected TupleQueryResult executeSPARQLForTupleResult(String query) {
 
 		Vector<String> names = new Vector();
-		Vector<BindingSet> bindings = new Vector();
 		try {
 			verifyIsOpen();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
@@ -1503,73 +1504,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				if (names.indexOf(col) < 0) 
 					names.add(col); // no duplicates
 			}
-			while (rs.next()) {
-				QueryBindingSet qbs = new QueryBindingSet();
-				for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-					String col = rsmd.getColumnName(i);
-					Object val = rs.getObject(i);
-					Value v = castValue(val);
-					qbs.setBinding(col, v);
-				}
-				bindings.add(qbs);
-			}
-			stmt.close();
+
+			return new TupleQueryResultImpl(names, new CloseableIterationBindingSet(rs));
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e.toString());
 		}
-		TupleQueryResult tqr = new TupleQueryResultImpl(names, bindings.iterator());
-		return tqr;
 	}
 	
 	protected GraphQueryResult executeSPARQLForGraphResult(String query) {
 
 		HashMap<String,Integer> names = new HashMap();
-		Vector<Statement> statements = new Vector<Statement>();
+
 		try {
 			verifyIsOpen();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+
 			ResultSetMetaData rsmd = rs.getMetaData();
 
 			// begin at onset one
 			for (int i = 1; i <= rsmd.getColumnCount(); i++)
 				names.put(rsmd.getColumnName(i), new Integer(i));
-
-			while (rs.next()) {
-			        Integer col = null;
-				Resource sval = null;
-				URI pval = null;
-				Value oval = null;
-				Resource gval = null;
-
-			        col = names.get("S");
-			        if (col != null)
-				  sval = (Resource) castValue(rs.getObject(col.intValue()));
-				
-			        col = names.get("P");
-			        if (col != null)
-				  pval = (URI) castValue(rs.getObject(col.intValue()));
-				
-			        col = names.get("O");
-			        if (col != null)
-				   oval = castValue(rs.getObject(col.intValue()));
-				
-			        col = names.get("G");
-			        if (col != null)
-				  gval = (Resource) castValue(rs.getObject(col.intValue()));
-				
-				Statement st = new ContextStatementImpl(sval,pval,oval,gval);
-				statements.add(st);
-			}
-			stmt.close();
+			return new GraphQueryResultImpl(new HashMap<String,String>(), new CloseableIterationGraphResult(rs));
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		
-		GraphQueryResult gqr = new GraphQueryResultImpl(new HashMap<String,String>(), statements);
-		return gqr;
 	}
 
 	protected boolean executeSPARQLForBooleanResult(String query) {
@@ -1804,7 +1766,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]");
 		}
 
-		return new CloseableIterationImpl(rs, subject, predicate, object);
+		return new CloseableIterationStmt(rs, subject, predicate, object);
 	}
 
 
@@ -2072,10 +2034,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-        public class CloseableIterationImpl implements CloseableIteration<Statement, RepositoryException> {
+	private Resource[] getContexts() throws RepositoryException {
+		Resource[] contexts;
+		
+		List<Resource> ctx = getContextIDs().asList();
+	        contexts = new Resource[ctx.size()];
+	        ctx.toArray(contexts);
+	        return contexts;
+	}
+
+
+        public class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
                                            
 
-		Statement v_row;
+		E	  v_row;
 		boolean	  v_finished = false;
 		boolean	  v_prefetched = false;
 		Resource  subject;
@@ -2083,7 +2055,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		Value 	  object;
 		VirtuosoResultSet v_rs;
 
-        	CloseableIterationImpl(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
+        	public CloseableIterationBase(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
         	{
         	  v_rs = rs;
         	  this.subject = subject;
@@ -2092,14 +2064,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         	}
 
 
-		public boolean hasNext() throws RepositoryException 
+        	private X createException(Exception e) {
+        	  return null;
+        	}
+
+		public boolean hasNext() throws X 
 		{
        			if (!v_finished && !v_prefetched) 
        				moveForward();
 			return !v_finished;
 		}
 
-		public Statement next() throws RepositoryException 
+		public E next() throws X 
 		{
 		        if (!v_finished && !v_prefetched)
 			    moveForward();
@@ -2112,12 +2088,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        return v_row;
 		}
 
-		public void remove() throws RepositoryException 
+		public void remove() throws X 
 		{
 		  throw new UnsupportedOperationException();
 		}
 
-		public void close() throws RepositoryException 
+		public void close() throws X
 		{
 			if (!v_finished)
 			{
@@ -2127,7 +2103,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 				catch (SQLException e)
 				{
-				    throw new RepositoryException(e);
+				    throw createException(e);
 				}
 			}
 			v_finished = true;
@@ -2141,7 +2117,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				} catch (Exception e) {}
 		}
 
-		protected void moveForward() throws RepositoryException
+		protected void moveForward() throws X
 		{
 			try
 			{
@@ -2155,9 +2131,27 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 			catch (Exception e)
 			{
-			    throw new RepositoryException(e);
+			    throw createException(e);
 			}
 		}
+
+		protected void extractRow() throws Exception 
+		{
+		}
+	}
+
+
+        public class CloseableIterationStmt extends CloseableIterationBase<Statement, RepositoryException> {
+                                           
+
+        	public CloseableIterationStmt(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
+        	{
+        	  super(rs, subject, predicate, object);
+        	}
+
+        	private RepositoryException createException(Exception e) {
+        		return new RepositoryException(e);
+        	}
 
 		protected void extractRow() throws Exception 
 		{
@@ -2200,14 +2194,91 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+        
 
+        public class CloseableIterationBindingSet extends CloseableIterationBase<BindingSet, QueryEvaluationException> {
+                                           
+ 		ResultSetMetaData rsmd;
 
-	private Resource[] getContexts() throws RepositoryException {
-		Resource[] contexts;
-		
-		List<Resource> ctx = getContextIDs().asList();
-	        contexts = new Resource[ctx.size()];
-	        ctx.toArray(contexts);
-	        return contexts;
+        	public CloseableIterationBindingSet(VirtuosoResultSet rs) throws QueryEvaluationException
+        	{
+        	  super(rs, null, null, null);
+        	  try {
+ 		  	rsmd = rs.getMetaData();
+		  } catch (Exception e) {
+		     throw createException(e);
+		  }
+        	}
+
+        	private QueryEvaluationException createException(Exception e) {
+        		return new QueryEvaluationException(e);
+        	}
+
+		protected void extractRow() throws Exception 
+		{
+
+			v_row = new QueryBindingSet();
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				String col = rsmd.getColumnName(i);
+				Object val = v_rs.getObject(i);
+				Value v = castValue(val);
+				((QueryBindingSet)v_row).setBinding(col, v);
+			}
+		}
 	}
+
+
+        public class CloseableIterationGraphResult extends CloseableIterationBase<Statement, QueryEvaluationException> {
+                                           
+		HashMap<String,Integer> names = new HashMap();
+
+        	public CloseableIterationGraphResult(VirtuosoResultSet rs) throws QueryEvaluationException
+        	{
+        	  super(rs, null, null, null);
+
+        	  try {
+ 		  	ResultSetMetaData rsmd = rs.getMetaData();
+
+		  	// begin at onset one
+		  	for (int i = 1; i <= rsmd.getColumnCount(); i++)
+		  		names.put(rsmd.getColumnName(i), new Integer(i));
+		  } catch (Exception e) {
+		     throw createException(e);
+		  }
+        	}
+
+        	private QueryEvaluationException createException(Exception e) {
+        		return new QueryEvaluationException(e);
+        	}
+
+		protected void extractRow() throws Exception 
+		{
+			Integer col = null;
+			Resource sval = null;
+			URI pval = null;
+			Value oval = null;
+			Resource gval = null;
+
+			col = names.get("S");
+			if (col != null)
+				sval = (Resource) castValue(v_rs.getObject(col.intValue()));
+				
+			col = names.get("P");
+			if (col != null)
+				pval = (URI) castValue(v_rs.getObject(col.intValue()));
+				
+			col = names.get("O");
+			if (col != null)
+				oval = castValue(v_rs.getObject(col.intValue()));
+				
+			col = names.get("G");
+			if (col != null)
+				gval = (Resource) castValue(v_rs.getObject(col.intValue()));
+
+			v_row = new ContextStatementImpl(sval,pval,oval,gval);
+		}
+	}
+
+
 }
+
