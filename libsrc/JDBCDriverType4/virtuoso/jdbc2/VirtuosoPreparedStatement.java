@@ -150,7 +150,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 try
 	   {
 	     // Add parameters
-	     vect.addElement(objparams.clone());
+	     vect.addElement(objparams);
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
@@ -239,7 +239,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 
    public int[] executeBatchUpdate() throws VirtuosoException
    {
-     int[] res = new int[batch.size()];  
+     int size = batch.size();
+     int[] res = new int[size];  
      synchronized (connection)
        {
 	 Object[] args = new Object[6];
@@ -247,14 +248,14 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 args[0] = statid;
 	 args[2] = (cursorName == null) ? args[0] : cursorName;
 	 args[1] = null;
-	 args[3] = objparams.clone();
+	 args[3] = batch;
 	 args[4] = null;
 	 try
 	   {
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-	     for (int inx = 0; inx < batch.size (); inx++)
+	     for (int inx = 0; inx < size; inx++)
 	     {
 		 vresultSet.setUpdateCount (0);
 		 vresultSet.getMoreResults ();
@@ -1044,14 +1045,10 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
          batch = new openlink.util.Vector(10,10);
 #endif
       // Add the sql request at the end
-      openlink.util.Vector vect = new openlink.util.Vector(3);
-      vect.addElement(parameters.clone());
-      vect.addElement(objparams.clone());
-      try {vect.addElement(new Integer(vresultSet.kindop()));}catch(VirtuosoException e){}
 #if JDK_VER >= 12
-      batch.add(vect);
+      batch.add(objparams.clone());
 #else
-      batch.addElement(vect);
+      batch.addElement(objparams.clone());
 #endif
    }
 
@@ -1089,35 +1086,14 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 
       try
 	{
-	  parameters = new openlink.util.Vector(batch.size());
-	  objparams = new openlink.util.Vector(batch.size());
-#if JDK_VER >= 12
-          inx = 0;
-          for(ListIterator it = batch.listIterator(); it.hasNext(); )
-	    {
-	      openlink.util.Vector vect = (openlink.util.Vector)it.next();
-	      parameters.setElementAt (vect.elementAt(0), inx);
-	      objparams.setElementAt (vect.elementAt(1), inx);
-	      Integer kindop = (Integer)(vect.elementAt(2));
-	      vect.removeAllElements();
-	      if(kindop.intValue()==VirtuosoTypes.QT_SELECT)
-		throwBatchUpdateException (result, "Batch executes only update statements", inx);
-              inx++;
-	    }
+      	  if (vresultSet.kindop()==VirtuosoTypes.QT_SELECT)
+	    throwBatchUpdateException (result, "Batch executes only update statements", inx);
+
 	  result = executeBatchUpdate ();
+
+#if JDK_VER >= 12
 	  batch.clear();
 #else
-	  for(inx = 0; inx < batch.size(); inx++)
-	    {
-	      openlink.util.Vector vect = (openlink.util.Vector)batch.elementAt(inx);
-	      parameters.setElementAt (vect.elementAt(0), inx);
-	      objparams.setElementAt (vect.elementAt(1), inx);
-	      Integer kindop = (Integer)(vect.elementAt(2));
-	      vect.removeAllElements();
-	      if(kindop.intValue()==VirtuosoTypes.QT_SELECT)
-		throwBatchUpdateException (result, "Batch executes only update statements", inx);
-	    }
-	  result = executeBatchUpdate ();
 	  batch.removeAllElements();
 #endif
 	}

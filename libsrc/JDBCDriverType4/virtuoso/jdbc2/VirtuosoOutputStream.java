@@ -196,18 +196,31 @@ class VirtuosoOutputStream extends BufferedOutputStream
      //System.err.println("Writing : object=[" + obj + "]");
      switch(tag = whatIs(obj))
        {
-	 case VirtuosoTypes.DV_ARRAY_OF_POINTER:
 	 case VirtuosoTypes.DV_LIST_OF_POINTER:
+#if JDK_VER >= 12
+	       {
+		 //System.out.println("DV_ARRAY_OF_POINTER");
+		 LinkedList o = (LinkedList)obj;
+		 int length = o.size();
+		 write(VirtuosoTypes.DV_ARRAY_OF_POINTER);
+		 writeint(length);
+		 for(ListIterator it = o.listIterator(); it.hasNext(); )
+		   {
+		     write_object(it.next());
+		   }
+		 return;
+	       }
+#endif
+	 case VirtuosoTypes.DV_ARRAY_OF_POINTER:
 	       {
 		 //System.out.println("DV_ARRAY_OF_POINTER");
 		 openlink.util.Vector o = (openlink.util.Vector)obj;
 		 int length = o.size();
 		 write(tag);
 		 writeint(length);
-		 for(;length != 0;length--)
+		 for(int i = 0; i < length; i++)
 		   {
-		     write_object(o.firstElement());
-		     o.removeElementAt(0);
+		     write_object(o.elementAt(i));
 		   }
 		 return;
 	       }
@@ -218,10 +231,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 int length = o.size();
 		 write(tag);
 		 writeint(length);
-		 for(;length != 0;length--)
+		 for(int i = 0; i < length; i++)
 		   {
-		     writelong(((Long)o.firstElement()).longValue());
-		     o.removeElementAt(0);
+		     writelong(((Long)o.elementAt(i)).longValue());
 		   }
 		 return;
 	       }
@@ -233,10 +245,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 int length = o.size();
 		 write(tag);
 		 writeint(length);
-		 for(;length != 0;length--)
+		 for(int i = 0; i < length; i++)
 		   {
-		     writeint(((Number)o.firstElement()).longValue());
-		     o.removeElementAt(0);
+		     writeint(((Number)o.elementAt(i)).longValue());
 		   }
 		 return;
 	       }
@@ -247,10 +258,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 int length = o.size();
 		 write(tag);
 		 writeint(length);
-		 for(;length != 0;length--)
+		 for(int i = 0; i < length; i++)
 		   {
-		     writerawdouble(((Double)o.firstElement()).doubleValue());
-		     o.removeElementAt(0);
+		     writerawdouble(((Double)o.elementAt(i)).doubleValue());
 		   }
 		 return;
 	       }
@@ -261,10 +271,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 int length = o.size();
 		 write(tag);
 		 writeint(length);
-		 for(;length != 0;length--)
+		 for(int i = 0; i < length; i++)
 		   {
-		     writerawfloat(((Float)o.firstElement()).floatValue());
-		     o.removeElementAt(0);
+		     writerawfloat(((Float)o.elementAt(i)).floatValue());
 		   }
 		 return;
 	       }
@@ -876,6 +885,10 @@ class VirtuosoOutputStream extends BufferedOutputStream
          return VirtuosoTypes.DV_ARRAY_OF_DOUBLE;
       if(obj instanceof VectorOfFloat)
          return VirtuosoTypes.DV_ARRAY_OF_FLOAT;
+#if JDK_VER >= 12
+      if(obj instanceof LinkedList)
+         return VirtuosoTypes.DV_LIST_OF_POINTER;
+#endif
       if(obj instanceof openlink.util.Vector)
          return VirtuosoTypes.DV_ARRAY_OF_POINTER;
       // Treat Short object
