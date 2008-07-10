@@ -5600,14 +5600,22 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
               where { `iri(?:tmpname)` ?p ?o };
               return vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> is identical to the new one, not touched'));
             }
-          signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
+          signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
         }
       res := vector_concat (res, vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped')));
     }
   else
     res := vector ();
-  if ((not bij) and __sprintff_is_proven_bijection (iritmpl))
-    bij := 1;
+  if (bij)
+    {
+      if (__sprintff_is_proven_unparseable (iritmpl))
+        signal ('22023', 'IRI class <' || classiri || '> has OPTION (BIJECTION) but its format string can not be unambiguously parsed by sprintf_inverse()');
+    }
+  else
+    {
+      if (__sprintff_is_proven_bijection (iritmpl))
+        bij := 1;
+    }
   bij_sff_count := 0;
   for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
     {

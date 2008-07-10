@@ -63,7 +63,7 @@ sprintff_is_proven_bijection (const char *f)
           while (isalnum (tail[0]) || ('_' == tail[0])) tail++;
           if ('}' != tail[0])
             return 0; /* Syntax error in placeholder for connection variable so the bijection is not proven */
-          if (NULL == strchr ("U", tail[1]))
+          if (NULL == strchr ("Us", tail[1]))
             return 0; /* Unknown format so the bijection is not proven */
           tail += 2;
           continue;
@@ -98,6 +98,64 @@ sprintff_is_proven_bijection (const char *f)
         }
     }
   return 1;
+}
+
+int
+sprintff_is_proven_unparseable (const char *f)
+{
+  const char *tail = f;
+  const char *tail_after_prev_format = NULL;
+
+  while ('\0' != tail[0])
+    {
+      char next;
+      char fmt_type;
+      char left_fmt_type;
+      if ('%' != tail[0])
+        {
+          tail += 1;
+          continue;
+        }
+      if ('%' == tail[1])
+        {
+          tail += 2;
+          continue;
+        }
+      if (tail == tail_after_prev_format)
+        left_fmt_type = tail_after_prev_format[-1];
+      else
+        left_fmt_type = '\0';
+      if ('{' == tail[1])
+        {
+          tail += 2;
+          while (isalnum (tail[0]) || ('_' == tail[0])) tail++;
+          if ('}' != tail[0])
+            return 1; /* Syntax error in placeholder for connection variable so it's proven to be unparseable */
+          if (NULL == strchr ("Us", tail[1]))
+            return 1; /* Unknown format so that is unparseable */
+          tail += 2;
+          continue;
+        }
+      tail++;
+      if (NULL == strchr ("DUdusc", tail[0]))
+        return 1; /* Unknown format so the format is unparseable OR the filed has modifiers for length and the like */
+      fmt_type = tail[0];
+      tail++;
+      tail_after_prev_format = tail;
+      if ('\0' == left_fmt_type)
+        continue; /* If formats are not ajacent then there's a possibility that ht is bijection for some data */
+      if ('c' == left_fmt_type)
+        continue; /* Single char is always OK because the size is fixed, can't "eat" more than needed */
+      if ('s' == left_fmt_type)
+        return 1; /* %s at left can not be a bijection */
+      if (('U' == left_fmt_type) && ('s' != fmt_type))
+        return 1; /* %U can eat anything except unescaped chars like '/' that might be pronted by '%s' */
+      if ('u' == fmt_type)
+        return 1; /* Any character %u can eat is good for any format at left */
+      if ('D' == fmt_type)
+        return 1; /* Any character %D can eat as first character is good for any format at left */
+   }
+  return 0;
 }
 
 #define SFF_ISECT_OK 0		/*!< A nonempty intersection may exists */
@@ -1038,8 +1096,12 @@ skip_save_f12: ;
       do newsize *= 2; while (newsize < max_reslen);
       new_buf = rvr->rvrSprintffs = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
     }
+#ifdef MALLOC_DEBUG
+  memset (rvr->rvrSprintffs, 0, box_length (rvr->rvrSprintffs));
+#else
 #ifdef DEBUG
   memset (rvr->rvrSprintffs, -1, box_length (rvr->rvrSprintffs));
+#endif
 #endif
   memcpy (rvr->rvrSprintffs, res, res_count * sizeof (caddr_t));
   rvr->rvrSprintffCount = res_count;

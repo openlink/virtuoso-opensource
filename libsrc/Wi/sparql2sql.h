@@ -173,6 +173,9 @@ extern ccaddr_t sparp_largest_intersect_superdatatype (sparp_t *sparp, ccaddr_t 
 /*! Checks whether the given sprintf format string is a bijection */
 extern int sprintff_is_proven_bijection (const char *sprintf_fmt);
 
+/*! Checks whether the given sprintf format string is proven to be bad for bijection because fields are merged and the parsing is impossible */
+extern int sprintff_is_proven_unparseable (const char *sprintf_fmt);
+
 /*! Returns an sprintf format string such that any string that can be printed by both \c sprintf_fmt1 and \c sprintf_fmt2 can
 also be printed by the returned format.
 The returned value can be NULL if it's proven that no one string can be printed by both given formats.

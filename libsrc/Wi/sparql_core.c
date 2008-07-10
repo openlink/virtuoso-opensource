@@ -2975,6 +2975,13 @@ bif_sprintff_is_proven_bijection (caddr_t * qst, caddr_t * err_ret, state_slot_t
 }
 
 caddr_t
+bif_sprintff_is_proven_unparseable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t f = bif_string_or_uname_arg (qst, args, 0, "__sprintff_is_proven_unparseable");
+  return box_num (sprintff_is_proven_unparseable (f));
+}
+
+caddr_t
 bif_sprintff_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t f1 = bif_string_or_uname_arg (qst, args, 0, "__sprintff_intersect");
@@ -3199,6 +3206,7 @@ sparql_init (void)
   bif_define ("sparql_quad_maps_for_quad", bif_sparql_quad_maps_for_quad);
   bif_define ("sparql_sql_cols_for_quad", bif_sparql_sql_cols_for_quad);
   bif_define ("__sprintff_is_proven_bijection", bif_sprintff_is_proven_bijection);
+  bif_define ("__sprintff_is_proven_unparseable", bif_sprintff_is_proven_unparseable);
   bif_define ("__sprintff_intersect", bif_sprintff_intersect);
   bif_define ("__sprintff_like", bif_sprintff_like);
 #ifdef DEBUG

@@ -4689,6 +4689,16 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
       if (NULL != auto_eq)
         needed = sparp_equiv_native_valmode (ssg->ssg_sparp, auto_valmode_gp, auto_eq);
     }
+  if (IS_BOX_POINTER (needed) && (0 == needed->qmfColumnCount))
+    {
+      ssg_puts (" 1 /*fake*/");
+      if (NULL != asname)
+        {
+          ssg_puts (" AS /*retexpn*/ ");
+          ssg_prin_id (ssg, asname);
+        }
+      return;
+    }
   eq = sparp_equiv_get_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp, (SPART *)var_name, eq_flags);
   printed = ssg_print_equiv_retval_expn (ssg, gp, eq, flags, needed, asname);
   if (! printed)
