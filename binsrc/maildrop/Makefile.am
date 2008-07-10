@@ -89,9 +89,9 @@ EXTRA_DIST = \
 	INSTALL \
 	odbc_mail.c \
 	odbc_mail.default.ini \
-	odbc_mail.vers.c \
+	odbc_mail_vers.c \
 	sysexits.h \
-	virt_mail.vers.c \
+	virt_mail_vers.c \
 	win32/BUILDING \
 	win32/generate.bat \
 	win32/maildrop.cpp \
