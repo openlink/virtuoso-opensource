@@ -2787,14 +2787,18 @@ create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
 
 	if (length (line[0]) > 0)
 	 {
-	   insert soft WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
-	       RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
-	       values (id, new_name, p_id, now (), now (), 2, '111111111NN', http_nogroup_gid(),
-		   line[0], __res_type, __rowguid, f_p);
+        insert soft WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP, RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+ 	        values (id, new_name, p_id, now (), now (), 2, '111111111NN', http_nogroup_gid(), line[0], __res_type, __rowguid, f_p);
 
 	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
 	       values (id, p_id, 'I', local_time);
 
+        if (__proc_exists ('CAL.WA.syncml2event'))
+        {
+          connection_set ('__sync_dav_upl', '1');
+          CAL.WA.syncml2event (line[0], new_name, p_id);
+          connection_set ('__sync_dav_upl', '0');
+        }
       }
   }
 }
@@ -3011,16 +3015,20 @@ create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing
 
 	if (length (line[0]) > 0)
 	 {
-	insert replacing WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
-	    RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
-	    values (id, new_name, p_id, now (), now (), 2, '111111111', http_nogroup_gid(), line[0], __res_type,
-		__rowguid, f_p);
+    	  insert replacing WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP, RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+    	    values (id, new_name, p_id, now (), now (), 2, '111111111', http_nogroup_gid(), line[0], __res_type, __rowguid, f_p);
 
     	local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
 
-	--dbg_obj_print ('Update  ->', N.RES_NAME);
 	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
 	       values (id, N.RES_COL, 'U', local_time);
+
+        if (__proc_exists ('CAL.WA.syncml2event'))
+        {
+          connection_set ('__sync_dav_upl', '1');
+          CAL.WA.syncml2event (line[0], new_name, p_id);
+          connection_set ('__sync_dav_upl', '0');
+        }
 	 }
     }
 }
