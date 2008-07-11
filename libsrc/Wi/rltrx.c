@@ -768,7 +768,7 @@ itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
     return (IE_ISSET (page + pos, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
   /* this is somebody else's lock.  Get the rb record. 
    * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image . 
-   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.  
+   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you do not get half transactions.  
    * If showing half transactions in read committtedf is good enough for Oracle it is good enough for us. */
   
   rbe = lt_rb_entry (gl->pl_owner, page + pos, NULL, NULL, 1);
@@ -1005,7 +1005,7 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 
   if (!PL_IS_FINALIZE (pl))
     {
-      /* if it is absent and needs no finalize, do not read it if not needed. * butmake a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, don't read */
+      /* if it is absent and needs no finalize, do not read it if not needed. * butmake a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, do not read */
       it_map_t * itm;
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       itm = IT_DP_MAP (pl->pl_it, pl->pl_page);

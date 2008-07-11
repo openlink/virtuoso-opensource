@@ -770,8 +770,8 @@ _t_UU:
    * So were not too picky here about the last input_line, as long as it's longer
    * than necessary and shorter than the maximum
    * this tolerance broke the xxdecoding, because xxencoded data was
-   * detected as being uuencoded :( so don't accept 'h' as first character
-   * also, if the first character is lowercase, don't accept the input_line to
+   * detected as being uuencoded :( so do not accept 'h' as first character
+   * also, if the first character is lowercase, do not accept the input_line to
    * have space characters. the only encoder I've heard of which uses
    * lowercase characters at least accepts the special case of encoding
    * 0 as `. The strchr() shouldn't be too expensive here as it's only
@@ -789,7 +789,7 @@ _t_UU:
   if (len != j || islower (*ptr))
     {
       /*
-       * if we are not in a 'uuencoded' ctx->uuc_state, don't allow the input_line to have
+       * if we are not in a 'uuencoded' ctx->uuc_state, do not allow the input_line to have
        * space characters at all. if we know we _are_ decoding uuencoded
        * data, the rest of the input_line, beyond the length of encoded data, may
        * have spaces.

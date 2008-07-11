@@ -101,7 +101,7 @@
 /* IvAn/0/001025 memview_t added */
 
 /*! This structure is very convenient for memory inspecting if you
-   don't know what it is under the pointer. Just cast this pointer to
+   do not know what it is under the pointer. Just cast this pointer to
    memview_t * and find the member with readable data.
    Note that in MSVC you should cast to (union memview_u) */
 union memview_u {

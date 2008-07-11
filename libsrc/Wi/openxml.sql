@@ -47,7 +47,7 @@ DB.DBA.OPENXML_DEFINE (in vname varchar, in tb varchar, in data varchar, in xp v
   if (tb is not null and exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = tb))
     {
       if (not exists (select 1 from SYS_COLS where \TABLE = tb and \COLUMN = data))
-	signal ('42S22', 'The data column is not exists', 'XV005');
+	signal ('42S22', 'The data column does not exist', 'XV005');
       mod := 1;
     }
 
@@ -56,7 +56,7 @@ DB.DBA.OPENXML_DEFINE (in vname varchar, in tb varchar, in data varchar, in xp v
 
 
   if (not mod and xml_tree (data, 0) is null)
-    signal ('22023', 'The table does not exists and data is not valid XML', 'XV001');
+    signal ('22023', 'The table does not exist and data is not valid XML', 'XV001');
 
   if (not isarray (meta))
     signal ('22023', 'The metadata is not supplied', 'XV002');
@@ -90,7 +90,7 @@ DB.DBA.OPENXML_DEFINE (in vname varchar, in tb varchar, in data varchar, in xp v
 	{
           declare ctype varchar;
 	  if (tb is not null and not exists (select 1 from SYS_COLS where \TABLE = tb and \COLUMN = elm[0]))
-	    signal ('42S22', 'The column is not exists', 'XV005');
+	    signal ('42S22', 'The column does not exist', 'XV005');
 	  select dv_type_title (COL_DTP) into ctype from SYS_COLS where \TABLE = tb and \COLUMN = elm[0];
 	  cols := concat (cols, sprintf ('%s %s,', elm[0], ctype));
           tcols := concat (tcols, elm [0], ',');

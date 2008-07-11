@@ -4970,7 +4970,7 @@ create method uf_column_value (in name varchar) for vspx_update_form
   if (pos > 0 and length (self.uf_row) >= pos)
     return self.uf_row[pos-1];
   else
-    signal ('22023', sprintf ('The column "%s" does not exists in rowset', name));
+    signal ('22023', sprintf ('The column "%s" does not exist in rowset', name));
 }
 ;
 

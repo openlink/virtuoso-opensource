@@ -1841,7 +1841,7 @@ bin_dv_to_wstr_place (unsigned char *str, wchar_t *place, size_t nbytes)
 /* Returns the length of piece copied, usually the same as
    the whole length stored to *len_ret.
    With blobs stores the length to *len_ret and returns the length of blob,
-   but doesn't try to fetch the blob in.
+   but does not try to fetch the blob in.
    If c_type is not SQL_C_CHAR (e.g. SQL_C_BINARY or SQL_C_OID) then
    copies the whole box.
    With SQL_C_BINARY copies also the terminating byte '\0' into the
@@ -3171,7 +3171,7 @@ stmt_set_columns (cli_stmt_t * stmt, caddr_t * row, int nth_in_set)
 
 
 /* Returns pointer to that point of string1, where the first instance
-   of string2 is found. Case doesn't matter. Checks max. maxbytes
+   of string2 is found. Case does not matter. Checks max. maxbytes
    characters from the beginning of string1.
    Probably not the most optimal algorithm, but good enough for me.
    (Cleaned from nc_strstr function of string.c module.)
@@ -3391,7 +3391,7 @@ stmt_convert_brace_escapes (SQLCHAR * statement_text, SQLINTEGER * newCB)
     {
       *ptr = ' ';		/* Overwrite it with a blank. */
       /* Find the last non-white-space character: (but only if the
-         statement began with a left brace, don't do this for
+         statement began with a left brace, do not do this for
          procedure definitions). */
       for (ptr = statement_text + strlen ((char *) statement_text) - 1;	/* From last */
 	  (ptr >= statement_text) && isspace (*ptr); ptr--);

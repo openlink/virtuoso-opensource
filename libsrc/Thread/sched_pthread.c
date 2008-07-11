@@ -653,7 +653,7 @@ thread_set_priority (thread_t *self, int prio)
     }
 
   /*
-   *  Cannot set priority on main thread, because it doesn't have a handle
+   *  Cannot set priority on main thread, because it does not have a handle
    */
   if (self != _main_thread &&
       pthread_setprio (*(pthread_t *) self->thr_handle, prio))
@@ -1434,7 +1434,7 @@ mutex_stat ()
  *
  ******************************************************************************/
 
-/* Pthreads doesn't support spinlocks, so simulate them by using a mutexes */
+/* Pthreads does not support spinlocks, so simulate them by using a mutexes */
 
 spinlock_t *
 spinlock_allocate (void)
@@ -1529,7 +1529,7 @@ static void * wrapper_routine(void * data)
   /* Set the profile timer value */
   setitimer(ITIMER_PROF, &((wrapper_t*)data)->itimer, NULL);
 
-  /* Tell the calling thread that we don't need its data anymore */
+  /* Tell the calling thread that we do not need its data anymore */
   pthread_mutex_lock(&((wrapper_t*)data)->lock);
   pthread_cond_signal(&((wrapper_t*)data)->wait);
   pthread_mutex_unlock(&((wrapper_t*)data)->lock);

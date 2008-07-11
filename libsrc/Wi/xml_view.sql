@@ -54,11 +54,11 @@ create procedure XML_VIEW_PUBLISH
   _procprefix := concat (name_part (view_name, 0), '.', name_part (view_name, 1), '.');
   if (not exists (select 1 from SYS_PROCEDURES 
 	where P_NAME like concat ( _procprefix, 'http_', name_part (view_name, 2), '_%')))
-    signal ('S1000', concat ('the XML view ', view_name, ' doesn''t exist'));
+    signal ('S1000', concat ('the XML view ', view_name, ' does not exist'));
   
   if (not exists (select 1 from SYS_PROCEDURES 
 	where P_NAME = concat ( _procprefix, 'http_view_', name_part (view_name, 2))))
-    signal ('S1000', concat ('the XML view ', view_name, ' doesn''t exist'));
+    signal ('S1000', concat ('the XML view ', view_name, ' does not exist'));
   
   if (aref (dav_path, 0) <> ascii ('/'))
     signal ('42000', 'The DAV path should be absolute');
@@ -71,7 +71,7 @@ create procedure XML_VIEW_PUBLISH
   path := WS.WS.HREF_TO_ARRAY (concat ('/DAV', dav_path), '');
 
   if (WS.WS.FINDCOL (path, _col_id) <> length (path) - 1)
-    signal ('S1000', 'the DAV collection of the view doesn''t exist or is invalid');
+    signal ('S1000', 'the DAV collection of the view does not exist or is invalid');
 
 --    signal ('S1000', 'a DAV resource with that name already exists');
 
@@ -80,7 +80,7 @@ whenever not found goto nfu;
   select U_ID, U_GROUP, U_DEF_PERMS into _u_id, _u_grp, _u_perm from WS.WS.SYS_DAV_USER where U_NAME = dav_owner;
 nfu:  
   if (_u_id is null)
-    signal ('42000', 'a DAV user with that name doesn''t exists');
+    signal ('42000', 'a DAV user with that name does not exist');
 
   if (is_persistent = 0)
     {
@@ -274,7 +274,7 @@ create procedure XML_VIEW_DROP (in view_name varchar)
   if (not exists (select 1 from SYS_VIEWS where
       V_NAME = view_name or
       V_NAME = concat (_procprefix, name_part (view_name, 2)) ) )
-    signal ('S1000', concat ('The XML view ''', view_name, ''' doesn''t exist'));
+    signal ('S1000', concat ('The XML view ''', view_name, ''' does not exist'));
 
   XML_VIEW_DROP_PROCS (view_name);
   delete from SYS_VIEWS where

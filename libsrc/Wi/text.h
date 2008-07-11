@@ -129,8 +129,8 @@ typedef struct sst_tctx_s sst_tctx_t;
     int			sst_nth_pos; \
     int			sst_raw_score; /* Hit count or the term score before applying a frequency correction and the statistical weight */ \
     int			sst_score;	/* Final corrected score */ \
-    wpos_t		sst_view_from; /* don't process word positions smaller than this value */ \
-    wpos_t		sst_view_to; /* don't process word positions larger than or equal to this value */ \
+    wpos_t		sst_view_from; /* do not process word positions smaller than this value */ \
+    wpos_t		sst_view_to; /* do not process word positions larger than or equal to this value */ \
     word_range_t *	sst_all_ranges; \
     unsigned		sst_all_ranges_fill; \
     wpos_t		sst_all_from; \

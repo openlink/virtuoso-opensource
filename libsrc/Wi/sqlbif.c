@@ -1777,7 +1777,7 @@ again:
    I think this is more useful this way, at least when arr is a string.
    E.g. chr$(65) can be defined now as aset(make_string(1),0,65)
    (AK 15-JAN-1997) (Now defined internally. See bif_chr below.)
-   I don't know what happens when the arr argument is some other kind
+   I do not know what happens when the arr argument is some other kind
    of an array...
 
    Fuck! It's not possible to create bif functions that return back
@@ -3279,7 +3279,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  caddr_t arg, narrow_arg;
 
 	  if (arg_len || arg_prec)
-	    sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d doesn't support modifiers", arg_inx);
+	    sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d does not support modifiers", arg_inx);
 
 	  arg = bif_arg (qst, args, arg_inx, szMe);
 
@@ -3321,7 +3321,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 
-	      sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d doesn't support modifiers", arg_inx);
+	      sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
 	    }
 	  else
 	    {
@@ -4282,7 +4282,7 @@ bif_locate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 /* Returns 1 if the given two string arguments match in the similar way as
    with like operand in queries: string1 LIKE string2
-   or 0, if they don't match. Uses cmp_like function defined in the
+   or 0, if they do not match. Uses cmp_like function defined in the
    module string.c
    String2 can be prefixed with the same special characters '%%', '**'
    or one or more @'s, to get the same special effects as with LIKE. */
@@ -4467,10 +4467,10 @@ bif_chr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
    Maybe we could convert hiragana to katakana and vice versa, whatever
    is the standard usage.
 
-   I don't know about AIX, but I could guess that its native isalpha,
+   I do not know about AIX, but I could guess that its native isalpha,
    etc. macros, using ctp, or whatever table, could be configurable,
    maybe even in run-time, with some SET LOCALITY option from the
-   operating system. I don't know, have to check that.
+   operating system. I do not know, have to check that.
  */
 
 /* C should be given unsigned! */
@@ -4601,7 +4601,7 @@ bif_initcap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 /* This is copied straight from cliuti.c which seems not to be included
    in the build of the Kubl server (WI.EXE)
    Constants referencing to SQL types has been replaced with corresponding
-   integers, so we don't need to include sqlcli.h or sql.h or sqlext.h
+   integers, so we do not need to include sqlcli.h or sql.h or sqlext.h
    header files here. */
 int
 dv_to_sql_type_server_side (int dv)
@@ -7005,7 +7005,7 @@ hexno (char c)
    'CONTENT-TRANSFER-ENCODING:' '8bit'
    'X-MOZILLA-STATUS:' '0011')
 
-   Of course this approach doesn't work with multiline headers, except
+   Of course this approach does not work with multiline headers, except
    somewhat kludgy.
    If the lines are separated by CR+LF, there is left one trailing
    CR at the end of each valuepart string.
@@ -7349,7 +7349,7 @@ bif_dvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #define boxes_match(X,Y) (DVC_MATCH == cmp_boxes((X),(Y), NULL, NULL))
 
-/* Could be also: box_equal((X),(Y)) except that it doesn't work so well. */
+/* Could be also: box_equal((X),(Y)) except that it does not work so well. */
 
 /* The last case is for strings. For them and longvectors it is assumed
    that elem2 has already been unboxed (i.e. dereferenced). */
@@ -7485,7 +7485,7 @@ wrong_item_type:
 
 /* Change at 29.October 1997 by AK:
    If the third argument (default) is missing, then act like it were NULL.
-   So if get_keyword(item,vector) doesn't find item from vector,
+   So if get_keyword(item,vector) does not find item from vector,
    it will return NULL.
 
    Change 30. October 1997 by AK: Now should work with vectors (arrays)
@@ -12262,7 +12262,7 @@ bif_byte_order_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (order != DB_ORDER_UNKNOWN && order != DB_SYS_BYTE_ORDER)
     {
       log_error ("The transaction log file has been produced with wrong byte order. You can not replay it on this machine. "
-"If the transaction log is empty or you don't want to replay it then delete it and start the server again.");
+"If the transaction log is empty or you do not want to replay it then delete it and start the server again.");
       call_exit(0);
     }
   return NEW_DB_NULL;
@@ -12279,7 +12279,7 @@ bif_server_version_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     {
       log_error ("The transaction log file has been produced by server version '%s'. "
 "The version of this server is '%s'. "
-"If the transaction log is empty or you don't want to replay it then delete it and start the server again. "
+"If the transaction log is empty or you do not want to replay it then delete it and start the server again. "
 "Otherwise replay the log using the server of version '%s' and make checkpoint and shutdown to ensure that the log is empty, then delete it and start using new version.",
         version, DBMS_SRV_VER, version );
       call_exit(0);

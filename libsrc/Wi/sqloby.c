@@ -98,7 +98,7 @@ sqlo_ot_group (sqlo_t * so, op_table_t * from_ot)
       return;
     }
 
-#if 0 /* - not so correct duplicate of sqlo_select_scope - doesn't count aggr in oby */
+#if 0 /* - not so correct duplicate of sqlo_select_scope - does not count aggr in oby */
   if (!from_ot->ot_group_ot && texp->_.table_exp.order_by)
     {
       /* no group but fun refs means 1 row hence no point in oby */
@@ -368,7 +368,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	    }
 	}
       /* not allow tables to be placed in index order if no tables were palced
-	 and the table doesn't have the first oby col */
+	 and the table does not have the first oby col */
       if (!tb_found && oby_nth > 0)
 	return 0;
     }

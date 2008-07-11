@@ -297,7 +297,7 @@ sec_full_object_name (query_instance_t * qi, char *name, int op, sql_class_t **p
       if (!full)
 	full = sch_full_module_name (isp_schema (qi->qi_space), name,
 	    qi->qi_client->cli_qualifier, CLI_OWNER (qi->qi_client));
-      /* TODO: if procedure/module doesn't exists make a SQL error,
+      /* TODO: if procedure/module does not exist make a SQL error,
                for now it's a hidden error */
       return (full ? full : name);
     }
@@ -863,7 +863,7 @@ sec_new_u_id (query_instance_t * qi)
 
   if (!qi || (CALLER_LOCAL == qi))	/* Added by AK 20-FEB-97. */
     {
-      /* I don't know whether this is correct, but check sec_new_user */
+      /* I do not know whether this is correct, but check sec_new_user */
       cli = bootstrap_cli;
       qi = CALLER_LOCAL;
     }
@@ -915,7 +915,7 @@ sec_new_user (query_instance_t * qi, char *name, char *pass)
 
   if (!qi || (CALLER_LOCAL == qi))	/* Added by AK 20-FEB-97. */
     {
-      /* I don't know whether this is correct, but check sec_set_user */
+      /* I do not know whether this is correct, but check sec_set_user */
       cli = bootstrap_cli;
       qi = CALLER_LOCAL;
     }
@@ -1462,7 +1462,7 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
 
 /* Grant privileges to all columns of SYS_PROCEDURES except P_TEXT
    and P_MORE, so that the API-function SQLProcedures shall work,
-   but the ordinary mortals still don't see the source code itself.
+   but the ordinary mortals still do not see the source code itself.
    Added by AK 17-APR-1997.
  */
   sec_dd_grant (isp_schema (NULL), "SYS_PROCEDURES", "P_QUAL", 1, GR_SELECT,

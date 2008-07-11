@@ -1241,7 +1241,7 @@ process_string:
         static caddr_t dtd_config = NULL;
         if (NULL == dtd_config)
           dtd_config = box_dv_short_string ("Validation=DISABLE Include=DISABLE");
-        temp_tree = xml_make_mod_tree (qi, str, err_ret, GE_XML, NULL, NULL /*(is_wide ? NULL : vtb->vtb_default_eh->eh_names[0])*/, lh, dtd_config, NULL /* don't save DTD */, NULL /* don't cache IDs */, NULL /* no namespace 2way dict */);
+        temp_tree = xml_make_mod_tree (qi, str, err_ret, GE_XML, NULL, NULL /*(is_wide ? NULL : vtb->vtb_default_eh->eh_names[0])*/, lh, dtd_config, NULL /* do not save DTD */, NULL /* do not cache IDs */, NULL /* no namespace 2way dict */);
       }
       if (is_xml == VTB_TRY_XML && (err_ret && *err_ret))
 	{

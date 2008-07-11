@@ -868,7 +868,7 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       SHORT_SET (parent->bd_buffer + DP_FIRST, DP_DATA);
       pg_make_map (parent);
       ITC_IN_KNOWN_MAP (it, parent->bd_page);
-      /* don't set it in the middle of the itc_reset sequence */
+      /* do not set it in the middle of the itc_reset sequence */
       it->itc_tree->it_root = parent->bd_page;
       ITC_LEAVE_MAP_NC (it);
     }
@@ -1365,7 +1365,7 @@ itc_delete_blobs (it_cursor_t * itc, db_buf_t page)
 		  blob_schedule_delayed_delete (itc,
 						bl,
 						BL_DELETE_AT_COMMIT );
-		  /* don't log the del'd blob if it was written by this trx. */
+		  /* do not log the del'd blob if it was written by this trx. */
 		}
 	    }
 	}

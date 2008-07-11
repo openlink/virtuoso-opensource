@@ -22,7 +22,7 @@
 --  
 -- Sample content providing procedures for vdir browser.
 -- 2 procedures should be supplied - for meta-information and for content.
--- Meta procedure: doesn't have parameters and returns a vector of string names of content columns.
+-- Meta procedure: does not have parameters and returns a vector of string names of content columns.
 -- Content-providing procedure:
 -- Parameters:
 -- path - path to get content for
@@ -142,7 +142,7 @@ create procedure db.dba.dav_browse_proc( in path varchar, in filter varchar := '
 
   i:=0;
   while( i < len ) {
-    if( dirlist[i][1] = 'c' /* and dirlist[i][10] like filter */ ) -- let's don't filter out catalogs!
+    if( dirlist[i][1] = 'c' /* and dirlist[i][10] like filter */ ) -- let's not filter out catalogs!
       retval := vector_concat(retval, vector(vector( 1, dirlist[i][10], NULL, sprintf('%d', dirlist[i][2]), left(cast(dirlist[i][3] as varchar), 19), 'Collection' )));
     i := i+1;
   }

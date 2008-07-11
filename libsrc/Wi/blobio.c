@@ -218,7 +218,7 @@ datetime_serialize (caddr_t dt_in, dk_session_t * out)
   int dt_type = DT_DT_TYPE (dt);
 
   if (dt_type == DT_TYPE_DATETIME || dt_type == DT_TYPE_DATE || dt_type == DT_TYPE_TIME)
-    { /* don't pass typed dates across the wire until compatibility issues resolved */
+    { /* do not pass typed dates across the wire until compatibility issues resolved */
       int tz = DT_TZ (dt);
       memcpy (dt_loc, dt_in, DT_LENGTH);
       dt = &(dt_loc[0]);

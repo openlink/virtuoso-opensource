@@ -355,7 +355,7 @@ skip_auth:;
               id := DAV_SEARCH_ID (path, 'R');
               if (isinteger (id))
                 if (id < 0)
-		  signal ('42000', concat ('DAV doesn''t contain resource with path equal to "', path, '"'));
+		  signal ('42000', concat ('DAV does not contain resource with path equal to "', path, '"'));
               rc := DAV_RES_CONTENT_INT (id, content, type, 0, 0, null, null);
               if (isinteger (rc))
                 if (rc < 0)
@@ -364,7 +364,7 @@ skip_auth:;
 		content := cast (content as varchar);
 	      return content;
             }
-	  signal ('42000', concat ('The table ', table_name, ' doesn''t have row with ',
+	  signal ('42000', concat ('The table ', table_name, ' does not have row with ',
 	      pathcol_name, ' equal to "', path, '"'));
 	}
     }
@@ -711,7 +711,7 @@ create procedure SYS_COPY_TABLE (in source_tbl varchar, in dest_tbl varchar)
 	    inx1 := inx1 + 1;
 	}
       if (have_match = 0)
-	signal ('42S22', sprintf ('The column %s in the source table %s doesn''t have a match in the destination table %s', col_name, source_tbl, dest_tbl), 'SR290');
+	signal ('42S22', sprintf ('The column %s in the source table %s does not have a match in the destination table %s', col_name, source_tbl, dest_tbl), 'SR290');
 
       if (inx > 0)
 	col_list := concat (col_list, ' , ');
@@ -1162,7 +1162,7 @@ dro:
 	      DB.DBA.ddl_fk_check_input (tb, 0);
 	    }
 	  else
-	    signal ('42S12', sprintf ('Foreign key "%s" does not exists', fkn), 'SR298');
+	    signal ('42S12', sprintf ('Foreign key "%s" does not exist', fkn), 'SR298');
 	}
       else
 	signal ('37000', 'To drop foreign key should be specified NAME or REFERENCES', 'SR299');
@@ -1291,7 +1291,7 @@ create procedure ddl_unq_modify (in tb varchar, in op integer, in decl any)
 	     0 = casemode_strcmp(KEY_TABLE, complete_table_name (tb, 0))
 	    and 0 = casemode_strcmp (KEY_NAME, nconstr)
 	    and KEY_IS_UNIQUE = 1))
-	signal ('42S12', sprintf ('Constraint "%s" does not exists for table "%s"', nconstr, tb), 'SR320');
+	signal ('42S12', sprintf ('Constraint "%s" does not exist for table "%s"', nconstr, tb), 'SR320');
 
       txt := sprintf ('DROP INDEX "%I" "%I"."%I"."%I"',
 	       nconstr, name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));

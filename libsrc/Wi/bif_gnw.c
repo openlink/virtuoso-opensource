@@ -50,7 +50,7 @@ bif_aux_encode_n_sextets_to_base64 (unsigned long int x, int n_sextets, char *de
    */
   x &= ((1 << (6 * n_sextets)) - 1);
 
-#ifdef OTHER_WAY_WOULD_BE_LIKE_THIS	/* That we don't use now. */
+#ifdef OTHER_WAY_WOULD_BE_LIKE_THIS	/* That we do not use now. */
   while (i < n_sextets)
     {
       dest_space[i++] = bif_aux_base64chars[(x & 077)];		/* Index between 0 and 63 */
@@ -219,7 +219,7 @@ bif_decode_to_intvec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   bits_total = (string_len * in_width_in_bits);
 
   vec_len = bits_total / out_width_in_bits;
-  if (bits_total % out_width_in_bits)	/* If doesn't divide exactly, */
+  if (bits_total % out_width_in_bits)	/* If does not divide exactly, */
     {
       vec_len++;
     }				/* then add one to result vec's length. */

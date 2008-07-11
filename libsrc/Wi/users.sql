@@ -184,7 +184,7 @@ GET_SEC_OBJECT_ID (in _name varchar, out id integer, out is_sql integer, out opt
 
   return;
 nf:
-  signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+  signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 

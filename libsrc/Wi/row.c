@@ -1265,7 +1265,7 @@ row_set_col_1 (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int
 	  }
 	else 
 	  {
-	    /* to don't overflow */
+	    /* to do not overflow */
 	    if (iid <= 0xFFFFFFFF)
 	      {
 	  LONG_SET (row + pos, iid);

@@ -2132,7 +2132,7 @@ sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST **group, op_table_t *dt_ot)
 
 static void
 sqlo_oby_remove_scalar_exps (sqlo_t *so, ST *** oby)
-{ /* remove all scalar order by's (as they don't contribute nothing) */
+{ /* remove all scalar order by's (as they do not contribute nothing) */
   dk_set_t set = NULL;
   int have_const_obys = 0, inx;
 
@@ -2236,7 +2236,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	}
       END_DO_BOX;
       sqlo_scope_array  (so, (ST**) tree->_.select_stmt.selection);
-      /* if a single row is to be returned the order by really doesn't matter */
+      /* if a single row is to be returned the order by really does not matter */
       if (ot->ot_fun_refs && !texp->_.table_exp.group_by)
 	texp->_.table_exp.order_by = NULL;
       sqlo_replace_as_exps (&(texp->_.table_exp.having), so->so_scope);

@@ -2397,7 +2397,7 @@ numeric_negate (numeric_t y, numeric_t x)
 #if NUMERIC_EXTS
 /*
  *  Calculates z = x % y
- *  XXX doesn't work correctly
+ *  XXX does not work correctly
  */
 int
 numeric_modulo (numeric_t z, numeric_t x, numeric_t y)

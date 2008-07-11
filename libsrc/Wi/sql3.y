@@ -77,7 +77,7 @@
    In effect, syntax like {any-name any-single-atom} in the place
    of atom will be converted to function call any-name(any-single-atom)
    Having funny one- or two-character bif-function names like d or ts
-   doesn't make any of them reserved keywords, and they can be used
+   does not make any of them reserved keywords, and they can be used
    to one's heart's contents as the names of tables, columns, etc.
  */
 #define obe_keyword_to_bif_fun_name(X) ((X))

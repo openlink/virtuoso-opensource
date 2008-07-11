@@ -397,7 +397,7 @@ create procedure oledb_procedure_parameters(
 	  while (i < n)
 	    {
 	      elt := aref (cols, i);
-              -- don't return SQL_RESULT_COL columns
+              -- do not return SQL_RESULT_COL columns
 	      if ((param is null or upper(cast(aref(elt, 3) as NVARCHAR)) = param)
 		  and aref(elt, 4) <> 3)
 		{

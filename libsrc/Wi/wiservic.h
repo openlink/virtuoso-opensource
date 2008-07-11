@@ -29,7 +29,7 @@
                  for the new module WISERVIC.C and main module CHIL.C
                  Contains also prototypes and macros (e.g. an auxiliary
                  function like wisvc_handle_W_option) for Unix builds,
-                 so don't miss this module from them.
+                 so do not miss this module from them.
 
     4.June.1997 AK  Changed the prototype of wisvc_send_wait_hint
  */

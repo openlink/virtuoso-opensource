@@ -1484,7 +1484,7 @@ xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t 
           xrie->xrie_iter_abend = bcfi_abend;
           xrie->xrie_iter_data = &(xrie->xrie_bcfi);
 	  if (DV_BLOB_WIDE_HANDLE == dtp_of_text)
-	    enc_ret[0] = "UTF-8"; /* the bh_get_data_from_user() doesn't get wchar_t *, it's UTF-8 */
+	    enc_ret[0] = "UTF-8"; /* the bh_get_data_from_user() does not get wchar_t *, it's UTF-8 */
 	  return 1;
         }
       else
@@ -5299,7 +5299,7 @@ bif_xmlconcat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     { /* some attributes concatenated */
       dk_free_tree (list_to_array (ret_set));
       dk_free_tree (list_to_array (head_set));
-      sqlr_new_error ("22003", "SR360", "XMLCONCAT doesn't concatenate attributes");
+      sqlr_new_error ("22003", "SR360", "XMLCONCAT does not concatenate attributes");
     }
   head = list_to_array (dk_set_nreverse (head_set));
   ret = list_to_array (dk_set_nreverse (ret_set));

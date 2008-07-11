@@ -165,7 +165,7 @@ create procedure REPL_UNPUBLISH (in _pub varchar)
   declare pub varchar;
   pub := SYS_ALFANUM_NAME (_pub);
   if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = repl_this_server () and ACCOUNT = pub))
-    signal ('37000', concat ('The publication ''', pub ,''' doesn''t exist'), 'TR003');
+    signal ('37000', concat ('The publication ''', pub ,''' does not exist'), 'TR003');
   {
     declare exit handler for sqlstate '*' goto cont;
     repl_text (pub, 'REPL_UNSUBSCRIBE (?, ?, null)', repl_this_server (), pub);
@@ -483,7 +483,7 @@ create procedure SUB_SCHEDULE (in srv varchar, in _acct varchar, in intl integer
     }
   else
     {
-      signal ('37000', concat ('Replication account ''', acct, ''' from ''', srv,''' doesn''t exist', 'TR015'));
+      signal ('37000', concat ('Replication account ''', acct, ''' from ''', srv,''' does not exist', 'TR015'));
     }
 }
 ;
@@ -559,7 +559,7 @@ for select TI_ITEM as _item, TI_DAV_USER as dav_u, TI_DAV_GROUP as dav_g from DB
 {
   if (not WS.WS.ISCOL (WS.WS.HREF_TO_ARRAY (_item, '')))
     {
-      signal ('37000', concat ('The WebDAV collection ''', _item, ''' doesn''t exists.'), 'TR018');
+      signal ('37000', concat ('The WebDAV collection ''', _item, ''' does not exist.'), 'TR018');
     }
 
   REPL_GET_DAV_UID_GID (dav_u, dav_g, dav_ui, dav_gi);
@@ -1030,18 +1030,18 @@ create procedure REPL_PUB_ADD (in __pub varchar, in _item varchar, in _type inte
     {
 
       if (not WS.WS.ISCOL (WS.WS.HREF_TO_ARRAY( _item, '')) or _item not like '/DAV%')
-	signal ('37000', concat ('The WebDAV collection ''' , _item, ''' doesn''t exist'), 'TR039');
+	signal ('37000', concat ('The WebDAV collection ''' , _item, ''' does not exist'), 'TR039');
     }
   else if (_type = 2)
     {
       if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = _item))
-	signal ('37000', concat ('The table ''' , _item, ''' doesn''t exist'), 'TR040');
+	signal ('37000', concat ('The table ''' , _item, ''' does not exist'), 'TR040');
       REPL_PUB_TBL (__pub, _item, _is_updatable);
     }
   else if (_type = 3)
     {
       if (not exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME = _item))
-	signal ('37000', concat ('The procedure ''' , _item, ''' doesn''t exist'), 'TR041');
+	signal ('37000', concat ('The procedure ''' , _item, ''' does not exist'), 'TR041');
       if (exists (select 1 from DB.DBA.SYS_TP_ITEM where TI_ITEM = _item and
 	    TI_SERVER = repl_this_server () and TI_TYPE =  3 and TI_OPTIONS = 1) and _opt = 1)
 	signal ('37000', concat ('The procedures calls to ''' , _item,
@@ -1659,7 +1659,7 @@ create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varch
 
   server := REPL_DSN (serv);
   if (server is null)
-    signal ('37000', concat ('The replication server ''', server, ''' doesn''t exist'), 'TR045');
+    signal ('37000', concat ('The replication server ''', server, ''' does not exist'), 'TR045');
 
   tbl := complete_table_name(tbl, 1);
   if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = tbl))
@@ -2117,7 +2117,7 @@ create procedure REPL_GRANT (in _acct varchar, in grantee varchar)
   acct := SYS_ALFANUM_NAME (_acct);
   if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = repl_this_server ()
 	and ACCOUNT = acct))
-    signal ('37000', concat ('The publication ''', acct, ''' doesn''t exist'), 'TR047');
+    signal ('37000', concat ('The publication ''', acct, ''' does not exist'), 'TR047');
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = grantee) and grantee is not null)
     signal ('22023', concat ('The grantee is invalid user name : ''', grantee, ''''), 'TR048');
   if (not exists (select 1 from DB.DBA.SYS_TP_GRANT where TPG_ACCT = acct and TPG_GRANTEE = grantee))
@@ -2135,7 +2135,7 @@ create procedure REPL_REVOKE (in _acct varchar, in grantee varchar)
   acct := SYS_ALFANUM_NAME (_acct);
   if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = repl_this_server ()
 	and ACCOUNT = acct))
-    signal ('37000', concat ('The publication ''', acct, ''' doesn''t exist'), 'TR049');
+    signal ('37000', concat ('The publication ''', acct, ''' does not exist'), 'TR049');
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = grantee) and grantee is not null)
     signal ('22023', concat ('The grantee is invalid user name : ''', grantee, ''''), 'TR050');
   if (exists (select 1 from DB.DBA.SYS_TP_GRANT where TPG_ACCT = acct and TPG_GRANTEE = grantee))
@@ -2149,7 +2149,7 @@ create procedure REPL_REVOKE (in _acct varchar, in grantee varchar)
       __repl_revoke (acct, grantee);
     }
   else
-    signal ('37000', concat ('The grantee ''', grantee, ''' doesn''t exist'), 'TR051');
+    signal ('37000', concat ('The grantee ''', grantee, ''' does not exist'), 'TR051');
 }
 ;
 
@@ -2247,7 +2247,7 @@ create procedure REPL_DAV_FILL (in _srv varchar, in _coll varchar, in dav_u inte
   _stat := '00000'; _msg := '';
   _addr := REPL_DSN (_srv);
   if (_addr is null)
-    signal ('37000', concat ('Publication server ''', _srv, ''' doesn''t exist'), 'TR053');
+    signal ('37000', concat ('Publication server ''', _srv, ''' does not exist'), 'TR053');
   exec (sprintf ('attach table WS.WS.SYS_DAV_COL as REPL_DAV_COL from ''%s''', _addr), _stat, _msg);
   if (_stat = '00000')
     {
@@ -2292,7 +2292,7 @@ create procedure REPL_INIT_COPY (in srv varchar, in _acct varchar, in ret_err in
   _ret_err := vector ();
   server := REPL_DSN (srv);
   if (server is null)
-    signal ('37000', concat ('The replication server ''', server, ''' doesn''t exist'), 'TR147');
+    signal ('37000', concat ('The replication server ''', server, ''' does not exist'), 'TR147');
 
   --
   -- enter atomic mode on publisher to guarantee repl level consistency
@@ -2542,7 +2542,7 @@ create procedure REPL_SUB_ITEM (in srv varchar, in _acct varchar,
 
   _server := REPL_DSN (srv);
   if (_server is null)
-    signal ('37000', concat ('The replication server ''', _server, ''' doesn''t exist'), 'TR146');
+    signal ('37000', concat ('The replication server ''', _server, ''' does not exist'), 'TR146');
 
   repl_set_raw(1);
 
@@ -2735,7 +2735,7 @@ create procedure REPL_ADD_CR (
   -- check _tbl
   _tbl := complete_table_name (_tbl, 1);
   if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = _tbl))
-    signal ('37000', concat ('The table \'' , _tbl, '\' doesn\'t exist'), 'TR128');
+    signal ('37000', concat ('The table \'' , _tbl, '\' does not exist'), 'TR128');
 
   -- check _name_suffix
   if (length (_name_suffix) = 0)
@@ -2969,14 +2969,14 @@ create procedure REPL_IS_UPDATABLE (in _server varchar, in _account varchar)
   if (_server = repl_this_server())
     {
       declare exit handler for not found
-        signal ('37000', concat ('The publication ''', _account, ''' doesn''t exist'), 'TR079');
+        signal ('37000', concat ('The publication ''', _account, ''' does not exist'), 'TR079');
       select IS_UPDATEABLE into _is_updatable from DB.DBA.SYS_REPL_ACCOUNTS
         where SERVER = _server and ACCOUNT = _account;
     }
   else
     {
       declare exit handler for not found
-        signal ('37000', concat ('The subscription ''', _account, ''' from ''', _server, ''' doesn''t exist'), 'TR004');
+        signal ('37000', concat ('The subscription ''', _account, ''' from ''', _server, ''' does not exist'), 'TR004');
       select IS_UPDATEABLE into _is_updatable from DB.DBA.SYS_REPL_ACCOUNTS
         where SERVER = _server and ACCOUNT = _account;
     }

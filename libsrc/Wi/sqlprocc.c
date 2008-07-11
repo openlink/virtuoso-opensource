@@ -426,7 +426,7 @@ sqlc_fetch_stmt (sql_comp_t * sc, ST * stmt)
   if (n_slots != BOX_ELEMENTS (targets))
     sqlc_new_error (sc->sc_cc, "42000", "SQ130",
 	"The count of supplied parameters to Virtuoso/PL FETCH "
-	"statement doesn't match the count of selected columns: %d parameters, %d columns", n_slots, BOX_ELEMENTS (targets));
+	"statement does not match the count of selected columns: %d parameters, %d columns", n_slots, BOX_ELEMENTS (targets));
   /**/
   DO_BOX_FAST (ST *, ref, inx, targets)
     {

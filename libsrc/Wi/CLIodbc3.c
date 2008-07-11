@@ -2903,7 +2903,7 @@ SQLCopyDesc (SQLHDESC arg0,
   DESC (desc, arg1);
   cli_dbg_printf (("SQLCopyDesc called\n"));
 
-  set_error (&desc->d_stmt->stmt_connection->con_environment->env_error, "IM001", "CL026", "Driver doesn't support this function");
+  set_error (&desc->d_stmt->stmt_connection->con_environment->env_error, "IM001", "CL026", "Driver does not support this function");
 
   return (SQL_ERROR);
 }

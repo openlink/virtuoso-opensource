@@ -2035,7 +2035,7 @@ qi_free (caddr_t * inst)
 	  LEAVE_CLIENT (qi->qi_client);
 	}
       qi->qi_lc->lc_inst = NULL;
-      /* don't re-free when freeing the lc. */
+      /* do not re-free when freeing the lc. */
     }
 
   /* The statement may from now on do what it will.

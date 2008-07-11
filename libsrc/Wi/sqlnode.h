@@ -375,7 +375,7 @@ typedef struct hash_area_s
   dbe_key_t *		ha_key;
   dbe_col_loc_t *	ha_key_cols; /* the col locs of the hash temp, key fix, key var, dep fix, dep var */
   dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
-  state_slot_t **	ha_slots;	/* slots where values to feed come from if they don't come from columns direct */
+  state_slot_t **	ha_slots;	/* slots where values to feed come from if they do not come from columns direct */
   int			ha_n_keys;
   int			ha_n_deps;
   char 			ha_op;
@@ -496,7 +496,7 @@ typedef struct table_source_s
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
     state_slot_t *	ts_current_of;
-    bitf_t		ts_is_unique:1;	/* Only one hit expected, don't look for more */
+    bitf_t		ts_is_unique:1;	/* Only one hit expected, do not look for more */
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
     bitf_t 		ts_no_blobs:1;
@@ -625,7 +625,7 @@ typedef struct insert_node_s
 
 
 #define INS_NORMAL	0
-#define INS_SOFT	1 /* don't insert if prime key exists */
+#define INS_SOFT	1 /* do not insert if prime key exists */
 #define INS_REPLACING	2 /* replace row if prime key exists. */
 
 

@@ -559,7 +559,7 @@ sqlc_table_refd_p (sql_comp_t * sc, sql_tree_t * tree, comp_table_t * ct)
       END_DO_BOX;
       return 0;
     }
-  return 1;			/* don't know means yes */
+  return 1;			/* do not know means yes */
 }
 
 

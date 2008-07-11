@@ -562,7 +562,7 @@ cs_position_at_from_row (cursor_state_t * cs, int ftype)
 	}
       else
 	{
-	  /* don't find org row. Next gt/lt shall be first of new window */
+	  /* do not find org row. Next gt/lt shall be first of new window */
 	  dk_free_tree ((box_t) row_id);
 	  dk_free_tree ((caddr_t) last_order_val);
 	  return ((caddr_t) SQL_SUCCESS);

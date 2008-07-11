@@ -1398,7 +1398,7 @@ try_again:
 #endif
   if (org && box_equal (org, db_name))
     {
-      /* if a txn originated here comes back by repl we just record the level but don't do the action */
+      /* if a txn originated here comes back by repl we just record the level but do not do the action */
       TC (tc_repl_cycle);
       repl_cycle_message ((caddr_t *)repl_header);
     }

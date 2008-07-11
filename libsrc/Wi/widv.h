@@ -61,7 +61,7 @@
   because depending from the time-zone of the user certain hours
   will become inaccessible. E.g. in GMT+1 (Central European Time)
   01:00:00 would be earliest possible time to which time could be
-  set. By using 2000-01-01 we don't get any problems of that kind.
+  set. By using 2000-01-01 we do not get any problems of that kind.
 */
 
 #ifndef _WIDV_H
@@ -304,7 +304,7 @@ extern int bnode_iri_ids_are_huge;
 	((DV_SHORT_INT == (elemtype)) || (DV_LONG_INT == (elemtype)))\
  : 1))))
 /* Maybe with strings we should also check if elemtype is DV_CHARACTER,
-   although I don't believe it's used with Kubl.
+   although I do not believe it's used with Kubl.
    The last else-part, 1, is for vectors of ordinary heterogeneous type
 i.e. (DV_ARRAY_OF_POINTER==(vectype)) || (DV_LIST_OF_POINTER==(vectype)))
    that can contain any kind of items.
@@ -357,7 +357,7 @@ i.e. (DV_ARRAY_OF_POINTER==(vectype)) || (DV_LIST_OF_POINTER==(vectype)))
    : sizeof(caddr_t))))))
 
 
-/* Of course MSVC doesn't want to compile this sucker without whining,
+/* Of course MSVC does not want to compile this sucker without whining,
    because ternary-expression cannot return different types.
    Why not? Does it say so in the standard?
    IvAn//010728:

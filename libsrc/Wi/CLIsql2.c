@@ -869,7 +869,7 @@ virtodbc__SQLTables (
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ? sql_tables_text_casemode_2 : sql_tables_text_casemode_0), SQL_NTS);
 
-/* Should actually be, but Kubl doesn't currently allow expressions in
+/* Should actually be, but Kubl does not currently allow expressions in
    order by: (by TABLE_TYPE, TABLE_QUALIFIER, TABLE_OWNER and TABLE_NAME)
    "order by "
    "subseq('SYSTEM TABLE',7-7*matches_like(KEY_TABLE,'" SYS_TABLE_PREFIX "'))"
@@ -2011,7 +2011,7 @@ SQLGetFunctions (
 
 
 
-#define KUBL_ARBITRARY_MAX_VALUE1 0	/* We don't know. */
+#define KUBL_ARBITRARY_MAX_VALUE1 0	/* We do not know. */
 
 
 SQLRETURN SQL_API
@@ -2854,14 +2854,14 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_OWNER_USAGE:
-      /* Actually no effect, but at least doesn't generate syntax error. */
+      /* Actually no effect, but at least does not generate syntax error. */
       intres =
 	  SQL_OU_DML_STATEMENTS |
 	  SQL_OU_PRIVILEGE_DEFINITION;
       break;
 
     case SQL_QUALIFIER_USAGE:
-      /* Actually no effect, but at least doesn't generate syntax error.
+      /* Actually no effect, but at least does not generate syntax error.
          Owner must be present too. E.g. select * from muu.kuu.luu */
       intres =
 	  SQL_QU_DML_STATEMENTS |
@@ -3114,7 +3114,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA1_NEXT |
 	  SQL_CA1_ABSOLUTE |
@@ -3129,7 +3129,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA2_READ_ONLY_CONCURRENCY |
 	  SQL_CA2_OPT_VALUES_CONCURRENCY |
@@ -3161,17 +3161,17 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_INFO_SCHEMA_VIEWS:
-      /* don't know */
+      /* do not know */
       intres = 0;
       break;
 
     case SQL_INSERT_STATEMENT:
-      /* don't know */
+      /* do not know */
       intres = 0;
       break;
 
     case SQL_KEYSET_CURSOR_ATTRIBUTES1:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA1_NEXT |
 	  SQL_CA1_ABSOLUTE |
@@ -3186,7 +3186,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_KEYSET_CURSOR_ATTRIBUTES2:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA2_READ_ONLY_CONCURRENCY |
 	  SQL_CA2_LOCK_CONCURRENCY |
@@ -3217,12 +3217,12 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_PARAM_ARRAY_ROW_COUNTS:
-      /* don't know */
+      /* do not know */
       intres = SQL_PARC_BATCH;
       break;
 
     case SQL_PARAM_ARRAY_SELECTS:
-      /* don't know */
+      /* do not know */
       intres = SQL_PAS_BATCH;
       break;
 
@@ -3257,7 +3257,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_SQL92_NUMERIC_VALUE_FUNCTIONS:
-      /* don't know */
+      /* do not know */
       intres = 0;
       break;
 
@@ -3273,7 +3273,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_SQL92_RELATIONAL_JOIN_OPERATORS:
-      /* don't know */
+      /* do not know */
       intres = 0;
       break;
 
@@ -3305,7 +3305,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_STATIC_CURSOR_ATTRIBUTES1:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA1_NEXT |
 	  SQL_CA1_ABSOLUTE |
@@ -3320,7 +3320,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_STATIC_CURSOR_ATTRIBUTES2:
-      /* don't know */
+      /* do not know */
       intres =
 	  SQL_CA2_READ_ONLY_CONCURRENCY |
 	  SQL_CA2_OPT_VALUES_CONCURRENCY |
@@ -3329,7 +3329,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_XOPEN_CLI_YEAR:
-      /* don't know */
+      /* do not know */
       strres = "";
       break;
 #endif
@@ -5535,7 +5535,7 @@ virtodbc__SQLGetData (
       SQLLEN len_read = 0;
 
       col_binding_t *cb = stmt_nth_col (stmt, icol);
-      /* Give sql_type always as zero as we don't know it. */
+      /* Give sql_type always as zero as we do not know it. */
       int was_first = !cb->cb_not_first_getdata;
       cb->cb_not_first_getdata = 1;
       piece_len = dv_to_place (col, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, cb->cb_read_up_to, stmt, icol);
@@ -5652,7 +5652,7 @@ SQLParamOptions (
    the behaviour of the column KP_NTH.
    Added where-clause "and KEY_MIGRATE_TO is NULL" to avoid obsolete
    primary keys after, e.g. commands like: ALTER TABLE tab ADD col integer;
-   i.e. doesn't return twice the same information.
+   i.e. does not return twice the same information.
 
    AK 22-JAN-1996:
    Added the sixth column, called PK_NAME by ODBC 2.0 (Primary Key
@@ -5663,7 +5663,7 @@ SQLParamOptions (
    question. (The name is actually in the ninth column, and the seventh
    and eight columns contains just constant strings 'db' and 'dba', just
    like the first and second columns.)
-   If the table doesn't have super table, then this column will contain
+   If the table does not have super table, then this column will contain
    the same table name as the third column (i.e. the table is its own
    super table, so to speak). This requires a join with the table
    SYS_KEYS itself (using two views, v1 and v2).
@@ -5952,7 +5952,7 @@ SQLProcedureColumns (
 
    25.Dec.1997: Changed \\P_NAME to name_part(\\P_NAME,2) where possible.
    because procedure names might nowadays occur with full prefixes.
-   (I don't know whether full prefixes are really necessary, and at
+   (I do not know whether full prefixes are really necessary, and at
    least in old databases the procedure names (column P_NAME) do not
    contain prefixes. Anyways, name_part(X,2) from X where there is no
    periods (.) produces back the X itself, so it is not harmful.

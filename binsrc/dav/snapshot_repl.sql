@@ -2470,7 +2470,7 @@ create procedure REPL_ALL_COLS (in _tbl varchar)
   _stat := '00000';
   _msg := '';
   if (0 <> exec(_stmt, _stat, _msg, vector(), 0, _src_comp, null))
-    signal ('37000', concat ('The table ''', _tbl, ''' doesn''t exist'), 'TR044');
+    signal ('37000', concat ('The table ''', _tbl, ''' does not exist'), 'TR044');
 
   declare _cols, _col any;
   declare _ix, _len integer;
@@ -4002,7 +4002,7 @@ create procedure REPL_ADD_SNAPSHOT_CR (
   -- check _tbl
   _tbl := complete_table_name (_tbl, 1);
   if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = _tbl))
-    signal ('37000', concat ('The table \'' , _tbl, '\' doesn\'t exist'), 'TR107');
+    signal ('37000', concat ('The table \'' , _tbl, '\' does not exist'), 'TR107');
 
   -- check _name_suffix
   if (length (_name_suffix) = 0)
@@ -5807,7 +5807,7 @@ create procedure REPL_ADD_DAV_CR (
   declare _colid integer;
   _colid := DAV_SEARCH_ID (_colname, 'c');
   if (_colid < 0)
-    signal ('37000', concat ('The collection \'' , _colname, '\' doesn\'t exist'), 'TR109');
+    signal ('37000', concat ('The collection \'' , _colname, '\' does not exist'), 'TR109');
 
   -- check _name_suffix
   if (length (_name_suffix) = 0)

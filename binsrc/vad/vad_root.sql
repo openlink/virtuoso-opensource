@@ -408,7 +408,7 @@ create procedure "VAD"."DBA"."VAD_RMDIR" (inout parr any, in curdir integer) ret
   declare name varchar;
   declare id integer;
   if (not exists (select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = curdir and "R_TYPE" = 'FOLDER'))
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Directory been removing doesn\'t exist:%d', curdir));
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Directory been removed does not exist:%d', curdir));
   if (1 = curdir)
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('You can\'t remove root directory'));
 
@@ -447,7 +447,7 @@ create procedure "VAD"."DBA"."VAD_RMNODE" (in id integer) returns integer
 --  commit work;
   return 1;
 err:
-  "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Item been removed doesn''t exist:%d', id));
+  "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Item been removed does not exist:%d', id));
 }
 ;
 
@@ -724,7 +724,7 @@ create procedure "VAD"."DBA"."VAD_DEL_SUBTREE" ( in curdir integer ) returns any
   declare name varchar;
   declare id integer;
   if (not exists (select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = curdir and "R_TYPE" = 'FOLDER'))
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Subtree been removing doesn\'t exist:%d', curdir));
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Subtree been removed does not exist:%d', curdir));
   if (exists (select top 1 1 from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = curdir and "R_PRNT" = 1))
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('You can\'t remove system subtree'));
   return "VAD"."DBA"."__VAD_DEL_SUBTREE" (curdir);

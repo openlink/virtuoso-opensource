@@ -279,7 +279,7 @@ read_object (dk_session_t *session)
 {
   void volatile * res = NULL;
 
-  /* if the session does not have scheduler data just read it, don't
+  /* if the session does not have scheduler data just read it, do not
      bother to make a jump context. This is the case for string
      inputs, for instance. */
   if (!SESSION_SCH_DATA (session))

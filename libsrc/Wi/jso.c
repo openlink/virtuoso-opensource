@@ -187,7 +187,7 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
       if (NULL == cd_ptr[0])
         return;
       if (!quiet_if_deleted)
-        sqlr_new_error ("22023", "SR501", "JSO instance IRI <%.500s> does not exists",
+        sqlr_new_error ("22023", "SR501", "JSO instance IRI <%.500s> does not exist",
           jinstance );
       return;
     }
@@ -597,7 +597,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
   inst_rtti = gethash (jinstance, jso_rttis_of_names);
   if (NULL == inst_rtti)
     {
-      sqlr_new_error ("22023", "SR494", "JSO instance IRI <%.500s> does not exists", jinstance);
+      sqlr_new_error ("22023", "SR494", "JSO instance IRI <%.500s> does not exist", jinstance);
     }
   if (do_set)
     {
@@ -752,7 +752,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           value_rtti = gethash (value_iri, jso_rttis_of_names);
           if (NULL == value_rtti)
             {
-              sqlr_new_error ("22023", "SR512", "JSO instance IRI <%.500s> does not exists",
+              sqlr_new_error ("22023", "SR512", "JSO instance IRI <%.500s> does not exist",
                 value_iri );
             }
           if (JSO_STATUS_DELETED == value_rtti->jrtti_status)
@@ -1058,7 +1058,7 @@ bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           inst_rtti = gethash (jinstance, cd->jsocd_rttis);
           if (NULL == inst_rtti)
             {
-              sqlr_new_error ("22023", "SR515", "JSO instance IRI <%.500s> does not exists", jinstance);
+              sqlr_new_error ("22023", "SR515", "JSO instance IRI <%.500s> does not exist", jinstance);
             }
           jso_rtti_proplist (inst_rtti->jrtti_inst_iri, inst_rtti, &acc);
         }

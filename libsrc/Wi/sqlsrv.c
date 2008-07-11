@@ -2408,7 +2408,7 @@ long log_audit_trail = 0;
 /* constructs an log name based on the original log name (from the settings) by inserting a timestamp
    right after the file name (before the extension).
    if the old name contains a valid timestamp (12 digits) at that location, then it's replaced
-   the function also checks for the configuration parameter (log file size) and doesn't generate a new
+   the function also checks for the configuration parameter (log file size) and does not generate a new
    name if the current log file size is lower then the value specified
    Return value : if it shouldn't change the log file's name, then it returns NULL
  */

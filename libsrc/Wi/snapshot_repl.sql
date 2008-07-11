@@ -447,7 +447,7 @@ create procedure REPL_ALL_COLS (in _tbl varchar)
   _stat := '00000';
   _msg := '';
   if (0 <> exec(_stmt, _stat, _msg, vector(), 1, _src_comp, null))
-    signal ('37000', concat ('The table ''', _tbl, ''' doesn''t exist'), 'TR044');
+    signal ('37000', concat ('The table ''', _tbl, ''' does not exist'), 'TR044');
 
   declare _cols, _col any;
   declare _ix, _len integer;

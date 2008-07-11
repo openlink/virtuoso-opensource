@@ -1483,7 +1483,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
           if (tid2)
             "VAD"."DBA"."VAD_UPDATE_NODE" (tid2, s4, ival);
           else
-            "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('package registry item (%s) doesn\'t exist & overwrite=expected', s2));
+            "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('package registry item (%s) does not exist & overwrite=expected', s2));
         }
         j := j + 1;
       }

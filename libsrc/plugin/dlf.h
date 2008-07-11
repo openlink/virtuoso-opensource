@@ -52,7 +52,7 @@
 #endif
 
 #ifdef DLDAPI_DYLD
-/* we want to alias the dlopen functions so they don't mess w/ the iODBC ones */
+/* we want to alias the dlopen functions so they do not mess w/ the iODBC ones */
 #define dlopen __virtuoso_dlopen
 #define dlsym __virtuoso_dlsym
 #define dlerror __virtuoso_dlerror

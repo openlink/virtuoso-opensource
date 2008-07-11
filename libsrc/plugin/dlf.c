@@ -159,7 +159,7 @@ slot_t;
  * share library). load() returns the function descriptor of
  * a module's entry point. From which we can calculate function
  * descriptors of other functions in the same module by using
- * the fact that the load() doesn't change the relative
+ * the fact that the load() does not change the relative
  * offset of functions to their module entry point(i.e the
  * offset in memory loaded by load() will be as same as in
  * the module library file).
@@ -482,7 +482,7 @@ dlsym (void *hdl, char *sym)
    * file to resolve the symbols. there are 3 ways to working
    * round this: 1. convert to full pathname in driver
    * manager. 2. applications always pass driver's full
-   * path name. 3. if driver itself don't support
+   * path name. 3. if driver itself do not support
    * SQLGetFunctions(), call it with SQL_ALL_FUNCTIONS
    * as flag immediately after SQLConnect(), SQLDriverConnect()
    * and SQLBrowseConnect() to force the driver manager
@@ -813,7 +813,7 @@ int
 iodbc_dlclose (void *hdll)
 {
   /*
-   *  Not really implemented since VMS doesn't support unloading images.
+   *  Not really implemented since VMS does not support unloading images.
    *  The hdll pointer is released though.
    */
   free (hdll);
@@ -1033,7 +1033,7 @@ dlopen (char FAR * path, int mode)
     }
 
   /*
-   * If we don't want an unshared handle see if we already have a handle
+   * If we do not want an unshared handle see if we already have a handle
    * for this path.
    */
   if ((mode & RTLD_UNSHARED) != RTLD_UNSHARED)
@@ -1079,7 +1079,7 @@ dlopen (char FAR * path, int mode)
 
   /*
    * We do not have a handle for this path if we were just trying to
-   * look it up return NULL to indicate we don't have it.
+   * look it up return NULL to indicate we do not have it.
    */
   if ((mode & RTLD_NOLOAD) == RTLD_NOLOAD)
     {

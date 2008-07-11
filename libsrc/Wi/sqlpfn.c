@@ -238,7 +238,7 @@ parse_string_literal (unsigned char **str_ptr, unsigned char *result, int accept
 		/* New escapes added 23.AUG.1991 \a for bell, and \v for vertical tab
 		   as specified in ANSI C standard. Also now recognizes hexadecimal
 		   character constants beginning with \x Note that \e for escape
-		   doesn't belong to standard. (Commented out)
+		   does not belong to standard. (Commented out)
 		 */
 		switch (*++str)	/* Check the next character. */
 		  {

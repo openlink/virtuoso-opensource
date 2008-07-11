@@ -46,7 +46,7 @@
 #endif
 
 /* maximum length for a dsn string
- * don't increase - depends on rendezvous packet structure
+ * do not increase - depends on rendezvous packet structure
  */
 #define MAX_DSN_LENGTH	255
 
@@ -539,7 +539,7 @@ reinit_rendezvous (void)
     {
       mDNS_DeregisterService (&ctx->dns, &thisServ->coreServ);
       /*
-       *  Note: we don't free thisServ here - rendezvous core
+       *  Note: we do not free thisServ here - rendezvous core
        *  still has references to it
        */
     }

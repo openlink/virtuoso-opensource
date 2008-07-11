@@ -1459,7 +1459,7 @@ end_of_encoding:
 	  if (!get_value (parser,1))
 	    goto xml_err_xmldecl;
 	  brcpy(&standalone,&parser->tmp.value);
-/* We don't need the value of "standalone" property at all, but
+/* We do not need the value of "standalone" property at all, but
 we have to ensure that it is correct */
 	  yn_is_bad = (strcmp (standalone.lm_memblock, "yes") && strcmp (standalone.lm_memblock, "no"));
 	  dk_free (standalone.lm_memblock, -1);

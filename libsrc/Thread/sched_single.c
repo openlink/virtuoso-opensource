@@ -314,7 +314,7 @@ mutex_leave (dk_mutex_t *mtx)
  *
  ******************************************************************************/
 
-/* Pthreads doesn't support spinlocks, so simulate them by using a mutexes */
+/* Pthreads does not support spinlocks, so simulate them by using a mutexes */
 
 spinlock_t *
 spinlock_allocate (void)

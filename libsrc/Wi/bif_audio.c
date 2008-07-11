@@ -1219,7 +1219,7 @@ ogg_packet_analyzer (stream *out, const byte *dp, size_t length)
 
       ogg_comment_packet (out, dp, dp + length);
 
-      /* all done - don't continue */
+      /* all done - do not continue */
       return 0;
     }
 

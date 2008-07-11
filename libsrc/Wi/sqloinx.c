@@ -416,7 +416,7 @@ sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, in
   /* tb_dfe is placed and has in inx with leading eqs.  See if joined can be inx intersected */
   if (tb_dfe->_.table.ot->ot_rds  || joined->_.table.ot->ot_rds)
     return 0;
-  tb_dfe->dfe_is_placed = 0; /* consider only preds that don't depend on the first table */
+  tb_dfe->dfe_is_placed = 0; /* consider only preds that do not depend on the first table */
   DO_SET (dbe_key_t *, key, &joined->_.table.ot->ot_table->tb_keys)
     {
       if (dk_set_is_subset (key->key_parts, joined->_.table.ot->ot_table_refd_cols))

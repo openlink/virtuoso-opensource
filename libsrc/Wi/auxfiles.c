@@ -99,7 +99,7 @@ unsigned long int cfg_thread_live_period = 0;
 unsigned long int cfg_thread_threshold = 10;
 
 /* Do automatic checkpoint approximately every N milliseconds. */
-/* If zero, don't do it. */
+/* If zero, do not do it. */
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 unsigned long int cfg_autocheckpoint = 0;
 int32 c_checkpoint_interval = 0;

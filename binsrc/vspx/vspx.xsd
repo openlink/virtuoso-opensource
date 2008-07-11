@@ -733,7 +733,7 @@ Any return value from the code is ignored.
 The page or a subclass of it will be the outermost VSPX element  on any VSPX page.
 Each .vspx file defines explicitly one custom page class derived from vspx_page.
 This element can enclose all HTML elements or can be incorporated in it's children on place apropriate for
-rendering the VSPX controls, but one VSPX page must contain only one vspx:page element. and noe VSPX-specific element may appear outside the vspx:page. It can be placed in other HTML stuff or around it, doesnt' matter, but VSP &amp; VSPX code must be inside it (the same applies to customized HTML attributes, i.e. containing &lt;?V &amp; &lt;?U shortcuts).
+rendering the VSPX controls, but one VSPX page must contain only one vspx:page element. and noe VSPX-specific element may appear outside the vspx:page. It can be placed in other HTML stuff or around it, does not matter, but VSP &amp; VSPX code must be inside it (the same applies to customized HTML attributes, i.e. containing &lt;?V &amp; &lt;?U shortcuts).
 Note that when using 'include' or 'decoration' features the top level page element will be : in case of include - 'this' page, in case of 'decoration' - the decoration page.
 Also page variables, controls will be combined in all cases of inclusion or macro-expansion, so their names must not be duplicated; this means that names of variables introduced by macro expansion or inclusion must not conflict with cnames of variables or controls in the top level page or any included or macro content.
 </xs:documentation>

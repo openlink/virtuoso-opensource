@@ -34,7 +34,7 @@
    Accompanied with WISERVIC.H, containing prototypes
    and few common macros required here and in chil.c
    Contains also code (e.g. an auxiliary function like
-   wisvc_handle_W_option) for Unix builds, so don't miss
+   wisvc_handle_W_option) for Unix builds, so do not miss
    this module from them.
 
    4.Jun.1997 AK  Added call to main_the_rest() (in chil.c) to the end
@@ -160,7 +160,7 @@ wisvc_Handle_I_and_J_options (int argc, char **argv,
    name and not with a backslash.
    Note that absolute paths with upward parts (..)
    like the one below seem to work equally well, so
-   we don't need to worry about .. :s and .:s in any
+   we do not need to worry about .. :s and .:s in any
    special way.
    D:\inetpub\wwwroot\..\..\ic\.\diskit\wi\windebug\wi.exe
  */
@@ -204,7 +204,7 @@ wisvc_Handle_I_and_J_options (int argc, char **argv,
       *(cutpnt + 1) = '\0';
 
       if (chdir (BinaryPathName))	/* Is not zero, i.e. -1, an error. */
-	{			/* However, we don't exit yet. */
+	{			/* However, we do not exit yet. */
 	  err_printf (("%s: Cannot chdir to \"%s\" because: %s",
 		       argv[0], BinaryPathName, strerror (errno)));
 	  exit (1);
@@ -225,7 +225,7 @@ wisvc_Handle_I_and_J_options (int argc, char **argv,
    but, if the directory is invalid, then it is much more friendly
    to give an error message here, than let the service itself fail,
    and hide the same error message to god knows which log file.
-   Check that the user doesn't try to give options -D, -U, -R or -d
+   Check that the user does not try to give options -D, -U, -R or -d
    to the service to be installed.
 
  */
@@ -376,7 +376,7 @@ wisvc_KublServiceStart (DWORD argc, LPTSTR * argv)
 	}
 
       if (chdir (work_dir))	/* Is not zero, i.e. -1, an error. */
-	{			/* However, we don't exit yet. */
+	{			/* However, we do not exit yet. */
 /*        DWORD erhe = GetLastError(); */
 
 	  wisvc_err_printf ("%s: Cannot chdir to \"%s\" because: %s",

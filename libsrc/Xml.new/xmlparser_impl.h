@@ -64,7 +64,7 @@
 #define XCFG_NOLOGPLACE 0x10	/*!< Bit that prevents automatic calling xmlparser_log_place when reporting message */
 
 /* If violation should be reported, error level is used as ID of action */
-#define XCFG_IGNORE	5	/*!< Do processing quietly, don't report nonfatal errors */
+#define XCFG_IGNORE	5	/*!< Do processing quietly, do not report nonfatal errors */
 #define XCFG_DISABLE	6	/*!< Disable some sort of processing fully */
 #define XCFG_ENABLE	7	/*!< Enable some sort of processing fully */
 #define XCFG_QUICK	7	/*!< Process DTD to report those serious errors which are easy to find */

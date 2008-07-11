@@ -1659,7 +1659,7 @@ ddl_ensure_column (const char *table, const char *col, const char *text, int is_
   dbe_table_t *tb;
   if (!( tb = sch_name_to_table (wi_inst.wi_schema, table)))
     {
-      log_error ("Error compiling a server init statement %s: Table not exists -- %s",
+      log_error ("Error compiling a server init statement %s: Table does not exist -- %s",
 	  table,
 	  text);
       return;
@@ -2240,7 +2240,7 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
 
   if (err != SQL_SUCCESS)
     {
-      QI_POISON_TRX (qi);	/* schema could be inconsistent, don't commit */
+      QI_POISON_TRX (qi);	/* schema could be inconsistent, do not commit */
       sqlr_resignal (err);
     }
 }
@@ -2363,7 +2363,7 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
 
   if (err)
     {
-      QI_POISON_TRX (qi);	/* schema could be inconsistent, don't commit */
+      QI_POISON_TRX (qi);	/* schema could be inconsistent, do not commit */
       sqlr_resignal (err);
     }
 }
@@ -4003,7 +4003,7 @@ static const char proc_XML_VIEW_DROP_PROCS[] =
 "   if ((not on_bootstrap) and not exists (select 1 from SYS_VIEWS where \n"
 "       V_NAME = view_name or \n"
 "       V_NAME = concat (_procprefix, name_part (view_name, 2)) ) ) \n"
-"     signal (\'S1000\', concat (\'The XML view \'\'\', view_name, \'\'\' doesn\'\'t exist\')); \n"
+"     signal (\'S1000\', concat (\'The XML view \'\'\', view_name, \'\'\' does not exist\')); \n"
 "  \n"
 "   whenever not found goto nf; \n"
 "   open pr; \n"
@@ -4146,7 +4146,7 @@ ddl_patch_triggers (void)
 }
 
 /* extract username from trigger name or if it not defined then extract from table ,
-   if both failed or user does not exists the effective owner is DBA */
+   if both failed or user does not exist the effective owner is DBA */
 const char * trig_owner_proc_txt =
 " create procedure DB.DBA.TRIG_OWNER (in name varchar, in tb varchar) \n"
 " { \n"

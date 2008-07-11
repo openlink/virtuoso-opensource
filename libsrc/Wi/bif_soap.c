@@ -3577,7 +3577,7 @@ soap_server (int soap_version, caddr_t method_fld, dk_session_t *ses, caddr_t *x
 
       if (!(body = xml_find_child (envelope, "Body", SOAP_URI (soap_version), 0, NULL)))
 	{
-	  err = ws_soap_error (ses, "300", "37000", "The SOAP Request doesn't have a Body",
+	  err = ws_soap_error (ses, "300", "37000", "The SOAP Request does not have a Body",
 	      soap_version, *uddi_action, http_resp_code, &ctx);
 	  goto end;
 	}
@@ -9408,7 +9408,7 @@ error:
      {
        if (!ctx->error_message)
 	 *err_ret = srv_make_new_error ("22023", "SV022",
-	     "The XML doesn't validate according to the parameter schema %s", type_ref);
+	     "The XML does not validate according to the parameter schema %s", type_ref);
        else
 	 {
 	   *err_ret = ctx->error_message;
@@ -10199,7 +10199,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 	   dtp_t dtp = DV_TYPE_OF(box);
 	   soap_print_tag (tag, ses, type_ref, ctx, 0, elem, qualified, NULL);
 	   /* TBD: make more consistent the bellow, not lay on the logic under cover
-	      in this cases the soap_print_box dont' print the closing >
+	      in this cases the soap_print_box do not print the closing >
 	    */
 	   if (dtp == DV_XML_ENTITY || dtp == DV_OBJECT || dtp == DV_REFERENCE)
              SES_PRINT (ses, ">");
@@ -11085,7 +11085,7 @@ error:
      {
        if (!ctx->error_message)
 	 *err_ret = srv_make_new_error ("22023", "SV023",
-	     "The PL value doesn't validate according to the parameter schema %s", type_ref);
+	     "The PL value does not validate according to the parameter schema %s", type_ref);
        else
 	 {
 	   *err_ret = ctx->error_message;

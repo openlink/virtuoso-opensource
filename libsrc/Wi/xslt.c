@@ -2570,7 +2570,7 @@ void shuric_parse_text__xslt (shuric_t *shuric, caddr_t uri_text_content, query_
       ns_2dict_ptr = &local_ns_2dict;
       if (NULL == dtd_config)
         dtd_config = box_dv_short_string ("BuildStandalone=ENABLE");
-      tree = (caddr_t *)xml_make_mod_tree (qi, uri_text_content, err_ret, FINE_XSLT, shuric->shuric_uri, NULL, server_default_lh, dtd_config, NULL /* don't save DTD */, NULL /* don't cache IDs */, ns_2dict_ptr);
+      tree = (caddr_t *)xml_make_mod_tree (qi, uri_text_content, err_ret, FINE_XSLT, shuric->shuric_uri, NULL, server_default_lh, dtd_config, NULL /* do not save DTD */, NULL /* do not cache IDs */, ns_2dict_ptr);
       tree_is_local = 1;
     }
   if (NULL == err_ret[0])

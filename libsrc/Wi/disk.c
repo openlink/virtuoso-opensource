@@ -3447,7 +3447,7 @@ wi_open (char *mode)
   for (inx = 0; inx < bp_n_bps; inx++)
     {
       wi_inst.wi_bps[inx] = bp_make_buffer_list (main_bufs / bp_n_bps);
-      wi_inst.wi_bps[inx]->bp_ts = inx * ((main_bufs / BP_N_BUCKETS) / 9); /* out of step, don't do stats all at the same time */
+      wi_inst.wi_bps[inx]->bp_ts = inx * ((main_bufs / BP_N_BUCKETS) / 9); /* out of step, do not do stats all at the same time */
     }
   wi_inst.wi_n_bps = (short) BOX_ELEMENTS (wi_inst.wi_bps);
 

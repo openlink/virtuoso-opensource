@@ -76,7 +76,7 @@ dk_mutex_t * xqr_mtx;
 #ifdef XPATH_DEBUG
 ptrlong xqi_set_debug_start = 0;
 #ifdef MALLOC_DEBUG
-/* You may set it to zero (check all slot operations) or to -1 (don't spend time for checks) */
+/* You may set it to zero (check all slot operations) or to -1 (do not spend time for checks) */
 ptrlong xqi_set_odometer = -1;
 #else
 /* Do not change this line, you will slow down the testing for nothing */
@@ -1321,7 +1321,7 @@ xslt_format_number (numeric_t value, caddr_t format,
 		  else if (ch == separator)
 		    {
 		      /* Don't allow separators before we see digit characters of phase
-			 1, and don't allow separators in the second pattern (j == 0). */
+			 1, and do not allow separators in the second pattern (j == 0). */
 		      if (phase == 0 || j == 0)
 			{
 			  dk_free (prefix, pref_suf_size);
@@ -6019,7 +6019,7 @@ xte_serialize_packed (caddr_t *src_tree, dtd_t *dtd, dk_session_t * ses)
 }
 
 
-/* Please don't tell me that this function is hard to read and understand, that it should be
+/* Please do not tell me that this function is hard to read and understand, that it should be
 divided into smaller functions etc. I need _speed_ */
 void
 xte_deserialize_packed (dk_session_t *ses, caddr_t **ret_tree, dtd_t **ret_dtd)

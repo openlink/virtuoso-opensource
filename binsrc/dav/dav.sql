@@ -3761,14 +3761,14 @@ create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, i
   if (isarray (rc))
     signal ('37000', sprintf ('The included resource "%s" is a special "%s" resource, not a plain DAV one', path, rc[0]), 'DA010');
   if (rc < 0)
-    signal ('37000', sprintf ('The included resource "%s" does not exists', path), 'DA009');
+    signal ('37000', sprintf ('The included resource "%s" does not exist', path), 'DA009');
   else
     {
       if (ct = 0)
 	{
 	  declare exit handler for not found
 	    {
-	      signal ('22023', sprintf ('The included resource "%s" does not exists', path), 'DA009');
+	      signal ('22023', sprintf ('The included resource "%s" does not exist', path), 'DA009');
 	    };
 	  select blob_to_string (RES_CONTENT), RES_OWNER, RES_GROUP, RES_PERMS, RES_MOD_TIME
 	      into curr_file, _u_id, _grp, _perms, modt from WS.WS.SYS_DAV_RES

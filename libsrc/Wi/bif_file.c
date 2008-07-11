@@ -2558,7 +2558,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (-1 == stat (full_exe_name, &st))
     {
       sqlr_new_error ("42000", "SR408",
-	  "Required executable '%s' doesn't exist, error %d", full_exe_name,
+	  "Required executable '%s' does not exist, error %d", full_exe_name,
 	  errno);
     }
   exe_args[0] = full_exe_name;

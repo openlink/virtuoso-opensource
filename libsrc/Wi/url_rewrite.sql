@@ -852,7 +852,7 @@ create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
 
 -- not needed as we can have TCN on empty rulelist
 --  if (not exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_uri))
---    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exists.');
+--    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exist.');
   if (isstring (qs) or qs < 0.001)
      signal ('22023', 'The quality factor must be float number between 1.0 and 0.001');
 
@@ -886,7 +886,7 @@ create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
 create procedure DB.DBA.HTTP_VARIANT_REMOVE (in rulelist_uri varchar, in uri varchar, in variant_uri varchar := '%')
 {
   if (not exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_uri))
-    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exists.');
+    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exist.');
   delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and VM_URI like uri and VM_VARIANT_URI like variant_uri;
 }
 ;
@@ -1221,7 +1221,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   if (length (long_url) and is_http_ctx ()) -- should be result = 1
     {
       declare full_path, pars, p_full_path any;
-      --dbg_obj_princ('Result: ', result, long_url,  params,  rule_iri,  target_vhost_pkey);
+      -- dbg_obj_princ('Result: ', result, long_url,  params,  rule_iri,  target_vhost_pkey);
 
       if (length (http_headers) > 0)
 	{

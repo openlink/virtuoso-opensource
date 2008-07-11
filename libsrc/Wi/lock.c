@@ -1227,7 +1227,7 @@ lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting)
       return 0;
     }
 
-  /* If the lock is shared and there's a queue, don't bypass */
+  /* If the lock is shared and there's a queue, do not bypass */
 
   if (!pl->pl_owner)
     GPF_T;			/* Lock with no owner */

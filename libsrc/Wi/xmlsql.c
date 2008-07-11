@@ -2455,9 +2455,9 @@ xv_schema_builder_free (xv_schema_builder_t * bld)
   id_hash_iterator_t dict_hit;	/* Iterator to zap dictionary */
   char **dict_key;		/* Current key to zap */
   char **dict_val;		/* Current value to zap, unused */
-  /* don't free bld->xa_dd -- it's pointer to data of query instance */
-  /* don't free bld->xa_view_name -- it's pointer to argument of bif_xml_view_schema */
-  /* don't free bld->xa_top_el_name -- it's pointer to NULL or argument of bif_xml_view_schema */
+  /* do not free bld->xa_dd -- it's pointer to data of query instance */
+  /* do not free bld->xa_view_name -- it's pointer to argument of bif_xml_view_schema */
+  /* do not free bld->xa_top_el_name -- it's pointer to NULL or argument of bif_xml_view_schema */
   for (id_hash_iterator (&dict_hit, bld->xs_typenames);
       hit_next (&dict_hit, (char **) (&dict_key), (char **) (&dict_val));
   /*no step */ )

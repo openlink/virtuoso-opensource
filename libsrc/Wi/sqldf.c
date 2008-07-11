@@ -1653,7 +1653,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	if (pref_loc && pref_loc != LOC_LOCAL &&
 	    sqlc_is_proc_available (pref_loc->loc_rds, dfe->dfe_tree->_.call.name) &&
 	    arg_max_loc == LOC_LOCAL)
-	  { /* if this is a remote virtuoso don't pass through scalar functions on proc vars */
+	  { /* if this is a remote virtuoso do not pass through scalar functions on proc vars */
 	    pref_loc = LOC_LOCAL;
 	  }
 

@@ -193,7 +193,7 @@ extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actual
    header file is included both by wi.h and cliint.h, of which the former
    in turn is included by the server's module sqlbif.c and the latter by
    client's module cliuti.c
-   These both modules use strtok_r function which probably doesn't exist
+   These both modules use strtok_r function which probably does not exist
    in MS Visual C environment.
    For a while, we use the following macro which just uses the ordinary
    strtok and ignores the third argument altogether.

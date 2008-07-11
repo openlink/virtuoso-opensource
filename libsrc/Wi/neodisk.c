@@ -460,7 +460,7 @@ itc_cpt_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_
 	  if (rbe->rbe_row_len > ROW_ALIGN (l))
 	    {
 	      log_error ("In cpt of uncommitted: Space for row is shorter than pre-image"
-			 " This is normally a gpf but we don't break cpt so we let it slide.");
+			 " This is normally a gpf but we do not break cpt so we let it slide.");
 	      return PAGE_NOT_CHANGED;
 	    }
 	  memcpy (page + pos,

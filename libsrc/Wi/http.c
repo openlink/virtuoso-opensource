@@ -1862,7 +1862,7 @@ ws_get_ranges (ws_connection_t *ws, char *err_text, int err_text_max, volatile O
 	  if (start > 0)
 	    satisfiable = 1;
 	  else if (start == 0)
-	    { /* we don't allow zero length suffix specs */
+	    { /* we do not allow zero length suffix specs */
 	      n_ranges = 0;
 	      goto done;
 	    }
@@ -1885,7 +1885,7 @@ ws_get_ranges (ws_connection_t *ws, char *err_text, int err_text_max, volatile O
       if (start < size)
 	satisfiable = 1;
 
-      /* TODO: for now don't support large files */
+      /* TODO: for now do not support large files */
       if (start > LONG_MAX || end > LONG_MAX)
 	{
 	  n_ranges = 0;
@@ -2464,7 +2464,7 @@ ws_url_rewrite (ws_connection_t *ws)
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
     {
-      err = srv_make_new_error ("42000", "HT058", "The authentication procedure DB.DBA.HTTP_URLREWRITE does not exists");
+      err = srv_make_new_error ("42000", "HT058", "The authentication procedure DB.DBA.HTTP_URLREWRITE does not exist");
       goto error_end;
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
@@ -2570,7 +2570,7 @@ ws_auth_check (ws_connection_t * ws)
 /*  if (!(proc = sch_proc_def (wi_inst.wi_schema, auth_proc)))*/
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, auth_proc, NULL, "dba", 0)))
     {
-      err = srv_make_new_error ("42000", "HT058", "The authentication procedure %s does not exists", auth_proc);
+      err = srv_make_new_error ("42000", "HT058", "The authentication procedure %s does not exist", auth_proc);
       goto error_end;
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
@@ -5166,7 +5166,7 @@ decode_base64(char * src, char * end)
        } /* unknown symbols are ignored */
     }
     if (i>0) {
-	for(;i<4;c[i++]=0); /* will leave padding nulls - don't matter here */
+	for(;i<4;c[i++]=0); /* will leave padding nulls - does not matter here */
        base64_store24(&d, c);
     }
     *d=0;

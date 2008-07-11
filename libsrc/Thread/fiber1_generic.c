@@ -34,7 +34,7 @@ unsigned long context_switches;
 
 
 /*
- *  These functions are in a separate file because we don't want the C compiler
+ *  These functions are in a separate file because we do not want the C compiler
  *  to optimize the calling of them away in any way. The compiler will save
  *  additional registers before calling the context switch, so our code
  *  won't crash...

@@ -40,12 +40,12 @@
 
 
 
-/* Define this as zero, if you don't want that the fuzzy matching function
+/* Define this as zero, if you do not want that the fuzzy matching function
    (strfmatchp) considers the upper- and lowercase versions as well as
    accented and unaccented versions of the letter to be equal: */
 #define INSENSITIVE_FUZZY   1
 
-/* Define this as zero, if you don't want that nc_strstr (case-insensitive
+/* Define this as zero, if you do not want that nc_strstr (case-insensitive
    substring search) function considers the accented and unaccented
    versions of the letter to be equal:
    (If you want the exact (case sensitive) substring search, use then the
@@ -86,7 +86,7 @@ char iso_diacritic_to_plain[] =
   'o',				/* 244 ocircumflex */
   'o',				/* 245 otilde (Estonian, Portugal?) */
   'o',				/* 246 odieresis (Finnish, Estonian, Swedish, German) */
-  'x',				/* 247 (minus?) I don't know what it should be, but the "uppercase"
+  'x',				/* 247 (minus?) I do not know what it should be, but the "uppercase"
 				   version looks like a multiplicative x and the
 				   lowercase version looks like a quotient sign. */
   'o',				/* 248 oslash (Danish, Norwegian?) */
@@ -284,7 +284,7 @@ loop:
 /* If there is something after asterisk(s) in the pattern, then it's either
    a literal character required, or ?, @ or [something] pattern, which
    requires at least one character. So if a string is in the end, this fails:
-   (Works so long we don't implement something like # for zero or more
+   (Works so long we do not implement something like # for zero or more
    digits.)
  */
       if (!*string)
@@ -446,7 +446,7 @@ loop:
 /* If there is something after asterisk(s) in the pattern, then it's either
    a literal character required, or ?, @ or [something] pattern, which
    requires at least one character. So if a string is in the end, this fails:
-   (Works so long we don't implement something like # for zero or more
+   (Works so long we do not implement something like # for zero or more
    digits.)
  */
       if (!*string)
@@ -564,7 +564,7 @@ ordinary_match:
 /*
    When called first time, max_diffs is one plus number of maximum allowed
    differences. When it comes to zero, we know that we have failed.
-   Now this doesn't increment the differences count for the letter which
+   Now this does not increment the differences count for the letter which
    are otherwise same but in differing cases, or if the other is a
    some diacritic ISO-letter, and the other is the corresponding unaccented
    plain ascii letter.
@@ -743,7 +743,7 @@ STRLIKE_NAME (strfmatchp) (const SLUCHAR *s1, const SLUCHAR *s2, int addlibs)
 
 
 /* Returns pointer to that point of string1, where the first instance
-   of string2 is found. Case doesn't matter.
+   of string2 is found. Case does not matter.
    string1 can contain also ISO-8859.1 diacritic vowels & consonants,
    which corresponding unaccented vowels in string2 will match against.
  */
@@ -1005,7 +1005,7 @@ STRLIKE_NAME(__cmp_like) (
    of course the column name (of type varchar, i.e. string), and the
    right side is the pattern searched for.
 
-   If the pattern doesn't begin with an at-sign (@) or with two
+   If the pattern does not begin with an at-sign (@) or with two
    asterisks (**), then the we test the equality of the string and pattern
    with the ordinary wildcard matching function wc_match, which behaves
    approximately like the filename pattern matching in the Unix shell.

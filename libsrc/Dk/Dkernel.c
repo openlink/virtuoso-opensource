@@ -940,7 +940,7 @@ sr_report_future_error (dk_session_t *ses, const char *service_name, const char 
 	log_error ("Malformed data received from IP [%.256s] : %.255s. Disconnecting the client",
 	    ip_buffer, reason);
     }
-/* don't report - it's usually an internal session - like txn log, deserialize etc
+/* do not report - it's usually an internal session - like txn log, deserialize etc
   else
     {
       if (service_name && strlen (service_name) > 0)
@@ -3646,7 +3646,7 @@ log_queue_add_msg (LOG *log, int level, char *buf)
 void
 log_thread_initialize()
 {
-  if (!virtuoso_log || !stderr_log || (log_file_line & 0x1) == 0) /*if no logs then don't use a thread */
+  if (!virtuoso_log || !stderr_log || (log_file_line & 0x1) == 0) /*if no logs then do not use a thread */
     return;
   log_queue_mtx = mutex_allocate();
   log_worker_thr = PrpcThreadAllocate ((init_func) log_worker_func, 100000, NULL)->dkt_process;
