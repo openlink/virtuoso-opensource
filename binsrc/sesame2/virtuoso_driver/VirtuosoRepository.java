@@ -54,6 +54,7 @@ public class VirtuosoRepository implements Repository {
 	public String user;
 	public String password;
 	public String defGraph;
+	public boolean useLazyAdd = false;
 	public int resultsHandlerType = 0;
         static final String utf8 = "charset=UTF-8";
 	private boolean initialized = false;
@@ -67,7 +68,7 @@ public class VirtuosoRepository implements Repository {
 		}
         }
 	
-	public VirtuosoRepository(String _url, String user, String password, String defGraph) {
+	public VirtuosoRepository(String _url, String user, String password, String defGraph, boolean useLazyAdd) {
 
 	        super();
 		this.url = _url.trim();
@@ -81,7 +82,11 @@ public class VirtuosoRepository implements Repository {
 		this.user = user;
 		this.password = password;
 		this.defGraph = defGraph;
-		
+		this.useLazyAdd = useLazyAdd;
+	}
+
+	public VirtuosoRepository(String url, String user, String password, String defGraph) {
+	        this(url, user, password, defGraph, false);
 	}
 
 	public VirtuosoRepository(String url, String user, String password) {
