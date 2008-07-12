@@ -32,6 +32,11 @@ create procedure CAL.WA.uninstall ()
 CAL.WA.uninstall ()
 ;
 
+-- Triggers
+CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AI');
+CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AU');
+CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AD');
+
 -- Scheduler
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Alarm Scheduler\'');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Upstream Scheduler\'');
@@ -41,7 +46,6 @@ CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'C
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_EVENT');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM');
-CAL.WA.exec_no_error('DROP TABLE CAL.WA.EXCHANGE');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ATTENDEES');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.SHARED');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
@@ -49,6 +53,7 @@ CAL.WA.exec_no_error('DROP TABLE CAL.WA.ANNOTATIONS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ALARMS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENT_COMMENTS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENTS');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.EXCHANGE');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.TAGS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.SETTINGS');
 

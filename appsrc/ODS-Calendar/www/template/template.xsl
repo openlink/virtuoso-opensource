@@ -395,6 +395,15 @@
       <?vsp http ('<div style="border-top: 1px solid #7f94a5;"></div>'); ?>
       <a href="#" onclick="javascript: cExchange('subscribeBrowse'); return false;" title="Import" class="gems">Manage Subscriptions</a>
       <a href="#" onclick="javascript: cExchange('publishBrowse'); return false;" title="Export" class="gems">Manage Publications</a>
+      <?vsp
+      if (isstring (DB.DBA.vad_check_version ('SyncML')))
+      {
+      ?>
+        <?vsp http ('<div style="border-top: 1px solid #7f94a5;"></div>'); ?>
+        <a href="#" onclick="javascript: cExchange('syncmlBrowse'); return false;" title="SyncML" class="gems">Manage SyncML</a>
+      <?vsp
+      }
+      ?>
     </div>
   </xsl:template>
 

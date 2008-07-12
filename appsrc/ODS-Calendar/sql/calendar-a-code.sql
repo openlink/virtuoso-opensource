@@ -1395,7 +1395,8 @@ create procedure CAL.WA.string2xml (
   in content varchar,
   in mode integer := 0)
 {
-  if (mode = 0) {
+  if (mode = 0)
+  {
     declare exit handler for sqlstate '*' { goto _html; };
     return xml_tree_doc (xml_tree (content, 0));
   }
@@ -4764,7 +4765,8 @@ create procedure CAL.WA.import_vcal (
   in domain_id integer,
   in content any,
   in options any := null,
-  in exchange_id integer := null)
+  in exchange_id integer := null,
+  in updatedBefore integer := null)
 {
   declare N, nLength integer;
   declare oEvents, oTasks, oTags any;
@@ -4791,9 +4793,10 @@ create procedure CAL.WA.import_vcal (
           completed,
           notes,
           updated any;
-  declare vcalVersion any;
+  declare vcalVersion, vcalImported any;
   declare tzDict, tzID, tzOffset any;
 
+  vcalImported := vector ();
   -- options
   oEvents := 1;
   oTasks := 1;
@@ -4847,6 +4850,11 @@ create procedure CAL.WA.import_vcal (
       {
         uid := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/UID/val', N), xmlItem, 1) as varchar);
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
+          if ((id <> -1) and not isnull (updatedBefore))
+          {
+            if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED > updatedBefore))
+              goto _skip;
+          }
         subject := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
         description := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
         location := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/LOCATION/val', N), xmlItem, 1) as varchar);
@@ -4892,6 +4900,8 @@ create procedure CAL.WA.import_vcal (
           );
           if (not isnull (exchange_id))
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
+          vcalImported := vector_concat (vcalImported, vector (id));
+        _skip:;
       }
       }
 
@@ -4903,6 +4913,11 @@ create procedure CAL.WA.import_vcal (
       {
         uid := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/UID/val', N), xmlItem, 1) as varchar);
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
+          if ((id <> -1) and not isnull (updatedBefore))
+          {
+            if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED > updatedBefore))
+              goto _skip2;
+          }
         subject := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
         description := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
         privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VTODO[%d]/CLASS/val', N));
@@ -4943,10 +4958,14 @@ create procedure CAL.WA.import_vcal (
           );
           if (not isnull (exchange_id))
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
+          vcalImported := vector_concat (vcalImported, vector (id));
+
+        _skip2:;
       }
     }
   }
 }
+  return vcalImported;
 }
 ;
 
@@ -5116,18 +5135,6 @@ create procedure CAL.WA.exchange_exec (
 
 --------------------------------------------------------------------------------
 --
-create procedure CAL.WA.exchange_event_update (
-  in _domain_id integer)
-{
-  for (select EX_ID from CAL.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
-  {
-    CAL.WA.exchange_exec (EX_ID);
-  }
-}
-;
-
---------------------------------------------------------------------------------
---
 create procedure CAL.WA.exchange_exec_internal (
   in _id integer)
 {
@@ -5190,7 +5197,7 @@ create procedure CAL.WA.exchange_exec_internal (
       }
     }
     -- subscribe
-    if (_direction = 1)
+    else if (_direction = 1)
     {
       if (_type = 1)
       {
@@ -5203,6 +5210,51 @@ create procedure CAL.WA.exchange_exec_internal (
       }
       CAL.WA.import_vcal (_domain_id, _content, _options, _id);
     }
+    -- syncml
+    else if (_direction = 2)
+    {
+      declare _path, _pathID varchar;
+
+      _pathID := DB.DBA.DAV_SEARCH_ID (_name, 'C');
+   	  for (select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = _pathID and DMLTYPE <> 'D') do
+   	  {
+   	     for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = RLOG_RES_ID) do
+   	     {
+           connection_set ('__sync_dav_upl', '1');
+           CAL.WA.syncml2event_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
+           connection_set ('__sync_dav_upl', '0');
+   	     }
+ 	    }
+
+      for (select E_ID, E_UID, E_KIND from CAL.WA.events where E_DOMAIN_ID = _domain_id) do
+      {
+        if ((E_KIND = 0) and (get_keyword ('events', _options, 0) = 0))
+          goto _skip;
+        if ((E_KIND = 1) and (get_keyword ('tasks', _options, 0) = 0))
+          goto _skip;
+
+        _path := _name || E_UID;
+        _pathID := DB.DBA.DAV_SEARCH_ID (_path, 'R');
+        if (not (isinteger(_pathID) and (_pathID > 0)))
+        {
+          CAL.WA.syncml_event_update_internal (_domain_id, E_ID, _path, _user, _password, 'I');
+        }
+
+      _skip:;
+      }
+    }
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_event_update (
+  in _domain_id integer)
+{
+  for (select EX_ID from CAL.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  {
+    CAL.WA.exchange_exec (EX_ID);
   }
 }
 ;
@@ -5251,6 +5303,246 @@ create procedure CAL.WA.exchange_scheduler ()
   }
 _done:;
   close cr;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.syncml_event_update (
+  in _domain_id integer,
+  in _event_id integer,
+  in _event_gid varchar,
+  in _event_kind integer,
+  in _action varchar)
+{
+  declare _syncmlPath, _path, _user, _password, _events, _tasks varchar;
+
+  if (connection_get ('__sync_dav_upl') = '1')
+    return;
+
+  if (not isstring (DB.DBA.vad_check_version ('SyncML')))
+    return;
+
+  for (select deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 2) do
+  {
+    _syncmlPath := get_keyword ('name', _options);
+
+    if (DB.DBA.yac_syncml_version_get (_syncmlPath) = 'N')
+      goto _skip;
+    if (DB.DBA.yac_syncml_type_get (_syncmlPath) not in ('vcalendar_11', 'vcalendar_12'))
+      goto _skip;
+    if ((_event_kind = 0) and (get_keyword ('events', _options, 0) = 0))
+      goto _skip;
+    if ((_event_kind = 1) and (get_keyword ('tasks', _options, 0) = 0))
+      goto _skip;
+
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+    _path := _syncmlPath || _event_gid;
+
+    CAL.WA.syncml_event_update_internal (_domain_id, _event_id, _path, _user, _password, _action);
+
+  _skip:;
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.syncml_event_update_internal (
+  in _domain_id integer,
+  in _event_id integer,
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _action varchar)
+{
+  if ((_action = 'I') or (_action = 'U'))
+  {
+    declare _content, _permissions varchar;
+
+    _content := CAL.WA.event2syncml (_domain_id, _event_id);
+    _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
+    if (isnull (_permissions))
+    {
+      _permissions := '110100000RR';
+    }
+    connection_set ('__sync_dav_upl', '1');
+    connection_set ('__sync_calendar', '1');
+    DB.DBA.DAV_RES_UPLOAD (_path, _content, 'text/x-vcalendar', _permissions, _user, null, _user, _password);
+    connection_set ('__sync_calendar', '0');
+    connection_set ('__sync_dav_upl', '0');
+  }
+
+  if (_action = 'D')
+  {
+    declare _id integer;
+
+    _id := DB.DBA.DAV_SEARCH_ID (_path, 'R');
+    if (isinteger(_id) and (_id > 0))
+    {
+      connection_set ('__sync_calendar', '1');
+      DB.DBA.DAV_DELETE (_path, 1, _user, _password);
+      connection_set ('__sync_calendar', '0');
+    }
+  }
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.event2syncml (
+  in domain_id integer,
+  in event_id integer)
+{
+  declare url varchar;
+  declare sStream any;
+
+  url := sprintf ('http://%s%s/%U/calendar/%U/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
+  sStream := string_output();
+
+  for (select * from CAL.WA.EVENTS where E_ID = event_id) do
+  {
+    if (E_KIND = 0)
+    {
+      CAL.WA.event2syncml_line ('BEGIN', 'VCALENDAR', sStream);
+      CAL.WA.event2syncml_line ('VERSION', '1.0', sStream);
+      CAL.WA.event2syncml_line ('BEGIN', 'VEVENT', sStream);
+      CAL.WA.event2syncml_line ('UID', E_UID, sStream);
+      CAL.WA.event2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
+      CAL.WA.event2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
+      CAL.WA.event2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
+      CAL.WA.event2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
+      CAL.WA.event2syncml_line ('SUMMARY', E_SUBJECT, sStream);
+      CAL.WA.event2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
+      CAL.WA.event2syncml_line ('LOCATION', E_LOCATION, sStream);
+      CAL.WA.event2syncml_line ('CATEGORIES', E_TAGS, sStream);
+      CAL.WA.event2syncml_line ('DTSTART', CAL.WA.vcal_date2str (E_EVENT_START), sStream);
+      CAL.WA.event2syncml_line ('DTEND', CAL.WA.vcal_date2str (E_EVENT_END), sStream);
+      CAL.WA.event2syncml_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
+      CAL.WA.event2syncml_line ('NOTES', E_NOTES, sStream);
+      CAL.WA.event2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+      CAL.WA.event2syncml_line ('END', 'VEVENT', sStream);
+      CAL.WA.event2syncml_line ('END', 'VCALENDAR', sStream);
+    }
+    else if (E_KIND = 1)
+    {
+      CAL.WA.event2syncml_line ('BEGIN', 'VCALENDAR', sStream);
+      CAL.WA.event2syncml_line ('VERSION', '1.0', sStream);
+      CAL.WA.event2syncml_line ('BEGIN', 'VTODO', sStream);
+      CAL.WA.event2syncml_line ('UID', E_UID, sStream);
+      CAL.WA.event2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
+      CAL.WA.event2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
+      CAL.WA.event2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
+      CAL.WA.event2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
+      CAL.WA.event2syncml_line ('SUMMARY', E_SUBJECT, sStream);
+      CAL.WA.event2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
+      CAL.WA.event2syncml_line ('CATEGORIES', E_TAGS, sStream);
+      CAL.WA.event2syncml_line ('DTSTART', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_START)), sStream);
+      CAL.WA.event2syncml_line ('DUE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_END)), sStream);
+      CAL.WA.event2syncml_line ('COMPLETED', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_COMPLETED)), sStream);
+      CAL.WA.event2syncml_line ('PRIORITY', E_PRIORITY, sStream);
+      CAL.WA.event2syncml_line ('STATUS', E_STATUS, sStream);
+      CAL.WA.event2syncml_line ('NOTES', E_NOTES, sStream);
+      CAL.WA.event2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+      CAL.WA.event2syncml_line ('END', 'VTODO', sStream);
+      CAL.WA.event2syncml_line ('END', 'VCALENDAR', sStream);
+    }
+  }
+
+  return string_output_string (sStream);
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.event2syncml_line (
+  in property varchar,
+  in value any,
+  inout sStream any)
+{
+  if (isnull (value))
+    return;
+  http (sprintf ('<%s><![CDATA[%s]]></%s>\r\n', property, cast (value as varchar), property), sStream);
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.syncml2event (
+  in res_content varchar,
+  in res_name varchar,
+  in res_col varchar,
+  in res_mod_time datetime := null)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return;
+  };
+
+  declare _syncmlPath, _path, _user, _password varchar;
+
+  for (select EX_DOMAIN_ID, deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_TYPE = 2) do
+  {
+    _path := WS.WS.COL_PATH (res_col);
+    _syncmlPath := get_keyword ('name', _options);
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+    if (_path = _syncmlPath)
+    {
+      CAL.WA.syncml2event_internal (EX_DOMAIN_ID, _path, _user, _password, res_content, res_name, res_mod_time);
+    }
+  }
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.syncml2event_internal (
+  in _domain_id integer,
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _res_content varchar,
+  in _res_name varchar,
+  in _res_mod_time datetime := null)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return;
+  };
+
+  declare N, _pathID integer;
+  declare _data, _uid  varchar;
+  declare IDs any;
+
+  if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
+    DB.DBA.sync_define_xsl ();
+
+	_data := xtree_doc (_res_content, 0, '', 'utf-8');
+	_data := xslt ('http://local.virt/sync_out_xsl', _data);
+  _data := serialize_to_UTF8_xml (_data);
+  _data := charset_recode (_data, 'UTF-8', '_WIDE_');
+
+	if (not isinteger (_data))
+	{
+    IDs := CAL.WA.import_vcal (_domain_id, _data, null, null, _res_mod_time);
+    for (N := 0; N < length (IDs); N := N + 1)
+    {
+      _uid := (select E_UID from CAL.WA.EVENTS where E_ID = IDs[N]);
+      if (_uid <> _res_name)
+      {
+        _pathID := DB.DBA.DAV_SEARCH_ID (_path || _res_name, 'R');
+        if (isinteger(_pathID) and (_pathID > 0))
+        {
+          update WS.WS.SYS_DAV_RES
+             set RES_NAME = _uid,
+                 RES_FULL_PATH = _path || _uid
+           where RES_ID = _pathID;
+        }
+      }
+    }
+  }
 }
 ;
 

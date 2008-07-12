@@ -1148,14 +1148,6 @@
                           {
                             self.cSubAction := cMode;
                           }
-                          if (cMode = 'publishBrowse')
-                          {
-                            self.cSubAction := cMode;
-                          }
-                          if (cMode = 'subscribeBrowse')
-                          {
-                            self.cSubAction := cMode;
-                          }
                           if (cMode = 'sharedBrowse')
                           {
                             self.cSubAction := cMode;
@@ -1267,9 +1259,11 @@
                         {
                           self.cAction := cCommand;
                         }
-
+                        else if (cCommand = 'syncmlBrowse')
+                        {
+                          self.cAction := cCommand;
+                        }
                 }
-
                 self.vc_data_bind(e);
                ]]>
              </v:on-post>
@@ -3915,7 +3909,7 @@
               </div>
             </vm:if>
 
-            <vm:if test="self.cAction in ('publishBrowse', 'subscribeBrowse')">
+            <vm:if test="self.cAction in ('publishBrowse', 'subscribeBrowse', 'syncmlBrowse')">
         <div class="new-form-header">
                 <?vsp
                   declare T varchar;
@@ -3929,6 +3923,10 @@
                   {
                     T := 'Subscriptions';
                   }
+                  else if (self.cAction = 'syncmlBrowse')
+                  {
+                    T := 'SyncML';
+                  }
                   http (T);
                 ?>
               </div>
@@ -3938,9 +3936,15 @@
                     if (self.cAction = 'publishBrowse')
                   {
                       control.ufl_value := 'New Publication';
-                    } else {
+                    }
+                    else if (self.cAction = 'subscribeBrowse')
+                    {
                       control.ufl_value := 'New Subscription';
                   }
+                    else
+                    {
+                      control.ufl_value := 'New SyncML';
+                    }
                   ]]>
                 </v:after-data-bind>
                 <v:on-post>
@@ -3948,9 +3952,15 @@
                     if (self.cAction = 'publishBrowse')
                   {
                       self.cAction := 'publishCreate';
-                    } else {
+                    }
+                    else if (self.cAction = 'subscribeBrowse')
+                    {
                       self.cAction := 'subscribeCreate';
                   }
+                    else
+                    {
+                      self.cAction := 'syncmlCreate';
+                    }
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -3963,7 +3973,7 @@
                 </v:after-data-bind>
                 <v:on-post>
                   <![CDATA[
-                    if (self.cAction = 'publishBrowse')
+                    if (self.cAction in ('publishBrowse', 'syncmlBrowse'))
                     {
                     declare N integer;
 
@@ -3980,7 +3990,7 @@
               <v:data-source name="dsrc_exchanges" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
-                    control.ds_sql := sprintf ('select * from CAL.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.cAction = 'publishBrowse' then 0 else 1 end);
+                    control.ds_sql := sprintf ('select * from CAL.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.cAction = 'publishBrowse' then 0 else case when self.cAction = 'subscribeBrowse' then 1 else 2 end end);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
@@ -4041,14 +4051,20 @@
                                   if (self.cAction = 'publishBrowse')
                   {
                                     self.cAction := 'publishUpdate';
-                                  } else {
+                                  }
+                                  else if (self.cAction = 'subscribeBrowse')
+                                  {
                                     self.cAction := 'subscribeUpdate';
                   }
+                                  else
+                                  {
+                                    self.cAction := 'syncmlUpdate';
+                                  }
                                   self.vc_data_bind(e);
                                 ]]>
                               </v:on-post>
                             </v:button>
-                            <v:button value="Exec" action="simple" xhtml_class="button">
+                            <v:button value="Sync" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
                                   self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
@@ -4088,7 +4104,7 @@
               </script>
             </vm:if>
 
-            <vm:if test="self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate')">
+            <vm:if test="self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate')">
               <div class="new-form-header">
                 <?vsp
                   declare T varchar;
@@ -4110,6 +4126,14 @@
                   {
                     T := 'Subscriptions/Update';
                   }
+                  else if (self.cAction = 'syncmlCreate')
+                  {
+                    T := 'SyncML/Create';
+                  }
+                  else if (self.cAction = 'syncmlUpdate')
+                  {
+                    T := 'SyncML/Update';
+                  }
                   http (T);
                 ?>
               </div>
@@ -4122,7 +4146,7 @@
                   {
                     declare exit handler for not found goto _end;
 
-                    if (self.cAction in  ('publishUpdate', 'subscribeUpdate'))
+                    if (self.cAction in  ('publishUpdate', 'subscribeUpdate', 'syncmlUpdate'))
                   {
                       select EX_TYPE,
                              EX_NAME,
@@ -4143,12 +4167,12 @@
                   }
                   _end:;
 
-                    self.ve_type := case when (self.cAction = 'publishCreate') then 0 else 1 end;
+                    self.ve_type := case when (self.cAction = 'publishCreate') then 0 else case when (self.cAction = 'subscribeCreate') then 1 else 2 end end;
                     self.ve_id := null;
                     self.ve_name := '';
-                    self.ve_update_type := case when (self.cAction = 'publishCreate') then 1 else 2 end;
-                    self.ve_update_period := case when (self.cAction = 'publishCreate') then null else 'hourly' end;
-                    self.ve_update_freq := case when (self.cAction = 'publishCreate') then null else 1 end;
+                    self.ve_update_type := case when (self.cAction in ('publishCreate', 'syncmlCreate')) then 1 else 2 end;
+                    self.ve_update_period := case when (self.cAction in ('publishCreate', 'syncmlCreate')) then null else 'hourly' end;
+                    self.ve_update_freq := case when (self.cAction in ('publishCreate', 'syncmlCreate')) then null else 1 end;
                     self.ve_options := vector ();
                   }
                 ]]>
@@ -4163,6 +4187,7 @@
                       <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
                   </td>
                 </tr>
+                  <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
                 <tr>
                     <th rowspan="<?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 3 else 2 end ?>" valign="top">
                       Refresh type
@@ -4220,11 +4245,13 @@
                     </v:select-list>
                   </td>
                 </tr>
+                  </vm:if>
                 <tr>
                     <td colspan="2" class="new-section">
-                      <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?>
+                      <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'Source' else  'Exchange' end end ?>
                   </td>
                 </tr>
+                  <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
                 <tr>
                     <th rowspan="2" valign="top">
                       <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
@@ -4256,12 +4283,14 @@
                       </label>
                           </td>
                         </tr>
+                  </vm:if>
                         <tr>
                     <th>
-                      WebDAV Path / URL
+                      <v:label for="sr_chars" value="-- case when (self.cAction in ('syncmlCreate', 'syncmlUpdate')) then 'WebDAV SyncML Path' else 'WebDAV Path / URL' end" />
                           </th>
                           <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
+                      <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
                       <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
                         <v:after-data-bind>
                           <![CDATA[
@@ -4270,6 +4299,7 @@
                           ]]>
                         </v:after-data-bind>
                       </v:button>
+                      </vm:if>
                           </td>
                         </tr>
                         <tr>
@@ -4314,7 +4344,7 @@
                       </table>
                     </div>
               <div class="new-form-footer">
-                <v:button action="simple" value="--case when self.cAction in ('publishCreate', 'subscribeCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
+                <v:button action="simple" value="--case when self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                   <v:on-post>
                         <![CDATA[
                       declare _type, _name, _user, _password, _events, _tasks any;
@@ -4350,6 +4380,10 @@
                       self.ve_update_freq := self.exc_update_freq.ufl_value;
                       self.ve_update_period := self.exc_update_period.ufl_value;
                     }
+                      if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
+                      {
+                        _type := 1;
+                      } else {
                     _type := 0;
                     if (self.exc_options_type_1.ufl_selected)
                     {
@@ -4359,7 +4393,13 @@
                     {
                       _type := 2;
                     }
+                      }
                     _name := trim (self.exc_options_name.ufl_value);
+                      if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
+                      {
+                        if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcalendar_11', 'vcalendar_12')))
+                          signal ('TEST', 'Bad SyncML folder.<>');
+                      }
                     _user := trim (self.exc_options_user.ufl_value);
                     _password := self.exc_options_password.ufl_value;
                     _events := case when self.exc_options_events.ufl_selected then 1 else 0 end;
@@ -4372,7 +4412,7 @@
                       CAL.WA.test (_name, vector('name', 'Resource Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
 
                       self.ve_update_freq := cast (self.ve_update_freq as integer);
-                      if (self.cAction in ('publishCreate', 'subscribeCreate'))
+                      if (self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate'))
                       		{
                         insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
                           values (self.domain_id, self.ve_type, self.ve_name, self.ve_update_type, self.ve_update_period, self.ve_update_freq, serialize (self.ve_options));
@@ -4386,7 +4426,7 @@
                          where EX_ID = self.ve_id;
                 					}
 
-                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                           self.vc_data_bind(e);
                         ]]>
                       </v:on-post>
@@ -4394,7 +4434,7 @@
                 <v:button action="simple" value="Cancel" name="exc_cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
-                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                      self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                 self.vc_data_bind(e);
               ]]>
             </v:on-post>
