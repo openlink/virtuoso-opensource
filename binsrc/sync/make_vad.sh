@@ -369,13 +369,8 @@ version_init
 sticker_init
 vad_create
 virtuoso_shutdown
-echo `pwd`
 chmod 644 syncml_dav.vad
-#directory_clean
-#virtuoso_init
-#vad_check
-#virtuoso_shutdown
-#directory_clean
+directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
