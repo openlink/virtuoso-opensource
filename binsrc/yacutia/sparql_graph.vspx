@@ -23,12 +23,13 @@
  -
  -
 -->
-<v:page name="http_serv_mgmt" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:page name="sparql_graph" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
 
-  <vm:pagetitle>Web Service Endpoints</vm:pagetitle>
+  <vm:pagetitle>List of Graphs</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
       <v:variable persist="0" name="mode" type="varchar" default="''"/>
+      <v:variable persist="0" name="graph_name" type="varchar" default="''"/>
   </vm:variables>
   <vm:menu>
     <vm:menuitem value="List of Graphs"/>
@@ -40,20 +41,75 @@
         <v:script>
 	 <![CDATA[
 
-	         declare graph_name varchar;
-
-	         graph_name := get_keyword ('graph_name', self.vc_event.ve_params, NULL);
+	         self.graph_name := get_keyword ('graph_name', self.vc_event.ve_params, NULL);
 	         self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
 
 		 dbg_obj_print ('self.mode ', self.mode);
-		 if (self.mode = 'delete')
-		   {
-		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_name);
-		   }
-
 	 ]]>
          </v:script>
        </v:before-data-bind>
+<?vsp
+	if (self.mode = 'delete')
+	{
+?>
+<v:form name="delete_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
+<div class="confirm_dialog">
+  <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+  <div class="confirm_text">
+    <div>
+            The graph
+	    <?vsp http(sprintf('<b> %s </b>', self.graph_name)); ?>
+	    will be removed permanently and there is no way to restore it. <br/>
+	    Are you sure you want to remove this graph?
+	  </div>
+  </div>
+  <div class="dialog_buttons">
+      <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>"/>
+        <v:on-post>
+          <v:script><![CDATA[
+	        if ( get_keyword ('remove', params, '') <> '' )
+		   {
+		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+		   }
+		self.mode := '';
+          ]]></v:script>
+        </v:on-post>
+        <v:button action="submit" name="remove" value="Yes"/>
+        <v:button action="submit" name="cancel" value="No"/>
+    </div>
+  </div>
+</v:form>
+<?vsp
+	   }
+	else if (self.mode = 'edit')
+	   {
+?>
+<v:form name="rename_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
+  <div class="dialog_buttons">
+      <input type="text" name="new_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" size="100" />
+    </div>
+  <div class="dialog_buttons">
+      <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>"/>
+        <v:on-post>
+          <v:script><![CDATA[
+	        if ( get_keyword ('rename', params, '') <> '' )
+		   {
+		      update DB.DBA.RDF_QUAD
+		      	set G = DB.DBA.RDF_MAKE_IID_OF_QNAME (get_keyword ('new_name', self.vc_page.vc_event.ve_params))
+		      	where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+		   }
+		self.mode := '';
+          ]]></v:script>
+        </v:on-post>
+        <v:button action="submit" name="rename" value="Rename"/>
+        <v:button action="submit" name="cancel2" value="Cancel"/>
+    </div>
+</v:form>
+<?vsp
+	   }
+	else
+	   {
+?>
       <v:form name="frm1" method="POST" type="simple">
         <table class="listing">
 	  <tr class="listing_header_row">
@@ -76,7 +132,9 @@
 	  ?>
         </table>
       </v:form>
-
+      <?vsp
+          }
+?>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
   </vm:pagebody>
   </vm:pagewrapper>
