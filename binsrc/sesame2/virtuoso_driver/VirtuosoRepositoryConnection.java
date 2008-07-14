@@ -96,9 +96,8 @@ import org.openrdf.rio.trig.TriGParserFactory;
 import org.openrdf.rio.trix.TriXParserFactory;
 import org.openrdf.rio.turtle.TurtleParserFactory;
 
-import virtuoso.jdbc3.VirtuosoExtendedString;
-import virtuoso.jdbc3.VirtuosoRdfBox;
-import virtuoso.jdbc3.VirtuosoResultSet;
+import virtuoso.sql.ExtendedString;
+import virtuoso.sql.RdfBox;
 
 
 /**
@@ -438,7 +437,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
 			while (rs.next()) {
@@ -645,7 +644,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 		        java.sql.Statement st = getQuadStoreConnection().createStatement();
-		        VirtuosoResultSet rs = (VirtuosoResultSet)st.executeQuery(query.toString());
+		        ResultSet rs = st.executeQuery(query.toString());
 
 			rs.next();
 			ret = rs.getInt(1);
@@ -673,7 +672,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "sparql select * where {?s ?o ?p} limit 1";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+			ResultSet rs = stmt.executeQuery(query);
 			result = rs.next();
                         rs.close();
                         return result;
@@ -1402,7 +1401,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+			ResultSet rs = stmt.executeQuery(query);
 
 			// begin at onset one
 			while (rs.next()) {
@@ -1439,7 +1438,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			PreparedStatement ps = getQuadStoreConnection().prepareStatement(query);
 			ps.setString(1, prefix);
-			VirtuosoResultSet rs = (VirtuosoResultSet) ps.executeQuery();
+			ResultSet rs = ps.executeQuery();
 
 			// begin at onset one
 			while (rs.next()) {
@@ -1531,7 +1530,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1557,7 +1556,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1580,7 +1579,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			while(rs.next())
 			{
@@ -1602,7 +1601,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1632,7 +1631,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(fixQuery(query));
+			ResultSet rs = stmt.executeQuery(fixQuery(query));
 			ResultSetMetaData rsmd = rs.getMetaData();
 
 			// begin at onset one
@@ -1818,7 +1817,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		sendDelayAdd();
 
-		VirtuosoResultSet rs = null;
+		ResultSet rs = null;
 		String s = "?s";
 		String p = "?p";
 		String o = "?o";
@@ -1851,7 +1850,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			rs = (VirtuosoResultSet) stmt.executeQuery(query.toString());
+			rs = stmt.executeQuery(query.toString());
 		}
 		catch (Exception e) {
 			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]");
@@ -2014,16 +2013,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private Value castValue(Object val) throws RepositoryException {
 		if (val == null) 
 			return null;
-		if (val instanceof VirtuosoRdfBox) {
-			VirtuosoRdfBox rb = (VirtuosoRdfBox) val;
+		if (val instanceof RdfBox) {
+			RdfBox rb = (RdfBox) val;
 			if (rb.getLang() != null) {
-				return getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), rb.getLang());
+				return getRepository().getValueFactory().createLiteral(rb.toString(), rb.getLang());
 			}
 			else if (rb.getType() != null) {
-				return getRepository().getValueFactory().createLiteral(rb.rb_box.toString(), this.getRepository().getValueFactory().createURI(rb.getType()));
+				return getRepository().getValueFactory().createLiteral(rb.toString(), this.getRepository().getValueFactory().createURI(rb.getType()));
 			}
 			else {
-				return getRepository().getValueFactory().createLiteral(rb.rb_box.toString());
+				return getRepository().getValueFactory().createLiteral(rb.toString());
 			}
 		}
 		else if (val instanceof java.lang.Integer) {
@@ -2058,10 +2057,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
 			return getRepository().getValueFactory().createLiteral(val.toString(), type);
 		}
-		else if (val instanceof VirtuosoExtendedString) {
-			VirtuosoExtendedString ves = (VirtuosoExtendedString) val;
-			String valueString = ves.str;
-			if (ves.iriType == VirtuosoExtendedString.IRI) {
+		else if (val instanceof ExtendedString) {
+			ExtendedString ves = (ExtendedString) val;
+			String valueString = ves.toString();
+			if (ves.getIriType() == ExtendedString.IRI) {
 				if (valueString.startsWith("_:")) {
 					valueString = valueString.substring(2);
 					return getRepository().getValueFactory().createBNode(valueString);
@@ -2076,7 +2075,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"");
 				}
 			}
-			else if (ves.iriType == VirtuosoExtendedString.BNODE) {
+			else if (ves.getIriType() == ExtendedString.BNODE) {
 				try {
 					valueString = valueString.substring(9); // "nodeID://"
 					return getRepository().getValueFactory().createBNode(valueString);
@@ -2090,7 +2089,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					return getRepository().getValueFactory().createLiteral(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
-					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.iriType);
+					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.getIriType());
 				}
 			}
 		}
@@ -2123,15 +2122,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-//	private Resource[] getContexts() throws RepositoryException {
-//		Resource[] contexts;
-//		
-//		List<Resource> ctx = getContextIDs().asList();
-//	        contexts = new Resource[ctx.size()];
-//	        ctx.toArray(contexts);
-//	        return contexts;
-//	}
-
 
         public class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
                                            
@@ -2142,9 +2132,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		Resource  subject;
 		URI       predicate;
 		Value 	  object;
-		VirtuosoResultSet v_rs;
+		ResultSet v_rs;
 
-        	public CloseableIterationBase(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
+        	public CloseableIterationBase(ResultSet rs, Resource subject, URI predicate, Value object)
         	{
         	  v_rs = rs;
         	  this.subject = subject;
@@ -2233,7 +2223,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         public class CloseableIterationStmt extends CloseableIterationBase<Statement, RepositoryException> {
                                            
 
-        	public CloseableIterationStmt(VirtuosoResultSet rs, Resource subject, URI predicate, Value object)
+        	public CloseableIterationStmt(ResultSet rs, Resource subject, URI predicate, Value object)
         	{
         	  super(rs, subject, predicate, object);
         	}
@@ -2289,7 +2279,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                            
  		ResultSetMetaData rsmd;
 
-        	public CloseableIterationBindingSet(VirtuosoResultSet rs) throws QueryEvaluationException
+        	public CloseableIterationBindingSet(ResultSet rs) throws QueryEvaluationException
         	{
         	  super(rs, null, null, null);
         	  try {
@@ -2321,7 +2311,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                            
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
 
-        	public CloseableIterationGraphResult(VirtuosoResultSet rs) throws QueryEvaluationException
+        	public CloseableIterationGraphResult(ResultSet rs) throws QueryEvaluationException
         	{
         	  super(rs, null, null, null);
 

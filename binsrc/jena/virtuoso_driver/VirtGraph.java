@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.util.Iterator;
 
-import virtuoso.jdbc3.*;
+import virtuoso.sql.*;
 
 import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.graph.impl.*;
@@ -592,23 +592,23 @@ public class VirtGraph extends GraphBase
 
     public static Node Object2Node(Object o)
     {
-      if (o instanceof VirtuosoExtendedString) 
+      if (o instanceof ExtendedString) 
         {
-          VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
-          if (vs.iriType == VirtuosoExtendedString.IRI) {
-            if (vs.str.indexOf ("_:") == 0)
-              return Node.createAnon(AnonId.create(vs.str.substring(2))); // _:
+          ExtendedString vs = (ExtendedString) o;
+          if (vs.getIriType() == ExtendedString.IRI) {
+            if (vs.toString().indexOf ("_:") == 0)
+              return Node.createAnon(AnonId.create(vs.toString().substring(2))); // _:
             else
-              return Node.createURI(vs.str);
-          } else if (vs.iriType == VirtuosoExtendedString.BNODE) {
-            return Node.createAnon(AnonId.create(vs.str.substring(9))); // nodeID://
+              return Node.createURI(vs.toString());
+          } else if (vs.getIriType() == ExtendedString.BNODE) {
+            return Node.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://
           } else {
-            return Node.createLiteral(vs.str); 
+            return Node.createLiteral(vs.toString()); 
           }
         }
-      else if (o instanceof VirtuosoRdfBox)
+      else if (o instanceof RdfBox)
         {
-          VirtuosoRdfBox rb = (VirtuosoRdfBox)o;
+          RdfBox rb = (RdfBox)o;
           String rb_type = rb.getType();
           RDFDatatype dt = null;
 
