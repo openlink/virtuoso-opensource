@@ -4,8 +4,9 @@ import java.lang.*;
 import java.io.*;
 import java.util.*;
 import java.sql.*;
+import virtuoso.sql.RdfBox;
 
-public class VirtuosoRdfBox
+public class VirtuosoRdfBox implements RdfBox
 {
     // rdf_box_t
     public short	rb_type;

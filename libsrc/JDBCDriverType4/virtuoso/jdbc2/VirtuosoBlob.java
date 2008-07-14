@@ -816,4 +816,20 @@ public class VirtuosoBlob
        throw new VirtuosoException ("Not implemented function", VirtuosoException.NOTIMPLEMENTED);
      }
 #endif
+
+   public InputStream getBinaryStream(long pos, long len) throws SQLException 
+   {
+       throw new VirtuosoException ("Not implemented function", VirtuosoException.NOTIMPLEMENTED);
+   }
+
+   public void free() throws SQLException
+   {
+   }
+
+   public Reader getCharacterStream(long pos, long len) throws SQLException {
+       throw new VirtuosoException ("Not implemented function", VirtuosoException.NOTIMPLEMENTED);
+   }
+
+
+
 }

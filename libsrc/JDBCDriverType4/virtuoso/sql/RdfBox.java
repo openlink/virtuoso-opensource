@@ -21,50 +21,23 @@
  *  
  */
 
-package virtuoso.jdbc2;
+package virtuoso.sql;
 
 import java.lang.*;
 import java.io.*;
-import virtuoso.sql.ExtendedString;
+import java.util.*;
+import java.sql.*;
 
-public class VirtuosoExtendedString implements ExtendedString
+public interface RdfBox
 {
-    public String str;
-    public int strType;
-    public int iriType;
+    short getLangKey (String lang);
 
-    public static final int IRI = ExtendedString.IRI;
-    public static final int BNODE = ExtendedString.BNODE;
+    short getTypeKey (String type);
 
-    public VirtuosoExtendedString (String str, int type)
-    {
-	this.str = str;
-	this.strType = type;
-	if (str.indexOf ("nodeID://") == 0)
-	    this.iriType = ExtendedString.BNODE;
-	else
-	    this.iriType = ExtendedString.IRI;
-    }
-    
-    public VirtuosoExtendedString (int type)
-    {
-	this.str = new String ();
-	this.strType = type;
-	this.iriType = ExtendedString.IRI;
-    }
-    
-    public String toString ()
-    {
-	return this.str;
-    }
+    String getType ();
 
-    public int getIriType ()
-    {
-        return this.iriType;
-    }
+    String getLang ();
 
-    public int getStrType ()
-    {
-        return this.strType;
-    }
+    String toString ();
 }
+

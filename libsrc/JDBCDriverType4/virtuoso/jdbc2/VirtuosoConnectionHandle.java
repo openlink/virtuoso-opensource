@@ -35,6 +35,8 @@ import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.Map;
+import java.sql.*;
+import java.util.Properties;
 
 /**
  * Connection wrapper which is created by PooledConnection.getConnection()

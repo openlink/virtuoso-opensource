@@ -89,6 +89,10 @@ javaxfiles := \
     OPLRowSetMetaData.java \
     messages_x.java
 
+sqlfiles := \
+    ExtendedString.java \
+    RdfBox.java 
+
 #jdbcfiles=Types.java
 
 
@@ -104,6 +108,7 @@ clean-local:
 # normal java files
 stdjavafiles= \
         $(utilfiles:%.java=outstd/openlink/util/%.java) \
+        $(sqlfiles:%.java=outstd/virtuoso/sql/%.java) \
     	$(infiles:%.java=outstd/virtuoso/jdbc2/%.java)
 
 stdclassfiles=$(stdjavafiles:%.java=%.class)
@@ -114,13 +119,14 @@ stdclassfiles=$(stdjavafiles:%.java=%.class)
 std2: ../../virtjdbc2.jar
 
 ../../virtjdbc2.jar: outstd $(stdjavafiles) $(stdclassfiles)
-	@cd outstd ; $(JDK2)/bin/jar cf ../../../virtjdbc2.jar virtuoso/jdbc2/*.class openlink/util/*.class
+	@cd outstd ; $(JDK2)/bin/jar cf ../../../virtjdbc2.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java 2.0 built"
 
 outstd:
 	@mkdir outstd
 	@mkdir outstd/virtuoso
 	@mkdir outstd/virtuoso/jdbc2
+	@mkdir outstd/virtuoso/sql
 	@mkdir outstd/openlink
 	@mkdir outstd/openlink/util
 
@@ -133,11 +139,18 @@ outstd/openlink/util/%.class: outstd/openlink/util/%.java
 	@echo jdbc2 util javac $(JDK2_FLAGS) $(notdir $<)
 	@cd outstd ; $(JDK2)/bin/javac $(JDK2_FLAGS) -classpath . openlink/util/$(notdir $<)
 
+outstd/virtuoso/sql/%.class: outstd/virtuoso/sql/%.java
+	@echo jdbc2 sql javac $(JDK2_FLAGS) $(notdir $<)
+	@cd outstd ; $(JDK2)/bin/javac $(JDK2_FLAGS) -classpath . virtuoso/sql/$(notdir $<)
+
 outstd/virtuoso/jdbc2/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd/openlink/util/%.java: ../../openlink/util/%.java
 	cd outstd/openlink/util; $(LN_S) ../../../$< .
+
+outstd/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd/virtuoso/sql; $(LN_S) ../../../$< .
 
 #SSL
 jssljars=../../../security/jdk1.2/jcert.jar$(CPS)../../../security/jdk1.2/jnet.jar$(CPS)../../../security/jdk1.2/jsse.jar
@@ -154,13 +167,14 @@ sslclassfiles=$(ssljavafiles:%.java=%.class)
 ssl2: ../../virtjdbc2ssl.jar
 
 ../../virtjdbc2ssl.jar: outssl $(ssljavafiles) $(sslclassfiles)
-	@cd outssl ; $(JDK2)/bin/jar cf ../../../virtjdbc2ssl.jar virtuoso/jdbc2/*.class openlink/util/*.class
+	@cd outssl ; $(JDK2)/bin/jar cf ../../../virtjdbc2ssl.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java SSL 2.0 built"
 
 outssl:
 	@mkdir outssl
 	@mkdir outssl/virtuoso
 	@mkdir outssl/virtuoso/jdbc2
+	@mkdir outssl/virtuoso/sql
 	@mkdir outssl/openlink
 	@mkdir outssl/openlink/util
 
@@ -172,11 +186,18 @@ outssl/openlink/util/%.class: outssl/openlink/util/%.java
 	@echo jdbc2 ssl util javac $(JDK2_FLAGS) $(notdir $<)
 	@cd outssl ; $(JDK2)/bin/javac $(JDK2_FLAGS) -classpath . openlink/util/$(notdir $<)
 
+outssl/virtuoso/sql/%.class: outssl/virtuoso/sql/%.java
+	@echo jdbc2 ssl sql javac $(JDK2_FLAGS) $(notdir $<)
+	@cd outssl ; $(JDK2)/bin/javac $(JDK2_FLAGS) -classpath . virtuoso/sql/$(notdir $<)
+
 outssl/virtuoso/jdbc2/%.java: %.java
 	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl/openlink/util/%.java: ../../openlink/util/%.java
 	cd outssl/openlink/util; $(LN_S) ../../../$< .
+
+outssl/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outssl/virtuoso/sql; $(LN_S) ../../../$< .
 
 
 
@@ -186,6 +207,7 @@ outssl/openlink/util/%.java: ../../openlink/util/%.java
 # normal java files
 std3javafiles= \
         $(utilfiles:%.java=outstd3/openlink/util/%.java) \
+        $(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
         $(util3files:%.java=outstd3/openlink/util/%.java) \
     	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
     	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
@@ -200,13 +222,14 @@ std3classfiles=$(std3javafiles:%.java=%.class)
 std3: ../../virtjdbc3.jar
 
 ../../virtjdbc3.jar: outstd3 $(std3javafiles) $(std3classfiles)
-	@cd outstd3 ; $(JDK3)/bin/jar cf ../../../virtjdbc3.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class
+	@cd outstd3 ; $(JDK3)/bin/jar cf ../../../virtjdbc3.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java 3.0 built"
 
 outstd3:
 	@mkdir outstd3
 	@mkdir outstd3/virtuoso
 	@mkdir outstd3/virtuoso/jdbc3
+	@mkdir outstd3/virtuoso/sql
 	@mkdir outstd3/openlink
 	@mkdir outstd3/openlink/util
 	@mkdir outstd3/virtuoso/javax
@@ -220,6 +243,10 @@ outstd3/openlink/util/%.class: outstd3/openlink/util/%.java
 	@echo jdbc3 util javac $(JDK3_FLAGS) $(notdir $<)
 	@cd outstd3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . openlink/util/$(notdir $<)
 
+outstd3/virtuoso/sql/%.class: outstd3/virtuoso/sql/%.java
+	@echo jdbc3 sql javac $(JDK3_FLAGS) $(notdir $<)
+	@cd outstd3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . virtuoso/sql/$(notdir $<)
+
 outstd3/virtuoso/javax/%.class: outstd3/virtuoso/javax/%.java
 	@echo jdbc3 javax javac $(JDK3_FLAGS) $(notdir $<)
 	@cd outstd3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . virtuoso/javax/$(notdir $<)
@@ -230,12 +257,16 @@ outstd3/virtuoso/jdbc3/%.java: %.java
 outstd3/openlink/util/%.java: ../../openlink/util/%.java
 	cd outstd3/openlink/util; $(LN_S) ../../../$< .
 
+outstd3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd3/virtuoso/sql; $(LN_S) ../../../$< .
+
 outstd3/virtuoso/javax/%.java: ../javax/%.java
 	cd outstd3/virtuoso/javax; $(LN_S) ../../../$< .
 
 #SSL JDBC 3
 ssl3javafiles= \
         $(utilfiles:%.java=outssl3/openlink/util/%.java) \
+        $(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
         $(util3files:%.java=outssl3/openlink/util/%.java) \
     	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
     	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
@@ -249,13 +280,14 @@ ssl3classfiles=$(ssl3javafiles:%.java=%.class)
 ssl3: ../../virtjdbc3ssl.jar
 
 ../../virtjdbc3ssl.jar: outssl3 $(ssl3javafiles) $(ssl3classfiles)
-	@cd outssl3 ; $(JDK3)/bin/jar cf ../../../virtjdbc3ssl.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class
+	@cd outssl3 ; $(JDK3)/bin/jar cf ../../../virtjdbc3ssl.jar virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java SSL 3.0 built"
 
 outssl3:
 	@mkdir outssl3
 	@mkdir outssl3/virtuoso
 	@mkdir outssl3/virtuoso/jdbc3
+	@mkdir outssl3/virtuoso/sql
 	@mkdir outssl3/openlink
 	@mkdir outssl3/openlink/util
 	@mkdir outssl3/virtuoso/javax
@@ -268,6 +300,10 @@ outssl3/openlink/util/%.class: outssl3/openlink/util/%.java
 	@echo jdbc3 ssl util javac $(JDK3_FLAGS) $(notdir $<)
 	@cd outssl3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . openlink/util/$(notdir $<)
 
+outssl3/virtuoso/sql/%.class: outssl3/virtuoso/sql/%.java
+	@echo jdbc3 ssl sql javac $(JDK3_FLAGS) $(notdir $<)
+	@cd outssl3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . virtuoso/sql/$(notdir $<)
+
 outssl3/virtuoso/javax/%.class: outssl3/virtuoso/javax/%.java
 	@echo jdbc3 ssl javax javac $(JDK3_FLAGS) $(notdir $<)
 	@cd outssl3 ; $(JDK3)/bin/javac $(JDK3_FLAGS) -classpath . virtuoso/javax/$(notdir $<)
@@ -278,6 +314,9 @@ outssl3/virtuoso/jdbc3/%.java: %.java
 outssl3/openlink/util/%.java: ../../openlink/util/%.java
 	cd outssl3/openlink/util; $(LN_S) ../../../$< .
 
+outssl3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outssl3/virtuoso/sql; $(LN_S) ../../../$< .
+
 outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 	cd outssl3/virtuoso/javax; $(LN_S) ../../../$< .
 
@@ -287,6 +326,7 @@ outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 # normal java files
 std1javafiles= \
         $(utilfiles:%.java=outstd1/openlink/util/%.java) \
+        $(sqlfiles:%.java=outstd1/virtuoso/sql/%.java) \
     	$(infiles:%.java=outstd1/virtuoso/jdbc/%.java) \
     	$(in1files:%.java=outstd1/virtuoso/jdbc/%.java)
 
@@ -298,13 +338,14 @@ std1classfiles=$(std1javafiles:%.java=%.class)
 std1: ../../virtjdbc.jar
 
 ../../virtjdbc.jar: outstd1 $(std1javafiles) $(std1classfiles)
-	@cd outstd1 ; $(JDK1)/bin/jar cf ../../../virtjdbc.jar virtuoso/jdbc/*.class openlink/util/*.class
+	@cd outstd1 ; $(JDK1)/bin/jar cf ../../../virtjdbc.jar virtuoso/jdbc/*.class openlink/util/*.class virtuoso/sql/*.class
 	@echo "............. Virtuoso pure Java 1.0 built"
 
 outstd1:
 	@mkdir outstd1
 	@mkdir outstd1/virtuoso
 	@mkdir outstd1/virtuoso/jdbc
+	@mkdir outstd1/virtuoso/sql
 	@mkdir outstd1/openlink
 	@mkdir outstd1/openlink/util
 
@@ -317,8 +358,15 @@ outstd1/openlink/util/%.class: outstd1/openlink/util/%.java
 	@echo jdbc1 util javac $(JDK1_FLAGS) $(notdir $<)
 	@cd outstd1 ; $(JDK1)/bin/javac $(JDK1_FLAGS) -classpath .:$(JDK1)/lib/classes.zip openlink/util/$(notdir $<)
 
+outstd1/virtuoso/sql/%.class: outstd1/virtuoso/sql/%.java
+	@echo jdbc1 sql javac $(JDK1_FLAGS) $(notdir $<)
+	@cd outstd1 ; $(JDK1)/bin/javac $(JDK1_FLAGS) -classpath .:$(JDK1)/lib/classes.zip virtuoso/sql/$(notdir $<)
+
 outstd1/virtuoso/jdbc/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc1_defs) $< >$@
 
 outstd1/openlink/util/%.java: ../../openlink/util/%.java
 	cd outstd1/openlink/util; $(LN_S) ../../../$< .
+
+outstd1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd1/virtuoso/sql; $(LN_S) ../../../$< .
