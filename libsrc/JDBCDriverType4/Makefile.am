@@ -21,25 +21,35 @@
 
 if JDK1
 JDK1_TARGETS = jdk1-target
+JDK1_TEST = jdk1-test
 endif
 
 if JDK2
 JDK2_TARGETS = jdk2-target
+JDK2_TEST = jdk2-test
 endif
 
 if JDK3
 JDK3_TARGETS = jdk3-target
+JDK3_TEST = jdk3-test
 endif
 
+JDK_TESTS = $(JDK1_TEST) $(JDK2_TEST) $(JDK3_TEST)
 
 SUBDIRS	= . virtuoso testsuite_1.2 testsuite_2.0 testsuite_3.0
 
 
 all-am: $(JDK1_TARGETS) $(JDK2_TARGETS) $(JDK3_TARGETS)
 
+run-tests:
+	$(MAKE) $(JDK_TESTS)
+
 .PHONY: jdk1-target
 jdk1-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std1
+
+jdk1-test:
+	env "JDK1=@ac_jdk1_path@" $(SHELL) ./test1.sh
 
 
 .PHONY: jdk2-target
@@ -47,10 +57,18 @@ jdk2-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std2
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl2
 
+jdk2-test:
+	env "JDK2=@ac_jdk2_path@" $(SHELL) ./test2.sh
+
+
 .PHONY: jdk3-target
 jdk3-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std3
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl3
+
+jdk3-test:
+	env "JDK3=@ac_jdk3_path@" $(SHELL) ./test3.sh
+
 
 install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-2.0"
