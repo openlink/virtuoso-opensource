@@ -534,7 +534,7 @@ vad_create
 virtuoso_shutdown
 chmod 644 ods_framework_dav.vad
 #chmod 644 virtuoso.trx
-#directory_clean
+directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"

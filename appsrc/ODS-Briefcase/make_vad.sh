@@ -418,6 +418,7 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0
