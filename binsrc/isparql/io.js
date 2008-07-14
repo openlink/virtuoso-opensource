@@ -25,7 +25,7 @@ var iSPARQL = {
 		defaultGraph:"",
 		graphs:[],
 		namedGraphs:[],
-		schemas:[],			/* FIXME: prefixes? */
+		prefixes:[],			/* FIXME: prefixes? */
 		pragmas:[],
 		canvas:false
 	}
@@ -86,10 +86,10 @@ iSPARQL.IO = {
 		if(dataObj.proxy) { addNode(page,"proxy",dataObj.proxy); }
 		if(dataObj.query) { addNode(page,"query",dataObj.query); }
 
-		if(dataObj.schemas) { 
+		if(dataObj.prefixes) { 
 			var schemas = addNode(page,"schemas");
-			for(var i=0;i<dataObj.schemas.length;i++) {
-				var schemaNode = dataObj.schemas[i];
+			for(var i=0;i<dataObj.prefixes.length;i++) {
+				var schemaNode = dataObj.prefixes[i];
 				addNode(schemas,"schema",schemaNode);
 			} 
 		}
@@ -224,7 +224,7 @@ iSPARQL.IO = {
 		var schemas = xml.getElementsByTagName("schemas");
 		for (var i=0;i<schemas.length;i++) {
 			var schema = OAT.Dom.fromSafeXML(schemas[i]);
-			dataObj.schemas.push(schema);
+			dataObj.prefixes.push(schema);
 		}
 
 		var pragmas = xml.getElementsByTagName("pragma");

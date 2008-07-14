@@ -478,7 +478,7 @@ function init() {
 		var cache = qe.cache[qe.cacheIndex];
 		qbe.loadFromString(cache.opts.query);
 		$('qbe_sponge').value = cache.opts.sponge;
-		qbe.service.input.value = cache.opts.endpoint;
+		$('service').value = cache.opts.endpoint;
 	});
 	OAT.Dom.append([qe.dom.ul,loadToQBE],[loadToQBE,img]);
   
@@ -493,7 +493,7 @@ function init() {
 		$('query').value = cache.opts.query;
 		$('default-graph-uri').value = cache.opts.defaultGraph;
 		$('adv_sponge').value = cache.opts.sponge;
-		adv.service.input.value = cache.opts.endpoint;
+		$('service').value = cache.opts.endpoint;
 	});
 	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
   

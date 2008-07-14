@@ -1100,7 +1100,7 @@ iSPARQL.QBE = function () {
 		} else {
 			OAT.Dom.hide(self.dataset_win.div);
 		}
-		l.raise(self.dataset_win.div);
+		self.l.raise(self.dataset_win.div);
 	}); 
 	//icon_datasets.style.cssFloat = 'right';
 
@@ -1542,7 +1542,7 @@ iSPARQL.QBE = function () {
 
 				if (xml.getElementsByTagName("service").length)	{
 				  var service = xml.getElementsByTagName("service")[0];
-				  adv.service.input.value = OAT.Xml.textValue(service);
+				  $('service').value = OAT.Xml.textValue(service);
 				}
 				
 					for (var i=0;i<self.svgsparql.groups.length;i++)
@@ -1565,7 +1565,7 @@ iSPARQL.QBE = function () {
 
 			  var tmp = data.match(/#service:(.*)/i)
 			  if (tmp && tmp.length > 1) {
-				adv.service.input.value = tmp[1].trim();
+				$('service').service.input.value = tmp[1].trim();
 			  }
 			}
 

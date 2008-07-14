@@ -333,8 +333,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.mlCache = [];
 	this.topDiv = OAT.Dom.create("div",{},"rdf_nav");
 	this.mainDiv = OAT.Dom.create("div");
-	this.description = "This module is used for navigating through all locally cached data, one resource at a time. "+
-							"Note that filters don't apply here, all data is displayed.";
+	this.description = "This module is used to navigate through locally cached data, one resource at a time. Note that filters are not applied here";
 	OAT.Dom.append([self.elm,self.topDiv,self.mainDiv]);
 
 	this.gd = new OAT.GhostDrag();
@@ -659,7 +658,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		}
 		/* give a list of items for navigation */
 		var obj = self.getTypeObject();
-		self.drawSpotlight("Click on a Data Entity to Explore it's Linked Data Web",obj);
+		self.drawSpotlight("Click on a Data Entity to explore its Linked Data Web.",obj);
 		self.redrawTop();
 	}
 
@@ -860,6 +859,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 				self.parent.processLink(node.svg,node.name);
 			}
 		}
+		this.elm.style.backgroundColor = '#cacce7';
 	}
 }
 
