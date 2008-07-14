@@ -45,6 +45,7 @@
 	  <xsl:apply-templates select="/html/body//img[@src]"/>
 	  <xsl:apply-templates select="/html/body//a[@href]"/>
       </foaf:Document>
+      <xsl:apply-templates select="meta[@name='keywords']" mode="meta"/>
   </xsl:template>
   <xsl:template match="*" mode="rdf-in-comment">
       <xsl:apply-templates mode="rdf-in-comment"/>
@@ -80,7 +81,13 @@
       </dc:subject>
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
       <xsl:for-each select="$res/results/result">
-	  <skos:Concept rdf:parseType="Resource">
+	  <skos:Concept rdf:resource="{$base}#{.}" />
+      </xsl:for-each>
+  </xsl:template>
+  <xsl:template match="meta[@name='keywords']" mode="meta">
+      <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
+      <xsl:for-each select="$res/results/result">
+	  <skos:Concept rdf:about="{$base}#{.}">
 	      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 	  </skos:Concept>
       </xsl:for-each>

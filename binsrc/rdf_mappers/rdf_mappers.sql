@@ -42,6 +42,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)',
             'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML and feeds', vector ('get-feeds', 'no', 'add-html-meta', 'no'));
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1);
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://farm[0-9]*.static.flickr.com/.*',
             'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
@@ -123,14 +126,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('http://musicbrainz.org/([^/]*)/([^\.]*)',
             'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
-    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 0);
-
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2048 where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2049 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
 --
@@ -183,6 +183,10 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hListing', 'http://dannyayers.com/micromodels/profiles/hlisting', registry_get ('_rdf_mappers_path_') || 'xslt/hlisting2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('relLicense', '', registry_get ('_rdf_mappers_path_') || 'xslt/cc2rdf.xsl')
 ;
 
@@ -192,6 +196,10 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('HR-XML', '', registry_get ('_rdf_mappers_path_') || 'xslt/hrxml2rdf.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hResume', 'http://dannyayers.com/micromodels/profiles/hresume', registry_get ('_rdf_mappers_path_') || 'xslt/hresume2rdf.xsl')
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
@@ -1320,7 +1328,10 @@ create procedure DB.DBA.RDF_CALAIS_OPTS (in mime varchar)
 create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
-  declare cnt, xt, xp, xd, mime, html_start any;
+  declare cnt, xt, xp, xd, mime, html_start, paras, doc_tree, frag any;
+  declare flag int;
+
+  flag := 0;
 
   declare exit handler for sqlstate '*'
     {
@@ -1334,19 +1345,38 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
 --  dbg_obj_print (mime);
   if (mime is null)
     return 0;
+
+  --doc_tree := xtree_doc (_ret_body, 2);
+  --paras := xpath_eval ('//p', doc_tree);
+  --frag := serialize_to_UTF8_xml (paras);
+
+  --dbg_printf ('%s', frag);
+  frag := _ret_body;
+
   cnt := http_get ('http://api.opencalais.com/enlighten/calais.asmx/Enlighten',
   	null, 'POST', null,
-	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, _ret_body, DB.DBA.RDF_CALAIS_OPTS (mime)));
+	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, frag, DB.DBA.RDF_CALAIS_OPTS (mime)));
   xt := xtree_doc (cnt, 0, '', 'UTF-8');
   xp := xpath_eval('string(//text())', xt);
   xd := charset_recode (xp, '_WIDE_', 'UTF-8');
---  dbg_obj_print (xd);
+  xt := xtree_doc (xd, 0, '', 'UTF-8');
+  xp := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/calais_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xp);
+  --string_to_file ('/tmp/oc.xml', xd, -2);
+  --dbg_printf ('%s', xd);
   if (xd is not null)
     {
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-      return 1;
+      flag := 1;
     }
-  return 0;
+  declare ord any;
+  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
+  for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
+    {
+      if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
+        flag := 0;
+    }
+  return flag;
 }
 ;
 
@@ -2082,18 +2112,23 @@ no_feed:;
         {
 	  mdta := mdta + 1;
           xd := serialize_to_UTF8_xml (xd);
+	  --dbg_printf (xd);
           DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	}
     }
 ret:
   if (mdta > 0 and aq is not null)
     aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
-
-  declare ord any;
+  -- /* decide how to return */
+  declare ord, mime any;
+  mime := get_keyword ('content-type', opts);
   ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
-  for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
+  for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS
+    where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
     {
-      if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
+      if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
+        mdta := 0;
+      else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' and regexp_match (RM_PATTERN, mime) is not null)
         mdta := 0;
     }
 
