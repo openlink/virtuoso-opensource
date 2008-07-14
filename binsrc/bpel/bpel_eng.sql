@@ -2143,7 +2143,7 @@ create procedure BPEL.BPEL.compile_script (in scp_id int, in vdir varchar := nul
        declare inx int;
        declare inv_ent any;
 
-       BPEL.BPEL.wsdl_messages (scp_id, bsrc_text, 0, src);
+       BPEL.BPEL.wsdl_messages (scp_id, bsrc_text, 1, src);
        fnd := 1;
     }
 
