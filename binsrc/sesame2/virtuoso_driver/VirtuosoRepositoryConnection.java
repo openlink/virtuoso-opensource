@@ -1903,9 +1903,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// o = o.replaceAll("'", "''");
 		    	
 		    	// context should not be null at this point, at the least, it will be a wildcard
-
 		        String query = "sparql delete from graph <"+context+
-  				"> {?s ?p ?o} where {?s ?p ?o . "
+  				"> {?s ?p ?o} from <"+context+"> where {?s ?p ?o . "
   				+ S +" "+ P +" "+ O +" }";
 
 		    	java.sql.Statement stmt = getQuadStoreConnection().createStatement();

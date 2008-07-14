@@ -485,35 +485,58 @@ public class VirtGraph extends GraphBase
     void delete_match(TripleMatch tm)
     {
 	String S, P, O;
+	Node nS, nP, nO;
 
 	checkOpen();
 
-	S = " ?s ";
-	P = " ?p ";
-	O = " ?o ";
+	S = "";
+	P = "";
+	O = "";
 
-	if (tm.getMatchSubject() != null)
-		S = Node2Str(tm.getMatchSubject());
+	nS = tm.getMatchSubject();
+	nP = tm.getMatchPredicate();
+	nO = tm.getMatchObject();
 
-	if (tm.getMatchPredicate() != null)
-		P = Node2Str(tm.getMatchPredicate());
+       try
+       {
+	  if (nS == null && nP == null && nO == null) {
 
-	if (tm.getMatchObject() != null)
-		O = Node2Str(tm.getMatchObject());
+	    clearGraph(this.graphName);
 
-        String query = "sparql delete from graph <"+this.graphName+
-  		"> {?s ?p ?o} where {?s ?p ?o . "+
-  		""+S+" ?p ?o . ?s "+P+" ?o . ?s ?p "+O+" .}";
+	  } else if (nS != null && nP != null && nO != null) {
+      	    java.sql.PreparedStatement ps;
 
-        try
-	{
+            ps = connection.prepareStatement(sdelete);
+            ps.setString(1, this.graphName);
+            bindSubject(ps, 2, nS);
+            bindPredicate(ps, 3, nP);
+            bindObject(ps, 4, nO);
+
+	    ps.execute();
+
+	  } else  {
+
+	    if (nS != null)
+		S = Node2Str(nS)+" ?p ?o ."  ;
+
+	    if (nP != null)
+		P = "?s "+Node2Str(nP)+" ?o .";
+
+	    if (nO != null)
+		O = "?s ?p "+Node2Str(nO)+" .";
+
+            String query = "sparql delete from graph <"+this.graphName+
+  		"> {?s ?p ?o} from <"+this.graphName+"> where {?s ?p ?o . "+
+  		S+" "+P+" "+O+" }";
+
 	    java.sql.Statement stmt = connection.createStatement();
 	    stmt.execute(query);
-	}
+          }
+      }
       catch(Exception e)
-	{
-            throw new DeleteDeniedException(e.toString());
-	}
+      {
+          throw new DeleteDeniedException(e.toString());
+      }
     }
 
 
