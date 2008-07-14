@@ -489,9 +489,9 @@ public class VirtGraph extends GraphBase
 
 	checkOpen();
 
-	S = "";
-	P = "";
-	O = "";
+	S = "?s";
+	P = "?p";
+	O = "?o";
 
 	nS = tm.getMatchSubject();
 	nP = tm.getMatchPredicate();
@@ -517,17 +517,16 @@ public class VirtGraph extends GraphBase
 	  } else  {
 
 	    if (nS != null)
-		S = Node2Str(nS)+" ?p ?o ."  ;
+		S = Node2Str(nS);
 
 	    if (nP != null)
-		P = "?s "+Node2Str(nP)+" ?o .";
+		P = Node2Str(nP);
 
 	    if (nO != null)
-		O = "?s ?p "+Node2Str(nO)+" .";
+		O = Node2Str(nO);
 
             String query = "sparql delete from graph <"+this.graphName+
-  		"> {?s ?p ?o} from <"+this.graphName+"> where {?s ?p ?o . "+
-  		S+" "+P+" "+O+" }";
+  		"> { "+S+" "+P+" "+O+" } from <"+this.graphName+"> where { "+S+" "+P+" "+O+" }";
 
 	    java.sql.Statement stmt = connection.createStatement();
 	    stmt.execute(query);

@@ -1864,9 +1864,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
 		PreparedStatement ps = null;
 
-		String S = "";
-		String P = "";
-		String O = "";
+		String S = "?s";
+		String P = "?p";
+		String O = "?o";
 
 		try {
 
@@ -1890,13 +1890,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    } else {
 
 			if (subject != null)
-				S = stringForResource(subject)+" ?p ?o ."  ;
+				S = stringForResource(subject);
 
 			if (predicate != null)
-				P = "?s "+stringForURI(predicate)+" ?o .";
+				P = stringForURI(predicate);
 
 			if (object != null)
-				O = "?s ?p "+stringForValue(object)+" .";
+				O = stringForValue(object);
 
 			// s = s.replaceAll("'", "''");
 			// p = p.replaceAll("'", "''");
@@ -1904,8 +1904,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    	
 		    	// context should not be null at this point, at the least, it will be a wildcard
 		        String query = "sparql delete from graph <"+context+
-  				"> {?s ?p ?o} from <"+context+"> where {?s ?p ?o . "
-  				+ S +" "+ P +" "+ O +" }";
+  				"> { "+S+" "+P+" "+O+" } from <"+context+
+  				"> where { "+S+" "+P+" "+O+" }";
 
 		    	java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 		    	stmt.execute(query);
