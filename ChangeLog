@@ -1,3 +1,162 @@
+2008-07-14 10:59  source
+
+	* Updated version of vad packages
+
+2008-07-14 10:59  source
+
+	* Small fixes
+
+2008-07-14 10:53  source
+
+	* Updated version of vad package
+
+2008-07-14 10:50  source
+
+	* Merged from upstream project
+
+2008-07-14 10:50  source
+
+	* Small cleanup
+
+2008-07-14 10:48  source
+
+	* Updated documentation
+
+2008-07-14 10:06  source
+
+	* Fixed sparql syntax
+
+2008-07-14 08:00  source
+
+	* Regenerated driver
+
+2008-07-14 08:00  source
+
+	* Regenerated provider
+
+2008-07-14 07:56  source
+
+	* Fixed delete graph
+
+2008-07-12 21:43  source
+
+	* Added SyncML feature
+
+2008-07-12 21:43  source
+
+	* Fixed label
+
+2008-07-11 13:38  source
+
+	* Added support for ODS Calendar feature
+
+2008-07-11 11:44  source
+
+	* Fixed spelling
+
+2008-07-11 09:11  source
+
+	* Added support for lazy add
+	* Fixed compiler warnings
+
+2008-07-10 21:36  source
+
+	* Updated documentation
+
+2008-07-10 15:24  source
+
+	* Updated version to 5.0.7-rc23
+
+2008-07-10 15:08  source
+
+	* Updated engine version to 3032
+
+2008-07-10 14:57  source
+
+	* Fix for code generation when the SPARQL query has LIMIT and/or OFFSET
+	  clause and uses backquoted expressions in constructor template.
+
+2008-07-10 14:55  source
+
+	* Fix for SPARQL metadata manipulation errors in case-sensitive CaseMode.
+
+2008-07-10 14:52  source
+
+	* Optimization for sparql delete { ?s ?p ?o } where { ?s ?p ?o } and
+	  all similar "delete everything what is found by simple condition"
+
+2008-07-10 14:49  source
+
+	* Fixed namespaces in SOAP
+
+2008-07-10 14:36  source
+
+	* Regenerated driver
+
+2008-07-10 14:35  source
+
+	* Added batch optimizations
+	* Fixed memory footprint
+
+2008-07-10 12:05  source
+
+	* Update documentation
+
+2008-07-10 11:06  source
+
+	* Fixed problem with plus char in directory name
+
+2008-07-10 11:06  source
+
+	* Fixed problem with make dist
+
+2008-07-10 08:08  source
+
+	* Regenerated provider
+
+2008-07-10 08:05  source
+
+	* Fixed memory footprint for select queries using iterator for resultset
+
+2008-07-09 16:02  source
+
+	* Added initial support for batched execute with parameters
+
+2008-07-09 16:02  source
+
+	* Fixed multiple RepositoryConnections
+	* Refactored some code
+
+2008-07-09 15:49  source
+
+	* Fixed tests to point to myopenlink.net site
+
+2008-07-09 15:45  source
+
+	* Fixed make clean
+	* Fixed dependency check
+
+2008-07-09 15:43  source
+
+	* Added more files to ignore
+
+2008-07-09 10:43  source
+
+	* Updated documentation
+
+2008-07-09 10:39  source
+
+	* Close import window after finishing
+
+2008-07-09 10:39  source
+
+	* Added event/task deletion after subscription delete
+
+2008-07-07 12:01  source
+
+	* Added get default txn isolation level from server
+	* Added connect string to disable log with log_enable (0-3)
+
 2008-07-07 11:29  source
 
 	* Updated version to 5.0.7-rc22
