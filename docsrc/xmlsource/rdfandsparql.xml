@@ -3116,7 +3116,7 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 SELECT DISTINCT ?friendsname ?friendshomepage ?foafsname ?foafshomepage
 WHERE
  {
-  <http://richard.cyganiak.de/foaf.rdf#cygri> foaf:knows ?friend .
+  <http://myopenlink.net/dataspace/person/kidehen#this> foaf:knows ?friend .
   ?friend foaf:mbox_sha1sum ?mbox .
   ?friendsURI foaf:mbox_sha1sum ?mbox .
   ?friendsURI foaf:name ?friendsname .
@@ -3131,15 +3131,13 @@ friendsname   friendshomepage  foafsname   foafshomepage
 VARCHAR       VARCHAR          VARCHAR VARCHAR
 _______________________________________________________________________________
 
-Jens Lehmann  http://jens-lehmann.org/ NULL NULL
-Uldis Bojars  http://captsolo.net/     NULL NULL
-Orri Erling   http://www.openlinksw.com/weblogs/oerling/  NULL NULL
-Lee Feigenbaum  http://thefigtrees.net/ NULL                                                                              NULL
-Simon Rieche    http://ds.ps-group.org/members/rieche NULL                                                                              NULL
-Kingsley Idehen http://www.openlinksw.com/blog/~kidehen/ NULL
+Tim Berners-Lee   http://www.w3.org/People/Berners-Lee/                 Dan Connolly    http://www.w3.org/People/Connolly/
+Tim Berners-Lee   http://www.w3.org/People/Berners-Lee/                 Eric Miller     http://purl.org/net/eric/
+Dave Beckett      http://www.dajobe.org/                                NULL            NULL
+Richard Cyganiak  http://richard.cyganiak.de/                           Dan Connolly    http://www.w3.org/People/Connolly/
 
 ...
-37 Rows. -- 1392 msec.
+73 Rows. -- 1452 msec.
 SQL>
 
 ]]></programlisting>
@@ -5596,7 +5594,10 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
     <para>
 	The old pattern '/proxy/' for RDF proxy service is deprecated.
     </para>
-    <para><emphasis>Note:</emphasis>In order the RDF proxy service to work correctly, you need to enable SPARQL_UPDATE for SPARQL user using Conductor UI:
+    <para><emphasis>Note: </emphasis>In order the RDF proxy service to work correctly, you need to enable SPARQL_UPDATE and grant RDF_SPONGE_UP for SPARQL user:
+    </para>
+    <para>
+       enable SPARQL_UPDATE using Conductor UI:
     </para>
 <itemizedlist>
   <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
@@ -5607,10 +5608,15 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
   <listitem>Click the button "Update".</listitem>
 </itemizedlist>
     <para>
+       grant RDF_SPONGE_UP:
+    </para>
+<programlisting><![CDATA[
+grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
+]]></programlisting>
+    <para>
 	The RDF proxy service takes following URL parameters:
     </para>
     <itemizedlist mark="bullet" spacing="compact">
-	<listitem><emphasis>url</emphasis> the URL of the target</listitem>
 	<listitem><emphasis>force</emphasis> if 'rdf' is specified will try to extract RDF data from target and return it</listitem>
 	<listitem><emphasis>header</emphasis> HTTP headers to be sent to the target</listitem>
 	<listitem><emphasis>output-format</emphasis> if 'force=rdf' is given, designate the output MIME type of the RDF data, the default is 'rdf+xml', can be also 'n3' or 'turtle' or 'ttl'.</listitem>
@@ -5620,7 +5626,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
     </para>
     <para>Example: rdf file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
-Access the url: http://host:port/proxy/rdf/?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
+Access the url: http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card&force=rdf
 ]]></programlisting>
 <para>As result will be shown the rdf file content. Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
 <para>Enter for Default Graph URI the url of the rdf file:  http://www.w3.org/People/Berners-Lee/card</para>
@@ -6331,12 +6337,14 @@ file after file with 3 processing threads. The most important performance tuning
 NumberOfBuffers = 1000000
 MaxDirtyBuffers = 800000
 MaxCheckpointRemap = 1000000
+DefaultIsolation = 2
 ]]></programlisting>
 <para>Note: these numbers are reasonable for 16 GB RAM Linux box. Usually when there are no such massive operations as loading huge database, you can set up the values as:</para>
 <programlisting><![CDATA[
 NumberOfBuffers = 1500000
 MaxDirtyBuffers = 1200000
 MaxCheckpointRemap = 1500000
+DefaultIsolation = 2
 ]]></programlisting>
 <para>Tip: Thus after loading all data you may wish to shutdown, tweak and start server again.
 If you have ext2fs or ext3fs filesystem, then it's better to have enough free space on disk not to
@@ -7274,7 +7282,7 @@ PASSED: TEST 10
 PASSED: TEST 11
 
 == TEST 12:  : Start
-   Retrieving statement (http://mso.monrai.com/foaf/shermanMonroe http://mso.monrai.com/foaf/name null)
+   Retrieving statement (http://myopenlink.net/dataspace/person/kidehen http://myopenlink.net/foaf/name null)
 == TEST 12:  : End
 PASSED: TEST 12
 
