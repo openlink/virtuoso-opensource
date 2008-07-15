@@ -147,10 +147,10 @@ outstd/virtuoso/jdbc2/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd/openlink/util/%.java: ../../openlink/util/%.java
-	cd outstd/openlink/util; $(LN_S) ../../../$< .
+	cd outstd/openlink/util; cp ../../../$< .
 
 outstd/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd/virtuoso/sql; $(LN_S) ../../../$< .
+	cd outstd/virtuoso/sql; cp ../../../$< .
 
 #SSL
 jssljars=../../../security/jdk1.2/jcert.jar$(CPS)../../../security/jdk1.2/jnet.jar$(CPS)../../../security/jdk1.2/jsse.jar
@@ -194,10 +194,10 @@ outssl/virtuoso/jdbc2/%.java: %.java
 	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl/openlink/util/%.java: ../../openlink/util/%.java
-	cd outssl/openlink/util; $(LN_S) ../../../$< .
+	cd outssl/openlink/util; cp ../../../$< .
 
 outssl/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl/virtuoso/sql; $(LN_S) ../../../$< .
+	cd outssl/virtuoso/sql; cp ../../../$< .
 
 
 
@@ -255,13 +255,13 @@ outstd3/virtuoso/jdbc3/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 outstd3/openlink/util/%.java: ../../openlink/util/%.java
-	cd outstd3/openlink/util; $(LN_S) ../../../$< .
+	cd outstd3/openlink/util; cp ../../../$< .
 
 outstd3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd3/virtuoso/sql; $(LN_S) ../../../$< .
+	cd outstd3/virtuoso/sql; cp ../../../$< .
 
 outstd3/virtuoso/javax/%.java: ../javax/%.java
-	cd outstd3/virtuoso/javax; $(LN_S) ../../../$< .
+	cd outstd3/virtuoso/javax; cp ../../../$< .
 
 #SSL JDBC 3
 ssl3javafiles= \
@@ -312,13 +312,13 @@ outssl3/virtuoso/jdbc3/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 outssl3/openlink/util/%.java: ../../openlink/util/%.java
-	cd outssl3/openlink/util; $(LN_S) ../../../$< .
+	cd outssl3/openlink/util; cp ../../../$< .
 
 outssl3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl3/virtuoso/sql; $(LN_S) ../../../$< .
+	cd outssl3/virtuoso/sql; cp ../../../$< .
 
 outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	cd outssl3/virtuoso/javax; $(LN_S) ../../../$< .
+	cd outssl3/virtuoso/javax; cp ../../../$< .
 
 
 
@@ -366,7 +366,7 @@ outstd1/virtuoso/jdbc/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc1_defs) $< >$@
 
 outstd1/openlink/util/%.java: ../../openlink/util/%.java
-	cd outstd1/openlink/util; $(LN_S) ../../../$< .
+	cd outstd1/openlink/util; cp ../../../$< .
 
 outstd1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd1/virtuoso/sql; $(LN_S) ../../../$< .
+	cd outstd1/virtuoso/sql; cp ../../../$< .
