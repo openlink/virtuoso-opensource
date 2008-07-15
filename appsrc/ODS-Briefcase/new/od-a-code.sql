@@ -444,6 +444,22 @@ create procedure ODRIVE.WA.url_fix (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.exec (
+  in S varchar,
+  in P any := null)
+{
+  declare st, msg, meta, rows any;
+
+  st := '00000';
+  exec (S, st, msg, P, 0, meta, rows);
+  if ('00000' = st)
+    return rows;
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Date / Time functions
 --
 -------------------------------------------------------------------------------
