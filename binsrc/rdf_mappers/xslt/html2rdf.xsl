@@ -81,13 +81,13 @@
       </dc:subject>
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
       <xsl:for-each select="$res/results/result">
-	  <skos:Concept rdf:resource="{$base}#{.}" />
+	  <skos:Concept rdf:resource="{vi:dbpIRI ($base, .)}" />
       </xsl:for-each>
   </xsl:template>
   <xsl:template match="meta[@name='keywords']" mode="meta">
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
       <xsl:for-each select="$res/results/result">
-	  <skos:Concept rdf:about="{$base}#{.}">
+	  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}">
 	      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 	  </skos:Concept>
       </xsl:for-each>

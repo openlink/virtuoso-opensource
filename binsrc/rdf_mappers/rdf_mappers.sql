@@ -317,12 +317,32 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 }
 ;
 
+create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
+{
+  declare res, xp, xt varchar;
+  declare uri varchar;
+  declare exit handler for sqlstate '*' {
+    return base || '#' || word;
+  };
+  if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
+    word[0] := word[0] - 32;
+  uri := sprintf ('ask from <http://dbpedia.org> where { <http://dbpedia.org/resource/%U> ?y ?z }', word);
+  res := http_get (sprintf ('http://dbpedia.org/sparql?query=%U', uri));
+  xt := xtree_doc (res);
+  xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
+  if (xp = 'true')
+    return sprintf ('http://dbpedia.org/resource/%U', word);
+  return base || '#' || word;
+}
+;
+
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
 grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
+grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
@@ -330,6 +350,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
 
 --create procedure RDF_LOAD_AMAZON_ARTICLE_INIT ()
 --{
