@@ -435,7 +435,7 @@ QueueMax     = 50000
 }
 
 vad_create() {
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_blog_dav.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_NAME', '.', 'ods_blog_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }
