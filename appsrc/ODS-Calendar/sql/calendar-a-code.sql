@@ -5216,15 +5216,8 @@ create procedure CAL.WA.exchange_exec_internal (
       declare _path, _pathID varchar;
 
       _pathID := DB.DBA.DAV_SEARCH_ID (_name, 'C');
-   	  for (select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = _pathID and DMLTYPE <> 'D') do
-   	  {
-   	     for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = RLOG_RES_ID) do
-   	     {
-           connection_set ('__sync_dav_upl', '1');
-           CAL.WA.syncml2event_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
-           connection_set ('__sync_dav_upl', '0');
-   	     }
- 	    }
+      if (__proc_exists (fix_identifier_case ('CAL.WA.exchange_exec_internal_syncml')))
+	  CAL.WA.exchange_exec_internal_syncml (_pathID, _domain_id, _name, _user, _password);
 
       for (select E_ID, E_UID, E_KIND from CAL.WA.events where E_DOMAIN_ID = _domain_id) do
       {
@@ -5245,6 +5238,27 @@ create procedure CAL.WA.exchange_exec_internal (
     }
   }
 }
+;
+
+CAL.WA.exec_no_error ('
+create procedure CAL.WA.exchange_exec_internal_syncml (
+    in _pathID int,
+    in _domain_id int,
+    in _name varchar,
+    in _user varchar,
+    in _password varchar
+    )
+{
+   	  for (select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = _pathID and DMLTYPE <> \'D\') do
+   	  {
+   	     for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = RLOG_RES_ID) do
+   	     {
+           connection_set (\'__sync_dav_upl\', \'1\');
+           CAL.WA.syncml2event_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
+           connection_set (\'__sync_dav_upl\', \'0\');
+   	     }
+ 	    }
+}')
 ;
 
 --------------------------------------------------------------------------------
