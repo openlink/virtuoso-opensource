@@ -20,13 +20,25 @@
 #  
 TOP=@TOP@
 
-noinst_DATA = demo.db
+#noinst_DATA = demo.db
 nodist_vad_DATA = doc_dav.vad demo_dav.vad
 
 if WITH_HTMLDOC
 #dist_htmldoc_DATA = $(top_srcdir)/docsrc/html_virt/*.html
 #dist_pdfdoc_DATA = $(top_srcdir)/docsrc/pdf/virtdocs.pdf
 endif
+
+
+# ----------------------------------------------------------------------
+#  Test loading of vad packages by creating demo.db
+# ----------------------------------------------------------------------
+TESTS=mkdemo.sh
+TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	HOME="$(TOP)" \
+	HTMLDOC="$(HTMLDOC)" \
+	prefix="$(prefix)" \
+	HOST=localhost 
 
 
 # ----------------------------------------------------------------------
