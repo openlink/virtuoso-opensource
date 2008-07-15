@@ -1,3 +1,42 @@
+July 14, 2008, V5.0.7:
+  * Database engine
+    - Added optimizations for JDBC batch support
+    - Added new connect options for JDBC driver
+    - Added ODBC extentions to retrieve SPARQL metadata
+    - Updated testsuite
+    - Fixed JDBC memory footprint
+    - Fixed costs calc for tables
+    - Fixed memory leaks
+    - Fixed support of exists ( ... union ... )
+    - Fixed extending database when disk full
+    - Fixed safety and argument checking of build-in functions
+    - Fixed ODBC connect threading problem
+    - Small bugfixes
+
+  * SPARQL and RDF
+    - Added SPARQL/SPARUL optimizations
+    - Added Sesame2 provider
+    - Added Jena provider extentions
+    - Added support for ^{DynamicLocalFormat}^
+    - Added support for parallel RDF sponging
+    - Added support for 'zeropart' IRI
+    - Added dynamic versions of Northwind and TPC-H RDF views
+    - Added new cardridges for ISBN, Slidy, YouTube, TheyWorkForYou
+    - Added new cardridges for hListing and hResume
+    - Fixed SPARUL rowcount
+    - Fixed UTF8 support in all RDF use cases
+    - Fixed support of alternate RDF indexing schemes
+    - Fixed inferencing of subclass and subproperty
+    - Small bugfixes
+
+  * ODS applications
+    - Added new API controller
+    - Added Syncml support
+    - Added discussion to OAuth
+    - Added Annotation hyperlinking
+    - Small bugfixes
+
+
 March 25, 2008, V5.0.6:
   * Database Engine
     - Added optimizations for bitmap intersection join

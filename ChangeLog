@@ -1,3 +1,50 @@
+2008-07-15 13:14  source
+
+	* Fixed building demo.db during make check
+
+2008-07-15 11:30  source
+
+	* Updated version to 5.0.7-rc24
+
+2008-07-15 10:17  source
+
+	* Fixed problem generating sticker
+
+2008-07-15 10:17  source
+
+	* Fixed problem with syncml not installed
+
+2008-07-14 19:23  source
+
+	* Fixed argument should always be 1
+
+2008-07-14 14:23  source
+
+	* Fixed tests
+
+2008-07-14 13:43  source
+
+	* Initial fixes to support JDK1.6/JDBC 4.x
+
+2008-07-14 13:42  source
+
+	* Added rules to run jdbc testsuite
+
+2008-07-14 13:40  source
+
+	* Initial fixes for building with jdk1.6
+
+2008-07-14 12:15  source
+
+	* Added hResume cardridge
+	* Added hListing cardridge
+	* Fixed Calais extraction
+	* Fixed tags extraction from html
+
+2008-07-14 11:29  source
+
+	* Small cleanups
+
 2008-07-14 10:59  source
 
 	* Updated version of vad packages
