@@ -2,7 +2,7 @@ July 14, 2008, V5.0.7:
   * Database engine
     - Added optimizations for JDBC batch support
     - Added new connect options for JDBC driver
-    - Added ODBC extentions to retrieve SPARQL metadata
+    - Added ODBC extensions to retrieve SPARQL metadata
     - Updated testsuite
     - Fixed JDBC memory footprint
     - Fixed costs calc for tables
@@ -16,13 +16,13 @@ July 14, 2008, V5.0.7:
   * SPARQL and RDF
     - Added SPARQL/SPARUL optimizations
     - Added Sesame2 provider
-    - Added Jena provider extentions
+    - Added Jena provider extinctions
     - Added support for ^{DynamicLocalFormat}^
     - Added support for parallel RDF sponging
     - Added support for 'zeropart' IRI
     - Added dynamic versions of Northwind and TPC-H RDF views
-    - Added new cardridges for ISBN, Slidy, YouTube, TheyWorkForYou
-    - Added new cardridges for hListing and hResume
+    - Added new cartridges for ISBN, Slidy, YouTube, TheyWorkForYou
+    - Added new cartridges for hListing and hResume
     - Fixed SPARUL rowcount
     - Fixed UTF8 support in all RDF use cases
     - Fixed support of alternate RDF indexing schemes
