@@ -1,3 +1,31 @@
+2008-07-16 22:39  source
+
+	* Updated version to 5.0.7 for final release
+
+2008-07-16 21:31  source
+
+	* Updated version to 5.0.7-rc26
+
+2008-07-16 21:29  source
+
+	* Added bibo and seeAlso
+
+2008-07-16 21:10  source
+
+	* Fixed order of loading vad packages
+
+2008-07-16 21:04  source
+
+	* Fixed possible buffer overrun
+
+2008-07-16 21:02  source
+
+	* Fixed problem with SyncML
+
+2008-07-16 21:02  source
+
+	* Added support for SyncML
+
 2008-07-16 15:49  source
 
 	* Updated version to 5.0.7-rc25

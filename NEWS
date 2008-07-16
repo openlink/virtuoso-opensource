@@ -1,4 +1,4 @@
-July 14, 2008, V5.0.7:
+July 17, 2008, V5.0.7:
   * Database engine
     - Added optimizations for JDBC batch support
     - Added new connect options for JDBC driver
