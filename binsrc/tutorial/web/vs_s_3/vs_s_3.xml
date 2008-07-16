@@ -44,7 +44,7 @@
 <refsect1 id="VS-S-3b">
 <title>Example virtual directory setup to another HTTP server</title>
 <orderedlist>
-  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>Go to "Web Application Server" tab and then go to the "Virtual Domains &amp; Directories" tab.</listitem>
   <listitem>From the given list of HTTP Hosts click the icon infront of the Interface value.</listitem>
   <listitem>Click the "Add new directory" link.</listitem>
   <listitem>Choose the "Proxy server" type and press the button "Next>>".</listitem>

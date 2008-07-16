@@ -38,7 +38,7 @@
   <listitem>A resource in the WebDAV repository can have a supplied content-type associated to the resource.</listitem>
   <listitem>If the content type is not supplied, the WebDAV server does a mapping from file extension to mime type.</listitem>
   <listitem>Mapping table is held in WS.WS.SYS_DAV_RES_TYPES and used by http_mime_type() function.</listitem>
-  <listitem>Using Conductor UI can be defined additional MIME type: Go to the "WebDAV &amp; HTTP" tab, then go to the "WebDAV Content Management" tab and then go to the "Resource Types" sub-tab. Here press the "Create New Type" button.</listitem>
+  <listitem>Using Conductor UI can be defined additional MIME type: Go to the "Web Application Server" tab, then go to the "Content Management" tab and then go to the "Resource Types" sub-tab. Here press the "Create New Type" button.</listitem>
 </itemizedlist>
 </refsect1>
 

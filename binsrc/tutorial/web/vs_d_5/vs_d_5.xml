@@ -52,7 +52,7 @@
   <listitem>The index is updated periodically, at approximately the specified period (in minutes),
   if allowed by other background tasks.</listitem>
   <listitem>The index refresh period is a scheduled event period to refresh the free-text index in batch mode.</listitem>
-  <listitem>To switch between modes in the Conductor UI, go to the "WebDAV &amp; HTTP" tab, then go to the "WebDAV Content Management" tab and then go to the "Text Triggers" sub-tab.</listitem>
+  <listitem>To switch between modes in the Conductor UI, go to the "Web Application Server" tab, then go to the "Content Management" tab and then go to the "Text Triggers" sub-tab.</listitem>
   <listitem><para>This can also be achieved using a sql command. For example to turn batch mode on for 7 minute updates use:</para>
 <programlisting>
   SQL&gt; DB.DBA.vt_batch_update ('WS.WS.SYS_DAV_RES', 'ON', 7);

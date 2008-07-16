@@ -43,7 +43,7 @@
 <title>Using the Virtual Directories UI</title>
 <itemizedlist mark="bullet">
   <listitem>Login to the Conductor UI using the dba account.</listitem>
-  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>Go to "Web Application Server" tab and then go to the "Virtual Domains &amp; Directories" tab.</listitem>
   <listitem>In the empty fields below the list of HTTP Listeners enter:</listitem>
   <listitem>In the "HTTP Host" field the qualified name of the host.</listitem>
   <listitem>In the "Interface" field the qualified name of the interface to listen to.</listitem>

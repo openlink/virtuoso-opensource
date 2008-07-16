@@ -84,7 +84,7 @@ select TUTORIAL_IS_DAV();
 <refsect1 id="VS-B-1d">
 <title>Allow VSP files to be run by vspdemo user with directory browsing allowed</title>
 <orderedlist>
-  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>Go to "Web Application Server" tab and then go to the "Virtual Domains &amp; Directories" tab.</listitem>
   <listitem>From the given list of HTTP Hosts click the icon in front of the Interface value.</listitem>
   <listitem>Click the "Add new directory" link.</listitem>
   <listitem>If tutorials Type location is FS, then choose the "File System" type and press the button

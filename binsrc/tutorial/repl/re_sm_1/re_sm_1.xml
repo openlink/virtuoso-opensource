@@ -83,7 +83,7 @@
 <refsect1 id="RE-SM-1b">
     <title>Instructions for setting SyncML server and client</title>
 <orderedlist>
-    <listitem>Create a new folder named '/DAV/sync/' under WebDAV root. This can be done via Conductor UI going to the "WebDAV &amp; HTTP" tab and then going to the "WebDAV Content Management" tab.</listitem>
+    <listitem>Create a new folder named '/DAV/sync/' under WebDAV root. This can be done via Conductor UI going to the "Web Application Server" tab and then going to the "Content Management" tab.</listitem>
     <listitem>Create subfolders calendar and contacts under /DAV/sync/</listitem>
     <listitem>Create a new virtual host with virtual root assigned to /DAV/sync/ WebDAV collection. Please reffer to the documentation for more information.</listitem>
 </orderedlist>
