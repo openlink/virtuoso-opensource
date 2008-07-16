@@ -333,6 +333,22 @@ create procedure CAL.WA.url_fix (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.exec (
+  in S varchar,
+  in P any := null)
+{
+  declare st, msg, meta, rows any;
+
+  st := '00000';
+  exec (S, st, msg, P, 0, meta, rows);
+  if ('00000' = st)
+    return rows;
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.export_rss_sqlx_int (
   in domain_id integer,
   in account_id integer)
@@ -5213,12 +5229,21 @@ create procedure CAL.WA.exchange_exec_internal (
     -- syncml
     else if (_direction = 2)
     {
+      declare data any;
+      declare N, _rlog_res_id integer;
       declare _path, _pathID varchar;
 
-      _pathID := DB.DBA.DAV_SEARCH_ID (_name, 'C');
-      if (__proc_exists (fix_identifier_case ('CAL.WA.exchange_exec_internal_syncml')))
-	  CAL.WA.exchange_exec_internal_syncml (_pathID, _domain_id, _name, _user, _password);
-
+      data := CAL.WA.exec ('select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = ? and DMLTYPE <> \'D\'', vector (DB.DBA.DAV_SEARCH_ID (_name, 'C')));
+      for (N := 0; N < length (data); N := N + 1)
+      {
+        _rlog_res_id := data[N][0];
+   	    for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = _rlog_res_id) do
+   	    {
+          connection_set ('__sync_dav_upl', '1');
+          CAL.WA.syncml2entry_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
+          connection_set ('__sync_dav_upl', '0');
+   	    }
+   	  }
       for (select E_ID, E_UID, E_KIND from CAL.WA.events where E_DOMAIN_ID = _domain_id) do
       {
         if ((E_KIND = 0) and (get_keyword ('events', _options, 0) = 0))
@@ -5230,7 +5255,7 @@ create procedure CAL.WA.exchange_exec_internal (
         _pathID := DB.DBA.DAV_SEARCH_ID (_path, 'R');
         if (not (isinteger(_pathID) and (_pathID > 0)))
         {
-          CAL.WA.syncml_event_update_internal (_domain_id, E_ID, _path, _user, _password, 'I');
+          CAL.WA.syncml_entry_update_internal (_domain_id, E_ID, _path, _user, _password, 'I');
         }
 
       _skip:;
@@ -5238,27 +5263,6 @@ create procedure CAL.WA.exchange_exec_internal (
     }
   }
 }
-;
-
-CAL.WA.exec_no_error ('
-create procedure CAL.WA.exchange_exec_internal_syncml (
-    in _pathID int,
-    in _domain_id int,
-    in _name varchar,
-    in _user varchar,
-    in _password varchar
-    )
-{
-   	  for (select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = _pathID and DMLTYPE <> \'D\') do
-   	  {
-   	     for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = RLOG_RES_ID) do
-   	     {
-           connection_set (\'__sync_dav_upl\', \'1\');
-           CAL.WA.syncml2event_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
-           connection_set (\'__sync_dav_upl\', \'0\');
-   	     }
- 	    }
-}')
 ;
 
 --------------------------------------------------------------------------------
@@ -5322,7 +5326,24 @@ _done:;
 
 -----------------------------------------------------------------------------------------
 --
-create procedure CAL.WA.syncml_event_update (
+create procedure CAL.WA.syncml_check (
+  in syncmlPath varchar := null)
+{
+  if (not isstring (DB.DBA.vad_check_version ('SyncML')))
+    return 0;
+  if (isnull (syncmlPath))
+    return 1;
+  if (DB.DBA.yac_syncml_version_get (syncmlPath) = 'N')
+    return 0;
+  if (DB.DBA.yac_syncml_type_get (syncmlPath) not in ('vcalendar_11', 'vcalendar_12'))
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.syncml_entry_update (
   in _domain_id integer,
   in _event_id integer,
   in _event_gid varchar,
@@ -5354,7 +5375,7 @@ create procedure CAL.WA.syncml_event_update (
     _password := get_keyword ('password', _options);
     _path := _syncmlPath || _event_gid;
 
-    CAL.WA.syncml_event_update_internal (_domain_id, _event_id, _path, _user, _password, _action);
+    CAL.WA.syncml_entry_update_internal (_domain_id, _event_id, _path, _user, _password, _action);
 
   _skip:;
   }
@@ -5363,7 +5384,7 @@ create procedure CAL.WA.syncml_event_update (
 
 -----------------------------------------------------------------------------------------
 --
-create procedure CAL.WA.syncml_event_update_internal (
+create procedure CAL.WA.syncml_entry_update_internal (
   in _domain_id integer,
   in _event_id integer,
   in _path varchar,
@@ -5375,16 +5396,16 @@ create procedure CAL.WA.syncml_event_update_internal (
   {
     declare _content, _permissions varchar;
 
-    _content := CAL.WA.event2syncml (_domain_id, _event_id);
+    _content := CAL.WA.entry2syncml (_domain_id, _event_id);
     _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
     if (isnull (_permissions))
     {
       _permissions := '110100000RR';
     }
     connection_set ('__sync_dav_upl', '1');
-    connection_set ('__sync_calendar', '1');
+    connection_set ('__sync_ods', '1');
     DB.DBA.DAV_RES_UPLOAD (_path, _content, 'text/x-vcalendar', _permissions, _user, null, _user, _password);
-    connection_set ('__sync_calendar', '0');
+    connection_set ('__sync_ods', '0');
     connection_set ('__sync_dav_upl', '0');
   }
 
@@ -5395,9 +5416,9 @@ create procedure CAL.WA.syncml_event_update_internal (
     _id := DB.DBA.DAV_SEARCH_ID (_path, 'R');
     if (isinteger(_id) and (_id > 0))
     {
-      connection_set ('__sync_calendar', '1');
+      connection_set ('__sync_ods', '1');
       DB.DBA.DAV_DELETE (_path, 1, _user, _password);
-      connection_set ('__sync_calendar', '0');
+      connection_set ('__sync_ods', '0');
     }
   }
 }
@@ -5405,7 +5426,7 @@ create procedure CAL.WA.syncml_event_update_internal (
 
 ----------------------------------------------------------------------
 --
-create procedure CAL.WA.event2syncml (
+create procedure CAL.WA.entry2syncml (
   in domain_id integer,
   in event_id integer)
 {
@@ -5419,48 +5440,48 @@ create procedure CAL.WA.event2syncml (
   {
     if (E_KIND = 0)
     {
-      CAL.WA.event2syncml_line ('BEGIN', 'VCALENDAR', sStream);
-      CAL.WA.event2syncml_line ('VERSION', '1.0', sStream);
-      CAL.WA.event2syncml_line ('BEGIN', 'VEVENT', sStream);
-      CAL.WA.event2syncml_line ('UID', E_UID, sStream);
-      CAL.WA.event2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
-      CAL.WA.event2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
-      CAL.WA.event2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
-      CAL.WA.event2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
-      CAL.WA.event2syncml_line ('SUMMARY', E_SUBJECT, sStream);
-      CAL.WA.event2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
-      CAL.WA.event2syncml_line ('LOCATION', E_LOCATION, sStream);
-      CAL.WA.event2syncml_line ('CATEGORIES', E_TAGS, sStream);
-      CAL.WA.event2syncml_line ('DTSTART', CAL.WA.vcal_date2str (E_EVENT_START), sStream);
-      CAL.WA.event2syncml_line ('DTEND', CAL.WA.vcal_date2str (E_EVENT_END), sStream);
-      CAL.WA.event2syncml_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
-      CAL.WA.event2syncml_line ('NOTES', E_NOTES, sStream);
-      CAL.WA.event2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
-      CAL.WA.event2syncml_line ('END', 'VEVENT', sStream);
-      CAL.WA.event2syncml_line ('END', 'VCALENDAR', sStream);
+      CAL.WA.entry2syncml_line ('BEGIN', 'VCALENDAR', sStream);
+      CAL.WA.entry2syncml_line ('VERSION', '1.0', sStream);
+      CAL.WA.entry2syncml_line ('BEGIN', 'VEVENT', sStream);
+      CAL.WA.entry2syncml_line ('UID', E_UID, sStream);
+      CAL.WA.entry2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
+      CAL.WA.entry2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
+      CAL.WA.entry2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
+      CAL.WA.entry2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
+      CAL.WA.entry2syncml_line ('SUMMARY', E_SUBJECT, sStream);
+      CAL.WA.entry2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
+      CAL.WA.entry2syncml_line ('LOCATION', E_LOCATION, sStream);
+      CAL.WA.entry2syncml_line ('CATEGORIES', E_TAGS, sStream);
+      CAL.WA.entry2syncml_line ('DTSTART', CAL.WA.vcal_date2str (E_EVENT_START), sStream);
+      CAL.WA.entry2syncml_line ('DTEND', CAL.WA.vcal_date2str (E_EVENT_END), sStream);
+      CAL.WA.entry2syncml_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
+      CAL.WA.entry2syncml_line ('NOTES', E_NOTES, sStream);
+      CAL.WA.entry2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+      CAL.WA.entry2syncml_line ('END', 'VEVENT', sStream);
+      CAL.WA.entry2syncml_line ('END', 'VCALENDAR', sStream);
     }
     else if (E_KIND = 1)
     {
-      CAL.WA.event2syncml_line ('BEGIN', 'VCALENDAR', sStream);
-      CAL.WA.event2syncml_line ('VERSION', '1.0', sStream);
-      CAL.WA.event2syncml_line ('BEGIN', 'VTODO', sStream);
-      CAL.WA.event2syncml_line ('UID', E_UID, sStream);
-      CAL.WA.event2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
-      CAL.WA.event2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
-      CAL.WA.event2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
-      CAL.WA.event2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
-      CAL.WA.event2syncml_line ('SUMMARY', E_SUBJECT, sStream);
-      CAL.WA.event2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
-      CAL.WA.event2syncml_line ('CATEGORIES', E_TAGS, sStream);
-      CAL.WA.event2syncml_line ('DTSTART', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_START)), sStream);
-      CAL.WA.event2syncml_line ('DUE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_END)), sStream);
-      CAL.WA.event2syncml_line ('COMPLETED', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_COMPLETED)), sStream);
-      CAL.WA.event2syncml_line ('PRIORITY', E_PRIORITY, sStream);
-      CAL.WA.event2syncml_line ('STATUS', E_STATUS, sStream);
-      CAL.WA.event2syncml_line ('NOTES', E_NOTES, sStream);
-      CAL.WA.event2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
-      CAL.WA.event2syncml_line ('END', 'VTODO', sStream);
-      CAL.WA.event2syncml_line ('END', 'VCALENDAR', sStream);
+      CAL.WA.entry2syncml_line ('BEGIN', 'VCALENDAR', sStream);
+      CAL.WA.entry2syncml_line ('VERSION', '1.0', sStream);
+      CAL.WA.entry2syncml_line ('BEGIN', 'VTODO', sStream);
+      CAL.WA.entry2syncml_line ('UID', E_UID, sStream);
+      CAL.WA.entry2syncml_line ('URL', url || cast (E_ID as varchar), sStream);
+      CAL.WA.entry2syncml_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
+      CAL.WA.entry2syncml_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
+      CAL.WA.entry2syncml_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
+      CAL.WA.entry2syncml_line ('SUMMARY', E_SUBJECT, sStream);
+      CAL.WA.entry2syncml_line ('DESCRIPTION', E_DESCRIPTION, sStream);
+      CAL.WA.entry2syncml_line ('CATEGORIES', E_TAGS, sStream);
+      CAL.WA.entry2syncml_line ('DTSTART', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_START)), sStream);
+      CAL.WA.entry2syncml_line ('DUE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_EVENT_END)), sStream);
+      CAL.WA.entry2syncml_line ('COMPLETED', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (E_COMPLETED)), sStream);
+      CAL.WA.entry2syncml_line ('PRIORITY', E_PRIORITY, sStream);
+      CAL.WA.entry2syncml_line ('STATUS', E_STATUS, sStream);
+      CAL.WA.entry2syncml_line ('NOTES', E_NOTES, sStream);
+      CAL.WA.entry2syncml_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+      CAL.WA.entry2syncml_line ('END', 'VTODO', sStream);
+      CAL.WA.entry2syncml_line ('END', 'VCALENDAR', sStream);
     }
   }
 
@@ -5470,7 +5491,7 @@ create procedure CAL.WA.event2syncml (
 
 ----------------------------------------------------------------------
 --
-create procedure CAL.WA.event2syncml_line (
+create procedure CAL.WA.entry2syncml_line (
   in property varchar,
   in value any,
   inout sStream any)
@@ -5483,7 +5504,7 @@ create procedure CAL.WA.event2syncml_line (
 
 ----------------------------------------------------------------------
 --
-create procedure CAL.WA.syncml2event (
+create procedure CAL.WA.syncml2entry (
   in res_content varchar,
   in res_name varchar,
   in res_col varchar,
@@ -5504,7 +5525,7 @@ create procedure CAL.WA.syncml2event (
     _password := get_keyword ('password', _options);
     if (_path = _syncmlPath)
     {
-      CAL.WA.syncml2event_internal (EX_DOMAIN_ID, _path, _user, _password, res_content, res_name, res_mod_time);
+      CAL.WA.syncml2entry_internal (EX_DOMAIN_ID, _path, _user, _password, res_content, res_name, res_mod_time);
     }
   }
 }
@@ -5512,7 +5533,7 @@ create procedure CAL.WA.syncml2event (
 
 ----------------------------------------------------------------------
 --
-create procedure CAL.WA.syncml2event_internal (
+create procedure CAL.WA.syncml2entry_internal (
   in _domain_id integer,
   in _path varchar,
   in _user varchar,

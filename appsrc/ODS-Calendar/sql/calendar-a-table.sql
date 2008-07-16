@@ -406,7 +406,7 @@ CAL.WA.exec_no_error ('
     }
     CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_TAGS, \'I\');
     CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
-    CAL.WA.syncml_event_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_KIND, \'I\');
+    CAL.WA.syncml_entry_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_KIND, \'I\');
   }
 ');
 
@@ -459,7 +459,7 @@ CAL.WA.exec_no_error ('
 
     CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_TAGS, \'U\');
     CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
-    CAL.WA.syncml_event_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_KIND, \'U\');
+    CAL.WA.syncml_entry_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_KIND, \'U\');
   }
 ');
 
@@ -470,7 +470,7 @@ CAL.WA.exec_no_error ('
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
-    CAL.WA.syncml_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_KIND, \'D\');
+    CAL.WA.syncml_entry_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_KIND, \'D\');
   }
 ');
 
@@ -949,13 +949,19 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   create trigger CALENDAR_SYS_DAV_RES_AI after insert on WS.WS.SYS_DAV_RES order 200 referencing new as N
   {
-    if (connection_get (\'__sync_calendar\') = \'1\')
+    declare data any;
+
+    if (not CAL.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (N.RES_COL, \'C\')))
       return;
 
-  	if (not exists (select 1 from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = N.RES_ID))
+    if (connection_get (\'__sync_ods\') = \'1\')
       return;
 
-    CAL.WA.syncml2event (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
+  	data := CAL.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (N.RES_ID));
+  	if (length (data) = 0)
+      return;
+
+    CAL.WA.syncml2entry (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
   }
 ')
 ;
@@ -965,16 +971,22 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   create trigger CALENDAR_SYS_DAV_RES_AU after update on WS.WS.SYS_DAV_RES order 200 referencing old as O, new as N
   {
-    if (connection_get (\'__sync_calendar\') = \'1\')
+    declare data any;
+
+    if (not CAL.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (N.RES_COL, \'C\')))
       return;
 
-  	if (not exists (select 1 from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = N.RES_ID))
+    if (connection_get (\'__sync_ods\') = \'1\')
+      return;
+
+  	data := CAL.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (N.RES_ID));
+  	if (length (data) = 0)
       return;
 
     if (O.RES_CONTENT = N.RES_CONTENT)
       return;
 
-    CAL.WA.syncml2event (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
+    CAL.WA.syncml2entry (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
   }
 ')
 ;
@@ -985,11 +997,16 @@ CAL.WA.exec_no_error ('
   create trigger CALENDAR_SYS_DAV_RES_AD after delete on WS.WS.SYS_DAV_RES order 200 referencing old as O
   {
     declare _syncmlPath, _path varchar;
+    declare data any;
 
-    if (connection_get (\'__sync_calendar\') = \'1\')
+    if (not CAL.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (O.RES_COL, \'C\')))
       return;
 
-  	if (not exists (select 1 from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = O.RES_ID))
+    if (connection_get (\'__sync_ods\') = \'1\')
+      return;
+
+  	data := CAL.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (O.RES_ID));
+  	if (length (data) = 0)
       return;
 
     for (select E_ID, E_DOMAIN_ID from CAL.WA.EVENTS where E_UID = O.RES_NAME) do
@@ -997,7 +1014,6 @@ CAL.WA.exec_no_error ('
       for (select deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_DOMAIN_ID = E_DOMAIN_ID and EX_TYPE = 2) do
       {
         _path := WS.WS.COL_PATH (O.RES_COL);
-        _syncmlPath := get_keyword (\'name\', _options);
         if (_path = _syncmlPath)
         {
           CAL.WA.event_delete (E_ID);
