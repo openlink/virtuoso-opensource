@@ -340,8 +340,6 @@ $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
 DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
-DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
-DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
 DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
@@ -372,6 +370,8 @@ then
     DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
 fi
 
+DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
+DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 
 DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 
