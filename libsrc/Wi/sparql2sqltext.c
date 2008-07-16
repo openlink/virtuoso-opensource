@@ -382,7 +382,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           char buf[10];
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use column number outside the loop", asname_printed);
-          sprintf (buf, "%d", col_idx);
+          snprintf (buf, sizeof (buf), "%d", col_idx);
           ssg_puts (buf);
         }
 /*                        0         1         2 */
@@ -392,7 +392,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           char buf[10];
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use column number outside the loop", asname_printed);
-          sprintf (buf, "%d", col_idx+1);
+          snprintf (buf, sizeof (buf), "%d", col_idx+1);
           ssg_puts (buf);
         }
 /*                        0         1         2 */
@@ -491,7 +491,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (IS_BOX_POINTER (asname))
             {
               char buf[60];
-              sprintf (buf, "%s~%d", asname, col_idx);
+              snprintf (buf, sizeof (buf), "%s~%d", asname, col_idx);
               ssg_puts (" AS /*as-name-N*/ ");
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
@@ -1727,7 +1727,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
           if (IS_BOX_POINTER (asname))
             {
               char buf[210];
-              sprintf (buf, "%.100s~%d", asname, col_ctr);
+              snprintf (buf, sizeof (buf), "%.100s~%d", asname, col_ctr);
               ssg_puts (" AS /*tr_var_expn*/ ");
               ssg_prin_id (ssg, buf);
             }
@@ -2915,7 +2915,7 @@ ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
       int pos = dk_set_position_of_string (env->spare_global_var_names, vname);
       if (0 > pos)
         spar_sqlprint_error ("ssg_" "print_global_param(): unexpected global variable name");
-      sprintf (buf, " :%d", pos + env->spare_global_num_offset);
+      snprintf (buf, sizeof (buf), " :%d", pos + env->spare_global_num_offset);
       ssg_puts (buf);
       return;
     }
@@ -3465,12 +3465,12 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
                     ssg_prin_id (ssg, tree->_.retval.selid);
                     ssg_putchar ('.');
                   }
-                sprintf (buf, "%.100s~%d", /*tree->_.retval.vname*/ e_varname, colctr);
+                snprintf (buf, sizeof (buf), "%.100s~%d", /*tree->_.retval.vname*/ e_varname, colctr);
                 ssg_prin_id (ssg, buf);
                 if (NULL != asname)
                   {
                 ssg_puts (" AS ");
-                sprintf (buf, "%.100s~%d", asname, colctr);
+                snprintf (buf, sizeof (buf), "%.100s~%d", asname, colctr);
                 ssg_prin_id (ssg, buf);
               }
               }
@@ -3501,7 +3501,7 @@ retval_without_var:
                   {
                     int col_idx = asname - COL_IDX_ASNAME;
                     char buf[210];
-            sprintf (buf, "%.100s~%d", full_vname, col_idx);
+		    snprintf (buf, sizeof (buf), "%.100s~%d", full_vname, col_idx);
                     ssg_prin_id (ssg, buf);
             if (0 == col_idx)
               {
@@ -4674,7 +4674,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
       if ((NULL_ASNAME == asname) && (flags & SSG_RETVAL_USES_ALIAS))
                 {
           char buf[30];
-          sprintf (buf, "callret-%d", col_idx);
+          snprintf (buf, sizeof (buf), "callret-%d", col_idx);
           asname = buf;
         }
       ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, asname);
@@ -4719,7 +4719,7 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid,
       if (NULL_ASNAME == asname)
         {
           char buf[30];
-          sprintf (buf, "callret-%d", col_idx);
+          snprintf (buf, sizeof (buf), "callret-%d", col_idx);
           asname = t_box_dv_short_string (buf);
         }
       if (0 < col_idx)
@@ -5142,8 +5142,8 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
     {
       if (1 == pass)
         {
-          char buf[100];
-          sprintf (buf, " (select top 1 1 as __fake_table_col_%d from DB.DBA.RDF_QUAD) as __fake_table_%d",
+          char buf[200];
+          snprintf (buf, sizeof (buf), " (select top 1 1 as __fake_table_col_%d from DB.DBA.RDF_QUAD) as __fake_table_%d",
             ssg->ssg_sparp->sparp_unictr, ssg->ssg_sparp->sparp_unictr );
           ssg->ssg_sparp->sparp_unictr++;
           ssg_puts (buf);
@@ -5640,9 +5640,9 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     {
       has_limofs = 1;
       if (0 != ofs)
-        sprintf (limofs_strg, " TOP %ld, %ld", ofs, lim);
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", ofs, lim);
       else
-        sprintf (limofs_strg, " TOP %ld", lim);
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld", lim);
     }
   switch (subtype)
     {
