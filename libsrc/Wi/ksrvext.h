@@ -665,5 +665,7 @@ int virtuoso_cfg_next_string (char **pkey, char **pret);
 void build_set_special_server_model (const char *new_model);void qi_check_trx_error (query_instance_t * qi, int only_terminate);
 void qi_signal_if_trx_error (query_instance_t * qi);
 #define isp_schema(x) isp_schema_1(x)
+extern int http_ses_size;
+void strses_enable_paging (dk_session_t *ses, int max_bytes_in_mem);
 
 #endif /* _KSRVEXT_H */
