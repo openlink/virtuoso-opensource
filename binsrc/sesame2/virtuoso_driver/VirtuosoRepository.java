@@ -68,15 +68,37 @@ public class VirtuosoRepository implements Repository {
 		}
         }
 	
-	public VirtuosoRepository(String _url, String user, String password, String defGraph, boolean useLazyAdd) {
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters
+	 * 
+	 * @param url
+	 *        the Virtuoso JDBC URL connection string
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param defGraph
+	 *        a default Graph name, used for Sesame calls, when contexts list
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+	 * @param useLazyAdd
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        <pre>
+	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
+         *        add(Statement statement, Resource... contexts);
+	 *        </pre>
+         *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
+         *        or when batch size become more than predefined batch max_size. 
+         *
+	 */
+	public VirtuosoRepository(String url, String user, String password, String defGraph, boolean useLazyAdd) {
 
 	        super();
-		this.url = _url.trim();
-		if (url.indexOf(utf8) == -1) {
-	   		if (url.charAt(url.length()-1) != '/')
-	     			url = url + "/" + utf8;
+		this.url = url.trim();
+		if (this.url.indexOf(utf8) == -1) {
+	   		if (this.url.charAt(this.url.length()-1) != '/')
+	     			this.url = this.url + "/" + utf8;
 	   		else
-	     			url = url + utf8;
+	     			this.url = this.url + utf8;
 		}
 		
 		this.user = user;
@@ -85,12 +107,67 @@ public class VirtuosoRepository implements Repository {
 		this.useLazyAdd = useLazyAdd;
 	}
 
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters
+	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
+	 * 
+	 * @param url
+	 *        the Virtuoso JDBC URL connection string
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param useLazyAdd
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        <pre>
+	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
+         *        add(Statement statement, Resource... contexts);
+	 *        </pre>
+         *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
+         *        or when batch size become more than predefined batch max_size. 
+         *
+	 */
+	public VirtuosoRepository(String url, String user, String password, boolean useLazyAdd) {
+	        this(url, user, password, "sesame:nil", useLazyAdd);
+	}
+
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters.
+	 * useLazyAdd will be set to <tt>false</tt>.
+	 * 
+	 * @param url
+	 *        the Virtuoso JDBC URL connection string
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param defGraph
+	 *        a default Graph name, used for Sesame calls, when contexts list
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+         *
+	 */
 	public VirtuosoRepository(String url, String user, String password, String defGraph) {
 	        this(url, user, password, defGraph, false);
 	}
 
+	/**
+	 * Construct a VirtuosoRepository with a specified parameters.
+	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
+	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
+	 * 
+	 * @param url
+	 *        the Virtuoso JDBC URL connection string
+	 * @param user
+	 *        the database user on whose behalf the connection is being made
+	 * @param password
+	 *        the user's password
+	 * @param defGraph
+	 *        a default Graph name, used for Sesame calls, when contexts list
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+         *
+	 */
 	public VirtuosoRepository(String url, String user, String password) {
-	        this(url, user, password, "sesame:nil");
+	        this(url, user, password, false);
 	}
 
 	/**
