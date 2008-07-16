@@ -367,6 +367,22 @@ create procedure AB.WA.url_fix (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.exec (
+  in S varchar,
+  in P any := null)
+{
+  declare st, msg, meta, rows any;
+
+  st := '00000';
+  exec (S, st, msg, P, 0, meta, rows);
+  if ('00000' = st)
+    return rows;
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.export_rss_sqlx_int (
   in domain_id integer,
   in account_id integer)
@@ -3080,7 +3096,7 @@ create procedure AB.WA.contact_update4 (
     AB.WA.contact_update3 (id[N], domain_id, pFields, pValues, tags);
   }
 
-  return length (id);
+  return id;
 }
 ;
 
@@ -3190,10 +3206,9 @@ create procedure AB.WA.contact_field (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.contact_delete (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
-  delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
+  delete from AB.WA.PERSONS where P_ID = id;
 }
 ;
 
@@ -3249,13 +3264,19 @@ create procedure AB.WA.contact_tags_update (
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
-  in options any,
-  in validation any := null)
+  in options any := null,
+  in validation any := null,
+  in updatedBefore integer := null,
+  in externalUID varchar := null)
 {
   declare L, M, N, nLength, mLength, id integer;
   declare tmp, uid, oTags, data, pFields, pValues, pField, pField2 any;
   declare xmlData, xmlItems, itemName, Meta, V any;
+  declare vcardImported any;
 
+  vcardImported := vector ();
+
+  -- options
   oTags := '';
   if (not isnull (options))
   {
@@ -3363,10 +3384,33 @@ create procedure AB.WA.import_vcard (
         }
       }
       }
+      if (isnull (uid) and not isnull (externalUID))
+      {
+        N := strchr (externalUID, '_');
+        if (isnull (N))
+        {
+          N := 0;
+        }
+        tmp := subseq (externalUID, N, length (externalUID));
+        id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = tmp), -1);
+        if (id <> -1)
+        {
+          uid := tmp;
+        }
+      }
       id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = uid), -1);
-      AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
+      if ((id <> -1) and not isnull (updatedBefore))
+      {
+        if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED > updatedBefore))
+          goto _skip;
+      }
+      id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
+      vcardImported := vector_concat (vcardImported, id);
+
+    _skip:;
     }
   }
+  return vcardImported;
 }
 ;
 
@@ -4289,7 +4333,7 @@ create procedure AB.WA.exchange_exec_internal (
       }
     }
     -- subscribe
-    if (_direction = 1)
+    else if (_direction = 1)
     {
       if (_type = 1)
       {
@@ -4300,7 +4344,51 @@ create procedure AB.WA.exchange_exec_internal (
       {
         signal ('AB001', 'Bad import/subscription source!<>');
       }
-      AB.WA.import_vcard (_domain_id, _content, _options, vector ());
+      AB.WA.import_vcard (_domain_id, _content, _options);
+    }
+    -- syncml
+    else if (_direction = 2)
+    {
+      declare data any;
+      declare N, _rlog_res_id integer;
+      declare _path, _pathID varchar;
+
+      data := AB.WA.exec ('select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = ? and DMLTYPE <> \'D\'', vector (DB.DBA.DAV_SEARCH_ID (_name, 'C')));
+      for (N := 0; N < length (data); N := N + 1)
+      {
+        _rlog_res_id := data[N][0];
+         for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = _rlog_res_id) do
+        {
+          connection_set ('__sync_dav_upl', '1');
+          AB.WA.syncml2entry_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME, 1);
+          connection_set ('__sync_dav_upl', '0');
+        }
+      }
+      --return;
+
+      declare oTagsInclude, oTagsExclude any;
+
+      oTagsInclude := null;
+      oTagsExclude := null;
+      if (not isnull (_options))
+      {
+        oTagsInclude := get_keyword ('tagsInclude', _options);
+        oTagsExclude := get_keyword ('tagsExclude', _options);
+      }
+      for (select P_ID, P_UID, P_TAGS from AB.WA.PERSONS where P_DOMAIN_ID = _domain_id) do
+      {
+        if (not AB.WA.tags_exchangeTest (P_TAGS, oTagsInclude, oTagsExclude))
+          goto _skip;
+
+        _path := _name || P_UID;
+        _pathID := DB.DBA.DAV_SEARCH_ID (_path, 'R');
+        if (not (isinteger(_pathID) and (_pathID > 0)))
+        {
+          AB.WA.syncml_entry_update_internal (_domain_id, P_ID, _path, _user, _password, 'I');
+        }
+
+      _skip:;
+      }
     }
   }
 }
@@ -4350,6 +4438,301 @@ create procedure AB.WA.exchange_scheduler ()
   }
 _done:;
   close cr;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.syncml_check (
+  in syncmlPath varchar := null)
+{
+  if (not isstring (DB.DBA.vad_check_version ('SyncML')))
+    return 0;
+  if (isnull (syncmlPath))
+    return 1;
+  if (DB.DBA.yac_syncml_version_get (syncmlPath) = 'N')
+    return 0;
+  if (DB.DBA.yac_syncml_type_get (syncmlPath) not in ('vcard_11', 'vcard_12'))
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.syncml_entry_update (
+  in _domain_id integer,
+  in _entry_id integer,
+  in _entry_gid varchar,
+  in _entry_tags varchar,
+  in _action varchar)
+{
+  declare _syncmlPath, _path, _user, _password, oTagsInclude, oTagsExclude any;
+
+  if (connection_get ('__sync_dav_upl') = '1')
+    return;
+
+  for (select deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 2) do
+  {
+    _syncmlPath := get_keyword ('name', _options);
+
+    if (not AB.WA.syncml_check (_syncmlPath))
+      goto _skip;
+    if (DB.DBA.yac_syncml_type_get (_syncmlPath) not in ('vcard_11', 'vcard_12'))
+      goto _skip;
+
+    oTagsInclude := null;
+    oTagsExclude := null;
+    if (not isnull (_options))
+    {
+      oTagsInclude := get_keyword ('tagsInclude', _options);
+      oTagsExclude := get_keyword ('tagsExclude', _options);
+    }
+    if (not AB.WA.tags_exchangeTest (_entry_tags, oTagsInclude, oTagsExclude))
+      goto _skip;
+
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+    _path := _syncmlPath || _entry_gid;
+
+    AB.WA.syncml_entry_update_internal (_domain_id, _entry_id, _path, _user, _password, _action);
+
+  _skip:;
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.syncml_entry_update_internal (
+  in _domain_id integer,
+  in _entry_id integer,
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _action varchar)
+{
+  if ((_action = 'I') or (_action = 'U'))
+  {
+    declare _content, _permissions varchar;
+
+    _content := AB.WA.entry2syncml (_entry_id);
+    _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
+    if (isnull (_permissions))
+    {
+      _permissions := '110100000RR';
+    }
+    connection_set ('__sync_dav_upl', '1');
+    connection_set ('__sync_ods', '1');
+    DB.DBA.DAV_RES_UPLOAD (_path, _content, 'text/x-vcard', _permissions, _user, null, _user, _password);
+    connection_set ('__sync_ods', '0');
+    connection_set ('__sync_dav_upl', '0');
+  }
+
+  if (_action = 'D')
+  {
+    declare _id integer;
+
+    _id := DB.DBA.DAV_SEARCH_ID (_path, 'R');
+    if (isinteger(_id) and (_id > 0))
+    {
+      connection_set ('__sync_ods', '1');
+      DB.DBA.DAV_DELETE (_path, 1, _user, _password);
+      connection_set ('__sync_ods', '0');
+    }
+  }
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure AB.WA.entry2syncml (
+  in entry_id integer)
+{
+  declare S varchar;
+  declare sStream any;
+
+  sStream := string_output();
+  for (select * from AB.WA.PERSONS where P_ID = entry_id) do
+  {
+    AB.WA.entry2syncml_line ('BEGIN', null, 'VCARD', sStream);
+    AB.WA.entry2syncml_line ('VERSION', null, '2.1', sStream);
+    AB.WA.entry2syncml_line ('REV', null, AB.WA.dt_iso8601 (P_UPDATED), sStream);
+
+    -- personal
+    AB.WA.entry2syncml_line ('UID', null, P_UID, sStream);
+    AB.WA.entry2syncml_line ('NICKNAME', null, P_NAME, sStream);
+    AB.WA.entry2syncml_line ('FN', null, P_FULL_NAME, sStream);
+
+    -- Home
+    S := coalesce (P_LAST_NAME, '');
+    S := S || ';' || coalesce (P_FIRST_NAME, '');
+    S := S || ';' || coalesce (P_MIDDLE_NAME, '');
+    S := S || ';' || coalesce (P_TITLE, '');
+    if (S <> ';;;')
+    {
+      AB.WA.entry2syncml_line ('N', null, S, sStream);
+    }
+    AB.WA.entry2syncml_line ('BDAY', null, AB.WA.dt_format (P_BIRTHDAY, 'Y-M-D'), sStream);
+
+    -- mail
+    AB.WA.entry2syncml_line ('EMAIL', vector ('TYPE', 'PREF', 'TYPE', 'INTERNET'), P_MAIL, sStream);
+    -- web
+    AB.WA.entry2syncml_line ('URL', null, P_WEB, sStream);
+    AB.WA.entry2syncml_line ('URL', vector ('TYPE', 'HOME'), P_H_WEB, sStream);
+    AB.WA.entry2syncml_line ('URL', vector ('TYPE', 'WORK'), P_B_WEB, sStream);
+    -- Home
+    S := ';';
+    S := S || ''  || coalesce (P_H_ADDRESS1, '');
+    S := S || ';' || coalesce (P_H_ADDRESS2, '');
+    S := S || ';' || coalesce (P_H_CITY, '');
+    S := S || ';' || coalesce (P_H_STATE, '');
+    S := S || ';' || coalesce (P_H_CODE, '');
+    S := S || ';' || coalesce (P_H_COUNTRY, '');
+    if (S <> ';;;;;;')
+    {
+      AB.WA.entry2syncml_line ('ADR', vector ('TYPE', 'HOME'), S, sStream);
+    }
+    AB.WA.entry2syncml_line ('TS', null, P_H_TZONE, sStream);
+    AB.WA.entry2syncml_line ('TEL', vector ('TYPE', 'HOME'), P_H_PHONE, sStream);
+    AB.WA.entry2syncml_line ('TEL', vector ('TYPE', 'HOME', 'TYPE', 'CELL'), P_H_MOBILE, sStream);
+
+    -- Business
+    S := ';';
+    S := S || ''  || coalesce (P_B_ADDRESS1, '');
+    S := S || ';' || coalesce (P_B_ADDRESS2, '');
+    S := S || ';' || coalesce (P_B_CITY, '');
+    S := S || ';' || coalesce (P_B_STATE, '');
+    S := S || ';' || coalesce (P_B_CODE, '');
+    S := S || ';' || coalesce (P_B_COUNTRY, '');
+    if (S <> ';;;;;;')
+    {
+      AB.WA.entry2syncml_line ('ADR', vector ('TYPE', 'WORK'), S, sStream);
+    }
+    AB.WA.entry2syncml_line ('TEL', vector ('TYPE', 'WORK'), P_B_PHONE, sStream);
+    AB.WA.entry2syncml_line ('TEL', vector ('TYPE', 'WORK', 'TYPE', 'CELL'), P_B_MOBILE, sStream);
+
+    AB.WA.entry2syncml_line ('ORG', null, P_B_ORGANIZATION, sStream);
+    AB.WA.entry2syncml_line ('TITLE', null, P_B_JOB, sStream);
+
+    AB.WA.entry2syncml_line ('END', null, 'VCARD', sStream);
+  }
+
+  return string_output_string (sStream);
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure AB.WA.entry2syncml_line (
+  in property varchar,
+  in attrinutes any,
+  in value any,
+  inout sStream any)
+{
+  declare N imteger;
+  declare S varchar;
+
+  if (is_empty_or_null(value))
+    return;
+
+  S := '';
+  if (not isnull(attrinutes))
+  {
+    for (N := 0; N < length(attrinutes); N := N + 2)
+    {
+      S := S || sprintf (' %s="%s"', attrinutes[N], attrinutes[N+1]);
+    }
+  }
+  http (sprintf ('<%s%s><![CDATA[%s]]></%s>\r\n', property, S, cast (value as varchar), property), sStream);
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure AB.WA.syncml2entry (
+  in res_content varchar,
+  in res_name varchar,
+  in res_col varchar,
+  in res_mod_time datetime := null)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return;
+  };
+
+  declare _syncmlPath, _path, _user, _password varchar;
+
+  for (select EX_DOMAIN_ID, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_TYPE = 2) do
+  {
+    _path := WS.WS.COL_PATH (res_col);
+    _syncmlPath := get_keyword ('name', _options);
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+    if (_path = _syncmlPath)
+    {
+      AB.WA.syncml2entry_internal (EX_DOMAIN_ID, _path, _user, _password, res_content, res_name, res_mod_time);
+    }
+  }
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure AB.WA.syncml2entry_internal (
+  in _domain_id integer,
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _res_content varchar,
+  in _res_name varchar,
+  in _res_mod_time datetime := null,
+  in _internal integer := 0)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return;
+  };
+
+  declare N, _pathID integer;
+  declare _data, _uid  varchar;
+  declare IDs any;
+
+  if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
+    DB.DBA.sync_define_xsl ();
+
+  _data := xtree_doc (_res_content, 0, '', 'utf-8');
+  _data := xslt ('http://local.virt/sync_out_xsl', _data);
+  _data := serialize_to_UTF8_xml (_data);
+  _data := charset_recode (_data, 'UTF-8', '_WIDE_');
+
+  if (not isinteger (_data))
+  {
+    IDs := AB.WA.import_vcard (_domain_id, _data, null, null, _res_mod_time, _res_name);
+    -- return;
+    for (N := 0; N < length (IDs); N := N + 1)
+    {
+      _uid := (select P_UID from AB.WA.PERSONS where P_ID = IDs[N]);
+      if (_uid <> _res_name)
+      {
+        _pathID := DB.DBA.DAV_SEARCH_ID (_path || _res_name, 'R');
+        if (isinteger(_pathID) and (_pathID > 0))
+        {
+          if (_internal)
+            set triggers off;
+
+          update WS.WS.SYS_DAV_RES
+             set RES_NAME = _uid,
+                 RES_FULL_PATH = _path || _uid,
+                 RES_CONTENT = AB.WA.entry2syncml (IDs[N])
+           where RES_ID = _pathID;
+
+          if (_internal)
+            set triggers on;
+        }
+      }
+    }
+  }
 }
 ;
 

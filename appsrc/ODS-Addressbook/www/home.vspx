@@ -154,7 +154,7 @@
           declare tags any;
 
           delimiter := '';
-          tags := CAL.WA.tags2vector (fValue);
+          tags := AB.WA.tags2vector (fValue);
           for (N := 0; N < length (tags); N := N + 1)
           {
             http (delimiter);
@@ -620,7 +620,7 @@
                     if (e.ve_params[N] = 'cb_item')
                     {
                         id := cast(e.ve_params[N+1] as integer);
-                        AB.WA.contact_delete(id, self.domain_id);
+                      AB.WA.contact_delete (id);
                       }
                     }
                   }
@@ -749,7 +749,7 @@
                     if (action = 'delete')
                     {
                     self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
-                      AB.WA.contact_delete (self.v_id, self.domain_id);
+                      AB.WA.contact_delete (self.v_id);
                     }
                     if (action = 'edit')
                     {
@@ -880,7 +880,7 @@
 
         </div>
         <div class="ab_right">
-          <v:template type="simple" enabled="--case when (self.abAction = 'browse') then 1 else 0 end">
+            <v:template name="t1" type="simple" enabled="--case when (self.abAction = 'browse') then 1 else 0 end">
             <?vsp
               declare nodeName, image any;
 
@@ -1005,7 +1005,7 @@
                 <table id="contacts" class="ab_grid" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
-                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                          <v:template name="t2" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
                         <th class="checkbox" width="1%">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
@@ -1023,7 +1023,7 @@
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr>
-                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                          <v:template  name="t3" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
                         <td align="center" valign="top">
                           <?vsp
                             declare S varchar;
@@ -1118,7 +1118,7 @@
             </script>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.abAction = 'tag') then 1 else 0 end">
+            <v:template  name="t4" type="simple" enabled="--case when (self.abAction = 'tag') then 1 else 0 end">
             <div class="new-form-header">
               <v:label format="%s" value="Tag contact(s)" />
             </div>
@@ -1173,7 +1173,7 @@
             </div>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.abAction = 'grants') then 1 else 0 end">
+            <v:template  name="t5" type="simple" enabled="--case when (self.abAction = 'grants') then 1 else 0 end">
             <v:before-data-bind>
               <![CDATA[
                 self.v_grants := get_keyword ('grants', self.vc_page.vc_event.ve_params, self.v_grants);
@@ -1250,7 +1250,7 @@
             </div>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.abAction in ('create', 'edit', 'view')) then 1 else 0 end">
+            <v:template  name="t6" type="simple" enabled="--case when (self.abAction in ('create', 'edit', 'view')) then 1 else 0 end">
             <v:before-data-bind>
               <![CDATA[
                 declare params any;
@@ -2267,9 +2267,9 @@
                     self.v_aim           := case when self.v_kind then '' else trim (self.ab_aim.ufl_value) end;
                     self.v_yahoo         := case when self.v_kind then '' else trim (self.ab_yahoo.ufl_value) end;
                     self.v_msn           := case when self.v_kind then '' else trim (self.ab_msn.ufl_value) end;
-                    self.v_hCountry      := case when self.v_kind then '' else trim (self.ab_hCountry.ufl_value) end;
+                      self.v_hCountry      := case when self.v_kind then '' else trim (get_keyword ('ab_hcountry', e.ve_params)) end;
+                      self.v_hState        := case when self.v_kind then '' else trim (get_keyword ('ab_hstate', e.ve_params)) end;
                     self.v_hCity         := case when self.v_kind then '' else trim (self.ab_hCity.ufl_value) end;
-                    self.v_hState        := case when self.v_kind then '' else trim (self.ab_hState.ufl_value) end;
                     self.v_hCode         := case when self.v_kind then '' else trim (self.ab_hCode.ufl_value) end;
                     self.v_hAddress1     := case when self.v_kind then '' else trim (self.ab_hAddress1.ufl_value) end;
                     self.v_hAddress2     := case when self.v_kind then '' else trim (self.ab_hAddress2.ufl_value) end;
@@ -2279,9 +2279,9 @@
                     self.v_hFax          := case when self.v_kind then '' else trim (self.ab_hFax.ufl_value) end;
                     self.v_hMail         := case when self.v_kind then '' else trim (self.ab_hMail.ufl_value) end;
                     self.v_hWeb          := case when self.v_kind then '' else trim (self.ab_hWeb.ufl_value) end;
-                    self.v_bCountry      := trim (self.ab_bCountry.ufl_value);
+                      self.v_bCountry      := trim (get_keyword ('ab_bcountry', e.ve_params));
+                      self.v_bState        := trim (get_keyword ('ab_bstate', e.ve_params));
                     self.v_bCity         := trim (self.ab_bCity.ufl_value);
-                    self.v_bState        := trim (self.ab_bState.ufl_value);
                     self.v_bCode         := trim (self.ab_bCode.ufl_value);
                     self.v_bAddress1     := trim (self.ab_bAddress1.ufl_value);
                     self.v_bAddress2     := trim (self.ab_bAddress2.ufl_value);
@@ -3545,6 +3545,14 @@
                   ]]>
                 </v:on-post>
               </v:button>
+                <v:button action="simple" style="url" value="SyncML" xhtml_class="gems2">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abSubAction := 'syncmlBrowse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
                 <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
                 <v:on-post>
@@ -3603,6 +3611,18 @@
                   else if (self.abSubAction = 'subscribeUpdate')
                   {
                     T := 'Subscriptions/Update';
+                  }
+                  else if (self.abSubAction = 'syncmlBrowse')
+                  {
+                    T := 'SyncML';
+                  }
+                  else if (self.abSubAction = 'syncmlCreate')
+                  {
+                    T := 'SyncML/Create';
+                  }
+                  else if (self.abSubAction = 'syncmlUpdate')
+                  {
+                    T := 'SyncML/Update';
                   }
                   http (S || T);
                 ?>
@@ -3973,15 +3993,21 @@
                 </div>
               </vm:if>
 
-              <vm:if test="self.abSubAction in ('publishBrowse', 'subscribeBrowse')">
+              <vm:if test="self.abSubAction in ('publishBrowse', 'subscribeBrowse', 'syncmlBrowse')">
                 <v:button value="--'New'" action="simple" xhtml_class="button">
                   <v:after-data-bind>
                     <![CDATA[
                       if (self.abSubAction = 'publishBrowse')
                       {
                         control.ufl_value := 'New Publication';
-                      } else {
+                      }
+                      else if (self.abSubAction = 'subscribeBrowse')
+                      {
                         control.ufl_value := 'New Subscription';
+                      }
+                      else
+                      {
+                        control.ufl_value := 'New SyncML';
                       }
                     ]]>
                   </v:after-data-bind>
@@ -3990,8 +4016,14 @@
                       if (self.abSubAction = 'publishBrowse')
                       {
                         self.abSubAction := 'publishCreate';
-                      } else {
+                      }
+                      else if (self.abSubAction = 'subscribeBrowse')
+                      {
                         self.abSubAction := 'subscribeCreate';
+                      }
+                      else
+                      {
+                        self.abSubAction := 'syncmlCreate';
                       }
                       self.vc_data_bind(e);
                     ]]>
@@ -4013,7 +4045,7 @@
                 <v:data-source name="dsrc_exchanges" expression-type="sql" nrows="0" initial-offset="0">
                   <v:before-data-bind>
                     <![CDATA[
-                      control.ds_sql := sprintf ('select * from AB.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.abSubAction = 'publishBrowse' then 0 else 1 end);
+                      control.ds_sql := sprintf ('select * from AB.WA.EXCHANGE where EX_DOMAIN_ID = %d and EX_TYPE = %d order by EX_NAME', self.domain_id, case when self.abSubAction = 'publishBrowse' then 0 else case when self.abSubAction = 'subscribeBrowse' then 1 else 2 end end);
                     ]]>
                   </v:before-data-bind>
                 </v:data-source>
@@ -4073,14 +4105,20 @@
                                   if (self.abSubAction = 'publishBrowse')
                                   {
                                     self.abSubAction := 'publishUpdate';
-                                  } else {
+                                  }
+                                  else if (self.abSubAction = 'subscribeBrowse')
+                                  {
                                     self.abSubAction := 'subscribeUpdate';
+                                  }
+                                  else
+                                  {
+                                    self.abSubAction := 'syncmlUpdate';
                                   }
                                   self.vc_data_bind(e);
                                 ]]>
                               </v:on-post>
                             </v:button>
-                            <v:button value="Exec" action="simple" xhtml_class="button">
+                            <v:button value="Sync" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
                                   declare exit handler for SQLSTATE '*'
@@ -4114,7 +4152,7 @@
                 </v:data-set>
               </vm:if>
 
-              <vm:if test="self.abSubAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate')">
+              <vm:if test="self.abSubAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate')">
                 <v:before-data-bind>
                   <![CDATA[
                     declare params any;
@@ -4124,7 +4162,7 @@
                     {
                       declare exit handler for not found goto _end2;
 
-                      if (self.abSubAction in  ('publishUpdate', 'subscribeUpdate'))
+                      if (self.abSubAction in  ('publishUpdate', 'subscribeUpdate', 'syncmlUpdate'))
                       {
                         select EX_TYPE,
                                EX_NAME,
@@ -4145,12 +4183,12 @@
                       }
                     _end2:;
 
-                      self.ve_type := case when (self.abSubAction = 'publishCreate') then 0 else 1 end;
+                      self.ve_type := case when (self.abSubAction = 'publishCreate') then 0 else case when (self.abSubAction = 'subscribeCreate') then 1 else 2 end end;
                       self.ve_id := null;
                       self.ve_name := '';
-                      self.ve_update_type := case when (self.abSubAction = 'publishCreate') then 1 else 2 end;
-                      self.ve_update_period := case when (self.abSubAction = 'publishCreate') then null else 'hourly' end;
-                      self.ve_update_freq := case when (self.abSubAction = 'publishCreate') then null else 1 end;
+                      self.ve_update_type := case when (self.abSubAction in ('publishCreate', 'syncmlCreate')) then 1 else 2 end;
+                      self.ve_update_period := case when (self.abSubAction in ('publishCreate', 'syncmlCreate')) then null else 'hourly' end;
+                      self.ve_update_freq := case when (self.abSubAction in ('publishCreate', 'syncmlCreate')) then null else 1 end;
                       self.ve_options := vector ();
                     }
                   ]]>
@@ -4165,6 +4203,7 @@
                         <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
                       </td>
                     </tr>
+                    <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
                     <tr>
                       <th rowspan="<?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 3 else 2 end ?>" valign="top">
                         Refresh type
@@ -4222,11 +4261,13 @@
                         </v:select-list>
                       </td>
                     </tr>
+                    </vm:if>
                     <tr>
                       <td colspan="2" class="new-section">
-                        <?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?>
+                        <?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  case when (self.abSubAction in ('subscribeCreate', 'subscribeUpdate')) then 'Source' else  'Exchange' end end ?>
                       </td>
                     </tr>
+                    <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
                     <tr>
                       <th rowspan="2" valign="top">
                         <?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
@@ -4258,12 +4299,14 @@
                         </label>
                       </td>
                     </tr>
+                    </vm:if>
                     <tr>
                       <th>
-                        WebDAV Path / URL
+                        <v:label for="sr_chars" value="-- case when (self.abSubAction in ('syncmlCreate', 'syncmlUpdate')) then 'WebDAV SyncML Path' else 'WebDAV Path / URL' end" />
                       </th>
                       <td>
                         <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
+                        <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
                         <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
                           <v:after-data-bind>
                             <![CDATA[
@@ -4272,6 +4315,7 @@
                             ]]>
                           </v:after-data-bind>
                         </v:button>
+                        </vm:if>
                       </td>
                     </tr>
                     <tr>
@@ -4318,7 +4362,7 @@
                   </table>
                 </div>
                 <div class="new-form-footer">
-                  <v:button action="simple" value="--case when self.abSubAction in ('publishCreate', 'subscribeCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
+                  <v:button action="simple" value="--case when self.abSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         declare _type, _name, _user, _password, _tagsInclude, _tagsExclude any;
@@ -4354,6 +4398,10 @@
                           self.ve_update_freq := self.exc_update_freq.ufl_value;
                           self.ve_update_period := self.exc_update_period.ufl_value;
                         }
+                        if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
+                        {
+                          _type := 1;
+                        } else {
                         _type := 0;
                         if (self.exc_options_type_1.ufl_selected)
                         {
@@ -4363,7 +4411,13 @@
                         {
                           _type := 2;
                         }
+                        }
                         _name := trim (self.exc_options_name.ufl_value);
+                        if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
+                        {
+                          if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcard_11', 'vcard_12')))
+                            signal ('TEST', 'Bad SyncML folder.<>');
+                        }
                         _user := trim (self.exc_options_user.ufl_value);
                         _password := self.exc_options_password.ufl_value;
 
@@ -4386,7 +4440,7 @@
                         AB.WA.test (_name, vector('name', 'Resource Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
 
                         self.ve_update_freq := cast (self.ve_update_freq as integer);
-                        if (self.abSubAction in ('publishCreate', 'subscribeCreate'))
+                        if (self.abSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate'))
                         {
                           insert into AB.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
                             values (self.domain_id, self.ve_type, self.ve_name, self.ve_update_type, self.ve_update_period, self.ve_update_freq, serialize (self.ve_options));
@@ -4400,7 +4454,7 @@
                            where EX_ID = self.ve_id;
                         }
 
-                        self.abSubAction := case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                        self.abSubAction := case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.abSubAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -4408,7 +4462,7 @@
                   <v:button action="simple" value="Cancel" name="exc_cancel" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
-                        self.abSubAction := case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else 'subscribeBrowse' end;
+                        self.abSubAction := case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.abSubAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>

@@ -168,28 +168,38 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error ('
   create trigger PERSONS_AI after insert on AB.WA.PERSONS referencing new as N {
-    if (isnull (N.P_UID))
+    declare _uid varchar;
+
+    _uid := N.P_UID;
+    if (isnull (_uid))
     {
+      _uid := AB.WA.uid ();
       set triggers off;
-      update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_ID = N.P_ID;
+      update AB.WA.PERSONS set P_UID = _uid where P_ID = N.P_ID;
       set triggers on;
     }
     AB.WA.tags_update (N.P_DOMAIN_ID, \'\', N.P_TAGS);
     AB.WA.exchange_entry_update (N.P_DOMAIN_ID);
+    AB.WA.syncml_entry_update (N.P_DOMAIN_ID, N.P_ID, _uid, N.P_TAGS, \'I\');
     AB.WA.domain_ping (N.P_DOMAIN_ID);
   }
 ');
 
 AB.WA.exec_no_error ('
   create trigger PERSONS_AU after update on AB.WA.PERSONS referencing  old as O, new as N {
-    if (isnull (N.P_UID))
+    declare _uid varchar;
+
+    _uid := N.P_UID;
+    if (isnull (_uid))
     {
+      _uid := AB.WA.uid ();
       set triggers off;
-      update AB.WA.PERSONS set P_UID = AB.WA.uid () where P_ID = N.P_ID;
+      update AB.WA.PERSONS set P_UID = _uid where P_ID = N.P_ID;
       set triggers on;
     }
     AB.WA.tags_update (N.P_DOMAIN_ID, O.P_TAGS, N.P_TAGS);
     AB.WA.exchange_entry_update (N.P_DOMAIN_ID);
+    AB.WA.syncml_entry_update (N.P_DOMAIN_ID, N.P_ID, _uid, N.P_TAGS, \'U\');
     AB.WA.domain_ping (N.P_DOMAIN_ID);
   }
 ');
@@ -197,6 +207,7 @@ AB.WA.exec_no_error ('
 AB.WA.exec_no_error ('
   create trigger PERSONS_AD after delete on AB.WA.PERSONS referencing old as O {
     AB.WA.tags_update (O.P_DOMAIN_ID, O.P_TAGS, \'\');
+    AB.WA.syncml_entry_update (O.P_DOMAIN_ID, O.P_ID, O.P_UID, O.P_TAGS, \'D\');
   }
 ');
 
@@ -669,3 +680,81 @@ AB.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('DROP TABLE AB.WA.LDAP_SERVERS');
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error ('
+  create trigger ADDRESSBOOK_SYS_DAV_RES_AI after insert on WS.WS.SYS_DAV_RES order 200 referencing new as N
+  {
+    declare data any;
+
+    if (not AB.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (N.RES_COL, \'C\')))
+      return;
+
+    if (connection_get (\'__sync_ods\') = \'1\')
+      return;
+
+  	data := AB.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (N.RES_ID));
+  	if (length (data) = 0)
+      return;
+
+    AB.WA.syncml2entry (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
+  }
+')
+;
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error ('
+  create trigger ADDRESSBOOK_SYS_DAV_RES_AU after update on WS.WS.SYS_DAV_RES order 200 referencing old as O, new as N
+  {
+    declare data any;
+
+    if (not AB.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (N.RES_COL, \'C\')))
+      return;
+
+    if (connection_get (\'__sync_ods\') = \'1\')
+      return;
+
+  	data := AB.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (N.RES_ID));
+  	if (length (data) = 0)
+      return;
+
+    AB.WA.syncml2entry (N.RES_CONTENT, N.RES_NAME, N.RES_COL, N.RES_MOD_TIME);
+  }
+')
+;
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error ('
+  create trigger ADDRESSBOOK_SYS_DAV_RES_AD after delete on WS.WS.SYS_DAV_RES order 200 referencing old as O
+  {
+    declare _syncmlPath, _path varchar;
+    declare data any;
+
+    if (not AB.WA.syncml_check (DB.DBA.DAV_SEARCH_PATH (O.RES_COL, \'C\')))
+      return;
+
+    if (connection_get (\'__sync_ods\') = \'1\')
+      return;
+
+  	data := AB.WA.exec (\'select RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_ID = ?\', vector (O.RES_ID));
+  	if (length (data) = 0)
+      return;
+
+    for (select P_ID, P_DOMAIN_ID from AB.WA.PERSONS where P_UID = O.RES_NAME) do
+    {
+      for (select deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_DOMAIN_ID = P_DOMAIN_ID and EX_TYPE = 2) do
+      {
+        _path := WS.WS.COL_PATH (O.RES_COL);
+        _syncmlPath := get_keyword (\'name\', _options);
+        if (_path = _syncmlPath)
+        {
+          AB.WA.contact_delete (P_ID);
+        }
+      }
+    }
+  }
+')
+;
