@@ -380,6 +380,12 @@ DO_COMMAND shutdown
 
 BREAK
 
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	exit 1
+fi
+
 ECHO "Dump and restore the db to remove the free pages"
 
 rm -f demo.trx 
