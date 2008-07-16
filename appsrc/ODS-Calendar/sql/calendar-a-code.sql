@@ -5240,7 +5240,7 @@ create procedure CAL.WA.exchange_exec_internal (
    	    for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = _rlog_res_id) do
    	    {
           connection_set ('__sync_dav_upl', '1');
-          CAL.WA.syncml2entry_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME);
+          CAL.WA.syncml2entry_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME, 1);
           connection_set ('__sync_dav_upl', '0');
    	    }
    	  }
@@ -5355,18 +5355,10 @@ create procedure CAL.WA.syncml_entry_update (
   if (connection_get ('__sync_dav_upl') = '1')
     return;
 
-  if (not isstring (DB.DBA.vad_check_version ('SyncML')))
-    return;
-
   for (select deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 2) do
   {
     _syncmlPath := get_keyword ('name', _options);
-
-    if (DB.DBA.yac_syncml_version_get (_syncmlPath) = 'N')
-      goto _skip;
-    if (DB.DBA.yac_syncml_type_get (_syncmlPath) not in ('vcalendar_11', 'vcalendar_12'))
-      goto _skip;
-    if ((_event_kind = 0) and (get_keyword ('events', _options, 0) = 0))
+    if (not CAL.WA.syncml_check (_syncmlPath))
       goto _skip;
     if ((_event_kind = 1) and (get_keyword ('tasks', _options, 0) = 0))
       goto _skip;
@@ -5540,7 +5532,8 @@ create procedure CAL.WA.syncml2entry_internal (
   in _password varchar,
   in _res_content varchar,
   in _res_name varchar,
-  in _res_mod_time datetime := null)
+  in _res_mod_time datetime := null,
+  in _internal integer := 0)
 {
   declare exit handler for sqlstate '*'
   {
@@ -5570,10 +5563,16 @@ create procedure CAL.WA.syncml2entry_internal (
         _pathID := DB.DBA.DAV_SEARCH_ID (_path || _res_name, 'R');
         if (isinteger(_pathID) and (_pathID > 0))
         {
+          if (_internal)
+            set triggers off;
+
           update WS.WS.SYS_DAV_RES
              set RES_NAME = _uid,
                  RES_FULL_PATH = _path || _uid
            where RES_ID = _pathID;
+
+          if (_internal)
+            set triggers on;
         }
       }
     }
