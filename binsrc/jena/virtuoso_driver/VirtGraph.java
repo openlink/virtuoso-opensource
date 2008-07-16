@@ -287,7 +287,7 @@ public class VirtGraph extends GraphBase
      */
     @Override
     protected int graphBaseSize() {
-	String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
+	String query = "select count(*) from (sparql define input:storage \"\" select * where { graph `iri(??)` { ?s ?p ?o }})f";
 	ResultSet rs = null;
 	int ret = 0;
 
@@ -297,8 +297,8 @@ public class VirtGraph extends GraphBase
 		java.sql.PreparedStatement ps = connection.prepareStatement(query);
 		ps.setString(1, graphName);
 		rs = ps.executeQuery();
-		rs.next();
-		ret = rs.getInt(1);
+		if (rs.next())
+		  ret = rs.getInt(1);
 		rs.close();
 	} catch (Exception e) {
 	        throw new JenaException(e);
@@ -331,14 +331,13 @@ public class VirtGraph extends GraphBase
 	if (!Node.ANY.equals(t.getObject()))
 		O = Node2Str(t.getObject());
 
-	exec_text = "select count (*) from (sparql select * where { graph <"+ 
-			this.graphName +"> { " + S +" "+ P +" "+ O +" }})f";
+	exec_text = "sparql define input:storage \"\" select * where { graph <"+ 
+			this.graphName +"> { " + S +" "+ P +" "+ O +" }} limit 1";
 
 	try {
 		java.sql.Statement stmt = connection.createStatement();
 		rs = stmt.executeQuery(exec_text);
-		rs.next();
-		return (rs.getInt(1) != 0);
+		return rs.next();
 	} catch (Exception e) {
 	        throw new JenaException(e);
 	}
