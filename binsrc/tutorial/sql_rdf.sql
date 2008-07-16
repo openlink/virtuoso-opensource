@@ -148,6 +148,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
                                 as virtrdf:tutsiocPost-RES_ID;
                         a bibo:Article
                                 as virtrdf:tutBiboPost-RES_ID ;
+                        foaf:primaryTopic tutorial:Post (resources.RES_ID, resources.RES_NAME) ;
                         bibo:identifier resources.RES_NAME
                                 as virtrdf:tutPost-RES_NAME ;
                         bibo:author users.U_NAME
@@ -167,7 +168,10 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
                         bibo:url tutorial:DocPath(resources.RES_FULL_PATH)
                                 as virtrdf:tutPost-RES_FULL_PATH ;
                         rdfs:isDefinedBy tutorial:post_iri (resources.RES_ID) ;
-                        rdfs:isDefinedBy tutorial:Post (resources.RES_ID, resources.RES_NAME) .
+                        rdfs:isDefinedBy tutorial:Post (resources.RES_ID, resources.RES_NAME) ;
+                        rdfs:seeAlso tutorial:Section(resources.RES_COL, collections.COL_NAME)
+                                where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
+                                as virtrdf:tutPost-RES_COL2.
 
                 tutorial:DocPath(resources.RES_FULL_PATH)
                         a tutorial:DocPath

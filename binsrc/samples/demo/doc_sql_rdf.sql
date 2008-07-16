@@ -49,6 +49,17 @@ create function DB.DBA.FILE_IRI_INVERSE (in _iri varchar) returns integer
     return atoi(DB.DBA.DOC_IRI_TO_ID(_iri));
 };
 
+create function DB.DBA.TOPIC_IRI (in _id integer) returns varchar
+{
+    return DOC_ID_TO_IRI('File', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.TOPIC_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.DOC_IRI_TO_ID(_iri));
+};
+
 create function DB.DBA.COL_IRI (in _id integer) returns varchar
 {
     return DOC_ID_TO_IRI('Collection', cast(_id as varchar));
@@ -132,6 +143,9 @@ create iri class doc:collection_iri using
 create iri class doc:property_iri using
     function DB.DBA.PROP_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.PROP_IRI_INVERSE (in customer_iri varchar) returns varchar.
+create iri class doc:topic_iri using
+    function DB.DBA.TOPIC_IRI (in topic_id varchar) returns varchar,
+    function DB.DBA.TOPIC_IRI_INVERSE (in topic_iri varchar) returns varchar.
 ;
 
 DB.DBA.exec_no_error('create view WS.WS.SYS_DAV_RES_VIEW(
@@ -177,6 +191,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/doc/h
                                 as virtrdf:BiboFile-RES_ID ;
                         bibo:identifier resources.RES_NAME
                                 as virtrdf:File-RES_NAME ;
+                        foaf:primaryTopic doc:File (resources.RES_ID, resources.RES_NAME) ;                        
                         bibo:author users.U_NAME
                                 where (^{resources.}^.RES_OWNER = ^{users.}^.U_ID)
                                 as virtrdf:File-RES_OWNER ;
@@ -196,7 +211,10 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/doc/h
                         bibo:url doc:DocPath(resources.RES_FULL_PATH)
                                 as virtrdf:File-RES_FULL_PATH ;
                         rdfs:isDefinedBy doc:file_iri (resources.RES_ID) ;
-                        rdfs:isDefinedBy doc:File (resources.RES_ID, resources.RES_NAME) .
+                        rdfs:isDefinedBy doc:File (resources.RES_ID, resources.RES_NAME) ;
+                        rdfs:seeAlso doc:Collection(resources.RES_COL, collections.COL_NAME)
+                                where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
+                                as virtrdf:File-RES_COL .
 
 
                 doc:DocPath(resources.RES_FULL_PATH)
