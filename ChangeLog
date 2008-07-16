@@ -1,3 +1,70 @@
+2008-07-16 15:49  source
+
+	* Updated version to 5.0.7-rc25
+
+2008-07-16 15:16  source
+
+	* Added more javadoc documentation
+	* Fixed speed of batch mode when using lazyAdd
+	* Fixed counting of physical triples
+
+2008-07-16 15:14  source
+
+	* Regenerated driver
+
+2008-07-16 15:13  source
+
+	* Fixed counting physical triples
+
+2008-07-16 12:36  source
+
+	* Fixed conductor tab names
+
+2008-07-16 10:17  source
+
+	* Fixed check for load problems before dump and reload
+
+2008-07-16 10:15  source
+
+	* Increased http thread size
+
+2008-07-16 09:46  source
+
+	* Added missing symbols for win32 build
+
+2008-07-16 09:32  source
+
+	* Fixed additional SyncML issues
+
+2008-07-16 09:26  source
+
+	* Reordered package list
+
+2008-07-16 09:26  source
+
+	* Use DynamicLocal
+	* Increased bufffers and threads
+
+2008-07-15 18:31  source
+
+	* Use dbpedia IRIs for subjects  of html2rdf mapping
+
+2008-07-15 17:40  source
+
+	* Enabled support for DynamicLocal in default ini file
+
+2008-07-15 16:50  source
+
+	* Fixed problem if SyncML not loaded
+
+2008-07-15 16:36  source
+
+	* Fixed box zero as xslt engine treats nil as no value
+
+2008-07-15 14:00  source
+
+	* Fixed build problem
+
 2008-07-15 13:14  source
 
 	* Fixed building demo.db during make check
