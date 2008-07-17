@@ -102,6 +102,7 @@ EXTRA_DIST = \
 	virtuoso_driver/*.java \
 	virt_jena.jar \
 	testsuite/*.java \
+	testsuite/*.class \
 	testsuite/start.bat \
 	testsuite/start.sh \
 	testsuite/testing/regression/testModelEquals/*.nt \
