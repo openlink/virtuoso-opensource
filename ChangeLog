@@ -1,3 +1,20 @@
+2008-07-17 09:02  source
+
+	* Fixed version string in executable
+
+2008-07-17 07:36  source
+
+	* Added option to change fetch buffer size (default 200)
+	* Fixed speed of batch mode
+
+2008-07-17 06:46  source
+
+	* Regenerated provider
+
+2008-07-17 06:45  source
+
+	* Added option to change fetch buffer size (default 200)
+
 2008-07-16 22:39  source
 
 	* Updated version to 5.0.7 for final release
