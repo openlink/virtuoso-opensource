@@ -51,10 +51,11 @@ public class VirtGraph extends GraphBase
     private String url;
     private String user;
     private String password;
+    private int prefetchSize = 200;
     private Connection connection = null;
     static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-    static final int BATCH_SIZE = 1000;
+    static final int BATCH_SIZE = 5000;
     static final String utf8 = "charset=UTF-8";
 
 
@@ -130,6 +131,18 @@ public class VirtGraph extends GraphBase
     public Connection getConnection()
     {
     	return this.connection;
+    }
+
+
+    public int getFetchSize()
+    {
+    	return this.prefetchSize;
+    }
+
+
+    public void setFetchSize(int sz)
+    {
+    	this.prefetchSize = sz;
     }
 
 
@@ -370,6 +383,7 @@ public class VirtGraph extends GraphBase
 	try {
 		java.sql.PreparedStatement stmt = connection
 				.prepareStatement(exec_text);
+		stmt.setFetchSize(prefetchSize);
 		return new VirtResSetIter(this, stmt.executeQuery(), tm);
 	} catch (Exception e) {
 	        throw new JenaException(e);

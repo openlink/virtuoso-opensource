@@ -25,7 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
-import virtuoso.jdbc3.*;
+import virtuoso.sql.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.*;

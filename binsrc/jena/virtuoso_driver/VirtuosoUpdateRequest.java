@@ -28,7 +28,7 @@ import java.io.*;
 import java.net.*;
 import java.sql.*;
 
-import virtuoso.jdbc3.*;
+import virtuoso.sql.*;
 
 import com.hp.hpl.jena.update.*;
 import com.hp.hpl.jena.sparql.util.IndentedWriter;

@@ -28,7 +28,7 @@ import java.io.*;
 import java.net.*;
 import java.sql.*;
 
-import virtuoso.jdbc3.*;
+import virtuoso.sql.*;
 
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.query.ResultSet;
@@ -63,6 +63,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     String virt_url  = null;
     String virt_user = null;
     String virt_pass = null;
+    int prefetchSize = 200;
     java.sql.Statement stmt = null;
 
     static {
@@ -80,6 +81,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	virt_url  = graph.getGraphUrl ();
 	virt_pass = graph.getGraphPassword ();
 	virt_user = graph.getGraphUser ();
+	prefetchSize = graph.getFetchSize ();
 
 	StringTokenizer tok = new StringTokenizer(query);
 	String s = tok.nextToken().toLowerCase();
@@ -100,7 +102,8 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
-	    VirtuosoResultSet result_set = (VirtuosoResultSet) stmt.executeQuery(virt_query);
+	    stmt.setFetchSize(prefetchSize);
+	    java.sql.ResultSet result_set = stmt.executeQuery(virt_query);
 
 	    ret = ViruosoResultBindingsToJenaResults (result_set);
 
@@ -116,7 +119,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     }
 
 
-    public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (virtuoso.jdbc3.VirtuosoResultSet VirtuosoRes)
+    public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (java.sql.ResultSet VirtuosoRes)
     {
 	try
 	{
@@ -191,7 +194,8 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
-	    VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(virt_query);
+	    stmt.setFetchSize(prefetchSize);
+	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
 	    ResultSetMetaData rsmd = rs.getMetaData();
 
 	    while(rs.next())
@@ -226,7 +230,8 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
-	    VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(virt_query);
+	    stmt.setFetchSize(prefetchSize);
+	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
 	    ResultSetMetaData rsmd = rs.getMetaData();
 	    while(rs.next())
 	    {
@@ -257,7 +262,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    Connection connection = DriverManager.getConnection(virt_url, virt_user, virt_pass);
 
 	    stmt = connection.createStatement();
-	    VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(virt_query);
+	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
 	    ResultSetMetaData rsmd = rs.getMetaData();
 
 	    while(rs.next())

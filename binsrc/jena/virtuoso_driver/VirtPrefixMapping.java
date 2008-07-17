@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.util.Iterator;
 
-import virtuoso.jdbc3.*;
+import virtuoso.sql.*;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -56,7 +56,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	  String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
 	  try {
 	    Statement stmt = conn.createStatement();
-	    VirtuosoResultSet rs = (VirtuosoResultSet) stmt.executeQuery(query);
+	    ResultSet rs = stmt.executeQuery(query);
 
   	    while (rs.next()) {
 	      String prefix = rs.getString(1);
