@@ -55,6 +55,7 @@ public class VirtuosoRepository implements Repository {
 	public String password;
 	public String defGraph;
 	public boolean useLazyAdd = false;
+	public int prefetchSize = 200;
 	public int resultsHandlerType = 0;
         static final String utf8 = "charset=UTF-8";
 	private boolean initialized = false;
@@ -199,6 +200,23 @@ public class VirtuosoRepository implements Repository {
 			System.out.println("Connection to " + url + " is FAILED.");
 			throw new RepositoryException(e);
 		}
+	}
+
+	/**
+	 * Set the buffer fetch size(default 200) 
+	 * 
+	 * @param sz
+	 *        buffer fetch size.
+	 */
+	public void setFetchSize(int sz) {
+		this.prefetchSize = sz;
+	}
+
+	/**
+	 * Get the buffer fetch size
+	 */
+	public int getFetchSize(int sz) {
+		return this.prefetchSize;
 	}
 
 	/**

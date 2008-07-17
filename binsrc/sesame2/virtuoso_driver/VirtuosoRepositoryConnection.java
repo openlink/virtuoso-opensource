@@ -152,12 +152,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private PreparedStatement psInsert;
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
+	private int prefetchSize = 200;
 
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
 		this.quadStoreConnection = connection;
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
+		this.prefetchSize = repository.prefetchSize;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		try {
 			this.repository.initialize();
@@ -1529,6 +1531,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.setFetchSize(prefetchSize);
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -1555,6 +1558,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.setFetchSize(prefetchSize);
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -1600,6 +1604,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.setFetchSize(prefetchSize);
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -1630,6 +1635,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.setFetchSize(prefetchSize);
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1849,6 +1855,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
+			stmt.setFetchSize(prefetchSize);
 			rs = stmt.executeQuery(query.toString());
 		}
 		catch (Exception e) {
