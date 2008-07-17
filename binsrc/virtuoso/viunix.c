@@ -485,8 +485,8 @@ usage (void)
 	PACKAGE_FIBER : PACKAGE_THREAD);
   p = stpcpy (version, line);
 
-  sprintf (line, "Version %s%s as of %s\n",
-      DBMS_SRV_VER, build_thread_model, build_date);
+  sprintf (line, "Version %s.%s%s%s as of %s\n",
+      PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
   sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
