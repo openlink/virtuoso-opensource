@@ -6836,7 +6836,7 @@ create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options a
       VT_INC_INDEX_DB_DBA_RDF_OBJ();
       return;
     }
-  grabbed_list := dict_to_vector (grabbed);
+  grabbed_list := dict_to_vector (grabbed, 0);
   grab_count := length (grabbed_list);
   for (grab_ctr := 1; grab_ctr < grab_count; grab_ctr := grab_ctr + 2)
     {
@@ -9360,32 +9360,22 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
   if (old_expiration is not null)
     {
-      if ((old_expiration >= now()) and (
-          explicit_refresh is null or
-          old_exp_is_true or
-          (dateadd ('second', explicit_refresh, old_last_load) >= now()) ) )
+      if ((old_expiration >= now() and explicit_refresh is null) or
+	 (explicit_refresh is not null and dateadd ('second', explicit_refresh, old_last_load) >= now()))
         {
           -- dbg_obj_princ ('not expired, return');
           update DB.DBA.SYS_HTTP_SPONGE
           set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1
           where HS_LOCAL_IRI = local_iri and HS_LAST_READ < now();
           commit work;
-	  -- check here for dependant URLs
-	  -- if some is expired or is dynamic, then treat the top page and rest as they changed
-	  if (DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHNAGED (local_iri, parser, explicit_refresh))
             return local_iri;
-	  else
-	    old_last_etag := null;
         }
     }
   else -- either other loading is in progress or an recorded error
     {
-      if (old_last_load >= now() and old_expiration is null)
-        {
           -- dbg_obj_princ ('collision in the air, return');
           return local_iri; -- Nobody promised to resolve collisions in the air.
         }
-    }
 
 update_old_origin:
   -- dbg_obj_princ ('starting update old origin...');
