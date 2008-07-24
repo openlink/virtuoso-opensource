@@ -513,8 +513,6 @@ public class VirtuosoConnection implements Connection
 	     VirtuosoFuture.rpc_log.flush();
 	   }
        }
-     //if (Driver.calibrating_loop > 0)
-     //  Driver.exec_calibrating_loop (Driver.calibrating_loop);
 #if JDK_VER >= 14
     try {
         out.write_object(obj);
@@ -548,8 +546,6 @@ public class VirtuosoConnection implements Connection
 
    protected void write_bytes(byte [] bytes) throws IOException, VirtuosoException
    {
-     //if (Driver.calibrating_loop > 0)
-     //  Driver.exec_calibrating_loop (Driver.calibrating_loop);
 #if JDK_VER >= 14
     try {
         for (int k = 0; k < bytes.length; k++)
@@ -624,8 +620,6 @@ public class VirtuosoConnection implements Connection
    {
      if (futures == null)
        throw new VirtuosoException ("Activity on a closed connection", "IM001", VirtuosoException.SQLERROR);
-     if (Driver.calibrating_loop > 0)
-       Driver.exec_calibrating_loop (Driver.calibrating_loop);
      //System.out.println ("req start");
      Object _result;
 #if JDK_VER >= 14

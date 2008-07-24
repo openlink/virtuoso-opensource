@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 19;
+   protected static final int minor = 20;
 
    // Some variables
    private String host, port, user, password, database, charset, pwdclear;
@@ -84,7 +84,6 @@ public class Driver implements java.sql.Driver
     */
    public Driver() throws SQLException
    {
-     calibrate_loop();
      try
        {
 	 String log_file = System.getProperty(
@@ -424,70 +423,4 @@ public class Driver implements java.sql.Driver
 #endif
    }
 
-   protected static long calibrating_loop;
-   private static Long calibrating_mtx;
-   private static final long calibrating_delay = 1;
-
-   protected static void exec_calibrating_loop (long cnt)
-     {
-       synchronized (calibrating_mtx)
-	 {
-	   long counter, dummy = 0;
-	   for (counter = 0; counter < cnt; counter++)
-	     dummy = counter % 10;
-	 }
-     }
-   private static void calibrate_loop ()
-     {
-       /* this does calibrate a busy loop end count for slowing down the driver on reading/writing
-	  thus effectively serializing the reads/writes */
-       calibrating_mtx = new Long (0);
-       long desired_delay, delay_so_far;
-       try
-	 {
-	   String prop = System.getProperty ("___virtjdbc2_delay");
-	   if (prop != null)
-	     desired_delay = new Long (prop).longValue();
-	   else
-	     desired_delay = calibrating_delay;
-	 }
-       catch (Exception e)
-	 {
-	   desired_delay = calibrating_delay;
-	 }
-       //System.err.println ("desired_delay=" + desired_delay);
-       if (calibrating_delay == 0)
-	 {
-	   calibrating_loop = 0;
-	   return;
-	 }
-
-       long t1, t2, timer_resolution;
-       t1 = t2 = System.currentTimeMillis();
-       while (t2 == t1)
-	 t2 = System.currentTimeMillis();
-
-       timer_resolution = t2 - t1;
-       delay_so_far = 0;
-       calibrating_loop = 1000;
-       while (delay_so_far < timer_resolution * 10)
-	 {
-	   //System.err.println ("calibrating_loop=" + calibrating_loop);
-	   t1 = System.currentTimeMillis();
-	   exec_calibrating_loop (calibrating_loop);
-	   delay_so_far = System.currentTimeMillis() - t1;
-	   //System.err.println ("delay_so_far=" + delay_so_far);
-	   if (delay_so_far < timer_resolution * 10)
-	     {
-	       if (calibrating_loop < Long.MAX_VALUE - 1000)
-		 calibrating_loop = (calibrating_loop * 120) / 100;
-	       else
-		 break;
-	     }
-	 }
-       //System.err.println ("delay_so_far=" + delay_so_far + " calibrating_loop=" + calibrating_loop);
-       calibrating_loop = (calibrating_loop * desired_delay / (timer_resolution * 10));
-
-       //System.err.println ("Calibrating loop = " + calibrating_loop + " Timer resolution = " + timer_resolution);
-     }
 }
