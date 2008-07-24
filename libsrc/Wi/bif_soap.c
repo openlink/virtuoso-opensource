@@ -2134,7 +2134,7 @@ soap_sqt_to_soap_type (sql_type_t *sqt, caddr_t soap_type, caddr_t * opts,
 
   if (sqt->sqt_class)
     {
-      ret = dk_alloc_box (box_length (sqt->sqt_class->scl_name_only) + strlen (ns_to_be) + 1, DV_STRING);
+      ret = dk_alloc_box (strlen (sqt->sqt_class->scl_name_only) + strlen (ns_to_be) + 2, DV_STRING);
       snprintf (ret, box_length (ret), "%s:%s", ns_to_be, sqt->sqt_class->scl_name_only);
     }
   else /* sqt_tree ; checked earlier */
