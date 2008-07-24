@@ -1682,7 +1682,7 @@ http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	       
       <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
       <para>Go to Conductor UI, for ex. at http://localhost:8890/conductor</para>
       <para>Login as dba user</para>
-      <para>Go to WebDAV&amp;HTTP and create new folder, for ex. test</para>
+      <para>Go to Web Application Server and create new folder, for ex. test</para>
       <para>Upload in the folder test a file, for ex. the file jose.rdf from above with options:</para>
       <itemizedlist>
         <listitem>Destination: RDF Store</listitem>
@@ -1696,7 +1696,7 @@ non-RDF but get RDF and this can go to the Quad Store)</para>
       <para><emphasis>Example:</emphasis></para>
       <para>Go to Conductor UI. For ex. at http://localhost:8890/conductor</para>
       <para>Login as dba user</para>
-      <para>Go to tab WebDAV&amp;HTTP</para>
+      <para>Go to tab Web Application Server</para>
       <para>Go to tab Content Imports</para>
       <para>Click the "New Target" button</para>
       <para>In the shown form:</para>
@@ -4156,8 +4156,19 @@ depending on absence or presence of port number in the value of
 There is one subtle problem with IRI class declarations.
 To get benefit from a relational index, SPARQL optimizer should compose equality between table column and some known SQL value, not between return value of IRI class and a known composed IRI.
 In addition, redundant calculations of IRIs takes time.
-To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause. For some simple format strings the compier may recognize the bijection automatically but an explicit declaration is always a good idea.
+To enable this optimization, an IRI class declaration should end with <emphasis>option (bijection)</emphasis> clause. For some simple format strings the compiler may recognize the bijection automatically but an explicit declaration is always a good idea.
 </para>
+<note><title>Note:</title>
+<para>
+See also: <ulink url="http://en.wikipedia.org/wiki/One-to-one_correspondence">Wikipedia - Bijection</ulink>.
+In mathematics, a bijection, or a bijective function is a function f from a set X to a set Y such that,
+for every y in Y, there is exactly one x in X such that f(x) = y.
+</para>
+<para>
+Alternatively, f is bijective if it is a one-to-one correspondence between those sets; i.e.,
+both one-to-one (injective) and onto (surjective).
+</para>
+</note>
 <para>
 The SPARQL compiler may produce big amounts of SQL code when the query contains equality of two calculated IRIs and these IRIs may come from many different IRI classes.
 It is possible to provide hints that will let the compiler check if two IRI classes form disjoint sets of possible IRI values. The more disjoint sets are found the less possible combinations remain so the resulting SQL query will contain fewer unions of joins.
@@ -7037,24 +7048,35 @@ xsd:integer (in strg varchar) returns integer
 </sect2>
 </sect1>
 <sect1 id="rdfnativestorageproviders"><title>Native RDF Storage Providers</title>
-  <sect2 id="rdfnativestorageprovidersjena"><title>Virtuoso Jena RDF Data Provider</title>
-    <para>The Virtuoso Jena RDF Data Provider enables Semantic Web applications written using
-the Jena RDF Frameworks to query the Virtuoso RDF Quad store directly. The Provider has been
-tested against the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> version currently available.
+  <sect2 id="rdfnativestorageprovidersjena"><title>Virtuoso Jena Provider</title>
+    <sect3 id="rdfnativestorageprovidersjenawhatis"><title>What is Jena</title>
+    <para>Jena is an open source Semantic Web framework for Java. It provides an API to
+extract data from and write to RDF graphs. The graphs are represented as an abstract "model".
+A model can be sourced with data from files, databases, URIs or a combination of these. A Model
+can also be queried through SPARQL and updated through SPARUL.
+    </para>
+    </sect3>
+    <sect3 id="rdfnativestorageprovidersjenawhatis"><title>What is the Virtuoso Jena Provider</title>
+    <para>The Virtuoso Jena RDF Data Provider is a fully operational Native Graph Model Storage
+Provider for the Jena Framework, enables Semantic Web applications written using the Jena RDF
+Frameworks to query the Virtuoso RDF Quad store directly. The Provider has been tested against
+the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> version currently available.
     </para>
     <figure id="rdfnativestorageprovidersjena1" float="1">
       <title>Virtuoso Jena RDF Data Provider</title>
       <graphic fileref="ui/VirtJenaProvider.png"/>
     </figure>
-    <sect3 id="rdfnativestorageprovidersjenareqfiles"><title>Required Files</title>
-    <itemizedlist mark="bullet">
-      <listitem>The Virtuoso Jena Provider packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virt_jena.jar">virt_jena.jar</ulink></listitem>
-      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
-      <listitem>The Jena and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/jenajars.zip">jenajars.zip</ulink></listitem>
-      <listitem>The sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjenasamples.zip">virtjenasamples.zip</ulink></listitem>
-    </itemizedlist>
     </sect3>
-    <sect3 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>
+    <sect3 id="rdfnativestorageprovidersjenasetup"><title>Setup</title>
+    <sect4 id="rdfnativestorageprovidersjenareqfiles"><title>Required Files</title>
+    <itemizedlist mark="bullet">
+      <listitem>Virtuoso Jena Provider JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virt_jena.jar">virt_jena.jar</ulink></listitem>
+      <listitem>Virtuoso JDBC Driver JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
+      <listitem>Jena Framework and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/jenajars.zip">jenajars.zip</ulink></listitem>
+      <listitem>Sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtJenaProvider/virtjenasamples.zip">virtjenasamples.zip</ulink></listitem>
+    </itemizedlist>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>
     <orderedlist>
       <listitem>Edit the sample programs VirtuosoSPARQLExampleX.java, where X = 1 to 9. Set the JDBC connection strings within to point to a valid Virtuoso Server instance of the form:
 <programlisting><![CDATA[
@@ -7080,34 +7102,31 @@ VirtuosoSPARQLExample5.java VirtuosoSPARQLExample6.java VirtuosoSPARQLExample7.j
 VirtuosoSPARQLExample8.java VirtuosoSPARQLExample9.java
 ]]></programlisting>
       </listitem>
-      <listitem></listitem>
     </orderedlist>
-    </sect3>
-    <sect3 id="rdfnativestorageprovidersjenatesting"><title>Testing</title>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenatesting"><title>Testing</title>
     <para>Once the Provider classes and sample program have been successfully compiled,
-the Provider can be tested using the two sample providers included.
+the Provider can be tested using the sample programs included. Ensure your active CLASSPATH
+includes full paths to all of the following files, before executing the example commands:
     </para>
-    <orderedlist>
-      <listitem>Ensure your active CLASSPATH includes full paths to all
-of the following files, before executing the example commands:
     <itemizedlist mark="bullet">
       <listitem>icu4j_3_4.jar</listitem>
       <listitem>iri.jar</listitem>
       <listitem>xercesImpl.jar</listitem>
       <listitem>axis.jar</listitem>
-      <listitem>commons-logging.jar</listitem>
+      <listitem>commons-logging-1.1.1.jar</listitem>
       <listitem>jena.jar</listitem>
       <listitem>arq.jar</listitem>
       <listitem>virtjdbc3.jar</listitem>
       <listitem>virt_jena.jar</listitem>
     </itemizedlist>
-      </listitem>
-      <listitem>VirtuosoSPARQLExample1 returns the contents of the RDF Quad store of the targeted Virtuoso instance, with the following command:
+    <orderedlist>
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples1">VirtuosoSPARQLExample1</link> returns the contents of the RDF Quad store of the targeted Virtuoso instance, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample1
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample2 reads in the contents of the following FOAF URIs --
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples2">VirtuosoSPARQLExample2</link> reads in the contents of the following FOAF URIs --
 <programlisting><![CDATA[
 http://kidehen.idehen.net/dataspace/person/kidehen#this
 http://www.w3.org/People/Berners-Lee/card#i
@@ -7118,66 +7137,751 @@ http://demo.openlinksw.com/dataspace/person/demo#this
 java VirtuosoSPARQLExample2
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample3 performs simple addition and deletion operation on
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples3">VirtuosoSPARQLExample3</link> performs simple addition and deletion operation on
 the content of the triple store, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample3
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample4 demonstrates the use of the <emphasis>graph.contains</emphasis> method for searching triples, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples4">VirtuosoSPARQLExample4</link> demonstrates the use of the <emphasis>graph.contains</emphasis> method for searching triples, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample4
 ]]></programlisting>
 </listitem>
-      <listitem>VirtuosoSPARQLExample5 demonstrates the use of the <emphasis>graph.find</emphasis> method for searching triples, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples5">VirtuosoSPARQLExample5</link> demonstrates the use of the <emphasis>graph.find</emphasis> method for searching triples, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample5
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample6 demonstrates the use of the <emphasis>graph.getTransactionHandler</emphasis> method, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples6">VirtuosoSPARQLExample6</link> demonstrates the use of the <emphasis>graph.getTransactionHandler</emphasis> method, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample6
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample7 demonstrates the use of the graph.getBulkUpdateHandler method, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples7">VirtuosoSPARQLExample7</link> demonstrates the use of the graph.getBulkUpdateHandler method, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample7
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample8 demonstrates how to insert triples into a graph, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples8">VirtuosoSPARQLExample8</link> demonstrates how to insert triples into a graph, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample8
 ]]></programlisting>
       </listitem>
-      <listitem>VirtuosoSPARQLExample9 demonstrates the use of the <emphasis>CONSTRUCT, DESCRIBE,</emphasis> and <emphasis>ASK</emphasis> SPARQL query forms, with the following command:
+      <listitem><link linkend="rdfnativestorageprovidersjenaexamples9">VirtuosoSPARQLExample9</link> demonstrates the use of the <emphasis>CONSTRUCT, DESCRIBE,</emphasis> and <emphasis>ASK</emphasis> SPARQL query forms, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample9
 ]]></programlisting>
       </listitem>
     </orderedlist>
+    </sect4>
+    </sect3>
+    <sect3 id="rdfnativestorageprovidersjenaexamples"><title>Examples</title>
+    <sect4 id="rdfnativestorageprovidersjenaexamples1"><title>VirtJenaSPARQLExample1</title>
+<programlisting><![CDATA[
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample1 {
+
+	/**
+	 * Executes a SPARQL query against a virtuoso url and prints results.
+	 */
+	public static void main(String[] args) {
+
+		String url;
+		if(args.length == 0)
+		    url = "jdbc:virtuoso://localhost:1111";
+		else
+		    url = args[0];
+
+/*			STEP 1			*/
+		VirtGraph set = new VirtGraph (url, "dba", "dba");
+
+/*			STEP 2			*/
+
+
+/*			STEP 3			*/
+/*		Select all data in virtuoso	*/
+		Query sparql = QueryFactory.create("SELECT * WHERE { GRAPH ?graph { ?s ?p ?o } } limit 100");
+
+/*			STEP 4			*/
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+
+		ResultSet results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution result = results.nextSolution();
+		    RDFNode graph = result.get("graph");
+		    RDFNode s = result.get("s");
+		    RDFNode p = result.get("p");
+		    RDFNode o = result.get("o");
+		    System.out.println(graph + " { " + s + " " + p + " " + o + " . }");
+		}
+	}
+}
+
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples2"><title>VirtJenaSPARQLExample2</title>
+<programlisting><![CDATA[
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample2 {
+
+	/**
+	 * Executes a SPARQL query against a virtuoso url and prints results.
+	 */
+	public static void main(String[] args) {
+
+		String url;
+		if(args.length == 0)
+		    url = "jdbc:virtuoso://localhost:1111";
+		else
+		    url = args[0];
+
+/*			STEP 1			*/
+		VirtGraph graph = new VirtGraph ("Example2", url, "dba", "dba");
+
+/*			STEP 2			*/
+/*		Load data to Virtuoso		*/
+		graph.clear ();
+
+		System.out.print ("Begin read from 'http://www.w3.org/People/Berners-Lee/card#i'  ");
+		graph.read("http://www.w3.org/People/Berners-Lee/card#i", "RDF/XML");
+		System.out.println ("\t\t\t Done.");
+
+		System.out.print ("Begin read from 'http://demo.openlinksw.com/dataspace/person/demo#this'  ");
+		graph.read("http://demo.openlinksw.com/dataspace/person/demo#this", "RDF/XML");
+		System.out.println ("\t Done.");
+
+		System.out.print ("Begin read from 'http://kidehen.idehen.net/dataspace/person/kidehen#this'  ");
+		graph.read("http://kidehen.idehen.net/dataspace/person/kidehen#this", "RDF/XML");
+		System.out.println ("\t Done.");
+
+
+/*			STEP 3			*/
+/*		Select only from VirtGraph	*/
+		Query sparql = QueryFactory.create("SELECT ?s ?p ?o WHERE { ?s ?p ?o }");
+
+/*			STEP 4			*/
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, graph);
+
+		ResultSet results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution result = results.nextSolution();
+		    RDFNode graph_name = result.get("graph");
+		    RDFNode s = result.get("s");
+		    RDFNode p = result.get("p");
+		    RDFNode o = result.get("o");
+		    System.out.println(graph_name + " { " + s + " " + p + " " + o + " . }");
+		}
+
+		System.out.println("graph.getCount() = " + graph.getCount());
+	}
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples3"><title>VirtJenaSPARQLExample3</title>
+<programlisting><![CDATA[
+import java.util.*;
+
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample3
+{
+    public static void main(String[] args)
+    {
+	String url;
+
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
+
+	Node foo1 = Node.createURI("http://example.org/#foo1");
+	Node bar1 = Node.createURI("http://example.org/#bar1");
+	Node baz1 = Node.createURI("http://example.org/#baz1");
+
+	Node foo2 = Node.createURI("http://example.org/#foo2");
+	Node bar2 = Node.createURI("http://example.org/#bar2");
+	Node baz2 = Node.createURI("http://example.org/#baz2");
+
+	Node foo3 = Node.createURI("http://example.org/#foo3");
+	Node bar3 = Node.createURI("http://example.org/#bar3");
+	Node baz3 = Node.createURI("http://example.org/#baz3");
+
+	List <Triple> triples = new ArrayList <Triple> ();
+
+	VirtGraph graph = new VirtGraph ("Example3", url, "dba", "dba");
+
+	graph.clear ();
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("Add 3 triples to graph <Example3>.");
+
+	graph.add(new Triple(foo1, bar1, baz1));
+	graph.add(new Triple(foo2, bar2, baz2));
+	graph.add(new Triple(foo3, bar3, baz3));
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	triples.add(new Triple(foo1, bar1, baz1));
+	triples.add(new Triple(foo2, bar2, baz2));
+
+	graph.isEmpty();
+
+	System.out.println("Remove 2 triples from graph <Example3>");
+	graph.remove(triples);
+	System.out.println("graph.getCount() = " + graph.getCount());
+	System.out.println("Please check result with isql tool.");
+
+	/* EXPECTED RESULT:
+
+SQL> sparql select ?s ?p ?o from <Example3> where {?s ?p ?o};
+s                                                    p                                                             o
+VARCHAR                                    VARCHAR                                              VARCHAR
+_______________________________________________________________________________
+
+http://example.org/#foo3              http://example.org/#bar3                         http://example.org/#baz3
+
+1 Rows. -- 26 msec.
+SQL>
+
+*/
+
+	}
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples4"><title>VirtJenaSPARQLExample4</title>
+<programlisting><![CDATA[
+import java.util.*;
+
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample4
+{
+
+    public static void main(String[] args)
+    {
+	String url;
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
+
+	Node foo1 = Node.createURI("http://example.org/#foo1");
+	Node bar1 = Node.createURI("http://example.org/#bar1");
+	Node baz1 = Node.createURI("http://example.org/#baz1");
+
+	Node foo2 = Node.createURI("http://example.org/#foo2");
+	Node bar2 = Node.createURI("http://example.org/#bar2");
+	Node baz2 = Node.createURI("http://example.org/#baz2");
+
+	Node foo3 = Node.createURI("http://example.org/#foo3");
+	Node bar3 = Node.createURI("http://example.org/#bar3");
+	Node baz3 = Node.createURI("http://example.org/#baz3");
+
+	VirtGraph graph = new VirtGraph ("Example4", url, "dba", "dba");
+
+	graph.clear ();
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+
+	System.out.println("Add 3 triples to graph <Example4>.");
+
+	graph.add(new Triple(foo1, bar1, baz1));
+	graph.add(new Triple(foo2, bar2, baz2));
+	graph.add(new Triple(foo3, bar3, baz3));
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	System.out.println ("graph.contains(new Triple(foo2, bar2, baz2) - " + graph.contains(new Triple(foo2, bar2, baz2)));
+	System.out.println ("graph.contains(new Triple(foo2, bar2, baz3) - " + graph.contains(new Triple(foo2, bar2, baz3)));
+
+	graph.clear ();
+
+    }
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples5"><title>VirtJenaSPARQLExample5</title>
+<programlisting><![CDATA[
+import java.util.*;
+
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample5
+{
+
+    public static void main(String[] args)
+    {
+	String url;
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
+
+	Node foo1 = Node.createURI("http://example.org/#foo1");
+	Node bar1 = Node.createURI("http://example.org/#bar1");
+	Node baz1 = Node.createURI("http://example.org/#baz1");
+
+	Node foo2 = Node.createURI("http://example.org/#foo2");
+	Node bar2 = Node.createURI("http://example.org/#bar2");
+	Node baz2 = Node.createURI("http://example.org/#baz2");
+
+	Node foo3 = Node.createURI("http://example.org/#foo3");
+	Node bar3 = Node.createURI("http://example.org/#bar3");
+	Node baz3 = Node.createURI("http://example.org/#baz3");
+
+	VirtGraph graph = new VirtGraph ("Example5", url, "dba", "dba");
+
+	graph.clear ();
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+
+	System.out.println("Add 3 triples to graph <Example5>.");
+
+	graph.add(new Triple(foo1, bar1, baz1));
+	graph.add(new Triple(foo2, bar2, baz2));
+	graph.add(new Triple(foo3, bar3, baz3));
+	graph.add(new Triple(foo1, bar2, baz2));
+	graph.add(new Triple(foo1, bar3, baz3));
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	ExtendedIterator iter = graph.find(foo1, Node.ANY, Node.ANY);
+	System.out.println ("\ngraph.find(foo1, Node.ANY, Node.ANY) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	iter = graph.find(Node.ANY, Node.ANY, baz3);
+	System.out.println ("\ngraph.find(Node.ANY, Node.ANY, baz3) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	iter = graph.find(foo1, Node.ANY, baz3);
+	System.out.println ("\ngraph.find(foo1, Node.ANY, baz3) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	graph.clear ();
+
+    }
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples6"><title>VirtJenaSPARQLExample6</title>
+<programlisting><![CDATA[
+import java.util.*;
+
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample6
+{
+
+    public static void main(String[] args)
+    {
+	String url;
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
+
+	Node foo1 = Node.createURI("http://example.org/#foo1");
+	Node bar1 = Node.createURI("http://example.org/#bar1");
+	Node baz1 = Node.createURI("http://example.org/#baz1");
+
+	Node foo2 = Node.createURI("http://example.org/#foo2");
+	Node bar2 = Node.createURI("http://example.org/#bar2");
+	Node baz2 = Node.createURI("http://example.org/#baz2");
+
+	Node foo3 = Node.createURI("http://example.org/#foo3");
+	Node bar3 = Node.createURI("http://example.org/#bar3");
+	Node baz3 = Node.createURI("http://example.org/#baz3");
+
+	VirtGraph graph = new VirtGraph ("Example6", url, "dba", "dba");
+
+	graph.clear ();
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+
+	System.out.println("test Transaction Commit.");
+	graph.getTransactionHandler().begin();
+	System.out.println("begin Transaction.");
+	System.out.println("Add 3 triples to graph <Example6>.");
+
+	graph.add(new Triple(foo1, bar1, baz1));
+	graph.add(new Triple(foo2, bar2, baz2));
+	graph.add(new Triple(foo3, bar3, baz3));
+
+	graph.getTransactionHandler().commit();
+	System.out.println("commit Transaction.");
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	ExtendedIterator iter = graph.find(Node.ANY, Node.ANY, Node.ANY);
+	System.out.println ("\ngraph.find(Node.ANY, Node.ANY, Node.ANY) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	graph.clear ();
+	System.out.println("\nCLEAR graph <Example6>");
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+
+	System.out.println("Add 1 triples to graph <Example6>.");
+	graph.add(new Triple(foo1, bar1, baz1));
+
+	System.out.println("test Transaction Abort.");
+	graph.getTransactionHandler().begin();
+	System.out.println("begin Transaction.");
+	System.out.println("Add 2 triples to graph <Example6>.");
+
+	graph.add(new Triple(foo2, bar2, baz2));
+	graph.add(new Triple(foo3, bar3, baz3));
+
+	graph.getTransactionHandler().abort();
+	System.out.println("abort Transaction.");
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	iter = graph.find(Node.ANY, Node.ANY, Node.ANY);
+	System.out.println ("\ngraph.find(Node.ANY, Node.ANY, Node.ANY) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	graph.clear ();
+	System.out.println("\nCLEAR graph <Example6>");
+
+    }
+}
+
+
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples7"><title>VirtJenaSPARQLExample7</title>
+<programlisting><![CDATA[
+import java.util.*;
+
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample7
+{
+
+    public static void main(String[] args)
+    {
+	String url;
+	if(args.length == 0)
+	    url = "jdbc:virtuoso://localhost:1111";
+	else
+	    url = args[0];
+
+	Node foo1 = Node.createURI("http://example.org/#foo1");
+	Node bar1 = Node.createURI("http://example.org/#bar1");
+	Node baz1 = Node.createURI("http://example.org/#baz1");
+
+	Node foo2 = Node.createURI("http://example.org/#foo2");
+	Node bar2 = Node.createURI("http://example.org/#bar2");
+	Node baz2 = Node.createURI("http://example.org/#baz2");
+
+	Node foo3 = Node.createURI("http://example.org/#foo3");
+	Node bar3 = Node.createURI("http://example.org/#bar3");
+	Node baz3 = Node.createURI("http://example.org/#baz3");
+
+	List triples1 = new ArrayList();
+	triples1.add(new Triple(foo1, bar1, baz1));
+	triples1.add(new Triple(foo2, bar2, baz2));
+	triples1.add(new Triple(foo3, bar3, baz3));
+
+	List triples2 = new ArrayList();
+	triples2.add(new Triple(foo1, bar1, baz1));
+	triples2.add(new Triple(foo2, bar2, baz2));
+
+	VirtGraph graph = new VirtGraph ("Example7", url, "dba", "dba");
+
+	graph.clear ();
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("Add List with 3 triples to graph <Example7> via BulkUpdateHandler.");
+
+	graph.getBulkUpdateHandler().add(triples1);
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	ExtendedIterator iter = graph.find(Node.ANY, Node.ANY, Node.ANY);
+	System.out.println ("\ngraph.find(Node.ANY, Node.ANY, Node.ANY) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+
+	System.out.println("\n\nDelete List of 2 triples from graph <Example7> via BulkUpdateHandler.");
+
+	graph.getBulkUpdateHandler().delete(triples2);
+
+	System.out.println("graph.isEmpty() = " + graph.isEmpty());
+	System.out.println("graph.getCount() = " + graph.getCount());
+
+	iter = graph.find(Node.ANY, Node.ANY, Node.ANY);
+	System.out.println ("\ngraph.find(Node.ANY, Node.ANY, Node.ANY) \nResult:");
+	for ( ; iter.hasNext() ; )
+	    System.out.println ((Triple) iter.next());
+
+	graph.clear ();
+	System.out.println("\nCLEAR graph <Example7>");
+
+    }
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples8"><title>VirtJenaSPARQLExample8</title>
+<programlisting><![CDATA[
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample8 {
+
+	/**
+	 * Executes a SPARQL query against a virtuoso url and prints results.
+	 */
+	public static void main(String[] args) {
+
+		String url;
+		if(args.length == 0)
+		    url = "jdbc:virtuoso://localhost:1111";
+		else
+		    url = args[0];
+
+/*			STEP 1			*/
+		VirtGraph set = new VirtGraph (url, "dba", "dba");
+
+/*			STEP 2			*/
+System.out.println("\nexecute: CLEAR GRAPH <http://test1>");
+                String str = "CLEAR GRAPH <http://test1>";
+                VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, set);
+                vur.exec();
+
+System.out.println("\nexecute: INSERT INTO GRAPH <http://test1> { <aa> <bb> 'cc' . <aa1> <bb1> 123. }");
+                str = "INSERT INTO GRAPH <http://test1> { <aa> <bb> 'cc' . <aa1> <bb1> 123. }";
+                vur = VirtuosoUpdateFactory.create(str, set);
+                vur.exec();
+
+/*			STEP 3			*/
+/*		Select all data in virtuoso	*/
+System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
+		Query sparql = QueryFactory.create("SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
+
+/*			STEP 4			*/
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+
+		ResultSet results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution rs = results.nextSolution();
+		    RDFNode s = rs.get("s");
+		    RDFNode p = rs.get("p");
+		    RDFNode o = rs.get("o");
+		    System.out.println(" { " + s + " " + p + " " + o + " . }");
+		}
+
+
+System.out.println("\nexecute: DELETE FROM GRAPH <http://test1> { <aa> <bb> 'cc' }");
+                str = "DELETE FROM GRAPH <http://test1> { <aa> <bb> 'cc' }";
+                vur = VirtuosoUpdateFactory.create(str, set);
+                vur.exec();
+
+System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
+		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+                results = vqe.execSelect();
+		while (results.hasNext()) {
+			QuerySolution rs = results.nextSolution();
+		    RDFNode s = rs.get("s");
+		    RDFNode p = rs.get("p");
+		    RDFNode o = rs.get("o");
+		    System.out.println(" { " + s + " " + p + " " + o + " . }");
+		}
+
+
+	}
+}
+]]></programlisting>
+    </sect4>
+    <sect4 id="rdfnativestorageprovidersjenaexamples9"><title>VirtJenaSPARQLExample9</title>
+<programlisting><![CDATA[
+import com.hp.hpl.jena.query.*;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.rdf.model.*;
+import java.util.Iterator;
+
+import virtuoso.jena.driver.*;
+
+public class VirtuosoSPARQLExample9 {
+
+	/**
+	 * Executes a SPARQL query against a virtuoso url and prints results.
+	 */
+	public static void main(String[] args) {
+
+		String url;
+		if(args.length == 0)
+		    url = "jdbc:virtuoso://localhost:1111";
+		else
+		    url = args[0];
+
+/*			STEP 1			*/
+		VirtGraph set = new VirtGraph (url, "dba", "dba");
+
+/*			STEP 2			*/
+                String str = "CLEAR GRAPH <http://test1>";
+                VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, set);
+                vur.exec();
+
+                str = "INSERT INTO GRAPH <http://test1> { <http://aa> <http://bb> 'cc' . <http://aa1> <http://bb> 123. }";
+                vur = VirtuosoUpdateFactory.create(str, set);
+                vur.exec();
+
+
+/*		Select all data in virtuoso	*/
+		Query sparql = QueryFactory.create("SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
+		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		ResultSet results = vqe.execSelect();
+                System.out.println("\nSELECT results:");
+		while (results.hasNext()) {
+			QuerySolution rs = results.nextSolution();
+		    RDFNode s = rs.get("s");
+		    RDFNode p = rs.get("p");
+		    RDFNode o = rs.get("o");
+		    System.out.println(" { " + s + " " + p + " " + o + " . }");
+		}
+
+		sparql = QueryFactory.create("DESCRIBE <http://aa> FROM <http://test1>");
+		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+
+		Model model = vqe.execDescribe();
+ 	        Graph g = model.getGraph();
+                System.out.println("\nDESCRIBE results:");
+	        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();)
+	           {
+	              Triple t = (Triple)i.next();
+		      System.out.println(" { " + t.getSubject() + " " +
+		      				 t.getPredicate() + " " +
+		      				 t.getObject() + " . }");
+	        }
+
+
+
+		sparql = QueryFactory.create("CONSTRUCT { ?x <http://test> ?y } FROM <http://test1> WHERE { ?x <http://bb> ?y }");
+		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+
+		model = vqe.execConstruct();
+ 	        g = model.getGraph();
+                System.out.println("\nCONSTRUCT results:");
+	        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();)
+	           {
+	              Triple t = (Triple)i.next();
+		      System.out.println(" { " + t.getSubject() + " " +
+		      				 t.getPredicate() + " " +
+		      				 t.getObject() + " . }");
+	        }
+
+
+		sparql = QueryFactory.create("ASK FROM <http://test1> WHERE { <http://aa> <http://bb> ?y }");
+		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+
+		boolean res = vqe.execAsk();
+                System.out.println("\nASK results: "+res);
+
+
+	}
+}
+]]></programlisting>
+    </sect4>
     </sect3>
     <sect3 id="rdfnativestorageprovidersjenajavadoc"><title>Javadoc API Documentation</title>
     <para><ulink url="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
     </para>
     </sect3>
   </sect2>
-  <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame 2 RDF Data Provider</title>
-    <para>The Virtuoso Sesame 2 RDF Data Provider enables Semantic Web applications written using the Sesame RDF Frameworks to query the Virtuoso RDF Quad store directly.
-The Provider has been tested against the <ulink url="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</ulink> version currently available.
+  <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame Provider</title>
+    <sect3 id="rdfnativestorageproviderssesamewhatis"><title>What is Sesame</title>
+      <para>Sesame is an open source Java framework for storing, querying and reasoning
+with RDF and RDF Schema. It can be used as a database for RDF and RDF Schema, or as a Java
+library for applications that need to work with RDF internally. For example, suppose you need
+to read a big RDF file, find the relevant information for your application, and use that information.
+Sesame provides you with the necessary tools to parse, interpret, query and store all this information,
+embedded in your own application if you want, or, if you prefer, in a separate database or even on a remote
+server. More generally: Sesame provides an application developer a toolbox that contains useful hammers
+screwdrivers etc. for doing 'Do-It-Yourself' with RDF.
+      </para>
+    </sect3>
+    <sect3 id="rdfnativestorageproviderssesamewhatisvirtuososesameprovider"><title>What is the Virtuoso Sesame Provider</title>
+    <para>The Virtuoso Sesame Provider is a fully oprerational Native Graph Model Storage Providers
+for the Sesame Framework, allowing users of Virtuoso to leverage the Sesame framework for modifying,
+querying, and reasoning with the Virtuoso quad store using the Java language. The Sesame Repository
+API offers a central access point for connecting to the Virtuoso quad store. Its purpose is to
+provides a java-friendly access point to Virtuoso. It offers various methods for querying and
+updating the data, while abstracting the details of the underlying machinery. The Provider has
+been tested against the <ulink url="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</ulink> version currently available.
     </para>
     <figure id="rdfnativestorageprovidersjena1" float="1">
-      <title>Virtuoso Sesame 2 RDF Data Provider</title>
+      <title>Fig. 1 Sesame Component Stack</title>
       <graphic fileref="ui/VirtSesame2Provider.png"/>
     </figure>
-    <sect3 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
-    <itemizedlist mark="bullet">
-      <listitem>The Virtuoso Sesame 2 Provider packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virt_sesame2.jar">virt_sesame2.jar</ulink></listitem>
-      <listitem>The Virtuoso JDBC Driver packaged as a JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
-      <listitem>The Sesame and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/sesame2jars.zip">sesame2jars.zip</ulink></listitem>
-      <listitem>The sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtsesame2samples.zip">virtsesame2samples.zip</ulink></listitem>
-    </itemizedlist>
+    <para>If you need more information about how to set up your environment for working with the
+Sesame APIs, take a look at Chapter 4 of the Sesame User Guide, <ulink url="http://www.openrdf.org/doc/sesame2/users/RDF">Setting up to use the Sesame libraries</ulink>.
+    </para>
     </sect3>
-    <sect3 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Jena Sample Programs</title>
+    <sect3 id="rdfnativestorageproviderssesamesetup"><title>Setup</title>
+    <sect4 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
+    <para>This tutorial assumes you have Virtuoso server installed and that the database
+is accessible at "localhost:1111". In addition, you will need the latest version of the
+Virtuoso Sesame Provider, and Sesame 2 or greater installed.
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>Virtuoso Sesame 2 Provider JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virt_sesame2.jar">virt_sesame2.jar</ulink></listitem>
+      <listitem>The Virtuoso JDBC Driver JAR file, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtjdbc3.jar">virtjdbc3.jar</ulink></listitem>
+      <listitem>Sesame Framework and associated classes, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/sesame2jars.zip">sesame2jars.zip</ulink></listitem>
+      <listitem>Sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtsesame2samples.zip">virtsesame2samples.zip</ulink></listitem>
+    </itemizedlist>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Jena Sample Programs</title>
     <orderedlist>
       <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
     <itemizedlist mark="bullet">
@@ -7204,8 +7908,8 @@ Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" 
 ]]></programlisting>
       </listitem>
     </orderedlist>
-    </sect3>
-    <sect3 id="rdfnativestorageproviderssesametesting"><title>Compiling Jena Sample Programs</title>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesametesting"><title>Testing</title>
     <orderedlist>
       <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
     <itemizedlist mark="bullet">
@@ -7321,9 +8025,383 @@ PASSED:18 FAILED:0
 ]]></programlisting>
       </listitem>
     </orderedlist>
+    </sect4>
+    </sect3>
+    <sect3 id="rdfnativestorageproviderssesamegettingstarted"><title>Getting Started</title>
+    <para>This section covers the essentials for connecting to and manipulating data stored in
+a Virtuoso repository using the Sesame API. More information on the Sesame Framework, including
+extended examples on how to use the API, can be found in Chapter 8 of the Sesame User’s guide,
+<ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/users/ch08.html#d0e833">the RepositoryConnection API</ulink>.
+    </para>
+    <para>The interfaces for the Repository API can be found in packages virtuoso.sesame2.driver
+and org.openrdf.repository. Several implementations for these interface exist in the
+Virtuoso Provider download package.
+The <ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/apidocs/">Javadoc reference for the Sesame API</ulink>
+is available online and can also be found in the doc directory of the download.
+    </para>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartedcrrep"><title>Creating a VirtuosoRepositoryRDF object</title>
+      <para>The first step to connecting to Virtuoso through the Sesame API is to create a
+Repository for it. The Repository object operates on (stacks of) Sail object(s) for storage
+and retrieval of RDF data.
+      </para>
+      <para>One of the simplest configurations is a repository that just stores RDF data in main
+memory without applying any inference or whatsoever. This is also by far the fastest type of
+repository that can be used. The following code creates and initialize a non-inferencing main-memory
+repository:
+      </para>
+<programlisting><![CDATA[
+import virtuoso.sesame2.driver.VirtuosoRepository;
+
+Repository myRepository = VirtuosoRepositoryRDF?("jdbc:virtuoso://localhost:1111”,”dba”,”dba”);
+
+myRepository.initialize();
+]]></programlisting>
+      <para>The constructor of the VirtuosoRepositoryRDF class accepts the JDBC URL of the Virtuoso
+engine (the default port is 1111), the username and password of an authorized user. Following this
+example, the repository needs to be initialized to prepare the Sail(s) that it operates on, which
+includes operations such as restoring previously stored data, setting up connections to a relational
+database, etc.
+      </para>
+      <para>The repository that is created by the above code is volatile: its contents are lost
+when the object is garbage collected or when the program is shut down. This is fine for cases where,
+for example, the repository is used as a means for manipulating an RDF model in memory. Using the
+Virtuoso repository with RepositoryConnecton.
+      </para>
+      <para>Now that we have created a VirtuosoRepositoryRDF, we want to do something with it.
+This is achieved through the use of the VirtuosoRepositoryConnection, which can be created by
+the VirtuosoRepositoryRDF.
+      </para>
+      <para>A VirtuosoRepositoryConnection represents - as the name suggests - a connection
+to the actual Virtuoso quad store. We can issue operations over this connection, and close it
+when we are done to make sure we are not keeping resources unnecessarily occupied.
+      </para>
+      <para>In the following sections, we will show some examples of basic operations
+using the Northwind dataset.
+      </para>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartedrdfvirt"><title>Adding RDF to Virtuoso</title>
+      <para>The Repository implements the Sesame Repository API offers various methods for adding
+data to a repository. Data can be added pro grammatically by specifying the location of a file
+that contains RDF data, and statements can be added individually or in collections.
+      </para>
+      <para>We perform operations on the repository by requesting a RepositoryConnection from
+the repository, which returns a VirtuosoRepositoryConnection object. On this VirtuosoRepositoryConnection
+object we can perform the various operations, such as query evaluation, getting, adding, or removing
+statements, etc.
+      </para>
+      <para>The following example code adds two files, one local and one located on the WWW, to a repository:
+      </para>
+<programlisting><![CDATA[
+import org.openrdf.repository.RepositoryException;
+
+import org.openrdf.repository.Repository;
+
+import org.openrdf.repository.RepositoryConnection;
+
+import org.openrdf.rio.RDFFormat;
+
+import java.io.File;
+
+import java.net.URL;
+
+File file = new File("/path/to/example.rdf");
+
+String baseURI = "http://example.org/example/localRDF";
+
+?
+
+try {
+
+   RepositoryConnection con = myRepository.getConnection();
+
+   try {
+
+      con.add(file, baseURI, RDFFormat.RDFXML);
+
+      URL url = new URL("http://example.org/example/remoteRDF");
+
+      con.add(url, url.toString(), RDFFormat.RDFXML);
+
+   }
+
+   finally {
+
+      con.close();
+
+   }
+
+}
+
+catch (RepositoryException rex) {
+
+   // handle exception
+
+}
+
+catch (java.io.IOEXception e) {
+
+   // handle io exception
+
+}
+]]></programlisting>
+      <para>More information on other available methods can be found in the javadoc
+reference of the RepositoryConnection interface.
+      </para>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartedqr"><title>Querying Virtuoso</title>
+      <para>The Repository API has a number of methods for creating and evaluating queries.
+Three types of queries are distinguished: tuple queries, graph queries and boolean queries.
+The query types differ in the type of results that they produce.
+      </para>
+      <para><emphasis>Select Query:</emphasis> The result of a select query is a set of tuples
+(or variable bindings), where each tuple represents a solution of a query. This type of query
+is commonly used to get specific values (URIs, blank nodes, literals) from the stored RDF data.
+The method QueryFactory.executeQuery() returns a Value[][] for sparql "SELECT" queries.
+The method QueryFactory.executeQuery() also calls the QueryFactory.setResult() which populates
+a set of tuples for SPARQL "SELECT" queries. The graph can be retrieved using
+QueryFactory.getBooleanResult().
+      </para>
+      <para><emphasis>Graph Query:</emphasis> The result of graph queries is an RDF graph
+(or set of statements). This type of query is very useful for extracting sub-graphs from
+the stored RDF data, which can then be queried further, serialized to an RDF document,
+etc. The method QueryFactory.executeQuery() calls the QueryFactory.setGraphResult()
+which populates a graph for SPARQL "DESCRIBE" and "CONSTRUCT" queries. The graph can
+be retrieved using QueryFactory.getGraphResult().
+      </para>
+      <para><emphasis>Boolean Query:</emphasis> The result of boolean queries is a simple
+boolean value, i.e. true of false. This type of query can be used to check if a repository
+contains specific information. The method QueryFactory.executeQuery() calls the
+QueryFactory.setBooleanResult() which sets a boolean value for sparql "ASK" queries.
+The value can be retrieved using QueryFactory.getBooleanResult().
+      </para>
+      <para>Note: Although Sesame 2 currently supports two query languages: SeRQL and SPARQL,
+the Virtuoso provider only supports the W3C SPARQL specification.
+      </para>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartevq"><title>Evaluating a SELECT Query</title>
+      <para>To evaluate a tuple query we simply do the following:
+      </para>
+<programlisting><![CDATA[
+import java.util.List;
+
+import org.openrdf.OpenRDFException;
+
+import org.openrdf.repository.RepositoryConnection;
+
+import org.openrdf.query.TupleQuery;
+
+import org.openrdf.query.TupleQueryResult;
+
+import org.openrdf.query.BindingSet;
+
+import org.openrdf.query.QueryLanguage;
+
+?
+
+try {
+
+   RepositoryConnection? con = myRepository.getConnection();
+
+   try {
+
+      String queryString = "SELECT x, y FROM  WHERE {x} p {y}";
+
+      TupleQuery? tupleQuery = con.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+
+      TupleQueryResult? result = tupleQuery.evaluate();
+
+      try {
+
+         ? // do something with the result
+
+      }
+
+      finally {
+
+         result.close();
+
+      }
+
+   }
+
+   finally {
+
+      con.close();
+
+   }
+
+}
+
+catch (RepositoryException? e) {
+
+   // handle exception
+
+}
+]]></programlisting>
+      <para>This evaluates a SPARQL query and returns a TupleQueryResult, which consists of a
+sequence of BindingSet objects. Each BindingSet contains a set of pairs called Binding objects.
+A Binding object represents a name/value pair for each variable in the query’s projection.
+      </para>
+      <para>We can use the TupleQueryResult to iterate over all results and get each individual
+result for x and y:
+      </para>
+<programlisting><![CDATA[
+while (result.hasNext()) {
+
+   BindingSet bindingSet = result.next();
+
+   Value valueOfX = bindingSet.getValue("x");
+
+   Value valueOfY = bindingSet.getValue("y");
+
+   // do something interesting with the query variable values here?
+
+}
+]]></programlisting>
+      <para>As you can see, we retrieve values by name rather than by an index. The names used
+should be the names of variables as specified in your query. The TupleQueryResult.getBindingNames()
+method returns a list of binding names, in the order in which they were specified in the query.
+To process the bindings in each binding set in the order specified by the projection, you can do
+the following:
+      </para>
+<programlisting><![CDATA[
+List bindingNames = result.getBindingNames();
+
+while (result.hasNext()) {
+
+   BindingSet bindingSet = result.next();
+
+   Value firstValue = bindingSet.getValue(bindingNames.get(0));
+
+   Value secondValue = bindingSet.getValue(bindingNames.get(1));
+
+   // do something interesting with the values here?
+
+}
+]]></programlisting>
+      <para>It is important to invoke the close() operation on the TupleQueryResult, after we are
+done with it. A TupleQueryResult evaluates lazily and keeps resources (such as connections to
+the underlying database) open. Closing the TupleQueryResult frees up these resources. Do not
+forget that iterating over a result may cause exceptions! The best way to make sure no connections
+are kept open unnecessarily is to invoke close() in the finally clause.
+      </para>
+      <para>An alternative to producing a TupleQueryResult is to supply an object that implements
+the TupleQueryResultHandler interface to the query's evaluate() method. The main difference is that
+when using a return object, the caller has control over when the next answer is retrieved, whereas
+with the use of a handler, the connection simply pushes answers to the handler object as soon as it
+has them available.
+      </para>
+      <para>As an example we will use SPARQLResultsXMLWriter, which is a TupleQueryResultHandler
+implementation that writes SPARQL Results XML documents to an output stream or to a writer:
+      </para>
+<programlisting><![CDATA[
+import org.openrdf.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
+
+?
+
+FileOutputStream out = new FileOutputStream("/path/to/result.srx");
+
+try {
+
+   SPARQLResultsXMLWriter sparqlWriter = new SPARQLResultsXMLWriter(out);
+
+   RepositoryConnection con = myRepository.getConnection();
+
+   try {
+
+      String queryString = "SELECT * FROM  WHERE {x} p {y}";
+
+      TupleQuery tupleQuery = con.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+
+      tupleQuery.evaluate(sparqlWriter);
+
+   }
+
+   finally {
+
+      con.close();
+
+   }
+
+}
+
+finally {
+
+   out.close();
+
+}
+]]></programlisting>
+      <para>You can just as easily supply your own application-specific implementation of
+TupleQueryResultHandler though.
+      </para>
+      <para>Lastly, an important warning: as soon as you are done with the RepositoryConnection
+object, you should close it. Notice that during processing of the TupleQueryResult object
+(for example, when iterating over its contents), the RepositoryConnection should still be open.
+We can invoke con.close() after we have finished with the result.
+      </para>
+    </sect4>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartevcnq"><title>Evaluating a CONSTRUCT query</title>
+      <para>The following code evaluates a graph query on a repository:
+      </para>
+<programlisting><![CDATA[
+import org.openrdf.query.GraphQueryResult;
+
+GraphQueryResult graphResult = con.prepareGraphQuery(
+
+      QueryLanguage.SPARQL, "CONSTRUCT * FROM {x} p {y}").evaluate();
+]]></programlisting>
+      <para>A GraphQueryResult is similar to TupleQueryResult in that is an object that iterates
+over the query results. However, for graph queries the query results are RDF statements, so a
+GraphQueryResult iterates over Statement objects:
+      </para>
+<programlisting><![CDATA[
+while (graphResult.hasNext()) {
+
+   Statement st = graphResult.next();
+
+   // ? do something with the resulting statement here.
+
+
+}
+]]></programlisting>
+      <para>The TupleQueryResultHandler equivalent for graph queries is org.openrdf.rio.RDFHandler.
+Again, this is a generic interface, each object implementing it can process the reported RDF statements
+in any way it wants.
+      </para>
+      <para>All writers from Rio (such as the RDFXMLWriter, TurtleWriter, TriXWriter, etc.) implement
+the RDFHandler interface. This allows them to be used in combination with querying quite easily. In
+the following example, we use a TurtleWriter to write the result of a SPARQL graph query to standard
+output in Turtle format:
+      </para>
+<programlisting><![CDATA[
+import org.openrdf.rio.turtle.TurtleWriter;
+
+?
+
+RepositoryConnection con = myRepository.getConnection();
+
+try {
+
+   TurtleWriter turtleWriter = new TurtleWriter(System.out);
+
+   con.prepareGraphQuery(QueryLanguage.SPARQL, "CONSTRUCT * FROM  WHERE {x} p {y}").evaluate(turtleWriter);
+
+}
+
+finally {
+
+   con.close();
+
+}
+]]></programlisting>
+      <para>Again, note that as soon as we are done with the result of the query (either after iterating over the contents of the GraphQueryResult or after invoking the RDFHandler),
+we invoke con.close() to close the connection and free resources.
+      </para>
+    </sect4>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamejavadoc"><title>Javadoc API Documentation</title>
-    <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
+    <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink>
+is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
     </para>
     </sect3>
   </sect2>

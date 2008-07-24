@@ -4523,7 +4523,7 @@ Admin User Interface or a collection of Virtuoso Stored Procedure Language (PL)-
 <itemizedlist>
 <listitem>Assuming you are using the local demonstration database, load http://localhost:8890/conductor
 into your browser, and then proceed through the Conductor as follows:</listitem>
-<listitem>Click the "WebDAV &amp; HTTP", and "HTTP Hosts &amp; Directories" tabs</listitem>
+<listitem>Click the "Web Application Server", and "Virtual Domains &amp; Directories" tabs</listitem>
 <listitem>Pick the domain that contains the virtual directories to which the rules are to be applied
 (in this case the default was taken)</listitem>
 <listitem>Click on the "URL-rewrite" link to create, delete, or edit a rule as shown below:</listitem>
@@ -4788,8 +4788,8 @@ DB.DBA.HTTP_VARIANT_REMOVE (
 </sect3>
 <sect3 id="urlrewritetransperantcontentserveconfgconductor"><title>Configuration using Conductor UI</title>
 <para>The Conductor 'Content negotiation' panel for describing resource variants and configuring
-content negotiation is depicted below. It can be reached by selecting the 'HTTP Hosts &amp; Directories'
-tab under the 'WebDAV &amp; HTTP' menu item, then selecting the 'URL rewrite' option for a logical path
+content negotiation is depicted below. It can be reached by selecting the 'Virtual Domains &amp; Directories'
+tab under the 'Web Application Server' menu item, then selecting the 'URL rewrite' option for a logical path
 listed amongst those for the relevant HTTP host, e.g. '{Default Web Site}'</para>
 <para>The input fields reflect the supported 'dimensions' of negotiation which include content type,
 language and encoding. Quality values corresponding to the options for 'Source Quality' are as follows:</para>

@@ -43,7 +43,7 @@ server which include content in DAV and under VSP.
         <figure float="1"><title>DAV Resource Types</title>
           <graphic fileref="ui/dav_resrctyp_01.png"/></figure>
 		<para>
-The WebDAV &amp; HTTP/WebDAV Content Management/Resource Types page shows the list of currently
+The Web Application Server/Content Management/Resource Types page shows the list of currently
 defined resource types in the Virtuoso server. You can edit or remove these types by using the
 action links on the right most column of the list next to the type applicable.
 </para>
@@ -63,7 +63,7 @@ Add new types by typing the details into the fields provided and pressing the <e
   the current login name.  The root of the repository is usually 
   <code>/DAV/</code>.</para>
 
-        <figure float="1"><title>WebDAV Content Management</title>
+        <figure float="1"><title>Content Management</title>
           <graphic fileref="webdav.png"/></figure>
 
   <sect3 id="davcontresnames"><title>Resource Names</title>

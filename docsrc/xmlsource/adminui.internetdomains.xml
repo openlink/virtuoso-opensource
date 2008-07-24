@@ -26,7 +26,7 @@
 
 	<sect2 id="httpvirtualdirs">
 		<title>HTTP Virtual Directories</title>
-	<para>From HTTP Hosts &amp; Directories you can define Virtual HTTP directories. Virtual Directories
+	<para>From Virtual Domains &amp; Directories you can define Virtual HTTP directories. Virtual Directories
   let you define multiple HTTP server listeners in Virtuoso for either the same 
   network interface or another one.  Virtual directories can respond logically 
   to a name or directly by IP address.  Both types as well as default responses 
@@ -158,7 +158,7 @@ CR-escape=yes;
   ]]></programlisting>
   <para>Install the Conductor package</para>
   <para>Go to http://host:port/conductor and login as dba user.</para>
-  <para>Go to WebDAV &amp; HTTP -> HTTP Hosts &amp; Directories.</para>
+  <para>Go to Web Application Server -> Virtual Domains &amp; Directories.</para>
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir011.png"/></figure>
   <para>For your {Default Web Site} click the link "New Directory".</para>

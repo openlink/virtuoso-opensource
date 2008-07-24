@@ -160,7 +160,7 @@
   <para>To allow XML template execution from a Virtuoso virtual directory and
   it's descendants the special option: 'xml_templates' must be used in the virtual
   directory definition.  This option can be set from the
-  <link linkend="httpvirtualdirs">Conductor / WebDAV &amp; HTTP / HTTP Hosts &amp; Directories</link> or from
+  <link linkend="httpvirtualdirs">Conductor / Web Application Server / Virtual Domains &amp; Directories</link> or from
   SQL (or ISQL) using the <link linkend="fn_vhost_define"><function>vhost_define(.... , opts=>vector('xml_templates', 'yes'));</function></link> function.  In the usual
   way, the SQL user specified for VSP execution within the virtual directory
   definition will be used for executing the templates within such web
@@ -193,7 +193,7 @@
   <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+  <para>First we will make a new WebDAV directory. From Web Application Server / Content Management
 / Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
 "Owner" dav and click the "Create" button.</para>
 
@@ -201,7 +201,7 @@
     <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+  that XML Templates can be executed later. Go to Web Application Server / Virtual Domains &amp; Directories
 and for your {Default Web Site} click the link "New Directory". In the shown form click "Next".</para>
     <figure id="xmltemplate004" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
     <graphic fileref="xmltemplate004.png"/></figure>
@@ -250,7 +250,7 @@ for example: sql-template.xml So finally the value should be <computeroutput>/DA
   <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+  <para>First we will make a new WebDAV directory. From Web Application Server / Content Management
 / Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
 "Owner" dav and click the "Create" button.</para>
 
@@ -258,7 +258,7 @@ for example: sql-template.xml So finally the value should be <computeroutput>/DA
     <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+  that XML Templates can be executed later. Go to Web Application Server / Virtual Domains &amp; Directories
 and for your {Default Web Site} click the link "New Directory". In the shown form click "Next".</para>
 
     <figure id="xmltemplate004x" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
@@ -311,7 +311,7 @@ SQL>vhost_define(lpath=>'/DAV/xmlt',
   <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+  <para>First we will make a new WebDAV directory. From Web Application Server / Content Management
 / Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
 "Owner" dav and click the "Create" button.</para>
 
@@ -319,7 +319,7 @@ SQL>vhost_define(lpath=>'/DAV/xmlt',
     <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+  that XML Templates can be executed later. Go to Web Application Server / Virtual Domains &amp; Directories
 and for your {Default Web Site} click the link "New Directory". In the shown form click "Next":</para>
 
     <figure id="xmltemplate004y" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>

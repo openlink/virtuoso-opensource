@@ -407,7 +407,7 @@ It is better to define virtual hosts and paths to the directory entries which co
       <para>This step by step example will define a virtual directory /help that will point to the directory /departments/support/</para>
       <orderedlist>
         <listitem>
-	  <para>From the Conductor UI go to WebDAV &amp; HTTP/ HTTP Hosts &amp; Directories.</para>
+	  <para>From the Conductor UI go to Web Application Server/ Virtual Domains &amp; Directories.</para>
 	  <figure id="virtdir1" float="1">
 	    <title>Http Hosts and Directories</title>
 	    <graphic fileref="ui/virtdir1.png" />
@@ -474,7 +474,7 @@ same IP address of the a.com that is hosting a Virtuoso server.
            </para>
 	</listitem>
         <listitem>
-	  <para>From the Conductor UI go to WebDAV &amp; HTTP/ HTTP Hosts &amp; Directories.</para>
+	  <para>From the Conductor UI go to Web Application Server/ Virtual Domains &amp; Directories.</para>
 	  <figure id="qsvirtdir1" float="1">
 	    <title>Http Hosts and Directories.</title>
 	    <graphic fileref="ui/virtdir1.png" />
@@ -732,7 +732,7 @@ or <emphasis>None</emphasis>. Also you can specify <emphasis>Return Type</emphas
 
   <sect3 id="qstexpwsvirtdir"><title>Defining Virtual Directories</title>
       <para>Before any procedures native or linked can be exposed as SOAP Services a location in
-HTTP space must be defined. From Conductor <emphasis>WebDAV &amp; HTTP/HTTP Hosts &amp; Directories</emphasis>
+HTTP space must be defined. From Conductor <emphasis>Web Application Server/Virtual Domains &amp; Directories</emphasis>
 you make a new URL Mappings. Click on the <emphasis>New Directory</emphasis> link for the
 {Default Web Site} line to begin defining a new SOAP mapping.
       </para>
@@ -771,7 +771,7 @@ Pl Modules, User Defined Types, or Saved Queries.
   <sect3 id="qstexpspublishbtn"><title>Publishing Procedures to a Virtual Directory</title>
       <para>If you already have a virtual directory defined and know what procedures you want to expose
 as web services you will have to repeat some of the steps in the section above. From Conductor go to
-<emphasis>WebDAV &amp;HTTP/HTTP Hosts &amp; Directories</emphasis>. Click on the "folder" icon for your
+<emphasis>Web Application Server/Virtual Domains &amp; Directories</emphasis>. Click on the "folder" icon for your
 {Default Web Site}. You will find the list of previously existing mappings, from which you can select
 the mapping that you want to edit by pressing on its <emphasis>Edit</emphasis> link. Note, the virtual
 directory should have type "SOAP".

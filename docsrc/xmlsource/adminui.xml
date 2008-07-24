@@ -59,10 +59,10 @@ administrate views, tables, stored procedures, trigger definitions, user define 
 		<title>Database Administration</title>
 		<graphic fileref="database.png"/>
 	</figure>
-<para>From "WebDAV &amp;HTTP Directories" you can configure Virtuoso's WebDAV, and HTTP
-Server functionality, which includes management of HTTP Hosts &amp; Directories.</para>
+<para>From "Web Application Server" you can configure Virtuoso's WebDAV, and HTTP
+Server functionality, which includes management of Virtual Domains &amp; Directories.</para>
 	<figure id="adminuiwebdav" float="1">
-		<title>WebDAV &amp; HTTP Administration</title>
+		<title>Web Application Server Administration</title>
 		<graphic fileref="webdav.png"/>
 	</figure>
 <para>From "XML" you can query Relational and XML Data using SQL, XQUERY, XPATH, and FREE TEXT.</para>
