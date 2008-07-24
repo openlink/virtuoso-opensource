@@ -5757,19 +5757,20 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char tmp [4096];
       int rd = 0;
       strses_enable_paging (cnt, http_ses_size);
-      CATCH_READ_FAIL (ses)
-	{
 	  for (;;)
 	    {
-	      rd = dks_read_line (ses, tmp, sizeof (tmp));
+	  rd = 0;
+	  CATCH_READ_FAIL (ses)
+	    {
+	      session_buffered_read_n (ses, tmp, sizeof (tmp), &rd);
+	    }
+	  END_READ_FAIL (ses);
 	      if (rd < 1)
 		break;
 	      session_buffered_write (cnt, tmp, rd);
 	      tcpses_check_disk_error (cnt, qst, 1);
 	    }
 	  session_flush_1 (cnt);
-	}
-      END_READ_FAIL (ses);
       if (!STRSES_CAN_BE_STRING (cnt))
 	res = (caddr_t) cnt;
       else
