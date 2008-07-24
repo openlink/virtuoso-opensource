@@ -297,6 +297,8 @@ OAT.Anchor.closeOnBlur = function() {
 	OAT.Dom.attach(document.getElementsByTagName('html')[0], "click", function(event) {
 	if (!OAT.AnchorData.closeOnBlur) return;
 	var checkIfClickedOutside = function(elem) {
+		if (!elem)
+			return false;
 		if (elem.tagName=='BODY' || elem.tagName=='HTML' || !elem.className.match)
 			return true;
 		if (elem.className.match(/^oat_win.+_container$/)) {
