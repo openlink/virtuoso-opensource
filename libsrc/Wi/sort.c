@@ -495,7 +495,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	  inst[brk->brk_current_slot] = (caddr_t) 0;
 	  if (n_total > n_per_set)
 	    SRC_IN_STATE ((data_source_t *) brk, inst) = inst;
-	  if (qst_get (inst, brk->brk_all_output[n_per_set - 1]))
+	  if (unbox (qst_get (inst, brk->brk_all_output[n_per_set - 1])))
 	    qn_send_output ((data_source_t *) brk, inst);
 	  state = NULL;
 	  continue;
@@ -507,7 +507,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	SRC_IN_STATE ((data_source_t*) brk, inst) = NULL;
       if (current == n_total)
 	return;
-      if (qst_get (inst, brk->brk_all_output[current + n_per_set - 1]))
+      if (unbox (qst_get (inst, brk->brk_all_output[current + n_per_set - 1])))
 	{
 	  for (inx = 0; inx < n_per_set; inx++)
 	    {
