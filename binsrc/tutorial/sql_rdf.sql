@@ -353,21 +353,21 @@ create procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV()
 {
   declare content1, urihost varchar;
   whenever not found goto none;
-  select cast (RES_CONTENT as varchar) into content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/tutorial/sql/tutorial.owl';
+  select cast (RES_CONTENT as varchar) into content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/tutorial/tutorial.owl';
   DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/tutorial#', 'http://demo.openlinksw.com/schemas/TutOntology/1.0/');
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   if (urihost = 'demo.openlinksw.com')
   {
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/sql/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/sql/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
   }
   none:
   ;
 };
 
---DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV();
+DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV();
 
 drop procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV;
 
@@ -375,15 +375,15 @@ create procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV2()
 {
   declare urihost varchar;
  whenever not found goto none;
-  sparql base <http://demo.openlinksw.com/schemas/tutorial#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/tutorial/sql/tutorial.owl")
+  sparql base <http://demo.openlinksw.com/schemas/tutorial#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/tutorial/tutorial.owl")
    into graph <http://demo.openlinksw.com/schemas/TutOntology/1.0/>;
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   if (urihost = 'demo.openlinksw.com')
   {
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/sql/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/sql/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
   }
   none:
   ;
