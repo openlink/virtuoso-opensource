@@ -11,6 +11,7 @@ VAD_INSTALL ('rdf_mappers_dav.vad');
 registry_set ('__sparql_sponge_use_w3c_xslt', 'off');
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
 
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/xmlWithGrddlAttribute.xml>
