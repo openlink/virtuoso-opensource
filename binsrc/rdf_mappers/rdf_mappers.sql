@@ -2289,7 +2289,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_ori
   if (xpath_eval ('/RDF', xt) is not null and content is not null)
     {
       xd := content;
-      mdta := mdta + 1;
+      mdta := 1;
       goto ins_rdf;
     }
   else if (xpath_eval ('/feed', xt) is not null)
@@ -2305,13 +2305,13 @@ create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_ori
 
   if (xpath_eval ('count(/RDF/*)', xd) > 0)
     {
-      mdta := mdta + 1;
+      mdta := 1;
     }
   xd := serialize_to_UTF8_xml (xd);
 --  string_to_file ('feed1.rdf', xd, -2);
 ins_rdf:
   --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
+  mdta := DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
 no_feed:
 
   declare ord, mime any;
@@ -2344,8 +2344,9 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
   xd := serialize_to_UTF8_xml (xd);
 --  string_to_file ('feed2.rdf', xd, -2);
   DB.DBA.RDF_LOAD_RDFXML (xd, iri, graph_iri);
+  return 1;
   no_sioc:
-  return;
+  return 0;
 }
 ;
 

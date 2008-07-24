@@ -121,6 +121,10 @@
 
 <xsl:template match="content:encoded">
     <sioc:content><xsl:apply-templates/></sioc:content>
+    <xsl:variable name="doc" select="document-literal (.,$base,2)"/>
+    <xsl:for-each select="$doc//a[@href]">
+	<sioc:links_to rdf:resource="{@href}"/>
+    </xsl:for-each>
 </xsl:template>
 
 <xsl:template match="dc:creator">
