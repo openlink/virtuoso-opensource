@@ -1817,7 +1817,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 		}
 
 	      /* Check for queue name */
-	      if ((sep = strrchr (value, '=')) != NULL)
+	      if ((sep = strrchr (value, '=')) != NULL || (sep = strrchr (value, ':')) != NULL)
 		{
 		  s_ioq = (char *) ltrim ((const char *) (sep + 1));
 		  *sep = '\0';
