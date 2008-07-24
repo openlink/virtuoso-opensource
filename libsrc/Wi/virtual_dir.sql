@@ -823,7 +823,7 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
     {
       if (lower (force) = 'rdf')
 	{
-	  declare params, defs any;
+	  declare params, defs, host, pref any;
 	  params := http_param ();
 	  defs := '';
 	  for (declare i,l int, i := 0, l := length (params); i < l; i := i + 2)
@@ -856,6 +856,10 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	    login := concat ('define get:login "', login, '" ');
 	  else
 	    login := '';
+	  host := http_request_header(http_request_header(), 'Host', null, null);
+	  pref := 'http://'||host||http_map_get ('domain')||'/rdf/';
+	  if (url like pref || '%')
+	    url := subseq (url, length (pref));
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');
 	  url := replace (url, '<', '%3C');
