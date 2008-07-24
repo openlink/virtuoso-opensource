@@ -40,6 +40,7 @@ class VirtuosoInputStream extends BufferedInputStream
 {
    // The connection attached to this stream
    private VirtuosoConnection connection;
+   private byte[] tmp = new byte[16];
 
    // -------------------- A new BufferedInputStream design -----------------
    // Some methods used to design a InputBufferedStream without
@@ -353,10 +354,10 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readlongint();
                      byte[] array = new byte[(int)n];
                      for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
-                     res = new String(array, "UTF8");
+                     return convByte2UTF(array);
                      //System.out.print("DV_LONG_WIDE: ");
 		     //System.out.println (res.toString());
-                     return res;
+                     //return res;
                    }
 
              case VirtuosoTypes.DV_WIDE:
@@ -371,14 +372,14 @@ class VirtuosoInputStream extends BufferedInputStream
 		      // else
 			// System.err.print ((256 + array[i]) + " ");
 		     //System.err.println ();
-                     res = new String(array, "UTF8");
+		     return convByte2UTF(array);
 		     //System.err.println ("UTF16 len=" + ((String)res).length());
 		     //for (int i = 0; i < ((String)res).length(); i++)
 		     //  System.err.print (((int) ((String)res).charAt(i)) + " ");
 		     //System.err.println ();
                      //System.out.print("DV_WIDE: ");
 		     //System.out.println (res.toString());
-                     return res;
+                     //return res;
                    }
 
              case VirtuosoTypes.DV_C_STRING:
@@ -390,12 +391,12 @@ class VirtuosoInputStream extends BufferedInputStream
                      byte[] array = new byte[(int)n];
                      for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
 		     if (connection.charset_utf8)
-			 res = new String(array, "UTF-8");
+		         return convByte2UTF(array);
 		     else
-                     res = new String(array, "8859_1");
+		         return convByte2Ascii(array);
                      //System.out.print("DV_LONG_STRING: ");
 		     //System.out.println (res.toString());
-                     return res;
+                     //return res;
                    }
 	     case VirtuosoTypes.DV_BOX_FLAGS:
 		   {
@@ -424,12 +425,12 @@ class VirtuosoInputStream extends BufferedInputStream
                      byte[] array = new byte[n];
                      for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
 		     if (connection.charset_utf8)
-			 res = new String(array, "UTF-8");
+		         return convByte2UTF(array);
 		     else
-                     res = new String(array, "8859_1");
+		         return convByte2Ascii(array);
                      //System.out.print("DV_SHORT_STRING_SERIAL: " + res.toString());
 		     //System.out.println (res.toString());
-                     return res;
+                     //return res;
                    }
 
              case VirtuosoTypes.DV_BIN:
@@ -561,7 +562,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_IRI_ID_8:
              case VirtuosoTypes.DV_INT64:
                    {
-                     res = new Long((((long)readlongint() << 32) & 0xffffffff00000000L) | (readlongint() & 0xffffffffL));
+                     res = new Long(readlong());
                      return res;
                    }
 	     case VirtuosoTypes.DV_RDF:		   
@@ -590,6 +591,77 @@ class VirtuosoInputStream extends BufferedInputStream
        }
    }
 
+   private final String convByte2UTF(byte[] data) throws IOException {
+        int utflen = data.length;
+        char[] c_arr = new char[utflen];
+
+        int c, c2, c3;
+        int count = 0;
+        int ch_count=0;
+
+        while (count < utflen) {
+            c = (int) data[count] & 0xff;      
+            if (c > 127) break;
+            count++;
+            c_arr[ch_count++]=(char)c;
+        }
+
+        while (count < utflen) {
+            c = (int) data[count] & 0xff;
+            switch (c >> 4) {
+                case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+                    /* 0xxxxxxx*/
+                    count++;
+                    c_arr[ch_count++]=(char)c;
+                    break;
+                case 12: case 13:
+                    /* 110x xxxx   10xx xxxx*/
+                    count += 2;
+                    if (count > utflen)
+                        throw new UTFDataFormatException(
+                            "malformed input: partial character at end");
+                    c2 = (int) data[count-1];
+                    if ((c2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException(
+                            "malformed input around byte " + count); 
+                    c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));  
+                    break;
+                case 14:
+                    /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                    count += 3;
+                    if (count > utflen)
+                        throw new UTFDataFormatException(
+                            "malformed input: partial character at end");
+                    c2 = (int) data[count-2];
+                    c3 = (int) data[count-1];
+                    if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                        throw new UTFDataFormatException(
+                            "malformed input around byte " + (count-1));
+                    c_arr[ch_count++]=(char)(((c & 0x0F) << 12) |
+                                                ((c2 & 0x3F) << 6)  |
+                                                ((c3 & 0x3F) << 0));
+                    break;
+                default:
+                    /* 10xx xxxx,  1111 xxxx */
+                    throw new UTFDataFormatException("malformed input around byte " + count);
+            }
+        }
+        // The number of chars produced may be less than utflen
+        return new String(c_arr, 0, ch_count);
+    }
+
+   
+   private final String convByte2Ascii(byte[] data) throws IOException {
+        int len = data.length;
+        char[] c_arr = new char[len];
+ 
+        for(int i=0; i < len; i++)
+          c_arr[i] = (char)data[i];
+
+        return new String(c_arr, 0, len);
+    }
+
+   
    /**
     * Method to read an int value depending DV_xxx_INT type.
     *
@@ -614,7 +686,11 @@ class VirtuosoInputStream extends BufferedInputStream
 
    private short readshort() throws IOException
    {
-      return (short) ( ((read() << 8) & 0xff00) | (read() & 0xff) );
+      int retVal;
+      for(int i = read(tmp,0, 2) ; i != 2 ; i+=read(tmp,i,2-i));
+
+      retVal = ((int) tmp[0] & 0xFF) << 8;
+      return (short)(retVal | ((int) tmp[1] & 0xFF));
    }
 
    /**
@@ -625,9 +701,28 @@ class VirtuosoInputStream extends BufferedInputStream
     */
    private int readlongint() throws IOException
    {
-      return (int)( ((read() << 24) & 0xff000000) |
-          ((read() << 16) & 0xff0000) | ((read() << 8) & 0xff00) |
-	  (read() & 0xff) );
+      int retVal;
+      for(int i = read(tmp,0, 4) ; i != 4 ; i+=read(tmp,i,4-i));
+
+      retVal  = ((int) tmp[0] & 0xFF) << 24;
+      retVal |= ((int) tmp[1] & 0xFF) << 16;
+      retVal |= ((int) tmp[2] & 0xFF) << 8;
+      return retVal | ((int) tmp[3] & 0xFF);
+   }
+
+   private long readlong() throws IOException
+   {
+      long retVal;
+      for(int i = read(tmp,0, 8) ; i != 8 ; i+=read(tmp,i,8-i));
+
+      retVal  = ((long) tmp[0] & 0xFF) << 56;
+      retVal |= ((long) tmp[1] & 0xFF) << 48;
+      retVal |= ((long) tmp[2] & 0xFF) << 40;
+      retVal |= ((long) tmp[3] & 0xFF) << 32;
+      retVal |= ((long) tmp[4] & 0xFF) << 24;
+      retVal |= ((long) tmp[5] & 0xFF) << 16;
+      retVal |= ((long) tmp[6] & 0xFF) << 8;
+      return retVal | ((long) tmp[7] & 0xFF);
    }
 
    /**
@@ -649,8 +744,7 @@ class VirtuosoInputStream extends BufferedInputStream
     */
    private double readdouble() throws IOException
    {
-     return Double.longBitsToDouble ((((long)readlongint() << 32) & 0xffffffff00000000L) |
-          (readlongint() & 0xffffffffL) );
+     return Double.longBitsToDouble (readlong());
    }
 
    /**
@@ -747,7 +841,7 @@ class VirtuosoInputStream extends BufferedInputStream
       if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
       {
 	if (0 != (flags & VirtuosoRdfBox.RBS_64))
-	  ro_id = (((long)readlongint() << 32) & 0xffffffff00000000L) | (readlongint() & 0xffffffffL);
+	  ro_id = readlong();
 	else
 	  ro_id = readlongint ();
       }
@@ -865,9 +959,9 @@ class VirtuosoInputStream extends BufferedInputStream
       switch(type)
       {
          case VirtuosoTypes.DT_TYPE_DATE:
-            return java.sql.Date.valueOf ((new java.sql.Date(cal_dat.getTime().getTime())).toString());
+            return new java.sql.Date(cal_dat.getTime().getTime());
          case VirtuosoTypes.DT_TYPE_TIME:
-            return java.sql.Time.valueOf ((new java.sql.Time(cal_dat.getTime().getTime())).toString());
+            return new java.sql.Time(cal_dat.getTime().getTime());
          default:
             {
                Timestamp _return = new java.sql.Timestamp(cal_dat.getTime().getTime());
