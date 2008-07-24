@@ -9415,7 +9415,7 @@ perform_actual_load:
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
       --!!! XXX: if authentication is needed then better to use http_client() instead of http_get
-      if ((old_last_etag is not null) and (explicit_refresh is null or (explicit_refresh >= 0)))
+      if (old_last_etag is not null and explicit_refresh is null)
         req_hdr := 'If-None-Match: ' || old_last_etag;
       -- content negotiation
       -- Here we tell to the remote party we want rdf in some form, if it supports content negotiation
