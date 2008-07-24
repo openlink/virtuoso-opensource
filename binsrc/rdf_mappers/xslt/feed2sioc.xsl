@@ -46,11 +46,13 @@
   xmlns:r="&rss;"
   xmlns:foaf="&foaf;"
   xmlns:atom="&atomowl;"
+  xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+  xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   version="1.0">
 
 <xsl:output indent="yes" />
 
-<xsl:variable name="base" select="/rdf:RDF/r:channel/@rdf:about"/>
+<xsl:param name="base" />
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -59,61 +61,49 @@
       <xsl:if test="not empty($users)">
       <xsl:apply-templates select="$users" mode="user"/>
       </xsl:if>
-      <xsl:apply-templates mode="atom"/>
   </rdf:RDF>
 </xsl:template>
 
 <xsl:template match="r:channel">
-    <sioc:Forum rdf:about="{@rdf:about}">
+    <sioc:Container rdf:about="{$base}#container">
+	<sioc:link rdf:resource="{@rdf:about}"/>
        <xsl:apply-templates />
-    </sioc:Forum>
-</xsl:template>
-<xsl:template match="r:channel" mode="atom">
-    <atom:Feed rdf:about="{@rdf:about}">
-	<xsl:apply-templates mode="atom"/>
-    </atom:Feed>
+	<xsl:copy-of select="geo:*"/>
+	<xsl:copy-of select="openSearch:*"/>
+    </sioc:Container>
 </xsl:template>
 
 <xsl:template match="rdf:li">
-    <sioc:container_of rdf:resource="{@rdf:resource}" />
-</xsl:template>
-
-<xsl:template match="rdf:li" mode="atom">
-    <atom:contains rdf:resource="{@rdf:resource}" />
-</xsl:template>
-
-<xsl:template match="r:title" mode="atom">
-    <atom:title><xsl:apply-templates/></atom:title>
-</xsl:template>
-
-<xsl:template match="r:description" mode="atom"/>
-<xsl:template match="r:link" mode="atom">
-    <atom:link rdf:parseType="Resource">
-	<rdf:type rdf:resource="&atomowl;Link" />
-	<atom:LinkHref><xsl:value-of select="."/></atom:LinkHref>
-	<atom:linkRel>alternate</atom:linkRel>
-    </atom:link>
+    <xsl:variable name="this" select="@rdf:resource"/>
+    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+	<xsl:if test="@rdf:resource = $this">
+	    <xsl:variable name="pos" select="position()"/>
+	</xsl:if>
+    </xsl:for-each>
+    <sioc:container_of rdf:resource="{$base}#{$pos}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
 </xsl:template>
 
 <xsl:template match="r:item">
-    <sioc:Post rdf:about="{@rdf:about}">
-	<sioc:has_container rdf:resource="{$base}"/>
+    <xsl:variable name="this" select="@rdf:about"/>
+    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+	<xsl:if test="@rdf:resource = $this">
+	    <xsl:variable name="pos" select="position()"/>
+	</xsl:if>
+    </xsl:for-each>
+    <sioc:Item rdf:about="{$base}#{$pos}">
+	<sioc:has_container rdf:resource="{$base}#container"/>
 	<xsl:apply-templates />
-    </sioc:Post>
+	<xsl:copy-of select="r:*"/>
+	<xsl:copy-of select="sioc:*"/>
+	<xsl:copy-of select="geo:*"/>
+    </sioc:Item>
 </xsl:template>
 
-<xsl:template match="r:item" mode="atom">
-    <atom:Entry rdf:about="{@rdf:about}">
-	<atom:source rdf:resource="{$base}"/>
-	<xsl:apply-templates mode="atom"/>
-    </atom:Entry>
-</xsl:template>
-
-<xsl:template match="r:title">
+<xsl:template match="r:title[. != '']">
     <dc:title><xsl:apply-templates/></dc:title>
 </xsl:template>
 
-<xsl:template match="r:description">
+<xsl:template match="r:description[. != '']">
     <dc:description><xsl:apply-templates/></dc:description>
 </xsl:template>
 
@@ -125,11 +115,7 @@
     <dct:created rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></dct:created>
 </xsl:template>
 
-<xsl:template match="dc:date" mode="atom">
-    <atom:published rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></atom:published>
-</xsl:template>
-
-<xsl:template match="dc:description">
+<xsl:template match="dc:description[. != '' ]">
     <xsl:copy-of select="."/>
 </xsl:template>
 
@@ -138,30 +124,34 @@
 </xsl:template>
 
 <xsl:template match="dc:creator">
-    <sioc:has_creator rdf:resource="{$base}#{urlify (.)}"/>
+    <foaf:maker rdf:resource="{$base}#{urlify (.)}"/>
 </xsl:template>
 
 <xsl:template match="dc:creator" mode="user">
-    <sioc:User rdf:about="{$base}#{urlify (.)}">
 	<xsl:variable name="uname" select="string(.)" />
-	<sioc:name><xsl:apply-templates/></sioc:name>
-	<xsl:for-each select="//r:item[string (dc:creator) = $uname]">
-	    <sioc:creator_of rdf:resource="{@rdf:about}"/>
-	</xsl:for-each>
-	<sioc:account_of rdf:resource="{$base}/person#{urlify (.)}"/>
-    </sioc:User>
-    <foaf:Person rdf:about="{$base}/person#{urlify (.)}">
+    <foaf:Person rdf:about="{$base}#{urlify (.)}">
 	<foaf:name><xsl:apply-templates/></foaf:name>
-	<foaf:holdsAccount rdf:resource="{$base}#{urlify (.)}"/>
+	<xsl:for-each select="//r:item[string (dc:creator) = $uname]">
+	    <xsl:variable name="this" select="@rdf:about"/>
+	    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+		<xsl:if test="@rdf:resource = $this">
+		    <xsl:variable name="pos" select="position()"/>
+		</xsl:if>
+	    </xsl:for-each>
+	    <foaf:made rdf:resource="{$base}#{$pos}"/>
+	</xsl:for-each>
     </foaf:Person>
 </xsl:template>
 
-<xsl:template match="r:*|rdf:*">
+<xsl:template match="rdf:*">
     <xsl:apply-templates />
 </xsl:template>
 
-<xsl:template match="r:*|rdf:*" mode="atom">
-    <xsl:apply-templates mode="atom"/>
+<xsl:template match="r:items">
+    <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="r:*">
 </xsl:template>
 
 <xsl:template match="text()">
@@ -170,15 +160,6 @@
 	<xsl:value-of select="$txt" />
     </xsl:if>
 </xsl:template>
-
-<xsl:template match="text()" mode="atom">
-    <xsl:variable name="txt" select="normalize-space (.)"/>
-    <xsl:if test="$txt != ''">
-	<xsl:value-of select="$txt" />
-    </xsl:if>
-</xsl:template>
-
-<xsl:template match="*" mode="atom"/>
 
 <xsl:template match="*" />
 

@@ -120,22 +120,16 @@
 
 
     <xsl:template match="LAST-MODIFIED"  priority="10">
-	<lastModified rdf:parseType="Resource">
-	    <dateTime>
+	<lastModified rdf:datatype="&xsd;dateTime">
 		<xsl:apply-templates select="val"/>
-	    </dateTime>
-	    <xsl:apply-templates select="*[local-name() != 'val']"/>
 	</lastModified>
     </xsl:template>
 
     <xsl:template match="DTEND|DTSTART|DTSTAMP|LASTMODIFIED|EXDATE|RDATE|CREATED|DUE"  priority="10">
 	<xsl:variable name="elt"><xsl:call-template name="ename"/></xsl:variable>
 	<xsl:element name="{$elt}" namespace="&ical;">
-	    <xsl:attribute name="parseType" namespace="&rdf;">Resource</xsl:attribute>
-	    <dateTime>
+	    <xsl:attribute name="datatype" namespace="&rdf;">&xsd;dateTime</xsl:attribute>
 		<xsl:apply-templates select="val"/>
-	    </dateTime>
-	    <xsl:apply-templates select="*[local-name() != 'val']"/>
 	</xsl:element>
     </xsl:template>
 

@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+]>
 <!--
  -
  -  $Id$
@@ -36,8 +42,8 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:if test="/results/ROOT/result/*">
-	    <rdf:Description
-		    rdf:about="{vi:proxyIRI($baseUri)}">
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+		    <rdf:type rdf:resource="&foaf;Document"/>
 		    <xsl:apply-templates select="/results/ROOT/result/*"/>
 	    </rdf:Description>
 	    </xsl:if>
@@ -53,6 +59,9 @@
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'/')]">
+	<xsl:if test="name () = 'type' and . like '%/person'">
+	    <rdf:type rdf:resource="&foaf;Person"/>
+	</xsl:if>
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
 		<xsl:value-of select="vi:proxyIRI()"/><xsl:value-of select="$ns"/>view<xsl:value-of select="."/>
@@ -68,8 +77,13 @@
     </xsl:template>
 
     <xsl:template match="*">
+	<xsl:if test="* or . != ''">
 	<xsl:element namespace="{$ns}" name="{name()}">
+		<xsl:if test="name() like 'date_%'">
+		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+		</xsl:if>
 	    <xsl:apply-templates select="@*|node()"/>
 	</xsl:element>
+	</xsl:if>
     </xsl:template>
 </xsl:stylesheet>

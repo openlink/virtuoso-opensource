@@ -60,7 +60,7 @@
 	    <xsl:apply-templates select="*|text()" />
 	</xsl:element>
     </xsl:when>
-    <xsl:when test="not ends-with (namespace-uri(), '/')">
+    <xsl:when test="not ends-with (namespace-uri(), '/') and not ends-with (namespace-uri(), '#')">
 	<xsl:element name="{local-name()}" namespace="{concat (namespace-uri(), '/')}">
 	    <xsl:apply-templates select="*|text()" />
 	</xsl:element>
@@ -141,11 +141,11 @@
 </xsl:template>
 
 <xsl:template match="channel/category|item/category">
-    <dc:subject>
+    <sioc:topic>
 	<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
 	    <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 	</skos:Concept>
-    </dc:subject>
+    </sioc:topic>
 </xsl:template>
 
 <!-- elements from 0.94 not converted:

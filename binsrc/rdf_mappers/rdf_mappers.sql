@@ -26,6 +26,8 @@
 
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)' and RM_TYPE = 'MIME';
+
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
@@ -39,8 +41,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-    values ('(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)',
-            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML and feeds', vector ('get-feeds', 'no', 'add-html-meta', 'no'));
+    values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
+            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no'));
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
+            'MIME', 'DB.DBA.RDF_LOAD_FEED_RESPONSE', null, 'Feeds', null);
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1);
@@ -79,6 +85,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://www.theyworkforyou.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_TWFY', null, 'TWFY');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://friendfeed.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_FRIENDFEED', null, 'FriendFeed');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://socialgraph.apis.google.com/lookup\\?.*)',
@@ -129,7 +139,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 3 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2048 where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
@@ -317,6 +328,59 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 }
 ;
 
+create procedure MOAT_APPLY (in ap_uid any, in phrase varchar)
+{
+  declare ap_set_ids any;
+  declare res_out, script_out, match_list any;
+  declare m_apc, m_aps, m_app, m_apa, m_apa_w, m_aph any;
+  declare apa_w_ctr, apa_w_count integer;
+  declare app_ctr, app_count integer;
+  declare prev_end, prev_apa_id, prev_idx integer;
+  declare done any;
+
+  ap_set_ids := (select vector (APS_ID) from DB.DBA.SYS_ANN_PHRASE_SET where
+  	APS_OWNER_UID = ap_uid and APS_NAME = sprintf ('Hyperlinking-%d', ap_uid));
+
+  if (not length (ap_set_ids))
+    return null;
+
+  match_list := ap_build_match_list (ap_set_ids, phrase, 'x-any', 1, 0);
+  m_apc   := aref_set_0 (match_list, 0);
+  m_aps   := aref_set_0 (match_list, 1);
+  m_app   := aref_set_0 (match_list, 2);
+  m_apa   := aref_set_0 (match_list, 3);
+  m_apa_w := aref_set_0 (match_list, 4);
+  m_aph   := aref_set_0 (match_list, 5);
+
+  apa_w_count := length (m_apa_w);
+  app_count := length (m_app);
+  if (0 = app_count)
+    return null;
+  for (apa_w_ctr := 0; apa_w_ctr < apa_w_count; apa_w_ctr := apa_w_ctr + 1)
+    {
+      declare apa_idx integer;
+      declare apa any;
+      apa_idx := m_apa_w [apa_w_ctr];
+      apa := aref_set_0 (m_apa, apa_idx);
+
+      if (6 = length (apa))
+        {
+          declare this_apa_id integer;
+          declare arr, dta any;
+	  if (position (prev_apa_id, apa[5]))
+	    this_apa_id := prev_apa_id;
+	  else
+	    this_apa_id := apa[5][0];
+	  arr := m_app[this_apa_id];
+	  dta := arr [3];
+	  return dta;
+	}
+    }
+  return null;
+}
+;
+
+
 create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
 {
   declare res, xp, xt varchar;
@@ -324,6 +388,13 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
   declare exit handler for sqlstate '*' {
     return base || '#' || word;
   };
+
+  uri := MOAT_APPLY (http_dav_uid (), word);
+  if (uri is not null)
+    {
+      return uri;
+    }
+
   if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
     word[0] := word[0] - 32;
   uri := sprintf ('ask from <http://dbpedia.org> where { <http://dbpedia.org/resource/%U> ?y ?z }', word);
@@ -588,6 +659,7 @@ create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
+  --dbg_printf ('%s', ses);
   ses := xtree_doc (ses);
   return ses;
 }
@@ -685,6 +757,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       types := vector_concat (types, tmp);
     }
   --types := get_keyword ('type', xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   foreach (any tp in types) do
     {
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
@@ -865,6 +938,42 @@ try_profile:
 end_sp:
   return 1;
 };
+
+create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+	asin := null;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://friendfeed.com/search?q=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://friendfeed.com/search?q=%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := concat(new_origin_uri, '&format=atom');
+	}
+	else if (new_origin_uri like 'http://friendfeed.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://friendfeed.com/%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := concat(new_origin_uri, '?format=atom');
+	}
+    else
+        return 0;
+	tmp := http_get (url);
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -1340,8 +1449,8 @@ create procedure DB.DBA.RDF_LOAD_DAV_META (in graph_iri varchar, in new_origin_u
 create procedure DB.DBA.RDF_CALAIS_OPTS (in mime varchar)
 {
   return sprintf (
-'<c:params xmlns:c="http://s.opencalais.com/1/pred/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' ||
-'    <c:processingDirectives c:contentType="%s" c:outputFormat="xml/rdf"/>' ||
+'<c:params xmlns:c="http://s.opencalais.com/1/pred/">' ||
+'    <c:processingDirectives c:contentType="%s" c:outputFormat="xml/rdf"/><c:externalMetadata/>' ||
 '</c:params>', mime);
 }
 ;
@@ -1878,6 +1987,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare get_feeds, add_html_meta, grddl_loop int;
   declare base_url, ns_url, reg varchar;
   declare profile_trf, ns_trf, ext_profs any;
+  declare dict any;
 
   get_feeds := add_html_meta := 0;
   if (isarray (opts) and 0 = mod (length(opts), 2))
@@ -1921,12 +2031,15 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     {
       declare rdf_url_inx int;
       rdf_url_inx := 0;
+      dict := dict_new ();
       foreach (any rdf_url in rdf_url_arr) do
 	{
       declare ret_content_type any;
 	  declare exit handler for sqlstate '*' { goto try_next_link; };
 	  rdf_url := cast (rdf_url as varchar);
-	  if (RDF_MAPPER_CACHE_CHECK (rdf_url, new_origin_uri, old_etag, old_last_modified))
+	  --if (RDF_MAPPER_CACHE_CHECK (rdf_url, new_origin_uri, old_etag, old_last_modified))
+	  --  goto try_next_link;
+	  if (dict_get (dict, rdf_url))
 	    goto try_next_link;
 	  load_msec := msec_time ();
 	  hdr := null;
@@ -1940,7 +2053,8 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
       else
          DB.DBA.TTLP (content, new_origin_uri, coalesce (dest, graph_iri));
       mdta := mdta + 1;
-	  RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
+	  --RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
+	  dict_put (dict, rdf_url, 1);
 	  rdf_url_inx := rdf_url_inx + 1;
 	  ret_flag := -1;
 	  try_next_link:;
@@ -2066,8 +2180,8 @@ try_grddl:
         {
 	  declare exit handler for sqlstate '*' { goto try_rss; };
 	  feed_url := atom;
-	  if (RDF_MAPPER_CACHE_CHECK (atom, new_origin_uri, old_etag, old_last_modified))
-	    goto no_feed;
+      --if (RDF_MAPPER_CACHE_CHECK (atom, new_origin_uri, old_etag, old_last_modified))
+      --  goto no_feed;
 	  load_msec := msec_time ();
 	  content := DB.DBA.RDF_HTTP_URL_GET (atom, new_origin_uri, hdr, 'GET', 'Accept: */*');
 	  load_msec := msec_time () - load_msec;
@@ -2080,8 +2194,8 @@ try_rss:;
         {
 	  declare exit handler for sqlstate '*' { goto no_microformats; };
 	  feed_url := rss;
-	  if (RDF_MAPPER_CACHE_CHECK (rss, new_origin_uri, old_etag, old_last_modified))
-	    goto no_feed;
+      --if (RDF_MAPPER_CACHE_CHECK (rss, new_origin_uri, old_etag, old_last_modified))
+      --  goto no_feed;
 	  load_msec := msec_time ();
 	  content := DB.DBA.RDF_HTTP_URL_GET (rss, new_origin_uri, hdr, 'GET', 'Accept: */*');
 	  load_msec := msec_time () - load_msec;
@@ -2120,11 +2234,11 @@ do_detect:;
 ins_rdf:
 	DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
         DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
-	RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
+    --RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	ret_flag := -1;
 no_feed:;
     }
-  -- generic xHTML, extraction as per our ontology
+  -- /* generic xHTML, extraction as per our ontology */
   xt := xt_sav;
   if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
     {
@@ -2133,6 +2247,7 @@ no_feed:;
         {
 	  mdta := mdta + 1;
           xd := serialize_to_UTF8_xml (xd);
+          --string_to_file ('html.rdf', xd, -2);
 	  --dbg_printf (xd);
           DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	}
@@ -2159,6 +2274,63 @@ ret:
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare content, xd, xt, ret_flag, mdta any;
+  content := ret_body;
+  declare exit handler for sqlstate '*'
+    {
+      goto no_xml;
+    };
+  mdta := 0;
+  xt := xtree_doc (content);
+
+  if (xpath_eval ('/RDF', xt) is not null and content is not null)
+    {
+      xd := content;
+      mdta := mdta + 1;
+      goto ins_rdf;
+    }
+  else if (xpath_eval ('/feed', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xt);
+    }
+  else if (xpath_eval ('/rss', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xt);
+    }
+  else
+    goto no_feed;
+
+  if (xpath_eval ('count(/RDF/*)', xd) > 0)
+    {
+      mdta := mdta + 1;
+    }
+  xd := serialize_to_UTF8_xml (xd);
+--  string_to_file ('feed1.rdf', xd, -2);
+ins_rdf:
+  --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
+no_feed:
+
+  declare ord, mime any;
+  mime := get_keyword ('content-type', opts);
+  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = current_proc_name ());
+  for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS
+    where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
+    {
+      if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
+        mdta := 0;
+      else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' and regexp_match (RM_PATTERN, mime) is not null)
+        mdta := 0;
+    }
+  return mdta;
+no_xml:;
+  return 0;
+}
+;
+
 -- /* convert the feed in rss 1.0 format to sioc */
 create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in graph_iri varchar)
 {
@@ -2170,6 +2342,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
   xt := xtree_doc (content);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri));
   xd := serialize_to_UTF8_xml (xd);
+--  string_to_file ('feed2.rdf', xd, -2);
   DB.DBA.RDF_LOAD_RDFXML (xd, iri, graph_iri);
   no_sioc:
   return;

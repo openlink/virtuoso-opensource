@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+]>
 <!--
  -
  -  $Id$
@@ -23,16 +28,19 @@
 -->
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdf="&rdf;"
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:foaf="&foaf;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
+  <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
+  <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
   <xsl:template match="/">
       <rdf:RDF>
 	  <xsl:apply-templates select="html/head"/>
@@ -40,12 +48,18 @@
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="html/head">
-      <foaf:Document rdf:about="{$base}">
+      <rdf:Description rdf:about="{$base}">
+	  <rdf:type rdf:resource="&foaf;Document"/>
+	  <rdf:type rdf:resource="&bibo;Document"/>
 	  <xsl:apply-templates select="title|meta"/>
 	  <xsl:apply-templates select="/html/body//img[@src]"/>
 	  <xsl:apply-templates select="/html/body//a[@href]"/>
-      </foaf:Document>
-      <xsl:apply-templates select="meta[@name='keywords']" mode="meta"/>
+	  <xsl:apply-templates select="link[@rel='alternate']"/>
+      </rdf:Description>
+      <!--xsl:apply-templates select="meta[translate (@name, $uc, $lc)='keywords']" mode="meta"/-->
+  </xsl:template>
+  <xsl:template match="link[@rel='alternate']">
+      <rdfs:seeAlso rdf:resource="{@href}"/>
   </xsl:template>
   <xsl:template match="*" mode="rdf-in-comment">
       <xsl:apply-templates mode="rdf-in-comment"/>
@@ -75,23 +89,27 @@
 	  <xsl:value-of select="@content"/>
       </dc:rights>
   </xsl:template>
-  <xsl:template match="meta[@name='keywords']">
+  <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
       <dc:subject>
 	  <xsl:value-of select="@content"/>
       </dc:subject>
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
       <xsl:for-each select="$res/results/result">
-	  <skos:Concept rdf:resource="{vi:dbpIRI ($base, .)}" />
+	      <sioc:topic>
+		  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}" >
+		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
+		  </skos:Concept>
+	      </sioc:topic>
       </xsl:for-each>
   </xsl:template>
-  <xsl:template match="meta[@name='keywords']" mode="meta">
+  <!--xsl:template match="meta[@name='keywords']" mode="meta">
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
       <xsl:for-each select="$res/results/result">
 	  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}">
 	      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 	  </skos:Concept>
       </xsl:for-each>
-  </xsl:template>
+  </xsl:template-->
   <!-- content specific rules -->
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
       <foaf:depiction>
