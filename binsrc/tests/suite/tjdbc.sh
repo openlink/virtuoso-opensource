@@ -33,7 +33,7 @@ CURRDIR=`pwd`
 
 BANNER "STARTED JDBC Driver TEST (tjdbc.sh)"
 
-if [ "x$JDK2" != "x" -a -f $JDBCDIR/virtjdbc2.jar -a -f  $JDBCDIR/testsuite2.jar ]
+if [ "x$JDK2" != "x" -a "x$JDK2" != "xnone" -a -f $JDBCDIR/virtjdbc2.jar -a -f  $JDBCDIR/testsuite2.jar ]
 then
 
 STOP_SERVER
@@ -73,7 +73,7 @@ SHUTDOWN_SERVER
 CHECK_LOG
 fi # JDK2
 
-if [ "x$JDK3" != "x" -a -f $JDBCDIR/virtjdbc3ssl.jar -a -f  $JDBCDIR/testsuite3.jar ]
+if [ "x$JDK3" != "x" -a "x$JDK3" != "xnone" -a -f $JDBCDIR/virtjdbc3ssl.jar -a -f  $JDBCDIR/testsuite3.jar ]
 then
 
 STOP_SERVER
