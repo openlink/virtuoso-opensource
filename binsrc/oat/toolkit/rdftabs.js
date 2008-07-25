@@ -490,7 +490,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				if (a.find(value) == -1) { a.push(value);}
 			}
 		}
-		obj["What links here"] = item.back;
+		obj["What Links Here"] = item.back;
 		self.drawSpotlight(self.parent.getTitle(item),obj);
 	}
 
