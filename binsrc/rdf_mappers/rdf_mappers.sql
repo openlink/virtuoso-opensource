@@ -91,8 +91,13 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_FRIENDFEED', null, 'FriendFeed');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://socialgraph.apis.google.com/lookup\\?.*)',
+    values ('(http://socialgraph.apis.google.com/lookup\\?.*)|'||
+            '(http://socialgraph.apis.google.com/otherme\\?.*)',
             'URL', 'DB.DBA.RDF_LOAD_SOCIALGRAPH', null, 'SocialGraph');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://openlibrary.org/b/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_OPENLIBRARY', null, 'OpenLibrary');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('.+\.svg\$', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
@@ -135,6 +140,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://musicbrainz.org/([^/]*)/([^\.]*)',
             'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('(http://api.crunchbase.com/v/1/.*)|(http://www.crunchbase.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_CRUNCHBASE', null, 'CrunchBase', null);
 
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
@@ -633,7 +642,12 @@ create procedure FB_SIG (in params any, in secret any)
 create procedure  DB.DBA.MQL_TREE_TO_XML_REC (in tree any, in tag varchar, inout ses any)
 {
   if (not isarray (tree) or isstring (tree))
+    {
+      if (tree is not null and tree <> '')
+	{
     http_value (tree, tag, ses);
+	}
+    }
   else if (length (tree) > 1 and __tag (tree[0]) = 255)
     {
       http (sprintf ('<%U>', tag), ses);
@@ -670,6 +684,7 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 	tag := trim(tag, '\"');
 	if (not isarray (tree) or	isstring (tree))
 	{
+                if (isstring (tree))
 		tree := trim(tree, '\"');
 		if (left(tag,	7) = 'http://')
 			tag	:= 'Site';
@@ -677,21 +692,25 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML_REC	(in	tree any, in tag varchar, in
 	}
 	else if (length (tree) > 1 and __tag (tree[0]) = 255)
 	{
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://')
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:')
 		{
 			http ('<Document>\n', ses);
 			http_value (tag, 'about', ses);
 		}
 		else
+		{
 			http (sprintf ('<%U>\n', tag), ses);
+                }
 		for (declare i,l int,	i := 2,	l := length	(tree);	i <	l; i :=	i +	2)
 		{
 			DB.DBA.SOCIAL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
 		}
-		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://')
+		if (left(tag,	7) = 'http://' or left(tag,	6) = 'ttp://' or left(tag, 7) = 'mailto:')
 			http ('</Document>\n',	ses);
 		else
+                {
 			http (sprintf ('</%U>\n', tag),	ses);
+	}
 	}
 	else if (length (tree) > 0)
 	{
@@ -713,6 +732,46 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   return ses;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare qr, path, hdr any;
+  declare tree, xt, xd, types any;
+  declare base, cnt, url, suffix varchar;
+
+  hdr := null;
+  declare exit handler for sqlstate '*'
+    {
+      --dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+
+  if (new_origin_uri like 'http://www.crunchbase.com/%')
+    {
+      cnt := http_get ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js');
+      base := 'http://www.crunchbase.com/';
+      suffix := '';
+    }
+  else
+    {
+      cnt := _ret_body;
+      base := 'http://api.crunchbase.com/v/1/';
+      suffix := '.js';
+    }
+
+  tree := json_parse (cnt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+  xt := DB.DBA.MQL_TREE_TO_XML (tree);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/crunchbase2rdf.xsl', xt,
+	  vector ('baseUri', coalesce (dest, graph_iri), 'base', base, 'suffix', suffix));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', serialize_to_UTF8_xml (xt));
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -1174,6 +1233,35 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/bugzilla2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare qr, path, hdr any;
+  declare tree, xt, xd, types any;
+  declare k, cnt, url, tmp, img_id varchar;
+  hdr := null;
+  declare exit handler for sqlstate '*'
+    {
+      dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+    
+  tmp := sprintf_inverse (new_origin_uri, 'http://openlibrary.org/b/%s', 0);
+  img_id := tmp[0];
+  if (img_id is null)
+    return 0; 
+  url := concat('http://www.openlibrary.org/api/get?key=/b/', img_id);
+  url := concat(url, '&prettyprint=true&text=true');
+  url:= 'http://openlibrary.org/api/get?key=/b/OL7668717M&prettyprint=true&text=true';
+  cnt := http_get (url, hdr);
+  tree := json_parse (cnt);
+  xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/openlibrary2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));  
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;

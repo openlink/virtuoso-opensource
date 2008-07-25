@@ -39,12 +39,12 @@
       <rdf:RDF>
 		<foaf:Group rdf:about="{$base}">
 			<foaf:homepage rdf:resource="{$base}"/>
-	  		<xsl:apply-templates select="results/nodes"/>
+	  		<xsl:apply-templates select="results"/>
 	  	</foaf:Group>
       </rdf:RDF>
   </xsl:template>
   
-  <xsl:template match="results/nodes">
+  <xsl:template match="results">
 	<xsl:for-each select="Document">
 	  <foaf:member>
 			<xsl:variable name="url" select="about" />
