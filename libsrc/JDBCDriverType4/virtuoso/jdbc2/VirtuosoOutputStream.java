@@ -40,6 +40,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 {
    // The connection attached to this stream
    private VirtuosoConnection connection;
+   private byte[] tmp = new byte[16];
 /*
    // -------------------- A new BufferedOutputStream design -----------------
    // The buffer
@@ -233,7 +234,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 writeint(length);
 		 for(int i = 0; i < length; i++)
 		   {
-		     writelong(((Long)o.elementAt(i)).longValue());
+		     writelongint(((Long)o.elementAt(i)).longValue());
 		   }
 		 return;
 	       }
@@ -355,7 +356,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		 //System.out.println("writing DV_LONG_BIN");
                  byte [] bobj = (byte[]) obj;
 		 write(VirtuosoTypes.DV_LONG_BIN);
-                 writelong(bobj.length);
+                 writelongint(bobj.length);
 		 write(bobj, 0, bobj.length);
 		 //System.out.println("writing DV_LONG_BIN done");
 		 return;
@@ -364,14 +365,14 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	       {
 		 //System.out.println("DV_BLOB_BIN");
 		 write(VirtuosoTypes.DV_BLOB_HANDLE);
-		 writelong(1l);
-		 writelong(((VirtuosoBlob)obj).hashCode());
-		 writelong(((VirtuosoBlob)obj).length());
+		 writelongint(1l);
+		 writelongint(((VirtuosoBlob)obj).hashCode());
+		 writelongint(((VirtuosoBlob)obj).length());
                  // o12 only
-		 writelong(((VirtuosoBlob)obj).key_id);
-		 writelong(((VirtuosoBlob)obj).frag_no);
-		 writelong(((VirtuosoBlob)obj).dir_page);
-		 writelong(((VirtuosoBlob)obj).bh_timestamp);
+		 writelongint(((VirtuosoBlob)obj).key_id);
+		 writelongint(((VirtuosoBlob)obj).frag_no);
+		 writelongint(((VirtuosoBlob)obj).dir_page);
+		 writelongint(((VirtuosoBlob)obj).bh_timestamp);
 		 write_object(((VirtuosoBlob)obj).pages);
 		 return;
 	       }
@@ -379,14 +380,14 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	       {
 		 //System.out.println("DV_BLOB");
 		 write(VirtuosoTypes.DV_BLOB_HANDLE);
-		 writelong(1l);
-		 writelong(((VirtuosoBlob)obj).hashCode());
-		 writelong(((VirtuosoBlob)obj).length());
+		 writelongint(1l);
+		 writelongint(((VirtuosoBlob)obj).hashCode());
+		 writelongint(((VirtuosoBlob)obj).length());
                  // o12 only
-		 writelong(((VirtuosoBlob)obj).key_id);
-		 writelong(((VirtuosoBlob)obj).frag_no);
-		 writelong(((VirtuosoBlob)obj).dir_page);
-		 writelong(((VirtuosoBlob)obj).bh_timestamp);
+		 writelongint(((VirtuosoBlob)obj).key_id);
+		 writelongint(((VirtuosoBlob)obj).frag_no);
+		 writelongint(((VirtuosoBlob)obj).dir_page);
+		 writelongint(((VirtuosoBlob)obj).bh_timestamp);
 		 write_object(((VirtuosoBlob)obj).pages);
 		 return;
 	       }
@@ -403,7 +404,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	       {
 		 VirtuosoExtendedString o = (VirtuosoExtendedString) obj;
 		 write (tag);
-		 writelong (o.strType);
+		 writelongint (o.strType);
 		 write_object (o.str);
 		 return;
 	       }
@@ -450,13 +451,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
     */
    private void writerawfloat(float m) throws IOException
    {
-      int n = Float.floatToIntBits(m);
-      //System.out.println((int)n>>24);	System.out.println((int)n>>16);
-      //System.out.println((int)n>>8);	System.out.println((int)n);
-      write(n >> 24);
-      write(n >> 16);
-      write(n >> 8);
-      write(n);
+      writelongint(Float.floatToIntBits(m));
    }
 
    /**
@@ -480,9 +475,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
     */
    private void writerawdouble(double m) throws IOException
    {
-      long n = Double.doubleToLongBits(m);
-      writelong(n >> 32);
-      writelong(n);
+      writelong(Double.doubleToLongBits(m));
    }
 
    /**
@@ -503,7 +496,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
       {
          //System.out.println("DV_LONG_INT");
          write(VirtuosoTypes.DV_LONG_INT);
-         writelong(n);
+         writelongint(n);
       }
    }
 
@@ -513,22 +506,52 @@ class VirtuosoOutputStream extends BufferedOutputStream
     * @param long	Value to send.
     * @exception	java.io.IOException
     */
-   protected void writelong(long n) throws IOException
+   protected void writelongint(long data) throws IOException
    {
-      //System.out.println((int)n>>24);	System.out.println((int)n>>16);
-      //System.out.println((int)n>>8);	System.out.println((int)n);
-      write((int)n >> 24);
-      write((int)n >> 16);
-      write((int)n >> 8);
-      write((int)n);
+     tmp[0] = ((byte) ((data >> 24) & 0xFF)); 
+     tmp[1] = ((byte) ((data >> 16) & 0xFF));
+     tmp[2] = ((byte) ((data >> 8) & 0xFF));
+     tmp[3] = ((byte) (data & 0xFF));
+     write(tmp, 0, 4);
+   }
+
+   /**
+    * Method to send a long value depending DV_xxx_INT type.
+    *
+    * @param long	Value to send.
+    * @exception	java.io.IOException
+    */
+   protected void writelongint(int data) throws IOException
+   {
+     tmp[0] = ((byte) ((data >> 24) & 0xFF));
+     tmp[1] = ((byte) ((data >> 16) & 0xFF));
+     tmp[2] = ((byte) ((data >> 8) & 0xFF));
+     tmp[3] = ((byte) (data & 0xFF));
+     write(tmp, 0, 4);
    }
 
    protected void writeshort (short n) throws IOException
    {
-     write ((int)n >> 8);
-     write ((int)n & 0xff);
+     tmp[0] = ((byte) ((data >> 8) & 0xFF));
+     tmp[1] = ((byte) (data & 0xFF));
+     write(tmp, 0, 2);
    }
 
+
+   protected void writelong(long data) throws IOException
+   {
+     tmp[0] = ((byte) ((data >> 56) & 0xFF));
+     tmp[1] = ((byte) ((data >> 48) & 0xFF));
+     tmp[2] = ((byte) ((data >> 40) & 0xFF));
+     tmp[3] = ((byte) ((data >> 32) & 0xFF));
+     tmp[4] = ((byte) ((data >> 24) & 0xFF));
+     tmp[5] = ((byte) ((data >> 16) & 0xFF));
+     tmp[6] = ((byte) ((data >> 8) & 0xFF));
+     tmp[7] = ((byte) (data & 0xFF));
+     write(tmp, 0, 8);
+   }
+
+   
    /**
     * Method to send a numeric value depending DV_NUMERIC type.
     *
@@ -630,12 +653,11 @@ class VirtuosoOutputStream extends BufferedOutputStream
       {
 	if (rb.rb_ro_id > 0xffffffffL)
 	{
-	  writelong ((rb.rb_ro_id >> 32) & 0xffffffffL);
-	  writelong (rb.rb_ro_id & 0xffffffffL);
+	  writelong(rb.rb_ro_id);
 	}
 	else
 	{
-	  writelong (rb.rb_ro_id);
+	  writelongint (rb.rb_ro_id);
 	}
       }
       if (VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE != rb.rb_type)
@@ -656,11 +678,11 @@ class VirtuosoOutputStream extends BufferedOutputStream
      bos = null;
 
      write (VirtuosoTypes.DV_OBJECT);
-     writelong (VirtuosoTypes.UDT_JAVA_CLIENT_OBJECT_ID);
+     writelongint (VirtuosoTypes.UDT_JAVA_CLIENT_OBJECT_ID);
      if (bytes.length > 255)
        {
 	 write (VirtuosoTypes.DV_LONG_BIN);
-	 writelong (bytes.length);
+	 writelongint (bytes.length);
        }
      else
        {
@@ -678,32 +700,25 @@ class VirtuosoOutputStream extends BufferedOutputStream
     */
    private void writestring(String string) throws IOException
    {
-     byte [] bytes;
-     try
-       {
-	 bytes = string.getBytes("8859_1");
-       }
-     catch (java.io.UnsupportedEncodingException e)
-       {
-	 char [] chars = string.toCharArray();
-	 bytes = new byte [chars.length];
-	 for (int i = 0; i < chars.length; i++)
-	   bytes[i] = (byte) chars[i];
-       }
-      if(bytes.length < 256)
+     int len = string.length();
+     byte[] bytes = new byte [len];
+     for (int i = 0; i < len; i++)
+       bytes[i] = (byte)string.charAt(i);
+
+     if(len < 256)
       {
          //System.out.println("DV_SHORT_STRING_SERIAL");	System.out.println(string.length());
          write(VirtuosoTypes.DV_SHORT_STRING_SERIAL);
-         write(bytes.length);
+         write(len);
       }
-      else
+     else
       {
          //System.out.println("DV_STRING");	System.out.println(string.length());
          write(VirtuosoTypes.DV_STRING);
-         writelong(bytes.length);
+         writelongint(len);
       }
       //System.out.println(string.toString());
-      write(bytes,0,bytes.length);
+     write(bytes, 0, len);
    }
 
    /**

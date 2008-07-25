@@ -959,19 +959,20 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       else
 	{
 	  String x;
-	  int zero_inx = x1.indexOf (0);
+//	  int zero_inx = x1.indexOf (0);
 	  /*
 	     if (zero_inx == -1)
 	     {
 	     char zeroc [] = { 0 };
 	     x = x1 + (new String (zeroc));
 	     }
-	     else */if (zero_inx > 0 && zero_inx < x1.length())
-	    {
-	      //System.out.println ("truncate @ " + zero_inx);
-	      x = x1.substring (0, zero_inx);
-	    }
-	  else
+	     else */
+//	     if (zero_inx > 0 && zero_inx < x1.length())
+//	    {
+//	      //System.out.println ("truncate @ " + zero_inx);
+//	      x = x1.substring (0, zero_inx);
+//	    }
+//	  else
 	    x = x1;
 	  if (parameters != null && parameters.elementAt(parameterIndex - 1) instanceof openlink.util.Vector)
 	    {

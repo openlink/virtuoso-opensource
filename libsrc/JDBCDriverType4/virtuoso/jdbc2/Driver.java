@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 21;
+   protected static final int minor = 22;
 
    // Some variables
    private String host, port, user, password, database, charset, pwdclear;

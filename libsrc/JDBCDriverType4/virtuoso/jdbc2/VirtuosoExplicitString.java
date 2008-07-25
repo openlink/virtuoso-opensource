@@ -142,24 +142,31 @@ public class VirtuosoExplicitString
 
       //System.err.println ("cli_wide_to_narrow");
       bytes = new byte[str.length()];
-      for (int i = 0; i < str.length(); i++)
-	{
-	  Character ch = new Character (str.charAt(i));
-	  Byte b;
-	  b = (Byte)(charset_ht != null ? charset_ht.get (ch) : new Byte ((byte) (ch.charValue())));
-	  //System.err.print ("Searching " + ((int)str.charAt(i)) + "=");
-	  //if (b != null)
-	  //  System.err.println (b.intValue());
-	  //else
-	  //  System.err.println ("<not found>");
-	  if (b == null)
-	    {
-	      bytes[i] = (byte) '?';
-	      ret = false;
-	    }
-	  else
-	    bytes[i] = (byte) b.intValue();
-	}
+      if (charset_ht == null) {
+        for (int i = 0; i < str.length(); i++)
+	  {
+	    bytes[i] = (byte)str.charAt(i);
+	  }
+      } else {
+        for (int i = 0; i < str.length(); i++)
+	  {
+	    Character ch = new Character (str.charAt(i));
+	    Byte b;
+	    b = (Byte)(charset_ht != null ? charset_ht.get (ch) : new Byte ((byte) (ch.charValue())));
+	    //System.err.print ("Searching " + ((int)str.charAt(i)) + "=");
+	    //if (b != null)
+	    //  System.err.println (b.intValue());
+	    //else
+	    //  System.err.println ("<not found>");
+	    if (b == null)
+	      {
+	        bytes[i] = (byte) '?';
+	        ret = false;
+	      }
+	    else
+	      bytes[i] = (byte) b.intValue();
+	  }
+      }	
       return ret;
     }
 
