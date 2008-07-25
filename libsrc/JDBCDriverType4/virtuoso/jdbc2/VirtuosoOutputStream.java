@@ -530,7 +530,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
      write(tmp, 0, 4);
    }
 
-   protected void writeshort (short n) throws IOException
+   protected void writeshort (short data) throws IOException
    {
      tmp[0] = ((byte) ((data >> 8) & 0xFF));
      tmp[1] = ((byte) (data & 0xFF));
