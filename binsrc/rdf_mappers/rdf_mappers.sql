@@ -737,7 +737,7 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare qr, path, hdr any;
-  declare tree, xt, xd, types any;
+  declare tree, xt, xd, types, is_search any;
   declare base, cnt, url, suffix varchar;
 
   hdr := null;
@@ -747,7 +747,15 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
       return 0;
     };
 
-  if (new_origin_uri like 'http://www.crunchbase.com/%')
+  is_search := 0;
+  if (new_origin_uri like 'http://www.crunchbase.com/search?query=%')
+    {
+      cnt := http_get ('http://api.crunchbase.com/v/1/search.js?query=' || subseq (new_origin_uri, 39));
+      base := 'http://www.crunchbase.com/';
+      suffix := '';
+      is_search := 1;
+    }
+  else if (new_origin_uri like 'http://www.crunchbase.com/%')
     {
       cnt := http_get ('http://api.crunchbase.com/v/1/' || subseq (new_origin_uri, 26) || '.js');
       base := 'http://www.crunchbase.com/';
@@ -760,7 +768,12 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
       suffix := '.js';
     }
 
+  if (new_origin_uri like 'http://api.crunchbase.com/v/1/search.js?query=%')
+    is_search := 1;
+
   tree := json_parse (cnt);
+  if (is_search)
+    tree := get_keyword ('results', tree);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   xt := DB.DBA.MQL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/crunchbase2rdf.xsl', xt,
@@ -1276,7 +1289,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
   hdr := null;
   declare exit handler for sqlstate '*'
     {
-      --dbg_printf ('%s', __SQL_MESSAGE);
+      dbg_printf ('%s', __SQL_MESSAGE);
       return 0;
     };
   url := new_origin_uri;
