@@ -233,7 +233,7 @@ public class VirtuosoExplicitString
       if (bytes.length < 256)
 	os.write (bytes.length);
       else
-	os.writelong (bytes.length);
+	os.writelongint (bytes.length);
       if ((dtp == VirtuosoTypes.DV_WIDE || dtp == VirtuosoTypes.DV_LONG_WIDE)
 	  && str != null)
 	{
@@ -269,7 +269,7 @@ public class VirtuosoExplicitString
 	{
 	  char [] chars = new char [bytes.length];
 	  for (int i =0 ; i < bytes.length; i++)
-	    chars[i] = (char)bytes[i];
+	    chars[i] = (char)(bytes[i] & 0xff);
 	  return new String (chars);
 	}
     }

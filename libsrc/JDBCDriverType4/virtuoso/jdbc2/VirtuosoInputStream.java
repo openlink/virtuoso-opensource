@@ -656,7 +656,7 @@ class VirtuosoInputStream extends BufferedInputStream
         char[] c_arr = new char[len];
  
         for(int i=0; i < len; i++)
-          c_arr[i] = (char)data[i];
+          c_arr[i] = (char)(data[i] & 0xff);
 
         return new String(c_arr, 0, len);
     }
