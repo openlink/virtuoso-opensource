@@ -119,7 +119,7 @@
 			    </xsl:otherwise>
 			</xsl:choose>
 		    </xsl:variable>
-		    <xsl:variable name="sas-iri" select="vi:dbpIRI ('', $nam)"/>
+		    <xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate ($nam, ' ', '_'))"/>
 		    <xsl:if test="not starts-with ($sas-iri, '#')">
 			<owl:sameAs rdf:resource="{$sas-iri}"/>
 		    </xsl:if>
@@ -211,7 +211,7 @@
 	<xsl:variable name="space" select="name()"/>
 	<xsl:variable name="type">
 	    <xsl:choose>
-		<xsl:when test="$space = 'company'">
+		<xsl:when test="$space = 'company' or $space = 'firm'">
 		    <xsl:text>Organization</xsl:text>
 		</xsl:when>
 		<xsl:when test="$space = 'person'">
@@ -232,6 +232,9 @@
 	    <xsl:choose>
 		<xsl:when test="$space = 'financial_org'">
 		    <xsl:text>financial-organization</xsl:text>
+		</xsl:when>
+		<xsl:when test="$space = 'firm'">
+		    <xsl:text>company</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
 		    <xsl:value-of select="translate ($space, '_', '-')"/>
