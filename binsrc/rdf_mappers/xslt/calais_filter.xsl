@@ -26,6 +26,8 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:DC   ="http://purl.org/dc/elements/1.1/"
     xmlns:DCTERMS = "http://purl.org/dc/terms/"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 
 
@@ -40,6 +42,15 @@
 
     <xsl:template match="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
 	<rdf:Description>
+	    <opl:data_source>
+		<opl:DataSource rdf:about="{@rdf:about}"/>
+	    </opl:data_source>
+	    <opl:provided_by>
+		<foaf:Organization rdf:about="http://dbpedia.org/resource/Reuters">
+		    <foaf:name>OpenCalais</foaf:name>
+		    <foaf:homepage rdf:resource="http://www.opencalais.com/"/>
+		</foaf:Organization>
+	    </opl:provided_by>
 	    <xsl:attribute name="rdf:about">
 		<xsl:value-of select="vi:proxyIRI($baseUri)"/><xsl:text>#</xsl:text>
 		<xsl:call-template name="substring-after-last">
