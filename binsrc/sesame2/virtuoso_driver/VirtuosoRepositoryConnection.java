@@ -1609,6 +1609,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
+			tqrh.startQueryResult(names);
 			// begin at onset one
 			while (rs.next()) {
 				QueryBindingSet qbs = new QueryBindingSet();
@@ -1621,6 +1622,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 				tqrh.handleSolution(qbs);
 			}
+			tqrh.endQueryResult();
                         stmt.close();
 		}
 		catch (Exception e) {
@@ -1643,6 +1645,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++)
 				names.put(rsmd.getColumnName(i), new Integer(i));
 
+			tqrh.startQueryResult(names);
 			while (rs.next()) {
 			        Integer col = null;
 				Resource sval = null;
@@ -1669,6 +1672,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				Statement st = new ContextStatementImpl(sval,pval,oval,gval);
 				tqrh.handleStatement(st);
 			}
+			tqrh.endQueryResult();
 			stmt.close();
 		}
 		catch (Exception e) {
