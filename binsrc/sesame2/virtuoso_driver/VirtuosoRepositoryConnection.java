@@ -1600,6 +1600,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query) {
+		LinkedList<String> names = new LinkedList<String>();
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
@@ -1608,7 +1609,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
+			// begin at onset one
+			for (int i = 1; i <= rsmd.getColumnCount(); i++)
+				names.add(rsmd.getColumnName(i));
 
+			tqrh.startQueryResult(names);
 			// begin at onset one
 			while (rs.next()) {
 				QueryBindingSet qbs = new QueryBindingSet();
@@ -1621,6 +1626,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 				tqrh.handleSolution(qbs);
 			}
+			tqrh.endQueryResult();
                         stmt.close();
 		}
 		catch (Exception e) {
@@ -1630,7 +1636,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 	protected void executeSPARQLForHandler(RDFHandler tqrh, String query) {
-		HashMap<String,Integer> names = new HashMap<String,Integer>();
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
@@ -1638,11 +1643,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			stmt.setFetchSize(prefetchSize);
 			ResultSet rs = stmt.executeQuery(fixQuery(query));
 			ResultSetMetaData rsmd = rs.getMetaData();
+	                int col_g = -1;
+        	        int col_s = -1;
+                	int col_p = -1;
+	                int col_o = -1;
 
 			// begin at onset one
-			for (int i = 1; i <= rsmd.getColumnCount(); i++)
-				names.put(rsmd.getColumnName(i), new Integer(i));
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				String label = rsmd.getColumnName(i);
+				if (label.equalsIgnoreCase("g"))
+				  col_g = i;
+				else if (label.equalsIgnoreCase("s"))
+				  col_s = i;
+				else if (label.equalsIgnoreCase("p"))
+				  col_p = i;
+				else if (label.equalsIgnoreCase("o"))
+				  col_o = i;
+			}
 
+			tqrh.startRDF();
 			while (rs.next()) {
 			        Integer col = null;
 				Resource sval = null;
@@ -1650,25 +1669,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				Value oval = null;
 				Resource gval = null;
 
-			        col = names.get("S");
-			        if (col != null)
-				  sval = (Resource) castValue(rs.getObject(col.intValue()));
+			        if (col_s != -1)
+				  sval = (Resource) castValue(rs.getObject(col_s));
 				
-			        col = names.get("P");
-			        if (col != null)
-				  pval = (URI) castValue(rs.getObject(col.intValue()));
+			        if (col_p != -1)
+				  pval = (URI) castValue(rs.getObject(col_p));
 				
-			        col = names.get("O");
-			        if (col != null)
-				   oval = castValue(rs.getObject(col.intValue()));
+			        if (col_o != -1)
+				   oval = castValue(rs.getObject(col_o));
 				
-			        col = names.get("G");
-			        if (col != null)
-				  gval = (Resource) castValue(rs.getObject(col.intValue()));
+			        if (col_g != -1)
+				  gval = (Resource) castValue(rs.getObject(col_g));
 
 				Statement st = new ContextStatementImpl(sval,pval,oval,gval);
 				tqrh.handleStatement(st);
 			}
+			tqrh.endRDF();
 			stmt.close();
 		}
 		catch (Exception e) {
@@ -2260,21 +2276,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		protected void extractRow() throws Exception 
 		{
-			Resource _graph;
+			Resource _graph = null;
 			Resource _subject = subject;
 			URI _predicate = predicate;
 			Value _object = object;
 			Object val = null;
 
 			try {
-				val = v_rs.getObject(col_g);
-				_graph = (Resource) castValue(val);
+			        if (col_g != -1) {
+				  val = v_rs.getObject(col_g);
+				  _graph = (Resource) castValue(val);
+				}
 			}
 			catch (ClassCastException ccex) {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
 			}
 
-			if (_subject == null) 
+			if (_subject == null && col_s != -1) 
 			  try {
 				val = v_rs.getObject(col_s);
 				_subject = (Resource) castValue(val);
@@ -2283,7 +2301,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
 			  }
 
-			if (_predicate == null) 
+			if (_predicate == null && col_p != -1) 
 			  try {
 				val = v_rs.getObject(col_p);
 				_predicate = (URI) castValue(val);
@@ -2292,7 +2310,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val);
 			  }
 
-			if (_object == null) 
+			if (_object == null && col_o != -1) 
 			  _object = castValue(v_rs.getObject(col_o));
 
 			v_row = new ContextStatementImpl(_subject,_predicate,_object,_graph);
