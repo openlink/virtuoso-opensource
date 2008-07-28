@@ -4713,7 +4713,7 @@ df_pred_score_key (dk_set_t first)
   df_elt_t * dfe = (df_elt_t*)first->data;
   if (dfe->dfe_arity)
     return -3;
-  return ((int32) -dfe->dfe_unit); /* desc order, hence - */
+  return ((int32) dfe->dfe_unit);
 }
 
 

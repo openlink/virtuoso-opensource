@@ -2313,7 +2313,9 @@ bitmap_index_box);
 		      go->go_ua_acc_setp_call = code_to_cv (so->so_sc, code);
 		      break;
 		    }
-		  default: ;
+                  case AMMSC_COUNT:
+                    break; /* Orri's patch for cast problem with count(distinct string-expn) ... group by other-expn  */
+		  default:
 		    arg->ssl_sqt = aggregate->ssl_sqt;
 		}
 	      if (fref->_.fn_ref.all_distinct)
