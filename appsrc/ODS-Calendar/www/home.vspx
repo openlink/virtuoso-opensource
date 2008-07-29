@@ -1000,6 +1000,7 @@
       <v:variable name="ve_update_period" type="varchar" default="''" />
       <v:variable name="ve_update_freq" type="integer" default="0" />
       <v:variable name="ve_options" type="any" default="null" />
+      <v:variable name="ve_result" type="any" default="null" />
 
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="0" />
 
@@ -4067,8 +4068,23 @@
                             <v:button value="Sync" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
+                                  declare exit handler for SQLSTATE '*'
+                                  {
+                                    if (__SQL_STATE like 'CAL%')
+                                    {
+                                      self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
+                                      self.vc_is_valid := 0;
+                                      return;
+                                    }
+                                    resignal;
+                                  };
                                   self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
+                                  if (self.cAction = 'syncmlBrowse')
+                                  {
+                                    self.cAction := 'syncmlExec';
+                                  } else {
                                   CAL.WA.exchange_exec (self.ve_id);
+                                  }
                                   self.vc_data_bind(e);
                                 ]]>
                               </v:on-post>
@@ -4104,7 +4120,7 @@
               </script>
             </vm:if>
 
-            <vm:if test="self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate')">
+            <v:template type="simple" enabled="--case when self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate') then 1 else 0 end">
               <div class="new-form-header">
                 <?vsp
                   declare T varchar;
@@ -4261,7 +4277,7 @@
                         <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                           <v:before-render>
                             <![CDATA[
-                              control.ufl_selected := either (lte (get_keyword ('type', self.ve_options, 1), 1), 1, 0);
+                                control.ufl_selected := either (lte (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 1), 1, 0);
                             ]]>
                           </v:before-render>
                         </v:radio-button>
@@ -4275,7 +4291,7 @@
                         <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                           <v:before-render>
                             <![CDATA[
-                              control.ufl_selected := either (equ (get_keyword ('type', self.ve_options, 1), 2), 1, 0);
+                                control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 2), 1, 0);
                             ]]>
                           </v:before-render>
                         </v:radio-button>
@@ -4323,11 +4339,31 @@
                       Options
                           </td>
                         </tr>
+                  <vm:if test="self.cAction in ('syncmlCreate', 'syncmlUpdate')">
+                    <tr>
+                      <th>
+                        <v:label for="exc_options_mode" value="Sync mode" />
+                      </th>
+                      <td>
+                        <v:select-list name="exc_options_mode">
+                          <v:item value="0" name="Update both" />
+                          <v:item value="1" name="Update client" />
+                          <v:item value="-1" name="Update SyncML server" />
+                          <v:before-data-bind>
+                            <![CDATA[
+                              control.ufl_value := get_keyword ('mode', self.ve_options);
+                              control.vc_data_bound := 1;
+                            ]]>
+                          </v:before-data-bind>
+                        </v:select-list>
+                      </td>
+                    </tr>
+                  </vm:if>
                         <tr>
                           <th />
                           <td>
                       <label>
-                        <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', self.ve_options, 1)" />
+                        <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', coalesce (self.ve_options, vector ()), 1)" />
                         Events
                       </label>
                           </td>
@@ -4336,7 +4372,7 @@
                           <th />
                           <td>
                       <label>
-                        <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', self.ve_options, 1)" />
+                        <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', coalesce (self.ve_options, vector ()), 1)" />
                         Tasks
                       </label>
                           </td>
@@ -4347,7 +4383,7 @@
                 <v:button action="simple" value="--case when self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                   <v:on-post>
                         <![CDATA[
-                      declare _type, _name, _user, _password, _events, _tasks any;
+                      declare _type, _name, _user, _password, _mode, _events, _tasks any;
                     declare tmp, params any;
 
                           declare exit handler for SQLSTATE '*'
@@ -4395,16 +4431,30 @@
                     }
                       }
                     _name := trim (self.exc_options_name.ufl_value);
+                      _name := '/' || _name || '/';
+                      _name := replace (_name, '//', '/');
                       if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
                       {
                         if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcalendar_11', 'vcalendar_12')))
                           signal ('TEST', 'Bad SyncML folder.<>');
                       }
+
                     _user := trim (self.exc_options_user.ufl_value);
                     _password := self.exc_options_password.ufl_value;
+                      if (_type = 1)
+                      {
+                        tmp := case when ((self.ve_type = 0) or (self.ve_type = 2)) then '11_' else '1__' end;
+                        if (not CAL.WA.dav_check_authenticate (_name, _user, _password, tmp))
+                        {
+                          signal ('TEST', 'The user has no rights for this folder.<>');
+                        }
+                      }
+
+                      _mode := cast (self.exc_options_mode.ufl_value as integer);
                     _events := case when self.exc_options_events.ufl_selected then 1 else 0 end;
                     _tasks := case when self.exc_options_events.ufl_selected then 1 else 0 end;
-                    self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'events', _events, 'tasks', _tasks);
+
+                      self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'mode', _mode, 'events', _events, 'tasks', _tasks);
 
                     CAL.WA.test (self.ve_name, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
                     if (self.ve_update_type = 2)
@@ -4440,9 +4490,9 @@
             </v:on-post>
           </v:button>
                 </div>
-            </vm:if>
+            </v:template>
 
-            <vm:if test="self.cAction in ('subscribeDelete')">
+            <v:template type="simple" enabled="--case when self.cAction in ('subscribeDelete') then 1 else 0 end">
               <div class="new-form-header">
                 Subscriptions/Delete
               </div>
@@ -4520,7 +4570,96 @@
                   </v:on-post>
                 </v:button>
               </div>
-            </vm:if>
+            </v:template>
+
+            <v:template type="simple" enabled="--case when self.cAction in ('syncmlExec') then 1 else 0 end">
+              <v:before-data-bind>
+                <![CDATA[
+                  declare params any;
+                  params := self.vc_page.vc_event.ve_params;
+
+                  if (isnull (get_keyword ('exc_options_mode2', params)))
+                  {
+                    declare exit handler for not found goto _end3;
+
+                    select EX_TYPE,
+                           EX_NAME,
+                           EX_UPDATE_TYPE,
+                           EX_UPDATE_PERIOD,
+                           EX_UPDATE_FREQ,
+                           deserialize (EX_OPTIONS)
+                      into self.ve_type,
+                           self.ve_name,
+                           self.ve_update_type,
+                           self.ve_update_period,
+                           self.ve_update_freq,
+                           self.ve_options
+                      from CAL.WA.EXCHANGE
+                     where EX_ID = self.ve_id;
+
+                    self.exc_options_mode2.ufl_value := get_keyword ('mode', self.ve_options);
+                    self.ve_result := null;
+                  }
+
+                 _end3:;
+                ]]>
+              </v:before-data-bind>
+              <div class="new-form-header">
+                SyncML/Execute
+              </div>
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <tr>
+                    <th width="30%">
+                      Name
+                    </th>
+                    <td>
+                      <?V self.ve_name ?>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="exc_options_mode2" value="Sync mode" />
+                    </th>
+                    <td>
+                      <v:select-list name="exc_options_mode2">
+                        <v:item value="0" name="Update both" />
+                        <v:item value="1" name="Update client" />
+                        <v:item value="-1" name="Update SyncML server" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <?vsp
+                    if (not isnull (self.ve_result))
+                    {
+                      http (sprintf ('<tr><th>Synced (Events, Tasks)</th><td>In - (%d, %d), Out - (%d, %d)</td></tr>', self.ve_result[0][0], self.ve_result[0][1], self.ve_result[1][0], self.ve_result[1][1]));
+                    }
+                  ?>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Sync" name="exc_sync_exec" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _mode any;
+
+                      _mode := cast (self.exc_options_mode2.ufl_value as integer);
+                      self.ve_result := CAL.WA.exchange_exec (self.ve_id, 0, _mode);
+
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" name="exc_sync_cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'syncmlBrowse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
 
             <vm:if test="self.cAction = 'settings'">
               <div class="new-form-header">
