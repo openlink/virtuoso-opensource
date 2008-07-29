@@ -1661,7 +1661,8 @@ static const char *aps_select_max_id__text =
   "select max (APS_ID) from DB.DBA.SYS_ANN_PHRASE_SET";
 
 
-void sql_compile_many (int count, int compile_static, ...)
+void
+sql_compile_many (int count, int compile_static, ...)
 {
   int idx;
   va_list ap;
