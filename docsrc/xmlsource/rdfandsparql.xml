@@ -2469,6 +2469,14 @@ Thus, the proxy service can be used as a 'pipe' for RDF browsers to browse non-R
 </para>
 <para>For more information see <link linkend="rdfproxyservice">RDF Sponger Proxy service</link></para>
 </sect3>
+<sect3 id="virtuosospongercache"><title>Sponger Cache Clearing</title>
+<para>To clear cache on all values of HS_LOCAL_IRI of the SYS_HTTP_SPONGE table use:
+<programlisting><![CDATA[
+sparql clear graph <A-Named-Graph>;
+]]></programlisting>
+</para>
+</sect3>
+
 </sect2>
 </sect1>
 <sect1 id="rdfiridereferencing"><title>Dereferencable IRIs and RDF Linked Data</title>
