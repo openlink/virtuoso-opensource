@@ -40,11 +40,8 @@
       <v:before-data-bind>
         <v:script>
 	 <![CDATA[
-
 	         self.graph_name := get_keyword ('graph_name', self.vc_event.ve_params, NULL);
 	         self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
-
-		 dbg_obj_print ('self.mode ', self.mode);
 	 ]]>
          </v:script>
        </v:before-data-bind>
