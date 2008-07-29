@@ -1,5 +1,5 @@
 -- Flags that describe restrictions on possible values of the variable or the use of the var
-JSO_CONST virtrdf SPART_VARR__ALL		0x77FF	--!< OR of everything, do not forget to edit when new bits are added.
+JSO_CONST virtrdf SPART_VARR__ALL		0xF7FF	--!< OR of everything, do not forget to edit when new bits are added.
 JSO_CONST virtrdf SPART_VARR_SPRINTFF		0x0001	--!< The values of a variable is always made according to one of specified formats
 JSO_CONST virtrdf SPART_VARR_IS_REF		0x0002	--!< The value is a node reference, IRI or blank
 JSO_CONST virtrdf SPART_VARR_IS_IRI		0x0004	--!< The value is an IRI node reference
@@ -13,8 +13,9 @@ JSO_CONST virtrdf SPART_VARR_LONG_EQ_SQL	0x0200	--!< The value is a number of so
 -- Flags listed below this line are for temporary use, they never appear in databases sho they may be changed.
 JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x0400	--!< The variable is never bound, can't have value other than NULL
 JSO_CONST virtrdf SPART_VARR_GLOBAL		0x1000	--!< The variable is a global parameter
-JSO_CONST virtrdf SPART_VARR_EXPORTED		0x2000	--!< The variable is exported to the final result-set
-JSO_CONST virtrdf SPART_VARR_CONFLICT		0x4000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
+JSO_CONST virtrdf SPART_VARR_EXTERNAL		0x2000	--!< The variable is in scalar subquery and is bound outside
+JSO_CONST virtrdf SPART_VARR_EXPORTED		0x4000	--!< The variable is exported to the final result-set
+JSO_CONST virtrdf SPART_VARR_CONFLICT		0x8000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'

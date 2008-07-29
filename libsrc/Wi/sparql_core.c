@@ -233,7 +233,8 @@ sparyyerror_impl_1 (sparp_t *sparp, char *raw_text, int yystate, short *yyssa, s
       );
 }
 
-void spar_error (sparp_t *sparp, const char *format, ...)
+void
+spar_error (sparp_t *sparp, const char *format, ...)
 {
   va_list ap;
   va_start (ap, format);
@@ -249,6 +250,25 @@ void spar_error (sparp_t *sparp, const char *format, ...)
   va_end (ap);
 }
 
+int
+spar_audit_error (sparp_t *sparp, const char *format, ...)
+{
+  va_list ap;
+  caddr_t msg;
+  va_start (ap, format);
+  msg = t_box_vsprintf (1500, format, ap);
+  fprintf (stderr, "%s\n", msg);
+#ifdef DEBUG
+  if (sparp->sparp_internal_error_runs_audit)
+    return 1;
+#endif
+  sqlr_new_error ("37000", "SP039",
+    "%.400s: Internal error (reported by audit): %.1500s",
+    ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
+  return 1; /* Never reached */
+}
+
+
 void
 spar_internal_error (sparp_t *sparp, const char *msg)
 {
@@ -260,6 +280,16 @@ spar_internal_error (sparp_t *sparp, const char *msg)
   fclose (core_reason1);
   GPF_T1(msg);
 #else
+#ifdef DEBUG
+  printf ("Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, sparp->sparp_text);
+  if (!sparp->sparp_internal_error_runs_audit)
+    {
+      sparp->sparp_internal_error_runs_audit = 1;
+      sparp_audit_mem (sparp);
+      sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+      sparp->sparp_internal_error_runs_audit = 0;
+    }
+#endif
   sqlr_new_error ("37000", "SP031",
     "%.400s: Internal error: %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
@@ -948,6 +978,8 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       else
         sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
     }
+  if (NULL == sparp->sparp_env->spare_acc_filters)
+    spar_internal_error (sparp, "spar_" "gp_add_filter(): NULL sparp->sparp_env->spare_acc_filters");
   t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_acc_filters->data)), filt);
 }
 
@@ -1002,7 +1034,8 @@ spar_gp_add_filter_for_named_graph (sparp_t *sparp)
   spar_gp_add_filter_for_graph (sparp, graph_expn, env->spare_named_graph_precodes, 0);
 }
 
-SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text)
+SPART *
+spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text)
 {
   int lvar_blen, verb_qname_blen;
   caddr_t new_key;
@@ -1191,7 +1224,7 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
 }
 
 SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset)
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART **order, caddr_t limit, caddr_t offset)
 {
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
@@ -1215,7 +1248,7 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     env->spare_output_format_name,
     t_box_copy (env->spare_storage_name),
     retvals, NULL /* orig_retvals */, NULL /* expanded_orig_retvals */, retselid,
-    sources, pattern, NULL, order,
+    sources, pattern, groupings, order,
     limit, offset, env );
 }
 
@@ -1543,7 +1576,7 @@ spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode)
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CLEAR",
         (SPART **)t_list (3, graph_precode, t_box_num_nonull (0), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
 }
 
@@ -1558,7 +1591,7 @@ spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode)
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_LOAD",
         (SPART **)t_list (3, graph_precode, src_precode, spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
 }
 
@@ -1573,7 +1606,7 @@ spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent)
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CREATE",
         (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
 }
 
@@ -1588,7 +1621,7 @@ spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent)
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_DROP",
         (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
     spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
 }
 
@@ -1643,7 +1676,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   top = spar_make_top (sparp, SPARUL_RUN_SUBTYPE,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)),
     spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
 }
 
@@ -1654,8 +1687,8 @@ spar_make_fake_action_solution (sparp_t *sparp)
   SPART * fake_gp;
   spar_gp_init (sparp, WHERE_L);
   fake_gp = spar_gp_finalize (sparp);
-  return (SPART **)t_list (4,
-    fake_gp, NULL, t_box_num(1), t_box_num(0));
+  return (SPART **)t_list (5,
+    fake_gp, NULL, NULL, t_box_num(1), t_box_num(0));
 }
 
 id_hashed_key_t
@@ -1768,632 +1801,6 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
       result_array = revlist_to_array (lexems);
       return result_array;
     }
-}
-
-
-const char *spart_dump_opname (ptrlong opname, int is_op)
-{
-
-  if (is_op)
-    switch (opname)
-    {
-    case BOP_AND: return "boolean operation 'AND'";
-    case BOP_OR: return "boolean operation 'OR'";
-    case BOP_NOT: return "boolean operation 'NOT'";
-    case BOP_EQ: return "boolean operation '='";
-    case BOP_NEQ: return "boolean operation '!='";
-    case BOP_LT: return "boolean operation '<'";
-    case BOP_LTE: return "boolean operation '<='";
-    case BOP_GT: return "boolean operation '>'";
-    case BOP_GTE: return "boolean operation '>='";
-    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! return "boolean operation 'like'"; */
-    case BOP_SAME: return "boolean operation '=='";
-    case BOP_NSAME: return "boolean operation '!=='";
-    case BOP_PLUS: return "arithmetic operation '+'";
-    case BOP_MINUS: return "arithmetic operation '-'";
-    case BOP_TIMES: return "arithmetic operation '*'";
-    case BOP_DIV: return "arithmetic operation 'div'";
-    case BOP_MOD: return "arithmetic operation 'mod'";
-    }
-
-  switch (opname)
-    {
-    case _LBRA: return "quad mapping parent group name";
-    case ASC_L: return "ascending order";
-    case ASK_L: return "ASK result-mode";
-    case BOUND_L: return "BOUND builtin";
-    case CONSTRUCT_L: return "CONSTRUCT result-mode";
-    case CREATE_L: return "quad mapping name";
-    case DATATYPE_L: return "DATATYPE builtin";
-    case DESC_L: return "descending";
-    case DESCRIBE_L: return "DESCRIBE result-mode";
-    case DISTINCT_L: return "SELECT DISTINCT result-mode";
-    case false_L: return "false boolean";
-    case FILTER_L: return "FILTER";
-    case FROM_L: return "FROM";
-    case GRAPH_L: return "GRAPH gp";
-    case IRI_L: return "IRI builtin";
-    case IN_L: return "IN";
-    case isBLANK_L: return "isBLANK builtin";
-    case isIRI_L: return "isIRI builtin";
-    case isLITERAL_L: return "isLITERAL builtin";
-    case isURI_L: return "isURI builtin";
-    case LANG_L: return "LANG builtin";
-    case LANGMATCHES_L: return "LANGMATCHES builtin";
-    case LIKE_L: return "LIKE";
-    case LIMIT_L: return "LIMIT";
-    case NAMED_L: return "NAMED";
-    case NIL_L: return "NIL";
-    case OBJECT_L: return "OBJECT";
-    case OFFSET_L: return "OFFSET";
-    case OPTIONAL_L: return "OPTIONAL gp";
-    case ORDER_L: return "ORDER";
-    case PREDICATE_L: return "PREDICATE";
-    case PREFIX_L: return "PREFIX";
-    case REGEX_L: return "REGEX builtin";
-    case SAMETERM_L: return "sameTerm builtin";
-    case SELECT_L: return "SELECT result-mode";
-    case STR_L: return "STR builtin";
-    case SUBJECT_L: return "SUBJECT";
-    case true_L: return "true boolean";
-    case UNION_L: return "UNION gp";
-    case WHERE_L: return "WHERE gp";
-
-    case SPAR_BLANK_NODE_LABEL: return "blank node label";
-    case SPAR_BUILT_IN_CALL: return "built-in call";
-    case SPAR_FUNCALL: return "function call";
-    case SPAR_GP: return "group pattern";
-    case SPAR_LIT: return "lit";
-    case SPAR_QNAME: return "QName";
-    /*case SPAR_QNAME_NS: return "QName NS";*/
-    case SPAR_REQ_TOP: return "SPARQL query";
-    case SPAR_VARIABLE: return "Variable";
-    case SPAR_TRIPLE: return "Triple";
-  }
-  return NULL;
-}
-
-
-char *spart_dump_addr (void *addr)
-{
-  return NULL;
-}
-
-
-void spart_dump_long (void *addr, dk_session_t *ses, int is_op)
-{
-  if (!IS_BOX_POINTER(addr))
-    {
-      const char *op_descr = spart_dump_opname((ptrlong)(addr), is_op);
-      if (NULL != op_descr)
-	{
-	  SES_PRINT (ses, op_descr);
-	  return;
-	}
-    }
-  else
-    {
-      char *addr_descr = spart_dump_addr(addr);
-      if (NULL != addr_descr)
-	{
-	  SES_PRINT (ses, addr_descr);
-	  return;
-	}
-    }
-  {
-    char buf[30];
-    sprintf (buf, "LONG " BOXINT_FMT, unbox (addr));
-    SES_PRINT (ses, buf);
-    return;
-  }
-}
-
-void spart_dump_varr_bits (dk_session_t *ses, int varr_bits)
-{
-  char buf[200];
-  char *tail = buf;
-#define VARR_BIT(b,txt) \
-  do { \
-    if (varr_bits & (b)) \
-      { const char *t = (txt); while ('\0' != (tail[0] = (t++)[0])) tail++; } \
-    } while (0);
-  VARR_BIT (SPART_VARR_CONFLICT, " CONFLICT");
-  VARR_BIT (SPART_VARR_GLOBAL, " GLOBAL");
-  VARR_BIT (SPART_VARR_ALWAYS_NULL, " always-NULL");
-  VARR_BIT (SPART_VARR_NOT_NULL, " notNULL");
-  VARR_BIT (SPART_VARR_FIXED, " fixed");
-  VARR_BIT (SPART_VARR_TYPED, " typed");
-  VARR_BIT (SPART_VARR_IS_LIT, " lit");
-  VARR_BIT (SPART_VARR_IRI_CALC, " IRI-namecalc");
-  VARR_BIT (SPART_VARR_SPRINTFF, " SprintfF");
-  VARR_BIT (SPART_VARR_IS_BLANK, " bnode");
-  VARR_BIT (SPART_VARR_IS_IRI, " IRI");
-  VARR_BIT (SPART_VARR_IS_REF, " reference");
-  VARR_BIT (SPART_VARR_EXPORTED, " exported");
-  session_buffered_write (ses, buf, tail-buf);
-}
-
-void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr)
-{
-  char buf[300];
-  char *tail = buf;
-  int len;
-  int varr_bits = rvr->rvrRestrictions;
-  ccaddr_t fixed_dt = rvr->rvrDatatype;
-  ccaddr_t fixed_val = rvr->rvrFixedValue;
-  spart_dump_varr_bits (ses, varr_bits);
-  if (varr_bits & SPART_VARR_TYPED)
-    {
-      len = sprintf (tail, "; dt=%.100s", fixed_dt);
-      tail += len;
-    }
-  if (varr_bits & SPART_VARR_FIXED)
-    {
-      dtp_t dtp = DV_TYPE_OF (fixed_val);
-      const char *dtp_name = dv_type_title (dtp);
-      const char *meta = "";
-      const char *lit_dt = NULL;
-      const char *lit_lang = NULL;
-      if (DV_ARRAY_OF_POINTER == dtp)
-        {
-          SPART *fixed_tree = ((SPART *)fixed_val);
-          if (SPAR_QNAME == SPART_TYPE (fixed_tree))
-            {
-              meta = " QName";
-              fixed_val = fixed_tree->_.lit.val;
-            }
-          else if (SPAR_LIT == SPART_TYPE (fixed_tree))
-            {
-              meta = " lit";
-              fixed_val = fixed_tree->_.lit.val;
-              lit_dt = fixed_tree->_.lit.datatype;
-              lit_lang = fixed_tree->_.lit.language;
-            }
-          dtp = DV_TYPE_OF (fixed_val);
-          dtp_name = dv_type_title (dtp);
-        }
-      if (IS_STRING_DTP (dtp))
-        len = sprintf (tail, "; fixed%s %s '%.100s'", meta, dtp_name, fixed_val);
-      else if (DV_LONG_INT == dtp)
-        len = sprintf (tail, "; fixed%s %s %ld", meta, dtp_name, (long)(unbox (fixed_val)));
-      else
-        len = sprintf (tail, "; fixed%s %s", meta, dtp_name);
-      tail += len;
-      if (NULL != lit_dt)
-        tail += sprintf (tail, "^^'%.50s'", lit_dt);
-      if (NULL != lit_lang)
-        tail += sprintf (tail, "@'%.50s'", lit_lang);
-      SES_PRINT (ses, buf);
-    }
-  if (rvr->rvrIriClassCount)
-    {
-      int iricctr;
-      SES_PRINT (ses, "; IRI classes");
-      for (iricctr = 0; iricctr < rvr->rvrIriClassCount; iricctr++)
-        {
-          SES_PRINT (ses, " ");
-          SES_PRINT (ses, rvr->rvrIriClasses[iricctr]);
-        }
-    }
-  if (rvr->rvrRedCutCount)
-    {
-      int rcctr;
-      SES_PRINT (ses, "; Not one of");
-      for (rcctr = 0; rcctr < rvr->rvrRedCutCount; rcctr++)
-        {
-          SES_PRINT (ses, " ");
-          SES_PRINT (ses, rvr->rvrRedCuts[rcctr]);
-        }
-    }
-  if (rvr->rvrSprintffs)
-    {
-      int sffctr;
-      SES_PRINT (ses, "; Formats ");
-      for (sffctr = 0; sffctr < rvr->rvrSprintffCount; sffctr++)
-        {
-          SES_PRINT (ses, " |");
-          SES_PRINT (ses, rvr->rvrSprintffs[sffctr]);
-          SES_PRINT (ses, "|");
-        }
-    }
-}
-
-
-void
-spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint)
-{
-  SPART *tree = (SPART *) tree_arg;
-  int ctr;
-  if ((NULL == tree) && (hint < 0))
-    return;
-  if (indent > 0)
-    {
-      session_buffered_write_char ('\n', ses);
-      for (ctr = indent; ctr--; /*no step*/ )
-        session_buffered_write_char (' ', ses);
-    }
-  if (title)
-    {
-      SES_PRINT (ses, title);
-      SES_PRINT (ses, ": ");
-    }
-  if ((-1 == hint) && IS_BOX_POINTER(tree))
-    {
-      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
-        {
-          SES_PRINT (ses, "special: ");
-          hint = 0;
-        }
-      else if ((SPART_HEAD >= BOX_ELEMENTS(tree)) || IS_BOX_POINTER (tree->type))
-        {
-          SES_PRINT (ses, "special: ");
-          hint = -2;
-        }
-    }
-  if (!hint)
-    hint = DV_TYPE_OF (tree);
-  switch (hint)
-    {
-    case -1:
-      {
-	int childrens;
-	char buf[50];
-	if (!IS_BOX_POINTER(tree))
-	  {
-	    SES_PRINT (ses, "[");
-	    spart_dump_long (tree, ses, 0);
-	    SES_PRINT (ses, "]");
-	    goto printed;
-	  }
-        sprintf (buf, "(line %d) ", (int) (ptrlong) tree->srcline);
-        SES_PRINT (ses, buf);
-	childrens = BOX_ELEMENTS (tree);
-	switch (tree->type)
-	  {
-	  case SPAR_ALIAS:
-	    {
-	      sprintf (buf, "ALIAS:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.alias.arg, ses, indent+2, "VALUE", 0);
-	      spart_dump (tree->_.alias.aname, ses, indent+2, "ALIAS NAME", 0);
-		/* _.alias.native is temp so it is not printed */
-	      break;
-	    }
-	  case SPAR_BLANK_NODE_LABEL:
-	    {
-	      sprintf (buf, "BLANK NODE:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
-	      spart_dump (tree->_.var.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.var.tabid, ses, indent+2, "TABLE ID", 0);
-	      break;
-	    }
-	  case SPAR_BUILT_IN_CALL:
-	    {
-	      sprintf (buf, "BUILT-IN CALL:");
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->_.builtin.btype), ses, -1);
-	      spart_dump (tree->_.builtin.args, ses, indent+2, "ARGUMENT", -2);
-	      break;
-	    }
-	  case SPAR_FUNCALL:
-	    {
-	      int argctr, argcount = BOX_ELEMENTS (tree->_.funcall.argtrees);
-	      spart_dump (tree->_.funcall.qname, ses, indent+2, "FUNCTION NAME", 0);
-              if (tree->_.funcall.agg_mode)
-		spart_dump ((void *)(tree->_.funcall.agg_mode), ses, indent+2, "AGGREGATE MODE", 0);
-	      for (argctr = 0; argctr < argcount; argctr++)
-		spart_dump (tree->_.funcall.argtrees[argctr], ses, indent+2, "ARGUMENT", -1);
-	      break;
-	    }
-	  case SPAR_GP:
-            {
-              int eq_count, eq_ctr;
-	      sprintf (buf, "GRAPH PATTERN:");
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->_.gp.subtype), ses, -1);
-	      spart_dump (tree->_.gp.members, ses, indent+2, "MEMBERS", -2);
-	      spart_dump (tree->_.gp.filters, ses, indent+2, "FILTERS", -2);
-	      spart_dump (tree->_.gp.selid, ses, indent+2, "SELECT ID", 0);
-	      /* spart_dump (tree->_.gp.results, ses, indent+2, "RESULTS", -2); */
-              session_buffered_write_char ('\n', ses);
-	      for (ctr = indent+2; ctr--; /*no step*/ )
-	        session_buffered_write_char (' ', ses);
-	      sprintf (buf, "EQUIVS:");
-	      SES_PRINT (ses, buf);
-              eq_count = tree->_.gp.equiv_count;
-	      for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
-                {
-	          sprintf (buf, " %d", (int)(tree->_.gp.equiv_indexes[eq_ctr]));
-		  SES_PRINT (ses, buf);
-                }
-	      break;
-	    }
-	  case SPAR_LIT:
-	    {
-	      sprintf (buf, "LITERAL:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "VALUE", 0);
-              if (tree->_.lit.datatype)
-	        spart_dump (tree->_.lit.datatype, ses, indent+2, "DATATYPE", 0);
-              if (tree->_.lit.language)
-	        spart_dump (tree->_.lit.language, ses, indent+2, "LANGUAGE", 0);
-	      break;
-	    }
-	  case SPAR_QNAME:
-	    {
-	      sprintf (buf, "QNAME:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "IRI", 0);
-	      break;
-	    }
-	  /*case SPAR_QNAME_NS:
-	    {
-	      sprintf (buf, "QNAME_NS:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "NAMESPACE", 0);
-	      break;
-	    }*/
-	  case SPAR_REQ_TOP:
-	    {
-#if 0
-              int eq_count, eq_ctr;
-#endif
-	      sprintf (buf, "REQUEST TOP NODE (");
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->_.req_top.subtype), ses, 1);
-	      SES_PRINT (ses, "):");
-              if (NULL != tree->_.req_top.retvalmode_name)
-	        spart_dump (tree->_.req_top.retvalmode_name, ses, indent+2, "VALMODE FOR RETVALS", 0);
-              if (NULL != tree->_.req_top.formatmode_name)
-	        spart_dump (tree->_.req_top.formatmode_name, ses, indent+2, "SERIALIZATION FORMAT", 0);
-              if (NULL != tree->_.req_top.storage_name)
-	        spart_dump (tree->_.req_top.storage_name, ses, indent+2, "RDF DATA STORAGE", 0);
-	      if (IS_BOX_POINTER(tree->_.req_top.retvals))
-	        spart_dump (tree->_.req_top.retvals, ses, indent+2, "RETVALS", -2);
-	      else
-	        spart_dump (tree->_.req_top.retvals, ses, indent+2, "RETVALS", 0);
-	      spart_dump (tree->_.req_top.retselid, ses, indent+2, "RETVALS SELECT ID", 0);
-	      spart_dump (tree->_.req_top.sources, ses, indent+2, "SOURCES", -2);
-	      spart_dump (tree->_.req_top.pattern, ses, indent+2, "PATTERN", -1);
-	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -1);
-	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", 0);
-	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", 0);
-#if 0
-	      sprintf (buf, "\nEQUIVS:");
-	      SES_PRINT (ses, buf);
-              eq_count = tree->_.req_top.equiv_count;
-	      for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
-                {
-		  sparp_equiv_t *eq = tree->_.req_top.equivs[eq_ctr];
-                  int varname_count, varname_ctr;
-                  int var_ctr;
-		  session_buffered_write_char ('\n', ses);
-		  for (ctr = indent+2; ctr--; /*no step*/ )
-		    session_buffered_write_char (' ', ses);
-                  if (NULL == eq)
-                    {
-	              sprintf (buf, "#%d: merged and destroyed", eq_ctr);
-	              SES_PRINT (ses, buf);
-                      continue;
-                    }
-	          sprintf (buf, "#%d: %s( %d subv, %d recv, %d gspo, %d const, %d subq:", eq_ctr,
-                    (eq->e_deprecated ? "deprecated " : ""),
-		    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
-	            (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_subquery_uses) );
-	          SES_PRINT (ses, buf);
-		  varname_count = BOX_ELEMENTS (eq->e_varnames);
-		  for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
-		    {
-		      SES_PRINT (ses, " ");
-		      SES_PRINT (ses, eq->e_varnames[varname_ctr]);
-		    }
-		  SES_PRINT (ses, " in");
-		  for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
-		    {
-                      SPART *var = eq->e_vars[var_ctr];
-		      SES_PRINT (ses, " ");
-		      SES_PRINT (ses, ((NULL != var->_.var.tabid) ? var->_.var.tabid : var->_.var.selid));
-		    }
-                  SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr));
-		  SES_PRINT (ses, ")");
-                }
-#endif
-	      break;
-	    }
-	  case SPAR_VARIABLE:
-	    {
-	      sprintf (buf, "VARIABLE:");
-	      SES_PRINT (ses, buf);
-              spart_dump_rvr (ses, &(tree->_.var.rvr));
-              if (NULL != tree->_.var.tabid)
-                {
-                  static const char *field_full_names[] = {"graph", "subject", "predicate", "object"};
-                  sprintf (buf, " (%s)", field_full_names[tree->_.var.tr_idx]); SES_PRINT (ses, buf);
-                }
-	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
-	      spart_dump (tree->_.var.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.var.tabid, ses, indent+2, "TABLE ID", 0);
-	      spart_dump ((void*)(tree->_.var.equiv_idx), ses, indent+2, "EQUIV", 0);
-	      break;
-	    }
-	  case SPAR_TRIPLE:
-	    {
-	      sprintf (buf, "TRIPLE:");
-	      SES_PRINT (ses, buf);
-	      if (tree->_.triple.ft_type)
-                {
-	          sprintf (buf, " ft predicate %d", (int)(tree->_.triple.ft_type));
-	          SES_PRINT (ses, buf);
-                }
-              if (NULL != tree->_.triple.options)
-                spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
-	      spart_dump (tree->_.triple.tr_graph, ses, indent+2, "GRAPH", -1);
-	      spart_dump (tree->_.triple.tr_subject, ses, indent+2, "SUBJECT", -1);
-	      spart_dump (tree->_.triple.tr_predicate, ses, indent+2, "PREDICATE", -1);
-	      spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
-	      spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
-	      break;
-	    }
-	  case BOP_EQ: case BOP_NEQ:
-	  case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
-	  /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
-	  case BOP_SAME: case BOP_NSAME:
-	  case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-	  case BOP_AND: case BOP_OR: case BOP_NOT:
-	    {
-	      sprintf (buf, "OPERATOR EXPRESSION ("/*, tree->type*/);
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->type), ses, 1);
-	      SES_PRINT (ses, "):");
-	      spart_dump (tree->_.bin_exp.left, ses, indent+2, "LEFT", -1);
-	      spart_dump (tree->_.bin_exp.right, ses, indent+2, "RIGHT", -1);
-	      break;
-	    }
-          case ORDER_L:
-            {
-	      sprintf (buf, "ORDERING ("/*, tree->_.oby.direction*/);
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->_.oby.direction), ses, 1);
-	      SES_PRINT (ses, "):");
-	      spart_dump (tree->_.oby.expn, ses, indent+2, "CRITERION", -1);
-	      break;
-            }
-	  case FROM_L:
-	    {
-	      sprintf (buf, "FROM (default):");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "IRI", 0);
-	      break;
-	    }
-	  case NAMED_L:
-	    {
-	      sprintf (buf, "FROM NAMED:");
-	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "IRI", 0);
-	      break;
-	    }
-	  default:
-	    {
-	      sprintf (buf, "NODE OF TYPE %ld (", (ptrlong)(tree->type));
-	      SES_PRINT (ses, buf);
-	      spart_dump_long ((void *)(tree->type), ses, 0);
-	      sprintf (buf, ") with %d children:\n", childrens-SPART_HEAD);
-	      SES_PRINT (ses, buf);
-	      for (ctr = SPART_HEAD; ctr < childrens; ctr++)
-		spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
-	      break;
-	    }
-	  }
-	break;
-      }
-    case DV_ARRAY_OF_POINTER:
-      {
-	int childrens = BOX_ELEMENTS (tree);
-	char buf[50];
-	sprintf (buf, "ARRAY with %d children: {", childrens);
-	SES_PRINT (ses,	buf);
-	for (ctr = 0; ctr < childrens; ctr++)
-	  spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
-	if (indent > 0)
-	  {
-	    session_buffered_write_char ('\n', ses);
-	    for (ctr = indent; ctr--; /*no step*/ )
-	      session_buffered_write_char (' ', ses);
-	  }
-	SES_PRINT (ses,	" }");
-	break;
-      }
-    case -2:
-      {
-	int childrens = BOX_ELEMENTS (tree);
-	char buf[50];
-	if (0 == childrens)
-	  {
-	    SES_PRINT (ses, "EMPTY ARRAY");
-	    break;
-	  }
-	sprintf (buf, "ARRAY OF NODES with %d children: {", childrens);
-	SES_PRINT (ses,	buf);
-	for (ctr = 0; ctr < childrens; ctr++)
-	  spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, -1);
-	if (indent > 0)
-	  {
-	    session_buffered_write_char ('\n', ses);
-	    for (ctr = indent; ctr--; /*no step*/ )
-	    session_buffered_write_char (' ', ses);
-	  }
-	SES_PRINT (ses,	" }");
-	break;
-      }
-#if 0
-    case -3:
-      {
-	char **execname = (char **)id_hash_get (xpf_reveng, (caddr_t)(&tree));
-	SES_PRINT (ses, "native code started at ");
-	if (NULL == execname)
-	  {
-	    char buf[30];
-	    sprintf (buf, "0x%p", (void *)tree);
-	    SES_PRINT (ses, buf);
-	  }
-	else
-	  {
-	    SES_PRINT (ses, "label '");
-	    SES_PRINT (ses, execname[0]);
-	    SES_PRINT (ses, "'");
-	  }
-	break;
-      }
-#endif
-    case DV_LONG_INT:
-      {
-	char buf[30];
-	sprintf (buf, "LONG %ld", (long)(unbox ((ccaddr_t)tree)));
-	SES_PRINT (ses,	buf);
-	break;
-      }
-    case DV_STRING:
-      {
-	SES_PRINT (ses,	"STRING `");
-	SES_PRINT (ses,	(char *)(tree));
-	SES_PRINT (ses,	"'");
-	break;
-      }
-    case DV_UNAME:
-      {
-	SES_PRINT (ses,	"UNAME `");
-	SES_PRINT (ses,	(char *)(tree));
-	SES_PRINT (ses,	"'");
-	break;
-      }
-    case DV_SYMBOL:
-      {
-	SES_PRINT (ses,	"SYMBOL `");
-	SES_PRINT (ses,	(char *)(tree));
-	SES_PRINT (ses,	"'");
-	break;
-      }
-    case DV_NUMERIC:
-      {
-        numeric_t n = (numeric_t)(tree);
-        char buf[0x100];
-	SES_PRINT (ses,	"NUMERIC ");
-        numeric_to_string (n, buf, 0x100);
-	SES_PRINT (ses,	buf);
-      }
-    default:
-      {
-	char buf[30];
-	sprintf (buf, "UNEXPECTED TYPE (%u)", (unsigned)(DV_TYPE_OF (tree)));
-	SES_PRINT (ses,	buf);
-	break;
-      }
-    }
-printed:
-  if (0 == indent)
-    session_buffered_write_char ('\n', ses);
 }
 
 #ifdef DEBUG
@@ -2533,7 +1940,7 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_context_qms);
   if ((NULL != env_copy->spare_context_qms) && ((SPART *)((ptrlong)_STAR) != env_copy->spare_context_qms->data))
     spar_error (sparp, "Subqueries are not allowed inside QUAD MAP group patterns other than 'QUAD MAP * {...}'");
-  ENV_COPY (spare_context_graphs);
+  ENV_COPY (spare_context_graphs); /* Do we need this??? */
   /* no copy for spare_context_subjects */
   /* no copy for spare_context_predicates */
   /* no copy for spare_context_objects */
@@ -2666,6 +2073,18 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   res = strses_allocate ();
   spart_dump (sparp->sparp_expr, res, 0, "QUERY", -1);
+#if 1
+  {
+    int eq_ctr, eq_count;
+    SES_PRINT (res, "\nEQUIVS:");
+    eq_count = sparp->sparp_equiv_count;
+    for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
+      {
+        sparp_equiv_t *eq = sparp->sparp_equivs[eq_ctr];
+        spart_dump_eq (eq_ctr, eq, res);
+      }
+  }
+#endif
   MP_DONE ();
   return (caddr_t)res;
 }

@@ -1134,6 +1134,11 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         return SSG_VALMODE_SQLVAL;
       else if (SPART_VARR_GLOBAL & tree->_.var.rvr.rvrRestrictions)
         return sparp_rettype_of_global_param (sparp, tree->_.var.vname);
+      else if (SPART_VARR_EXTERNAL & tree->_.var.rvr.rvrRestrictions)
+        {
+          SPART *orig = sparp_find_origin_of_external_var (sparp, tree);
+          return sparp_expn_native_valmode (sparp, orig);
+        }
       else if (NULL != tree->_.var.tabid)
         {
           SPART *triple;
@@ -1197,8 +1202,25 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           eq_valmode = sparp_equiv_native_valmode (sparp, gp, eq);
           return eq_valmode;
         }
-    default: spar_internal_error (sparp, "sparp_" "expn_native_valmode(): unsupported case");
+    case SPAR_GP:
+      {
+        sparp_t *sub_sparp;
+        SPART *subq = tree->_.gp.subquery;
+        ssg_valmode_t res;
+        if (SELECT_L != tree->_.gp.subtype)
+          break;
+        if (1 != BOX_ELEMENTS (subq->_.req_top.retvals))
+          break;
+        sub_sparp = (sparp_t *)t_box_copy ((caddr_t)sparp);
+        sub_sparp->sparp_expr = subq;
+        sub_sparp->sparp_env = subq->_.req_top.shared_spare;
+        sub_sparp->sparp_parent_sparp = sparp;
+        res = sparp_expn_native_valmode (sub_sparp, subq->_.req_top.retvals[0]);
+        return res;
+      }
+    default: break;
     }
+  spar_internal_error (sparp, "sparp_" "expn_native_valmode(): unsupported case");
   return NULL; /* Never reached, to keep compiler happy */
 }
 
@@ -1315,6 +1337,10 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
             SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
           return eq->e_rvr.rvrRestrictions;
         }
+    case SPAR_GP:
+      if (tree->_.gp.subtype != SELECT_L)
+        spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
+      return sparp_restr_bits_of_expn (sparp, tree->_.gp.subquery->_.req_top.retvals[0]);
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -1533,6 +1559,14 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
   if ((NULL != type) || (NULL != lang))
     {
+      if ((NULL == lang) && (
+        ((uname_xmlschema_ns_uri_hash_string == type) && (DV_STRING == DV_TYPE_OF (value))) ||
+        ((uname_xmlschema_ns_uri_hash_integer == type) && (DV_LONG_INT == DV_TYPE_OF (value))) ||
+        ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) )
+        {
+          ssg_print_box_as_sql_atom (ssg, value, 0);
+          return;
+        }
       ssg_puts (" /* sqlval of typed literal */ __rdf_sqlval_of_obj (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
       ssg_print_box_as_sql_atom (ssg, value, 0);
       ssg_putchar (',');
@@ -3417,6 +3451,14 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg_print_qm_sql (ssg, tree);
         goto print_asname;
       }
+    case SPAR_GP:
+      if ((SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
+        {
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, asname);
+          return;
+        }
+      ssg_print_scalar_subquery_exp (ssg, tree->_.gp.subquery, tree, needed);
+      goto print_asname;
     default:
       spar_sqlprint_error ("ssg_" "print_scalar_expn(): unsupported scalar expression type");
       goto print_asname;
@@ -3630,6 +3672,27 @@ ssg_find_global_in_equiv (sparp_equiv_t *eq, SPART **var_ret, caddr_t *name_ret)
 }
 
 void
+ssg_find_external_in_equiv (sparp_equiv_t *eq, SPART **var_ret, caddr_t *name_ret)
+{
+  int ctr;
+  for (ctr = eq->e_var_count; ctr--; /* no step */)
+    {
+      SPART *var = eq->e_vars[ctr];
+      if (!(SPART_VARR_EXTERNAL & var->_.var.rvr.rvrRestrictions))
+        continue;
+      if (NULL != var_ret)
+        var_ret[0] = var;
+      if (NULL != name_ret)
+        name_ret[0] = var->_.var.vname;
+      return;
+    }
+  if (NULL != var_ret)
+    var_ret[0] = NULL;
+  if (NULL != name_ret)
+    name_ret[0] = NULL;
+}
+
+void
 ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter)
 {
   SPART *fld_tree = triple->_.triple.tr_fields [fld_idx];
@@ -3797,7 +3860,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
       {
         ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
         ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
-        if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL) & tree_restr)
+        if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & tree_restr)
           return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
         if (SPART_VARR_CONFLICT & tree_restr) 
           {
@@ -3818,10 +3881,15 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
 /* SPONGE_SEEALSO () as a fake filter for a variable */
         if ((SPAR_VARIABLE == fld_tree_type) &&
           !(SPART_VARR_IS_LIT & tree_restr) &&
+          !(SPART_VARR_EXTERNAL & tree_restr) &&
           (NULL != env->spare_grab.rgc_sa_preds) &&
           ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
             (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
           {
+/* External variable should be checked by this fake predicate at place of origin, hence no check here.
+It's an open issue what to do if seealso is enabled only in scalar subquery.
+Maybe the best thing is to prohibit seealso declarations in subqueries at all.
+!!!TBD. */
             SPART *graph_tree = triple->_.triple.tr_graph;
             ptrlong graph_tree_type = SPART_TYPE (graph_tree);
             qm_value_t *graph_qmv = qmap->qmGraphMap;
@@ -3833,7 +3901,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
               {
                 if (NULL == graph_qmv)
                   {
-                    ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
+                    ssg_print_literal_as_long (ssg, (SPART *)(qmap->qmGraphRange.rvrFixedValue));
                     break;
                   }
                 if ((SPAR_VARIABLE == graph_tree_type) || (SPAR_BLANK_NODE_LABEL == graph_tree_type))
@@ -3841,15 +3909,15 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
                     ptrlong graph_tree_restr = graph_tree->_.var.rvr.rvrRestrictions;
                     if (SPART_VARR_FIXED & graph_tree_restr)
                       {
-                        ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
+                        ssg_print_literal_as_long (ssg, (SPART *)(graph_tree->_.var.rvr.rvrFixedValue));
                         break;
                       }
                     if (SPART_VARR_GLOBAL & graph_tree_restr)
                       {
-                        ssg_print_global_param (ssg, graph_tree->_.var.vname, SSG_VALMODE_SQLVAL);
+                        ssg_print_global_param (ssg, graph_tree->_.var.vname, SSG_VALMODE_LONG);
                         break;
                       }
-                    ssg_print_tmpl (ssg, graph_qmv->qmvFormat, graph_qmv->qmvFormat->qmfUriOfShortTmpl, tabid, graph_qmv, NULL, NULL_ASNAME);
+                    ssg_print_tmpl (ssg, graph_qmv->qmvFormat, graph_qmv->qmvFormat->qmfIidOfShortTmpl, tabid, graph_qmv, NULL, NULL_ASNAME);
                     break;
                   }
                 ssg_puts ("NULL");
@@ -3924,12 +3992,15 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         spar_error (ssg->ssg_sparp, "Unable to compose SQL text for ?%.200s because quad map format %.200s has no version that could handle NULL values", eq->e_varnames[0], needed->qmfName );
       needed = nullable_needed;
     }
-  if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
-    {
-      for (var_ctr = 0; var_ctr < var_count; var_ctr++)
+  if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
         {
-          SPART *vartree = eq->e_vars[var_ctr];
-          if (SPART_VARNAME_IS_GLOB (vartree->_.var.vname))
+      SPART *vartree;
+      caddr_t varname;
+      if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
+        ssg_find_global_in_equiv (eq, &vartree, &varname);
+      else
+        ssg_find_external_in_equiv (eq, &vartree, &varname);
+      if (NULL != vartree)
             {
               if (NULL == native)
                 native = sparp_expn_native_valmode (ssg->ssg_sparp, vartree);
@@ -3945,7 +4016,6 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
 		}
             }
         }
-    }
   if (flags & SSG_RETVAL_FROM_JOIN_MEMBER)
     {
       for (var_ctr = 0; var_ctr < var_count; var_ctr++)
@@ -4143,7 +4213,7 @@ if (NULL != jright_alias)
           int col_ctr, col_count;
           qm = var_triple->_.triple.tc_list[0]->tc_qm;
           qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
-          if (NULL == qmv) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
+          if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
             continue;
           SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
           memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
@@ -4167,7 +4237,7 @@ if (NULL != jright_alias)
             }
           continue;
         }
-      if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
+      if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
         {
           SPART *glob_var;
           caddr_t glob_name;
@@ -4181,9 +4251,28 @@ if (NULL != jright_alias)
           var_rv->_.retval.vname = "";
           vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
           SPART_AUTO (glob_rv, glob_rv_buf, SPAR_RETVAL);
+          if (SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions)
           ssg_find_global_in_equiv (eq, &glob_var, &glob_name);
+          else
+            {
+              SPART *local_glob_var;
+              ssg_find_external_in_equiv (eq, &local_glob_var, &glob_name);
+              glob_var = sparp_find_origin_of_external_var (ssg->ssg_sparp, local_glob_var);
+            }
           if (NULL != glob_var)
+            {
             memcpy (&(glob_rv->_.retval), &(glob_var->_.var), sizeof (glob_var->_.var));
+              if (!(SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions))
+                {
+                  glob_rv->_.retval.gp = sparp_find_gp_by_alias (ssg->ssg_sparp, glob_rv->_.retval.selid);
+                  glob_rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, glob_rv->_.retval.gp, glob_rv);
+                }
+              else
+                {
+                  glob_rv->_.retval.gp = NULL;
+                  glob_rv->_.retval.triple = NULL;
+                }
+            }
           else
             { /* This is possible in sparql select * where { ?local ?p ?o . filter (?local = ?:global) }*/
               memcpy (&(glob_rv->_.retval), &(var->_.var), sizeof (var->_.var));
@@ -4200,9 +4289,14 @@ if (NULL != jright_alias)
           for (col_ctr = 0; col_ctr < col_count; col_ctr++)
             {
               const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
-              ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "global param value of equiv class"));
+              ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL :
+                  ((SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions) ?
+                    "global param value of equiv class" : "outer query value of equiv class" ) ) );
               ssg_print_tr_var_expn (ssg, var_rv, vmode, eq_idx_asname);
           ssg_puts (" =");
+              if (NULL != glob_rv->_.retval.triple)
+                ssg_print_tr_var_expn (ssg, glob_rv, vmode, eq_idx_asname);
+              else
               ssg_print_scalar_expn (ssg, glob_rv, vmode, eq_idx_asname);
             }
           if (0 == col_count)
@@ -4232,7 +4326,7 @@ if (NULL != jright_alias)
 
 print_cross_equalities:
   /* Printing cross-equalities */
-  if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL) & eq->e_rvr.rvrRestrictions)
+  if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
     return; /* As soon as all are equal to globals, no need in cross-equalities */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
@@ -4384,16 +4478,7 @@ print_field_and_retval_equalities:
             }
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
           sub2_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub2_gp, sub2_eq);
-#ifdef DEBUG
-          if (0 == BOX_ELEMENTS_0 (sub_gp->_.gp.members))
-            common_native = sub2_native;
-          else if (0 == BOX_ELEMENTS_0 (sub2_gp->_.gp.members))
-            common_native = sub_native;
-          else
           common_native = ssg_largest_eq_valmode (sub_native, sub2_native);
-#else
-          common_native = ssg_largest_eq_valmode (sub_native, sub2_native);
-#endif
           if (SSG_VALMODE_LONG == common_native)
             common_native = SSG_VALMODE_SQLVAL;
           else if (SSG_VALMODE_AUTO == common_native)
@@ -4629,6 +4714,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         goto print_asname;
       }
     case SPAR_LIT: case SPAR_QNAME:/* case SPAR_QNAME_NS:*/
+    case SPAR_GP:
       ssg_print_scalar_expn (ssg, tree, needed, asname);
       return;
     default:
@@ -4982,7 +5068,8 @@ from_printed:
               SPART *g = tree->_.triple.tr_graph;
               if (SPAR_IS_LIT_OR_QNAME (g) ||
                 (SPAR_IS_BLANK_OR_VAR (g) &&
-                  ((SPART_VARR_FIXED | SPART_VARR_GLOBAL) & g->_.var.rvr.rvrRestrictions) ) )
+                  ((SPART_VARR_FIXED | SPART_VARR_GLOBAL /* Should I add SPART_VARR_EXTERNAL here ? */) &
+                    g->_.var.rvr.rvrRestrictions) ) )
                 {
                   ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_GRAPH",
                     (SPART **)t_list (2, ft_arg1, g) );
@@ -5115,6 +5202,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   memset (&subq_ssg, 0, sizeof (spar_sqlgen_t));
   subq_ssg.ssg_sparp = sub_sparp;
   subq_ssg.ssg_tree = sub_sparp->sparp_expr = wrapping_gp->_.gp.subquery;
+  sub_sparp->sparp_parent_sparp = NULL; /* not a scalar subquery -- no searchas in surrounding query */
   sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
   if (NULL != ssg->ssg_sc)
     subq_ssg.ssg_sc = ssg->ssg_sc;
@@ -5132,6 +5220,43 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   ssg_puts (" /* subq end */ ) AS ");
   ssg->ssg_indent--;
   ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
+}
+
+void
+ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed)
+{
+  sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
+  spar_sqlgen_t subq_ssg;
+  sql_comp_t subq_sc;
+  ssg_puts (" ( /* scalar subq begin */ ");
+  ssg->ssg_indent++;
+  ssg_newline (1);
+  memset (&subq_ssg, 0, sizeof (spar_sqlgen_t));
+  subq_ssg.ssg_sparp = sub_sparp;
+  subq_ssg.ssg_tree = sub_sparp->sparp_expr = wrapping_gp->_.gp.subquery;
+  sub_sparp->sparp_parent_sparp = ssg->ssg_sparp;
+  sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
+  if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_AUTO == needed))
+    sub_sparp->sparp_env->spare_output_valmode_name = t_box_dv_short_string ("LONG");
+  else if (SSG_VALMODE_SQLVAL == needed)
+    sub_sparp->sparp_env->spare_output_valmode_name = NULL;
+  else
+    spar_internal_error (ssg->ssg_sparp, "ssg_" "print_scalar_subquery_exp: unsupported valmode");
+  if (NULL != ssg->ssg_sc)
+    subq_ssg.ssg_sc = ssg->ssg_sc;
+  else
+    {
+      memset (&subq_sc, 0, sizeof (sql_comp_t));
+      subq_sc.sc_client = sub_sparp->sparp_sparqre->sparqre_cli;
+      subq_ssg.ssg_sc = &subq_sc;
+    }
+  subq_ssg.ssg_sources = subq_ssg.ssg_tree->_.req_top.sources;
+  subq_ssg.ssg_out = ssg->ssg_out;
+  subq_ssg.ssg_indent = ssg->ssg_indent;
+  ssg_make_sql_query_text (&subq_ssg);
+  ssg_newline (1);
+  ssg_puts (" /* scalar subq end */ )");
+  ssg->ssg_indent--;
 }
 
 void
@@ -5348,7 +5473,6 @@ fld_restrictions_may_vary:
           selected_triples_of_mcases [selected_triples_count++] = all_triples_of_mcases[tc];
         }
       ssg_print_fake_self_join_subexp (ssg, first_mcase, selected_triples_of_mcases, selected_triples_count, 1 + breakup_shift, 1 /* = inside breakup */, common_fld_restrictions_bitmasks[left_tc]);
-table_list_done: ;
     }
   ssg->ssg_indent--;
   save_where_l_printed = ssg->ssg_where_l_printed;
@@ -5651,6 +5775,12 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case DISTINCT_L:
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
+      else if (SSG_VALMODE_AUTO == retvalmode)
+        {
+          SPART **retvals = tree->_.req_top.retvals;
+          if (1 == BOX_ELEMENTS (retvals))
+            retvalmode = sparp_expn_native_valmode (ssg->ssg_sparp, retvals[0]);
+        }
       if ((DISTINCT_L == subtype) && (SSG_VALMODE_SQLVAL != retvalmode))
         {
           if (SSG_VALMODE_LONG == retvalmode)
@@ -5772,7 +5902,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_puts (".__ask_retval)\nFROM (");
           ssg->ssg_indent += 1;
         }
-      ssg_puts ("SELECT TOP 1 1 as __ask_retval");
+      ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
       break;
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }

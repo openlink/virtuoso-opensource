@@ -40,10 +40,48 @@ extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
 #define SPAR_GPT_RESCAN		0x80	/* Lists of children should be found again because they may become obsolete during 'in' callback */
 #define SPAR_GPT_ENV_PUSH	0x01	/* Environment should be pushed. */
 
+/*! Single item of state stack of sparp_gp_trav() */
+typedef struct sparp_trav_state_s {
+    SPART *sts_ancestor_gp;		/*!< Group pattern that contains the current subtree, say, gp of filter, parent of gp or triple. */
+    SPART *sts_parent;			/*!< Parent of the current state, NULL for WHERE tree */
+    SPART **sts_curr_array;		/*!< Array that contains current subtree */
+    int sts_ofs_of_curr_in_array;	/*!< Offset of the current subtree from sts_curr_array */
+    void *sts_env;			/*!< Task-specific traverse environment data; */
+  } sparp_trav_state_t;
+
 /*! Returns combination of SPAR_GPT_... bits */
 typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 
-extern int sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
+/*! Parameters of the call of sparp_gp_trav() */
+typedef struct sparp_trav_params_s {
+  sparp_gp_trav_cbk_t *stp_gp_in_cbk;	/*!< Preorder callback to traverse group patterns */
+  sparp_gp_trav_cbk_t *stp_gp_out_cbk;	/*!< Postorder callback to traverse group patterns */
+  sparp_gp_trav_cbk_t *stp_expn_in_cbk;	/*!< Preorder callback to traverse expressions (filters, retvals etc.) */
+  sparp_gp_trav_cbk_t *stp_expn_out_cbk;	/*!< Postordercallback to traverse expressions (filters, retvals etc.) */
+  sparp_gp_trav_cbk_t *stp_expn_subq_cbk;	/*!< Inorder callback to traverse scalar subqueries inside expressions */
+  sparp_gp_trav_cbk_t *stp_literal_cbk;	/*!< Inorder callback to traverse literals (scalars) inside expressions */
+} sparp_trav_params_t;
+
+extern int sparp_gp_trav (sparp_t *sparp, SPART *tree, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ );
+
+extern int sparp_trav_out_clauses (sparp_t *sparp, SPART *root, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ );
+
+typedef int sparp_gp_trav_int_t (sparp_t *sparp, SPART *tree,
+  sparp_trav_state_t *sts_this, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ );
+
+extern int sparp_gp_trav_1 (sparp_t *sparp, sparp_gp_trav_int_t *intcall, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
   sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
@@ -64,6 +102,30 @@ extern int sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   sparp_gp_trav_cbk_t *literal_cbk
  );
 
+extern int sparp_trav_out_clauses_int (sparp_t *sparp, SPART *root,
+  sparp_trav_state_t *sts_this, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ );
+
+
+#define SPARP_GP_TRAV_CALLBACK_ARGS(stp) \
+  (stp).stp_gp_in_cbk, (stp).stp_gp_out_cbk, \
+  (stp).stp_expn_in_cbk, (stp).stp_expn_out_cbk, (stp).stp_expn_subq_cbk, \
+  (stp).stp_literal_cbk
+
+/*!< Suspedns the traversal in order to start other traversal */
+extern void sparp_gp_trav_suspend (sparp_t *sparp);
+/*!< Resumes the suspended traversal */
+extern void sparp_gp_trav_resume (sparp_t *sparp);
+/*!< Suspends the traversal, creates a copy of \c sparp, sets its top expn to subquery of \c subq_gp_wrapper, sets the environment; returns the copy */
+extern sparp_t *sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper);
+/*!< Reverts the effect of \c sparp_down_to_sub() by copying changes from \c sub_sparp to \c sparp and resuming the traversal */
+extern void sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *sub_sparp);
+/*!< Continues the current traversal in the given gp with subquery */
+extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env);
+
 struct sparp_equiv_s;
 
 /*! Equivalence class of variables. All instances of \c sparp_equiv_s are enumerated in \c sparp_equivs .
@@ -76,26 +138,33 @@ typedef struct sparp_equiv_s
     SPART **e_vars;		/*!< Array of all equivalent variables, including different occurences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples) */
+    ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each subquery use) */
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
+    ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables */
     ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
     ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_cloning_serial */
+    ptrlong e_external_src_idx;	/*!< Index in \c req_top.equivs of the binding of external variable at ancestor of scalar subquery */
+    ptrlong e_merge_dest_idx;	/*!< After the merge of equiv into some destination equiv, e_merge_dest_idx keeps destination */
     ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
 #ifdef DEBUG
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to same the pointer after \c e_gp is set to NULL */
 #endif
   } sparp_equiv_t;
 
-#define SPARP_EQUIV_GET_NAMESAKES	0x01	/*!< sparp_equiv_get returns equiv of namesakes, no need to search for exact var. */
-#define SPARP_EQUIV_INS_CLASS		0x02	/*!< sparp_equiv_get has a right to add a new equiv to the \c haystack_gp */
-#define SPARP_EQUIV_INS_VARIABLE	0x04	/*!< sparp_equiv_get has a right to insert needle_var into an equiv */
-#define SPARP_EQUIV_GET_ASSERT		0x08	/*!< sparp_equiv_get will signal internal error instead of returning NULL */
-#define SPARP_EQUIV_ADD_GPSO_USE	0x10	/*!< sparp_equiv_get will increment \c e_gspo_uses if variable is added */
-#define SPARP_EQUIV_ADD_CONST_READ	0x20	/*!< sparp_equiv_get will increment \c e_const_reads if variable is added */
-#define SPARP_EQUIV_ADD_SUBQUERY_USE	0x40	/*!< sparp_equiv_get will increment \c e_subquery_uses if variable is added */
+#define SPARP_EQUIV_GET_NAMESAKES	0x01	/*!< \c sparp_equiv_get() returns equiv of namesakes, no need to search for exact var. */
+#define SPARP_EQUIV_INS_CLASS		0x02	/*!< \c sparp_equiv_get() has a right to add a new equiv to the \c haystack_gp */
+#define SPARP_EQUIV_INS_VARIABLE	0x04	/*!< \c sparp_equiv_get() has a right to insert \c needle_var into an equiv */
+#define SPARP_EQUIV_GET_ASSERT		0x08	/*!< \c sparp_equiv_get() will signal internal error instead of returning NULL */
+#define SPARP_EQUIV_ADD_GPSO_USE	0x10	/*!< \c sparp_equiv_get() will increment \c e_gspo_uses if variable is added */
+#define SPARP_EQUIV_ADD_CONST_READ	0x20	/*!< \c sparp_equiv_get() will increment \c e_const_reads if variable is added */
+#define SPARP_EQUIV_ADD_SUBQUERY_USE	0x40	/*!< \c sparp_equiv_get() will increment \c e_subquery_uses if variable is added */
+#define SPARP_EQUIV_ADD_OPTIONAL_READ	0x80	/*!< \c sparp_equiv_get() will increment \c e_optional_reads if variable is added */
+/* There's no SPARP_EQUIV_ADD_OPTIONAL_READ because subquery vars are not added to the equiv */
+
 /*! Finds or create an equiv class for a \c needle_var in \c haystack_gp.
 The core behaviour is specified by (flags & (SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE)):
    when 0 then only existing equiv with existing occurrence is returned;
@@ -109,7 +178,7 @@ extern sparp_equiv_t *sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_
 /*! Finds an equiv class that supplies a subvalue to the \c receiver from the specified \c haystack_gp */
 extern sparp_equiv_t *sparp_equiv_get_subvalue_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack_gp, sparp_equiv_t *receiver);
 
-/*! Returns 1 if connection exists (or added), 0 otherwise. GPFs if tries to add the second up */
+/*! Returns 2 if connection exists, 1 if did not exist but added, 0 if not exists and not added. GPFs if tries to add the second up */
 extern int sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing);
 
 /*! Returns 1 if connection existed and removed. */
@@ -123,6 +192,8 @@ extern void sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *va
 An error is signaled if the \c orig has been cloned during current cloning on gp.
 Using the function outside gp cloning may need fake increment of \c sparp_gp_cloning_serial to avoid the signal. */
 extern sparp_equiv_t *sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp);
+
+extern void spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses);
 
 #if 0
 /*! Makes an exact copy of equiv without changing indexes.
@@ -220,11 +291,15 @@ extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, 
 
 #define SPARP_RVR_CREATE ((rdf_val_range_t *)1L)
 
+#define SPARP_EQUIV_AUDIT_NOBAD 0x01
 #ifdef DEBUG
 extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr);
 #define sparp_rvr_audit(sparp,rvr) dbg_sparp_rvr_audit (__FILE__, __LINE__, sparp, rvr)
 extern void sparp_equiv_audit_all (sparp_t *sparp, int flags);
 extern void sparp_audit_mem (sparp_t *sparp);
+extern void sparp_equiv_audit_gp (sparp_t *sparp, SPART *gp, int is_deprecated, sparp_equiv_t *chk_eq);
+extern void sparp_equiv_audit_retvals (sparp_t *sparp, SPART *top);
+
 #else
 #define sparp_rvr_audit(sparp,rvr) 0
 #define sparp_equiv_audit_all(sparp,flags)
@@ -255,6 +330,12 @@ extern void sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_
 /*! Returns 1 if the \c tree is an expression that is free from non-global variables */
 extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
 
+/*!< Adds variables to equivalence classes and set counters of usages */
+extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
+
+/*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE */
+void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
+
 /*! Performs all basic term rewritings of the query tree. */
 extern void sparp_rewrite_basic (sparp_t *sparp);
 
@@ -270,6 +351,9 @@ extern SPART *sparp_find_triple_of_var (sparp_t *sparp, SPART *gp, SPART *var);
 /*! This is like \c sparp_find_triple_of_var() but returns triple that
 contains the field whose selid, tabid, name and tr_idx matches \c var. */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var);
+
+/*! This finds a variable that is a source of value of a given external variable. */
+extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
 
 /*! This returns a mapping of \c var.
 If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
@@ -347,6 +431,10 @@ extern SPART *sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_g
 /*! This creates a copy of \c origs array and fills it with sparp_tree_full_copy of each member of the array. */
 extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp);
 
+/*! This fills in \c acc with all distinct variable names found inside the tree, including subqueries.
+Found variable names are pushed into \c acc that may be non-empty when the procedure is called */
+extern void sparp_distinct_varnames_of_tree (sparp_t *sparp, SPART *tree, dk_set_t *acc);
+
 /*! This removes the member with specified index from \c parent_gp and removes its variables from equivs.
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 Removal of a child does not alter restrictions of equivalence classes, because the operation should be used as
@@ -406,6 +494,9 @@ extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPAR
 /*! This makes the gp and all its sub-gps unusable and marks 'deprecated' all equivs that belong to these gps. */
 extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
 
+/*! This calls sparp_gp_deprecate() for all gps ofa subquery. */
+extern void sparp_req_top_deprecate (sparp_t *sparp, SPART *top);
+
 /*! This may turn, e.g., '10 > ?a' into '?a < 10' in order to normalize expressions before optimizations.
 No effects if called for the second time. */
 extern void sparp_rotate_comparisons_by_rank (SPART *filt);
@@ -446,11 +537,34 @@ extern void sparp_gp_produce_nothing (sparp_t *sparp, SPART *gp);
 /*! Perform all rewritings according to the type of the tree, grab logc etc. */
 extern void sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals);
 
+extern void sparp_make_common_eqs (sparp_t *sparp);
+
+/*! Assigns table aliases to all variables in the expression */
+extern void sparp_make_aliases (sparp_t *sparp);
+
+/*! Label variables as EXTERNAL. */
+extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
+
+/*! Removes equivalence classes that were supposed to be pure conenctions but are not connections at all. */
+extern void sparp_remove_redundant_connections (sparp_t *sparp);
+
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
 extern void sparp_rewrite_grab (sparp_t *sparp);
 
 /*! Finds all mappings of all triples, then performs all graph pattern term rewritings of the query tree */
 extern void sparp_rewrite_qm (sparp_t *sparp);
+
+/*! Initial part of sparp_rewrite_qm() that is executed once at top and in every subquery. It finds all mappings of all triples. */
+extern void sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals);
+
+/*! Optimization loop body sparp_rewrite_qm() that is executed recursively at top and in every subquery while it has some effect.
+Returns zero if optimization gives no effect. \c opt_ctr is just a value counter of loops, mostly to run some optimizations not on every loop.
+A special value of SPARP_MULTIPLE_OPTLOOPS tells to run default sequence of few optloops with check for dirty and endless optimization. */
+extern int sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr);
+#define SPARP_MULTIPLE_OPTLOOPS -20080327
+
+/*! Finalization part of sparp_rewrite_qm(), including invocation of whole support of recursive sponge. */
+extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 
 /*! Expand '*' retval list into actual list of variables, add MAX around non-grouped variables etc. */
 extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
@@ -542,6 +656,7 @@ typedef struct spar_sqlgen_s
   int			ssg_where_l_printed;	/*!< Flags what to print before a filter: " WHERE" if 0, " AND" otherwise */
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
+  struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
 } spar_sqlgen_t;
 
 
@@ -620,6 +735,9 @@ extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
 extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
+
+extern void ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp);
+extern void ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed);
 
 #define SSG_PRINT_UNION_NOFIRSTHEAD	0x01	/*!< Flag to suppress printing of 'SELECT retvallist' of the first member of the union */
 #define SSG_PRINT_UNION_NONEMPTY_STUB	0x02	/*!< Flag to print a stub that returns a 1-row result of single column, instead of a stub with empty resultset */

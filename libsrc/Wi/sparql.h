@@ -150,13 +150,6 @@ typedef struct rdf_grab_config_s {
     caddr_t		rgc_loader_name;	/*!< Name of function that actually load the resource */
 } rdf_grab_config_t;
 
-typedef struct sparp_trav_state_s {
-    SPART *sts_parent; /*!< Parent of the current state, NULL for WHERE tree */
-    SPART **sts_curr_array; /*!< Array that contains current subtree */
-    int sts_ofs_of_curr_in_array; /*!< Offset of the current subtree from sts_curr_array */
-    void *sts_env; /*!< Task-specific traverse environment data; */
-  } sparp_trav_state_t;
-
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
@@ -218,8 +211,9 @@ typedef struct sparp_env_s
     caddr_t		spare_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
     int			spare_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
     caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
-    sparp_trav_state_t spare_saved_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Saved state of \c sparp_stss, used when a subquery is entered */
-    int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stss is in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
+    struct sparp_trav_params_s *spare_saved_stp;	/*!< Saved sparp_stp, used when a subquery is entered */
+    struct sparp_trav_state_s *spare_saved_stss;	/*!< Saved state of \c sparp_stss, used when a subquery is entered */
+    int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stp and \c spare_saved_stss are in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
   } sparp_env_t;
 
 typedef struct sparp_s {
@@ -227,6 +221,7 @@ typedef struct sparp_s {
   spar_query_env_t *sparp_sparqre;	/*!< External environment of the query */
   caddr_t sparp_err_hdr;
   SPART * sparp_expr;
+  struct sparp_s *sparp_parent_sparp;	/*!< Pointer to the parser state used to keep parent query of the current query. */
   encoding_handler_t *sparp_enc;
   lang_handler_t *sparp_lang;
   int sparp_synthighlight;
@@ -265,10 +260,14 @@ typedef struct sparp_s {
   struct sparp_equiv_s **sparp_equivs;	/*!< All variable equivalences made for the tree, in growing buffer */
   ptrlong sparp_equiv_count;		/*!< Count of used items in the beginning of spare_equivs */
   ptrlong sparp_cloning_serial;		/*!< The serial used for current \c sparp_gp_full_clone() operation */
-  sparp_trav_state_t sparp_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
+  struct sparp_trav_params_s *sparp_stp;	/*!< Parameters of traverse (callbacks in use). It is filled in by sparp_gp_grav() only, not by sparp_gp_grav_int() */
+  struct sparp_trav_state_s *sparp_stss;	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
-  caddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
+  ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
+#ifdef DEBUG
+  int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
+#endif
 } sparp_t;
 
 
@@ -281,6 +280,7 @@ extern YY_DECL;
 
 extern void spar_error (sparp_t *sparp, const char *format, ...);
 extern void spar_internal_error (sparp_t *sparp, const char *strg);
+extern int spar_audit_error (sparp_t *sparp, const char *format, ...); /* returns fake 1 as a value for return */
 extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
 extern caddr_t spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld);
 extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);
@@ -331,7 +331,7 @@ void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, 
 typedef struct qm_atable_use_s
 {
   const char *qmatu_alias;
-  qm_atable_t *qmatu_ata;
+  const char *qmatu_tablename;
   void *qmatu_more;
 } qm_atable_use_t;
 
@@ -567,7 +567,7 @@ extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART **order, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);

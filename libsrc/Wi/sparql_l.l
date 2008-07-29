@@ -442,6 +442,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{F}{R}{O}{M}			{ return FROM_L		; }
 <SPARQL>{F}{U}{N}{C}{T}{I}{O}{N}	{ return FUNCTION_L	; }
 <SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L	; }
+<SPARQL>{G}{R}{O}{U}{P}			{ return GROUP_L	; }
 <SPARQL>{I}{N}				{ return IN_L		; }
 <SPARQL>{I}{N}{D}{E}{X}			{ return INDEX_L	; }
 <SPARQL>{I}{N}{F}{E}{R}{E}{N}{C}{E}	{ return INFERENCE_L	; }

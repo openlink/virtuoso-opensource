@@ -6834,19 +6834,25 @@ create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options a
   if (isstring (g_iri) and __rdf_obj_ft_rule_count_in_graph (iri_to_id (g_iri)))
     {
       VT_INC_INDEX_DB_DBA_RDF_OBJ();
+      commit work;
+      -- dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has indexed RDF_OBJ');
       return;
     }
   grabbed_list := dict_to_vector (grabbed, 0);
   grab_count := length (grabbed_list);
+  -- dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has grabbed_list = ', grabbed_list);
   for (grab_ctr := 1; grab_ctr < grab_count; grab_ctr := grab_ctr + 2)
     {
       g_iri := grabbed_list[grab_ctr];
       if (isstring (g_iri) and __rdf_obj_ft_rule_count_in_graph (iri_to_id (g_iri)))
         {
           VT_INC_INDEX_DB_DBA_RDF_OBJ();
+          commit work;
+          -- dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has indexed RDF_OBJ');
           return;
         }
     }
+  -- dbg_obj_princ ('DB.DBA.RDF_FT_INDEX_GRABBED () has changed nothing');
 }
 ;
 
@@ -6884,13 +6890,14 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env))(url, opts);
       commit work;
-      dict_put (grabbed, url, final_dest);
+      dict_put (grabbed, url, coalesce (final_dest, dest));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
       if (get_keyword ('refresh_free_text', env, 0) and
         (__rdf_obj_ft_rule_count_in_graph (iri_to_id (final_dest)) or
           __rdf_obj_ft_rule_count_in_graph (iri_to_id (final_gdest)) ) )
         {
           VT_INC_INDEX_DB_DBA_RDF_OBJ();
+          -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
           commit work;
         }
       return 1;
@@ -6918,6 +6925,8 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
   declare grabbed, aq any;
   declare sa_graphs, sa_preds any;
   declare doc_limit integer;
+  if (not isiri_id (subj))
+    return 1;
   aq := async_queue (8);
   grabbed := get_keyword ('grabbed', env);
   doc_limit := get_keyword ('doc_limit', env);
@@ -6930,7 +6939,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
     {
       foreach (varchar graph in sa_graphs) do
         {
-          for (sparql select ?val where { graph ?:graph { ?:subj ?:pred ?val . filter (isIRI(?val)) } } ) do
+          for (sparql define input:storage "" select ?val where { graph ?:graph { ?:subj ?:pred ?val . filter (isIRI(?val)) } } ) do
             {
               -- dbg_obj_princ ('found {', graph, subj, pred, val, '}');
               if ("val" like 'http://%')
@@ -6948,7 +6957,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
     {
       foreach (varchar pred in sa_preds) do
         {
-          for (sparql select ?val where { graph ?:opt_g { ?:subj ?:pred ?val . filter (isIRI(?val)) } } ) do
+          for (sparql define input:storage "" select ?val where { graph ?:opt_g { ?:subj ?:pred ?val . filter (isIRI(?val)) } } ) do
             {
               -- dbg_obj_princ ('found {', opt_g, subj, pred, val, '}');
               if ("val" like 'http://%')
@@ -6964,11 +6973,13 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
     }
   if (bit_and (1, get_keyword ('flags', env, 0)))
     {
-      if (subj like 'http://%')
+      declare subj_iri varchar;
+      subj_iri := id_to_iri (subj);
+      if (subj_iri like 'http://%')
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector (subj, '...', env, doc_limit));
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (subj, grabbed, env, doc_limit);
-          aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (subj, grabbed, env, doc_limit));
+          aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (subj_iri, grabbed, env, doc_limit));
         }
     }
 out_of_limit:
@@ -6976,8 +6987,8 @@ out_of_limit:
   aq_wait_all (aq);
   DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, env);
   if (dict_size (grabbed) > doc_limit)
-    return 1;
-  return 0;
+    return 4;
+  return 2;
 }
 ;
 
@@ -7033,12 +7044,15 @@ DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final v
               declare val any;
               declare dest varchar;
               val := rset[rctr][colctr];
+              if (isiri_id (val))
+                {
               -- dbg_obj_princ ('DB.DBA.RDF_GRAB (): dynamic IRI aq_request ', vector (val, '...', grab_params, doc_limit));
               --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
               aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
               if (dict_size (grabbed) >= doc_limit)
                 goto final_exec;
             }
+        }
         }
       commit work;
       aq_wait_all (aq);
@@ -8820,14 +8834,6 @@ host_found:
   rset := null;
   if (registry_get ('__sparql_endpoint_debug') = '1')
     dbg_printf ('query=[%s]', full_query);
-  exec ('isnull (sparql_to_sql_text (?))', state, msg, vector (full_query));
-  if (state <> '00000')
-    {
-      DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-        '400', 'Bad Request',
-	full_query, state, msg, format);
-      return;
-    }
 
   declare sc_max int;
   declare sc decimal;
@@ -8856,6 +8862,15 @@ host_found:
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
     {
+      declare state2, msg2 varchar;
+      exec ('isnull (sparql_to_sql_text (?))', state2, msg2, vector (full_query));
+      if (state2 <> '00000')
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '400', 'Bad Request',
+            full_query, state2, msg2, format);
+          return;
+        }
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '500', 'SPARQL Request Failed',
 	full_query, state, msg, format);
@@ -9422,13 +9437,25 @@ perform_actual_load:
       -- then it may return rdf instead of html
       req_hdr := req_hdr || case when length (req_hdr) > 0 then '\r\n' else '' end
         || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
-	|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
+	|| 'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, application/xml; q=0.2, */*; q=0.1';
+	--|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
       -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
       --ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
+      {
+        declare exit handler for sqlstate '*' {
+	  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+	  commit work;
+	  resignal;
+	};
       ret_body := DB.DBA.RDF_HTTP_URL_GET (new_origin_uri, '', ret_hdr, get_method, req_hdr, NULL, get_proxy, 0);
+      }
       -- dbg_obj_princ ('http_get returned header: ', ret_hdr);
       if (ret_hdr[0] like 'HTTP%404%')
+        {
+	  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+	  commit work;
         signal ('HT404', sprintf ('Resource "%.1000s" not found', new_origin_uri));
+	}
       if (ret_hdr[0] like 'HTTP%304%')
         {
           ret_304_not_modified := 1;
