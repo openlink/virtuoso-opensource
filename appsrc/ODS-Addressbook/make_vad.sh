@@ -36,6 +36,7 @@ VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
 NEED_VERSION=04.50.2920
+SYNCML_VERSION=1.05.75
 
 if [ "x$HOST_OS" != "x" ]
 then
@@ -231,7 +232,14 @@ sticker_init() {
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
   echo "  <sql purpose=\"pre-install\"></sql>" >> $STICKER
-  echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER
+  echo "  <sql purpose=\"post-install\">" >> $STICKER
+  echo "    <![CDATA[" >> $STICKER
+  echo "      if (isstring (DB.DBA.vad_check_version ('SyncML')) and (VAD.DBA.version_compare (DB.DBA.vad_check_version ('SyncML'), '$SYNCML_VERSION') < 0)) " >> $STICKER
+  echo "        { " >> $STICKER
+  echo "          result ('WARNING', 'The SyncML feature requires installed SyncML version $SYNCML_VERSION or greater'); " >> $STICKER
+  echo "        } " >> $STICKER
+  echo "    ]]>" >> $STICKER
+  echo "  </sql>" >> $STICKER
   echo "</procedures>" >> $STICKER
   echo "<ddls>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER

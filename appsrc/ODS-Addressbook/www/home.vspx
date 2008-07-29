@@ -167,9 +167,7 @@
 
   <v:method name="viewTimeZone" arglist="inout fValue any">
     <![CDATA[
-      if (is_empty_or_null (fValue))
-         return '';
-      return sprintf ('GMT %s%02d:00', case when cast (fValue as integer) < 0 then '-' else '+' end,  abs(cast (fValue as integer)));
+      return sprintf ('GMT %s%02d:00', case when cast (fValue as integer) < 0 then '-' else '+' end,  abs(cast (coalesce (fValue, 0) as integer)));
 	  ]]>
 	</v:method>
 
@@ -407,7 +405,7 @@
       <v:variable name="v_hCode" type="varchar" default="''" />
       <v:variable name="v_hAddress1" type="varchar" default="''" />
       <v:variable name="v_hAddress2" type="varchar" default="''" />
-      <v:variable name="v_hTzone" type="varchar" default="''"/>
+      <v:variable name="v_hTzone" type="varchar" default="'0'" />
       <v:variable name="v_hLat" type="real" default="0.00"/>
       <v:variable name="v_hLng" type="real" default="0.00"/>
       <v:variable name="v_hPhone" type="varchar" default="''" />
@@ -422,7 +420,7 @@
       <v:variable name="v_bCode" type="varchar" default="''" />
       <v:variable name="v_bAddress1" type="varchar" default="''" />
       <v:variable name="v_bAddress2" type="varchar" default="''" />
-      <v:variable name="v_bTzone" type="varchar" default="''"/>
+      <v:variable name="v_bTzone" type="varchar" default="'0'" />
       <v:variable name="v_bLat" type="real" default="0.00"/>
       <v:variable name="v_bLng" type="real" default="0.00"/>
       <v:variable name="v_bPhone" type="varchar" default="''" />
@@ -473,6 +471,7 @@
       <v:variable name="ve_update_period" type="varchar" default="''" />
       <v:variable name="ve_update_freq" type="integer" default="0" />
       <v:variable name="ve_options" type="any" default="null" />
+      <v:variable name="ve_result" type="any" default="null" />
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -558,7 +557,7 @@
                     self.v_hCode := '';
                     self.v_hAddress1 := '';
                     self.v_hAddress2 := '';
-                    self.v_hTzone := '';
+                  self.v_hTzone := '0';
                     self.v_hLat := null;
                     self.v_hLng := null;
                     self.v_hMail := '';
@@ -573,7 +572,7 @@
                     self.v_bCode := '';
                     self.v_bAddress1 := '';
                     self.v_bAddress2 := '';
-                    self.v_bTzone := '';
+                  self.v_bTzone := '0';
                     self.v_bLat := null;
                     self.v_bLng := null;
                     self.v_bMail := '';
@@ -1136,7 +1135,7 @@
               </table>
             </div>
             <div class="new-form-footer">
-              <v:button action="simple" value="Tag" xhtml_class="form-button">
+                <v:button name="b1" action="simple" value="Tag" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.v_tag := AB.WA.tag_prepare(self.t_tag.ufl_value);
@@ -1704,27 +1703,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_hCountry" xhtml_id="ab_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_hCountry\', \'ab_hState\');" >
-                   		    <v:after-data-bind>
-      		                  <![CDATA[
-                                  if (e.ve_initiator = control)
-                                  {
-                    		        control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
-                          			self.v_hState := null;
-                         			  self.ab_hState.vc_data_bind (e);
-                          		} else {
-      		                      control.ufl_value := self.v_hCountry;
-                          		}
-                                  if (is_empty_or_null (self.v_hLat) and is_empty_or_null (self.v_hLng) and (not e.ve_is_post or e.ve_initiator = control))
-                                  {
-      		                      whenever not found goto _end;
-      		                      select WC_LAT, WC_LNG into self.v_hLat, self.v_hLng from WA_COUNTRY where WC_NAME = control.ufl_value;
-      		                    _end:;
-      		                    }
-      		                    control.vs_set_selected ();
-      		                  ]]>
-      		                </v:after-data-bind>
-                        </v:data-list>
+                            <v:data-list name="ab_hCountry" xhtml_id="ab_hCountry" value="--self.v_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_hCountry\', \'ab_hState\');" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hCountry); ?>
                       </td>
@@ -1735,7 +1714,28 @@
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_hState" xhtml_id="ab_hState" value="--self.v_hState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_hCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
+                            <span id="span_ab_hState">
+                              <![CDATA[
+                                <script type="text/javascript">
+                                  function categoryCombo ()
+                                  {
+                                    var cc = new OAT.Combolist([], "<?V self.v_hState ?>");
+                                    cc.input.name = "ab_hState";
+                                    cc.input.id = "ab_hState";
+                                    cc.input.size = "60";
+                                    $("span_ab_hState").appendChild(cc.div);
+                                    cc.addOption("");
+                                    <?vsp
+                                      for (select * from WA_PROVINCE where WP_COUNTRY = self.ab_hCountry.ufl_value) do
+                                      {
+                                        http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
+                                      }
+                                    ?>
+                                  }
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                                 </script>
+                              ]]>
+                            </span>
                         </vm:if>
                         <?vsp self.viewField (self.v_hState); ?>
                       </td>
@@ -1826,7 +1826,7 @@
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_hLat" value="--case when self.v_hLat is not null then sprintf ('%.6f', coalesce (self.v_hLat, 0.00)) else '' end" xhtml_size="20" />
-                  			<v:button action="simple" value="Set from address">
+                            <v:button name="SetFromAddress" action="simple" value="Set from address">
                   			  <v:on-post>
                   			    <![CDATA[
                   			      declare lat, lng double precision;
@@ -1835,7 +1835,7 @@
                             		        trim (coalesce (self.ab_hAddress1.ufl_value, '')),
                             		        trim (coalesce (self.ab_hAddress2.ufl_value, '')),
                             		        trim (coalesce (self.ab_hCity.ufl_value, '')),
-                            		        trim (coalesce (self.ab_hState.ufl_value, '')),
+                                            trim (get_keyword ('ab_hState', e.ve_params, '')),
                             		        trim (coalesce (self.ab_hCode.ufl_value, '')),
                             		        trim (coalesce (self.ab_hCountry.ufl_value, '')),
                             		        lat,
@@ -1928,36 +1928,39 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_bCountry" xhtml_id="ab_bCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_bCountry\', \'ab_bState\');" >
-                   		    <v:after-data-bind>
-      		                  <![CDATA[
-      		                    if (e.ve_initiator = control) {
-                    		        control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
-                                  self.v_bState := null;
-                                   self.ab_bState.vc_data_bind (e);
-                          		} else {
-      		                      control.ufl_value := self.v_bCountry;
-                          		}
-      		                    if (self.v_bLat is null and self.v_bLng is null and (not e.ve_is_post or e.ve_initiator = control)) {
-      		                      whenever not found goto _end;
-      		                      select WC_LAT, WC_LNG into self.v_bLat, self.v_bLng from WA_COUNTRY where WC_NAME = control.ufl_value;
-      		                    _end:;
-      		                    }
-      		                    control.vs_set_selected ();
-      		                  ]]>
-      		                </v:after-data-bind>
-                        </v:data-list>
+                            <v:data-list name="ab_bCountry" xhtml_id="ab_bCountry" value="--self.v_bCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_bCountry\', \'ab_bState\');" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bCountry); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_skype" value="State/Province"/>
+                          <v:label for="ab_bState" value="State/Province" />
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_bState" xhtml_id="ab_bState" value="--self.v_bState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
+                            <span id="span_ab_bState">
+                              <![CDATA[
+                                <script type="text/javascript">
+                                  function categoryCombo ()
+                                  {
+                                    var cc = new OAT.Combolist([], "<?V self.v_bState ?>");
+                                    cc.input.name = "ab_bState";
+                                    cc.input.id = "ab_bState";
+                                    cc.input.size = "60";
+                                    $("span_ab_bState").appendChild(cc.div);
+                                    cc.addOption("");
+                                    <?vsp
+                                      for (select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value) do
+                                      {
+                                        http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
+                                      }
+                                    ?>
+                                  }
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                                 </script>
+                              ]]>
+                            </span>
                         </vm:if>
                         <?vsp self.viewField (self.v_bState); ?>
                       </td>
@@ -2048,7 +2051,7 @@
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_bLat" value="--case when self.v_bLat is not null then sprintf ('%.6f', coalesce (self.v_bLat, 0.00)) else '' end" xhtml_size="20" />
-                  			<v:button action="simple" value="Set from address">
+                            <v:button name="SetFromAddress2" action="simple" value="Set from address">
                   			  <v:on-post>
                   			    <![CDATA[
                   			      declare lat, lng double precision;
@@ -2058,7 +2061,7 @@
                             		         trim (coalesce (self.ab_bAddress1.ufl_value, '')),
                             		         trim (coalesce (self.ab_bAddress2.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCity.ufl_value, '')),
-                                           trim (coalesce (self.ab_bState.ufl_value, '')),
+                                             trim (get_keyword ('ab_bState', e.ve_params, '')),
                             		         trim (coalesce (self.ab_bCode.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCountry.ufl_value, '')),
                             		         lat,
@@ -2267,8 +2270,8 @@
                     self.v_aim           := case when self.v_kind then '' else trim (self.ab_aim.ufl_value) end;
                     self.v_yahoo         := case when self.v_kind then '' else trim (self.ab_yahoo.ufl_value) end;
                     self.v_msn           := case when self.v_kind then '' else trim (self.ab_msn.ufl_value) end;
-                      self.v_hCountry      := case when self.v_kind then '' else trim (get_keyword ('ab_hcountry', e.ve_params)) end;
-                      self.v_hState        := case when self.v_kind then '' else trim (get_keyword ('ab_hstate', e.ve_params)) end;
+                      self.v_hCountry      := case when self.v_kind then '' else trim (get_keyword ('ab_hCountry', e.ve_params)) end;
+                      self.v_hState        := case when self.v_kind then '' else trim (get_keyword ('ab_hState', e.ve_params)) end;
                     self.v_hCity         := case when self.v_kind then '' else trim (self.ab_hCity.ufl_value) end;
                     self.v_hCode         := case when self.v_kind then '' else trim (self.ab_hCode.ufl_value) end;
                     self.v_hAddress1     := case when self.v_kind then '' else trim (self.ab_hAddress1.ufl_value) end;
@@ -2279,8 +2282,8 @@
                     self.v_hFax          := case when self.v_kind then '' else trim (self.ab_hFax.ufl_value) end;
                     self.v_hMail         := case when self.v_kind then '' else trim (self.ab_hMail.ufl_value) end;
                     self.v_hWeb          := case when self.v_kind then '' else trim (self.ab_hWeb.ufl_value) end;
-                      self.v_bCountry      := trim (get_keyword ('ab_bcountry', e.ve_params));
-                      self.v_bState        := trim (get_keyword ('ab_bstate', e.ve_params));
+                      self.v_bCountry      := trim (get_keyword ('ab_bCountry', e.ve_params));
+                      self.v_bState        := trim (get_keyword ('ab_bState', e.ve_params));
                     self.v_bCity         := trim (self.ab_bCity.ufl_value);
                     self.v_bCode         := trim (self.ab_bCode.ufl_value);
                     self.v_bAddress1     := trim (self.ab_bAddress1.ufl_value);
@@ -2379,9 +2382,9 @@
             </script>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.abAction = 'import') then 1 else 0 end">
+            <v:template name="t7" type="simple" enabled="--case when (self.abAction = 'import') then 1 else 0 end">
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '1') then 1 else 0 end">
+              <v:template  name="t8" type="simple" enabled="-- case when (self.abStep = '1') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Select source type"/>
 	            </div>
@@ -2489,7 +2492,7 @@
 	            </div>
 	          </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
+              <v:template  name="t9" type="simple" enabled="-- case when (self.abStep = '2') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Select content type"/>
 	            </div>
@@ -2583,7 +2586,7 @@
 	            </div>
 	          </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
+              <v:template name="t10" type="simple" enabled="-- case when (self.abStep = '3') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Source parameters"/>
 	            </div>
@@ -2607,7 +2610,7 @@
 		                  </th>
 		                  <td>
                         <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
-                        <v:button action="browse" value="Browse...">
+                          <v:button action="browse" name="browse" value="Browse...">
                        	  <v:after-data-bind>
                        		  <![CDATA[
                               control.vc_add_attribute ('onclick', 'javascript: davBrowse (''f_dav'');');
@@ -2927,7 +2930,7 @@
 	            </div>
 	          </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
+              <v:template name="t11" type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
 	            <div class="new-form-header">
                 <v:label format="%s" value="Import: Select persons" />
               </div>
@@ -3053,7 +3056,7 @@
               </div>
             </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
+              <v:template name="t12" type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
               <div class="new-form-header">
 	              <v:label format="%s" value="Import: Mapping"/>
 	            </div>
@@ -3171,7 +3174,7 @@
               </vm:if>
 	            </div>
               <div class="new-form-mapping2">
-                <v:button action="simple" value="Default" xhtml_class="form-button" xhtml_style="margin: 5px 0px 0px 0px;">
+                  <v:button action="simple" name="default" value="Default" xhtml_class="form-button" xhtml_style="margin: 5px 0px 0px 0px;">
                   <v:on-post>
                     <![CDATA[
                       if (self.i_type = 2) {
@@ -3238,7 +3241,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" value="Reset" xhtml_class="form-button" xhtml_style="margin: 5px 5px 0px 0px;">
+                  <v:button action="simple" name="reset" value="Reset" xhtml_class="form-button" xhtml_style="margin: 5px 5px 0px 0px;">
                   <v:on-post>
                     <![CDATA[
                       self.i_maps := null;
@@ -3291,7 +3294,7 @@
               </script>
 	          </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
+              <v:template name="t14" type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Options"/>
 	            </div>
@@ -3423,8 +3426,7 @@
 	          </v:template>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.abAction = 'export') then 1 else 0 end">
-
+            <v:template name="t17" type="simple" enabled="--case when (self.abAction = 'export') then 1 else 0 end">
             <div class="new-form-header">
               <v:label format="%s" value="-- case when (length (self.abSelected)) then 'Export selected contacts' else 'Export all contacts' end" />
             </div>
@@ -3545,7 +3547,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                <v:button action="simple" style="url" value="SyncML" xhtml_class="gems2">
+                <v:button action="simple" style="url" value="SyncML" xhtml_class="gems2" enabled="--AB.WA.syncml_check();">
                   <v:on-post>
                     <![CDATA[
                       self.abSubAction := 'syncmlBrowse';
@@ -3623,6 +3625,10 @@
                   else if (self.abSubAction = 'syncmlUpdate')
                   {
                     T := 'SyncML/Update';
+                  }
+                  else if (self.abSubAction = 'syncmlExec')
+                  {
+                    T := 'SyncML/Execute';
                   }
                   http (S || T);
                 ?>
@@ -3703,7 +3709,7 @@
                 </div>
                     <div id="s_content_1" class="tabContent" style="display: none;">
                       <table class="form-body" cellspacing="0">
-                        <v:template type="simple" enabled="--either (equ (AB.WA.discussion_check (), 1), 0, 1)">
+                        <v:template name="t16" type="simple" enabled="--either (equ (AB.WA.discussion_check (), 1), 0, 1)">
                           <tr>
                             <td class="error_text" colspan="2">
                               <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
@@ -4132,7 +4138,12 @@
                                     resignal;
                                   };
                                   self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
+                                  if (self.abSubAction = 'syncmlBrowse')
+                                  {
+                                    self.abSubAction := 'syncmlExec';
+                                  } else {
                                   AB.WA.exchange_exec (self.ve_id);
+                                  }
                                   self.vc_data_bind(e);
                                 ]]>
                               </v:on-post>
@@ -4152,7 +4163,7 @@
                 </v:data-set>
               </vm:if>
 
-              <vm:if test="self.abSubAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate')">
+              <v:template name="t20" type="simple" enabled="--case when self.abSubAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate') then 1 else 0 end">
                 <v:before-data-bind>
                   <![CDATA[
                     declare params any;
@@ -4277,7 +4288,7 @@
                           <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                             <v:before-render>
                               <![CDATA[
-                                control.ufl_selected := either (lte (get_keyword ('type', self.ve_options, 1), 1), 1, 0);
+                                  control.ufl_selected := either (lte (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 1), 1, 0);
                               ]]>
                             </v:before-render>
                           </v:radio-button>
@@ -4291,7 +4302,7 @@
                           <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                             <v:before-render>
                               <![CDATA[
-                                control.ufl_selected := either (equ (get_keyword ('type', self.ve_options, 1), 2), 1, 0);
+                                  control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 2), 1, 0);
                               ]]>
                             </v:before-render>
                           </v:radio-button>
@@ -4339,6 +4350,26 @@
                         Options
                       </td>
                     </tr>
+                    <vm:if test="self.abSubAction in ('syncmlCreate', 'syncmlUpdate')">
+                      <tr>
+                        <th>
+                          <v:label for="exc_options_mode" value="Sync mode" />
+                        </th>
+                        <td>
+                          <v:select-list name="exc_options_mode">
+                            <v:item value="0" name="Update both" />
+                            <v:item value="1" name="Update client" />
+                            <v:item value="-1" name="Update SyncML server" />
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := get_keyword ('mode', self.ve_options);
+                                control.vc_data_bound := 1;
+                              ]]>
+                            </v:before-data-bind>
+                          </v:select-list>
+                        </td>
+                      </tr>
+                    </vm:if>
                     <tr>
                       <th>
                         <v:label for="exc_tags_include" value="Include with tags (comma-separated)" />
@@ -4359,13 +4390,25 @@
                       </td>
                     </tr>
                     <?vsp self.myTags ('exc_tags_exclude'); ?>
+                    <vm:if test="self.abSubAction in ('syncmlCreate', 'syncmlUpdate')">
+                      <tr>
+                        <th>
+                          <v:label for="exc_tags" value="Tags for incoming entries (comma-separated)" />
+                        </th>
+                        <td>
+                          <v:text name="exc_tags" value="--get_keyword ('tags', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
+                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['exc_tags'].value = ''" class="button" />
+                        </td>
+                      </tr>
+                      <?vsp self.myTags ('exc_tags'); ?>
+                    </vm:if>
                   </table>
                 </div>
                 <div class="new-form-footer">
                   <v:button action="simple" value="--case when self.abSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
-                        declare _type, _name, _user, _password, _tagsInclude, _tagsExclude any;
+                        declare _type, _name, _user, _password, _mode, _tagsInclude, _tagsExclude, _tags any;
                         declare tmp, params any;
 
                         declare exit handler for SQLSTATE '*'
@@ -4413,13 +4456,26 @@
                         }
                         }
                         _name := trim (self.exc_options_name.ufl_value);
+                        _name := '/' || _name || '/';
+                        _name := replace (_name, '//', '/');
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
                         {
                           if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcard_11', 'vcard_12')))
                             signal ('TEST', 'Bad SyncML folder.<>');
                         }
+
                         _user := trim (self.exc_options_user.ufl_value);
                         _password := self.exc_options_password.ufl_value;
+                        if (_type = 1)
+                        {
+                          tmp := case when ((self.ve_type = 0) or (self.ve_type = 2)) then '11_' else '1__' end;
+                          if (not AB.WA.dav_check_authenticate (_name, _user, _password, tmp))
+                          {
+                            signal ('TEST', 'The user has no rights for this folder.<>');
+                          }
+                        }
+
+                        _mode := cast (self.exc_options_mode.ufl_value as integer);
 
                         tmp := trim (self.exc_tags_include.ufl_value);
                         AB.WA.test (tmp, vector ('name', 'Include Tags', 'class', 'tags'));
@@ -4432,7 +4488,14 @@
                         tmp := AB.WA.tags2vector (tmp);
                         tmp := AB.WA.vector_unique (tmp);
                         _tagsExclude := AB.WA.vector2tags (tmp);
-                        self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'tagsInclude', _tagsInclude, 'tagsExclude', _tagsExclude);
+
+                        tmp := trim (self.exc_tags.ufl_value);
+                        AB.WA.test (tmp, vector ('name', 'Tags', 'class', 'tags'));
+                        tmp := AB.WA.tags2vector (tmp);
+                        tmp := AB.WA.vector_unique (tmp);
+                        _tags := AB.WA.vector2tags (tmp);
+
+                        self.ve_options := vector ('type', _type, 'name', _name, 'user', _user, 'password', _password, 'mode', _mode, 'tagsInclude', _tagsInclude, 'tagsExclude', _tagsExclude, 'tags', _tags);
 
                         AB.WA.test (self.ve_name, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
                         if (self.ve_update_type = 2)
@@ -4468,7 +4531,93 @@
                     </v:on-post>
                   </v:button>
                 </div>
-              </vm:if>
+              </v:template>
+
+              <v:template  name="t21" type="simple" enabled="--case when self.abSubAction in ('syncmlExec') then 1 else 0 end">
+                <v:before-data-bind>
+                  <![CDATA[
+                    declare params any;
+                    params := self.vc_page.vc_event.ve_params;
+
+                    if (isnull (get_keyword ('exc_options_mode2', params)))
+                    {
+                      declare exit handler for not found goto _end3;
+                      select EX_TYPE,
+                             EX_NAME,
+                             EX_UPDATE_TYPE,
+                             EX_UPDATE_PERIOD,
+                             EX_UPDATE_FREQ,
+                             deserialize (EX_OPTIONS)
+                        into self.ve_type,
+                             self.ve_name,
+                             self.ve_update_type,
+                             self.ve_update_period,
+                             self.ve_update_freq,
+                             self.ve_options
+                        from AB.WA.EXCHANGE
+                       where EX_ID = self.ve_id;
+
+                      self.ve_result := null;
+                      self.exc_options_mode2.ufl_value := get_keyword ('mode', self.ve_options);
+                    }
+
+                   _end3:;
+                  ]]>
+                </v:before-data-bind>
+                <div class="new-form-body">
+                  <table cellspacing="0">
+                    <tr>
+                      <th width="30%">
+                        Name
+                      </th>
+                      <td>
+                        <?V self.ve_name ?>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <v:label for="exc_options_mode2" value="Sync mode" />
+                      </th>
+                      <td>
+                        <v:select-list name="exc_options_mode2">
+                          <v:item value="0" name="Update both" />
+                          <v:item value="1" name="Update client" />
+                          <v:item value="-1" name="Update SyncML server" />
+                        </v:select-list>
+                      </td>
+                    </tr>
+                    <?vsp
+                      if (not isnull (self.ve_result))
+                      {
+                        http (sprintf ('<tr><th>Synced</th><td>In - %d, Out - %d</td></tr>', self.ve_result[0], self.ve_result[1]));
+                      }
+                    ?>
+                  </table>
+                </div>
+                <div class="new-form-footer">
+                  <v:button action="simple" value="Sync" name="exc_sync_exec" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        declare _mode any;
+
+                        _mode := cast (self.exc_options_mode2.ufl_value as integer);
+                        self.ve_result := AB.WA.exchange_exec (self.ve_id, 0, _mode);
+
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Cancel" name="exc_sync_cancel" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.abSubAction := 'syncmlBrowse';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </v:template>
+
             </td>
           </tr>
         </table>

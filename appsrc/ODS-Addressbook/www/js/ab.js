@@ -577,10 +577,19 @@ function hasError(root) {
 // ---------------------------------------------------------------------------
 function updateState(countryName, stateName, stateValue)
 {
-  var obj = $(stateName);
-  obj.innerHTML = "";
+  var span = $('span_'+stateName);
+  span.innerHTML = "";
 
-  if ($v(countryName) != '') {
+  var cc = new OAT.Combolist([], "");
+  cc.input.name = stateName;
+  cc.input.id = stateName;
+  cc.input.size = "60";
+  cc.addOption("");
+
+  span.appendChild(cc.div);
+
+  if ($v(countryName) != '')
+  {
     var wsdl = "/ods_services/services.wsdl";
     var serviceName = "ODS_USER_LIST";
 
@@ -593,14 +602,14 @@ function updateState(countryName, stateName, stateValue)
     	}
     }
   	var x = function(xml) {
-  	  listCallback(xml, obj, stateValue);
+  	  listCallback(xml, cc, stateValue);
   	}
   	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
   }
 }
 
 // ---------------------------------------------------------------------------
-function listCallback (result, obj, objValue)
+function listCallback (result, cc, objValue)
 {
   var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
 	var root = xml.documentElement;
@@ -610,14 +619,10 @@ function listCallback (result, obj, objValue)
   	var items = root.getElementsByTagName("item");
   	if (items.length)
   	{
-			obj.options[0] = new Option('', '');
   		for (var i=1; i<=items.length; i++)
   		{
-  		  o = new Option(OAT.Xml.textValue(items[i-1]), OAT.Xml.textValue(items[i-1]));
-  			obj.options[i] = o;
+        cc.addOption(OAT.Xml.textValue(items[i-1]));
   		}
-  		if (objValue != null)
-  		  obj.value = objValue;
   	}
 	}
 }

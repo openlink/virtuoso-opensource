@@ -3401,7 +3401,7 @@ create procedure AB.WA.import_vcard (
       id := coalesce ((select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_UID = uid), -1);
       if ((id <> -1) and not isnull (updatedBefore))
       {
-        if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED > updatedBefore))
+        if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED >= updatedBefore))
           goto _skip;
       }
       id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
@@ -4233,11 +4233,13 @@ create procedure AB.WA.uid ()
 --
 create procedure AB.WA.exchange_exec (
   in _id integer,
-  in _mode integer := 0)
+  in _mode integer := 0,
+  in _exMode integer := null)
 {
+  declare retValue any;
+
   declare exit handler for SQLSTATE '*'
   {
-    rollback work;
     update AB.WA.EXCHANGE
        set EX_EXEC_LOG = __SQL_STATE || ' ' || AB.WA.test_clear (__SQL_MESSAGE)
      where EX_ID = _id;
@@ -4247,13 +4249,15 @@ create procedure AB.WA.exchange_exec (
       resignal;
   };
 
-  AB.WA.exchange_exec_internal (_id);
+  retValue := AB.WA.exchange_exec_internal (_id, _exMode);
 
   update AB.WA.EXCHANGE
      set EX_EXEC_TIME = now (),
          EX_EXEC_LOG = null
    where EX_ID = _id;
   commit work;
+
+  return retValue;
 }
 ;
 
@@ -4272,17 +4276,22 @@ create procedure AB.WA.exchange_entry_update (
 --------------------------------------------------------------------------------
 --
 create procedure AB.WA.exchange_exec_internal (
-  in _id integer)
+  in _id integer,
+  in _exMode integer := null)
 {
   for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_ID = _id) do
   {
-    declare _type, _name, _user, _password any;
+    declare _type, _name, _user, _password, _mode, _tags, _tagsInclude, _tagsExclude any;
     declare _content any;
 
     _type := get_keyword ('type', _options);
     _name := get_keyword ('name', _options);
     _user := get_keyword ('user', _options);
     _password := get_keyword ('password', _options);
+    _mode := cast (get_keyword ('mode', _options) as integer);
+    _tags := get_keyword ('tags', _options);
+    _tagsInclude := get_keyword ('tagsInclude', _options);
+    _tagsExclude := get_keyword ('tagsExclude', _options);
 
     -- publish
     if (_direction = 0)
@@ -4350,9 +4359,17 @@ create procedure AB.WA.exchange_exec_internal (
     else if (_direction = 2)
     {
       declare data any;
-      declare N, _rlog_res_id integer;
+      declare N, _in, _out, _rlog_res_id integer;
       declare _path, _pathID varchar;
 
+      _in := 0;
+      _out := 0;
+      if (not isnull (_exMode))
+      {
+        _mode := _exMode;
+      }
+      if ((_mode >= 0) and AB.WA.dav_check_authenticate (_name, _user, _password, '1__'))
+      {
       data := AB.WA.exec ('select distinct RLOG_RES_ID from DB.DBA.SYNC_RPLOG where RLOG_RES_COL = ? and DMLTYPE <> \'D\'', vector (DB.DBA.DAV_SEARCH_ID (_name, 'C')));
       for (N := 0; N < length (data); N := N + 1)
       {
@@ -4360,24 +4377,17 @@ create procedure AB.WA.exchange_exec_internal (
          for (select RES_CONTENT, RES_NAME, RES_MOD_TIME from WS.WS.SYS_DAV_RES where RES_ID = _rlog_res_id) do
         {
           connection_set ('__sync_dav_upl', '1');
-          AB.WA.syncml2entry_internal (_domain_id, _name, _user, _password, RES_CONTENT, RES_NAME, RES_MOD_TIME, 1);
+            _in := _in + AB.WA.syncml2entry_internal (_domain_id, _name, _user, _password, _tags, RES_CONTENT, RES_NAME, RES_MOD_TIME, 1);
           connection_set ('__sync_dav_upl', '0');
         }
       }
-      --return;
-
-      declare oTagsInclude, oTagsExclude any;
-
-      oTagsInclude := null;
-      oTagsExclude := null;
-      if (not isnull (_options))
-      {
-        oTagsInclude := get_keyword ('tagsInclude', _options);
-        oTagsExclude := get_keyword ('tagsExclude', _options);
       }
+
+      if ((_mode <= 0) and AB.WA.dav_check_authenticate (_name, _user, _password, '11_'))
+      {
       for (select P_ID, P_UID, P_TAGS from AB.WA.PERSONS where P_DOMAIN_ID = _domain_id) do
       {
-        if (not AB.WA.tags_exchangeTest (P_TAGS, oTagsInclude, oTagsExclude))
+          if (not AB.WA.tags_exchangeTest (P_TAGS, _tagsInclude, _tagsExclude))
           goto _skip;
 
         _path := _name || P_UID;
@@ -4385,10 +4395,13 @@ create procedure AB.WA.exchange_exec_internal (
         if (not (isinteger(_pathID) and (_pathID > 0)))
         {
           AB.WA.syncml_entry_update_internal (_domain_id, P_ID, _path, _user, _password, 'I');
+            _out := _out + 1;
         }
 
       _skip:;
       }
+    }
+      return vector (_in, _out);
     }
   }
 }
@@ -4441,12 +4454,32 @@ _done:;
 }
 ;
 
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.dav_check_authenticate (
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _permissions varchar)
+{
+  if (DB.DBA.DAV_AUTHENTICATE (DB.DBA.DAV_SEARCH_ID (_path, 'C'), 'C', _permissions, _user, _password) < 0)
+    return 0;
+  return 1;
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 create procedure AB.WA.syncml_check (
   in syncmlPath varchar := null)
 {
-  if (not isstring (DB.DBA.vad_check_version ('SyncML')))
+  declare syncmlVersion varchar;
+
+  syncmlVersion := DB.DBA.vad_check_version ('SyncML');
+  if (not isstring (syncmlVersion))
+    return 0;
+  if (VAD.DBA.version_compare (syncmlVersion, '1.05.75') < 0)
     return 0;
   if (isnull (syncmlPath))
     return 1;
@@ -4524,7 +4557,7 @@ create procedure AB.WA.syncml_entry_update_internal (
     }
     connection_set ('__sync_dav_upl', '1');
     connection_set ('__sync_ods', '1');
-    DB.DBA.DAV_RES_UPLOAD (_path, _content, 'text/x-vcard', _permissions, _user, null, _user, _password);
+    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcard', _permissions, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
     connection_set ('__sync_ods', '0');
     connection_set ('__sync_dav_upl', '0');
   }
@@ -4661,17 +4694,19 @@ create procedure AB.WA.syncml2entry (
     return;
   };
 
-  declare _syncmlPath, _path, _user, _password varchar;
+  declare _syncmlPath, _path, _user, _password, _tags varchar;
 
   for (select EX_DOMAIN_ID, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_TYPE = 2) do
   {
     _path := WS.WS.COL_PATH (res_col);
     _syncmlPath := get_keyword ('name', _options);
-    _user := get_keyword ('user', _options);
-    _password := get_keyword ('password', _options);
     if (_path = _syncmlPath)
     {
-      AB.WA.syncml2entry_internal (EX_DOMAIN_ID, _path, _user, _password, res_content, res_name, res_mod_time);
+      _user := get_keyword ('user', _options);
+      _password := get_keyword ('password', _options);
+      _tags := get_keyword ('tags', _options);
+      if (AB.WA.dav_check_authenticate (_path, _user, _password, '11_'))
+        AB.WA.syncml2entry_internal (EX_DOMAIN_ID, _path, _user, _password, _tags, res_content, res_name, res_mod_time);
     }
   }
 }
@@ -4684,6 +4719,7 @@ create procedure AB.WA.syncml2entry_internal (
   in _path varchar,
   in _user varchar,
   in _password varchar,
+  in _tags varchar,
   in _res_content varchar,
   in _res_name varchar,
   in _res_mod_time datetime := null,
@@ -4708,7 +4744,7 @@ create procedure AB.WA.syncml2entry_internal (
 
   if (not isinteger (_data))
   {
-    IDs := AB.WA.import_vcard (_domain_id, _data, null, null, _res_mod_time, _res_name);
+    IDs := AB.WA.import_vcard (_domain_id, _data, vector ('tags', _tags), null, _res_mod_time, _res_name);
     -- return;
     for (N := 0; N < length (IDs); N := N + 1)
     {
@@ -4732,6 +4768,7 @@ create procedure AB.WA.syncml2entry_internal (
         }
       }
     }
+    return length (IDs);
   }
 }
 ;
