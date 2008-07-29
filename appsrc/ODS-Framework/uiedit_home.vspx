@@ -30,6 +30,11 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <script type="text/javascript">
+    <![CDATA[
+		  OAT.Loader.loadFeatures(["combolist", "ws"], function(){});
+	  ]]>
+  </script>
     <v:variable persist="0" name="haddress1" type="varchar" default="''"/>
     <v:variable persist="0" name="haddress2" type="varchar" default="''"/>
     <v:variable persist="0" name="hcode" type="varchar" default="''"/>
@@ -92,46 +97,37 @@
               <tr>
                 <th><label for="h_country">Country</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:data-list name="h_country" xhtml_id="regcountry" xhtml_style="width:216px" xhtml_tabindex="1" enabled="1"
-                    sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="getElementById(''dirty_force_global'').value = ''true'' ; doAutoSubmit (this.form, this);" >
-		    <v:after-data-bind><![CDATA[
-		     if (not e.ve_is_post)
-		       {
-		         control.ufl_value := self.hcountry;
-		       }
-		     else if (e.ve_initiator = control)
-		       {
-		         control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
-			 self.hstate := null;
-			 self.h_state.vc_data_bind (e);
-		       }
-		     if (self.lat is null and self.lng is null and (not e.ve_is_post or e.ve_initiator = control))
-		       {
-		         whenever not found goto nflat;
-		           select WC_LAT, WC_LNG into self.lat, self.lng
-		           from WA_COUNTRY where WC_NAME = control.ufl_value;
-		         nflat:;
-		       }
-		     control.vs_set_selected ();
-		       ]]></v:after-data-bind>
-                  </v:data-list>
+        <v:data-list name="h_country" xhtml_id="h_country" value="--self.hcountry" sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'h_country\', \'h_state\');" />
 		  <vm:u-prop-select name="sel_16" value="self.sav16" />
-                  <!--v:label name ="lb2" format="%s" value="'* Refers to State/Province, City/Town, Country'"/-->
                 </td>
               </tr>
               <tr>
-                <th><label for="h_state">State/Province</label></th>
+      <th>
+        <label for="h_state">State/Province</label>
+      </th>
 		<td class="listing_col" nowrap="1">
-		    <v:data-list name="h_state" value="--self.hstate" xhtml_tabindex="2"
-			sql="select * from WA_PROVINCE where WP_COUNTRY = self.h_country.ufl_value"
-			key-column="WP_PROVINCE"
-			value-column="WP_PROVINCE"
-			/>
-
-                  <!--v:text name="h_state"
-                          value="-#-self.hstate"
-                          xhtml_style="width:216px"
-                          xhtml_tabindex="4"/-->
+        <span id="span_h_state">
+          <![CDATA[
+            <script type="text/javascript">
+              function categoryCombo ()
+              {
+                var cc = new OAT.Combolist([], "<?V self.hstate ?>");
+                cc.input.name = "h_state";
+                cc.input.id = "h_state";
+                cc.input.style.width = "216px";
+                $("span_h_state").appendChild(cc.div);
+                cc.addOption("");
+                <?vsp
+                  for (select * from WA_PROVINCE where WP_COUNTRY = self.h_country.ufl_value) do
+                  {
+                    http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
+                  }
+                ?>
+              }
+              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+             </script>
+          ]]>
+        </span>
                 </td>
               </tr>
               <tr>
@@ -225,7 +221,7 @@
 			        trim (coalesce (self.h_address1.ufl_value, '')),
 			        trim (coalesce (self.h_address2.ufl_value, '')),
 			        trim (coalesce (self.h_city.ufl_value, '')),
-			        trim (coalesce (self.h_state.ufl_value, '')),
+                           trim (coalesce (get_keyword ('h_state', e.ve_params), '')),
 			        trim (coalesce (self.h_code.ufl_value, '')),
 			        trim (coalesce (self.h_country.ufl_value, '')),
 			      lat, lng
@@ -239,8 +235,10 @@
 			</v:button>
               <v:check-box name="set_hlatlng_def" initial-checked="0" value="-- case self.hlatlng_def when 1 then 0 else 1 end" xhtml_id="set_hlatlng_def" >
                 <v:after-data-bind>
-                    if (not e.ve_is_post){
-                      if(self.hlatlng_def=0){
+                   if (not e.ve_is_post)
+                   {
+                     if(self.hlatlng_def=0)
+                     {
                          control.ufl_selected := 1;
                       }else {
                          control.ufl_selected := 0;
@@ -292,8 +290,7 @@
               <tr>
 		  <th><label for="set_all">Set access for all fields as </label></th>
 		  <td class="ctrl">
-		      <v:select-list name="set_all3" value="0"
-			  xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+          <v:select-list name="set_all3" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
 			  <v:item name="*no change*"  value="0" />
 			  <v:item name="public"  value="1" />
 			  <v:item name="friends" value="2" />
@@ -313,10 +310,11 @@
                     <v:on-post>
                       <![CDATA[
 		        declare lat, lng any;
+                  declare _arr any;
 
-                        if(self.vc_is_valid = 0) return;
+                  if(self.vc_is_valid = 0)
+                    return;
 
-                        declare _arr any;
                         _arr := WA_STR_PARAM(params,'sel_');
 			WA_USER_VISIBILITY (self.u_name, _arr, 2);
 
@@ -332,7 +330,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.h_address2.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.h_code.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.h_city.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', self.h_state.ufl_value);
+                  WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', get_keyword ('h_state', e.ve_params));
                         WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.h_country.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_HTZONE', self.h_tzone.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.h_phone.ufl_value);

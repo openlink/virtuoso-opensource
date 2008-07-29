@@ -272,4 +272,76 @@ function callSparql (graph, qry_id, res_id, rdf_gem)
   OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
 }
 
+function hasError(root) {
+	if (!root)
+	{
+		alert('No data!');
+		return true;
+	}
 
+	/* error */
+	var error = root.getElementsByTagName('error')[0];
+  if (error)
+  {
+	  var code = error.getElementsByTagName('code')[0];
+    if (OAT.Xml.textValue(code) != 'OK')
+    {
+	    var message = error.getElementsByTagName('message')[0];
+      if (message)
+        alert (OAT.Xml.textValue(message));
+  		return true;
+    }
+  }
+  return false;
+}
+
+function updateState(countryName, stateName, stateValue)
+{
+  var span = $('span_'+stateName);
+  span.innerHTML = "";
+
+  var cc = new OAT.Combolist([], "");
+  cc.input.name = stateName;
+  cc.input.id = stateName;
+  cc.input.style.width = "216px";
+  cc.addOption("");
+
+  span.appendChild(cc.div);
+
+  if ($v(countryName) != '')
+  {
+    var wsdl = "/ods_services/services.wsdl";
+    var serviceName = "ODS_USER_LIST";
+
+    var inputObject = {
+    	ODS_USER_LIST:{
+        pSid:document.forms[0].elements['sid'].value,
+        pRealm:document.forms[0].elements['realm'].value,
+        pList:'Province',
+        pParam:$v(countryName)
+    	}
+    }
+  	var x = function(xml) {
+  	  listCallback(xml, cc, stateValue);
+  	}
+  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
+  }
+}
+
+function listCallback (result, cc, objValue)
+{
+  var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
+	var root = xml.documentElement;
+	if (!hasError(root))
+	{
+    /* options */
+  	var items = root.getElementsByTagName("item");
+  	if (items.length)
+  	{
+  		for (var i=1; i<=items.length; i++)
+  		{
+        cc.addOption(OAT.Xml.textValue(items[i-1]));
+  		}
+  	}
+	}
+}

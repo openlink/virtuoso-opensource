@@ -3075,9 +3075,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	  ' CONSTRUCT {
 	    ?maker foaf:made ?forum .
 	    ?forum foaf:maker ?maker .
-	    ?forum a ?forum_type .
+#	    ?forum a ?forum_type .
 	    ?forum rdfs:label ?label .
-	    ?forum rdfs:seeAlso ?see_also .
+#	    ?forum rdfs:seeAlso ?see_also .
 	  }
 	  WHERE
 	  {

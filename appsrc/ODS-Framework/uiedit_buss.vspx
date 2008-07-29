@@ -30,6 +30,12 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <script type="text/javascript">
+    <![CDATA[
+		  OAT.Loader.loadFeatures(["combolist", "ws"], function(){});
+	  ]]>
+  </script>
+
     <v:variable persist="0" name="bindustr" type="varchar" default="''"/>
     <v:variable persist="0" name="borg" type="varchar" default="''"/>
     <v:variable persist="0" name="bjob" type="varchar" default="''"/>
@@ -191,33 +197,7 @@
               <tr>
                 <th><label for="b_country">Country</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:data-list name="b_country" xhtml_id="b_country" enabled="1" xhtml_style="width:216px" xhtml_tabindex="4"
-                    sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME"  auto-submit = "1"  xhtml_onchange=" getElementById(''dirty_force_global'').value = ''true'' ; doAutoSubmit (this.form, this) ;" >
-                      <v:before-data-bind>
-                        control.ufl_value := self.bcountry;
-                      </v:before-data-bind>
-		    <v:after-data-bind><![CDATA[
-		     if (not e.ve_is_post)
-		       {
-		         control.ufl_value := self.bcountry;
-		       }
-		     else if (e.ve_initiator = control)
-		       {
-		         control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
-			 self.bstate := null;
-			 self.b_state.vc_data_bind (e);
-		       }
-		     if (self.blat is null and self.blng is null and (not e.ve_is_post or e.ve_initiator = control))
-		       {
-		         whenever not found goto nflat;
-		           select WC_LAT, WC_LNG into self.lat, self.lng
-		           from WA_COUNTRY where WC_NAME = control.ufl_value;
-		         nflat:;
-		       }
-
-		     control.vs_set_selected ();
-		       ]]></v:after-data-bind>
-                  </v:data-list>
+                  <v:data-list name="b_country" xhtml_id="b_country" value="--self.bcountry" sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'b_country\', \'b_state\');" />
 		    <vm:u-prop-select name="sel_23" value="self.sav23" />
                   <!--v:label name ="lb32" format="%s" value="'* Refers to State/Province, City/Town, Country'"/-->
                 </td>
@@ -225,15 +205,28 @@
               <tr>
                 <th><label for="b_state">State/Province</label></th>
                 <td class="listing_col" nowrap="1">
-                  <!--v:text name="b_state"
-                          value="-#-self.bstate"
-                          xhtml_style="width:216px"
-                          xhtml_tabindex="7"/-->
-		    <v:data-list name="b_state" value="--self.bstate" xhtml_tabindex="5"
-			sql="select * from WA_PROVINCE where WP_COUNTRY = self.b_country.ufl_value"
-			key-column="WP_PROVINCE"
-			value-column="WP_PROVINCE"
-			/>
+                  <span id="span_b_state">
+                    <![CDATA[
+                      <script type="text/javascript">
+                        function categoryCombo ()
+                        {
+                          var cc = new OAT.Combolist([], "<?V self.bstate ?>");
+                          cc.input.name = "b_state";
+                          cc.input.id = "b_state";
+                          cc.input.style.width = "216px";
+                          $("span_b_state").appendChild(cc.div);
+                          cc.addOption("");
+                          <?vsp
+                            for (select * from WA_PROVINCE where WP_COUNTRY = self.b_country.ufl_value) do
+                            {
+                              http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
+                            }
+                          ?>
+                        }
+                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                       </script>
+                    ]]>
+                  </span>
                 </td>
               </tr>
               <tr>
@@ -327,7 +320,7 @@
                                trim (coalesce (self.b_address1.ufl_value, '')),
                                trim (coalesce (self.b_address2.ufl_value, '')),
                                trim (coalesce (self.b_city.ufl_value, '')),
-                               trim (coalesce (self.b_state.ufl_value, '')),
+                               trim (coalesce (ger_keyword ('b_state', e.ve_params), '')),
                                trim (coalesce (self.b_code.ufl_value, '')),
                                trim (coalesce (self.b_country.ufl_value, '')),
                                blat, blng
@@ -363,7 +356,7 @@
               </td>
               </tr>
               <tr>
-                <th><label for="h_long">Longitude</label></th>
+                <th><label for="b_long">Longitude</label></th>
                 <td class="listing_col" nowrap="1">
                 </td>
               </tr>
@@ -544,7 +537,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_BADDRESS2', self.b_address2.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BCODE', self.b_code.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BCITY', self.b_city.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', self.b_state.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_BSTATE', get_keyword ('b_state', e.ve_params));
                         WA_USER_EDIT (self.u_name, 'WAUI_BCOUNTRY', self.b_country.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BTZONE', self.b_tzone.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BLAT', blat);

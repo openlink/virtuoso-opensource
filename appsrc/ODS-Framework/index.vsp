@@ -34,14 +34,14 @@
   declare cookie_arr any;
   cookie_arr := vsp_ua_get_cookie_vec(lines);
 
-  if(cookie_arr is not null and get_keyword('interface',cookie_arr,'js')='vspx')
-  {
-     http_rewrite ();
-     http_request_status ('HTTP/1.1 302 Found');
-     http_header (concat (http_header_get (), 'Location: ',oldui_url,'\r\n'));
-
-     return;
- }
+  -- if(cookie_arr is not null and get_keyword('interface',cookie_arr,'js')='vspx')
+  -- {
+  --   http_rewrite ();
+  --   http_request_status ('HTTP/1.1 302 Found');
+  --   http_header (concat (http_header_get (), 'Location: ',oldui_url,'\r\n'));
+  --
+  --   return;
+  -- }
 
   sid := get_keyword('sid',params,'');
   realm := get_keyword('realm',params,'wa');
