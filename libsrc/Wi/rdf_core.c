@@ -1679,6 +1679,28 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_arg (qst, args, 0, "iri_to_id_nosignal");
+  int make_new = (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "iri_to_id_nosignal") : 1);
+  caddr_t err = NULL;
+  caddr_t res = iri_to_id (qst, name, make_new ? IRI_TO_ID_WITH_CREATE : IRI_TO_ID_IF_KNOWN, &err);
+  if (NULL != err)
+    {
+      if (!strcmp (ERR_STATE(err), "RDFXX"))
+        return NEW_DB_NULL;
+      sqlr_resignal (err);
+    }
+  if (NULL == res)
+    {
+      if (BOX_ELEMENTS (args) > 2)
+        return box_copy_tree (bif_arg (qst, args, 2, "iri_to_id"));
+      return NEW_DB_NULL;
+    }
+  return res;
+}
+
+caddr_t
 bif_iri_to_id_if_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id_if_cached");
@@ -2139,6 +2161,8 @@ rdf_core_init (void)
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_set_uses_index (bif_iri_to_id);
+  bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
+  bif_set_uses_index (bif_iri_to_id_nosignal);
   bif_define ("iri_to_id_if_cached", bif_iri_to_id_if_cached);
   bif_define ("id_to_iri", bif_id_to_iri);
   bif_set_uses_index (bif_id_to_iri);
