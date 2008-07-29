@@ -277,6 +277,8 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
                 as virtrdf:TPCDpartsupp-partsupps ;
             tpcd:has_part tpcd:part (partsupps.PS_PARTKEY)
                 as virtrdf:TPCDpartsupp-ps_partkey ;
+            tpcd:has_ps_partkey partsupps.PS_PARTKEY
+                as virtrdf:TPCDpartsupp-has_ps_partkey ;
             tpcd:has_supplier tpcd:supplier (partsupps.PS_SUPPKEY)
                 as virtrdf:TPCDpartsupp-ps_suppkey ;
             tpcd:availqty partsupps.PS_AVAILQTY
@@ -305,6 +307,8 @@ where (^{customers.}^.C_NATIONKEY = ^{nations.}^.N_NATIONKEY)
         tpcd:supplier (suppliers.S_SUPPKEY)
             a tpcd:supplier
                 as virtrdf:TPCDsupplier-suppliers ;
+            tpcd:suppkey suppliers.S_SUPPKEY
+                as virtrdf:TPCDsupplier-s_suppkey ;
             tpcd:name suppliers.S_NAME
                 as virtrdf:TPCDsupplier-s_name ;
             tpcd:address suppliers.S_ADDRESS
