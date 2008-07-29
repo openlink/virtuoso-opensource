@@ -697,7 +697,7 @@ thead.sortHeader tr
 }
 
 /* make the TH elements pretty */
-thead.sortHeader th
+thead.sortHeader tr th
 {
   font-size: 1em;
   font-weight: bold;

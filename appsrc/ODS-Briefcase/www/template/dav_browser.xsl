@@ -266,7 +266,7 @@
          else
            secondSufix := 'grant';
 
-         http(sprintf('<input type="checkbox" value="1" name="%s_%s" %s onClick="javascript: uncheck(\'%s_%s\')" />', itemName, itemSufix, itemChecked, itemName, secondSufix));
+         http (sprintf ('<input type="checkbox" value="1" name="%s_%s" %s onclick="javascript: uncheck(\'%s_%s\')" />', itemName, itemSufix, itemChecked, itemName, secondSufix));
         ]]>
       </v:method>
 
@@ -556,7 +556,7 @@
             imageStr := '&nbsp;&nbsp;';
           }
           altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-          http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+          http (sprintf ('<a href="#" onclick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
         ]]>
       </v:method>
 
@@ -1187,7 +1187,7 @@
                       <td>
                       <v:text name="dav_mime" value="--get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                         <v:template type="simple" enabled="--self.dav_enable">
-                          <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
@@ -1239,7 +1239,7 @@
                         </v:after-data-bind>
                       </v:text>
                       <v:template type="simple" enabled="-- case when (ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)) and (self.dav_enable = 1)) then 1 else 0 end;">
-                        <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
                       </v:template>
                     </td>
                   </tr>
@@ -1250,7 +1250,7 @@
                     <td>
                       <v:text name="dav_group" value="--get_keyword('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                       <v:template type="simple" enabled="--self.dav_enable">
-                        <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
                       </v:template>
                     </td>
                   </tr>
@@ -1837,7 +1837,7 @@
                       <td>
                         <input type="text" name="prop_mime" class="field-text" />
                         <v:template type="simple">
-                          <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" disabled="disabled" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
@@ -1855,7 +1855,7 @@
                           </v:after-data-bind>
                         </v:text>
                         <v:template type="simple" enabled="-- equ(ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)), 1)">
-                          <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" disabled="disabled" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
@@ -1866,7 +1866,7 @@
                       <td>
                         <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                         <v:template type="simple">
-                          <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" disabled="disabled" class="button" />
+                        <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
@@ -1882,7 +1882,7 @@
                             <?vsp
                               declare i integer;
                               for (i := 0; i < 9; i := i + 1)
-                                http(sprintf('<td align="center"><input type="checkbox" name="prop_add_perm%i" onClick="chkbx(this,prop_rem_perm%i);" /></td>', i, i));
+                              http (sprintf ('<td align="center"><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" /></td>', i, i));
                             ?>
                           </tr>
                         </table>
@@ -1900,7 +1900,7 @@
                             <?vsp
                               declare i integer;
                               for (i := 0; i < 9; i := i + 1)
-                                http(sprintf('<td align="center"><input type="checkbox" name="prop_rem_perm%i" onClick="chkbx(this,prop_add_perm%i);" /></td>', i, i));
+                              http (sprintf ('<td align="center"><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" /></td>', i, i));
                             ?>
                           </tr>
                         </table>
@@ -2541,7 +2541,7 @@
                             if ((self.dir_select = 0) and (self.dir_path <> ''))
                             {
                               http('<th class="checkbox" width="1%">');
-                                http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes (this, \'CB_\', true)" title="Select All" />');
+                                http ('<input type="checkbox" name="selectall" value="Select All" onclick="selectAllCheckboxes (this, \'CB_\', true)" title="Select All" />');
                                   http('</th>');
                                 }
                               ?>
@@ -2911,7 +2911,7 @@
                             ]]>
                           </v:on-post>
                         </v:button>
-                        <v:button action="simple" value="Delete" xhtml_onClick="javascript: return deleteConfirm();" xhtml_disabled="disabled" xhtml_class="button">
+                        <v:button action="simple" value="Delete" xhtml_onclick="javascript: return deleteConfirm();" xhtml_disabled="disabled" xhtml_class="button">
                           <v:on-post>
                             <![CDATA[
                               WS.WS.ACL_REMOVE_ENTRY(self.dav_acl,
@@ -2958,7 +2958,7 @@
                   http(sprintf('<input type="text" name="ace_user" value="%s" disabled="disabled" class="field-short" title="Users/groups must be comma separated!" />', ODRIVE.WA.odrive_user_name(self.ace[0], '')));
                 ?>
                 <v:template type="simple">
-                  <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?dst=m&amp;params=ace_user:s1;',520)" class="button" />
+                  <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=ace_user:s1;',520)" class="button" />
                 </v:template>
               </td>
             </tr>
@@ -3249,7 +3249,7 @@
           <td>
             <?vsp http(sprintf('<input type="text" name="ts_mime" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'mime'))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=ts_mime:s1;')" disabled="disabled" class="button" />
+              <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=ts_mime:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
@@ -3260,7 +3260,7 @@
           <td>
             <?vsp http(sprintf('<input type="text" name="ts_owner" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'owner', -1)))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=ts_owner:s1;')" disabled="disabled" class="button" />
+              <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=ts_owner:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
@@ -3271,7 +3271,7 @@
           <td>
             <?vsp http(sprintf('<input type="text" name="ts_group" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'group', -1)))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=ts_group:s1;')" disabled="disabled" class="button" />
+              <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=ts_group:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
@@ -3769,7 +3769,7 @@
                           </v:label>
                         </td>
                         <td nowrap="nowrap">
-                          <v:button action="simple" style="image" value="image/del_16.png" enabled="-- (control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_onClick="javascript: return confirm(\'Are you sure you want to delete the chosen version and all previous versions?\');">
+                          <v:button action="simple" style="image" value="image/del_16.png" enabled="-- (control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_onclick="javascript: return confirm(\'Are you sure you want to delete the chosen version and all previous versions?\');">
                             <v:on-post>
                               <![CDATA[
                                 declare retValue any;

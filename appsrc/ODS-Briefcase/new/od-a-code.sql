@@ -343,6 +343,7 @@ create procedure ODRIVE.WA.menu_tree ()
       <node name="Mimes Update"   url="mimes_update.vspx"  id="321" place="link"                    allowed="admin owner"/>
     </node>
   </node>
+  <node     name="Subscriptions"  url="subscriptions.vspx" id="4"   tip="Subscriptions"            allowed="admin owner"/>
 </menu_tree>';
 }
 ;
@@ -1389,10 +1390,19 @@ create procedure ODRIVE.WA.account() returns varchar
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.account_id (
+  in account_name varchar)
+{
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.account_name (
   in account_id integer)
 {
-  return coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
 }
 ;
 

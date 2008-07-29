@@ -1,0 +1,1398 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="subscriptions" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <vm:pagetitle>subscriptions</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="is_dav_src" type="integer" persist="0"/>
+      <v:variable name="site_name" type="varchar" persist="0"/>
+
+      <v:variable name="v_host" type="varchar" persist="0"/>
+      <v:variable name="v_root" type="varchar" persist="0"/>
+
+      <v:variable name="v_description" type="varchar" default="''" persist="0" />
+      <v:variable name="v_url" type="varchar" default="''" persist="0" />
+      <v:variable name="v_owner" type="varchar" default="''" persist="0" />
+      <v:variable name="v_newer" type="varchar" default="''" persist="0" />
+      <v:variable name="v_follow" type="varchar" default="''" persist="0" />
+      <v:variable name="v_notFollow" type="varchar" default="''" persist="0" />
+      <v:variable name="_opage" type="varchar" default="''" persist="0" />
+      <v:variable name="v_image" type="varchar" default="''" persist="0" />
+      <v:variable name="v_dav" type="varchar" default="''" persist="0" />
+      <v:variable name="v_delete" type="varchar" default="''" persist="0" />
+      <v:variable name="v_redirect" type="varchar" default="1" persist="0" />
+      <v:variable name="v_store" type="varchar" default="1" persist="0" />
+      <v:variable name="v_get_rdf" type="int" default="0" persist="0" />
+      <v:variable name="v_data" type="any" default="NULL" persist="0" />
+      <v:variable name="_auth" type="varchar" default="''" persist="0" />
+      <v:variable name="v_old_url" type="varchar" default="''" persist="0" />
+      <v:variable name="v_target_url" type="varchar" default="''" persist="0" />
+      <v:variable name="v_target_uid" type="varchar" default="''" persist="0" />
+      <v:variable name="v_target_pwd" type="varchar" default="''" persist="0" />
+
+      <v:variable name="vs_name" type="varchar" default="null" persist="0" />
+      <v:variable name="vs_start" type="datetime" default="null" persist="0" />
+      <v:variable name="vs_interval" type="integer" default="0" persist="0" />
+      <v:variable name="vs_sql" type="varchar" default="null" persist="0" />
+
+      <v:variable name="v_export" type="varchar" persist="0"/>
+      <v:variable name="v_mode" type="varchar" param-name="mode" default="'targetBrowse'" persist="0"/>
+    </vm:variables>
+    <vm:pagebody>
+      <vm:if test="self.v_mode in ('targetBrowse', 'queueBrowse', 'retrievedBrowse', 'retrievedEdit')">
+        <div style="padding: 0 0 0.5em 0;">
+          <vm:if test="self.v_mode in ('targetBrowse')">
+            <v:button action="simple" value="New Target" name="newTarget" xhtml_class="button">
+              <v:on-post>
+                <![CDATA[
+                  self.v_newer := '1900-01-01 00-00-00';
+                  self.v_delete := '';
+                  self._opage := '';
+                  self.v_image := '';
+                  self.v_dav := '';
+                  self.v_owner := 'dav';
+                  self.v_description := '';
+                  self.v_host := '';
+                  self.v_url := '';
+                  self.v_root := '';
+                  self.v_follow := '';
+                  self.v_notFollow := '';
+                  self.v_store := 1;
+                  self.v_redirect := 1;
+                  self.v_target_url := '';
+                  self.v_target_uid := '';
+                  self.v_target_pwd := '';
+                  self.v_data := vector ();
+
+                  self.v_mode := 'targetCreate';
+                  self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </vm:if>
+          <vm:if test="self.v_mode in ('queueBrowse', 'retrievedBrowse', 'retrievedEdit')">
+            <v:button action="simple" value="Targets" name="importTargets" xhtml_class="button">
+              <v:on-post>
+                <![CDATA[
+                  self.v_mode := 'targetBrowse';
+                  self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </vm:if>
+          <v:button action="simple" value="Queues" name="importQueues" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'queueBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Retrieved Sites" name="retrievedSites" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'retrievedBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </vm:if>
+
+      <vm:if test="self.v_mode = 'targetBrowse'">
+        <br />
+        <label><b>Target Sites</b></label>
+        <hr />
+        <v:data-set name="ds" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="1000" scrollable="1" cursor-type="keyset" edit="1">
+          <v:param name="instance" value="--self.domain_id" />
+          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds_header_template">
+            <table id="groups" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>Description</th>
+                  <th>Host</th>
+                  <th>Start Path</th>
+                  <th>Target Collection</th>
+                  <th nowrap="nowrap" width="1%">Action</th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds_repeat_template">
+            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds_if_not_exists_template">
+              <table>
+                <tr class="listing_count">
+                  <td align="center" colspan="5" class="listing_row_count">
+                    No rows retrieved
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds_browse_template">
+              <table>
+                <tr>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[3])" />
+                  </td>
+                  <td nowrap="nowrap" width="1%">
+                    <v:button action="simple" value="Edit" name="edit1" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare _idx, _oth varchar;
+                          declare _n_own integer;
+
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                          self.v_mode := 'targetEdit';
+
+                          _oth := '';
+                          _n_own := 0;
+                          select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS, VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA)
+                            into self.v_description, self.v_host, self.v_url, _idx, self.v_root, self.v_newer, self.v_delete, self.v_follow, self.v_notFollow, self._auth, self.v_image, self.v_dav, _n_own, _oth, self._opage, self.v_redirect, self.v_store, self.v_get_rdf, self.v_data
+                            from WS.WS.VFS_SITE
+                           where VS_HOST = self.v_host
+                             and VS_ROOT = self.v_root;
+
+                          self.v_owner := ODRIVE.WA.account_name (_n_own);
+                          update WS.WS.VFS_QUEUE
+                             set VQ_STAT = 'waiting'
+                           where VQ_HOST = self.v_host
+                             and VQ_ROOT = self.v_root;
+                          self.v_root := concat('/DAV/', self.v_root);
+                          self.v_newer := subseq(datestring(self.v_newer), 0, 19);
+                          self.v_old_url := self.v_url;
+                          self.v_target_url := 'http://';
+                          if (self.v_data is null)
+                          {
+                            self.v_data := vector ();
+                          }
+                          if (length (self._auth))
+                          {
+                            declare auth any;
+                            auth := split_and_decode (self._auth, 0, '\0\0:');
+                            if (length (auth) = 2)
+                            {
+                              self.v_target_uid := auth[0];
+                              self.v_target_pwd := auth[1];
+                            }
+                          }
+                          self.v_target_url := concat(self.v_target_url, self.v_host, self.v_url);
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Delete" name="delete1" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                          delete from WS.WS.VFS_SITE where VS_HOST = self.v_host and VS_ROOT = self.v_root;
+                          delete from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root;
+                          delete from WS.WS.VFS_URL where VU_HOST = self.v_host and VU_ROOT = self.v_root;
+                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_SQL = concat('WS.WS.SERV_QUEUE_TOP(\'',self.v_host,'\',\'',self.v_root,'\', 1, 0, null, null)');
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+          </v:template>
+          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds_footer_template">
+            <table>
+            </table>
+          </v:template>
+        </v:data-set>
+      </vm:if>
+
+      <vm:if test="self.v_mode in ('targetCreate', 'targetEdit')">
+        <script type="text/javascript">
+          <![CDATA[
+            function toggleMeta (btn, div_id)
+            {
+              var div = document.getElementById (div_id);
+              if (div)
+              {
+                if (btn.checked)
+                {
+                  div.style.display = (btn.checked) ? 'block' : 'none';
+                }
+              }
+            }
+          ]]>
+        </script>
+        <div class="new-form-header">
+          <?V case when self.v_mode = 'targetCreate' then 'Create target' else 'Edit target' end ?>
+        </div>
+        <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+        <div class="new-form-body">
+          <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
+            <tr>
+              <th>
+                Target description
+              </th>
+              <td>
+                <v:text name="descr" value="--self.v_description"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Target URL
+              </th>
+              <td>
+                <v:text name="target_url" value="--self.v_target_url" xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Login name on target
+              </th>
+              <td>
+                <v:text name="target_uid" value="--self.v_target_uid" xhtml_size="20"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Login password on target
+              </th>
+              <td>
+                <v:text name="target_pwd" value="--self.v_target_pwd" type='password' xhtml_size="20"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Copy to local DAV collection
+              </th>
+              <td>
+                <v:text name="root" value="--self.v_root" xhtml_readonly="--case when self.v_mode = 'targetEdit' then 'readonly' else '@@hidden@@' end"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <?vsp
+                  if (self.v_mode <> 'targetEdit')
+                  {
+                ?>
+                <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
+                <?vsp
+                  } else {
+                ?>
+                <v:check-box name="opage1" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
+                <?vsp
+                  }
+                ?>
+                <label for="opage">Single page download</label>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Local resources owner
+              </th>
+              <td>
+                <v:text name="owner" value="" format="%s" xhtml_class="field-short">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := self.v_owner;
+                      if (not ODRIVE.WA.check_admin (self.account_id))
+                        control.tf_style := 3;
+                    ]]>
+                  </v:after-data-bind>
+                </v:text>
+                <v:template type="simple" name="t1" enabled="-- case when ODRIVE.WA.check_admin (self.account_id) then 1 else 0 end;">
+                  <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=owner:s1;')" class="button" />
+                </v:template>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Download only newer than
+              </th>
+              <td>
+                <v:text name="newer" value="--self.v_newer" />
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Follow links matching <em>(delimited with ;)</em>
+              </th>
+              <td>
+                <v:text name="flow" value="--self.v_follow" xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Do not follow links matching <em>(delimited with ;)</em>
+              </th>
+              <td>
+                <v:text name="notFollow" value="--self.v_notFollow"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <label>
+                  <v:check-box name="img" value="1" initial-checked="--case when self.v_image = 'checked' then 1 else 0 end" xhtml_id="img"/>
+                  Download images
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <label>
+                  <v:check-box name="dav" value="1" initial-checked="--case when self.v_dav = 'checked' then 1 else 0 end" xhtml_id="dav"/>
+                  use WebDAV methods
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <v:check-box name="del" value="1" initial-checked="--case when self.v_delete = 'checked' then 1 else 0 end" xhtml_id="del"/>
+                <label for="del">Delete if remove on remote detected</label>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <label>
+                  <v:check-box name="redir" value="1" initial-checked="--case when self.v_redirect then 1 else 0 end" xhtml_id="redir"/>
+                  Follow HTTP redirects
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <label>
+                  <v:check-box name="store" value="1" initial-checked="--case when self.v_store then 1 else 0 end" xhtml_id="store"/>
+                  Store content locally
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <th/>
+              <td>
+                <label>
+                  <v:check-box name="get_rdf" value="1" initial-checked="--case when self.v_get_rdf then 1 else 0 end" xhtml_id="get_rdf" xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
+                  Store metadata *
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td colspan="2">
+                <div  id="meta_opts" style="display: <?V case when self.v_get_rdf = 0 then 'none' else 'block' end ?>;">
+                  <table class="listing">
+                    <thead class="sortHeader">
+                      <tr>
+                        <th class="checkbox" style="text-align: left;">
+                          <label>
+                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes (this, 'cb_', true)"/>
+                            RDF Cartridge
+                          </label>
+                        </th>
+                      </tr>
+                    </thead>
+                    <?vsp
+                      for select RM_DESCRIPTION, RM_PID, VM_ID from WS.WS.VFS_SITE_RDF_MAP right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID) where RM_ENABLED = 1 order by RM_ID do
+                      {
+                    ?>
+                    <tr>
+                      <td>
+                        <?vsp
+                          http (sprintf ('<label><input type="checkbox" name="cb_%d" value="%d" %s /> %s</label>', RM_PID, RM_PID, case when (VM_ID is null) then 'checked="checked"' else '' end, RM_DESCRIPTION));
+                        ?>
+                      </td>
+                    </tr>
+                    <?vsp
+                      }
+                    ?>
+                  </table>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="--case when self.v_mode = 'targetEdit' then 'Update' else 'Create' end" name="robot_button">
+            <v:on-post>
+              <![CDATA[
+                declare item, idx, len, _idx, _oth, target_url, sav_host varchar;
+                declare ret_arr, opts any;
+                declare pos integer;
+                declare params any;
+
+                params := e.ve_params;
+                target_url := get_keyword('target_url', params, '');
+                if (length(target_url) <= 0)
+                {
+                  self.vc_error_message := 'Incorrect target URL';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                ret_arr := WS.WS.PARSE_URI(target_url);
+                pos := coalesce (strchr (ret_arr[1], '@'), 0);
+                self._auth := left (ret_arr[1], pos);
+                sav_host := self.v_host;
+                self.v_host := right (ret_arr[1], length (ret_arr[1]) - pos);
+
+                self._auth := '';
+                if (length (self.target_uid.ufl_value) and length (self.target_pwd.ufl_value))
+                {
+                   self._auth := concat (self.target_uid.ufl_value,':',self.target_pwd.ufl_value);
+                }
+                if (self.v_host[0] = ascii ('@'))
+                {
+                  self.v_host := substring (self.v_host, 2, length (self.v_host));
+                }
+                if (self.v_mode = 'targetEdit' and sav_host <> self.v_host)
+                {
+                  self.v_host := sav_host;
+                  self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                self.v_description := get_keyword('descr', params);
+                self.v_url := ret_arr[2];
+                if (ret_arr[4] is not null and length (ret_arr[4]) > 0)
+                {
+                  self.v_url := concat(self.v_url, '?', ret_arr[4]);
+                  self.v_url := trim(self.v_url);
+                }
+                self.v_root := get_keyword('root', params);
+                if (self.v_mode <> 'targetEdit' and right(self.v_root, 1) <> '/')
+                {
+                  self.v_root := concat(self.v_root, '/');
+                }
+                if (left(self.v_root, 5) = '/DAV/')
+                {
+                  self.v_root := right(self.v_root, length(self.v_root) - 5);
+                }
+                self.v_newer := get_keyword('newer', params);
+                self.v_follow := get_keyword('flow', params);
+                self.v_notFollow := get_keyword('notFollow', params);
+                self.v_delete := get_keyword('del', params);
+                if (self.v_mode = 'targetEdit')
+                {
+                  self._opage := self._opage;
+                } else {
+                  self._opage := get_keyword('opage', params);
+                }
+                _idx := null;
+                self.v_image := get_keyword('img', params);
+                self.v_dav := get_keyword('dav', params);
+                self.v_owner := get_keyword('owner', params);
+                self.v_redirect := get_keyword('redir', params);
+                self.v_store := get_keyword('store', params);
+                self.v_get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
+
+                opts := vector ();
+                self.v_data := opts;
+
+                if (self.v_mode = 'targetEdit' and self._opage = '1')
+                  self._opage := 'checked';
+                if (self.v_delete = '1')
+                  self.v_delete := 'checked';
+                if (self.v_image = '1')
+                  self.v_image := 'checked';
+                if (self.v_dav = '1')
+                  self.v_dav := 'checked';
+                _oth := null;
+                if (WS.WS.isempty(self.v_host) or WS.WS.isempty(self.v_root) or WS.WS.isempty(self.v_url))
+                {
+                  self.vc_error_message := 'Host, Target collection and Start path must be specified';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (self.v_url[0] <> ascii('/'))
+                {
+                  self.v_url := concat('/', self.v_url);
+                }
+                if (self.v_root[0] = ascii('/') or strstr(self.v_root , '..') is not null and self.v_mode <> 'targetEdit')
+                {
+                  self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (self._opage = 'checked')
+                {
+                  declare u_arr any;
+                  declare target_page varchar;
+                  if (self.v_url not like '%/')
+                  {
+                    u_arr := WS.WS.HREF_TO_ARRAY(self.v_url, '');
+                    target_page := u_arr[length (u_arr) - 1];
+                  }
+                  else
+                  {
+                    target_page := 'index.html';
+                  }
+                  -- we'll guess is the root is a collection or not
+                  if (self.v_root[length(self.v_root) - 1] = ascii('/'))
+                  {
+                    self.v_root := concat(self.v_root, target_page);
+                  }
+                }
+                if (exists(select 1 from WS.WS.VFS_SITE where VS_ROOT = self.v_root and VS_HOST = self.v_host) and self.v_mode <> 'targetEdit')
+                {
+                  self.vc_error_message := 'Target resource/collection already specified. Please do specify another target collection or resource';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (self.v_mode = 'targetEdit')
+                {
+                  update WS.WS.VFS_SITE
+                     set VS_DESCR = self.v_description,
+                         VS_INX = _idx,
+                         VS_OWN = ODRIVE.WA.account_id (self.v_owner),
+                         VS_NEWER = stringdate(self.v_newer),
+                         VS_DEL = self.v_delete,
+                         VS_FOLLOW = self.v_follow,
+                         VS_NFOLLOW = self.v_notFollow,
+                         VS_SRC = self.v_image,
+                         VS_OPAGE = self._opage,
+                         VS_METHOD = self.v_dav,
+                         VS_OTHER = _oth,
+                         VS_OPTIONS = self._auth,
+                         VS_URL = self.v_url,
+                         VS_REDIRECT = self.v_redirect,
+                         VS_STORE = self.v_store,
+                         VS_DLOAD_META = self.v_get_rdf,
+                         VS_UDATA = serialize (self.v_data)
+                   where VS_HOST = self.v_host
+                     and VS_ROOT = self.v_root;
+                  if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_URL = self.v_url))
+                  {
+                    update WS.WS.VFS_QUEUE set VQ_URL = self.v_url where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_URL = self.v_old_url;
+                  }
+                }
+                else
+                {
+                  declare hinf any;
+                  hinf := WS.WS.PARSE_URI(self.v_host);
+                  if (lower(hinf[0]) = 'http' and hinf[1] <> '')
+                  {
+                    self.v_host := hinf[1];
+                  }
+                  insert into WS.WS.VFS_SITE (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA, VS_INST_ID)
+                    values (self.v_description, self.v_host, self.v_url, _idx, ODRIVE.WA.account_id (self.v_owner), self.v_root, stringdate(self.v_newer), self.v_delete, self.v_follow, self.v_notFollow, self.v_image, self.v_dav, _oth, self._auth, self._opage, self.v_redirect, self.v_store, self.v_get_rdf, serialize (self.v_data), self.domain_id);
+                  insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self.v_host, self.v_url, now(), 'waiting', self.v_root);
+                }
+
+                delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self.v_host and VM_ROOT = self.v_root;
+                if (self.v_get_rdf)
+                {
+                  declare _mp, _idx, _seq any;
+
+                  _seq := 0;
+                  _idx := 0;
+                  while (_mp := adm_next_keyword ('cd_', control.vc_page.vc_event.ve_params, _idx))
+                  {
+                    _seq := _seq + 1;
+                    insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ)
+                      values (self.v_host,self.v_root, atoi (_mp), _seq);
+                  }
+                }
+
+                self.v_mode := 'targetBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" name="cancel1">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'targetBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </vm:if>
+
+      <vm:if test="self.v_mode = 'queueBrowse'">
+        <br />
+        <label><b>Targets</b></label>
+        <hr />
+        <v:data-set name="data_set2" sql="select VS_DESCR, VQ_HOST, VQ_STAT, VQ_ROOT, VQ_URL from WS.WS.VFS_QUEUE, WS.WS.VFS_SITE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_URL = VS_URL and VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
+          <v:param name="instance" value="--self.domain_id" />
+          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
+            <table id="groups" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>Description</th>
+                  <th>Host</th>
+                  <th>URL</th>
+                  <th>Target Collection</th>
+                  <th>State</th>
+                  <th nowrap="nowrap" width="1%">Action</th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+          <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set2_repeat_template">
+            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set2_if_not_exists_template">
+              <table>
+                <tr class="listing_count">
+                  <td class="listing_row_count" colspan="6">
+                    No rows retrieved
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set2_browse_template">
+              <table>
+                <tr>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[4])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[3])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
+                  </td>
+                  <td nowrap="nowrap" width="1%">
+                    <v:button action="simple" value="Start" name="start" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare sttime datetime;
+
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                          self.v_url := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+                          sttime := coalesce ((select max(VU_CPTIME) from WS.WS.VFS_URL where VU_ROOT = self.v_root and VU_HOST = self.v_host), now());
+
+                          -- always do re-fetch
+                          if (self.v_url is null)
+                            self.v_url := coalesce ((select VS_URL from WS.WS.VFS_SITE where VS_ROOT = self.v_root and VS_HOST = self.v_host), '/');
+
+                          delete from WS.WS.VFS_URL where VU_ROOT = self.v_root and VU_HOST = self.v_host;
+                          delete from WS.WS.VFS_QUEUE where VQ_ROOT = self.v_root and VQ_HOST = self.v_host and VQ_URL <> self.v_url;
+                          update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self.v_host and VQ_ROOT =self.v_root and VQ_URL = self.v_url;
+
+                          http_rewrite();
+                          http_header(sprintf ('Location: subscriptions.vspx?mode=queueStart&host=%U&root=%U&url=%U&start=%d&sid=%s&realm=%s&stime=%s\r\n', self.v_host, self.v_root, self.v_url, msec_time(), self.sid, self.realm, cast (sttime as varchar)));
+                          http_request_status('HTTP/1.1 302 Found');
+                          http_flush ();
+
+                          WS.WS.SERV_QUEUE_TOP (self.v_host, self.v_root, 0, 3, null, null);
+                          commit work;
+                      ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Edit" name="edit2" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare sttime datetime;
+
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                          self.v_url := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+                          sttime := coalesce ((select max(VU_CPTIME) from WS.WS.VFS_URL where VU_ROOT =self.v_root and VU_HOST = self.v_host), now());
+
+                          http_rewrite();
+                          http_header(sprintf ('Location: subscriptions.vspx?mode=queueEdit&host=%U&root=%U&url=%U&start=%d&sid=%s&realm=%s&stime=%s\r\n', self.v_host, self.v_root, self.v_url, msec_time(), self.sid, self.realm, cast (sttime as varchar)));
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_flush();
+
+                          WS.WS.SERV_QUEUE_TOP (self.v_host, self.v_root, 1, 3, null, null);
+                          commit work;
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Schedule" name="schedule" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare tmp any;
+
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                          tmp := (select VS_DESCR from WS.WS.VFS_SITE where VS_HOST = self.v_host and VS_ROOT = self.v_root);
+                          self.vs_name := concat(tmp, '(', self.v_host,' in /DAV/', self.v_root,')');
+                          self.vs_start := cast (now () as varchar);
+                          self.vs_interval := 10;
+                          self.vs_sql := concat ('WS.WS.SERV_QUEUE_TOP(\'', self.v_host, '\', \'', self.v_root, '\', 1, 0, null, null)');
+
+                          self.v_mode := 'sheduleCreate';
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Reset" name="reset" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                          self.v_url := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+                          update WS.WS.VFS_QUEUE
+                             set VQ_STAT = 'waiting'
+                           where VQ_HOST = self.v_host
+                             and VQ_ROOT = self.v_root
+                             and VQ_URL = self.v_url;
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Stop" name="stop" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                          self.v_url := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+                          delete
+                            from WS.WS.VFS_QUEUE
+                           where VQ_HOST = self.v_host
+                             and VQ_ROOT = self.v_root
+                             and VQ_URL <> self.v_url
+                              and VQ_STAT <> 'pending';
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+          </v:template>
+          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set2_footer_template">
+            <table>
+            </table>
+          </v:template>
+        </v:data-set>
+        <br />
+        <label><b>Current Scheduled Updates</b></label>
+        <hr />
+        <v:data-set name="ds3" sql="select a.SE_NAME, a.SE_START, a.SE_INTERVAL, a.SE_LAST_COMPLETED, a.SE_SQL, b.VS_SQL from DB.DBA.SYS_SCHEDULED_EVENT a, (select concat('WS.WS.SERV_QUEUE_TOP(\'',VS_HOST,'\',\'',VS_ROOT,'\', 1, 0, null, null)') as VS_SQL from WS.WS.VFS_SITE where VS_INST_ID = :instance) b where a.SE_SQL = b.VS_SQL" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
+          <v:param name="instance" value="--self.domain_id" />
+          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds3_header_template">
+            <table id="groups" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>Description</th>
+                  <th>Start on</th>
+                  <th>Interval (minutes)</th>
+                  <th>Last executed</th>
+                  <th nowrap="nowrap" width="1%">Action</th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds3_repeat_template">
+            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds3_if_not_exists_template">
+              <table>
+                <tr>
+                  <td class="listing_count" colspan="5">
+                    No rows retrieved
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds3_browse_template">
+              <table>
+                <tr>
+                  <td>
+                    <v:label format="%s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"  fmt-function="date_fmt"/>
+                  </td>
+                  <td>
+                    <v:label format="%d" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"  fmt-function="date_fmt"/>
+                  </td>
+                  <td nowrap="nowrap" width="1%">
+                    <v:button action="simple" value="Edit" name="edit3" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.vs_name := (control.vc_parent as vspx_row_template).te_rowset[0];
+                          self.vs_start := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.vs_interval := (control.vc_parent as vspx_row_template).te_rowset[2];
+
+                          self.v_mode := 'sheduleEdit';
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Delete" name="delete3" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          delete
+                            from DB.DBA.SYS_SCHEDULED_EVENT
+                           where SE_NAME = (control.vc_parent as vspx_row_template).te_rowset[0];
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+          </v:template>
+          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds3_footer_template">
+            <table>
+              <tr class="browse_button_row">
+                <td colspan="5" align="center">
+                  <vm:ds-navigation data-set="ds3"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:data-set>
+      </vm:if>
+
+      <vm:if test="self.v_mode in ('queueStart', 'queueEdit')">
+        <div class="new-form-header">
+          Scheduled Event
+        </div>
+        <div class="new-form-body">
+          <?vsp
+            set isolation='uncommitted';
+
+            declare upd, i, l, in_proc, idx integer;
+            declare stime, cnt, wait integer;
+            declare reqs varchar;
+            declare refr, elap int;
+            declare params any;
+
+            params := self.vc_page.vc_event.ve_params;
+
+            refr := 0;
+            upd := 1;
+            reqs := http_pending_req();
+            in_proc := 0;
+            self.v_host := get_keyword ('host', params, '');
+            self.v_root := get_keyword ('root', params, '');
+            self.v_url := get_keyword ('url', params, '');
+            stime := atoi(get_keyword ('start', params, '0'));
+            elap := msec_time () - stime;
+
+            i := 0;
+            l := length (reqs);
+            while (i < l)
+            {
+              declare rec any;
+              rec := reqs [i];
+              if (rec[1] = 'robot_queues.vspx')
+              {
+                i := l;
+                in_proc := 1;
+              }
+              i := i + 1;
+            }
+            if (in_proc or(exists( select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = self.v_root and VQ_HOST = self.v_host and ((VQ_URL <> self.v_url and VQ_STAT in ('waiting', 'pending')) or (VQ_URL = self.v_url and VQ_STAT = 'pending')))))
+            {
+              refr := 1;
+            }
+            if (refr)
+            {
+              select count(*) into cnt from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_STAT = 'retrieved';
+            } else {
+              select count(*) into cnt from WS.WS.VFS_URL where VU_HOST = self.v_host and VU_ROOT = self.v_root;
+            }
+            select count(*) into wait from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_STAT = 'waiting';
+            http(concat('<h4>Results for ', self.v_host,'</h4>'));
+            if (refr)
+            {
+          ?>
+
+          Top <?V case when wait > 20 then 20 else wait end ?> pending URLs (Total waiting <?V wait ?>)
+          <br />
+          <table>
+             <tr>
+              <td>
+                URL
+              </td>
+              <td>
+                Registered on
+              </td>
+              <td>
+                State
+              </td>
+            </tr>
+            <?vsp
+               idx := 0;
+               for select top 10 VQ_URL, VQ_TS, VQ_STAT from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_STAT in ('waiting', 'pending', 'error') order by VQ_HOST, VQ_ROOT, VQ_TS do
+               {
+                 idx := idx + 1;
+            ?>
+            <tr>
+              <th>
+                <?V VQ_URL ?>
+              </th>
+              <td>
+                <?V adm_date_fmt(VQ_TS) ?>
+              </td>
+              <td>
+                <font style="<?vsp if (VQ_STAT = 'pending') http ('color:red'); ?>">
+                  <?V VQ_STAT ?>
+                </font>
+              </td>
+            </tr>
+
+            <?vsp
+               }
+            ?>
+          </table>
+          <?vsp
+            http_header ('Refresh: 5\r\n');
+          }
+          else
+          {
+            declare _err_cnt, updated_l, sttime int;
+
+            _err_cnt := coalesce ((select count(*) from ws.ws.vfs_queue where vq_host = self.v_host and vq_root = self.v_root and vq_stat = 'error'), 0);
+            if (_err_cnt > 1)
+              http (concat ('<p>errors while retrieving target. wrong entries : ', cast (_err_cnt as varchar) ,'. select "stop" and "reset" to return initial state</p>'));
+            {
+              declare continue handler for sqlstate '*' { upd := 0; sttime := now (); };
+              sttime := cast (get_keyword ('stime', params, cast (now() as varchar)) as datetime);
+            }
+            if (upd)
+            {
+              declare continue handler for not found { updated_l := 0; };
+              {
+                select count(*) into updated_l from WS.WS.VFS_URL where VU_ROOT = self.v_root and VU_HOST = self.v_host and VU_CPTIME > sttime and VU_URL not like '%/';
+              }
+              if (updated_l > 0)
+              {
+                http(sprintf('<p><strong>Total updated : %d</strong></p>', updated_l));
+              }
+              else
+              {
+                http(sprintf('<p><strong>No Updates</strong></p>', updated_l));
+              }
+            }
+          ?>
+          <p>
+            <b>Download finished</b>
+          </p>
+          <?vsp
+          }
+          ?>
+          <p>
+            Total downloads: <b><?V cnt ?></b> pages
+          </p>
+          <?vsp
+            if (refr)
+            {
+          ?>
+          <p>
+            Elapsed time: <b><?V elap ?></b> msec.
+          </p>
+          <?vsp
+            }
+          ?>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Refresh" name="robot_button26" />
+          <v:button action="simple" value="Back" name="robot_button25">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'queueBrowse';
+
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </vm:if>
+
+      <vm:if test="self.v_mode in ('sheduleCreate', 'sheduleEdit')">
+        <div class="new-form-header">
+          Scheduled Event
+        </div>
+        <div class="new-form-body">
+          <table>
+            <tr>
+              <th width="45%">
+                Event name
+              </th>
+              <td>
+                <?V self.vs_name ?>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Start Time
+              </th>
+              <td>
+                <v:text name="fs_start" value="--cast (self.vs_start as varchar)" />
+               </td>
+             </tr>
+             <tr>
+               <th>
+                 Interval
+               </th>
+               <td>
+                <v:text name="fs_interval" value="--cast (self.vs_interval as varchar)" />
+               </td>
+             </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Save" name="save2">
+            <v:on-post>
+              <![CDATA[
+                declare start_time any;
+                declare st, msg any;
+
+                st := '00000';
+                exec ('stringdate(?)', st, msg, vector (self.fs_start.ufl_value));
+                if (st <> '00000')
+                {
+                  start_time := now();
+                }
+                else
+                {
+                  start_time := stringdate (self.fs_start.ufl_value);
+                }
+                if (exists (select 1 from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = self.vs_name))
+                {
+                  update DB.DBA.SYS_SCHEDULED_EVENT
+                     set SE_START = start_time,
+                         SE_INTERVAL = self.fs_interval.ufl_value
+                   where SE_NAME = self.vs_name;
+                }
+                else
+                {
+                  insert into DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+                    values(self.vs_name, start_time, self.fs_interval.ufl_value, self.vs_sql);
+                }
+
+                self.v_mode := 'queueBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" name="cancel2">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'queueBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </vm:if>
+
+      <vm:if test="self.v_mode = 'retrievedBrowse'">
+        <br />
+        <label><b>Retrieved Sites</b></label>
+        <hr />
+        <v:data-set name="ds4" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
+          <v:param name="instance" value="--self.domain_id" />
+          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds4_header_template">
+            <table id="groups" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>Description</th>
+                  <th>Host</th>
+                  <th>URL</th>
+                  <th>Collection</th>
+                  <th nowrap="nowrap" width="1%">Total pages</th>
+                  <th nowrap="nowrap" width="1%">Action</th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+
+          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds4_repeat_template">
+            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds4_if_not_exists_template">
+              <table>
+                <tr>
+                  <td class="listing_count" colspan="6">
+                    No rows retrieved
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds4_browse_template">
+              <table>
+                <tr>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
+                  </td>
+                  <td>
+                    <v:label format="%s" value="--((control.vc_parent as vspx_row_template).te_rowset[3])" />
+                  </td>
+                  <td nowrap="nowrap" width="1%" align="right">
+                    <?V (select count (*) from WS.WS.VFS_URL where VU_HOST = (control as vspx_row_template).te_rowset[1] and VU_ROOT = (control as vspx_row_template).te_rowset[3]) ?>
+                  </td>
+                  <td nowrap="nowrap" width="1%">
+                    <v:button action="simple" value="Edit" name="edit4" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_mode := 'retrievedEdit';
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Export" name="export1" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_mode := 'retrievedExport';
+                          self.v_description := (control.vc_parent as vspx_row_template).te_rowset[0];
+                          self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+          </v:template>
+          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds4_footer_template">
+            <table>
+            </table>
+          </v:template>
+        </v:data-set>
+      </vm:if>
+
+      <vm:if test="self.v_mode = 'retrievedEdit'">
+        <h3>Current downloads for <?V self.v_host ?></h3>
+        <hr />
+        <table id="groups" class="grid" cellspacing="0">
+          <thead class="sortHeader">
+            <tr>
+              <th>URL</th>
+              <th>Etag</th>
+              <th>Retrieved</th>
+              <th nowrap="nowrap" width="1%">Action</th>
+            </tr>
+          </thead>
+          <v:data-set name="data_set1" sql=" select VU_URL, VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = :ehost and VU_ROOT = :eroot" nrows="0" scrollable="1" cursor-type="keyset" edit="0">
+            <v:param name="ehost" value="--self.v_host" />
+            <v:param name="eroot" value="--self.v_root" />
+            <v:template type="repeat" name="tmpl3">
+              <v:template type="if-not-exists" name="tmpl1">
+                <tr>
+                  <td colspan="4" align="center">
+                    <b>There are no URLs</b>
+                  </td>
+                </tr>
+              </v:template>
+              <v:template type="browse" name="tmpl2">
+                <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                  <td>
+                    <?V control.te_rowset[0] ?>
+                  </td>
+                  <td>
+                    <?V control.te_rowset[1] ?>
+                  </td>
+                  <td>
+                    <?V subseq(cast (control.te_rowset[2] as varchar),0, 19) ?>
+                  </td>
+                  <td nowrap="nowrap" width="1%">
+                    <v:button action="simple" value="Delete" name="delete4" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          delete from WS.WS.VFS_URL where VU_HOST = self.v_host  and VU_ROOT = self.v_root and VU_URL = (control.vc_parent as vspx_row_template).te_rowset[0];
+
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </v:template>
+            </v:template>
+          </v:data-set>
+        </table>
+      </vm:if>
+
+      <vm:if test="self.v_mode = 'retrievedExport'">
+        <div class="new-form-header">
+          Export
+        </div>
+        <div class="new-form-body">
+          <table class="ctl_grp" border="0" cellpadding="0">
+            <tr>
+              <th>
+                Selected Site
+              </th>
+              <td>
+                <?V self.v_description ?>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                External WebDAV Server URL
+              </th>
+              <td>
+                <v:text value="" name="t_dst" xhtml_size="60%"/>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Export" name="export2" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                declare _host, _root, _url, _dst, _rc, _method any;
+
+                _rc := 0;
+                _host := self.v_host;
+                _root := self.v_root;
+                _url := self.v_url;
+                _dst := self.t_dst.ufl_value;
+                _method := 'dav';
+                if (length (_host) and length (_root) and length(_url) and length (_dst))
+                {
+                  if (_root[0] = ascii ('/'))
+                  {
+                    _root := substring (_root, 2, length (_root));
+                  }
+                  if (_root like '%/')
+                  {
+                    _root := rtrim (_root, '/');
+                  }
+
+                  if (_method = 'fs')
+                  {
+                    declare exit handler for sqlexception { _rc := __SQL_MESSAGE; };
+                    {
+                      _rc := WS.WS.LFS_EXP (_host, _url, _root, _dst);
+                    }
+                  }
+                  else if (_method = 'dav')
+                  {
+                    declare exit handler for sqlexception { _rc := __SQL_MESSAGE; };
+
+                    _rc := WS.WS.DAV_EXP (_host, _url, _root, _dst);
+                  }
+                  if (_rc <> 0)
+                  {
+                    self.vc_is_valid := 0;
+
+                    if (isstring (_rc))
+                    {
+                      self.vc_error_message := _rc;
+                    }
+                    else if (isnumeric (_rc))
+                    {
+                      self.vc_error_message := sprintf ('Error number: %d', _rc);
+                    }
+                    else
+                    {
+                      self.vc_error_message := 'Unspecified error';
+                    }
+                  }
+                  else
+                  {
+                    if (length (_dst) > 2)
+                    {
+                      if (_dst[1] = ascii (':'))
+                      {
+                        if (_dst[2] = ascii ('\\'))
+                        {
+                          _dst := replace (_dst, '\\', '/');
+                        }
+                      }
+                    }
+                    if (_dst[length (_dst) - 1] <> ascii ('/'))
+                    {
+                      _dst := concat (_dst, '/');
+                    }
+                  }
+                }
+                else
+                {
+                  self.vc_error_message := 'Destination path/URL must be supplied.';
+                  self.vc_is_valid := 0;
+                }
+
+                self.v_mode := 'targetBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" name="cancel3" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'targetBrowse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </vm:if>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
