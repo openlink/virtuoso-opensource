@@ -298,6 +298,7 @@ create function DB.DBA.RDF_DF_MN_NUM_INV_2 (in mn_num integer) returns integer
 grant execute on DB.DBA.RDF_DF_MN_NUM_INV_2 to SPARQL_SELECT
 ;
 
+sparql
 drop quad map graph iri("http://example.com/sys") .
 create quad storage virtrdf:sys
   {
@@ -360,18 +361,18 @@ prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 create quad storage virtrdf:sys
 from DB.DBA.SYS_USERS as user where (^{user.}^.U_IS_ROLE = 0)
-from DB.DBA.SYS_USERS as group where (^{group.}^.U_IS_ROLE = 1)
+from DB.DBA.SYS_USERS as grp where (^{grp.}^.U_IS_ROLE = 1)
 from DB.DBA.SYS_USERS as account
 from DB.DBA.SYS_USERS as active_user where (^{active_user.}^.U_IS_ROLE = 0) where (^{active_user.}^.U_ACCOUNT_DISABLED = 0)
-from DB.DBA.SYS_USERS as active_group where (^{active_group.}^.U_IS_ROLE = 1) where (^{active_group.}^.U_ACCOUNT_DISABLED = 0)
+from DB.DBA.SYS_USERS as active_grp where (^{active_grp.}^.U_IS_ROLE = 1) where (^{active_grp.}^.U_ACCOUNT_DISABLED = 0)
 from DB.DBA.SYS_USERS as active_account where (^{active_account.}^.U_ACCOUNT_DISABLED = 0)
 from DB.DBA.SYS_ROLE_GRANTS as role_grant
   where (^{role_grant.}^.GI_SUPER = ^{account.}^.U_ID)
-  where (^{role_grant.}^.GI_SUB = ^{group.}^.U_ID)
+  where (^{role_grant.}^.GI_SUB = ^{grp.}^.U_ID)
   where (^{role_grant.}^.GI_SUPER = ^{user.}^.U_ID)
   where (^{role_grant.}^.GI_SUPER = ^{active_user.}^.U_ID)
-  where (^{role_grant.}^.GI_SUPER = ^{active_group.}^.U_ID)
-  where (^{role_grant.}^.GI_SUB = ^{active_group.}^.U_ID)
+  where (^{role_grant.}^.GI_SUPER = ^{active_grp.}^.U_ID)
+  where (^{role_grant.}^.GI_SUB = ^{active_grp.}^.U_ID)
 from DB.DBA.SYS_ROLE_GRANTS as super_role_grant
   where (^{super_role_grant.}^.GI_SUB = ^{role_grant.}^.GI_SUPER)
   {
@@ -394,17 +395,17 @@ from DB.DBA.SYS_ROLE_GRANTS as super_role_grant
             oplsioc:name user.U_FULL_NAME where (^{user.}^.U_FULL_NAME is not null)
                     as virtrdf:SysUsersFullName .
         oplsioc:user_name_iri (user.U_NAME)
-            oplsioc:subname-of-supername oplsioc:group_name_iri (group.U_NAME) option (using role_grant)
+            oplsioc:subname-of-supername oplsioc:group_name_iri (grp.U_NAME) option (using role_grant)
 		    as virtrdf:SysUsers-subname-of-supername .
-        oplsioc:group_iri (active_group.U_ID)
+        oplsioc:group_iri (active_grp.U_ID)
             a oplsioc:active-role
                     as virtrdf:SysUserType-ActiveRole .
-        oplsioc:group_iri (group.U_ID)
+        oplsioc:group_iri (grp.U_ID)
             a sioc:role
                     as virtrdf:SysUserType-Role ;
-            oplsioc:login group.U_NAME
+            oplsioc:login grp.U_NAME
                     as virtrdf:SysUsersName-Role ;
-            oplsioc:name group.U_FULL_NAME where (^{group.}^.U_FULL_NAME is not null)
+            oplsioc:name grp.U_FULL_NAME where (^{grp.}^.U_FULL_NAME is not null)
                     as virtrdf:SysUsersFullName-Role .
         oplsioc:group_iri (role_grant.GI_SUB)
             sioc:has_member oplsioc:grantee_iri (role_grant.GI_SUPER)
