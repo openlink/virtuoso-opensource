@@ -1098,6 +1098,27 @@ sqlp_view_def (ST ** names, ST * exp, int generate_col_names)
 
 
 void
+sqlp_dt_header (ST * exp)
+{
+  if (ST_P (exp, UNION_ST)
+      || ST_P (exp, UNION_ALL_ST)
+      || ST_P (exp, INTERSECT_ST) || ST_P (exp, INTERSECT_ALL_ST)
+      || ST_P (exp, EXCEPT_ST) || ST_P (exp, EXCEPT_ALL_ST)
+      )
+    {
+      sqlp_dt_header (exp->_.bin_exp.left);
+      sqlp_dt_header (exp->_.bin_exp.right);
+    }
+  else
+    {
+      ST **selection = (ST **) exp->_.select_stmt.selection;
+      exp->_.select_stmt.selection = sqlp_stars (sqlp_wrapper_sqlxml ((ST **) selection), exp->_.select_stmt.table_exp->_.table_exp.from);
+      sqlp_breakup (exp);
+    }
+}
+
+
+void
 sqlp_no_table (char *pref, char *name)
 {
   char temp[500];
@@ -2058,6 +2079,14 @@ sqlp_patch_call_if_special (ST * funcall_tree)
       goto generic_check;
     }
 #endif
+  if (0 == strnicmp (call_name, "IRI_TO_ID", 9)
+      && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
+    {
+      caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
+      if (arg)
+	funcall_tree->_.call.params[0] = arg;
+    }
+
 generic_check:
   sqlp_check_arg(funcall_tree);
 

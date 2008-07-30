@@ -243,5 +243,6 @@ ST * sqlp_infoschema_redirect (ST *texp);
 
 void sqlp_breakup (ST * sel);
 int sel_n_breakup (ST * sel);
+void sqlp_dt_header (ST * exp);
 
 #endif /* _SQLPFN_H */

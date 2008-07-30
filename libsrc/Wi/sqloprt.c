@@ -387,6 +387,7 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
     sqlo_print (("sequence for %s cost %9.2g:", dfe->_.sub.ot->ot_new_prefix, cost));
   for (elt = dfe->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
     {
+      int elt_printed = 1;
       switch (elt->dfe_type)
 	{
 	case DFE_TABLE:
@@ -405,6 +406,7 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
 			sqlo_print ((" %s on %s, ", OT_NAME (dio->dio_table->_.table.ot), dio->dio_key->key_name));
 		      }
 		    END_DO_SET();
+		    sqlo_print ((" ) "));
 		  }
 		else if (HR_REF == elt->_.table.hash_role)
 		  {
@@ -432,8 +434,10 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
 	  else
 	    sqlo_print ((" group_by "));
 	  break;
+	default:
+	  elt_printed = 0;
 	}
-      if (elt->dfe_next)
+      if (elt->dfe_next && elt_printed)
 	sqlo_print ((", "));
     }
   sqlo_print (("\n"));

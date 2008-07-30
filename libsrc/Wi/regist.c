@@ -178,7 +178,7 @@ id_hash_t *sequences;
 
 #define ENSURE_SEQUENCES \
   if (!sequences)  \
-sequences = id_hash_allocate  (101, sizeof (void *), sizeof (boxint), \
+sequences = id_hash_allocate  (2001, sizeof (void *), sizeof (boxint), \
 				 strhash, strhashcmp);
 
 

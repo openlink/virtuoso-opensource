@@ -4896,12 +4896,45 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
 }
 
 
+/* meters */
+int32 sqlo_n_layout_steps;
+int32 sqlo_n_full_layouts;
+int32 sqlo_n_best_layouts;
+int32 sqlo_compiler_exceeds_run_factor;
+
+int
+sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
+{
+  /* every so often, see if the best plan's time is less than the time to compile so far. If so, no point in further scenarios */
+  uint32 now;
+  static int ctr;
+  if (sqlo_compiler_exceeds_run_factor && 0 == ++ctr % 2)
+    {
+      if (!so->so_best)
+	return 0;
+      now = get_msec_real_time ();
+      if (!so->so_last_sample_time)
+	so->so_last_sample_time = now;
+      if (so->so_best_score * compiler_unit_msecs * ot->ot_work_dfe->_.sub.in_arity
+	  < sqlo_compiler_exceeds_run_factor * (now - so->so_last_sample_time ))
+	{
+	  if (sqlo_print_debug_output)
+	    {
+	      sqlo_print (("Compilation time longer than query time after %d layouts, elapsed %d msec\n", ot->ot_layouts_tried, now - so->so_last_sample_time));
+	    }
+	  return 1;
+	}
+    }
+  return 0;
+}
+
+
 void
 sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 {
   /* take an ungenerated table and put it and its stuff into the pipeline */
   df_elt_t * must_be_next;
-  dk_set_t sort_set, new_leaves = NULL;
+  dk_set_t sort_set, new_leaves = NULL, inx_int_tried = NULL;
   float this_score;
   int any_tried = 0;
   must_be_next = sqlo_next_joined (ot->ot_work_dfe);
@@ -4924,11 +4957,15 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     } 
   sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
+  sqlo_n_layout_steps++;
   DO_SET (dk_set_t, dfes, &sort_set)
 	{
       df_elt_t * dfe = (df_elt_t*)dfes->data;
 	  df_elt_t * in_loop_dfe = NULL;
 	  any_tried = 1;
+      if (dk_set_member (inx_int_tried, (void*)dfe))
+	continue;
+      so->so_inx_int_tried_ret = &inx_int_tried;
       sqlo_try (so, ot, dfes, &in_loop_dfe, &this_score);
 	  if (-1 == so->so_best_score || this_score < so->so_best_score)
 	    {
@@ -4945,7 +4982,8 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	      if (ot->ot_layouts_tried >= 0)
 		{
 		  ot->ot_layouts_tried += 1;
-		  if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
+	      if ((sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
+		  || sqlo_no_more_time (so, ot))
 		    {
 		      if (sqlo_print_debug_output)
 			sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
@@ -4996,7 +5034,8 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
 		    }
 		  ot->ot_layouts_tried += 1;
-		  if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
+	      if ((sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
+		  || sqlo_no_more_time (so, ot))
 		    {
 		      if (sqlo_print_debug_output)
 			sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
@@ -5085,9 +5124,11 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	}
       END_DO_SET ();
 
+      sqlo_n_full_layouts++;
       this_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
       if (-1 == so->so_best_score ||  this_score < so->so_best_score)
 	{
+	  sqlo_n_best_layouts++;
 	  if (sqlo_print_debug_output)
 	    {
 	      sqlo_print (("New best %s is:\n", ot->ot_new_prefix));

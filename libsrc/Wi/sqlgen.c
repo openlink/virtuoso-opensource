@@ -793,8 +793,9 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
     {
     case IOP_AND:
       {
-	int inx = 0;
+	int inx = 0, n_terms;
 	iop->iop_terms = (inx_op_t **) dk_set_to_array ((dk_set_t) dio->dio_terms);
+	n_terms = BOX_ELEMENTS (iop->iop_terms);
 	DO_SET (df_inx_op_t *, term, &dio->dio_terms)
 	  {
 	    iop->iop_terms[inx] = sqlg_inx_op (so, tb_dfe, term, iop);
@@ -806,9 +807,11 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 	    sqlg_inx_op_and_ks (so, iop, term, dio, (df_inx_op_t*) dk_set_nth (dio->dio_terms, inx));
 	    sqlg_inx_op_ssls (so, term);
 	    if (0 != inx)
-	      term->iop_other = iop->iop_terms[0];
+	      if (2 == n_terms)
+		term->iop_other = iop->iop_terms[0]; /* Most inx ands are with 2.  If more, the iop_other trick for looking in the other's state while advancing will cause advances to be missed */
 	  }
 	END_DO_BOX;
+	if (2 == n_terms)
 	iop->iop_terms[0]->iop_other = iop->iop_terms[1];
 	break;
       }

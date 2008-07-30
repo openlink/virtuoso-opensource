@@ -231,7 +231,7 @@ sqlo_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
   if (!ot->ot_eq_hash)
     {
       ot->ot_eq_hash =
-	t_id_hash_allocate (11,
+	t_id_hash_allocate (33,
 			    sizeof (caddr_t), sizeof (caddr_t),
 			    treehash, treehashcmp);
     }

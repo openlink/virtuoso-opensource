@@ -517,7 +517,7 @@ sqlo_iri_constant_name_1 (ST* tree)
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name) 
-      && nc_strstr (tree->_.call.name, "_tweak")
+      && 0 == stricmp (tree->_.call.name, "__box_flags_tweak")
       && DV_STRINGP (tree->_.call.params[0]))
     return (caddr_t) tree->_.call.params[0];
   return NULL;
@@ -531,8 +531,8 @@ sqlo_iri_constant_name (ST* tree)
   if (DV_IRI_ID == DV_TYPE_OF (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) && 
-      (nc_strstr (tree->_.call.name, "iid_of_qname") || nc_strstr (tree->_.call.name, "IRI_TO_ID"))
+      && DV_STRINGP (tree->_.call.name) 
+      && 0 == strnicmp (tree->_.call.name, "IRI_TO_ID", 9)
       && DV_STRINGP ((name = sqlo_iri_constant_name_1 (tree->_.call.params[0]))))
     return name;
   return NULL;
@@ -918,6 +918,8 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
       itc_free (itc);
       return unbox (*place);
     }
+  if (so && sqlo_compiler_exceeds_run_factor)
+    so->so_last_sample_time = get_msec_real_time ();
   itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
   buf = itc_reset (itc);
   itc->itc_random_search = RANDOM_SEARCH_OFF;
@@ -1019,7 +1021,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
   int nth_term = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_inx = dk_set_length (group);
-  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, min_rows = -1, a;
+  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, min_rows = -1, a, min_arity = -1;
   float n_rows[10];
   DO_SET (df_inx_op_t *, dio, &group)
     {
@@ -1028,10 +1030,10 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
       n_rows[nth_term] = dbe_key_count (dio->dio_table->_.table.ot->ot_table->tb_primary_key);
       dio->dio_table->_.table.key = key;
       dfe_table_cost (tb_dfe, &cost[nth_term], &arity[nth_term], &ov, 1);
-      if (-1 == smallest_term || min_rows > n_rows[nth_term])
+      if (-1 == smallest_term || min_arity > arity[nth_term])
 	{
 	  smallest_term = nth_term;
-	  min_rows = n_rows[nth_term];
+	  min_arity = arity[nth_term];
 	}
       if (-1 == min ||   cost[nth_term] < min)
 	min = cost[nth_term];
@@ -1046,7 +1048,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
   for (inx = 0; inx < nth_term; inx++)
     {
       if (inx != smallest_term)
-	a *= arity[inx];
+	a *= arity[inx] / n_rows[inx];
     }
   *arity_ret = a;
   /* must get the main row? If cols refd that are not in any of the inxes. */
