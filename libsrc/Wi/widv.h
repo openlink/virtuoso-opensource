@@ -205,7 +205,7 @@ typedef unsigned int64 iri_id_t;
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
 #define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
 #define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
-#define unbox_iri_id(i) (*(iri_id_t*)(i))
+#define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
 extern int bnode_iri_ids_are_huge;
 #define min_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_BNODE_IRI_ID : MIN_32BIT_BNODE_IRI_ID)
 #define min_named_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_NAMED_BNODE_IRI_ID : MIN_32BIT_NAMED_BNODE_IRI_ID)
@@ -519,8 +519,8 @@ sqlr_new_error is void, and should never return.
     "ANY" : \
   ((type) == DV_REFERENCE) ? \
     "UDT_REFERENCE" : \
-    ((type) == DV_IRI_ID) ? "IRI_ID" : \
-    ((type) == DV_IRI_ID_8) ? "IRI_ID" : \
+  ((type) == DV_IRI_ID) ? "IRI_ID" : \
+  ((type) == DV_IRI_ID_8) ? "IRI_ID" : \
   ((type) == DV_INT64) ? "BIGINT" : \
   ((type) == DV_UNAME) ? "UNAME" : \
   ((type) == DV_RDF) ? "rdf" : \
