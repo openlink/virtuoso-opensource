@@ -23,97 +23,108 @@
 -->
 <refentry id="RD-S-1">
   <refmeta>
-    <refentrytitle>RDF Mappers</refentrytitle>
+    <refentrytitle>RDF Cartridges (RDF Mappers or RDFizers)</refentrytitle>
     <refmiscinfo>tutorial</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>RDF Mappers</refname>
-    <refpurpose>This article explains how to develop a custom RDF mapper and test.</refpurpose>
+    <refname>RDF Cartridges</refname>
+    <refpurpose>This article explains how to develop and test a custom RDF Cartridge.</refpurpose>
   </refnamediv>
   <refsect1 id="RD-S-1a">
     <title>Concept</title>
     <para>
-      The RDF mappers provide a way to extract metadata from non-RDF documents such as HTML pages,
-      images Office documents etc. and pass to the SPARQL sponger (crawler which retrieve missing
-      source graphs). For brevity, further in this page the "RDF mapper" we simply will call "mapper".
+      RDF cartridges provide a modular approach to RDF oriented entity extraction and ontology mapping
+      as part of a Linked Data production pipeline. Typical sources include (X)HTML pages, Images, Office
+      documents, PDFs, amongst others.
     </para>
     <para>
-      The mappers consist of PL procedure (hook) and extractor, where extractor itself can be built
-      using PL, C or any external language supported by Virtuoso server. Once the mapper is developed,
-      it must be plugged into the SPARQL engine by adding a record in the table DB.DBA.SYS_RDF_MAPPERS.
+      Cartridges expose their functionality to service consumers via the Virtuoso Sponger ("Sponger"),
+      a middleware layer that provides delivers RDF to other Virtuoso components such as the Web Crawler
+      and SPARQL Query Process, in addition direct exposure as a REST style Web Service for external
+      applications and services to exploit.
     </para>
     <para>
-      The way it works is as follows:
+      A Cartridges is comprised of an initialization PL procedure (hook) and an entity extractor and mapper.
+      The entity extractor and mapping component can be developed using PL, C or any external language
+      supported by Virtuoso via the Virtuoso Server Extensions APIs.
     </para>
     <para>
-      If a SPARQL query instructs the SPARQL processor to retrieve target graph into local storage,
-      then the sparql sponger will be invoked. If the target graph IRI represents a deferencable
-      URL, then content will be retrieved using content negotiation. The next step is the content type
-      to be detected and if it is RDF and no further transformation such as GRDDL is needed, then the
-      process would stop. But if content such as 'text/plain' is not known to have metadata, the SPARQL
-      sponger will look in the DB.DBA.SYS_RDF_MAPPERS table by order of RM_ID and for every matching
-      URL or MIME type pattern (depends on column RM_TYPE) will call the mapper hook. If hook returns
-      zero the next mapper will be tried, if result is negative the process would stop instructing the
-      SPARQL nothing was retrieved, if result is positive the process would stop instructing the SPARQL
-      that metadata was retrieved.
+      Once the cartridge is developed, it is plugged into the Virtuoso Sponger by adding a record to
+      the table DB.DBA.SYS_RDF_MAPPERS.
     </para>
+    <para><b>How Cartridges Work:</b></para>
   </refsect1>
   <refsect1 id="RD-S-1b">
+    <title>SPARQL Query Processing</title>
+    <para>
+      When a SPARQL query is dispatched to Virtuoso, it invokes the Sponger during the act of
+      graph or resource URI dereferencing i.e. it actually crawls the Web, locates a resource via
+      it's URI/IRI (using a variety of RDF discovery heuristics), and then differences the data that
+      the URI exposes. If RDF is discovered, the cartridges play no role. On the other hand, if RDF
+      isn't discovered the Sponger will look in the DB.DBA.SYS_RDF_MAPPERS table (in RM_ID order),
+      and for every matching URI or MIME type pattern (depending on RM_TYPE column value) it will
+      invoke the associated cartridge by invoking the hook procedure. If hook returns zero the next
+      cartridge will be tried, if result is negative the process stops instructing the SPARQL Engine
+      that nothing was retrieved, if result is positive the process stops instructing the SPARQL that
+      RDF data was retrieved.
+    </para>
+  </refsect1>
+  <refsect1 id="RD-S-1c">
     <title>PL hook requirements</title>
     <para>
-      Every PL function used to plug a mapper into SPARQL engine must have following parameters in
-      the same order:
+      Every PL function used to plug a cartridge into SPARQL engine must have the following parameter
+      signature:
     </para>
     <itemizedlist mark="bullet">
       <listitem>
-        in graph_iri varchar: the graph IRI which is currently retrieved
+        in graph_iri varchar: the local storage graph IRI
       </listitem>
       <listitem>
-	in new_origin_uri varchar: the URL of the document retrieved
+	in new_origin_uri varchar: target information resource URI
       </listitem>
       <listitem>
-        in destination varchar: the destination graph IRI
+        in destination varchar: the target graph IRI
       </listitem>
       <listitem>
-        inout content any: the content of the document retrieved by SPARQL sponger
+        inout content any: the content of the information resource retrieved for dispatch to the Sponger
       </listitem>
       <listitem>
-        inout async_queue any: an asynchronous queue, can be used to push something to execute on background if needed.
+        inout async_queue any: an asynchronous queue, can be used for background processing (if required)
       </listitem>
       <listitem>
-        inout ping_service any: the value of [SPARQL] - PingService INI parameter, could be used to configure a service notification such as pingthesemanticweb.com
+        inout ping_service any: the value in the [SPARQL] section of a Virtuoso instance (i.e PingService? INI parameter) which is enables RDF triple propagation and notification to pinger services such as http://pingthesemanticweb.com
       </listitem>
       <listitem>
-        inout api_key any: a plain text id single key value or serialized vector of key structure, basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table.
+        inout api_key any: a plain text id single key value or serialized vector of keys, basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table, which is used for handling of API keys for 3rd party Web Services.
       </listitem>
     </itemizedlist>
     <para>
-      Note that the names of the parameters are not important, but their order and presence are!
+      Note: the names of the parameters are not important, but their order and presence are vital.
     </para>
   </refsect1>
-  <refsect1 id="RD-S-1b">
+  <refsect1 id="RD-S-1d">
     <title>Implementation</title>
     <para>
-      In the example script we implement a basic mapper which maps a text/plain mime type to an
-      imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
+      In the example script we implement a basic cartridge which maps a text/plain mime type to an
+      imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords?'
       and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.
     </para>
     <para>
-      To test the mapper we just use /sparql endpoint with option 'Retrieve remote RDF data for all
-      missing source graphs' to execute:
+      To test the cartridge we just use /sparql endpoint with option 'Retrieve remote RDF data for
+      all missing source graphs' to execute:
     </para>
     <programlisting><![CDATA[
       select * from <URL-of-a-txt-file> where { ?s ?p ?o }
     ]]></programlisting>
     <para>
-      It is important that the SPARQL_UPDATE role to be granted to "SPARQL" account in order to
-      allow local repository update via sponge feature.
+      It is important that the SPARQL_SPONGE role needs to be granted to "SPARQL" user account (or any
+      other account bound to SPARQL functionality) in order to enable persistence to local storage.
     </para>
     <para>
       If the above is set correctly then you can just hit <ulink url="/sparql?default-graph-uri=http%3A%2F%2Flocalhost%3A<?U server_http_port() ?>%2Ftutorial%2Fhosting%2Fho_s_30%2FWebCalendar%2Ftools%2Fsummary.txt&should-sponge=soft&query=select+*+where+%7B+%3Fs+%3Fp+%3Fo+.+%7D&format=text%2Fhtml">this link</ulink>.
     </para>
     <para>
-      More complex examples can be found in the rdf_mappers package implementation.
+      More complex examples can be found in the rdf_cartridges package implementation.
     </para>
   </refsect1>
 </refentry>
