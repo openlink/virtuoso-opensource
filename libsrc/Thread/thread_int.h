@@ -129,6 +129,7 @@ struct thread_s
   caddr_t		thr_reset_code;
   caddr_t		thr_func_value;
   void *		thr_tmp_pool;
+  void *		thr_sql_scs;
   int                   thr_attached;
   caddr_t		thr_dbg;
 };

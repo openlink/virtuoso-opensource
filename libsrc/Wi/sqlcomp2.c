@@ -1367,7 +1367,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   query_t * volatile qr;
   client_connection_t *old_cli = sqlc_client ();
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
-
+  volatile int inside_sem = 0;
   if (DO_LOG_INT (LOG_COMPILE))
     {
       LOG_GET;
@@ -1404,6 +1404,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     }
   string = wrap_sql_string (string2);
   semaphore_enter (parse_sem);
+  inside_sem = 1;
   SCS_STATE_PUSH;
   sqlc_set_client (cli);
   sqlp_in_view (view_name);
@@ -1453,29 +1454,30 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
 		    sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
-	      sql_pop_all_buffers ();
 	      if (!nested_sql_comp)
 		{
 		  MP_DONE();
 		}
+	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
 	      semaphore_leave (parse_sem);
 	      POP_CATCH;
 	      return NULL;
 	    }
 	}
+      sql_pop_all_buffers ();
       tree = the_parse_tree ? (ST *) t_full_box_copy_tree ((caddr_t) the_parse_tree) : parse_tree;
+      semaphore_leave (parse_sem);
+      inside_sem = 0;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
 	  sqlc_set_client (old_cli);
-	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
 	    }
 	  SCS_STATE_POP;
-	  semaphore_leave (parse_sem);
 	  qr_free (qr);
 	  /*dk_free (string, -1);*/
 	  POP_CATCH;
@@ -1487,13 +1489,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  ST *ret = (ST *) sqlo_top (&sc, &tree, NULL);
 	  tree1 = box_copy_tree ((box_t) (ret ? ret : tree));
 	  sqlc_set_client (old_cli);
-	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
 	    }
 	  SCS_STATE_POP;
-	  semaphore_leave (parse_sem);
 	  qr_free (qr);
 	  /*dk_free (string, -1);*/
 	  POP_CATCH;
@@ -1504,13 +1504,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  float score = 0;
 	  sqlo_top (&sc, &tree, &score);
 	  sqlc_set_client (old_cli);
-	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
 	    }
 	  SCS_STATE_POP;
-	  semaphore_leave (parse_sem);
 	  qr_free (qr);
 	  POP_CATCH;
 	  return ((query_t*) box_float (score));
@@ -1587,7 +1585,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     qr = NULL;
   }
   END_CATCH;
-  sql_pop_all_buffers ();
   if (qr)
     sqlc_assign_unknown_dtps (qr);
   if (err && !(*err))
@@ -1598,6 +1595,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   sqlc_set_client (old_cli);
   /* TREE_CHECK (tree); */
   SCS_STATE_POP;
+  if (inside_sem)
   semaphore_leave (parse_sem);
   if (qr)
     {

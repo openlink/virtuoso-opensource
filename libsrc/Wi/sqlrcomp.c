@@ -44,13 +44,13 @@
 
 /* the rds for which the stmt is being generated.
   use for ds specific info. Serialized by parse_mtx */
-remote_ds_t *target_rds;
+
 
 
 void
 sqlc_target_rds (remote_ds_t * rds)
 {
-  target_rds = rds;
+  SET_TARGET_RDS (rds);
   rds->rds_quote = rds_get_info (rds, SQL_IDENTIFIER_QUOTE_CHAR);
   rds->rds_dbms_name = rds_get_info (rds, SQL_DBMS_NAME);
   rds->rds_correlation_name = (int) (ptrlong) rds_get_info (rds, SQL_CORRELATION_NAME);

@@ -630,8 +630,6 @@ sqlc_make_policy_trig (comp_context_t *cc, dbe_table_t *tb, int op)
       caddr_t sql = NULL;
       query_t *proc_qr = sch_proc_def (isp_schema (NULL), tb->tb_rls_procs[op]);
 
-      semaphore_leave (parse_sem);
-
       ret_val = sqlc_rls_get_condition_string (tb, op, &err);
       if (!err)
 	{
@@ -649,7 +647,6 @@ sqlc_make_policy_trig (comp_context_t *cc, dbe_table_t *tb, int op)
 	  dk_set_delete (&tb->tb_triggers->trig_list, qr);
 	}
 
-      semaphore_enter (parse_sem);
       sqlc_set_client (cli);
     }
 

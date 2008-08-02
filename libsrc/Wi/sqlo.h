@@ -611,6 +611,7 @@ int sqlo_is_postprocess (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe)
 
 #include "sqlofn.h"
 #include "sqloinv.h"
+#include "sqlcstate.h"
 
 
 #ifdef BIF_XML

@@ -156,7 +156,6 @@ ST * sqlp_patch_call_if_special (ST * funcall_tree);
 ptrlong sqlp_cursor_name_to_type (caddr_t name);
 ptrlong sqlp_fetch_type_to_code (caddr_t name);
 
-extern char * inside_view;
 extern dk_set_t view_aliases;
 
 void sqlo_calculate_view_scope (query_instance_t *qi, ST **tree, char *view_name);

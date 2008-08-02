@@ -49,38 +49,49 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
   char *scs_sql_text;
   int scs_param_inx;
   int scs_sqlp_have_infoschema_views;
+  char * scs_inside_view;
 } sql_compile_state_t;
 
-extern sql_compile_state_t global_sqlc_st;
-#define top_sc global_sqlc_st.scs_top_sc
-#define v_u_id global_sqlc_st.scs_v_u_id
-#define v_g_id global_sqlc_st.scs_v_g_id
-#define sql_line_loc_text	global_sqlc_st.scs_sql_line_loc_text
-#define sql_err_text		global_sqlc_st.scs_sql_err_text
-#define sql_err_state		global_sqlc_st.scs_sql_err_state
-#define sql_err_native		global_sqlc_st.scs_sql_err_native
-#define parse_not_char_c_escape	global_sqlc_st.scs_parse_not_char_c_escape
-#define parse_utf8_execs	global_sqlc_st.scs_parse_utf8_execs
-#define parse_pldbg		global_sqlc_st.scs_parse_pldbg
-#define pl_file			global_sqlc_st.scs_pl_file
-#define pl_file_offs		global_sqlc_st.scs_pl_file_offs
-#define sql3_breaks		global_sqlc_st.scs_sql3_breaks
-#define sql3_pbreaks		global_sqlc_st.scs_sql3_pbreaks
-#define sql3_ppbreaks		global_sqlc_st.scs_sql3_ppbreaks
-#define sqlp_udt_current_type	global_sqlc_st.scs_sqlp_udt_current_type
-#define sqlp_udt_current_type_lang global_sqlc_st.scs_sqlp_udt_current_type_lang
-#define parse_tree		global_sqlc_st.scs_parse_tree
-#define sql_text		global_sqlc_st.scs_sql_text
-#define param_inx		global_sqlc_st.scs_param_inx
-#define sqlp_have_infoschema_views	global_sqlc_st.scs_sqlp_have_infoschema_views
 
-#define SCS_STATE_FRAME		sql_compile_state_t save_scs
+#define top_sc global_scs->scs_top_sc
+#define v_u_id global_scs->scs_v_u_id
+#define v_g_id global_scs->scs_v_g_id
+#define sql_line_loc_text	global_scs->scs_sql_line_loc_text
+#define sql_err_text		global_scs->scs_sql_err_text
+#define sql_err_state		global_scs->scs_sql_err_state
+#define sql_err_native		global_scs->scs_sql_err_native
+#define parse_not_char_c_escape	global_scs->scs_parse_not_char_c_escape
+#define parse_utf8_execs	global_scs->scs_parse_utf8_execs
+#define parse_pldbg		global_scs->scs_parse_pldbg
+#define pl_file			global_scs->scs_pl_file
+#define pl_file_offs		global_scs->scs_pl_file_offs
+#define sql3_breaks		global_scs->scs_sql3_breaks
+#define sql3_pbreaks		global_scs->scs_sql3_pbreaks
+#define sql3_ppbreaks		global_scs->scs_sql3_ppbreaks
+#define sqlp_udt_current_type	global_scs->scs_sqlp_udt_current_type
+#define sqlp_udt_current_type_lang global_scs->scs_sqlp_udt_current_type_lang
+#define parse_tree		global_scs->scs_parse_tree
+#define sqlc_sql_text		global_scs->scs_sql_text
+#define param_inx		global_scs->scs_param_inx
+#define sqlp_have_infoschema_views	global_scs->scs_sqlp_have_infoschema_views
+#define inside_view global_scs->scs_inside_view
+
+#define SET_SCS(scs) \
+  THREAD_CURRENT_THREAD->thr_sql_scs = (void*)scs
+
+#define global_scs ((sql_compile_state_t*) (THREAD_CURRENT_THREAD->thr_sql_scs))
+
+#define SCS_STATE_FRAME		sql_compile_state_t * save_scs; sql_compile_state_t scs
+
 #define SCS_STATE_PUSH \
         { \
-	  memcpy (&save_scs, &global_sqlc_st, sizeof (sql_compile_state_t)); \
-          memset (&global_sqlc_st, 0, sizeof (sql_compile_state_t)); \
+	  save_scs = global_scs; \
+          memset (&scs, 0, sizeof (sql_compile_state_t)); \
+	  SET_SCS (&scs); \
 	}
+
 #define SCS_STATE_POP \
-	memcpy (&global_sqlc_st, &save_scs, sizeof (sql_compile_state_t))
+  SET_SCS (save_scs)
+
 
 #endif

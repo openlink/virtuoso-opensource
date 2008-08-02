@@ -6606,6 +6606,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
     }
   else
     {
+      SCS_STATE_FRAME;
       dk_set_t lexems = NULL;
       sql_comp_t sc;
       caddr_t result_array = NULL;
@@ -6616,6 +6617,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
   parse_sem = semaphore_allocate (1);
       MP_START();
       semaphore_enter (parse_sem);
+      SCS_STATE_PUSH;
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
       snprintf (str, box_length (str), "EXEC SQL %s;", str2);
 
@@ -6661,6 +6663,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
   }
 cleanup:
       sql_pop_all_buffers ();
+      SCS_STATE_POP;
       semaphore_leave (parse_sem);
       MP_DONE();
       sc_free (&sc);
@@ -6771,12 +6774,14 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   int has_useful_lexems;
   int start_lineno;
   int start_plineno;
+  SCS_STATE_FRAME;
   memset (&sc, 0, sizeof (sc));
 
   if (!parse_sem)
     parse_sem = semaphore_allocate (1);
   MP_START();
   semaphore_enter (parse_sem);
+  SCS_STATE_PUSH;
   str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
   snprintf (str, box_length (str), "EXEC SQL %s", str2);
   yy_string_input_init (str);
@@ -6855,6 +6860,7 @@ nothing_to_commit:
 cleanup:
   scn3split_pop_all_buffers ();
   MP_DONE();
+  SCS_STATE_POP;
   semaphore_leave (parse_sem);
   sc_free (&sc);
   dk_free_box (scn3split_ses);

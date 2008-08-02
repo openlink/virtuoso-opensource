@@ -73,7 +73,10 @@ remote_ds_t *sqlc_table_remote_ds (sql_comp_t * sc, char *name);
 
 
 remote_ds_t * sqlc_first_location (sql_comp_t * sc, ST * tree);
-extern remote_ds_t *target_rds;
+
+#define target_rds  ((remote_ds_t*)THR_ATTR (THREAD_CURRENT_THREAD, TA_TARGET_RDS))
+#define SET_TARGET_RDS(r) SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_TARGET_RDS, (void*)r)
+
 
 #define SQL_QUOTE (target_rds ? target_rds->rds_quote : "\"")
 

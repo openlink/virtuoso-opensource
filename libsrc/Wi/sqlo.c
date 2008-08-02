@@ -752,7 +752,6 @@ sqlo_rls_add_condition (sqlo_t *so, op_table_t *ot, dk_set_t *res, dbe_table_t *
 	  "select 1 from \"%s\".\"%s\".\"%s\" where %s";
       query_t *proc_qr = sch_proc_def (isp_schema (NULL), tb->tb_rls_procs[TB_RLS_S]);
 
-      semaphore_leave (parse_sem);
 
       ret_val = sqlc_rls_get_condition_string (tb, TB_RLS_S, &err);
       if (err)
@@ -797,7 +796,6 @@ done:
 	dk_free_tree (sql_text);
       if (ret_val)
 	dk_free_tree (ret_val);
-      semaphore_enter (parse_sem);
       sqlc_set_client (cli);
       if (err)
 	{

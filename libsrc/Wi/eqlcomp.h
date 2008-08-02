@@ -122,6 +122,7 @@ void sqlc_set_client (client_connection_t * cli);
 #define TA_SQLC_ERROR 111
 #define TA_SQLC_CURRENT_CLIENT 113
 #define TA_SQL_WARNING_SET 115
+#define TA_TARGET_RDS 116
 
 void ks_spec_add (search_spec_t ** place, search_spec_t * sp);
 

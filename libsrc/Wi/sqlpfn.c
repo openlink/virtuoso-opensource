@@ -530,20 +530,20 @@ void
 yy_string_input_init (char *text)
 {
   param_inx = 0;
-  sql_text = text;
+  sqlc_sql_text = text;
 }
 
 
 int
 yy_string_input (char *buf, int max)
 {
-  int len = (int) strlen (sql_text);
+  int len = (int) strlen (sqlc_sql_text);
   if (len == 0)
     return 0;
   if (len > max)
     len = max;
-  memcpy (buf, sql_text, len);
-  sql_text += len;
+  memcpy (buf, sqlc_sql_text, len);
+  sqlc_sql_text += len;
   return len;
 }
 
@@ -732,7 +732,7 @@ sqlp_box_id_quoted (char *str)
 static void
 sqlp_check_infoschema (char *o)
 {
-  if (!CASEMODESTRCMP (o, "INFORMATION_SCHEMA"))
+  if (!CASEMODESTRCMP (o, "INFORMATION_SCHEMA") && global_scs)
     sqlp_have_infoschema_views = 1;
 }
 
@@ -870,7 +870,7 @@ sqlp_infoschema_redirect_tbs (ST **tree, ST **where_cond)
 ST *
 sqlp_infoschema_redirect (ST *texp)
 {
-  if (sqlp_have_infoschema_views && !inside_view)
+  if (global_scs && sqlp_have_infoschema_views && !inside_view)
     {
       ST *new_where = NULL;
       sqlp_infoschema_redirect_tbs (&texp, &new_where);
@@ -882,7 +882,6 @@ sqlp_infoschema_redirect (ST *texp)
     return texp;
 }
 
-char * inside_view;
 dk_set_t view_aliases;
 
 
