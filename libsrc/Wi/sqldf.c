@@ -52,12 +52,72 @@
 
 df_elt_t **df_body_to_array (df_elt_t * body);
 
+id_hashed_key_t
+sql_tree_hash_1 (ST * st)
+{
+  dtp_t dtp = DV_TYPE_OF (st);
+  switch (dtp)
+    {
+    case DV_LONG_INT:
+      return (uint32)(ptrlong)st;
+    case DV_STRING: 
+    case DV_C_STRING:
+    case DV_SYMBOL:
+    case DV_UNAME:
+      {
+	char * str = (char *)st;
+	int len = box_length ((caddr_t)st);
+	uint32 hash = 1234567;
+	if (len > 10)
+	  {
+	    int d = len / 2;
+	    len -= d;
+	    str += d;
+	  }
+	BYTE_BUFFER_HASH (hash, str, len);
+	return hash;
+      }
+    case DV_ARRAY_OF_POINTER:
+      {
+	int len = BOX_ELEMENTS (st);
+	uptrlong first;
+	uint32 hash, inx;
+	if (!len)
+	  return 1;
+	first = st->type;
+	if (first < 10000)
+	  hash = first;
+	else 
+	  hash = sql_tree_hash_1 ((ST*)first);
+	if (SELECT_STMT == first && len > 4 && DV_ARRAY_OF_POINTER == DV_TYPE_OF (st->_.select_stmt.selection))
+	  {
+	    return sql_tree_hash_1 ((ST*)st->_.select_stmt.selection);
+	  }
+	if (len > 3)
+	  len = 3;
+	for (inx = 1; inx < len; inx++)
+	  hash =  ((hash >> 2) | ((hash & 3 << 30)) ) ^ sql_tree_hash_1 (((ST**)st)[inx]);
+	return hash;
+      }
+    default: return box_hash ((caddr_t)st);
+    }
+}
+
+
+id_hashed_key_t
+sql_tree_hash (char *strp)
+{
+  char *str = *(char **) strp;
+  return 0x7fffffff & sql_tree_hash_1 ((ST*)str);
+}
+
+
 static id_hash_t *
 sqlo_allocate_df_elts (int size)
 {
   return t_id_hash_allocate (size,
       sizeof (caddr_t), sizeof (caddr_t),
-      treehash, treehashcmp);
+      sql_tree_hash, treehashcmp);
 }
 
 
@@ -65,12 +125,12 @@ df_elt_t *
 sqlo_df_elt (sqlo_t * so, ST * tree)
 {
   df_elt_t ** place = NULL;
-
+  id_hashed_key_t hash = sql_tree_hash ((caddr_t) &tree);
   if (so->so_df_private_elts)
-    place = (df_elt_t **) id_hash_get (so->so_df_private_elts, (caddr_t) &tree);
+    place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
 
   if (!place)
-    place = (df_elt_t **) id_hash_get (so->so_df_elts, (caddr_t) &tree);
+    place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_elts, (caddr_t) &tree, hash);
 
   if (place)
     return (*place);
@@ -121,10 +181,12 @@ sqlo_new_dfe (sqlo_t * so, int type, ST * tree)
   dfe->dfe_tree = tree;
   if (tree)
     {
+      id_hashed_key_t hash = sql_tree_hash ((caddr_t)&tree);
+      dfe->dfe_hash = hash;
       if (so->so_df_private_elts && type != DFE_COLUMN && type != DFE_CONST && type != DFE_FUN_REF)
-	t_id_hash_set (so->so_df_private_elts, (caddr_t)&tree, (caddr_t)&dfe);
+	t_id_hash_set_with_hash_number (so->so_df_private_elts, (caddr_t)&tree, (caddr_t)&dfe, hash);
       else
-	t_id_hash_set (so->so_df_elts, (caddr_t)&tree, (caddr_t)&dfe);
+	t_id_hash_set_with_hash_number (so->so_df_elts, (caddr_t)&tree, (caddr_t)&dfe, hash);
     }
   return dfe;
 }
@@ -1209,6 +1271,7 @@ dfe_defines (df_elt_t * defining, df_elt_t * defd)
   if (defd == defining)
     return 1;
   if (defining->dfe_tree
+      && defining->dfe_hash == defd->dfe_hash 
       && box_equal ((box_t) defining->dfe_tree, (box_t) defd->dfe_tree))
     return 1;
   if (DFE_COLUMN == defd->dfe_type)
@@ -4929,6 +4992,15 @@ sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
 }
 
 
+#define LAYOUT_ABORT \
+{ \
+  sqlo_untry (so, dfe, in_loop_dfe); \
+    sqlo_restore_leaves (so, new_leaves); \
+    return; \
+}
+
+
+
 void
 sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 {
@@ -4972,9 +5044,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	      sqlo_layout_1 (so, ot, is_top);
 	      if (ot->ot_layouts_tried == -1)
 		{
-		  so->so_gen_pt = dfe->dfe_prev;
-		  sqlo_dt_unplace (so, dfe);
-		  return;
+	      LAYOUT_ABORT;
 		}
 	    }
 	  else
@@ -4987,10 +5057,8 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		    {
 		      if (sqlo_print_debug_output)
 			sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
-		      so->so_gen_pt = dfe->dfe_prev;
-		      sqlo_dt_unplace (so, dfe);
 		      ot->ot_layouts_tried = -1;
-		      return;
+		  LAYOUT_ABORT;
 		    }
 		}
 	      if (sqlo_print_debug_output)
@@ -5016,9 +5084,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		  sqlo_layout_1 (so, ot, is_top);
 		  if (ot->ot_layouts_tried == -1)
 		    {
-		      so->so_gen_pt = dfe->dfe_prev;
-		      sqlo_dt_unplace (so, dfe);
-		      return;
+		  LAYOUT_ABORT;
 		    }
 		}
 	      else
@@ -5040,22 +5106,18 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		      if (sqlo_print_debug_output)
 			sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
 		      ot->ot_layouts_tried = -1;
-		      so->so_gen_pt = dfe->dfe_prev;
-		      sqlo_dt_unplace (so, dfe);
-		      return;
+		  LAYOUT_ABORT;
 		    }
 		}
 	    }
 	  else if (ot->ot_layouts_tried == -2)
 	    {
 	      ot->ot_layouts_tried = -1;
-	      so->so_gen_pt = dfe->dfe_prev;
-	      sqlo_dt_unplace (so, dfe);
 	      if (sqlo_print_debug_output)
 		sqlo_print ((
 		      "Max layouts (%d) exceeded and index ORDER BY not applicable.\n"
 		      "Taking the best so far\n", sqlo_max_layouts));
-	      return;
+	  LAYOUT_ABORT;
 	    }
       sqlo_untry (so, dfe, in_loop_dfe);
     }
@@ -5611,7 +5673,7 @@ sqlo_top_2 (sqlo_t * so, sql_comp_t * sc, ST ** ptree)
   top_ot = sqlo_find_dt (so, tree);
   if (sc->sc_cc && sc->sc_cc->cc_query && sc->sc_cc->cc_query->qr_unique_rows)
     sqlo_unique_rows(sc, top_ot, tree);
-  so->so_df_elts = sqlo_allocate_df_elts (101);
+  so->so_df_elts = sqlo_allocate_df_elts (201);
   sqlo_df (so, top_ot->ot_dt);
   top_ot->ot_work_dfe = dfe_container (so, DFE_DT, NULL);
   top_ot->ot_work_dfe->dfe_tree = top_ot->ot_dt;

@@ -176,6 +176,7 @@ struct df_elt_s
   short	dfe_type;
   char	dfe_is_placed;
   bitf_t	dfe_unit_includes_vdb:1;
+  int32		dfe_hash;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
   dk_set_t	locus_content; /* (moved from .sub as refd with any dfe_type) 

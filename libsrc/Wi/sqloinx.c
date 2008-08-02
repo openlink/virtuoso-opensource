@@ -539,6 +539,8 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
 }
 
 
+int inx_int_prune = 1; /* if true, do not try other permutations of the inx ints */
+
 void
 sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
 			 dk_set_t * after_preds)
@@ -556,6 +558,8 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
     {
       if (!dio->dio_table->dfe_is_placed)
 	{/* one of them is already placed, preds and all. */
+	  if (inx_int_prune && so->so_inx_int_tried_ret)
+	    t_set_push (so->so_inx_int_tried_ret, (void*)dio->dio_table);
       DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.col_preds)
 	{
 	  cp->dfe_is_placed = DFE_PLACED;
