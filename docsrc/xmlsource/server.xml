@@ -692,6 +692,17 @@ ACL's</link> for information on functions that are restricted.</para>
             the best execution plan reached thus far will  be used.  The default
             value is 1000, specifying 0 will try all possible orders and guarantee that the best plan is reached.</para></formalpara>
 				</listitem>
+
+				<listitem id="ini_Parameters_StopCompilerWhenXOverRunTime">
+					<formalpara>
+						<title>StopCompilerWhenXOverRunTime = 0</title>
+						<para>
+						If non-zero, this specifies that the SQL compiler should stop considering alternative execution plans after the elapsed compilation time exceeds the best run time estimate times the parameter.
+						For example, if this is 2, then compilation stops after using twice the time of the best plan reached thus far.
+						Enabling this option increases performance when processing short running queries that are each executed once.  Using this with long running queries or prepared parametrized queries is not useful and may lead to non-optimal plans being selected.
+						</para></formalpara>
+				</listitem>
+
 				<listitem id="ini_Parameters_TraceOn">
     		  <formalpara><title>TraceOn = option1 [, option2 [, ..]]</title>
 				<para>This parameter accepts a comma-delimited list of tracing options to
