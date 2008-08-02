@@ -119,6 +119,8 @@ int32 c_checkpoint_sync = 2;
 int c_use_o_direct = 0;
 int c_use_aio = 0;
 
+extern int32 sqlo_compiler_exceeds_run_factor;
+
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
 void _dbs_read_cfg (dbe_storage_t * dbs, char *file);
@@ -681,6 +683,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   if (!txn_after_image_limit)
     txn_after_image_limit = 50000000L;
   COND_PARAM_WITH_DEFAULT("\nmax_optimize_layouts:", sqlo_max_layouts, 1000);
+  COND_PARAM_WITH_DEFAULT("\nstop_compiler_when_x_over_run:", sqlo_compiler_exceeds_run_factor, 0);
   COND_PARAM_WITH_DEFAULT("\nmax_optimize_memory:", sqlo_max_mp_size, 10000000);
   COND_PARAM_WITH_DEFAULT("\ntemp_allocation_pct:", helper, 30);
   wi_inst.wi_temp_allocation_pct = (short) helper;
