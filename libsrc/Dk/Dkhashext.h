@@ -115,6 +115,7 @@ typedef struct lenmem_s lenmem_t;
 
 EXE_EXPORT (id_hash_t *, id_hash_allocate, (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf));
 EXE_EXPORT (void, id_hash_set, (id_hash_t *ht, caddr_t key, caddr_t data));
+EXE_EXPORT (void, id_hash_set_with_hash_number, (id_hash_t *ht, caddr_t key, caddr_t data, id_hashed_key_t inx));
 EXE_EXPORT (caddr_t, id_hash_add_new, (id_hash_t *ht, caddr_t key, caddr_t data));
 
 #ifdef MALLOC_DEBUG
@@ -125,6 +126,7 @@ id_hash_t *dbg_id_hash_allocate (const char *file, int line, id_hashed_key_t buc
 void dbg_id_hash_free (const char *file, int line, id_hash_t *hash);
 void dbg_id_hash_clear (const char *file, int line, id_hash_t *hash);
 void dbg_id_hash_set (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data);
+void dbg_id_hash_set_with_hash_number (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data, id_hashed_key_t inx);
 caddr_t dbg_id_hash_add_new (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data);
 void dbg_id_hash_rehash (const char *file, int line, id_hash_t *ht, uint32 new_sz);
 int dbg_id_hash_remove (const char *file, int line, id_hash_t *ht, caddr_t key);
@@ -139,6 +141,7 @@ id_hash_t * dbg_id_tree_hash_create (const char *file, int line, id_hashed_key_t
 #define id_hash_free(HASH)			dbg_id_hash_free (__FILE__, __LINE__, (HASH))
 #define id_hash_clear(HASH)			dbg_id_hash_clear (__FILE__, __LINE__, (HASH))
 #define id_hash_set(HT,KEY,DATA)		dbg_id_hash_set (__FILE__, __LINE__, (HT),(KEY),(DATA))
+#define id_hash_set_with_hash_number(HT,KEY,DATA, inx)		dbg_id_hash_set (__FILE__, __LINE__, (HT),(KEY),(DATA, inx))
 #define id_hash_add_new(HT,KEY,DATA)		dbg_id_hash_add_new (__FILE__, __LINE__, (HT),(KEY),(DATA))
 #define id_hash_rehash(HT,NS)			dbg_id_hash_rehash (__FILE__, __LINE__, (HT),(NS))
 #define id_hash_remove(HT,KEY)			dbg_id_hash_remove (__FILE__, __LINE__, (HT),(KEY))
@@ -166,6 +169,7 @@ id_hash_t *dbg_t_id_hash_allocate (const char *file, int line, id_hashed_key_t b
 void dbg_t_id_hash_free (const char *file, int line, id_hash_t *hash);
 void dbg_t_id_hash_clear (const char *file, int line, id_hash_t *hash);
 void dbg_t_id_hash_set (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data);
+void dbg_t_id_hash_set_with_hash_number (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data, id_hashed_key_t inx);
 caddr_t dbg_t_id_hash_add_new (const char *file, int line, id_hash_t *ht, caddr_t key, caddr_t data);
 void dbg_t_id_hash_rehash (const char *file, int line, id_hash_t *ht, uint32 new_sz);
 int dbg_t_id_hash_remove (const char *file, int line, id_hash_t *ht, caddr_t key);
@@ -177,6 +181,7 @@ id_hash_t * dbg_t_id_tree_hash_create (const char *file, int line, id_hashed_key
 #define t_id_hash_free(HASH)			dbg_t_id_hash_free (__FILE__, __LINE__, (HASH))
 #define t_id_hash_clear(HASH)			dbg_t_id_hash_clear (__FILE__, __LINE__, (HASH))
 #define t_id_hash_set(HT,KEY,DATA)		dbg_t_id_hash_set (__FILE__, __LINE__, (HT),(KEY),(DATA))
+#define t_id_hash_set_with_hash_number(HT,KEY,DATA, inx)		dbg_t_id_hash_set_with_hash_number (__FILE__, __LINE__, (HT),(KEY),(DATA, inx))
 #define t_id_hash_add_new(HT,KEY,DATA)		dbg_t_id_hash_add_new (__FILE__, __LINE__, (HT),(KEY),(DATA))
 #define t_id_hash_rehash(HT,NS)			dbg_t_id_hash_rehash (__FILE__, __LINE__, (HT),(NS))
 #define t_id_hash_remove(HT,KEY)		dbg_t_id_hash_remove (__FILE__, __LINE__, (HT),(KEY))
@@ -189,6 +194,7 @@ id_hash_t *t_id_hash_allocate (id_hashed_key_t buckets, int keybytes, int databy
 void t_id_hash_free (id_hash_t *hash);
 void t_id_hash_clear (id_hash_t *hash);
 void t_id_hash_set (id_hash_t *ht, caddr_t key, caddr_t data);
+void t_id_hash_set_with_hash_number (id_hash_t *ht, caddr_t key, caddr_t data, id_hashed_key_t inx);
 caddr_t t_id_hash_add_new (id_hash_t *ht, caddr_t key, caddr_t data);
 void t_id_hash_rehash (id_hash_t *ht, uint32 new_sz);
 int t_id_hash_remove (id_hash_t *ht, caddr_t key);

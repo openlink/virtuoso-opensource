@@ -133,6 +133,42 @@ DBG_HASHEXT_NAME(id_hash_set) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t d
 }
 
 
+void
+DBG_HASHEXT_NAME(id_hash_set_with_hash_number ) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx)
+{
+  caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
+  if (place)
+    {
+      memcpy (place, data, ht->ht_data_length);
+    }
+  else
+    {
+      char *bucket;
+      ID_HASHED_KEY_CHECK(inx);
+      ID_CHECK_REHASH (ht);
+      inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
+      ht->ht_inserts++;
+      ht->ht_count++;
+      if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
+	{
+	  bucket = BUCKET (ht, inx);
+	  memcpy (bucket, key, ht->ht_key_length);
+	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  BUCKET_OVERFLOW (bucket, ht) = NULL;
+	}
+      else
+	{
+	  ht->ht_overflows++;
+	  bucket = (char *) DBG_HASHEXT_ALLOC (ht->ht_bucket_length);
+	  memcpy (bucket, key, ht->ht_key_length);
+	  memcpy (bucket + ht->ht_data_inx, data, ht->ht_data_length);
+	  BUCKET_OVERFLOW (bucket, ht) = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+	  BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = bucket;
+	}
+    }
+}
+
+
 caddr_t
 DBG_HASHEXT_NAME(id_hash_add_new) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t data)
 {
