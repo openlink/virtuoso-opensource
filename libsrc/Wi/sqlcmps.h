@@ -521,8 +521,7 @@ ST * sqlc_embedded_xpath (sql_comp_t * sc, char * str2, caddr_t * err_ret);
 #endif
 
 caddr_t sqlo_iri_constant_name_1 (ST* tree);
-int32 sqlo_compiler_exceeds_run_factor;
-extern 
+extern int32 sqlo_compiler_exceeds_run_factor;
 
 /* sqlcr.c */
 query_t *
