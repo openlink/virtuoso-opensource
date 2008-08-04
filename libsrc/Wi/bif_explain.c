@@ -963,10 +963,12 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlo_print_debug_output = old_debug;
   if (err)
     {
-      if (qr && !qr->qr_proc_name)
+      if (SQLC_SQLO_SCORE != cr_type && (qr && !qr->qr_proc_name))
 	qr_free (qr);
       sqlr_resignal (err);
     }
+  if (SQLC_SQLO_SCORE == cr_type)
+    return (caddr_t)qr;
   if (SQLC_TRY_SQLO == cr_type)
     return NULL;
   else if (SQLC_PARSE_ONLY == cr_type)
