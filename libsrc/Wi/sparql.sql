@@ -3924,12 +3924,14 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
           ses := string_output ();
           http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any)\n', ses);
           http ('{\n', ses);
+          http ('  declare subj_iri varchar;\n', ses);
+          http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
           http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> select ?p1 ?o1\n', ses);
           http ('      where { graph ?g {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
             {
               if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps[map_ctr][0] || '> { `iri(?:subj)` ?p1 ?o1 } }\n', ses);
+              http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
           http ('            } } ) do { dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
@@ -6216,9 +6218,14 @@ no_match: ;
 }
 ;
 
-create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, inout tablename varchar) returns varchar
+create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, inout tablename varchar, in o_dt any := null, in o_lang any := null) returns varchar
 {
-/* iqi qmv: vector ( UNAME'http://www.openlinksw.com/schemas/oplsioc#user_iri' , vector ( vector ('DB.DBA.SYS_USERS', 'alias1', 'U_ID') ) ) */
+/* iqi qmv: vector ( UNAME'http://www.openlinksw.com/schemas/oplsioc#user_iri' ,
+    vector ( vector ('alias1', 'DB.DBA.SYS_USERS')),
+   vector ( vector ('DB.DBA.SYS_USERS', 'alias1', 'U_ID') ),
+   vector ('^{alias1.}^.U+IS_ROLE = 0'),
+   NULL
+ ) */
   declare atables, sqlcols, conds any;
   declare ftextid varchar;
   declare atablectr, atablecount integer;
@@ -6238,6 +6245,10 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   if (fmtid <> UNAME'literal')
     {
       DB.DBA.RDF_QM_ASSERT_JSO_TYPE (fmtid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
+      if (o_dt is not null)
+        signal ('22023', 'Only default literal class can have DATATYPE clause in the mapping, <' || fmtid || '> can not');
+      if (o_lang is not null)
+        signal ('22023', 'Only default literal class can have LANG clause in the mapping, <' || fmtid || '> can not');
       fmtcolcount := ((sparql select ?cc from <http://www.openlinksw.com/schemas/virtrdf#>
           where { `iri(?:fmtid)` virtrdf:qmfColumnCount ?cc } ) );
       if (fmtcolcount <> colcount)
@@ -6292,7 +6303,40 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
           ') can not be mapped to an RDF literal in current version of Virtuoso' );
+      if (o_lang is not null and coltype <> 'varchar' and coltype <> 'longvarchar')
+        signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
+          '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
+          ') conflicts with LANG clause, only strings may have language' );
+      if (o_dt is not null and coltype <> 'varchar' and coltype <> 'longvarchar')
+        signal ('22023', 'Current version of Virtuoso does not support DATATYPE clause for columns other than varchar; the column "' || sqlcols[0][2] ||
+          '" of table "' || sqlcols[0][0] || '" has COL_DTP=' || cast (coldtp as varchar) );
       fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#sql-' || coltype;
+      if (o_dt is not null)
+        {
+          if (__tag (o_dt) = __tag of vector)
+            {
+              if (o_dt[1] <> sqlcols[0][1])
+                signal ('22023', 'The alias in DATATYPE clause and the alias in object column should be the same');
+              fmtid := fmtid || '-dt';
+              sqlcols := vector_concat (sqlcols, vector (o_dt));
+              colcount := colcount + 1;
+            }
+          else
+            fmtid := DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_DT (coltype, o_dt);
+        }
+      if (o_lang is not null)
+        {
+          if (__tag (o_lang) = __tag of vector)
+            {
+              if (o_lang[1] <> sqlcols[0][1])
+                signal ('22023', 'The alias in LANG clause and the alias in object column should be the same');
+              fmtid := fmtid || '-lang';
+              sqlcols := vector_concat (sqlcols, vector (o_lang));
+              colcount := colcount + 1;
+            }
+          else
+            fmtid := DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (coltype, o_lang);
+        }
       if (colnullable)
         fmtid := fmtid || '-nullable';
       iriclassid := null;
@@ -6415,12 +6459,12 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
 
 create procedure DB.DBA.RDF_QM_NORMALIZE_QMV (
   inout qmv any, inout qmvfix any, inout qmvid any,
-  in can_be_literal integer, in fldname varchar, inout tablename varchar )
+  in can_be_literal integer, in fldname varchar, inout tablename varchar, in o_dt any := null, in o_lang any := null )
 {
   -- dbg_obj_princ ('DB.DBA.RDF_QM_NORMALIZE_QMV (', qmv, ' ..., ..., ', can_be_literal, fldname, ')');
   qmvid := qmvfix := NULL;
   if ((__tag of vector = __tag (qmv)) and (5 = length (qmv)))
-    qmvid := DB.DBA.RDF_QM_DEFINE_MAP_VALUE (qmv, fldname, tablename);
+    qmvid := DB.DBA.RDF_QM_DEFINE_MAP_VALUE (qmv, fldname, tablename, o_dt, o_lang);
   else if (217 = __tag (qmv))
       qmvfix := DB.DBA.RDF_MAKE_IID_OF_QNAME (qmv);
   else if (qmv is not null and not can_be_literal)
@@ -6437,7 +6481,7 @@ create procedure DB.DBA.RDF_QM_NORMALIZE_QMV (
 
 create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
   in qmrawid varchar, in qmid varchar, in qmparentid varchar,
-  in qmv_g any, in qmv_s any, in qmv_p any, in qmv_o any,
+  in qmv_g any, in qmv_s any, in qmv_p any, in qmv_o any, in o_dt any, in o_lang any,
   in is_real integer, in atables any, in conds any, in opts any ) returns any
 {
   declare old_actual_type varchar;
@@ -6477,7 +6521,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
   DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_g, qmvfix_g, qmvid_g, 0, 'graph', tablename);
   DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_s, qmvfix_s, qmvid_s, 0, 'subject', tablename);
   DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_p, qmvfix_p, qmvid_p, 0, 'predicate', tablename);
-  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_o, qmvfix_o, qmvid_o, 1, 'object', tablename);
+  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_o, qmvfix_o, qmvid_o, 1, 'object', tablename, o_dt, o_lang);
   if (get_keyword_ucase ('EXCLUSIVE', opts))
     qm_exclusive := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_EXCLUSIVE';
   else
@@ -8863,6 +8907,7 @@ host_found:
   if (state <> '00000')
     {
       declare state2, msg2 varchar;
+      state2 := '00000';
       exec ('isnull (sparql_to_sql_text (?))', state2, msg2, vector (full_query));
       if (state2 <> '00000')
         {
@@ -10578,7 +10623,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-07-29 0001'
+                virtrdf:version '2008-08-04 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

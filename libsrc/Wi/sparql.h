@@ -616,6 +616,7 @@ extern void spar_qm_add_text_literal (sparp_t *sparp, caddr_t ft_type, caddr_t f
 extern void spar_qm_check_filter_aliases (sparp_t *sparp, dk_set_t used_aliases);
 extern SPART *sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name);
 extern caddr_t spar_qm_collist_crc (SPART **cols, const char *prefix, int ignore_order);
+extern SPART *spar_make_qm_col_desc (sparp_t *sparp, SPART *col);
 extern SPART *spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols);
 extern void spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, dk_set_t *cond_tmpls_ptr);
 extern SPART *spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named);

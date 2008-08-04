@@ -216,7 +216,7 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
   return NULL; /* never reached */
 }
 
-static SPART *
+SPART *
 spar_make_qm_col_desc (sparp_t *sparp, SPART *col)
 {
   return spar_make_vector_qm_sql (sparp,
@@ -594,6 +594,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
   SPART * subject = spar_qm_get_local (sparp, SUBJECT_L, is_real);
   SPART * predicate = spar_qm_get_local (sparp, PREDICATE_L, is_real);
   SPART * object = spar_qm_get_local (sparp, OBJECT_L, is_real);
+  SPART * obj_dt = spar_qm_get_local (sparp, DATATYPE_L, 0);
+  SPART * obj_lang = spar_qm_get_local (sparp, LANG_L, 0);
   caddr_t *local_cond_tmpls = (caddr_t *)spar_qm_get_local (sparp, WHERE_L, 0);
   caddr_t uname_using = t_box_dv_uname_string ("USING");
   SPART * exclusive = (SPART *)get_keyword_int ((caddr_t *)options, t_box_dv_uname_string ("EXCLUSIVE"), "(SPARQL compiler)");
@@ -617,14 +619,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
     {
       caddr_t key = (caddr_t)t_list (9,
         storage_name, raw_id, parent_id,
-#if 0
-        ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (graph)) ? graph[0] : graph),
-        ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (subject)) ? subject[0] : subject),
-        ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (predicate)) ? predicate[0] : predicate),
-        ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (object)) ? object[0] : object),
-#else
-        graph, subject, predicate, object,
-#endif
+        graph, subject, predicate,
+        (((NULL != obj_dt) || (NULL != obj_lang)) ? (SPART *)t_list (3, object, obj_dt, obj_lang) : (SPART *)object),
         /* no where_cond -- intentionally */ exclusive, order );
       caddr_t md5 = box_md5 (key);
       int i, md5len = box_length (md5) - 1;
@@ -726,9 +722,10 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
         t_set_push (&final_cond_tmpls, t_set_pop (&all_cond_tmpls));
     }
   return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_DEFINE_MAPPING",
-      (SPART **)t_list (11,
+      (SPART **)t_list (13,
 	storage_name	, raw_id	, qm_id		, parent_id	,
 	graph		, subject	, predicate	, object	,
+        obj_dt, obj_lang,
 	t_box_num_nonull (is_real),
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_atables))),
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_cond_tmpls))) ),

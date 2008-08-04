@@ -43,10 +43,12 @@ JSO_STRUCT_END
 JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from
 JSO_SCALAR qmfName STRING REQUIRED			--!< Name used for error messages and debugging
 -- Templates that convert raw column into other types (can be applied to both field and not field expression)
-JSO_SCALAR qmfShortTmpl STRING REQUIRED			--!< 'short' value template, can be NULL
-JSO_SCALAR qmfLongTmpl STRING REQUIRED			--!< 'long' value template, can be NULL
-JSO_SCALAR qmfSqlvalTmpl STRING REQUIRED		--!< 'sqlval' value template, can be NULL
-JSO_SCALAR qmfBoolTmpl STRING REQUIRED			--!< Boolean value template, can be NULL
+JSO_SCALAR qmfShortTmpl STRING REQUIRED			--!< 'short' value template
+JSO_SCALAR qmfLongTmpl STRING REQUIRED			--!< 'long' value template
+JSO_SCALAR qmfSqlvalTmpl STRING REQUIRED		--!< 'sqlval' value template
+JSO_SCALAR qmfDatatypeTmpl STRING OPTIONAL		--!< datatype value template, compiler will use qmfDatatypeOfShortTmpl if this one is not set
+JSO_SCALAR qmfLanguageTmpl STRING OPTIONAL		--!< language value template, compiler will use qmfLanguageOfShortTmpl if this one is not set
+JSO_SCALAR qmfBoolTmpl STRING REQUIRED			--!< Boolean value template
 -- Templates of booleans that tell whether the short is of some sort:
 JSO_SCALAR qmfIsrefOfShortTmpl STRING REQUIRED		--!< ... whether the short is ref
 JSO_SCALAR qmfIsuriOfShortTmpl STRING REQUIRED		--!< ... whether the short is uri

@@ -423,13 +423,34 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("alias-1", 7))
+        {
+          ccaddr_t colalias;
+          if (NULL == alias)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
+          if (NULL == qm_val)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-1}^ if qm_val is NULL", asname_printed);
+          colalias = qm_val->qmvColumns[1]->qmvcAlias;
+          if ((NULL == colalias) || ('!' == colalias[0]))
+            ssg_prin_id (ssg, alias);
+          else
+            {
+              caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
+              ssg_prin_id (ssg, subalias);
+            }
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("alias-dot", 9))
         {
           ccaddr_t colalias;
           if (NULL == qm_val)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-dot}^ if qm_val is NULL", asname_printed);
           if (1 != BOX_ELEMENTS (qm_val->qmvColumns))
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-dot}^ if qm_val has more than one column", asname_printed);
+            {
+              if ((2 < BOX_ELEMENTS (qm_val->qmvColumns)) || strcmp (qm_val->qmvColumns[0]->qmvcAlias, qm_val->qmvColumns[1]->qmvcAlias))
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-dot}^ if qm_val has many columns", asname_printed);
+            }
           if (col_idx >= 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-dot}^ inside a loop, should be ^{column-N}^", asname_printed);
           colalias = qm_val->qmvColumns[0]->qmvcAlias;
@@ -484,6 +505,58 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-0", 9))
+        {
+          if (IS_BOX_POINTER (asname))
+            {
+              char buf[60];
+              snprintf (buf, sizeof (buf), "%s~%d", asname, 0);
+              ssg_puts (" AS /*as-name-0*/ ");
+              ssg_prin_id (ssg, buf);
+              asname_printed = 1;
+            }
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-1", 9))
+        {
+          if (IS_BOX_POINTER (asname))
+            {
+              char buf[60];
+              snprintf (buf, sizeof (buf), "%s~%d", asname, 1);
+              ssg_puts (" AS /*as-name-0*/ ");
+              ssg_prin_id (ssg, buf);
+              asname_printed = 1;
+            }
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-dt", 10))
+        {
+          if (col_idx >= 0)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-dt}^ inside a loop", asname_printed);
+          if (IS_BOX_POINTER (asname))
+            {
+              ssg_puts (" AS /*as-name-dt*/ ");
+              ssg_prin_id_with_suffix (ssg, asname, "_dt");
+            }
+          asname_printed = 1;
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-lang", 12))
+        {
+          if (col_idx >= 0)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-lang}^ inside a loop", asname_printed);
+          if (IS_BOX_POINTER (asname))
+            {
+              ssg_puts (" AS /*as-name-lang*/ ");
+              ssg_prin_id_with_suffix (ssg, asname, "_lang");
+            }
+          asname_printed = 1;
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("as-name-N", 9))
         {
           if (col_idx < 0)
@@ -519,6 +592,14 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("column-1", 8))
+        {
+          if (NULL == qm_val)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{column-0}^ if qm_val is NULL", asname_printed);
+          ssg_prin_id (ssg, qm_val->qmvColumns[1]->qmvcColumnName);
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("column-N", 8))
         {
           if (NULL == qm_val)
@@ -529,6 +610,10 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{column-N}^ exceedes number of columns", asname_printed);
           ssg_prin_id (ssg, qm_val->qmvColumns[col_idx]->qmvcColumnName);
         }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("comma-cut", 9))
+        ssg_puts (", ");
 /*                        0         1         2 */
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("comma-list-begin", 16))
@@ -595,6 +680,23 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("tree-1", 6))
+        {
+          if (!(IS_BOX_POINTER (qm_fmt) && (2 <= qm_fmt->qmfColumnCount)))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-1}^ if qm_fmt is not short or have less than 2 cols", asname_printed);
+          if (NULL == tree)
+            {
+              if (NULL == qm_fmt)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-1}^ if qm_fmt is NULL", asname_printed);
+              if (tmpl == qm_fmt->qmfShortTmpl)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-1}^ in qmfShortTmpl: infinite recursion", asname_printed);
+              ssg_print_tmpl (ssg, qm_fmt, qm_fmt->qmfShortTmpl, alias, qm_val, NULL, COL_IDX_ASNAME + 1);
+            }
+          else
+            ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, COL_IDX_ASNAME + 1);
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("tree-N", 6))
         {
           if (NULL == tree)
@@ -623,6 +725,36 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           else
             ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
           asname_printed = 1;
+        }
+/*                         0         1         2 */
+/*                         012345678901234567890 */
+      else if (CMD_EQUAL("tree-dt", 7))
+        {
+          if (NULL == tree)
+            {
+              if (NULL == qm_fmt)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-dt}^ if qm_fmt is NULL", asname_printed);
+              if (tmpl == qm_fmt->qmfDatatypeOfShortTmpl)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-dt}^ in qmfDatatypeOfShortTmpl: infinite recursion", asname_printed);
+              ssg_print_tmpl (ssg, qm_fmt, qm_fmt->qmfDatatypeOfShortTmpl, alias, qm_val, NULL, asname);
+            }
+          else
+            ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_DATATYPE, asname);
+        }
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("tree-lang", 9))
+        {
+          if (NULL == tree)
+            {
+              if (NULL == qm_fmt)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-lang}^ if qm_fmt is NULL", asname_printed);
+              if (tmpl == qm_fmt->qmfLanguageOfShortTmpl)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{tree-lang}^ in qmfLanguageOfShortTmpl: infinite recursion", asname_printed);
+              ssg_print_tmpl (ssg, qm_fmt, qm_fmt->qmfLanguageOfShortTmpl, alias, qm_val, NULL, asname);
+            }
+          else
+            ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_LANGUAGE, asname);
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
@@ -698,17 +830,40 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
     }
   if ((NULL != asname) && !IS_BOX_POINTER (asname))
     {
-      const char *loop_begin, *loop_end;
+      int col_idx = asname - COL_IDX_ASNAME, col_ctr;
+      const char *tail, *cut_begin, *cut_end;
 /*                                0         1         2 */
 /*                                012345678901234567890 */
-      loop_begin = strstr (tmpl, "-list-begin}^");
-      if (NULL == loop_begin)
-        spar_sqlprint_error ("ssg_print_tmpl(): no list in template for printing one part of list");
-      loop_begin += 13;
-      loop_end = strstr (loop_begin, "^{end}^");
-      if (NULL == loop_begin)
+      cut_begin = strstr (tmpl, "-list-begin}^");
+      if (NULL != cut_begin)
+        {
+          cut_begin += 13;
+          cut_end = strstr (cut_begin, "^{end}^");
+          if (NULL == cut_begin)
         spar_sqlprint_error ("ssg_print_tmpl(): list-begin}^ without ^{end}^");
-      ssg_print_tmpl_phrase (ssg, qm_fmt, loop_begin, loop_end, alias, qm_val, tree, asname - COL_IDX_ASNAME, NULL_ASNAME);
+          goto print_cut; /* see below */
+        }
+      cut_begin = tmpl;
+      for (col_ctr = 0; col_ctr < col_idx; col_ctr++)
+        {
+/*                                        0         1         2 */
+/*                                        012345678901234567890 */
+          tail = strstr (cut_begin, "^{comma-cut}^");
+          if (NULL == tail)
+            {
+              if (cut_begin == tmpl)
+                spar_sqlprint_error ("ssg_print_tmpl(): no list in template for printing one part of list");
+              else
+                spar_sqlprint_error ("ssg_print_tmpl(): not enough comma-cuts in template");
+            }
+          cut_begin = tail + 13;
+        }
+      cut_end = strstr (cut_begin, "^{comma-cut}^");
+      if (NULL == cut_end)
+        cut_end = cut_begin + strlen (cut_begin);
+
+print_cut:
+      ssg_print_tmpl_phrase (ssg, qm_fmt, cut_begin, cut_end, alias, qm_val, tree, col_idx, NULL_ASNAME);
   return;
     }
   asname_printed = ssg_print_tmpl_phrase (ssg, qm_fmt, tmpl, tmpl_end, alias, qm_val, tree, -1, asname);
@@ -775,6 +930,14 @@ sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_a
         goto noloop_tbl_cmd;
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("alias-0", 7))
+        goto noloop_tbl_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("alias-1", 7))
+        goto noloop_tbl_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("alias-dot", 9))
         goto noloop_tbl_cmd;
 /*                        0         1         2 */
@@ -784,6 +947,22 @@ sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_a
 /*                        0         1         2 */
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("as-name", 7))
+        goto noloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-0", 9))
+        goto noloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-1", 9))
+        goto noloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-dt", 10))
+        goto noloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("as-name-lang", 12))
         goto noloop_cmd;
 /*                        0         1         2 */
 /*                        012345678901234567890 */
@@ -799,7 +978,15 @@ sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_a
         goto inloop_cmd;
 /*                        0         1         2 */
 /*                        012345678901234567890 */
+      else if (CMD_EQUAL("column-1", 8))
+        goto inloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
       else if (CMD_EQUAL("column-N", 8))
+        goto inloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("comma-cut", 9))
         goto inloop_cmd;
 /*                        0         1         2 */
 /*                        012345678901234567890 */
@@ -831,6 +1018,14 @@ sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_a
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("tree", 4))
         goto noloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("tree-0", 6))
+        goto inloop_cmd;
+/*                        0         1         2 */
+/*                        012345678901234567890 */
+      else if (CMD_EQUAL("tree-1", 6))
+        goto inloop_cmd;
 /*                        0         1         2 */
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("tree-N", 6))
@@ -945,6 +1140,11 @@ sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements)
   return tres;
 }
 
+void
+spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg)
+  {
+    ssg_putchar ('!'); ssg_puts (msg); ssg_putchar ('!');
+  }
 
 void
 ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
@@ -961,6 +1161,26 @@ ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 #endif
   ssg_putchar ('"');
   ssg_puts (name);
+  ssg_putchar ('"');
+#endif
+}
+
+
+void
+ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix)
+{
+#if 0
+  char tmp[1000 + 1];
+  sprintf_escaped_id (t_box_sprintf ("%s%s", name, suffix), tmp, NULL);
+  ssg_puts (tmp);
+#else
+#ifdef DEBUG
+  if (NULL != strstr (name, "CRASH"))  
+    ssg_puts ("!!!CRASH!!!");
+#endif
+  ssg_putchar ('"');
+  ssg_puts (name);
+  ssg_puts (suffix);
   ssg_putchar ('"');
 #endif
 }
@@ -1691,6 +1911,10 @@ ssg_print_tr_field_expn (spar_sqlgen_t *ssg, qm_value_t *field, caddr_t tabid, s
         tmpl = field_format->qmfLongTmpl;
       else if (SSG_VALMODE_SQLVAL == needed)
         tmpl = field_format->qmfSqlvalTmpl;
+      else if (SSG_VALMODE_DATATYPE == needed)
+        tmpl = (field_format->qmfDatatypeTmpl ? field_format->qmfDatatypeTmpl : field_format->qmfDatatypeOfShortTmpl) ;
+      else if (SSG_VALMODE_LANGUAGE == needed)
+        tmpl = (field_format->qmfLanguageTmpl ? field_format->qmfLanguageTmpl : field_format->qmfLanguageOfShortTmpl) ;
       else if (SSG_VALMODE_BOOL == needed)
         tmpl = field_format->qmfBoolTmpl;
       else if (SSG_VALMODE_AUTO == needed)
@@ -2080,6 +2304,9 @@ Without the special optization it becomes iri_to_id ('graph iri string from view
       (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, right) )
     {
+      if ((BOP_NEQ == ttype) && (IS_BOX_POINTER (left_vmode)) && !left_vmode->qmfOkForAnySqlvalue)
+        min_mode = SSG_VALMODE_SQLVAL;
+      else
       min_mode = left_vmode;
       goto vmodes_found; /* see below */
     }
@@ -2088,6 +2315,9 @@ Without the special optization it becomes iri_to_id ('graph iri string from view
       (IS_BOX_POINTER (right_vmode) && right_vmode->qmfIsBijection) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, left) )
     {
+      if ((BOP_NEQ == ttype) && (IS_BOX_POINTER (right_vmode)) && !right_vmode->qmfOkForAnySqlvalue)
+        min_mode = SSG_VALMODE_SQLVAL;
+      else
       min_mode = right_vmode;
       goto vmodes_found; /* see below */
     }
@@ -3128,7 +3358,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           fromshort->_.conv.needed = SSG_VALMODE_LONG;
           ssg_print_scalar_expn (ssg, fromshort, needed, asname);
           return;
-        }/*#0*/
+        }
       ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_short (needed, native), NULL, NULL, tree, asname);
       return;
     }

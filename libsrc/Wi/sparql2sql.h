@@ -675,8 +675,9 @@ typedef struct spar_sqlgen_s
     } while (0)
 
 #ifdef DEBUG
-#define spar_sqlprint_error(x) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return; } while (0)
-#define spar_sqlprint_error2(x,v) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return (v); } while (0)
+extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
+#define spar_sqlprint_error(x) do { spar_sqlprint_error_impl (ssg, (x)); return; } while (0)
+#define spar_sqlprint_error2(x,v) do { spar_sqlprint_error_impl (ssg, (x)); return (v); } while (0)
 #else
 #define spar_sqlprint_error(x) spar_internal_error (NULL, (x))
 #define spar_sqlprint_error2(x,v) spar_internal_error (NULL, (x))
@@ -695,6 +696,7 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
+extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix);
 extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, caddr_t box, int allow_uname);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);

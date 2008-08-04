@@ -394,6 +394,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_qm_obj_field_commalist
 %type <trees> spar_qm_obj_field
 %type <box> spar_qm_as_id_opt
+%type <tree> spar_qm_obj_datatype_opt
+%type <tree> spar_qm_obj_language_opt
 %type <tree> spar_qm_verb
 %type <tree> spar_qm_field_or_blank
 %type <tree> spar_qm_field
@@ -1791,6 +1793,11 @@ spar_qm_named_field	/* [Virt]	QmNamedField	 ::=  ('GRAPH'|'SUBJECT'|'PREDICATE'|
 	| SUBJECT_L spar_qm_field { spar_qm_push_local (sparp_arg, SUBJECT_L, $2, 0); }
 	| PREDICATE_L spar_qm_field { spar_qm_push_local (sparp_arg, PREDICATE_L, $2, 0); }
 	| OBJECT_L spar_qm_field { spar_qm_push_local (sparp_arg, OBJECT_L, $2, 0); }
+	    spar_qm_obj_datatype_opt {
+		spar_qm_push_local (sparp_arg, DATATYPE_L, (SPART *)($4), 0); }
+            spar_qm_obj_language_opt {
+		spar_qm_push_local (sparp_arg, LANG_L, (SPART *)($6), 0); }
+
 	;
 
 spar_qm_props		/* [Virt]	QmProps		 ::=  QmProp ( ';' QmProp )?	*/
@@ -1825,15 +1832,32 @@ spar_qm_obj_field	/* [Virt]	QmObjField	 ::=  QmFieldOrBlank QmCondition* QmOptio
 		spar_qm_push_local (sparp_arg, OBJECT_L,
 		  ((NULL != $1) ? ((SPART *)($1)) : spar_qm_get_local (sparp_arg, OBJECT_L, 1)),
 		  0 ); }
+            spar_qm_obj_datatype_opt {
+		spar_qm_push_local (sparp_arg, DATATYPE_L, (SPART *)($3), 0); }
+            spar_qm_obj_language_opt {
+		spar_qm_push_local (sparp_arg, LANG_L, (SPART *)($5), 0); }
 	    spar_qm_where_list_opt {
-		spar_qm_push_local (sparp_arg, WHERE_L, (SPART *)t_revlist_to_array ($3), 0); }
-	    spar_qm_options_opt { $$ = $5; }
+		spar_qm_push_local (sparp_arg, WHERE_L, (SPART *)t_revlist_to_array ($7), 0); }
+	    spar_qm_options_opt { $$ = $9; }
         | error { sparyyerror ("Description of object field is expected here"); }
 	;
 
 spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
 	: /* empty */ { $$ = NULL; }
 	| AS_L spar_qm_iriref_const_expn { $$ = $2; }
+	;
+
+spar_qm_obj_datatype_opt
+	: /* empty */ { $$ = NULL; }
+	| DATATYPE_L spar_iriref { $$ = $2->_.lit.val; }
+	| DATATYPE_L IRI_L _LPAR SPARQL_STRING _RPAR { sparyyerror ("Datatype of object field should be either constant IRI or table field, not template IRI (string)"); }
+	| DATATYPE_L spar_qm_sqlcol { $$ = spar_make_qm_col_desc (sparp_arg, $2); }
+	;
+
+spar_qm_obj_language_opt
+	: /* empty */ { $$ = NULL; }
+	| LANG_L SPARQL_STRING { $$ = $2; }
+	| LANG_L spar_qm_sqlcol { $$ = spar_make_qm_col_desc (sparp_arg, $2); }
 	;
 
 spar_qm_verb		/* [Virt]	QmVerb		 ::=  QmField | ( '[' ']' ) | 'a'	*/

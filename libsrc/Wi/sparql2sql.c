@@ -757,6 +757,52 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
   return 0;
 }
 
+/* For an != in group \c curr between member of \c eq_l and expression \c r,
+the function may sometimes set conflict to \c eq_l or find that the filter is useless (say, inequality between literal and IRI)
+\returns 1 if != is no longer needed due to added conflict or proven useless, 0 otherwise */
+int
+spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r)
+{
+  int ret = 0;
+  ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
+  if ((eq_l->e_rvr.rvrRestrictions & SPART_VARR_IS_REF) && (tree_restr_bits & SPART_VARR_IS_LIT))
+    return 1;
+  if ((eq_l->e_rvr.rvrRestrictions & SPART_VARR_IS_LIT) && (tree_restr_bits & SPART_VARR_IS_REF))
+    return 1;
+  if ((eq_l->e_rvr.rvrRestrictions & SPART_VARR_IS_IRI) && (tree_restr_bits & SPART_VARR_IS_BLANK))
+    return 1;
+  if ((eq_l->e_rvr.rvrRestrictions & SPART_VARR_IS_BLANK) && (tree_restr_bits & SPART_VARR_IS_IRI))
+    return 1;
+  if (!(eq_l->e_rvr.rvrRestrictions & SPART_VARR_FIXED))
+    return 0;
+  switch (SPART_TYPE (r))
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      {
+        sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
+        if (!(eq_r->e_rvr.rvrRestrictions & SPART_VARR_FIXED))
+          return 0;
+        if (sparp_equivs_have_same_fixedvalue (sparp, eq_l, eq_r))
+          {
+            eq_l->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            eq_r->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            return 1;
+          }
+        break;
+      }
+    case SPAR_LIT: case SPAR_QNAME:
+      {
+        if (sparp_fixedvalues_equal (sparp, eq_l->e_rvr.rvrFixedValue, r))
+          {
+            eq_l->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            return 1;
+          }
+        break;
+      }
+    }
+  return 0;
+}
+
 /* Processing of simple filters that introduce restrictions on variables
 \c trav_env_this is not used.
 \c common_env is not used. */
@@ -815,6 +861,20 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           }
         break;
      }
+    case BOP_NEQ:
+      {
+        SPART *l = filt->_.bin_exp.left;
+        SPART *r = filt->_.bin_exp.right;
+        switch (SPART_TYPE (l))
+          {
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            {
+              sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
+              return spar_var_bangeq_to_equiv (sparp, curr, eq_l, r);
+            }
+          }
+        break;
+      }
     case BOP_NOT: break;
     case SPAR_BUILT_IN_CALL:
       {
@@ -1837,7 +1897,7 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
   if (SPAR_VARIABLE == curr->type)
     {
       caddr_t varname = curr->_.var.vname;
-      if (SPART_VARNAME_IS_GLOB(varname))
+      if (!SPART_VARNAME_IS_GLOB(varname))
         {
           common_env = (void *)((ptrlong)1);
           return SPAR_GPT_COMPLETED;
@@ -3949,7 +4009,11 @@ sparp_rewrite_qm_postopt (sparp_t *sparp)
 /* Final processing: */
   switch (root->_.req_top.subtype)
     {
-    case INSERT_L: case DELETE_L:
+    case DELETE_L:
+      if (spar_optimize_delete_of_single_triple_pattern (sparp, root))
+        break; /* If optimized then there's nothing more to optimize. */
+      /* no break here */
+    case INSERT_L:
       spar_optimize_retvals_of_insert_or_delete (sparp, root);
       break;
     case MODIFY_L:
