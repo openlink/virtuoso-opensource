@@ -34,14 +34,14 @@
     <title>Concept</title>
     <para>
       RDF cartridges provide a modular approach to RDF oriented entity extraction and ontology mapping
-      as part of a Linked Data production pipeline. Typical sources include (X)HTML pages, Images, Office
-      documents, PDFs, amongst others.
+      as part of a Linked Data production pipeline. Typical sources include (X)HTML pages, images,
+      Office documents and PDF documents amongst others.
     </para>
     <para>
       Cartridges expose their functionality to service consumers via the Virtuoso Sponger ("Sponger"),
-      a middleware layer that provides delivers RDF to other Virtuoso components such as the Web Crawler
-      and SPARQL Query Process, in addition direct exposure as a REST style Web Service for external
-      applications and services to exploit.
+      a middleware layer that extracts and delivers RDF to other Virtuoso components such as the Web
+      Crawler and SPARQL Query Process. In addition it is directly exposed as a REST-style Web Service
+      for external applications and services to exploit.
     </para>
     <para>
       A Cartridges is comprised of an initialization PL procedure (hook) and an entity extractor and mapper.
@@ -49,8 +49,8 @@
       supported by Virtuoso via the Virtuoso Server Extensions APIs.
     </para>
     <para>
-      Once the cartridge is developed, it is plugged into the Virtuoso Sponger by adding a record to
-      the table DB.DBA.SYS_RDF_MAPPERS.
+      Once the cartridge has been developed, it is plugged into the Virtuoso Sponger by adding a record
+      to the table DB.DBA. DB.DBA.SYS_RDF_MAPPERS.
     </para>
     <para><b>How Cartridges Work:</b></para>
   </refsect1>
@@ -63,17 +63,16 @@
       the URI exposes. If RDF is discovered, the cartridges play no role. On the other hand, if RDF
       isn't discovered the Sponger will look in the DB.DBA.SYS_RDF_MAPPERS table (in RM_ID order),
       and for every matching URI or MIME type pattern (depending on RM_TYPE column value) it will
-      invoke the associated cartridge by invoking the hook procedure. If hook returns zero the next
-      cartridge will be tried, if result is negative the process stops instructing the SPARQL Engine
-      that nothing was retrieved, if result is positive the process stops instructing the SPARQL that
-      RDF data was retrieved.
+      invoke the associated cartridge by invoking the hook procedure. If the hook returns zero the
+      next cartridge will be tried. If the result is negative the process stops, instructing the
+      SPARQL engine that nothing was retrieved. If the result is positive the process stops, this
+      time instructing the SPARQL engine that RDF data was successfully retrieved.
     </para>
   </refsect1>
   <refsect1 id="RD-S-1c">
     <title>PL hook requirements</title>
     <para>
-      Every PL function used to plug a cartridge into SPARQL engine must have the following parameter
-      signature:
+      Every PL function used to plug a cartridge into the SPARQL engine must have the following parameter signature:
     </para>
     <itemizedlist mark="bullet">
       <listitem>
