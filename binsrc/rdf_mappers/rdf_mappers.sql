@@ -78,6 +78,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://digg.com/search.*)',
+            'URL', 'DB.DBA.RDF_LOAD_DIGG', null, 'Digg');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://isbndb.com/.*)|'||
             '(https://isbndb.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
@@ -1225,6 +1229,29 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, section_name, search, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare exit handler for sqlstate '*'
+    {
+      --dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+  tmp := sprintf_inverse (new_origin_uri, 'http://digg.com/search?section=%s&s=%s', 0);
+  section_name := tmp[0];
+  search := tmp[1];
+  if (search is null)
+    return 0;
+  url := sprintf('http://digg.com/rss_search?search=%s&area=promoted&type=both&section=%s', search, section_name);
+  tmp := http_get (url);
+  xd := xtree_doc (tmp, 2);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
@@ -1260,7 +1287,7 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
   hdr := null;
   declare exit handler for sqlstate '*'
     {
-      dbg_printf ('%s', __SQL_MESSAGE);
+      --dbg_printf ('%s', __SQL_MESSAGE);
       return 0;
     };
     
