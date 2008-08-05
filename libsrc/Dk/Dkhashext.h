@@ -181,7 +181,7 @@ id_hash_t * dbg_t_id_tree_hash_create (const char *file, int line, id_hashed_key
 #define t_id_hash_free(HASH)			dbg_t_id_hash_free (__FILE__, __LINE__, (HASH))
 #define t_id_hash_clear(HASH)			dbg_t_id_hash_clear (__FILE__, __LINE__, (HASH))
 #define t_id_hash_set(HT,KEY,DATA)		dbg_t_id_hash_set (__FILE__, __LINE__, (HT),(KEY),(DATA))
-#define t_id_hash_set_with_hash_number(HT,KEY,DATA, inx)		dbg_t_id_hash_set_with_hash_number (__FILE__, __LINE__, (HT),(KEY),(DATA, inx))
+#define t_id_hash_set_with_hash_number(HT,KEY,DATA, inx)		dbg_t_id_hash_set_with_hash_number (__FILE__, __LINE__, (HT),(KEY),(DATA),(inx))
 #define t_id_hash_add_new(HT,KEY,DATA)		dbg_t_id_hash_add_new (__FILE__, __LINE__, (HT),(KEY),(DATA))
 #define t_id_hash_rehash(HT,NS)			dbg_t_id_hash_rehash (__FILE__, __LINE__, (HT),(NS))
 #define t_id_hash_remove(HT,KEY)		dbg_t_id_hash_remove (__FILE__, __LINE__, (HT),(KEY))
