@@ -1893,7 +1893,9 @@ are implemented. */
   /*row_map_print (image, key);*/
   if (key->key_is_bitmap)
     {
+      ITC_SAVE_FAIL (it);
       key_bm_insert (it, image);
+      ITC_RESTORE_FAIL (it);
       itc_free_owned_params (it);
       return DVC_LESS;
     }
