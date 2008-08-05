@@ -121,6 +121,7 @@ exec_start:;
     params := vector_concat(params, vector('user_info', vector('user_id',       user_id,
                                                                'user_name',     user_name,
                                                                'user_fullname', user_fullName,
+                                                               'user_basic_authorization', OMAIL.WA.account_basicAuthorization (user_id),
                                                                'domain_id',     waID,
                                                                'domain_path',   OMAIL.WA.domain_sioc_url (waID),
                                                                'description',   waDescription,

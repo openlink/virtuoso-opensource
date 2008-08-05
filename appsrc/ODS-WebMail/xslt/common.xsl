@@ -224,9 +224,9 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="css">
-    <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/styles.css"/>
-    <link type="text/css" media="print" rel="Stylesheet" href="/oMail/i/css/print.css"/>
-    <link type="text/css" media="screen" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
+    <link type="text/css" rel="stylesheet" href="/oMail/i/css/styles.css" />
+    <link type="text/css" rel="stylesheet" href="/oMail/i/css/print.css" media="print" />
+    <link type="text/css" rel="stylesheet" href="/ods/oat/styles/webdav.css" />
   </xsl:template>
 
   <!-- ========================================================================== -->
@@ -242,18 +242,17 @@
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
-      // WebDAV Object
-      var oWebDAV;
-
       function myInit() {
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+
         // WebDAV
-        var options = { imagePath: '/ods/images/oat/',
-                        imageExt: 'png',
-			path: '/DAV/home/<xsl:value-of select="//user_info/user_name" />/',
-			user: '<xsl:value-of select="//user_info/user_name" />'
+        var options = { imagePath: OAT.Preferences.imagePath,
+                        pathHome: '/home/',
+                        path: '/home/<xsl:value-of select="//user_info/user_name" />/',
+                        user: '<xsl:value-of select="//user_info/user_name" />',
+                        connectionHeaders: {Authorization: '<xsl:value-of select="//user_info/user_basic_authorization" />'}
                       };
         OAT.WebDav.init(options);
-        oWebDAV = OAT.WebDav;
 
         // a++
         OAT.Preferences.imagePath = '/ods/images/oat/';
@@ -261,9 +260,9 @@
         OAT.Anchor.zIndex = 1001;
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
-          generateAPP('app_area', {appActivation: "click"});
+          generateAPP('app_area', {appActivation: "click", searchECRM: true});
         if (<xsl:value-of select="//user_info/app" /> == 2)
-          generateAPP('app_area', {appActivation: "hover"});
+          generateAPP('app_area', {appActivation: "hover", searchECRM: true});
       }
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>

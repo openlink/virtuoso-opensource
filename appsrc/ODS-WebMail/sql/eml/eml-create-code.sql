@@ -1349,6 +1349,24 @@ create procedure OMAIL.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.account_name (
+  in account_id integer)
+{
+  return coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.account_password (
+  in account_id integer)
+{
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.account_fullName (
   in account_id integer)
 {
@@ -1362,6 +1380,19 @@ create procedure OMAIL.WA.account_mail(
   in account_id integer)
 {
   return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.account_basicAuthorization (
+  in account_id integer)
+{
+  declare account_name, account_password varchar;
+
+  account_name := OMAIL.WA.account_name (account_id);
+  account_password := OMAIL.WA.account_password (account_id);
+  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
 
@@ -2589,7 +2620,8 @@ create procedure OMAIL.WA.omail_insert_attachment(
 
   _error := 0;
   _attach := '';
-  if (get_keyword ('att_source', _params, '-1') = '0') {
+  if (get_keyword ('att_source', _params, '-1') = '0')
+  {
     _attach    := get_keyword ('att_1', _params, '', 1);
     _att_attrs := get_keyword_ucase ('attr-att_1', _params);
     _att_fname := trim(get_keyword_ucase ('filename', _att_attrs));
@@ -2597,8 +2629,9 @@ create procedure OMAIL.WA.omail_insert_attachment(
       return;
     _att_name  := substring(_att_fname,OMAIL.WA.omail_locate_last('\\',_att_fname)+1,length(_att_fname));
     _att_type  := get_keyword_ucase ('Content-Type', _att_attrs);
-
-  } else if (get_keyword ('att_source', _params, '-1') = '1') {
+  }
+  else if (get_keyword ('att_source', _params, '-1') = '1')
+  {
     declare reqHdr, resHdr varchar;
     declare vspx_user, vspx_pwd varchar;
     declare userInfo any;
@@ -2609,22 +2642,18 @@ create procedure OMAIL.WA.omail_insert_attachment(
 
     userInfo := vector('user_id', _user_id);
     OMAIL.WA.omail_dav_api_params(userInfo, vspx_user, vspx_pwd);
-    reqHdr := sprintf('Authorization: Basic %s', encode_base64(vspx_user || ':' || vspx_pwd));
-    commit work;
-    _attach := http_get (OMAIL.WA.host_url () || _att_fname, resHdr, 'GET', reqHdr);
-    if (resHdr[0] like 'HTTP/1._ 200 %') {
-      _att_type := http_request_header(resHdr, 'Content-Type', null, 'application/octet-stream');
-      _att_name := substring(_att_fname,OMAIL.WA.omail_locate_last('/',_att_fname)+1,length(_att_fname));
-    } else {
+    OMAIL.WA.omail_dav_content (OMAIL.WA.host_url () || _att_fname, _attach, _att_type, vspx_user, vspx_pwd);
+    if (isnull (_attach))
+    {
       _error := 3003;
       return;
     }
-  } else {
-    return;
+    _att_name := substring(_att_fname,OMAIL.WA.omail_locate_last('/',_att_fname)+1,length (_att_fname));
   }
 
   -- Insert attachments -----------------------------------------------------------------------------------------
-  if (length(_attach) > 0) {
+  if (length (_attach) > 0)
+  {
     declare _part_id any;
     declare _type_id,_aparams,_freetext_id integer;
 
@@ -2656,6 +2685,54 @@ create procedure OMAIL.WA.omail_insert_attachment(
 err:
   _error := 3001;
   return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.omail_dav_content (
+  in uri varchar,
+  out content any,
+  out content_type any,
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare exit handler for sqlstate '*'
+  {
+    return null;
+  };
+
+  declare N integer;
+  declare oldUri, newUri, reqHdr, resHdr varchar;
+  declare xt any;
+
+  content := null;
+  content_type := null;
+  newUri := replace (uri, ' ', '%20');
+  reqHdr := sprintf ('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
+
+_again:
+  N := N + 1;
+  oldUri := newUri;
+  commit work;
+  content := http_get (newUri, resHdr, 'GET', reqHdr);
+  if (resHdr[0] like 'HTTP/1._ 30_ %')
+  {
+    newUri := http_request_header (resHdr, 'Location');
+    newUri := WS.WS.EXPAND_URL (oldUri, newUri);
+    if (N > 15)
+      return null;
+    if (newUri <> oldUri)
+      goto _again;
+  }
+  if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
+  {
+    content := null;
+  } else
+  {
+    content_type := http_request_header (resHdr, 'Content-Type', null, 'application/octet-stream');
+  }
+  return content;
 }
 ;
 
