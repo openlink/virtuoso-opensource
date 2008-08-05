@@ -108,7 +108,7 @@ id_hashed_key_t
 sql_tree_hash (char *strp)
 {
   char *str = *(char **) strp;
-  return 0x7fffffff & sql_tree_hash_1 ((ST*)str);
+  return ID_HASHED_KEY_MASK & sql_tree_hash_1 ((ST*)str);
 }
 
 
@@ -184,9 +184,9 @@ sqlo_new_dfe (sqlo_t * so, int type, ST * tree)
       id_hashed_key_t hash = sql_tree_hash ((caddr_t)&tree);
       dfe->dfe_hash = hash;
       if (so->so_df_private_elts && type != DFE_COLUMN && type != DFE_CONST && type != DFE_FUN_REF)
-	t_id_hash_set_with_hash_number (so->so_df_private_elts, (caddr_t)&tree, (caddr_t)&dfe, hash);
+	t_id_hash_set_with_hash_number (so->so_df_private_elts, (caddr_t)(&tree), (caddr_t)(&dfe), hash);
       else
-	t_id_hash_set_with_hash_number (so->so_df_elts, (caddr_t)&tree, (caddr_t)&dfe, hash);
+	t_id_hash_set_with_hash_number (so->so_df_elts, (caddr_t)(&tree), (caddr_t)(&dfe), hash);
     }
   return dfe;
 }
