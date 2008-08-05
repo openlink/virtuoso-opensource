@@ -242,7 +242,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
 
-        S := POLLS.WA.dav_url (self.domain_id);
+        S := POLLS.WA.gems_url (self.domain_id);
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));

@@ -431,7 +431,7 @@
             <td>
               Subscribe to an RSS feed of this comment thread:
               <?vsp
-                http(sprintf('<a href="%sOFM.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS conversation" class="gems"><img src="image/rss-icon-16.gif" border="0"/></a>', ENEWS.WA.dav_url (self.domain_id), self.v_fid));
+                http(sprintf('<a href="%sOFM.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS conversation" class="gems"><img src="image/rss-icon-16.gif" border="0" /></a>', ENEWS.WA.gems_url (self.domain_id), self.v_fid));
               ?>
             </td>
           </tr>

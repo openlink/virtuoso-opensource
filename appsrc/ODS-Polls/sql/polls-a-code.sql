@@ -24,6 +24,34 @@
 -- Session Functions
 --
 -------------------------------------------------------------------------------
+create procedure POLLS.WA.session_domain (
+  inout params any)
+{
+  declare aPath, domain_id, options any;
+
+  declare exit handler for sqlstate '*'
+  {
+    domain_id := -1;
+    goto _end;
+  };
+
+  options := http_map_get('options');
+  if (not is_empty_or_null (options))
+    domain_id := get_keyword ('domain', options);
+  if (is_empty_or_null (domain_id)) {
+    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    domain_id := cast(aPath[1] as integer);
+  }
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
+
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.session_restore(
   inout params any)
 {
@@ -529,7 +557,7 @@ create procedure POLLS.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || 'Polls/';
+  home := home || 'Gems/';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   home := home || POLLS.WA.domain_gems_name(domain_id) || '/';
@@ -584,10 +612,10 @@ create procedure POLLS.WA.domain_gems_create (
 create procedure POLLS.WA.domain_gems_delete(
   in domain_id integer,
   in account_id integer := null,
-  in appName varchar := 'Polls',
+  in appName varchar := 'Gems',
   in appGems varchar := null)
 {
-  declare tmp, home, path varchar;
+  declare tmp, home, appHome, path varchar;
 
   if (isnull (account_id))
     account_id := POLLS.WA.domain_owner_id (domain_id);
@@ -598,17 +626,16 @@ create procedure POLLS.WA.domain_gems_delete(
 
   if (isnull(appGems))
     appGems := POLLS.WA.domain_gems_name(domain_id);
-  home := home || appName || '/' || appGems || '/';
+  appHome := home || appName || '/';
+  home := appHome || appGems || '/';
 
-  path := home || appName || '.rss';
+  path := home || 'Polls.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.rdf';
+  path := home || 'Polls.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.atom';
+  path := home || 'Polls.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.ocs';
-  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.opml';
+  path := home || 'Polls.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;
@@ -622,6 +649,10 @@ create procedure POLLS.WA.domain_gems_delete(
   if (not isinteger(tmp) and not length(tmp))
     DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
+  tmp := DB.DBA.DAV_DIR_LIST (appHome, 0, auth_uid, auth_pwd);
+  if (not isinteger(tmp) and not length(tmp))
+    DB.DBA.DAV_DELETE_INT (appHome, 1, null, null, 0);
+
   return 1;
 }
 ;
@@ -632,7 +663,7 @@ create procedure POLLS.WA.domain_update (
   inout domain_id integer,
   inout account_id integer)
 {
-  POLLS.WA.domain_gems_delete (domain_id, account_id, 'Polls');
+  POLLS.WA.domain_gems_delete (domain_id, account_id, 'Polls', POLLS.WA.domain_name (domain_id) || '_Gems');
   POLLS.WA.domain_gems_create (domain_id, account_id);
 
   return 1;
@@ -697,7 +728,7 @@ create procedure POLLS.WA.domain_name (
 create procedure POLLS.WA.domain_gems_name (
   in domain_id integer)
 {
-  return concat(POLLS.WA.domain_name(domain_id), '_Gems');
+  return concat(POLLS.WA.domain_name(domain_id), '');
 }
 ;
 
@@ -1157,6 +1188,15 @@ create procedure POLLS.WA.sioc_url (
   in domain_id integer)
 {
   return sprintf('http://%s/dataspace/%U/polls/%U/sioc.rdf', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.gems_url (
+  in domain_id integer)
+{
+  return sprintf('http://%s/dataspace/%U/polls/%U/gems/', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 

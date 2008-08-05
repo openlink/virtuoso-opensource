@@ -426,7 +426,7 @@
             <td>
               Subscribe to an RSS feed of this comment thread:
               <?vsp
-                http (sprintf ('<a href="%sAddressBook.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS discussion" class="gems3"><img src="image/rss-icon-16.gif" border="0" /></a>', AB.WA.dav_url (self.domain_id), self.v_id));
+                http (sprintf ('<a href="%sAddressBook.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS discussion" class="gems3"><img src="image/rss-icon-16.gif" border="0" /></a>', AB.WA.gems_url (self.domain_id), self.v_id));
               ?>
             </td>
           </tr>

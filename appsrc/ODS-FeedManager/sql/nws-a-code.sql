@@ -24,6 +24,62 @@
 -- Session Functions
 --
 -------------------------------------------------------------------------------
+create procedure ENEWS.WA.session_domain (
+  inout params any)
+{
+  declare aPath, domain_id, options any;
+
+  declare exit handler for sqlstate '*'
+  {
+    domain_id := -1;
+    goto _end;
+  };
+
+  options := http_map_get('options');
+  if (not is_empty_or_null (options))
+    domain_id := get_keyword ('domain', options);
+  if (is_empty_or_null (domain_id)) {
+    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    domain_id := cast(aPath[1] as integer);
+  }
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
+
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.session_domain (
+  inout params any)
+{
+  declare aPath, domain_id, options any;
+
+  declare exit handler for sqlstate '*'
+  {
+    domain_id := -1;
+    goto _end;
+  };
+
+  options := http_map_get('options');
+  if (not is_empty_or_null (options))
+    domain_id := get_keyword ('domain', options);
+  if (is_empty_or_null (domain_id)) {
+    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    domain_id := cast(aPath[1] as integer);
+  }
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
+
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.session_restore(
   inout params any)
 {
@@ -376,7 +432,7 @@ create procedure ENEWS.WA.domain_gems_create (
   inout domain_id integer,
   inout account_id integer)
 {
-  declare read_perm, exec_perm, content, home, path varchar;
+  declare read_perm, exec_perm, content, home, home2, path varchar;
 
   home := ENEWS.WA.dav_home(account_id);
   if (isnull(home))
@@ -384,12 +440,16 @@ create procedure ENEWS.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || ENEWS.WA.domain_gems_folder() || '/';
-  DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
-  path := home || 'channels/';
+  home2 := home || 'Feed Subscriptions/';
+  DB.DBA.DAV_MAKE_DIR (home2, account_id, null, read_perm);
+
+  path := home2 || 'channels/';
   DB.DBA.DAV_MAKE_DIR (path, account_id, null, read_perm);
   update WS.WS.SYS_DAV_COL set COL_DET = 'News3' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+  home := home || 'Gems/';
+  DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   home := home || ENEWS.WA.domain_gems_name(domain_id) || '/';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
@@ -484,8 +544,9 @@ create procedure ENEWS.WA.domain_gems_create (
 create procedure ENEWS.WA.domain_gems_delete(
   in domain_id integer,
   in account_id integer,
-  in appName varchar := null,
-  in appGems varchar := 'OFM')
+  in appName varchar := 'Gems',
+  in appGems varchar := null,
+  in fileName varchar := 'OFM')
 {
   declare tmp, davHome, home, path varchar;
 
@@ -494,39 +555,38 @@ create procedure ENEWS.WA.domain_gems_delete(
     return;
 
   if (isnull (appName))
+    appName := ENEWS.WA.domain_gems_folder (domain_id);
+
+  if (isnull (appGems))
     appName := ENEWS.WA.domain_gems_name (domain_id);
 
-  home := davHome || ENEWS.WA.domain_gems_folder() || '/';
+  home := davHome || appName || '/';
 
-  path := home || appName || '/' || appGems || '.rss';
+  path := home || appGems || '/' || fileName || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.rdf';
+  path := home || appGems || '/' || fileName || '.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.atom';
+  path := home || appGems || '/' || fileName || '.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.ocs';
+  path := home || appGems || '/' || fileName || '.ocs';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.opml';
+  path := home || appGems || '/' || fileName || '.opml';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.foaf';
+  path := home || appGems || '/' || fileName || '.foaf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.comment';
+  path := home || appGems || '/' || fileName || '.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '/' || appGems || '.podcast';
+  path := home || appGems || '/' || fileName || '.podcast';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid integer;
 
   auth_uid := http_dav_uid();
 
-  path := home || appName || '/';
+  path := home || appGems || '/';
   tmp := DB.DBA.DAV_DIR_LIST_INT (path, 0, '%', null, null, auth_uid);
   if (not isinteger(tmp) and not length(tmp))
     DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-
-  tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
-  if (not isinteger(tmp) and (length(tmp) = 1) and (tmp[0][10] = 'channels'))
-    DB.DBA.DAV_DELETE_INT (home || 'channels/', 1, null, null, 0);
 
   tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
   if (not isinteger(tmp) and not length(tmp))
@@ -546,7 +606,7 @@ create procedure ENEWS.WA.domain_update (
   ENEWS.WA.domain_gems_delete (domain_id, account_id, 'eNews', cast(domain_id as varchar));
   ENEWS.WA.domain_gems_delete (domain_id, account_id, 'OFM');
   ENEWS.WA.domain_gems_delete (domain_id, account_id, 'OFM', cast(domain_id as varchar));
-  ENEWS.WA.domain_gems_delete (domain_id, account_id, ENEWS.WA.domain_gems_folder());
+  ENEWS.WA.domain_gems_delete (domain_id, account_id, 'Feed Subscriptions', ENEWS.WA.domain_name (domain_id) || '_Gems');
   ENEWS.WA.domain_gems_create (domain_id, account_id);
 
   ENEWS.WA.sfolder_create(domain_id, 'New items', '<settings><entry ID="read">r-</entry></settings>', 1);
@@ -611,7 +671,7 @@ create procedure ENEWS.WA.domain_description (
 --
 create procedure ENEWS.WA.domain_gems_folder ()
 {
-  return 'Feed Subscriptions';
+  return 'Gems';
 }
 ;
 
@@ -620,7 +680,7 @@ create procedure ENEWS.WA.domain_gems_folder ()
 create procedure ENEWS.WA.domain_gems_name (
   in domain_id integer)
 {
-  return ENEWS.WA.domain_name (domain_id) || '_Gems';
+  return ENEWS.WA.domain_name (domain_id) || '';
 }
 ;
 
@@ -4269,6 +4329,15 @@ create procedure ENEWS.WA.sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.gems_url (
+  in domain_id integer)
+{
+  return sprintf('http://%s/dataspace/%U/subscriptions/%U/gems/', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), replace (ENEWS.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.foaf_url (
   in domain_id integer)
 {
@@ -6094,12 +6163,7 @@ create procedure ENEWS.WA.version_update()
 {
   if (registry_get ('news_version_upgrade') = '1')
     return;
-
-  for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'eNews2' and WAM_MEMBER_TYPE = 1) do {
-    ENEWS.WA.domain_update(WAI_ID, WAM_USER);
-  }
+  registry_set ('news_version_upgrade', '1');
 
   -- Members (List of members feeds)
   ENEWS.WA.directory_insert(null, 'Members');
@@ -6222,7 +6286,19 @@ create procedure ENEWS.WA.version_update()
 
 ENEWS.WA.version_update()
 ;
-registry_set ('news_version_upgrade', '1')
+
+-----------------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.version_update2 ()
+{
+  for (select WAI_ID, WAM_USER
+         from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
+        where WAI_TYPE_NAME = 'eNews2' and WAM_MEMBER_TYPE = 1) do {
+    ENEWS.WA.domain_update (WAI_ID, WAM_USER);
+  }
+}
+;
+ENEWS.WA.version_update2 ()
 ;
 
 -----------------------------------------------------------------------------------------

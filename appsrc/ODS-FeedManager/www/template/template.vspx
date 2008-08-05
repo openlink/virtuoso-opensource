@@ -35,8 +35,8 @@
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', ENEWS.WA.sioc_url (self.domain_id)));
       }
-      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, ENEWS.WA.dav_url (self.domain_id)||'OFM.rss'));
-      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, ENEWS.WA.dav_url (self.domain_id)||'OFM.atom'));
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, ENEWS.WA.gems_url (self.domain_id)||'OFM.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, ENEWS.WA.gems_url (self.domain_id)||'OFM.atom'));
       http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, ENEWS.WA.enews_url (self.domain_id), self.account_id, self.domain_id));
       http (ENEWS.WA.geo_url (self.domain_id, self.account_id));
     ?>

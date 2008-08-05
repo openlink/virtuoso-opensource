@@ -35,8 +35,8 @@
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', AB.WA.sioc_url (self.domain_id)));
       }
-      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V" href="%s" />', domainName, AB.WA.dav_url (self.domain_id)||'AddressBook.rss'));
-      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V" href="%s" />', domainName, AB.WA.dav_url (self.domain_id)||'AddressBook.atom'));
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V" href="%s" />', domainName, AB.WA.gems_url (self.domain_id)||'AddressBook.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V" href="%s" />', domainName, AB.WA.gems_url (self.domain_id)||'AddressBook.atom'));
       http (AB.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>

@@ -35,8 +35,8 @@
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', POLLS.WA.sioc_url (self.domain_id)));
       }
-      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, POLLS.WA.dav_url (self.domain_id)||'Polls.rss'));
-      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, POLLS.WA.dav_url (self.domain_id)||'Polls.atom'));
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, POLLS.WA.gems_url (self.domain_id)||'Polls.atom'));
       http (POLLS.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>

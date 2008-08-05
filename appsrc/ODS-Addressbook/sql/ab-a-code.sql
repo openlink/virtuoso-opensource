@@ -24,6 +24,34 @@
 -- Session Functions
 --
 -------------------------------------------------------------------------------
+create procedure AB.WA.session_domain (
+  inout params any)
+{
+  declare aPath, domain_id, options any;
+
+  declare exit handler for sqlstate '*'
+  {
+    domain_id := -1;
+    goto _end;
+  };
+
+  options := http_map_get('options');
+  if (not is_empty_or_null (options))
+    domain_id := get_keyword ('domain', options);
+  if (is_empty_or_null (domain_id)) {
+    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    domain_id := cast(aPath[1] as integer);
+  }
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
+
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.session_restore(
   inout params any)
 {
@@ -562,7 +590,7 @@ create procedure AB.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || 'AddressBook/';
+  home := home || 'Gems/';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   home := home || AB.WA.domain_gems_name(domain_id) || '/';
@@ -620,7 +648,7 @@ create procedure AB.WA.domain_gems_delete (
   in appName varchar := 'AddressBook',
   in appGems varchar := null)
 {
-  declare tmp, home, path varchar;
+  declare tmp, home, appHome, path varchar;
 
   if (isnull (account_id))
     account_id := AB.WA.domain_owner_id (domain_id);
@@ -628,17 +656,19 @@ create procedure AB.WA.domain_gems_delete (
   home := AB.WA.dav_home (account_id);
   if (isnull (home))
     return;
-  home := home || 'AddressBook/';
+  appHome := home || appName || '/';
 
   if (isnull (appGems))
     appGems := AB.WA.domain_gems_name (domain_id);
-  home := home || appGems || '/';
+  home := appHome || appGems || '/';
 
   path := home || appName || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || appName || '.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || appName || '.atom';
+  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+  path := home || appName || '.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;
@@ -652,6 +682,10 @@ create procedure AB.WA.domain_gems_delete (
   if (not isinteger(tmp) and not length(tmp))
     DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
+  tmp := DB.DBA.DAV_DIR_LIST (appHome, 0, auth_uid, auth_pwd);
+  if (not isinteger(tmp) and not length(tmp))
+    DB.DBA.DAV_DELETE_INT (appHome, 1, null, null, 0);
+
   return 1;
 }
 ;
@@ -662,7 +696,7 @@ create procedure AB.WA.domain_update (
   inout domain_id integer,
   inout account_id integer)
 {
-  AB.WA.domain_gems_delete (domain_id, account_id, 'AddressBook');
+  AB.WA.domain_gems_delete (domain_id, account_id, 'AddressBook', AB.WA.domain_gems_name (domain_id) || '_Gems');
   AB.WA.domain_gems_create (domain_id, account_id);
 
   return 1;
@@ -749,7 +783,7 @@ create procedure AB.WA.domain_nntp_name2 (
 create procedure AB.WA.domain_gems_name (
   in domain_id integer)
 {
-  return concat(AB.WA.domain_name(domain_id), '_Gems');
+  return concat(AB.WA.domain_name (domain_id), '');
 }
 ;
 
@@ -1233,6 +1267,15 @@ create procedure AB.WA.sioc_url (
   in domain_id integer)
 {
   return sprintf ('http://%s/dataspace/%U/addressbook/%U/sioc.rdf', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), replace (AB.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.gems_url (
+  in domain_id integer)
+{
+  return sprintf ('http://%s/dataspace/%U/addressbook/%U/gems/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), replace (AB.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
