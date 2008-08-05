@@ -723,8 +723,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
     }
   return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_DEFINE_MAPPING",
       (SPART **)t_list (13,
-	storage_name	, raw_id	, qm_id		, parent_id	,
-	graph		, subject	, predicate	, object	,
+	storage_name, raw_id, qm_id, parent_id,
+	graph, subject, predicate, object,
         obj_dt, obj_lang,
 	t_box_num_nonull (is_real),
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_atables))),

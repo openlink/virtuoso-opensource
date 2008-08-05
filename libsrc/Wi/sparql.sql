@@ -6409,14 +6409,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvid)`
-        rdf:type virtrdf:QuadMapValue;
-        virtrdf:qmvTableName ?:tablename;
-        virtrdf:qmvATables `iri(?:qmvatablesid)`;
-        virtrdf:qmvColumns `iri(?:qmvcolsid)`;
-        virtrdf:qmvConds `iri(?:qmvcondsid)`;
-        virtrdf:qmvFormat `iri(?:fmtid)`;
-        virtrdf:qmvFText `iri(?:ftextid)`;
-        virtrdf:qmvIriClass `iri(?:iriclassid)`;
+        rdf:type virtrdf:QuadMapValue ;
+        virtrdf:qmvTableName ?:tablename ;
+        virtrdf:qmvATables `iri(?:qmvatablesid)` ;
+        virtrdf:qmvColumns `iri(?:qmvcolsid)` ;
+        virtrdf:qmvConds `iri(?:qmvcondsid)` ;
+        virtrdf:qmvFormat `iri(?:fmtid)` ;
+        virtrdf:qmvFText `iri(?:ftextid)` ;
+        virtrdf:qmvIriClass `iri(?:iriclassid)` ;
         virtrdf:qmvColumnsFormKey ?:columnsformkey .
       `iri(?:qmvatablesid)`
         rdf:type virtrdf:array-of-QuadMapATable .
