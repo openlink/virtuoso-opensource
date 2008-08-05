@@ -28,6 +28,7 @@ function generateAPPAnchor(options, app)
   var appOnclick = app.onclick;
   var link = app;
   var useRDFB = options.useRDFB;
+  var searchECRM = options.searchECRM;
   // If we use a separate image to make a++, then actual anchor is previous sibling
   if (app.tagName == "IMG")
   {
@@ -38,7 +39,8 @@ function generateAPPAnchor(options, app)
     var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
 
     // html link
-    if (appHref != "javascript: void(0);")
+    /*
+    if ((appHref != "javascript: void(0);") && (appHref != "javascript:%20void(0);"))
     {
       var a = OAT.Dom.create("a");
 
@@ -60,6 +62,7 @@ function generateAPPAnchor(options, app)
       elm.appendChild(a);
       ul.appendChild(elm);
     }
+    */
 
     // rdf link
     if (appIRI)
@@ -153,6 +156,10 @@ function generateAPPAnchor(options, app)
 	    search = link.innerHTML;
     }
     OAT.AJAX.GET("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}, onerror:function(){OAT.Dom.unlink(ul.lastChild);}});
+    if (searchECRM)
+    {
+      OAT.AJAX.GET("/ods_services/search_ecrm/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}, onerror:function(){OAT.Dom.unlink(ul.lastChild);}});
+    }
     return ul;
   }
 
@@ -209,7 +216,8 @@ function generateAPP(appArea, optObj)
     width: 300,
     height: 200,
     appActivation: "click",
-    useRDFB: false
+    useRDFB: false,
+    searchECRM: false
   }
   for (var p in optObj)
   {
@@ -235,7 +243,7 @@ function generateAPP(appArea, optObj)
     	} else {
     	  app.parentNode.appendChild (img);
     	}
-    	generateAPPAnchor (options, img);
+    	generateAPPAnchor (options, img, OAT.Dom.isClass(app, 'searchECRM'));
     }
   }
 }

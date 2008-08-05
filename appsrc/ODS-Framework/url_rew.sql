@@ -88,7 +88,13 @@ create procedure DB.DBA.ODS_ATOM_PAGE (in par varchar, in fmt varchar, in val va
     if (length (val))
       val := split_and_decode (val)[0];
     ret := cast ((select WAI_ID from WA_INSTANCE where WAI_NAME = val) as varchar);
-  } else {
+  }
+  else if ((par = 'app') and (val = 'subscriptions'))
+  {
+    ret := 'enews2';
+  }
+  else
+  {
     ret := sprintf ('%s', val);
   }
   return sprintf (fmt, ret);
@@ -403,9 +409,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_atom_html', 1,
 
 -- Calendar atop-pub is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_gems_html', 1,
-    '/dataspace/([^/]*)/calendar/([^/]*)/gems/([^\\?]*)',
-    vector('uname', 'inst', 'gem'), 3,
-    '/calendar/%s/gems.vsp?type=%s', vector('inst', 'gem'),
+    '/dataspace/([^/]*)/(addressbook|bookmark|calendar|subscriptions|polls)/([^/]*)/gems/([^\\?]*)',
+    vector('uname', 'app', 'inst', 'gem'), 4,
+    '/%s/%s/gems.vsp?type=%s', vector('app', 'inst', 'gem'),
     'DB.DBA.ODS_ATOM_PAGE',
     NULL,
     2);

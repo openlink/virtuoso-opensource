@@ -28,9 +28,13 @@
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule1', 1,
   '/ods_services/search/(.*)', vector ('par'), 1,
-  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%27%U%%27%%29%%20%%20%%7D%%20LIMIT%%20100&format=application/sparql-results%2Bxml', vector ('par'), 'DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING', null, 0, null);
+  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%27%U%%27%%29%%20%%20%%7D%%20LIMIT%%20100&format=application/sparql-results%2Bxml', vector ('par'), 'DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING', null, 2, null);
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_svc_rule_list1', 1, vector ('ods_svc_rule1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule2', 1,
+  '/ods_services/search_ecrm/(.*)', vector ('par'), 1,
+  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/ecrm%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%27%U%%27%%29%%20%%20%%7D%%20LIMIT%%20100&format=application/sparql-results%2Bxml', vector ('par'), 'DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING', null, 2, null);
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_svc_rule_list1', 1, vector ('ods_svc_rule1', 'ods_svc_rule2'));
 
 -- move into ods_define_common_vd
 --DB.DBA.VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services');

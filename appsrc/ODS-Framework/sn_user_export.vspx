@@ -47,6 +47,7 @@
      arr := WA_GET_USER_INFO(uid, ufid, visb, own);
 
      http_rewrite ();
+     http_request_status ('HTTP/1.1 200 OK');
      http_header (sprintf ('Content-Type: text/x-vcard\r\nContent-Disposition: inline; filename="%s.vcf"\r\n', ufname));
      http ('BEGIN:VCARD\r\n');
      http ('VERSION:2.1\r\n');
