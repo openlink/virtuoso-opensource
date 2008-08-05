@@ -35,14 +35,14 @@
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', BMK.WA.sioc_url (self.domain_id)));
       }
-      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.rss'));
-      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.atom'));
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.atom'));
       http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, BMK.WA.bookmarks_url (self.domain_id), self.account_id, self.domain_id));
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css" />
-    <link rel="stylesheet" href="/ods/oat/styles/winrect.css" type="text/css" />
+    <link rel="stylesheet" href="/ods/winrect.css" type="text/css" />
     <meta name="dc.description" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>

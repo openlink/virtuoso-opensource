@@ -130,7 +130,7 @@
           declare tags any;
 
           delimiter := '';
-          tags := CAL.WA.tags2vector (fValue);
+          tags := BMK.WA.tags2vector (fValue);
           for (N := 0; N < length (tags); N := N + 1)
           {
             http (delimiter);

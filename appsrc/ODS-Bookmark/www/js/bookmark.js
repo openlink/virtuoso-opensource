@@ -1048,14 +1048,14 @@ BMK.initLeftPane = function ()
     BMK.saveState();
   }
   BMK.forms = new Object();
-  BMK.forms['import'] = {height: '400px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['export'] = {height: '160px'};
-  BMK.forms['bookmark'] = {height: '380px', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['folder'] = {height: '180px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['smart folder'] = {height: '320px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['move'] = {params: {items: true}, height: '100px', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['share'] = {params: {items: true}, height: '130px', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['tags'] = {params: {items: true}, height: '130px', postActions:['BMK.loadTags()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['import'] = {height: '400', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['export'] = {height: '160'};
+  BMK.forms['bookmark'] = {height: '380', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['folder'] = {height: '180', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['smart folder'] = {height: '320', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['move'] = {params: {items: true}, height: '100', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['share'] = {params: {items: true}, height: '130', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['tags'] = {params: {items: true}, height: '130', postActions:['BMK.loadTags()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['delete'] = {params: {items: true}, postActions:['BMK.loadTree()', 'BMK.loadTags()', 'BMK.resetToolbars()']};
 
   BMK.initTabs()
@@ -1465,15 +1465,15 @@ BMK.formShow = function (action, id, params)
   var formParams = action.split('/')[0].toLowerCase();
   var form = BMK.forms[formParams];
   var dx = form.width;
-  if (!dx) {dx = '720px';}
+  if (!dx) {dx = '720';}
   var dy  = form.height;
-  if (!dy) {dy = '200px';}
+  if (!dy) {dy = '200';}
 
   var formDiv = $('formDiv');
   if (formDiv) {OAT.Dom.unlink(formDiv);}
-  formDiv = OAT.Dom.create('div', {width:dx, height:dy});
+  formDiv = OAT.Dom.create('div', {width:dx+'px', height:dy+'px'});
   formDiv.id = 'formDiv';
-  formDialog = new OAT.Dialog('', formDiv, {buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
+  formDialog = new OAT.Dialog('', formDiv, {width:parseInt(dx)+20, buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
 
   var s = 'forms.vspx?sa='+encodeURIComponent(action)+BMK.sessionParams();
   if (id) {s += '&id='+encodeURIComponent(id);}
