@@ -50,6 +50,8 @@ _end:;
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.session_restore (
   inout params any)
 {
@@ -528,7 +530,7 @@ create procedure CAL.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || 'Calendar Gems/';
+  home := home || 'Gems/';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   home := home || CAL.WA.domain_gems_name(domain_id) || '/';
@@ -583,10 +585,10 @@ create procedure CAL.WA.domain_gems_create (
 create procedure CAL.WA.domain_gems_delete (
   in domain_id integer,
   in account_id integer := null,
-  in appName varchar := 'Calendar Gems',
+  in appName varchar := 'Gems',
   in appGems varchar := null)
 {
-  declare tmp, home, path varchar;
+  declare tmp, home, appHome, path varchar;
 
   if (isnull (account_id))
     account_id := CAL.WA.domain_owner_id (domain_id);
@@ -597,13 +599,16 @@ create procedure CAL.WA.domain_gems_delete (
 
   if (isnull (appGems))
     appGems := CAL.WA.domain_gems_name (domain_id);
-  home := home || appName || '/' || appGems || '/';
+  appHome := home || appName || '/';
+  home := appHome || appGems || '/';
 
   path := home || 'Calendar.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || 'Calendar.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || 'Calendar.atom';
+  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+  path := home || 'Calendar.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;
@@ -617,6 +622,10 @@ create procedure CAL.WA.domain_gems_delete (
   if (not isinteger(tmp) and not length (tmp))
     DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
+  tmp := DB.DBA.DAV_DIR_LIST (appHome, 0, auth_uid, auth_pwd);
+  if (not isinteger(tmp) and not length (tmp))
+    DB.DBA.DAV_DELETE_INT (appHome, 1, null, null, 0);
+
   return 1;
 }
 ;
@@ -628,6 +637,7 @@ create procedure CAL.WA.domain_update (
   inout account_id integer)
 {
   CAL.WA.domain_gems_delete (domain_id, account_id, 'Calendar');
+  CAL.WA.domain_gems_delete (domain_id, account_id, 'Calendar Gems');
   CAL.WA.domain_gems_create (domain_id, account_id);
 
   declare home, path varchar;
@@ -636,6 +646,7 @@ create procedure CAL.WA.domain_update (
   DB.DBA.DAV_DELETE_INT (path || 'Calendar.rss', 1, null, null, 0);
   DB.DBA.DAV_DELETE_INT (path || 'Calendar.atom', 1, null, null, 0);
   DB.DBA.DAV_DELETE_INT (path || 'Calendar.rdf', 1, null, null, 0);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.comment', 1, null, null, 0);
 
   declare auth_pwd varchar;
   auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = 'dav'), '');
@@ -1198,6 +1209,15 @@ create procedure CAL.WA.sioc_url (
   in domain_id integer)
 {
   return sprintf ('http://%s/dataspace/%U/calendar/%U/sioc.rdf', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), replace (CAL.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.gems_url (
+  in domain_id integer)
+{
+  return sprintf ('http://%s/dataspace/%U/calendar/%U/gems/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), replace (CAL.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -3963,10 +3983,8 @@ create procedure CAL.WA.events_forPeriod (
           and a.E_PRIVACY >= b.CALENDAR_PRIVACY
           and a.E_KIND = 0
           and (a.E_REPEAT = '' or a.E_REPEAT is null)
-          and (
-                (a.E_EVENT = 0 and a.E_EVENT_START >= dtStart and a.E_EVENT_START <  dtEnd) or
-                (a.E_EVENT = 1 and a.E_EVENT_START <  dtEnd   and a.E_EVENT_END   >  dtStart)
-              )) do
+          and a.E_EVENT_START < dtEnd
+          and a.E_EVENT_END   > dtStart) do
   {
     result (E_ID,
             E_EVENT,
@@ -4067,7 +4085,8 @@ create procedure CAL.WA.task_update (
 {
   if (isnull (updated))
     updated := now ();
-  if (id = -1) {
+  if (id = -1)
+  {
     id := sequence_next ('CAL.WA.event_id');
     insert into CAL.WA.EVENTS
       (
@@ -4109,7 +4128,9 @@ create procedure CAL.WA.task_update (
         now (),
         updated
       );
-  } else {
+  }
+  else
+  {
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
@@ -4890,7 +4911,7 @@ create procedure CAL.WA.import_vcal (
         tmp := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DALARM/val', N), xmlItem, 1) as varchar);
         eReminder := CAL.WA.vcal_str2reminder (xmlItem, sprintf ('IMC-VEVENT[%d]/IMC-VALARM/TRIGGER/', N));
           updated := case when isnull (updatedBefore) then CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTAMP/', N), tzDict) else null end;
-        notes := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/NOTES/val', N), xmlItem, 1) as varchar);
+          notes := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/X-OL-NOTES/val', N), xmlItem, 1) as varchar);
           id := CAL.WA.event_update
           (
             id,
@@ -4952,7 +4973,7 @@ create procedure CAL.WA.import_vcal (
         completed := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/COMPLETED/', N));
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
         updated := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTAMP/', N), tzDict);
-        notes := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/VOTES/val', N), xmlItem, 1) as varchar);
+          notes := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/X-OL-NOTES/val', N), xmlItem, 1) as varchar);
           id := CAL.WA.task_update
           (
             id,
@@ -5070,7 +5091,7 @@ create procedure CAL.WA.export_vcal (
     }
     CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
     CAL.WA.export_vcal_reminder (E_REMINDER, sStream);
-    CAL.WA.export_vcal_line ('NOTES', E_NOTES, sStream);
+        CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
     CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VEVENT\r\n', sStream);
 	}
@@ -5098,7 +5119,7 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('COMPLETED;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_COMPLETED, tz))), sStream);
     CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
     CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
-    CAL.WA.export_vcal_line ('NOTES', E_NOTES, sStream);
+        CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
     CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VTODO\r\n', sStream);
 	}

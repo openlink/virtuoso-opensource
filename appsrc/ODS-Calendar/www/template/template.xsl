@@ -353,7 +353,7 @@
               {
                 if (CAL.WA.dt_compare (dt, eventDays [M]))
                 {
-                  S := sprintf ('style="%s"', 'font-weight: bold;');
+                  S := 'style="font-weight: bold;"';
                   goto _exit;
                 }
               }
@@ -362,6 +362,15 @@
             }
             http ('</tr>');
           ?>
+          <tr id="c_footer" class="C_heading">
+            <td colspan="2" />
+            <td class="C_onmonth C_today" colspan="3">
+              <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">
+                today
+              </span>
+            </td>
+            <td colspan="2" />
+          </tr>
         </tbody>
       </table>
     </div>
@@ -426,7 +435,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
 
-        S := CAL.WA.dav_url (self.domain_id);
+        S := CAL.WA.gems_url (self.domain_id);
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));

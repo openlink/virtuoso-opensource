@@ -295,7 +295,7 @@
       declare S varchar;
 
       S := '';
-      if (e_event = 1)
+      --if (e_event = 1)
       {
         if (CAL.WA.dt_dateClear (e_start) < CAL.WA.dt_dateClear (dt))
           S := '<img src="image/tr_close2.gif" border="0" />';
@@ -1057,7 +1057,7 @@
         if (0)
         {
       ?>
-          <v:button name="command" action="simple" value="Submit">
+                <v:button action="simple" name="command" value="Submit">
             <v:on-post>
               <![CDATA[
                       declare N, cCommand, cMode, cPermission, cParams, kind any;
@@ -1123,6 +1123,13 @@
                           self.cnMonth := null;
                         }
                       }
+                            if (cParams[1] = 'today')
+                            {
+                              self.cScope := 'day';
+                              self.cDay := CAL.WA.dt_curdate (self.cTimeZone);
+                              self.cMonth := null;
+                              self.cnMonth := null;
+                            }
                             if (cParams[1] = 'day')
                             {
                         self.cMonth := self.cnMonth;
@@ -1296,7 +1303,7 @@
             </table>
           </div>
           <div class="new-form-footer" style="margin: 0;   border-top: 0;">
-            <v:button action="simple" value="Search" xhtml_class="form-button">
+                  <v:button action="simple" name="s_search" value="Search" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
                   self.cSearch := null;
@@ -1307,7 +1314,7 @@
                 ]]>
               </v:on-post>
             </v:button>
-            <v:button action="simple" value="Cancel" name="s_cancel" xhtml_class="form-button">
+                  <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
                   self.cAction := 'browse';
@@ -1321,7 +1328,7 @@
         <table cellspacing="0" style="width: 100%;">
           <tr style="height: 18px;">
             <td>
-              <v:button action="simple" style="url" value="Day" xhtml_class="-- case when (self.cScope = 'day') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Day">
+                    <v:button action="simple" name="day" style="url" value="Day" xhtml_class="-- case when (self.cScope = 'day') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Day">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'day';
@@ -1332,7 +1339,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Week" xhtml_class="-- case when (self.cScope = 'week') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Week">
+                    <v:button action="simple" name="week" style="url" value="Week" xhtml_class="-- case when (self.cScope = 'week') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Week">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'week';
@@ -1343,7 +1350,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Month" xhtml_class="-- case when (self.cScope = 'month') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Month">
+                    <v:button action="simple" name="month" style="url" value="Month" xhtml_class="-- case when (self.cScope = 'month') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Month">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'month';
@@ -1354,7 +1361,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Events" xhtml_class="-- case when (self.cScope = 'events') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Event List">
+                    <v:button action="simple" name="events" style="url" value="Events" xhtml_class="-- case when (self.cScope = 'events') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Event List">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'events';
@@ -1364,7 +1371,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Tasks" xhtml_class="-- case when (self.cScope = 'tasks') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Task List">
+                    <v:button action="simple" name="tasks" style="url" value="Tasks" xhtml_class="-- case when (self.cScope = 'tasks') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Task List">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'tasks';
@@ -1375,7 +1382,7 @@
                 </v:on-post>
               </v:button>
               <vm:if test="not isnull (self.cSearch)">
-                <v:button action="simple" style="url" value="Search" xhtml_class="-- case when (self.cScope = 'search') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Search List">
+                      <v:button action="simple" name="search" style="url" value="Search" xhtml_class="-- case when (self.cScope = 'search') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Search List">
                   <v:on-post>
                     <![CDATA[
                       self.cScope := 'search';
@@ -1414,7 +1421,7 @@
 
                 ?>
               </span>
-                <v:button action="simple" style="url" value="--'&amp;lt;'" xhtml_class="calendar_button" xhtml_alt="Previous">
+                      <v:button action="simple" name="previous" style="url" value="--'&amp;lt;'" xhtml_class="calendar_button" xhtml_alt="Previous">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -1429,7 +1436,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                <v:button action="simple" style="url" value="--'&amp;gt;'" xhtml_class="calendar_button" xhtml_alt="Next">
+                      <v:button action="simple" name="next" style="url" value="--'&amp;gt;'" xhtml_class="calendar_button" xhtml_alt="Next">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -1449,7 +1456,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Today" xhtml_class="calendar_button" xhtml_alt="Today">
+                      <v:button action="simple" name="today" style="url" value="Today" xhtml_class="calendar_button" xhtml_alt="Today">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'day';
@@ -1475,7 +1482,7 @@
                 <td>
                       <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.access_role not in ('public', 'guest'))">
             <vm:if test="(self.cScope <> 'search')">
-                    <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button">
+                          <v:button action="simple" name="new" value="--'New ' || self.singleObjectName (self.cScope)" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                   self.cAction := 'create';
@@ -1484,7 +1491,7 @@
               </v:on-post>
             </v:button>
             </vm:if>
-                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                        <v:button action="simple" name="delete" value="Delete" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                               declare N, id integer;
@@ -1557,7 +1564,8 @@
                   declare S, C, onClick varchar;
                   declare V any;
 
-                  if (self.cScope = 'day') {
+                        if (self.cScope = 'day')
+                        {
                     V := make_array (48, 'any');
                     for (N := 0; N < 48; N := N + 1)
                       V[N] := vector ();
@@ -1581,20 +1589,45 @@
                         hasEvents := 1;
                       }
                               http (self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_repeat_offset, e_reminder, e_attendees, self.showContinue (self.cDay, e_event, e_start, e_end)));
-                      } else {
+                            }
+                            else
+                            {
+                              if (CAL.WA.dt_compare (e_start, self.cDay))
+                              {
                         CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
                         pStart := pHour*2 + pMinute/30;
+                              }
+                              else
+                              {
+                                pStart := 0;
+                              }
+                              if (CAL.WA.dt_compare (e_end, self.cDay))
+                              {
                         CAL.WA.dt_timeDecode (e_end, pHour, pMinute);
                         pEnd := pHour*2 + pMinute/30;
+                              }
+                              else
+                              {
+                                pEnd := 48;
+                              }
                               for (N := pStart; N < pEnd; N := N + 1)
                               {
-                          S := '';
-                          if ((N = pStart) and (pEnd - pStart > 1))
+                                if ((N = pStart) and (pEnd - pStart > 1) and CAL.WA.dt_compare (e_start, self.cDay))
+                                {
                             S := '<img src="image/tr_close.gif" border="0" />';
-                          if ((N = pEnd-1) and (pEnd - pStart > 1))
+                                }
+                                else if ((N = pEnd-1) and (pEnd - pStart > 1) and CAL.WA.dt_compare (e_end, self.cDay))
+                                {
                             S := '<img src="image/tr_close2.gif" border="0" />';
-                          if ((N <> pStart) and (N <> pEnd-1) and (pEnd - pStart > 1))
+                                }
+                                else if (CAL.WA.dt_compare (e_start, self.cDay) and CAL.WA.dt_compare (e_end, self.cDay) and (pEnd - pStart = 1))
+                                {
+                                  S := '';
+                                }
+                                else
+                                {
                             S := '... ';
+                                }
                                 aset (V, N, vector_concat(V[N], vector (self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_repeat_offset, e_reminder, e_attendees, S))));
                         }
                       }
@@ -1631,8 +1664,7 @@
                       http ('</tr>');
                     }
                   }
-
-                  if (self.cScope = 'week')
+                        else if (self.cScope = 'week')
                   {
                     for (N := 0; N < length (self.cDays); N := N + 1)
                     {
@@ -1695,8 +1727,7 @@
                       }
                     }
                   }
-
-                        if (self.cScope = 'month')
+                        else if (self.cScope = 'month')
                         {
                           for (N := 0; N < length (self.cDays); N := N + 1)
                           {
@@ -2152,7 +2183,7 @@
                       ?>
                     </td>
                     <td nowrap="nowrap" width="1%" colspan="2">
-                            <xsl:call-template name="nbsp" /><vm:label for="e_event" value="--'All day event'" />
+                                &nbsp;<vm:label for="e_event" value="--'All day event'" />
                     </td>
                   </tr>
                   <tr>
@@ -2165,7 +2196,7 @@
                                 <a href="#" id="e_eventStartDate_select" onclick="cPopup.select(document.forms[0].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
-                      <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
+                                <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -2187,6 +2218,14 @@
                             control.ufl_value := CAL.WA.dt_timestring (CAL.WA.dt_timeCeiling (self.v_eventStart, 30), self.cTimeFormat);
                           ]]>
                         </v:before-data-bind>
+                                  <v:after-data-bind>
+                                    <![CDATA[
+                                      if (cast (get_keyword ('e_event', self.vc_page.vc_event.ve_params, self.v_event) as integer) = 1)
+                                      {
+                                        control.vc_add_attribute ('style', 'display: none;');
+                                      }
+                                    ]]>
+                                  </v:after-data-bind>
                       </v:select-list>
                     </td>
                   </tr>
@@ -2200,7 +2239,7 @@
                                 <a href="#" id="e_eventEndDate_select" onclick="cPopup.select(document.forms[0].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
-                      <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
+                                <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -2221,6 +2260,14 @@
                             control.ufl_value := CAL.WA.dt_timestring (CAL.WA.dt_timeCeiling (self.v_eventEnd, 30), self.cTimeFormat);
                           ]]>
                         </v:before-data-bind>
+                                  <v:after-data-bind>
+                                    <![CDATA[
+                                      if (cast (get_keyword ('e_event', self.vc_page.vc_event.ve_params, self.v_event) as integer) = 1)
+                                      {
+                                        control.vc_add_attribute ('style', 'display: none;');
+                                      }
+                                    ]]>
+                                  </v:after-data-bind>
                       </v:select-list>
                     </td>
                   </tr>
@@ -2785,7 +2832,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_onclick="javascript:updateRTE(\'e_notes\')" xhtml_class="form-button">
+                <v:button action="simple" name="e_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_onclick="javascript:updateRTE(\'e_notes\')" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -2797,7 +2844,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Create and New" enabled="--case when ((self.cScope = 'events') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
+                <v:button action="simple" name="e_create_new" value="Create and New" enabled="--case when ((self.cScope = 'events') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -2809,7 +2856,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" name="e_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="e_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2972,7 +3019,7 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Cancel" name="ev_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="ev_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -3265,7 +3312,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'t_notes\')" xhtml_class="form-button">
+                <v:button action="simple" name="t_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'t_notes\')" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveTask ();
@@ -3277,7 +3324,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Create and New" enabled="--case when ((self.cScope = 'tasks') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
+                <v:button action="simple" name="t_create_new" value="Create and New" enabled="--case when ((self.cScope = 'tasks') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveTask ();
@@ -3289,7 +3336,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" name="t_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="t_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -3423,7 +3470,7 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Cancel" name="tv_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="tv_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -3491,7 +3538,7 @@
                       <input type="file" name="f_file" size="60" />
                   </td>
                     <td id="imp_td_1" style="display: <?V case when self.icSource = 1 then '' else 'none' end ?>;">
-                      <v:text name="f_dav" xhtml_id="f_dav" value="--''" xhtml_size="60" /><v:button action="browse" value="Browse...">
+                      <v:text name="f_dav" xhtml_id="f_dav" value="--''" xhtml_size="60" /><v:button action="browse" name="browse" value="Browse...">
                    	  <v:after-data-bind>
                    		  <![CDATA[
                                 control.vc_add_attribute ('onclick', 'javascript: davBrowse (\'f_dav\');');
@@ -3532,7 +3579,7 @@
         </div>
 
         <div class="new-form-footer">
-            <v:button action="simple" value="Import" xhtml_class="form-button">
+                <v:button action="simple" name="import" value="Import" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
                   declare tmp, content any;
@@ -3608,7 +3655,7 @@
                  ]]>
                </v:on-post>
             </v:button>
-            <v:button action="simple" value="Cancel" name="i2_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -3679,7 +3726,7 @@
                     </th>
                     <td>
                       <v:text name="ex_destination" xhtml_id="ex_destination" value="--self.exName" xhtml_size="60" />
-                      <v:button action="browse" value="Browse..." name="ex_destination_button" xhtml_id="ex_destination_button">
+                      <v:button action="browse" name="ex_destination_button" value="Browse..." xhtml_id="ex_destination_button">
                         <v:after-data-bind>
                           <![CDATA[
                             control.vc_add_attribute ('onclick', 'javascript: davBrowse (''ex_destination'');');
@@ -3899,7 +3946,7 @@
                      ]]>
                    </v:on-post>
                 </v:button>
-                <v:button action="simple" value="Cancel" name="ex_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="ex_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.cAction := 'browse';
@@ -3931,7 +3978,7 @@
                   http (T);
                 ?>
               </div>
-              <v:button value="--'New'" action="simple" xhtml_class="button">
+              <v:button action="simple" name="new_exchange" value="--'New'" xhtml_class="button">
                 <v:after-data-bind>
                   <![CDATA[
                     if (self.cAction = 'publishBrowse')
@@ -3966,7 +4013,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button value="Delete" action="simple" xhtml_class="button">
+              <v:button action="simple" name="delete_exchange" value="Delete" xhtml_class="button">
                 <v:after-data-bind>
                   <![CDATA[
                     control.vc_add_attribute ('onclick', 'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');');
@@ -4045,7 +4092,7 @@
                       		  ?>
                           </td>
                           <td nowrap="nowrap">
-                            <v:button value="Edit" action="simple" xhtml_class="button">
+                            <v:button action="simple" name="edit_exchange" value="Edit" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
                                   self.ve_id := (control.vc_parent as vspx_row_template).te_column_value('EX_ID');
@@ -4065,7 +4112,7 @@
                                 ]]>
                               </v:on-post>
                             </v:button>
-                            <v:button value="Sync" action="simple" xhtml_class="button">
+                            <v:button action="simple" name="sync_exchange" value="Sync" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
                                   declare exit handler for SQLSTATE '*'
@@ -4104,7 +4151,7 @@
                 </v:data-set>
               </div>
               <div style="width: 100%; border-top: 1px solid #7f94a5;">
-                <v:button value="--'Back'" action="simple" xhtml_class="button">
+                <v:button action="simple" name="back" value="Back" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
                       self.cAction := 'browse';
@@ -4120,7 +4167,7 @@
               </script>
             </vm:if>
 
-            <v:template type="simple" enabled="--case when self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate') then 1 else 0 end">
+            <v:template name="exchange_form" type="simple" enabled="--case when self.cAction in ('publishCreate', 'publishUpdate', 'subscribeCreate', 'subscribeUpdate', 'syncmlCreate', 'syncmlUpdate') then 1 else 0 end">
               <div class="new-form-header">
                 <?vsp
                   declare T varchar;
@@ -4307,7 +4354,7 @@
                           <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
                       <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
-                      <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
+                        <v:button action="browse" name="exc_options_name_button" value="Browse..." xhtml_id="exc_options_name_button">
                         <v:after-data-bind>
                           <![CDATA[
                             control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
@@ -4380,7 +4427,7 @@
                       </table>
                     </div>
               <div class="new-form-footer">
-                <v:button action="simple" value="--case when self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
+                <v:button action="simple" name="exc_save" value="--case when self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" xhtml_class="form-button">
                   <v:on-post>
                         <![CDATA[
                       declare _type, _name, _user, _password, _mode, _events, _tasks any;
@@ -4481,7 +4528,7 @@
                         ]]>
                       </v:on-post>
                     </v:button>
-                <v:button action="simple" value="Cancel" name="exc_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="exc_cancel" value="Cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
                       self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
@@ -4492,7 +4539,7 @@
                 </div>
             </v:template>
 
-            <v:template type="simple" enabled="--case when self.cAction in ('subscribeDelete') then 1 else 0 end">
+            <v:template name="exchange_delete" type="simple" enabled="--case when self.cAction in ('subscribeDelete') then 1 else 0 end">
               <div class="new-form-header">
                 Subscriptions/Delete
               </div>
@@ -4535,7 +4582,7 @@
                 </table>
               </div>
               <div class="new-form-footer">
-                <v:button action="simple" value="Delete" name="exc_delete" xhtml_class="form-button">
+                <v:button action="simple" name="exc_delete" value="Delete" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -4561,7 +4608,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" value="Cancel" name="exc_delete_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="exc_delete_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.cAction := 'subscribeBrowse';
@@ -4572,7 +4619,7 @@
               </div>
             </v:template>
 
-            <v:template type="simple" enabled="--case when self.cAction in ('syncmlExec') then 1 else 0 end">
+            <v:template name="exchange_sync" type="simple" enabled="--case when self.cAction in ('syncmlExec') then 1 else 0 end">
               <v:before-data-bind>
                 <![CDATA[
                   declare params any;
@@ -4638,7 +4685,7 @@
                 </table>
               </div>
               <div class="new-form-footer">
-                <v:button action="simple" value="Sync" name="exc_sync_exec" xhtml_class="form-button">
+                <v:button action="simple" name="exc_sync_exec" value="Sync" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare _mode any;
@@ -4650,7 +4697,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" value="Cancel" name="exc_sync_cancel" xhtml_class="form-button">
+                <v:button action="simple" name="exc_sync_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.cAction := 'syncmlBrowse';
