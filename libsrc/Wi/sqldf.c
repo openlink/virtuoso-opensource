@@ -4983,7 +4983,7 @@ sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
 	{
 	  if (sqlo_print_debug_output)
 	    {
-	      sqlo_print (("Compilation time longer than query time after %d layouts, elapsed %d msec\n", ot->ot_layouts_tried, now - so->so_last_sample_time));
+	      sqlo_print (("Compilation time longer than query time after %ld layouts, elapsed %ld msec\n", (long)(ot->ot_layouts_tried), (long)(now - so->so_last_sample_time)));
 	    }
 	  return 1;
 	}
