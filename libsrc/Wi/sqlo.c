@@ -2150,6 +2150,177 @@ sqlo_oby_remove_scalar_exps (sqlo_t *so, ST *** oby)
 }
 
 
+
+/* remove identity self join */
+
+
+int 
+sqlo_is_col (ST * tree, caddr_t pref, caddr_t col)
+{
+  return (ST_P (tree, COL_DOTTED) && tree->_.col_ref.prefix && !strcmp (tree->_.col_ref.prefix, pref) && !strcmp (tree->_.col_ref.name, col));
+}
+
+
+int
+sqlo_cols_eq (dk_set_t top_and, caddr_t col, caddr_t pref1, caddr_t pref2)
+{
+  /* true if inside top_and there is pref1.col = pref2.col or if there is pref1.col = x and pref2.col = x */
+  ST * val1 = NULL, * p1 = NULL;
+  ST * val2 = NULL, *p2 = NULL;
+  DO_SET (ST*, pred, &top_and)
+    {
+      if (!ST_P (pred, BOP_EQ))
+	continue;
+      if (sqlo_is_col (pred->_.bin_exp.left, pref1, col))
+	{
+	  if (sqlo_is_col (pred->_.bin_exp.right, pref2, col))
+	    return 1;
+	  p1 = pred;
+	  val1 = pred->_.bin_exp.right;
+	}
+      if (sqlo_is_col (pred->_.bin_exp.right, pref1, col))
+	{
+	  if (sqlo_is_col (pred->_.bin_exp.left, pref2, col))
+	    return 1;
+	  p1 = pred;
+	  val1 = pred->_.bin_exp.left;
+	}
+      if (sqlo_is_col (pred->_.bin_exp.left, pref2, col))
+	{
+	  if (sqlo_is_col (pred->_.bin_exp.right, pref1, col))
+	    return 1;
+	  p2 = pred;
+	  val2 = pred->_.bin_exp.right;
+	}
+      if (sqlo_is_col (pred->_.bin_exp.right, pref2, col))
+	{
+	  if (sqlo_is_col (pred->_.bin_exp.left, pref1, col))
+	    return 1;
+	  p2 = pred;
+	  val2 = pred->_.bin_exp.left;
+	}
+    }
+  END_DO_SET();
+  if (p1 && p2 && box_equal (val1, val2))
+    return 1;
+  return 0;
+}
+
+
+int
+sqlo_is_identity_join (op_table_t * ot1, op_table_t * ot2, dk_set_t top_and)
+{
+  /* in top and, enough col = same col between ot1 and ot2 to make unique */
+  DO_SET (dbe_key_t *, key, &ot1->ot_table->tb_keys)
+    {
+      int nth_part = 0;
+      int unq_limit = key->key_is_unique ? key->key_decl_parts : key->key_n_significant;
+      if (!key->key_is_primary && !key->key_is_unique)
+	continue;
+      DO_SET (dbe_column_t *, col, &key->key_parts)
+	{
+	  if (!sqlo_cols_eq (top_and, col->col_name, ot1->ot_new_prefix, ot2->ot_new_prefix))
+	    goto next_key;
+	  if (++nth_part == unq_limit)
+	    return 1;
+	}
+      END_DO_SET();
+    next_key: ;
+    }
+  END_DO_SET();
+  return 0;
+}
+
+
+void
+sqlo_col_pref_replace (ST * tree, caddr_t old_pref, caddr_t new_pref)
+{
+  if (ST_P (tree, COL_DOTTED) && !strcmp (tree->_.col_ref.prefix, old_pref))
+    {
+      tree->_.col_ref.prefix = new_pref;
+      return;
+    }
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
+    {
+      int inx;
+      DO_BOX (ST *, elt, inx, ((ST**)tree))
+	{
+	  sqlo_col_pref_replace (elt, old_pref, new_pref);
+	}
+      END_DO_BOX;
+    }
+}
+
+
+void
+t_box_rem_at_inx (ST *** place, int inx)
+{
+  ST ** org = *place;
+  int d = 0, s;
+  *place = (ST**)t_alloc_box (sizeof (caddr_t) * (BOX_ELEMENTS (org) - 1), DV_ARRAY_OF_POINTER);
+  for (s = 0; s  < BOX_ELEMENTS (org); s++)
+    {
+      if (s != inx)
+	(*place)[d++] = org[s];
+    }
+}
+
+dk_set_t
+sqlo_and_list (ST * tree)
+{
+  if (!ST_P (tree, BOP_AND))
+    return t_cons (tree, NULL);
+  return dk_set_conc (sqlo_and_list (tree->_.bin_exp.left), sqlo_and_list (tree->_.bin_exp.right));
+}
+
+
+#define tref_table(t) (t)->_.table_ref.table
+
+void
+sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
+{
+  ST * tree = *ptree;
+  ST * texp = tree->_.select_stmt.table_exp;
+  int inx;
+  dk_set_t top_and = NULL;
+  if (!texp || !texp->_.table_exp.where)
+    return;
+  if (!so->so_identity_joins)
+    return;
+  DO_BOX (ST *, t1, inx, texp->_.table_exp.from)
+    {
+      int inx2;
+      t1 = tref_table (t1);
+      if (!ST_P (t1, TABLE_DOTTED))
+	continue;
+      for (inx2 = inx + 1; inx2 < BOX_ELEMENTS (texp->_.table_exp.from); inx2++)
+	{
+	  ST * t2 = texp->_.table_exp.from[inx2];
+	  t2 = tref_table (t2);
+	  if (ST_P  (t2, TABLE_DOTTED)
+	      && 0 == strcmp (t1->_.table.name, t2->_.table.name))
+	    {
+	      op_table_t * ot1 = sqlo_cname_ot_1 (so, t1->_.table.prefix, 1);
+	      op_table_t * ot2 = sqlo_cname_ot_1 (so, t2->_.table.prefix, 1);
+	      if (!top_and)
+		top_and = sqlo_and_list (texp->_.table_exp.where);
+	      if (sqlo_is_identity_join (ot1, ot2, top_and))
+		{
+		  char old_rescope = so->so_is_rescope;
+		  sqlo_col_pref_replace (tree, ot2->ot_new_prefix, ot1->ot_new_prefix);
+		  t_box_rem_at_inx (&texp->_.table_exp.from, inx2);
+		  so->so_is_rescope = 1;
+		  sqlo_scope (so, ptree);
+		  so->so_is_rescope = old_rescope;
+		  return;
+		}
+	    }
+	}
+    }
+  END_DO_BOX;
+}
+
+
 void
 sqlo_select_scope (sqlo_t * so, ST ** ptree)
 {
@@ -2167,6 +2338,9 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
   TNEW (sql_scope_t, sco);
   memset (sco, 0, sizeof (sql_scope_t));
   memset (ot, 0, sizeof (op_table_t));
+
+  if (texp && sqlo_opt_value (ST_OPT (texp, caddr_t *, _.table_exp.opts), OPT_SPARQL))
+    so->so_identity_joins = 1;
 
   so->so_this_dt = ot;
   sco->sco_so = so;
@@ -2343,6 +2517,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
   so->so_scope = so->so_scope->sco_super;
   t_set_push (&so->so_tables, (void*) ot);
   so->so_this_dt = old_dt;
+  sqlo_identity_self_join (so, ptree);
 }
 
 
