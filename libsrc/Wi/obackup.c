@@ -1571,7 +1571,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
   if (dbs->dbs_disks)
     {
       disk_stripe_t *dst;
-      int fd, rc;
+      int fd;
 
       while (dest >= dbs->dbs_n_pages)
 	{
@@ -1589,7 +1589,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
       rc = LSEEK (fd, off, SEEK_SET);
       if (rc != off)
 	{
-	  log_error ("Seek failure on stripe %s", dst->dst_file);
+	  log_error ("Seek failure on stripe %s rc=" BOXINT_FMT " errno=%d off=" BOXINT_FMT ".", dst->dst_file, rc, errno, off);
 	  GPF_T;
 	}
       rc = write (fd, buf->bd_buffer, PAGE_SZ);
@@ -1621,9 +1621,9 @@ buf_disk_raw_write (buffer_desc_t* buf)
       else
 	{
 	  off = ((OFF_T)buf->bd_physical_page) * PAGE_SZ;
-	  if (off != LSEEK (dbs->dbs_fd, off, SEEK_SET))
+	  if (off != (rc = LSEEK (dbs->dbs_fd, off, SEEK_SET)))
 	    {
-	      log_error ("Seek failure on database %s", dbs->dbs_file);
+	      log_error ("Seek failure on database %s rc=" BOXINT_FMT " errno=%d off=" BOXINT_FMT ".", dbs->dbs_file, rc, errno, off);
 	      GPF_T;
 	    }
 	  rc = write (dbs->dbs_fd, (char *)(buf->bd_buffer), PAGE_SZ);
