@@ -27,6 +27,7 @@
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)' and RM_TYPE = 'MIME';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
@@ -42,7 +43,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
-            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no'));
+            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no', 'get-feeds', 'yes'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
@@ -805,19 +806,20 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     };
 
   path := split_and_decode (new_origin_uri, 0, '%\0/');
-  --dbg_obj_print (path);
   if (length (path) < 1)
     return 0;
   k := path [length(path) - 1];
-
+  if (path [length(path) - 2] = 'guid')
+    k := sprintf ('"id":"/guid/%s"', k);
+  else
+  {
   if (k like '#%')
     k := sprintf ('"id":"%s"', k);
   else
     k := sprintf ('"key":"%s"', k);
-
+  }
   qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-  --dbg_obj_print (url);
   cnt := http_get (url, hdr);
   tree := json_parse (cnt);
   xt := get_keyword ('ROOT', tree);
@@ -828,7 +830,6 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   foreach (any tp in xt) do
     {
       declare tmp any;
-      --dbg_obj_print (tp);
       tmp := get_keyword ('type', tp);
       types := vector_concat (types, tmp);
     }
@@ -839,13 +840,11 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
       url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
       cnt := http_get (url, hdr);
-      --dbg_printf ('%s', cnt);
       tree := json_parse (cnt);
       xt := get_keyword ('ROOT', tree);
       xt := DB.DBA.MQL_TREE_TO_XML (tree);
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
       xd := serialize_to_UTF8_xml (xt);
-      --dbg_printf ('%s', xd);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     }
   return 1;
@@ -2144,7 +2143,8 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   xt_sav := xt := xtree_doc (ret_body, 2);
 
   {
-    declare exit handler for sqlstate '*' { xt_xml := null; goto no_xml_cont; };
+    declare exit handler for sqlstate '*' { 
+    xt_xml := null; goto no_xml_cont; };
     xt_xml := xtree_doc (ret_body);
     no_xml_cont:;
   }
@@ -2155,6 +2155,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     rdf_url_arr  := xpath_eval ('//head/link[ @rel="alternate" and contains (@type, "/rdf+") ]/@href', xt, 0);
   if (not length (rdf_url_arr))
     rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" ]/@href', xt, 0);
+    
   if (length (rdf_url_arr))
     {
       declare rdf_url_inx int;
