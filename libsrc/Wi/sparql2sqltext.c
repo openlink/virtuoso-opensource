@@ -2267,11 +2267,66 @@ ssg_find_nullable_superformat (ssg_valmode_t fmt)
   return SSG_VALMODE_LONG;
 }
 
+#define SSG_MAGIC_SPLIT_MULTIPART \
+	"^{comma-list-begin}^ sprintf_inverse (^{tree}^, ^{custom-string-1}^, 2)[^{N}^]^{as-name-N}^^{end}^"
+
+#define SSG_MAGIC_SPLIT_SINGLEPART \
+	" sprintf_inverse (^{tree}^, ^{custom-string-1}^, 2)[0]"
+
+caddr_t *
+ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tree_is_qname, ssg_valmode_t fmt)
+{
+  ccaddr_t tmpl, sff, strg;
+  caddr_t *err = NULL;
+  caddr_t split, split_copy;
+  int tree_type = tree_is_qname ? SPAR_QNAME : SPART_TYPE (tree);
+  if (!IS_BOX_POINTER (fmt) || !fmt->qmfIsBijection || (NULL == fmt->qmfCustomString1))
+    return NULL;
+  switch (tree_type)
+    {
+    case SPAR_QNAME:
+      if (NULL == fmt->qmfShortOfUriTmpl)
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfUriTmpl, so there are corrupted medatada");
+      tmpl = fmt->qmfShortOfUriTmpl;
+      break;
+    case SPAR_LIT:
+      if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && ((NULL != tree->_.lit.language) || (NULL != tree->_.lit.datatype)))
+        return NULL;
+      if (NULL == fmt->qmfShortOfSqlvalTmpl)
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfSqlvalTmpl, so there are corrupted medatada");
+      tmpl = fmt->qmfShortOfSqlvalTmpl;
+      break;
+    default:
+      return NULL;
+    }
+  if (strcmp (tmpl, SSG_MAGIC_SPLIT_MULTIPART) && strcmp (tmpl, SSG_MAGIC_SPLIT_SINGLEPART))
+    return NULL;
+  sff = fmt->qmfCustomString1;
+  if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
+    return NULL;
+  strg = SPAR_LIT_OR_QNAME_VAL (tree);
+  split = sprintf_inverse (NULL, &err, strg, sff, 1);
+  if (NULL != err)
+    {
+      dk_free_tree (err);
+      return NULL;
+    }
+  if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (split)) || (fmt->qmfColumnCount != BOX_ELEMENTS (split)))
+    {
+      dk_free_tree (split);
+      return NULL;
+    }
+  split_copy = t_full_box_copy_tree (split);
+  dk_free_tree (split);
+  return split_copy;
+}
+
 void
 ssg_print_bop_bool_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, const char *sqlval_fn, int top_filter_op, ssg_valmode_t needed)
 {
   SPART *left = tree->_.bin_exp.left;
   SPART *right = tree->_.bin_exp.right;
+  caddr_t *split = NULL;
   ptrlong ttype = tree->type;
   int bop_has_bool_args = ((BOP_AND == ttype) || (BOP_OR == ttype));
   int bop_is_comparison = ((BOP_LT == ttype) || (BOP_LTE == ttype) || (BOP_GT == ttype) || (BOP_GTE == ttype));
@@ -2298,6 +2353,20 @@ Without the special optization it becomes iri_to_id ('graph iri string from view
           goto vmodes_found; /* see below */
         }
     }
+/* Special case for "=" or "!=" between bijection short made by good sff and a constant that can be parsed by sprintf_inverse */
+  if (!bop_is_comparison && (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection))
+    {
+      split = ssg_const_is_good_for_split_into_short (ssg, right, 0, left_vmode);
+      if (NULL != split)
+        {
+          min_mode = left_vmode;
+#ifndef NDEBUG
+          right = BADBEEF_BOX;
+#endif
+          goto vmodes_found; /* see below */
+        }
+    }
+/* There is no "symmetric" check like "if (!bop_is_comparison && (IS_BOX_POINTER (right_vmode) && right_vmode->qmfIsBijection))" because tree is rotated so the constant is supposed to be at right */
 /* Valmode of global expressions does not really matter because they're calculated only once, hence the comparison prefers valmode of the non-global expression argument */
   if (!bop_is_comparison && (SSG_VALMODE_SQLVAL == right_vmode) &&
     ((SSG_VALMODE_LONG == left_vmode) ||
@@ -2347,7 +2416,10 @@ vmodes_found:
         {
           ssg_print_scalar_expn (ssg, left, min_mode, NULL_ASNAME);
           ssg_puts (bool_op);
+          if (NULL == split)
           ssg_print_scalar_expn (ssg, right, min_mode, NULL_ASNAME);
+          else
+            ssg_print_box_as_sql_atom (ssg, split[0], 0);
         }
       else
         {
@@ -2372,7 +2444,10 @@ vmodes_found:
                       ssg_putchar ('('); ssg->ssg_indent ++;
                       ssg_print_scalar_expn (ssg, left, min_mode, asname);
                       ssg_puts (" = ");
+                      if (NULL == split)
                       ssg_print_scalar_expn (ssg, right, min_mode, asname);
+                      else
+                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], 0);
                       ssg->ssg_indent --; ssg_putchar (')');
                       ssg_puts (" and ");
                     }
@@ -2380,7 +2455,10 @@ vmodes_found:
               asname = COL_IDX_ASNAME + colctr;
               ssg_print_scalar_expn (ssg, left, min_mode, asname);
               ssg_puts (bool_op);
+              if (NULL == split)
               ssg_print_scalar_expn (ssg, right, min_mode, asname);
+              else
+                ssg_print_box_as_sql_atom (ssg, split[colctr], 0);
               ssg->ssg_indent --; ssg_putchar (')');
             }
         }
@@ -2393,7 +2471,10 @@ vmodes_found:
           ssg_puts (sqlval_fn); ssg->ssg_indent ++;
       ssg_print_scalar_expn (ssg, left, min_mode, NULL_ASNAME);
       ssg_puts (", ");
+          if (NULL == split)
       ssg_print_scalar_expn (ssg, right, min_mode, NULL_ASNAME);
+          else
+            ssg_print_box_as_sql_atom (ssg, split[0], 0);
           ssg->ssg_indent --; ssg_putchar (')');
         }
       else
@@ -2419,7 +2500,10 @@ vmodes_found:
                       ssg_puts (" equ ("); ssg->ssg_indent ++;
                       ssg_print_scalar_expn (ssg, left, min_mode, asname);
                       ssg_puts (", ");
+                      if (NULL == split)
                       ssg_print_scalar_expn (ssg, right, min_mode, asname);
+                      else
+                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], 0);
                       ssg->ssg_indent --; ssg_putchar (')');
                       ssg_puts (", ");
                     }
@@ -2428,7 +2512,10 @@ vmodes_found:
               ssg_puts (sqlval_fn); ssg->ssg_indent ++;
               ssg_print_scalar_expn (ssg, left, min_mode, asname);
               ssg_puts (", ");
+              if (NULL == split)
               ssg_print_scalar_expn (ssg, right, min_mode, asname);
+              else
+                ssg_print_box_as_sql_atom (ssg, split[colctr], 0);
               ssg->ssg_indent --; ssg_putchar (')');
             }
           ssg->ssg_indent --; ssg_putchar (')');
@@ -4025,7 +4112,9 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   if (field->qmvFormat->qmfIsBijection)
     {
       int col_ctr, col_count;
+      caddr_t *split;
   col_count = BOX_ELEMENTS (field->qmvColumns);
+      split = ssg_const_is_good_for_split_into_short (ssg, uri, 1, field->qmvFormat);
   for (col_ctr = 0; col_ctr < col_count; col_ctr++)
     {
       const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
@@ -4035,7 +4124,10 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
           else
       ssg_print_tr_field_expn (ssg, field, tabid, field->qmvFormat, eq_asname);
       ssg_puts (" =");
+          if (NULL == split)
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfShortOfUriTmpl, tabid, field, (SPART *)uri, eq_asname);
+          else
+            ssg_print_box_as_sql_atom (ssg, split[col_ctr], 0);
     }
       if (0 != col_count)
         return;

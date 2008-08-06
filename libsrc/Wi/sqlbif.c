@@ -3440,6 +3440,16 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_arg (qst, args, 0, "sprintf_inverse");
   caddr_t fmt = bif_string_arg (qst, args, 1, "sprintf_inverse");
   long hide_errors = bif_long_arg (qst, args, 2, "sprintf_inverse");
+  caddr_t *err = NULL;
+  caddr_t res = sprintf_inverse (qst, &err, str, fmt, hide_errors);
+  if (NULL != err)
+    sqlr_resignal (err);
+  return res;
+}
+
+caddr_t
+sprintf_inverse (caddr_t *qst, caddr_t *err_ret, caddr_t str, caddr_t fmt, long hide_errors)
+{
   dtp_t str_dtp = DV_TYPE_OF (str);
   dk_set_t res = NULL;
   char *str_tail = str;
@@ -3461,14 +3471,13 @@ retry_unrdf:
 	  str_dtp = DV_TYPE_OF (str);
 	  goto retry_unrdf;	/* see above */
 	}
-
       if ((0 == hide_errors) && (DV_DB_NULL != str_dtp))
 	{
-	  sqlr_new_error ("22023", "SR536",
+          err_ret[0] = srv_make_new_error ("22023", "SR536",
 	      "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
-	      dv_type_title (str_dtp), str_dtp);
+	      dv_type_title (str_dtp), str_dtp );
+          return NULL;
 	}
-
       goto format_mismatch;
     }
   QR_RESET_CTX
@@ -3489,7 +3498,7 @@ retry_unrdf:
 		  caddr_t connvar_name, connvar_value, *connvar_valplace;
 		  dtp_t connvar_dtp;
 		  query_instance_t *qi = (query_instance_t *) qst;
-		  client_connection_t *cli = qi->qi_client;
+		  client_connection_t *cli;
 		  const char *val_tail, *val_end;
 
 		  field_start = fmt_tail;
@@ -3511,6 +3520,10 @@ retry_unrdf:
 		  memset (field_fmt_buf, 0, sizeof (field_fmt_buf));
 		  memcpy (field_fmt_buf, field_start + 2, MIN ((fmt_tail - field_start) - 3, sizeof (field_fmt_buf) - 1));
 
+                  if (NULL == qi)
+		    sqlr_new_error ("22026", "SR597",
+		      "sprintf_inverse can not process %%{%.200s}%c at compile time", field_fmt_buf, *fmt_tail);
+                  cli = qi->qi_client;
 		  connvar_name = box_dv_short_string (field_fmt_buf);
 		  connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
 		  dk_free_box (connvar_name);
@@ -3977,7 +3990,7 @@ retry_unrdf:
 
   sorry_unsupported:
     sqlr_new_error ("22023", "SR524",
-	"Sorry, unsupported format string for sscanf at field %d (column %ld of format '%.1000s')", 
+	"Sorry, unsupported format string for sprintf_inverse at field %d (column %ld of format '%.1000s')", 
 	field_ctr, (long) (fmt_tail - fmt), fmt);
 
   POP_format_mismatch_mid_field:
@@ -3991,18 +4004,16 @@ retry_unrdf:
   }
   QR_RESET_CODE
   {
-    caddr_t err = thr_get_error_code (((query_instance_t *) qst)->qi_thread);
-
+    caddr_t *err = thr_get_error_code (((query_instance_t *) qst)->qi_thread);
     POP_QR_RESET;
 
     if (!hide_errors)
       {
 	while (NULL != res)
 	  dk_free_tree (dk_set_pop (&res));
-
-	sqlr_resignal (err);
+        err_ret[0] = err;
+        return NULL;
       }
-
     goto format_mismatch_mid_field;	/* see below */
   }
   END_QR_RESET;
