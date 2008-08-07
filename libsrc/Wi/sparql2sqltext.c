@@ -1573,7 +1573,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     (40 < box_length (arg)) ) )
 
 void
-ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
+ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
 {
   char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
   size_t buflen;
@@ -1856,7 +1856,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
     (DV_XML_ENTITY == value_dtp) )
     {
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (");
-      ssg_print_literal_as_sqlval (ssg, NULL, value);
+      ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)value);
       ssg_putchar (')');
       return;
     }
@@ -2277,7 +2277,7 @@ caddr_t *
 ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tree_is_qname, ssg_valmode_t fmt)
 {
   ccaddr_t tmpl, sff, strg;
-  caddr_t *err = NULL;
+  caddr_t err = NULL;
   caddr_t split, split_copy;
   int tree_type = tree_is_qname ? SPAR_QNAME : SPART_TYPE (tree);
   if (!IS_BOX_POINTER (fmt) || !fmt->qmfIsBijection || (NULL == fmt->qmfCustomString1))
@@ -2318,7 +2318,7 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
     }
   split_copy = t_full_box_copy_tree (split);
   dk_free_tree (split);
-  return split_copy;
+  return (caddr_t *)split_copy;
 }
 
 void
@@ -3667,7 +3667,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             else if (SSG_VALMODE_LONG == needed)
               {
                 ssg_puts (" iri_to_id (");
-                ssg_print_box_as_sql_atom (ssg, tree, 1);
+                ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 1);
                 ssg_puts (")");
               }
             else if (SSG_VALMODE_SQLVAL == needed)
@@ -4114,7 +4114,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       int col_ctr, col_count;
       caddr_t *split;
   col_count = BOX_ELEMENTS (field->qmvColumns);
-      split = ssg_const_is_good_for_split_into_short (ssg, uri, 1, field->qmvFormat);
+      split = ssg_const_is_good_for_split_into_short (ssg, (SPART *)uri, 1, field->qmvFormat);
   for (col_ctr = 0; col_ctr < col_count; col_ctr++)
     {
       const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
@@ -5840,7 +5840,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
     {
       SPART *member = members[memb_ctr];
       ccaddr_t prev_itm_alias = uname___empty;
-      int first_tabexpn_itm_idx, itm_idx, itm_count;
+      int first_tabexpn_itm_idx, itm_idx, itm_count, filter_idx, filter_count;
       int curr_retval_flags = retval_flags;
       caddr_t *first_breakup_tabids;
       breakup_shift = 0;
@@ -5966,6 +5966,12 @@ retval_list_complete:
                   sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
                   ssg_print_equivalences (ssg, member, eq, prev_itm_alias, itm_alias);
                 }
+              filter_count = BOX_ELEMENTS_0 (member->_.gp.filters);
+              for (filter_idx = filter_count - member->_.gp.glued_filters_count; filter_idx < filter_count; filter_idx++)
+                {
+                  SPART *filt = member->_.gp.filters[filter_idx];
+                  ssg_print_filter (ssg, filt);
+                }
               if (0 == ssg->ssg_where_l_printed)
                 ssg_puts ("1");
               ssg->ssg_indent--;
@@ -6023,11 +6029,12 @@ end_of_table_list: ;
           sparp_equiv_t *eq = ssg->ssg_equivs[member->_.gp.equiv_indexes[equiv_ctr]];
           ssg_print_equivalences (ssg, member, eq, NULL, NULL);
         }
-      DO_BOX_FAST (SPART *, itm, itm_idx, member->_.gp.filters)
+      filter_count = BOX_ELEMENTS_0 (member->_.gp.filters) - member->_.gp.glued_filters_count;
+      for (filter_idx = 0; filter_idx < filter_count; filter_idx++)
         {
-          ssg_print_filter (ssg, itm);
+          SPART *filt = member->_.gp.filters[filter_idx];
+          ssg_print_filter (ssg, filt);
         }
-      END_DO_BOX_FAST;
 end_of_where_list:
       ssg->ssg_where_l_printed = save_where_l_printed;
       ssg->ssg_where_l_text = save_where_l_text;

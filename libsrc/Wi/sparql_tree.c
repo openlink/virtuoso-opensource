@@ -869,9 +869,7 @@ sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inn
 void
 sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
 {
-#ifdef DEBUG
   int namesakes_count = 0;
-#endif
   int varctr;
   int hit_idx = -1;
   if (NULL == eq)
@@ -879,42 +877,49 @@ sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
       int eq_idx = var->_.var.equiv_idx;
       if (SPART_BAD_EQUIV_IDX == eq_idx)
         return;
-#ifdef DEBUG
       if (eq_idx >= sparp->sparp_equiv_count)
         spar_internal_error (sparp, "sparp_" "equiv_remove_var(): eq_idx is too big");
-#endif
       eq = SPARP_EQUIV (sparp, eq_idx);
-#ifdef DEBUG
       if (NULL == eq)
         spar_internal_error (sparp, "sparp_" "equiv_remove_var(): eq is merged and disabled");
-#endif
     }
   for (varctr = eq->e_var_count; varctr--; /*no step*/)
     {
       SPART *curr_var = eq->e_vars [varctr];
       if (curr_var == var)
         {
-#ifdef DEBUG
           if (0 <= hit_idx)
             spar_internal_error (sparp, "sparp_" "equiv_remove_var(): duplicate occurrence of var in equiv ?");
-#endif
           hit_idx = varctr;
         }
-#ifdef DEBUG
       if (!strcmp (curr_var->_.var.vname, var->_.var.vname))
         namesakes_count++;
-#endif
     }
-#ifdef DEBUG
   if (0 > hit_idx)
     spar_internal_error (sparp, "sparp_" "equiv_remove_var(): var is not in equiv ?");
   if (1 > namesakes_count)
     spar_internal_error (sparp, "sparp_" "equiv_remove_var(): no namesakes of var in equiv ?");
-#endif
   eq->e_vars[hit_idx] = eq->e_vars[eq->e_var_count - 1];
   eq->e_vars[eq->e_var_count - 1] = NULL;
   eq->e_var_count--;
   var->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
+  if (1 == namesakes_count)
+    { /* The name of variable is no longer in explicit use, but it can not be removed from eq.
+The reason is that it still may be used to establish relationship between this eq and namesake of the removed variable in other gps.
+An example is name "s1" in OPTIONAL clause of  ?s1 ?p1 ?o1 OPTIONAL { ?s2 ?p2 ?o2 . FILTER (?s1 = ?s2) }
+When filter is optimized away, the only ?s1 in OPTIONAL disappears but ?s1 outside still should find its namesake in OPTIONAL to not forget ON (s1 = s2) after LEFT OUTER JOIN.
+At the same time, the unused name should not appear at the first place of \c e_varnames list because that may result in inaccurate alias in result list.
+So it should be reordered in the list in such a way that it will never appear at the first position if there are any better names. */
+      int count = BOX_ELEMENTS (eq->e_varnames), ctr;
+      for (ctr = count; ctr--; /* no step */)
+        {
+          if (strcmp (eq->e_varnames [ctr], var->_.var.vname))
+            continue;
+          while (++ctr < count) eq->e_varnames [ctr-1] = eq->e_varnames [ctr];
+          eq->e_varnames [count-1] = var->_.var.vname;
+          break;
+        }
+    }
 }
 
 sparp_equiv_t *
@@ -2457,10 +2462,10 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART *filt;
   SPART **old_filters = parent_gp->_.gp.filters;
+  int old_len = BOX_ELEMENTS (old_filters);
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
-  int old_len = BOX_ELEMENTS (old_filters);
   if ((0 > filter_idx) || (old_len <= filter_idx))
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif
@@ -2475,6 +2480,8 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   parent_gp->_.gp.filters = (SPART **)t_list_remove_nth ((caddr_t)old_filters, filter_idx);
+  if (filter_idx >= (old_len - parent_gp->_.gp.glued_filters_count))
+    parent_gp->_.gp.glued_filters_count -= 1;
   sparp_equiv_audit_all (sparp, 0);
   return filt;
 }
@@ -2487,6 +2494,8 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***
   int filt_ctr;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
+  if (0 != parent_gp->_.gp.glued_filters_count)
+    spar_internal_error (sparp, "sparp_" "gp_detach_all_filters(): optimization tries to break the semantics of LEFT OUTER JOIN for OPTIONAL clause");
   DO_BOX_FAST_REV (SPART *, filt, filt_ctr, filters)
     {
       memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
@@ -2535,15 +2544,16 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **old_filters = parent_gp->_.gp.filters;
+  int old_len = BOX_ELEMENTS (old_filters);
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
-  SPART **old_members = parent_gp->_.gp.members;
-  int old_len = BOX_ELEMENTS (old_members);
   if ((0 > insert_before_idx) || (old_len < insert_before_idx))
     spar_internal_error (sparp, "sparp_" "gp_attach_filter(): bad insert_before_idx");
 #endif
   parent_gp->_.gp.filters = (SPART **)t_list_insert_before_nth ((caddr_t)old_filters, (caddr_t)new_filt, insert_before_idx);
+  if (insert_before_idx > (old_len - parent_gp->_.gp.glued_filters_count))
+    parent_gp->_.gp.glued_filters_count += 1;
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
   stss[0].sts_env = parent_gp;
@@ -2561,11 +2571,11 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **old_filters = parent_gp->_.gp.filters;
+  int old_len = BOX_ELEMENTS (old_filters);
   int filt_ctr, ins_count;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
-  int old_len = BOX_ELEMENTS (old_filters);
   if ((0 > insert_before_idx) || (old_len < insert_before_idx))
     spar_internal_error (sparp, "sparp_" "gp_attach_filter(): bad insert_before_idx");
 #endif
@@ -2577,6 +2587,8 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
       return;
     }
   parent_gp->_.gp.filters = (SPART **)t_list_insert_many_before_nth ((caddr_t)old_filters, (caddr_t *)new_filters, ins_count, insert_before_idx);
+  if (insert_before_idx > (old_len - parent_gp->_.gp.glued_filters_count))
+    parent_gp->_.gp.glued_filters_count += ins_count;
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
   stss[0].sts_env = parent_gp;

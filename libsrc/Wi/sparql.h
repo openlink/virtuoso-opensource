@@ -381,8 +381,9 @@ typedef struct spar_tree_s
       SPART **filters;
         SPART *subquery;
       caddr_t selid;
-      ptrlong *equiv_indexes;
-      ptrlong equiv_count;
+        ptrlong *equiv_indexes;		/*!< Array of indexes of equivs used in triples and filters of this GP, some items at the tail of the array may be spare and temporarily not in use */
+        ptrlong equiv_count;		/*!< Number of items in \c equiv_indexes array that contains valid data. */
+        ptrlong glued_filters_count;	/*!< Last \c glued_filters_count members of \c filters are expressions for ON statement of LEFT OUTER JOIN. They can not be moved to some other GP because they were moved already and next move will break semantics. */
       } gp;
     struct {
         /* #define SPAR_LIT		(ptrlong)1009 */

@@ -96,7 +96,7 @@ int sqlc_is_remote_proc (remote_ds_t *rds, char *p_name);
 int sqlc_is_pass_through_function (remote_ds_t *rds, char *p_name);
 char sqlc_contains_fn_to_char (const char *name);
 
-void sqlc_string_literal (char *text, size_t tlen, int *fill, char *exp);
+void sqlc_string_literal (char *text, size_t tlen, int *fill, const char *exp);
 void sqlc_wide_string_literal (char *text, size_t tlen, int *fill, wchar_t *exp);
 
 void sqlc_insert_commalist (sql_comp_t * sc, comp_table_t * ct, ST * tree,

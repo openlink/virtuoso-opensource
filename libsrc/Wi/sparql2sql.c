@@ -763,7 +763,6 @@ the function may sometimes set conflict to \c eq_l or find that the filter is us
 int
 spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r)
 {
-  int ret = 0;
   ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
   if ((eq_l->e_rvr.rvrRestrictions & SPART_VARR_IS_REF) && (tree_restr_bits & SPART_VARR_IS_LIT))
     return 1;
@@ -792,7 +791,7 @@ spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPAR
       }
     case SPAR_LIT: case SPAR_QNAME:
       {
-        if (sparp_fixedvalues_equal (sparp, eq_l->e_rvr.rvrFixedValue, r))
+        if (sparp_fixedvalues_equal (sparp, (SPART *)(eq_l->e_rvr.rvrFixedValue), r))
           {
             eq_l->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             return 1;
@@ -1357,6 +1356,32 @@ sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps)
     NULL );
 }
 
+void
+sparp_remove_totally_useless_equivs (sparp_t *sparp)
+{
+  int equiv_ctr, recv_ctr, dirty;
+
+again:
+  dirty = 0;
+  for (equiv_ctr = sparp->sparp_equiv_count; equiv_ctr--; /* no step */)
+    {
+      sparp_equiv_t *eq = SPARP_EQUIV (sparp, equiv_ctr);
+      if (NULL == eq)
+        continue;
+      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) || (0 != eq->e_const_reads) || (0 != eq->e_optional_reads))
+        continue;
+      DO_BOX_FAST_REV (ptrlong, recv_idx, recv_ctr, eq->e_receiver_idxs)
+        {
+          sparp_equiv_disconnect (sparp, SPARP_EQUIV (sparp, recv_idx), eq);
+        }
+      END_DO_BOX_FAST_REV;
+      sparp_equiv_remove (sparp, eq);
+      dirty = 1;
+    }
+  if (dirty)
+    goto again; /* see above */
+}
+
 int
 sparp_gp_trav_remove_redundant_connections (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -1898,24 +1923,43 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
     {
       caddr_t varname = curr->_.var.vname;
       if (!SPART_VARNAME_IS_GLOB(varname))
-        {
-          common_env = (void *)((ptrlong)1);
           return SPAR_GPT_COMPLETED;
-    }
       return SPAR_GPT_NODOWN;
     }
+  if (SPAR_BLANK_NODE_LABEL == curr->type)
+    return SPAR_GPT_COMPLETED;
   return 0;
 }  
 
 int
 sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
 {
-  ptrlong has_locals = 0;
-  sparp_gp_trav (sparp, tree, &has_locals,
+  int res = sparp_gp_trav (sparp, tree, NULL,
     NULL, NULL,
-    sparp_gp_trav_check_if_local, NULL, NULL,
+    sparp_gp_trav_check_if_local, NULL, NULL /*!!!TBD add*/,
     NULL );
-  return !has_locals;
+  return (SPAR_GPT_COMPLETED & res);
+}
+
+int sparp_gp_trav_expn_reads_equiv (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if ((SPAR_VARIABLE == curr->type) || (SPAR_BLANK_NODE_LABEL == curr->type))
+    {
+      if (curr->_.var.equiv_idx == ((ptrlong)(common_env)))
+        return SPAR_GPT_COMPLETED;
+    }
+  return 0;
+}
+
+int
+sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq)
+{
+  ptrlong eq_idx = eq->e_own_idx;
+  int res = sparp_gp_trav (sparp, expn, (void *)eq_idx,
+    NULL, NULL,
+    sparp_gp_trav_expn_reads_equiv, NULL, NULL /*!!!TBD add*/,
+    NULL );
+  return (SPAR_GPT_COMPLETED & res);
 }
 
 /* Main rewriting functions */
@@ -1933,6 +1977,7 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_eq_restr_from_connected (sparp);
   sparp_eq_restr_to_vars (sparp);
   sparp_label_external_vars (sparp, NULL);
+  sparp_remove_totally_useless_equivs (sparp);
   sparp_remove_redundant_connections (sparp);
   sparp_audit_mem (sparp);
 }
@@ -2923,13 +2968,13 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
 SPART *
 sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline)
 {
-  SPART *res = spartlist (sparp, 8,
+  SPART *res = spartlist (sparp, 9,
     SPAR_GP, subtype,
     t_list (0),
     t_list (0),
     NULL,
     spar_mkid (sparp, "s"),
-    NULL, (ptrlong)(0) );
+    NULL, (ptrlong)(0), (ptrlong)(0) );
   res->srcline = t_box_num (srcline);
   return res;
 }
@@ -3595,7 +3640,7 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
                   if (((base_restr & SPART_VARR_IS_REF) && (dep_restr & SPART_VARR_IS_LIT)) ||
                     ((base_restr & SPART_VARR_IS_LIT) && (dep_restr & SPART_VARR_IS_REF)) )
                     goto next_dep; /* see below */
-                  if (!sparp_fixedvalues_equal (sparp, base_fld_const, dep_fld_const))
+                  if (!sparp_fixedvalues_equal (sparp, (SPART *)base_fld_const, (SPART *)dep_fld_const))
                     goto next_dep; /* see below */
                 }
             }
@@ -3852,6 +3897,43 @@ sparp_rewrite_qm (sparp_t *sparp)
   sparp_rewrite_qm_postopt (sparp);
 }
 
+int
+sparp_dig_and_glue_loj_filter_for_eq (sparp_t *sparp, sparp_equiv_t *eq)
+{
+  SPART *gp = eq->e_gp;
+  sparp_equiv_t *good_recv_eq = NULL;
+  SPART *good_recv_gp;
+  int recv_ctr, filter_ctr;
+  if ((OPTIONAL_L != gp->_.gp.subtype) || (0 == eq->e_const_reads) || (0 == BOX_ELEMENTS_0 (eq->e_receiver_idxs)))
+    return 0;
+  for (recv_ctr = BOX_ELEMENTS (eq->e_receiver_idxs); recv_ctr--; /* no step */)
+    {
+      sparp_equiv_t *recv_eq = SPARP_EQUIV(sparp, eq->e_receiver_idxs[recv_ctr]);
+      if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY(recv_eq) || SPARP_EQ_IS_ASSIGNED_LOCALLY(recv_eq))
+        {
+          good_recv_eq = recv_eq;
+          break;
+        }
+    }
+  if (good_recv_eq == NULL)
+    return 0;
+  good_recv_gp = good_recv_eq->e_gp;
+  for (filter_ctr = BOX_ELEMENTS_0 (gp->_.gp.filters) - gp->_.gp.glued_filters_count; filter_ctr--; /* no step */)
+    {
+      SPART *filt = gp->_.gp.filters[filter_ctr];
+      if (!sparp_expn_reads_equiv (sparp, filt, eq))
+        continue;
+      good_recv_gp = good_recv_eq->e_gp;
+      if (UNION_L == good_recv_gp->_.gp.subtype)
+        spar_error (sparp, "Variable '%.100s' is used in OPTIONAL inside UNION but not assigned in OPTIONAL, please rephrase the query", eq->e_varnames[0]);
+      sparp_gp_detach_filter (sparp, gp, filter_ctr, NULL);
+      sparp_gp_attach_filter (sparp, good_recv_gp, filt, BOX_ELEMENTS_0 (good_recv_gp->_.gp.filters) - good_recv_gp->_.gp.glued_filters_count, NULL);
+      good_recv_gp->_.gp.glued_filters_count += 1;
+      return 1;
+    }
+  return 0;
+}
+
 void
 sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
 {
@@ -3861,6 +3943,8 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
     GPF_T1 ("sparp_" "rewrite_qm_preopt () for SQL_FUNCALL");
+
+retry_preopt:
   sparp_rewrite_basic (sparp);
   equivs = sparp->sparp_equivs;
   equiv_count = sparp->sparp_equiv_count;
@@ -3869,13 +3953,13 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
       sparp_equiv_t *eq = equivs[equiv_ctr];
       if (NULL == eq)
         continue;
-      if (
-        !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) &&
-        (0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
-        (0 == eq->e_nested_bindings) && (0 == BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) &&         
-	((0 != eq->e_const_reads) || /* note: no check for (0 != eq->e_optional_reads) */
-          (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) ) )
-        {
+      if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY(eq) || SPARP_EQ_IS_ASSIGNED_LOCALLY(eq))
+        continue;
+      if (!SPARP_EQ_IS_USED(eq))
+        continue;
+      /* At this point we know that some variable is used but not assigned. It may be non-optional variable in FILTER inside OPTIONAL or an error. */
+      if (sparp_dig_and_glue_loj_filter_for_eq (sparp, eq))
+        goto retry_preopt; /* see above */
           if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
             spar_error (sparp, "Variable '%.100s' is used in the query result set but not assigned", eq->e_varnames[0]);
           if ((0 != eq->e_const_reads) || /* note: no check for (0 != eq->e_optional_reads) */
@@ -3883,7 +3967,6 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
             {
             spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but not assigned", eq->e_varnames[0]);
         }
-    }
     }
   sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
 /* Building qm_list for every triple in the tree. */

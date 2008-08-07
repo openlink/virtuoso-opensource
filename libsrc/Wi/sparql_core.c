@@ -877,14 +877,14 @@ spar_gp_finalize (sparp_t *sparp)
       t_set_push (&opt_membs, last_opt);
     }
 /* Plain composing of SPAR_GP tree node */
-  res = spartlist (sparp, 8,
+  res = spartlist (sparp, 9,
     SPAR_GP, subtype,
     /* opt members are at the first place in NCONC because there's a reverse in t_revlist_to_array */
     t_revlist_to_array (t_NCONC (opt_membs, req_membs)),
     t_revlist_to_array (filts),
     NULL,
     orig_selid,
-    NULL, (ptrlong)(0) );
+    NULL, (ptrlong)(0), (ptrlong)(0) );
   spar_selid_pop (sparp);
   return res;
 }

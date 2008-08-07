@@ -692,8 +692,9 @@ dk_set_append_1 (dk_set_t * res, void *item)
 }
 
 
+
 void
-sqlc_string_literal (char *text, size_t tlen, int *fill, char *exp)
+sqlc_string_literal (char *text, size_t tlen, int *fill, const char *exp)
 {
   int inx, len = box_length (exp) - 1;
   sprintf_more (text, tlen, fill, "\'");

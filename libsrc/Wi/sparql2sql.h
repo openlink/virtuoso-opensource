@@ -155,6 +155,16 @@ typedef struct sparp_equiv_s
 #endif
   } sparp_equiv_t;
 
+#define SPARP_EQ_IS_ASSIGNED_EXTERNALLY(eq) \
+  ((eq)->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL))
+
+#define SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) \
+  ((0 != (eq)->e_gspo_uses) || (0 != (eq)->e_subquery_uses) || (0 != (eq)->e_nested_bindings) || (0 != BOX_ELEMENTS_0 ((eq)->e_subvalue_idxs)))
+
+#define SPARP_EQ_IS_USED(eq) \
+  ((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)))
+
+
 #define SPARP_EQUIV_GET_NAMESAKES	0x01	/*!< \c sparp_equiv_get() returns equiv of namesakes, no need to search for exact var. */
 #define SPARP_EQUIV_INS_CLASS		0x02	/*!< \c sparp_equiv_get() has a right to add a new equiv to the \c haystack_gp */
 #define SPARP_EQUIV_INS_VARIABLE	0x04	/*!< \c sparp_equiv_get() has a right to insert \c needle_var into an equiv */
@@ -327,8 +337,11 @@ extern void sparp_equiv_tighten (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_rang
 The function can not be used if \c addon has SPART_VARR_CONFLICT set */
 extern void sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
 
-/*! Returns 1 if the \c tree is an expression that is free from non-global variables */
+/*! Returns true if the \c tree is an expression that is free from non-global variables */
 extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
+
+/*! Returns true if some variable from \c eq occurs in \c expn or one of its subexpressions. */
+extern int sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq);
 
 /*!< Adds variables to equivalence classes and set counters of usages */
 extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
@@ -545,6 +558,9 @@ extern void sparp_make_aliases (sparp_t *sparp);
 /*! Label variables as EXTERNAL. */
 extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
 
+/*! Removes equivalence classes that are no longer in any sort of use (neither pure connections nor equivs of actual variables */
+extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
+
 /*! Removes equivalence classes that were supposed to be pure conenctions but are not connections at all. */
 extern void sparp_remove_redundant_connections (sparp_t *sparp);
 
@@ -697,7 +713,7 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix);
-extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, caddr_t box, int allow_uname);
+extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit);

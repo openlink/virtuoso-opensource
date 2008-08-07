@@ -1849,14 +1849,14 @@ spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
 
 spar_qm_obj_datatype_opt
 	: /* empty */ { $$ = NULL; }
-	| DATATYPE_L spar_iriref { $$ = $2->_.lit.val; }
+	| DATATYPE_L spar_iriref { $$ = (SPART *)$2->_.lit.val; }
 	| DATATYPE_L IRI_L _LPAR SPARQL_STRING _RPAR { sparyyerror ("Datatype of object field should be either constant IRI or table field, not template IRI (string)"); }
 	| DATATYPE_L spar_qm_sqlcol { $$ = spar_make_qm_col_desc (sparp_arg, $2); }
 	;
 
 spar_qm_obj_language_opt
 	: /* empty */ { $$ = NULL; }
-	| LANG_L SPARQL_STRING { $$ = $2; }
+	| LANG_L SPARQL_STRING { $$ = (SPART *)$2; }
 	| LANG_L spar_qm_sqlcol { $$ = spar_make_qm_col_desc (sparp_arg, $2); }
 	;
 
