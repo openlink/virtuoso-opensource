@@ -2907,7 +2907,7 @@ window.onload = function (e)
     <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
     <?vsp } ?>
     <div>
-	<v:url xhtml_class="button" name="full_profile" value="Full profile"
+    	<v:url name="full_profile" value="Full profile"
 	  url="--self.owner_iri"
 	  render-only="1"
 	  is-local="1"
