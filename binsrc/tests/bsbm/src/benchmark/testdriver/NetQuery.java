@@ -1,0 +1,73 @@
+package benchmark.testdriver;
+
+import java.io.UnsupportedEncodingException;
+import java.net.*;
+import java.io.*;
+
+public class NetQuery {
+
+	HttpURLConnection conn;
+	Long start;
+	Long end;
+	
+	protected NetQuery(String serviceURL, String query, byte queryType, String defaultGraph) {
+		try {
+			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8");
+
+			if(defaultGraph!=null)
+				urlString +=  "&default-graph-uri=" + defaultGraph;
+			URL url = new URL(urlString);
+			conn = (HttpURLConnection)url.openConnection();
+			conn.setRequestMethod("GET");
+			conn.setDefaultUseCaches(false);
+			conn.setDoOutput(true);
+			conn.setUseCaches(false);
+			if(queryType==Query.DESCRIBE_TYPE)
+				conn.setRequestProperty("Accept", "application/rdf+xml");
+			else
+				conn.setRequestProperty("Accept", "application/sparql-results+xml");
+		} catch(UnsupportedEncodingException e) {
+			System.err.println(e.toString());
+			System.exit(-1);
+		} catch(MalformedURLException e) {
+			System.err.println(e.toString());
+			System.exit(-1);
+		} catch(IOException e) {
+			System.err.println(e.toString());
+			System.exit(-1);
+		}
+	}
+	
+	protected InputStream exec() {
+		try {
+			conn.connect();
+		} catch(IOException e) {
+			System.err.println("Could not connect to SPARQL Service.");
+			System.exit(-1);
+		}
+		try {
+			start = System.nanoTime();
+			int rc = conn.getResponseCode();
+			if(rc < 200 || rc >= 300) {
+				System.err.println("Query execution with error.");
+				System.err.println(URLDecoder.decode(conn.getURL().getQuery(),"UTF-8"));
+			}
+			return conn.getInputStream();
+		} catch(IOException e) {
+			System.err.println("Query Execution error.");
+			System.exit(-1);
+		}
+		return null;
+	}
+	
+	protected double getExecutionTimeInSeconds() {
+		end = System.nanoTime();
+		Long interval = end-start;
+		return interval.doubleValue()/1000000000;
+	}
+	
+	protected void close() {
+		conn.disconnect();
+		conn = null;
+	}
+}

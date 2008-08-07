@@ -1,0 +1,5 @@
+QueryType=Select
+
+word1=Dictionary1
+word2=Dictionary1
+word3=Dictionary1

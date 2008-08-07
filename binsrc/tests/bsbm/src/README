@@ -1,0 +1,17 @@
+This directory subtree is taken from from Berlin SPARQL Benchmark, see
+http://www4.wiwiss.fu-berlin.de/bizer/BerlinSPARQLBenchmark/spec/20080730/
+
+Original authors are
+Chris Bizer (Web-based Systems Group, Freie Universität Berlin, Germany)
+Andreas Schultz (Institut für Informatik, Freie Universität Berlin, German
+
+Original license is GNU GPL, available at http://www.gnu.de/gpl-ger.html .
+
+This is not the original version of the benchmark.
+The test data generator has changed by OpenLink Software: the file
+/binsrc/tests/bsbm/src/benchmark/serializer/VirtSerializer.java
+is added from scratch and invocation of related class is added to other files.
+In case of problems related to that file, please contact OpenLink, not
+authors of the original version.
+
+The new code is licensed as a part of OpenLink Virtuoso Open Source Edition.
