@@ -2356,6 +2356,7 @@ AC_CONFIG_FILES([
 	binsrc/tests/biftest/Makefile
 	binsrc/tests/dotnet/Makefile
 	binsrc/tests/Makefile
+	binsrc/tests/bsbm/Makefile
 	binsrc/tests/lubm/Makefile
 	binsrc/tests/oledb/Makefile
 	binsrc/tests/oracle_tpcc/Makefile
