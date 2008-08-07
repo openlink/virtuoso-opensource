@@ -169,6 +169,15 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			self.disable(self.items[i].href);
 	}
 
+	this.invertSel = function() {
+		for (var i=0;i<self.items.length;i++)
+			if (self.items[i].enabled) {
+				self.disable(self.items[i].href);
+			} else {
+				self.enable(self.items[i].href);
+			}
+	}
+
 	this.rebuild = function(complete) {
 		var conversionTable = {};
 		

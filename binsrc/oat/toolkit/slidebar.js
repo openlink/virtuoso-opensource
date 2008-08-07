@@ -102,7 +102,7 @@ OAT.Slidebar = function (div, optionsObj) {
 		
 		OAT.Dom.attach (self.handle_div, "click", self.open);
 		self.handle_open();
-		OAT.MSG.send (self, OAT.MSG.SLB_OPENED, self)
+		OAT.MSG.send(self, OAT.MSG.SLB_CLOSED, self)
 	}
 
 	this.center_handle_img = function () {
