@@ -1567,7 +1567,7 @@ create procedure DB.DBA.RDF_LOAD_DAV_META (in graph_iri varchar, in new_origin_u
         DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
       return 1;
     }
-  return 0;
+  return 1;
 }
 ;
 
