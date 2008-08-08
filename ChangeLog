@@ -1,3 +1,63 @@
+2008-08-08 11:53  source
+
+	* Updated version to 5.0.8-rc1
+
+2008-08-08 11:52  source
+
+	* Reversed previous changes to atom/rss
+
+2008-08-08 08:55  source
+
+	* Fixed atom/rss
+
+2008-08-07 15:42  source
+
+	* Updated version to 5.0.8-pre6
+
+2008-08-07 15:42  source
+
+	* Fixed 'Full Profile' link
+
+2008-08-07 14:09  source
+
+	* Merged from upstream project
+
+2008-08-07 13:58  source
+
+	* Added initial support for berlin benchmark
+
+2008-08-07 13:58  source
+
+	* Added initial file for berlin benchmark
+
+2008-08-07 11:14  source
+
+	* Fixed sparql construction for
+	  { ?s1 ?p1 ?o1 . OPTIONAL { ?s2 ?p2 ?o2 . FILTER (?s1=?s2 && ?o1 < ?o2)}}
+
+2008-08-06 11:33  source
+
+	* Fixed rss/atom
+	* Fixed freebase
+
+2008-08-06 11:32  source
+
+	* Added ssg_const_is_good_for_split_into_short() and the related
+	  elimination of sprintf_inverse (const, const, 2) in the generated code.
+
+2008-08-06 11:31  source
+
+	* Fixed optimization of identity self joins, like twide the same table with
+	  uniq key equal between them, or equal uniq conditions repeated for both.
+
+2008-08-06 11:30  source
+
+	* Fixed 64 bit portability
+
+2008-08-06 11:30  source
+
+	* Fixed bad seek pos check in restore of strip over 2G
+
 2008-08-05 14:15  source
 
 	* Updated version to 5.0.8-pre5
