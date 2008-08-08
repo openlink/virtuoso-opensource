@@ -2361,10 +2361,11 @@ do_detect:;
 	  }
 	xd := serialize_to_UTF8_xml (xd);
 ins_rdf:
-	DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    ---DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
         DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
     --RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
-	ret_flag := -1;
+    ret_flag := 1;
+    return 1;
 no_feed:;
     }
   -- /* generic xHTML, extraction as per our ontology */
