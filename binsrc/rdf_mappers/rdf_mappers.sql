@@ -678,7 +678,6 @@ create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
-  --dbg_printf ('%s', ses);
   ses := xtree_doc (ses);
   return ses;
 }
@@ -784,7 +783,6 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/crunchbase2rdf.xsl', xt,
 	  vector ('baseUri', coalesce (dest, graph_iri), 'base', base, 'suffix', suffix));
   xd := serialize_to_UTF8_xml (xt);
---  dbg_printf ('%s', serialize_to_UTF8_xml (xt));
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -1592,6 +1590,7 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
 
   declare exit handler for sqlstate '*'
     {
+    --  dbg_obj_print (__SQL_MESSAGE);
       return 0;
     };
 
@@ -2361,11 +2360,10 @@ do_detect:;
 	  }
 	xd := serialize_to_UTF8_xml (xd);
 ins_rdf:
-    ---DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
         DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
     --RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
     ret_flag := 1;
-    return 1;
 no_feed:;
     }
   -- /* generic xHTML, extraction as per our ontology */
@@ -2385,6 +2383,7 @@ no_feed:;
 ret:
   if (mdta > 0 and aq is not null)
     aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+    
   -- /* decide how to return */
   declare ord, mime any;
   mime := get_keyword ('content-type', opts);
