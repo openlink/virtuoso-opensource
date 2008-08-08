@@ -51,6 +51,7 @@ html>/**/body .oat_winround_wrapper {
 	background-position: right;
 	width: 16px;
 	background-image: url('../images/winround_r.png');
+	background-color: #fff;
 }
 .oat_winround_lb {
 	width: 16px;
