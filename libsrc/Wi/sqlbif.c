@@ -8858,9 +8858,9 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
 
   BOX_AUTO (ptmp, tmp, 3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   proposed = (sql_tree_tmp *) ptmp;
-  ptmp[0] = (uptrlong) to_dtp;
+  ptmp[0] = (caddr_t) (uptrlong) to_dtp;
   ptmp[1] = prec_box;
-  ptmp[2] = (uptrlong) scale;
+  ptmp[2] = (caddr_t) (uptrlong) scale;
 
   QR_RESET_CTX
     {

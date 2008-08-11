@@ -2434,7 +2434,7 @@ xslt_globals (xparse_ctx_t * xp, caddr_t * params)
 	      if (NULL != params[inx + 1])
 	        xb->xb_value = box_copy_tree (params[inx + 1]);
 	      else
-		xb->xb_value = box_num_nonull (params[inx + 1]);
+		xb->xb_value = box_num_nonull (0);
 	      xb->xb_next = xp->xp_globals;
 	      xp->xp_globals = xb;
 	    }

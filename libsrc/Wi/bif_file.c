@@ -5486,7 +5486,7 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("42000", "FA003", "Can't open file (%s)", fname);
 
   ret = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_NUMERIC);
-  ret[0] = (caddr_t) fp;
+  ret[0] = (caddr_t) (ptrlong) fp;
 
   return (caddr_t) ret;
 }
