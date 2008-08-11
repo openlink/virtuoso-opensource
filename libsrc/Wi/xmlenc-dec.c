@@ -717,7 +717,7 @@ void wsse_keyname_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t *
 	  {
 	    char keyn[128];
 	    strncpy (keyn, keyname, 127);
-	    keyn[128] = 0;
+	    keyn[127] = 0;
 	    dk_free_box (keyname);
 	    wsse_report_error (ctx, WSSE_UNKNOWN_KEY_CODE, 128, keyn);
 	  }

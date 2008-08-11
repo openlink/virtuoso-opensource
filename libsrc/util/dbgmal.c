@@ -23,8 +23,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
 
 #undef MALLOC_DEBUG
 
@@ -279,7 +278,7 @@ mal_register (const char *name, u_int line)
 {
   malrec_t xrec, *r;
 
-  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN-1);
+  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN);
   xrec.fname[MALREC_FNAME_BUFLEN-1] = '\0';
   xrec.linenum = line;
 
@@ -753,8 +752,8 @@ dbg_mark (char *name)
 {
   malrec_t xrec, *r;
 
-  strncpy (xrec.fname, name, 32);
-  xrec.fname[32] = 0;
+  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN);
+  xrec.fname[MALREC_FNAME_BUFLEN-1] = 0;
   xrec.linenum = -1;
 
   r = (malrec_t *) dtab_find_record (_dbgtab, 1, (htrecord_t) &xrec);
@@ -778,8 +777,8 @@ dbg_unmark (char *name)
 {
   malrec_t xrec, *r;
 
-  strncpy (xrec.fname, name, 32);
-  xrec.fname[32] = 0;
+  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN);
+  xrec.fname[MALREC_FNAME_BUFLEN-1] = 0;
   xrec.linenum = -1;
 
   r = (malrec_t *) dtab_find_record (_dbgtab, 1, (htrecord_t) &xrec);

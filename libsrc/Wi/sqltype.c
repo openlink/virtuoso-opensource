@@ -3268,8 +3268,8 @@ sqlp_udt_method_decl (int specific, int mtd_type,
 	  char buffer[255], state[6];
 	  strncpy (buffer, ERR_MESSAGE (err), sizeof (buffer));
 	  strncpy (state, ERR_STATE (err), sizeof (state));
-	  buffer[sizeof (buffer)] = 0;
-	  state[sizeof (state)] = 0;
+	  buffer[sizeof (buffer)-1] = 0;
+	  state[sizeof (state)-1] = 0;
 	  dk_free_tree (err);
 	  yy_new_error (buffer, state, "UD052");
 	}
