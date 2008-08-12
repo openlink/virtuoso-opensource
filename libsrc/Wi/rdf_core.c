@@ -213,7 +213,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
 }
 
 static const char *tf_cbk_param_types[COUNTOF__TRIPLE_FEED] = {
-  "RR",		/* e.g., DB.DBA.TTLP_EV_NEW_GRAPH(?,?) */
+  "RRR",	/* e.g., DB.DBA.TTLP_EV_NEW_GRAPH(?,?) */
   "RRR",	/* e.g., DB.DBA.TTLP_EV_NEW_BLANK(?,?, ?); there was 'select DB.DBA.TTLP_EV_NEW_BLANK(?,?)' */
   "RRRR",	/* e.g., DB.DBA.TTLP_EV_GET_IID(?,?,?, ?); there was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)'  */
   "RRRRR",	/* e.g., DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?) */
@@ -290,14 +290,15 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
 
 
 void
-tf_new_graph (triple_feed_t *tf)
+tf_new_graph (triple_feed_t *tf, caddr_t uri)
 {
-  char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 2];
+  char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 3];
   void **params;
   caddr_t err = NULL;
-  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 2, DV_ARRAY_OF_POINTER);
-  params[0] = &(tf->tf_graph_iid);
-  params[1] = &(tf->tf_app_env);
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
+  params[0] = &uri;
+  params[1] = &(tf->tf_graph_iid);
+  params[2] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_GRAPH], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
@@ -479,6 +480,7 @@ ttlp_free (ttlp_t *ttlp)
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   dk_free_tree (ttlp->ttlp_base_uri);
+  dk_free_tree (ttlp->ttlp_last_complete_uri);
   dk_free_tree (ttlp->ttlp_subj_uri);
   dk_free_tree (ttlp->ttlp_pred_uri);
   dk_free_tree (ttlp->ttlp_obj);
@@ -858,7 +860,7 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
       COUNTOF__TRIPLE_FEED );
-  res = rdf_load_turtle (str, base_uri, graph_uri, flags,
+  res = rdf_load_turtle (str, 0, base_uri, graph_uri, flags,
     (ccaddr_t *) cbk_names, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
   if (NULL != err)
@@ -869,7 +871,31 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
-
+caddr_t
+bif_rdf_load_turtle_local_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_arg (qst, args, 0, "rdf_load_turtle_local_file");
+  caddr_t base_uri = bif_string_or_uname_arg (qst, args, 1, "rdf_load_turtle_local_file");
+  caddr_t graph_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "rdf_load_turtle_local_file");
+  long flags = bif_long_arg (qst, args, 3, "rdf_load_turtle_local_file");
+  caddr_t *cbk_names = bif_strict_type_array_arg (DV_STRING, qst, args, 4, "rdf_load_turtle_local_file");
+  caddr_t app_env = bif_arg (qst, args, 5, "rdf_load_turtle_local_file");
+  caddr_t err = NULL;
+  caddr_t res;
+  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
+    sqlr_new_error ("22023", "RDF01",
+      "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
+      COUNTOF__TRIPLE_FEED );
+  res = rdf_load_turtle (str, 1, base_uri, graph_uri, flags,
+    (ccaddr_t *) cbk_names, app_env,
+    (query_instance_t *)qst, QST_CHARSET(qst), &err );
+  if (NULL != err)
+    {
+      dk_free_tree (res);
+      sqlr_resignal (err);
+    }
+  return res;
+}
 
 caddr_t
 bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -2158,6 +2184,8 @@ rdf_core_init (void)
   bif_set_uses_index (bif_rdf_load_rdfxml);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
+  bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
+  bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_set_uses_index (bif_iri_to_id);

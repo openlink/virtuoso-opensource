@@ -61,7 +61,7 @@ typedef struct triple_feed_s {
 extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names);
-extern void tf_new_graph (triple_feed_t *tf);
+extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
@@ -71,6 +71,7 @@ extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_
 #define TTLP_VERB_MAY_BE_BLANK		0x02
 #define TTLP_ACCEPT_VARIABLES		0x04
 #define TTLP_SKIP_LITERAL_SUBJECTS	0x08
+#define TTLP_ALLOW_TRIG			0x10
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -102,6 +103,7 @@ typedef struct ttlp_s
   dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
   caddr_t ttlp_base_uri;	/*!< Base URI to resolve relative URIs */
+  caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
   caddr_t ttlp_obj;		/*!< Current object URI or value */
@@ -109,6 +111,7 @@ typedef struct ttlp_s
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
+  caddr_t ttlp_trig_graph_uri;	/*!< Current graph URI as specified by TriG syntax, if 0 != (ttlp_flags & TTLP_ALLOW_TRIG) */
   /* feeder */
   triple_feed_t *ttlp_tf;
 } ttlp_t;
@@ -118,7 +121,7 @@ extern ttlp_t *ttlp_alloc (void);
 extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
-  caddr_t text, caddr_t base_uri, caddr_t graph_uri, long flags,
+  caddr_t text_or_filename, int arg1_is_filename, caddr_t base_uri, caddr_t graph_uri, long flags,
   ccaddr_t *cbk_names, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
@@ -160,11 +163,6 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ );
-
-extern caddr_t rdf_load_turtle (
-  caddr_t str, caddr_t base_uri, caddr_t graph_uri, long flags,
-  ccaddr_t *cbk_names, caddr_t app_env,
-  query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
 /* Metadata about free-text index on DB.DBA.RDF_OBJ */
 extern id_hash_t *rdf_obj_ft_rules;

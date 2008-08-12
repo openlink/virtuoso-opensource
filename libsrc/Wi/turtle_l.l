@@ -158,7 +158,8 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 <INITIAL>","		{ return _COMMA; }
 <INITIAL>"."[ \t]	{ return _DOT_WS; }
 <INITIAL>"."{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; return _DOT_WS; }
-<INITIAL>"."		{ return _DOT_NOWS; }
+<INITIAL>"."[^0-9]	{ ttlyyerror ("Whitespace is required after dot if dot is not inside decimal number, string or IRI"); }
+<INITIAL>"."		{ return _DOT_WS; }
 <INITIAL>":"		{ return _COLON; }
 <INITIAL>";"		{ return _SEMI; }
 <INITIAL>"="		{ return _EQ; }
@@ -443,19 +444,22 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
 
 caddr_t
 rdf_load_turtle (
-  caddr_t text, caddr_t base_uri, caddr_t graph_uri, long flags,
+  caddr_t text_or_filename, int arg1_is_filename, caddr_t base_uri, caddr_t graph_uri, long flags,
   ccaddr_t *cbk_names, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret )
 {
+  FILE *srcfile = NULL;
   bh_from_client_fwd_iter_t bcfi;
   bh_from_disk_fwd_iter_t bdfi;
   dk_session_fwd_iter_t dsfi;
   /* !!!TBD: add wide support: int text_strg_is_wide = 0; */
-  dtp_t dtp_of_text = DV_TYPE_OF (text);
+  dtp_t dtp_of_text = (arg1_is_filename ? 0 : DV_TYPE_OF (text_or_filename));
   caddr_t res;
   ttlp_t *ttlp;
   yyscan_t scanner;
   triple_feed_t *tf;
+  if (arg1_is_filename)
+    sec_check_dba (qi, "<reading TURTLE from local file>");
   if (DV_BLOB_XPER_HANDLE == dtp_of_text)
     sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
   ttlp = ttlp_alloc ();
@@ -463,9 +467,42 @@ rdf_load_turtle (
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
   tf->tf_app_env = app_env;
+
+  if (arg1_is_filename)
+    {
+#ifdef WIN32
+      char fname[_MAX_PATH], *fname_ptr;
+      strncpy (fname, text_or_filename, _MAX_PATH);
+      fname[_MAX_PATH - 1] = '\0';
+      for (fname_ptr = fname; fname_ptr[0]; fname_ptr++)
+        {
+          switch (fname_ptr[0])
+            {
+            case '|':
+              fname_ptr[0] = ':';
+              break;
+            case '/':
+              fname_ptr[0] = '\\';
+              break;
+            }
+        }
+#else
+      char *fname = ((char *) text_or_filename);
+#endif
+      sec_check_dba (qi, "<read XML from URL of type file://...>");
+      srcfile = fopen (fname, "rb");
+      if (NULL == srcfile)
+        {
+          ttlp_free (ttlp);
+	  sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", fname);
+        }
+      ttlp->ttlp_iter = file_read;
+      ttlp->ttlp_iter_data = srcfile;
+      goto iter_is_set;
+    }
   if ((DV_BLOB_HANDLE == dtp_of_text) /* !!!TBD: add wide support: || (DV_BLOB_WIDE_HANDLE == dtp_of_text)*/ )
     {
-      blob_handle_t *bh = (blob_handle_t *) text;
+      blob_handle_t *bh = (blob_handle_t *) text_or_filename;
 #if 0 /* !!!TBD: add wide support: */
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
 #endif      
@@ -484,7 +521,7 @@ rdf_load_turtle (
     }
   if (DV_STRING_SESSION == dtp_of_text)
     {
-      dk_session_t *ses = (dk_session_t *) text;
+      dk_session_t *ses = (dk_session_t *) text_or_filename;
       dsfi_reset (&dsfi, ses);
       ttlp->ttlp_iter = dsfi_read;
       ttlp->ttlp_iter_data = &dsfi;
@@ -493,15 +530,15 @@ rdf_load_turtle (
 #if 0 /* !!!TBD: add wide support: */
    if (IS_WIDE_STRING_DTP (dtp_of_text))
     {
-      text_len = (s_size_t) (box_length(text)-sizeof(wchar_t));
+      text_len = (s_size_t) (box_length(text_or_filename)-sizeof(wchar_t));
       text_strg_is_wide = 1;
       goto iter_is_set;
     }
 #endif
   if (IS_STRING_DTP (dtp_of_text))
     {
-      ttlp->ttlp_text = text;
-      ttlp->ttlp_text_len = box_length(text) - 1;
+      ttlp->ttlp_text = text_or_filename;
+      ttlp->ttlp_text_len = box_length(text_or_filename) - 1;
       goto iter_is_set;
     }
   ttlp_free (ttlp);
@@ -525,15 +562,15 @@ iter_is_set:
     ttlp->ttlp_base_uri = box_copy (base_uri);
   QR_RESET_CTX
     {
-      tf_set_cbk_names (tf, (const char **)cbk_names);
-      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
-      tf_commit (tf);
-      tf_new_graph (tf);
       ttlyylex_init (&scanner);
       ttlyyset_extra (ttlp, scanner);
 #ifdef MALLOC_DEBUG
       yy_push_state (INITIAL, scanner);
 #endif
+      tf_set_cbk_names (tf, (const char **)cbk_names);
+      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
+      tf_commit (tf);
+      tf_new_graph (tf, tf->tf_graph_uri);
       ttlyyparse (ttlp, scanner);
       tf_commit (tf);
     }
@@ -550,6 +587,8 @@ iter_is_set:
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
+  if (NULL != srcfile)
+    fclose (srcfile);
   ttlyylex_destroy (scanner);
   err_ret[0] = ttlp->ttlp_catched_error;
   ttlp->ttlp_catched_error = NULL;
