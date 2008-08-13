@@ -412,6 +412,7 @@ typedef struct spar_tree_s
       } req_top;
     struct {
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
+        ptrlong subtype;
       SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
         caddr_t qm_iri;
       caddr_t selid;

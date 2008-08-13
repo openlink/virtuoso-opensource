@@ -2599,8 +2599,8 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
     ((SPAR_VARIABLE == SPART_TYPE (left)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (left)) ||
       (SPAR_VARIABLE == SPART_TYPE (right)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (right)) ) )
     { /* Comparison that is partially optimizable for indexing */
-      const char *typemin, *typemax;
 #ifdef RIGOROUS_CMP
+      const char *typemin, *typemax;
       ssg_puts ("((");
       ssg->ssg_indent += 2;
       ssg_print_scalar_expn (ssg, left, smallest_union, NULL_ASNAME);

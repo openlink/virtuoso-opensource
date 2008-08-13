@@ -356,6 +356,8 @@ ignore_retval_name: ;
     case SPAR_TRIPLE: break;
     default: return 0;
     }
+  if (UNION_L != gp->_.gp.subtype)
+    {
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
       SPART *fld = curr->_.triple.tr_fields[fctr];
@@ -365,9 +367,11 @@ ignore_retval_name: ;
 	case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
 	default: continue;
 	}
+          if (OPTIONAL_L == curr->_.triple.subtype)
+            continue;
       eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
-      if (UNION_L != gp->_.gp.subtype)
         sparp_rvr_tighten (sparp, &(eq->e_rvr), &(fld->_.var.rvr), ~0);
+    }
     }
   if (UNION_L == gp->_.gp.subtype)
     {
@@ -823,7 +827,12 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
           {
 		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
-            return spar_var_eq_to_equiv (sparp, curr, eq_l, r);
+              if (spar_var_eq_to_equiv (sparp, curr, eq_l, r))
+                {
+                  eq_l->e_replaces_filter++;
+                  return 1;
+                }
+              return 0;
 	      }
           case SPAR_QNAME:
             {
@@ -869,7 +878,12 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
             {
               sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
-              return spar_var_bangeq_to_equiv (sparp, curr, eq_l, r);
+              if (spar_var_bangeq_to_equiv (sparp, curr, eq_l, r))
+                {
+                  eq_l->e_replaces_filter++;
+                  return 1;
+                }
+              return 0;
             }
           }
         break;
@@ -888,15 +902,19 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           case isIRI_L:
           case isURI_L:
             arg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL;
+            arg1_eq->e_replaces_filter++;
             return 1;
           case isBLANK_L:
             arg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_BLANK | SPART_VARR_NOT_NULL;
+            arg1_eq->e_replaces_filter++;
             return 1;
           case isLITERAL_L:
             arg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
+            arg1_eq->e_replaces_filter++;
             return 1;
           case BOUND_L:
             arg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
+            arg1_eq->e_replaces_filter++;
             return 1;
           case SAMETERM_L:
             {
@@ -1237,8 +1255,9 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
         (0 != BOX_ELEMENTS_INT_0 (eq->e_receiver_idxs)) ||
         (1 < (eq->e_nested_bindings + eq->e_optional_reads)) ||
         (0 != eq->e_var_count) ||
-        (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) )
-	continue;
+        (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) ||
+        eq->e_replaces_filter )
+	continue; /* Do not remove if in use */
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
@@ -1368,7 +1387,7 @@ again:
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, equiv_ctr);
       if (NULL == eq)
         continue;
-      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) || (0 != eq->e_const_reads) || (0 != eq->e_optional_reads))
+      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) || (0 != eq->e_const_reads) || (0 != eq->e_optional_reads) || eq->e_replaces_filter)
         continue;
       DO_BOX_FAST_REV (ptrlong, recv_idx, recv_ctr, eq->e_receiver_idxs)
         {
@@ -1386,13 +1405,13 @@ int
 sparp_gp_trav_remove_redundant_connections (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_remove_redundant_connections (sub_sparp);
+  sparp_remove_redundant_connections (sub_sparp, (ptrlong)common_env);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }
 
 void
-sparp_remove_redundant_connections (sparp_t *sparp)
+sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
 {
   SPART *top = sparp->sparp_expr;
   SPART *top_pattern = top->_.req_top.pattern;
@@ -1406,19 +1425,21 @@ sparp_remove_redundant_connections (sparp_t *sparp)
     NULL, sparp_gp_trav_cu_out_triples_1,
     NULL, NULL, sparp_gp_trav_remove_redundant_connections,
     NULL );
+  if (!(SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY & flags))
+    goto skip_ext_ext_unlinks; /* see below */
   for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
     {
       sparp_equiv_t *eq = equivs[eq_ctr];
       int sub_ctr;
       if (NULL == eq)
         continue;
-      if (!((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL | SPART_VARR_FIXED) & eq->e_rvr.rvrRestrictions))
+      if (!SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq))
         continue;
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /*no step*/)
         {
           int can_unlink = 0;
           sparp_equiv_t *sub_eq = equivs[eq->e_subvalue_idxs[sub_ctr]];
-          if (!((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL | SPART_VARR_FIXED) & sub_eq->e_rvr.rvrRestrictions))
+          if (!SPARP_EQ_IS_ASSIGNED_EXTERNALLY(sub_eq))
             continue;
           if (
             ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions) &&
@@ -1433,6 +1454,8 @@ sparp_remove_redundant_connections (sparp_t *sparp)
             sparp_equiv_disconnect (sparp, eq, sub_eq);
         }
     }
+
+skip_ext_ext_unlinks:
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
     NULL, NULL, NULL,
@@ -1978,7 +2001,7 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_eq_restr_to_vars (sparp);
   sparp_label_external_vars (sparp, NULL);
   sparp_remove_totally_useless_equivs (sparp);
-  sparp_remove_redundant_connections (sparp);
+  sparp_remove_redundant_connections (sparp, 0);
   sparp_audit_mem (sparp);
 }
 
@@ -3755,12 +3778,12 @@ sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_ma
 }
 
 
-int
+void
 sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
 {
   SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
   quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
-  int key_field_idx, join_offset = 0;
+  int key_field_idx;
           for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
             {
               SPART *key_field = base->_.triple.tr_fields[key_field_idx];
@@ -3802,7 +3825,9 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
               sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                     spar_internal_error (sparp, "sparp_" "gp_trav_reuse_tabids(): dep_field not found in members");
             }
-          if (dep_triple_idx <= (base_idx + join_offset)) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
+          if (dep_triple_idx <= base_idx) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
+            continue;
+          if (OPTIONAL_L == dep_triple->_.triple.subtype) /* Optional is bad candidate for reuse */
                     continue;
                   if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
                     continue;
@@ -3819,17 +3844,16 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
                   /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
           sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                   sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
-          if (dep_triple_idx > (base_idx + join_offset + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
+          if (dep_triple_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
                     {
                       int swap_ctr;
-              for (swap_ctr = dep_triple_idx; swap_ctr > (base_idx + join_offset + 1); swap_ctr--)
+              for (swap_ctr = dep_triple_idx; swap_ctr > (base_idx + 1); swap_ctr--)
                 curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
-              curr->_.gp.members[base_idx + join_offset + 1] = dep_triple;
+              curr->_.gp.members[base_idx + 1] = dep_triple;
                     }
           sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                 }
             }
-  return join_offset;
 }
 
 
@@ -3855,16 +3879,173 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
     case 0: case WHERE_L:
       DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
         {
-          int join_offset;
           if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
             continue;
           if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
             continue;
-          join_offset = sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
-          base_idx += join_offset;
+          sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
         }
       END_DO_BOX_FAST;
       break;
+    case OPTIONAL_L:
+      {
+        sparp_equiv_t *eq_as_filter;
+        SPART *base;
+        quad_map_t *base_qm;
+        int eq_ctr, key_field_idx;
+        if ((0 != BOX_ELEMENTS_0 (curr->_.gp.filters)) ||
+          (1 != BOX_ELEMENTS_0 (curr->_.gp.members)) ||
+          (SPAR_TRIPLE != SPART_TYPE (curr->_.gp.members[0])) )
+          break;
+        SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
+          {
+            if (eq->e_replaces_filter)
+              {
+                eq_as_filter = eq;
+                break;
+              }
+          }
+        END_SPARP_FOREACH_GP_EQUIV;
+        if (NULL != eq_as_filter)
+          break;
+        base = curr->_.gp.members[0];
+        base_qm = base->_.triple.tc_list[0]->tc_qm;
+        for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
+          {
+            SPART *key_field = base->_.triple.tr_fields[key_field_idx];
+            ssg_valmode_t key_fmt = base->_.triple.native_formats[key_field_idx];
+            qm_value_t *key_qmv;
+            sparp_jso_validate_format (sparp, key_fmt);
+            if (!SPAR_IS_BLANK_OR_VAR (key_field)) /* Non-variables can not result in tabid reuse atm, !!!TBD: support for { <pk> ?p1 ?o1 . OPTIONAL { <pk> ?p2 ?o2 } } */
+              continue;
+            key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
+            if (sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
+              {
+                t_set_push (((dk_set_t *)(common_env)), curr);
+                return 0;
+              }
+          }
+        break;
+      }
+    }
+  return 0;
+}
+
+static int
+sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key_field, qm_value_t *key_qmv, sparp_equiv_t *key_recv_eq, SPART *key_asc_or_self)
+{
+  int dep_ctr;
+  SPART *key_recv_gp = key_recv_eq->e_gp;
+  if ((0 != key_recv_gp->_.gp.subtype) && (WHERE_L != key_recv_gp->_.gp.subtype))
+    return 0;
+  for (dep_ctr = key_recv_eq->e_var_count; dep_ctr--; /* no step */)
+    {
+      sparp_equiv_t *key_field_eq;
+      SPART *opt_triple;
+      SPART *opt_parent;
+      SPART *dep_field = key_recv_eq->e_vars[dep_ctr];
+      int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr;
+      SPART *dep_triple = NULL;
+      quad_map_t *dep_qm;
+      qm_value_t *dep_qmv;
+      if (NULL == dep_field->_.var.tabid) /* The variable is not a field in a triple (const read, not gspo use) */
+        continue;
+      dep_field_tr_idx = dep_field->_.var.tr_idx;
+      for (dep_triple_idx = BOX_ELEMENTS (key_recv_gp->_.gp.members); dep_triple_idx--; /* no step */)
+        {
+          dep_triple = key_recv_gp->_.gp.members[dep_triple_idx];
+          if (SPAR_TRIPLE != dep_triple->type)
+            continue;
+          if (dep_triple->_.triple.tr_fields [dep_field_tr_idx] == dep_field)
+            break;
+        }
+      if (0 > dep_triple_idx)
+        {
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+          spar_internal_error (sparp, "sparp_" "try_reduce_trivial_optional_via_eq(): dep_field not found in member triples");
+        }
+      if (OPTIONAL_L == dep_triple->_.triple.subtype) /* Optional is bad candidate for reuse */
+        continue;
+      if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
+        continue;
+      dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
+      dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
+      if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
+        continue;
+      if (!sparp_qmv_forms_reusable_key_of_qm (sparp, dep_qmv, dep_qm))
+        continue;
+      /* Glory, glory, hallelujah; we can cut optional triple reuse the tabid so the final SQL query will have one join less. */
+      sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+      opt_triple = opt->_.gp.members[0];
+      key_field_eq = SPARP_EQUIV (sparp, key_field->_.var.equiv_idx);
+      opt_parent = SPARP_EQUIV (sparp, key_field_eq->e_receiver_idxs[0])->e_gp;
+      sparp_gp_detach_member (sparp, opt, 0, NULL);
+      o_p_idx = BOX_ELEMENTS(opt_parent->_.gp.members) - 1;
+      if (opt_parent->_.gp.members [o_p_idx] != opt)
+        spar_internal_error (sparp, "sparp_" "try_reduce_trivial_optional_via_eq(): can not locate OPTIONAL in parent");
+      sparp_gp_detach_member (sparp, opt_parent, o_p_idx, NULL);
+      sparp_gp_attach_member (sparp, key_recv_gp, opt_triple, dep_triple_idx+1, NULL);
+      sparp_set_triple_selid_and_tabid (sparp, opt_triple, key_recv_gp->_.gp.selid, dep_triple->_.triple.tabid);
+      opt_triple->_.triple.subtype = OPTIONAL_L;
+      for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
+        {
+          SPART *fld_expn = opt_triple->_.triple.tr_fields[field_ctr];
+          if (!SPAR_IS_BLANK_OR_VAR (fld_expn))
+            continue;
+          fld_expn->_.var.rvr.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
+        }
+      sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+      return 1;
+    }
+  DO_BOX_FAST (ptrlong, dep_idx, dep_ctr, key_recv_eq->e_subvalue_idxs)
+    {
+      sparp_equiv_t *dep_eq = SPARP_EQUIV (sparp, dep_idx);
+      if (dep_eq->e_gp == key_asc_or_self) /* -- Back to origin? -- No, thanks. */
+        continue;
+      if (sparp_try_reduce_trivial_optional_via_eq (sparp, opt, key_field, key_qmv, dep_eq, NULL))
+        return 1;
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (ptrlong, dep_idx, dep_ctr, key_recv_eq->e_receiver_idxs)
+    {
+      sparp_equiv_t *dep_eq = SPARP_EQUIV (sparp, dep_idx);
+      if (sparp_try_reduce_trivial_optional_via_eq (sparp, opt, key_field, key_qmv, dep_eq, key_recv_gp))
+        return 1;
+    }
+  END_DO_BOX_FAST;
+  return 0;
+}
+
+static int
+sparp_reduce_trivial_optional (sparp_t *sparp, SPART *opt)
+{
+  SPART *base = opt->_.gp.members[0];
+  quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
+  int key_field_idx, recv_ctr;
+  for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
+    {
+      SPART *key_field = base->_.triple.tr_fields[key_field_idx];
+      ssg_valmode_t key_fmt = base->_.triple.native_formats[key_field_idx];
+      qm_value_t *key_qmv;
+      sparp_equiv_t *key_eq;
+      sparp_jso_validate_format (sparp, key_fmt);
+      if (!SPAR_IS_BLANK_OR_VAR (key_field)) /* Non-variables can not result in tabid reuse atm, !!!TBD: support for { <pk> ?p1 ?o1 . OPTIONAL { <pk> ?p2 ?o2 } } */
+        continue;
+      key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
+      if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
+        continue;
+      key_eq = sparp_equiv_get (sparp, opt, key_field, SPARP_EQUIV_GET_ASSERT);
+      DO_BOX_FAST (ptrlong, recv_idx, recv_ctr, key_eq->e_receiver_idxs)
+        {
+          sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_idx);
+          if (sparp_try_reduce_trivial_optional_via_eq (sparp, opt, key_field, key_qmv, recv_eq, opt))
+            return 1;
+        }
+      END_DO_BOX_FAST;
+/*      if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (key_eq))
+        {
+          sparp_find_gp_by_alias_int
+        }*/
     }
   return 0;
 }
@@ -4075,16 +4256,31 @@ sparp_rewrite_qm_postopt (sparp_t *sparp)
   sparp_equiv_t **equivs;
   int equiv_ctr, equiv_count;
   int retval_ctr;
+  dk_set_t optionals_to_reduce;
   SPART *root = sparp->sparp_expr;
   if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for SQL_FUNCALL");
   sparp_wpar_retvars_in_max (sparp, sparp->sparp_expr);
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+
+retry_after_reducing_optionals:
+  optionals_to_reduce = NULL;
+  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &optionals_to_reduce,
     NULL, sparp_gp_trav_reuse_tabids,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
+  while (NULL != optionals_to_reduce)
+    {
+      SPART *opt = t_set_pop (&optionals_to_reduce);
+      if (sparp_reduce_trivial_optional (sparp, opt))
+        {
+          sparp_rewrite_qm_optloop (sparp, 1);
+          goto retry_after_reducing_optionals; /* see above */
+        }
+    }
+  sparp_remove_redundant_connections (sparp, SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY);
+  sparp_audit_mem (sparp);
   sparp_trav_out_clauses (sparp, sparp->sparp_expr, NULL,
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,

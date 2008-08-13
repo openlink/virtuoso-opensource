@@ -1356,7 +1356,8 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   SPART *triple;
   key = t_box_sprintf (0x100, "%s-t%d", env->spare_selids->data, sparp->sparp_key_gen);
   sparp->sparp_key_gen += 1;
-  triple = spartlist (sparp, 16, SPAR_TRIPLE,
+  triple = spartlist (sparp, 17, SPAR_TRIPLE,
+    (ptrlong)0,
     graph, subject, predicate, object, qm_iri,
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,

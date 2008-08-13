@@ -67,11 +67,12 @@ extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 
-#define TTLP_STRING_MAY_CONTAIN_CRLF	0x01
-#define TTLP_VERB_MAY_BE_BLANK		0x02
-#define TTLP_ACCEPT_VARIABLES		0x04
-#define TTLP_SKIP_LITERAL_SUBJECTS	0x08
-#define TTLP_ALLOW_TRIG			0x10
+#define TTLP_STRING_MAY_CONTAIN_CRLF	0x0001
+#define TTLP_VERB_MAY_BE_BLANK		0x0002
+#define TTLP_ACCEPT_VARIABLES		0x0004
+#define TTLP_SKIP_LITERAL_SUBJECTS	0x0008
+#define TTLP_NAME_MAY_CONTAIN_PATH	0x0010
+#define TTLP_ALLOW_TRIG			0x0100
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02

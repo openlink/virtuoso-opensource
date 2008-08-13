@@ -117,12 +117,6 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 	/* Special unreacheable state to fill the first item of ttlp_arg[0].ttlp_lexstates */
 %x UNREACHEABLE
 
-XMLNS_NCNAME	([A-Za-z\x7f-\xfe_][A-Za-z0-9_.\x7f-\xfe-]*)
-XMLNS_QNAME1	(({XMLNS_NCNAME}":")?{XMLNS_NCNAME})
-XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+\x7f-\xfe-]+"!)"))
-XMLNS_QQNAME	({XMLNS_NCNAME}":"({XMLNS_NCNAME}":")+{XMLNS_NCNAME})
-XML_RESERVED	({X}{M}{L}([A-Za-z0-9_.-]*)":"{XMLNS_NCNAME})
-
 INTEGER_LITERAL ([0-9]+)
 DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
@@ -133,21 +127,13 @@ SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{H
 S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX		([0-9A-Fa-f])
 
- /*
-  SPAR_NCCHAR1p	([A-Za-z\200-\377])
-  SPAR_NCCHAR1	({SPAR_NCCHAR1p}|[_])
-  SPAR_VARNAME	(({SPAR_NCCHAR1}|[0-9])+)
-  SPAR_NCCHAR	({SPAR_NCCHAR1}|[0-9-])
-  SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
-  SPAR_NCNAME		({SPAR_NCCHAR1}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
-  */
-
 SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
 SPAR_NCCHAR1	([A-Za-z\x7f-\xfe_])
 SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
 SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
+SPAR_NCNAME_X		({SPAR_NCCHAR1}([A-Za-z0-9_./#\x7f-\xfe-]*{SPAR_NCCHAR})?)
 
 %%
 
@@ -205,12 +191,17 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
   }
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
+<INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{ 
+    if (!(ttlp_arg[0].ttlp_flags & TTLP_NAME_MAY_CONTAIN_PATH))
+      ttlyyerror ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
+    TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
+
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
 <INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
-      ttlyyerror ("Full N3 syntax allow variables, TURTLE does not!");
+      ttlyyerror ("Full N3 syntax allow variables, TURTLE does not; this error can be suppressed by parser flags");
     TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
@@ -264,8 +255,14 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 <TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_SQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags)) ttlyyerror ("End-of-line in a short single-quoted string"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
-<TURTLE_DQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags)) ttlyyerror ("End-of-line in a short double-quoted string"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_SQ>{S_NL}	{
+    if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      ttlyyerror ("End-of-line in a short single-quoted string; this error can be suppressed by parser flags");
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_DQ>{S_NL}	{
+    if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      ttlyyerror ("End-of-line in a short double-quoted string; this error can be suppressed by parser flags");
+    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_SQ>[\\]		{ ttlyyerror ("Bad escape sequence in a short single-quoted string"); }

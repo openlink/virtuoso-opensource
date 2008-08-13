@@ -142,6 +142,7 @@ typedef struct sparp_equiv_s
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
+    ptrlong e_replaces_filter;	/*!< Nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables */
     ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
@@ -561,8 +562,9 @@ extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
 /*! Removes equivalence classes that are no longer in any sort of use (neither pure connections nor equivs of actual variables */
 extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 
+#define SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY 0x1
 /*! Removes equivalence classes that were supposed to be pure conenctions but are not connections at all. */
-extern void sparp_remove_redundant_connections (sparp_t *sparp);
+extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
 
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
 extern void sparp_rewrite_grab (sparp_t *sparp);
