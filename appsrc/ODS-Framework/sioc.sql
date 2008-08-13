@@ -58,6 +58,11 @@ create procedure sioc_iri (in s varchar)
   return concat ('http://rdfs.org/sioc/ns#', s);
 };
 
+create procedure services_iri (in s varchar)
+{
+  return concat ('http://rdfs.org/sioc/services#', s);
+};
+
 create procedure rdf_iri (in s varchar)
 {
   return concat ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', s);
@@ -1260,19 +1265,19 @@ create procedure ods_sioc_service (
   if (iri is null or forum_iri is null)
     return;
   ods_sioc_result (iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Service'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_of'), forum_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('has_service'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), services_iri ('Service'));
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_of'), forum_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, services_iri ('has_service'), iri);
   if (max_res is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('max_results'), cast (max_res as varchar));
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('max_results'), cast (max_res as varchar));
   if (fmt is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('results_format'), fmt);
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('results_format'), fmt);
   if (wsdl is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_definition'), wsdl);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_definition'), wsdl);
   if (endpoint is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_endpoint'), endpoint);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_endpoint'), endpoint);
   if (proto is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('service_protocol'), proto);
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('service_protocol'), proto);
   if (descr is not null or proto is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), coalesce (descr, proto));
   if (id is not null)
