@@ -125,7 +125,8 @@ function enableToolbars (objForm, prefix, doc)
   for (var i = 0; i < objForm.elements.length; i++)
   {
     var o = objForm.elements[i];
-    if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked) {
+    if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked)
+    {
       oCount += 1;
       if (o.value.indexOf ('b#') != -1)
         tCount += 1;
@@ -193,18 +194,13 @@ function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
-      if (obj.value == 'Select All')
-        o.checked = true;
-      else
-        o.checked = false;
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    {
+      o.checked = (obj.value == 'Select All');
       coloriseRow(getParent(o, 'tr'), o.checked);
     }
   }
-  if (obj.value == 'Select All')
-    obj.value = 'Unselect All';
-  else
-    obj.value = 'Select All';
+  obj.value = (obj.value == 'Select All')? 'Unselect All': 'Select All';
   selectCheck (obj, prefix);
   obj.focus();
 }
@@ -813,12 +809,12 @@ function checkState()
 
       if (timer != null)
         showProgress (progressIndex);
-      if ((progressIndex != null) && (progressIndex != progressMax) && (timer != null)) {
+      if ((progressIndex != null) && (progressIndex != progressMax) && (timer != null))
+      {
         setTimeout("checkState()", 500);
       } else {
-        hideObject('btn_Background');
-        document.getElementById("btn_Stop").value = 'Close';
         timer = null;
+        $('btn_Stop').click();
       }
     }
   }

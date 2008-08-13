@@ -212,7 +212,7 @@
         http (sprintf ('<input type="hidden" name="node"  id="node"  value="%s" />', self.bNode));
       ?>
       <input type="hidden" name="sa" value="<?V self.v_form ?>"/>
-      <vm:if test="self.v_form = 'browse'">
+      <v:template type="simple" enabled="-- case when self.v_form = 'browse' then 1 else 0 end">
         <?vsp
           declare i integer;
           declare params, flag  any;
@@ -357,8 +357,9 @@
                   control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
                   control.ds_sql := replace(control.ds_sql, '<DOMAIN_ID>', cast (self.domain_id as varchar));
                   control.ds_sql := replace(control.ds_sql, '<ID>', BMK.WA.node_suffix(self.bNode));
-
-                } else {
+                }
+                else
+                {
                   control.ds_sql := 'select *
                                        from (select TOP 100
                                                     1                              _TYPE,
@@ -729,9 +730,9 @@
             coloriseTable('bookmarks');
           ]]>
         </script>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form = 'import'">
+      <v:template type="simple" enabled="--case when self.v_form = 'import' then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
            if (self.bStep = '')
@@ -1170,9 +1171,9 @@
             ]]>
           </script>
         </v:template>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form = 'export'">
+      <v:template type="simple" enabled="-- case when self.v_form = 'export' then 1 else 0 end">
         <div class="new-form-header">
           <v:label format="%s" value="Export"/>
         </div>
@@ -1211,9 +1212,9 @@
           </v:button>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form in ('Bookmark/Create', 'Bookmark/Edit', 'Bookmark/View')">
+      <v:template type="simple" enabled="-- case when self.v_form in ('Bookmark/Create', 'Bookmark/Edit', 'Bookmark/View') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             declare params any;
@@ -1357,9 +1358,9 @@
           <input type="button" title="Save" value="Save" onclick="javascript: BMK.formPost('<?V self.v_form ?>'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form in ('Folder/Create', 'Folder/Edit')">
+      <v:template type="simple" enabled="-- case when self.v_form in ('Folder/Create', 'Folder/Edit') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             if (self.v_form in ('Folder/Create', 'Folder/Edit'))
@@ -1469,9 +1470,9 @@
           <input type="button" title="Save" value="Save" onclick="javascript: BMK.formPost('<?V self.v_form ?>'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form in ('Smart Folder/Create', 'Smart Folder/Edit')">
+      <v:template type="simple" enabled="-- case when self.v_form in ('Smart Folder/Create', 'Smart Folder/Edit') then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             if (self.v_form in ('Smart Folder/Create', 'Smart Folder/Edit'))
@@ -1598,9 +1599,9 @@
           <input type="button" title="Save" value="Save" onclick="javascript: BMK.formPost('<?V self.v_form ?>'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form = 'tags'">
+      <v:template type="simple" enabled="-- case when self.v_form = 'tags' then 1 else 0 end">
         <div class="new-form-header">
           <v:label format="%s" value="Tags"/>
         </div>
@@ -1621,9 +1622,9 @@
           <input type="button" title="Tag" value="Tag" onclick="javascript: BMK.formPost('<?V self.v_form ?>'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form = 'move'">
+      <v:template type="simple" enabled="-- case when self.v_form = 'move' then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             self.vm_folder_id := get_keyword ('m_folder_id', self.vc_page.vc_event.ve_params, '');
@@ -1682,9 +1683,9 @@
           <input type="button" title="Move" value="Move" onclick="javascript: BMK.formPost('move'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
-      <vm:if test="self.v_form = 'share'">
+      <v:template type="simple" enabled="-- case when self.v_form = 'share' then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
             self.vs_share := get_keyword ('share', self.vc_page.vc_event.ve_params, self.vs_share);
@@ -1749,7 +1750,7 @@
           <input type="button" title="Share" value="Share" onclick="javascript: BMK.formPost('share'); return false;"/>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
-      </vm:if>
+      </v:template>
 
     </vm:pagebody>
   </vm:popup_pagewrapper>
