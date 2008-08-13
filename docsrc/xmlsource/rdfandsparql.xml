@@ -4512,7 +4512,7 @@ ttlp ('
  <http://dbpedia.org/property/countryofbirth> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
  <http://dbpedia.org/property/countyofbirth> rdfs:subPropertyOf <http://dbpedia.org/property/birthPlace> .
  <http://dbpedia.org/property/cityofdeath> rdfs:subPropertyOf <http://dbpedia.org/property/deathPlace> .
- <http://dbpedia.org/property/countryofdeath> rdfs:subPropertyOf <http://dbpedia.org/property/deathPlace> . "",
+ <http://dbpedia.org/property/countryofdeath> rdfs:subPropertyOf <http://dbpedia.org/property/deathPlace> . ', '',
  'http://dbpedia.org/inference/rules#') ;
 
 rdfs_rule_set ('http://dbpedia.org/schema/property_rules1', 'http://dbpedia.org/inference/rules#');
