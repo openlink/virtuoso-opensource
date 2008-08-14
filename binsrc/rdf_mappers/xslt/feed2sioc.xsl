@@ -65,7 +65,7 @@
 </xsl:template>
 
 <xsl:template match="r:channel">
-    <sioc:Container rdf:about="{$base}#container">
+    <sioc:Container rdf:about="{$base}">
 	<sioc:link rdf:resource="{@rdf:about}"/>
        <xsl:apply-templates />
 	<xsl:copy-of select="geo:*"/>
@@ -91,7 +91,7 @@
 	</xsl:if>
     </xsl:for-each>
     <sioc:Item rdf:about="{$base}#{$pos}">
-	<sioc:has_container rdf:resource="{$base}#container"/>
+	<sioc:has_container rdf:resource="{$base}"/>
 	<xsl:apply-templates />
 	<xsl:copy-of select="r:*"/>
 	<xsl:copy-of select="sioc:*"/>
