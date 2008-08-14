@@ -1598,7 +1598,7 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
     return 0;
 
   mime := get_keyword ('content-type', opts);
---  dbg_obj_print (mime);
+  --dbg_obj_print (mime);
   if (mime is null)
     return 0;
 

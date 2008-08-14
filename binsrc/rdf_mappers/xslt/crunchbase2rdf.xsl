@@ -198,7 +198,7 @@
     <xsl:template match="image" priority="10">
 	<xsl:for-each select="available_sizes">
 	    <xsl:if test=". like '%.jpg' or . like '%.gif'">
-		<foaf:depicition rdf:resource="http://www.crunchbase.com/{.}"/>
+		<foaf:depiction rdf:resource="http://www.crunchbase.com/{.}"/>
 	    </xsl:if>
 	</xsl:for-each>
     </xsl:template>

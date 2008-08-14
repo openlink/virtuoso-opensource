@@ -77,6 +77,9 @@
 					</bibo:uri>
 					<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
 					<bibo:content><xsl:value-of select="."/></bibo:content>
+				<xsl:for-each select=".//img[@src]">
+				    <foaf:depiction rdf:resource="{@src}"/>
+				</xsl:for-each>
 				</rdf:Description>
 		</xsl:for-each>
 	</xsl:template>
