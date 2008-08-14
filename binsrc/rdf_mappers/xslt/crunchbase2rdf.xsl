@@ -4,6 +4,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <!--
  -
@@ -35,7 +36,8 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dct= "http://purl.org/dc/terms/"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:sioc="http://rdfs.org/sioc/ns#"
+    xmlns:sioc="&sioc;"
+    xmlns:bibo="&bibo;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:cb="http://www.crunchbase.com/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -49,10 +51,7 @@
     <xsl:param name="base"/>
     <xsl:param name="suffix"/>
 
-    <xsl:template match="/">
-	<rdf:RDF>
-	    <xsl:for-each select="/results">
-		<xsl:variable name="space">
+    <xsl:template name="space-name">
 		    <xsl:choose>
 			<xsl:when test="namespace">
 			    <xsl:value-of select="namespace"/>
@@ -88,8 +87,32 @@
 			    <xsl:text>service-provider</xsl:text>
 			</xsl:when>
 		    </xsl:choose>
+    </xsl:template>
+
+    <xsl:template match="/">
+	<rdf:RDF>
+	    <rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<xsl:for-each select="/results">
+		    <xsl:variable name="space">
+			<xsl:call-template name="space-name"/>
 		</xsl:variable>
-		<rdf:Description rdf:about="{$base}{$space}/{permalink}{$suffix}">
+		    <foaf:topic rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+		    <dct:subject rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+		    <sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+		</xsl:for-each>
+	    </rdf:Description>
+
+	    <xsl:for-each select="/results">
+		<xsl:variable name="space">
+		    <xsl:call-template name="space-name"/>
+		</xsl:variable>
+		<rdf:Description rdf:about="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}">
+		    <foaf:page rdf:resource="{$baseUri}"/>
+		    <sioc:has_container rdf:resource="{$baseUri}"/>
+		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <xsl:variable name="type">
 			<xsl:choose>
 			    <xsl:when test="$space = 'company'">
@@ -211,7 +234,7 @@
 	<xsl:variable name="space" select="name()"/>
 	<xsl:variable name="type">
 	    <xsl:choose>
-		<xsl:when test="$space = 'company' or $space = 'firm'">
+		<xsl:when test="$space = 'company' or $space = 'firm' or $space = 'competitor'">
 		    <xsl:text>Organization</xsl:text>
 		</xsl:when>
 		<xsl:when test="$space = 'person'">
@@ -233,7 +256,7 @@
 		<xsl:when test="$space = 'financial_org'">
 		    <xsl:text>financial-organization</xsl:text>
 		</xsl:when>
-		<xsl:when test="$space = 'firm'">
+		<xsl:when test="$space = 'firm' or $space = 'competitor'">
 		    <xsl:text>company</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
@@ -247,11 +270,7 @@
 		<xsl:element namespace="{$ns}" name="{name()}">
 		    <xsl:element name="{$type}" namespace="&foaf;">
 			<xsl:attribute name="rdf:about">
-			    <xsl:value-of select="$base"/>
-			    <xsl:value-of select="$nspace"/>
-			    <xsl:text>/</xsl:text>
-			    <xsl:value-of select="permalink"/>
-			    <xsl:value-of select="$suffix"/>
+			    <xsl:value-of select="vi:proxyIRI(concat ($base, $nspace, '/', permalink, $suffix))"/>
 			</xsl:attribute>
 			<xsl:apply-templates select="@*|node()"/>
 		    </xsl:element>
@@ -260,7 +279,9 @@
 	    <xsl:otherwise>
 		<xsl:element namespace="{$ns}" name="{name()}">
 		    <xsl:element name="{$nspace}" namespace="{$ns}">
-			<!--xsl:attribute name="rdf:parseType">Resource</xsl:attribute-->
+			<xsl:attribute name="rdf:about">
+			    <xsl:value-of select="vi:proxyIRI(concat ($baseUri, '#', name(), '-', position()))"/>
+			</xsl:attribute>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>
 	    </xsl:element>

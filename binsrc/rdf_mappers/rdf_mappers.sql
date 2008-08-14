@@ -27,7 +27,7 @@
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)' and RM_TYPE = 'MIME';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
+--delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
@@ -43,7 +43,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
-            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no', 'get-feeds', 'yes'));
+            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no', 'get-feeds', 'no'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
@@ -400,6 +400,7 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
   declare res, xp, xt varchar;
   declare uri varchar;
   declare exit handler for sqlstate '*' {
+--    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     return base || '#' || word;
   };
 
@@ -412,7 +413,7 @@ create procedure DB.DBA.RDF_SPONGE_DBP_IRI (in base varchar, in word varchar)
   if (word[0] >= 'a'[0] and word[0] <= 'z'[0])
     word[0] := word[0] - 32;
   uri := sprintf ('ask from <http://dbpedia.org> where { <http://dbpedia.org/resource/%U> ?y ?z }', word);
-  res := http_get (sprintf ('http://dbpedia.org/sparql?query=%U', uri));
+  res := http_client (url=>sprintf ('http://dbpedia.org/sparql?query=%U', uri), timeout=>30);
   xt := xtree_doc (res);
   xp := cast (xpath_eval('/sparql/boolean/text()', xt) as varchar);
   if (xp = 'true')
@@ -678,6 +679,7 @@ create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
   ses := string_output ();
   DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
   ses := string_output_string (ses);
+  --dbg_printf ('%s', ses);
   ses := xtree_doc (ses);
   return ses;
 }
@@ -794,7 +796,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
 {
   declare qr, path, hdr any;
   declare tree, xt, xd, types any;
-  declare k, cnt, url varchar;
+  declare k, cnt, url, id varchar;
 
   hdr := null;
   declare exit handler for sqlstate '*'
@@ -808,15 +810,12 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     return 0;
   k := path [length(path) - 1];
   if (path [length(path) - 2] = 'guid')
-    k := sprintf ('"id":"/guid/%s"', k);
+    k := sprintf ('"guid":"#%s"', k);
   else
   {
-  if (k like '#%')
-    k := sprintf ('"id":"%s"', k);
-  else
     k := sprintf ('"key":"%s"', k);
   }
-  qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
+  qr := sprintf ('{"ROOT":{"query":[{%s, "id":[]}]}}', k);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
   cnt := http_get (url, hdr);
   tree := json_parse (cnt);
@@ -824,27 +823,14 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   if (not isarray (xt))
     return 0;
   xt := get_keyword ('result', xt);
-  types := vector ();
-  foreach (any tp in xt) do
-    {
-      declare tmp any;
-      tmp := get_keyword ('type', tp);
-      types := vector_concat (types, tmp);
-    }
-  --types := get_keyword ('type', xt);
+  id := get_keyword ('id', xt[0]);
+  id := id[0];
+  --dbg_obj_print (id);
+  url := sprintf ('http://linkeddata.openlinksw.com:8891/sparql?query=%U',
+  sprintf ('describe <http://linkeddata.openlinksw.com/freebase/topic%s#this> from <http://linkeddata.openlinksw.com/freebase#>', id));
+  xd := http_client (url=>url, timeout=>100);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-  foreach (any tp in types) do
-    {
-      qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
-      url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
-      cnt := http_get (url, hdr);
-      tree := json_parse (cnt);
-      xt := get_keyword ('ROOT', tree);
-      xt := DB.DBA.MQL_TREE_TO_XML (tree);
-      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
-      xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-    }
   return 1;
 }
 ;

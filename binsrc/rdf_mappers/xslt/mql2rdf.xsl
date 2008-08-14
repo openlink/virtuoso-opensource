@@ -4,6 +4,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <!--
  -
@@ -31,6 +32,10 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:sioc="&sioc;"
+    xmlns:bibo="&bibo;"
+    xmlns:foaf="&foaf;"
+    xmlns:dct= "http://purl.org/dc/terms/"
     xmlns:mql="http://www.freebase.com/">
 
     <xsl:output method="xml" indent="yes" />
@@ -42,8 +47,19 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:if test="/results/ROOT/result/*">
+		<rdf:Description rdf:about="{$baseUri}">
+		    <rdf:type rdf:resource="&foaf;Document"/>
+		    <rdf:type rdf:resource="&bibo;Document"/>
+		    <rdf:type rdf:resource="&sioc;Container"/>
+		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		    <foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		    <dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 		    <rdf:type rdf:resource="&foaf;Document"/>
+		    <rdf:type rdf:resource="&bibo;Document"/>
+		    <rdf:type rdf:resource="&sioc;Item"/>
+		    <sioc:has_container rdf:resource="{$baseUri}"/>
 		    <xsl:apply-templates select="/results/ROOT/result/*"/>
 	    </rdf:Description>
 	    </xsl:if>
