@@ -3651,6 +3651,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 
       qry := sprintf ('sparql
    	  prefix sioc: <http://rdfs.org/sioc/ns#>
+   	  prefix svc: <http://rdfs.org/sioc/services#>
 	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 	  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 	  prefix dc: <http://purl.org/dc/elements/1.1/>
@@ -3665,11 +3666,11 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			?member rdfs:seeAlso ?see_also .
 			?forum sioc:has_space ?host .
 			?forum sioc:type ?type .
-			?forum sioc:has_service ?svc .
-			?svc sioc:service_endpoint ?endp .
-			?svc sioc:service_protocol ?proto .
-			?svc sioc:service_of ?forum .
-			?svc rdf:type sioc:Service .
+			?forum svc:has_service ?svc .
+			?svc svc:service_endpoint ?endp .
+			?svc svc:service_protocol ?proto .
+			?svc svc:service_of ?forum .
+			?svc rdf:type svc:Service .
 		    } where
             	{
 		  graph <%s>
@@ -3684,9 +3685,9 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		    ?role sioc:function_of ?member .
 		    ?member rdfs:seeAlso ?see_also .
    		    optional {
-  		      ?forum sioc:has_service ?svc .
-  		      ?svc sioc:service_endpoint ?endp .
-  		      ?svc sioc:service_protocol ?proto .
+  		      ?forum svc:has_service ?svc .
+  		      ?svc svc:service_endpoint ?endp .
+  		      ?svc svc:service_protocol ?proto .
 		    }
 		  }
 		}', wai_name, graph, wai_name
