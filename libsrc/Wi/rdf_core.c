@@ -54,7 +54,6 @@ caddr_t
 uriqa_get_host_for_dynamic_local (query_instance_t *qi)
 {
   caddr_t res = NULL;
-  ASSERT_IN_TXN;
   if (NULL != qi->qi_client->cli_http_ses)
     {
       ws_connection_t *ws = qi->qi_client->cli_ws;
@@ -63,7 +62,11 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi)
   if (NULL == res)
     {
       const char *regname = "URIQADefaultHost";
-      caddr_t *place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      caddr_t * place;
+      IN_TXN;
+      ASSERT_IN_TXN;
+      place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      LEAVE_TXN;
       if (place)
         res = box_copy (place[0]);
     }
@@ -76,7 +79,10 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
   if (!strcmp ("URIQADefaultHost", varname))
     {
       const char *regname = "URIQADefaultHost";
-      caddr_t *place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      caddr_t * place;
+      IN_TXN;
+      place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      LEAVE_TXN;
       if (place)
         return box_copy (place[0]);
       return NULL;
@@ -1647,7 +1653,6 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
   if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
     {
       caddr_t host;
-      IN_TXN;
       host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst);
       if (NULL != host)
         {
@@ -1666,7 +1671,6 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
             }
 	  dk_free_box (host);
         }
-      LEAVE_TXN;
     }
   switch (mode)
     {
@@ -1827,7 +1831,6 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   if (!strncmp (name, "local:", 6))
     {
       caddr_t host;
-      IN_TXN;
       host = uriqa_get_host_for_dynamic_local (qi);
       if (NULL != host)
         {
@@ -1842,7 +1845,6 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
           name = expanded_name;
 	  dk_free_box (host);
         }
-      LEAVE_TXN;
     }
   return name;
 }

@@ -1573,6 +1573,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
       disk_stripe_t *dst;
       int fd;
 
+      IN_DBS (dbs);
       while (dest >= dbs->dbs_n_pages)
 	{
 	  rc = dbs_extend_file (dbs);
@@ -1582,6 +1583,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	      call_exit (-1);
 	    }
 	}
+      LEAVE_DBS (dbs);
 
       dst = dp_disk_locate (dbs, dest, &off);
       fd = dst_fd (dst);
