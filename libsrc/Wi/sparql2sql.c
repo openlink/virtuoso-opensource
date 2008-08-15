@@ -4496,7 +4496,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   caddr_t group_destination	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
   caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
   caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #17 */
-  int refresh_free_text		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #18 */
+  caddr_t refresh_free_text	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #18 */
   int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #19 */
   caddr_t rgc_flags		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #20 */
   int varctr, varcount = BOX_ELEMENTS (retvals);
@@ -4600,7 +4600,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
   PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
   PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
-  PROC_PARAM_EQ_SPART ("_refresh_free_text", (ptrlong) refresh_free_text);
+  PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
   PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong) use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
 #undef PROC_PARAM_EQ_SPART
