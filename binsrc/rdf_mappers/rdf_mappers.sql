@@ -796,7 +796,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
 {
   declare qr, path, hdr any;
   declare tree, xt, xd, types any;
-  declare k, cnt, url, id varchar;
+  declare k, cnt, url varchar;
 
   hdr := null;
   declare exit handler for sqlstate '*'
@@ -810,12 +810,15 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     return 0;
   k := path [length(path) - 1];
   if (path [length(path) - 2] = 'guid')
-    k := sprintf ('"guid":"#%s"', k);
+    k := sprintf ('"id":"/guid/%s"', k);
   else
   {
+    if (k like '#%')
+        k := sprintf ('"id":"%s"', k);
+    else
     k := sprintf ('"key":"%s"', k);
   }
-  qr := sprintf ('{"ROOT":{"query":[{%s, "id":[]}]}}', k);
+  qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
   cnt := http_get (url, hdr);
   tree := json_parse (cnt);
@@ -823,14 +826,27 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
   if (not isarray (xt))
     return 0;
   xt := get_keyword ('result', xt);
-  id := get_keyword ('id', xt[0]);
-  id := id[0];
-  --dbg_obj_print (id);
-  url := sprintf ('http://linkeddata.openlinksw.com:8891/sparql?query=%U',
-  sprintf ('describe <http://linkeddata.openlinksw.com/freebase/topic%s#this> from <http://linkeddata.openlinksw.com/freebase#>', id));
-  xd := http_client (url=>url, timeout=>100);
+  types := vector ();
+  foreach (any tp in xt) do
+    {
+      declare tmp any;
+      tmp := get_keyword ('type', tp);
+      types := vector_concat (types, tmp);
+    }
+  --types := get_keyword ('type', xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+  foreach (any tp in types) do
+    {
+      qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
+      url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
+      cnt := http_get (url, hdr);
+      tree := json_parse (cnt);
+      xt := get_keyword ('ROOT', tree);
+      xt := DB.DBA.MQL_TREE_TO_XML (tree);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+      xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
   return 1;
 }
 ;
