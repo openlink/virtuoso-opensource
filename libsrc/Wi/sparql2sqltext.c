@@ -3157,7 +3157,17 @@ sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t d
 ssg_valmode_t
 sparp_rettype_of_global_param (sparp_t *sparp, caddr_t name)
 {
-  ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name+1, SSG_VALMODE_SQLVAL);
+  ssg_valmode_t res;
+  if ((':' == name[0]) && (':' == name[1]))
+    {
+      caddr_t vmname = sparp->sparp_env->spare_input_param_valmode_name;
+      if (NULL == vmname)
+        res = SSG_VALMODE_SQLVAL;
+      else
+        res = ssg_find_valmode_by_name (vmname);
+    }
+  else
+    res = sparp_find_valmode_by_name_prefix (sparp, name+1, SSG_VALMODE_SQLVAL);
   return res;
 }
 
@@ -3258,7 +3268,7 @@ ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
 { /* needed is always equal to native in this function */
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
   char *coloncolon = strstr (vname, "::");
-  if (NULL != coloncolon)
+  if ((NULL != coloncolon) && (vname != coloncolon))
     vname = coloncolon + 1;
   if (env->spare_globals_are_numbered)
     {
@@ -6076,8 +6086,12 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ccaddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
   retvals = tree->_.req_top.retvals;
   if (NULL != ssg->ssg_sparp->sparp_env->spare_storage_name)
+    {
+      if ('\0' != ssg->ssg_sparp->sparp_env->spare_storage_name[0])
     ssg_qr_uses_jso (ssg, NULL, ssg->ssg_sparp->sparp_env->spare_storage_name);
-  ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_QuadStorage);
+    }
+  else
+    ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadStorage);
   ssg->ssg_equiv_count = ssg->ssg_sparp->sparp_equiv_count;
   ssg->ssg_equivs = ssg->ssg_sparp->sparp_equivs;
   formatter = ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype);

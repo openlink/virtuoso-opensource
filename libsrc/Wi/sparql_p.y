@@ -248,6 +248,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_prolog
 %type <nothing> spar_defines_opt
 %type <nothing> spar_define
+%type <backstack> spar_define_val_commalist
+%type <tree> spar_define_val
 %type <nothing> spar_base_decl_opt
 %type <nothing> spar_prefix_decls_opt
 %type <nothing> spar_prefix_decl
@@ -470,12 +472,27 @@ spar_defines_opt	/* ::=  Define*	*/
         | spar_defines_opt spar_define	{ ; }
 	;
 
-spar_define		/* [Virt]	Define		 ::=  'DEFINE' QNAME (QNAME | Q_IRI_REF | String )	*/
-        : DEFINE_L QNAME QNAME { sparp_define (sparp_arg, $2, QNAME, $3); }
-        | DEFINE_L QNAME Q_IRI_REF { sparp_define (sparp_arg, $2, Q_IRI_REF, $3); }
-	| DEFINE_L QNAME SPARQL_STRING { sparp_define (sparp_arg, $2, SPARQL_STRING, $3); }
-	| DEFINE_L QNAME SPARQL_INTEGER { sparp_define (sparp_arg, $2, SPARQL_INTEGER, $3); }
-	| DEFINE_L QNAME spar_global_var { sparp_define (sparp_arg, $2, SPAR_VARIABLE, (caddr_t)$3); }
+spar_define		/* [Virt]	Define		 ::=  'DEFINE' QNAME DefValue ( ',' DefValue )*	*/
+        : DEFINE_L QNAME spar_define_val_commalist {
+		dk_set_t vals = $3;
+		while (NULL != vals)
+		  {
+		    caddr_t *val = (caddr_t *)t_set_pop (&vals);
+		    sparp_define (sparp_arg, $2, (ptrlong)(val[0]), val[1]);
+		  } }
+	;
+
+spar_define_val_commalist
+	: spar_define_val	{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_define_val_commalist _COMMA spar_define_val	{ $$ = $1; t_set_push (&($$), $3); }
+	;
+
+spar_define_val		/* [Virt]	DefValue	 :=  QNAME | Q_IRI_REF | String	*/
+        : QNAME { $$ = t_list (2, QNAME, $1); }
+        | Q_IRI_REF { $$ = t_list (2, Q_IRI_REF, $1); }
+	| SPARQL_STRING { $$ = t_list (2, SPARQL_STRING, $1); }
+	| SPARQL_INTEGER { $$ = t_list (2, SPARQL_INTEGER, $1); }
+	| spar_global_var { $$ = t_list (2, SPAR_VARIABLE, (caddr_t)$1); }
 	;
 
 spar_base_decl_opt	/* [3]  	BaseDecl	  ::=  	'BASE' Q_IRI_REF	*/
@@ -982,8 +999,8 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 	;
 
 spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRIref )	*/
-	: QUEST_VARNAME			{ $$ = spar_make_variable (sparp_arg, $1); }
-	| DOLLAR_VARNAME		{ $$ = spar_make_variable (sparp_arg, $1); }
+	: QUEST_VARNAME			{ $$ = spar_make_param_or_variable (sparp_arg, $1); }
+	| DOLLAR_VARNAME		{ $$ = spar_make_param_or_variable (sparp_arg, $1); }
 	| spar_global_var		{ $$ = $1; }
 	| spar_var spar_arrow_iriref	{ $$ = spar_add_propvariable (sparp_arg, $1, (ptrlong)($2[0]), $2[1], (ptrlong)($2[2]), (caddr_t)($2[3]) ); }
 	;

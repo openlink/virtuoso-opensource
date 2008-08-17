@@ -410,12 +410,11 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
           lexem = ttlyylex (&lex_value, ttlp, scanner);
           if (0 == lexem)
             break;
-          dk_set_push (&lexems, list (4,
+          dk_set_push (&lexems, list (5,
 		box_num (ttlp->ttlp_lexlineno),
 		ttlp->ttlp_lexdepth,
 		box_copy (ttlp->ttlp_raw_text),
-		lexem ) );
-          dk_free_box (lex_value);
+		lexem, lex_value ) );
 	}
     }
   QR_RESET_CODE

@@ -703,6 +703,11 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           if (!strcmp (param, "input:grab-loader")) {
               rgc->rgc_loader_name = t_box_dv_uname_string (value); return; }
         }
+      else if (!strcmp (param, "input:param") || !strcmp (param, "input:params")) {
+          t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
+          return; }
+      else if (!strcmp (param, "input:param-valmode")) {
+          sparp->sparp_env->spare_input_param_valmode_name = t_box_dv_uname_string (value); return; }
     }
   if ((4 < strlen (param)) && !memcmp (param, "get:", 4))
     {
@@ -720,8 +725,10 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     }
   if ((4 < strlen (param)) && !memcmp (param, "sql:", 4))
     {
-      if (!strcmp (param, "sql:log-enable"))
-        {
+      if (!strcmp (param, "sql:param") || !strcmp (param, "sql:params")) {
+          t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
+          return; }
+      if (!strcmp (param, "sql:log-enable")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if (0 > val)
             spar_error (sparp, "define sql:log-enable should have nonnegative integer value");
@@ -1401,7 +1408,19 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   return triple;
 }
 
-SPART *spar_make_variable (sparp_t *sparp, caddr_t name)
+SPART *
+spar_make_param_or_variable (sparp_t *sparp, caddr_t name)
+{
+  if (0 <= dk_set_position_of_string (sparp->sparp_env->spare_protocol_params, name))
+    {
+      caddr_t intname = t_box_sprintf (110, "::%.100s", name);
+      return spar_make_variable (sparp, intname);
+    }
+  return spar_make_variable (sparp, name);
+}
+
+SPART *
+spar_make_variable (sparp_t *sparp, caddr_t name)
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *res;
@@ -1888,6 +1907,7 @@ sparp_clone_for_variant (sparp_t *sparp)
   t_NEW_VARZ (sparp_env_t, env_copy);
   memcpy (sparp_copy, sparp, sizeof (sparp_t));
   sparp_copy->sparp_env = env_copy;
+  ENV_BOX_COPY (spare_input_param_valmode_name);
   ENV_BOX_COPY (spare_output_valmode_name);
   ENV_BOX_COPY (spare_output_format_name);
   ENV_BOX_COPY (spare_storage_name);
@@ -1919,6 +1939,7 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_namespace_prefixes);
   ENV_COPY (spare_namespace_prefixes_outer);
   ENV_COPY (spare_base_uri);
+  ENV_COPY (spare_input_param_valmode_name);
   env_copy->spare_output_valmode_name = t_box_dv_short_string ("AUTO");
   ENV_COPY (spare_storage_name);
   ENV_COPY (spare_inference_name);

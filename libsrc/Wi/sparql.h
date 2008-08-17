@@ -159,11 +159,13 @@ typedef struct sparp_env_s
     dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
     dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
     caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
+    caddr_t             spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
+    caddr_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
     struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
 #if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
@@ -571,6 +573,7 @@ extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **r
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART **order, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
+extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
