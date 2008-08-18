@@ -1352,6 +1352,20 @@ qr_proc_repl_check_valid (query_t *qr, caddr_t *err)
   return 1;
 }
 
+static int
+sql_is_ddl (sql_tree_t * tree)
+{
+  switch (tree->type)
+    {
+      case SCHEMA_ELEMENT_LIST:
+      case ROUTINE_DECL:
+      case USER_AGGREGATE_DECL:
+      case MODULE_DECL:
+      case TRIGGER_DEF:
+	  return 1;
+    }
+  return 0;
+}
 
 query_t *
 DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
@@ -1368,6 +1382,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   client_connection_t *old_cli = sqlc_client ();
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
   volatile int inside_sem = 0;
+  volatile int is_ddl = 0;
   if (DO_LOG_INT (LOG_COMPILE))
     {
       LOG_GET;
@@ -1467,8 +1482,13 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       sql_pop_all_buffers ();
       tree = the_parse_tree ? (ST *) t_full_box_copy_tree ((caddr_t) the_parse_tree) : parse_tree;
+      if (cr_type != SQLC_PARSE_ONLY && cr_type != SQLC_TRY_SQLO && cr_type != SQLC_SQLO_SCORE)
+	is_ddl = sql_is_ddl (tree);
+      if (!is_ddl)
+	{
       semaphore_leave (parse_sem);
       inside_sem = 0;
+	}
       if (cr_type == SQLC_PARSE_ONLY)
 	{
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
