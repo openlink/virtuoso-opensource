@@ -64,6 +64,7 @@
                                          http_rewrite ();
                                          http_request_status ('HTTP/1.1 302 Found');
                                          http_header (concat (http_header_get (), 'Location: ',sprintf('/ods/index.html#msg=%U','The user '||uname||' does not exist.'),'\r\n'));
+					 return;
                                        };
     if (not exists (select 1 from SYS_USERS where U_NAME =  uname))
       {
