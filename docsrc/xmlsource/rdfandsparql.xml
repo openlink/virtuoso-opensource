@@ -5633,7 +5633,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
 grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
 ]]></programlisting>
     <para>
-	The RDF proxy service takes following URL parameters:
+	The RDF proxy service takes following URL parameters when using the style: http://host:port/proxy?..:
     </para>
     <itemizedlist mark="bullet" spacing="compact">
 	<listitem><emphasis>force</emphasis> if 'rdf' is specified will try to extract RDF data from target and return it</listitem>
@@ -5645,8 +5645,10 @@ grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
     </para>
     <para>Example: rdf file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
-Access the url: http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card&force=rdf
+Access the url: http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card
+or use the style: http://host:port/proxy?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
 ]]></programlisting>
+	<para>Note: It is not allowed when using the style http://host:port/proxy/rdf to pass url parameters to the proxy. </para>
 <para>As result will be shown the rdf file content. Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
 <para>Enter for Default Graph URI the url of the rdf file:  http://www.w3.org/People/Berners-Lee/card</para>
 <para>Enter for Query:</para>
