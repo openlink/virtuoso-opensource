@@ -915,8 +915,8 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
   if (NULL == val)
     {
       if ((JSO_STATUS_LOADED == status) &&
-        ((JSO_INTEGER == fld_type) ||
-          ((JSO_ANY == fld_type) && (JSO_REQUIRED == fld_req)) ) )
+        (!strcmp (JSO_INTEGER, fld_type) ||
+          (!strcmp (JSO_ANY, fld_type) && (JSO_REQUIRED == fld_req)) ) )
         return box_num_nonull (0);
       return NULL;
     }
