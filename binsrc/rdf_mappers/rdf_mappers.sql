@@ -29,6 +29,11 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)' and RM_TYPE = 'MIME';
 --delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 
+-- remove wrong patterns for svg, ics and odt files
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.svg\$';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.od[ts]\$';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
+
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
@@ -105,22 +110,21 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_OPENLIBRARY', null, 'OpenLibrary');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('.+\.svg\$', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
+    values ('.+\\.svg\x24', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)',
             'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('.+\.od[ts]\$', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
+    values ('.+\\.od[ts]\x24', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://local.yahooapis.com/MapsService/V1/trafficData.*',
             'URL', 'DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA', null, 'Yahoo Traffic Data');
 
-
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('.+\.ics\$', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
+    values ('.+\\.ics\x24', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('http[s]*://www.facebook.com/.*',
@@ -335,9 +339,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 	cname := cname ||':'|| server_http_port ();
     }
   if (length (login))
-    ret := sprintf ('http://%s/proxy/rdf/%U/%s', cname, login, uri);
+    ret := sprintf ('http://%s/proxy/rdf/%U/%s#this', cname, login, uri);
   else
-    ret := sprintf ('http://%s/proxy/rdf/%s', cname, uri);
+    ret := sprintf ('http://%s/proxy/rdf/%s#this', cname, uri);
   return ret;
 }
 ;
@@ -790,15 +794,51 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RDF_MQL_GET_WIKI_URI (in kwd any)
+{
+  declare url, hdr any;
+  declare olduri any;
+  declare redirects int;
+
+  hdr := null;
+  redirects := 15;
+  url := 'http://wikipedia.org/wiki/'||kwd;
+
+  again:
+  olduri := url;
+  if (redirects <= 0)
+    return '';
+
+  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD');
+  redirects := redirects - 1;
+
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    {
+      if (hdr[0] like 'HTTP/1._ 30_ %')
+	{
+	  url := http_request_header (hdr, 'Location');
+	  if (isstring (url))
+	    {
+	      url := WS.WS.EXPAND_URL (olduri, url);
+	      goto again;
+	    }
+	}
+      return '';
+    }
+  return url;
+}
+;
+
 
 create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare qr, path, hdr any;
   declare tree, xt, xd, types any;
-  declare k, cnt, url varchar;
+  declare k, cnt, url, sa varchar;
 
   hdr := null;
+  sa := '';
   declare exit handler for sqlstate '*'
     {
       --dbg_printf ('%s', __SQL_MESSAGE);
@@ -816,7 +856,10 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     if (k like '#%')
         k := sprintf ('"id":"%s"', k);
     else
+      {
+	sa := DB.DBA.RDF_MQL_GET_WIKI_URI (k);
     k := sprintf ('"key":"%s"', k);
+  }
   }
   qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
   url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
@@ -843,7 +886,10 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       tree := json_parse (cnt);
       xt := get_keyword ('ROOT', tree);
       xt := DB.DBA.MQL_TREE_TO_XML (tree);
-      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+      --dbg_obj_print (xt);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt,
+      	vector ('baseUri', coalesce (dest, graph_iri), 'wpUri', sa));
+      sa := '';
       xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     }

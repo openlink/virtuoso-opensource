@@ -32,6 +32,7 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
     xmlns:foaf="&foaf;"
@@ -41,6 +42,7 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
+    <xsl:param name="wpUri" />
 
     <xsl:variable name="ns">http://www.freebase.com/</xsl:variable>
 
@@ -52,7 +54,7 @@
 		    <rdf:type rdf:resource="&bibo;Document"/>
 		    <rdf:type rdf:resource="&sioc;Container"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		    <foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		    <dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
@@ -61,6 +63,9 @@
 		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <sioc:has_container rdf:resource="{$baseUri}"/>
 		    <xsl:apply-templates select="/results/ROOT/result/*"/>
+		    <xsl:if test="$wpUri != ''">
+			<rdfs:seeAlso rdf:resource="{$wpUri}"/>
+		    </xsl:if>
 	    </rdf:Description>
 	    </xsl:if>
 	</rdf:RDF>
