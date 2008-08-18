@@ -37,6 +37,7 @@
 #include "sqlo.h"
 #include "sqloinv.h"
 #include "sqlbif.h"
+#include "security.h"
 
 static id_hash_t *sinv_func_hash = NULL;
 

@@ -422,12 +422,12 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 df_elt_t *
 sqlo_wrap_dfe_true_or_false (sqlo_t *so, df_elt_t *const_dfe)
 {
-  ST *eq;
+  ST *eq = NULL;
   df_elt_t *res;
   if (DFE_TRUE == const_dfe)
-    eq = t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)1);
+    eq = (ST *) t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)1);
   else if (DFE_FALSE == const_dfe)
-    eq = t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)2);
+    eq = (ST *) t_list (3, BOP_EQ, (ptrlong)1, (ptrlong)2);
   else
     GPF_T1 ("sqlo_wrap_dfe_true_or_false for not a const cond");
   res = sqlo_new_dfe (so, DFE_BOP_PRED, eq);

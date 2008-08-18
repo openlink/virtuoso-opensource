@@ -52,6 +52,7 @@ extern "C" {
 #include "remote.h"
 #include "xmlparser_impl.h"
 #include "schema.h"
+#include "sqlrcomp.h"
 
 #define GM_VALUE	1
 #define GM_COND		2

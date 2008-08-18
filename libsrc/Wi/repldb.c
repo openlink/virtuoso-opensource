@@ -34,6 +34,7 @@
 #include "wirpce.h"
 #include "sqlbif.h"
 #include "datesupp.h"
+#include "security.h"
 
 /* Receiving Replication */
 

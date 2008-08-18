@@ -101,4 +101,6 @@ void sqlc_wide_string_literal (char *text, size_t tlen, int *fill, wchar_t *exp)
 
 void sqlc_insert_commalist (sql_comp_t * sc, comp_table_t * ct, ST * tree,
     dbe_table_t * tb, char *text, size_t tlen, int *fill, int in_vdb);
+
+void sqlc_target_rds (remote_ds_t * rds);
 #endif /* _SQLRCOMP_H */

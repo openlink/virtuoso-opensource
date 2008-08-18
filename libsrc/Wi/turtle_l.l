@@ -35,6 +35,7 @@
 #include "turtle_p.h"
 #include "numeric.h"
 #include "turtle_p.h"
+#include "security.h"
 
 #define YY_EXTRA_TYPE ttlp_t *
 
