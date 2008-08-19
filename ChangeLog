@@ -1,3 +1,98 @@
+2008-08-18 22:48  source
+
+	* Updated version to 5.0.8-rc2
+
+2008-08-18 22:46  source
+
+	* Fixed split foaf query in more parts else execution time is too big
+
+2008-08-18 21:49  source
+
+	* Updated documentation
+
+2008-08-18 21:49  source
+
+	* Added #this to proxy IRIs
+	* Added seeAlso for freebase extraction to link with wikipedia
+
+2008-08-18 21:48  source
+
+	* Fixed compiler warnings
+
+2008-08-18 21:47  source
+
+	* Fixed argument check
+
+2008-08-18 21:47  source
+
+	* Fixed serialize on parse semaphore to prevent multiple dlls to compile
+	  at the same time
+
+2008-08-17 13:21  source
+
+	* Added support for "define input:param" and "define input:param-valmode"
+
+2008-08-15 17:34  source
+
+	* Fixed problem with truncated value
+
+2008-08-15 14:19  source
+
+	* Fixed linkage with LOD
+
+2008-08-15 14:11  source
+
+	* Fixed problem with mtx debugging
+
+2008-08-14 15:22  source
+
+	* Updated sioc services namespace
+
+2008-08-14 15:01  source
+
+	* Added sponger tags bibo:document, foaf:document and sioc:container
+	* Fixed use the freebase dumps on LOD
+
+2008-08-14 08:39  source
+
+	* Fixed typo in foaf:depiction in slidy and crunchbase rdf mappers
+	* Fixed problem with slidy images
+
+2008-08-14 08:38  source
+
+	* Fixed use $base instead $base#container to link graphs
+
+2008-08-13 15:14  source
+
+	* Fixed UI pages load time
+	* Fixed a++ links and automatically close import window
+
+2008-08-13 15:13  source
+
+	* Updated documentation
+
+2008-08-13 15:13  source
+
+	* FIxed SIOC services namespace
+
+2008-08-13 12:07  source
+
+	* Added table reuse optimization  for OPTIONAL with single triple
+	* Added option to allow '/' and '#' in local part of QName if appropriate
+	  flag is set
+
+2008-08-12 12:39  source
+
+	* Added support for TriG format
+
+2008-08-11 10:44  source
+
+	* Fixed compiler warnings
+
+2008-08-08 13:11  source
+
+	* Fixed problem with cardridges
+
 2008-08-08 11:53  source
 
 	* Updated version to 5.0.8-rc1
