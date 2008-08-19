@@ -1,4 +1,4 @@
-set timeout 60;
+set timeout 120;
 
 create procedure load_lubm (in dir any)
 {
