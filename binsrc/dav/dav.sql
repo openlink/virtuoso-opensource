@@ -2003,6 +2003,7 @@ again:
 	  -- dbg_obj_princ ('VSP called without re-compilation: ', stat, msg);
 	  if (stat = '00000')
 	    return;
+	  goto exec_err;
 	  -- dbg_obj_princ ('If recompiled VSP have no errors this line will not appear');
 	}
        select blob_to_string (RES_CONTENT), RES_FULL_PATH into resource_content, full_path
@@ -2034,6 +2035,7 @@ again:
        -- dbg_obj_princ ('execution status: ', stat, msg);
        if (stat <> '00000')
 	 {
+	   exec_err:
 	   http ('<html><body>');
 	   http (concat ('<H3>Execution of "', http_path(), '" failed.</H3>'));
 	   http (concat ('<p><b>SQL Error: ', stat, ' '));
