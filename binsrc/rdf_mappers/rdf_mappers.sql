@@ -798,10 +798,18 @@ create procedure DB.DBA.RDF_MQL_GET_WIKI_URI (in kwd any)
 {
   declare url, hdr any;
   declare olduri any;
-  declare redirects int;
+  declare redirects, i, l int;
 
   hdr := null;
   redirects := 15;
+  i := 0; l := length (kwd);
+  for (; i < l; i := i+1)
+  {
+    if (i = 0 and kwd[i] > 96 and kwd[i] < 123)
+      kwd[i] := kwd[i] - 32;
+    else if (i > 0 and kwd[i-1] = '_'[0] and kwd[i] > 96 and kwd[i] < 123)
+      kwd[i] := kwd[i] - 32;
+  }
   url := 'http://wikipedia.org/wiki/'||kwd;
 
   again:
@@ -829,6 +837,32 @@ create procedure DB.DBA.RDF_MQL_GET_WIKI_URI (in kwd any)
 }
 ;
 
+create procedure DB.DBA.RDF_MQL_RESOLVE_IMAGE (in name varchar)
+{
+  declare qr, url, cnt, tree, xt, hdr any;
+  declare exit handler for sqlstate '*'
+    {
+      return '';
+    };
+
+  qr := sprintf ('{"ROOT":{"query":{"name":"%s", "type":"/common/image", "id":{}}}}', name);
+  url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
+  cnt := http_get (url, hdr);
+  --dbg_printf ('%s', cnt);
+  tree := json_parse (cnt);
+  tree := get_keyword ('ROOT', tree);
+  tree := get_keyword ('result', tree);
+  tree := get_keyword ('id', tree);
+  tree := get_keyword ('value', tree);
+  return 'http://www.freebase.com/api/trans/image_thumb/'||tree;
+}
+;
+
+grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'))
+;
 
 create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -883,6 +917,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
       url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
       cnt := http_get (url, hdr);
+      --dbg_printf ('%s', cnt);
       tree := json_parse (cnt);
       xt := get_keyword ('ROOT', tree);
       xt := DB.DBA.MQL_TREE_TO_XML (tree);
@@ -891,6 +926,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       	vector ('baseUri', coalesce (dest, graph_iri), 'wpUri', sa));
       sa := '';
       xd := serialize_to_UTF8_xml (xt);
+--      dbg_printf ('%s', xd);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     }
   return 1;
@@ -1361,7 +1397,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
   hdr := null;
   declare exit handler for sqlstate '*'
     {
-      dbg_printf ('%s', __SQL_MESSAGE);
+--      dbg_printf ('%s', __SQL_MESSAGE);
       return 0;
     };
   url := new_origin_uri;
@@ -1830,6 +1866,7 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	 };
 	code := RDFMAP_DBPEDIA_EXTRACT_PHP (base, get_uri);
         body := php_str (code);
+	  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, graph_iri));
         DB.DBA.TTLP (body, base, coalesce (dest, graph_iri));
         return 1;
       }
@@ -1849,6 +1886,7 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
             </foaf:Document>
             </rdf:RDF>', new_origin_uri, get_uri);
 	--body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
+	delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (coalesce (dest, graph_iri));
 	DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
       }

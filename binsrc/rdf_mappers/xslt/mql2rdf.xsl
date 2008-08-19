@@ -58,8 +58,6 @@
 		    <dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
-		    <rdf:type rdf:resource="&foaf;Document"/>
-		    <rdf:type rdf:resource="&bibo;Document"/>
 		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <sioc:has_container rdf:resource="{$baseUri}"/>
 		    <xsl:apply-templates select="/results/ROOT/result/*"/>
@@ -85,7 +83,7 @@
 	</xsl:if>
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="vi:proxyIRI()"/><xsl:value-of select="$ns"/>view<xsl:value-of select="."/>
+		<xsl:value-of select="vi:proxyIRI(concat ($ns, 'view', .))"/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>
@@ -99,12 +97,19 @@
 
     <xsl:template match="*">
 	<xsl:if test="* or . != ''">
+		<xsl:choose>
+		    <xsl:when test="name()='image'">
+			<foaf:depiction rdf:resource="{vi:mql-image-by-name (.)}"/>
+		    </xsl:when>
+		    <xsl:otherwise>
 	<xsl:element namespace="{$ns}" name="{name()}">
 		<xsl:if test="name() like 'date_%'">
 		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
 		</xsl:if>
 	    <xsl:apply-templates select="@*|node()"/>
 	</xsl:element>
+		    </xsl:otherwise>
+		</xsl:choose>
 	</xsl:if>
     </xsl:template>
 </xsl:stylesheet>

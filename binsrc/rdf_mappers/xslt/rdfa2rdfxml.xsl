@@ -82,7 +82,7 @@
       </rdf:RDF>
   </xsl:template>
 
-	<xsl:template match="*[@rel]">
+	<xsl:template match="*[@rel]" priority="1">
 		<xsl:call-template name="a-rel" />
   </xsl:template>
 
@@ -93,8 +93,16 @@
       </xsl:variable>
       <xsl:if test="$elem-nss != ''">
 					<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+			<xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
+			<xsl:call-template name="dt-attr" />
+			<xsl:choose>
+			    <xsl:when test="@content">
 						<xsl:value-of select="@content" />
-						<xsl:apply-templates />
+			    </xsl:when>
+			    <xsl:otherwise>
+				<xsl:call-template name="elem-cont" />
+			    </xsl:otherwise>
+			</xsl:choose>
 					</xsl:element>
       </xsl:if>
   </xsl:template>
@@ -224,9 +232,6 @@
 							<xsl:copy-of select="ancestor-or-self::*/@xml:lang" />
 							<xsl:call-template name="dt-attr" />
 		  <xsl:choose>
-					<xsl:when test="@resource">
-					    <xsl:attribute name="rdf:resource"><xsl:value-of select="@resource" /></xsl:attribute>
-					</xsl:when>
 		      <xsl:when test="@content">
 									<xsl:value-of select="@content" />
 		      </xsl:when>
