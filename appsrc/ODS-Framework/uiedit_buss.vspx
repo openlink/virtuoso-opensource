@@ -320,7 +320,7 @@
                                trim (coalesce (self.b_address1.ufl_value, '')),
                                trim (coalesce (self.b_address2.ufl_value, '')),
                                trim (coalesce (self.b_city.ufl_value, '')),
-                               trim (coalesce (ger_keyword ('b_state', e.ve_params), '')),
+                               trim (coalesce (get_keyword ('b_state', e.ve_params), '')),
                                trim (coalesce (self.b_code.ufl_value, '')),
                                trim (coalesce (self.b_country.ufl_value, '')),
                                blat, blng
