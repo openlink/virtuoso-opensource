@@ -23,6 +23,7 @@
 #include "odbcinc.h"
 #include "odbcuti.h"
 #include <stdio.h>
+#include <string.h>
 
 HENV henv = SQL_NULL_HENV;
 HDBC hdbc = SQL_NULL_HDBC;

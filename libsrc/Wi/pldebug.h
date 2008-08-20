@@ -113,7 +113,7 @@ pld_infos [] = {
 
 #define PLD_LINE_LIMIT 256
 
-char * pldbg_read_resp (void * ses1);
+caddr_t pldbg_read_resp (void * ses1);
 int pldbg_command (void * ses1, char * cmd1);
 void * pldbg_connect (char * addr, char * usr, char * pwd1);
 

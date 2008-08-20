@@ -503,10 +503,14 @@ out:;
   srv_global_init (mode);
 
   if (recover_file_prefix)
+    {
     kubl_main_exit (0);
+    }
 
   if (read_from_rebuilt_database)
+    {
     kubl_main_exit (0);
+    }
 
 
   if (is_db_to_log)

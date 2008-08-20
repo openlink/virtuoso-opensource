@@ -21,6 +21,8 @@
  *  
 */
 #include       <stdio.h>
+#include <string.h>
+
 #include       "odbcinc.h"
 
 SQLHENV  henv = 0;
@@ -316,8 +318,8 @@ endCursor:
       printf ("***FAILED: ");
       fprintf (stderr, "***FAILED: ");
     }
-  printf ("B3078 : array parameters selects returned %d resultsets\n", totalSets);
-  fprintf (stderr, "B3078 : array parameters selects returned %d resultsets\n", totalSets);
+  printf ("B3078 : array parameters selects returned %lu resultsets\n", totalSets);
+  fprintf (stderr, "B3078 : array parameters selects returned %lu resultsets\n", totalSets);
   SQLFreeStmt (hstmt, SQL_CLOSE);
 
   return 0;

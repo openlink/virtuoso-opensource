@@ -387,9 +387,9 @@ void
 tsc_fwd_ext_fetch (int ctype, int ac, char * text)
 {
   long count = 0;
-  int rc;
+  int rc = SQL_SUCCESS;
   long t1 = get_msec_count ();
-  long last_row_no;
+  long last_row_no = 0;
   int do_testing = (strcmp(text, T1_BASE_TEXT) == 0);
 
   SQLSetConnectOption (hdbc1, SQL_AUTOCOMMIT, ac);
@@ -920,8 +920,8 @@ void
 tsc_commit_cursor (t1_window_t * tw, int ctype, int commit)
 {
   long count = 0;
-  int rc;
-  long last_row_no;
+  int rc = SQL_SUCCESS;
+  long last_row_no = 0;
 
   printf ("STARTED: %s on open autocommit %s cursor\n",
       commit == SQL_COMMIT ? "commit" : "rollback", cr_type_name (ctype));

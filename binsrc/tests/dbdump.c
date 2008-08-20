@@ -294,6 +294,9 @@ show it as any ordinary string? (with 4 byte class specification cut off)
    directory as where this is invoked from in cgi-bin usage.
  */
 
+#include <stdio.h>
+#include <string.h>
+
 #include <Dk.h>
 #include "odbcinc.h"
 #include "virtext.h"

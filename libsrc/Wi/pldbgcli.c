@@ -160,7 +160,7 @@ pldbg_command (void * ses1, char * cmd1)
   return 1;
 }
 
-char *
+caddr_t
 pldbg_read_resp (void * ses1)
 {
   dk_session_t * ses = (dk_session_t *) ses1;
