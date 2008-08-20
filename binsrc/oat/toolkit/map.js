@@ -30,6 +30,7 @@
 */
 
 OAT.MapData = {
+	TYPE_NONE:0,
 	TYPE_G:1,
 	TYPE_Y:2,
 	TYPE_MS:3,
@@ -52,14 +53,18 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
 	this.id = 0; /* ms map pins need id */
-	this.provider = provider;
+	this.provider = OAT.MapData.TYPE_NONE;
 	this.obj = false;
 	this.elm = $(something);
+	this.elm.innerHTML = "Map service currently disabled or not available.";
 	this.markerArr = [];
 	this.layerObj = false;
 	
-	switch (self.provider) { /* create main object */
+	this.init = function(provider) {
+		OAT.Dom.clear(self.elm);
+		switch (provider) { /* create main object */
 		case OAT.MapData.TYPE_G: 
+				OAT.Dom.clear(self.elm);
 			self.obj = new GMap2(self.elm,specificOptions); 
 			self.geoCoder = new GClientGeocoder();
 		break;
@@ -80,8 +85,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 			});
 		break;
 		case OAT.MapData.TYPE_MS: 
-			self.elm.id = 'our_mapping_element';
-			self.obj = new VEMap('our_mapping_element',specificOptions);
+				self.obj = new VEMap(self.elm.id,specificOptions);
 			try {
 				self.obj.LoadMap();
 			} 
@@ -107,7 +111,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	}
 	
 	if (self.options.fix != OAT.MapData.FIX_NONE) { /* marker fix */
-		switch (self.provider) { 
+			switch (provider) { 
 			case OAT.MapData.TYPE_G: 
 				GEvent.addListener(self.obj,'zoomend',function(){self.fixMarkers();});
 			break;
@@ -123,6 +127,43 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 		}
 	}
 	
+		self.provider = provider;
+	}
+
+	this.loadApi = function(provider, callback) {
+		self.elm.innerHTML = "Map service loading...";
+		var cb = function() {
+			try {
+				self.init(provider);
+				if (callback) { callback(self); }
+			} catch (e) {
+				self.elm.innerHTML = "Map service currently disabled or not available.";
+				self.provider = OAT.MapData.TYPE_NONE;
+			}
+		}
+		switch (provider) {
+			case OAT.MapData.TYPE_G:
+				OAT.Loader.loadFeatures("gmaps",cb);
+			break;
+			case OAT.MapData.TYPE_Y:
+				OAT.Loader.loadFeatures("ymaps",cb);
+			break;
+			case OAT.MapData.TYPE_MS:
+				if(OAT.Browser.isIE) {
+					OAT.Loader.loadFeatures("msapi",cb);
+				} else {
+					OAT.Loader.loadFeatures("atlascompat",function() {OAT.Loader.loadFeatures("msapi",cb);});
+				}
+			break;
+			case OAT.MapData.TYPE_OL:
+				OAT.Loader.loadFeatures("openlayers",cb);
+			break;
+			case OAT.MapData.TYPE_NONE:
+				self.elm.innerHTML = "Map service currently disabled or not available.";
+				if (callback) { callback(self); }
+			break;
+		}
+	}
 	/* --- map methods --- */
 
 	this.geoCode = function(addr,callback) {
@@ -145,10 +186,13 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				self.obj.geoCodeAddress(addr);
 			break;
 			case OAT.MapData.TYPE_MS: 
-				callback(false); /* no GC support */
+				callback(false); /* FIXME: GC support */
 			break;
 			case OAT.MapData.TYPE_OL: 
 				callback(false); /* no GC support */
+			break;
+			case OAT.MapData.TYPE_NONE:
+				callback(false);
 			break;
 		}
 	}
@@ -218,8 +262,8 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				var z = 1 + self.getZoom();
 				var ll1 = new VELatLong(marker.__coords[0],marker.__coords[1]);
 				var p1 = self.obj.LatLongToPixel(ll1,z);
-				var p2 = new Msn.VE.Pixel(p1.x+shiftArray[0],p1.y+shiftArray[1]);
-				var ll2 = self.obj.PixelToLatLong(p2.x,p2.y,z);
+				var p2 = new VEPixel(p1.x+shiftArray[0],p1.y+shiftArray[1]);
+				var ll2 = self.obj.PixelToLatLong(p2,z);
 				return [ll2.Latitude,ll2.Longitude];
 			break;
 			case OAT.MapData.TYPE_OL: 
@@ -261,8 +305,6 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				self.newGeoPosition(g,j);
 			}
 		} /* for all groups */
-
-		if (self.provider == OAT.MapData.TYPE_OL) { self.obj.layers[2].redraw(); }
 	}
 	
 	this.addTypeControl = function() {
@@ -318,9 +360,9 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 
 			case OAT.MapData.TYPE_MS: 
 				switch (type) {
-					case OAT.MapData.MAP_MAP: self.obj.SetMapStyle("r"); break;
-					case OAT.MapData.MAP_ORTO: self.obj.SetMapStyle("a"); break;
-					case OAT.MapData.MAP_HYB: self.obj.SetMapStyle("h"); break;
+					case OAT.MapData.MAP_MAP: self.obj.SetMapStyle(VEMapStyle.Road); break;
+					case OAT.MapData.MAP_ORTO: self.obj.SetMapStyle(VEMapStyle.Aerial); break;
+					case OAT.MapData.MAP_HYB: self.obj.SetMapStyle(VEMapStyle.Hybrid); break;
 				}
 			break;
 		}	
@@ -420,6 +462,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 
 		}
 		
+		if (pointArr.length)
 		self.centerAndZoom(clat,clon,autoZoom);
 		self.fixMarkers();
 	}
@@ -560,10 +603,12 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 			break;
 		}	
 
+		if (marker) {
 		marker.__coords = [lat,lon];
 		marker.__group = group;
 		self.markerArr.push(marker);
-//		self.fixMarkers();
+		}
+		
 		return marker;
 	}
 	

@@ -806,20 +806,25 @@ OAT.FormObject = {
 			}
 			self.markerIndex = 0;
 			self.markerMapping = {};
-			self.map = new OAT.Map(self.elm,self.provider,self.fixObj);
+
+			var cb = function() {
 			self.map.centerAndZoom(0,0,self.zoom);
 			self.map.addTypeControl();
 			self.map.addTrafficControl();
 			self.map.addMapControl();
-
-			self.form = false;
-			if (self.properties[9].value) { self.form = self.properties[9].value; }
-
 			switch (self.properties[4].value) {
 				case "Map": self.map.setMapType(OAT.MapData.MAP_MAP); break;
 				case "Satellite": self.map.setMapType(OAT.MapData.MAP_ORTO); break;
 				case "Hybrid": self.map.setMapType(OAT.MapData.MAP_HYB); break;
 			}
+			}
+
+			self.map = new OAT.Map(self.elm,self.provider,self.fixObj);
+			self.map.loadApi(self.provider,cb);
+
+			self.form = false;
+			if (self.properties[9].value) { self.form = self.properties[9].value; }
+
 			
 			self.markers = [];
 			for (var i=0;i<self.datasources.length;i++) {

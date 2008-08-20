@@ -554,12 +554,9 @@ OAT.Form = function(targetElm,optObj) {
 			if (type == "graph") { arr.push("graphsvg"); }
 			if (type == "tab") { arr.push("tab"); }
 			if (type == "map") {
+				arr.push("map");
 				var props = objs[i].getElementsByTagName("property");
 				var val = parseInt(OAT.Xml.textValue(props[2].getElementsByTagName("value")[0]));
-				if (val == 1) { arr.push("gmaps"); }
-				if (val == 2) { arr.push("ymaps"); }
-				if (val == 3) { arr.push("msapi"); }
-				if (val == 4) { arr.push("openlayers"); }
 				if (val == 1 || val == 2) { 
 					var key = OAT.Xml.textValue(props[0].getElementsByTagName("value")[0]);
 					if (val == 1) { window._apiKey = key; }

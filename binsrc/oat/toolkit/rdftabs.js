@@ -1006,7 +1006,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.markerIndex = 0;
 		self.markerMapping = {};
 
-		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
+		var cb = function() {
 		self.map.centerAndZoom(0,0,0);
 		self.map.addTypeControl();
 		self.map.addMapControl();
@@ -1021,6 +1021,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			var item = self.parent.data.structured[i];
 			self.trySimple(item);
 		}
+		}
+
+		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
+		self.map.loadApi(self.options.provider,cb);
 		
 		OAT.Resize.createDefault(self.elm);
 

@@ -255,7 +255,7 @@ OAT.AJAX = {
 			if ($('oat_ajax_throbber')) {
 				OAT.Dom.show($('oat_ajax_throbber'));	
 			} else {
-				var win = new OAT.Win({type:OAT.WinData.TYPE_ROUND,title:"Loading...",outerWidth:135,outerHeight:115,visibleButtons:""});
+				var win = new OAT.Win({type:OAT.WinData.TYPE_ROUND,title:"Processing...",outerWidth:135,outerHeight:115,visibleButtons:""});
 				win.dom.container.id = 'oat_ajax_throbber';
 				win.show();
 

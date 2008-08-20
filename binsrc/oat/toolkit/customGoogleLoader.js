@@ -22,7 +22,7 @@ _gwjs('http://www.google.com/jsapi');
 
 function gmap_last_include() {
 	if (window.google.loader && window.google.load) {
-		google.loader.ApiKey = OAT.ApiKeys.getKey('gmapapi');
+		google.loader.ApiKey = OAT.ApiKeys.getKey('gmapapi') || window._apiKey || false;
 		google.load("maps","2",{callback: function() { OAT.Loader.featureLoaded("gmaps") }});
 	} else if (__gload_count < 5) {
 		__gload_count = __gload_count + 1;
