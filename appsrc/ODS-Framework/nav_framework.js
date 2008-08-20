@@ -2407,31 +2407,32 @@ ODS.Nav = function (navOptions)
         self.searchObj.tab.add ('searcT2','searchP2');
         self.searchObj.tab.go (0);
 
-        OAT.Event.attach ('searcT2', "click",
-			  function () {
-			searchDiv.style.position = 'relative';
-			searchDiv.style.height='400';
-			searchDiv.style.width='800px';
-			      if ($v ('search_textbox_searchC') == '')
-				  self.searchContacts ('', self.renderSearchResultsMap);
-			  });
 
         var mapOpt = {
                       fix:OAT.MapData.FIX_ROUND1,
-		      fixDistance:20,
-		      fixEpsilon:0.5
 	}
 
-    var searchDiv = document.getElementById('searchMap');
-    searchDiv.style.position = 'relative';
-    searchDiv.style.height='400px';
-    searchDiv.style.width='800px';
-    self.searchObj.map = new OAT.Map (searchDiv, OAT.MapData.TYPE_Y, mapOpt);
-    self.searchObj.map.centerAndZoom (0, 0, 0);
-    self.searchObj.map.setMapType (OAT.MapData.MAP_MAP);
-    self.searchObj.map.addMapControl();
-    self.searchObj.map.addTypeControl();
-    self.searchObj.map.addTrafficControl();
+	var searchCallback = function(commonMapObj) {
+	    commonMapObj.addTypeControl();
+	    commonMapObj.addMapControl();
+	    commonMapObj.setMapType(OAT.MapData.MAP_MAP);
+	    commonMapObj.centerAndZoom(0,0,1);
+
+	    if ($v ('search_textbox_searchC') == '')
+		self.searchContacts ('', self.renderSearchResultsMap);
+	}
+
+	OAT.Event.attach ('searcT2', "click",
+		  function () {
+		      self.searchObj.map.loadApi (providerType, searchCallback);
+		  });
+
+	// Use Yahoo maps for now
+	window.YMAPPID = "";
+	var searchDiv = document.getElementById('searchMap');
+	var providerType = OAT.MapData.TYPE_Y;
+	self.searchObj.map = new OAT.Map (searchDiv, providerType, mapOpt);
+
 
         self.searchObj.map.removeAllMarkers =
 	function () {
