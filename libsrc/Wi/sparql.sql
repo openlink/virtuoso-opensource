@@ -7697,7 +7697,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
           if (_val like 'nodeID://%')
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
           else
-            http (sprintf ('\n   <binding name="%s"><uri>%s</uri></binding>', _name, _val), ses);
+            http (sprintf ('\n   <binding name="%s"><uri>%V</uri></binding>', _name, _val), ses);
         }
       else
         {
