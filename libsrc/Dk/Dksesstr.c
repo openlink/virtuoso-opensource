@@ -263,15 +263,15 @@ report_error:
 #if defined (WIN32)
 # define OPEN_FLAGS  	  O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY	  
 #elif defined (FILE64)
-# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_LARGEFILE
+# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL | O_LARGEFILE
 #else
-# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY
+# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL
 #endif	  
 
 #ifdef WIN32
 	  ses2->ses_file->ses_file_descriptor = _open (fname, OPEN_FLAGS, 0600);
 #else
-	  ses2->ses_file->ses_file_descriptor = open (fname, OPEN_FLAGS);
+	  ses2->ses_file->ses_file_descriptor = open (fname, OPEN_FLAGS, 0600);
 	  unlink (fname);
 #endif
 	  if (ses2->ses_file->ses_file_descriptor < 0)
