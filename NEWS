@@ -1,3 +1,38 @@
+August 21, 2008, V5.0.8:
+  * Database engine
+    - Added optimizations to SQL compiler
+    - Added re-entrant SQL compiler
+    - Added optimizations for identity self joins
+    - Added optimizations to JDBC drivers
+    - Fixed compiler warnings
+    - Fixed unneeded memory allocations in soap calls
+
+  * SPARQL and RDF
+    - Added optimizations for SPARQL engine
+    - Added SPARQL-BI extensions
+    - Added support for TriG format
+    - Added support for 'define input:param" and "define input:param-valmode"
+    - Added FriendFeed, OpenLibrary Books, CrunchBase cartridges
+    - Added search results feed
+    - Added support for bibo:document, foaf:document and sioc:container
+    - Added #this to proxy IRIs
+    - Added seeAlso for freebase extraction to link with wikipedia
+    - Fixed WHERE conditions in BREAKUP
+    - Fixed sparql construction for OPTIONAL
+    - Fixed calls to startQueryResult/endQueryResult in Sesame2 provider
+    - Fixed sponger to not sponge refs to self 
+    - Fixed small bugs in cartridges
+
+  * ODS applications
+    - Added support for new OAT Map
+    - Added subscriptions
+    - Added "Province" locator
+    - Updated SIOC services namespace
+    - Fixed Gems URL
+    - Fixed SyncML support
+    - Fixed small bugs
+
+
 July 17, 2008, V5.0.7:
   * Database engine
     - Added optimizations for JDBC batch support
