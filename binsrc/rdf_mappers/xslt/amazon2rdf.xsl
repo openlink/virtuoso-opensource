@@ -74,7 +74,7 @@
 			<xsl:apply-templates select="//ItemAttributes/*" mode="bibo"/>
 		    </xsl:when>
 		    <xsl:otherwise>
-		<xsl:apply-templates/>
+			<xsl:apply-templates/>
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </rdf:Description>

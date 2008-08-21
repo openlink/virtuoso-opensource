@@ -63,85 +63,85 @@
 	</bibo:Book>
       </rdf:RDF>
   </xsl:template>
-  
+
   <xsl:template match="results/result">
     <xsl:variable name="coverimage" select="coverimage" />
     <xsl:variable name="authors" select="authors/key" />
-    
+
     <xsl:if test="title">
-    <dcterms:title>
-	<xsl:value-of select="title"/>
-    </dcterms:title>
+	<dcterms:title>
+	    <xsl:value-of select="title"/>
+	</dcterms:title>
     </xsl:if>
     <xsl:if test="isbn_13">
-    <bibo:isbn13>                                                                              
-	<xsl:value-of select="isbn_13"/>                                                         
-    </bibo:isbn13>  
+	<bibo:isbn13>
+	    <xsl:value-of select="isbn_13"/>
+	</bibo:isbn13>
     </xsl:if>
     <xsl:if test="isbn_10">
-    <bibo:isbn10>                                                                              
-	<xsl:value-of select="isbn_10"/>                                                         
-    </bibo:isbn10>  
+	<bibo:isbn10>
+	    <xsl:value-of select="isbn_10"/>
+	</bibo:isbn10>
     </xsl:if>
     <xsl:if test="lccn">
-    <bibo:lccn>                                                                              
-	<xsl:value-of select="lccn"/>                                                         
-    </bibo:lccn>
+	<bibo:lccn>
+	    <xsl:value-of select="lccn"/>
+	</bibo:lccn>
     </xsl:if>
     <xsl:if test="publish_date">
-    <dcterms:issued>
-	<xsl:value-of select="publish_date"/>
-    </dcterms:issued>
+	<dcterms:issued>
+	    <xsl:value-of select="publish_date"/>
+	</dcterms:issued>
     </xsl:if>
     <xsl:if test="physical_dimensions">
-    <dcterms:format>
-	<xsl:value-of select="physical_dimensions"/>
-    </dcterms:format>
+	<dcterms:format>
+	    <xsl:value-of select="physical_dimensions"/>
+	</dcterms:format>
     </xsl:if>
     <xsl:if test="edition_name">
-    <bibo:edition>
-	<xsl:value-of select="edition_name"/>
-    </bibo:edition>
+	<bibo:edition>
+	    <xsl:value-of select="edition_name"/>
+	</bibo:edition>
     </xsl:if>
     <xsl:if test="publishers">
-    <dcterms:publisher>
-	<xsl:value-of select="publishers"/>
-    </dcterms:publisher>
+	<dcterms:publisher>
+	    <xsl:value-of select="publishers"/>
+	</dcterms:publisher>
     </xsl:if>
     <xsl:if test="coverimage">
-    <foaf:depiction rdf:resource="{$coverimage}"/>
+	<foaf:depiction rdf:resource="{$coverimage}"/>
     </xsl:if>
     <xsl:if test="last_modified">
-    <dcterms:date>
-	<xsl:value-of select="last_modified"/>	
-    </dcterms:date>
+	<dcterms:date>
+	    <xsl:value-of select="last_modified"/>
+	</dcterms:date>
     </xsl:if>
     <xsl:if test="$authors != ''">
-    <bibo:authorList rdf:resource="{$authors}"/>
+	<bibo:authorList rdf:resource="{$authors}"/>
     </xsl:if>
     <xsl:if test="publish_places">
-    <address:localityName>
-	<xsl:value-of select="publish_places"/>
-    </address:localityName>
+	<address:localityName>
+	    <xsl:value-of select="publish_places"/>
+	</address:localityName>
     </xsl:if>
     <xsl:if test="number_of_pages">
-    <bibo:pages>
-	<xsl:value-of select="number_of_pages"/>
-    </bibo:pages>
+	<bibo:pages>
+	    <xsl:value-of select="number_of_pages"/>
+	</bibo:pages>
     </xsl:if>
     <xsl:if test="first_sentence">
-    <bibo:content>
-	<xsl:value-of select="first_sentence"/>
-    </bibo:content>
+	<bibo:content>
+	    <xsl:value-of select="first_sentence"/>
+	</bibo:content>
     </xsl:if>
     <xsl:for-each select="subjects">
 	<dc:subject>
 	    <xsl:value-of select="."/>
 	</dc:subject>
     </xsl:for-each>
-    
+
   </xsl:template>
-  
+
   <xsl:template match="*|text()"/>
 
 </xsl:stylesheet>

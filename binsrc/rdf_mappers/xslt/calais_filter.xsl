@@ -82,10 +82,10 @@
 	    </opl:provided_by>
 	    <xsl:attribute name="rdf:about">
 		<xsl:variable name="frag">
-		<xsl:call-template name="substring-after-last">
-		    <xsl:with-param name="string" select="@rdf:about"/>
-		    <xsl:with-param name="character" select="'/'"/>
-		</xsl:call-template>
+		    <xsl:call-template name="substring-after-last">
+			<xsl:with-param name="string" select="@rdf:about"/>
+			<xsl:with-param name="character" select="'/'"/>
+		    </xsl:call-template>
 		</xsl:variable>
 		<xsl:value-of select="vi:proxyIRI($baseUri,'', $frag)"/>
 	    </xsl:attribute>
@@ -104,10 +104,10 @@
 	    <xsl:if test="@rdf:resource">
 		<xsl:attribute name="rdf:resource">
 		    <xsl:variable name="frag">
-		    <xsl:call-template name="substring-after-last">
-			<xsl:with-param name="string" select="@rdf:resource"/>
-			<xsl:with-param name="character" select="'/'"/>
-		    </xsl:call-template>
+			<xsl:call-template name="substring-after-last">
+			    <xsl:with-param name="string" select="@rdf:resource"/>
+			    <xsl:with-param name="character" select="'/'"/>
+			</xsl:call-template>
 		    </xsl:variable>
 		    <xsl:value-of select="vi:proxyIRI($baseUri, '', $frag)"/>
 		</xsl:attribute>

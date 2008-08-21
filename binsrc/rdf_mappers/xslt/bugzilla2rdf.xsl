@@ -36,14 +36,14 @@
   xmlns:sioct="http://rdfs.org/sioc/types#"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
-  <xsl:output method="xml" indent="yes"/>
+    <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
-  <xsl:template match="/">
-      <rdf:RDF>
-	  	<xsl:apply-templates select="bugzilla/bug"/>
+    <xsl:template match="/">
+	<rdf:RDF>
+	    <xsl:apply-templates select="bugzilla/bug"/>
 	    <xsl:apply-templates select="issuezilla/issue"/>
-      </rdf:RDF>
-  </xsl:template>
+	</rdf:RDF>
+    </xsl:template>
     <xsl:template match="issuezilla/issue">
 		<wf:Task rdf:about="{$baseUri}">
 			<xsl:apply-templates select="*"/>
@@ -66,10 +66,10 @@
 			</sioc:Post>
 		</xsl:for-each>
     </xsl:template>
-  <xsl:template match="bugzilla/bug">
+    <xsl:template match="bugzilla/bug">
 		<wf:Task rdf:about="{$baseUri}">
-	    <xsl:apply-templates select="*"/>
-	</wf:Task>
+			<xsl:apply-templates select="*"/>
+		</wf:Task>
 		<sioct:Discussion rdf:about="{$baseUri}">
 			<sioc:container_of rdf:resource="{@rdf:resource}" />
 		</sioct:Discussion>
@@ -87,25 +87,25 @@
 				</dc:description>
 			</sioc:Post>
 		</xsl:for-each>
-  </xsl:template>
+    </xsl:template>
     <xsl:template match="version">
 	<bugzilla:version>
-	  <xsl:value-of select="."/>
+	    <xsl:value-of select="."/>
 	</bugzilla:version>
-  </xsl:template>  
+    </xsl:template>
     <xsl:template match="delta_ts">
 	<bugzilla:delta>
-	  <xsl:value-of select="."/>
+	    <xsl:value-of select="."/>
 	</bugzilla:delta>
         <bugzilla:modified>
 	    <xsl:value-of select="."/>
 	</bugzilla:modified>
-  </xsl:template>
+    </xsl:template>
     <xsl:template match="bug_status">
 	<bugzilla:state>
 	    <xsl:value-of select="."/>
 	</bugzilla:state>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="issue_status">
 	<bugzilla:state>
 	    <xsl:value-of select="."/>
@@ -115,28 +115,28 @@
 	<bugzilla:reporterPlatform>
 	    <xsl:value-of select="."/>
 	</bugzilla:reporterPlatform>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="assigned_to">
 	<bugzilla:assignee>
 	    <xsl:value-of select="vi:proxyIRI (.)"/>
 	</bugzilla:assignee>
-  </xsl:template>
-  <xsl:template match="reporter">
+    </xsl:template>
+    <xsl:template match="reporter">
 	<bugzilla:reporter>
 	    <xsl:value-of select="vi:proxyIRI (.)"/>
 	</bugzilla:reporter>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="product">
 	<bugzilla:product>
-	  <xsl:value-of select="."/>
+	    <xsl:value-of select="."/>
 	</bugzilla:product>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="component">
 	<bugzilla:component>
 	    <xsl:value-of select="."/>
 	</bugzilla:component>
-  </xsl:template>
-  <xsl:template match="creation_ts">
+    </xsl:template>
+    <xsl:template match="creation_ts">
 	<bugzilla:created>
 	    <xsl:value-of select="."/>
 	</bugzilla:created>
@@ -145,12 +145,12 @@
 	<bugzilla:target_milestone>
 	    <xsl:value-of select="."/>
 	</bugzilla:target_milestone>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="bug_severity">
 	<bugzilla:bug_severity>
-	  <xsl:value-of select="."/>
+	    <xsl:value-of select="."/>
 	</bugzilla:bug_severity>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="issue_severity">
 	<bugzilla:bug_severity>
 	    <xsl:value-of select="."/>
@@ -170,41 +170,41 @@
 	<bugzilla:operationSystem>
 	    <xsl:value-of select="."/>
 	</bugzilla:operationSystem>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="estimated_time">
 	<bugzilla:estimatedTime>
 	    <xsl:value-of select="."/>
 	</bugzilla:estimatedTime>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="remaining_time">
 	<bugzilla:remainingTime>
 	    <xsl:value-of select="."/>
 	</bugzilla:remainingTime>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="everconfirmed">
 	<bugzilla:everConfirmed>
 	    <xsl:value-of select="."/>
 	</bugzilla:everConfirmed>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="cclist_accessible">
 	<bugzilla:ccListAccessible>
 	    <xsl:value-of select="."/>
 	</bugzilla:ccListAccessible>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="reporter_accessible">
 	<bugzilla:reporterAccessible>
 	    <xsl:value-of select="."/>
 	</bugzilla:reporterAccessible>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="priority">
 	<bugzilla:priority>
 	    <xsl:value-of select="."/>
 	</bugzilla:priority>
-    </xsl:template> 
+    </xsl:template>
     <xsl:template match="short_desc">
 	<bugzilla:shortDescription>
 	    <xsl:value-of select="."/>
 	</bugzilla:shortDescription>
-  </xsl:template>
-  <xsl:template match="*|text()"/>
+    </xsl:template>
+    <xsl:template match="*|text()"/>
 </xsl:stylesheet>

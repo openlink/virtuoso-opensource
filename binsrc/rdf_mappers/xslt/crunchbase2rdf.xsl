@@ -52,41 +52,41 @@
     <xsl:param name="suffix"/>
 
     <xsl:template name="space-name">
-		    <xsl:choose>
-			<xsl:when test="namespace">
-			    <xsl:value-of select="namespace"/>
-			</xsl:when>
-			<xsl:when test="ends-with ($baseUri, 'companies.js')">
-			    <xsl:text>company</xsl:text>
-			</xsl:when>
-			<xsl:when test="ends-with ($baseUri, 'people.js')">
-			    <xsl:text>person</xsl:text>
-			</xsl:when>
-			<xsl:when test="ends-with ($baseUri, 'financial-organizations.js')">
-			    <xsl:text>financial-organization</xsl:text>
-			</xsl:when>
-			<xsl:when test="ends-with ($baseUri, 'products.js')">
-			    <xsl:text>product</xsl:text>
-			</xsl:when>
-			<xsl:when test="ends-with ($baseUri, 'service-providers.js')">
-			    <xsl:text>service-provider</xsl:text>
-			</xsl:when>
-			<xsl:when test="$baseUri like '%/company/%'">
-			    <xsl:text>company</xsl:text>
-			</xsl:when>
-			<xsl:when test="$baseUri like '%/person/%'">
-			    <xsl:text>person</xsl:text>
-			</xsl:when>
-			<xsl:when test="$baseUri like '%/financial-organization/%'">
-			    <xsl:text>financial-organization</xsl:text>
-			</xsl:when>
-			<xsl:when test="$baseUri like '%/product/%'">
-			    <xsl:text>product</xsl:text>
-			</xsl:when>
-			<xsl:when test="$baseUri like '%/service-provider/%'">
-			    <xsl:text>service-provider</xsl:text>
-			</xsl:when>
-		    </xsl:choose>
+	<xsl:choose>
+	    <xsl:when test="namespace">
+		<xsl:value-of select="namespace"/>
+	    </xsl:when>
+	    <xsl:when test="ends-with ($baseUri, 'companies.js')">
+		<xsl:text>company</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="ends-with ($baseUri, 'people.js')">
+		<xsl:text>person</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="ends-with ($baseUri, 'financial-organizations.js')">
+		<xsl:text>financial-organization</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="ends-with ($baseUri, 'products.js')">
+		<xsl:text>product</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="ends-with ($baseUri, 'service-providers.js')">
+		<xsl:text>service-provider</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="$baseUri like '%/company/%'">
+		<xsl:text>company</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="$baseUri like '%/person/%'">
+		<xsl:text>person</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="$baseUri like '%/financial-organization/%'">
+		<xsl:text>financial-organization</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="$baseUri like '%/product/%'">
+		<xsl:text>product</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="$baseUri like '%/service-provider/%'">
+		<xsl:text>service-provider</xsl:text>
+	    </xsl:when>
+	</xsl:choose>
     </xsl:template>
 
     <xsl:template match="/">
@@ -98,7 +98,7 @@
 		<xsl:for-each select="/results">
 		    <xsl:variable name="space">
 			<xsl:call-template name="space-name"/>
-		</xsl:variable>
+		    </xsl:variable>
 		    <foaf:topic rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		    <dct:subject rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>

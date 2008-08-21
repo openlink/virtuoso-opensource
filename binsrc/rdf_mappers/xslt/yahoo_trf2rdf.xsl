@@ -80,7 +80,7 @@
 	<xsl:element namespace="{$ns}" name="{@type}">
 	    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', @type)}">
 		<rdf:type rdf:resource="&sioc;Item"/>
-	    <xsl:apply-templates select="@*|node()"/>
+		<xsl:apply-templates select="@*|node()"/>
 	    </rdf:Description>
 	</xsl:element>
     </xsl:template>
@@ -90,8 +90,8 @@
 	    <foaf:based_near>
 		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', 'location')}">
 		    <rdf:type rdf:resource="&geo;Point"/>
-		<geo:lat><xsl:value-of select="."/></geo:lat>
-		<geo:long><xsl:value-of select="../y:Longitude"/></geo:long>
+		    <geo:lat><xsl:value-of select="."/></geo:lat>
+		    <geo:long><xsl:value-of select="../y:Longitude"/></geo:long>
 		</rdf:Description>
 	    </foaf:based_near>
 	</xsl:if>

@@ -29,19 +29,19 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
-<xsl:stylesheet 
-	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:skos="http://www.w3.org/2004/02/skos/core#" 
-	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+	xmlns:foaf="http://xmlns.com/foaf/0.1/"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
-	xmlns:dcterms="http://purl.org/dc/terms/" 
+	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:twfy="http://www.openlinksw.com/schemas/twfy#"
-	xmlns:owl="http://www.w3.org/2002/07/owl#" 
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
@@ -140,7 +140,7 @@
 						<xsl:element namespace="{$ns}" name="{$canonicalname}" >
 							<xsl:attribute name="rdf:datatype">
 								<xsl:value-of select="concat('&xsd;', 'date')" />
-							</xsl:attribute>						
+							</xsl:attribute>
 							<xsl:value-of select="." />
 						</xsl:element>
 					</rdf:Description>

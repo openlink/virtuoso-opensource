@@ -58,11 +58,11 @@
 	  </rdf:Description>
 	  <foaf:Group rdf:about="{$res}">
 	      <foaf:homepage rdf:resource="{$baseUri}"/>
-	  		<xsl:apply-templates select="results"/>
-	  	</foaf:Group>
+	      <xsl:apply-templates select="results"/>
+	  </foaf:Group>
       </rdf:RDF>
   </xsl:template>
-  
+
   <xsl:template match="results">
 	<xsl:for-each select="Document">
 	  <foaf:member>

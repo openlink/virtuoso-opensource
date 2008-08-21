@@ -40,15 +40,15 @@
             <xsl:apply-templates mode="hresume" />
         </cv:CV>
     </xsl:template>
-    
+
     <xsl:template match="comment()|processing-instruction()|text()"/>
-    
+
     <xsl:template match="//*[@class='hresume']/*[@class='summary']" mode="hresume">
         <cv:cvDescription>
             <xsl:value-of select="." />
         </cv:cvDescription>
     </xsl:template>
-    
+
     <xsl:template match="//*[@class='vcalendar']/*[contains(@class, 'experience')]" mode="hresume">
         <cv:hasWorkHistory>
             <cv:WorkHistory>
@@ -93,7 +93,7 @@
             </cv:Skill>
         </cv:hasSkill>
     </xsl:template>
-    
+
     <xsl:template match="*" mode="hresume">
         <xsl:variable name="contact">
             <xsl:call-template name="testclass">
@@ -109,7 +109,7 @@
         </xsl:if>
         <xsl:apply-templates mode="hresume" />
     </xsl:template>
-    
+
     <xsl:template match="comment()|processing-instruction()|text()" mode="hresume"/>
 
     <xsl:template match="*" mode="extract-vcal">
@@ -128,7 +128,7 @@
                         <xsl:attribute name="rdf:about">
                             <xsl:value-of select="concat('#', *[contains(@class, 'summary')])" />
                         </xsl:attribute>
-                    </cv:Education>                    
+                    </cv:Education>
                 </cv:hasEducation>
             </xsl:when>
         </xsl:choose>

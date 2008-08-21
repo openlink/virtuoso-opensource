@@ -65,7 +65,7 @@
 		    <xsl:if test="$wpUri != ''">
 			<rdfs:seeAlso rdf:resource="{$wpUri}"/>
 		    </xsl:if>
-	    </rdf:Description>
+		</rdf:Description>
 	    </xsl:if>
 	</rdf:RDF>
     </xsl:template>
@@ -109,12 +109,12 @@
 			<foaf:depiction rdf:resource="{vi:mql-image-by-name (.)}"/>
 		    </xsl:when>
 		    <xsl:otherwise>
-	<xsl:element namespace="{$ns}" name="{name()}">
-		<xsl:if test="name() like 'date_%'">
-		    <xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
-		</xsl:if>
-	    <xsl:apply-templates select="@*|node()"/>
-	</xsl:element>
+			<xsl:element namespace="{$ns}" name="{name()}">
+			    <xsl:if test="name() like 'date_%'">
+				<xsl:attribute name="rdf:datatype">&xsd;dateTime</xsl:attribute>
+			    </xsl:if>
+			    <xsl:apply-templates select="@*|node()"/>
+			</xsl:element>
 		    </xsl:otherwise>
 		</xsl:choose>
 	</xsl:if>

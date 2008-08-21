@@ -59,7 +59,7 @@
       <xsl:apply-templates/>
       <xsl:variable name="users" select="distinct (//dc:creator)"/>
       <xsl:if test="not empty($users)">
-      <xsl:apply-templates select="$users" mode="user"/>
+	  <xsl:apply-templates select="$users" mode="user"/>
       </xsl:if>
   </rdf:RDF>
 </xsl:template>
@@ -67,7 +67,7 @@
 <xsl:template match="r:channel">
     <atom:Feed rdf:about="{$base}">
 	<sioc:link rdf:resource="{@rdf:about}"/>
-       <xsl:apply-templates />
+	<xsl:apply-templates />
 	<xsl:copy-of select="geo:*"/>
 	<xsl:copy-of select="openSearch:*"/>
     </atom:Feed>
@@ -132,7 +132,7 @@
 </xsl:template>
 
 <xsl:template match="dc:creator" mode="user">
-	<xsl:variable name="uname" select="string(.)" />
+    <xsl:variable name="uname" select="string(.)" />
     <foaf:Person rdf:about="{$base}#{urlify (.)}">
 	<foaf:name><xsl:apply-templates/></foaf:name>
 	<xsl:for-each select="//r:item[string (dc:creator) = $uname]">

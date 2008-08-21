@@ -44,7 +44,7 @@
   xmlns:cvbase="http://purl.org/captsolo/resume-rdf/0.2/base#"
   xmlns:v="http://www.w3.org/2006/vcard/ns#"
   version="1.0">
-  
+
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
 
   <xsl:param name="baseUri"/>
@@ -67,28 +67,29 @@
   </xsl:template>
 
   <xsl:template match="StructuredXMLResume">
-	<cv:cvDescription>
-		<xsl:value-of select="ExecutiveSummary"/>  
-	</cv:cvDescription>
+
+    <cv:cvDescription>
+        <xsl:value-of select="ExecutiveSummary"/>
+    </cv:cvDescription>
 
     <xsl:if test="ContactInfo">
     <cv:aboutPerson>
         <cv:Person rdf:about="#{ContactInfo/PersonName/FormattedName}">
             <foaf:name>
-              <xsl:value-of select="ContactInfo/PersonName/FormattedName"/>  
+              <xsl:value-of select="ContactInfo/PersonName/FormattedName"/>
             </foaf:name>
             <xsl:if test="ContactInfo/ContactMethod">
             <foaf:phone>
-              <xsl:value-of select="ContactInfo/ContactMethod/Telephone/FormattedNumber"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/Telephone/FormattedNumber"/>
             </foaf:phone>
             <v:fax>
-              <xsl:value-of select="ContactInfo/ContactMethod/Fax/FormattedNumber"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/Fax/FormattedNumber"/>
             </v:fax>
             <v:email>
-              <xsl:value-of select="ContactInfo/ContactMethod/InternetEmailAddress"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/InternetEmailAddress"/>
             </v:email>
             <foaf:homepage>
-              <xsl:value-of select="ContactInfo/ContactMethod/InternetWebAddress"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/InternetWebAddress"/>
             </foaf:homepage>
             <v:country-name>
               <xsl:attribute name="rdf:resource">
@@ -96,10 +97,10 @@
               </xsl:attribute>
             </v:country-name>
             <v:country-name>
-              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/CountryCode"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/CountryCode"/>
             </v:country-name>
             <v:postal-code>
-              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/PostalCode"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/PostalCode"/>
             </v:postal-code>
             <v:region>
               <xsl:attribute name="rdf:resource">
@@ -107,10 +108,10 @@
               </xsl:attribute>
             </v:region>
             <v:region>
-              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Region"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Region"/>
             </v:region>
             <v:locality>
-              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Municipality"/>  
+              <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Municipality"/>
             </v:locality>
             <v:locality>
               <xsl:attribute name="rdf:resource">
@@ -128,81 +129,81 @@
     <xsl:if test="Objective">
     <cv:hasTarget>
         <cv:Target rdf:about="#{normalize-space(Objective)}">
-			<cv:targetJobDescription>
-				<xsl:value-of select="Objective"/>
-			</cv:targetJobDescription>
-		</cv:Target>
-    </cv:hasTarget>    
+            <cv:targetJobDescription>
+                <xsl:value-of select="Objective"/>
+            </cv:targetJobDescription>
+        </cv:Target>
+    </cv:hasTarget>
     </xsl:if>
 
     <xsl:if test="EmploymentHistory">
     <cv:hasWorkHistory>
         <xsl:for-each select="EmploymentHistory/EmployerOrg">
         <cv:WorkHistory rdf:about="#WorkHistory/{EmployerOrgName}">
-			<cv:employedIn>
+            <cv:employedIn>
                 <cv:Company rdf:about="#{EmployerOrgName}">
-					<cv:Name>
+                    <cv:Name>
                         <xsl:value-of select="EmployerOrgName"/>
-					</cv:Name>
-					<cv:Locality>
+                    </cv:Name>
+                    <cv:Locality>
                         <xsl:value-of select="EmployerContactInfo/LocationSummary"/>
-					</cv:Locality>
-					<cv:Notes>
+                    </cv:Locality>
+                    <cv:Notes>
                         <xsl:value-of select="PositionHistory/OrgName/OrganizationName"/>
-					</cv:Notes>
-				</cv:Company>
-			</cv:employedIn>
-			<cv:startDate>
+                    </cv:Notes>
+                </cv:Company>
+            </cv:employedIn>
+            <cv:startDate>
                 <xsl:value-of select="PositionHistory/StartDate/YearMonth"/>
-			</cv:startDate>
-			<cv:endDate>
+            </cv:startDate>
+            <cv:endDate>
                 <xsl:value-of select="PositionHistory/EndDate/YearMonth"/>
-			</cv:endDate>
-			<cv:jobTitle>
+            </cv:endDate>
+            <cv:jobTitle>
                 <xsl:value-of select="PositionHistory/Title"/>
-			</cv:jobTitle>
-			<cv:jobDescription>
+            </cv:jobTitle>
+            <cv:jobDescription>
                 <xsl:value-of select="PositionHistory/Description"/>
-			</cv:jobDescription>
-			<cv:jobType>
+            </cv:jobDescription>
+            <cv:jobType>
                 <xsl:value-of select="PositionHistory/@positionType"/>
-			</cv:jobType>
+            </cv:jobType>
         </cv:WorkHistory>
         </xsl:for-each>
     </cv:hasWorkHistory>
     </xsl:if>
-    
+
     <xsl:if test="EducationHistory">
     <cv:hasEducation>
         <xsl:for-each select="EducationHistory/SchoolOrInstitution">
         <cv:Education rdf:about="#Education/{School/SchoolName}">
-			<cv:studiedIn>
+            <cv:studiedIn>
                 <cv:EducationalOrg rdf:about="#{School/SchoolName}">
-					<cv:Name>
+                    <cv:Name>
                         <xsl:value-of select="School/SchoolName"/>
-					</cv:Name>
-					<cv:URL>
+                    </cv:Name>
+                    <cv:URL>
                         <xsl:value-of select="School/InternetDomainName"/>
-					</cv:URL>
-				</cv:EducationalOrg>
-			</cv:studiedIn>			
-			<cv:eduGradDate>
+                    </cv:URL>
+                </cv:EducationalOrg>
+            </cv:studiedIn>
+            <cv:eduGradDate>
                 <xsl:value-of select="Degree/DegreeDate/YearMonth"/>
-			</cv:eduGradDate>
-			<cv:eduMajor>
+            </cv:eduGradDate>
+            <cv:eduMajor>
                 <xsl:value-of select="Degree/DegreeMajor/Name"/>
-			</cv:eduMajor>
-			<cv:eduMinor>
+            </cv:eduMajor>
+            <cv:eduMinor>
                 <xsl:value-of select="Degree/DegreeMinor/Name"/>
-			</cv:eduMinor>
-			<cv:eduDescription>
+            </cv:eduMinor>
+            <cv:eduDescription>
                 <xsl:value-of select="Degree/Comments"/>
-			</cv:eduDescription>
-		</cv:Education>    
+            </cv:eduDescription>
+        </cv:Education>
         </xsl:for-each>
     </cv:hasEducation>
     </xsl:if>
-    
+
     <xsl:if test="LicensesAndCertifications">
     <cv:hasCourse>
         <xsl:for-each select="LicensesAndCertifications/LicenseOrCertification">
@@ -226,13 +227,13 @@
             <cv:courseDescription>
                 <xsl:value-of select="Description"/>
             </cv:courseDescription>
-        </cv:Course>    
+        </cv:Course>
         </xsl:for-each>
     </cv:hasCourse>
     </xsl:if>
 
     <xsl:if test="Qualifications or Languages">
-        <xsl:for-each select="Qualifications/Competency">
+    <xsl:for-each select="Qualifications/Competency">
         <cv:hasSkill>
           <cv:Skill rdf:about="#{@name}">
             <cv:skillName>
@@ -247,10 +248,10 @@
             <cv:skillLevel>
                 <xsl:value-of select="Competency/CompetencyEvidence/NumericValue"/>
             </cv:skillLevel>
-        </cv:Skill>
+          </cv:Skill>
         </cv:hasSkill>
-        </xsl:for-each>
-        <xsl:for-each select="Languages/Language">
+    </xsl:for-each>
+    <xsl:for-each select="Languages/Language">
       <cv:hasSkill>
         <cv:LanguageSkill rdf:about="#{LanguageCode}">
             <cv:skillName>
@@ -266,7 +267,7 @@
                 <xsl:value-of select="Speak"/>
             </cv:skillLevel>
         </cv:LanguageSkill>
-    </cv:hasSkill>
+     </cv:hasSkill>
     </xsl:for-each>
     </xsl:if>
 
@@ -274,22 +275,22 @@
     <cv:hasReference>
         <xsl:for-each select="References/Reference">
         <cv:Reference rdf:about="#Reference/{PersonName/FormattedName}">
-            <cv:referenceBy>                    
+            <cv:referenceBy>
                 <cv:Person rdf:about="#{PersonName/FormattedName}">
                     <v:n>
-                      <xsl:value-of select="PersonName/FormattedName"/>  
+                      <xsl:value-of select="PersonName/FormattedName"/>
                     </v:n>
                     <v:title>
-                      <xsl:value-of select="PositionTitle"/>  
+                      <xsl:value-of select="PositionTitle"/>
                     </v:title>
                     <v:tel>
-                      <xsl:value-of select="ContactMethod/Telephone/FormattedNumber"/>  
+                      <xsl:value-of select="ContactMethod/Telephone/FormattedNumber"/>
                     </v:tel>
                     <v:email>
-                      <xsl:value-of select="ContactMethod/InternetEmailAddress"/>  
+                      <xsl:value-of select="ContactMethod/InternetEmailAddress"/>
                     </v:email>
                     <v:note>
-                      <xsl:value-of select="Comments"/>  
+                      <xsl:value-of select="Comments"/>
                     </v:note>
                 </cv:Person>
             </cv:referenceBy>
@@ -297,7 +298,7 @@
         </xsl:for-each>
     </cv:hasReference>
     </xsl:if>
-    
+
   </xsl:template>
 
 </xsl:stylesheet>

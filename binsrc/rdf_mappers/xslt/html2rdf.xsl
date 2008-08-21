@@ -94,13 +94,13 @@
 	  <xsl:value-of select="@content"/>
       </dc:subject>
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
-      <xsl:for-each select="$res/results/result">
+	  <xsl:for-each select="$res/results/result">
 	      <sioc:topic>
 		  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}" >
 		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 		  </skos:Concept>
 	      </sioc:topic>
-      </xsl:for-each>
+	  </xsl:for-each>
   </xsl:template>
   <!--xsl:template match="meta[@name='keywords']" mode="meta">
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
