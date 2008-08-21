@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <!--
  -
  -  $Id$

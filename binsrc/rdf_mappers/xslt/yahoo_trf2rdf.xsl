@@ -3,7 +3,6 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 ]>
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
  -  $Id$

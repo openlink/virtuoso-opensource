@@ -45,8 +45,7 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description
-		rdf:about="{$resourceURL}">
+	    <rdf:Description rdf:about="{$resourceURL}">
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>

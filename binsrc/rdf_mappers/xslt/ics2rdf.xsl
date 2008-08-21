@@ -30,7 +30,7 @@
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf   ="&rdf;"
     xmlns:c   ="&ical;"
-    xmlns     ="&ical;"
+    xmlns     ="http://www.w3.org/2002/12/cal/ical#"
     xmlns:v   ="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:xml   ="xml"
     version="1.0"

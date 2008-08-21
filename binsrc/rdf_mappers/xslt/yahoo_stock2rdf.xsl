@@ -4,7 +4,6 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY stock "http://xbrlontology.com/ontology/finance/stock_market#">
 ]>
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
  -  $Id$
@@ -47,10 +46,10 @@
     </xsl:template>
 
     <xsl:template match="quote">
-	<rdf:Description rdf:about="{vi:proxyIRI()}http://dbpedia.org/resource/{@stock}">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}">
 	    <rdf:type rdf:resource="&stock;StockMarket"/>
 	</rdf:Description>
-	<rdf:Description rdf:about="{vi:proxyIRI()}http://finance.yahoo.com/q?s={symbol}#price">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol), '', '#price')}">
 	    <rdf:type rdf:resource="&stock;DailyPrice"/>
 	    <stock:bid><xsl:value-of select="bid"/></stock:bid>
 	    <stock:ask><xsl:value-of select="ask"/></stock:ask>
@@ -58,17 +57,17 @@
 	    <stock:prev.close><xsl:value-of select="prev.close"/></stock:prev.close>
 	    <stock:days-High><xsl:value-of select="high"/></stock:days-High>
 	    <stock:days-Low><xsl:value-of select="low"/></stock:days-Low>
-	    <stock:relativeToStock rdf:resource="{vi:proxyIRI()}http://finance.yahoo.com/q?s={symbol}#this"/>
+	    <stock:relativeToStock rdf:resource="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol))}"/>
 	</rdf:Description>
-	<rdf:Description rdf:about="{vi:proxyIRI()}http://finance.yahoo.com/q?s={symbol}#this">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol))}">
 	    <rdf:type rdf:resource="&stock;Stock"/>
-	    <stock:hasDailyPrice rdf:resource="{vi:proxyIRI()}http://finance.yahoo.com/q?s={symbol}#price"/>
-	    <stock:partOfCompany rdf:resource="{vi:proxyIRI()}http://dbpedia.org/resource/{symbol}"/>
-	    <stock:relativeToStockMarket rdf:resource="{vi:proxyIRI()}http://dbpedia.org/resource/{@stock}"/>
+	    <stock:hasDailyPrice rdf:resource="{vi:proxyIRI(concat('http://finance.yahoo.com/q?s=', symbol), '', '#price')}"/>
+	    <stock:partOfCompany rdf:resource="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', symbol))}"/>
+	    <stock:relativeToStockMarket rdf:resource="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', @stock))}"/>
 	</rdf:Description>
-	<rdf:Description rdf:about="{vi:proxyIRI()}http://dbpedia.org/resource/{symbol}">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://dbpedia.org/resource/', symbol))}">
 	    <rdf:type rdf:resource="&stock;Company"/>
-	    <stock:hasStocks rdf:resource="{vi:proxyIRI()}http://finance.yahoo.com/q?s={symbol}#this"/>
+	    <stock:hasStocks rdf:resource="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', symbol))}"/>
 	    <stock:companyName><xsl:value-of select="company"/></stock:companyName>
 	</rdf:Description>
     </xsl:template>
@@ -85,10 +84,10 @@
 		<stock:close><xsl:value-of select="open"/></stock:close>
 		<stock:volume><xsl:value-of select="volume"/></stock:volume>
 		<stock:adjClose><xsl:value-of select="adjclose"/></stock:adjClose>
-		<stock:relativeToStock rdf:resource="{vi:proxyIRI()}http://finance.yahoo.com/q?s={../@symbol}#this"/>
+		<stock:relativeToStock rdf:resource="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', ../@symbol))}"/>
 	    </rdf:Description>
 	</xsl:for-each>
-	<rdf:Description rdf:about="{vi:proxyIRI()}http://finance.yahoo.com/q?s={@symbol}#this">
+	<rdf:Description rdf:about="{vi:proxyIRI(concat ('http://finance.yahoo.com/q?s=', @symbol))}">
 	    <xsl:for-each select="hist-price">
 		<stock:hasPriceHist rdf:resource="#{date}"/>
 	    </xsl:for-each>

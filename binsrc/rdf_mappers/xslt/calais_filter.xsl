@@ -21,14 +21,23 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-    xmlns:DC   ="http://purl.org/dc/elements/1.1/"
-    xmlns:DCTERMS = "http://purl.org/dc/terms/"
+    xmlns:dc   ="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:opl="http://www.openlinksw.com/schema/attribution#"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    xmlns:foaf="&foaf;"
+    xmlns:sioc="&sioc;"
+    xmlns:bibo="&bibo;"
+    xmlns:rdf  ="&rdf;">
 
 
     <xsl:output method="xml" indent="yes"/>
@@ -36,12 +45,32 @@
 
     <xsl:template match="rdf:RDF">
 	<xsl:copy>
+	    <rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<xsl:for-each select="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
+		    <xsl:variable name="frag">
+			<xsl:call-template name="substring-after-last">
+			    <xsl:with-param name="string" select="@rdf:about"/>
+			    <xsl:with-param name="character" select="'/'"/>
+			</xsl:call-template>
+		    </xsl:variable>
+		    <xsl:variable name="res">
+			<xsl:value-of select="vi:proxyIRI($baseUri,'', $frag)"/>
+		    </xsl:variable>
+		    <sioc:container_of rdf:resource="{$res}"/>
+		    <foaf:topic rdf:resource="{$res}"/>
+		    <dcterms:subject rdf:resource="{$res}"/>
+		</xsl:for-each>
+	    </rdf:Description>
 	    <xsl:apply-templates />
 	</xsl:copy>
     </xsl:template>
 
     <xsl:template match="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
 	<rdf:Description>
+	    <sioc:has_container rdf:resource="{$baseUri}"/>
 	    <opl:data_source>
 		<opl:DataSource rdf:about="{@rdf:about}"/>
 	    </opl:data_source>
@@ -52,11 +81,13 @@
 		</foaf:Organization>
 	    </opl:provided_by>
 	    <xsl:attribute name="rdf:about">
-		<xsl:value-of select="vi:proxyIRI($baseUri)"/><xsl:text>#</xsl:text>
+		<xsl:variable name="frag">
 		<xsl:call-template name="substring-after-last">
 		    <xsl:with-param name="string" select="@rdf:about"/>
 		    <xsl:with-param name="character" select="'/'"/>
 		</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of select="vi:proxyIRI($baseUri,'', $frag)"/>
 	    </xsl:attribute>
 	    <!--xsl:copy-of select="*"/-->
 	    <xsl:apply-templates mode="cp"/>
@@ -72,11 +103,13 @@
 	    <xsl:copy-of select="@*[local-name () != 'resource']"/>
 	    <xsl:if test="@rdf:resource">
 		<xsl:attribute name="rdf:resource">
-		    <xsl:value-of select="vi:proxyIRI($baseUri)"/><xsl:text>#</xsl:text>
+		    <xsl:variable name="frag">
 		    <xsl:call-template name="substring-after-last">
 			<xsl:with-param name="string" select="@rdf:resource"/>
 			<xsl:with-param name="character" select="'/'"/>
 		    </xsl:call-template>
+		    </xsl:variable>
+		    <xsl:value-of select="vi:proxyIRI($baseUri, '', $frag)"/>
 		</xsl:attribute>
 	    </xsl:if>
 	    <xsl:apply-templates mode="cp"/>

@@ -21,10 +21,22 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdf="&rdf;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
+    xmlns:dcterms="&dcterms;"
     xmlns:ebay="urn:ebay:apis:eBLBaseComponents">
 
     <xsl:output method="xml" indent="yes" />
@@ -45,8 +57,17 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description
-		rdf:about="{vi:proxyIRI ($resourceURL)}">
+	    <rdf:Description rdf:about="{$resourceURL}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+	    </rdf:Description>
+	    <rdf:Description rdf:about="{vi:proxyIRI ($resourceURL)}">
+		<rdf:type rdf:resource="&sioc;Item"/>
+		<sioc:has_container rdf:resource="{$resourceURL}"/>
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>

@@ -324,7 +324,7 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
-create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login varchar := '')
+create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
 {
   declare cname any;
   declare ret any;
@@ -338,10 +338,14 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
       if (server_http_port () <> '80')
 	cname := cname ||':'|| server_http_port ();
     }
+  if (length (frag) and frag[0] <> '#'[0])
+    frag := '#' || frag;
+  if (strchr (uri, '#') is not null)
+    frag := '';
   if (length (login))
-    ret := sprintf ('http://%s/proxy/rdf/%U/%s#this', cname, login, uri);
+    ret := sprintf ('http://%s/proxy/rdf/%U/%s%s', cname, login, uri, frag);
   else
-    ret := sprintf ('http://%s/proxy/rdf/%s#this', cname, uri);
+    ret := sprintf ('http://%s/proxy/rdf/%s%s', cname, uri, frag);
   return ret;
 }
 ;
@@ -1418,10 +1422,10 @@ create procedure DB.DBA.RDF_LOAD_SVG (in graph_iri varchar, in new_origin_uri va
     {
       return 0;
     };
-  tmp := http_get (new_origin_uri, hdr);
+  --tmp := http_get (new_origin_uri, hdr);
   --if (hdr[0] not like 'HTTP/1._ 200 %');
   --  signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-  xd := xtree_doc (tmp);
+  xd := xtree_doc (_ret_body);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/svg2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));

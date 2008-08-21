@@ -280,7 +280,7 @@
 		<xsl:element namespace="{$ns}" name="{name()}">
 		    <xsl:element name="{$nspace}" namespace="{$ns}">
 			<xsl:attribute name="rdf:about">
-			    <xsl:value-of select="vi:proxyIRI(concat ($baseUri, '#', name(), '-', position()))"/>
+			    <xsl:value-of select="vi:proxyIRI($baseUri, '', concat ('#', name(), '-', position()))"/>
 			</xsl:attribute>
 		    <xsl:apply-templates select="@*|node()"/>
 		</xsl:element>

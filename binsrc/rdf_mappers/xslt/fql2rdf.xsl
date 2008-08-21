@@ -5,7 +5,6 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 ]>
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
  -  $Id$

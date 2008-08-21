@@ -5,6 +5,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <!--
  -
@@ -36,14 +37,14 @@
     xmlns:aws="http://soap.amazon.com/"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;">
 
     <xsl:output method="xml" indent="yes" />
 
+    <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL">
-	<xsl:value-of select="vi:proxyIRI ()"/>
-	<xsl:text>http://www.amazon.com/exec/obidos/ASIN/</xsl:text>
-	<xsl:value-of select="//ASIN"/>
+	<xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/exec/obidos/ASIN/', //ASIN))"/>
     </xsl:variable>
 
     <xsl:variable name="ns">http://soap.amazon.com/</xsl:variable>
@@ -56,7 +57,16 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{$resourceURL}#this">
+	    <rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+	    </rdf:Description>
+	    <rdf:Description rdf:about="{$resourceURL}">
+		<rdf:type rdf:resource="&sioc;Item"/>
 		<rdfs:label><xsl:value-of select="//ItemAttributes/Title"/></rdfs:label>
 		<xsl:choose>
 		    <xsl:when test="//ProductGroup[ . = 'Book']">

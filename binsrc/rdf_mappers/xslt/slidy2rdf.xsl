@@ -56,7 +56,7 @@
 	</xsl:template>
 
 	<xsl:template match="html">
-			<rdf:Description rdf:about="{$baseUri}#this">
+			<rdf:Description rdf:about="{$baseUri}">
 				<rdfs:label>
 					<xsl:value-of select="//html/head/title"/>
 				</rdfs:label>
@@ -68,10 +68,10 @@
 	<xsl:template match="body">
 		<xsl:for-each select="//div[contains(@class, 'slide')]">
 			<xsl:variable name="pos" select="position()"/>
-				<rdf:Description rdf:about="{$baseUri}#this">
+			<rdf:Description rdf:about="{$baseUri}">
 				<xsl:attribute name="rdf:about">#(<xsl:value-of select="$pos"/>)</xsl:attribute>
 					<rdf:type rdf:resource="&bibo;Slide"/>
-					<dcterms:isPartOf rdf:resource="{$baseUri}#this"/>
+				<dcterms:isPartOf rdf:resource="{$baseUri}"/>
 					<bibo:uri>
 					<xsl:attribute name="rdf:resource"><xsl:value-of select="$baseUri"/>#(<xsl:value-of select="$pos"/>)</xsl:attribute>
 					</bibo:uri>

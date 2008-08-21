@@ -21,6 +21,13 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
@@ -28,7 +35,9 @@
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs ="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:geo  ="http://www.w3.org/2003/01/geo/wgs84_pos#"
-    xmlns:foaf ="http://xmlns.com/foaf/0.1/#"
+    xmlns:foaf ="&foaf;"
+    xmlns:sioc ="&sioc;"
+    xmlns:bibo ="&bibo;"
     xmlns:v    ="http://www.openlinksw.com/xsltext/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"
@@ -68,6 +77,14 @@
 	</rdf:Description>
     </xsl:template>
     <xsl:template match="photo">
+	<rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 	    <rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
 	    <xsl:variable name="lic" select="@license"/>

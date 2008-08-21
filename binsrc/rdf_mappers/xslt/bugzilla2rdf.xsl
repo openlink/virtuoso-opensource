@@ -52,7 +52,7 @@
 			<sioc:container_of rdf:resource="{@rdf:resource}" />
 		</sioct:Discussion>
 		<xsl:for-each select="long_desc">
-			<sioc:Post rdf:about="{vi:proxyIRI(concat($baseUri, '#', issue_when))}">
+			<sioc:Post rdf:about="{vi:proxyIRI($baseUri,'',issue_when)}">
 				<sioc:has_container rdf:resource="{$baseUri}"/>
 				<dc:date>
 					<xsl:value-of select="issue_when"/>
@@ -74,7 +74,7 @@
 			<sioc:container_of rdf:resource="{@rdf:resource}" />
 		</sioct:Discussion>
 		<xsl:for-each select="long_desc">
-			<sioc:Post rdf:about="{vi:proxyIRI(concat($baseUri, '#', bug_when))}">
+			<sioc:Post rdf:about="{vi:proxyIRI($baseUri, '', bug_when)}">
 				<sioc:has_container rdf:resource="{$baseUri}"/>
 				<dc:date>
 					<xsl:value-of select="bug_when"/>
