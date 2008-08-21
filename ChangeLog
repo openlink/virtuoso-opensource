@@ -1,3 +1,63 @@
+2008-08-21 11:01  source
+
+	* Updated version to 5.0.8-rc3
+
+2008-08-21 09:19  source
+
+	* Fixed proxyIRI
+	* Fixed DOCTYPE
+	* Fixed tag labels
+
+2008-08-20 20:51  source
+
+	* Fixed problem with session file
+
+2008-08-20 19:19  source
+
+	* Fixed use %V to escape the values
+
+2008-08-20 19:18  source
+
+	* Updated documentation
+
+2008-08-20 19:17  source
+
+	* Fixed compiler warnings
+
+2008-08-20 14:07  source
+
+	* Fixed typo
+
+2008-08-20 13:43  source
+
+	* Added new OAT.MAP api
+
+2008-08-20 13:38  source
+
+	* Merged from upstream project
+
+2008-08-19 20:05  source
+
+	* Fixed image deref
+	* Fixed properties
+	* Small bugfixes
+
+2008-08-19 14:37  source
+
+	* Fixed do not recompile when error occurs and vsp has not changed
+
+2008-08-19 14:32  source
+
+	* Fixed load timeout
+
+2008-08-19 14:31  source
+
+	* Fixed RDFA @resource and @typeof
+
+2008-08-19 14:30  source
+
+	* Fixed RDFa @resource and @typeof
+
 2008-08-18 22:48  source
 
 	* Updated version to 5.0.8-rc2
