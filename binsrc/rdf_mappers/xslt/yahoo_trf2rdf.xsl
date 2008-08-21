@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE xsl:stylesheet [
-<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-]>
 <!--
  -
  -  $Id$
@@ -10,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2008 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,11 +21,23 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+    xmlns:foaf="&foaf;"
+    xmlns:sioc="&sioc;"
+    xmlns:bibo="&bibo;"
+    xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:y="urn:yahoo:maps">
 
     <xsl:output method="xml" indent="yes" />
@@ -43,7 +51,18 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri)}">
+	    <xsl:variable name="res" select="vi:proxyIRI ($baseUri)"/>
+	    <rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&foaf;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&sioc;Container"/>
+		<sioc:container_of rdf:resource="{$res}"/>
+		<foaf:primaryTopic rdf:resource="{$res}"/>
+		<dcterms:subject rdf:resource="{$res}"/>
+	    </rdf:Description>
+	    <rdf:Description rdf:about="{$res}">
+		<rdf:type rdf:resource="&sioc;Item"/>
+		<sioc:has_container rdf:resource="{$baseUri}"/>
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>
@@ -59,17 +78,22 @@
 
     <xsl:template match="y:Result" priority="1">
 	<xsl:element namespace="{$ns}" name="{@type}">
-	    <xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
+	    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', @type)}">
+		<rdf:type rdf:resource="&sioc;Item"/>
 	    <xsl:apply-templates select="@*|node()"/>
+	    </rdf:Description>
 	</xsl:element>
     </xsl:template>
 
     <xsl:template match="y:Latitude|y:Longitude">
 	<xsl:if test="local-name () = 'Latitude'">
-	    <geo:Point rdf:parseType="Resource">
+	    <foaf:based_near>
+		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', 'location')}">
+		    <rdf:type rdf:resource="&geo;Point"/>
 		<geo:lat><xsl:value-of select="."/></geo:lat>
 		<geo:long><xsl:value-of select="../y:Longitude"/></geo:long>
-	    </geo:Point>
+		</rdf:Description>
+	    </foaf:based_near>
 	</xsl:if>
     </xsl:template>
 

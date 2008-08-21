@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE xsl:stylesheet [
-<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY sioc "http://rdfs.org/sioc/ns#">
-]>
 <!--
  -
  -  $Id$
@@ -13,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2008 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +21,13 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -36,6 +36,7 @@
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
     xmlns:foaf="&foaf;"
+    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:dct= "http://purl.org/dc/terms/"
     xmlns:mql="http://www.freebase.com/">
 
@@ -78,9 +79,15 @@
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'/')]">
-	<xsl:if test="name () = 'type' and . like '%/person'">
+	<xsl:if test="local-name () = 'type' and . like '%/person'">
 	    <rdf:type rdf:resource="&foaf;Person"/>
 	</xsl:if>
+	<xsl:if test="local-name () = 'type'">
+	    <sioc:topic>
+		<skos:Concept rdf:about="{vi:proxyIRI (concat ($ns, 'view', .))}"/>
+	    </sioc:topic>
+	</xsl:if>
+
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
 		<xsl:value-of select="vi:proxyIRI(concat ($ns, 'view', .))"/>

@@ -1131,7 +1131,8 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
     xd := serialize_to_UTF8_xml (xt);
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
 }
 ;
@@ -1329,10 +1330,12 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
     return 0;
   url := sprintf('http://digg.com/rss_search?search=%s&area=promoted&type=both&section=%s', search, section_name);
   tmp := http_get (url);
-  xd := xtree_doc (tmp, 2);
+  xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
-  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+  --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
@@ -1380,9 +1383,9 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
   img_id := tmp[0];
   if (img_id is null)
     return 0; 
-  url := concat('http://www.openlibrary.org/api/get?key=/b/', img_id);
+  url := concat('http://openlibrary.org/api/get?key=/b/', img_id);
   url := concat(url, '&prettyprint=true&text=true');
-  url:= 'http://openlibrary.org/api/get?key=/b/OL7668717M&prettyprint=true&text=true';
+  --XXX:url:= 'http://openlibrary.org/api/get?key=/b/OL7668717M&prettyprint=true&text=true';
   cnt := http_get (url, hdr);
   tree := json_parse (cnt);
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);

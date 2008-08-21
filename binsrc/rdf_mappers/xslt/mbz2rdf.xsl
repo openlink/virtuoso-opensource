@@ -1,13 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE xsl:stylesheet [
-<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
-<!ENTITY mo "http://purl.org/ontology/mo/">
-<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
-<!ENTITY dc "http://purl.org/dc/elements/1.1/">
-]>
 <!--
  -
  -  $Id$
@@ -15,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2008 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,6 +21,15 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY mo "http://purl.org/ontology/mo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
