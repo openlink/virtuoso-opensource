@@ -1879,23 +1879,77 @@ new_cfg_read_storages (caddr_t ** temp_storage)
 
 /*
  *  Checks if the database is in use
- *  TODO Use file locking
  */
-
 static int lck_fd = -1;
 
 #if !defined (WIN32)
-# if !defined (HAVE_FLOCK_IN_SYS_FILE)
-#  define LCK_O_FLAGS	O_CREAT|O_EXCL|O_WRONLY
-# else
+# if defined (HAVE_FLOCK_IN_SYS_FILE) || defined (F_SETLK)
 #  define LCK_O_FLAGS   O_CREAT|O_WRONLY
+# else
+#  define LCK_O_FLAGS	O_CREAT|O_EXCL|O_WRONLY
+#  define LCK_CAN_CLOSE	1
 # endif
 #else
 # define LCK_O_FLAGS	O_CREAT|O_EXCL|O_TEMPORARY|O_WRONLY
 #endif
 
+
+static int
+db_lck_lock_fd (int fd, char *name)
+{
+#if defined (F_SETLK)
+  struct flock fl;
+
+  /* Get an advisory WRITE lock */
+  fl.l_type = F_WRLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0;
+
+  if (fcntl (fd, F_SETLK, &fl) < 0)
+    {
+      log (L_ERR, "Unable to lock file %s (%m).", name);
+
+      /* we could not get a lock, so who owns it? */
+      fcntl (fd, F_GETLK, &fl);
+      log (L_ERR, "Virtuoso is already runnning (pid %ld)", fl.l_pid);
+      return -1;
+    }
+#elif defined (HAVE_FLOCK_IN_SYS_FILE)
+  if (flock (fd, LOCK_EX | LOCK_NB))
+    {
+      log (L_ERR, "Unable to lock file %s (%m).", name);
+      return -1;
+    }
+#endif
+
+  return 0;
+}
+
+
 static void
-db_lck_write_pid (int lck_fd)
+db_lck_unlock_fd (int fd, char *name)
+{
+#if defined (F_SETLK)
+  struct flock fl;
+
+  /* Unlock */
+  fl.l_type = F_UNLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0;
+
+  if (fcntl (fd, F_SETLK, &fl) < 0)
+    log (L_WARNING, "Unable to unlock %s (%m)", name);
+#elif defined (HAVE_FLOCK_IN_SYS_FILE)
+  if (flock (fd, LOCK_UN | LOCK_NB))
+    log (L_WARNING, "Unable to unlock %s (%m)", name);
+#endif
+}
+
+
+static void
+db_lck_write_pid (int fd)
 {
   char pid_arr[50];
   int len;
@@ -1904,7 +1958,7 @@ db_lck_write_pid (int lck_fd)
   len = strlen (pid_arr);
   len = len > sizeof (pid_arr) ? sizeof (pid_arr) : len;
 
-  if (len != write (lck_fd, pid_arr, len))
+  if (len != write (fd, pid_arr, len))
     {
       log (L_ERR, "Unable to store the PID of the virtuoso process into the lock file : %m");
     }
@@ -1917,66 +1971,54 @@ db_check_in_use (void)
   /* OK, this is not fool proof, but it provides basic protection */
   if ((lck_fd = open (c_lock_file, LCK_O_FLAGS, 0644)) == -1)
     {
-      if (errno == EEXIST || errno == EACCES)
-	{
-	  fprintf (stderr,
-	      "The file %s exists.\n"
-	      "This probably means that %s is already running.\n"
-	      "If you are sure that this is not the case,\n"
-	      "  please remove the file %s and start again.\n",
-	      c_lock_file, MYNAME, c_lock_file);
-	}
-      else
-	{
-	  log (L_ERR, "Unable to create %s (%m)", c_lock_file);
-	}
-      return -1;
+      log (L_ERR, "Unable to create file %s (%m).", c_lock_file);
+      goto failed;
     }
+
+  if (db_lck_lock_fd (lck_fd, c_lock_file))
+    goto failed;
 
   db_lck_write_pid (lck_fd);
 
-#if (!defined (WIN32)) && (!defined (HAVE_FLOCK_IN_SYS_FILE))
+#if defined (LCK_CAN_CLOSE)
   close (lck_fd);
   lck_fd = -1;
 #endif
-
-#if defined (HAVE_FLOCK_IN_SYS_FILE)
-  if (flock (lck_fd, LOCK_EX | LOCK_NB))
-    {
-      close (lck_fd);
-      lck_fd = -1;
-      fprintf (stderr,
-	  "Unable to lock file %s.\n"
-	  "This probably means that %s is already running.\n"
-	  "If you are sure that this is not the case,\n"
-	  "  please remove the file %s and start again.\n",
-	  c_lock_file, MYNAME, c_lock_file);
-      return -1;
-    }
-#endif
-
   return 0;
+
+failed:
+  log (L_ERR, "This probably means you either do not have permission to start");
+  log (L_ERR, "this server, or that %s is already running.", MYNAME);
+  log (L_ERR, "If you are absolutely sure that this is not the case, please try");
+  log (L_ERR, "to remove the file %s and start again.", c_lock_file);
+
+  close (lck_fd);
+  lck_fd = -1;
+
+  return -1;
 }
 
 
 void
 db_not_in_use (void)
 {
-#if defined (HAVE_FLOCK_IN_SYS_FILE)
   if (lck_fd != -1)
     {
-      if (flock (lck_fd, LOCK_UN | LOCK_NB))
-	log (L_WARNING, "Unable to unlock %s (%m)", c_lock_file);
+      db_lck_unlock_fd (lck_fd, c_lock_file);
+      close (lck_fd);
+      lck_fd = -1;
     }
-#endif
+
 #if ! defined (WIN32)
   if (unlink (c_lock_file) == -1)
     log (L_WARNING, "Unable to remove %s (%m)", c_lock_file);
 #endif
 }
 
+
 /* needed to access the server port in hosting binaries */
-char *virtuoso_odbc_port ()
+char *
+virtuoso_odbc_port ()
 {
   return c_serverport;
 }
