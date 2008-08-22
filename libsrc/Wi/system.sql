@@ -6217,3 +6217,13 @@ create procedure view_get_where_from_foreign_key (in _tbls varchar, in _suff var
 ;
 
 -- END RDF Schema objects
+
+create table SYS_HTTP_CLIENT_CACHE (
+    HCC_URI varchar,
+    HCC_HASH varchar,
+    HCC_TS timestamp,
+    HCC_HEADER any,
+    HCC_BODY long varbinary,
+    primary key (HCC_URI, HCC_HASH))
+;
+

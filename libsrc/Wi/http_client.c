@@ -1677,7 +1677,11 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t _err_ret;
   int meth = HC_METHOD_GET;
   caddr_t http_hdr = NULL;
-  IO_SECT(qst);
+  caddr_t body = NULL;
+  dk_set_t hdrs = NULL;
+  caddr_t *head = NULL;
+  int to_free_head = 1;
+
 
   ctx = http_cli_std_init (url);
   ctx->hcctx_method = HC_METHOD_GET;
@@ -1715,7 +1719,7 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (BOX_ELEMENTS (args) > 5)
     {
-      caddr_t body = bif_string_or_null_arg (qst, args, 5, me);
+      body = bif_string_or_null_arg (qst, args, 5, me);
       if (body)
 	{
 	  session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
@@ -1745,6 +1749,10 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         ctx->hcctx_timeout = time_out;
     }
 
+  if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, 8)))
+    return ret;  
+
+  IO_SECT(qst);
 
 #ifdef DEBUG
   fprintf (stderr, "bif_http_client: State: %d\n", ctx->hcctx_state);
@@ -1770,10 +1778,6 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_resignal (_err_ret);
     }
 
-  if (BOX_ELEMENTS (args) > 8 && ssl_is_settable (args[8]))
-    {
-      dk_set_t hdrs = NULL;
-      caddr_t *head;
       dk_set_push (&hdrs, box_dv_short_string (ctx->hcctx_response));
       DO_SET (caddr_t, line, &(ctx->hcctx_resp_hdrs))
 	{
@@ -1781,7 +1785,11 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       END_DO_SET();
       head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
+
+  if (BOX_ELEMENTS (args) > 8 && ssl_is_settable (args[8]))
+    {
       qst_set (qst, args[8], (caddr_t) head);
+      to_free_head = 0;
     }
 
   http_cli_ctx_free (ctx);
@@ -1791,6 +1799,9 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (ret);
       ret = NULL;
     }
+  http_client_cache_register ((query_instance_t *)qst, url, http_hdr, body, head, ret);
+  if (to_free_head)
+    dk_free_tree ((caddr_t) head);
   return (ret);
 }
 

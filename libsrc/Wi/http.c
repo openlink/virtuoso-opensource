@@ -5262,7 +5262,7 @@ http_connect (char * uri, caddr_t * err_ret, caddr_t ** head_ret, caddr_t method
   if (header && strlen(header) < 1)
     header = NULL;
 
-  if (header != NULL && NULL == nc_strstr ((unsigned char *) header, (unsigned char *) "User-Agent:"))
+  if ((NULL == header) || (header != NULL && NULL == nc_strstr ((unsigned char *) header, (unsigned char *) "User-Agent:")))
     snprintf (ua_fld, sizeof (ua_fld), "User-Agent: %s\r\n", http_client_id_string);
   else
     strcpy_ck (ua_fld, "");
@@ -5624,7 +5624,143 @@ http_read_chunked_content (dk_session_t *ses, caddr_t *err_ret, char *uri, int a
   return res;
 }
 
-/*TODO return error as 6-th parameter*/
+int32 http_enable_client_cache = 0;
+
+caddr_t
+http_client_cache_hash (caddr_t head, caddr_t body)
+{
+  caddr_t res;
+  dk_session_t * ses = strses_allocate();
+  ptrlong len;
+  CATCH_WRITE_FAIL(ses)
+    {
+      if (head)
+	{	
+	  len = box_length (head);
+	  session_buffered_write (ses, head, len);
+	}
+      if (body)
+	{	
+	  len = box_length (body);
+	  session_buffered_write (ses, body, len);
+	}
+    }
+  END_READ_FAIL (ses);
+  if (strses_length (ses))
+    res = md5_ses (ses);
+  else
+    res = box_dv_short_string ("");
+  strses_free (ses);
+  return res;
+}
+
+caddr_t
+http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t body, state_slot_t ** args, int arg_pos)
+{
+  static query_t * qr;
+  local_cursor_t * lc;
+  caddr_t err = NULL;
+  caddr_t ret = NULL;
+
+  if (!http_enable_client_cache)
+    return NULL;
+
+  if (!qr)
+    qr = sql_compile_static ("select HCC_HEADER, HCC_BODY from DB.DBA.SYS_HTTP_CLIENT_CACHE "
+	" where HCC_URI = ? and HCC_HASH = ?", qi->qi_client, &err, 0);
+  if (err) 
+    { 
+      log_error ("Error compiling http cache retrieval statement : %s: %s", 
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
+      dk_free_tree (err); 
+      return NULL;
+    }
+  err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 2,
+      ":0", url, QRP_STR,
+      ":1", http_client_cache_hash (header, body), QRP_RAW);
+  if (err) 
+    { 
+      log_error ("Error retrieving http client cache : %s: %s", 
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
+      dk_free_tree (err); 
+    }
+  else
+    {
+      while (lc_next (lc))
+	{
+	  caddr_t body = lc_nth_col (lc, 1);
+	  dtp_t dtp = DV_TYPE_OF (body);
+	  if (BOX_ELEMENTS (args) > arg_pos && ssl_is_settable (args[arg_pos]))
+	    {
+	      caddr_t * head = (caddr_t *) lc_nth_col (lc, 0);
+	      qst_set ((caddr_t *) qi, args[arg_pos], box_copy_tree (head));
+	    }
+	  if (IS_BLOB_HANDLE_DTP (dtp))
+	    {
+	      blob_handle_t * bh = (blob_handle_t *) body;
+	      if (bh->bh_length > 10000000)
+		ret = (caddr_t) blob_to_string_output (qi->qi_trx, body);
+	      else
+		ret = blob_to_string (qi->qi_trx, body);
+	    }
+	  else if (dtp == DV_BIN)
+	    {
+	      int len = box_length (body);
+	      ret = dk_alloc_box (len + 1, DV_STRING);
+	      memcpy (ret, body, len);
+	      ret[len] = '\0';
+	    }
+	  else
+	    ret = body ? box_copy (body) : NEW_DB_NULL;
+	}
+    }
+  if (lc)
+    lc_free (lc);
+  return ret;
+}
+
+void
+http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t req_body, caddr_t * head, caddr_t body)
+{
+  static query_t * qr;
+  caddr_t err = NULL;
+
+  if (!body || !http_enable_client_cache)
+    return;
+  if (!qr)
+    qr = sql_compile_static ("insert replacing DB.DBA.SYS_HTTP_CLIENT_CACHE (HCC_URI, HCC_HEADER, HCC_BODY, HCC_HASH) "
+	"values (?,?,?,?)", qi->qi_client, &err, 0);
+  if (err) 
+    { 
+      log_error ("Error compiling http cache register statement : %s: %s", 
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
+      dk_free_tree (err); 
+      err = NULL; 
+      return;
+    }
+  err = qr_rec_exec (qr, qi->qi_client, NULL, qi, NULL, 4,
+      ":0", url, QRP_STR,
+      ":1", box_copy_tree (head), QRP_RAW,
+      ":2", body, QRP_STR,
+      ":3", http_client_cache_hash (header, req_body), QRP_RAW);
+
+  if (err) 
+    { 
+      log_error ("Error registering http client cache : %s: %s", 
+	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]); 
+      dk_free_tree (err); 
+      err = NULL; 
+    }
+}
+
+caddr_t
+bif_http_client_cache_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *) qst, "http_client_cache_enable");
+  http_enable_client_cache = bif_long_arg (qst, args, 0, "http_client_cache_enable");
+  return NULL;
+}
+
 caddr_t
 bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -5632,6 +5768,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t uri = bif_string_or_uname_arg (qst, args, 0, "http_get");
   caddr_t err = NULL;
   caddr_t * head = NULL;
+  int to_free_head = 1;
   dk_session_t * volatile ses = NULL;
   char *http_pos;
   volatile long len ;
@@ -5648,7 +5785,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char host[1000];
   long peer_max_timeout = 0;
 #endif
-  IO_SECT (qst);
+  
   if (n_args > 2)
     method = bif_string_or_uname_arg (qst, args, 2, "http_get");
   if (n_args > 3)
@@ -5666,6 +5803,10 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef DEBUG
   printf("\nhttp_get(\"%s\", ...)\n", uri);
 #endif
+  if (NULL != (res = http_client_cache_get ((query_instance_t *)qst, uri, header, body, args, 1)))
+    return res;  
+
+  IO_SECT (qst);
   if (!(http_pos = strstr (uri, "http://")))
     {
       char err_msg [1000];
@@ -5834,21 +5975,20 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 #endif
   *err_ret = err;
-  if (BOX_ELEMENTS (args) > 1)
+  if (BOX_ELEMENTS (args) > 1 && ssl_is_settable (args[1]))
     {
-      if (ssl_is_settable (args[1]))
 	qst_set (qst, args[1], (caddr_t) head);
-      else
-	dk_free_tree ((caddr_t) head);
+      to_free_head = 0;
     }
-  else
-    dk_free_tree ((caddr_t) head);
   END_IO_SECT (err_ret);
   if (*err_ret)
     {
       dk_free_tree (res);
       res = NULL;
     }
+  http_client_cache_register ((query_instance_t *)qst, uri, header, body, head, res);
+  if (to_free_head)
+    dk_free_tree ((caddr_t) head);
   return res;
 }
 
@@ -8885,6 +9025,7 @@ http_init_part_one ()
   bif_define_typed ("http_path", bif_http_path, &bt_varchar);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
   bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+  bif_define_typed ("http_client_cache_enable", bif_http_client_cache_enable, &bt_varchar);
   bif_define_typed ("string_output", bif_string_output, &bt_varchar);
   bif_define_typed ("string_output_string", bif_string_output_string, &bt_varchar);
   bif_define ("string_output_flush", bif_string_output_flush);
