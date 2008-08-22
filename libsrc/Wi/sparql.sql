@@ -9017,7 +9017,6 @@ host_found:
   rset := null;
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
   set_user_id ('SPARQL');
-  dbg_obj_princ ('full_query = ', full_query, ', qry_params = ', qry_params);
   commit work;
   exec ( concat ('sparql ', full_query), state, msg, qry_params, maxrows, metas, rset);
   commit work;
