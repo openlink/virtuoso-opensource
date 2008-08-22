@@ -339,6 +339,9 @@ page_release_read (buffer_desc_t * buf)
 	  ADAPTIVE_READ_INC (waiting, buf);
 	  if (PA_WRITE == waiting->itc_dive_mode)
 	    {
+#ifdef MTX_DEBUG 
+	      buf->bd_writer = waiting->itc_thread;
+#endif
 	      /* if adaptive landing made this a write, then free no more cursors. */
 	      buf->bd_read_waiting = next;
 	      semaphore_leave (waiting->itc_thread->thr_sem);
@@ -380,6 +383,9 @@ page_release_writes (buffer_desc_t * buf)
 	  waiting->itc_buf_entered = buf;
 	  waiting->itc_pl = buf->bd_pl;
 	  BD_SET_IS_WRITE (buf, 1);
+#ifdef MTX_DEBUG
+	  buf->bd_writer = waiting->itc_thread;
+#endif
 	  buf->bd_write_waiting = next;
 	  semaphore_leave (waiting->itc_thread->thr_sem);
 	  return W_RELEASED;
@@ -904,6 +910,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 	{
 	  TC (tc_dive_split);
 	  *buf_ret = itc_reset (itc);
+          itc->itc_read_waits += 1000;
 	  return;
 	}
   waited = 1;

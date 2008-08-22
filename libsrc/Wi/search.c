@@ -3018,7 +3018,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
 	  {
 	    /* Go down on the right edge. */
 	    itc_down_transit (it, buf_ret, leaf);
-	    if (it->itc_write_waits || it->itc_read_waits)
+	    if (it->itc_write_waits >= 1000 || it->itc_read_waits >= 1000)
 	    {
 		/* if the cursor had a wait, a reset or any such thing, the path from top to bottom is not the normal one and the sample must be discarded */
 		int old_rnd = it->itc_random_search;
