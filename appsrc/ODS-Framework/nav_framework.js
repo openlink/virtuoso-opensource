@@ -2409,7 +2409,7 @@ ODS.Nav = function (navOptions)
 
 
         var mapOpt = {
-                      fix:OAT.MapData.FIX_ROUND1,
+	    fix:OAT.MapData.FIX_ROUND1
 	}
 
 	var searchCallback = function(commonMapObj) {
