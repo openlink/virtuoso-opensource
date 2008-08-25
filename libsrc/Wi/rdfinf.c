@@ -68,24 +68,28 @@ caddr_t rdfs_type;
 void
 ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst)
 {
-  data_source_t * qn = (data_source_t *)ri;
-  data_source_t * next_qn = NULL;
-  table_source_t * ts = NULL;
-  hash_source_t * hs = NULL;
+  data_source_t *qn = (data_source_t *) ri;
+  data_source_t *next_qn = NULL;
+  table_source_t *ts = NULL;
+  hash_source_t *hs = NULL;
+  data_source_t *en;
+  code_vec_t after = NULL;
   if (!any_flag || qst_get (inst, any_flag))
     return;
   /* the ts or hs after ri is outer.  Must call the appropriate outer output.  */
   while ((qn = qn_next ((data_source_t *) qn)))
     {
-      if (IS_TS ((table_source_t*)qn) || IS_HS ((table_source_t*)qn))
+      if (IS_TS ((table_source_t *) qn) || IS_HS ((table_source_t *) qn))
 	{
-	  ts = (table_source_t *)qn;
-	  next_qn = qn_next (qn_next ((data_source_t *)ts));
+	  ts = (table_source_t *) qn;
+	  next_qn = qn_next (en = qn_next ((data_source_t *) ts));
 	  break;
 	}
     }
-  
-  if (!next_qn)
+
+  if ((qn_input_fn) end_node_input == en->src_input && en->src_after_code)
+    after = en->src_after_code;
+  if (!next_qn && !after)
     return;
   if (IS_TS (ts))
     {
@@ -103,18 +107,20 @@ ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * ins
 	  END_DO_SET ();
 	}
     }
-  else 
+  else
     {
       int inx;
-      hs = (hash_source_t *)ts;
+      hs = (hash_source_t *) ts;
       DO_BOX (state_slot_t *, out, inx, hs->hs_out_slots)
 	{
 	  qst_set_bin_string (inst, out, (db_buf_t) "", 0, DV_DB_NULL);
 	}
       END_DO_BOX;
     }
-
-  qn_input (next_qn, inst, inst);
+  if (after)
+    code_vec_run (after, inst);
+  if (next_qn)
+    qn_input (next_qn, inst, inst);
   /* the join test for this is in the 2nd end node after */
 }
 
