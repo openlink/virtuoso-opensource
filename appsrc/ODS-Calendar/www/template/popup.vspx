@@ -40,6 +40,9 @@
       <script type="text/javascript">
         function myInit()
         {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
+
           // init tabs
           showTab('a', 2, 0);
         }

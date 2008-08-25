@@ -402,12 +402,12 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-      <xsl:element name="v:url">
-      <xsl:attribute name="url">javascript: showTab(\'<xsl:value-of select="@tab" />\', <xsl:value-of select="@tabsCount" />, <xsl:value-of select="@tabNo" />);</xsl:attribute>
-        <xsl:attribute name="value"><xsl:value-of select="@caption"/></xsl:attribute>
-      <xsl:attribute name="xhtml_id"><xsl:value-of select="concat(@tab, '_tab_', @tabNo)" /></xsl:attribute>
-      <xsl:attribute name="xhtml_class">tab noapp</xsl:attribute>
-      </xsl:element>
+    <div>
+      <xsl:attribute name="id"><xsl:value-of select="concat(@tab, '_tab_', @tabNo)" /></xsl:attribute>
+      <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+      <xsl:attribute name="onclick">javascript: showTab('<xsl:value-of select="@tab" />', <xsl:value-of select="@tabsCount" />, <xsl:value-of select="@tabNo" />);</xsl:attribute>
+      <xsl:value-of select="@caption"/>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->

@@ -199,7 +199,7 @@ Feeds.loadTags = function ()
   var x = function(data) {
     div.innerHTML = data;
     var selected = Feeds.state.selected;
-    if (selected.indexOf('t#') == 0)
+    if (selected && selected.indexOf('t#') == 0)
       Feeds.selectTag(selected);
   }
   var S = 'ajax.vsp?a=tags&sa=load&np='+encodeURIComponent(Feeds.state.selected)+Feeds.sessionParams();

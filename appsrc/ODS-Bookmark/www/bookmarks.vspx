@@ -219,8 +219,8 @@
 
               <vm:if test="(self.account_role not in ('public', 'shared'))">
                     <div class="tabs">
-                  <a href2="#" id="tree_button" class="noapp tab <?V case when self.bTab = 'tree' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tree'); return false;">Tree</a>
-                  <a href2="#" id="tags_button" class="noapp tab <?V case when self.bTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tags'); return false;">Tags</a>
+                  <div id="tree_button" class="tab <?V case when self.bTab = 'tree' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tree');">Tree</div>
+                  <div id="tags_button" class="tab <?V case when self.bTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tags');">Tags</div>
                     </div>
               </vm:if>
 

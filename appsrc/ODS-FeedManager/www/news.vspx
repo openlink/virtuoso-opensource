@@ -137,8 +137,8 @@
       <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
         <div class="tabs">
           <div style="float: left;">
-            <a href="#" id="feeds_button" class="noapp tab <?V case when self.fTab = 'feeds' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('feeds'); return false;">Feeds</a>
-            <a href="#" id="tags_button" class="noapp tab <?V case when self.fTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('tags'); return false;">Tags</a>
+            <div id="feeds_button" class="tab <?V case when self.fTab = 'feeds' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('feeds');">Feeds</div>
+            <div id="tags_button" class="tab <?V case when self.fTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('tags');">Tags</div>
         </div>
         <?vsp
           if (ENEWS.WA.settings_favourites (self.settings))

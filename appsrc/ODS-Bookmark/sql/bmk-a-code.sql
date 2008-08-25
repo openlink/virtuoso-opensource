@@ -949,7 +949,8 @@ create procedure BMK.WA.bookmark_import_netscape(
   if (V is null)
     return;
   N := 1;
-  while (1) {
+  while (1)
+  {
     --commit work;
     T := xpath_eval('/dl/dt/a/text()', V, N);
     if (T is null)
@@ -959,7 +960,8 @@ create procedure BMK.WA.bookmark_import_netscape(
 
     tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, tags, folder_id);
 
-	  if (not is_empty_or_null (progress_id)) {
+	  if (not is_empty_or_null (progress_id))
+	  {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
 	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
@@ -969,7 +971,8 @@ create procedure BMK.WA.bookmark_import_netscape(
   }
 _folder:
   N := 1;
-  while (1) {
+  while (1)
+  {
     T := xpath_eval('/dl/dt/h3', V, N);
     if (T is null)
       goto _exit;

@@ -250,22 +250,23 @@ function sortSelect(box) {
 //
 function showTab(tabs, tabsCount, tabNo)
 {
-  if ($(tabs)) {
-    for (var i = 0; i < tabsCount; i++) {
+  if ($(tabs))
+  {
+    for (var i = 0; i < tabsCount; i++)
+    {
       var l = $(tabs+'_tab_'+i);      // tab labels
       var c = $(tabs+'_content_'+i);  // tab contents
-      if (i == tabNo) {
+      if (i == tabNo)
+      {
         if ($('tabNo'))
           $('tabNo').value = tabNo;
-        if (c) {
+        if (c)
           OAT.Dom.show(c);
-      }
         OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-        if (c) {
+        if (c)
           OAT.Dom.hide(c);
-    }
         OAT.Dom.removeClass(l, "activeTab");
   }
 }

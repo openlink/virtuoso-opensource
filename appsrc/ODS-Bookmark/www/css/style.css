@@ -832,6 +832,27 @@ div.tabContent {
   padding: 6px;
 }
 
+div.tab {
+  cursor: pointer;
+  display: inline;
+  font-weight: bold;
+  background-color: #b0cde4;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  margin-right: 3px;
+  position: relative;
+  text-decoration: none;
+  top: 2px;
+  z-index: 100;
+}
+
+div.activeTab {
+  background-color: #EFEFEF;
+  border-color: #7f94a5;
+}
+
 a.tab {
   color: #000;
   font-weight: bold;
@@ -846,7 +867,7 @@ a.tab {
   z-index: 100;
 }
 
-a.tab.tab2 {
+div.tab2 {
   background-color: #EFEFEF;
 }
 
@@ -855,7 +876,7 @@ a.tab.activeTab {
   border-color: #7f94a5 #7f94a5 #7f94a5 #7f94a5;
 }
 
-a.tab.activeTab2 {
+div.activeTab2 {
   background-color: #FFF;
 }
 
