@@ -25,111 +25,95 @@
 -- Working procedures
 --
 -----------------------------------------------------------------------------
-create procedure ODRIVE.WA.dav_dc_xml()
+create procedure ODRIVE.WA.dc_xml ()
 {
-  return '<?xml version="1.0" encoding="UTF-8"?><dc><base/><advanced/><property/><metadata/></dc>';
+  return '<?xml version="1.0" encoding="UTF-8"?><dc><base/><criteria/></dc>';
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_set_base(
+create procedure ODRIVE.WA.dc_xml_doc (
+  in search varchar)
+{
+  declare exit handler for SQLSTATE '*'
+{
+    return xtree_doc (ODRIVE.WA.dc_xml ());
+  };
+  return xtree_doc (search);
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_set_base (
   inout search varchar,
   in id varchar,
   in value varchar)
 {
-  return ODRIVE.WA.dav_dc_set(search, 'base', id, sprintf('<entry ID="%s">%V</entry>', id, cast(coalesce(value, '') as varchar)));
+  return ODRIVE.WA.dc_set(search, 'base', id, sprintf('<entry ID="%s">%V</entry>', id, cast(coalesce(value, '') as varchar)));
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_set_advanced(
+create procedure ODRIVE.WA.dc_set_criteria (
   inout search varchar,
   in id varchar,
-  in value varchar)
+  in fField any,
+  in fCriteria any,
+  in fValue any,
+  in fSchema any := null,
+  in fProperty any := null)
 {
-  return ODRIVE.WA.dav_dc_set(search, 'advanced', id, sprintf('<entry ID="%s">%V</entry>', id, cast(coalesce(value, '') as varchar)));
+  declare S varchar;
+
+  S := '';
+  if (not isnull (fField))
+    S := sprintf ('%s field="%V"', S, fField);
+  if (not isnull (fSchema))
+    S := sprintf ('%s schema="%V"', S, fSchema);
+  if (not isnull (fProperty))
+    S := sprintf ('%s property="%V"', S, fProperty);
+  if (not isnull (fCriteria))
+    S := sprintf ('%s criteria="%V"', S, fCriteria);
+  return ODRIVE.WA.dc_set (search, 'criteria', id, sprintf('<entry ID="%s" %s>%V</entry>', id, S, coalesce (fValue, '')));
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_set_property(
-  inout search varchar,
-  in id varchar,
-  in property varchar,
-  in condition varchar,
-  in value varchar)
-{
-  return ODRIVE.WA.dav_dc_set(search, 'property', id, sprintf('<entry ID="%s" property="%V" condition="%V">%V</entry>', id, property, condition, cast(coalesce(value, '') as varchar)));
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.dav_dc_set_metadata(
-  inout search varchar,
-  in id varchar,
-  in type varchar,
-  in schema_urn varchar,
-  in property varchar,
-  in condition varchar,
-  in value varchar)
-{
-  return ODRIVE.WA.dav_dc_set(search, 'metadata', id, sprintf('<entry ID="%s" type="%s" schema="%V" property="%V" condition="%V">%V</entry>', id, type, schema_urn, property, condition, cast(coalesce(value, '') as varchar)));
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.dav_dc_set(
+create procedure ODRIVE.WA.dc_set(
   inout search varchar,
   in tag varchar,
   in id varchar,
   in value varchar)
 {
-  declare
-    aXml,
-    aEntity any;
-  declare
-    S varchar;
+  declare aXml, aEntity any;
 
-  {
-    declare exit handler for SQLSTATE '*' {
-      aXml := xtree_doc(ODRIVE.WA.dav_dc_xml());
-      goto _skip;
-    };
-    aXml := xtree_doc(search);
-  }
-_skip:
+  aXml := ODRIVE.WA.dc_xml_doc (search);
   aEntity := xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), aXml);
   if (not isnull(aEntity))
     aXml := XMLUpdate(aXml, sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), null);
 
   aEntity := xpath_eval(sprintf('/dc/%s', tag), aXml);
   XMLAppendChildren(aEntity, xtree_doc(value));
-  search := ODRIVE.WA.dav_dc_restore_ns(ODRIVE.WA.xml2string(aXml));
+  search := ODRIVE.WA.dc_restore_ns (ODRIVE.WA.xml2string (aXml));
   return search;
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_cut(
+create procedure ODRIVE.WA.dc_cut (
   inout search varchar,
   in tag varchar,
   in id varchar)
 {
-  declare
-    aXml,
-    aEntity any;
+  declare aXml any;
 
-  declare exit handler for SQLSTATE '*' {return search;};
-
-  aXml := xtree_doc(search);
-  aEntity := xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), aXml);
-  if (not isnull(aEntity))
+  aXml := ODRIVE.WA.dc_xml_doc (search);
+  if (not isnull(xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), aXml)))
     aXml := XMLUpdate(aXml, sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), null);
 
   search := ODRIVE.WA.xml2string(aXml);
@@ -139,20 +123,16 @@ create procedure ODRIVE.WA.dav_dc_cut(
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_get(
+create procedure ODRIVE.WA.dc_get(
   inout search varchar,
   in tag varchar,
   in id varchar,
   in defaultValue any := '')
 {
-  declare
-    aXml any;
-  declare
-    value any;
+  declare aXml any;
+  declare value any;
 
-  declare exit handler for SQLSTATE '*' {return defaultValue;};
-
-  aXml := xtree_doc(search);
+  aXml := ODRIVE.WA.dc_xml_doc (search);
   value := cast(xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]/.', tag, id), aXml) as varchar);
   if (is_empty_or_null(value))
     return defaultValue;
@@ -163,252 +143,127 @@ create procedure ODRIVE.WA.dav_dc_get(
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_property_rs(
+create procedure ODRIVE.WA.dc_filter (
   inout search varchar)
 {
-  declare
-    I,
-    N integer;
-  declare
-    aXml,
-    aEntity any;
-  declare
-    c0 integer;
-  declare
-    c1, c2, c3 varchar;
-
-  result_names(c0, c1, c2, c3);
-
-  declare exit handler for SQLSTATE '*' {return;};
-
-  aXml := xtree_doc(search);
-  I := xpath_eval('count(/dc/property/entry)', aXml);
-  N := 1;
-  while (N <= I) {
-    aEntity := xpath_eval('/dc/property/entry', aXml, N);
-    result(cast(xpath_eval('@ID', aEntity) as integer),
-           cast(xpath_eval('@property', aEntity) as varchar),
-           cast(xpath_eval('@condition', aEntity) as varchar),
-           cast(xpath_eval('.', aEntity) as varchar)
-          );
-    N := N + 1;
-  }
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.dav_dc_metadata_rs(
-  inout search varchar)
-{
-  declare
-    I,
-    N integer;
-  declare
-    aXml,
-    aEntity,
-    aType,
-    aSchema,
-    aCategory any;
-  declare
-    c0 integer;
-  declare
-    c1, c2, c3, c4, c5, c6 varchar;
-
-  result_names(c0, c1, c2, c3, c4, c5, c6);
-
-  declare exit handler for SQLSTATE '*' {return;};
-
-  aXml := xtree_doc(search);
-  I := xpath_eval('count(/dc/metadata/entry)', aXml);
-  for (N := 1; N <= I; N := N + 1) {
-    aEntity := xpath_eval('/dc/metadata/entry', aXml, N);
-    aType := cast(xpath_eval('@type', aEntity) as varchar);
-    if (isnull(aType))
-      aType := 'RDF';
-    aSchema := cast(xpath_eval('@schema', aEntity) as varchar);
-    aCategory := 'WebDAV Properties';
-    if (aType = 'RDF')
-      aCategory := (select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS where RS_URI = aSchema);
-    result(cast(xpath_eval('@ID', aEntity) as integer),
-           aType,
-           aSchema,
-           cast(xpath_eval('@property', aEntity) as varchar),
-           cast(xpath_eval('@condition', aEntity) as varchar),
-           cast(xpath_eval('.', aEntity) as varchar),
-           aCategory
-          );
-  }
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.dav_dc_filter(
-  inout search varchar)
-{
-  declare
-    I,
-    N integer;
-  declare
-    aXml,
-    aEntity,
-    aFilter any;
+  declare I, N integer;
+  declare aXml, aEntity, aFilter any;
 
   aFilter := vector();
-  if (isnull(search))
-    return aFilter;
-
-  aXml := xtree_doc(search);
-
-  -- base
-  --
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_NAME',    'like', ODRIVE.WA.dav_dc_get(search, 'base', 'name'));
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_CONTENT', 'contains_text', ODRIVE.WA.dav_dc_get(search, 'base', 'content'));
-
-  -- advanced
-  --
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_TYPE',     'like', ODRIVE.WA.dav_dc_get(search, 'advanced', 'mime'));
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_OWNER_ID', '=', ODRIVE.WA.dav_dc_get(search, 'advanced', 'owner', '-1'), 'integer', '-1');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_GROUP_ID', '=', ODRIVE.WA.dav_dc_get(search, 'advanced', 'group', '-1'), 'integer', '-1');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_CR_TIME',  ODRIVE.WA.dav_dc_get(search, 'advanced', 'createDate11'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'createDate12'), 'datetime');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_CR_TIME',  ODRIVE.WA.dav_dc_get(search, 'advanced', 'createDate21'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'createDate22'), 'datetime');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_MOD_TIME', ODRIVE.WA.dav_dc_get(search, 'advanced', 'modifyDate11'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'modifyDate12'), 'datetime');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_MOD_TIME', ODRIVE.WA.dav_dc_get(search, 'advanced', 'modifyDate21'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'modifyDate22'), 'datetime');
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_PUBLIC_TAGS', ODRIVE.WA.dav_dc_get(search, 'advanced', 'publicTags11'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'publicTags12'));
-  ODRIVE.WA.dav_dc_subfilter(aFilter, 'RES_PRIVATE_TAGS', ODRIVE.WA.dav_dc_get(search, 'advanced', 'privateTags11'), ODRIVE.WA.dav_dc_get(search, 'advanced', 'privateTags12'));
-
-  -- properties
-  --
-  I := xpath_eval('count(/dc/property/entry)', aXml);
-  N := 1;
-  while (N <= I)
-  {
-    aEntity := xpath_eval('/dc/property/entry', aXml, N);
-    ODRIVE.WA.dav_dc_propSubfilter(aFilter, 'PROP_VALUE', cast(xpath_eval('@property', aEntity) as varchar), cast(xpath_eval('@condition', aEntity) as varchar), cast(xpath_eval('.', aEntity) as varchar));
-    N := N + 1;
+  aXml := ODRIVE.WA.dc_xml_doc (search);
+  I := xpath_eval('count(/dc/criteria/entry)', aXml);
+  for (N := 1; N <= I; N := N + 1)
+{
+    aEntity := xpath_eval('/dc/criteria/entry', aXml, N);
+    ODRIVE.WA.dc_subfilter(aFilter, aEntity);
   }
-
-  -- metadata
-  --
-  I := xpath_eval('count(/dc/metadata/entry)', aXml);
-  N := 1;
-  while (N <= I)
-  {
-    aEntity := xpath_eval('/dc/metadata/entry', aXml, N);
-    if (cast(xpath_eval('@type', aEntity) as varchar) = 'RDF') {
-      ODRIVE.WA.dav_dc_metaSubfilter(aFilter, 'RDF_VALUE', 'http://local.virt/DAV-RDF', cast(xpath_eval('@property', aEntity) as varchar), cast(xpath_eval('@condition', aEntity) as varchar), cast(xpath_eval('.', aEntity) as varchar));
-    } else {
-      ODRIVE.WA.dav_dc_propSubfilter(aFilter, 'PROP_VALUE', cast(xpath_eval('@property', aEntity) as varchar), cast(xpath_eval('@condition', aEntity) as varchar), cast(xpath_eval('.', aEntity) as varchar));
-    }
-    N := N + 1;
-  }
-
   return aFilter;
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_subfilter(
+create procedure ODRIVE.WA.dc_subfilter (
   inout filter any,
-  in name any,
-  in cond any,
-  in value any,
-  in type varchar := 'varchar',
-  in empty_value any := '') returns void
+  inout criteria any)
 {
-  if (is_empty_or_null(cond))
-    return;
-  value := ODRIVE.WA.dav_dc_cast(value, type);
-  if (isnull(value))
-    return;
-  if ((cond = 'like') and (cast(value as varchar) <> ''))
-    value := replace(concat(cast(value as varchar), '%'), '%%', '%');
-  if (cast(value as varchar) = cast(empty_value as varchar))
-    return;
-  if ((cond = 'contains_text') or (cond = 'may_contain_text'))
-    value := ODRIVE.WA.dc_search_string (value);
-  filter := vector_concat(filter, vector(vector(name, cond, value)));
+  declare V, fField, fSchema, fProperty, fCriteria, fValue, fValueType any;
+
+  fField := cast (xpath_eval ('@field', criteria) as varchar);
+  if (is_empty_or_null (fField))
+    signal ('TEST', 'Field can not be empry!<>');
+
+  fCriteria := cast (xpath_eval ('@criteria', criteria) as varchar);
+  if (is_empty_or_null (fCriteria))
+    signal ('TEST', 'Condition can not be empry!<>');
+
+  fValue := cast (xpath_eval ('.', criteria) as varchar);
+  if (is_empty_or_null (fCriteria))
+    signal ('TEST', 'Value can not be empry!<>');
+  fValueType := ODRIVE.WA.dc_valueType (fField);
+  fValue := ODRIVE.WA.dc_cast (fValue, fValueType);
+  if (is_empty_or_null (fValue))
+    signal ('TEST', 'Value type is not appropriate!<>');
+
+  if (fCriteria = 'like')
+  {
+    fValue := ODRIVE.WA.dc_search_like_fix (fValue);
+  }
+  else if (fCriteria in ('contains_text', 'may_contain_text'))
+  {
+    fValue := ODRIVE.WA.dc_search_string (fValue);
+  }
+  V := vector (fField, fCriteria, fValue);
+
+  fSchema := cast (xpath_eval ('@schema', criteria) as varchar);
+  if (not isnull (fSchema))
+    V := vector_concat (V, vector ('http://local.virt/DAV-RDF'));
+
+  fProperty := cast (xpath_eval ('@property', criteria) as varchar);
+  if (not isnull (fProperty))
+    V := vector_concat (V, vector (fProperty));
+
+  filter := vector_concat (filter, vector(V));
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_propSubfilter(
-  inout filter any,
-  in name any,
-  in propName any,
-  in cond any,
-  in value any,
-  in type varchar := 'varchar',
-  in empty_value any := '') returns void
+create procedure ODRIVE.WA.dc_restore_ns(inout pXml varchar)
 {
-  if (is_empty_or_null(cond))
-    return;
-  if (is_empty_or_null(propName))
-    return;
-  value := ODRIVE.WA.dav_dc_cast(value, type);
-  if (isnull(value))
-    return;
-  if (cast(value as varchar) = cast(empty_value as varchar))
-    return;
-  filter := vector_concat(filter, vector(vector(name, cond, value, propName)));
-}
-;
+  pXml := replace (pXml, 'n0:', 'vmd:');
+  pXml := replace (pXml, 'xmlns:n0', 'xmlns:vmd');
+  return pXml;
+};
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_metaSubfilter(
-  inout filter any,
-  in name any,
-  in schemaName any,
-  in propName any,
-  in cond any,
-  in value any,
-  in type varchar := 'varchar',
-  in empty_value any := '') returns void
-{
-  if (is_empty_or_null(cond))
-    return;
-  if (is_empty_or_null(schemaName))
-    return;
-  if (is_empty_or_null(propName))
-    return;
-  value := ODRIVE.WA.dav_dc_cast(value, type);
-  if (isnull(value))
-    return;
-  if (cast(value as varchar) = cast(empty_value as varchar))
-    return;
-  filter := vector_concat(filter, vector(vector(name, cond, value, schemaName, propName)));
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.dav_dc_cast(
-  in value any,
-  in type varchar := 'varchar') returns any
+create procedure ODRIVE.WA.dc_cast (
+  in fValue any,
+  in fValueType varchar := 'varchar')
 {
   declare exit handler for SQLSTATE '*' {return null;};
 
-  if (type = 'varchar')
-    return cast(value as varchar);
-  if (type = 'integer')
-    return cast(value as integer);
-  if (type = 'datetime')
-    return cast(value as datetime);
+  if (fValueType = 'varchar')
+    return cast (fValue as varchar);
+  if (fValueType = 'integer')
+    return cast (fValue as integer);
+  if (fValueType = 'datetime')
+    return cast (fValue as datetime);
+  return fValue;
 }
 ;
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.dav_dc_restore_ns(inout pXml varchar)
+create procedure ODRIVE.WA.dc_valueType (
+  in fField any)
 {
-  pXml := replace(pXml, 'n0:', 'vmd:');
-  pXml := replace(pXml, 'xmlns:n0', 'xmlns:vmd');
-  return pXml;
-};
+	declare fPredicates, fPredicate any;
+
+	ODRIVE.WA.dc_predicateMetas (fPredicates);
+	fPredicate := get_keyword (fField, fPredicates);
+	if (isnull (fPredicate))
+	  return null;
+  return fPredicate[4];
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_search_like_fix (
+  in value varchar)
+{
+  if (is_empty_or_null (value))
+  {
+    value := '%';
+  } else {
+    if (isnull (strstr (value, '%')))
+      value := value || '%';
+  }
+  return replace (value, '%%', '%');
+}
+;
 
 -----------------------------------------------------------------------------
 --
@@ -426,16 +281,18 @@ create procedure ODRIVE.WA.dc_search_string (
   words := vector ();
   tmp := exp;
   w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
-  while (w is not null) {
+  while (w is not null)
+  {
     w := trim (w, '"'' ');
     words := vector_concat (words, vector (w));
     w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
   }
   exp := '';
-  n := 0;
-  while (n < length(words)) {
+  for (n := 0; n < length(words); n := n + 1)
+  {
     w := words[n];
-    if (upper(w) in ('AND', 'OR')) {
+    if (upper(w) in ('AND', 'OR'))
+    {
       exp := concat (exp, sprintf (' %s ', upper(w)));
     } else {
       if ((n = 0) or (upper(words[n-1]) in ('AND', 'OR'))) {
@@ -444,8 +301,91 @@ create procedure ODRIVE.WA.dc_search_string (
         exp := concat (exp, sprintf (' AND "%s"', w));
       }
     }
-    n := n + 1;
   }
   return exp;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_filter_check (
+  inout search varchar,
+  inout user_id integer)
+{
+  declare exit handler for SQLSTATE '*'
+  {
+    return ODRIVE.WA.test_clear (__SQL_MESSAGE);
+  };
+  declare aValue, aFilter any;
+
+  aFilter := ODRIVE.WA.dc_filter (search);
+  DB.DBA.DAV_FC_PRINT_WHERE (aFilter, user_id);
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_predicateMetas (inout pred_metas any)
+{
+  pred_metas := vector (
+    'RES_NAME',                 vector (1, 'File Name',                      null,        null,            'varchar',  vector ()),
+    'RES_FULL_PATH',            vector (0, 'RES_FULL_PATH',                  null,        null,            'varchar',  vector ()),
+    'RES_TYPE',                 vector (1, 'FileType',                       null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'mimes_select.vspx?params=-FIELD-:s1;\')" />')),
+    'RES_OWNER_ID',             vector (0, 'RES_OWNER_ID',                   null,        null,            'integer',  vector ()),
+    'RES_OWNER_NAME',           vector (1, 'Owner Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'users_select.vspx?mode=u&params=-FIELD-:s1;\')" />')),
+    'RES_GROUP_ID',             vector (0, 'RES_GROUP_ID',                   null,        null,            'integer',  vector ()),
+    'RES_GROUP_NAME',           vector (1, 'Group Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'users_select.vspx?mode=g&params=-FIELD-:s1;\')" />')),
+    'RES_COL_FULL_PATH',        vector (0, 'RES_COL_FULL_PATH',              null,        null,            'varchar',  vector ()),
+    'RES_COL_NAME',             vector (0, 'RES_COL_NAME',                   null,        null,            'varchar',  vector ()),
+    'RES_CR_TIME',              vector (1, 'Creation Time',                  null,        null,            'datetime', vector ('size', '10', 'onclick', 'cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\')', 'button', '<img id="-FIELD-_select" border="0" src="image/pick_calendar.gif" onclick="javascript: cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\');" />')),
+    'RES_MOD_TIME',             vector (1, 'Modification Time',              null,        null,            'datetime', vector ('size', '10', 'onclick', 'cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\')', 'button', '<img id="-FIELD-_select" border="0" src="image/pick_calendar.gif" onclick="javascript: cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\');" />')),
+    'RES_PERMS',                vector (0, 'RES_PERMS',                      null,        null,            'varchar',  vector ()),
+    'RES_CONTENT',              vector (1, 'File Content',                   null,        null,            'text',     vector ()),
+    'PROP_NAME',                vector (0, 'PROP_NAME',                      null,        null,            'varchar',  vector ()),
+    'RES_TAGS',                 vector (0, 'RES_TAGS',                       null,        null,            'varchar',  vector ()),
+    'RES_PUBLIC_TAGS',          vector (1, 'Public Tags (comma separated)',  null,        null,            'text-tag', vector ()),
+    'RES_PRIVATE_TAGS',         vector (1, 'Private Tags (comma separated)', null,        null,            'text-tag', vector ()),
+    'PROP_VALUE',               vector (1, 'WebDAV Property',                null,        'davProperties', 'varchar',  vector ()),
+    'RDF_PROP',                 vector (0, 'RDF_PROP',                       null,        null,            'varchar',  vector ()),
+    'RDF_VALUE',                vector (1, 'RDF Property',                   'rdfSchema', 'rdfProperties', 'varchar',  vector ()),
+    'RDF_OBJ_VALUE',            vector (0, 'RDF_OBJ_VALUE',                  null,        null,            'XML',      vector ())
+  );
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_compareMetas (inout cmp_metas any)
+{
+  cmp_metas := vector (
+    '=',                      vector ('equal to'                 , vector ('integer', 'datetime', 'varchar')),
+    '<',                      vector ('less than'                , vector ('integer', 'datetime', 'varchar')),
+    '<=',                     vector ('less than or equal to'    , vector ('integer', 'datetime', 'varchar')),
+    '>',                      vector ('greater than'             , vector ('integer', 'datetime', 'varchar')),
+    '>=',                     vector ('greater than or equal to' , vector ('integer', 'datetime', 'varchar')),
+    '<>',                     vector ('not equal to'             , vector ('integer', 'datetime', 'varchar')),
+    '!=',                     vector ('!='                       , vector ()),
+    'between',                vector ('between'                  , vector ()),
+    'in',                     vector ('in'                       , vector ()),
+    'member_of',              vector ('member of'                , vector ()),
+    'like',                   vector ('like'                     , vector ('varchar')),
+    'regexp_match',           vector ('regexp match'             , vector ()),
+    'is_substring_of',        vector ('is substring of'          , vector ('varchar')),
+    'contains_substring',     vector ('contains substring'       , vector ('varchar')),
+    'not_contains_substring', vector ('not contains substring'   , vector ('varchar')),
+    'starts_with',            vector ('starts with'              , vector ('varchar')),
+    'not_starts_with',        vector ('not starts with'          , vector ('varchar')),
+    'ends_with',              vector ('ends with'                , vector ('varchar')),
+    'not_ends_with',          vector ('not ends with'            , vector ('varchar')),
+    'is_null',                vector ('is null'                  , vector ()),
+    'is_not_null',            vector ('is not null'              , vector ()),
+    'contains_tags',          vector ('contains tags'            , vector ('text-tag')),
+    'may_contain_tags',       vector ('may contain tags'         , vector ('text-tag')),
+    'contains_text',          vector ('contains text'            , vector ('text')),
+    'may_contain_text',       vector ('may_contain_text'         , vector ()),
+    'xcontains',              vector ('xcontains'                , vector ('XML'))
+  );
 }
 ;

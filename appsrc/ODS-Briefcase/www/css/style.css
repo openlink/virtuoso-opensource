@@ -29,6 +29,11 @@ body
   font-size: 9pt;
 }
 
+.pointer
+{
+  cursor: pointer;
+}
+
 a
 {
   text-decoration: none;
@@ -359,13 +364,23 @@ table#list th
   border-width: 1px 0px 1px 0px;
 }
 
-.td_row0
+.tr_0
 {
   background-color: #EFEFEF;
 }
 
-.td_row1
+.tr_1
 {
+}
+
+.tr_1:hover, .tr_0:hover
+{
+ 	background-color: #eec;
+}
+
+.tr_select
+{
+  background-color: #FFFFCC;
 }
 
 /*
@@ -489,38 +504,67 @@ input.button {
 }
 
 /*====== Form lists ======*/
-.form-list
+.permissions-list
 {
+  text-align: center;
+}
+
+.permissions-list th
+{
+  text-align: center;
+  padding: 2px 4px 2px 4px;
+  border: solid #7f94a5;
+  background-color: #b0cde4;
+  border-width: 1px 0px 0px 1px;
+  font-weight: bold;
+}
+
+.permissions-list td.right, .permissions-list th.right
+{
+  border-right-width: 1px;
+}
+
+.permissions-list td.bottom, .permissions-list th.bottom
+{
+  border-bottom-width: 1px;
+}
+
+.permissions-list td {
+  text-align: center;
+  padding: 2px;
+  background-color: #fff;
+  border: solid #7f94a5;
+  border-width: 1px 0px 0px 1px;
+}
+
+.form-list {
   width: 100%;
   border: solid #7f94a5;
   border-width: 1px 1px 1px 1px;
   background-color: #fff;
 }
 
-.form-list th
-{
+.form-list th {
   text-align: center;
+  white-space: nowrap;
   font-size: 1em;
-  padding: 4px;
+  font-weight: bold;
+  padding: 2px 4px 2px 4px;
   border: solid #7f94a5;
   background-color: #b0cde4;
   border-width: 0px 1px 1px 0px;
-  font-weight: bold;
 }
 
-th.last
-{
+th.last {
   border-width: 0px 0px 1px 0px;
 }
-.form-list td
-{
+.form-list td {
   border: solid #7f94a5;
   border-width: 0px 0px 0px 0px;
   padding: 2px 4px 2px 4px;
 }
 
-.tab_page
-{
+.tab_page {
   font-size: 10pt;
   border-top: solid 1px #7f94a5;
   border-left: solid 1px #7f94a5;
@@ -534,8 +578,7 @@ th.last
   height: 100%;
 }
 
-.form-confirm
-{
+.form-confirm {
   width: 100%;
   color: red;
   font-size: 1.2em;
@@ -584,6 +627,27 @@ div.tabContent {
   padding: 6px;
 }
 
+div.tab {
+  cursor: pointer;
+  display: inline;
+  font-weight: bold;
+  background-color: #b0cde4;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  margin-right: 3px;
+  position: relative;
+  text-decoration: none;
+  top: 2px;
+  z-index: 100;
+}
+
+div.activeTab {
+  background-color: #EFEFEF;
+  border-color: #7f94a5;
+}
+
 a.tab {
   color: #000;
   font-weight: bold;
@@ -596,19 +660,6 @@ a.tab {
   text-decoration: none;
   top: 2px;
   z-index: 100;
-}
-
-a.tab.tab2 {
-  background-color: #EFEFEF;
-}
-
-a.tab.activeTab {
-  background-color: #EFEFEF;
-  border-color: #7f94a5 #7f94a5 #7f94a5 #7f94a5;
-}
-
-a.tab.activeTab2 {
-  background-color: #FFF;
 }
 
 table.box {
@@ -683,7 +734,7 @@ span.toolbarLabel
 }
 
 /*====== Grid ======*/
-.grid
+.OD_grid
 {
   width: 100%;
   border: solid #7f94a5;
@@ -692,54 +743,47 @@ span.toolbarLabel
 
 thead.sortHeader tr
 {
-  background-image: url(../image/stl_blu1_grad.gif);
-  background-repeat: repeat-x;
+  background-color: #B0CDE4;
 }
 
 /* make the TH elements pretty */
-thead.sortHeader tr th
-{
-  font-size: 1em;
+thead.sortHeader tr th {
+  font-size: 1.1em;
   font-weight: bold;
-  text-align: left;
+  text-align: center;
   padding: 3px 2px 3px 3px;
   border: solid #7f94a5;
   border-width: 0px 1px 1px 0px;
 }
 
-thead.sortHeader th.checkbox
-{
+thead.sortHeader th.checkbox {
   text-align: center;
   padding: 0;
 }
 
-thead.sortHeader th.last
-{
+thead.sortHeader th.last {
   border-width: 0px 0px 1px 0px;
 }
 
-/* make the A elements pretty. makes for nice clickable headers                */
-thead.sortHeader a, thead.sortHeader a:link, thead.sortHeader a:visited
-{
-  color: #000;
-  font-weight: bold;
-	display: block;
-	text-decoration: none;
-	width: 100%
+thead.sortHeader th.sortcol {
+  cursor: pointer;
 }
 
-/* make the A elements pretty. makes for nice clickable headers                */
-/* WARNING: swapping the background on hover may cause problems in WinIE 6.x   */
-thead.sortHeader a:hover
-{
-  color: #000;
-  font-weight: bold;
-	display: block;
-	text-decoration: underline;
-	width: 100%
+thead.sortHeader th.sortcol_active {
+  padding-right: 20px;
+  background-position: right center;
+  background-repeat: no-repeat;
 }
 
-table.grid td
+thead.sortHeader th.sortcol_desc {
+  background-image: url(../image/d.gif) !important;
+}
+
+thead.sortHeader th.sortcol_asc {
+  background-image: url(../image/u.gif) !important;
+}
+
+table.OD_grid td
 {
   padding: 2px 4px 2px 4px;
 }
@@ -886,4 +930,33 @@ td.cpDayColumnHeader
 .cpOtherMonthDate
 {
  color: #808080;
+}
+
+#dav_list
+{
+  background-color: white;
+  width: 100%;
+  height: 380px;
+  overflow: auto;
+}
+
+/* ComboList */
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  width: 200px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #bce;
+  color: white;
+}
+
+table.grid {
+	border-collapse: collapse;
+	font: menu;
+	width: 99%;
 }

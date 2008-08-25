@@ -23,31 +23,7 @@
  -
 -->
 <v:page name="mimes" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <v:method name="label_name" arglist="">
-    <![CDATA[
-     if (neq(self.v_right, 'W'))
-       return 'View';
-     return 'Edit';
-    ]]>
-  </v:method>
-  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
-    <![CDATA[
-      declare altStr, directionStr, imageStr varchar;
 
-      if (self.mimes_order = columnName and self.mimes_direction = 'desc') {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.mimes_order = columnName and self.mimes_direction = 'asc') {
-        directionStr := 'Descending';
-        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
-        directionStr := 'Ascending';
-        imageStr := '&nbsp;&nbsp;';
-      }
-      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-    ]]>
-  </v:method>
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
       if (columnName = '')
@@ -67,9 +43,16 @@
       Mime Types
     </vm:header>
     <vm:variables>
+      <v:variable name="v_mode" type="varchar" default="'browse'"/>
       <v:variable name="v_right" type="varchar" default="'W'"/>
+
       <v:variable name="mimes_order" persist="1" type="varchar" default="'MT_IDENT'" />
       <v:variable name="mimes_direction" persist="1" type="varchar" default="'asc'" />
+
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_id" param-name="id" type="varchar" default="''"/>
+      <v:variable name="v_extension" type="varchar" default="''"/>
+      <v:variable name="v_description" type="varchar" default="''"/>
     </vm:variables>
     <vm:pagebody>
         <v:before-data-bind>
@@ -77,6 +60,7 @@
             self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
           ]]>
         </v:before-data-bind>
+      <v:template type="simple" enabled="-- case when self.v_mode = 'browse' then 1 else 0 end">
       <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
           <v:before-data-bind>
             <![CDATA[
@@ -92,25 +76,49 @@
             <v:button action="simple" value="Create" enabled="--equ(self.v_right, 'W')" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
-                  self.vc_redirect('mimes_update.vspx');
+                  self.v_id := '';
+                  self.v_extension := '';
+                  self.v_description := '';
+
+                  self.v_tabNo := 1;
+                  self.v_mode := 'create';
+
+         		      self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button value="Delete" action="simple" enabled="--equ(self.v_right, 'W')" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
+              <v:on-post>
+                <![CDATA[
+                  declare N integer;
+                  declare id varchar;
+
+                  for (N := 0; N < length (e.ve_params); N := N + 4)
+                  {
+                    if (e.ve_params[N] = 'cb_item')
+                    {
+                      id := e.ve_params[N+1];
+                      delete from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = id;
+                      delete from WS.WS.SYS_MIME_TYPES where MT_IDENT = id;
+                    }
+                  }
+
+                  self.vc_data_bind(e);
                 ]]>
               </v:on-post>
             </v:button>
           </div>
 
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="mimes" class="grid" cellspacing="0">
+            <table id="mimes" class="OD_grid colorise" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
-                  <th>
-                    <?vsp self.sortColumn('MIME Type', 'MT_IDENT'); ?>
+                  <th class="checkbox" width="1%">
+                    <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                   </th>
-                  <th>
-                    <?vsp self.sortColumn('File Extension', 'MT_DEFAULT_EXT'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Description', 'MT_DESCRIPTION'); ?>
-                  </th>
+                  <?vsp http (ODRIVE.WA.show_column_header ('MIME Type', 'MT_IDENT', self.mimes_order, self.mimes_direction)); ?>
+                  <?vsp http (ODRIVE.WA.show_column_header ('File Extension', 'MT_DEFAULT_EXT', self.mimes_order, self.mimes_direction)); ?>
+                  <?vsp http (ODRIVE.WA.show_column_header ('Description', 'MT_DESCRIPTION', self.mimes_order, self.mimes_direction)); ?>
                   <th class="last" align="center" width="1%">
                     <v:label value="Actions" format="%s"/>
                   </th>
@@ -124,7 +132,7 @@
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr align="center">
-                  <td colspan="4">No MIME types</td>
+                  <td colspan="5">No MIME types</td>
                 </tr>
               </table>
             </v:template>
@@ -132,6 +140,14 @@
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
+                  <td align="center" valign="top">
+                    <?vsp
+                      if (self.v_right = 'W')
+                      {
+                        http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', (control as vspx_row_template).te_column_value('MT_IDENT')));
+                      }
+                    ?>
+                  </td>
                   <td nowrap="nowrap">
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MT_IDENT')" format="%s"/>
                   </td>
@@ -142,18 +158,19 @@
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MT_DESCRIPTION')" format="%s"/>
                   </td>
                   <td nowrap="nowrap">
-                    <v:button value="--self.label_name()" action="simple" xhtml_class="button">
+                    <v:button value="-- case when neq(self.v_right, 'W') then 'View' else 'Edit' end" action="simple" xhtml_class="button">
                       <v:on-post>
                         <![CDATA[
-                          self.vc_redirect(sprintf('mimes_update.vspx?id=%U', (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT')));
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button value="Delete" action="simple" enabled="--equ(self.v_right, 'W')" xhtml_onClick="javascript: return deleteConfirm();" xhtml_class="button">
-                      <v:on-post>
-                        <![CDATA[
-                          delete from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT');
-                  		    delete from WS.WS.SYS_MIME_TYPES where MT_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT');
+                          self.v_id := (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT');
+                          select MT_DEFAULT_EXT,
+                                 MT_DESCRIPTION
+                            into self.v_extension,
+                                 self.v_description
+                            from WS.WS.SYS_MIME_TYPES
+                           where MT_IDENT = self.v_id;
+
+                          self.v_tabNo := 1;
+                          self.v_mode := 'update';
                   		    self.vc_data_bind(e);
                         ]]>
                       </v:on-post>
@@ -176,11 +193,220 @@
           </v:template>
 
         </v:data-set>
+      </v:template>
+
+      <v:template type="simple" enabled="-- case when self.v_mode <> 'browse' then 1 else 0 end">
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+        <v:text name="formRight" type="hidden" value="--self.v_right"/>
+        <div class="new-form-header">
+          <v:label format="%s" value="--concat(initcap(self.v_mode), ' MIME Type')"/>
+        </div>
+        <div id="c1">
+          <div class="tabs">
+            &nbsp;
+            <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
+            <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+              <vm:tabCaption tab="2" tabs="2" caption="Schemas"/>
+            </v:template>
+          </div>
+          <div class="contents">
+            <div id="1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="f_id" value="MIME Type"/>
+                  </th>
+                  <td>
+                    <v:text name="f_id" value="--self.v_id" type="--either(equ(self.v_mode, 'create'), 'plain', 'hidden')" xhtml_class="field-text"/>
+                    <v:template type="simple" enabled="--equ(self.v_mode, 'create')">
+                      <input type="button" value="Select" onClick="javascript:windowShow('mimes_select.vspx?params=f_id:s1;f_extension:s2;')"/>
+                    </v:template>
+                    <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                      <span class="text"><v:label value="--self.v_id"/></span>
+                    </v:template>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_extension" value="Resource Extension"/>
+                  </th>
+                  <td>
+                    <v:text name="f_extension" value="--self.v_extension" enabled="--equ(self.v_right, 'W')"/>
+                    <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                      <span class="text"><v:label value="--self.v_extension"/></span>
+                    </v:template>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_description" value="Description"/>
+                  </th>
+                  <td>
+                    <v:text name="f_description" value="--self.v_description" enabled="--equ(self.v_right, 'W')" xhtml_class="field-text"/>
+                    <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                      <span class="text"><v:label value="--self.v_description"/></span>
+                    </v:template>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+              <div id="2" class="tabContent" style="display: none;">
+                <div style="padding: 0 0 0.5em 0;">
+                  <v:data-list name="dst_schema_add" sql="select '' as RS_URI, '' as RS_LABEL from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select RS_URI, ODRIVE.WA.rdf_schema_get_property(DAV_GET_RDF_SCHEMA_N3(RS_URI), RS_URI, 'label') as RS_LABEL from WS.WS.SYS_RDF_SCHEMAS where ODRIVE.WA.dav_rdf_notDeprecated(RS_URI)=1" key-column="RS_URI" value-column="RS_LABEL" enabled="--equ(self.v_right, 'W')"/>
+                  <v:button action="simple" value="Add" enabled="--equ(self.v_right, 'W')" xhtml_class="button" >
+                    <v:on-post>
+                      <![CDATA[
+                        if (self.dst_schema_add.ufl_value <> '')
+                          DB.DBA.DAV_REGISTER_MIME_RDF(self.v_id, self.dst_schema_add.ufl_value);
+                        self.dst_schema_add.ufl_value := '';
+                        self.dst.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+                <v:data-set name="dst" sql="select * from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = :pMIME" nrows="-1" scrollable="1" cursor-type="keyset" edit="1" xhtml_class="select">
+                  <v:param name="pMIME" value="--self.v_id"/>
+
+                  <v:template name="dst_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                    <table class="form-list" id="list2" cellspacing="0">
+                      <tr>
+                        <th>
+                          <v:label value="Schema" format="%s"/>
+                        </th>
+                        <th class="last" align="center" width="1%">
+                          <v:label value="Action" format="%s"/>
+                        </th>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                  <v:template name="dst_repeat" type="repeat">
+
+                    <v:template name="dst_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr align="center">
+                          <td colspan="2">No attached schemas</td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                    <v:template name="dst_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td nowrap="nowrap">
+                            <v:label value="--ODRIVE.WA.rdf_schema_get_property(DAV_GET_RDF_SCHEMA_N3((control.vc_parent as vspx_row_template).te_column_value('MR_RDF_URI')), (control.vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'), 'label')"/>
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:template type="simple" enabled="--equ(self.v_right, 'W')">
+                              <v:button action="simple" value="Deprecate" xhtml_onclick="javascript: return deprecateConfirm();" xhtml_class="button" enabled="--either(equ(cast(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_DEPRECATED') as integer), 1), 0, 1)">
+                                <v:after-data-bind>
+                                  <![CDATA[
+                                    control.vc_enabled := ODRIVE.WA.dav_mime_notDeprecated(self.v_id, ((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'));
+                                  ]]>
+                                </v:after-data-bind>
+                                <v:on-post>
+                                  <![CDATA[
+                                    DB.DBA.DAV_DEPRECATE_MIME_RDF(self.v_id, ((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'));
+                                    self.dst.vc_data_bind(e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </v:template>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                  </v:template>
+
+                  <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                    <table>
+                    </table>
+                  </v:template>
+
+                </v:data-set>
+              </div>
+            </v:template>
+          </div>
+        </div>
+
+        <div class="new-form-footer">
+          <v:button action="simple" value="--initcap(self.v_mode)" xhtml_class="form-button" enabled="--equ(self.v_right, 'W')">
+            <v:on-post>
+              <![CDATA[
+                if (not self.vc_is_valid)
+                  return;
+
+                self.v_id := trim(self.f_id.ufl_value);
+                self.v_extension := trim(self.f_extension.ufl_value);
+                self.v_description := trim(self.f_description.ufl_value);
+
+                if (strchr(self.v_extension, '.') = 0)
+                  self.v_extension := right(self.v_extension, length(self.v_extension) - 1);
+
+                if (is_empty_or_null(self.v_id) or (self.v_id = '*'))
+                {
+                  self.vc_error_message := 'Please, enter correct ''MIME Type'' value';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (is_empty_or_null(self.v_extension))
+                {
+                  self.vc_error_message := 'Please, enter the ''Resource extension'' value';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (strchr(self.v_extension, '*') is not null)
+                {
+                  self.vc_error_message := 'Please, enter correct file extension (example: txt or doc)';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                if (is_empty_or_null(self.v_description))
+                {
+                  self.vc_error_message := 'Please, enter the ''Description'' value';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                {
+                  declare exit handler for sqlstate '*' {
+                    self.vc_error_message := 'MIME type is already registered';
+                    self.vc_is_valid := 0;
+                    return;
+                  };
+                  DB.DBA.DAV_REGISTER_MIME_TYPE(self.v_id, self.v_description, self.v_extension, null, either(equ(self.v_mode, 'create'), 'into', 'replacing'));
+                };
+
+                if (self.v_mode = 'update')
+                {
+                  self.v_mode := 'browse';
+                } else {
+                  self.v_mode := 'update';
+                }
+         		    self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := 'browse';
+         		    self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+
         <script>
           <![CDATA[
-            coloriseTable('mimes');
+            initDisabled();
+            initTab(2, 1);
           ]]>
         </script>
+      </v:template>
+
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

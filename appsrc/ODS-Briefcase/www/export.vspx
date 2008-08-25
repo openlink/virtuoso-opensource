@@ -34,7 +34,11 @@
 
   <![CDATA[
     <?vsp
-      declare N integer;
+      declare N, M integer;
+      declare f0, f1, f2, f3, f4 varchar;
+      declare _params, tmp any;
+
+      _params := self.vc_page.vc_event.ve_params;
 
       set http_charset = 'UTF-8';
       http_rewrite();
@@ -113,8 +117,6 @@
         http ('</rss>');
 
    	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
-
-        goto _end;
       }
       else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
       {
@@ -122,47 +124,28 @@
 
         if (self.v_mode = 's')
         {
-          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 10, get_keyword('b2', self.vc_page.vc_event.ve_params, ''), ODRIVE.WA.account_name (self.account_id));
+          params := vector (get_keyword ('path', _params, ''), 10, get_keyword('b2', _params, ''), ODRIVE.WA.account_name (self.account_id));
         }
-        if (self.v_mode = 'a')
+        else if (self.v_mode = 'a')
         {
-          ODRIVE.WA.dav_dc_set_base(data, 'path',    get_keyword('b1', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_base(data, 'name',    get_keyword('b2', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_base(data, 'content', get_keyword('b3', self.vc_page.vc_event.ve_params, ''));
-
-          ODRIVE.WA.dav_dc_set_advanced(data, 'mime',          get_keyword('a1',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'owner',         get_keyword('a2',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'group',         get_keyword('a3',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate11',  get_keyword('a4',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate12',  get_keyword('a5',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate21',  get_keyword('a6',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate22',  get_keyword('a7',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate11',  get_keyword('a8',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate12',  get_keyword('a9',  self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate21',  get_keyword('a10', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate22',  get_keyword('a11', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'publicTags11',  get_keyword('a12', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'publicTags12',  get_keyword('a13', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'privateTags11', get_keyword('a14', self.vc_page.vc_event.ve_params, ''));
-          ODRIVE.WA.dav_dc_set_advanced(data, 'privateTags12', get_keyword('a15', self.vc_page.vc_event.ve_params, ''));
-
-          N := 1;
-          while (get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, '') <> '')
-          {
-            ODRIVE.WA.dav_dc_set_metadata(data,
-                                          cast(N as varchar),
-                                          get_keyword(sprintf('mt%d', N), self.vc_page.vc_event.ve_params, ''),
-                                          get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, ''),
-                                          get_keyword(sprintf('mn%d', N), self.vc_page.vc_event.ve_params, ''),
-                                          get_keyword(sprintf('mc%d', N), self.vc_page.vc_event.ve_params, ''),
-                                          get_keyword(sprintf('mv%d', N), self.vc_page.vc_event.ve_params, '')
-                                         );
-            N := N + 1;
+          ODRIVE.WA.search_set_base (data, 'path', get_keyword ('path', _params));
+          for (N := 0; N < length (_params); N := N + 2)
+        {
+            if (_params[N] like 'f%_0')
+            {
+              M := replace (replace (_params[N], 'f', ''), '_0', '');
+              f0 := get_keyword (sprintf ('f%s_0', M), _params);
+              f1 := get_keyword (sprintf ('f%s_1', M), _params);
+              f2 := get_keyword (sprintf ('f%s_2', M), _params);
+              f3 := get_keyword (sprintf ('f%s_3', M), _params);
+              f4 := get_keyword (sprintf ('f%s_4', M), _params);
+              ODRIVE.WA.search_set_criteria (data, M, f0, f3, f4, f1, f2);
+            }
           }
-          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, '', ODRIVE.WA.account_name (self.account_id));
+          params := vector (get_keyword('path', _params, ''), 11, data, '', ODRIVE.WA.account_name (self.account_id));
         }
 
-        sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+        sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
         sql := replace(sql, '<MAX>', 'TOP ' || self.v_max);
         sql := concat(sql, ' order by c1, ', self.v_order, ' ', self.v_direction);
 
@@ -223,26 +206,27 @@
         }
         http ('</channel>\n');
         http ('</rss>');
-
         if (self.v_output = 'rdf')
+        {
      	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
-
+     	  }
         else if (self.v_output = 'xbel')
+        {
     	    http_xslt (ODRIVE.WA.xslt_full ('rss2xbel.xsl'));
-
+     	  }
         else if (self.v_output = 'atom03')
+        {
     	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom03.xsl'));
-
+     	  }
         else if (self.v_output = 'atom10')
+        {
     	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom.xsl'));
-
-        goto _end;
       }
+      }
+      return;
+
     _error:
       http('<?xml version="1.0" ?><empty />');
-
-    _end:
-      return;
     ?>
   ]]>
 </v:page>

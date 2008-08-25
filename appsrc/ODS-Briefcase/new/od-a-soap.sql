@@ -74,15 +74,13 @@ create procedure DBA.SOAPODRIVE.Browse (
   declare tags, tags2, data, sql, params, state, msg, meta, rows any;
   declare sVersions, aVersions any;
 
-  ODRIVE.WA.dav_dc_set_base(data, 'path', path);
+  ODRIVE.WA.search_set_base (data, 'path', path);
 
-  ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate11',  '>=');
-  ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate12',  cast(dateBegin as varchar));
-  ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate21',  '<=');
-  ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate22',  cast(dateEnd as varchar));
+  ODRIVE.WA.search_set_criteria (data, '0', 'RES_MOD_TIME',  '>=', cast (dateBegin as varchar));
+  ODRIVE.WA.search_set_criteria (data, '1', 'RES_MOD_TIME',  '<=', cast (dateEnd as varchar));
 
-  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5, rs6)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? and rs6 = ?order by c9, c3, c1';
-  params := vector(path, 0, 20, data, null, uName, uPassword);
+  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? order by c9, c3, c1';
+  params := vector(path, 20, data, null, uName, uPassword);
 
   set_user_id('dba');
   state := '00000';

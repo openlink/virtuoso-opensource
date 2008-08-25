@@ -26,6 +26,8 @@ create procedure ODRIVE.WA.rdf_n3_list_properties (
   inout schemaN3 any,
   in classname varchar)
 {
+  if (not isentity(schemaN3))
+    schemaN3 := xml_tree_doc(schemaN3);
   if (classname is null)
     {
       return xpath_eval ('
@@ -71,13 +73,18 @@ create procedure ODRIVE.WA.rdf_n3_get_object (
   declare hits, best_hit any;
   declare minpos integer;
   declare obj any;
+
+  if (not isentity(schemaN3))
+    schemaN3 := xml_tree_doc(schemaN3);
   hits := xpath_eval ('/N3[@N3S=\044subj][@N3P=\044pred]', schemaN3, 0, vector (UNAME'subj', subj, UNAME'pred', pred));
   if (length (hits) = 0)
     return null;
-  if (ret_list) {
+  if (ret_list)
+  {
     declare ctr, len integer;
     len := length (hits);
-    for (ctr := 0; ctr < len; ctr := ctr + 1) {
+    for (ctr := 0; ctr < len; ctr := ctr + 1)
+    {
       obj := xpath_eval ('@N3O', hits[ctr]);
       if (obj is null)
         obj := xpath_eval ('node()', hits[ctr]);
@@ -87,11 +94,13 @@ create procedure ODRIVE.WA.rdf_n3_get_object (
   }
   best_hit := hits[0]; -- to have something if everything else fails
   minpos := 1000000;
-  foreach (any hit in hits) do {
+  foreach (any hit in hits) do
+  {
     declare lang varchar;
     declare lang_pos integer;
     lang := xpath_eval ('@xml:lang', hit);
-    if (lang is null) {
+    if (lang is null)
+    {
       if (minpos = 1000000)
         best_hit := hit;
     } else {
@@ -266,7 +275,8 @@ create procedure ODRIVE.WA.rdf_get_object_property (
   declare langs any;
   declare node varchar;
 
-  if (object = 'displayMode-BrowseExpert') {
+  if (object = 'displayMode-BrowseExpert')
+  {
     node := ODRIVE.WA.rdf_get_property (schemaN3, subject, 'http://www.openlinksw.com/schemas/virtrdf#displayMode-BrowseExpert');
     return ODRIVE.WA.rdf_get_property(schemaN3, node, property, defaultValue);
   }
@@ -282,8 +292,11 @@ create procedure ODRIVE.WA.rdf_cut_property (
 {
   declare params, newN3 any;
 
+  if (not isentity(oldN3))
+    oldN3 := xml_tree_doc(oldN3);
   xte_nodebld_init(newN3);
-  foreach (any N3 in xpath_eval ('/N3', oldN3, 0)) do {
+  foreach (any N3 in xpath_eval ('/N3', oldN3, 0)) do
+  {
     params := xpath_eval('vector (string (@N3S), string (@N3P), string(@xml:lang))', N3);
     if (params[0] <> subject)
     	xte_nodebld_acc(newN3, N3);
@@ -340,15 +353,15 @@ create procedure ODRIVE.WA.rdf_set_object (
   declare S varchar;
   declare node any;
 
-  if (object = 'displayMode-BrowseExpert')
-    object := 'http://www.openlinksw.com/schemas/virtrdf#displayMode-BrowseExpert';
-  else
+  if (object <> 'displayMode-BrowseExpert')
     return;
 
+  object := 'http://www.openlinksw.com/schemas/virtrdf#displayMode-BrowseExpert';
   node := ODRIVE.WA.rdf_get_property (schemaN3, subject, object, concat('nodeID://X', cast(msec_time() as varchar)));
   S := sprintf('<N3 N3S="%V" N3P="%V" N3O="%V" />', subject, object, node);
   N := 0;
-  while (N < length(properties)) {
+  while (N < length(properties))
+  {
     S := sprintf('%s<N3 N3S="%V" N3P="%V">%V</N3>', S, node, concat('http://www.openlinksw.com/schemas/virtrdf#', properties[N]), properties[N+1]);
     N := N + 2;
   }
@@ -362,12 +375,15 @@ create procedure ODRIVE.WA.rdf_merge (
   inout schemaN3 any,
   in S varchar)
 {
-  if (isnull(schemaN3)) {
+  if (isnull(schemaN3))
+  {
     schemaN3 := xml_tree_doc(S);
     return;
   }
   declare patchN3 any;
 
+  if (not isentity(schemaN3))
+    schemaN3 := xml_tree_doc(schemaN3);
   patchN3 := xml_tree_doc(S);
   schemaN3 := DB.DBA.DAV_RDF_MERGE (schemaN3, patchN3, null, 0);
 }
@@ -451,7 +467,8 @@ create procedure ODRIVE.WA.dav_rdf_get_metadata (
 {
   declare metadata any;
 
-  if (ODRIVE.WA.dav_rdf_has_metadata (path)) {
+  if (ODRIVE.WA.dav_rdf_has_metadata (path))
+  {
   metadata := ODRIVE.WA.DAV_RDF_PROP_GET(path, 'http://local.virt/DAV-RDF');
   if (not ODRIVE.WA.DAV_ERROR(metadata))
     return xml_tree_doc(xslt('http://local.virt/davxml2n3xml', metadata));
@@ -490,15 +507,18 @@ create procedure ODRIVE.WA.dav_rdf_schema_rs(
   if (not isentity(schemaN3))
     schemaN3 := xml_tree_doc(schemaN3);
   mimeType := ODRIVE.WA.rdf_get_property (schemaN3, 'http://local.virt/this', 'http://www.openlinksw.com/virtdav#dynRdfExtractor', '');
-  if (mimeType <> '') {
+  if (mimeType <> '')
+  {
     for (select MR_RDF_URI from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = mimeType) do
       result (MR_RDF_URI);
   } else {
     N3 := xpath_eval('/N3', schemaN3, 0);
     N := length (N3);
-    for (N := 0; N < length (N3); N := N + 1) {
+    for (N := 0; N < length (N3); N := N + 1)
+    {
       P := xpath_eval ('@N3P', N3[N]);
-      if (not isnull(P)) {
+      if (not isnull(P))
+      {
         pos := strchr(P, '#');
         if (not isnull(pos))
           P := subseq (P, 0, pos+1);
@@ -522,7 +542,10 @@ create procedure ODRIVE.WA.dav_rdf_schema_properties_rs(
 
   declare exit handler for SQLSTATE '*' {return;};
 
-  foreach (varchar property in ODRIVE.WA.rdf_n3_list_properties (schemaN3, NULL)) do {
+  if (not isentity(schemaN3))
+    schemaN3 := xml_tree_doc(schemaN3);
+  foreach (varchar property in ODRIVE.WA.rdf_n3_list_properties (schemaN3, NULL)) do
+  {
     result(property,
            ODRIVE.WA.rdf_get_property(schemaN3, property, 'label'),
            ODRIVE.WA.rdf_get_property(schemaN3, property, 'range'),

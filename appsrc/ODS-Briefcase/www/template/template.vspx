@@ -33,6 +33,7 @@
       }
       http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
     ?>
+    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
     <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
@@ -42,12 +43,12 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor"];
+        var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/odrive.js"></script>
-      <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
         // CalendarPopup
         var cPopup = new CalendarPopup('cDiv');
@@ -56,11 +57,33 @@
         function myInit()
         {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.showAjax = false;
+
+          // WebDAV
+          var options = { imagePath: OAT.Preferences.imagePath,
+                          pathHome: '/home/',
+                          foldersOnly: true,
+													height:330,
+                          path: '<?V ODRIVE.WA.dav_logical_home (self.account_id) ?>',
+                          user: '<?V ODRIVE.WA.account_name (self.account_id) ?>',
+                          connectionHeaders: {Authorization: '<?V ODRIVE.WA.account_basicAuthorization (self.account_id) ?>'}
+                        };
+          OAT.WebDav.init(options);
+
+          // <a>++
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+          {
+            if ($('app_area'))
+            {
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+        }
+          }
+
+          // Init ODRIVE object
+          ODRIVE.init();
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
       </script>

@@ -398,6 +398,40 @@ create procedure ODRIVE.WA.show_excerpt(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.show_column_header (
+  in columnLabel varchar,
+  in columnName varchar,
+  in sortOrder varchar,
+  in sortDirection varchar := 'asc',
+  in isSortable integer := 1)
+{
+  declare strClass, strOnclick any;
+
+  strClass := '';
+  strOnclick := '';
+  if (isSortable)
+  {
+    strClass := 'sortcol';
+    strOnclick := sprintf ('onclick="javascript: myPost(\'F1\', \'sortColumn\', \'%s\');"', columnName);
+    if (sortOrder = columnName)
+    {
+      if (sortDirection = 'desc')
+      {
+        strClass := strClass || ' sortcol_active sortcol_desc';
+      }
+      else if (sortDirection = 'asc')
+      {
+        strClass := strClass || ' sortcol_active sortcol_asc';
+      }
+    }
+    strClass := 'class="' || strClass || '"';
+  }
+  return sprintf ('<th %s %s>%s</th>', strClass, strOnclick, columnLabel);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.xslt_root()
 {
   declare sHost varchar;
@@ -1045,25 +1079,18 @@ create procedure ODRIVE.WA.hiddens_check (
 --
 create procedure ODRIVE.WA.odrive_proc(
   in path varchar,
-  in dir_select integer := 0,
   in dir_mode integer := 0,
   in dir_params any := null,
   in dir_hiddens any := null,
   in dir_account any := null,
   in dir_password any := null) returns any
 {
-  declare
-    i, pos integer;
-  declare
-    tmp, dirFilter, dirHiddens, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
-  declare
-    vspx_user, user_name, group_name varchar;
-  declare
-    user_id, group_id integer;
-  declare
-    c2 integer;
-  declare
-    c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
+  declare i, pos integer;
+  declare tmp, dirFilter, dirHiddens, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
+  declare vspx_user, user_name, group_name varchar;
+  declare user_id, group_id integer;
+  declare c2 integer;
+  declare c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
 
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
 
@@ -1082,7 +1109,7 @@ create procedure ODRIVE.WA.odrive_proc(
   };
 
   dirList := vector();
-  if ((dir_mode = 0) or (dir_select = 1))
+  if (dir_mode = 0)
   {
     if (path = ODRIVE.WA.shared_name())
     {
@@ -1098,25 +1125,20 @@ create procedure ODRIVE.WA.odrive_proc(
   {
     path := ODRIVE.WA.odrive_real_path(path);
     dirList := ODRIVE.WA.DAV_DIR_LIST(path, 0);
-    dirFilter := dir_params;
-    if (is_empty_or_null(dirFilter))
-      dirFilter := '%';
-    dirFilter := trim(dirFilter, '*');
-    dirFilter := '%' || dirFilter || '%';
-    dirFilter := replace(dirFilter, '%%', '%');
+    dirFilter := ODRIVE.WA.dc_search_like_fix (dir_params);
   }
   else if ((dir_mode = 2) or (dir_mode = 3))
   {
     if (dir_mode = 2)
     {
       path := ODRIVE.WA.odrive_real_path(path);
-      dirFilter := vector();
-      ODRIVE.WA.dav_dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
-    } else {
-      path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/'));
-      dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
+      dirFilter := vector (vector('RES_NAME', 'like', ODRIVE.WA.dc_search_like_fix (dir_params)));
     }
-    --dbg_obj_print(dirFilter);
+    else
+    {
+      path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dc_get (dir_params, 'base', 'path', '/DAV/'));
+      dirFilter := ODRIVE.WA.dc_filter(dir_params);
+    }
     if (trim(path, '/') = ODRIVE.WA.shared_name())
     {
       sharedRoot := ODRIVE.WA.odrive_sharing_dir_list(ODRIVE.WA.account());
@@ -1131,7 +1153,7 @@ create procedure ODRIVE.WA.odrive_proc(
           {
             sharedPath := subseq (item[0], 0, pos+1);
             sharedFilter := dirFilter;
-            ODRIVE.WA.dav_dc_subfilter(sharedFilter, 'RES_NAME', '=', item[10]);
+            ODRIVE.WA.dc_subfilter(sharedFilter, 'RES_NAME', '=', item[10]);
             sharedList := ODRIVE.WA.DAV_DIR_FILTER(sharedPath, 0, sharedFilter);
           }
         }
@@ -1139,7 +1161,6 @@ create procedure ODRIVE.WA.odrive_proc(
           dirList := vector_concat(dirList, sharedList);
       }
     } else {
-      --dbg_obj_print(path, 1, dirFilter);
       dirList := ODRIVE.WA.DAV_DIR_FILTER(path, 1, dirFilter);
     }
     dirFilter := '%';
@@ -1147,21 +1168,21 @@ create procedure ODRIVE.WA.odrive_proc(
   else if (dir_mode = 10)
   {
     dirFilter := vector();
-    ODRIVE.WA.dav_dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
+    ODRIVE.WA.dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, ODRIVE.WA.DAV_API_PWD(dir_account));
     dirFilter := '%';
   }
   else if (dir_mode = 11)
   {
-    path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/'));
-    dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
+    path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dc_get(dir_params, 'base', 'path', '/DAV/'));
+    dirFilter := ODRIVE.WA.dc_filter(dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, ODRIVE.WA.DAV_API_PWD(dir_account));
     dirFilter := '%';
   }
   else if (dir_mode = 20)
   {
-    path := ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/');
-    dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
+    path := ODRIVE.WA.dc_get(dir_params, 'base', 'path', '/DAV/');
+    dirFilter := ODRIVE.WA.dc_filter(dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, dir_password);
     dirFilter := '%';
   }
@@ -1176,7 +1197,7 @@ create procedure ODRIVE.WA.odrive_proc(
     {
       if (isarray(item))
       {
-        if (((item[1] = 'C') or ((dir_select = 0) and (item[10] like dirFilter))) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
+        if (((item[1] = 'C') or (item[10] like dirFilter)) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
         {
           if (user_id <> item[7])
           {
@@ -1216,7 +1237,8 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
   gid := (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
 
-  if (isinteger(ODRIVE.WA.DAV_GET(item, 'id'))) {
+  if (isinteger(ODRIVE.WA.DAV_GET(item, 'id')))
+  {
     if (ODRIVE.WA.DAV_GET(item, 'ownerID') = uid)
       return 1;
     if (uid = http_dav_uid())
@@ -1272,7 +1294,7 @@ create procedure ODRIVE.WA.odrive_permission (
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_read_permission (
-  inout path varchar)
+  in path varchar)
 {
   return ODRIVE.WA.odrive_effective_permissions(path, vector('1__', '__1'));
 }
@@ -1281,7 +1303,7 @@ create procedure ODRIVE.WA.odrive_read_permission (
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_write_permission (
-  inout path varchar)
+  in path varchar)
 {
   return ODRIVE.WA.odrive_effective_permissions(path, '_1_');
 }
@@ -1526,8 +1548,10 @@ create procedure ODRIVE.WA.odrive_user_initialize(
 
   DB.DBA.DAV_OWNER_ID(user_name, null, uid, gid);
   cid := DB.DBA.DAV_SEARCH_ID(user_home, 'C');
-  if (not ODRIVE.WA.DAV_ERROR(cid)) {
-    if ((select count(*) from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter') = 0) {
+  if (not ODRIVE.WA.DAV_ERROR (cid))
+  {
+    if ((select count(*) from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter') = 0)
+    {
       new_folder := concat(user_home, 'Items/');
       cid := DB.DBA.DAV_SEARCH_ID(new_folder, 'C');
       if (ODRIVE.WA.DAV_ERROR(cid))
@@ -1541,7 +1565,7 @@ create procedure ODRIVE.WA.odrive_user_initialize(
     if (ODRIVE.WA.DAV_ERROR(cid))
       cid := DB.DBA.DAV_MAKE_DIR (new_folder, uid, gid, '110100100R');
     if (ODRIVE.WA.DAV_ERROR(cid))
-      signal ('BRF03', concat('User\'s folder \'Public\' can not be created.', ODRIVE.WA.DAV_PERROR(cid)));
+      signal ('BRF03', concat('User''s folder ''Public'' can not be created.', ODRIVE.WA.DAV_PERROR(cid)));
   }
 }
 ;
@@ -1552,10 +1576,11 @@ create procedure ODRIVE.WA.host_url ()
 {
   declare ret varchar;
 
-  --return '';
-  if (is_http_ctx ()) {
+  if (is_http_ctx ())
+  {
     ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null) {
+    if (isstring (ret) and strchr (ret , ':') is null)
+    {
       declare hp varchar;
       declare hpa any;
 
@@ -1563,7 +1588,9 @@ create procedure ODRIVE.WA.host_url ()
       hpa := split_and_decode ( hp , 0 , '\0\0:');
       ret := ret || ':' || hpa [1];
     }
-  } else {
+  }
+  else
+  {
     ret := sys_connected_server_address ();
     if (ret is null)
       ret := sys_stat ('st_host_name') || ':' || server_http_port ();
@@ -1637,7 +1664,7 @@ create procedure ODRIVE.WA.banner_links (
 
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_dav_home(
+create procedure ODRIVE.WA.dav_home (
   in user_name varchar := null) returns varchar
 {
   declare user_home any;
@@ -1669,7 +1696,8 @@ create procedure ODRIVE.WA.dav_home2 (
   if (isinteger (user_home))
     return '/DAV/';
   colID := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (isinteger (colID) and (colID > 0)) {
+  if (isinteger (colID) and (colID > 0))
+  {
     if (user_role <> 'public')
       return user_home;
     return user_home || 'Public/';
@@ -1707,6 +1735,20 @@ create procedure ODRIVE.WA.dav_home_create(
 
 _error:
   return -18;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dav_logical_home (
+  inout account_id integer) returns varchar
+{
+  declare home any;
+
+  home := ODRIVE.WA.dav_home2 (account_id);
+  if (not isnull (home))
+    home := replace (home, '/DAV', '');
+  return home;
 }
 ;
 
@@ -1812,9 +1854,7 @@ create procedure ODRIVE.WA.shared_name() returns varchar
 create procedure ODRIVE.WA.path_is_shortcut(
   in path varchar) returns integer
 {
-  if (isnull(get_keyword(ODRIVE.WA.odrive_refine_path(path), ODRIVE.WA.odrive_shortcuts())))
-    return 0;
-  return 1;
+  return case when (get_keyword (ODRIVE.WA.odrive_refine_path (path), ODRIVE.WA.odrive_shortcuts ()) <> null) then 1 else 0 end;
 }
 ;
 
@@ -1837,8 +1877,8 @@ create procedure ODRIVE.WA.odrive_shortcuts() returns any
   declare shortcuts any;
   declare exit handler for SQLSTATE '*' {return shortcuts;};
 
-  shortcuts := vector(ODRIVE.WA.odrive_name_home(), vector(trim(ODRIVE.WA.odrive_dav_home(), '/'), 0), ODRIVE.WA.shared_name(), vector(ODRIVE.WA.shared_name(), 1));
-  if (trim(ODRIVE.WA.odrive_dav_home(), '/') = 'DAV')
+  shortcuts := vector (ODRIVE.WA.odrive_name_home(), vector(trim(ODRIVE.WA.dav_home (), '/'), 0), ODRIVE.WA.shared_name(), vector(ODRIVE.WA.shared_name(), 1));
+  if (trim(ODRIVE.WA.dav_home (), '/') = 'DAV')
     return shortcuts;
   if (not ODRIVE.WA.odrive_read_permission('/DAV/'))
     return shortcuts;
@@ -1853,7 +1893,7 @@ create procedure ODRIVE.WA.odrive_all_shortcuts() returns any
   declare shortcuts any;
   declare exit handler for SQLSTATE '*' {return shortcuts;};
 
-  shortcuts := vector(ODRIVE.WA.odrive_name_home(), vector(trim(ODRIVE.WA.odrive_dav_home(), '/'), 0), ODRIVE.WA.shared_name(), vector(ODRIVE.WA.shared_name(), 1));
+  shortcuts := vector(ODRIVE.WA.odrive_name_home(), vector(trim(ODRIVE.WA.dav_home (), '/'), 0), ODRIVE.WA.shared_name(), vector(ODRIVE.WA.shared_name(), 1));
   return vector_concat(vector(ODRIVE.WA.odrive_name_dav(), vector('DAV', 0)), shortcuts);
 }
 ;
@@ -1875,19 +1915,23 @@ create procedure ODRIVE.WA.odrive_shortcut_path(
     return shortcut[showType];
   if (shortcut[showType] = 0)
     return shortcut[0];
-  if (shortcut[showType] = 1) {
-    if (N+1 < length(parts)) {
-
+  if (shortcut[showType] = 1)
+  {
+    if (N+1 < length (parts))
+    {
       declare name varchar;
       declare id integer;
 
       ODRIVE.WA.odrive_name_restore(parts[N+1], name, id);
-      if (not isnull(id)) {
-        if (pathType = 'R') {
+      if (not isnull (id))
+      {
+        if (pathType = 'R')
+        {
           for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = id) do
             return left(trim(RES_FULL_PATH, '/'), strrchr(trim(RES_FULL_PATH, '/'), '/'));
         }
-        if (pathType = 'C') {
+        if (pathType = 'C')
+        {
           for (select WS.WS.COL_PATH(COL_ID) as COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id) do
             return left(trim(COL_FULL_PATH, '/'), strrchr(trim(COL_FULL_PATH, '/'), '/'));
         }
@@ -1897,7 +1941,8 @@ create procedure ODRIVE.WA.odrive_shortcut_path(
         declare gid integer;
         DB.DBA.DAV_OWNER_ID(ODRIVE.WA.account(), null, uid, gid);
 
-        if (pathType = 'R') {
+        if (pathType = 'R')
+        {
           for (select TOP 1 RES_FULL_PATH
                  from WS.WS.SYS_DAV_RES
                         join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
@@ -1912,7 +1957,8 @@ create procedure ODRIVE.WA.odrive_shortcut_path(
             return left(trim(RES_FULL_PATH, '/'), strrchr(trim(RES_FULL_PATH, '/'), '/'));
           }
         }
-        if (pathType = 'C') {
+        else if (pathType = 'C')
+        {
           for (select TOP 1 WS.WS.COL_PATH(COL_ID) as COL_FULL_PATH
                  from WS.WS.SYS_DAV_COL
                         join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = COL_ID
@@ -1934,49 +1980,140 @@ create procedure ODRIVE.WA.odrive_shortcut_path(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.prop_right (
+  in property any,
+  in user_id any := null)
+{
+  if (ODRIVE.WA.check_admin (user_id))
+    return 1;
+  if (property like 'DAV:%')
+    return 0;
+  if (property like 'xml-%')
+    return 0;
+  if (property like 'xper-%')
+    return 0;
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.prop_params (
+  inout params any,
+  in user_id any := null)
+{
+  declare N integer;
+  declare c_properties, c_seq, c_property, c_value, c_action any;
+
+  c_properties := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if ((params[N] like 'c_property_%') and (params[N] <> 'c_property_xxx'))
+    {
+      c_seq := replace (params[N], 'c_property_', '');
+      c_property := trim (params[N+1]);
+      if ((c_property <> '') and (not ODRIVE.WA.prop_right (c_property, user_id)))
+      {
+        signal ('TEST', 'Property name is empty or prefix is not allowed!');
+      }
+      c_value := trim (get_keyword ('c_value_' || c_seq, params, ''));
+      {
+        declare exit handler for sqlstate '*' { goto _error; };
+        if (isarray (xml_tree (c_value, 0)))
+          c_value := serialize (xml_tree (c_value));
+      }
+    _error:;
+      c_action := get_keyword ('c_action_' || c_seq, params, '');
+      c_properties := vector_concat (c_properties, vector (c_property, c_value, c_action));
+    }
+  }
+  return c_properties;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_params (
+  inout params any)
+{
+  declare I, N integer;
+  declare acl_value, acl_seq, acl_users, acl_user, acl_inheritance any;
+
+  acl_value := WS.WS.ACL_CREATE();
+  for (I := 0; I < length (params); I := I + 2)
+  {
+    if ((params[I] like 'acl_user_%') and (params[I] <> 'acl_user_xxx'))
+    {
+      acl_seq := replace (params[I], 'acl_user_', '');
+      acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
+      for (N := 0; N < length (acl_users); N := N + 1)
+      {
+        acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
+        if (acl_user <> -1)
+        {
+          acl_inheritance := atoi (get_keyword ('acl_inheritance_' || acl_seq, params));
+          WS.WS.ACL_ADD_ENTRY (acl_value,
+                               acl_user,
+                               bit_shift (atoi (get_keyword ('acl_r_grant_' || acl_seq, params, '0')), 2) +
+                               bit_shift (atoi (get_keyword ('acl_w_grant_' || acl_seq, params, '0')), 1) +
+                               atoi (get_keyword ('acl_x_grant_' || acl_seq, params, '0')),
+                               1,
+                               acl_inheritance);
+          WS.WS.ACL_ADD_ENTRY (acl_value,
+                               acl_user,
+                               bit_shift (atoi (get_keyword ('acl_r_deny_' || acl_seq, params, '0')), 2) +
+                               bit_shift (atoi (get_keyword ('acl_w_deny_' || acl_seq, params, '0')), 1) +
+                               atoi (get_keyword ('acl_x_deny_' || acl_seq, params, '0')),
+                               0,
+                               acl_inheritance);
+        }
+      }
+    }
+  }
+  return acl_value;
+}
+;
+
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_acl_proc(
-  in acl varbinary) returns any
+create procedure ODRIVE.WA.acl_vector (
+  in acl varbinary)
 {
-  declare
-    N,
-    I integer;
-  declare
-    aAcl,
-    aTmp any;
+  declare N, I integer;
+  declare aAcl, aTmp any;
 
   aAcl := WS.WS.ACL_PARSE(acl, '0123', 0);
   aTmp := vector();
 
   for (N := 0; N < length(aAcl); N := N + 1)
+  {
     if (not aAcl[N][1])
+    {
       aTmp := vector_concat(aTmp, vector(vector(aAcl[N][0], aAcl[N][2], 0, aAcl[N][3])));
-
-  for (N := 0; N < length(aAcl); N := N + 1) {
-    if (aAcl[N][1]) {
-      I := 0;
-      while (I < length(aTmp)) {
-        if ((aAcl[N][0] = aTmp[I][0]) and (aAcl[N][2] = aTmp[I][1])) {
+    }
+  }
+  for (N := 0; N < length (aAcl); N := N + 1)
+  {
+    if (aAcl[N][1])
+    {
+      for (I := 0; I < length (aTmp); I := I + 1)
+      {
+        if ((aAcl[N][0] = aTmp[I][0]) and (aAcl[N][2] = aTmp[I][1]))
+        {
           aset(aTmp, I, vector(aTmp[I][0], aTmp[I][1], aAcl[N][3], aTmp[I][3]));
           goto _exit;
         }
-        I := I + 1;
       }
     _exit:
       if (I = length(aTmp))
+      {
         aTmp := vector_concat(aTmp, vector(vector(aAcl[N][0], aAcl[N][2], aAcl[N][3], 0)));
     }
   }
-
-  declare
-    c0, c1, c2, c3 integer;
-
-  result_names(c0, c1, c2, c3);
-  for (N := 0; N < length(aTmp); N := N + 1)
-    result(aTmp[N][0], aTmp[N][1], aTmp[N][2], aTmp[N][3]);
-
-  return;
+  }
+  return aTmp;
 }
 ;
 
@@ -2011,6 +2148,7 @@ create procedure ODRIVE.WA.odrive_ace_inheritance(
     return 'Subfolders and files';
   if (N = 3)
     return 'Inherited';
+  return '';
 }
 ;
 
@@ -2356,8 +2494,8 @@ create procedure ODRIVE.WA.DAV_GET_INFO(
 create procedure ODRIVE.WA.DAV_SET_VERSIONING_CONTROL(
   in path varchar,
   in autoVersion varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare permissions, uname, gname varchar;
   declare retValue any;
@@ -2385,8 +2523,8 @@ create procedure ODRIVE.WA.DAV_SET_VERSIONING_CONTROL(
 --
 create procedure ODRIVE.WA.DAV_VERSION_CONTROL (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2399,8 +2537,8 @@ create procedure ODRIVE.WA.DAV_VERSION_CONTROL (
 --
 create procedure ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2413,8 +2551,8 @@ create procedure ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (
 --
 create procedure ODRIVE.WA.DAV_CHECKIN (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2427,8 +2565,8 @@ create procedure ODRIVE.WA.DAV_CHECKIN (
 --
 create procedure ODRIVE.WA.DAV_CHECKOUT (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2441,8 +2579,8 @@ create procedure ODRIVE.WA.DAV_CHECKOUT (
 --
 create procedure ODRIVE.WA.DAV_UNCHECKOUT (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2455,8 +2593,8 @@ create procedure ODRIVE.WA.DAV_UNCHECKOUT (
 --
 create procedure ODRIVE.WA.DAV_GET_AUTOVERSION (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   --declare exit handler for SQLSTATE '*' {return '';};
 
@@ -2656,18 +2794,26 @@ create procedure ODRIVE.WA.DAV_INIT (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_INIT_INT (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
-  declare
-    uid, gid integer;
-  declare
-    user_name, permissions varchar;
+  declare uid, gid integer;
+  declare permissions, uname, gname varchar;
 
-  user_name := coalesce(ODRIVE.WA.account(), 'nobody');
-  DB.DBA.DAV_OWNER_ID(user_name, null, uid, gid);
-  permissions := USER_GET_OPTION (user_name, 'PERMISSIONS');
-  if (path like (ODRIVE.WA.dav_home2 (uid, 'owner') || 'Public%'))
-    aset (permissions, 6, ascii ('1'));
+  DB.DBA.DAV_OWNER_ID(ODRIVE.WA.account (), null, uid, gid);
+  ODRIVE.WA.DAV_API_PARAMS (uid, gid, uname, gname, auth_name, auth_pwd);
+  uname := coalesce (auth_name, 'nobody');
+
+  permissions := -1;
+  path := replace (path || '/', '//', '/');
+  if (path <> ODRIVE.WA.dav_home (uname))
+  {
+    permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+  }
+  if (permissions < 0)
+    permissions := USER_GET_OPTION (uname, 'PERMISSIONS');
+
   return vector(null, '', 0, null, 0, permissions, gid, uid, null, '', null);
 }
 ;
@@ -2776,17 +2922,20 @@ create procedure ODRIVE.WA.DAV_GET (
   if (property = 'name')
     return resource[10];
 
-  if (property = 'acl') {
+  if (property = 'acl')
+  {
     if (isnull(resource[0]))
       return WS.WS.ACL_CREATE();
     return cast(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
   }
 
-  if ((property = 'detType') and (not isnull(resource[0]))) {
+  if ((property = 'detType') and (not isnull (resource[0])))
+  {
     declare detType any;
     
     detType := ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtdet');
-    if (isnull (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C')) {
+    if (isnull (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C'))
+    {
       if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:rdf_graph', '') <> '')
         detType := 'rdfSink';
       if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:Versioning-History', '') <> '')
@@ -2801,25 +2950,26 @@ create procedure ODRIVE.WA.DAV_GET (
   if ((property = 'publictags') and (not isnull(resource[0])))
     return coalesce(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtpublictags'), '');
 
-  if (property = 'versionControl') {
+  if (property = 'versionControl')
+  {
     if (isnull(resource[0]))
       return null;
     return ODRIVE.WA.DAV_GET_VERSION_CONTROL (resource[0]);
   }
-
-  if (property = 'autoversion') {
+  if (property = 'autoversion')
+  {
     if (isnull(resource[0]))
       return null;
     return ODRIVE.WA.DAV_GET_AUTOVERSION (resource[0]);
   }
-
-  if (property = 'checked-in') {
+  if (property = 'checked-in')
+  {
     if (isnull(resource[0]))
       return null;
     return ODRIVE.WA.DAV_PROP_GET (resource[0], 'DAV:checked-in', '');
   }
-
-  if (property = 'checked-out') {
+  if (property = 'checked-out')
+  {
     if (isnull(resource[0]))
       return null;
     return ODRIVE.WA.DAV_PROP_GET (resource[0], 'DAV:checked-out', '');
@@ -2845,8 +2995,8 @@ create procedure ODRIVE.WA.DAV_SET (
   in path varchar,
   in property varchar,
   in value varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare tmp varchar;
 
@@ -2906,7 +3056,7 @@ create procedure ODRIVE.WA.DAV_API_PARAMS (
 
   gname := null;
   if (not isnull(gid))
-    gname := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = gid);
+    gname := (select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = gid);
 
   if (isnull(auth_name))
     auth_name := ODRIVE.WA.account();
@@ -2924,8 +3074,8 @@ create procedure ODRIVE.WA.DAV_API_PARAMS (
 create procedure ODRIVE.WA.DAV_DIR_LIST (
   in path varchar := '/DAV/',
   in recursive integer := 0,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2940,8 +3090,8 @@ create procedure ODRIVE.WA.DAV_DIR_FILTER (
   in path varchar := '/DAV/',
   in recursive integer := 0,
   inout filter any,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -2959,8 +3109,8 @@ create procedure ODRIVE.WA.ResFilter_CONFIGURE (
   declare search_path varchar;
   declare filter any;
 
-  search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(search_params, 'base', 'path', '/DAV/'));
-  filter := ODRIVE.WA.dav_dc_filter(search_params);
+  search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dc_get(search_params, 'base', 'path', '/DAV/'));
+  filter := ODRIVE.WA.dc_filter(search_params);
   return ODRIVE.WA.ResFilter_CONFIGURE_INT(path, search_path, filter);
 }
 ;
@@ -2990,8 +3140,8 @@ create procedure ODRIVE.WA.CatFilter_CONFIGURE (
   declare search_path varchar;
   declare filter any;
 
-  search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(search_params, 'base', 'path', '/DAV/'));
-  filter := ODRIVE.WA.dav_dc_filter(search_params);
+  search_path := ODRIVE.WA.odrive_real_path (ODRIVE.WA.dc_get (search_params, 'base', 'path', '/DAV/'));
+  filter := ODRIVE.WA.dc_filter (search_params);
   return ODRIVE.WA.CatFilter_CONFIGURE_INT(path, search_path, filter);
 }
 ;
@@ -3002,8 +3152,8 @@ create procedure ODRIVE.WA.CatFilter_CONFIGURE_INT (
   in path varchar,
   in search_path varchar,
   in filter any,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare cid, uid integer;
   declare uname, gname varchar;
@@ -3024,8 +3174,8 @@ create procedure ODRIVE.WA.DAV_COPY (
   in destination varchar,
   in overwrite integer := 0,
   in permissions varchar := '110100000R',
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
   declare uid, gid integer;
@@ -3044,8 +3194,8 @@ create procedure ODRIVE.WA.DAV_MOVE (
   in path varchar,
   in destination varchar,
   in overwrite integer,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3059,8 +3209,8 @@ create procedure ODRIVE.WA.DAV_MOVE (
 create procedure ODRIVE.WA.DAV_DELETE (
   in path varchar,
   in silent integer := 0,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3076,10 +3226,10 @@ create procedure ODRIVE.WA.DAV_RES_UPLOAD (
   inout content any,
   in type varchar := '',
   in permissions varchar := '110100000R',
-  in uid integer := NULL,
-  in gid integer := NULL,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in uid integer := null,
+  in gid integer := null,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3092,8 +3242,8 @@ create procedure ODRIVE.WA.DAV_RES_UPLOAD (
 --
 create procedure ODRIVE.WA.DAV_RES_CONTENT (
   in path varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
   declare content, contentType any;
@@ -3131,8 +3281,8 @@ create procedure ODRIVE.WA.DAV_COL_CREATE (
   in permissions varchar := '110100000R',
   in uid integer,
   in gid integer,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3147,8 +3297,8 @@ create procedure ODRIVE.WA.DAV_PROP_LIST (
   in path varchar,
   in propmask varchar := '%',
   in skips varchar := null,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
   declare props any;
@@ -3178,8 +3328,8 @@ create procedure ODRIVE.WA.DAV_PROP_GET (
   in path varchar,
   in propName varchar,
   in propValue varchar := null,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare exit handler for SQLSTATE '*' {return propValue;};
 
@@ -3200,8 +3350,8 @@ create procedure ODRIVE.WA.DAV_PROP_SET (
   in path varchar,
   in propname varchar,
   in propvalue any,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3217,8 +3367,8 @@ create procedure ODRIVE.WA.DAV_PROP_TAGS_SET (
   in path varchar,
   in propname varchar,
   in propvalue any,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3236,8 +3386,8 @@ create procedure ODRIVE.WA.DAV_PROP_TAGS_SET (
 create procedure ODRIVE.WA.DAV_RDF_PROP_GET (
   in path varchar,			      -- Path to the resource or collection
   in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3252,8 +3402,8 @@ create procedure ODRIVE.WA.DAV_RDF_PROP_SET (
   in path varchar,			      -- Path to the resource or collection
   in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
   in rdf any,				          -- RDF XML
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3267,8 +3417,8 @@ create procedure ODRIVE.WA.DAV_RDF_PROP_SET (
 create procedure ODRIVE.WA.DAV_PROP_REMOVE (
   in path varchar,
   in propname varchar,
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare uname, gname varchar;
 
@@ -3295,8 +3445,8 @@ create procedure ODRIVE.WA.DAV_IS_LOCKED (
 create procedure ODRIVE.WA.DAV_LOCK (
   in path varchar,
   in type varchar := 'R',
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare retValue varchar;
   declare uname, gname varchar;
@@ -3314,8 +3464,8 @@ create procedure ODRIVE.WA.DAV_LOCK (
 create procedure ODRIVE.WA.DAV_UNLOCK (
   in path varchar,
   in type varchar := 'R',
-  in auth_name varchar := NULL,
-  in auth_pwd varchar := NULL)
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare id integer;
   declare locks, retValue any;
@@ -3354,8 +3504,6 @@ create procedure ODRIVE.WA.get_rdf (
 create procedure ODRIVE.WA.test_clear (
   in S any)
 {
-  declare N integer;
-
   return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
 }
 ;
@@ -3403,7 +3551,8 @@ create procedure ODRIVE.WA.test (
   valueName := get_keyword('name', params, 'Field');
   valueMessage := get_keyword('message', params, '');
   tmp := get_keyword('canEmpty', params);
-  if (isnull(tmp)) {
+  if (isnull (tmp))
+  {
     if (not isnull(get_keyword('minValue', params))) {
       tmp := 0;
     } else if (get_keyword('minLength', params, 0) <> 0) {
@@ -3561,6 +3710,8 @@ create procedure ODRIVE.WA.validate_tags (
   declare N integer;
   declare V any;
 
+  if (is_empty_or_null(S))
+    return 1;
   V := ODRIVE.WA.tags2vector(S);
   if (is_empty_or_null(V))
     return 0;
@@ -3610,7 +3761,7 @@ create procedure ODRIVE.WA.version_update()
           and WAM_USER = U_ID) do
   {
     ODRIVE.WA.odrive_user_initialize(U_NAME);
-    home := ODRIVE.WA.odrive_dav_home(U_NAME);
+    home := ODRIVE.WA.dav_home(U_NAME);
     if (not isnull(home)) {
       source := concat(home, 'My Items/');
       target := concat(home, 'Items/');
@@ -3625,3 +3776,166 @@ create procedure ODRIVE.WA.version_update()
 --
 ODRIVE.WA.version_update()
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.obj2json (
+  in o any,
+  in d integer := 2)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare retValue any;
+
+	if (d = 0)
+	  return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
+	retValue := '';
+	if (isnumeric (o))
+	{
+		retValue := cast (o as varchar);
+	}
+	else if (isstring (o))
+	{
+		for (N := 0; N < length(o); N := N + 1)
+		{
+			R := chr (o[N]);
+		  for (M := 0; M < length(T); M := M + 2)
+		  {
+				if (R = T[M])
+				  R := T[M+1];
+			}
+			retValue := retValue || R;
+		}
+		retValue := '"' || retValue || '"';
+	}
+	else if (isarray (o))
+	{
+		retValue := '[';
+		for (N := 0; N < length(o); N := N + 1)
+		{
+		  retValue := retValue || ODRIVE.WA.obj2json (o[N], d-1);
+		  if (N <> length(o)-1)
+			  retValue := retValue || ',\n';
+		}
+		retValue := retValue || ']';
+	}
+	return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.ui_image (
+  in itemPath varchar,
+  in itemType varchar,
+  in itemMimeType varchar)
+{
+  if (itemType = 'C')
+  {
+    if (ODRIVE.WA.det_category(itemPath) = 'CatFilter')
+      return 'image/dav/category_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'PropFilter')
+      return 'image/dav/property_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'HostFs')
+      return 'image/dav/hostfs_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'Versioning')
+      return 'image/dav/versions_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'News3')
+      return 'image/dav/enews_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'Blog')
+      return 'image/dav/blog_16.png';
+    if (ODRIVE.WA.det_category(itemPath) = 'oMail')
+      return 'image/dav/omail_16.png';
+    return 'image/dav/foldr_16.png';
+  }
+  if (itemPath like '%.txt')
+    return 'image/dav/text.gif';
+  if (itemPath like '%.pdf')
+    return 'image/dav/pdf.gif';
+  if (itemPath like '%.html')
+    return 'image/dav/html.gif';
+  if (itemPath like '%.htm')
+    return 'image/dav/html.gif';
+  if (itemPath like '%.wav')
+    return 'image/dav/wave.gif';
+  if (itemPath like '%.ogg')
+    return 'image/dav/wave.gif';
+  if (itemPath like '%.flac')
+    return 'image/dav/wave.gif';
+  if (itemPath like '%.wma')
+    return 'image/dav/wave.gif';
+  if (itemPath like '%.wmv')
+    return 'image/dav/video.gif';
+  if (itemPath like '%.doc')
+    return 'image/dav/msword.gif';
+  if (itemPath like '%.dot')
+    return 'image/dav/msword.gif';
+  if (itemPath like '%.xls')
+    return 'image/dav/xls.gif';
+  if (itemPath like '%.zip')
+    return 'image/dav/zip.gif';
+  if (itemMimeType like 'audio/%')
+    return 'image/dav/wave.gif';
+  if (itemMimeType like 'video/%')
+    return 'image/dav/video.gif';
+  if (itemMimeType like 'image/%')
+    return 'image/dav/image.gif';
+  return 'image/dav/generic_file.png';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.ui_alt (
+  in itemPath varchar,
+  in itemType varchar)
+{
+  return case when (itemType = 'C') then 'Folder: ' else 'File: ' end || itemPath ;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.ui_size (
+  in itemSize integer,
+  in itemType varchar)
+{
+  declare S varchar;
+
+  if ((itemSize = 0) and (itemType = 'C'))
+    return '';
+
+  S := '%d<span style="font-family: Monospace;">&nbsp;%s</span>';
+  if (itemSize < 1024)
+    return sprintf (S, itemSize, 'B&nbsp;');
+  if (itemSize < (1024 * 1024))
+    return sprintf (S, floor(itemSize / 1024), 'KB');
+  if (itemSize < (1024 * 1024 * 1024))
+    return sprintf (S, floor(itemSize / (1024 * 1024)), 'MB');
+  if (itemSize < (1024 * 1024 * 1024 * 1024))
+    return sprintf (S, floor(itemSize / (1024 * 1024 * 1024)), 'GB');
+  return sprintf (S, floor(itemSize / (1024 * 1024 * 1024 * 1024)), 'TB');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.ui_date (
+  in itemDate datetime)
+{
+	itemDate := left (cast (itemDate as varchar), 19);
+	return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), right(itemDate, 8));
+}
+;
+

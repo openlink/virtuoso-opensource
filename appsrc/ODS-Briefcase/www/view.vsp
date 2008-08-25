@@ -60,15 +60,20 @@ _again:
     content := res_header[0];
 
   http_rewrite();
-  if ((contentType = 'text/plain') and (mode <> 'download')) {
+  if ((contentType = 'text/plain') and (mode <> 'download'))
+  {
     http_header (sprintf('Content-Type: %s\r\n', 'text/html'));
     http('<html><body><pre>\r\n');
     http(content);
     http('\r\n</pre></body></html>');
-  } else if ((contentType in ('text/xml', 'text/html')) and (mode <> 'download')) {
+  }
+  else if ((contentType in ('text/xml', 'text/html')) and (mode <> 'download'))
+  {
     http_header (sprintf('Content-Type: %s\r\n', contentType));
     http(content);
-  } else {
+  }
+  else
+  {
     declare pos integer;
 
     pos := strrchr (file, '/');

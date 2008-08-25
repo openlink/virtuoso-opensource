@@ -108,7 +108,7 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
     for (select RES_ID, RES_FULL_PATH, RES_NAME, RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_CONTENT
            from WS.WS.SYS_DAV_RES
                   join WS.WS.SYS_DAV_USER ON RES_OWNER = U_ID
-            where RES_FULL_PATH like '/DAV/home/%/Public/%' and RES_FULL_PATH like ODRIVE.WA.odrive_dav_home(_U_NAME) || 'Public/%'
+            where RES_FULL_PATH like '/DAV/home/%/Public/%' and RES_FULL_PATH like ODRIVE.WA.dav_home(_U_NAME) || 'Public/%'
 	    and  RES_NAME[0] <> ascii ('.')) do
     {
         iri := post_iri_ex (c_iri, RES_ID);
@@ -158,7 +158,7 @@ create procedure ods_briefcase_sioc_tags (in path varchar, in res_id int, in own
 {
   declare pos int;
   declare dir, iri, post_iri varchar;
-  if (path like '/DAV/home/%/Public/%' and path like ODRIVE.WA.odrive_dav_home(owner_name) || 'Public/%')
+  if (path like '/DAV/home/%/Public/%' and path like ODRIVE.WA.dav_home(owner_name) || 'Public/%')
     {
       for select WAI_NAME, WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
 	where WAM_INST = WAI_NAME and WAM_USER = owner and WAM_IS_PUBLIC = 1 and WAM_APP_TYPE = 'oDrive' do
@@ -828,10 +828,10 @@ create view ODS_ODRIVE_POSTS as select
 	um.U_ACCOUNT_DISABLED = 0 and
 	um.U_DAV_ENABLE = 1 and
 	WAM_APP_TYPE = 'oDrive' and
-	RES_FULL_PATH like ODRIVE.WA.odrive_dav_home(um.U_NAME) || 'Public/%'
+	RES_FULL_PATH like ODRIVE.WA.dav_home(um.U_NAME) || 'Public/%'
 ;
 
-grant execute on ODRIVE.WA.odrive_dav_home to SPARQL_SELECT;
+grant execute on ODRIVE.WA.dav_home to SPARQL_SELECT;
 
 create procedure ODS_ODRIVE_TAGS ()
 {

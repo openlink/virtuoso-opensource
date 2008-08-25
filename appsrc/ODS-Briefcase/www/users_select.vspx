@@ -69,18 +69,18 @@
     <v:before-data-bind>
       <![CDATA[
         if (self.v_mode = 'g')
+      {
           self.v_filter := 'g';
-        if (self.v_mode = 'u')
+      }
+      else if (self.v_mode = 'u')
+      {
           self.v_filter := 'u';
-        self.v_src := get_keyword('src', self.vc_page.vc_event.ve_params, '');
-        self.v_dst := get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc');
-        self.v_s1 := get_keyword('s1', self.vc_page.vc_event.ve_params, '');
-        self.v_s2 := get_keyword('s2', self.vc_page.vc_event.ve_params, '');
+      }
       ]]>
     </v:before-data-bind>
 
   <vm:pagetitle>Select User/Group</vm:pagetitle>
-  <vm:popup_page_wrapper>
+  <vm:popup_pagewrapper>
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
@@ -90,10 +90,10 @@
       <v:variable name="v_how" persist="0" type="varchar" default="'1'"/>
       <v:variable name="v_order" persist="0" type="varchar" default="'U_NAME'" />
       <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
-      <v:variable name="v_src" persist="0" type="varchar" default="''" />
-      <v:variable name="v_dst" persist="0" type="varchar" default="'sc'" />
-      <v:variable name="v_s1" persist="0" type="varchar" default="''" />
-      <v:variable name="v_s2" persist="0" type="varchar" default="''" />
+      <v:variable name="v_src" persist="0" param-name="src" type="varchar" default="''" />
+      <v:variable name="v_dst" persist="0" param-name="dst" type="varchar" default="'sc'" />
+      <v:variable name="v_s1" persist="0" param-name="s1" type="varchar" default="''" />
+      <v:variable name="v_s2" persist="0" param-name="s2" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
@@ -103,7 +103,7 @@
       <?vsp http(sprintf('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', self.vc_page.vc_event.ve_params, ''))); ?>
       <?vsp http(sprintf('<input type="hidden" name="s2"    id="s2"    value="%s"/>', get_keyword('s2', self.vc_page.vc_event.ve_params, ''))); ?>
       <v:text name="params" type="hidden" value="--self.v_params"/>
-      <div style="padding: 0.5em;">
+      <div style="padding: 0.2em;">
         <div class="boxHeader">
           Show
           <v:select-list name="filter" value="--self.v_filter" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
@@ -176,10 +176,13 @@
               control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
             ]]>
           </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
         </v:data-source>
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
           <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-            <table id="users" class="grid" cellspacing="0">
+            <table id="users" class="OD_grid colorise" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
@@ -194,12 +197,8 @@
                       <v:label value="Type" format="%s"/>
                     </th>
                   </v:template>
-                  <th>
-                    <?vsp self.sortColumn('Name', 'U_NAME'); ?>
-                  </th>
-                  <th>
-                    <?vsp self.sortColumn('Description', 'U_FULL_NAME'); ?>
-                  </th>
+                  <?vsp http (ODRIVE.WA.show_column_header ('Name', 'U_NAME', self.v_order, self.v_direction)); ?>
+                  <?vsp http (ODRIVE.WA.show_column_header ('Description', 'U_FULL_NAME', self.v_order, self.v_direction)); ?>
                   <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
                     <th class="last" width="1%">
                       <v:label value="Action" format="%s"/>
@@ -279,12 +278,7 @@
             <a href="#" onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
           </div>
         </v:template>
-        <script>
-          <![CDATA[
-            coloriseTable('users');
-          ]]>
-        </script>
       </div>
     </vm:pagebody>
-  </vm:popup_page_wrapper>
+  </vm:popup_pagewrapper>
 </v:page>

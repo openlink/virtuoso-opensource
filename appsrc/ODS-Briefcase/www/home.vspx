@@ -29,13 +29,312 @@
       declare items any;
 
       items := ODRIVE.WA.DAV_DIR_LIST (path, 0);
-      foreach (any item in items) do {
-        ODRIVE.WA.DAV_SET(item[0], 'permissions', dav_perms);
-        ODRIVE.WA.DAV_SET(item[0], 'ownerID', dav_owner);
-        ODRIVE.WA.DAV_SET(item[0], 'groupID', dav_group);
+      foreach (any item in items) do
+      {
+        declare itemPath varchar;
+
+        itemPath := item[0];
+        ODRIVE.WA.DAV_SET(itemPath, 'permissions', dav_perms);
+        ODRIVE.WA.DAV_SET(itemPath, 'ownerID', dav_owner);
+        ODRIVE.WA.DAV_SET(itemPath, 'groupID', dav_group);
         if (item[1] = 'C')
-          self.set_recursive (item[0], dav_perms, dav_owner, dav_group);
+          self.set_recursive (itemPath, dav_perms, dav_owner, dav_group);
       }
+    ]]>
+  </v:method>
+
+  <v:method name="dc_prepare" arglist="">
+    <![CDATA[
+      if (self.noPrepare)
+        return;
+
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      ODRIVE.WA.dc_set_base (self.search_dc, 'path', get_keyword ('ts_path', params));
+
+      declare N, M, seqNo integer;
+      declare fType, fSchema, fProperty, fCriteria, fValue any;
+
+      M := 0;
+      seqNo := cast (get_keyword ('search_seqNo', params, '0') as integer);
+      for (N := 0; N < seqNo; N := N + 1)
+      {
+        fType := get_keyword (sprintf ('search_field_0_%d', N), params);
+        if (not isnull (fType))
+        {
+          fSchema := get_keyword (sprintf ('search_field_1_%d', N), params);
+          fProperty := get_keyword (sprintf ('search_field_2_%d', N), params);
+          fCriteria := get_keyword (sprintf ('search_field_3_%d', N), params);
+          fValue := get_keyword (sprintf ('search_field_4_%d', N), params);
+          ODRIVE.WA.dc_set_criteria (self.search_dc, cast (M as varchar), fType, fCriteria, fValue, fSchema, fProperty);
+          M := M + 1;
+        }
+      }
+      return ODRIVE.WA.dc_filter_check (self.search_dc, self.account_id);
+    ]]>
+  </v:method>
+
+  <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
+    <![CDATA[
+      return sprintf ('<option value="%s" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
+    ]]>
+  </v:method>
+
+  <v:method name="command_set" arglist="in command integer, in command_mode integer">
+    <![CDATA[
+      self.command_restore (command, command_mode, 1);
+    ]]>
+  </v:method>
+
+  <v:method name="command_restore" arglist="in command integer, in command_mode integer, in restore_mode integer">
+    <![CDATA[
+      self.tabNo := '1';
+      self.command := command;
+      self.command_mode := command_mode;
+      if (self.command = 0)
+      {
+        self.need_overwrite := 0;
+        self.item_array := vector ();
+        if (self.command_mode <> 1)
+          self.search_filter := null;
+        if (self.command_mode <> 2)
+          self.search_simple := null;
+        if (self.command_mode <> 3)
+        {
+          self.search_advanced := null;
+          self.dir_grouping := '';
+          self.dir_cloud := 0;
+        } else {
+          self.search_dc := self.search_advanced;
+        }
+        if (restore_mode)
+        {
+          self.search_dc := null;
+        }
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="command_push" arglist="in command integer, in command_mode integer">
+    <![CDATA[
+      self.command_save := vector (self.command, self.command_mode, self.dir_path);
+      self.command_set (command, command_mode);
+    ]]>
+  </v:method>
+
+  <v:method name="command_pop" arglist="in path varchar">
+    <![CDATA[
+      if (is_empty_or_null (self.command_save))
+      {
+        self.command_set (0, 0);
+      }
+      else
+      {
+        self.command_restore (self.command_save[0], self.command_save[1], 0);
+        if (isnull(path))
+        {
+          self.dir_path := self.command_save[2];
+        }
+        else
+        {
+          self.dir_path := path;
+        }
+        self.command_save := null;
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="toolbarEnable" arglist="in cmd varchar">
+    <![CDATA[
+      if (cmd = 'refresh')
+        return 1;
+
+      if (cmd = 'home')
+        return 1;
+
+      if (is_empty_or_null(self.dir_path))
+        return 0;
+
+      if (self.dir_path = ODRIVE.WA.shared_name())
+        return 0;
+
+      if (not (((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced)))))
+        return 0;
+
+      if (cmd = 'new')
+      {
+        if (not (self.command_mode in (0,1)))
+          return 0;
+        if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
+          return 0;
+      }
+
+      if ((cmd = 'shared') and (self.account_role = 'public'))
+        return 0;
+
+      if (cmd = 'up')
+      {
+        if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), '/')))
+          return 0;
+      }
+
+      if (cmd = 'upload')
+      {
+        if (not (self.command_mode in (0, 1)))
+          return 0;
+        if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
+          return 0;
+        if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
+          return 0;
+      }
+
+      if ((cmd = 'new') and (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path))))
+        return 0;
+
+      return 1;
+    ]]>
+  </v:method>
+
+  <v:method name="toolbarShow" arglist="in cmd varchar, in cmdLabel varchar, in cmdEvent varchar, in cmdImage varchar, in cmdImageGray varchar, in cmdImageAlternate integer">
+    <![CDATA[
+      declare hasLabels varchar;
+      declare toolbarLabel varchar;
+
+      hasLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
+      toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%s</span>', cmdLabel) end;
+      if (self.toolbarEnable (cmd))
+      {
+        http (sprintf ('<span id="tb_%s" class="toolbar" style="cursor: pointer; %s" %s>', cmd, case when (cmdImageGray <> '') and cmdImageAlternate then 'display: none;' else '' end, cmdEvent));
+        http (sprintf ('  <img src="image/%s" border="0" alt="%s" />%s', cmdImage, cmdLabel, toolbarLabel));
+        http (         '</span>');
+      }
+      if ((cmdImageGray <> '') and ((not self.toolbarEnable (cmd)) or cmdImageAlternate))
+      {
+        http (sprintf ('<span id="tb_%s_gray" class="toolbar" style="display: inline;">', cmd));
+        http (sprintf ('  <img src="image/%s" border="0" alt="%s"/>%s', cmdImageGray, cmdLabel, toolbarLabel));
+        http (         '</span>');
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="getColumn" arglist="in columnId varchar">
+    <![CDATA[
+      declare N integer;
+
+      for (N := 0; N < length (self.dir_columns); N := N + 1)
+      {
+        if (self.dir_columns[N][0] = columnId)
+          return self.dir_columns[N];
+      }
+      return null;
+    ]]>
+  </v:method>
+
+  <v:method name="enabledColumn" arglist="in columnId varchar">
+    <![CDATA[
+      declare dir_column any;
+
+      dir_column := self.getColumn(columnId);
+      if (is_empty_or_null(dir_column))
+        return 0;
+      if (dir_column[0] = self.dir_grouping)
+        return 0;
+      if (dir_column[5][self.dir_details] <> 1)
+        return 0;
+      return 1;
+    ]]>
+  </v:method>
+
+  <v:method name="showColumnHeader" arglist="in columnId varchar">
+    <![CDATA[
+      if (not self.enabledColumn(columnId))
+        return;
+
+      declare dir_column, strClass, strOnclick any;
+
+      dir_column := self.getColumn(columnId);
+      strClass := '';
+      strOnclick := '';
+      if ((dir_column[3] = 1) and (self.dir_path <> ''))
+      {
+        strClass := 'sortcol';
+        strOnclick := sprintf ('onclick="javascript: myPost(\'F1\', \'sortColumn\', \'%s\');"', dir_column[0]);
+        if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'desc'))
+        {
+          strClass := strClass || ' sortcol_active sortcol_desc';
+        }
+        else if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'asc'))
+        {
+          strClass := strClass || ' sortcol_active sortcol_asc';
+        }
+        strClass := 'class="' || strClass || '"';
+      }
+      http (sprintf ('<th nowrap="nowrap" %s %s %s>%s</th>', dir_column[6], strClass, strOnclick, dir_column[2]));
+    ]]>
+  </v:method>
+
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+
+      self.ds_items.vc_reset();
+      if (self.dir_order = columnName)
+      {
+        self.dir_direction := either(equ(self.dir_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.dir_direction := 'asc';
+      }
+      self.dir_order := columnName;
+    ]]>
+  </v:method>
+
+  <v:method name="do_url" arglist="">
+    <![CDATA[
+      declare I, N integer;
+      declare tmp, T varchar;
+      declare aCriteria, criteria any;
+
+      tmp := sprintf ('&did=%d&aid=%d', self.domain_id, self.account_id);
+      if (self.command_mode = 2)
+      {
+        tmp := tmp || '&mode=s';
+        tmp := tmp || sprintf ('&path=%U', ODRIVE.WA.odrive_real_path (self.dir_path));
+        tmp := tmp || sprintf ('&f0_0=RES_NAME&f0_3=like&f0_4=%U', trim (self.search_simple));
+      }
+      else if (self.command_mode = 3)
+      {
+        tmp := tmp || sprintf ('&path=%U', ODRIVE.WA.dc_get (self.search_dc, 'base', 'path'));
+        aCriteria := ODRIVE.WA.dc_xml_doc (self.search_dc);
+        I := xpath_eval('count(/dc/criteria/entry)', aCriteria);
+        for (N := 1; N <= I; N := N + 1)
+        {
+          criteria := xpath_eval('/dc/criteria/entry', aCriteria, N);
+          T := cast (xpath_eval ('@type', criteria) as varchar);
+          if (not isnull (T))
+            tmp := tmp || sprintf ('&f%d_0=%U', I, T);
+          T := cast (xpath_eval ('@schema', criteria) as varchar);
+          if (not isnull (T))
+            tmp := tmp || sprintf ('&f%d_1=%U', I, T);
+          T := cast (xpath_eval ('@property', criteria) as varchar);
+          if (not isnull (T))
+            tmp := tmp || sprintf ('&f%d_2=%U', I, T);
+          T := cast (xpath_eval ('@criteria', criteria) as varchar);
+          if (not isnull (T))
+            tmp := tmp || sprintf ('&f%d_3=%U', I, T);
+          T := cast (xpath_eval ('.', criteria) as varchar);
+          if (not isnull (T))
+            tmp := tmp || sprintf ('&f%d_4=%U', I, T);
+        }
+      }
+      T := self.getColumn(self.dir_order);
+      if (not is_empty_or_null(T) and (T[1] <> 'c0'))
+        tmp := concat(tmp, sprintf ('&order=%U', T[1]));
+      if (not is_empty_or_null(self.dir_direction) and self.dir_direction <> 'desc')
+        tmp := concat(tmp, sprintf ('&direction=%U', self.dir_direction));
+
+      return tmp;
     ]]>
   </v:method>
 
@@ -43,6 +342,7 @@
     <![CDATA[
       declare N, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
+      declare properties, c_properties any;
       declare dav_filename, dav_file, rdf_content any;
       declare params, itemList any;
 
@@ -70,7 +370,7 @@
             signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
         }
       }
-      if ((e.ve_button is not null) and (e.ve_button.vc_name = 'Create'))
+      if ((e.ve_button is not null) and (e.ve_button.vc_name = 'cCreate'))
         {
   	      self.odrive_login.vc_data_bind(e);
   	      self.odrive_login.vc_data_bound := 1;
@@ -78,11 +378,17 @@
           if (self.command_mode = 0)
           {
             msg := 'Can not create folder. ';
-          } else if (self.command_mode = 1) {
+        }
+        else if (self.command_mode = 1)
+        {
             msg := 'Can not create dynamic folder. ';
-          } else if (self.command_mode = 5) {
+        }
+        else if (self.command_mode = 5)
+        {
             msg := 'Can not upload file. ';
-          } else if (self.command_mode = 10) {
+        }
+        else if (self.command_mode = 10)
+        {
             msg := 'Can not update resource. ';
           }
 
@@ -99,11 +405,15 @@
               if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
               {
                 rdf_data := http_get(dav_filename);
-              } else {
+            }
+            else
+            {
                 pos := position ('dav_file', params);
                 rdf_data := aref_set_0 (params, pos);
               }
-          } else if (get_keyword ('dav_source', params, '-1') = '1') {
+          }
+          else if (get_keyword ('dav_source', params, '-1') = '1')
+          {
             dav_filename := get_keyword('dav_url', params, '');
               rdf_data := http_get(dav_filename);
             }
@@ -126,16 +436,20 @@
               }
             }
             if (is_xml = 0 and is_ttl = 0)
+          {
               signal ('TEST', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.<>');
-
+          }
             if (is_ttl)
             {
             retValue := DB.DBA.TTLP (rdf_data, '', rdf_graph);
-            } else {
+          }
+          else
+          {
             retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, '', rdf_graph);
             }
-
-          } else {
+        }
+        else
+        {
             -- WebDAV
 
             if (self.command_mode = 10)
@@ -152,14 +466,22 @@
           if (strchr(dav_name, '/') is not null or strchr(dav_name, '\\') is not null)
             signal('TEST', 'The folder/file name should not contain slash or back-slash symbols!<>');
 
+          -- validate tags
+          self.dav_tags_public := trim (get_keyword ('f_tags_public', params, ''));
+          if (not ODRIVE.WA.validate_tags (self.dav_tags_public))
+            signal('TEST', 'The expression contans not valid tag(s)!<>');
+
+          self.dav_tags_private := trim (get_keyword ('f_tags_private', params, ''));
+          if (not ODRIVE.WA.validate_tags (self.dav_tags_private))
+            signal('TEST', 'The expression contans not valid tag(s)!<>');
+
           -- validate metadata
             if ((self.command_mode = 10) and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path))
             {
             declare param, uri, property, value any;
             declare delim integer;
 
-            N := 0;
-            while (N < length(params))
+            for (N := 0; N < length(params); N := N + 4)
               {
               if (params[N] like 'vmd_edit_property%')
                 {
@@ -171,7 +493,6 @@
                 if (not ODRIVE.WA.rdf_validate_property(uri, property, value))
                   signal('TEST', 'Bad metadata value!<>');
               }
-              N := N + 4;
             }
           }
 
@@ -191,7 +512,7 @@
               {
               declare search_path varchar;
 
-              search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'path', '/DAV/'));
+              search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dc_get(self.search_dc, 'base', 'path', '/DAV/'));
               if (search_path between dav_fullPath and (dav_fullPath || '\255\255\255\255'))
                 signal('TEST', sprintf('Search path (%s) can not contains in folder full path (%s)!<>', search_path, dav_fullPath));
             }
@@ -221,10 +542,14 @@
                 pos := position ('dav_file', params);
                 dav_file := aref_set_0 (params, pos);
               }
-            } else if (get_keyword ('dav_source', params, '-1') = '1') {
+          }
+          else if (get_keyword ('dav_source', params, '-1') = '1')
+          {
               dav_filename := get_keyword('dav_url', params, '');
               dav_file := http_get(dav_filename);
-            } else if (get_keyword ('dav_source', params, '-1') = '2') {
+          }
+          else if (get_keyword ('dav_source', params, '-1') = '2')
+          {
               dav_filename := get_keyword('dav_rdf', params, '');
                 dav_file := ODRIVE.WA.get_rdf (dav_filename);
             }
@@ -243,7 +568,7 @@
           dav_group := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_group', params, '')));
           if (dav_group < 0)
             dav_group := null;
-          if (not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(params)))
+        if (not ODRIVE.WA.check_admin (self.account_id))
             if ((ODRIVE.WA.DAV_GET(self.dav_item, 'groupID') <> dav_group) or isnull(dav_group))
               if (not ODRIVE.WA.odrive_group_own(trim(get_keyword('dav_group', params, ''))))
                 signal('TEST', 'Only own groups or ''dba'' group are allowed!<>');
@@ -253,10 +578,12 @@
             {
             _p := get_keyword(sprintf('dav_perm%i', N), params, '');
             if (_p <> '')
+          {
               dav_perms := concat(dav_perms, '1');
-            else
+          } else {
               dav_perms := concat(dav_perms, '0');
           }
+        }
             if (dav_perms = '000000000')
             {
             declare own_id integer;
@@ -264,10 +591,13 @@
             own_id := coalesce(dav_owner, (select min(U_ID) from WS.WS.SYS_DAV_USER));
             dav_perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
           }
-          dav_perms := concat (dav_perms,
-                               get_keyword ('dav_index', params, 'N'),
-                               get_keyword ('dav_metagrab', params, 'N')
-                              );
+          dav_perms := concat (dav_perms, get_keyword ('dav_index', params, 'N'), get_keyword ('dav_metagrab', params, 'N'));
+
+          -- changing properties
+          c_properties := ODRIVE.WA.prop_params (params, self.account_id);
+
+          -- acl
+          self.dav_acl := ODRIVE.WA.acl_params (params);
 
           -- Update
             if (self.command_mode = 10)
@@ -288,13 +618,6 @@
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'acl') <> self.dav_acl)
                 ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl);
 
-            -- Tags
-            if (self.dav_type = 'R')
-            {
-              ODRIVE.WA.DAV_SET(self.dav_path, 'privatetags', self.dav_tags);
-              ODRIVE.WA.DAV_SET(self.dav_path, 'publictags', self.dav_tags2);
-            }
-
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
               ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
           }
@@ -308,10 +631,13 @@
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
               self.dav_path := dav_fullPath;
-            } else {
+            }
+            else
+            {
               if (get_keyword ('dav_recursive', params, '') <> '')
+              {
                   self.set_recursive (self.dav_path, dav_perms, dav_owner, dav_group);
-
+              }
                 if (dav_detType <> 'Versioning')
                 {
                   -- clear old properties
@@ -338,57 +664,37 @@
             }
 
               -- set new properties
-            if (dav_detType = 'ResFilter')
+            if (dav_detType in ('ResFilter', 'CatFilter'))
             {
                 -- save & validate metadata
                 declare rValue any;
-                rValue := self.dc_prepare();
-                if (rValue <> 1) {
-                  if (rValue = -1)
-                    self.vc_error_message := 'Bad metadata schema';
-                  if (rValue = -2)
-                    self.vc_error_message := 'Bad metadata property';
-                  if (rValue = -3)
-                    self.vc_error_message := 'Bad metadata condition';
-                  if (rValue = -4)
-                    self.vc_error_message := 'Bad metadata value';
 
+                rValue := self.dc_prepare();
+              if (not isnull (rValue))
+              {
+                self.vc_error_message := rValue;
                   self.vc_is_valid := 0;
                   return;
                 }
-
               ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
-              retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
-              if (ODRIVE.WA.DAV_ERROR(retValue))
-                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
-            } else if (dav_detType = 'CatFilter') {
-                -- save & validate metadata
-                declare rValue any;
-                rValue := self.dc_prepare();
-                if (rValue <> 1) {
-                  if (rValue = -1)
-                    self.vc_error_message := 'Bad metadata schema';
-                  if (rValue = -2)
-                    self.vc_error_message := 'Bad metadata property';
-                  if (rValue = -3)
-                    self.vc_error_message := 'Bad metadata condition';
-                  if (rValue = -4)
-                    self.vc_error_message := 'Bad metadata value';
-
-                  self.vc_is_valid := 0;
-                  return;
-                }
-
-              ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
+              if (dav_detType = 'ResFilter')
+              {
+                retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
+              } else {
               retValue := ODRIVE.WA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
+              }
               if (ODRIVE.WA.DAV_ERROR(retValue))
+              {
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
-
-              } else if (dav_detType = 'rdfSink') {
+              }
+            }
+            else if (dav_detType = 'rdfSink')
+            {
               ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_graph', get_keyword('dav_rdfSink_rdfGraph', params));
               ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_sponger', get_keyword('dav_rdfSink_rdfSponger', params));
-
-              } else if (dav_detType <> 'Versioning') {
+            }
+            else if (dav_detType <> 'Versioning')
+            {
               retValue := ODRIVE.WA.DAV_SET(self.dav_path, 'detType', either(equ(dav_detType, ''), null, dav_detType));
                 if (dav_detType = 'oMail')
                 {
@@ -407,10 +713,13 @@
             }
 
           -- File
-          if (self.dav_type = 'R') {
-            if (self.command_mode = 5) {
+          if (self.dav_type = 'R')
+          {
+            if (self.command_mode = 5)
+            {
               retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
-              if (not ODRIVE.WA.DAV_ERROR(retValue)) {
+              if (not ODRIVE.WA.DAV_ERROR (retValue))
+              {
                 self.dav_vector := vector(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
                 self.command := 14;
                 self.vc_data_bind(e);
@@ -423,22 +732,41 @@
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
                 if (dav_fullPath like (ODRIVE.WA.dav_home2 (self.account_id, 'owner') || 'Public%'))
                   ODRIVE.WA.domain_ping (self.domain_id);
-
-            } else {
-              if (ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) {
+            }
+            else
+            {
+              if (ODRIVE.WA.dav_rdf_has_metadata(self.dav_path))
+              {
                 declare param, property any;
                 declare delim integer;
 
                 for (N := 0; N < length(params); N := N + 4)
-                  if (params[N] like 'vmd_edit_property%') {
+                {
+                  if (params[N] like 'vmd_edit_property%')
+                  {
                     param := replace(params[N], 'vmd_edit_property$0', '');
                     delim := strstr (param, '$0');
                     property := subseq (param, delim+2);
                     ODRIVE.WA.dav_rdf_set_property(self.dav_metadata, property, params[N+1]);
                   }
+                }
                   retValue := ODRIVE.WA.dav_rdf_set_metadata (self.dav_path, self.dav_metadata);
               }
             }
+            -- Tags
+            ODRIVE.WA.DAV_SET (dav_fullPath, 'privatetags', self.dav_tags_private);
+            ODRIVE.WA.DAV_SET (dav_fullPath, 'publictags', self.dav_tags_public);
+          }
+
+          -- properties
+          properties := ODRIVE.WA.DAV_PROP_LIST (dav_fullPath, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+          for (N := 0; N < length (properties); N := N + 2)
+          {
+            ODRIVE.WA.DAV_PROP_REMOVE (dav_fullPath, properties[N][0]);
+          }
+          for (N := 0; N < length (c_properties); N := N + 3)
+          {
+            ODRIVE.WA.DAV_PROP_SET (dav_fullPath, c_properties[N], c_properties[N+1]);
           }
 
           -- Auto versioning
@@ -456,18 +784,1553 @@
           }
 
           self.command_pop(null);
-          self.command_acl := 0;
           self.vc_data_bind(e);
   		  }
     ]]>
   </v:on-init>
+
   <vm:pagetitle>Briefcase Home</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="command" persist="0" type="integer" default="0" />
+      <v:variable name="command_mode" persist="0" type="integer" default="0" />
+      <v:variable name="command_save" persist="0" type="integer" default="0" />
+      <v:variable name="source" persist="0" type="varchar" default="''" />
+      <v:variable name="item_array" persist="0" type="any" default="null" />
+      <v:variable name="need_overwrite" persist="0" type="integer" default="0" />
+      <v:variable name="dir_spath" persist="1" type="varchar" default="'__root__'" />
+      <v:variable name="dir_path" persist="0" type="varchar" default="'__root__'" />
+      <v:variable name="dir_right" persist="0" type="varchar" default="''" />
+      <v:variable name="dir_details" persist="1" type="integer" default="0" />
+      <v:variable name="dir_order" persist="1" type="varchar" default="'column_#1'" />
+      <v:variable name="dir_direction" persist="1" type="varchar" default="'asc'" />
+      <v:variable name="dir_grouping" type="varchar" default="''" />
+      <v:variable name="dir_groupName" type="varchar" default="''" />
+      <v:variable name="dir_cloud" type="integer" default="0" />
+      <v:variable name="dir_tags" type="any" default="null" />
+      <v:variable name="dir_columns" type="any" default="null" />
+      <v:variable name="search_filter" persist="0" type="varchar" default="''" />
+      <v:variable name="search_simple" persist="0" param-name="keywords" type="any" default="null" />
+      <v:variable name="search_advanced" persist="0" type="any" default="null" />
+      <v:variable name="search_dc" persist="0" type="any" default="null" />
+      <v:variable name="noPrepare" persist="temp" type="integer" default="0" />
+      <v:variable name="dav_vector" persist="0" type="any" default="null" />
+      <v:variable name="tabNo" param-name="tabNo" type="varchar" default="'1'" />
+      <v:variable name="dav_id" type="integer" default="-1" />
+      <v:variable name="dav_path" type="varchar" default="''" />
+      <v:variable name="dav_type" type="varchar" default="''" />
+      <v:variable name="dav_detType" type="varchar" default="''" />
+      <v:variable name="dav_item" type="any" default="null" />
+      <v:variable name="dav_enable" type="integer" default="1" />
+      <v:variable name="dav_propEnable" type="integer" default="1" />
+      <v:variable name="dav_acl" persist="0" type="varbinary" />
+      <v:variable name="dav_tags_private" persist="0" type="varchar" />
+      <v:variable name="dav_tags_public" persist="0" type="varchar" />
+      <v:variable name="dav_metadata" persist="0" type="varchar" default="null" />
+      <v:variable name="chars" type="integer" default="60" />
+    </vm:variables>
     <vm:header>
       Briefcase  Home
     </vm:header>
     <vm:pagebody>
-      <vm:dav_browser />
+
+      <v:before-data-bind>
+        <![CDATA[
+          declare _params, tmp any;
+
+          _params := self.vc_page.vc_event.ve_params;
+
+          self.chars := cast (get_keyword ('chars', self.settings, '60') as integer);
+
+          self.dir_columns := vector ();
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#1', 'c0', 'Name',          1, 0, vector (cast(get_keyword ('column_#1', self.settings, '1') as integer), 1), 'width="50%"')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#2',   '', 'Tags',          0, 0, vector (cast(get_keyword ('column_#2', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#3', 'c2', 'Size',          1, 1, vector (cast(get_keyword ('column_#3', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#4', 'c3', 'Date Modified', 1, 1, vector (cast(get_keyword ('column_#4', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#5', 'c4', 'Mime Type',     1, 1, vector (cast(get_keyword ('column_#5', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#6', 'c9', 'Kind',          1, 1, vector (cast(get_keyword ('column_#6', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#7', 'c5', 'Owner',         1, 1, vector (cast(get_keyword ('column_#7', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#8', 'c6', 'Group',         1, 1, vector (cast(get_keyword ('column_#8', self.settings, '1') as integer), 0), '')));
+          self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (cast(get_keyword ('column_#9', self.settings, '1') as integer), 0), '')));
+
+          if (get_keyword ('id', _params, '') <> '')
+          {
+            self.vc_redirect (sprintf ('%s/view.vsp?file=%U&mode=download', ODRIVE.WA.odrive_url (self.domain_id), DB.DBA.DAV_SEARCH_PATH (cast (get_keyword ('id', _params) as integer), 'R')));
+            return;
+          }
+          self.dir_path := get_keyword ('dir', _params, self.dir_path);
+          if (self.dir_path = '__root__')
+            self.dir_path := self.dir_spath;
+          if (self.dir_path = '__root__')
+            self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
+          if ((self.owner_id <> self.account_id) and (not ODRIVE.WA.check_admin (self.account_id)))
+            if (isnull (strstr (ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), self.dir_path)))
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
+          self.dir_spath := self.dir_path;
+          self.dir_details := cast(get_keyword ('list_type', _params, self.dir_details) as integer);
+
+          if ((self.command = 0) and (self.command_mode = 2))
+            self.search_simple := trim(get_keyword ('simple', _params, self.search_simple));
+
+          if (get_keyword ('mode', _params) = 'simple')
+          {
+            self.command_set (0, 2);
+            if (self.dir_path = '')
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
+            self.search_simple := trim (get_keyword ('keywords', _params));
+          }
+          else if (get_keyword ('mode', _params) = 'advanced')
+          {
+            self.command_set (0, 3);
+            if (self.dir_path = '')
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
+            ODRIVE.WA.dc_set_base (self.search_dc, 'path', ODRIVE.WA.odrive_real_path (self.dir_path));
+            tmp := trim (get_keyword ('keywords', _params));
+            if (tmp <> '')
+              ODRIVE.WA.dc_set_criteria (self.search_dc, '0', 'RES_NAME', 'like', tmp);
+          }
+          self.dir_right := ODRIVE.WA.odrive_permission(concat(ODRIVE.WA.path_show (self.dir_path), '/'));
+        ]]>
+      </v:before-data-bind>
+
+      <?vsp http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo)); ?>
+      <div class="toolbar">
+        <?vsp
+          self.toolbarShow ('refresh', 'Refresh', 'onclick="javascript: document.forms[0].submit();"', 'ref_32.png', '', 0);
+          self.toolbarShow ('up', 'Up', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'up\');"', 'up_32.png', 'grey_up_32.png', 0);
+
+          http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
+
+          self.toolbarShow ('home', 'Home', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'home\');"', 'home_32.png', '', 0);
+          self.toolbarShow ('shared', 'Shared Folders', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'shared\');"', 'folder_violet.png', 'folder_grey.png', 0);
+          self.toolbarShow ('new', 'New Folder', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'new\');"', 'new_fldr_32.png', 'grey_new_fldr_32.png', 0);
+
+          http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
+
+          self.toolbarShow ('rename', 'Rename', 'onclick="javascript: ODRIVE.formShow(\'rename\');"', 'renm_32.png', 'grey_renm_32.png', 1);
+          self.toolbarShow ('copy', 'Copy', 'onclick="javascript: ODRIVE.formShow(\'copy\');"', 'copy_32.png', 'grey_copy_32.png', 1);
+          self.toolbarShow ('move', 'Move', 'onclick="javascript: ODRIVE.formShow(\'move\');"', 'move_32.png', 'grey_move_32.png', 1);
+          self.toolbarShow ('delete', 'Delete', 'onclick="javascript: ODRIVE.formShow(\'delete\');"', 'del_32.png', 'grey_del_32.png', 1);
+
+          http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
+
+          self.toolbarShow ('properties', 'Edit Properties', 'onclick="javascript: ODRIVE.formShow(\'properties\');"', 'prop_32.png', 'grey_prop_32.png', 1);
+          self.toolbarShow ('tag', 'Tag', 'onclick="javascript: ODRIVE.formShow(\'tags\');"', 'tag_32.png', 'grey_tag_32.png', 1);
+
+          http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
+
+          self.toolbarShow ('upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
+        ?>
+      </div>
+      <div style="clear: both;"></div>
+      <?vsp
+        if (0)
+        {
+      ?>
+          <v:button name="action" action="simple" style="url" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare _action, _path, _item, params any;
+
+                params := e.ve_params;
+                _action := get_keyword ('_cmd', params, '');
+                if (_action = 'home')
+                {
+                  self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
+                  self.command_set (0, 0);
+                }
+                else if (_action = 'shared')
+                {
+                  self.dir_path := ODRIVE.WA.shared_name();
+                  self.command_set (0, 0);
+                }
+                else if (_action = 'up')
+                {
+                  if (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), '/'))
+                  {
+                    self.dir_path := '';
+                  } else {
+                    declare pos integer;
+
+                    pos := strrchr(self.dir_path, '/');
+                    if (isnull(pos))
+                      pos := 0;
+                    self.dir_path := left(self.dir_path, pos);
+                  }
+                  self.ds_items.vc_reset();
+                }
+                else if (_action = 'go')
+                {
+                  self.path.ufl_value := ODRIVE.WA.path_show (self.path.ufl_value);
+                  if (not ODRIVE.WA.path_is_shortcut (self.path.ufl_value))
+                  {
+                    declare tmp any;
+
+                    tmp := ODRIVE.WA.odrive_real_path (self.path.ufl_value);
+                    if (ODRIVE.WA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID(tmp, 'C')))
+                    {
+                      self.vc_error_message := concat('Can not find the folder with name ', ODRIVE.WA.odrive_refine_path(self.path.ufl_value));
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    if ((not ODRIVE.WA.check_admin (self.account_id)) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.owner_id, self.account_role))))
+                    {
+                      self.vc_error_message := 'The path must be part of your home directory or another public directory';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  }
+                  self.dir_path := self.path.ufl_value;
+                  self.ds_items.vc_reset();
+                }
+                else if (_action = 'filter')
+                {
+                  self.command_set (0, 1);
+                  self.search_filter := self.filter.ufl_value;
+                }
+                else if (_action = 'cancelFilter')
+                {
+                  self.command_set (0, 1);
+                  self.search_filter := '';
+                }
+                else if (_action = 'new')
+                {
+                  self.command_push (10, 0);
+                }
+                else if (_action = 'upload')
+                {
+                  self.command_push (10, 5);
+                }
+                else if (_action = 'update')
+                {
+                  self.source := get_keyword ('_path', params, '');
+                  self.command_push (10, 10);
+                }
+                else if (_action = 'select')
+                {
+                  _path := get_keyword ('_path', params, '');
+                  if (_path <> '')
+                  {
+                    if (ODRIVE.WA.odrive_permission (_path) = '')
+                    {
+                      self.vc_error_message := 'You have not rights to read this folder/file!';
+                      self.vc_is_valid := 0;
+                      self.vc_data_bind (e);
+                      return;
+                    }
+                    _item := ODRIVE.WA.dav_init (_path);
+                    if (ODRIVE.WA.dav_get (_item, 'type') = 'R')
+                    {
+                      http_request_status ('HTTP/1.1 302 Found');
+                      http_header (sprintf ('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, _path));
+                    }
+                    else
+                    {
+                      if (self.dir_path <> '')
+                      {
+                        self.dir_path := rtrim (self.dir_path, '/') || '/';
+                      }
+                      self.dir_path := self.dir_path || ODRIVE.WA.dav_get (_item, 'name');
+
+                      self.ds_items.vc_reset();
+                      self.vc_data_bind (e);
+                    }
+                  }
+                }
+                else if (_action = 'tag_search')
+                {
+                  declare tag, tags, tagType any;
+
+                  tag := get_keyword ('tag_hidden', params, '');
+                  tagType := 'public';
+                  if (not isnull (strstr(tag, '#_')))
+                  {
+                    tag := replace(tag,  '#_', '');
+                    tagType := 'private';
+                  }
+                  if (self.command_mode < 2)
+                  {
+                    self.command_set (0, 3);
+                    ODRIVE.WA.dc_set_base (self.search_dc, 'path', ODRIVE.WA.odrive_real_path (self.dir_path));
+                    if (trim (self.simple.ufl_value) <> '')
+                      ODRIVE.WA.dc_set_criteria (self.search_dc, '0', 'REAS_NAME', 'like', trim (self.simple.ufl_value));
+                  }
+                  else
+                  {
+                    self.command_mode := 3;
+                  }
+                  tags := ODRIVE.WA.dc_get (self.search_dc, 'advanced', concat(tagType, 'Tags12'), '');
+                  if (is_empty_or_null(tags))
+                  {
+                    tags := tag;
+                  }
+                  else if (isnull(strstr(tags, tag)))
+                  {
+                    tags := concat(tags, ', ', tag);
+                  }
+                  ODRIVE.WA.dc_set_advanced (self.search_dc, concat(tagType, 'Tags12'), tags);
+                  self.search_advanced := self.search_dc;
+                }
+                self.vc_data_bind (e);
+               ]]>
+             </v:on-post>
+          </v:button>
+      <?vsp
+        }
+      ?>
+
+      <!-- Simple search -->
+      <v:template name="tform_1" type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 2)) then 1 else 0 end">
+        <div class="boxHeader" style="text-align: center;">
+          <b>Search </b>
+          <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
+          <xsl:call-template name="nbsp" />
+          |
+          <v:button action="simple" style="url" name="sAdvanced" value="Advanced" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.command_set (0, 3);
+                ODRIVE.WA.dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
+                if (trim (self.simple.ufl_value) <> '')
+                  ODRIVE.WA.dc_set_criteria(self.search_dc, '0', 'RES_NAME', 'like', trim (self.simple.ufl_value));
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          |
+          <v:button action="simple" style="url" name="sCancel" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.vc_is_valid := 1;
+                self.command_set (0, 0);
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </v:template>
+
+      <!-- Advanced Search -->
+      <v:template name="tform_2" type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 3)) then 1 else 0 end">
+        <input name="formRight" type="hidden" value="1" />
+        <div id="c1">
+          <div class="tabs">
+            <vm:tabCaption tab="7" tabs="10" caption="Criteria" />
+            <span>
+            <vm:tabCaption tab="10" tabs="10" caption="Options" />
+            </span>
+          </div>
+          <div class="contents">
+            <vm:search-dc-template7 />
+            <vm:search-dc-template10 />
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" name="ssSearch" value="Search">
+              <v:on-post>
+                <![CDATA[
+                  -- save & validate metadata
+                  declare rValue any;
+
+                  rValue := self.dc_prepare ();
+		              if (not isnull (rValue))
+		              {
+		                self.vc_error_message := rValue;
+		                self.vc_is_valid := 0;
+		                return;
+		              }
+
+                  self.search_advanced := self.search_dc;
+                  self.dir_order := get_keyword ('ts_order', e.ve_params, '');
+                  self.dir_direction := get_keyword ('ts_direction', e.ve_params, '');
+                  self.dir_grouping := get_keyword ('ts_grouping', e.ve_params, '');
+                  self.dir_cloud := cast(get_keyword ('ts_cloud', e.ve_params, '0') as integer);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button action="simple" name="ssClear" value="Clear" xhtml_title="Clear Criteria">
+              <v:on-post>
+                <![CDATA[
+                  self.search_dc := null;
+                  self.search_advanced := null;
+                  self.noPrepare := 1;
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button action="simple" name="ssSave" value="Save" xhtml_title="Save as Smart Folder" enabled="--either(equ(self.dir_right, 'W'), 1, 0)">
+              <v:on-post>
+                <![CDATA[
+                  -- save & validate metadata
+                  declare rValue any;
+                  rValue := self.dc_prepare ();
+		              if (not isnull (rValue))
+		              {
+		                self.vc_error_message := rValue;
+		                self.vc_is_valid := 0;
+		                return;
+		              }
+
+                  self.command_push (10, 1);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button action="simple" name="ssCancel" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_is_valid := 1;
+                  self.command_set (0, 0);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+          <div style="margin: 0 0 6px 0;" />
+        </div>
+        <script>
+          initDisabled();
+          initTab(10, 7);
+        </script>
+      </v:template>
+
+      <!-- Confirm replace -->
+      <v:template name="tform_3" type="simple" enabled="-- equ(self.command, 14)">
+        <div class="new-form-header">
+          Confirm replace
+        </div>
+        <div class="form-confirm">
+          <v:label>
+            <v:before-data-bind>
+              <![CDATA[
+                declare res_cr_date varchar;
+                declare res_size integer;
+
+                res_size := ODRIVE.WA.ui_size(ODRIVE.WA.DAV_PROP_GET(self.dav_vector[0], ':getcontentlength'), 'R');
+                res_cr_date := ODRIVE.WA.ui_date(ODRIVE.WA.DAV_PROP_GET(self.dav_vector[0], ':creationdate'));
+                control.ufl_value := sprintf ('Do you want to replace <b>%s</b> with size <b>%s</b> and created on <b>%s</b><br/> with file with size <b>%s</b>?', self.dav_vector[0], res_size, res_cr_date, ODRIVE.WA.ui_size(length(self.dav_vector[1]), 'R'));
+              ]]>
+            </v:before-data-bind>
+          </v:label>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" name="rReplace" value="Replace">
+            <v:on-post>
+              <![CDATA[
+                declare retValue integer;
+                retValue := ODRIVE.WA.DAV_RES_UPLOAD(self.dav_vector[0], self.dav_vector[1], self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
+                if (ODRIVE.WA.DAV_ERROR(retValue))
+                {
+                  self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
+                  self.vc_is_valid := 0;
+                  self.vc_data_bind (e);
+                  return;
+                }
+                self.command_pop (null);
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" name="rCancel" value="Cancel">
+            <v:on-post>
+              <![CDATA[
+                self.command_pop (null);
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </v:template>
+
+      <!-- Create/update folder/file -->
+      <v:template name="tform_4" type="simple" enabled="-- equ(self.command, 10)">
+        <v:before-data-bind>
+          <![CDATA[
+            self.dav_path := ODRIVE.WA.odrive_real_resource (self.source);
+            self.dav_enable := 1;
+            self.dav_propEnable := self.dav_enable;
+            if (self.command_mode = 10)
+            {
+              self.dav_enable := ODRIVE.WA.det_action_enable(self.dav_path, 'edit');
+              self.dav_item := ODRIVE.WA.DAV_INIT(self.dav_path);
+              if (ODRIVE.WA.DAV_ERROR(self.dav_item))
+              {
+                self.command_pop (null);
+                self.vc_data_bind (e);
+                return;
+              }
+              self.dav_propEnable := self.dav_enable;
+              if (self.dav_propEnable)
+                if (not isnull(DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT (ODRIVE.WA.DAV_GET (self.dav_item, 'id'), 'R', 'DAV:checked-in', 0))))
+                  self.dav_propEnable := 0;
+            }
+            else if (self.command_mode = 5)
+            {
+              self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
+            } else {
+              self.dav_item := ODRIVE.WA.DAV_INIT_COLLECTION (self.dir_path);
+              if (self.command_mode = 1)
+                self.vc_page.vc_event.ve_params := vector_concat(self.vc_page.vc_event.ve_params, vector ('dav_det', 'ResFilter', 'attr_dav_det', ''));
+            }
+            self.dav_type := ODRIVE.WA.DAV_GET (self.dav_item, 'type');
+            self.dav_detType := get_keyword ('dav_det', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType'));
+            if (isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
+              self.dav_acl := ODRIVE.WA.DAV_GET (self.dav_item, 'acl');
+            if (self.command_mode = 10)
+            {
+              if (isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
+              {
+                self.dav_tags_private := '';
+                self.dav_tags_public := '';
+                if (self.dav_type = 'R')
+                {
+                  self.dav_tags_private := ODRIVE.WA.DAV_GET (self.dav_item, 'privatetags');
+                  self.dav_tags_public := ODRIVE.WA.DAV_GET (self.dav_item, 'publictags');
+                }
+                self.dav_metadata := null;
+                if (self.dav_type = 'R')
+                  self.dav_metadata := ODRIVE.WA.dav_rdf_get_metadata (self.dav_path);
+                self.search_dc := ODRIVE.WA.DAV_PROP_GET (self.dav_path, 'virt:Filter-Params');
+              }
+            }
+            if (not isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
+              self.dc_prepare();
+          ]]>
+        </v:before-data-bind>
+        <v:text name="formRight" type="hidden" value="--self.dav_enable" />
+        <div class="new-form-header">
+          <v:label format="%V">:
+            <v:before-data-bind>
+              <![CDATA[
+                if (self.command_mode = 10)
+                {
+                  control.ufl_value := concat('Properties of ', self.source);
+                } else {
+                  if (self.command_mode = 5)
+                    control.ufl_value := 'Upload file into ';
+                  else
+                    control.ufl_value := 'Create folder in ';
+                  control.ufl_value := concat(control.ufl_value, ODRIVE.WA.path_show (self.dir_path));
+                }
+              ]]>
+            </v:before-data-bind>
+          </v:label>
+        </div>
+         <div id="c1">
+          <div class="tabs">
+            <vm:tabCaption tab="1" tabs="10" caption="Main" />
+            <v:template name="tform_5" type="simple" enabled="-- gte(self.command_mode, 10)">
+            <vm:tabCaption tab="2" tabs="10" caption="Sharing" />
+            </v:template>
+            <v:template name="tform_6" type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path)) then 1 else 0 end">
+            <vm:tabCaption tab="3" tabs="10" caption="Metadata" />
+            </v:template>
+            <v:template name="tform_7" type="simple" enabled="-- case when (equ(self.command_mode, 10) and equ(self.dav_type, 'R') and ODRIVE.WA.det_action_enable(self.dav_path, 'version')) then 1 else 0 end">
+            <vm:tabCaption tab="9" tabs="10" caption="Versions" />
+            </v:template>
+            <v:template name="tform_8" type="simple" enabled="-- equ(self.dav_type, 'C')">
+            <vm:tabCaption tab="4" tabs="10" caption="WebMail" />
+            <vm:tabCaption tab="5"  tabs="10" caption="Filter" />
+            <vm:tabCaption tab="6"  tabs="10" caption="FS Link" />
+            <vm:tabCaption tab="7"  tabs="10" caption="Criteria" />
+            <vm:tabCaption tab="8"  tabs="10" caption="RDF Upload" />
+            </v:template>
+          </div>
+          <div class="contents">
+            <div id="1" class="tabContent">
+              <table class="form-body" cellspacing="0">
+                <v:template name="tform_9" type="simple" enabled="-- equ(self.command_mode, 5)">
+                  <tr>
+                    <th width="30%">
+                      <vm:label for="dav_file" value="--'Destination'" />
+                    </th>
+                    <td style="padding-left: 4px">
+                      <input type="radio" name="dav_destination" id="dav_destination_0" value="0" checked="checked" onchange="javascript: toggleDavRows();" title="WebDAV" /><b><vm:label for="dav_destination_0" value="--'WebDAV'" /></b>
+                      <input type="radio" name="dav_destination" id="dav_destination_1" value="1" onchange="javascript: toggleDavRows();" title="RDF Store" /><b><vm:label for="dav_destination_1" value="--'RDF Store'" /></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th valign="top">
+                      <v:label for="dav_file" value="--'Source'" />
+                    </th>
+                    <td>
+                      <table cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td>
+                            <input type="radio" name="dav_source" id="dav_source_0" value="0" checked="checked" title="File" /><xsl:call-template name="nbsp" />
+                          </td>
+                          <td>
+                            <b><vm:label for="dav_source_0" value="--'File'" /></b>
+                          </td>
+                          <td>
+                            <input type="file" name="dav_file" onchange="javascript: F1.dav_source[0].checked=true; getFileName(this);" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[0].checked=true;" size="40" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input type="radio" name="dav_source" id="dav_source_1" value="1" title="URL" /><xsl:call-template name="nbsp" />
+                          </td>
+                          <td>
+                            <b><vm:label for="dav_source_1" value="--'URL'" /></b>
+                          </td>
+                          <td>
+                            <input type="text" name="dav_url" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[1].checked=true;" size="40" />
+                          </td>
+                        </tr>
+                        <tr id="rdf_store">
+                          <td>
+                            <input type="radio" name="dav_source" id="dav_source_2" value="2" title="RDF Store" /><xsl:call-template name="nbsp" />
+                          </td>
+                          <td>
+                            <b><vm:label for="dav_source_2" value="--'RDF Store'" /></b>
+                          </td>
+                          <td>
+                            <input type="text" name="dav_rdf" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[2].checked=true;" size="40" />
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </v:template>
+                <tr>
+                  <th width="30%">
+                    <span id="label_dav"><v:label for="dav_name" value="--either(equ(self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
+                    <span id="label_dav_rdf" style="display: none;"><v:label for="dav_name" value="--'RDF graph name'" /></span>
+                  </th>
+                  <td>
+                    <v:text name="dav_name" xhtml_id="dav_name" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'name'))" format="%s" fmt-function="ODRIVE.WA.wide2utf" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path)))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                  </td>
+                </tr>
+                <v:template name="tform_10" type="simple" enabled="-- equ(self.dav_type, 'R')">
+                  <tr id="davRow_mime">
+                    <th>
+                      <v:label for="dav_mime" value="--'File Mime Type'" />
+                    </th>
+                    <td>
+                      <v:text name="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                      <v:template name="tform_11" type="simple" enabled="--self.dav_enable">
+                        <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
+                      </v:template>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType <> 'Versioning')) or (self.command_mode <> 10)) then 1 else 0 end">
+                  <vm:autoVersion />
+                </v:template>
+                <v:template name="tform_13" type="simple" enabled="-- equ(self.dav_type, 'C')">
+                  <tr>
+                    <th>
+                      <v:label for="dav_det" value="--'Folder type'" />
+                    </th>
+                    <td>
+                      <select name="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled">
+                        <?vsp
+                          if (self.command_mode = 1)
+                          {
+                            http (self.option_prepare('ResFilter',        'Smart Folder',                  'ResFilter'));
+                          }
+                          else if ((self.command_mode = 10) and (self.dav_detType = 'Versioning'))
+                          {
+                            http (self.option_prepare('Versioning',       'Version Control Folder',        self.dav_detType));
+                          }
+                          else
+                          {
+                            http (self.option_prepare('',                 'Normal',                        self.dav_detType));
+                            http (self.option_prepare('ResFilter',        'Smart Folder',                  self.dav_detType));
+                            http (self.option_prepare('CatFilter',        'Category Folder',               self.dav_detType));
+                            http (self.option_prepare('PropFilter',       'Property Filter Folder',        self.dav_detType));
+                            http (self.option_prepare('HostFs',           'Host FS Folders',               self.dav_detType));
+                            http (self.option_prepare('oMail',            'WebMail Folders',               self.dav_detType));
+                            http (self.option_prepare('News3',            'OFM Subscriptions',             self.dav_detType));
+                            http (self.option_prepare('rdfSink',          'RDF Upload Folder',             self.dav_detType));
+                            http (self.option_prepare('RDFData',          'RDF Data',                      self.dav_detType));
+                          }
+                        ?>
+                      </select>
+                    </td>
+                  </tr>
+                </v:template>
+                <tr id="davRow_owner">
+                  <th>
+                    <v:label for="dav_owner" value="--'Owner'" />
+                  </th>
+                  <td>
+                    <v:text name="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if (not ODRIVE.WA.check_admin (self.account_id))
+                            control.tf_style := 3;
+                        ]]>
+                      </v:after-data-bind>
+                    </v:text>
+                    <v:template name="tform_14" type="simple" enabled="-- case when (ODRIVE.WA.check_admin (self.account_id) and (self.dav_enable = 1)) then 1 else 0 end;">
+                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
+                    </v:template>
+                  </td>
+                </tr>
+                <tr id="davRow_group">
+                  <th>
+                    <v:label for="dav_group" value="--'Group'" />
+                  </th>
+                  <td>
+                    <v:text name="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:template name="tform_15" type="simple" enabled="--self.dav_enable">
+                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
+                    </v:template>
+                  </td>
+                </tr>
+                <tr id="davRow_perms">
+                  <th>
+                    <v:label for="dav_group" value="--'Permissions'" />
+                  </th>
+                  <td>
+                    <table class="permissions-list" cellspacing="0">
+                      <vm:permissions-header1 />
+                      <vm:permissions-header2 />
+                      <tr>
+                        <?vsp
+                          declare i integer;
+                          declare perms, checked, c, S varchar;
+
+                          perms := ODRIVE.WA.DAV_GET (self.dav_item, 'permissions');
+                          for (i := 0; i < 9; i := i + 1)
+                          {
+                            if (isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
+                            {
+                              c := subseq(perms, i, i+1);
+                            } else {
+                              c := get_keyword (sprintf ('dav_perm%i', i), self.vc_page.vc_event.ve_params, '0');
+                            }
+                            checked := case when (c <> '0') then 'checked' else '' end;
+                            S := case when (i = 8) then 'class="bottom right"' else 'class="bottom"' end;
+                            http (sprintf ('<td %s><input type="checkbox" name="dav_perm%i" %s disabled="disabled" /></td>', S, i, checked));
+                          }
+                        ?>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr id="davRow_text">
+                  <th>
+                    <vm:label for="dav_index" value="--'Full Text Search'" />
+                  </th>
+                  <td>
+                    <v:select-list name="dav_index" value="-- get_keyword ('dav_index', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'freeText'))" xhtml_disabled="disabled">
+                      <v:item name="Off" value="N" />
+                      <v:item name="Direct members" value="T" />
+                      <v:item name="Recursively" value="R" />
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr id="davRow_metadata">
+                  <th>
+                    <vm:label for="dav_metagrab" value="--'Metadata Retrieval'" />
+                  </th>
+                  <td>
+                    <v:select-list name="dav_metagrab" value="--get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
+                      <v:item name="Off" value="N" />
+                      <v:item name="Direct members" value="M" />
+                      <v:item name="Recursively" value="R" />
+                    </v:select-list>
+                  </td>
+                </tr>
+                <v:template name="tform_16" type="simple" enabled="-- case when ((self.dav_type = 'C') and isstring (DB.DBA.vad_check_version ('SyncML')) and ((self.command_mode = 0) or ((self.command_mode = 10) and (DB.DBA.yac_syncml_detect (self.dav_path) = 1)))) then 1 else 0 end">
+                  <tr>
+                    <th>SyncML version</th>
+                    <td>
+                    <select name="s_v">
+                      <?vsp
+                        declare aValues, aValue any;
+                        declare N integer;
+
+                        aValue := case when (self.command_mode = 0) then 'N' else DB.DBA.yac_syncml_version_get (self.dav_path) end;
+                        aValues := DB.DBA.yac_syncml_version ();
+                        for (N := 0; N < length (aValues); N := N + 2)
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>SyncML type</th>
+                    <td>
+                    <select name="s_t">
+                      <?vsp
+                        declare aValues, aValue any;
+                        declare N integer;
+
+                        aValue := case when (self.command_mode = 0) then 'N' else DB.DBA.yac_syncml_type_get (self.dav_path) end;
+                        aValues := DB.DBA.yac_syncml_type ();
+                        for (N := 0; N < length (aValues); N := N + 2)
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_17" type="simple" enabled="-- case when ((self.dav_type = 'C') and (self.command_mode = 10)) then 1 else 0 end">
+                  <tr>
+                    <th> </th>
+                    <td valign="center">
+                      <input type="checkbox" name="dav_recursive" disabled="disabled" title="Recursive" />
+                      <b><v:label for="dav_recursive" value="--'Apply changes to all subfolders and resources'" /></b>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_18" type="simple" enabled="-- equ(self.dav_type, 'R')">
+                  <tr id="davRow_tagsPublic">
+                    <th>
+                      <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
+                    </th>
+                    <td>
+                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" /><xsl:call-template name="nbsp" />
+                      <input type="button" value="Clear" onclick="javascript: $('f_tags_public').value = ''" class="button" />
+                    </td>
+                  </tr>
+                  <tr id="davRow_tagsPrivate">
+                    <th>
+                      <v:label for="f_tags_private" value="Private tags (comma-separated)"/>
+                    </th>
+                    <td>
+                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" /><xsl:call-template name="nbsp" />
+                      <input type="button" value="Clear" onclick="javascript: $('f_tags_private').value = ''" class="button" />
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_19" type="simple" enabled="-- gte(self.command_mode, 10)">
+                  <tr>
+                    <th>WebDAV Properties</th>
+                    <td>
+                      <?vsp
+                        declare N integer;
+                        declare properties any;
+
+                        properties := ODRIVE.WA.DAV_PROP_LIST (self.dav_path, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+                        if ((length (properties) = 0) and (self.dav_propEnable = 0))
+                        {
+                          http ('No Properties');
+                        }
+                        else
+                        {
+                          http (sprintf ('<input type="hidden" name="c_seqNo" id="c_seqNo" value="%d" />', length (properties)));
+                      ?>
+                      <table class="form-list" style="width: 80%;" id="davProperties" cellspacing="0">
+                        <tr>
+                          <th>Property</th>
+                          <th>Value</th>
+                          <vm:if test="self.dav_propEnable">
+                            <th>&amp;nbsp;</th>
+                          </vm:if>
+                        </tr>
+                        <?vsp
+                          for (N := 0; N < length (properties); N := N + 1)
+                          {
+                        ?>
+                          <tr id="c_tr_<?V cast (N as varchar) ?>">
+                            <td id="c_td_<?V cast (N as varchar) ?>" width="50%">
+                              <vm:if test="self.dav_propEnable">
+                          		  <![CDATA[
+                          		    <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('<?V cast (N as varchar) ?>', '<?V properties[N][0] ?>');});
+                          		    </script>
+                          		  ]]>
+                              </vm:if>
+                              <vm:if test="not self.dav_propEnable">
+                                <?V properties[N][0] ?>
+                              </vm:if>
+                            </td>
+                            <td width="50%">
+                              <vm:if test="self.dav_propEnable">
+                                <input name="c_value_<?V cast (N as varchar) ?>" value="<?V properties[N][1] ?>" style="width: 97%;" />
+                              </vm:if>
+                              <vm:if test="not self.dav_propEnable">
+                                <?V properties[N][1] ?>
+                              </vm:if>
+                            </td>
+                            <vm:if test="self.dav_propEnable">
+                              <td>
+                                <img class="pointer" src="image/del_16.png" border="0" alt="Delete Proporty" title="Delete Proporty" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"/>
+                              </td>
+                            </vm:if>
+                          </tr>
+                        <?vsp
+                          }
+                        ?>
+                        <vm:if test="self.dav_propEnable">
+                          <tr id="c_tr">
+                            <td colspan="3">
+                              <hr />
+                            </td>
+                          </tr>
+                          <tr id="c_tr_xxx">
+                            <td id="c_td_xxx" width="50%">
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('xxx', '');});
+                        		    </script>
+                        		  ]]>
+        		                </td>
+                            <td width="50%">
+                              <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
+                            </td>
+                            <vm:if test="self.dav_propEnable">
+                              <td>
+                                <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.propertyUpdate('xxx');"/>
+                              </td>
+                            </vm:if>
+                          </tr>
+                        </vm:if>
+                      </table>
+                      <?vsp
+                        }
+                      ?>
+                    </td>
+                  </tr>
+                </v:template>
+              </table>
+            </div>
+
+            <v:template name="tform_20" type="simple" enabled="-- gte(self.command_mode, 10)">
+              <div id="2" class="tabContent">
+                <?vsp
+                  declare N integer;
+                  declare acl_values, acl, D any;
+
+                  acl_values := ODRIVE.WA.acl_vector (self.dav_acl);
+                  http (sprintf ('<input type="hidden" name="c_seqNo" id="c_seqNo" value="%d" />', length (acl_values)));
+                ?>
+                <table id="aceProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                  <tr>
+                    <th align="center" nowrap="nowrap">User/Group</th>
+                    <th align="center">Inheritance</th>
+                    <th align="center" nowrap="nowrap">Allow<br />(Read, Write, eXecute)</th>
+                    <th align="center" nowrap="nowrap">Deny<br />(Read, Write, eXecute)</th>
+                    <th>&amp;nbsp;</th>
+                  </tr>
+                  <?vsp
+                  if ((length (acl_values) = 0) and (self.dav_enable = 0))
+                  {
+                    http ('<tr><td colspan="5">No Security Properties</tr></tr>');
+                  }
+                  else
+                  {
+                    for (N := 0; N < length (acl_values); N := N + 1)
+                    {
+                      acl := acl_values[N];
+                      D := case when (acl[1] = 3) then 'class="disabled"' else '' end;
+                  ?>
+                  <tr id="acl_tr_<?V cast (N as varchar) ?>">
+                    <td nowrap="nowrap">
+                      <?vsp http (sprintf ('<input id="acl_user_%d" name="acl_user_%d" style="width: 95%%;" value="%s" disabled="disabled" %s />', N, N, ODRIVE.WA.account_name (acl[0]), D)); ?>
+                      <vm:if test="(acl[1] <> 3) and self.dav_enable">
+                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_<?V cast (N as varchar) ?>:s1;',520)" />
+                      </vm:if>
+		                </td>
+                    <td width="1%">
+                      <?vsp http (sprintf ('<select name="acl_inheritance_%d" id="acl_inheritance_%d" disabled="disabled" %s>', N, N, D)); ?>
+                        <option value="0" selected="<?V case when acl[1] = 0 then 'selected' else '' end ?>">This object only</option>
+                        <option value="1" selected="<?V case when acl[1] = 1 then 'selected' else '' end ?>">This object, subfolders and files</option>
+                        <option value="2" selected="<?V case when acl[1] = 2 then 'selected' else '' end ?>">Subfolders and files</option>
+                        <vm:if test="acl[1] = 3">
+                        <option value="3" selected="<?V case when acl[1] = 3 then 'selected' else '' end ?>">Inherited</option>
+                        </vm:if>
+                      <?vsp http ('</select>'); ?>
+                    </td>
+                    <td width="1%" align="center">
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_r_deny_%d\')" name="acl_r_grant_%d" id="acl_r_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 4) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_w_deny_%d\')" name="acl_w_grant_%d" id="acl_w_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 2) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_x_deny_%d\')" name="acl_x_grant_%d" id="acl_x_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 1) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                    </td>
+                    <td width="1%" align="center">
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_r_grant_%d\')" name="acl_r_deny_%d" id="acl_r_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 4) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_w_grant_%d\')" name="acl_w_deny_%d" id="acl_w_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 2) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_x_grant_%d\')" name="acl_x_deny_%d" id="acl_x_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 1) <> 0 then 'checked="checked"' else '' end, D)); ?>
+                    </td>
+                    <td width="1%">
+                      <vm:if test="(acl[1] <> 3) and self.dav_enable">
+                      <img class="pointer" src="image/del_16.png" border="0" alt="Delete Security" title="Delete Security" onclick="javascript: ODRIVE.aclUpdate('<?V cast (N as varchar) ?>');"/>
+                      </vm:if>
+                    </td>
+                  </tr>
+                  <?vsp
+                    }
+                    if (self.dav_enable)
+                    {
+                  ?>
+                  <tr id="acl_tr">
+                    <td colspan="5">
+                      <hr />
+                    </td>
+                  </tr>
+                  <tr id="acl_tr_xxx">
+                    <td nowrap="nowrap">
+                      <input id="acl_user_xxx" name="acl_user_xxx" style="width: 95%;" />
+                      <xsl:call-template name="nbsp" />
+                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_xxx:s1;',520)" />
+		                </td>
+                    <td width="1%">
+                      <select name="acl_inheritance_xxx" id="acl_inheritance_xxx">
+                        <option value="0">This object only</option>
+                        <option value="1">This object, subfolders and files</option>
+                        <option value="2">Subfolders and files</option>
+                      </select>
+                    </td>
+                    <td width="1%" align="center">
+                      <input type="checkbox" onclick="javascript: uncheck('acl_r_deny_xxx')" checked="checked" name="acl_r_grant_xxx" id="acl_r_grant_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_w_deny_xxx')" checked="checked" name="acl_w_grant_xxx" id="acl_w_grant_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_x_deny_xxx')" name="acl_x_grant_xxx" id="acl_x_grant_xxx" value="1"/>
+                    </td>
+                    <td width="1%" align="center">
+                      <input type="checkbox" onclick="javascript: uncheck('acl_r_grant_xxx')" name="acl_r_deny_xxx" id="acl_r_deny_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
+                    </td>
+                    <td width="1%">
+                      <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.aclUpdate('xxx');"/>
+                    </td>
+                  </tr>
+                  <?vsp
+                    }
+                  }
+                  ?>
+                </table>
+              </div>
+            </v:template>
+
+            <v:template name="tform_21" type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path)) then 1 else 0 end">
+              <div id="3" class="tabContent" style="display: none;">
+                <table id="schema" class="OD_grid" cellspacing="0">
+                  <thead class="sortHeader">
+                    <tr>
+                      <th>
+                        Schema
+                      </th>
+                      <th>
+                        Property
+                      </th>
+                      <th>
+                        Value
+                      </th>
+                    </tr>
+                  </thead>
+                  <?vsp
+                    declare N integer;
+
+                    for (select distinct s.* from ODRIVE.WA.dav_rdf_schema_rs(p0, p1)(MR_RDF_URI varchar) s where p0 = ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType') and p1 = self.dav_metadata order by MR_RDF_URI) do
+                    {
+                      N := (select count(*) from ODRIVE.WA.dav_rdf_schema_properties_rs(property0)(pID varchar, pLabel varchar, pType varchar, pDefault varchar, pOrder varchar, pAccess varchar) p where property0 = DB.DBA.DAV_GET_RDF_SCHEMA_N3(MR_RDF_URI));
+                      for (select p.* from ODRIVE.WA.dav_rdf_schema_properties_rs(property0)(pID varchar, pLabel varchar, pType varchar, pDefault varchar, pOrder varchar, pAccess varchar) p where property0 = DB.DBA.DAV_GET_RDF_SCHEMA_N3(MR_RDF_URI) order by pOrder, pLabel) do
+                      {
+                        http ('<tr>');
+                          http ('<td nowrap="nowrap">');
+                          if (N)
+                          {
+                            http (ODRIVE.WA.rdf_schema_get_property(DB.DBA.DAV_GET_RDF_SCHEMA_N3(MR_RDF_URI), MR_RDF_URI, 'label'));
+                            N := 0;
+                          } else {
+                            http ('&nbsp;');
+                          }
+                          http ('</td>');
+                          http ('<td nowrap="nowrap">');
+                            http (pLabel);
+                          http ('</td>');
+                          http ('<td width="50%">');
+                          declare pValue any;
+                          pValue := ODRIVE.WA.dav_rdf_get_property(self.dav_metadata, pID, pDefault);
+                          if (pAccess = 'read-only')
+                          {
+                            http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-max" readonly="readonly" />', MR_RDF_URI, pID, pValue));
+                          }
+                          else
+                          {
+                            pType := ODRIVE.WA.rdf_n3_base_remove(pType);
+                            if (pType = 'boolean')
+                            {
+                              http (sprintf ('<select name="vmd_edit_property$0%s$0%s" disabled="disabled"><option value="No" %s>No</option><option value="Yes" %s>Yes</option></select>', MR_RDF_URI, pID, either(equ(pValue, 'No'), 'selected="selected"', ''), either(equ(pValue, 'Yes'), 'selected="selected"', '')));
+                            }
+                            else if (pType = 'integer')
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-short" disabled="disabled" /> (Ex. 123)', MR_RDF_URI, pID, pValue));
+                            }
+                            else if (pType = 'float')
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-short" disabled="disabled" /> (Ex. 123.45)', MR_RDF_URI, pID, pValue));
+                            }
+                            else if (pType = 'dateTime')
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-short" disabled="disabled" /> (Ex. yyyy-mm-dd hh:mm)', MR_RDF_URI, pID, pValue));
+                            }
+                            else if (pType = 'date')
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-short" disabled="disabled" /> (Ex. yyyy-mm-dd)', MR_RDF_URI, pID, pValue));
+                            }
+                            else if (pType = 'time')
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-short" disabled="disabled" /> (Ex. hh:mm)', MR_RDF_URI, pID, pValue));
+                            }
+                            else
+                            {
+                              http (sprintf ('<input type="text" name="vmd_edit_property$0%s$0%s" value="%s"class="field-max" disabled="disabled" />', MR_RDF_URI, pID, pValue));
+                            }
+                          }
+                          http ('</td>');
+                        http ('</tr>');
+                      }
+                    }
+                  ?>
+                </table>
+              </div>
+            </v:template>
+
+            <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
+              <vm:search-dc-template4 />
+              <vm:search-dc-template5 />
+              <vm:search-dc-template6 />
+              <vm:search-dc-template7 />
+              <vm:search-dc-template8 />
+            </v:template>
+            <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
+              <vm:search-dc-template9 />
+            </v:template>
+
+          </div>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--self.dav_enable" />
+          <v:button action="simple" name="cCancel" value="Cancel" >
+            <v:on-post>
+              <![CDATA[
+                self.command_pop (null);
+                self.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+        <script>
+          <![CDATA[
+            if (document.F1.elements['dav_det'])
+              updateLabel(document.F1.dav_det.options[document.F1.dav_det.selectedIndex].value);
+            initDisabled();
+            initTab(10, 1);
+          ]]>
+        </script>
+      </v:template>
+
+      <!-- Header -->
+      <v:template type="simple" enabled="-- case when (((self.command in (0)) and (self.command_mode in (0, 1)))) then 1 else 0 end">
+        <div class="boxHeader">
+          <b><v:label for="path" value="' Path '" /></b>
+          <v:text name="path" value="--ODRIVE.WA.utf2wide(ODRIVE.WA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_id="path" xhtml_size="60" />
+          <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="image/go_16.png" onclick="javascript: vspxPost('action', '_cmd', 'go');" />
+          <b><v:label for="list_type" value="' View '" /></b>
+          <v:select-list name="list_type" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+            <v:item name="Details" value="0" />
+            <v:item name="List" value="1" />
+          </v:select-list>
+          <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
+            <b><v:label for="filter" value="--' Filter Pattern '" /></b>
+            <v:text name="filter" xhtml_id="filter" value="--self.search_filter" type="simple" />
+            <img class="pointer" border="0" alt="Filter" title="Filter" src="image/filter_16.png" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
+            <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="image/cancl_16.png" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
+          </v:template>
+        </div>
+      </v:template>
+
+      <!-- Browser -->
+      <v:template type="simple" enabled="-- case when ((((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced))))) then 1 else 0 end">
+
+        <dir id="dav_data" style="width: 100%; margin: 0; padding: 0;">
+          <v:data-source name="dsrc_items" expression-type="sql" nrows="0" initial-offset="0">
+            <v:before-data-bind>
+              <![CDATA[
+                self.sortChange (get_keyword ('sortColumn', self.vc_page.vc_event.ve_params, ''));
+                control.ds_parameters := null;
+                control.add_parameter(self.dir_path);
+                control.add_parameter(self.command_mode);
+                if (self.command_mode = 1)
+                {
+                  control.add_parameter (self.search_filter);
+                }
+                else if (self.command_mode = 2)
+                {
+                  control.add_parameter (self.search_simple);
+                }
+                else if (self.command_mode = 3)
+                {
+                  control.add_parameter (self.search_advanced);
+                }
+                else
+                {
+                  control.add_parameter (null);
+                }
+                control.add_parameter (ODRIVE.WA.settings_hiddens (self.settings));
+
+                control.ds_sql := 'select rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+                control.ds_sql := concat(control.ds_sql, ' order by c1');
+
+                if (self.dir_details = 0)
+                {
+                  declare dir_order, dir_grouping any;
+
+                  dir_order := self.getColumn(self.dir_order);
+                  dir_grouping := self.getColumn(self.dir_grouping);
+                  if (not is_empty_or_null(dir_grouping))
+                    control.ds_sql := concat(control.ds_sql, ', ', dir_grouping[1]);
+                  if (not is_empty_or_null(dir_order))
+                    control.ds_sql := concat(control.ds_sql, ', ', dir_order[1], ' ', self.dir_direction);
+                }
+                else
+                {
+                  control.ds_sql := control.ds_sql || ', c0';
+                }
+                --control.ds_nrows := ODRIVE.WA.settings_rows (self.settings);
+                self.dir_tags := vector ();
+                if (self.dir_cloud = 1)
+                {
+                  declare state, msg, meta, result any;
+
+                  state := '00000';
+                  exec(control.ds_sql, state, msg, control.ds_parameters, 0, meta, result);
+                  if (state = '00000')
+                  {
+                    declare I, N, minCnt, maxCnt integer;
+                    declare tag_object, tags, tags_dict any;
+
+                    tags_dict := dict_new();
+                    for (N := 0; N < length(result); N := N + 1)
+                    {
+                      tags := ODRIVE.WA.DAV_PROP_GET(result[N][8], ':virtpublictags', '');
+                      tags := split_and_decode (tags, 0, '\0\0,');
+                      foreach (any tag in tags) do
+                      {
+                        tag_object := dict_get(tags_dict, lcase(tag), vector (lcase(tag), 0, ''));
+                        tag_object[1] := tag_object[1] + 1;
+                        dict_put(tags_dict, lcase(tag), tag_object);
+                      }
+                      tags := ODRIVE.WA.DAV_PROP_GET(result[N][8], ':virtprivatetags', '');
+                      tags := split_and_decode (tags, 0, '\0\0,');
+                      foreach (any tag in tags) do
+                      {
+                        tag_object := dict_get(tags_dict, lcase(tag), vector (lcase(tag), 0, '#_'));
+                        tag_object[1] := tag_object[1] + 1;
+                        dict_put(tags_dict, lcase(tag), tag_object);
+                      }
+                    }
+                    maxCnt := 1;
+                    minCnt := 1000000;
+                    for (select p.* from ODRIVE.WA.tagsDictionary2rs(p0)(c0 varchar, c1 integer, c2 varchar) p where p0 = tags_dict order by c0) do
+                    {
+                      self.dir_tags := vector_concat(self.dir_tags, vector (vector (c0, c1, c2)));
+                      if (c1 < minCnt)
+                        minCnt := c1;
+                      if (c1 > maxCnt)
+                        maxCnt := c1;
+                    }
+                    self.dir_tags := vector_concat (vector (vector ('__max', maxCnt)), self.dir_tags);
+                    self.dir_tags := vector_concat (vector ( vector ('__min', minCnt)), self.dir_tags);
+                  }
+                }
+              ]]>
+            </v:before-data-bind>
+            <v:after-data-bind>
+              <![CDATA[
+                declare row_data any;
+
+                row_data := control.ds_row_data;
+                if ((length(row_data) = 1) and (row_data[0][1] <> 'R') and (row_data[0][1] <> 'C'))
+                {
+                  if (row_data[0][0] = '37000')
+                  {
+                    self.vc_error_message := 'Text search expression syntax error!';
+                  } else {
+                    self.vc_error_message := sprintf ('Search error: %s!', row_data[0][0]);
+                  }
+                  self.vc_is_valid := 0;
+                }
+              ]]>
+            </v:after-data-bind>
+          </v:data-source>
+
+          <v:template type="simple" enabled="-- case when (self.vc_is_valid and (self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and not isnull(self.search_advanced)))) then 1 else 0 end;">
+            <div class="new-form-header" style="margin-top: 6px;">
+              <i><?V either(equ(self.command_mode, 2), 'Simple', 'Advanced') ?> search found <?V length(self.dsrc_items.ds_row_data) ?> resource(s) in last search</i>
+            </div>
+          </v:template>
+          <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and (not isnull(self.search_advanced)))) and length(self.dsrc_items.ds_row_data) and self.vc_is_valid) then 1 else 0 end;">
+            <div style="padding-bottom: 5px;">
+              <?vsp
+                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                if (ODRIVE.WA.settings_atomVersion (self.settings) = '1.0')
+                {
+                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                } else {
+                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                }
+                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0" /> RDF</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=xbel%s"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" /> XBEL</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+              ?>
+            </div>
+          </v:template>
+
+          <table class="box" cellspacing="0">
+            <tr>
+              <td width="80%" valign="top" style="border: solid #7F94A5;  border-width: 1px 1px 1px 1px;">
+                <div id="dav_list">
+                  <v:data-set name="ds_items" data-source="self.dsrc_items" scrollable="1">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        if (self.vc_is_valid = 0)
+                        {
+                          control.ds_row_data := vector ();
+                          control.ds_rows_fetched := 0;
+                          control.ds_rows_total := 0;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                    <v:template name="ds_items_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                      <table id="dir" class="OD_grid colorise no-border" cellspacing="0">
+                        <thead class="sortHeader">
+                          <tr class="nocolor">
+                            <?vsp
+                              if (self.dir_path <> '')
+                              {
+                                http ('<th class="checkbox" width="1%">');
+                                  http ('<input type="checkbox" name="selectall" value="Select All" onclick="selectAllCheckboxes (this, \'cb_item\', true)" title="Select All" />');
+                                http ('</th>');
+                              }
+                            ?>
+                            <?vsp self.showColumnHeader('column_#1'); ?>
+                            <vm:if test="self.dir_details = 0">
+                              <?vsp self.showColumnHeader('column_#2'); ?>
+                              <?vsp self.showColumnHeader('column_#3'); ?>
+                              <?vsp self.showColumnHeader('column_#4'); ?>
+                              <?vsp self.showColumnHeader('column_#5'); ?>
+                              <?vsp self.showColumnHeader('column_#6'); ?>
+                              <?vsp self.showColumnHeader('column_#7'); ?>
+                              <?vsp self.showColumnHeader('column_#8'); ?>
+                              <?vsp self.showColumnHeader('column_#9'); ?>
+                            </vm:if>
+                            <th class="last" width="1%">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </v:template>
+
+                    <v:template name="ds_items_repeat" type="repeat">
+
+                      <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                        <?vsp
+                          if ((self.command = 0) and ((self.command_mode = 2) or (self.command_mode = 3)))
+                            http ('<tr align="center"><td colspan="11" valign="middle" height="100px"><b>No resources were found in ODS Briefcase that matched your search.<br />Please refine your search or enter new search criteria.</b></td></tr>');
+                        ?>
+                      </v:template>
+
+                      <v:template name="ds_items_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <v:template type="simple" enabled="-- case when (self.dir_grouping <> '') then 1 else 0 end;">
+                            <?vsp
+                              declare tmp, dir_column any;
+
+                              dir_column := self.getColumn(self.dir_grouping);
+                              tmp := (control.vc_parent as vspx_row_template).te_column_value(dir_column[1]);
+
+                              if (is_empty_or_null(self.dir_groupName) or (self.dir_groupName <> tmp))
+                              {
+                            ?>
+                            <tr>
+                              <td colspan="11">
+                                <?vsp http (sprintf ('<b> %s: %s</b>', dir_column[2], cast(tmp as varchar))); ?>
+                              </td>
+                            </tr>
+                            <?vsp
+                              }
+                              self.dir_groupName := tmp;
+                            ?>
+                          </v:template>
+                          <tr>
+                            <?vsp
+                              declare rowset any;
+                              rowset := (control as vspx_row_template).te_rowset;
+
+                              if (self.dir_path <> '')
+                              {
+                                http (sprintf ('<td align="center"><input type="checkbox" name="cb_item" value="%s" onclick="selectCheck (this, \'cb_item\')"/></td>', rowset[8]));
+                              }
+                            ?>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                declare id, rowset any;
+
+                                rowset := (control as vspx_row_template).te_rowset;
+                                id := case when (rowset[1] = 'R') then sprintf ('id=%V', rowset[8]) else '' end;
+                                http (sprintf ('<a %s href="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'select\', \'_path\', \'%s\'); return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, ODRIVE.WA.dav_url (rowset[8]), replace (rowset[8], '\'', '\\\''), ODRIVE.WA.utf2wide (rowset[0]), ODRIVE.WA.ui_image(rowset[8], rowset[1], rowset[4]), ODRIVE.WA.stringCut (rowset[0], self.chars)));
+                              ?>
+                              <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(ODRIVE.WA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
+                                <br /><i><v:label value="--ODRIVE.WA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), ODRIVE.WA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
+                              </v:template>
+                            </td>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#2')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <?vsp
+                                  declare N integer;
+                                  declare tags any;
+
+                                  N := 0;
+                                  tags := ODRIVE.WA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtpublictags');
+                                  if (isstring(tags))
+                                  {
+                                    tags := split_and_decode (tags, 0, '\0\0,');
+                                    foreach (any tag in tags) do {
+                                      N := N + length(tag);
+                                      if (N < 20)
+                                        http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag, tag));
+                                      N := N + 1;
+                                    }
+                                  }
+                                  tags := coalesce(ODRIVE.WA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags'), '');
+                                  if (isstring(tags)) {
+                                    tags := split_and_decode (tags, 0, '\0\0,');
+                                    foreach (any tag in tags) do {
+                                      N := N + length(tag);
+                                      if (N < 20)
+                                        http (sprintf ('<a  id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag, tag));
+                                      N := N + 1;
+                                    }
+                                  }
+                                ?>
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#3')) then 1 else 0 end;">
+                              <td class="number" nowrap="nowrap">
+                                <v:label>
+                                  <v:before-data-bind>
+                                    <![CDATA[
+                                      control.ufl_value := ODRIVE.WA.ui_size((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[2], (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1]);
+                                    ]]>
+                                  </v:before-data-bind>
+                                </v:label>
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#4')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--left((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s" />
+                                <font size="1">
+                                  <v:label value="--right((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 8)" />
+                                </font>
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#5')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" />
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#6')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9], ' ')" />
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#7')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" />
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#8')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" />
+                              </td>
+                            </v:template>
+                            <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#9')) then 1 else 0 end;">
+                              <td nowrap="nowrap">
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
+                              </td>
+                            </v:template>
+                            <td class="action">
+                              <?vsp
+                                if (ODRIVE.WA.odrive_read_permission (rowset[8]))
+                                {
+                                  http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="image/dav/item_prop.png" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'update\', \'_path\', \'%s\');" />', replace (rowset[8], '\'', '\\\'')));
+                                }
+                                if ((__tag (DB.DBA.DAV_SEARCH_ID (rowset[8], 'R')) <> 193)
+                                    and (rowset[0] like '%.vsp'
+		                                  or rowset[0] like '%.vspx'
+		                                  or rowset[0] like '%.rdf'
+		                                  or rowset[0] like '%.xml'
+		                                  or rowset[0] like '%.xsl'
+		                                  or rowset[0] like '%.js'
+		                                  or rowset[0] like '%.txt'
+		                                  or rowset[0] like '%.html'
+		                                  or rowset[0] like '%.htm'
+		                                  or rowset[0] like '%.sql'
+		                                  or rowset[0] like '%.ini'
+		                                  or rowset[4] like 'text/%'))
+                                {
+                                  http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="image/dav/item_edit.png" onclick="javascript: ODRIVE.formShow(\'edit\', \'%s\')" />', replace (rowset[8], '\'', '\\\'')));
+                                }
+                              ?>
+                          </td>
+                        </tr>
+                      </table>
+                      </v:template>
+
+                    </v:template>
+
+                    <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                      <table>
+                        <tr class="nocolor" align="center">
+                          <td colspan="11">
+                            <vm:ds-navigation data-set="ds_items" />
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                  </v:data-set>
+                  <script>
+                    <![CDATA[
+                      enableToolbars (document.forms['F1'], 'cb_item');
+                    ]]>
+                  </script>
+                </div>
+              </td>
+              <v:template type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 3) and (self.dir_cloud = 1)) then 1 else 0 end;">
+                <td width="20%" valign="top" style="border: solid #7F94A5;  border-width: 1px 1px 1px 0px;">
+                  <div style="margin-left:3px; margin-top:3px; overflow: auto; height: 360px;">
+                    <?vsp
+                      declare N, tLength, tMax, tMin integer;
+                      declare tStyle varchar;
+
+                      tLength := length(self.dir_tags);
+                      if (tLength > 2)
+                      {
+                        tMin := self.dir_tags[0][1];
+                        tMax := self.dir_tags[1][1];
+                        for (N := 2; N < tLength; N := N + 1)
+                        {
+                          tStyle := ODS.WA.tag_style(self.dir_tags[N][1], tMin, tMax);
+                          http (sprintf ('<a href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s%s\');" name="btn_%s"><span class="nolink_b" style="%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
+                        }
+                      } else {
+                        http ('no tags');
+                      }
+                    ?>
+                    &nbsp;
+                  </div>
+                </td>
+              </v:template>
+            </tr>
+          </table>
+        </dir>
+      </v:template>
+
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
+
+

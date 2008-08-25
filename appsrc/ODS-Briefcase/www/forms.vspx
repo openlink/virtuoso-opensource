@@ -1,0 +1,824 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="forms" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:template name="tf1" type="simple" condition="(self.v_step = 'end')">
+    <script type="text/javascript">
+      <![CDATA[
+        ODRIVE.formClose('<?V self.v_form ?>');
+      ]]>
+    </script>
+  </v:template>
+
+  <v:method name="showSelected" arglist="in x any">
+    <![CDATA[
+      declare i integer;
+      declare item any;
+
+      http ('<div id="dav_list" style="height: 200px;">');
+      http ('  <table class="OD_grid colorise no-border" cellspacing="0">');
+      http ('    <thead class="sortHeader nocolor">');
+      http ('      <tr>');
+      http ('        <th>Name</th>');
+      http ('        <th>Size</th>');
+      http ('        <th>Date Modified</th>');
+      http ('        <th>Owner</th>');
+      http ('        <th>Group</th>');
+      http ('        <th>Permissions</th>');
+      if (self.v_step <> 'start')
+      {
+      http ('        <th>&nbsp;</th>');
+      }
+      http ('      </tr>');
+      http ('    </thead>');
+
+      for (i := 0; i < length (self.items); i := i + 2)
+      {
+        item := ODRIVE.WA.DAV_INIT (self.items[i]);
+
+        http ('    <tr>');
+        http (sprintf ('<td nowrap="nowrap"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', ODRIVE.WA.ui_image (ODRIVE.WA.DAV_GET (item, 'fullPath'), ODRIVE.WA.DAV_GET (item, 'type'), ODRIVE.WA.DAV_GET (item, 'mimeType')), ODRIVE.WA.ui_alt (ODRIVE.WA.DAV_GET (item, 'name'), ODRIVE.WA.DAV_GET (item, 'type')), self.items[i]));
+        http (sprintf ('<td class="number" nowrap="nowrap">%s</td', ODRIVE.WA.ui_size (ODRIVE.WA.DAV_GET (item, 'length'), ODRIVE.WA.DAV_GET (item, 'type'))));
+        http (sprintf ('<td nowrap="nowrap">%s</td>', ODRIVE.WA.ui_date (ODRIVE.WA.DAV_GET (item, 'modificationTime'))));
+        http (sprintf ('<td>%s</td>', ODRIVE.WA.DAV_GET (item, 'ownerName')));
+        http (sprintf ('<td>%s</td>', ODRIVE.WA.DAV_GET (item, 'groupName')));
+        http (sprintf ('<td>%s</td>', ODRIVE.WA.DAV_GET (item, 'permissionsName')));
+        if (self.v_step <> 'start')
+        {
+        http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
+        }
+        http ('    </tr>');
+      }
+      http ('  </table>');
+      http ('</div>');
+      http ('<br />');
+    ]]>
+  </v:method>
+
+  <v:method name="execSelected" arglist="in overwriteFlag integer">
+    <![CDATA[
+      declare returnData, i integer;
+      declare targetPath varchar;
+      declare tmpVector, item any;
+
+      tmpVector := vector();
+      for (i := 0; i < length (self.items); i := i+ 2)
+      {
+        item := ODRIVE.WA.DAV_INIT(self.items[i]);
+        if (ODRIVE.WA.DAV_ERROR (item))
+        {
+          returnData := item;
+        }
+        else
+        {
+          if (self.v_form = 'delete')
+          {
+            returnData := ODRIVE.WA.DAV_DELETE (self.items[i]);
+          }
+          else
+          {
+            targetPath := ODRIVE.WA.odrive_real_path (self.v_target) || ODRIVE.WA.DAV_GET (item, 'name');
+            if (ODRIVE.WA.DAV_GET (item, 'type') = 'C')
+            {
+              targetPath := targetPath || '/';
+            }
+            if (self.v_form = 'copy')
+            {
+              returnData := ODRIVE.WA.DAV_COPY (self.items[i], targetPath, overwriteFlag, ODRIVE.WA.DAV_GET (item, 'permissions'));
+            }
+            else if (self.v_form = 'move')
+            {
+              returnData := ODRIVE.WA.DAV_MOVE (self.items[i], targetPath, overwriteFlag);
+            }
+          }
+        }
+        if (returnData < 0)
+        {
+          tmpVector := vector_concat (tmpVector, vector (self.items[i], ODRIVE.WA.DAV_PERROR (returnData)));
+        }
+      }
+      self.items := tmpVector;
+    ]]>
+  </v:method>
+
+  <v:method name="execPost" arglist="in e vspx_event">
+    <![CDATA[
+      declare exit handler for SQLSTATE '*'
+      {
+        dbg_obj_print ('__SQL_MESSAGE', __SQL_MESSAGE);
+        if (__SQL_STATE = 'TEST')
+        {
+          self.vc_error_message := ODRIVE.WA.test_clear (__SQL_MESSAGE);
+          self.vc_is_valid := 0;
+          return;
+        }
+        resignal;
+      };
+
+      declare I, N integer;
+      declare returnData, item, params any;
+
+      if (self.v_form = 'properties')
+      {
+        declare prop_owner, prop_group integer;
+        declare prop_mime, prop_add_perms, prop_rem_perms, prop_perms, one, zero varchar;
+        declare c_properties, c_seq, c_property, c_value, c_action any;
+        declare dav_acl, acl_value any;
+        declare itemList any;
+
+        params := e.ve_params;
+        if ((not ODRIVE.WA.check_admin (self.account_id)) and (get_keyword ('prop_group', params, '') <> 'Do not change'))
+          if (not ODRIVE.WA.odrive_group_own (trim (get_keyword ('prop_group', params, ''))))
+          {
+            self.vc_error_message := 'Only own groups or ''dba'' group are allowed!';
+            self.vc_is_valid := 0;
+            return;
+          }
+        prop_mime  := trim (get_keyword ('prop_mime', params, ''));
+        prop_owner := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_owner', params, '')));
+        prop_group := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_group', params, '')));
+
+        one := ascii('1');
+        zero := ascii('0');
+        prop_add_perms := '000000000N';
+        for (N := 0; N < 9; N := N + 1)
+        {
+          if (get_keyword (sprintf ('prop_add_perm%i', N), params, '') <> '')
+            aset(prop_add_perms, N, one);
+        }
+        prop_rem_perms := '000000000N';
+        for (N := 0; N < 9; N := N + 1)
+        {
+          if (get_keyword (sprintf ('prop_rem_perm%i', N), params, '') <> '')
+            aset(prop_rem_perms, N, one);
+        }
+
+        -- changing or adding properties
+        c_properties := ODRIVE.WA.prop_params (params, self.account_id);
+
+        -- acl properties
+        acl_value := WS.WS.ACL_PARSE (ODRIVE.WA.acl_params (params));
+
+        for (I := 0; I < length (self.items); I := I + 2)
+        {
+          item := ODRIVE.WA.DAV_INIT(self.items[I]);
+          if (not ODRIVE.WA.DAV_ERROR (item))
+          {
+            if (('' <> prop_mime) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and (ODRIVE.WA.DAV_GET (item, 'mimeType') <> prop_mime))
+            {
+              ODRIVE.WA.DAV_SET (self.items[I], 'mimeType', prop_mime);
+            }
+            if ((prop_owner <> -1) and (ODRIVE.WA.DAV_GET (item, 'ownerID') <> prop_owner))
+            {
+              ODRIVE.WA.DAV_SET (self.items[I], 'ownerID', prop_owner);
+            }
+            if ((prop_group <> -1) and (ODRIVE.WA.DAV_GET (item, 'groupID') <> prop_group))
+            {
+              ODRIVE.WA.DAV_SET (self.items[I], 'groupID', prop_group);
+            }
+            -- permissions
+            prop_perms := ODRIVE.WA.DAV_GET (item, 'permissions');
+            for (N := 0; N < 10; N := N + 1)
+            {
+              if (prop_add_perms[N] = one)
+                aset(prop_perms, N, one);
+              if (prop_rem_perms[N] = one)
+                aset (prop_perms, N, zero);
+            }
+            if (get_keyword ('prop_index', params, '*') <> '*')
+            {
+              aset (prop_perms, 9, ascii (get_keyword ('prop_index', params)));
+            }
+            if (get_keyword ('prop_metagrab', params, '*') <> '*')
+            {
+              if (length(prop_perms) < 11)
+                prop_perms := concat(prop_perms, ' ');
+              aset (prop_perms, 10, ascii (get_keyword ('prop_metagrab', params)));
+            }
+            ODRIVE.WA.DAV_SET (self.items[I], 'permissions', prop_perms);
+
+            -- recursive
+            if ((ODRIVE.WA.DAV_GET (item, 'type') = 'C') and ('' <> get_keyword ('prop_recursive', params, '')))
+            {
+              itemList := ODRIVE.WA.DAV_DIR_LIST (self.items[I], 1);
+              for (N := 0; N < length(itemList); N := N + 1)
+              {
+                if (itemList[N][1] = 'R')
+                {
+                  ODRIVE.WA.DAV_SET (itemList[N][0], 'permissions', prop_perms);
+                  if (prop_owner <> -1)
+                    ODRIVE.WA.DAV_SET (itemList[N][0], 'ownerID', prop_owner);
+                  if (prop_group <> -1)
+                    ODRIVE.WA.DAV_SET (itemList[N][0], 'groupID', prop_group);
+                }
+              }
+            }
+
+            -- properties
+            for (N := 0; N < length (c_properties); N := N + 3)
+            {
+              if (c_properties[N] <> '')
+              {
+                if (c_properties[N+2] = 'U')
+                {
+                  ODRIVE.WA.DAV_PROP_SET (self.items[I], c_properties[N], c_properties[N+1]);
+                }
+                else if (c_properties[N+2] = 'R')
+                {
+                  ODRIVE.WA.DAV_PROP_REMOVE (self.items[I], c_properties[N]);
+                }
+              }
+            }
+
+            -- acl
+            if (length (acl_value))
+            {
+              dav_acl := ODRIVE.WA.DAV_GET (item, 'acl');
+              foreach (any acl in acl_value) do
+              {
+                if ((ODRIVE.WA.DAV_GET (item, 'type') = 'C') or (acl[2] = 0))
+                {
+                  WS.WS.ACL_ADD_ENTRY (dav_acl, acl[0], acl[3], acl[1], acl[2]);
+                }
+              }
+              ODRIVE.WA.DAV_SET (self.items[I], 'acl', dav_acl);
+            }
+          }
+        }
+        self.v_step := 'end';
+      }
+      else if (self.v_form = 'edit')
+      {
+        item := ODRIVE.WA.DAV_INIT (self.v_path);
+        returnData := ODRIVE.WA.DAV_RES_UPLOAD (self.v_path, self.f_content.ufl_value, ODRIVE.WA.DAV_GET (item, 'mimeType'), ODRIVE.WA.DAV_GET (item, 'permissions'), ODRIVE.WA.DAV_GET (item, 'ownerID'), ODRIVE.WA.DAV_GET (item, 'groupID'));
+        if (ODRIVE.WA.DAV_ERROR (returnData))
+          signal('TEST', ODRIVE.WA.DAV_PERROR (returnData) || '<>');
+
+        self.v_step := 'end';
+      }
+      else if (self.v_form = 'rename')
+      {
+   	    declare oldName, newName any;
+
+        oldName := trim (self.f_old.ufl_value);
+        newName := trim (self.f_new.ufl_value);
+        if (oldName <> newName)
+        {
+          ODRIVE.WA.test (newName, vector('name', 'New Name', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+          returnData := ODRIVE.WA.DAV_SET (self.v_path, 'name', newName);
+          if (ODRIVE.WA.DAV_ERROR (returnData))
+            signal('TEST', ODRIVE.WA.DAV_PERROR (returnData) || '<>');
+        }
+        self.v_step := 'end';
+      }
+      else if (self.v_form = 'tag')
+      {
+  	    declare itemPath, tags, tagsPublic, tagsPrivate any;
+
+        tagsPublic := trim (self.f_tags_public.ufl_value);
+        if (not ODRIVE.WA.validate_tags (tagsPublic))
+        {
+          signal ('TEST', 'The expression contans not valid tag(s)!<>');
+        }
+        tagsPrivate := trim (self.f_tags_private.ufl_value);
+        if (not ODRIVE.WA.validate_tags (tagsPrivate))
+        {
+          signal ('TEST', 'The expression contans not valid tag(s)!<>');
+        }
+        if ((tagsPublic <> '') or (tagsPrivate <> ''))
+        {
+          for (N := 0; N < length (self.items); N := N + 2)
+          {
+            itemPath := self.items[N];
+            if (tagsPublic <> '')
+            {
+              tags := ODRIVE.WA.DAV_PROP_GET (itemPath, ':virtpublictags', '');
+              ODRIVE.WA.DAV_PROP_SET (itemPath, ':virtpublictags', ODRIVE.WA.tags_join (tags, tagsPublic));
+            }
+            if (tagsPrivate <> '')
+            {
+              tags := ODRIVE.WA.DAV_PROP_GET (itemPath, ':virtprivatetags', '');
+              ODRIVE.WA.DAV_PROP_SET (itemPath, ':virtprivatetags', ODRIVE.WA.tags_join (tags, tagsPrivate));
+            }
+          }
+        }
+        self.v_step := 'end';
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="property_right" arglist="in property any">
+    <![CDATA[
+      if (ODRIVE.WA.check_admin (self.account_id))
+        return 1;
+      if (property like 'DAV:%')
+        return 0;
+      if (property like 'xml-%')
+        return 0;
+      if (property like 'xper-%')
+        return 0;
+      return 1;
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>Rename File</vm:pagetitle>
+  <vm:popup_pagewrapper clean="yes" login="yes">
+    <vm:variables>
+      <v:variable name="v_form" param-name="sa" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_step" type="varchar" default="''" persist="0" />
+      <v:variable name="v_tab" param-name="tabNo" type="varchar" default="'1'" />
+
+      <v:variable name="v_id" param-name="id" type="any" persist="0" />
+      <v:variable name="v_path" type="varchar" persist="pagestate" />
+
+      <v:variable name="v_parent" type="varchar" />
+      <v:variable name="v_old" type="varchar" />
+      <v:variable name="v_new" type="varchar" />
+
+      <v:variable name="v_source" type="varchar" persist="0"/>
+      <v:variable name="v_target" type="varchar" persist="0"/>
+
+      <v:variable name="items" type="any" persist="0"/>
+      <v:variable name="overwriteFlag" type="integer" value="0" persist="0"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:template name="tf2" type="simple" enabled="-- case when (self.v_step <> 'end') then 1 else 0 end">
+
+        <input type="hidden" name="tabNo" id="tabNo" value="<?V self.v_tab ?>" />
+        <v:template name="tf3" type="simple" condition="not self.vc_is_valid">
+          <div class="error">
+            <p><v:error-summary/></p>
+          </div>
+        </v:template>
+
+        <v:before-data-bind>
+          <![CDATA[
+            self.sid := get_keyword ('sid', params);
+            self.realm := get_keyword ('realm', params);
+            if (isnull (connection_get ('vspx_user')))
+            {
+              connection_set ('vspx_user', ODRIVE.WA.account_name (self.account_id));
+            }
+            if (self.v_step = '')
+            {
+              declare i integer;
+
+              self.v_step := 'start';
+              self.v_source := get_keyword ('path', params, '');
+              self.overwriteFlag := 0;
+              self.items := vector ();
+              for (i := 0; i < length(params); i := i + 2)
+              {
+                if (params[i] = 'cb_item')
+                {
+                  self.items := vector_concat (self.items, vector (params[i+1], null));
+                }
+              }
+            }
+          ]]>
+        </v:before-data-bind>
+
+        <v:template name="tf4" type="simple" enabled="-- case when self.v_form = 'properties' then 1 else 0 end">
+          <div class="new-form-header">
+            Update properties for listed items
+          </div>
+          <?vsp self.showSelected(1); ?>
+          <div id="c1">
+            <div class="tabs">
+              <vm:tabCaption tab="1" tabs="2" caption="Main" />
+              <vm:tabCaption tab="2" tabs="2" caption="Sharing" />
+            </div>
+            <div class="contents">
+              <div id="1" class="tabContent">
+                <table class="form-body" cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label for="prop_mime" value="--'File Mime Type'" />
+                    </th>
+                    <td>
+                      <input type="text" name="prop_mime" class="field-short" />
+                      &amp;nbsp;
+                      <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" class="button" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="prop_owner" value="--'Owner'" />
+                    </th>
+                    <td>
+                      <v:text name="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short">
+                        <v:after-data-bind>
+                          <![CDATA[
+                            if (not ODRIVE.WA.check_admin (self.account_id))
+                              control.tf_style := 3;
+                          ]]>
+                        </v:after-data-bind>
+                      </v:text>
+                      <v:template name="tf5" type="simple" enabled="-- equ(ODRIVE.WA.check_admin (self.account_id), 1)">
+                        <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" class="button" />
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="prop_group" value="--'Group'" />
+                    </th>
+                    <td>
+                      <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
+                      &amp;nbsp;
+                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label value="--'Permissions'" />
+                    </th>
+                    <td>
+                      <table class="permissions-list" cellspacing="0">
+                        <vm:permissions-header1 text="Add"/>
+                        <vm:permissions-header2 />
+                        <tr>
+                          <td>Add</td>
+                          <?vsp
+                            declare i integer;
+                            declare S varchar;
+                            for (i := 0; i < 9; i := i + 1)
+                            {
+                              S := case when (i = 8) then 'class="right"' else '' end;
+                              http (sprintf ('<td %s><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" /></td>', S, i, i));
+                            }
+                          ?>
+                        </tr>
+                        <tr>
+                          <td class="bottom">Remove</td>
+                          <?vsp
+                            declare i integer;
+                            declare S varchar;
+                            for (i := 0; i < 9; i := i + 1)
+                            {
+                              S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
+                              http (sprintf ('<td %s><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" /></td>', S, i, i));
+                            }
+                          ?>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="prop_index" value="--'Full Text Search'" />
+                    </th>
+                    <td>
+                      <v:select-list name="prop_index">
+                        <v:item name="Do not change" value="*" />
+                        <v:item name="Off" value="N" />
+                        <v:item name="Direct members" value="T" />
+                        <v:item name="Recursively" value="R" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="prop_metagrab" value="--'Metadata Retrieval'" />
+                    </th>
+                    <td>
+                      <v:select-list name="prop_metagrab">
+                        <v:item name="Do not change" value="*" />
+                        <v:item name="Off" value="N" />
+                        <v:item name="Direct members" value="M" />
+                        <v:item name="Recursively" value="R" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td valign="center">
+                      <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
+                      <v:label for="prop_recursive" value="--'Recursive'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>WebDAV Properties</th>
+                    <td>
+                      <v:text name="c_seqNo" xhtml_id="c_seqNo" type="hidden" value="0" />
+                      <table id="davProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                        <tr>
+                          <th>Property</th>
+                          <th>Value</th>
+                          <th>Action</th>
+                          <th>&amp;nbsp;</th>
+                        </tr>
+                        <tr id="c_tr">
+                          <td colspan="4">
+                            <hr />
+                          </td>
+                        </tr>
+                        <tr id="c_tr_xxx">
+                          <td id="c_td_xxx" width="50%">
+                      		  <![CDATA[
+                      		    <script type="text/javascript">
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('xxx', '');});
+                      		    </script>
+                      		  ]]>
+      		                </td>
+                          <td width="50%">
+                            <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
+                          </td>
+                          <td>
+                            <select id="c_action_xxx" name="c_action_xxx">
+                              <option value="U">Set</option>
+                              <option value="R">Remove</option>
+                            </select>
+                          </td>
+                          <td>
+                            <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.propertyUpdate('xxx');" />
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <div id="2" class="tabContent">
+                <v:text name="acl_seqNo" xhtml_id="acl_seqNo" type="hidden" value="0" />
+                <table id="aceProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                  <tr>
+                    <th align="center" nowrap="nowrap">User/Group</th>
+                    <th align="center">Inheritance</th>
+                    <th align="center" nowrap="nowrap">Allow<br />(Read, Write, eXecute)</th>
+                    <th align="center" nowrap="nowrap">Deny<br />(Read, Write, eXecute)</th>
+                    <th>&amp;nbsp;</th>
+                  </tr>
+                  <tr id="acl_tr">
+                    <td colspan="5">
+                      <hr />
+                    </td>
+                  </tr>
+                  <tr id="acl_tr_xxx">
+                    <td nowrap="nowrap">
+                      <input id="acl_user_xxx" name="acl_user_xxx" style="width: 93%;" />
+                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_xxx:s1;',520)" />
+		                </td>
+                    <td width="1%">
+                      <select name="acl_inheritance_xxx" id="acl_inheritance_xxx">
+                        <option value="0">This object only</option>
+                        <option value="1">This object, subfolders and files</option>
+                        <option value="2">Subfolders and files</option>
+                      </select>
+                    </td>
+                    <td width="1%" align="center">
+                      <input type="checkbox" onclick="javascript: uncheck('acl_r_deny_xxx')" checked="checked" name="acl_r_grant_xxx" id="acl_r_grant_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_w_deny_xxx')" checked="checked" name="acl_w_grant_xxx" id="acl_w_grant_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_x_deny_xxx')" name="acl_x_grant_xxx" id="acl_x_grant_xxx" value="1"/>
+                    </td>
+                    <td width="1%" align="center">
+                      <input type="checkbox" onclick="javascript: uncheck('acl_r_grant_xxx')" name="acl_r_deny_xxx" id="acl_r_deny_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
+                      <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
+                    </td>
+                    <td width="1%">
+                      <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.aclUpdate('xxx');"/>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="Update">
+              <v:on-post>
+                <![CDATA[
+                  self.execPost (e);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <input type="button" title="Cancel" value="Cancel" onclick="javascript: ODRIVE.formClose();"/>
+          </div>
+          <script>
+            initTab(2, 1);
+          </script>
+        </v:template>
+
+        <v:template type="simple" enabled="-- case when (self.v_form = 'edit') then 1 else 0 end">
+          <v:before-data-bind>
+            <![CDATA[
+              self.v_path := self.v_id;
+            ]]>
+          </v:before-data-bind>
+          <div class="new-form-header">
+            Edit resource <?V self.v_path ?>
+          </div>
+          <div style="padding-right: 4px;">
+            <v:textarea name="f_content" value="-- ODRIVE.WA.DAV_RES_CONTENT (self.v_path)" xhtml_style="width: 100%; height: 360px;" xhtml_cols="80" xhtml_rows="28" />
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="Save">
+              <v:on-post>
+                <![CDATA[
+                  self.execPost (e);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <input type="button" title="Cancel" value="Cancel" onclick="javascript: ODRIVE.formClose();"/>
+          </div>
+        </v:template>
+
+        <v:template type="simple" enabled="--case when (self.v_form = 'rename') then 1 else 0 end">
+          <v:before-data-bind>
+            <![CDATA[
+              if (self.v_step = 'start')
+              {
+                declare N integer;
+                declare tmp any;
+
+                self.v_path := self.items [0];
+                tmp := rtrim(self.v_path, '/');
+                N := strrchr(tmp, '/');
+                if (isnull(N))
+                  N := 0;
+                self.v_parent := left (tmp, N);
+                self.v_old := trim (subseq(tmp, N, length(tmp)), '/');
+                self.v_new := self.v_old;
+              }
+            ]]>
+          </v:before-data-bind>
+          <div class="new-form-header">
+            Rename resource
+          </div>
+          <div class="new-form-body">
+            <table cellspacing="0">
+              <tr>
+                <th width="30%">
+                  Parent Folder
+                </th>
+                <td>
+                  <span class="text"><v:label value="--self.v_parent" /></span>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  Old Name
+                </th>
+                <td>
+                  <v:text name="f_old" value="--self.v_old" xhtml_disabled="disabled" xhtml_size="65%" />
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <vm:label for="f_new" value="New Name" />
+                </th>
+                <td>
+                  <v:text name="f_new" value="--self.v_new" xhtml_size="65%" />
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="Rename">
+              <v:on-post>
+                <![CDATA[
+                  self.execPost (e);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <input type="button" title="Cancel" value="Cancel" onclick="javascript: ODRIVE.formClose();"/>
+          </div>
+        </v:template>
+
+        <v:template type="simple" condition="(self.v_form = 'tags')">
+          <div class="new-form-header">
+            Tag listed items
+          </div>
+          <?vsp self.showSelected(1); ?>
+          <div class="new-form-body">
+            <table cellspacing="0">
+              <tr>
+                <th>
+                  <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
+                </th>
+                <td>
+                  <v:text name="f_tags_public" xhtml_id="f_tags_public" xhtml_class="textbox" xhtml_size="60"/>
+                  <input type="button" value="Clear" onclick="javascript: $('f_tags_public').value = ''" class="button" />
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <v:label for="f_tags_private" value="Private tags (comma-separated)"/>
+                </th>
+                <td>
+                  <v:text name="f_tags_private" xhtml_id="f_tags_private" xhtml_class="textbox" xhtml_size="60"/>
+                  <input type="button" value="Clear" onclick="javascript: $('f_tags_private').value = ''" class="button" />
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="Tag">
+              <v:on-post>
+                <![CDATA[
+                  self.execPost (e);
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <input type="button" title="Cancel" value="Cancel" onclick="javascript: ODRIVE.formClose();"/>
+          </div>
+        </v:template>
+
+        <v:template type="simple" condition="(self.v_form in ('move', 'copy', 'delete'))">
+          <div class="new-form-header">
+            <?V initcap (self.v_form) ?> listed items
+          </div>
+          <?vsp self.showSelected(2); ?>
+          <v:template type="simple" condition="((self.v_form <> 'delete') and (self.v_step <> 'error'))">
+            <div class="new-form-body">
+              <table cellspacing="0">
+                <v:template type="simple" condition="(self.v_step = 'start')">
+                  <th width="30%">
+                    Destination folder
+                  </th>
+                  <td>
+                    <input name="f_folder" id="f_folder" value="<?V self.v_source ?>" class="field-short" />
+                    <input type="button" class="button" onclick="javascript: ODRIVE.davFolderSelect ('f_folder');" value="Select" />
+                  </td>
+                </v:template>
+                <v:template type="simple" condition="(self.v_step = 'overwrite')">
+                  <th colspan="2">
+                    Some folder(s)/file(s) could not to be written or have to overwrite existing ones. Do you want to try to overwrite?
+                  </th>
+                </v:template>
+              </table>
+            </div>
+          </v:template>
+          <div class="new-form-footer">
+            <v:button action="simple" value="--initcap (self.v_form)" enabled="-- case when self.v_step <> 'error' then 1 else 0 end">
+              <v:on-post>
+                <![CDATA[
+                  if (self.v_step = 'start')
+                  {
+                    self.v_target := '/' || get_keyword ('f_folder', e.ve_params, '') || '/';
+                    self.v_target := replace (self.v_target, '//', '/');
+                  }
+                  if (self.v_step = 'overwrite')
+                  {
+                    self.overwriteFlag := 1;
+                  }
+                  self.execSelected (self.overwriteFlag);
+                  if (length (self.items) = 0)
+                  {
+                    self.v_step := 'end';
+                  }
+                  else
+                  {
+                    if (self.v_form = 'delete')
+                    {
+                      self.v_step := 'error';
+                    }
+                    else if (self.v_step = 'start')
+                    {
+                      self.v_step := 'overwrite';
+                    }
+                    else
+                    {
+                      self.v_step := 'error';
+                    }
+                  }
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <input type="button" title="Cancel" value="Cancel" onclick="javascript: ODRIVE.formClose();"/>
+          </div>
+        </v:template>
+      </v:template>
+
+    </vm:pagebody>
+  </vm:popup_pagewrapper>
+
+</v:page>

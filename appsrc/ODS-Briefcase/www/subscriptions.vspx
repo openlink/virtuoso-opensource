@@ -130,7 +130,7 @@
         <v:data-set name="ds" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="1000" scrollable="1" cursor-type="keyset" edit="1">
           <v:param name="instance" value="--self.domain_id" />
           <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds_header_template">
-            <table id="groups" class="grid" cellspacing="0">
+            <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <th>Description</th>
@@ -662,7 +662,7 @@
         <v:data-set name="data_set2" sql="select VS_DESCR, VQ_HOST, VQ_STAT, VQ_ROOT, VQ_URL from WS.WS.VFS_QUEUE, WS.WS.VFS_SITE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_URL = VS_URL and VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
           <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
-            <table id="groups" class="grid" cellspacing="0">
+            <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <th>Description</th>
@@ -825,7 +825,7 @@
         <v:data-set name="ds3" sql="select a.SE_NAME, a.SE_START, a.SE_INTERVAL, a.SE_LAST_COMPLETED, a.SE_SQL, b.VS_SQL from DB.DBA.SYS_SCHEDULED_EVENT a, (select concat('WS.WS.SERV_QUEUE_TOP(\'',VS_HOST,'\',\'',VS_ROOT,'\', 1, 0, null, null)') as VS_SQL from WS.WS.VFS_SITE where VS_INST_ID = :instance) b where a.SE_SQL = b.VS_SQL" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
           <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds3_header_template">
-            <table id="groups" class="grid" cellspacing="0">
+            <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <th>Description</th>
@@ -1146,7 +1146,7 @@
         <v:data-set name="ds4" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
           <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds4_header_template">
-            <table id="groups" class="grid" cellspacing="0">
+            <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
                   <th>Description</th>
@@ -1227,7 +1227,7 @@
       <vm:if test="self.v_mode = 'retrievedEdit'">
         <h3>Current downloads for <?V self.v_host ?></h3>
         <hr />
-        <table id="groups" class="grid" cellspacing="0">
+        <table id="groups" class="OD_grid" cellspacing="0">
           <thead class="sortHeader">
             <tr>
               <th>URL</th>
