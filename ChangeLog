@@ -1,3 +1,64 @@
+2008-08-25 20:35  source
+
+	* Updated version to 5.0.8-rc4
+
+2008-08-25 20:34  source
+
+	* Fixed forms with tabs
+
+2008-08-25 20:33  source
+
+	* Added OAT UI
+	* Fixed saving file to DAV/home/user/Public
+
+2008-08-25 20:32  source
+
+	* Fixed problem with IE
+
+2008-08-25 20:06  source
+
+	* Merged from upstream project
+
+2008-08-25 14:35  source
+
+	* Fixed possible miss count of left join nulls when in iter or rdf inf
+	  iter because the count code is at the end of the end node that keeps
+	  track of any or no result
+
+2008-08-22 09:30  source
+
+	* Fixed initial settings
+
+2008-08-22 08:35  source
+
+	* Added support for fcntl (SETLK)
+
+2008-08-22 07:59  source
+
+	* Removed debugging line
+
+2008-08-22 07:26  source
+
+	* Added HTTP client cache (for tsuite use)
+
+2008-08-22 07:26  source
+
+	* Fixed problem with concurrent sampling by SQL compiler
+	* Fixed mtx debug
+
+2008-08-22 07:17  source
+
+	* Merged from upstream project
+
+2008-08-21 20:03  source
+
+	* Fixed indentation
+
+2008-08-21 19:32  source
+
+	* Added additional fields
+	* Fixed headers
+
 2008-08-21 11:01  source
 
 	* Updated version to 5.0.8-rc3
