@@ -102,21 +102,27 @@ OAT.RDF = {
 						children.push(n.childNodes[j]);
 					}
 					/* now what those children mean: */
-					if (children.length == 0) { /* no children nodes - take text content */
-						var obj = OAT.Xml.textValue(n);
-						triples.push([subj,pred,obj,0]);
-					} else if (children.length == 1) { /* one child - it is a standalone subject */
-						var obj = processNode(children[0]);
-						triples.push([subj,pred,obj,1]);
-					} else if (getAtt(nattribs,"parseType") == "Collection") { /* multiple children - each is a standalone node */
+					if (getAtt(nattribs,"parseType") == "Collection") { 	/* possibly multiple children - each is a standalone node */
 						for (var j=0;j<children.length;j++) {
 							var obj = processNode(children[j]);
 							triples.push([subj,pred,obj,1]);
 						}
-					} else { /* multiple children - each is a pred-obj pair */
+					} else if (getAtt(nattribs,"parseType") == "Literal") { /* possibly multiple children, literal - everything to one string */
+						var obj = "";
+						for (var j=0;j<children.length;j++) {
+							obj += OAT.Xml.serializeXmlDoc(children[j]);
+						}
+						triples.push([subj,pred,obj,1]);
+					} else if (children.length == 1) { /* one child - it is a standalone subject */
+						var obj = processNode(children[0]);
+						triples.push([subj,pred,obj,1]);
+					} else if (children.length == 0) { /* no children nodes - take text content */
+						var obj = OAT.Xml.textValue(n);
+						triples.push([subj,pred,obj,0]);
+					} else { /* other cases, multiple children - each is a pred-obj pair */
 						var obj = processNode(n,true);
 						triples.push([subj,pred,obj,1]);
-					} /* multiple children */
+					}
 				}
 			} /* for all subnodes */
 			return subj;
