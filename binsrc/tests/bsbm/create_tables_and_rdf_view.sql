@@ -36,6 +36,8 @@ CREATE TABLE DB.DBA.Producer (
 
 grant select on DB.DBA.Producer to public
 ;
+create index producer_homepage on DB.DBA.Producer (homepage)
+;
 
 CREATE TABLE DB.DBA.Product (
   nr integer primary key,
@@ -116,7 +118,10 @@ CREATE TABLE DB.DBA.Vendor (
 grant select on DB.DBA.Vendor to public
 ;
 
-create index vendor_country on DB.DBA.Vendor (country);
+create index vendor_country on DB.DBA.Vendor (country)
+;
+create index vendor_homepage on DB.DBA.Vendor (homepage)
+;
 
 CREATE TABLE DB.DBA.Offer (
   nr integer primary key,
@@ -143,6 +148,8 @@ create unique index offer_producer_product on DB.DBA.Offer (producer, product, n
 create index offer_validto on DB.DBA.Offer (validTo)
 ;
 create index offer_vendor on DB.DBA.Offer (vendor)
+;
+create index offer_webpage on DB.DBA.Offer (offerWebpage)
 ;
 
 CREATE TABLE DB.DBA.Person (
