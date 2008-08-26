@@ -1213,6 +1213,15 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 		url := sprintf ('http://isbndb.com/api/subjects.xml?access_key=%s&index1=name&value1=%s',
 			api_key, asin);
 	}
+	else if (new_origin_uri like 'http%://%isbndb.com/d/book/%.html')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http%s://%sisbndb.com/d/book/%s.html', 0);
+		asin := tmp[2];
+		if (asin is null)
+		  return 0;
+		url := sprintf ('http://isbndb.com/api/books.xml?access_key=%s&index1=book_id&value1=%s',
+			api_key, asin);
+	}
     else if (new_origin_uri like 'http%://%isbndb.com/search-all.html?kw=%&%')
 	{
 		is_book := 1;
@@ -1312,7 +1321,9 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   xd := xtree_doc (tmp, 2);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
-  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
@@ -2573,6 +2584,16 @@ create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_ori
   else if (xpath_eval ('/rss', xt) is not null)
     {
       xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xt);
+    }
+  else if (xpath_eval ('/entry', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/google2rdf.xsl', xt);
+      if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	mdta := 1;
+      xd := serialize_to_UTF8_xml (xd);
+--      string_to_file ('gb.rdf', xd, -2);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      goto no_feed;
     }
   else
     goto no_feed;
