@@ -1252,7 +1252,7 @@ Delete from <http://BookStore.com>, 3 triples -- done
         <para>Create a DAV collection xx for user demo with password demo.</para>
         <para>Execute the following command:</para>
 <programlisting><![CDATA[
-curl -i -d "INSERT {<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+curl -i -d "INSERT {<http://demo.openlinksw.com/DAV/home/demo_about.rdf>
 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}" -u "demo:demo"
 -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
 ]]></programlisting>
@@ -1267,27 +1267,18 @@ Accept-Ranges: bytes
 MS-Author-Via: SPARQL
 Content-Length: 0
 ]]></programlisting>
-        <para>The result in the DAV/xx location will be a new WebDAV resource with name "yy" containing the following:</para>
-<itemizedlist>
-<listitem>if opened with Conductor:
-<programlisting><![CDATA[
-CONSTRUCT { ?s ?p ?o } FROM <http://localhost:8890/DAV/xx/yy> WHERE { ?s ?p ?o }
-]]></programlisting>
-</listitem>
-<listitem>if opened with GET, then the content will be RDF representation of what was inserted into the graph, i.e.
+        <para>The result in the DAV/xx location will be a new WebDAV resource with name "yy" containing the inserted RDF:</para>
 <programlisting><![CDATA[
 <?xml version="1.0" encoding="utf-8" ?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
 <rdf:Description
-rdf:about="http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this">
+rdf:about="http://demo.openlinksw.com/DAV/home/demo_about.rdf">
 <ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 rdf:resource="http://rdfs.org/sioc/ns#User"/>
 </rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
-</listitem>
-</itemizedlist>
         <para><emphasis>Example 2:</emphasis></para>
         <para>Create a DAV collection, for ex. with name "test" for user ( for ex. demo).</para>
         <para>Execute the following command:</para>
@@ -1466,7 +1457,7 @@ Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.co
         <para><emphasis>Example:</emphasis></para>
         <para>Using the Virtuoso ISQL tool or using the /sparql UI at http://host:port/sparql, execute the following:</para>
 <itemizedlist>
-<listitem>Insert into graph http://example/bookStore 3 triples:
+<listitem>Insert into graph http://BookStore.com 3 triples:
 <programlisting><![CDATA[
 sparql insert in graph <http://BookStore.com>
 { <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
@@ -1479,7 +1470,7 @@ sparql insert in graph <http://BookStore.com>
 Insert into <http://BookStore.com>, 3 triples -- done
 ]]></programlisting>
 </listitem>
-<listitem>Next we will select all triples from the graph http://example/bookStore:
+<listitem>Next we will select all triples from the graph http://BookStore.com:
 <programlisting><![CDATA[
 sparql select * from <http://BookStore.com> where {?s ?p ?o};
 ]]></programlisting>
@@ -8694,6 +8685,87 @@ with the above options.
         <listitem><ulink url="http://librdf.org/docs/api/redland-storage-modules.html">RedLand Storage Modules</ulink></listitem>
       </itemizedlist>
     </sect3>
+  </sect2>
+</sect1>
+<sect1 id="rdfpredicatessparql"><title>SPARQL predicates usage</title>
+  <para>Since version 5.0 Virtuoso supports declaring RDF objects triples by given predicate.</para>
+  <sect2 id="rdfpredicatessparqlexamples"><title>Examples</title>
+    <para>The boolean functions bif:contains and bif:xcontains are used for objects that come from RDF Views as well
+as for regular "physical" triples. Every function gets two arguments and returns a boolean value.
+The first argument is an local variable. The argument variable should be used as an object field in
+the group pattern where the filter condition is placed.
+    </para>
+    <para>In order to execute the examples below please run these commands:</para>
+<programlisting><![CDATA[
+sparql clear graph <http://MyTest.com>;
+DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml1', 'p_all1', xtree_doc ('<Hello>world</Hello>'));
+DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml2', 'p_all2', xtree_doc ('<Hello2>world</Hello2>'));
+DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'nonxml1', 'p_all3', 'Hello world');
+VT_INC_INDEX_DB_DBA_RDF_OBJ();
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://MyTest.com', null, 'My test RDF Data');
+]]></programlisting>
+    <para><emphasis>bif:contains</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql
+select *
+from <http://MyTest.com>
+where { ?s ?p ?o . ?o bif:contains "world" };
+
+s             p         o
+VARCHAR       VARCHAR   VARCHAR
+_______________________________________________________________________________
+
+sxml1         p_all1    <Hello>world</Hello>
+nonxml1       p_all3    Hello world
+sxml2         p_all2    <Hello2>world</Hello2>
+
+3 Rows. -- 20 msec.
+]]></programlisting>
+<para><emphasis>bif:xcontains</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql
+select *
+from <http://MyTest.com>
+where { ?s ?p ?o . ?o bif:xcontains "//Hello[text-contains (., 'world')]" };
+s                  p          o
+VARCHAR            VARCHAR    VARCHAR
+_______________________________________________________________________________
+
+sxml1              p_all      <Hello>world</Hello>
+
+1 Rows. -- 10 msec.
+]]></programlisting>
+<para><emphasis>bif:xpath_contains</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql
+select *
+from <http://MyTest.com>
+where { ?s ?p ?o . ?o bif:xpath_contains "//*" };
+
+s             p         o
+VARCHAR       VARCHAR   VARCHAR
+_______________________________________________________________________________
+
+sxml1         p_all1    <Hello>world</Hello>
+sxml2         p_all2    <Hello2>world</Hello2>
+
+2 Rows. -- 20 msec.
+]]></programlisting>
+<para><emphasis>bif:xquery_contains</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql
+select *
+from <http://MyTest.com>
+where { ?s ?p ?o . ?o bif:xquery_contains "//Hello2 , world" };
+
+s             p         o
+VARCHAR       VARCHAR   VARCHAR
+_______________________________________________________________________________
+
+sxml2         p_all2    <Hello2>world</Hello2>
+
+1 Rows. -- 20 msec.
+]]></programlisting>
   </sect2>
 </sect1>
 </chapter>
