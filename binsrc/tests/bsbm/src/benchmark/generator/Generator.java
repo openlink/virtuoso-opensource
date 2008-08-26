@@ -20,9 +20,9 @@ public class Generator {
 	private static String serializerType = "nt"; 
 	
 	//Ratios of different Resources
-	static final int productsVendorsRatio = 50;
+	static final int productsVendorsRatio = 100;
 	
-	static final int avgReviewsPerProduct=25;
+	static final int avgReviewsPerProduct=10;
 	static final int avgReviewsPerPerson=20;
 	static final int avgReviewsPerRatingSite=10000;
 	static final int avgProductsPerProducer = 50;
@@ -51,6 +51,7 @@ public class Generator {
 	private static ArrayList<ProductType> productTypeLeaves;
 	private static ArrayList<ProductType> productTypeNodes;
 	private static ArrayList<Integer> producerOfProduct;//saves producer-product relationship
+	private static ArrayList<Integer> vendorOfOffer;//saves vendor-offer relationship
 	private static ArrayList<Integer> ratingsiteOfReview;//saves review-ratingSite relationship
 	private static HashMap<String,Integer> wordList;//Word list for the Test driver
 	
@@ -67,6 +68,8 @@ public class Generator {
 		
 		producerOfProduct = new ArrayList<Integer>();
 		producerOfProduct.add(0);
+		vendorOfOffer = new ArrayList<Integer>();
+		vendorOfOffer.add(0);
 		ratingsiteOfReview = new ArrayList<Integer>();
 		ratingsiteOfReview.add(0);
 		
@@ -143,6 +146,19 @@ public class Generator {
 			System.exit(-1);
 		}
 	
+		//Product-Producer Relationships in outputDir/pp.dat
+		File vo = new File(outputDir, "vo.dat");
+		ObjectOutputStream offerVendorOutput;
+		try {
+			vo.createNewFile();
+			offerVendorOutput = new ObjectOutputStream(new FileOutputStream(vo, false));
+			offerVendorOutput.writeObject(vendorOfOffer.toArray(new Integer[0]));
+		} catch(IOException e) {
+			System.err.println("Could not open or create file " + vo.getAbsolutePath());
+			System.err.println(e.getMessage());
+			System.exit(-1);
+		}
+	
 		//Review-Rating Site Relationships in outputDir/rr.dat
 		File rr = new File(outputDir, "rr.dat");
 		ObjectOutputStream reviewRatingsiteOutput;
@@ -164,6 +180,7 @@ public class Generator {
 			currentDateAndLabelWordsOutput = new ObjectOutputStream(new FileOutputStream(cdlw, false));
 			currentDateAndLabelWordsOutput.writeInt(productCount);
 			currentDateAndLabelWordsOutput.writeInt(reviewCount);
+			currentDateAndLabelWordsOutput.writeInt(offerCount);
 			currentDateAndLabelWordsOutput.writeObject(today);
 			currentDateAndLabelWordsOutput.writeObject(wordList);
 		} catch(IOException e) {
@@ -179,24 +196,23 @@ public class Generator {
 	 */
 	private static int[] calcBranchingFactors(long scalefactor)
 	{
-		int logSF = (int)Math.log10(scalefactor*1.1);
-		int depth = Math.round((float)logSF / 3) + 1;
+		float logSF = (float)Math.log10(scalefactor);
+
+		//depth = log10(scale factor)/2 + 1
+		int depth = Math.round((logSF) / 2) + 1;
 		
 		int[] branchingFactors = new int[depth];
 		
-		branchingFactors[0] = 2 * logSF;
+		branchingFactors[0] = 2 * Math.round(logSF);
 		
 		int[] temp = {2,4,8};
 		for(int i=1;i<depth;i++)
 		{
-			if((i+3) <= depth)
-				branchingFactors[i] = 16 << i;
+			if(i+1 < depth)
+				branchingFactors[i] = 8;
 			else {
-				int value = temp[(logSF+1)%3];
-				int shiftFactor = (depth - i -1) * 2;
-				if(i>1)
-					shiftFactor++;
-				branchingFactors[i] = value << shiftFactor;
+				int value = temp[Math.round(logSF*3/2+1)%3];
+				branchingFactors[i] = value;
 			}
 		}
 		return branchingFactors;
@@ -308,7 +324,7 @@ public class Generator {
 		for(int i=2; i<=depth; i++)
 		{
 			featureFrom[i-1] = 35 * i / depthSum;
-			featureTo[i-1] = 55 * i / depthSum;
+			featureTo[i-1] = 75 * i / depthSum;
 		}
 		
 		//Product Feature Nr.
@@ -444,6 +460,7 @@ public class Generator {
 				bundle.setPublisher(p.toString());
 				bundle.setPublishDate(publishDateGen.randomDateInMillis());
 				bundle.setGraphName("<" + Producer.getProducerNS(p.getNr()) + "Graph-" + DateGenerator.formatDate(bundle.getPublishDate()) + ">");
+				bundle.setPublisherNum(p.getNr());
 			}
 			
 			bundle.add(p);
@@ -649,7 +666,7 @@ public class Generator {
 		Integer offerNr = 1;
 		Integer vendorNr = 1;
 		
-		while(offerNr<offerCount)
+		while(offerNr<=offerCount)
 		{
 			//Generate Vendor data
 			int labelNrWords = valueGen.randomInt(1, 3);
@@ -675,6 +692,7 @@ public class Generator {
 				bundle.setPublisher(v.toString());
 				bundle.setPublishDate(publishDateGen.randomDateInMillis());
 				bundle.setGraphName("<" + Vendor.getVendorNS(v.getNr()) + "Graph-" + DateGenerator.formatDate(bundle.getPublishDate()) + ">");
+				bundle.setPublisherNum(v.getNr());
 			}
 			
 			bundle.add(v);
@@ -690,6 +708,7 @@ public class Generator {
 			bundle.commitToSerializer();
 			
 			offerNr += offerCountVendor;
+			vendorOfOffer.add(offerNr-1);
 			vendorNr++;
 		}
 		System.out.println((vendorNr-1) + " Vendors and " + (offerNr - 1) + " Offers have been generated.\n");
@@ -700,7 +719,7 @@ public class Generator {
 	 */
 	public static void createOffersOfVendor(ObjectBundle bundle, Integer vendor, Integer offerNr, Integer hasNrOffers, ValueGenerator valueGen)
 	{
-		NormalDistRangeGenerator deliveryDaysGen = new NormalDistRangeGenerator(2,1,21,14,seedGenerator.nextLong());
+		NormalDistRangeGenerator deliveryDaysGen = new NormalDistRangeGenerator(2,1,21,14.2,seedGenerator.nextLong());
 		NormalDistRangeGenerator productNrGen = new NormalDistRangeGenerator(2,1,productCount,4,seedGenerator.nextLong());
 		DateGenerator dateGen = new DateGenerator(seedGenerator.nextLong());
 		
@@ -770,6 +789,7 @@ public class Generator {
 				bundle.setPublisher(RatingSite.getURIref(ratingSiteNr));
 				bundle.setPublishDate(publishDateGen.randomDateInMillis());
 				bundle.setGraphName("<" + RatingSite.getRatingSiteNS(ratingSiteNr) + "Graph-" + DateGenerator.formatDate(bundle.getPublishDate()) + ">");
+				bundle.setPublisherNum(ratingSiteNr);
 			} 
 			else {
 				bundle.setPublisher(RatingSite.getURIref(ratingSiteNr));
@@ -801,7 +821,7 @@ public class Generator {
 				//Now generate Reviews for this Person
 				Integer reviewCountPerson = reviewCountPPGen.getValue0();
 				if(reviewNr+reviewCountPerson-1 > maxReviewForRatingSite)
-					reviewCountPerson = maxReviewForRatingSite - reviewNr + 1;
+					reviewCountPerson = maxReviewForRatingSite - reviewNr;
 				
 				createReviewsOfPerson(bundle, p, reviewNr, reviewCountPerson, valueGen, reviewDateGen,
 									  productNrGen, publishDateGen, true70);
@@ -815,7 +835,7 @@ public class Generator {
 			ratingsiteOfReview.add(reviewNr-1);
 			ratingSiteNr++;
 		}
-		System.out.println((ratingSiteNr - 1) + " Rating Sites with " + (personNr - 1) + " Persons and " + reviewCount + " Reviews have been generated.\n");
+		System.out.println((ratingSiteNr - 1) + " Rating Sites with " + (personNr - 1) + " Persons and " + (reviewNr-1) + " Reviews have been generated.\n");
 	}
 	
 	
@@ -834,7 +854,7 @@ public class Generator {
 			Long reviewDate = dateGen.randomDateInMillis(today.getTimeInMillis()-DateGenerator.oneDayInMillis*365,today.getTimeInMillis());
 			int titleCount = valueGen.randomInt(4, 15);
 			String title = dictionary2.getRandomSentence(titleCount);
-			int textCount = valueGen.randomInt(50, 300);
+			int textCount = valueGen.randomInt(50, 200);
 			String text = dictionary2.getRandomSentence(textCount);
 			int language = ISO3166.countryCodes.get(person.getCountryCode());
 			
@@ -903,7 +923,7 @@ public class Generator {
 		String output = "Usage: java benchmark.generator.Generator <options>\n\n" +
 						"Possible options are:\n" +
 						"\t-s <output format>\n" +
-						"\t\twhere <output format>: nt (N-Triples), trig (TriG), ttl (Turtle), sql (MySQL dump), xml\n" +
+						"\t\twhere <output format>: nt (N-Triples), trig (TriG), ttl (Turtle), sql (MySQL dump), xml (XML dump), virt (Virtuoso dump)\n" +
 						"\t\tdefault: nt\n" +
 						"\t\tNote:\tBy chosing a named graph output format like TriG,\n\t\t\ta named graph model gets generated.\n" +
 						"\t-pc <product count>\n" +

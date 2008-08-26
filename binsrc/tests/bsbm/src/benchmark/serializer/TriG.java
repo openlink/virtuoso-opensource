@@ -9,19 +9,27 @@ import java.io.*;
 import java.util.*;
 
 public class TriG implements Serializer {
-	private FileWriter fileWriter;
+	private FileWriter dataFileWriter;
 	private FileWriter provenanceGraphWriter;
 	private boolean forwardChaining;
 	private long nrTriples;
 	private File provenanceFile;
+	private File dataFile;
+	private FileWriter prefixFileWriter;
 	
 	public TriG(String file, boolean forwardChaining)
 	{
 		try{
 			this.provenanceFile = File.createTempFile("BSBM", ".prov");
 			this.provenanceFile.deleteOnExit();
-			fileWriter = new FileWriter(file);
-			provenanceGraphWriter = new FileWriter(provenanceFile);
+			this.provenanceGraphWriter = new FileWriter(provenanceFile);
+			
+			this.prefixFileWriter = new FileWriter(file);
+			
+			this.dataFile = File.createTempFile("BSBM", ".data");
+			this.dataFile.deleteOnExit();
+			this.dataFileWriter = new FileWriter(dataFile);
+			
 		} catch(IOException e){
 			System.err.println("Could not open File for writing.");
 			System.err.println(e.getMessage());
@@ -29,9 +37,8 @@ public class TriG implements Serializer {
 		}
 		
 		try {
-			fileWriter.append(getNamespaces());
-			fileWriter.append("\n");
-			provenanceGraphWriter.append("localhost:provenanceData {\n");
+			prefixFileWriter.append(getNamespaces());
+			provenanceGraphWriter.append("<localhost:provenanceData>\n{\n");
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 		}
@@ -64,7 +71,7 @@ public class TriG implements Serializer {
 		result.append(prefix);
 		result.append(" ");
 		result.append(createURIref(namespace));
-		result.append("\n");
+		result.append(" .\n");
 		
 		return result.toString();
 	}
@@ -75,38 +82,42 @@ public class TriG implements Serializer {
 
 		//Write Graph and provenance data
 		try {
-			fileWriter.append(bundle.getGraphName() + "\n{\n");
+			String prefix = getPrefixDefinition(bundle);
+			if(prefix!=null)
+				prefixFileWriter.append(prefix);
+			
+			dataFileWriter.append(bundle.getGraphName() + "\n{\n");
 				
 			while(it.hasNext())
 			{
 				BSBMResource obj = it.next();
 	
 				if(obj instanceof ProductType){
-					fileWriter.append(convertProductType((ProductType)obj));
+					dataFileWriter.append(convertProductType((ProductType)obj));
 				}
 				else if(obj instanceof Offer){
-					fileWriter.append(convertOffer((Offer)obj));
+					dataFileWriter.append(convertOffer((Offer)obj));
 				}
 				else if(obj instanceof Product){
-					fileWriter.append(convertProduct((Product)obj));
+					dataFileWriter.append(convertProduct((Product)obj));
 				}
 				else if(obj instanceof Person){
-					fileWriter.append(convertPerson((Person)obj));
+					dataFileWriter.append(convertPerson((Person)obj, bundle));
 				}
 				else if(obj instanceof Producer){
-					fileWriter.append(convertProducer((Producer)obj));
+					dataFileWriter.append(convertProducer((Producer)obj));
 				}
 				else if(obj instanceof ProductFeature){
-					fileWriter.append(convertProductFeature((ProductFeature)obj));
+					dataFileWriter.append(convertProductFeature((ProductFeature)obj));
 				}
 				else if(obj instanceof Vendor){
-					fileWriter.append(convertVendor((Vendor)obj));
+					dataFileWriter.append(convertVendor((Vendor)obj));
 				}
 				else if(obj instanceof Review){
-					fileWriter.append(convertReview((Review)obj));
+					dataFileWriter.append(convertReview((Review)obj, bundle));
 				}
 			}
-			fileWriter.append("}\n\n");
+			dataFileWriter.append("}\n\n");
 			
 			provenanceGraphWriter.append(convertProvenanceData(bundle));
 			provenanceGraphWriter.append("\n");
@@ -116,6 +127,30 @@ public class TriG implements Serializer {
 			System.err.println(e.getMessage());
 			System.exit(-1);
 		}
+	}
+	
+	/*
+	 * Generate Prefix-String
+	 */
+	private String getPrefixDefinition(ObjectBundle bundle) {
+		StringBuffer prefix = new StringBuffer();
+
+		String publisher = bundle.getPublisher().toLowerCase();
+		Integer publisherNum = bundle.getPublisherNum();
+		
+		if(publisher.contains("datafromvendor")) {
+			prefix.append(createPrefixLine(Vendor.getVendorNSprefixed(publisherNum), Vendor.getVendorNS(publisherNum)));
+		}
+		else if(publisher.contains("datafromratingsite")) {
+			prefix.append(createPrefixLine(RatingSite.getRatingSiteNSprefixed(publisherNum), RatingSite.getRatingSiteNS(publisherNum)));
+		}
+		else if(publisher.contains("datafromproducer")) {
+			prefix.append(createPrefixLine(Producer.getProducerNSprefixed(publisherNum), Producer.getProducerNS(publisherNum)));
+		}
+		else
+			return null;
+		
+		return prefix.toString();
 	}
 	
 	/*
@@ -333,12 +368,12 @@ public class TriG implements Serializer {
 	 * Converts the Person Object into an TriG String
 	 * representation.
 	 */
-	private String convertPerson(Person person)
+	private String convertPerson(Person person, ObjectBundle bundle)
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
 		result.append("  ");
-		result.append(Person.getPrefixed(person.getNr(), person.getPublisher()));
+		result.append(Person.getPrefixed(person.getNr(), bundle.getPublisherNum()));
 		result.append("\n");
 
 		//rdf:type
@@ -479,12 +514,12 @@ public class TriG implements Serializer {
 	 * Converts the Review Object into an TriG String
 	 * representation.
 	 */
-	private String convertReview(Review review)
+	private String convertReview(Review review, ObjectBundle bundle)
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
 		result.append("  ");
-		result.append(Review.getPrefixed(review.getNr(), review.getPublisher()));
+		result.append(Review.getPrefixed(review.getNr(), bundle.getPublisherNum()));
 		result.append("\n");
 
 		//rdf:type
@@ -650,15 +685,27 @@ public class TriG implements Serializer {
 			provenanceGraphWriter.flush();
 			provenanceGraphWriter.close();
 			
-			FileReader prov = new FileReader(provenanceFile);
+			dataFileWriter.flush();
+			dataFileWriter.close();
+			
+			prefixFileWriter.append("\n");
+			
+			FileReader data = new FileReader(dataFile);
 			char[] buf = new char[100];
 			int len = 0;
-			while((len=prov.read(buf))!=-1) {
-				fileWriter.write(buf, 0, len);
+			while((len=data.read(buf))!=-1) {
+				prefixFileWriter.write(buf, 0, len);
 			}
 			
-			fileWriter.flush();
-			fileWriter.close();
+			FileReader prov = new FileReader(provenanceFile);
+			buf = new char[100];
+			len = 0;
+			while((len=prov.read(buf))!=-1) {
+				prefixFileWriter.write(buf, 0, len);
+			}
+			
+			prefixFileWriter.flush();
+			prefixFileWriter.close();
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);

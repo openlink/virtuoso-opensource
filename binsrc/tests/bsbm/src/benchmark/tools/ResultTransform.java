@@ -20,7 +20,8 @@ public class ResultTransform {
 	private final static String[] queries = { "Query 1", "Query 2", "Query 3", "Query 4",
 		 								"Query 5", "Query 6", "Query 7", "Query 8",
 		 								"Query 9", "Query 10"};
-	private static final String[] sizes = { "50K", "250K", "1M", "5M", "25M" };
+//	private static final String[] sizes = { "50K", "250K", "1M", "5M", "25M", "100M" };
+	private static final String[] sizes = { "25M", "100M" };
 	private static HashMap<String, Integer> sizeMap = new HashMap<String, Integer>();
 	
 	public static void main(String argv[]) {
@@ -60,15 +61,19 @@ public class ResultTransform {
 				File file = files[i];
 				int sizeIndex = checkSizeIndex(file.getName());
 				if(sizeIndex==-1) {
-					System.err.println("XML result file names must contain size metrics e.g. store_50k.xml");
-					System.exit(-1);
+					System.err.println("Error: XML result file names must contain size metrics e.g. store_50k.xml for " + file.getName());
+					
+//					System.exit(-1);
 				}
+				else
+				{
 				InputStream is = new FileInputStream(file);
 				String[] queries = storesQueriesSizes[x][sizeIndex];
 
 				handler.setArray(queries);
 				saxParser.parse(is, handler);
 			}
+		}
 		}
 
 	  } catch(Exception e) {
@@ -181,8 +186,12 @@ public class ResultTransform {
 			sb.append("<tr><td><b>"+yDimArray[y.getValue()]+"</b></td>");
 			for(x.setValue(0); x.getValue() < xDimArray.length;x.inc()) {
 				String val = storesQueriesSizes[storeInd.getValue()][sizeInd.getValue()][queryInd.getValue()];
-				if(val!=null)
+				if(val!=null) {
+					if(val.equals("0.0"))
+						sb.append("<td>not executed</td>");
+					else
 					sb.append("<td>"+val+"</td>");
+				}
 				else
 					sb.append("<td>no value</td>");
 			}

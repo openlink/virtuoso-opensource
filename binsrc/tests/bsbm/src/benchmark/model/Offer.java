@@ -124,4 +124,15 @@ public class Offer extends BSBMResource {
 		s.append(nr);
 		return s.toString();
 	}
+	
+	public static String getURIref(int offerNr, int vendorNr)
+	{
+		StringBuffer s = new StringBuffer();
+		s.append("<");
+		s.append(Vendor.getVendorNS(vendorNr));
+		s.append("Offer");
+		s.append(offerNr);
+		s.append(">");
+		return s.toString();
+	}
 }

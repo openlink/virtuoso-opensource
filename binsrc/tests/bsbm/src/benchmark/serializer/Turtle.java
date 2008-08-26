@@ -1,22 +1,28 @@
 package benchmark.serializer;
 
+import java.util.GregorianCalendar;
 import java.util.Iterator;
 import benchmark.model.*;
 import benchmark.vocabulary.*;
 import benchmark.generator.*;
 
 import java.io.*;
-import java.util.*;
 
 public class Turtle implements Serializer {
-	private FileWriter fileWriter;
+	private FileWriter dataFileWriter;
+	private File dataFile;
+	private FileWriter prefixFileWriter;
 	private boolean forwardChaining;
 	private long nrTriples;
 	
 	public Turtle(String file, boolean forwardChaining)
 	{
 		try{
-			fileWriter = new FileWriter(file);
+			this.prefixFileWriter = new FileWriter(file);
+			
+			this.dataFile = File.createTempFile("BSBM", ".data");
+			this.dataFile.deleteOnExit();
+			this.dataFileWriter = new FileWriter(dataFile);
 		} catch(IOException e){
 			System.err.println("Could not open File for writing.");
 			System.err.println(e.getMessage());
@@ -24,8 +30,7 @@ public class Turtle implements Serializer {
 		}
 		
 		try {
-			fileWriter.append(getNamespaces());
-			fileWriter.append("\n");
+			prefixFileWriter.append(getNamespaces());
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 		}
@@ -58,7 +63,7 @@ public class Turtle implements Serializer {
 		result.append(prefix);
 		result.append(" ");
 		result.append(createURIref(namespace));
-		result.append("\n");
+		result.append(" .\n");
 		
 		return result.toString();
 	}
@@ -68,34 +73,37 @@ public class Turtle implements Serializer {
 		Iterator<BSBMResource> it = bundle.iterator();
 
 		try {
+			String prefix = getPrefixDefinition(bundle);
+			if(prefix!=null)
+				prefixFileWriter.append(prefix);
 				
 			while(it.hasNext())
 			{
 				BSBMResource obj = it.next();
 	
 				if(obj instanceof ProductType){
-					fileWriter.append(convertProductType((ProductType)obj));
+					dataFileWriter.append(convertProductType((ProductType)obj));
 				}
 				else if(obj instanceof Offer){
-					fileWriter.append(convertOffer((Offer)obj));
+					dataFileWriter.append(convertOffer((Offer)obj));
 				}
 				else if(obj instanceof Product){
-					fileWriter.append(convertProduct((Product)obj));
+					dataFileWriter.append(convertProduct((Product)obj));
 				}
 				else if(obj instanceof Person){
-					fileWriter.append(convertPerson((Person)obj));
+					dataFileWriter.append(convertPerson((Person)obj, bundle));
 				}
 				else if(obj instanceof Producer){
-					fileWriter.append(convertProducer((Producer)obj));
+					dataFileWriter.append(convertProducer((Producer)obj));
 				}
 				else if(obj instanceof ProductFeature){
-					fileWriter.append(convertProductFeature((ProductFeature)obj));
+					dataFileWriter.append(convertProductFeature((ProductFeature)obj));
 				}
 				else if(obj instanceof Vendor){
-					fileWriter.append(convertVendor((Vendor)obj));
+					dataFileWriter.append(convertVendor((Vendor)obj));
 				}
 				else if(obj instanceof Review){
-					fileWriter.append(convertReview((Review)obj));
+					dataFileWriter.append(convertReview((Review)obj, bundle));
 				}
 			}
 			
@@ -106,6 +114,40 @@ public class Turtle implements Serializer {
 		}
 	}
 	
+	/*
+	 * Generate Prefix-String
+	 */
+	private String getPrefixDefinition(ObjectBundle bundle) {
+		StringBuffer prefix = new StringBuffer();
+		prefix.append("@prefix ");
+		String publisher = bundle.getPublisher().toLowerCase();
+		
+		if(publisher.contains("datafromvendor")) {
+			prefix.append("dataFromVendor");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append(": <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append("/> .\n");
+		}
+		else if(publisher.contains("datafromratingsite")) {
+			prefix.append("dataFromRatingSite");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append(": <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append("/> .\n");
+		}
+		else if(publisher.contains("datafromproducer")) {
+			prefix.append("dataFromProducer");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append(": <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer");
+			prefix.append(bundle.getPublisherNum());
+			prefix.append("/> .\n");
+		}
+		else
+			return null;
+		
+		return prefix.toString();
+	}
 
 	/*
 	 * Converts the ProductType Object into an TriG String
@@ -141,10 +183,23 @@ public class Turtle implements Serializer {
 		}
 		
 		//rdfs:comment
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				RDFS.prefixed("comment"),
 				createLiteral(pType.getComment())));
 
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				createURIref(BSBM.getStandardizationInstitution(pType.getPublisher()))));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(pType.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
+		
 		return result.toString();
 	}
 	
@@ -204,9 +259,22 @@ public class Turtle implements Serializer {
 				createDataTypeLiteral(offer.getDeliveryDays().toString(), XSD.prefixed("integer"))));
 		
 		//bsbm:offerWebpage
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("offerWebpage"),
 				createURIref(offer.getOfferWebpage())));
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				Vendor.getPrefixed(offer.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(offer.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -287,9 +355,22 @@ public class Turtle implements Serializer {
 		}
 		
 		//bsbm:producer
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("producer"),
 				Producer.getPrefixed(product.getProducer())));
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				Producer.getPrefixed(product.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(product.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -298,12 +379,12 @@ public class Turtle implements Serializer {
 	 * Converts the Person Object into an TriG String
 	 * representation.
 	 */
-	private String convertPerson(Person person)
+	private String convertPerson(Person person, ObjectBundle bundle)
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
 		
-		result.append(Person.getPrefixed(person.getNr(), person.getPublisher()));
+		result.append(Person.getPrefixed(person.getNr(), bundle.getPublisherNum()));
 		result.append("\n");
 
 		//rdf:type
@@ -322,9 +403,22 @@ public class Turtle implements Serializer {
 				createLiteral(person.getMbox_sha1sum())));
 		
 		//bsbm:country
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("country"),
 				createURIref(ISO3166.find(person.getCountryCode()))));
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				RatingSite.getPrefixed(person.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(person.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -362,9 +456,22 @@ public class Turtle implements Serializer {
 				createURIref(producer.getHomepage())));
 		
 		//bsbm:country
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("country"),
 				createURIref(ISO3166.find(producer.getCountryCode()))));
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				Producer.getPrefixed(producer.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(producer.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -392,9 +499,22 @@ public class Turtle implements Serializer {
 				createLiteral(pf.getLabel())));
 		
 		//rdfs:comment
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				RDFS.prefixed("comment"),
 				createLiteral(pf.getComment())));
+
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				createURIref(BSBM.getStandardizationInstitution(pf.getPublisher()))));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(pf.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 
 		return result.toString();
 	}
@@ -432,9 +552,22 @@ public class Turtle implements Serializer {
 				createURIref(vendor.getHomepage())));
 		
 		//bsbm:country
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("country"),
 				createURIref(ISO3166.find(vendor.getCountryCode()))));	
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				Vendor.getPrefixed(vendor.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(vendor.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -444,12 +577,12 @@ public class Turtle implements Serializer {
 	 * Converts the Review Object into an TriG String
 	 * representation.
 	 */
-	private String convertReview(Review review)
+	private String convertReview(Review review, ObjectBundle bundle)
 	{
 		StringBuffer result = new StringBuffer();
 		//First the uriref for the subject
 		
-		result.append(Review.getPrefixed(review.getNr(), review.getPublisher()));
+		result.append(Review.getPrefixed(review.getNr(), bundle.getPublisherNum()));
 		result.append("\n");
 
 		//rdf:type
@@ -492,9 +625,22 @@ public class Turtle implements Serializer {
 		GregorianCalendar reviewDate = new GregorianCalendar();
 		reviewDate.setTimeInMillis(review.getReviewDate());
 		String reviewDateString = DateGenerator.formatDate(reviewDate);
-		result.append(createTriplePOEnd(
+		result.append(createTriplePO(
 				BSBM.prefixed("reviewDate"),
 				createDataTypeLiteral(reviewDateString, XSD.prefixed("date"))));
+		
+		//dc:publisher
+		result.append(createTriplePO(
+				DC.prefixed("publisher"),
+				RatingSite.getPrefixed(review.getPublisher())));
+		
+		//dc:date
+		GregorianCalendar date = new GregorianCalendar();
+		date.setTimeInMillis(review.getPublishDate());
+		String dateString = DateGenerator.formatDate(date);
+		result.append(createTriplePOEnd(
+				DC.prefixed("date"),
+				createDataTypeLiteral(dateString, XSD.prefixed("date"))));
 		
 		return result.toString();
 	}
@@ -596,8 +742,20 @@ public class Turtle implements Serializer {
 	public void serialize() {
 		//Close files
 		try {
-			fileWriter.flush();
-			fileWriter.close();
+			dataFileWriter.flush();
+			dataFileWriter.close();
+			
+			prefixFileWriter.append("\n");
+			
+			FileReader data = new FileReader(dataFile);
+			char[] buf = new char[100];
+			int len = 0;
+			while((len=data.read(buf))!=-1) {
+				prefixFileWriter.write(buf, 0, len);
+			}
+			
+			prefixFileWriter.flush();
+			prefixFileWriter.close();
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);

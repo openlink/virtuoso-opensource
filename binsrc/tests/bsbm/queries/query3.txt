@@ -6,7 +6,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 SELECT ?product ?label
 WHERE {
     ?product rdfs:label ?label .
-    ?product rdf:type %ProductType% .
+    ?product a %ProductType% .
 	?product bsbm:productFeature %ProductFeature1% .
 	?product bsbm:productPropertyNumeric1 ?p1 .
 	FILTER ( ?p1 > %x% ) 

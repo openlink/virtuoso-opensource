@@ -1,8 +1,8 @@
 package benchmark.testdriver;
 
-public class QueryMix {
-	private Query[] queries;
-	protected Integer[] queryMix;
+public class CompiledQueryMix {
+	protected CompiledQuery[] queryMix;
+	int queryNr;
 	
 	private double[] aqet;//arithmetic mean query execution time
 	private double[] qmin;//Query minimum execution time
@@ -21,47 +21,47 @@ public class QueryMix {
 	private double maxQueryMixRuntime;
 	private double queryMixGeoMean;
 	private double totalRuntime;//Total runtime of all runs
-	private double multiThreadRuntime;//ClientManager sets this value after the runs
 	
-	public double getMultiThreadRuntime() {
-		return multiThreadRuntime;
-	}
-
-	public void setMultiThreadRuntime(double multiThreadRuntime) {
-		this.multiThreadRuntime = multiThreadRuntime;
-	}
-	
-	public QueryMix(Query[] queries, Integer[] queryMix) {
-		this.queries = queries;
+	/*
+	 * Initialize the CompileQueryMix with CompiledQueries and a max query number for array sizes
+	 */
+	public CompiledQueryMix(CompiledQuery[] queryMix, int maxQueryNr) {
+		this.queryNr = maxQueryNr;
 		this.queryMix = queryMix;
+		init();
+	}
+	
+	public CompiledQueryMix(int maxQueryNr) {
+		this.queryNr = maxQueryNr;
 		
-		//Queries are enumerated starting with 1
-		for(int i=0;i<queries.length;i++) {
-			if(queries[i]!=null) {
-				queries[i].setNr(i+1);
-				queries[i].setQueryMix(this);
-			}
-		}
-		
-		//same reason
-		for(int i=0;i<queryMix.length;i++) {
-			queryMix[i]--;
-		}
+		init();
+	}
+	
+	public void setNewCompiledQueryMix(CompiledQuery[] queryMix) {
+		this.queryMix = queryMix;
+	}
+	
+	/*
+	 * After every run this method initializes the CompiledQueryMix with a new CompiledQuery set.
+	 * All metrics are set to the start values.
+	 */
+	public void init(CompiledQuery[] queryMix) {
+		this.queryMix = queryMix;
 		
 		init();
 	}
 	
 	public void init() {
-		aqet = new double[queries.length];
-		qmin = new double[queries.length];
-		qmax = new double[queries.length];
+		aqet = new double[queryNr];
+		qmin = new double[queryNr];
+		qmax = new double[queryNr];
 		
-		avgResults = new double[queries.length];
-		aqetg = new double[queries.length];
-		minResults = new int[queries.length];
-		maxResults = new int[queries.length];
+		avgResults = new double[queryNr];
+		aqetg = new double[queryNr];
+		minResults = new int[queryNr];
+		maxResults = new int[queryNr];
 		
-		runsPerQuery = new int[queries.length];
+		runsPerQuery = new int[queryNr];
 		
 		currentQueryIndex = 0;
 		queryMixRuns = 0;
@@ -83,59 +83,6 @@ public class QueryMix {
 			qmin[i] = Double.MAX_VALUE;
 			minResults[i] = Integer.MAX_VALUE;
 		}
-	}
-		
-	/*
-	 * Add results of a CompiledQueryMix
-	 */
-	public synchronized void addCompiledQueryMix(CompiledQueryMix cqMix) {
-		int[] cRunsPerQuery = cqMix.getRunsPerQuery();
-		double[] cAqet = cqMix.getAqet();
-		double[] cAvgResults = cqMix.getAvgResults();
-		double[] cAqetg = cqMix.getAqetg();
-		double[] cQmin = cqMix.getQmin();
-		double[] cQmax = cqMix.getQmax();
-		int[] cMinResults = cqMix.getMinResults();
-		int[] cMaxResults = cqMix.getMaxResults();
-		double cTotalRuntime = cqMix.getTotalRuntime();
-		double cMinQueryMixRuntime = cqMix.getMinQueryMixRuntime();
-		double cMaxQueryMixRuntime = cqMix.getMaxQueryMixRuntime();
-		double cQueryMixGeoMean = cqMix.getQueryMixGeoMean();
-		int cQueryMixRuns = cqMix.getQueryMixRuns();
-		for(int i=0;i<queries.length;i++) {
-			if(cRunsPerQuery[i]>0) {
-				int cNrRuns = cRunsPerQuery[i];
-				
-				
-				aqet[i] = (aqet[i]*runsPerQuery[i] + cAqet[i]*cNrRuns)/(runsPerQuery[i]+cNrRuns);
-				aqetg[i] += cAqetg[i];
-				avgResults[i] = (avgResults[i]*runsPerQuery[i] + cAvgResults[i]*cNrRuns)/(runsPerQuery[i]+cNrRuns);
-				
-				if(cQmin[i] < qmin[i])
-					qmin[i] = cQmin[i];
-				
-				if(cQmax[i] > qmax[i])
-					qmax[i] = cQmax[i];
-				
-				if(cMinResults[i] < minResults[i])
-					minResults[i] = cMinResults[i];
-				
-				if(cMaxResults[i] > maxResults[i])
-					maxResults[i] = cMaxResults[i];
-
-				runsPerQuery[i] += cNrRuns;
-			}
-		}
-		//QueryMix statistics
-		totalRuntime+=cTotalRuntime;
-		queryMixGeoMean += cQueryMixGeoMean;
-		queryMixRuns+=cQueryMixRuns;
-		
-		if(cMinQueryMixRuntime < minQueryMixRuntime)
-			minQueryMixRuntime = cMinQueryMixRuntime;
-		
-		if(cMaxQueryMixRuntime > maxQueryMixRuntime)
-			maxQueryMixRuntime = cMaxQueryMixRuntime;
 	}
 	
 	public void setRun(int run) {
@@ -164,10 +111,11 @@ public class QueryMix {
 		
 		//Reset queryMixRuntime
 		queryMixRuntime = 0;
+		queryMix = null;
 	}
 	
-	public Query getNext() {
-		return queries[queryMix[currentQueryIndex]];
+	public CompiledQuery getNext() {
+		return queryMix[currentQueryIndex];
 	}
 	
 	public Boolean hasNext() {
@@ -179,7 +127,7 @@ public class QueryMix {
 	 */
 	public void setCurrent(int numberResults, Double timeInSeconds) {
 		if(run>=0 && timeInSeconds>=0.0) {
-			int queryNr = queryMix[currentQueryIndex];
+			int queryNr = queryMix[currentQueryIndex].getNr()-1;
 	
 			int nrRuns = runsPerQuery[queryNr]++;
 			aqet[queryNr] = (aqet[queryNr] * nrRuns + timeInSeconds) / (nrRuns+1);
@@ -203,14 +151,7 @@ public class QueryMix {
 		
 		currentQueryIndex++;
 	}
-
-	public Query[] getQueries() {
-		return queries;
-	}
-
-	public Integer[] getQueryMix() {
-		return queryMix;
-	}
+	
 
 	public double[] getAqet() {
 		return aqet;
@@ -234,10 +175,6 @@ public class QueryMix {
 
 	public double getQmph() {
 		return 3600 / (totalRuntime / queryMixRuns);
-	}
-
-	public double getMultiThreadQmpH() {
-		return 3600 / (multiThreadRuntime / queryMixRuns);
 	}
 
 	public double getQueryMixRuntime() {
@@ -290,5 +227,9 @@ public class QueryMix {
 
 	public double getQueryMixGeoMean() {
 		return Math.pow(10, (queryMixGeoMean/queryMixRuns));
+	}
+
+	public double[] getAqetg() {
+		return aqetg;
 	}
 }

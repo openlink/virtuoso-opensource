@@ -6,7 +6,6 @@ SELECT ?product ?label
 WHERE {
 	?product rdfs:label ?label .
     ?product rdf:type bsbm:Product .
-    ?label bif:contains "'%word1%' or '%word2%' or '%word3%'" .
+	FILTER regex(?label, "%word1%")
 }
-
 

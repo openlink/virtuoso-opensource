@@ -11,6 +11,7 @@ public class Query {
 	private Vector<String> queryStrings;
 	private Byte queryType;
 	private QueryMix queryMix;
+	private String parameterChar;
 	
 	//Parameter constants
 	public static final byte PRODUCT_PROPERTY_NUMERIC = 1;
@@ -21,18 +22,22 @@ public class Query {
 	public static final byte PRODUCT_URI = 6;
 	public static final byte REVIEW_URI = 7;
 	public static final byte COUNTRY_URI = 8;
+	public static final byte OFFER_URI = 9;
 	
 	//query type constants
 	public static final byte SELECT_TYPE = 1;
 	public static final byte DESCRIBE_TYPE = 2;
+	public static final byte CONSTRUCT_TYPE = 3;
 	
-	public Query(String queryString, String parameterDescription)
+	public Query(String queryString, String parameterDescription, String c)
 	{
+		parameterChar = c;
 		init(queryString, parameterDescription);
 	}
 	
-	public Query(File queryFile, File parameterDescriptionFile)
+	public Query(File queryFile, File parameterDescriptionFile, String c)
 	{
+		parameterChar = c;
 		String queryString = "";
 		String parameterDescriptionString = "";
 		
@@ -150,11 +155,11 @@ public class Query {
 		index = 0;//Array index
 		int index1 = 0;
 		int index2 = -1;
-		while(queryString.indexOf("%",index2+1)!=-1) {
+		while(queryString.indexOf(parameterChar,index2+1)!=-1) {
 			
-			index1 = queryString.indexOf("%", index2+1);
+			index1 = queryString.indexOf(parameterChar, index2+1);
 			
-			index2 = queryString.indexOf("%", index1+1);
+			index2 = queryString.indexOf(parameterChar, index1+1);
 			
 			String parameter = queryString.substring(index1+1, index2);
 
@@ -186,6 +191,8 @@ public class Query {
 			return REVIEW_URI;
 		else if(stringType.equals("CountryURI"))
 			return COUNTRY_URI;
+		else if(stringType.equals("OfferURI"))
+			return OFFER_URI;
 		else
 			return 0;
 	}
@@ -198,6 +205,8 @@ public class Query {
 			return SELECT_TYPE;
 		else if(stringType.toLowerCase().equals("describe"))
 			return DESCRIBE_TYPE;
+		else if(stringType.toLowerCase().equals("construct"))
+			return CONSTRUCT_TYPE;
 		else
 			return 0;
 	}
@@ -210,9 +219,9 @@ public class Query {
 		
 		int index1 = 0;
 		int index2 = -1;
-		while(queryString.contains("%")) {
+		while(queryString.contains(parameterChar)) {
 			
-			index1 = queryString.indexOf("%", index2+1);
+			index1 = queryString.indexOf(parameterChar, index2+1);
 			if(index1==-1) {
 				index2++;
 				break;
@@ -220,10 +229,13 @@ public class Query {
 			
 			queryStrings.add(queryString.substring(index2+1, index1));
 			
-			index2 = queryString.indexOf("%", index1+1);
+			index2 = queryString.indexOf(parameterChar, index1+1);
 			if(index2==-1)
 				return null;//Error: Shouldn't happen
 		}
+		
+		if(index2==-1)
+			index2++;
 		
 		queryStrings.add(queryString.substring(index2));
 		return queryStrings;

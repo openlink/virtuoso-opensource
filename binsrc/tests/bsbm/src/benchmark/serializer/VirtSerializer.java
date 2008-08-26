@@ -146,7 +146,7 @@ public class VirtSerializer implements Serializer {
 			values.append(",");
 
 //			producer
-			values.append(offer.getProducer());
+			values.append(offer.getProducer()); // was: values.append(Generator.getProducerOfProduct(offer.getProduct()));
 			values.append(",");
 
 //			vendor

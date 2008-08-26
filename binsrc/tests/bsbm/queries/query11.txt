@@ -1,0 +1,6 @@
+SELECT ?property ?hasValue ?isValueOf
+WHERE {
+  { %ProductXYZ% ?property ?hasValue }
+  UNION
+  { ?isValueOf ?property %ProductXYZ% }
+}

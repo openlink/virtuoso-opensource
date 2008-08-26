@@ -22,7 +22,8 @@ public class NetQuery {
 			conn.setDefaultUseCaches(false);
 			conn.setDoOutput(true);
 			conn.setUseCaches(false);
-			if(queryType==Query.DESCRIBE_TYPE)
+			conn.setReadTimeout(45000);
+			if(queryType==Query.DESCRIBE_TYPE || queryType==Query.CONSTRUCT_TYPE)
 				conn.setRequestProperty("Accept", "application/rdf+xml");
 			else
 				conn.setRequestProperty("Accept", "application/sparql-results+xml");
@@ -53,11 +54,14 @@ public class NetQuery {
 				System.err.println(URLDecoder.decode(conn.getURL().getQuery(),"UTF-8"));
 			}
 			return conn.getInputStream();
+		} catch(SocketTimeoutException e) {
+			return null;
 		} catch(IOException e) {
 			System.err.println("Query Execution error.");
 			System.exit(-1);
-		}
 		return null;
+	}
+	
 	}
 	
 	protected double getExecutionTimeInSeconds() {

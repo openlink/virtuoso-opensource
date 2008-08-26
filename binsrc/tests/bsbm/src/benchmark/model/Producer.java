@@ -89,10 +89,9 @@ public class Producer extends BSBMResource {
 	public static String getProducerNSprefixed(int producerNr)
 	{
 		StringBuffer s = new StringBuffer();
-		s.append(BSBM.INST_PREFIX);
 		s.append("dataFromProducer");
 		s.append(producerNr);
-		s.append("/");
+		s.append(":");
 		return s.toString();
 	}
 	

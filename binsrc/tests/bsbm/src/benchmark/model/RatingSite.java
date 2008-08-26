@@ -27,10 +27,9 @@ public class RatingSite {
 	public static String getRatingSiteNSprefixed(int ratingSiteNr)
 	{
 		StringBuffer s = new StringBuffer();
-		s.append(BSBM.INST_PREFIX);
 		s.append("dataFromRatingSite");
 		s.append(ratingSiteNr);
-		s.append("/");
+		s.append(":");
 		return s.toString();
 	}
 	

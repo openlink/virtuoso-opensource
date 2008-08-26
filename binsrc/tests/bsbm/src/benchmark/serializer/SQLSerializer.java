@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.io.File;
 
 import benchmark.generator.DateGenerator;
+import benchmark.generator.Generator;
 import benchmark.model.BSBMResource;
 import benchmark.model.Offer;
 import benchmark.model.Person;
@@ -16,9 +17,7 @@ import benchmark.model.ProductFeature;
 import benchmark.model.ProductType;
 import benchmark.model.Review;
 import benchmark.model.Vendor;
-import benchmark.vocabulary.BSBM;
 import benchmark.vocabulary.ISO3166;
-import benchmark.vocabulary.XSD;
 
 public class SQLSerializer implements Serializer {
 	private File outputDir;
@@ -143,6 +142,10 @@ public class SQLSerializer implements Serializer {
 			
 //			product
 			values.append(offer.getProduct());
+			values.append(",");
+			
+//			producer
+			values.append(Generator.getProducerOfProduct(offer.getProduct()));
 			values.append(",");
 			
 //			vendor
@@ -518,6 +521,10 @@ public class SQLSerializer implements Serializer {
 		values.append(review.getProduct());
 		values.append(",");
 
+		//product
+		values.append(review.getProducerOfProduct());
+		values.append(",");
+		
 		//person
 		values.append(review.getPerson());
 		values.append(",");
@@ -723,7 +730,8 @@ public class SQLSerializer implements Serializer {
 						"  `propertyTex5` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
 						"  `propertyTex6` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
 						"  `publisher` int(11) default NULL,\n" +
-						"  `publishDate` date default NULL\n";
+						"  `publishDate` date default NULL,\n" +
+						"  INDEX USING BTREE (producer)\n";
 			
 			return createTable(database, "Product", tableDefinition);
 		}
@@ -761,6 +769,7 @@ public class SQLSerializer implements Serializer {
 		private String initOffer() {
 			String tableDefinition = "  `nr` int(11) primary key,\n" +
 						"  `product` int (11),\n" +
+						"  `producer` int (11),\n" +
 						"  `vendor` int (11),\n" +
 						"  `price` double default null,\n" +
 						"  `validFrom` date default null,\n" +
@@ -768,7 +777,9 @@ public class SQLSerializer implements Serializer {
 						"  `deliveryDays` int(11) default null,\n" +
 						"  `offerWebpage` varchar(100) character set utf8 collate utf8_bin default NULL,\n" +
 						"  `publisher` int(11),\n" +
-						"  `publishDate` date\n";
+						"  `publishDate` date,\n" +
+						"  INDEX USING BTREE (product),\n" +
+						"  INDEX USING BTREE (vendor)\n";
 			
 			return createTable(database, "Offer", tableDefinition);
 		}
@@ -787,6 +798,7 @@ public class SQLSerializer implements Serializer {
 		private String initReview() {
 			String tableDefinition = "  `nr` int(11) primary key,\n" +
 						"  `product` int (11),\n" +
+						"  `producer` int (11),\n" +
 						"  `person` int (11),\n" +
 						"  `reviewDate` date default NULL,\n" +
 						"  `title` varchar(200) character set utf8 collate utf8_bin default NULL,\n" +
@@ -797,7 +809,9 @@ public class SQLSerializer implements Serializer {
 						"  `rating3` int(11) default NULL,\n" +
 						"  `rating4` int(11) default NULL,\n" +
 						"  `publisher` int(11),\n" +
-						"  `publishDate` date\n";
+						"  `publishDate` date,\n" +
+						"  INDEX USING BTREE (product),\n"+
+						"  INDEX USING BTREE (person)\n"; 
 			
 			return createTable(database, "Review", tableDefinition);
 		}

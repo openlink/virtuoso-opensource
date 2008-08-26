@@ -12,27 +12,45 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
 
 import java.io.*;
-//import java.util.StringTokenizer;
+import java.util.StringTokenizer;
 
 public class TestDriver {
-	private QueryMix queryMix;//The Benchmark Querymix
-	private int warmups = 10;//how many Query mixes are run for warm up
-	private AbstractParameterPool parameterPool;
+	protected QueryMix queryMix;//The Benchmark Querymix
+	protected int warmups = TestDriverDefaultValues.warmups;//how many Query mixes are run for warm up
+	protected AbstractParameterPool parameterPool;
 	private ServerConnection server;
-	private String queryMixFN = null;
-	private File queryDir = new File("queries");
-	private int totalRuns = 50;
-	private String sparqlEndpoint = null;
-	private String defaultGraph = null;
-	private String resourceDir = "td_data";
-	private String xmlResultFile = "benchmark_result.xml";
+	private String queryMixFN = null;//"qm.txt";
+	private File queryDir = TestDriverDefaultValues.queryDir;
+	protected int nrRuns = TestDriverDefaultValues.nrRuns;
+	private long seed = TestDriverDefaultValues.seed;
+	protected String sparqlEndpoint = null;
+	protected String defaultGraph = TestDriverDefaultValues.defaultGraph;
+	private String resourceDir = TestDriverDefaultValues.resourceDir;
+	private String xmlResultFile = TestDriverDefaultValues.xmlResultFile;
 	private static Logger logger = Logger.getLogger( TestDriver.class );
+	protected boolean[] ignoreQueries;
+	protected boolean doSQL = false;
+	private boolean multithreading=false;
+	protected int nrThreads;
 	
 	public TestDriver(String[] args) {
 		processProgramParameters(args);
-		parameterPool = new LocalParameterPool(new File(resourceDir),808080L);
-		if(sparqlEndpoint!=null)
-			server = new ServerConnection(sparqlEndpoint, defaultGraph);
+		System.out.print("Reading Test Driver data...");
+		System.out.flush();
+		if(doSQL)
+			parameterPool = new SQLParameterPool(new File(resourceDir),seed);
+		else
+			parameterPool = new LocalSPARQLParameterPool(new File(resourceDir),seed);
+		System.out.println("done");
+	
+		if(sparqlEndpoint!=null && !multithreading){
+			if(doSQL)
+				server = new SQLConnection(sparqlEndpoint);
+			else
+				server = new SPARQLConnection(sparqlEndpoint, defaultGraph);
+		} else if(multithreading) {
+			//do nothing
+		}
 		else {
 			printUsageInfos();
 			System.exit(-1);
@@ -44,9 +62,10 @@ public class TestDriver {
 		Integer[] queryRun = null;
 		
 		if(queryMixFN==null) {
-			Integer[] temp = { 1, 2, 2, 3, 2, 2, 2, 4, 2, 2, 5, 7, 7, 6, 7, 7, 8, 9, 9, 8, 9, 9, 10, 10, 10};
+			Integer[] temp = { 1, 2, 2, 3, 2, 2, 4, 2, 2, 5, 7, 7, 6, 7, 7, 8, 9, 9, 8, 9, 9, 10, 10, 11, 12};
+//			Integer[] temp = { 1, 2, 2, 3, 2, 2, 4, 2, 2, 5, 7, 7, 6, 7, 7, 8, 9, 9, 8, 9, 9, 10, 10, 10, 10};
 //			Integer[] temp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-//			Integer[] temp = { 2 };
+//			Integer[] temp = { 8 };
 
 			queryRun = temp;
 		}
@@ -56,22 +75,35 @@ public class TestDriver {
 		
 		Integer maxQueryNr = 0;
 		for(int i=0;i<queryRun.length;i++) {
-			if(queryRun != null || queryRun[i] > maxQueryNr)
+			if(queryRun[i] != null && queryRun[i] > maxQueryNr)
 				maxQueryNr = queryRun[i];
 		}
 
 		queries = new Query[maxQueryNr];
+		ignoreQueries = new boolean[maxQueryNr];
+		
+		for(int i=0;i<ignoreQueries.length;i++) {
+			ignoreQueries[i] = false;
+		}
+		
+		//WHICH QUERIES TO IGNORE
+//		ignoreQueries[4] = true;
 		
 		for(int i=0;i<queries.length;i++) {
 			queries[i] = null;
 		}
 		
 		for(int i=0;i<queryRun.length;i++) {
-			int qnr = queryRun[i];
+			if(queryRun[i]!=null) {
+				Integer qnr = queryRun[i];
 			if(queries[qnr-1]==null) {
 				File queryFile = new File(queryDir, "query" + qnr + ".txt");
 				File queryDescFile = new File(queryDir, "query" + qnr + "desc.txt");
-				queries[qnr-1] = new Query(queryFile, queryDescFile);
+					if(doSQL)
+						queries[qnr-1] = new Query(queryFile, queryDescFile, "@");
+					else
+						queries[qnr-1] = new Query(queryFile, queryDescFile, "%");
+				}
 			}
 		}
 		
@@ -83,11 +115,16 @@ public class TestDriver {
 		File file = new File(queryMixFilename);
 		try {
 			BufferedReader qmReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-			char[] data = new char[10];
-			qmReader.read(data);
-//			StringTokenizer st = new StringTokenizer(new String(data));
-			System.out.println();
-			//TODO: Implement QueryMix reader 
+			StringBuffer data = new StringBuffer();
+			String line = null;
+			while((line=qmReader.readLine())!=null) {
+				data.append(line);
+				data.append(" ");
+			}
+				
+			StringTokenizer st = new StringTokenizer(data.toString());
+			while(st.hasMoreTokens());
+				System.out.println(st.nextToken());
 		} catch(IOException e) {
 			System.err.println("Error processing query mix file: " + queryMixFilename);
 			System.exit(-1);
@@ -97,20 +134,43 @@ public class TestDriver {
 	
 	public void run() {
 		
-		for(int nrRun=-warmups;nrRun<totalRuns;nrRun++) {
+		for(int nrRun=-warmups;nrRun<nrRuns;nrRun++) {
 			long startTime = System.currentTimeMillis();
-			queryMix.init(nrRun);
+			queryMix.setRun(nrRun);
 			while(queryMix.hasNext()) {
 				Query next = queryMix.getNext();
 				Object[] queryParameters = parameterPool.getParametersForQuery(next);
 				next.setParameters(queryParameters);
-
+				if(ignoreQueries[next.getNr()-1])
+					queryMix.setCurrent(0, -1.0);
+				else {
 				server.executeQuery(next, next.getQueryType());
+			}
 			}
 			System.out.println(nrRun + ": " + String.format(Locale.US, "%.2f", queryMix.getQueryMixRuntime()*1000)
 					+ "ms, total: " + (System.currentTimeMillis()-startTime) + "ms");
 			queryMix.finishRun();
 		}
+		logger.log(Level.ALL, printResults(true));
+		try {
+			FileWriter resultWriter = new FileWriter(xmlResultFile);
+			resultWriter.append(printXMLResults(true));
+			resultWriter.flush();
+			resultWriter.close();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * run the test driver in multi-threaded mode
+	 */
+	public void runMT() {
+		ClientManager manager = new ClientManager(parameterPool, this);
+		
+		manager.createClients();
+		manager.startWarmup();
+		manager.startRun();
 		logger.log(Level.ALL, printResults(true));
 		try {
 			FileWriter resultWriter = new FileWriter(xmlResultFile);
@@ -130,7 +190,7 @@ public class TestDriver {
 		while(i<args.length) {
 			try {
 				if(args[i].equals("-runs")) {
-					totalRuns = Integer.parseInt(args[i++ + 1]);
+					nrRuns = Integer.parseInt(args[i++ + 1]);
 				}
 				else if(args[i].equals("-idir")) {
 					resourceDir = args[i++ + 1];
@@ -146,6 +206,16 @@ public class TestDriver {
 				}
 				else if(args[i].equals("-dg")) {
 					defaultGraph = args[i++ + 1];
+				}
+				else if(args[i].startsWith("-sql")) {
+					doSQL = true;
+				}
+				else if(args[i].startsWith("-mt")) {
+					multithreading = true;
+					nrThreads = Integer.parseInt(args[i++ + 1]);
+				}
+				else if(args[i].startsWith("-seed")) {
+					seed = Long.parseLong(args[i++ + 1]);
 				}
 				else if(!args[i].startsWith("-")) {
 					sparqlEndpoint = args[i];
@@ -172,10 +242,22 @@ public class TestDriver {
 		StringBuffer sb = new StringBuffer(100);
 		
 		sb.append("Scale factor: " + parameterPool.getScalefactor() + "\n");
-		sb.append("Number of query mix runs: " + queryMix.getQueryMixRuns() + " times\n");
+		sb.append("Number of warmup runs: " + warmups + "\n");
+		if(multithreading)
+			sb.append("Number of clients: " + nrThreads + "\n");
+		sb.append("Seed: " + seed + "\n");
+		sb.append("Number of query mix runs (without warmups): " + queryMix.getQueryMixRuns() + " times\n");
 		sb.append("min/max Querymix runtime: " + String.format(Locale.US, "%.4fs",queryMix.getMinQueryMixRuntime()) +
 				  " / " + String.format(Locale.US, "%.4fs",queryMix.getMaxQueryMixRuntime()) + "\n");
+		if(multithreading) {
+			sb.append("Total runtime (sum): " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
+			sb.append("Total actual runtime: " + String.format(Locale.US, "%.3f",queryMix.getMultiThreadRuntime()) + " seconds\n");
+		}
+		else
 		sb.append("Total runtime: " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
+		if(multithreading)
+			sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getMultiThreadQmpH()) + " query mixes per hour\n");
+		else
 		sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getQmph()) + " query mixes per hour\n");
 		sb.append("CQET: " + String.format(Locale.US, "%.5f",queryMix.getCQET()) + " seconds average runtime of query mix\n");
 		sb.append("CQET (geom.): " + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + " seconds geometric mean runtime of query mix\n");
@@ -201,7 +283,7 @@ public class TestDriver {
 					sb.append("QPS: " + String.format(Locale.US, "%.2f",1/qavga[i]) + " Queries per second\n");
 					sb.append("minQET/maxQET: " + String.format(Locale.US, "%.8fs",qmin[i]) + " / " + 
 							String.format(Locale.US, "%.8fs",qmax[i]) + "\n");
-					sb.append("Average result count: " + String.format(Locale.US, "%.1f",avgResults[i]) + "\n");
+					sb.append("Average result count: " + String.format(Locale.US, "%.2f",avgResults[i]) + "\n");
 					sb.append("min/max result count: " + minResults[i] + " / " + maxResults[i] + "\n\n");
 				}
 			}
@@ -219,12 +301,24 @@ public class TestDriver {
 		sb.append("<bsbm>\n");
 		sb.append("  <querymix>\n");
 		sb.append("     <scalefactor>" + parameterPool.getScalefactor() + "</scalefactor>\n");
+		sb.append("     <warmups>" + warmups + "</warmups>\n");
+		if(multithreading)
+			sb.append("     <nrthreads>" + nrThreads + "</nrthreads>\n");
+		sb.append("     <seed>" + seed + "</seed>\n");
 		sb.append("     <querymixruns>" + queryMix.getQueryMixRuns() + "</querymixruns>\n");
 		sb.append("     <minquerymixruntime>" + 
 				  String.format(Locale.US, "%.4f",queryMix.getMinQueryMixRuntime()) + "</minquerymixruntime>\n");
 		sb.append("     <maxquerymixruntime>" + 
 				  String.format(Locale.US, "%.4f",queryMix.getMaxQueryMixRuntime()) + "</maxquerymixruntime>\n");
+		if(multithreading) {
+			sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
+			sb.append("     <actualtotalruntime>" + String.format(Locale.US, "%.3f",queryMix.getMultiThreadRuntime()) + "</actualtotalruntime>\n");
+		}
+		else
 		sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
+		if(multithreading)
+			sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getMultiThreadQmpH()) + "</qmph>\n");
+		else
 		sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getQmph()) + "</qmph>\n");
 		sb.append("     <cqet>" + String.format(Locale.US, "%.5f",queryMix.getCQET()) + "</cqet>\n");
 		sb.append("     <cqetg>" + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + "</cqetg>\n");
@@ -251,9 +345,15 @@ public class TestDriver {
 					sb.append("      <qps>" + String.format(Locale.US, "%.2f",1/qavga[i]) + "</qps>\n");
 					sb.append("      <minqet>" + String.format(Locale.US, "%.8f",qmin[i]) + "</minqet>\n");
 					sb.append("      <maxqet>" + String.format(Locale.US, "%.8f",qmax[i]) + "</maxqet>\n");
-					sb.append("      <avgresults>" + String.format(Locale.US, "%.1f",avgResults[i]) + "</avgresults>\n");
+					sb.append("      <avgresults>" + String.format(Locale.US, "%.2f",avgResults[i]) + "</avgresults>\n");
 					sb.append("      <minresults>" + minResults[i] + "</minresults>\n");
 					sb.append("      <maxresults>" + maxResults[i] + "</maxresults>\n");
+					sb.append("    </query>\n");
+				}
+				else {
+					sb.append("    <query nr=\"" + (i+1) + "\">\n");
+					sb.append("      <executecount>0</executecount>\n");
+					sb.append("      <aqet>0.0</aqet>\n");
 					sb.append("    </query>\n");
 				}
 			}
@@ -271,19 +371,27 @@ public class TestDriver {
 						"SPARQL-Endpoint: The URL of the HTTP SPARQL Endpoint\n\n" +
 						"Possible options are:\n" +
 						"\t-runs <number of query mix runs>\n" +
-						"\t\tdefault: " + totalRuns + "\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.nrRuns + "\n" +
 						"\t-idir <data input directory>\n" +
 						"\t\tThe input directory for the Test Driver data\n" +
-						"\t\tdefault: " + resourceDir + "\n" +
-//						"\t-qdir <query directory>\n" +
-//						"\t\tThe directory containing the query data\n" +
-//						"\t\tdefault: " + queryDir.getName() + "\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.resourceDir + "\n" +
+						"\t-qdir <query directory>\n" +
+						"\t\tThe directory containing the query data\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.queryDir.getName() + "\n" +
 						"\t-w <number of warm up runs before actual measuring>\n" +
-						"\t\tdefault: " + warmups + "\n"+
+						"\t\tdefault: " + TestDriverDefaultValues.warmups + "\n"+
 						"\t-o <benchmark results output file>\n" +
-						"\t\tdefault: " + xmlResultFile + "\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.xmlResultFile + "\n" +
 						"\t-dg <Default Graph>\n" +
-						"\t\tdefault: null\n";
+						"\t\tdefault: " + TestDriverDefaultValues.defaultGraph + "\n" +
+						"\t-sql\n" +
+						"\t\tuse JDBC connection to a RDB, default: not set\n" +
+						"\t-mt <Number of clients>\n" +
+						"\t\tRun multiple clients concurrently.\n" +
+						"\t\tdefault: not set\n" +
+						"\t-seed <Long Integer>\n" +
+						"\t\tInit the Test Driver with another seed than the default.\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n";
 		
 		System.out.print(output);
 	}
@@ -293,6 +401,9 @@ public class TestDriver {
 		TestDriver testDriver = new TestDriver(argv);
 		testDriver.init();
 		System.out.println("\nStarting test...\n");
+		if(testDriver.multithreading)
+			testDriver.runMT();
+		else
 		testDriver.run();
 		System.out.println("\n" + testDriver.printResults(true));
 	}
