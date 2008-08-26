@@ -277,7 +277,9 @@ sparp_jso_push_deleted (sparp_t *sparp, ccaddr_t class_iri, ccaddr_t inst_iri)
 void 
 ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
 {
-  comp_context_t *cc;
+  comp_context_t *cc = ssg->ssg_sc->sc_cc;
+  if (NULL == cc)
+    return;
   if (NULL == jso_name)
      {
       jso_rtti_t *jso_rtti = gethash (jso_inst, jso_rttis_of_names);
@@ -285,12 +287,8 @@ ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
         return; /* Built-in anonymous JSO, like one used when define input:storage "" */
       jso_name = jso_rtti->jrtti_inst_iri;
      }
-  cc = ssg->ssg_sc->sc_cc;
-  if (NULL != cc)
-    {
       box_dv_uname_make_immortal ((caddr_t)jso_name);
       qr_uses_jso (cc->cc_super_cc->cc_query, jso_name);
-    }
 }
 
 void
@@ -4415,6 +4413,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
               ssg_print_valmoded_scalar_expn (ssg, (SPART *)t_NEW_DB_NULL, needed, SSG_VALMODE_SQLVAL, asname);
               return 1;
             }
+          if (flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)
+            rv->_.retval.optional_makes_nullable = 1;
           ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
           return 1;
         }
@@ -4435,6 +4435,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           native = sparp_equiv_native_valmode (ssg->ssg_sparp, gp, eq);
         if ((native == needed) || (SSG_VALMODE_AUTO == needed))
           name_as_expn = rv->_.retval.vname;
+        if (flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)
+          rv->_.retval.optional_makes_nullable = 1;
         ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
         return 1;
       }
