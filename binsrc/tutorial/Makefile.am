@@ -44,6 +44,7 @@ EXTRA_DIST= \
 	*.css \
 	*.html \
 	*.js \
+	*.owl \
 	*.sql \
 	*.vsp \
 	*.xml \
