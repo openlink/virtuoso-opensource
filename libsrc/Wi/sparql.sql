@@ -4964,8 +4964,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
       result ('00000', 'Built-in metadata were reloaded');
       if (fix_bugs > 1)
         {
-          for (sparql
-            define input:storage ""
+          for (sparql define input:storage ""
             prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:array-of-QuadMap } ) do
@@ -4973,8 +4972,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
               if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 1) is null)
                 result ('00000', 'Quad map array <' || "s" || '> is not used, removed');
             }
-          for (sparql
-            define input:storage ""
+          for (sparql define input:storage ""
             prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:QuadMap } ) do
@@ -4982,8 +4980,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
               if (DB.DBA.RDF_QM_GC_MAPPING_SUBTREE ("s", 1) is null)
                 result ('00000', 'Quad map <' || "s" || '> is not used, removed');
             }
-          for (sparql
-            define input:storage ""
+          for (sparql define input:storage ""
             prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:array-of-QuadMapFormat } ) do
@@ -4991,8 +4988,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
               if (DB.DBA.RDF_QM_GC_SUBTREE ("s", 1) is null)
                 result ('00000', 'Quad map format array <' || "s" || '> is not used, removed');
             }
-          for (sparql
-            define input:storage ""
+          for (sparql define input:storage ""
             prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
             select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:QuadMapFormat } ) do
@@ -5012,7 +5008,8 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
       result ('00000', 'List <' || id_to_iri("lst") || '> contains IRI <' || id_to_iri("itm") || '> that has no type');
       if (fix_bugs)
         {
-          sparql delete from graph ?:graphiri_id { ?:"lst" ?:"p" ?:"itm" };
+          sparql define input:storage ""
+          delete from graph ?:graphiri_id { ?:"lst" ?:"p" ?:"itm" };
         }
     }
   vectorbld_init (all_lists);
@@ -6301,7 +6298,8 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         signal ('22023', 'Only default literal class can have DATATYPE clause in the mapping, <' || fmtid || '> can not');
       if (o_lang is not null)
         signal ('22023', 'Only default literal class can have LANG clause in the mapping, <' || fmtid || '> can not');
-      fmtcolcount := ((sparql select ?cc from <http://www.openlinksw.com/schemas/virtrdf#>
+      fmtcolcount := ((sparql define input:storage ""
+          select ?cc from <http://www.openlinksw.com/schemas/virtrdf#>
           where { `iri(?:fmtid)` virtrdf:qmfColumnCount ?cc } ) );
       if (fmtcolcount <> colcount)
         signal ('22023', 'Number of columns of quad map value does not match number of arguments of format <' || fmtid || '>');
