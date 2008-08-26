@@ -33,6 +33,8 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.svg\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.od[ts]\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://digg.com/.*)|(http://services.digg.com/.*)'
+	where RM_PATTERN = '(http://digg.com/search.*)' and RM_TYPE = 'URL';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
@@ -84,7 +86,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://digg.com/search.*)',
+    values ('(http://digg.com/.*)|(http://services.digg.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_DIGG', null, 'Digg');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -1317,12 +1319,17 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
 
 create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, section_name, search, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare xd, section_name, search, xt, url, tmp, story_url, appkey any;
+  story_url := '';
+  appkey := 'http://www.openlinksw.com/virtuoso';
   declare exit handler for sqlstate '*'
     {
       --dbg_printf ('%s', __SQL_MESSAGE);
+--      dbg_printf ('%s', xd);
       return 0;
     };
+  if (new_origin_uri like 'http://digg.com/search?%')
+    {
   tmp := sprintf_inverse (new_origin_uri, 'http://digg.com/search?section=%s&s=%s', 0);
   section_name := tmp[0];
   search := tmp[1];
@@ -1331,12 +1338,57 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
   url := sprintf('http://digg.com/rss_search?search=%s&area=promoted&type=both&section=%s', search, section_name);
   tmp := http_get (url);
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd,
+      	vector ('baseUri', coalesce (dest, graph_iri), 'isDiscussion', '1'));
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
   --DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri), '1');
   return 1;
+}
+  else if (new_origin_uri like 'http://digg.com/%')
+    {
+      declare ext_url, gr, id, comm varchar;
+      gr := coalesce (dest, graph_iri);
+      whenever not found goto ret;
+      select "o" into ext_url from (sparql prefix dc: <http://purl.org/dc/elements/1.1/>
+  	select ?o where { graph ?:gr { ?s dc:source ?o } } ) sp;
+      url := sprintf ('http://services.digg.com/stories?link=%U&appkey=%U', ext_url, appkey);
+      tmp := http_client (url);
+      xd := xtree_doc (tmp);
+      id := cast (xpath_eval ('string (/stories/story/@id)', xd) as varchar);
+      comm := cast (xpath_eval ('string (/stories/story/@comments)', xd) as varchar);
+      story_url := cast (xpath_eval ('string (/stories/story/@href)', xd) as varchar);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/digg2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+      xd := serialize_to_UTF8_xml (xt);
+      delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      url := sprintf ('http://services.digg.com/story/%s/comments?count=%s&appkey=%U', id, comm, appkey);
+      --dbg_obj_print ('source: ', url);
+      tmp := http_client (url);
+      goto diggsvc;
+    }
+  else -- http://services.digg.com
+    {
+      if (new_origin_uri like 'http://services.digg.com/story/%/%') -- if it is a comment
+	{
+	  tmp := sprintf_inverse (new_origin_uri, 'http://services.digg.com/story/%s/%s', 0);
+	  url := sprintf ('http://services.digg.com/story/%s?appkey=%U', tmp[0], appkey);
+	  tmp := http_client (url);
+	  xd := xtree_doc (tmp);
+	  story_url := cast (xpath_eval ('string (/stories/story/@href)', xd) as varchar);
+	}
+      tmp := _ret_body;
+      diggsvc:
+      xd := xtree_doc (tmp);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/digg2rdf.xsl', xd,
+      		vector ('baseUri', coalesce (dest, graph_iri), 'storyUrl', story_url));
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      return 1;
+    }
+ret:
+  return 0;
 }
 ;
 
@@ -2554,7 +2606,7 @@ no_xml:;
 ;
 
 -- /* convert the feed in rss 1.0 format to sioc */
-create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in graph_iri varchar)
+create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in graph_iri varchar, in is_disc int := '')
 {
   declare xt, xd any;
   declare exit handler for sqlstate '*'
@@ -2562,7 +2614,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
       goto no_sioc;
     };
   xt := xtree_doc (content);
-  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri));
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri, 'isDiscussion', is_disc));
   xd := serialize_to_UTF8_xml (xd);
 --  string_to_file ('feed2.rdf', xd, -2);
   DB.DBA.RDF_LOAD_RDFXML (xd, iri, graph_iri);
