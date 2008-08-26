@@ -89,7 +89,7 @@ run-tests:
 endif
 
 clean-local:
-	-rm -rf out.driver testsuite/*.class
+	-rm -rf out.driver
 
 
 # ----------------------------------------------------------------------
