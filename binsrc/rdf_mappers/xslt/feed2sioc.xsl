@@ -33,26 +33,30 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dct "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
+<!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="&rdf;"
+  xmlns:rdfs="&rdfs;"
   xmlns:dc="&dc;"
   xmlns:dct="&dct;"
   xmlns:content="&content;"
   xmlns:sioc="&sioc;"
   xmlns:r="&rss;"
   xmlns:foaf="&foaf;"
-  xmlns:atom="&atomowl;"
+  xmlns:atom="&atom;"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+  xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+  xmlns:digg="http://digg.com/docs/diggrss/"
   version="1.0">
 
 <xsl:output indent="yes" />
 
 <xsl:param name="base" />
+<xsl:param name="isDiscussion" />
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -65,12 +69,20 @@
 </xsl:template>
 
 <xsl:template match="r:channel">
-    <atom:Feed rdf:about="{$base}">
+    <rdf:Description rdf:about="{$base}">
+	<xsl:choose>
+	    <xsl:when test="$isDiscussion = '1'">
+		<rdf:type rdf:resource="&sioct;MessageBoard"/>
+	    </xsl:when>
+	    <xsl:otherwise>
+		<rdf:type rdf:resource="&atom;Feed"/>
+	    </xsl:otherwise>
+	</xsl:choose>
 	<sioc:link rdf:resource="{@rdf:about}"/>
 	<xsl:apply-templates />
 	<xsl:copy-of select="geo:*"/>
 	<xsl:copy-of select="openSearch:*"/>
-    </atom:Feed>
+    </rdf:Description>
 </xsl:template>
 
 <xsl:template match="rdf:li">
@@ -90,13 +102,21 @@
 	    <xsl:variable name="pos" select="position()"/>
 	</xsl:if>
     </xsl:for-each>
-    <sioc:Post rdf:about="{$base}#{$pos}">
+    <rdf:Description rdf:about="{$base}#{$pos}">
+	<xsl:choose>
+	    <xsl:when test="$isDiscussion = '1'">
+		<rdf:type rdf:resource="&sioct;BoardPost"/>
+	    </xsl:when>
+	    <xsl:otherwise>
+		<rdf:type rdf:resource="&sioc;Post"/>
+	    </xsl:otherwise>
+	</xsl:choose>
 	<sioc:has_container rdf:resource="{$base}"/>
 	<xsl:apply-templates />
 	<xsl:copy-of select="r:*"/>
 	<xsl:copy-of select="sioc:*"/>
 	<xsl:copy-of select="geo:*"/>
-    </sioc:Post>
+    </rdf:Description>
 </xsl:template>
 
 <xsl:template match="r:title[. != '']">
@@ -109,6 +129,7 @@
 
 <xsl:template match="r:link">
     <sioc:link rdf:resource="{string(.)}"/>
+    <rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}"/>
 </xsl:template>
 
 <xsl:template match="dc:date">
