@@ -205,7 +205,7 @@ public class Generator {
 		
 		branchingFactors[0] = 2 * Math.round(logSF);
 		
-		int[] temp = {2,4,8};
+		int[] temp = { 2, 4, 8};
 		for(int i=1;i<depth;i++)
 		{
 			if(i+1 < depth)

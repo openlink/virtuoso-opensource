@@ -10,5 +10,5 @@ public interface ServerConnection {
 	public void executeQuery(CompiledQuery query, CompiledQueryMix queryMix);
 	
 	public void close();
-		}
+}
 
