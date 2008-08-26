@@ -1,4 +1,4 @@
-August 21, 2008, V5.0.8:
+August 26, 2008, V5.0.8:
   * Database engine
     - Added optimizations to SQL compiler
     - Added re-entrant SQL compiler
@@ -12,7 +12,7 @@ August 21, 2008, V5.0.8:
     - Added SPARQL-BI extensions
     - Added support for TriG format
     - Added support for 'define input:param" and "define input:param-valmode"
-    - Added FriendFeed, OpenLibrary Books, CrunchBase cartridges
+    - Added Digg, FriendFeed, OpenLibrary Books, CrunchBase cartridges
     - Added search results feed
     - Added support for bibo:document, foaf:document and sioc:container
     - Added #this to proxy IRIs
