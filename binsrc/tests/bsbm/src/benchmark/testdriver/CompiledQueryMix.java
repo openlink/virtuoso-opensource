@@ -12,6 +12,7 @@ public class CompiledQueryMix {
 	private int[] minResults;
 	private int[] maxResults;
 	private int[] runsPerQuery;//Runs Per Query
+	private int[] timeoutsPerQuery;
 	private int run;//run: negative values are warm up runs
 	
 	private int currentQueryIndex;//Index of current query for queryMix
@@ -62,6 +63,7 @@ public class CompiledQueryMix {
 		maxResults = new int[queryNr];
 		
 		runsPerQuery = new int[queryNr];
+		timeoutsPerQuery = new int[queryNr];
 		
 		currentQueryIndex = 0;
 		queryMixRuns = 0;
@@ -120,6 +122,11 @@ public class CompiledQueryMix {
 	
 	public Boolean hasNext() {
 		return currentQueryIndex < queryMix.length;
+	}
+	
+	public void reportTimeOut() {
+		int queryNr = queryMix[currentQueryIndex].getNr()-1;
+		timeoutsPerQuery[queryNr]++;
 	}
 	
 	/*
@@ -231,5 +238,9 @@ public class CompiledQueryMix {
 
 	public double[] getAqetg() {
 		return aqetg;
+	}
+
+	public int[] getTimeoutsPerQuery() {
+		return timeoutsPerQuery;
 	}
 }

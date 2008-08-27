@@ -935,7 +935,7 @@ public class Generator {
 						"\t\tdefault: td_data\n" +
 						"\t-fn <dataset file name>\n" +
 						"\t\tThe file name without the output format suffix\n" +
-						"\t\tdefault: dataset";
+						"\t\tdefault: dataset\n";
 		System.out.print(output);
 	}
 	/**

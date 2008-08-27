@@ -17,18 +17,18 @@ import java.util.StringTokenizer;
 public class TestDriver {
 	protected QueryMix queryMix;//The Benchmark Querymix
 	protected int warmups = TestDriverDefaultValues.warmups;//how many Query mixes are run for warm up
-	protected AbstractParameterPool parameterPool;
-	private ServerConnection server;
+	protected AbstractParameterPool parameterPool;//Where to get the query parameters from
+	private ServerConnection server;//only important for single threaded runs
 	private String queryMixFN = null;//"qm.txt";
-	private File queryDir = TestDriverDefaultValues.queryDir;
+	private File queryDir = TestDriverDefaultValues.queryDir;//where to take the queries from
 	protected int nrRuns = TestDriverDefaultValues.nrRuns;
-	private long seed = TestDriverDefaultValues.seed;
+	private long seed = TestDriverDefaultValues.seed;//For the random number generators
 	protected String sparqlEndpoint = null;
 	protected String defaultGraph = TestDriverDefaultValues.defaultGraph;
-	private String resourceDir = TestDriverDefaultValues.resourceDir;
+	private String resourceDir = TestDriverDefaultValues.resourceDir;//Where to take the Test Driver data from
 	private String xmlResultFile = TestDriverDefaultValues.xmlResultFile;
 	private static Logger logger = Logger.getLogger( TestDriver.class );
-	protected boolean[] ignoreQueries;
+	protected boolean[] ignoreQueries;//Queries to ignore
 	protected boolean doSQL = false;
 	private boolean multithreading=false;
 	protected int nrThreads;
@@ -240,6 +240,7 @@ public class TestDriver {
 	 */
 	public String printResults(boolean all) {
 		StringBuffer sb = new StringBuffer(100);
+		double singleMultiRatio = 0.0;
 		
 		sb.append("Scale factor: " + parameterPool.getScalefactor() + "\n");
 		sb.append("Number of warmup runs: " + warmups + "\n");
@@ -252,6 +253,7 @@ public class TestDriver {
 		if(multithreading) {
 			sb.append("Total runtime (sum): " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
 			sb.append("Total actual runtime: " + String.format(Locale.US, "%.3f",queryMix.getMultiThreadRuntime()) + " seconds\n");
+			singleMultiRatio = queryMix.getTotalRuntime()/queryMix.getMultiThreadRuntime();
 		}
 		else
 		sb.append("Total runtime: " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
@@ -271,6 +273,7 @@ public class TestDriver {
 			double[] qavga = queryMix.getAqet();//Arithmetic mean
 			double[] avgResults = queryMix.getAvgResults();
 			double[] qavgg = queryMix.getGeoMean();
+			int[] qTimeout = queryMix.getTimeoutsPerQuery();
 			int[] minResults = queryMix.getMinResults();
 			int[] maxResults = queryMix.getMaxResults();
 			int[] nrq = queryMix.getRunsPerQuery();
@@ -280,11 +283,15 @@ public class TestDriver {
 					sb.append("Count: " + nrq[i] + " times executed in whole run\n");
 					sb.append("AQET: " + String.format(Locale.US, "%.6f",qavga[i]) + " seconds (arithmetic mean)\n");
 					sb.append("AQET(geom.): " + String.format(Locale.US, "%.6f",qavgg[i]) + " seconds (geometric mean)\n");
+					if(multithreading)
+						sb.append("QPS: " + String.format(Locale.US, "%.2f",singleMultiRatio/qavga[i]) + " Queries per second\n");
+					else
 					sb.append("QPS: " + String.format(Locale.US, "%.2f",1/qavga[i]) + " Queries per second\n");
 					sb.append("minQET/maxQET: " + String.format(Locale.US, "%.8fs",qmin[i]) + " / " + 
 							String.format(Locale.US, "%.8fs",qmax[i]) + "\n");
 					sb.append("Average result count: " + String.format(Locale.US, "%.2f",avgResults[i]) + "\n");
-					sb.append("min/max result count: " + minResults[i] + " / " + maxResults[i] + "\n\n");
+					sb.append("min/max result count: " + minResults[i] + " / " + maxResults[i] + "\n");
+					sb.append("Number of timeouts: " + qTimeout[i] + "\n\n");
 				}
 			}
 		}
@@ -297,6 +304,8 @@ public class TestDriver {
 	 */
 	public String printXMLResults(boolean all) {
 		StringBuffer sb = new StringBuffer(100);
+		double singleMultiRatio = 0.0;
+		
 		sb.append("<?xml version=\"1.0\"?>");
 		sb.append("<bsbm>\n");
 		sb.append("  <querymix>\n");
@@ -313,6 +322,7 @@ public class TestDriver {
 		if(multithreading) {
 			sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
 			sb.append("     <actualtotalruntime>" + String.format(Locale.US, "%.3f",queryMix.getMultiThreadRuntime()) + "</actualtotalruntime>\n");
+			singleMultiRatio = queryMix.getTotalRuntime()/queryMix.getMultiThreadRuntime();
 		}
 		else
 		sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
@@ -333,6 +343,7 @@ public class TestDriver {
 			double[] qavga = queryMix.getAqet();
 			double[] avgResults = queryMix.getAvgResults();
 			double[] qavgg = queryMix.getGeoMean();
+			int[] qTimeout = queryMix.getTimeoutsPerQuery();
 			int[] minResults = queryMix.getMinResults();
 			int[] maxResults = queryMix.getMaxResults();
 			int[] nrq = queryMix.getRunsPerQuery();
@@ -342,12 +353,13 @@ public class TestDriver {
 					sb.append("      <executecount>" + nrq[i] + "</executecount>\n");
 					sb.append("      <aqet>" + String.format(Locale.US, "%.6f",qavga[i]) + "</aqet>\n");
 					sb.append("      <aqetg>" + String.format(Locale.US, "%.6f",qavgg[i]) + "</aqetg>\n");
-					sb.append("      <qps>" + String.format(Locale.US, "%.2f",1/qavga[i]) + "</qps>\n");
+					sb.append("      <qps>" + String.format(Locale.US, "%.2f",singleMultiRatio/qavga[i]) + "</qps>\n");
 					sb.append("      <minqet>" + String.format(Locale.US, "%.8f",qmin[i]) + "</minqet>\n");
 					sb.append("      <maxqet>" + String.format(Locale.US, "%.8f",qmax[i]) + "</maxqet>\n");
 					sb.append("      <avgresults>" + String.format(Locale.US, "%.2f",avgResults[i]) + "</avgresults>\n");
 					sb.append("      <minresults>" + minResults[i] + "</minresults>\n");
 					sb.append("      <maxresults>" + maxResults[i] + "</maxresults>\n");
+					sb.append("      <timeoutcount>" + qTimeout[i] + "</timeoutcount>\n");
 					sb.append("    </query>\n");
 				}
 				else {

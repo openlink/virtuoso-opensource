@@ -75,6 +75,7 @@ public class ClientThread extends Thread {
 				}
 				System.out.println("Thread " + nr + ": query mix " + queryMix.getRun() + ": " + String.format(Locale.US, "%.2f", queryMix.getQueryMixRuntime()*1000)
 						+ "ms, total: " + String.format(Locale.US, "%.2f",(System.nanoTime()-startTime)/(double)1000000) + "ms");
+				
 				queryMix.finishRun();
 			}
 		}

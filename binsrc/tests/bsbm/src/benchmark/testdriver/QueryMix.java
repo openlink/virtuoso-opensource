@@ -12,6 +12,7 @@ public class QueryMix {
 	private int[] minResults;
 	private int[] maxResults;
 	private int[] runsPerQuery;//Runs Per Query
+	private int[] timeoutsPerQuery;
 	private int run;//run: negative values are warm up runs
 	
 	private int currentQueryIndex;//Index of current query for queryMix
@@ -62,6 +63,7 @@ public class QueryMix {
 		maxResults = new int[queries.length];
 		
 		runsPerQuery = new int[queries.length];
+		timeoutsPerQuery = new int[queries.length];
 		
 		currentQueryIndex = 0;
 		queryMixRuns = 0;
@@ -97,6 +99,7 @@ public class QueryMix {
 		double[] cQmax = cqMix.getQmax();
 		int[] cMinResults = cqMix.getMinResults();
 		int[] cMaxResults = cqMix.getMaxResults();
+		int[] cTimeouts = cqMix.getTimeoutsPerQuery();
 		double cTotalRuntime = cqMix.getTotalRuntime();
 		double cMinQueryMixRuntime = cqMix.getMinQueryMixRuntime();
 		double cMaxQueryMixRuntime = cqMix.getMaxQueryMixRuntime();
@@ -110,6 +113,7 @@ public class QueryMix {
 				aqet[i] = (aqet[i]*runsPerQuery[i] + cAqet[i]*cNrRuns)/(runsPerQuery[i]+cNrRuns);
 				aqetg[i] += cAqetg[i];
 				avgResults[i] = (avgResults[i]*runsPerQuery[i] + cAvgResults[i]*cNrRuns)/(runsPerQuery[i]+cNrRuns);
+				timeoutsPerQuery[i] += cTimeouts[i];
 				
 				if(cQmin[i] < qmin[i])
 					qmin[i] = cQmin[i];
@@ -164,6 +168,11 @@ public class QueryMix {
 		
 		//Reset queryMixRuntime
 		queryMixRuntime = 0;
+	}
+	
+	public void reportTimeOut() {
+		int queryNr = queryMix[currentQueryIndex];
+		timeoutsPerQuery[queryNr]++;
 	}
 	
 	public Query getNext() {
@@ -290,5 +299,9 @@ public class QueryMix {
 
 	public double getQueryMixGeoMean() {
 		return Math.pow(10, (queryMixGeoMean/queryMixRuns));
+	}
+
+	public int[] getTimeoutsPerQuery() {
+		return timeoutsPerQuery;
 	}
 }

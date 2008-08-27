@@ -84,7 +84,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertProductType(ProductType pType) throws IOException
 	{
-		StringBuffer values = getBuffer(tables.productTypeInsertCounter++, "ProductType");
+		StringBuffer values = getBuffer(tables.productTypeInsertCounter++, "producttype");
 		values.append("(");
 		//nr
 		values.append(pType.getNr());
@@ -133,7 +133,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertOffer(Offer offer) throws IOException
 	{
-		  	StringBuffer values = getBuffer(tables.offerInsertCounter++, "Offer");
+		  	StringBuffer values = getBuffer(tables.offerInsertCounter++, "offer");
 		  	values.append("(");
 		  
 //		  	nr
@@ -201,7 +201,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertProduct(Product product)throws IOException
 	{
-		StringBuffer values = getBuffer(tables.productInsertCounter++, "Product");
+		StringBuffer values = getBuffer(tables.productInsertCounter++, "product");
 		
 		values.append("(");
 		
@@ -227,7 +227,7 @@ public class SQLSerializer implements Serializer {
 		if(forwardChaining) {
 			ProductType pt = product.getProductType();
 			while(pt!=null) {
-				StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "ProductTypeProduct");
+				StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "producttypeproduct");
 				
 				valuesPTP.append("(" + product.getNr() + ",");
 				valuesPTP.append(new Integer(pt.getNr()).toString());
@@ -243,7 +243,7 @@ public class SQLSerializer implements Serializer {
 			}
 		}
 		else {
-			StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "ProductTypeProduct");
+			StringBuffer valuesPTP = getBuffer(tables.productTypeProductInsertCounter++, "producttypeproduct");
 			
 			valuesPTP.append("(" + product.getNr() + ",");
 			valuesPTP.append(new Integer(product.getProductType().getNr()).toString());
@@ -283,7 +283,7 @@ public class SQLSerializer implements Serializer {
 		Iterator<Integer> pf = product.getFeatures().iterator();
 		while(pf.hasNext())
 		{
-			StringBuffer valuesPFP = getBuffer(tables.productFeatureProductInsertCounter++, "ProductFeatureProduct");
+			StringBuffer valuesPFP = getBuffer(tables.productFeatureProductInsertCounter++, "productfeatureproduct");
 			valuesPFP.append("(");
 			Integer value = pf.next();
 
@@ -322,7 +322,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertPerson(Person person)throws IOException
 	{
-		StringBuffer values = getBuffer(tables.personInsertCounter++, "Person");
+		StringBuffer values = getBuffer(tables.personInsertCounter++, "person");
 		values.append("(");
 	
 		//nr
@@ -367,7 +367,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertProducer(Producer producer) throws IOException
 	{
-		StringBuffer values = getBuffer(tables.producerInsertCounter++, "Producer");
+		StringBuffer values = getBuffer(tables.producerInsertCounter++, "producer");
 		values.append("(");
 	
 		//nr
@@ -417,7 +417,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertProductFeature(ProductFeature pf) throws IOException
 	{
-		StringBuffer values = getBuffer(tables.productFeatureInsertCounter++, "ProductFeature");
+		StringBuffer values = getBuffer(tables.productFeatureInsertCounter++, "productfeature");
 		values.append("(");
 	
 		//nr
@@ -459,7 +459,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertVendor(Vendor vendor) throws IOException
 	{
-		StringBuffer values = getBuffer(tables.vendorInsertCounter++, "Vendor");
+		StringBuffer values = getBuffer(tables.vendorInsertCounter++, "vendor");
 		values.append("(");
 	
 		//nr
@@ -510,7 +510,7 @@ public class SQLSerializer implements Serializer {
 	 */
 	private void convertReview(Review review) throws IOException
 	{
-		StringBuffer values = getBuffer(tables.reviewInsertCounter++, "Review");
+		StringBuffer values = getBuffer(tables.reviewInsertCounter++, "review");
 		values.append("(");
 	
 		//nr
@@ -579,43 +579,43 @@ public class SQLSerializer implements Serializer {
 	public void serialize() {
 		//Finish files and close
 		try {
-			tables.productTypeDump.append(tables.endTable(tables.productTypeInsertCounter, "ProductType"));
+			tables.productTypeDump.append(tables.endTable(tables.productTypeInsertCounter, "producttype"));
 			tables.productTypeDump.flush();
 			tables.productTypeDump.close();
 			
-			tables.productFeatureDump.append(tables.endTable(tables.productFeatureInsertCounter, "ProductFeature"));
+			tables.productFeatureDump.append(tables.endTable(tables.productFeatureInsertCounter, "productfeature"));
 			tables.productFeatureDump.flush();
 			tables.productFeatureDump.close();
 			
-			tables.producerDump.append(tables.endTable(tables.producerInsertCounter, "Producer"));
+			tables.producerDump.append(tables.endTable(tables.producerInsertCounter, "producer"));
 			tables.producerDump.flush();
 			tables.producerDump.close();
 			
-			tables.productDump.append(tables.endTable(tables.productInsertCounter, "Product"));
+			tables.productDump.append(tables.endTable(tables.productInsertCounter, "product"));
 			tables.productDump.flush();
 			tables.productDump.close();
 			
-			tables.productTypeProductDump.append(tables.endTable(tables.productTypeProductInsertCounter, "ProductTypeProduct"));
+			tables.productTypeProductDump.append(tables.endTable(tables.productTypeProductInsertCounter, "producttypeproduct"));
 			tables.productTypeProductDump.flush();
 			tables.productTypeProductDump.close();
 			
-			tables.productFeatureProductDump.append(tables.endTable(tables.productFeatureProductInsertCounter, "ProductFeatureProduct"));
+			tables.productFeatureProductDump.append(tables.endTable(tables.productFeatureProductInsertCounter, "productfeatureproduct"));
 			tables.productFeatureProductDump.flush();
 			tables.productFeatureProductDump.close();
 			
-			tables.vendorDump.append(tables.endTable(tables.vendorInsertCounter, "Vendor"));
+			tables.vendorDump.append(tables.endTable(tables.vendorInsertCounter, "vendor"));
 			tables.vendorDump.flush();
 			tables.vendorDump.close();
 			
-			tables.offerDump.append(tables.endTable(tables.offerInsertCounter, "Offer"));
+			tables.offerDump.append(tables.endTable(tables.offerInsertCounter, "offer"));
 			tables.offerDump.flush();
 			tables.offerDump.close();
 			
-			tables.personDump.append(tables.endTable(tables.personInsertCounter, "Person"));
+			tables.personDump.append(tables.endTable(tables.personInsertCounter, "person"));
 			tables.personDump.flush();
 			tables.personDump.close();
 			
-			tables.reviewDump.append(tables.endTable(tables.reviewInsertCounter, "Review"));
+			tables.reviewDump.append(tables.endTable(tables.reviewInsertCounter, "review"));
 			tables.reviewDump.flush();
 			tables.reviewDump.close();
 			
@@ -687,7 +687,7 @@ public class SQLSerializer implements Serializer {
 						"  `publisher` int(11),\n" +
 						"  `publishDate` date\n";
 			
-			return createTable(database, "ProductType", tableDefinition);
+			return createTable(database, "producttype", tableDefinition);
 		}
 		
 		private String initProductFeature() {
@@ -697,7 +697,7 @@ public class SQLSerializer implements Serializer {
 						"  `publisher` int(11),\n" +
 						"  `publishDate` date\n";
 			
-			return createTable(database, "ProductFeature", tableDefinition);
+			return createTable(database, "productfeature", tableDefinition);
 		}
 		
 		private String initProducer() {
@@ -709,7 +709,7 @@ public class SQLSerializer implements Serializer {
 						"  `publisher` int(11),\n" +
 						"  `publishDate` date\n";
 			
-			return createTable(database, "Producer", tableDefinition);
+			return createTable(database, "producer", tableDefinition);
 		}
 		
 		private String initProduct() {
@@ -733,7 +733,7 @@ public class SQLSerializer implements Serializer {
 						"  `publishDate` date default NULL,\n" +
 						"  INDEX USING BTREE (producer)\n";
 			
-			return createTable(database, "Product", tableDefinition);
+			return createTable(database, "product", tableDefinition);
 		}
 		
 		private String initProductTypeProduct() {
@@ -742,7 +742,7 @@ public class SQLSerializer implements Serializer {
 									 "  PRIMARY KEY (product, productType)\n";
 									 
 						
-			return createTable(database, "ProductTypeProduct", tableDefinition);
+			return createTable(database, "producttypeproduct", tableDefinition);
 		}
 		
 		private String initProductFeatureProduct() {
@@ -751,7 +751,7 @@ public class SQLSerializer implements Serializer {
 									 "  PRIMARY KEY (product, productFeature)\n";
 									 
 						
-			return createTable(database, "ProductFeatureProduct", tableDefinition);
+			return createTable(database, "productfeatureproduct", tableDefinition);
 		}
 		
 		private String initVendor() {
@@ -763,7 +763,7 @@ public class SQLSerializer implements Serializer {
 						"  `publisher` int(11),\n" +
 						"  `publishDate` date\n";
 			
-			return createTable(database, "Vendor", tableDefinition);
+			return createTable(database, "vendor", tableDefinition);
 		}
 		
 		private String initOffer() {
@@ -781,7 +781,7 @@ public class SQLSerializer implements Serializer {
 						"  INDEX USING BTREE (product),\n" +
 						"  INDEX USING BTREE (vendor)\n";
 			
-			return createTable(database, "Offer", tableDefinition);
+			return createTable(database, "offer", tableDefinition);
 		}
 		
 		private String initPerson() {
@@ -792,7 +792,7 @@ public class SQLSerializer implements Serializer {
 						"  `publisher` int(11),\n" +
 						"  `publishDate` date\n";
 			
-			return createTable(database, "Person", tableDefinition);
+			return createTable(database, "person", tableDefinition);
 		}
 		
 		private String initReview() {
@@ -813,7 +813,7 @@ public class SQLSerializer implements Serializer {
 						"  INDEX USING BTREE (product),\n"+
 						"  INDEX USING BTREE (person)\n"; 
 			
-			return createTable(database, "Review", tableDefinition);
+			return createTable(database, "review", tableDefinition);
 		}
 		
 		

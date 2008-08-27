@@ -69,7 +69,8 @@ public class SPARQLConnection implements ServerConnection{
 
 		if(is==null) {//then Timeout!
 			System.out.println("Query " + queryNr + ": 45 seconds timeout!");
-			queryMix.setCurrent(0, 45.0);
+			queryMix.reportTimeOut();//inc. timeout counter
+			queryMix.setCurrent(0, 60.0);
 			qe.close();
 			return;
 		}
@@ -124,6 +125,8 @@ private int countBytes(InputStream is) {
 		//Log results
 		if(queryType==Query.DESCRIBE_TYPE)
 			sb.append("\tQuery(Describe) result (" + resultCount + " Bytes): \n\n");
+		else if(queryType==Query.CONSTRUCT_TYPE)
+			sb.append("\tQuery(Construct) result (" + resultCount + " Bytes): \n\n");
 		else
 			sb.append("\tQuery results (" + resultCount + " results): \n\n");
 		

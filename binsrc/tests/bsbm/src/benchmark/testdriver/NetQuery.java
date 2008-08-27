@@ -13,6 +13,7 @@ public class NetQuery {
 	protected NetQuery(String serviceURL, String query, byte queryType, String defaultGraph) {
 		try {
 			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8");
+//			System.out.println(urlString);
 
 			if(defaultGraph!=null)
 				urlString +=  "&default-graph-uri=" + defaultGraph;
@@ -22,7 +23,7 @@ public class NetQuery {
 			conn.setDefaultUseCaches(false);
 			conn.setDoOutput(true);
 			conn.setUseCaches(false);
-			conn.setReadTimeout(45000);
+			conn.setReadTimeout(60000);
 			if(queryType==Query.DESCRIBE_TYPE || queryType==Query.CONSTRUCT_TYPE)
 				conn.setRequestProperty("Accept", "application/rdf+xml");
 			else
@@ -67,6 +68,7 @@ public class NetQuery {
 	protected double getExecutionTimeInSeconds() {
 		end = System.nanoTime();
 		Long interval = end-start;
+		Thread.yield();
 		return interval.doubleValue()/1000000000;
 	}
 	

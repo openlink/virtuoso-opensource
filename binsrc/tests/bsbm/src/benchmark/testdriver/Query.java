@@ -110,6 +110,7 @@ public class Query {
 
 		Integer index = 0;//Array index for ParameterTypes
 		
+		//Read Query Description
 		while(paramTokenizer.hasMoreTokens()) {
 			String line = paramTokenizer.nextToken();
 			//Skip uninteresting lines
