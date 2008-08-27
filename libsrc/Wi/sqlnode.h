@@ -44,12 +44,13 @@ typedef void (*qn_input_fn) (data_source_t *, caddr_t *, caddr_t *);
 typedef void (*qn_advance_fn) (data_source_t *);
 typedef void (*qn_free_fn) (data_source_t *);
 
+typedef unsigned short ssl_index_t;
 
 struct data_source_s
   {
     dk_set_t		src_continuations;
-    short			src_in_state;
-    short			src_count;
+    ssl_index_t		src_in_state;
+    ssl_index_t		src_count;
     qn_input_fn		src_input;
     qn_free_fn		src_free;
     code_vec_t		src_pre_code;
@@ -84,13 +85,14 @@ struct data_source_s
 	(ssl && ssl->ssl_name && ssl->ssl_name[0] == ':' && isdigit (ssl->ssl_name[1]))
 
 
+
 typedef struct state_slot_s
   {
     char		ssl_type;
     bitf_t		ssl_is_alias:1;
     bitf_t		ssl_is_observer:1;
     bitf_t		ssl_is_callret:1;
-    unsigned short	ssl_index;
+    ssl_index_t		ssl_index;
     sql_type_t		ssl_sqt;
     caddr_t	ssl_constant;
     char *		ssl_name;
@@ -104,8 +106,6 @@ typedef struct state_slot_s
 #define ssl_class ssl_sqt.sqt_class
 #define ssl_non_null ssl_sqt.sqt_non_null
 
-
-typedef unsigned short ssl_index_t;
 
 typedef struct state_const_slot_s
   {
@@ -412,7 +412,7 @@ typedef struct key_source_s
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
 					   True if fun ref query */
-    short			ks_count;
+    ssl_index_t		ks_count;
     struct text_search_s * ks_text;
     state_slot_t *	ks_proc_set_ctr;
 /*    char 			ks_local_op; */
@@ -524,7 +524,7 @@ typedef struct  in_iter_node_s
 typedef struct hash_source_s
 {
   data_source_t		src_gen;
-  short			hs_current_inx;
+  ssl_index_t		hs_current_inx;
   state_slot_t *	hs_tree;
   state_slot_t **	hs_ref_slots;
   hash_area_t *	hs_ha; /* shared with the filler setp */
