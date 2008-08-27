@@ -3595,6 +3595,36 @@ sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_trip
 }
 
 int
+sparp_bitmask_fields_with_equations (sparp_t *sparp, SPART *triple)
+{
+  quad_map_t *qm = triple->_.triple.tc_list[0]->tc_qm;
+  int fld_ctr;
+  int res = 0;
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+       SPART *fld = triple->_.triple.tr_fields[fld_ctr];
+       sparp_equiv_t *fld_eq;
+       qm_value_t *fld_qmv;
+       long restr;
+       int fld_has_equations;
+       if (!SPAR_IS_BLANK_OR_VAR (fld))
+         {
+           res |= (1 << fld_ctr);
+           continue;
+         }
+       fld_eq = SPARP_EQUIV (sparp, fld->_.var.equiv_idx);
+       fld_qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
+       restr = fld_eq->e_rvr.rvrRestrictions;
+       fld_has_equations = ((1 < fld_eq->e_var_count) ||
+         (restr & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) ||
+         ((restr & SPART_VARR_FIXED) && (NULL != fld_qmv)) );
+       if (fld_has_equations)
+         res |= (1 << fld_ctr);
+    }
+  return res;
+}
+
+int
 sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
 {
   SPART *base = curr->_.gp.members[base_idx];
@@ -3621,11 +3651,19 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
           SPART *base_triple = base_triples[bt_ctr];
           SPART *dep_triple = dep_triples[bt_ctr];
           quad_map_t *base_qm, *dep_qm;
-          int fld_ctr;
+          int fld_ctr, base_bitmask_of_equations, dep_bitmask_of_equations;
           if (dep_triple->_.triple.src_serial != base_triple->_.triple.src_serial)
             goto next_dep; /* see below */
           base_qm = base_triple->_.triple.tc_list[0]->tc_qm;
           dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
+          base_bitmask_of_equations = sparp_bitmask_fields_with_equations (sparp, base_triple);
+          if ((base_bitmask_of_equations & (1 << SPART_TRIPLE_OBJECT_IDX)) &&
+             !(base_bitmask_of_equations & (1 << SPART_TRIPLE_SUBJECT_IDX)) ) /* If chances on good breakup are low but cost of wrong decision may be high... */
+            goto next_dep; /* see below */
+          dep_bitmask_of_equations = sparp_bitmask_fields_with_equations (sparp, dep_triple);
+          if ((dep_bitmask_of_equations & (1 << SPART_TRIPLE_OBJECT_IDX)) &&
+             !(dep_bitmask_of_equations & (1 << SPART_TRIPLE_SUBJECT_IDX)) ) /* If chances on good breakup are low but cost of wrong decision may be high... */
+            goto next_dep; /* see below */
           if (!sparp_expn_lists_are_equal (sparp, base->_.gp.filters, dep->_.gp.filters))
             goto next_dep; /* see below */
           if (!sparp_quad_maps_eq_for_breakup (sparp, base_qm, dep_qm))
@@ -3635,8 +3673,6 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
               SPART *base_fld = base_triple->_.triple.tr_fields[fld_ctr];
               SPART *dep_fld = dep_triple->_.triple.tr_fields[fld_ctr];
               sparp_equiv_t *base_fld_eq, *dep_fld_eq;
-              long base_restr, dep_restr;
-              int fld_has_equations;
               qm_value_t *base_fld_qmv, *dep_fld_qmv;
               if (!SPAR_IS_BLANK_OR_VAR (base_fld))
                 continue;
@@ -3646,18 +3682,16 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
               dep_fld_eq = SPARP_EQUIV (sparp, dep_fld->_.var.equiv_idx);
               base_fld_qmv = SPARP_FIELD_QMV_OF_QM (base_qm, fld_ctr);
               dep_fld_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, fld_ctr);
-              base_restr = base_fld_eq->e_rvr.rvrRestrictions;
-              dep_restr = dep_fld_eq->e_rvr.rvrRestrictions;
-              fld_has_equations = ((1 < base_fld_eq->e_var_count) ||
-                (base_restr & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) ||
-                ((base_restr & SPART_VARR_FIXED) && (NULL != base_fld_qmv)) ||
-                ((dep_restr & SPART_VARR_FIXED) && (NULL != dep_fld_qmv)) );
-              if (!fld_has_equations)
-                continue;
               if (base_fld_qmv != dep_fld_qmv)
                 goto next_dep; /* see below */
+              if (!(base_bitmask_of_equations & (1 << fld_ctr)))
+                continue;
+              if (!(dep_bitmask_of_equations & (1 << fld_ctr)))
+                continue;
               if (NULL == base_fld_qmv)
                 {
+                  long base_restr = base_fld_eq->e_rvr.rvrRestrictions;
+                  long dep_restr = dep_fld_eq->e_rvr.rvrRestrictions;
                   caddr_t base_fld_const = SPARP_FIELD_CONST_OF_QM (base_qm, fld_ctr);
                   caddr_t dep_fld_const = SPARP_FIELD_CONST_OF_QM (dep_qm, fld_ctr);
                   if (((base_restr & SPART_VARR_IS_REF) && (dep_restr & SPART_VARR_IS_LIT)) ||
