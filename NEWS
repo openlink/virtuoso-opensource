@@ -1,4 +1,4 @@
-August 26, 2008, V5.0.8:
+August 27, 2008, V5.0.8:
   * Database engine
     - Added optimizations to SQL compiler
     - Added re-entrant SQL compiler
@@ -8,7 +8,7 @@ August 26, 2008, V5.0.8:
     - Fixed unneeded memory allocations in soap calls
 
   * SPARQL and RDF
-    - Added optimizations for SPARQL engine
+    - Added optimizations to SPARQL engine
     - Added SPARQL-BI extensions
     - Added support for TriG format
     - Added support for 'define input:param" and "define input:param-valmode"
