@@ -292,20 +292,20 @@ create function DB.DBA."RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts a
 --  dbg_obj_print (detcol_id, gr);
   if (top_id[2] is null)
     {
-	vectorbld_acc (res,
-	    	vector (
-		   DAV_CONCAT_PATH (top_davpath, 'All') || '/',
-		   'C',
-		   0,
-		   now (),
-                   vector (UNAME'RDFData', detcol_id, -1),
-                   access,
-		   ownergid,
-		   owner_uid,
-		   now (),
-		   'dav/unix-directory',
-		   'All')
-		 );
+--	vectorbld_acc (res,
+--	    	vector (
+--		   DAV_CONCAT_PATH (top_davpath, 'All') || '/',
+--		   'C',
+--		   0,
+--		   now (),
+--                   vector (UNAME'RDFData', detcol_id, -1),
+--                   access,
+--		   ownergid,
+--		   owner_uid,
+--		   now (),
+--		   'dav/unix-directory',
+--		   'All')
+--		 );
       FOR SELECT CLS FROM (
 		    sparql
 		    select distinct ?CLS
@@ -367,6 +367,7 @@ create function DB.DBA."RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts a
 	{
 	  is_all := 1;
 	  cs := '?cls';
+	  return vector ();
 	}
       else
         cs := sprintf ('<%S>', cs);
