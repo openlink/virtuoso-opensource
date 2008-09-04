@@ -72,26 +72,10 @@ grant execute on DB.DBA.POST_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.COL_IRI to "SPARQL";
 grant execute on DB.DBA.COL_IRI_INVERSE to "SPARQL";
 
-SPARQL
-prefix tutorial: <http://demo.openlinksw.com/schemas/tutorial#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial_view") .
+SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial_view") .
 ;
 
-SPARQL
-prefix tutorial: <http://demo.openlinksw.com/schemas/tutorial#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-drop quad map virtrdf:tutorial .
+SPARQL drop quad map virtrdf:tutorial .
 ;
 
 SPARQL
@@ -154,7 +138,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
                         bibo:author users.U_NAME
                                 where (^{resources.}^.RES_OWNER = ^{users.}^.U_ID)
                                 as virtrdf:tutPost-RES_OWNER ;
-                        tutorial:belongs_to_section tutorial:Section(resources.RES_COL, collections.COL_NAME)
+                        tutorial:belongs_to_section tutorial:Section(collections.COL_ID, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
                                 as virtrdf:tutPost-RES_COL ;
                         sioc:content resources.RES_CONTENT
@@ -169,7 +153,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
                                 as virtrdf:tutPost-RES_FULL_PATH ;
                         rdfs:isDefinedBy tutorial:post_iri (resources.RES_ID) ;
                         rdfs:isDefinedBy tutorial:Post (resources.RES_ID, resources.RES_NAME) ;
-                        rdfs:seeAlso tutorial:Section(resources.RES_COL, collections.COL_NAME)
+                        rdfs:seeAlso tutorial:Section(collections.COL_ID, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
                                 as virtrdf:tutPost-RES_COL2.
 
