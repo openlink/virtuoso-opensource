@@ -151,6 +151,7 @@ extern char * http_server_id_string;
 extern char * http_client_id_string;
 extern char * http_soap_client_id_string;
 extern long http_ses_trap;
+extern int http_check_rdf_accept;
 
 extern int vd_use_mts;
 
@@ -314,6 +315,7 @@ extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
 char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
+int32 c_http_check_rdf_accept = 0;
 int32 c_iri_cache_size = 0;
 int c_uriqa_dynamic_local = 0;
 
@@ -1140,6 +1142,9 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "MaintenancePage", &www_maintenance_page) == -1)
     www_maintenance_page = NULL;
 
+  if (cfg_getlong (pconfig, section, "RDFContentNegotiation", &c_http_check_rdf_accept) == -1)
+    c_http_check_rdf_accept = 1;
+
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
    * if c_http_max_cached_proxy_connections is set to something whenever
@@ -1566,6 +1571,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   http_max_cached_proxy_connections = c_http_max_cached_proxy_connections;
   http_proxy_connection_cache_timeout = c_http_proxy_connection_cache_timeout;
   http_ses_trap = c_http_ses_trap;
+  http_check_rdf_accept = c_http_check_rdf_accept;
 
   vt_batch_size_limit = c_vt_batch_size_limit;
   sqlc_add_views_qualifiers = c_sqlc_add_views_qualifiers;
