@@ -93,6 +93,17 @@ create function DB.DBA.PRODUCT_IRI_INVERSE (in _iri varchar) returns integer
     return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
 };
 
+create function DB.DBA.CUSTOMERDOC_IRI (in _id varchar) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('CustomerDoc', _id);
+}
+;
+
+create function DB.DBA.CUSTOMERDOC_IRI_INVERSE (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
 create function DB.DBA.CUSTOMER_IRI (in _id varchar) returns varchar
 {
     return NORTHWIND_ID_TO_IRI('Customer', _id);
@@ -228,6 +239,8 @@ grant execute on DB.DBA.EMPLOYEE_IRI to "SPARQL";
 grant execute on DB.DBA.EMPLOYEE_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.ORDER_IRI to "SPARQL";
 grant execute on DB.DBA.ORDER_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.CUSTOMERDOC_IRI to "SPARQL";
+grant execute on DB.DBA.CUSTOMERDOC_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.CUSTOMERCONTACT_IRI to "SPARQL";
 grant execute on DB.DBA.CUSTOMERCONTACT_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.ORDERLINE_IRI to "SPARQL";
@@ -245,45 +258,57 @@ grant execute on DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE to "SPARQL";
 grant execute on DB.DBA.CATEGORYPHOTO_IRI to "SPARQL";
 grant execute on DB.DBA.CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
 
-SPARQL
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
+;
 
-drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
+SPARQL drop quad map virtrdf:NorthwindDemo .
 ;
 
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-
-drop quad map virtrdf:NorthwindDemo .
+drop iri class northwind:Category .
+drop iri class northwind:Shipper .
+drop iri class northwind:Supplier .
+drop iri class northwind:Product .
+drop iri class northwind:Customer .
+drop iri class northwind:Employee .
+drop iri class northwind:Order .
+drop iri class northwind:CustomerContact .
+drop iri class northwind:CustomerDoc .
+drop iri class northwind:OrderLine .
+drop iri class northwind:Province .
+drop iri class northwind:Country .
+drop iri class northwind:Flag .
+drop iri class northwind:dbpedia_iri .
+drop iri class northwind:EmployeePhoto .
+drop iri class northwind:CategoryPhoto .
+drop iri class northwind:category_iri .
+drop iri class northwind:shipper_iri .
+drop iri class northwind:supplier_iri .
+drop iri class northwind:product_iri .
+drop iri class northwind:customer_iri .
+drop iri class northwind:customerdoc_iri .
+drop iri class northwind:employee_iri .
+drop iri class northwind:order_iri .
+drop iri class northwind:customercontact_iri .
+drop iri class northwind:orderline_iri .
+drop iri class northwind:province_iri .
+drop iri class northwind:country_iri .
+drop iri class northwind:employeephoto_iri .
+drop iri class northwind:categoryphoto_iri .
+drop iri class northwind:flag_iri .
 ;
 
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 
 create iri class northwind:Category "http://^{URIQADefaultHost}^/Northwind/Category/%d#this" (in category_id integer not null) .
 create iri class northwind:Shipper "http://^{URIQADefaultHost}^/Northwind/Shipper/%d#this" (in shipper_id integer not null) .
 create iri class northwind:Supplier "http://^{URIQADefaultHost}^/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
 create iri class northwind:Product   "http://^{URIQADefaultHost}^/Northwind/Product/%d#this" (in product_id integer not null) .
 create iri class northwind:Customer "http://^{URIQADefaultHost}^/Northwind/Customer/%U#this" (in customer_id varchar not null) .
-create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this" (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
+create iri class northwind:CustomerDoc "http://^{URIQADefaultHost}^/Northwind/Customer/%U" (in customer_id varchar not null) .
+create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U_%U_%d#this" (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class northwind:Order "http://^{URIQADefaultHost}^/Northwind/Order/%d#this" (in order_id integer not null) .
 create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/Northwind/CustomerContact/%U#this" (in customer_id varchar not null) .
 create iri class northwind:OrderLine "http://^{URIQADefaultHost}^/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
@@ -293,17 +318,6 @@ create iri class northwind:Flag "http://^{URIQADefaultHost}^%U#this" (in flag_pa
 create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
-;
-
-SPARQL
-prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-
 create iri class northwind:category_iri using
     function DB.DBA.CATEGORY_IRI (in category_id integer) returns varchar,
     function DB.DBA.CATEGORY_IRI_INVERSE (in category_iri varchar) returns integer .
@@ -319,6 +333,9 @@ create iri class northwind:product_iri using
 create iri class northwind:customer_iri using
     function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
     function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar.
+create iri class northwind:customerdoc_iri using
+    function DB.DBA.CUSTOMERDOC_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.CUSTOMERDOC_IRI_INVERSE (in customer_iri varchar) returns varchar.
 create iri class northwind:employee_iri using
     function DB.DBA.EMPLOYEE_IRI (in employee_id integer) returns varchar,
     function DB.DBA.EMPLOYEE_IRI_INVERSE (in employee_iri varchar) returns integer.
@@ -392,8 +409,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
                                 as virtrdf:CustomerContact-country ;
-                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) ;
-                        rdfs:isDefinedBy northwind:CustomerContact (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -420,8 +436,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
                                 as virtrdf:Product-discontinued ;
-                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) ;
-                        rdfs:isDefinedBy northwind:Product (products.ProductID) .
+                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) .
 
                 northwind:Category (products.CategoryID)
                         northwind:category_of northwind:Product (products.ProductID) as virtrdf:Product-category_of .
@@ -456,8 +471,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
                                 as virtrdf:Supplier-home_page ;
-                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) ;
-                        rdfs:isDefinedBy northwind:Supplier (suppliers.SupplierID) .
+                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) .
 
                 northwind:Country (suppliers.Country)
                         northwind:is_country_of
@@ -472,14 +486,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Category-description ;
 			foaf:img northwind:CategoryPhoto(categories.CategoryID)
                                 as virtrdf:Category-categories.CategoryPhoto ;
-                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) ;
-                        rdfs:isDefinedBy northwind:Category (categories.CategoryID) .
+                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) .
 				
 				northwind:CategoryPhoto(categories.CategoryID)
 						a northwind:CategoryPhoto
                                 as virtrdf:Category-categories.CategoryPhotoID ;
-                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) ;
-                        rdfs:isDefinedBy northwind:CategoryPhoto(categories.CategoryID) .
+                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) .
 
                 northwind:Shipper (shippers.ShipperID)
                         a northwind:Shipper
@@ -488,8 +500,16 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Shipper-company_name ;
                         northwind:phone shippers.Phone
                                 as virtrdf:Shipper-phone ;
-                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) ;
-                        rdfs:isDefinedBy northwind:Shipper (shippers.ShipperID) .
+                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) .
+
+                northwind:CustomerDoc (customers.CustomerID)
+                        a  northwind:CustomerDoc
+                                as virtrdf:CustomerDoc-CustomerID2 ;
+                        a  foaf:Document
+                                as virtrdf:CustomerDoc-CustomerID3 ;
+                        foaf:primaryTopic northwind:Customer (customers.CustomerID)
+                                as virtrdf:CustomerDoc-foaf_primarytopic ;
+                        rdfs:isDefinedBy northwind:customerdoc_iri (customers.CustomerID) .
 
                 northwind:Customer (customers.CustomerID)
                         a  northwind:Customer
@@ -524,8 +544,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-phone ;
                         northwind:fax customers.Fax
                                 as virtrdf:Customer-fax ;
-                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) ;
-                        rdfs:isDefinedBy northwind:Customer (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -576,14 +595,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-reports_to ;
 			foaf:img northwind:EmployeePhoto(employees.EmployeeID)                                                                                                      
                                 as virtrdf:Employee-employees.EmployeePhoto ;
-                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) ;
-                        rdfs:isDefinedBy northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) .
+                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) .
 
 				northwind:EmployeePhoto(employees.EmployeeID)
 						a northwind:EmployeePhoto
                                 as virtrdf:Employee-employees.EmployeePhotoId ;
-                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) ;
-                        rdfs:isDefinedBy northwind:EmployeePhoto (employees.EmployeeID) .                        
+                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of
@@ -626,8 +643,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country ;
-                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) ;
-                        rdfs:isDefinedBy northwind:Order (orders.OrderID) .
+                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) .
 
                 northwind:Country (orders.ShipCountry)
                         northwind:is_ship_country_of
@@ -652,8 +668,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
                                 as virtrdf:OrderLine-discount ;
-                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
-                        rdfs:isDefinedBy northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) .
+                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) .
                                 
                 northwind:Order (orders.OrderID)
                         northwind:is_order_of
@@ -685,8 +700,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng ;
-                        rdfs:isDefinedBy northwind:country_iri (countries.Name) ;
-                        rdfs:isDefinedBy northwind:Country (countries.Name) .
+                        rdfs:isDefinedBy northwind:country_iri (countries.Name) .
 
                 northwind:Country (countries.Name)
                         northwind:has_province
@@ -699,8 +713,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
                                 as virtrdf:Province-ProvinceName ;
-                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) ;
-                        rdfs:isDefinedBy northwind:Province (provinces.CountryCode, provinces.Province) .
+                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) .
 
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         northwind:is_province_of
@@ -708,51 +721,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
         }.
 }.
 ;
-
-delete from db.dba.url_rewrite_rule_list where urrl_list like 'demo_nw%';
-delete from db.dba.url_rewrite_rule where urr_rule like 'demo_nw%';
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule2',
-    1,
-    '(/[^#]*)',
-    vector('path'),
-    1,
-    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
-    vector('path', 'path', '*accept*'),
-    null,
-    '(text/rdf.n3)|(application/rdf.xml)',
-    0,
-    null
-    );    
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule1',
-    1,
-    '(/[^#]*)',
-    vector('path'),
-    1,
-    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
-    vector('path'),
-    null,
-    '(text/html)|(\\*/\\*)',
-    0,
-    303
-    );
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule3',
-    1,
-    '(/[^#]*)/\x24',
-    vector('path'),
-    1,
-    '%s',
-    vector('path'),
-    null,
-    null,
-    0,
-    null
-    );
 
 create procedure DB.DBA.REMOVE_DEMO_RDF_DET()
 {
@@ -780,42 +748,37 @@ create procedure DB.DBA.NORTHWIND_MAKE_RDF_DET()
 ;
 
 DB.DBA.NORTHWIND_MAKE_RDF_DET();
-
 drop procedure DB.DBA.NORTHWIND_MAKE_RDF_DET;
 
--- procedure to convert path to DET resource name
-create procedure DB.DBA.NORTHWIND_DET_REF (in par varchar, in fmt varchar, in val varchar)
-{
-  declare res, iri any;
-  declare uriqa_str varchar;
-  uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  uriqa_str := 'http://' || uriqa_str || '/Northwind';
-  iri := uriqa_str || val;
-  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
-  return sprintf (fmt, res);
-}
-;
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('demo_nw_rdf', 1,
-    '/Northwind/(.*)', vector('path'), 1, 
-    '/Northwind/data/rdf/%U', vector('path'),
-    'DB.DBA.NORTHWIND_DET_REF',
-    'application/rdf.xml',
-    2,  
-    303);
+delete from DB.DBA.URL_REWRITE_RULE_LIST where urrl_list like 'demo_nw%';
+delete from DB.DBA.URL_REWRITE_RULE where urr_rule like 'demo_nw%';
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule4',
+    'demo_nw_rule2',
     1,
-    '/schemas/northwind#(.*)',
+    '(/[^#]*)',
     vector('path'),
     1,
-    '/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/northwind%23%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/NorthwindOntology/1.0/%3E',
-    vector('path'),
+    '/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/Northwind%%3E&format=%U',
+    vector('path', 'path', '*accept*'),
     null,
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
     null
+    );
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'demo_nw_rule1',
+    1,
+    '(/[^#]*)',
+    vector('path'),
+    1,
+    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
+    vector('path'),
+    null,
+    '(text/html)|(\\*/\\*)',
+    0,
+    303
     );
 
 DB.DBA.URLREWRITE_CREATE_RULELIST (
@@ -823,15 +786,12 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
     1,
     vector (
                 'demo_nw_rule1',
-                'demo_nw_rule2',
-                'demo_nw_rule3',
-                'demo_nw_rule4',
-                'demo_nw_rdf'
+                'demo_nw_rule2'
           ));
 
 
 VHOST_REMOVE (lpath=>'/Northwind');
-DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
+DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'dba', is_dav=>1,
           is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
 
 create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
@@ -850,24 +810,6 @@ create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
 };
 
 DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV();
-
 drop procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV;
 
-create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2()
-{
-  declare urihost varchar;
-  sparql base <http://demo.openlinksw.com/schemas/northwind#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/demo/sql/nw.owl")
-   into graph <http://demo.openlinksw.com/schemas/NorthwindOntology/1.0/>;
-  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  if (urihost = 'demo.openlinksw.com')
-  {
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind#', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-  }
-};
-
---DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2();
-
-drop procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV2;
+DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
