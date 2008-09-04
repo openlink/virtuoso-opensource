@@ -147,7 +147,18 @@ directory_init() {
   mkdir vad/vsp/rdf_mappers/ontologies/
   mkdir vad/vsp/rdf_mappers/ontologies/xbrl/
 
+  mkdir vad/vsp/rdf_mappers/rdfdesc
+  mkdir vad/vsp/rdf_mappers/rdfdesc/images
+  mkdir vad/vsp/rdf_mappers/rdfdesc/statics
+  mkdir vad/vsp/rdf_mappers/rdfdesc/style
+
+  for f in `find rdfdesc -type f | grep -v "/CVS/" | grep -v "\.sql"`
+  do
+     cp $f vad/vsp/rdf_mappers/$f  
+  done
+
   cp *.sql vad/code/rdf_mappers
+  cp rdfdesc/*.sql vad/code/rdf_mappers
   cp xslt/*.xsl vad/vsp/rdf_mappers/xslt/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
 
@@ -255,6 +266,13 @@ else
 fi
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/rdf_mappers.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/oai_servers.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/description.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/rdfdesc');" >> $STICKER
+if [ "$ISDAV" = "1" ] ; then
+  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/rdfdesc', ppath=>'/DAV/VAD/$VAD_NAME/rdfdesc/', is_dav=>1, vsp_user=>'dba');" >> $STICKER
+else
+  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/rdfdesc', ppath=>'/vad/vsp/$VAD_NAME/rdfdesc/', is_dav=>0, vsp_user=>'dba');" >> $STICKER
+fi  
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
@@ -270,6 +288,7 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oai_servers.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
   for file in `find xslt -type f -print | grep -v CVS | sort`
   do
@@ -277,6 +296,11 @@ fi
   done
 
   for file in `find ontologies/xbrl -type f -print | grep -v CVS | sort`
+  do
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+
+  for file in `find rdfdesc -type f -print | grep -v CVS | grep -v ".sql" | sort`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done

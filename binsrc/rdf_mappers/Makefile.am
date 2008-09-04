@@ -53,5 +53,16 @@ EXTRA_DIST = \
 	*.sql \
 	make_vad.sh \
 	ontologies/xbrl/*.owl \
+	rdfdesc/*.sql \
+	rdfdesc/*.vsp \
+	rdfdesc/images/*.gif \
+	rdfdesc/images/*.png \
+	rdfdesc/statics/*.css \
+	rdfdesc/statics/*.gif \
+	rdfdesc/statics/*.js \
+	rdfdesc/statics/*.png \
+	rdfdesc/statics/rdf_w3c.svg \
+	rdfdesc/statics/sw-vert-v.svg \
+	rdfdesc/style/*.css \
 	vad_version \
 	xslt/*.xsl

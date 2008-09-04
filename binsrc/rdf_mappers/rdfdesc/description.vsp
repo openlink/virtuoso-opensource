@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+
+   declare _G, _S, odd_position any;
+   declare _resource_, project_name, project_home_page any;
+   declare page_resource_uri, rdf_link, label, _subject any;
+   declare white_page, arr, data, meta, h1, h2  any;
+
+   -- INIT VALUES
+
+   _resource_ := get_keyword ('res', params, get_keyword ('g', params, ''));
+
+   white_page := 1;
+
+   project_name := get_keyword ('g', params, '');
+   project_home_page := get_keyword ('g', params, '');
+   page_resource_uri := _resource_;
+
+   project_home_page := replace (project_home_page, '%23', '#');
+   page_resource_uri := replace (page_resource_uri, '%23', '#');
+   _G := project_home_page; --DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (project_home_page);
+   _S := page_resource_uri; --DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
+
+   arr := rfc1808_parse_uri (_G);
+   if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
+     arr[2] := '';
+   arr [5] := '';
+   _G := DB.DBA.vspx_uri_compose (arr);
+
+   DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z }', _G), 'SPARQL');
+   commit work;
+
+   exec (sprintf ('sparql ask where { graph <%S> { <%S> ?p ?o }}', _G, _S), null, null, vector (), 0, meta, data);
+   if (not length (data))
+     {
+        exec (sprintf ('sparql select ?s where { graph <%S> { ?s ?p ?o filter regex (?s, "%S#.*") }}', _G, _S), 
+	  null, null, vector (), 0, meta, data);
+        if (length (data))
+          { 
+            _S := data[0][0];
+            page_resource_uri := _S;
+          }
+     }
+
+   odd_position := 0;
+   set http_charset='utf-8';
+   set isolation = 'uncommitted';
+   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
+   --http_header (sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 1, now ()))));
+   label := ''; _subject := '';
+
+   exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+	select ?o where { graph <%S> { <%S> rdfs:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+   if (length (data)) label := data[0][0];
+
+   if (label = '')
+     { 
+       exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+	    select ?o where { graph <%S> { <%S> dc:title ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+       if (length (data)) label := data[0][0];
+     }
+
+   exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
+	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+   if (length (data)) _subject := data[0][0];
+
+   rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S)); 
+
+?>
+
+<!-- header -->
+<head>
+    <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/">
+    <title><?=_resource_?> | <?=project_name?></title>
+    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <link rel="stylesheet" type="text/css" href="statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
+    <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
+    <script type="text/javascript" src="statics/script.js"></script>
+</head>
+  <body onLoad="init();">
+    <div id="header">
+      <div id="hd_l">
+        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+        <div id="homelink">
+          <?vsp if (white_page = 0) http ('at <a href="http://dbpedia.org/">DBpedia.org</a>'); ?>
+        </div>
+        <div class="page-resource-uri">
+	  <label for="page_res_uri">Description of:</label> <a id="page_res_uri" href="<?=page_resource_uri?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
+        </div>
+      </div> <!-- hd_l -->
+      <div id="hd_r">
+        <a href="<?=rdf_link?>" title="RDF data">
+	  <img src="statics/sw-cube.png" alt="[RDF Data]">
+        </a>
+      </div> <!-- hd_r -->
+    </div> <!-- header -->
+    <div id="content">
+
+      <p><?vsp http (sprintf ('%s', _subject)); ?></p>
+
+<!-- proptable -->
+      <table class="description"><tr><th width="25%">Property</th><th>Value</th></tr>
+
+<?vsp
+      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S), 
+		null, null, vector (), 0, null, null, h1); 
+      while (0 = exec_next (h1, null, null, data))	
+	{
+           declare PRED any;
+	   pred := data[0];  
+	   rdfdesc_http_print_l (PRED, odd_position);
+	   exec (sprintf ('sparql select ?o where { graph <%S> { <%S> <%S> ?o } } limit 300', _G, _S, PRED),
+		null, null, vector (), 0, null, null, h2);
+	   while (0 = exec_next (h2, null, null, data))	
+	      {	
+                declare OBJECT any;
+		OBJECT := data [0];
+		rdfdesc_http_print_r (OBJECT);
+	      }
+	   exec_close (h2);
+
+	   http ('</ul></td></tr>');
+	}
+      exec_close (h1);
+
+      exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S), 
+		null, null, vector (), 0, null, null, h1); 
+      while (0 = exec_next (h1, null, null, data))	
+	{
+           declare PRED any;
+	   pred := data[0];  
+	   rdfdesc_http_print_l (PRED, odd_position);
+	   exec (sprintf ('sparql select ?s where { graph <%S> { ?s <%S> <%S> } } limit 300', _G, PRED, _S),
+		null, null, vector (), 0, null, null, h2);
+	   while (0 = exec_next (h2, null, null, data))	
+	      {	
+                declare OBJECT any;
+		OBJECT := data [0];
+		rdfdesc_http_print_r (OBJECT);
+	      }
+	   exec_close (h2);
+
+	   http ('</ul></td></tr>');
+	}
+      exec_close (h1);
+
+       if  (odd_position = 0)
+	 {
+	    http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
+	 }
+?>
+      </table>
+    </div> <!--  #content -->
+<!-- footer -->
+    <div id="footer">
+      <div id="ft_t">
+        Explore using:
+        <a href="http://demo.openlinksw.com/rdfbrowser2/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+        <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
+        <a href="http://beckr.org/marbles?uri=<?vsp http_url (page_resource_uri); ?>">Marbles</a> |
+        <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (page_resource_uri); ?>">DISCO</a> |
+        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (page_resource_uri); ?>" >Tabulator</a>
+        &nbsp; &nbsp; Raw Data in:
+        <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
+        <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
+        &nbsp; &nbsp;<a href="http://www.openlinksw.com/virtuoso">About</a>&nbsp; &nbsp;
+      </div> <!-- #ft_t -->
+      <div id="ft_b">
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" border="0"></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" border="0"></a>
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/80x15.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
+      </div> <!-- #ft_b -->
+    </div> <!-- #footer -->
+
+ <!--script type="text/javascript">
+     var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+     document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+   </script>
+ <script type="text/javascript">
+     var pageTracker = _gat._getTracker("UA-139779-13");
+     pageTracker._initData();
+     pageTracker._trackPageview();
+ </script-->
+
+ </body>
+</html>
