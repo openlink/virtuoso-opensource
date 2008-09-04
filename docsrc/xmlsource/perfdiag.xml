@@ -153,8 +153,7 @@ because then locks will be in effect for less time.
     <para>To know if there is a bad query plan, see the explain output of the query.</para>
     <para>Unless a full table scan is intended, a full table scan is pretty much always bad.</para>
     <para>In the explain () result set, a table access is marked by a From table name.
-Below this is mentioned the driving index. Below this are the conditions on the index and
-below that the conditions that are not indexable.
+Below is mentioned the driving index, the conditions on the index and the conditions that are not indexable.
     </para>
     <para>Joins are listed one after the other, the outermost first. The join order can
 be read from the explain output going from top to bottom.

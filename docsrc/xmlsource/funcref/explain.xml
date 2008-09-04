@@ -47,27 +47,254 @@
       <para><type>integer</type> cursor type</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_explain"><title>Return Values</title>
-    <para><function>explain</function> returns a result set of single
-    <type>varchar</type> column rows.</para>
-  </refsect1>
   <refsect1 id="desc_explain"><title>Description</title>
-      <para>The explain function compiles a SQL statement and returns
-      a description of the compilation as a result set. The set consists
-      of one column, a varchar, which corresponds to each line of the
-      description but may be long, several hundred characters.</para>
-      <para>The output is not a complete disassembly of the query graph but
-      is detailed enough to show the join order, subquery structure and the
-      order of evaluation of predicates as well as the splitting of a
-      distributed VDB query over different data sources.</para>
-      <para>The optional cursor type can be one of the SQL_CURSOR_&lt;xx&gt;
-      constants. The default is 0, for forward only. If the statement is a
-      SELECT and the cursor type is not forward only, the auxiliary SQL
-      statements used by the cursor implementation are shown.</para>
 
 <para>
-Specifying a cursor type of -5 produces a diagnostic dump to the server's standard output.  This contains the costs associated with different join orders tried during the compilation.
+The explain function compiles a SQL statement and returns a description
+of that compilation as a result set, return value or parse tree. The result set consists of one
+VARCHAR column with one line of the description in each row.  Any given
+line may be quite long, even several hundred characters.
 </para>
+<para>
+The output is not a complete disassembly of the query graph, but it
+is detailed enough to show the join order, the sub-query structure,
+and the order of evaluation of query predicates, as well as the
+splitting of a distributed VDB query over different data sources.
+</para>
+<para>
+The optional cursor type can be one of the SQL_CURSOR_&lt;xx&gt; constants,
+or one of the special values listed below.  The default is 0, for
+FORWARD ONLY. The special values each have special effect, as listed.
+If the statement is a SELECT and the cursor type is not FORWARD ONLY,
+the auxiliary SQL statements used by the cursor implementation are
+shown.
+</para>
+
+<table>
+	<title>Cursor Type</title>
+<tgroup cols="2">
+<thead><row>
+<entry>Cursor Type</entry><entry>Effect</entry>
+</row></thead>
+<tbody>
+<row><entry>3</entry><entry>SQL_CURSOR_STATIC</entry></row>
+<row><entry>2</entry><entry>SQL_CURSOR_DYNAMIC</entry></row>
+<row><entry>1</entry><entry>SQL_CURSOR_KEYSET_DRIVEN</entry></row>
+<row><entry>0</entry><entry>SQL_CURSOR_FORWARD_ONLY</entry></row>
+<row><entry>-1</entry><entry>A result set is printed.  Same effect as 0.</entry></row>
+<row><entry>-2</entry><entry>A parse tree is returned.</entry></row>
+<row><entry>-5</entry><entry>A result set is printed, and a diagnostic dump is delivered
+        to the server's standard output.  This can be viewed if the
+        server was started with +foreground option.</entry></row>
+<row><entry>-7</entry><entry>Cost estimates are returned, associated with any different
+        join orders tried during the compilation.</entry></row>
+</tbody>
+</tgroup>
+</table>
+
+  </refsect1>
+  <refsect1 id="ret_explain"><title>Return Types</title>
+
+<para>
+Returns types vary with the specified cursor type.
+</para>
+
+<table>
+	<title>Return Types</title>
+<tgroup cols="2">
+<thead><row>
+<entry>Cursor Type</entry><entry>Return Type</entry>
+</row></thead>
+<tbody>
+<row><entry>0, 1, 2, 3, -5,  -1</entry><entry>Result set.</entry></row>
+<row><entry>-7</entry><entry>Return value.</entry></row>
+<row><entry>-2</entry><entry>Parse tree.</entry></row>
+</tbody>
+</tgroup>
+</table>
+
+  </refsect1>
+  <refsect1 id="examples_explain">
+  <title>Examples</title>
+  <example id="ex_explainsmp"><title>Simple Example Usage</title>
+<para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+SQL> explain('select * from sys_users');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+{
+from DB.DBA.SYS_USERS by SYS_USERS         17 rows
+Key SYS_USERS  ASC ($47 ".U_ID", $46 ".U_NAME", $45 ".U_IS_ROLE", $44 ".U_FULL_NAME", $43 ".U_E_MAIL", $42 ".U_PASSWORD", $41 ".U_GROUP", $40 ".U_LOGI
+N_TIME", $39 ".U_ACCOUNT_DISABLED", $38 ".U_DAV_ENABLE", $37 ".U_SQL_ENABLE", $36 ".U_DATA", $35 ".U_METHODS", $34 ".U_DEF_PERMS", $33 ".U_HOME", $32
+".U_PASSWORD_HOOK", $31 ".U_PASSWORD_HOOK_DATA", $30 ".U_GET_PASSWORD", $29 ".U_DEF_QUAL", $28 ".U_OPTS")
+
+
+Current of: <$49 "<DB.DBA.SYS_USERS >" spec 5>
+Select ($47 ".U_ID", $46 ".U_NAME", $45 ".U_IS_ROLE", $44 ".U_FULL_NAME", $43 ".U_E_MAIL", $42 ".U_PASSWORD", $41 ".U_GROUP", $40 ".U_LOGIN_TIME", $39
+ ".U_ACCOUNT_DISABLED", $38 ".U_DAV_ENABLE", $37 ".U_SQL_ENABLE", $36 ".U_DATA", $35 ".U_METHODS", $34 ".U_DEF_PERMS", $33 ".U_HOME", $32 ".U_PASSWORD
+_HOOK", $31 ".U_PASSWORD_HOOK_DATA", $30 ".U_GET_PASSWORD", $29 ".U_DEF_QUAL", $28 ".U_OPTS", <$49 "<DB.DBA.SYS_USERS >" spec 5>)
+}
+
+8 Rows. -- 10 msec.
+]]></programlisting>
+  </example>
+  <example id="ex_explain1"><title>Example with type -1</title>
+<para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+SQL> explain('sparql
+select *
+from <http://myopenlink.net/dataspace/person/kidehen#this>
+where {?s ?p ?o} limit 10',-1);
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+{
+
+Precode:
+      0: $27 "hen#this" := Call iri_to_id_nosignal (<constant (http://myopenlink.net/dataspace/person/kidehen#this)>)
+      5: BReturn 0
+from DB.DBA.RDF_QUAD by RDF_QUAD        0.4 rows
+Key RDF_QUAD  ASC ($31 "s-1-1-t0.S", $30 "s-1-1-t0.P", $29 "s-1-1-t0.O")
+ inlined <col=412 G = $27 "hen#this">
+
+Current of: <$33 "<DB.DBA.RDF_QUAD s-1-1-t0>" spec 5>
+
+After code:
+      0: $34 "s" := Call id_to_iri ($31 "s-1-1-t0.S")
+      5: $35 "p" := Call id_to_iri ($30 "s-1-1-t0.P")
+      10: $36 "o" := Call __rdf_sqlval_of_obj ($29 "s-1-1-t0.O")
+      15: BReturn 0
+Select (TOP <constant (10)>) ($34 "s", $35 "p", $36 "o", <$33 "<DB.DBA.RDF_QUAD s-1-1-t0>" spec 5>)
+}
+
+18 Rows. -- 10 msec.
+]]></programlisting>
+  </example>
+  <example id="ex_explain2"><title>Example with type -2</title>
+<para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+SQL> select dbg_obj_print(explain('sparql
+select *
+from <http://myopenlink.net/dataspace/person/kidehen#this>
+where {?s ?p ?o} limit 10',-2));
+callret
+VARCHAR
+_______________________________________________________________________________
+
+0
+
+1 Rows. -- 20 msec.
+]]></programlisting>
+<para>As result on the Server console will be shown this output:</para>
+<programlisting><![CDATA[
+(100 (122 0 10 0 0 0 ) ((21 (609 'id_to_iri' ((201 's-1-1-t0' 'S' ) ) ) 0 's' 0 ) (21 (609 'id_to_iri' ((201 's-1-1-t0' 'P' ) ) ) 0 'p' 0 ) (21 (609 '
+__rdf_sqlval_of_obj' ((201 's-1-1-t0' 'O' ) ) ) 0 'o' 0 ) ) 0 (106 ((107 (200 'DB.DBA.RDF_QUAD' 's-1-1-t0' 0 0 0 ) 0 ) ) (9 (201 's-1-1-t0' 'G' ) (609
+ 'iri_to_id_nosignal' ('http://myopenlink.net/dataspace/person/kidehen#this' ) ) 0 0 0 0 0 0 ) 0 0 0 0 (907 1 ) 0 ) )
+]]></programlisting>
+  </example>
+  <example id="ex_explain5"><title>Example with type -5</title>
+<para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+SQL> explain('sparql select * from <http://myopenlink.net/dataspace/person/kidehen#this> where {?s ?p ?o} limit 10',-5);
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+{
+
+Precode:
+      0: $27 "hen#this" := Call iri_to_id_nosignal (<constant (http://myopenlink.net/dataspace/person/kidehen#this)>)
+      5: BReturn 0
+from DB.DBA.RDF_QUAD by RDF_QUAD        0.4 rows
+Key RDF_QUAD  ASC ($31 "s-1-1-t0.S", $30 "s-1-1-t0.P", $29 "s-1-1-t0.O")
+ inlined <col=412 G = $27 "hen#this">
+
+Current of: <$33 "<DB.DBA.RDF_QUAD s-1-1-t0>" spec 5>
+
+After code:
+      0: $34 "s" := Call id_to_iri ($31 "s-1-1-t0.S")
+      5: $35 "p" := Call id_to_iri ($30 "s-1-1-t0.P")
+      10: $36 "o" := Call __rdf_sqlval_of_obj ($29 "s-1-1-t0.O")
+      15: BReturn 0
+Select (TOP <constant (10)>) ($34 "s", $35 "p", $36 "o", <$33 "<DB.DBA.RDF_QUAD s-1-1-t0>" spec 5>)
+}
+
+18 Rows. -- 40 msec.
+]]></programlisting>
+<para>As result on the Server console will be printed this output:</para>
+<programlisting><![CDATA[
+New best dt0 is:
+sequence for dt0 cost       6.9 (0.0135757 msec):RDF_QUAD as t1  on RDF_QUAD ,
+{
+   dt dt0
+  unit       6.9 (0.0135757 msecs) arity       0.4 reached       1
+Out cols :
+    call id_to_iri: (609 'id_to_iri' ((201 't1' 'S' ) ) )
+
+    call id_to_iri: (609 'id_to_iri' ((201 't1' 'P' ) ) )
+
+    call __rdf_sqlval_of_obj: (609 '__rdf_sqlval_of_obj' ((201 't1' 'O' ) ) )
+
+    call iri_to_id_nosignal: (609 'iri_to_id_nosignal' ('http://myopenlink.net/dataspace/person/kidehen#this' ) )
+
+    Table DB.DBA.RDF_QUAD(s-1-1-t0 t1) by RDF_QUAD   Reached         1 unit       4.6 (0.00907572 msecs) arity       0.4
+  col preds:
+        pred artm (201 't1' 'G' ) = (609 'iri_to_id_nosignal' ('http://myopenlink.net/dataspace/person/kidehen#this' ) )
+      out cols:  O  P  S
+
+    call id_to_iri: (609 'id_to_iri' ((201 't1' 'S' ) ) )
+
+    call id_to_iri: (609 'id_to_iri' ((201 't1' 'P' ) ) )
+
+    call __rdf_sqlval_of_obj: (609 '__rdf_sqlval_of_obj' ((201 't1' 'O' ) ) )
+}
+]]></programlisting>
+  </example>
+  <example id="ex_explain7"><title>Example with type -7</title>
+<para>Execute from ISQL:</para>
+<programlisting><![CDATA[
+SQL> select explain('sparql
+select *
+from <http://myopenlink.net/dataspace/person/kidehen#this>
+where {?s ?p ?o} limit 10',-7);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+6.957722663879395
+
+1 Rows. -- 0 msec.
+]]></programlisting>
+  </example>
+  <example id="ex_explainvsp"><title>Example with vsp printing the result from executing explain:</title>
+<programlisting><![CDATA[
+<?vsp
+  declare meta, data any;
+  exec ('explain (?)', null, null, vector ('select * from sys_users'),  0, meta, data);
+  foreach (any row in data) do
+  {
+     http_value (row[0], 'p');
+  }
+?>]]></programlisting>
+<para>As result, after accessing this sample vsp, the following otuput will be printed:</para>
+<programlisting><![CDATA[
+{
+
+from DB.DBA.SYS_USERS by SYS_USERS 17 rows
+
+Key SYS_USERS ASC ($47 ".U_ID", $46 ".U_NAME", $45 ".U_IS_ROLE", $44 ".U_FULL_NAME", $43 ".U_E_MAIL", $42 ".U_PASSWORD", $41 ".U_GROUP", $40 ".U_LOGIN_TIME", $39 ".U_ACCOUNT_DISABLED", $38 ".U_DAV_ENABLE", $37 ".U_SQL_ENABLE", $36 ".U_DATA", $35 ".U_METHODS", $34 ".U_DEF_PERMS", $33 ".U_HOME", $32 ".U_PASSWORD_HOOK", $31 ".U_PASSWORD_HOOK_DATA", $30 ".U_GET_PASSWORD", $29 ".U_DEF_QUAL", $28 ".U_OPTS")
+
+Current of: <$49 "<DB.DBA.SYS_USERS >" spec 5>
+
+Select ($47 ".U_ID", $46 ".U_NAME", $45 ".U_IS_ROLE", $44 ".U_FULL_NAME", $43 ".U_E_MAIL", $42 ".U_PASSWORD", $41 ".U_GROUP", $40 ".U_LOGIN_TIME", $39 ".U_ACCOUNT_DISABLED", $38 ".U_DAV_ENABLE", $37 ".U_SQL_ENABLE", $36 ".U_DATA", $35 ".U_METHODS", $34 ".U_DEF_PERMS", $33 ".U_HOME", $32 ".U_PASSWORD_HOOK", $31 ".U_PASSWORD_HOOK_DATA", $30 ".U_GET_PASSWORD", $29 ".U_DEF_QUAL", $28 ".U_OPTS", <$49 "<DB.DBA.SYS_USERS >" spec 5>)
+
+}
+?>]]></programlisting>
+  </example>
+
   </refsect1>
   <refsect1 id="seealso_explain"><title>See Also</title>
     <para><link linkend="perfdiagqueryplans">Query Plans.</link></para>
