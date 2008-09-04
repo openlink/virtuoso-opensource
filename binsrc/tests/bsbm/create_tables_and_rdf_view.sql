@@ -147,7 +147,7 @@ create unique index offer_producer_product on DB.DBA.Offer (producer, product, n
 ;
 create index offer_validto on DB.DBA.Offer (validTo)
 ;
-create index offer_vendor on DB.DBA.Offer (vendor)
+create index offer_vendor_product on DB.DBA.Offer (vendor, product)
 ;
 create index offer_webpage on DB.DBA.Offer (offerWebpage)
 ;
@@ -217,25 +217,22 @@ sparql create iri class bsbm:ProductFeature-iri "http://www4.wiwiss.fu-berlin.de
 sparql create iri class bsbm:ProductType-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType%d" (in nr integer not null)
 ;
 
-sparql create iri class bsbm:Producer-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Producer%d" (in nr integer not null)
+sparql create iri class bsbm:Producer-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer%d/Producer%d" (in nr_ integer not null, in nr integer not null)
 ;
 
 sparql create iri class bsbm:Product-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer%d/Product%d" (in producer integer not null, in nr integer not null)
 ;
 
-sparql create iri class bsbm:ProductTypeProduct-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductTypeProduct/%d/%d" (in product integer not null, in ptype integer not null)
+sparql create iri class bsbm:Vendor-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor%d/Vendor%d" (in nr_ integer not null, in nr integer not null)
 ;
 
-sparql create iri class bsbm:ProductFeatureProduct-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeatureProduct/%d/%d" (in product integer not null, in pfeature integer not null)
+sparql create iri class bsbm:Offer-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor%d/Offer%d" (in vendor integer not null, in nr integer not null)
 ;
 
-sparql create iri class bsbm:Vendor-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Vendor%d" (in nr integer not null)
+sparql create iri class bsbm:StdInst-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/StandardizationInstitution%d" (in publisher integer not null)
 ;
 
-sparql create iri class bsbm:Offer-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Offer%d" (in nr integer not null)
-;
-
-sparql create iri class bsbm:Person-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Person%d" (in nr integer not null)
+sparql create iri class bsbm:Person-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite%d/Person%d" (in publisher integer not null, in nr integer not null)
 ;
 
 sparql create iri class bsbm:Review-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite%d/Review%d" (in site integer, in nr integer not null)
@@ -247,7 +244,7 @@ sparql create iri class bsbm:ISO3166-country-iri "http://downlode.org/rdf/iso-31
 sparql create iri class bsbm:homepage-iri "%s" (in homepage varchar not null) option (returns "http://%s")
 ;
 
-sparql create iri class bsbm:RatingSite-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/RatingSite%d" (in nr integer not null)
+sparql create iri class bsbm:RatingSite-iri "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite%d/RatingSite%d" (in nr_ integer not null, in nr integer not null)
 ;
 
 sparql
@@ -271,7 +268,7 @@ where (^{product.}^.nr = ^{pfeatureproduct.}^.product)
           a bsbm:Product ;
 	  rdfs:label product.label ;
           rdfs:comment product.comment ;
-          bsbm:producer bsbm:Producer-iri (product.producer) ;
+          bsbm:producer bsbm:Producer-iri (product.producer, product.producer) ;
           bsbm:productPropertyTextual1 product.propertyTex1 ;
           bsbm:productPropertyTextual2 product.propertyTex2 ;
           bsbm:productPropertyTextual3 product.propertyTex3 ;
@@ -286,68 +283,68 @@ where (^{product.}^.nr = ^{pfeatureproduct.}^.product)
           bsbm:productPropertyNumeric6 product.propertyNum6 ;
           rdf:type bsbm:ProductType-iri (ptypeproduct.productType) ;
           bsbm:productFeature bsbm:ProductFeature-iri (pfeatureproduct.productFeature) ;
-          dc:publisher bsbm:Producer-iri (product.publisher) ;
+          dc:publisher bsbm:Producer-iri (product.publisher, product.publisher) ;
           dc:date product.publishDate .
 
         bsbm:ProductType-iri (ptype.nr)
           a bsbm:ProductType ;
           rdfs:label ptype.label ;
           rdfs:comment ptype.comment ;
-          rdfs:subClassOf bsbm:ProductType-iri-nullable (ptype.parent) ;
-          dc:publisher bsbm:Producer-iri (ptype.publisher) ;
+          rdfs:subClassOf bsbm:ProductType-iri (ptype.parent) ;
+          dc:publisher bsbm:StdInst-iri (ptype.publisher) ;
           dc:date ptype.publishDate .
 
         bsbm:ProductFeature-iri (pfeature.nr)
           a bsbm:ProductFeature ;
           rdfs:label pfeature.label ;
           rdfs:comment pfeature.comment ;
-          dc:publisher bsbm:Producer-iri (pfeature.publisher) ;
+          dc:publisher bsbm:StdInst-iri (pfeature.publisher) ;
           dc:date pfeature.publishDate .
 
-        bsbm:Producer-iri (producer.nr)
+        bsbm:Producer-iri (producer.nr, producer.nr)
           a bsbm:Producer ;
           rdfs:label producer.label ;
           rdfs:comment producer.comment ;
           foaf:homepage bsbm:homepage-iri (producer.homepage) ;
           bsbm:country bsbm:ISO3166-country-iri (producer.country) ;
-          dc:publisher bsbm:Producer-iri (producer.publisher) ;
+          dc:publisher bsbm:Producer-iri (producer.nr, producer.nr) ;
           dc:date producer.publishDate .
 
-        bsbm:Vendor-iri (vendor.nr)
+        bsbm:Vendor-iri (vendor.nr, vendor.nr)
           a bsbm:Vendor ;
           rdfs:label vendor.label ;
           rdfs:comment vendor.comment ;
           foaf:homepage bsbm:homepage-iri (vendor.homepage) ;
           bsbm:country bsbm:ISO3166-country-iri (vendor.country) ;
-          dc:publisher bsbm:Vendor-iri (vendor.publisher) ;
+          dc:publisher bsbm:Vendor-iri (vendor.publisher, vendor.publisher) ;
           dc:date vendor.publishDate .
 
-        bsbm:Offer-iri (offer.nr)
+        bsbm:Offer-iri (offer.vendor, offer.nr)
           a bsbm:Offer ;
           bsbm:product bsbm:Product-iri (offer.producer, offer.product) ;
-          bsbm:producer bsbm:Producer-iri (offer.producer) ;
-          bsbm:vendor bsbm:Vendor-iri (offer.vendor) ;
+          bsbm:vendor bsbm:Vendor-iri (offer.vendor, offer.vendor) ;
+          bsbm:vendor bsbm:Vendor-iri (offer.vendor, offer.vendor) ;
           bsbm:price offer.price ;
           bsbm:validFrom offer.validFrom ;
           bsbm:validTo offer.validTo ;
           bsbm:deliveryDays offer.deliveryDays ;
           bsbm:offerWebpage bsbm:homepage-iri (offer.offerWebpage) ;
-          dc:publisher bsbm:Vendor-iri (offer.publisher) ;
+          dc:publisher bsbm:Vendor-iri (offer.publisher, offer.publisher) ;
           dc:date offer.publishDate .
 
-        bsbm:Person-iri (person.nr)
+        bsbm:Person-iri (person.publisher, person.nr)
           a foaf:Person ;
           foaf:name person.name ;
           foaf:mbox_sha1sum person.mbox_sha1sum ;
           bsbm:country bsbm:ISO3166-country-iri (person.country) ;
-          dc:publisher bsbm:RatingSite-iri (person.publisher) ;
+          dc:publisher bsbm:RatingSite-iri (person.publisher, person.publisher) ;
           dc:date person.publishDate .
 
         bsbm:Review-iri (review.publisher, review.nr)
           a rev:Review ;
           bsbm:reviewFor bsbm:Product-iri (review.producer, review.product) ;
-          bsbm:producer bsbm:Producer-iri (review.producer) ;
-          rev:reviewer bsbm:Person-iri (review.person) ;
+          bsbm:producer bsbm:Producer-iri (review.producer, review.producer) ;
+          rev:reviewer bsbm:Person-iri (review.publisher, review.person) ;
           bsbm:reviewDate review.reviewDate ;
           dc:title review.title ;
           rev:text review.text lang review.textlang ;
@@ -355,7 +352,7 @@ where (^{product.}^.nr = ^{pfeatureproduct.}^.product)
           bsbm:rating2 review.rating2 ;
           bsbm:rating3 review.rating3 ;
           bsbm:rating4 review.rating4 ;
-          dc:publisher bsbm:RatingSite-iri (review.publisher) ;
+          dc:publisher bsbm:RatingSite-iri (review.publisher, review.publisher) ;
           dc:date review.publishDate .
       }
   }
