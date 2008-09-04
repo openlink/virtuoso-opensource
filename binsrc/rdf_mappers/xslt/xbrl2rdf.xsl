@@ -33,7 +33,7 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
-	xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl/"
+	xmlns:virt-xbrl="http://www.openlinksw.com/schemas/xbrl/"
 	xmlns:v="http://www.openlinksw.com/xsltext/"
 	xmlns:sioct="&sioct;"
 	xmlns:sioc="&sioc;"
@@ -41,7 +41,7 @@
 
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
-	<xsl:variable name="ns">http://demo.openlinksw.com/schemas/xbrl/</xsl:variable>
+	<xsl:variable name="ns">http://www.openlinksw.com/schemas/xbrl/</xsl:variable>
 	<xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates select="xbrl" />

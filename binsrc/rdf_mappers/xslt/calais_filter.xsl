@@ -71,15 +71,15 @@
     <xsl:template match="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
 	<rdf:Description>
 	    <sioc:has_container rdf:resource="{$baseUri}"/>
-	    <opl:data_source>
+	    <opl:hasDataProvider>
 		<opl:DataSource rdf:about="{@rdf:about}"/>
-	    </opl:data_source>
-	    <opl:provided_by>
+	    </opl:hasDataProvider>
+	    <opl:providedBy>
 		<foaf:Organization rdf:about="http://dbpedia.org/resource/Reuters">
 		    <foaf:name>OpenCalais</foaf:name>
 		    <foaf:homepage rdf:resource="http://www.opencalais.com/"/>
 		</foaf:Organization>
-	    </opl:provided_by>
+	    </opl:providedBy>
 	    <xsl:attribute name="rdf:about">
 		<xsl:variable name="frag">
 		    <xsl:call-template name="substring-after-last">

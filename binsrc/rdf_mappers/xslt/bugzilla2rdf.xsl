@@ -49,7 +49,9 @@
 			<xsl:apply-templates select="*"/>
 		</wf:Task>
 		<sioct:Discussion rdf:about="{$baseUri}">
-			<sioc:container_of rdf:resource="{@rdf:resource}" />
+		    <xsl:for-each select="long_desc">
+			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
+		    </xsl:for-each>
 		</sioct:Discussion>
 		<xsl:for-each select="long_desc">
 			<sioc:Post rdf:about="{vi:proxyIRI($baseUri,'',issue_when)}">
@@ -71,7 +73,9 @@
 			<xsl:apply-templates select="*"/>
 		</wf:Task>
 		<sioct:Discussion rdf:about="{$baseUri}">
-			<sioc:container_of rdf:resource="{@rdf:resource}" />
+		    <xsl:for-each select="long_desc">
+			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
+		    </xsl:for-each>
 		</sioct:Discussion>
 		<xsl:for-each select="long_desc">
 			<sioc:Post rdf:about="{vi:proxyIRI($baseUri, '', bug_when)}">

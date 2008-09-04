@@ -25,6 +25,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -32,7 +33,7 @@
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-  xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:sioc="&sioc;"
   xmlns:foaf="&foaf;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -51,6 +52,7 @@
       <rdf:Description rdf:about="{$base}">
 	  <rdf:type rdf:resource="&foaf;Document"/>
 	  <rdf:type rdf:resource="&bibo;Document"/>
+	  <rdf:type rdf:resource="&sioc;Container"/>
 	  <xsl:apply-templates select="title|meta"/>
 	  <xsl:apply-templates select="/html/body//img[@src]"/>
 	  <xsl:apply-templates select="/html/body//a[@href]"/>
@@ -90,11 +92,9 @@
       </dc:rights>
   </xsl:template>
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:subject>
-	  <xsl:value-of select="@content"/>
-      </dc:subject>
       <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
 	  <xsl:for-each select="$res/results/result">
+	  <dc:subject rdf:resource="{vi:dbpIRI ($base, .)}"/>
 	      <sioc:topic>
 		  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}" >
 		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>

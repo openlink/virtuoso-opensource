@@ -31,7 +31,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
-<!ENTITY dct "http://purl.org/dc/terms/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
@@ -41,10 +41,10 @@
   xmlns:rdf="&rdf;"
   xmlns:rdfs="&rdfs;"
   xmlns:dc="&dc;"
-  xmlns:dct="&dct;"
+  xmlns:dcterms="&dcterms;"
   xmlns:content="&content;"
   xmlns:sioc="&sioc;"
-  xmlns:r="&rss;"
+  xmlns:rss="&rss;"
   xmlns:foaf="&foaf;"
   xmlns:atom="&atom;"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
@@ -68,7 +68,7 @@
   </rdf:RDF>
 </xsl:template>
 
-<xsl:template match="r:channel">
+<xsl:template match="rss:channel">
     <rdf:Description rdf:about="{$base}">
 	<xsl:choose>
 	    <xsl:when test="$isDiscussion = '1'">
@@ -87,7 +87,7 @@
 
 <xsl:template match="rdf:li">
     <xsl:variable name="this" select="@rdf:resource"/>
-    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+    <xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 	<xsl:if test="@rdf:resource = $this">
 	    <xsl:variable name="pos" select="position()"/>
 	</xsl:if>
@@ -95,9 +95,9 @@
     <sioc:container_of rdf:resource="{$base}#{$pos}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
 </xsl:template>
 
-<xsl:template match="r:item">
+<xsl:template match="rss:item">
     <xsl:variable name="this" select="@rdf:about"/>
-    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+    <xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 	<xsl:if test="@rdf:resource = $this">
 	    <xsl:variable name="pos" select="position()"/>
 	</xsl:if>
@@ -113,27 +113,27 @@
 	</xsl:choose>
 	<sioc:has_container rdf:resource="{$base}"/>
 	<xsl:apply-templates />
-	<xsl:copy-of select="r:*"/>
+	<xsl:copy-of select="rss:*"/>
 	<xsl:copy-of select="sioc:*"/>
 	<xsl:copy-of select="geo:*"/>
     </rdf:Description>
 </xsl:template>
 
-<xsl:template match="r:title[. != '']">
+<xsl:template match="rss:title[. != '']">
     <dc:title><xsl:apply-templates/></dc:title>
 </xsl:template>
 
-<xsl:template match="r:description[. != '']">
+<xsl:template match="rss:description[. != '']">
     <dc:description><xsl:apply-templates/></dc:description>
 </xsl:template>
 
-<xsl:template match="r:link">
+<xsl:template match="rss:link">
     <sioc:link rdf:resource="{string(.)}"/>
     <rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}"/>
 </xsl:template>
 
 <xsl:template match="dc:date">
-    <dct:created rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></dct:created>
+    <dcterms:created rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></dcterms:created>
 </xsl:template>
 
 <xsl:template match="dc:description[. != '' ]">
@@ -156,9 +156,9 @@
     <xsl:variable name="uname" select="string(.)" />
     <foaf:Person rdf:about="{$base}#{urlify (.)}">
 	<foaf:name><xsl:apply-templates/></foaf:name>
-	<xsl:for-each select="//r:item[string (dc:creator) = $uname]">
+	<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
 	    <xsl:variable name="this" select="@rdf:about"/>
-	    <xsl:for-each select="/rdf:RDF/r:channel/r:items/rdf:Seq/rdf:li">
+	    <xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 		<xsl:if test="@rdf:resource = $this">
 		    <xsl:variable name="pos" select="position()"/>
 		</xsl:if>
@@ -172,11 +172,11 @@
     <xsl:apply-templates />
 </xsl:template>
 
-<xsl:template match="r:items">
+<xsl:template match="rss:items">
     <xsl:apply-templates />
 </xsl:template>
 
-<xsl:template match="r:*">
+<xsl:template match="rss:*">
 </xsl:template>
 
 <xsl:template match="text()">

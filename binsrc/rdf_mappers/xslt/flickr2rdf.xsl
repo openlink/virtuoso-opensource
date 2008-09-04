@@ -31,7 +31,7 @@
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
-    xmlns:dct  ="http://purl.org/dc/terms/"
+    xmlns:dcterms  ="http://purl.org/dc/terms/"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs ="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:geo  ="http://www.w3.org/2003/01/geo/wgs84_pos#"
@@ -83,7 +83,7 @@
 		<rdf:type rdf:resource="&sioc;Container"/>
 		<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		<foaf:topic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		<dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 	    <rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
@@ -119,12 +119,12 @@
 	<dc:description><xsl:value-of select="."/></dc:description>
     </xsl:template>
     <xsl:template match="dates">
-	<dct:created rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+	<dcterms:created rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 	    <xsl:value-of select="v:unixTime2ISO (@posted)"/>
-	</dct:created>
-	<dct:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+	</dcterms:created>
+	<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
 	    <xsl:value-of select="v:unixTime2ISO (@lastupdate)"/>
-	</dct:modified>
+	</dcterms:modified>
 	<dc:date><xsl:value-of select="translate (@taken, ' ', 'T')"/></dc:date>
     </xsl:template>
     <xsl:template match="tag[@machine_tag='0']">

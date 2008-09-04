@@ -25,8 +25,8 @@
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:h    ="http://www.w3.org/1999/xhtml"
     xmlns      ="http://www.w3.org/1999/xhtml"
-    xmlns:DC   ="http://purl.org/dc/elements/1.1/"
-    xmlns:DCTERMS = "http://purl.org/dc/terms/"
+    xmlns:dc   ="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:xml="xml"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 
@@ -90,9 +90,9 @@
 		    <xsl:when test="$ref">
 			<rdf:Description rdf:about="{$ref}">
 			    <xsl:if test="@hreflang">
-				<DC:language>
+				<dc:language>
 				    <xsl:value-of select="@hreflang" />
-				</DC:language>
+				</dc:language>
 			    </xsl:if>
 			</rdf:Description>
 		    </xsl:when>

@@ -26,7 +26,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:a="http://www.w3.org/2005/Atom"
-    xmlns:g="http://schemas.google.com/g/2005"
+    xmlns:gd="http://schemas.google.com/g/2005"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:georss="http://www.georss.org/georss"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -67,18 +67,18 @@
 	</foaf:based_near>
     </xsl:template>
 
-    <xsl:template match="g:postalAddress">
+    <xsl:template match="gd:postalAddress">
 	<xsl:element name="{local-name()}" namespace="http://schemas.google.com/g/2005/">
 	    <xsl:attribute name="parseType" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#">Literal</xsl:attribute>
 	    <xsl:value-of select="."/>
 	</xsl:element>
     </xsl:template>
 
-    <xsl:template match="g:phoneNumber">
+    <xsl:template match="gd:phoneNumber">
 	<foaf:phone rdf:resource="tel:{.}"/>
     </xsl:template>
 
-    <xsl:template match="g:extendedProperty">
+    <xsl:template match="gd:extendedProperty">
 	<xsl:element name="{@name}" namespace="http://schemas.google.com/g/2005/">
 	    <xsl:attribute name="parseType" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#">Literal</xsl:attribute>
 	    <xsl:value-of select="@value"/>

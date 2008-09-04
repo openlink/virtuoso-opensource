@@ -27,7 +27,7 @@
 ]>
 <xsl:stylesheet
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
-    xmlns:r   ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdf   ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:h   ="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -54,15 +54,15 @@
     <xsl:param name="Anchor" />
 
     <xsl:template match="/">
-	<r:RDF>
+	<rdf:RDF>
 	    <xsl:if test="//*[contains(concat(' ',normalize-space(@class),' '),' vevent ')] or //*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
-		<c:Vcalendar r:about="{$baseUri}">
+		<c:Vcalendar rdf:about="{$baseUri}">
 		    <c:prodid>-//connolly.w3.org//palmagent 0.6 (BETA)//EN</c:prodid>
 		    <c:version>2.0</c:version>
 		    <xsl:apply-templates />
 		</c:Vcalendar>
 	    </xsl:if>
-	</r:RDF>
+	</rdf:RDF>
     </xsl:template>
 
 
@@ -105,7 +105,7 @@
 
     <xsl:template name="cal-props">
 	<xsl:if test="@id and $Source">
-	    <xsl:attribute name="r:about">
+	    <xsl:attribute name="rdf:about">
 		<xsl:value-of select='concat($Source, "#", @id)' />
 	    </xsl:attribute>
 	</xsl:if>
@@ -259,7 +259,7 @@
 
 		    <xsl:element name="{$class}"
 			namespace="&CalNS;">
-			<xsl:attribute name="r:resource">
+			<xsl:attribute name="rdf:resource">
 			    <xsl:value-of select="$ref" />
 			</xsl:attribute>
 		    </xsl:element>
@@ -270,7 +270,7 @@
 	    <xsl:when test="$default">
 		<xsl:element name="{$class}"
 		    namespace="&CalNS;">
-		    <xsl:attribute name="r:resource">
+		    <xsl:attribute name="rdf:resource">
 			<xsl:value-of select="$default" />
 		    </xsl:attribute>
 		</xsl:element>
@@ -312,8 +312,8 @@
 
 	    <xsl:element name="{$class}"
 		namespace="&CalNS;">
-		<xsl:attribute name="r:parseType">Resource</xsl:attribute>
-		<c:calAddress r:resource="{$mbox}" />
+		<xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
+		<c:calAddress rdf:resource="{$mbox}" />
 		<xsl:if test="$cn">
 		    <c:cn><xsl:value-of select="$cn"/></c:cn>
 		</xsl:if>
@@ -347,7 +347,7 @@
 
 		<xsl:choose>
 		    <xsl:when test='contains($when, "Z")'>
-			<xsl:attribute name="r:datatype">
+			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "dateTime")' />
 			</xsl:attribute>
 
@@ -356,7 +356,7 @@
 
 		    <xsl:when test='string-length($when) =
 			string-length("yyyy-mm-ddThh:mm:ss+hhmm")'>
-			<xsl:attribute name="r:datatype">
+			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "dateTime")' />
 			</xsl:attribute>
 			<xsl:call-template name="timeDelta">
@@ -377,14 +377,14 @@
 		    </xsl:when>
 
 		    <xsl:when test='contains($when, "T")'>
-			<xsl:attribute name="r:datatype">
+			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&CalNS;", "dateTime")' />
 			</xsl:attribute>
 			<xsl:value-of select='$when' />
 		    </xsl:when>
 
 		    <xsl:otherwise>
-			<xsl:attribute name="r:datatype">
+			<xsl:attribute name="rdf:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "date")' />
 			</xsl:attribute>
 			<xsl:value-of select='vi:str2date ($when)' />
@@ -583,18 +583,18 @@
 
 	    <xsl:element name="{$class}"
 		namespace="&CalNS;">
-		<xsl:attribute name="r:parseType">Resource</xsl:attribute>
+		<xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
 
-		<r:first r:datatype="http://www.w3.org/2001/XMLSchema#double">
+		<rdf:first rdf:datatype="http://www.w3.org/2001/XMLSchema#double">
 		    <xsl:value-of select="$x" />
-		</r:first>
+		</rdf:first>
 
-		<r:rest r:parseType="Resource">
-		    <r:first r:datatype="http://www.w3.org/2001/XMLSchema#double">
+		<rdf:rest rdf:parseType="Resource">
+		    <rdf:first rdf:datatype="http://www.w3.org/2001/XMLSchema#double">
 			<xsl:value-of select="$y" />
-		    </r:first>
-		    <r:rest r:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" />
-		</r:rest>
+		    </rdf:first>
+		    <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" />
+		</rdf:rest>
 	    </xsl:element>
 	</xsl:for-each>
     </xsl:template>
@@ -608,7 +608,7 @@
 	    concat(' ', $class, ' '))]">
 	    <xsl:element name="{$class}"
 		namespace="&CalNS;">
-		<xsl:attribute name="r:parseType">Resource</xsl:attribute>
+		<xsl:attribute name="rdf:parseType">Resource</xsl:attribute>
 		<xsl:call-template name="sub-prop">
 		    <xsl:with-param name="ln" select='"freq"' />
 		</xsl:call-template>

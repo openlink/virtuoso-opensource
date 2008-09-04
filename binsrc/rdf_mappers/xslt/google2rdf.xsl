@@ -31,14 +31,14 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
-<!ENTITY dct "http://purl.org/dc/terms/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:dc="&dc;"
-    xmlns:dct="&dct;"
+    xmlns:dcterms="&dcterms;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioc="&sioc;"
     xmlns:foaf="&foaf;"
@@ -93,11 +93,11 @@
     </xsl:template>
 
     <xsl:template match="a:published">
-	<dct:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dct:created>
+	<dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dcterms:created>
     </xsl:template>
 
     <xsl:template match="a:updated">
-	<dct:modified rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dct:modified>
+	<dcterms:modified rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dcterms:modified>
     </xsl:template>
 
     <xsl:template match="a:category">

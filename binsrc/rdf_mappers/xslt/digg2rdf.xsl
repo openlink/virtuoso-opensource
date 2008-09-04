@@ -31,7 +31,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
-<!ENTITY dct "http://purl.org/dc/terms/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
@@ -40,12 +40,13 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="&rdf;"
   xmlns:dc="&dc;"
-  xmlns:dct="&dct;"
+  xmlns:dcterms="&dcterms;"
   xmlns:content="&content;"
   xmlns:sioc="&sioc;"
   xmlns:rdfs="&rdfs;"
   xmlns:foaf="&foaf;"
   xmlns:atom="&atomowl;"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -71,7 +72,7 @@
 <xsl:template match="story">
     <rdf:Description rdf:about="{vi:proxyIRI (@href)}">
 	<rdf:type rdf:resource="&sioc;Thread"/>
-	<dct:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="vi:unix2iso-date (@submit_date)"/></dct:created>
+	<dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="vi:unix2iso-date (@submit_date)"/></dcterms:created>
 	<xsl:apply-templates/>
     </rdf:Description>
 </xsl:template>
@@ -96,7 +97,7 @@
 		<sioc:reply_of rdf:resource="{vi:proxyIRI (concat ($svc, '/story/', @story, '/comment/', @replyto, '?appkey=', $appkey))}"/>
 	    </xsl:otherwise>
 	</xsl:choose>
-	<dct:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="vi:unix2iso-date (@date)"/></dct:created>
+	<dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="vi:unix2iso-date (@date)"/></dcterms:created>
 	<dc:title><xsl:value-of select="."/></dc:title>
 	<xsl:apply-templates/>
     </rdf:Description>

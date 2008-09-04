@@ -107,26 +107,85 @@
 		</xsl:if>
 	</xsl:template>
 
-	<xsl:template name="a-rel">
+	<xsl:template name="a-rel-single">
+	    <xsl:param name="rel"/>
+	    <xsl:param name="about"/>
+	    <xsl:param name="obj"/>
+	    <xsl:param name="types"/>
 	    <xsl:choose>
-		<xsl:when test="substring-after (@rel, ':') != ''">
-		    <xsl:variable name="elem-name" select="substring-after (@rel, ':')" />
+		<xsl:when test="substring-after ($rel, ':') != ''">
+		    <xsl:variable name="elem-name" select="substring-after ($rel, ':')" />
 		    <xsl:variable name="elem-nss">
-			<xsl:call-template name="nss-uri" />
+			<xsl:call-template name="nss-uri">
+			    <xsl:with-param name="qname"><xsl:value-of select="$rel"/></xsl:with-param>
+			</xsl:call-template>
 		    </xsl:variable>
 		</xsl:when>
 		<xsl:otherwise>
-		    <xsl:variable name="elem-name" select="@rel" />
+		    <xsl:variable name="elem-name" select="$rel" />
 		    <xsl:variable name="elem-nss">&xhv;</xsl:variable>
 		</xsl:otherwise>
 	    </xsl:choose>
 	    <xsl:if test="$elem-nss = ''">
 		<xsl:variable name="elem-nss">&xhv;</xsl:variable>
 	    </xsl:if>
+	    <xsl:variable name="typeof" select="vi:split-and-decode($types, 0, ' ')"/>
+	    <rdf:Description rdf:about="{$about}">
+		<!-- rdf:type -->
+		<xsl:for-each select="$typeof/results/result">
+		    <rdf:type>
+			<xsl:attribute name="rdf:resource">
+			    <xsl:call-template name="uri-or-curie">
+				<xsl:with-param name="uri"><xsl:value-of select="."/></xsl:with-param>
+			    </xsl:call-template>
+			</xsl:attribute>
+		    </rdf:type>
+		</xsl:for-each>
+		<!-- relation -->
+		<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+		    <xsl:attribute name="rdf:resource">
+			<xsl:value-of select="$obj" />
+		    </xsl:attribute>
+		</xsl:element>
+	    </rdf:Description>
+	</xsl:template>
+
+	<xsl:template name="a-rev-single">
+	    <xsl:param name="rev"/>
+	    <xsl:param name="about"/>
+	    <xsl:param name="obj"/>
+	    <xsl:choose>
+		<xsl:when test="substring-after ($rev, ':') != ''">
+		    <xsl:variable name="rev-name" select="substring-after ($rev, ':')" />
+		    <xsl:variable name="rev-nss">
+			<xsl:call-template name="rev-uri">
+			    <xsl:with-param name="qname"><xsl:value-of select="$rev"/></xsl:with-param>
+			</xsl:call-template>
+		    </xsl:variable>
+		</xsl:when>
+		<xsl:otherwise>
+		    <xsl:variable name="rev-name" select="$rev" />
+		    <xsl:variable name="rev-nss">&xhv;</xsl:variable>
+		</xsl:otherwise>
+	    </xsl:choose>
+	    <xsl:if test="$rev-nss = ''">
+		<xsl:variable name="rev-nss">&xhv;</xsl:variable>
+	    </xsl:if>
+	    <rdf:Description rdf:about="{$obj}">
+		<xsl:element name="{$rev-name}" namespace="{$rev-nss}">
+		    <xsl:attribute name="rdf:resource">
+			<xsl:value-of select="$about" />
+		    </xsl:attribute>
+		</xsl:element>
+	    </rdf:Description>
+	</xsl:template>
+
+	<xsl:template name="a-rel">
+	    <xsl:variable name="rels" select="vi:split-and-decode(@rel, 0, ' ')"/>
 		<xsl:variable name="about">
 			<xsl:call-template name="about-ancestor-or-self" />
 		</xsl:variable>
-		<xsl:variable name="typeof" select="vi:split-and-decode(@typeof, 0, ' ')"/>
+	    <xsl:variable name="types" select="@typeof"/>
 		<xsl:variable name="obj">
 			<xsl:choose>
 				<xsl:when test="@href">
@@ -146,40 +205,31 @@
 				</xsl:when>
 			</xsl:choose>
 		</xsl:variable>
-		    <rdf:Description rdf:about="{$about}">
-			<!-- rdf:type -->
-			<xsl:for-each select="$typeof/results/result">
-			    <rdf:type>
-				<xsl:attribute name="rdf:resource">
-				    <xsl:call-template name="uri-or-curie">
-					<xsl:with-param name="uri"><xsl:value-of select="."/></xsl:with-param>
+	    <xsl:for-each select="$rels/results/result">
+		<xsl:call-template name="a-rel-single">
+		    <xsl:with-param name="rel"><xsl:value-of select="."/></xsl:with-param>
+		    <xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
+		    <xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
+		    <xsl:with-param name="types"><xsl:value-of select="$types"/></xsl:with-param>
 				    </xsl:call-template>
-				</xsl:attribute>
-			    </rdf:type>
 			</xsl:for-each>
-			<!-- relation -->
-			<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
-			    <xsl:attribute name="rdf:resource">
-				<xsl:value-of select="$obj" />
-			    </xsl:attribute>
-			</xsl:element>
+
+	    <rdf:Description rdf:about="{$about}">
 			<!-- property -->
 			<xsl:call-template name="a-prop"/>
 		    </rdf:Description>
+
 		    <xsl:apply-templates />
-		    <!-- reverse property -->
+	    <!-- reverse propertes -->
 		    <xsl:if test="@rev">
-			<xsl:variable name="rev-name" select="substring-after (@rev, ':')" />
-			<xsl:variable name="rev-nss">
-			    <xsl:call-template name="rev-uri" />
-			</xsl:variable>
-			<rdf:Description rdf:about="{$obj}">
-			    <xsl:element name="{$rev-name}" namespace="{$rev-nss}">
-				<xsl:attribute name="rdf:resource">
-				    <xsl:value-of select="$about" />
-				</xsl:attribute>
-			    </xsl:element>
-			</rdf:Description>
+		<xsl:variable name="revs" select="vi:split-and-decode(@rev, 0, ' ')"/>
+		<xsl:for-each select="$revs/results/result">
+		    <xsl:call-template name="a-rev-single">
+			<xsl:with-param name="rev"><xsl:value-of select="."/></xsl:with-param>
+			<xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
+			<xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
+		    </xsl:call-template>
+		</xsl:for-each>
 		    </xsl:if>
 	</xsl:template>
 
@@ -194,24 +244,23 @@
 				</xsl:with-param>
 			</xsl:call-template>
 		</xsl:variable>
-		<xsl:variable name="rev-name" select="substring-after (@rev, ':')" />
-		<xsl:variable name="rev-nss">
-			<xsl:call-template name="rev-uri" />
-		</xsl:variable>
-		<rdf:Description rdf:about="{$obj}">
-			<xsl:element name="{$rev-name}" namespace="{$rev-nss}">
-				<xsl:attribute name="rdf:resource">
-					<xsl:value-of select="$about" />
-				</xsl:attribute>
-			</xsl:element>
-		</rdf:Description>
+		<xsl:variable name="revs" select="vi:split-and-decode(@rev, 0, ' ')"/>
+		<xsl:for-each select="$revs/results/result">
+		    <xsl:call-template name="a-rev-single">
+			<xsl:with-param name="rev"><xsl:value-of select="."/></xsl:with-param>
+			<xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
+			<xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
+		    </xsl:call-template>
+		</xsl:for-each>
 		<xsl:apply-templates />
 	</xsl:template>
 
 	<xsl:template match="*[@property and not (@href)]">
 		<xsl:variable name="elem-name" select="substring-after (@property, ':')" />
 		<xsl:variable name="elem-nss">
-			<xsl:call-template name="nss-uri" />
+			<xsl:call-template name="nss-uri">
+			    <xsl:with-param name="qname"><xsl:value-of select="@property"/></xsl:with-param>
+			</xsl:call-template>
 		</xsl:variable>
 		<xsl:variable name="about">
 			<xsl:call-template name="about-ancestor-or-self" />
@@ -299,17 +348,9 @@
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
+
 	<xsl:template name="nss-uri">
-		<xsl:variable name="qname">
-			<xsl:choose>
-				<xsl:when test="@rel">
-					<xsl:value-of select="@rel" />
-				</xsl:when>
-				<xsl:when test="@property">
-					<xsl:value-of select="@property" />
-				</xsl:when>
-			</xsl:choose>
-		</xsl:variable>
+	    <xsl:param name="qname"/>
 		<xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
 		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
 	</xsl:template>
@@ -322,23 +363,8 @@
 		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
 	</xsl:template>
 
-	<xsl:template name="inst-uri">
-		<xsl:variable name="qname">
-			<xsl:value-of select="@typeof" />
-		</xsl:variable>
-		<xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
-		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
-	</xsl:template>
-
 	<xsl:template name="rev-uri">
-		<xsl:variable name="qname">
-			<xsl:choose>
-				<xsl:when test="@rev">
-					<xsl:value-of select="@rev" />
-				</xsl:when>
-				<!--xsl:when test="@property"><xsl:value-of select="@property"/></xsl:when-->
-			</xsl:choose>
-		</xsl:variable>
+	    <xsl:param name="qname"/>
 		<xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
 		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
 	</xsl:template>

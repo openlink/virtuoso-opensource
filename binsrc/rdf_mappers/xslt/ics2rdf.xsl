@@ -29,9 +29,9 @@
 <xsl:stylesheet
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf   ="&rdf;"
-    xmlns:c   ="&ical;"
+    xmlns:ical   ="&ical;"
     xmlns     ="http://www.w3.org/2002/12/cal/ical#"
-    xmlns:v   ="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:vi   ="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:xml   ="xml"
     version="1.0"
     >
@@ -54,7 +54,7 @@
 	<xsl:variable name="tmp1" select="replace (., '-//', '')"/>
 	<xsl:variable name="tmp2" select="replace ($tmp1, ' ', '_')" />
 	<xsl:variable name="tmp3" select="replace ($tmp2, '//', '_')" />
-	<xsl:variable name="sha1" select="v:sha1_hex ($tmp3)" />
+	<xsl:variable name="sha1" select="vi:sha1_hex ($tmp3)" />
 	<xsl:variable name="part1" select="substring ($tmp3, 1, 10)" />
 	<xsl:variable name="part2" select="substring ($sha1, 1, 16)" />
         <xsl:value-of select="concat ($part1, '_', $part2, '#')"/>
@@ -159,7 +159,7 @@
     </xsl:template>
 
     <xsl:template match="URL|DIR">
-	<c:url rdf:resource="{.}"/>
+	<ical:url rdf:resource="{.}"/>
     </xsl:template>
 
     <xsl:template match="*">

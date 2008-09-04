@@ -78,3 +78,4 @@ INSERT SOFT DB.DBA.OAI_SERVERS(OS_ID,OS_SERVER,OS_ENABLED,OS_URN_PATTERN) VALUES
 INSERT SOFT DB.DBA.OAI_SERVERS(OS_ID,OS_SERVER,OS_ENABLED,OS_URN_PATTERN) VALUES(78,'https://dspace.library.uvic.ca:8443/dspace-oai/request',1,'oai:dspace.library.uvic.ca');
 INSERT SOFT DB.DBA.OAI_SERVERS(OS_ID,OS_SERVER,OS_ENABLED,OS_URN_PATTERN) VALUES(79,'https://ritdml.rit.edu/dspace-oai/request',0,'');
 INSERT SOFT DB.DBA.OAI_SERVERS(OS_ID,OS_SERVER,OS_ENABLED,OS_URN_PATTERN) VALUES(80,'https://zone.biblio.laurentian.ca/dspace-oai/request',0,'');
+INSERT SOFT DB.DBA.OAI_SERVERS(OS_ID,OS_SERVER,OS_ENABLED,OS_URN_PATTERN) VALUES(81,'http://oai-bdb.onb.ac.at/Script/oai2.aspx',1,'oai:baa.onb.at');

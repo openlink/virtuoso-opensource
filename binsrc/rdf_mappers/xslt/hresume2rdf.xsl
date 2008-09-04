@@ -22,9 +22,9 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <xsl:stylesheet xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rss="http://purl.org/rss/1.0/"
-    xmlns:dct="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:admin="http://webns.net/mvcb/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:v="http://www.w3.org/2006/vcard/ns#" xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"
     xmlns:cvbase="http://purl.org/captsolo/resume-rdf/0.2/base#" version="1.0">

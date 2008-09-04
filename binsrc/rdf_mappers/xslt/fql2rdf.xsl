@@ -37,7 +37,7 @@
     xmlns:fb="http://api.facebook.com/1.0/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
-    xmlns:dct  ="http://purl.org/dc/terms/"
+    xmlns:dcterms  ="http://purl.org/dc/terms/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
@@ -67,7 +67,7 @@
 	    <fb:pid><xsl:value-of select="fb:pid"/></fb:pid>
 	    <fb:aid><xsl:value-of select="fb:aid"/></fb:aid>
 	    <dc:title><xsl:value-of select="fb:caption"/></dc:title>
-	    <dct:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dct:created>
+	    <dcterms:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dcterms:created>
 	    <sioc:link rdf:resource="{fb:src_small}"/>
 	    <sioc:link rdf:resource="{fb:src_big}"/>
 	    <sioc:link rdf:resource="{fb:src}"/>
@@ -81,8 +81,8 @@
 	<sioct:ImageGallery rdf:about="{vi:proxyIRI (fb:link, $login)}">
 	    <fb:aid><xsl:value-of select="fb:aid"/></fb:aid>
 	    <dc:title><xsl:value-of select="fb:name"/></dc:title>
-	    <dct:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dct:created>
-	    <dct:modified><xsl:value-of select="vi:unix2iso-date (fb:modified)"/></dct:modified>
+	    <dcterms:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dcterms:created>
+	    <dcterms:modified><xsl:value-of select="vi:unix2iso-date (fb:modified)"/></dcterms:modified>
 	    <sioc:link rdf:resource="{fb:link}"/>
 	    <xsl:if test="not contains ($baseUri, '&amp;')">
 		<sioc:has_owner rdf:resource="{$baseUri}"/>

@@ -5,7 +5,7 @@
 	<!ENTITY xl 'http://rhizomik.net/ontologies/2007/11/xl-2003-12-31.owl#'>
 	<!ENTITY xlink 'http://rhizomik.net/ontologies/2007/11/xlink-2003-12-31.owl#'>
 	<!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
-	<!ENTITY virt 'http://demo.openlinksw.com/schemas/xbrl/'>
+    <!ENTITY virt 'http://www.openlinksw.com/schemas/xbrl/'>
 ]>
 <rdf:RDF xmlns:link="&link;" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:xl="&xl;" xmlns:xlink="&xlink;" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	<owl:Ontology rdf:about="">

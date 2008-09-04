@@ -22,15 +22,15 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <xsl:stylesheet xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rss="http://purl.org/rss/1.0/"
-    xmlns:dct="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:admin="http://webns.net/mvcb/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:hlisting="http://demo.openlinksw.com/schemas/hlisting/"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.w3.org/2006/vcard/ns#"
     version="1.0">
     <xsl:output indent="yes" omit-xml-declaration="yes" method="xml" />
     <xsl:param name="baseUri" />
-    <xsl:template match="/xhtml:html/xhtml:body">
+    <xsl:template match="/h:html/h:body">
         <rdf:RDF>
             <xsl:apply-templates />
         </rdf:RDF>
@@ -75,9 +75,9 @@
         </xsl:variable>
         <xsl:choose>
             <xsl:when test="$field='dtlisted'">
-                <dct:created>
+                <dcterms:created>
                     <xsl:value-of select="@title" />
-                </dct:created>
+                </dcterms:created>
             </xsl:when>
             <xsl:when test="$field='price'">
                 <hlisting:price>
@@ -85,9 +85,9 @@
                 </hlisting:price>
             </xsl:when>
             <xsl:when test="$field='dtexpired'">
-                <dct:available>
+                <dcterms:available>
                     <xsl:value-of select="@title" />
-                </dct:available>
+                </dcterms:available>
             </xsl:when>
             <xsl:when test="$field='item'">
                 <hlisting:item>

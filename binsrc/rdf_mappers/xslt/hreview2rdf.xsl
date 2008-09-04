@@ -29,7 +29,7 @@ xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 xmlns:foaf="http://xmlns.com/foaf/0.1/"
 xmlns:skos="http://www.w3.org/2004/02/skos/core#"
 xmlns:admin="http://webns.net/mvcb/"
-xmlns:xhtml="http://www.w3.org/1999/xhtml"
+xmlns:h="http://www.w3.org/1999/xhtml"
 xmlns:owl="http://www.w3.org/2002/07/owl#"
 xmlns:review="http:/www.purl.org/stuff/rev#"
 xmlns:hrev="http:/www.purl.org/stuff/hrev#"
@@ -38,7 +38,7 @@ version="1.0">
 
 <xsl:output indent="yes" omit-xml-declaration="yes" method="xml"/>
 
-<xsl:template match="/xhtml:html/xhtml:body">
+<xsl:template match="/h:html/h:body">
   <rdf:RDF>
 	<xsl:apply-templates />
   </rdf:RDF>

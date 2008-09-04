@@ -37,7 +37,7 @@
     xmlns:bibo="&bibo;"
     xmlns:foaf="&foaf;"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:dct= "http://purl.org/dc/terms/"
+    xmlns:dcterms= "http://purl.org/dc/terms/"
     xmlns:mql="http://www.freebase.com/">
 
     <xsl:output method="xml" indent="yes" />
@@ -56,7 +56,7 @@
 		    <rdf:type rdf:resource="&sioc;Container"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		    <foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-		    <dct:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+		    <dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 		    <rdf:type rdf:resource="&sioc;Item"/>

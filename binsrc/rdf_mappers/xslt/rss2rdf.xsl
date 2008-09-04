@@ -33,7 +33,7 @@
   xmlns:rss="http://purl.org/rss/1.0/"
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
-  xmlns:atom10="http://www.w3.org/2005/Atom"
+  xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:georss="http://www.georss.org/georss"
@@ -78,7 +78,7 @@
 <xsl:template match="vi:*" />
 <xsl:template match="channel/itunes:*" />
 <xsl:template match="item/itunes:*" />
-<xsl:template match="atom10:*" />
+<xsl:template match="a:*" />
 
 
 <xsl:template match="text()">

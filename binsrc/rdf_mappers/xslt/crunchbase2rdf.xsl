@@ -34,7 +34,7 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:mql="http://www.freebase.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
-    xmlns:dct= "http://purl.org/dc/terms/"
+    xmlns:dcterms= "http://purl.org/dc/terms/"
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
@@ -100,7 +100,7 @@
 			<xsl:call-template name="space-name"/>
 		    </xsl:variable>
 		    <foaf:topic rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
-		    <dct:subject rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
+		    <dcterms:subject rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		    <sioc:container_of rdf:resource="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}"/>
 		</xsl:for-each>
 	    </rdf:Description>
@@ -231,7 +231,14 @@
     </xsl:template>
 
     <xsl:template match="*[* and ../../*]" priority="1">
+	<xsl:choose>
+	    <xsl:when test="type_of_entity">
+		<xsl:variable name="space" select="type_of_entity"/>
+	    </xsl:when>
+	    <xsl:otherwise>
 	<xsl:variable name="space" select="name()"/>
+	    </xsl:otherwise>
+	</xsl:choose>
 	<xsl:variable name="type">
 	    <xsl:choose>
 		<xsl:when test="$space = 'company' or $space = 'firm' or $space = 'competitor'">
