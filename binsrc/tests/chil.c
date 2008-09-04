@@ -217,7 +217,7 @@ sig_catcher (int sig)
   signal (SIGPIPE, SIG_IGN);
   log_info ("Caught signal %d, shutting down", sig);
   db_shutdown = 1;
-  semaphore_leave (the_main_thread->thr_sem);
+  semaphore_leave (background_sem);
 }
 #endif
 
