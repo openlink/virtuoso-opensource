@@ -1011,3 +1011,75 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
    return string_output_string (ses);
 }
 ;
+
+create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar, in lines any, in graph_mode int)
+{
+  declare host, stat, msg, qry, data, meta, accept, format, itm, q, graph, url, ssl varchar;
+  declare ses, arr any;
+  declare best_q, i, l int;
+
+  ses := 0;
+  host := http_request_header(lines, 'Host', null, '');
+  accept := http_request_header_full (lines, 'Accept', '*/*');
+  qry := http_request_get ('QUERY_STRING');
+  ssl := '';
+  if (is_https_ctx ())
+    ssl := 's';
+  if (length (qry))
+    path := path || '?' || qry;
+
+  arr := split_and_decode (accept, 0, '\0\0,;');
+  best_q := 0;
+  l := length (arr);
+  format := null;
+  for (i := 0; i < l; i := i + 2)
+    {
+      declare tmp any;
+      itm := trim(arr[i]);
+      q := arr[i+1];
+      if (q is null)
+	q := 1.0;
+      else
+	{
+	  tmp := split_and_decode (q, 0, '\0\0=');
+	  if (length (tmp) = 2)
+	    q := atof (tmp[1]);
+	  else
+	    q := 1.0;
+        }
+      if (best_q < q)
+        {
+	  best_q := q;
+	  format := itm;
+	}
+    }
+  if (format is null)
+    accept := http_request_header (lines, 'Accept', null, null);
+
+  --dbg_printf ('DB.DBA.HTTP_RDF_ACCEPT: [%s] [%s] [%s] [%d]', path, virtual_dir, format, graph_mode);
+  set_user_id ('SPARQL');
+  stat := '00000';
+  graph := sprintf ('FROM <http%s://%s%s>', ssl, host, virtual_dir);
+  if (graph_mode = 2)
+    graph := '';
+  url := sprintf ('http%s://%s%s', ssl, host, path);
+  if (strchr (url, '#') is null)
+    qry := sprintf ('SPARQL DESCRIBE <%s> <%s#this> %s', url, url, graph);
+  else
+    qry := sprintf ('SPARQL DESCRIBE <%s> %s', url, graph);
+  exec (qry, stat, msg, vector (), 0, meta, data);
+  if (stat = '00000')
+    {
+      if (length (data) = 1 and length (dict_list_keys (data[0][0], 0)) > 0)
+	{
+	  http_status_set (200);
+	  http_rewrite ();
+	  DB.DBA.SPARQL_RESULTS_WRITE (ses, meta, data, format, 1);
+	  return 1;
+	}
+    }
+  else
+    signal (stat, msg);
+  return 0;
+}
+;

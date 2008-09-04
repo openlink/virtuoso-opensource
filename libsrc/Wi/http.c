@@ -2464,12 +2464,12 @@ ws_url_rewrite (ws_connection_t *ws)
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
     {
-      err = srv_make_new_error ("42000", "HT058", "The authentication procedure DB.DBA.HTTP_URLREWRITE does not exist");
+      err = srv_make_new_error ("42000", "HT058", "The stored procedure DB.DBA.HTTP_URLREWRITE does not exist");
       goto error_end;
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The authentication procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -2669,6 +2669,89 @@ static void http_get_def_page (caddr_t fpath, caddr_t *ts2, caddr_t all_str, cha
   dk_free_box (temp_def_page);
   if (temp_path)
     dk_free_box (temp_path);
+}
+
+/*##**********************************************************
+* This check if RDF data is asked and try to locate in the repository
+* 
+*************************************************************/
+int http_check_rdf_accept = 1;
+
+static int
+ws_check_rdf_accept (ws_connection_t *ws)
+{
+#ifdef VIRTUAL_DIR
+  static query_t * qr = NULL;
+  client_connection_t * cli = ws->ws_cli;
+  query_t * proc;
+  caddr_t err = NULL;
+  int rc = LTE_OK, retc = 0;
+  local_cursor_t * lc = NULL;
+  char * accept;
+
+  if (!http_check_rdf_accept)
+    return 0;
+  accept = ws_header_field (ws->ws_lines, "Accept:", NULL);
+  if (!ws || !ws->ws_map || !accept)
+    return 0;
+  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3"))
+    return 0;
+
+  if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_RDF_ACCEPT", NULL, "dba", 0)))
+    {
+      err = srv_make_new_error ("42000", "HT058", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" " does not exist");
+      goto error_end;
+    }
+  if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
+    {
+      err = srv_make_new_error ("42000", "HT059", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
+      goto error_end;
+    }
+  if (proc->qr_to_recompile)
+    {
+      proc = qr_recompile (proc, &err);
+      if (err)
+	goto error_end;
+    }
+  if (!qr)
+    qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+
+  IN_TXN;
+  lt_threads_set_inner (cli->cli_trx, 1);
+  LEAVE_TXN;
+
+  err = qr_quick_exec (qr, cli, NULL, &lc, 4,
+      ":0", ws->ws_path_string, QRP_STR,
+      ":1", ws->ws_map->hm_l_path, QRP_STR,
+      ":2", box_copy_tree (ws->ws_lines), QRP_RAW,
+      ":3", (ptrlong) http_check_rdf_accept, QRP_INT
+      );
+
+  if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
+      && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
+    retc = (int) unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+
+  IN_TXN;
+  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+    lt_rollback (cli->cli_trx, TRX_CONT);
+  else
+    rc = lt_commit (cli->cli_trx, TRX_CONT);
+  CLI_NEXT_USER (cli);
+  lt_threads_set_inner (cli->cli_trx, 0);
+  LEAVE_TXN;
+
+error_end:
+  if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
+    {
+      ws_proc_error (ws, err);
+      retc = 1;
+    }
+  if (err)
+    dk_free_tree (err);
+  if (lc)
+    lc_free (lc);
+  return retc;
+#endif
 }
 
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
@@ -3210,6 +3293,8 @@ do_file:
       char page_opt_name[3 + 5 + 1];
       char *text = NULL;
 
+      if (!ws_check_rdf_accept (ws))
+	{
       snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
       if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
 	{
@@ -3242,6 +3327,7 @@ do_file:
 	  strses_flush (ws->ws_strses);
 	  goto request_do_again;
 	}
+    }
     }
 #endif
 
