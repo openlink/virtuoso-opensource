@@ -50,10 +50,7 @@ create procedure rdfdesc_http_url (in url varchar)
 {
   declare host, pref varchar;
   host := http_request_header(http_request_header(), 'Host', null, null);
-  --pref := 'http://'||host||'/proxy/rdf/';
-  --if (url like pref || '%')
-  --  url := subseq (url, length (pref));
-  pref := 'http://'||host||'/proxy/html/';
+  pref := 'http://'||host||'/about/html/';
   if (url not like pref || '%')
     url := pref || url;
   url := replace (url, '#', '%23');
@@ -208,3 +205,30 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_http_proxy_rule_2', 1,
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1', 'ext_http_proxy_rule_2'));
 
 DB.DBA.EXEC_STMT ('grant SPARQL_SPONGE to "SPARQL"', 0);
+
+-- /* extended http proxy service */
+create procedure virt_proxy_init_about ()
+{
+  if (registry_get ('DB.DBA.virt_proxy_init_about_state') = '1.0')
+    return;
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_1', 1,
+      '/about/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
+      '/about?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_about_http_proxy_rule_2', 1,
+      '/about/html/(.*)', vector ('g'), 1,
+      '/rdfdesc/description.vsp?g=%U', vector ('g'), null, null, 2);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_about_http_proxy_rule_list1', 1, vector ('ext_about_http_proxy_rule_1', 'ext_about_http_proxy_rule_2'));
+  DB.DBA.VHOST_REMOVE (lpath=>'/about');
+  DB.DBA.VHOST_DEFINE (lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
+  registry_set ('DB.DBA.virt_proxy_init_about_state', '1.1');
+}
+;
+
+virt_proxy_init_about ()
+;
+
+drop procedure virt_proxy_init_about;

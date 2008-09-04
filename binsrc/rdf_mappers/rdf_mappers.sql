@@ -362,9 +362,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   if (strchr (uri, '#') is not null)
     frag := '';
   if (length (login))
-    ret := sprintf ('http://%s/proxy/rdf/%U/%s%s', cname, login, uri, frag);
+    ret := sprintf ('http://%s/about/rdf/%U/%s%s', cname, login, uri, frag);
   else
-    ret := sprintf ('http://%s/proxy/rdf/%s%s', cname, uri, frag);
+    ret := sprintf ('http://%s/about/rdf/%s%s', cname, uri, frag);
   return ret;
 }
 ;
