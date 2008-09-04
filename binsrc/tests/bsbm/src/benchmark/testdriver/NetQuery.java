@@ -10,13 +10,14 @@ public class NetQuery {
 	Long start;
 	Long end;
 	
-	protected NetQuery(String serviceURL, String query, byte queryType, String defaultGraph) {
+	protected NetQuery(String serviceURL, String query, String encodedParamString, byte queryType, String defaultGraph) {
 		try {
-			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8");
+			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8") + encodedParamString;
 //			System.out.println(urlString);
 
 			if(defaultGraph!=null)
 				urlString +=  "&default-graph-uri=" + defaultGraph;
+
 			URL url = new URL(urlString);
 			conn = (HttpURLConnection)url.openConnection();
 			conn.setRequestMethod("GET");
@@ -60,9 +61,9 @@ public class NetQuery {
 		} catch(IOException e) {
 			System.err.println("Query Execution error.");
 			System.exit(-1);
-		return null;
-	}
-	
+			return null;
+		}
+
 	}
 	
 	protected double getExecutionTimeInSeconds() {

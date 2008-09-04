@@ -34,7 +34,7 @@ public class ClientManager {
 			if(parent.doSQL)
 				sConn = new SQLConnection(parent.sparqlEndpoint);
 			else
-				sConn = new SPARQLConnection(parent.sparqlEndpoint, parent.defaultGraph);
+				sConn = new SPARQLConnection(parent.sparqlEndpoint, parent.defaultGraph, parent.isParametrized);
 				
 			clients[i] = new ClientThread(pool, sConn, ignoreQueries.length, this, i+1);
 		}

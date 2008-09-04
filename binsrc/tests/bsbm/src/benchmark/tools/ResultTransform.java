@@ -67,13 +67,13 @@ public class ResultTransform {
 				}
 				else
 				{
-				InputStream is = new FileInputStream(file);
-				String[] queries = storesQueriesSizes[x][sizeIndex];
-
-				handler.setArray(queries);
-				saxParser.parse(is, handler);
+					InputStream is = new FileInputStream(file);
+					String[] queries = storesQueriesSizes[x][sizeIndex];
+	
+					handler.setArray(queries);
+					saxParser.parse(is, handler);
+				}
 			}
-		}
 		}
 
 	  } catch(Exception e) {
@@ -190,7 +190,7 @@ public class ResultTransform {
 					if(val.equals("0.0"))
 						sb.append("<td>not executed</td>");
 					else
-					sb.append("<td>"+val+"</td>");
+						sb.append("<td>"+val+"</td>");
 				}
 				else
 					sb.append("<td>no value</td>");

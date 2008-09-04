@@ -145,7 +145,7 @@ public class Generator {
 			System.err.println(e.getMessage());
 			System.exit(-1);
 		}
-	
+		
 		//Product-Producer Relationships in outputDir/pp.dat
 		File vo = new File(outputDir, "vo.dat");
 		ObjectOutputStream offerVendorOutput;
@@ -204,7 +204,7 @@ public class Generator {
 		int[] branchingFactors = new int[depth];
 		
 		branchingFactors[0] = 2 * Math.round(logSF);
-		
+
 		int[] temp = { 2, 4, 8};
 		for(int i=1;i<depth;i++)
 		{
@@ -726,7 +726,7 @@ public class Generator {
 		for(int nr=offerNr;nr<offerNr+hasNrOffers;nr++)
 		{
 			int product = productNrGen.getValue();
-			int producerOfProduct = getProducerOfProduct(product);
+                        int producerOfProduct = getProducerOfProduct(product);
 			double price = valueGen.randomDouble(5, 10000);
 			Long publishDate;
 			if(namedGraph)

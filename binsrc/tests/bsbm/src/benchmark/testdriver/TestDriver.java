@@ -30,7 +30,8 @@ public class TestDriver {
 	private static Logger logger = Logger.getLogger( TestDriver.class );
 	protected boolean[] ignoreQueries;//Queries to ignore
 	protected boolean doSQL = false;
-	private boolean multithreading=false;
+	protected boolean isParametrized = false;
+	private boolean multithreading = false;
 	protected int nrThreads;
 	
 	public TestDriver(String[] args) {
@@ -47,7 +48,7 @@ public class TestDriver {
 			if(doSQL)
 				server = new SQLConnection(sparqlEndpoint);
 			else
-				server = new SPARQLConnection(sparqlEndpoint, defaultGraph);
+				server = new SPARQLConnection(sparqlEndpoint, defaultGraph, isParametrized);
 		} else if(multithreading) {
 			//do nothing
 		}
@@ -96,9 +97,9 @@ public class TestDriver {
 		for(int i=0;i<queryRun.length;i++) {
 			if(queryRun[i]!=null) {
 				Integer qnr = queryRun[i];
-			if(queries[qnr-1]==null) {
-				File queryFile = new File(queryDir, "query" + qnr + ".txt");
-				File queryDescFile = new File(queryDir, "query" + qnr + "desc.txt");
+				if(queries[qnr-1]==null) {
+					File queryFile = new File(queryDir, "query" + qnr + ".txt");
+					File queryDescFile = new File(queryDir, "query" + qnr + "desc.txt");
 					if(doSQL)
 						queries[qnr-1] = new Query(queryFile, queryDescFile, "@");
 					else
@@ -144,8 +145,8 @@ public class TestDriver {
 				if(ignoreQueries[next.getNr()-1])
 					queryMix.setCurrent(0, -1.0);
 				else {
-				server.executeQuery(next, next.getQueryType());
-			}
+					server.executeQuery(next, next.getQueryType());
+				}
 			}
 			System.out.println(nrRun + ": " + String.format(Locale.US, "%.2f", queryMix.getQueryMixRuntime()*1000)
 					+ "ms, total: " + (System.currentTimeMillis()-startTime) + "ms");
@@ -210,7 +211,12 @@ public class TestDriver {
 				else if(args[i].startsWith("-sql")) {
 					doSQL = true;
 				}
-				else if(args[i].startsWith("-mt")) {
+				else if (args[i].startsWith("-param"))
+				{
+					isParametrized = true;
+				}
+				else if (args[i].startsWith("-mt"))
+				{
 					multithreading = true;
 					nrThreads = Integer.parseInt(args[i++ + 1]);
 				}
@@ -256,11 +262,11 @@ public class TestDriver {
 			singleMultiRatio = queryMix.getTotalRuntime()/queryMix.getMultiThreadRuntime();
 		}
 		else
-		sb.append("Total runtime: " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
+			sb.append("Total runtime: " + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + " seconds\n");
 		if(multithreading)
 			sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getMultiThreadQmpH()) + " query mixes per hour\n");
 		else
-		sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getQmph()) + " query mixes per hour\n");
+			sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getQmph()) + " query mixes per hour\n");
 		sb.append("CQET: " + String.format(Locale.US, "%.5f",queryMix.getCQET()) + " seconds average runtime of query mix\n");
 		sb.append("CQET (geom.): " + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + " seconds geometric mean runtime of query mix\n");
 		
@@ -325,11 +331,11 @@ public class TestDriver {
 			singleMultiRatio = queryMix.getTotalRuntime()/queryMix.getMultiThreadRuntime();
 		}
 		else
-		sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
+			sb.append("     <totalruntime>" + String.format(Locale.US, "%.3f",queryMix.getTotalRuntime()) + "</totalruntime>\n");
 		if(multithreading)
 			sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getMultiThreadQmpH()) + "</qmph>\n");
 		else
-		sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getQmph()) + "</qmph>\n");
+			sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getQmph()) + "</qmph>\n");
 		sb.append("     <cqet>" + String.format(Locale.US, "%.5f",queryMix.getCQET()) + "</cqet>\n");
 		sb.append("     <cqetg>" + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + "</cqetg>\n");
 		sb.append("  </querymix>\n");
@@ -416,7 +422,7 @@ public class TestDriver {
 		if(testDriver.multithreading)
 			testDriver.runMT();
 		else
-		testDriver.run();
+			testDriver.run();
 		System.out.println("\n" + testDriver.printResults(true));
 	}
 }

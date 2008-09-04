@@ -10,10 +10,10 @@ WHERE {
 	%ProductXYZ% rdfs:label ?productLabel .
     OPTIONAL {
         ?offer bsbm:product %ProductXYZ% .
-	?offer bsbm:price ?price .
-	?offer bsbm:vendor ?vendor .
-	?vendor rdfs:label ?vendorTitle .
-	?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#DE> .
+		?offer bsbm:price ?price .
+		?offer bsbm:vendor ?vendor .
+		?vendor rdfs:label ?vendorTitle .
+        ?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#DE> .
         ?offer dc:publisher ?vendor . 
         ?offer bsbm:validTo ?date .
         FILTER (?date > %currentDate% )

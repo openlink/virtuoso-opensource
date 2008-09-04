@@ -1,6 +1,6 @@
 package benchmark.testdriver;
 
-	
+
 public interface ServerConnection {
 	/*
 	 * Execute Query with Query Object

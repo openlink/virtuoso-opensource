@@ -114,6 +114,8 @@ public class LocalParameterPool extends AbstractParameterPool {
 				parameters[i] = getRandomReviewURI();
 			else if(parameterTypes[i]==Query.WORD_FROM_DICTIONARY1)
 				parameters[i] = getRandomWord();
+			else if (parameterTypes[i] == Query.WORD_FROM_DICTIONARY1_QUOTED)
+				parameters[i] = "\"" + getRandomWord() + "\"";
 			else
 				parameters[i] = null;
 		}

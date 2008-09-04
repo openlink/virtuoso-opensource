@@ -76,7 +76,7 @@ public class Turtle implements Serializer {
 			String prefix = getPrefixDefinition(bundle);
 			if(prefix!=null)
 				prefixFileWriter.append(prefix);
-				
+			
 			while(it.hasNext())
 			{
 				BSBMResource obj = it.next();
@@ -502,7 +502,7 @@ public class Turtle implements Serializer {
 		result.append(createTriplePO(
 				RDFS.prefixed("comment"),
 				createLiteral(pf.getComment())));
-
+		
 		//dc:publisher
 		result.append(createTriplePO(
 				DC.prefixed("publisher"),

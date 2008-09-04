@@ -1,10 +1,13 @@
 package benchmark.testdriver;
 
+import java.io.UnsupportedEncodingException;
+import java.net.*;
 import java.io.*;
 import java.util.*;
 
 public class Query {
 	private int nr;
+	private String[] parameterNames;
 	private Object[] parameters;
 	private Integer[] parameterFills;
 	private Byte[] parameterTypes;
@@ -12,6 +15,7 @@ public class Query {
 	private Byte queryType;
 	private QueryMix queryMix;
 	private String parameterChar;
+	private String parametrizedQueryString;
 	
 	//Parameter constants
 	public static final byte PRODUCT_PROPERTY_NUMERIC = 1;
@@ -19,10 +23,11 @@ public class Query {
 	public static final byte PRODUCT_TYPE_URI = 3;
 	public static final byte CURRENT_DATE = 4;
 	public static final byte WORD_FROM_DICTIONARY1 = 5;
-	public static final byte PRODUCT_URI = 6;
-	public static final byte REVIEW_URI = 7;
-	public static final byte COUNTRY_URI = 8;
-	public static final byte OFFER_URI = 9;
+	public static final byte WORD_FROM_DICTIONARY1_QUOTED = 6;
+	public static final byte PRODUCT_URI = 7;
+	public static final byte REVIEW_URI = 8;
+	public static final byte COUNTRY_URI = 9;
+	public static final byte OFFER_URI = 10;
 	
 	//query type constants
 	public static final byte SELECT_TYPE = 1;
@@ -83,7 +88,8 @@ public class Query {
 	 * Initialize the Query
 	 */
 	private void init(String queryString, String parameterDescription) {
-		queryStrings = processQueryString(queryString);
+		queryStrings = prepareQueryStrings(queryString);
+		parametrizedQueryString = prepareParametrizedQueryString(queryString);
 		queryType = SELECT_TYPE;//default: Select query
 		
 		if(queryStrings == null) {
@@ -101,6 +107,7 @@ public class Query {
 	 * namely the two arrays parameterFills and parameterTypes
 	 */
 	private void processParameters(String queryString, String parameterDescription) {
+                Vector<String> parameterN = new Vector<String>();
 		//parameterType Array
 		Vector<Byte> parameterT = new Vector<Byte>();
 		//StringTokenizer for the parameter description String
@@ -129,7 +136,7 @@ public class Query {
 			if(parameter.toLowerCase().equals("querytype")) {
 				byte qType = getQueryType(paramType);
 				if(qType==0) {
-					System.err.println("Invalid query type chosen. Use Seclect or Describe." +
+					System.err.println("Invalid query type chosen. Use Select or Describe." +
 									" Using default: Select");
 				}
 				else
@@ -142,14 +149,17 @@ public class Query {
 					System.exit(-1);
 				}
 				mapping.put(parameter, index++);
+				parameterN.add(parameter);
 				parameterT.add(byteType);
 			}
 		}
-		
-		parameterTypes = new Byte[parameterT.size()];
-		for(int i=0;i<parameterT.size();i++)
-			parameterTypes[i] = parameterT.elementAt(i);
 
+		parameterNames = new String[parameterN.size()];
+		parameterTypes = new Byte[parameterT.size()];
+		for(int i=0;i<parameterT.size();i++) {
+			parameterNames[i] = parameterN.elementAt(i);
+			parameterTypes[i] = parameterT.elementAt(i);
+		}
 		
 		//fill parameterFills
 		Vector<Integer> paramFills = new Vector<Integer>();
@@ -186,7 +196,9 @@ public class Query {
 			return CURRENT_DATE;
 		else if(stringType.equals("Dictionary1"))
 			return WORD_FROM_DICTIONARY1;
-		else if(stringType.equals("ProductURI"))
+		else if (stringType.equals("Dictionary1Quoted"))
+			return WORD_FROM_DICTIONARY1_QUOTED;
+		else if (stringType.equals("ProductURI"))
 			return PRODUCT_URI;
 		else if(stringType.equals("ReviewURI"))
 			return REVIEW_URI;
@@ -215,7 +227,7 @@ public class Query {
 	/*
 	 * Get the Query String components without the parameter Strings
 	 */
-	private Vector<String> processQueryString(String queryString) {
+	private Vector<String> prepareQueryStrings(String queryString) {
 		Vector<String> queryStrings = new Vector<String>();
 		
 		int index1 = 0;
@@ -241,8 +253,39 @@ public class Query {
 		queryStrings.add(queryString.substring(index2));
 		return queryStrings;
 	}
-	
-	public void setParameters(Object[] param) {
+
+	/*
+	 * Get the string with parameter palceholders replaced with parameter variables
+	 */
+	private String prepareParametrizedQueryString(String queryString)
+	{
+		StringBuffer res = new StringBuffer();
+		int index1 = 0;
+		int index2 = -1;
+		while (queryString.contains(parameterChar))
+		{
+			index1 = queryString.indexOf(parameterChar, index2 + 1);
+			if (index1 == -1)
+			{
+				index2++;
+				break;
+			}
+			res.append (queryString.substring(index2 + 1, index1));
+			index2 = queryString.indexOf(parameterChar, index1 + 1);
+			if (index2 == -1)
+				return null;//Error: Shouldn't happen
+			String parameter = queryString.substring(index1 + 1, index2);
+			res.append("?");
+			res.append(parameter);
+		}
+		if (index2 == -1)
+			index2++;
+		res.append(queryString.substring(index2));
+		return res.toString();
+	}
+
+	public void setParameters(Object[] param)
+	{
 		if(parameters.length==param.length)
 			parameters = param;
 		else {
@@ -265,7 +308,29 @@ public class Query {
 
 		return s.toString();
 	}
-	
+	public String getParametrizedQueryString() {
+		return parametrizedQueryString;
+	}
+	public String getEncodedParamString()
+	{
+		StringBuffer s = new StringBuffer();
+		try {
+			for (int i = 0; i < parameterNames.length; i++)
+			{
+				StringBuffer s1 = new StringBuffer();
+				s.append("&%3F");
+				s.append(parameterNames[i]);
+				s.append("=");
+				s1.append(parameters[i]);
+				s.append(URLEncoder.encode(s1.toString(), "UTF-8"));
+			}
+		} catch(UnsupportedEncodingException e) {
+			System.err.println(e.toString());
+			System.exit(-1);
+		}
+		return s.toString();
+	}
+
 	public Byte[] getParameterTypes() {
 		return parameterTypes;
 	}

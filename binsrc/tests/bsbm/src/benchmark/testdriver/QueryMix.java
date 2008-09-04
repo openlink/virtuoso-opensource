@@ -31,7 +31,7 @@ public class QueryMix {
 	public void setMultiThreadRuntime(double multiThreadRuntime) {
 		this.multiThreadRuntime = multiThreadRuntime;
 	}
-	
+
 	public QueryMix(Query[] queries, Integer[] queryMix) {
 		this.queries = queries;
 		this.queryMix = queryMix;
@@ -86,7 +86,7 @@ public class QueryMix {
 			minResults[i] = Integer.MAX_VALUE;
 		}
 	}
-		
+	
 	/*
 	 * Add results of a CompiledQueryMix
 	 */
@@ -212,6 +212,7 @@ public class QueryMix {
 		
 		currentQueryIndex++;
 	}
+	
 
 	public Query[] getQueries() {
 		return queries;
@@ -244,7 +245,7 @@ public class QueryMix {
 	public double getQmph() {
 		return 3600 / (totalRuntime / queryMixRuns);
 	}
-
+	
 	public double getMultiThreadQmpH() {
 		return 3600 / (multiThreadRuntime / queryMixRuns);
 	}
