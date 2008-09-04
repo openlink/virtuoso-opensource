@@ -790,16 +790,16 @@ create procedure virt_proxy_init ()
 {
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'PROXY'))
   DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
-  if (registry_get ('DB.DBA.virt_proxy_init_state') = '1.0')
+  if (registry_get ('DB.DBA.virt_proxy_init_state') = '1.1')
     return;
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_http_proxy_rule_1', 1,
       '/proxy/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
-      '/proxy?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'));
+      '/proxy?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1'));
   DB.DBA.VHOST_REMOVE (lpath=>'/proxy');
   DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
-  registry_set ('DB.DBA.virt_proxy_init_state', '1.0');
+  registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
 ;
 
