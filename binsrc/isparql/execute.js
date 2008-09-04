@@ -13,7 +13,7 @@
 	iSPARQL query executer & visualizer
 */
 
-window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#'},
+window.defaultPrefixes = [
 						 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
 						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
 						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
@@ -31,7 +31,7 @@ window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/
 						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
 						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
 						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
-						 {"label":'skos', "uri":'http://www.w3.org/2004/02/skos/core#'},
+						 {"label":'skos', "uri":'http://www.w3.org/2008/05/skos#'},
 						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
 						 {"label":'opo',"uri":'http://ggg.milanstankovic.org/opo/ns/'},
 						 {"label":'nco',"uri":'http://www.semanticdesktop.org/ontologies/nco/'},
@@ -45,6 +45,7 @@ window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/
 						 {"label":'kuaba',"uri":'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba'},
 						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
 						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
+						 {"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
 						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
 						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
 
