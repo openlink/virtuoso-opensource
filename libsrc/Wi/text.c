@@ -2469,10 +2469,26 @@ sst_related (search_stream_t * sst1, search_stream_t * sst2, int dist, int dist_
   sst1->sst_related = dk_set_conc(sst1->sst_related, addon);
 }
 
-
 #define SST_IS_MERGEABLE(super, term) \
-  ( (super->sst_op == BOP_AND && (term->sst_op == SRC_NEAR || term->sst_op == SRC_WORD_CHAIN || term->sst_op == BOP_AND)) \
+  ( (super->sst_op == BOP_AND && \
+     (term->sst_op == SRC_NEAR || term->sst_op == SRC_WORD_CHAIN || term->sst_op == BOP_AND) && \
+     sst_term_is_mergable (term)) \
     || (super->sst_op == SRC_NEAR && (term->sst_op == SRC_NEAR)))
+
+int
+sst_term_is_mergable (search_stream_t * term)
+{
+  int inx;
+  DO_BOX (search_stream_t *, sst, inx, term->sst_terms)
+    {
+      if (sst->sst_op != SRC_WORD_CHAIN && sst->sst_op != SRC_NEAR && sst->sst_op != BOP_AND && sst->sst_op != SRC_WORD)
+	return 0;
+      if (sst->sst_op != SRC_WORD && !sst_term_is_mergable (sst))
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
 
 void
 sst_interrelate (search_stream_t * sst, int calc_score)
