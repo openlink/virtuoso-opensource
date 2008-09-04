@@ -37,7 +37,7 @@ OAT.Preferences = {
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
 	endpointXmla:"/XMLA",
-	version:"2.7",
+	version:"2.8",
 	build:"$Date$",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
@@ -141,6 +141,16 @@ String.prototype.leadingZero = function(length) {
 	var tmp = this;
 	while (tmp.length < l)  { tmp = "0"+tmp; }
 	return tmp.toString();
+}
+
+String.prototype.truncate = function(maxlen) {
+	var str = this.trim();
+	if (!maxlen || maxlen < 2)
+		maxlen = 20;
+	if (str.length <= maxlen)
+		return this;
+	var half = Math.floor(maxlen / 2);
+	return str.substr(0, half) + "..." + str.substr(length-half); /* IE does not support negative numbers in substr */
 }
 
 Number.prototype.toSize = function() {

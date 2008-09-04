@@ -85,7 +85,8 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 			});
 		break;
 		case OAT.MapData.TYPE_MS: 
-				self.obj = new VEMap(self.elm.id,specificOptions);
+				self.elm.id = 'our_mapping_element';
+				self.obj = new VEMap('our_mapping_element',specificOptions);
 			try {
 				self.obj.LoadMap();
 			} 
@@ -95,8 +96,9 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 		case OAT.MapData.TYPE_OL: 
 		    self.obj = new OpenLayers.Map(self.elm,specificOptions);
 		    var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS", 
-		        "http://labs.metacarta.com/wms/vmap0?", {layers: 'basic'} );
+					"http://labs.metacarta.com/wms/vmap0", {layers: 'basic'} );
 		    self.obj.addLayer(wms);
+				
             var wms = new OpenLayers.Layer.KaMap("Satellite",
 				"http://openlayers.org/world/index.php",{g:"satellite",map:"world"});
 		    self.obj.addLayer(wms);

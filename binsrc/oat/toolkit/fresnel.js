@@ -206,7 +206,7 @@ OAT.Fresnel = function(optObj) {
 				var obj = tmp.preds[format][0];
 				if (self.ns+"contentBefore" in obj.preds) {	
 					pre = self.xmlDoc.createElement("fresnel_text");
-					pre.appendChild(self.xml.createTextNode(obj.preds[self.ns+"contentBefore"]));	
+					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentBefore"]));	
 				}
 				if (self.ns+"contentAfter" in obj.preds) { 
 					post = self.xmlDoc.createElement("fresnel_text");

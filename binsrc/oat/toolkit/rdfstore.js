@@ -68,7 +68,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.filtersProperty = [];
 	this.items = [];
 		
-	this.addURL = function(u,onstart,onend) {
+	this.addURL = function(u,onstart,onend,title) {
 		var url = u.toString().trim();
 		var cback = function(str) {
 			if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
@@ -97,8 +97,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 
 				/* replace some special characters in objects */
 				t[2] = decode(t[2]);
+				
+				if (!title) 
+					if (t[1] == "http://purl.org/dc/elements/1.1/title")
+						title = t[2];
 			}
-			self.addTriples(triples,url);
+			self.addTriples(triples,url,title);
 		}
 		var start = onstart ? onstart : self.options.ajaxStart;
 		var end = onend ? onend : self.options.ajaxEnd;
@@ -115,11 +119,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		self.addTriples(triples,href);
 	}
 		
-	this.addTriples = function(triples,href) {
+	this.addTriples = function(triples,href,title) {
 		var o = {
 			triples:triples,
 			href:href || "",
-			enabled:true
+			enabled:true,
+			title:title
 		}
 		self.items.push(o);
 		self.rebuild(false);
@@ -217,7 +222,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			self.data.all = [];
 			for (var i=0;i<self.items.length;i++) {
 				var item = self.items[i];
-				if (item.enabled) { todo.push([item.triples,item.href]); }
+				if (item.enabled) { todo.push([item.triples,item.href,item.title]); }
 			}
 		} else { /* not complete - only last item */
 			for (var i=0;i<self.data.all.length;i++) {
@@ -225,7 +230,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				conversionTable[item.uri] = item;
 			}
 			var item = self.items[self.items.length-1];
-			todo.push([item.triples,item.href]);
+			todo.push([item.triples,item.href,item.title]);
 		}
 		for (var i=0;i<todo.length;i++) { 
 			var triples = todo[i][0];

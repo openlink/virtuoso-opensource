@@ -53,15 +53,17 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		
 	this.options = {
 		pageSize:20,
-		removeNS:true
+		removeNS:true,
+		description:"This module is used for viewing all filtered data, structured into resource items.",
+		desc:"All filtered data structured into resource items"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.initialized = false;
 	this.dataDiv = OAT.Dom.create("div",{},"rdf_data");
 	this.sortDiv = OAT.Dom.create("div",{},"rdf_sort");
-	this.description = "This module is used for viewing all filtered data, structured into resource items.";
-	this.desc = "All filtered data structured into resource items";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.parent = parent;
 	this.sortTerm = false;
 	this.groupMode = false;
@@ -321,7 +323,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 		
 	this.options = {
-		limit:5
+		limit:5,
+		description:"This module is used to navigate through locally cached data, one resource at a time. Note that filters are not applied here.",
+		desc:"Navigate through locally cached data (Filters not applied)"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
@@ -334,8 +338,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.mlCache = [];
 	this.topDiv = OAT.Dom.create("div",{},"rdf_nav");
 	this.mainDiv = OAT.Dom.create("div");
-	this.description = "This module is used to navigate through locally cached data, one resource at a time. Note that filters are not applied here.";
-	this.desc = "Navigate through locally cached data (Filters not applied)";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	OAT.Dom.append([self.elm,self.topDiv,self.mainDiv]);
 
 	this.gd = new OAT.GhostDrag();
@@ -719,7 +723,9 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	OAT.RDFTabs.parent(self);
 	this.options = {
 		pageSize:100,
-		removeNS:true
+		removeNS:true,
+		description:"This module displays all filtered triples.",
+		desc:"All filtered triples"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -729,8 +735,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	this.currentPage = 0;
 	this.pageDiv = OAT.Dom.create("div");
 	this.gridDiv = OAT.Dom.create("div");
-	this.description = "This module displays all filtered triples.";
-	this.desc = "All filtered triples";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	
 	this.select = OAT.Dom.create("select");
 	OAT.Dom.option("Human readable","0",this.select);
@@ -830,13 +836,18 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	var self = this;
 	OAT.RDFTabs.parent(self);
 	this.options = {
-		limit:100
+		limit:100,
+		description:"",
+		desc:"Filtered data as SVG Graph"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
+	if (!self.options.description)
+		 self.options.description = "This module displays filtered data as SVG Graph. For performance reasons, the number of used triples is limited to "+self.options.limit+"."
+
 	this.parent = parent;
-	this.description = "This module displays filtered data as SVG Graph. For performance reasons, the number of used triples is limited to "+self.options.limit+".";
-	this.desc = "Filtered data as SVG Graph";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.elm.style.position = "relative";
 	this.elm.style.height = "600px";
 	this.elm.style.top = "24px";
@@ -881,14 +892,16 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	
 	this.options = {
 		provider:OAT.MapData.TYPE_G,
-		fix:OAT.MapData.FIX_ROUND1
+		fix:OAT.MapData.FIX_ROUND1,
+		description:"This module plots all geodata found in filtered resources onto a map.",
+		desc:"Plots all geodata onto a map"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.map = false;
 	this.parent = parent;
-	this.description = "This module plots all geodata found in filtered resources onto a map.";
-	this.desc = "Plots all geodata onto a map";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.elm.style.position = "relative";
 	this.elm.style.height = "600px";
 	
@@ -1049,14 +1062,16 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	OAT.RDFTabs.parent(self);
 	
 	this.options = {
-		imagePath:OAT.Preferences.imagePath
+		imagePath:OAT.Preferences.imagePath,
+		description:"This module displays all date/time containing resources on an interactive timeline.",
+		desc:"Date/time on timeline"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
 	this.initialized = false;
 	this.parent = parent;
-	this.description = "This module displays all date/time containing resources on an interactive timeline.";
-	this.desc = "Date/time on timeline";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.elm.style.position = "relative";
 	this.elm.style.margin = "1em";
 	this.elm.style.top = "20px";
@@ -1156,7 +1171,9 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	this.options = {
 		columns:4,
 		thumbSize:150,
-		size:600
+		size:600,
+		description:"This module displays all images found in filtered data set.",
+		desc:"Images from filtered data set"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1166,8 +1183,8 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	this.cache = {};
 	this.images = [];
 	this.container = false;
-	this.description = "This module displays all images found in filtered data set.";
-	this.desc = "Images from filtered data set";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.dimmer = false;
 
 	this.showBig = function(index) {
@@ -1325,13 +1342,15 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 	OAT.RDFTabs.parent(self);
 
 	this.options = {
+		description:"This module displays all links found in filtered data set.",
+		desc:"Links from filtered data set"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.parent = parent;
 	this.initialized = false;
-	this.description = "This module displays all links found in filtered data set.";
-	this.desc = "Links from filtered data set";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	this.clouds = [];
 
 	this.addTag = function(item,cloud) {
@@ -1413,7 +1432,9 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 
 	this.options = {
 		defaultURL:"",
-		autoload:false
+		autoload:false,
+		description:"This module applies Fresnel RDF Vocabularies to all dereferenced data.",
+		desc:"Fresnel RDF Vocabularies to dereferenced data"
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
@@ -1422,8 +1443,8 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 	this.inputElm = OAT.Dom.create("div");
 	this.mainElm = OAT.Dom.create("div",{},"rdf_fresnel");
 	this.elm.className = "rdf_fresnel";
-	this.description = "This module applies Fresnel RDF Vocabularies to all dereferenced data.";
-	this.desc = "Fresnel RDF Vocabularies to dereferenced data";
+	this.description = self.options.description;
+	this.desc = self.options.desc;
 	OAT.Dom.append([self.elm,self.inputElm,self.mainElm]);
 	self.fresnel = new OAT.Fresnel();
 	
@@ -1444,7 +1465,52 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 			var xmlDoc = results[0];
 			var out = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
 			OAT.Dom.clear(self.mainElm);
-			self.mainElm.innerHTML = OAT.Xml.serializeXmlDoc(out);
+			self.mainElm.innerHTML = OAT.Xml.unescape(OAT.Xml.serializeXmlDoc(out));
+			return;
+
+			/* FIXME: NOTREACHED, skip this until full implementation is available */
+
+			/* gimme a string, i'll return a triple with string as object */
+			var find = function(str) {
+				var triples = self.parent.data.triples;
+				for (var i=0;i<triples.length;i++) {
+					var t = triples[i];
+					var o = t[2];
+					if (str == o) { return t; }	
+				}
+				return false;
+			}
+
+			/* get all spans and hrefs from fresnell processed page */
+			var all = [];
+			var spans = self.mainElm.getElementsByTagName("span");
+			var hrefs = self.mainElm.getElementsByTagName("a");
+
+			for (var i=0;i<spans.length;i++) { all.push(spans[i]); }
+			for (var i=0;i<hrefs.length;i++) { all.push(hrefs[i]); }
+			
+			for (var i=0;i<all.length;i++) {
+				/* get the nodes content */
+				var node = all[i];
+				var str = decodeURIComponent(node.innerHTML);
+				/* do we have a matching triple? we should, since
+				 * the fresnel processed same RDF as we did
+				 * FIXME: there could be more than one triple matching
+				 */
+				var triple = find(str);
+				if (!triple) { continue; }
+
+				/* create link */
+				var a = OAT.Dom.create("a");
+				a.innerHTML = str;
+
+				/* href is a resource */
+				a.href = triple[0];
+				OAT.Dom.clear(node);
+				node.appendChild(a);
+				/* attach a++, or do something else */
+				self.parent.processLink(a,triple[0]);
+			}
 		}
 		OAT.AJAX.GET(OAT.Preferences.xsltPath+"fresnel2html.xsl",false,cb,{type:OAT.AJAX.TYPE_XML});
 	} /* redraw */
