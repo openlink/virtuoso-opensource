@@ -449,16 +449,22 @@ box_dict_hashtable_destr_hook (caddr_t dict)
   int line = __LINE__;
 #endif
   caddr_t *key, *val;
+  id_hash_t * ht = (id_hash_t*)dict;
   id_hash_iterator_t hit;
 #ifndef NDEBUG
   if (0 != ((id_hash_t *)(dict))->ht_dict_refctr)
     GPF_T1("Destructor on hashtable with references");
 #endif
+  if (ht->ht_free_hook)
+    ht->ht_free_hook (ht);
+  else 
+    {
   id_hash_iterator (&hit, (id_hash_t *)(dict));
   while (hit_next (&hit, (caddr_t *)(&key), (caddr_t *)(&val)))
     {
       dk_free_tree (key[0]);
       dk_free_tree (val[0]);
+    }
     }
   id_hash_clear ((id_hash_t *)(dict));
   ID_HASH_FREE_INTERNALS((id_hash_t *)(dict));
