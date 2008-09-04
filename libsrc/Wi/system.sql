@@ -4630,6 +4630,20 @@ create procedure EXEC_STMT (in stmt_text varchar, in mode integer)
 }
 ;
 
+create procedure EXEC_AS (in stmt_text varchar, in uname varchar, in mode integer := 0)
+{
+   declare state, msg varchar;
+   declare meta, res any;
+
+   set_user_id (uname);
+
+   if (mode)
+     return execstr (stmt_text);
+
+   exec (stmt_text, state, msg, vector (), 100, meta, res);
+}
+;
+
 
 --!AWK PUBLIC
 create procedure RSTMTEXEC (in dsn varchar, in stmt varchar, in max_rows integer := 0, in params_array any := null)
