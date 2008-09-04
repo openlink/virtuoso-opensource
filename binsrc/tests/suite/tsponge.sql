@@ -38,9 +38,9 @@ ECHO BOTH ": RDFa example : " $ROWCNT " triples, expected 6\n";
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/inline.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Inline transformation reference : " $ROWCNT " triples, expected 2\n";
+ECHO BOTH ": Inline transformation reference : " $ROWCNT " triples, expected 1\n";
 
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/baseURI.html>
