@@ -423,9 +423,10 @@ sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, in
 	{
 	  int n_eqs2 = sqlo_leading_eqs (key, joined->_.table.col_preds);
 	  if (n_eqs2 && key->key_n_significant - n_eqs2 == tb_dfe->_.table.key->key_n_significant - n_eqs
-	      && key->key_n_significant > n_eqs2)
+	      && key->key_n_significant > n_eqs2
+	      && (!key->key_is_bitmap || n_eqs2 == key->key_n_significant - 1))
 	    {
-	      /* equal and non-zero no of free vars */
+	      /* equal and non-zero no of free vars.  But if bm inx, then only one free var allowed. */
 	      int nth;
 	      for (nth = 0; nth < key->key_n_significant - n_eqs2; nth++)
 		{
@@ -511,6 +512,7 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
     return;
   n_eqs = sqlo_leading_eqs (tb_dfe->_.table.key, tb_dfe->_.table.col_preds);
   if (!n_eqs
+      || (n_eqs != tb_dfe->_.table.key->key_n_significant - 1 && tb_dfe->_.table.key->key_is_bitmap)
       || !dk_set_is_subset (tb_dfe->_.table.key->key_parts, tb_dfe->_.table.ot->ot_table_refd_cols))
     return;
 

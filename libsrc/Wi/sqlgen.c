@@ -781,6 +781,21 @@ sqlg_inx_op_ssls (sqlo_t * so, inx_op_t * iop)
 }
 
 
+int
+iop_one_col_free (inx_op_t * iop)
+{
+  /* the full spec is one longer than the start spec 
+  * The iop_other trick is applicable only if all except the last key part are fixed in the inx int */
+  int n_start = 0, n_full = 0;
+  search_spec_t * sp1, *sp2;
+  for (sp1 = iop->iop_ks_start_spec.ksp_spec_array; sp1; sp1 = sp1->sp_next)
+    n_start++;
+  for (sp2 = iop->iop_ks_full_spec.ksp_spec_array; sp2; sp2 = sp2->sp_next)
+    n_full++;
+  return n_start == n_full - 1;
+}
+
+
 inx_op_t *
 sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * parent_iop)
 {
@@ -806,12 +821,12 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 	  {
 	    sqlg_inx_op_and_ks (so, iop, term, dio, (df_inx_op_t*) dk_set_nth (dio->dio_terms, inx));
 	    sqlg_inx_op_ssls (so, term);
-	    if (0 != inx)
-	      if (2 == n_terms)
+	    if (0 != inx
+		&& 2 == n_terms && iop_one_col_free (term))
 		term->iop_other = iop->iop_terms[0]; /* Most inx ands are with 2.  If more, the iop_other trick for looking in the other's state while advancing will cause advances to be missed */
 	  }
 	END_DO_BOX;
-	if (2 == n_terms)
+	if (2 == n_terms && iop_one_col_free (iop->iop_terms[0]))
 	iop->iop_terms[0]->iop_other = iop->iop_terms[1];
 	break;
       }
