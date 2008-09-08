@@ -5346,6 +5346,12 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in quick_gc_only integer 
   vectorbld_final (objs_of_s);
   -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found descendants ', objs_of_s);
   delete from DB.DBA.RDF_QUAD where G = graphiri_id and S = seed_id;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s virtrdf:isSubClassOf ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s virtrdf:isSubClassOf ?o . filter (?o = iri(?:seed_id)) };
+
   commit work;
   foreach (IRI_ID descendant in objs_of_s) do
     {
@@ -5668,6 +5674,11 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
         bij := 1;
     }
   bij_sff_count := 0;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:sprintffsid)) };
   for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
     {
       declare sff varchar;
@@ -5683,6 +5694,16 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
     }
   if ((not bij) and (bij_sff_count = sff_count) and (bij_sff_count > 0))
     bij := 1;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:classiri)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:superformatsid)) };
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
@@ -5810,6 +5831,16 @@ fheaders is, say,
     res := vector ();
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:classiri)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:superformatsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:classiri)`
         rdf:type virtrdf:QuadMapFormat;
@@ -5843,6 +5874,11 @@ fheaders is, say,
       declare sffsid varchar;
       sffsid := classiri || '--Sprintffs';
       sff_count := length (sffs);
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+      from <http://www.openlinksw.com/schemas/virtrdf#>
+      where { ?s ?p ?o . filter (?s = iri(?:sffsid)) };
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -5944,6 +5980,16 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
     }
   else
     res := vector ();
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:classiri)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:superformatsid)) };
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -6110,6 +6156,16 @@ create function DB.DBA.RDF_QM_DEFINE_QUAD_STORAGE (in storage varchar) returns a
   qsusermaps := storage || '--UserMaps';
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:storage)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qsusermaps)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:storage)`
         rdf:type virtrdf:QuadStorage ;
@@ -6162,6 +6218,11 @@ create function DB.DBA.RDF_QM_STORE_ATABLES (in qmvid varchar, in atablesid varc
       inner_id := qmvid || '-atable-' || alias || '-' || qtable;
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+      from <http://www.openlinksw.com/schemas/virtrdf#>
+      where { ?s ?p ?o . filter (?s = iri(?:inner_id)) };
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
           `iri(?:atablesid)`
             `iri (bif:sprintf ("%s%d", str (rdf:_), ?:atablectr+1))` `iri(?:inner_id)` .
@@ -6202,6 +6263,16 @@ create function DB.DBA.RDF_QM_FT_USAGE (in ft_type varchar, in ft_alias varchar,
     return ftid;
   if (ftcondsid is not null)
     DB.DBA.RDF_QM_GC_SUBTREE (ftcondsid);
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:ftid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:ftcondsid)) };
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -6457,6 +6528,26 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   columnsformkey := DB.DBA.RDF_QM_CHECK_COLUMNS_FORM_KEY (sqlcols);
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmvid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmvatablesid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmvcolsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmvcondsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvid)`
         rdf:type virtrdf:QuadMapValue ;
@@ -6483,6 +6574,11 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       alias := sqlcol[1];
       colname := sqlcol[2];
       inner_id := qmvid || '-col-' || alias || '-' || colname;
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+      from <http://www.openlinksw.com/schemas/virtrdf#>
+      where { ?s ?p ?o . filter (?s = iri(?:inner_id)) };
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -6636,6 +6732,26 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
     atablesid := NULL;
   if (0 = condcount)
     qmcondsid := NULL;
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:atablesid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmcondsid)) };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
+  from <http://www.openlinksw.com/schemas/virtrdf#>
+  where { ?s ?p ?o . filter (?s = iri(?:qmusersubmapsid)) };
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
