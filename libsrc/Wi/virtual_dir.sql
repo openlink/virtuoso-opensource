@@ -842,6 +842,13 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
           accept := '';
 	  if (header is not null and length (header))
 	    accept := http_request_header (split_and_decode (header, 0, '\0\0\r\n'), 'Accept', null, null);
+	  else
+	    {
+	      accept := http_request_header_full (http_request_header(), 'Accept', '*/*');
+	      accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+	      if (accept is null)
+	        accept := '';
+	    }
 	  if ("output-format" is not null)
 	    {
 	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml')
@@ -1012,21 +1019,12 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 }
 ;
 
-create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar, in lines any, in graph_mode int)
+-- /* get a header field based on max of quality value */
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
 {
-  declare host, stat, msg, qry, data, meta, accept, format, itm, q, graph, url, ssl varchar;
-  declare ses, arr any;
+  declare format, itm, q varchar;
+  declare arr any;
   declare best_q, i, l int;
-
-  ses := 0;
-  host := http_request_header(lines, 'Host', null, '');
-  accept := http_request_header_full (lines, 'Accept', '*/*');
-  qry := http_request_get ('QUERY_STRING');
-  ssl := '';
-  if (is_https_ctx ())
-    ssl := 's';
-  if (length (qry))
-    path := path || '?' || qry;
 
   arr := split_and_decode (accept, 0, '\0\0,;');
   best_q := 0;
@@ -1053,6 +1051,27 @@ create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar
 	  format := itm;
 	}
     }
+  return format;
+}
+;
+
+create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar, in lines any, in graph_mode int)
+{
+  declare host, stat, msg, qry, data, meta, accept, format, graph, url, ssl varchar;
+  declare ses any;
+
+  ses := 0;
+  host := http_request_header(lines, 'Host', null, '');
+  accept := http_request_header_full (lines, 'Accept', '*/*');
+  qry := http_request_get ('QUERY_STRING');
+  ssl := '';
+  if (is_https_ctx ())
+    ssl := 's';
+  if (length (qry))
+    path := path || '?' || qry;
+
+  format := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+
   if (format is null)
     accept := http_request_header (lines, 'Accept', null, null);
 
