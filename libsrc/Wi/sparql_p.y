@@ -420,6 +420,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_qm_sqlcol
 %type <box> spar_qm_sql_id
 %type <box> spar_qm_iriref_const_expn
+%type <nothing> spar_graph_identified_by_opt
 %type <nothing> spar_graph_identified_by
 %type <nothing> spar_opt_dot_and_end
 
@@ -1386,7 +1387,7 @@ spar_in_graph_precode_opt
 		if (NULL != dflt_graphs->next)
 		  spar_error (sparp_arg, "No 'INTO GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
-	| spar_in_or_into spar_graph_identified_by spar_precode_expn	{ $$ = $3; }
+	| spar_in_or_into spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
 	;
 
 spar_from_graph_precode_opt
@@ -1397,7 +1398,7 @@ spar_from_graph_precode_opt
 		if (NULL != dflt_graphs->next)
 		  spar_error (sparp_arg, "No 'FROM GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
-	| FROM_L spar_graph_identified_by spar_precode_expn	{ $$ = $3; }
+	| FROM_L spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
 	;
 
 spar_graph_precode_opt
@@ -1408,7 +1409,7 @@ spar_graph_precode_opt
 		if (NULL != dflt_graphs->next)
 		  spar_error (sparp_arg, "No 'GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
-	| spar_graph_identified_by spar_precode_expn	{ $$ = $2; }
+	| spar_graph_identified_by_opt spar_precode_expn	{ $$ = $2; }
 	;
 
 spar_in_or_into
@@ -2008,12 +2009,17 @@ spar_qm_iriref_const_expn	/* [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' Str
 		$$ = spar_make_iri_from_template (sparp_arg, $3); }
 	;
 
+spar_graph_identified_by_opt
+	: /* empty */			{}
+	| spar_graph_identified_by	{}
+	;
+
 spar_graph_identified_by
 	: GRAPH_L			{}
 	| GRAPH_L IDENTIFIED_L BY_L	{}
 	;
 
 spar_opt_dot_and_end
-	: END_OF_SPARQL_TEXT {;}
-	| _DOT END_OF_SPARQL_TEXT {;}
+	: END_OF_SPARQL_TEXT		{}
+	| _DOT END_OF_SPARQL_TEXT	{}
 	;

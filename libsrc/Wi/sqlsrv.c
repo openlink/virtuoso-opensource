@@ -55,13 +55,10 @@
 #include "sqltype.h"
 #include "wi.h"
 #include "recovery.h"
+#include "shcompo.h"
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
-
-#ifdef NO_OPLKIT
-#define DEFAULT_MAX_CONNECTIONS 100
-#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -3690,6 +3687,7 @@ srv_global_init (char *mode)
   ddl_fk_init ();
   db_replay_registry_sequences ();
   local_commit (bootstrap_cli);
+  shcompo_init ();
 #ifdef BIF_XML
   shuric_init ();
   ddl_init_xml ();

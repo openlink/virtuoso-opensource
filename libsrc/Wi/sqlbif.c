@@ -79,6 +79,7 @@ extern "C" {
 #include "sqlcstate.h"
 #include "virtpwd.h"
 #include "rdf_core.h"
+#include "shcompo.h"
 
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
@@ -7579,7 +7580,7 @@ caddr_t
 get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt)
 {
   int inx, len = BOX_ELEMENTS (arr);
-  for (inx = 0; inx < len; inx += 2)
+  for (inx = 0; inx < len-1; inx += 2)
     {
       caddr_t key = arr[inx];
       dtp_t keydtp = DV_TYPE_OF (key);
@@ -11234,12 +11235,16 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *new_params = NULL;
   dtp_t ptype = DV_DB_NULL;
   caddr_t err = NULL;
-  query_t *qr;
+  query_t *qr = NULL;
   long max = 0;
   client_connection_t *cli = qi->qi_client;
   caddr_t res = NULL;
   dk_set_t warnings = NULL;
   ST *pt = NULL;
+  boxint max_rows = -1;
+  int max_rows_is_set = 0;
+  caddr_t *options = NULL;
+  shcompo_t *shc = NULL;
   PROC_SAVE_VARS;
 
   _text = bif_arg (qst, args, 0, "exec");
@@ -11268,24 +11273,67 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
-  if (n_args < 8 || !ssl_is_settable (args[7]))
-    { /* no cursor for stored procedures */
       if (n_args > 4)
 	{
-	  cli->cli_resultset_max_rows = (long) bif_long_arg (qst, args, 4, "exec");
-	  if (!cli->cli_resultset_max_rows)
-	    cli->cli_resultset_max_rows = -1;
+      dtp_t options_dtp;
+      options = (caddr_t *)bif_arg(qst, args, 4, "exec");
+      options_dtp = DV_TYPE_OF (options);
+      if (DV_ARRAY_OF_POINTER != options_dtp)
+        {
+          if (DV_LONG_INT == options_dtp)
+            {
+              max_rows = unbox ((caddr_t)options);
+              max_rows_is_set = 1;
+              options = NULL;
 	}
+          else if (DV_DB_NULL == options_dtp)
+            options = NULL;
+          else
+            sqlr_new_error ("22023", "SR599", "Argument #5 of exec() should be either integer (max no of rows) or array of options or NULL");
+        }
+      else
+        {
+          caddr_t b = get_keyword_ucase_int (options, "max_rows", NULL);
+          if (NULL != b)
+            {
+              max_rows = unbox (b);
+              max_rows_is_set = 1;
+              dk_free_tree (b);
+            }
+        }
+    }
+  if (n_args < 8 || !ssl_is_settable (args[7]))
+    { /* no cursor for stored procedures */
+      if (max_rows_is_set)
+        cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
       if (n_args > 5 && ssl_is_settable (args[5]))
 	cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
       if (n_args > 6 && ssl_is_settable (args[6]))
 	cli->cli_resultset_data_ptr = &proc_resultset;
     }
-
+  if (NULL != options)
+    {
+      caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
+      if ((DV_LONG_INT == DV_TYPE_OF (cache_b)) && unbox (cache_b))
+        {
+          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+          if (NULL == err)
+            {
+              shcompo_recompile_if_needed (&shc);
+              if (NULL != shc->shcompo_error)
+                err = box_copy_tree (shc->shcompo_error);
+            }
+          if (NULL == err)
+            qr = (query_instance_t *)(shc->shcompo_data);
+          goto qr_set;
+        }
+    }
   if (pt)
     qr = sql_compile_1 ("", qi->qi_client, &err, SQLC_DEFAULT, pt, NULL);
   else
     qr = sql_compile (text, qi->qi_client, &err, SQLC_DEFAULT);
+
+qr_set:
   if (err)
     {
       PROC_RESTORE_SAVED;
@@ -11328,8 +11376,8 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (proc_resultset)
 	dk_free_tree (list_to_array (proc_resultset));
 
-      if (n_args > 4)
-	max = (long) bif_long_arg (qst, args, 4, "exec");
+      if (max_rows > 0)
+	max = max_rows;
 
       comp = qr_describe (qr, NULL);
       n_cols = BOX_ELEMENTS (comp->sc_columns);
@@ -11446,6 +11494,9 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 done:
   dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+  if (NULL != shc)
+    shcompo_release (shc);
+  else
   qr_free (qr);
   return res ? res : box_num (0);
 }

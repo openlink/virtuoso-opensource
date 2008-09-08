@@ -9014,9 +9014,11 @@ host_found:
   metas := null;
   rset := null;
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
+  -- dbg_obj_princ ('full_query = ', full_query);
+  -- dbg_obj_princ ('qry_params = ', qry_params);
   set_user_id ('SPARQL');
   commit work;
-  exec ( concat ('sparql ', full_query), state, msg, qry_params, maxrows, metas, rset);
+  exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
