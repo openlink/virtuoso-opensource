@@ -8490,6 +8490,7 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
   in httpcode varchar, in httpstatus varchar,
   in query varchar, in state varchar, in msg varchar, in accept varchar := null)
 {
+  -- dbg_obj_princ ('DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (...', httpcode, httpstatus, '...', state, msg, accept);
 --  declare exit handler for sqlstate '*' { signal (state, msg); };
   if (httpstatus is null)
     {
@@ -9737,12 +9738,24 @@ perform_actual_load:
       -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
       --ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
       {
+        declare new_origin_uri_save varchar;
         declare exit handler for sqlstate '*' {
 	  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
 	  resignal;
 	};
+	new_origin_uri_save := new_origin_uri;
       ret_body := DB.DBA.RDF_HTTP_URL_GET (new_origin_uri, '', ret_hdr, get_method, req_hdr, NULL, get_proxy, 0);
+	if (new_origin_uri <> new_origin_uri_save)
+	  {
+	    declare pos int;
+	    pos := position ('http-redirect-to', options);
+	    if (pos > 0)
+	      options[pos-1] := new_origin_uri;
+	    else
+	      options := vector_concat (options, vector ('http-redirect-to', new_origin_uri));
+	  }
+	new_origin_uri := new_origin_uri_save;
       }
       -- dbg_obj_princ ('http_get returned header: ', ret_hdr);
       if (ret_hdr[0] like 'HTTP%404%')
