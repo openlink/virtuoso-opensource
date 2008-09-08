@@ -263,12 +263,14 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
   nss := xmlnss_get (xtree_doc (strg));
   ses := string_output ();
   http ('@prefix opl: <http://www.openlinksw.com/schema/attribution#> .\n', ses);
+  http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)
     {
       http (sprintf ('<%s> a opl:DataSource .\n', nss[i+1]), ses);
-      http (sprintf ('<%s> opl:hasSchema <%s> .\n', base, nss[i+1]), ses);
+      http (sprintf ('<%s> rdfs:isDefinedBy <%s> .\n', base, nss[i+1]), ses);
+      http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
-  --dbg_obj_print (string_output_string (ses));
+  --dbg_printf ('%s', string_output_string (ses));
   DB.DBA.TTLP (ses, base, graph);
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
 }
@@ -2097,7 +2099,7 @@ create procedure DB.DBA.RDF_MAPPER_EXPN_URLS (in all_xslt any, in base varchar)
   return ret;
 };
 
-create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in doc_base varchar, in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     in xt any, inout mdta any, inout visited any, in what varchar, in lev int)
 {
   declare pf_docs, ns_doc, barr any;
@@ -2127,12 +2129,12 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
     }
 
   if (length (base_url) = 0)
-     base_url := new_origin_uri;
+     base_url := doc_base;
 
   barr := WS.WS.PARSE_URI (base_url);
   -- if base is relative
   if (barr [0] = '')
-    base_url := WS.WS.EXPAND_URL (new_origin_uri, base_url);
+    base_url := WS.WS.EXPAND_URL (doc_base, base_url);
 
   profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
   profs := null;
@@ -2243,13 +2245,13 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
       declare ret any;
       foreach (any pf_item in pf_docs) do
         {
-      ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf', lev);
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, pf_item[0], dest, pf_item[1], mdta, visited, 'pf', lev);
 	  --dbg_obj_print ('ret1=', ret);
 	  all_xslt := vector_concat (all_xslt, ret);
 	}
       foreach (any ns_item in ns_doc) do
         {
-      ret := DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns', lev);
+      ret := DB.DBA.RDF_LOAD_GRDDL_REC (base_url, graph_iri, ns_item[0], dest, ns_item[1], mdta, visited, 'ns', lev);
 	  --dbg_obj_print ('ret2=', ret);
 	  all_xslt := vector_concat (all_xslt, ret);
 	}
@@ -2284,10 +2286,11 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
-  declare base_url, ns_url, reg varchar;
+  declare base_url, ns_url, reg, doc_base varchar;
   declare profile_trf, ns_trf, ext_profs any;
   declare dict any;
 
+  --dbg_printf ('%s %s', new_origin_uri, dest);
   get_feeds := add_html_meta := 0;
   if (isarray (opts) and 0 = mod (length(opts), 2))
     {
@@ -2331,8 +2334,11 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   if (length (rdf_url_arr))
     {
       declare rdf_url_inx int;
+      declare ss any;
       rdf_url_inx := 0;
       dict := dict_new ();
+      ss := string_output ();
+      http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ss);
       foreach (any rdf_url in rdf_url_arr) do
 	{
       declare ret_content_type any;
@@ -2342,6 +2348,10 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	  --  goto try_next_link;
 	  if (dict_get (dict, rdf_url))
 	    goto try_next_link;
+
+	  http (sprintf ('<%s> rdfs:seeAlso <%s> .\n', new_origin_uri, WS.WS.EXPAND_URL (new_origin_uri, rdf_url)), ss);
+	  goto try_next_link; -- we just expose seeAlso link
+
 	  load_msec := msec_time ();
 	  hdr := null;
       content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri, hdr, 'GET', 'Accept: application/rdf+xml, text/rdf+n3, */*');
@@ -2360,6 +2370,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	  ret_flag := -1;
 	  try_next_link:;
 	}
+	DB.DBA.TTLP (ss, new_origin_uri, coalesce (dest, graph_iri));
     }
 
   -- sometimes RDF is inside the xhtml
@@ -2409,7 +2420,9 @@ try_grddl:
     profs := split_and_decode (profile, 0, '\0\0 ');
 
   reg := '';
-  DB.DBA.RDF_LOAD_GRDDL_REC (graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0);
+  doc_base := get_keyword ('http-redirect-to', opts, new_origin_uri);
+  --dbg_printf ('redir: %s uri: %s', doc_base, new_origin_uri);
+  DB.DBA.RDF_LOAD_GRDDL_REC (doc_base, graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0);
 
   --dbg_obj_print ('done mdta=', mdta);
 
@@ -2544,6 +2557,7 @@ no_feed:;
   if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
     {
       xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/html2rdf.xsl', xt, vector ('base', coalesce (dest, graph_iri)));
+      --  dbg_printf ('%s', serialize_to_UTF8_xml (xd));
       if (xpath_eval ('count(/RDF/*)', xd) > 0)
         {
 	  mdta := mdta + 1;

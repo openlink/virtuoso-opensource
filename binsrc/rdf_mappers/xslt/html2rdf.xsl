@@ -54,8 +54,8 @@
 	  <rdf:type rdf:resource="&bibo;Document"/>
 	  <rdf:type rdf:resource="&sioc;Container"/>
 	  <xsl:apply-templates select="title|meta"/>
-	  <xsl:apply-templates select="/html/body//img[@src]"/>
-	  <xsl:apply-templates select="/html/body//a[@href]"/>
+	  <xsl:apply-templates select="//img[@src]"/>
+	  <xsl:apply-templates select="//a[@href]"/>
 	  <xsl:apply-templates select="link[@rel='alternate']"/>
       </rdf:Description>
       <!--xsl:apply-templates select="meta[translate (@name, $uc, $lc)='keywords']" mode="meta"/-->
@@ -126,6 +126,12 @@
 	  </xsl:when>
 	  <xsl:when test="$url like 'http://cgi.sandbox.ebay.com/%&amp;item=%&amp;%' or $url like 'http://cgi.ebay.com/%QQitemZ%QQ%'">
 	      <rdfs:seeAlso rdf:resource="{$url}"/>
+	  </xsl:when>
+	  <xsl:when test="$url like 'urn:lsid:%' or $url like 'doi:%' or $url like 'oai:%'">
+	      <rdfs:seeAlso rdf:resource="{vi:proxyIRI ($url, '', '')}"/>
+	  </xsl:when>
+	  <xsl:when test="$url like 'lsidres:urn:lsid:%'">
+	      <rdfs:seeAlso rdf:resource="{substring-after ($url, 'lsidres:')}"/>
 	  </xsl:when>
       </xsl:choose>
   </xsl:template>
