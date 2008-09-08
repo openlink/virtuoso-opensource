@@ -3644,7 +3644,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer := 0, in
 
 create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 0) returns any
 {
-  commit work;
+  --commit work;
   if (compose_report)
     {
       declare ses any;
