@@ -221,7 +221,7 @@ trig_call (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calli
   err = qr_subq_exec (qi->qi_client, qr, qi,
       (caddr_t *) & auto_qi, sizeof (auto_qi), NULL, pars, NULL);
   dk_free_box ((caddr_t) pars);
-  if (err != (caddr_t) SQL_SUCCESS)
+  if (err != (caddr_t) SQL_SUCCESS && err != (caddr_t) SQL_NO_DATA_FOUND)
     sqlr_resignal (err);
 }
 
