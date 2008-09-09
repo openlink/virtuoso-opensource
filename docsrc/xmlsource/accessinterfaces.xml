@@ -402,7 +402,7 @@ the Virtuoso server running on the same computer on port 1111:</para>
 	    for(int i = 1;i <= data.getColumnCount();i++)
 	    {
 		String s = rs.getString(i);
-		Object o = ((VirtuosoResultSet)rs).getRdfObject(i);
+		Object o = ((VirtuosoResultSet)rs).getObject(i);
 		if (o instanceof VirtuosoExtendedString) // String representing an IRI
 		  {
 		    VirtuosoExtendedString vs = (VirtuosoExtendedString) o;

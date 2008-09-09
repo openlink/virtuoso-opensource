@@ -1015,6 +1015,27 @@ My simple test with Virtuoso
 1 Rows. -- 0 msec.
 ]]></programlisting>
 </sect1>
+<sect1 id="EXECSQLPROCFORK">
+		<title>Execute Stored Procedures In Background</title>
+<para>You can start procedure in background using the [name of the procedure][params]&amp; syntax.
+This feature forks another ISQL process and leaves the other on background so there will be
+two separate clients running separate client connections:</para>
+<programlisting><![CDATA[
+SQL>create procedure test()
+{
+return 'my simple test';
+}
+;
+Done. -- 0 msec.
+SQL>test()&
+SQL> Connected to OpenLink Virtuoso
+Driver: 05.07.3033 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+
+Done. -- 10 msec.
+]]></programlisting>
+</sect1>
 
 	&createassembly;
 	&createexthostproc;

@@ -5599,12 +5599,23 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
 	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a RDF proxy service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target. In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
     </para>
     <para>
-	Virtuoso reserves the path '/proxy/rdf/' for RDF proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP requests on port 8080 then client applications should use the 'service endpoint' string equal to 'http://example.com:8080/proxy/rdf/'.
+	When the rdf_mappers package is installed, Virtuoso reserves the path '/about/[rdf|html]/' for RDF
+proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that
+come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file
+and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP
+requests on port 8080 then client applications should use the 'service endpoint' string equal to
+'http://example.com:8080/about/[rdf|html]/'.
+    </para>
+    <para>
+	If the rdf_mappers package is not installed, then the path '/proxy/rdf/' is used for
+RDF proxy service.
     </para>
     <para>
 	The old pattern '/proxy/' for RDF proxy service is deprecated.
     </para>
-    <para><emphasis>Note: </emphasis>In order the RDF proxy service to work correctly, you need to enable SPARQL_UPDATE and grant RDF_SPONGE_UP for SPARQL user:
+    <para><emphasis>Note: </emphasis>In order the RDF proxy service to work correctly, in case you do
+not have the rdf_mappers package installed, you need to enable SPARQL_UPDATE and grant RDF_SPONGE_UP
+for SPARQL user:
     </para>
     <para>
        enable SPARQL_UPDATE using Conductor UI:
@@ -5636,11 +5647,17 @@ grant execute on DB.DBA.RDF_SPONGE_UP to "SPARQL";
     </para>
     <para>Example: rdf file with URL: http://www.w3.org/People/Berners-Lee/card</para>
 <programlisting><![CDATA[
-Access the url: http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card
-or use the style: http://host:port/proxy?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
+-- Access the url in order to view the result in html format:
+http://host:port/about/html/http://www.w3.org/People/Berners-Lee/card
+-- Access the url in order to view the result in rdf:
+http://host:port/about/rdf/http://www.w3.org/People/Berners-Lee/card
+-- or use the style:
+http://host:port/proxy/rdf/http://www.w3.org/People/Berners-Lee/card
+-- or use the style:
+http://host:port/proxy?url=http://www.w3.org/People/Berners-Lee/card&force=rdf
 ]]></programlisting>
 	<para>Note: It is not allowed when using the style http://host:port/proxy/rdf to pass url parameters to the proxy. </para>
-<para>As result will be shown the rdf file content. Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
+<para>Now go to the sparql endpoint, i.e. http://host:port/sparql</para>
 <para>Enter for Default Graph URI the url of the rdf file:  http://www.w3.org/People/Berners-Lee/card</para>
 <para>Enter for Query:</para>
 <programlisting><![CDATA[
