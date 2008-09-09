@@ -125,6 +125,39 @@ public class VirtuosoTest {
 			URI context = repository.getValueFactory().createURI("http://demo.openlinksw.com/demo#this");
 			Value[][] results = null;
 
+			con.clear(context);
+			startTest();
+			try {
+				URI subject = repository.getValueFactory().createURI("urn:s");
+				URI predicate = repository.getValueFactory().createURI("urn:p");
+				URI object = repository.getValueFactory().createURI("urn:o");
+				boolean rc;
+                                rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+                                if (rc != false) {
+                                	ok = false;
+                                } else {
+					con.setAutoCommit(false);
+					con.add(subject, predicate, object, context);
+                                	rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+                                	if (rc != true) {
+                                		ok = false;
+                                	} else {
+                                		con.rollback();
+                                		rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+                                		ok = rc ? false : true;
+                                	}
+                                }
+			}
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest(ok);
+
+
+			con.setAutoCommit(true);
+
 			startTest();
 			// test query data
 			query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
