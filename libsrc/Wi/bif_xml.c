@@ -2354,7 +2354,7 @@ normal_attr_out:
 	      bx_out_q_name (xsst, ses, tag[inx + 1], 2, CHARSET_UTF8);
 	  else
 	    bx_out_value (xsst->xsst_qst, ses, (db_buf_t) tag[inx + 1], xsst->xsst_charset, CHARSET_UTF8,
-		DKS_ESC_DQATTR | (IS_HTML_OUT(xsst->xsst_out_method) ? DKS_ESC_COMPAT_HTML : 0) );
+		DKS_ESC_DQATTR | (OUT_METHOD_HTML == xsst->xsst_out_method ? DKS_ESC_COMPAT_HTML : 0) );
 	  SES_PRINT (ses, "\"");
 	}
 
