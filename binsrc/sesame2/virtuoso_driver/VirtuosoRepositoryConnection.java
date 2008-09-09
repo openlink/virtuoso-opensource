@@ -256,7 +256,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		
 		StringTokenizer st = new StringTokenizer(query);
-		String type = st.nextToken().toLowerCase();
+		String type = null;
+
+		while(st.hasMoreTokens()) {
+		  type = st.nextToken().toLowerCase();
+		  if (type.equals("select"))
+		      break;
+		  else if(type.equals("construct") || type.equals("describe"))
+		      break;
+		  else if(type.equals("ask"))
+		      break;
+		}
+
 		if(type.equals("select")) {
 			return prepareTupleQuery(language, query, baseURI);
 		}
