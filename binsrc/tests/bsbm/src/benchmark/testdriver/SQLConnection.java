@@ -21,6 +21,8 @@ public class SQLConnection implements ServerConnection {
 		try {
 			conn = DriverManager.getConnection(serviceURL, "d2r", "d2rbsbm");
 			statement = conn.createStatement();
+			
+			statement.setQueryTimeout(TestDriverDefaultValues.timeoutInMs/1000);
 		} catch(SQLException e) {
 			while(e!=null) {
 				e.printStackTrace();

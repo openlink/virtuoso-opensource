@@ -24,7 +24,7 @@ public class NetQuery {
 			conn.setDefaultUseCaches(false);
 			conn.setDoOutput(true);
 			conn.setUseCaches(false);
-			conn.setReadTimeout(60000);
+			conn.setReadTimeout(TestDriverDefaultValues.timeoutInMs);
 			if(queryType==Query.DESCRIBE_TYPE || queryType==Query.CONSTRUCT_TYPE)
 				conn.setRequestProperty("Accept", "application/rdf+xml");
 			else
@@ -46,20 +46,22 @@ public class NetQuery {
 			conn.connect();
 		} catch(IOException e) {
 			System.err.println("Could not connect to SPARQL Service.");
+			e.printStackTrace();
 			System.exit(-1);
 		}
 		try {
 			start = System.nanoTime();
 			int rc = conn.getResponseCode();
 			if(rc < 200 || rc >= 300) {
-				System.err.println("Query execution with error.");
+				System.err.println("Query execution: Received error code " + rc + " from server for Query:\n");
 				System.err.println(URLDecoder.decode(conn.getURL().getQuery(),"UTF-8"));
 			}
 			return conn.getInputStream();
 		} catch(SocketTimeoutException e) {
 			return null;
 		} catch(IOException e) {
-			System.err.println("Query Execution error.");
+			System.err.println("Query execution error:");
+			e.printStackTrace();
 			System.exit(-1);
 			return null;
 		}

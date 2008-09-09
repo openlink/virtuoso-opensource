@@ -196,9 +196,9 @@ public class Query {
 			return CURRENT_DATE;
 		else if(stringType.equals("Dictionary1"))
 			return WORD_FROM_DICTIONARY1;
-		else if (stringType.equals("Dictionary1Quoted"))
+		else if(stringType.equals("Dictionary1Quoted"))
 			return WORD_FROM_DICTIONARY1_QUOTED;
-		else if (stringType.equals("ProductURI"))
+		else if(stringType.equals("ProductURI"))
 			return PRODUCT_URI;
 		else if(stringType.equals("ReviewURI"))
 			return REVIEW_URI;

@@ -232,8 +232,12 @@ public class CompiledQueryMix {
 		return temp;
 	}
 
-	public double getQueryMixGeoMean() {
+	public double getQueryMixGeometricMean() {
 		return Math.pow(10, (queryMixGeoMean/queryMixRuns));
+	}
+
+	public double getQueryMixGeoMean() {
+		return queryMixGeoMean;
 	}
 
 	public double[] getAqetg() {

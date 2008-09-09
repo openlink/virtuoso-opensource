@@ -10,4 +10,5 @@ public class TestDriverDefaultValues {
 	public static final String defaultGraph = null;
 	public static final String resourceDir = "td_data";
 	public static final String xmlResultFile = "benchmark_result.xml";
+	public static final int timeoutInMs = 60000;
 }

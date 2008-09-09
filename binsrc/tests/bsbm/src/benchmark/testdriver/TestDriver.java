@@ -31,7 +31,7 @@ public class TestDriver {
 	protected boolean[] ignoreQueries;//Queries to ignore
 	protected boolean doSQL = false;
 	protected boolean isParametrized = false;
-	private boolean multithreading = false;
+	private boolean multithreading=false;
 	protected int nrThreads;
 	
 	public TestDriver(String[] args) {
@@ -211,12 +211,11 @@ public class TestDriver {
 				else if(args[i].startsWith("-sql")) {
 					doSQL = true;
 				}
-				else if (args[i].startsWith("-param"))
+				else if(args[i].startsWith("-param"))
 				{
 					isParametrized = true;
 				}
-				else if (args[i].startsWith("-mt"))
-				{
+				else if(args[i].startsWith("-mt")) {
 					multithreading = true;
 					nrThreads = Integer.parseInt(args[i++ + 1]);
 				}
@@ -227,6 +226,7 @@ public class TestDriver {
 					sparqlEndpoint = args[i];
 				}
 				else {
+					System.err.println("Unknown parameter: " + args[i]);
 					printUsageInfos();
 					System.exit(-1);
 				}
@@ -268,7 +268,7 @@ public class TestDriver {
 		else
 			sb.append("QMpH: " + String.format(Locale.US, "%.2f",queryMix.getQmph()) + " query mixes per hour\n");
 		sb.append("CQET: " + String.format(Locale.US, "%.5f",queryMix.getCQET()) + " seconds average runtime of query mix\n");
-		sb.append("CQET (geom.): " + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + " seconds geometric mean runtime of query mix\n");
+		sb.append("CQET (geom.):           " + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeometricMean()) + " seconds geometric mean runtime of query mix\n");
 		
 		if(all) {
 			sb.append("\n");
@@ -285,7 +285,7 @@ public class TestDriver {
 			int[] nrq = queryMix.getRunsPerQuery();
 			for(int i=0;i<qmin.length;i++) {
 				if(queries[i]!=null) {
-					sb.append("Metrics for Query " + (i+1) + ":\n");
+					sb.append("Metrics for Query:      " + (i+1) + "\n");
 					sb.append("Count: " + nrq[i] + " times executed in whole run\n");
 					sb.append("AQET: " + String.format(Locale.US, "%.6f",qavga[i]) + " seconds (arithmetic mean)\n");
 					sb.append("AQET(geom.): " + String.format(Locale.US, "%.6f",qavgg[i]) + " seconds (geometric mean)\n");
@@ -295,8 +295,13 @@ public class TestDriver {
 					sb.append("QPS: " + String.format(Locale.US, "%.2f",1/qavga[i]) + " Queries per second\n");
 					sb.append("minQET/maxQET: " + String.format(Locale.US, "%.8fs",qmin[i]) + " / " + 
 							String.format(Locale.US, "%.8fs",qmax[i]) + "\n");
+					if(queries[i].getQueryType()==Query.SELECT_TYPE) {
 					sb.append("Average result count: " + String.format(Locale.US, "%.2f",avgResults[i]) + "\n");
 					sb.append("min/max result count: " + minResults[i] + " / " + maxResults[i] + "\n");
+					} else {
+						sb.append("Average result (Bytes): " + String.format(Locale.US, "%.2f",avgResults[i]) + "\n");
+						sb.append("min/max result (Bytes): " + minResults[i] + " / " + maxResults[i] + "\n");
+					}
 					sb.append("Number of timeouts: " + qTimeout[i] + "\n\n");
 				}
 			}
@@ -337,7 +342,7 @@ public class TestDriver {
 		else
 			sb.append("     <qmph>" + String.format(Locale.US, "%.2f",queryMix.getQmph()) + "</qmph>\n");
 		sb.append("     <cqet>" + String.format(Locale.US, "%.5f",queryMix.getCQET()) + "</cqet>\n");
-		sb.append("     <cqetg>" + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeoMean()) + "</cqetg>\n");
+		sb.append("     <cqetg>" + String.format(Locale.US, "%.5f",queryMix.getQueryMixGeometricMean()) + "</cqetg>\n");
 		sb.append("  </querymix>\n");
 		
 		if(all) {

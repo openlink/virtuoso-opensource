@@ -79,7 +79,7 @@ public class SQLSerializer implements Serializer {
 	}
 
 	/*
-	 * Converts the ProductType Object into an N-Triples String
+	 * Converts the ProductType Object into a SQL
 	 * representation.
 	 */
 	private void convertProductType(ProductType pType) throws IOException
@@ -128,7 +128,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the Offer Object into an N-Triples String
+	 * Converts the Offer Object into a SQL
 	 * representation.
 	 */
 	private void convertOffer(Offer offer) throws IOException
@@ -196,7 +196,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the Product Object into an N-Triples String
+	 * Converts the Product Object into into a SQL
 	 * representation.
 	 */
 	private void convertProduct(Product product)throws IOException
@@ -317,7 +317,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the Person Object into an N-Triples String
+	 * Converts the Person Object into into a SQL
 	 * representation.
 	 */
 	private void convertPerson(Person person)throws IOException
@@ -362,7 +362,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the Producer Object into an N-Triples String
+	 * Converts the Producer Object into into a SQL
 	 * representation.
 	 */
 	private void convertProducer(Producer producer) throws IOException
@@ -412,7 +412,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the ProductFeature Object into an N-Triples String
+	 * Converts the ProductFeature Object into a SQL
 	 * representation.
 	 */
 	private void convertProductFeature(ProductFeature pf) throws IOException
@@ -454,7 +454,7 @@ public class SQLSerializer implements Serializer {
 	}
 	
 	/*
-	 * Converts the Vendor Object into an N-Triples String
+	 * Converts the Vendor Object into a SQL
 	 * representation.
 	 */
 	private void convertVendor(Vendor vendor) throws IOException
@@ -505,7 +505,7 @@ public class SQLSerializer implements Serializer {
 	
 	
 	/*
-	 * Converts the Review Object into an N-Triples String
+	 * Converts the Review Object into a SQL
 	 * representation.
 	 */
 	private void convertReview(Review review) throws IOException

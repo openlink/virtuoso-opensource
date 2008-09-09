@@ -298,7 +298,7 @@ public class QueryMix {
 		return temp;
 	}
 
-	public double getQueryMixGeoMean() {
+	public double getQueryMixGeometricMean() {
 		return Math.pow(10, (queryMixGeoMean/queryMixRuns));
 	}
 

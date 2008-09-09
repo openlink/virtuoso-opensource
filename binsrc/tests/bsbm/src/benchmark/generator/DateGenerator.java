@@ -99,20 +99,24 @@ public class DateGenerator {
 	{
 		GregorianCalendar c = new GregorianCalendar();
 		c.setTimeInMillis(date);
-		int day = c.get(Calendar.DAY_OF_MONTH);
-		int month = c.get(Calendar.MONTH)+1;
-		int year = c.get(Calendar.YEAR);
 		
-		String prefixDay = "";
-		String prefixMonth = "";		
+		return formatDate(c);
+	}
 		
-		if(day<10)
-			prefixDay = "0";
+	/*
+	 * Format date in xsd:dateTime format
+	 */
+	public static String formatDateTime(Long date) {
+		GregorianCalendar c = new GregorianCalendar();
+		c.setTimeInMillis(date);
 		
-		if(month<10)
-			prefixMonth = "0";
+		String dateString = formatDate(c);
+		return dateString + "T00:00:00";
+	}
 		
-		return year+"-"+prefixMonth+month+"-"+prefixDay+day;
+	public static String formatDateTime(GregorianCalendar date) {
+		String dateString = formatDate(date);
+		return dateString + "T00:00:00";
 	}
 	
 	public Long randomDateInMillis(Long from, Long to)

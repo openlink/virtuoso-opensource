@@ -78,9 +78,10 @@ public class SPARQLConnection implements ServerConnection{
 		InputStream is = qe.exec();
 
 		if(is==null) {//then Timeout!
-			System.out.println("Query " + queryNr + ": 45 seconds timeout!");
+			double timeout = TestDriverDefaultValues.timeoutInMs/1000.0;
+			System.out.println("Query " + queryNr + ": " + timeout + " seconds timeout!");
 			queryMix.reportTimeOut();//inc. timeout counter
-			queryMix.setCurrent(0, 60.0);
+			queryMix.setCurrent(0, timeout);
 			qe.close();
 			return;
 		}
@@ -106,13 +107,15 @@ public class SPARQLConnection implements ServerConnection{
 	
 private int countBytes(InputStream is) {
 	int nrBytes=0;
-	byte[] buf = new byte[1000];
+	byte[] buf = new byte[10000];
 	int len=0;
 //	StringBuffer sb = new StringBuffer(1000);
 	try {
 		while((len=is.read(buf))!=-1) {
 			nrBytes += len;//resultCount counts the returned bytes
 //			String temp = new String(buf,0,len);
+//			temp = "\n\n" + temp + "\n\n";
+//			logger.log(Level.ALL, temp);
 //			sb.append(temp);
 		}
 	} catch(IOException e) {

@@ -43,4 +43,6 @@ public class XSD {
 	public static final String Decimal = NS + "decimal";
 
 	public static final String Date = NS + "date";
+	
+	public static final String DateTime = NS + "dateTime";
 }
