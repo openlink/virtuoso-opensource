@@ -1,4 +1,4 @@
-CREATE TABLE DB.DBA.ProductFeature (
+CREATE TABLE DB.DBA.productfeature (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
@@ -7,10 +7,10 @@ CREATE TABLE DB.DBA.ProductFeature (
 )
 ;
 
-grant select on DB.DBA.ProductFeature to public
+grant select on DB.DBA.productfeature to public
 ;
 
-CREATE TABLE DB.DBA.ProductType (
+CREATE TABLE DB.DBA.producttype (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
@@ -20,10 +20,10 @@ CREATE TABLE DB.DBA.ProductType (
 )
 ;
 
-grant select on DB.DBA.ProductType to public
+grant select on DB.DBA.producttype to public
 ;
 
-CREATE TABLE DB.DBA.Producer (
+CREATE TABLE DB.DBA.producer (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
@@ -34,12 +34,12 @@ CREATE TABLE DB.DBA.Producer (
 )
 ;
 
-grant select on DB.DBA.Producer to public
+grant select on DB.DBA.producer to public
 ;
-create index producer_homepage on DB.DBA.Producer (homepage)
+create index producer_homepage on DB.DBA.producer (homepage)
 ;
 
-CREATE TABLE DB.DBA.Product (
+CREATE TABLE DB.DBA.product (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar not null,
@@ -61,50 +61,50 @@ CREATE TABLE DB.DBA.Product (
 )
 ;
 
-grant select on DB.DBA.Product to public
+grant select on DB.DBA.product to public
 ;
 
-create index product_lbl on DB.DBA.Product (label)
+create index product_lbl on DB.DBA.product (label)
 ;
-create unique index product_producer_nr on DB.DBA.Product (producer, nr)
+create unique index product_producer_nr on DB.DBA.product (producer, nr)
 ;
-create index product_pn1 on DB.DBA.Product (propertyNum1)
+create index product_pn1 on DB.DBA.product (propertyNum1)
 ;
-create index product_pn2 on DB.DBA.Product (propertyNum2)
+create index product_pn2 on DB.DBA.product (propertyNum2)
 ;
-create index product_pn3 on DB.DBA.Product (propertyNum3)
-;
-
-create text index on DB.DBA.Product (label) with key nr
+create index product_pn3 on DB.DBA.product (propertyNum3)
 ;
 
-CREATE TABLE DB.DBA.ProductTypeProduct (
+create text index on DB.DBA.product (label) with key nr
+;
+
+CREATE TABLE DB.DBA.producttypeproduct (
   product integer not null,
   productType integer not null,
   PRIMARY KEY (product, productType)
 )
 ;
 
-grant select on DB.DBA.ProductTypeProduct to public
+grant select on DB.DBA.producttypeproduct to public
 ;
 
-create index ptype_inv on DB.DBA.ProductTypeProduct (productType, product)
+create index ptype_inv on DB.DBA.producttypeproduct (productType, product)
 ;
 
-CREATE TABLE DB.DBA.ProductFeatureProduct (
+CREATE TABLE DB.DBA.productfeatureproduct (
   product integer not null,
   productFeature integer not null,
   PRIMARY KEY (product, productFeature)
 )
 ;
 
-grant select on DB.DBA.ProductFeatureProduct to public
+grant select on DB.DBA.productfeatureproduct to public
 ;
 
-create index pfeature_inv on DB.DBA.ProductFeatureProduct (productFeature, product)
+create index pfeature_inv on DB.DBA.productfeatureproduct (productFeature, product)
 ;
 
-CREATE TABLE DB.DBA.Vendor (
+CREATE TABLE DB.DBA.vendor (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar not null,
@@ -115,15 +115,15 @@ CREATE TABLE DB.DBA.Vendor (
 )
 ;
 
-grant select on DB.DBA.Vendor to public
+grant select on DB.DBA.vendor to public
 ;
 
-create index vendor_country on DB.DBA.Vendor (country)
+create index vendor_country on DB.DBA.vendor (country)
 ;
-create index vendor_homepage on DB.DBA.Vendor (homepage)
+create index vendor_homepage on DB.DBA.vendor (homepage)
 ;
 
-CREATE TABLE DB.DBA.Offer (
+CREATE TABLE DB.DBA.offer (
   nr integer primary key,
   product integer not null,
   producer integer,
@@ -138,21 +138,21 @@ CREATE TABLE DB.DBA.Offer (
 )
 ;
 
-grant select on DB.DBA.Offer to public
+grant select on DB.DBA.offer to public
 ;
 
-create index offer_product on DB.DBA.Offer (product, deliveryDays)
+create index offer_product on DB.DBA.offer (product, deliveryDays)
 ;
-create unique index offer_producer_product on DB.DBA.Offer (producer, product, nr)
+create unique index offer_producer_product on DB.DBA.offer (producer, product, nr)
 ;
-create index offer_validto on DB.DBA.Offer (validTo)
+create index offer_validto on DB.DBA.offer (validTo)
 ;
-create index offer_vendor_product on DB.DBA.Offer (vendor, product)
+create index offer_vendor_product on DB.DBA.offer (vendor, product)
 ;
-create index offer_webpage on DB.DBA.Offer (offerWebpage)
+create index offer_webpage on DB.DBA.offer (offerWebpage)
 ;
 
-CREATE TABLE DB.DBA.Person (
+CREATE TABLE DB.DBA.person (
   nr integer primary key,
   name varchar(30) not null,
   mbox_sha1sum char(40) not null,
@@ -162,10 +162,10 @@ CREATE TABLE DB.DBA.Person (
 )
 ;
 
-grant select on DB.DBA.Person to public
+grant select on DB.DBA.person to public
 ;
 
-CREATE TABLE DB.DBA.Review (
+CREATE TABLE DB.DBA.review (
   nr integer primary key,
   product integer not null,
   producer integer,
@@ -183,16 +183,16 @@ CREATE TABLE DB.DBA.Review (
 )
 ;
 
-grant select on DB.DBA.Review to public
+grant select on DB.DBA.review to public
 ;
 
-create unique index review_product on DB.DBA.Review (product, producer, nr)
+create unique index review_product on DB.DBA.review (product, producer, nr)
 ;
 
-create unique index review_producer_product on DB.DBA.Review (producer, product, nr)
+create unique index review_producer_product on DB.DBA.review (producer, product, nr)
 ;
 
-create bitmap index review_textlang on DB.DBA.Review (textlang)
+create bitmap index review_textlang on DB.DBA.review (textlang)
 ;
 
 DB.DBA.XML_SET_NS_DECL ('foaf', 'http://xmlns.com/foaf/0.1/', 2)
@@ -249,16 +249,16 @@ sparql create iri class bsbm:RatingSite-iri "http://www4.wiwiss.fu-berlin.de/biz
 
 sparql
 alter quad storage virtrdf:DefaultQuadStorage
-from DB.DBA.ProductFeature as pfeature
-from DB.DBA.ProductType as ptype
-from DB.DBA.Producer as producer
-from DB.DBA.Product as product text literal product.label
-from DB.DBA.ProductTypeProduct as ptypeproduct
-from DB.DBA.ProductFeatureProduct as pfeatureproduct
-from DB.DBA.Vendor as vendor
-from DB.DBA.Offer as offer
-from DB.DBA.Person as person
-from DB.DBA.Review as review
+from DB.DBA.productfeature as pfeature
+from DB.DBA.producttype as ptype
+from DB.DBA.producer as producer
+from DB.DBA.product as product text literal product.label
+from DB.DBA.producttypeproduct as ptypeproduct
+from DB.DBA.productfeatureproduct as pfeatureproduct
+from DB.DBA.vendor as vendor
+from DB.DBA.offer as offer
+from DB.DBA.person as person
+from DB.DBA.review as review
 where (^{product.}^.nr = ^{ptypeproduct.}^.product)
 where (^{product.}^.nr = ^{pfeatureproduct.}^.product)
   {

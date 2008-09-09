@@ -31,10 +31,10 @@ public class ClientManager {
 		clients = new ClientThread[nrThreads];
 		for(int i=0;i<nrThreads;i++) {
 			ServerConnection sConn;
-			if(parent.doSQL)
-				sConn = new SQLConnection(parent.sparqlEndpoint);
+			if(parent.connectionType == TestDriver.DB_CONNECTION)
+				sConn = new SQLConnection(parent.connEndpoint, parent.driverClassName, parent.connUser, parent.connPwd);
 			else
-				sConn = new SPARQLConnection(parent.sparqlEndpoint, parent.defaultGraph, parent.isParametrized);
+				sConn = new SPARQLConnection(parent.connEndpoint);
 				
 			clients[i] = new ClientThread(pool, sConn, ignoreQueries.length, this, i+1);
 		}

@@ -8,18 +8,18 @@ import java.sql.*;
 public class SQLConnection implements ServerConnection {
 	private Statement statement;
 	private Connection conn;
-
 	private static Logger logger = Logger.getLogger( SQLConnection.class );
 	
-	public SQLConnection(String serviceURL) {
+	public SQLConnection(String serviceURL, String driverClassName, String connUser, String connPwd)
+	{
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName(driverClassName);
 		} catch(ClassNotFoundException e) {
 			e.printStackTrace();
 			System.exit(-1);
 		}
 		try {
-			conn = DriverManager.getConnection(serviceURL, "d2r", "d2rbsbm");
+			conn = DriverManager.getConnection(serviceURL, connUser, connPwd);
 			statement = conn.createStatement();
 			
 			statement.setQueryTimeout(TestDriverDefaultValues.timeoutInMs/1000);
@@ -36,7 +36,10 @@ public class SQLConnection implements ServerConnection {
 	 * Execute Query with Query Object
 	 */
 	public void executeQuery(Query query, byte queryType) {
-		executeQuery(query.getQueryString(), queryType, query.getNr(), query.getQueryMix());
+		String qs = query.getQueryString();
+		if (query.querySyntax == TestDriver.VIRTUOSO_FAMILY && query.queryLang == TestDriver.SPARQL_LANG)
+			qs = "SPARQL define input:default-graph-uri <" + query.defaultGraph + "> " + qs;
+		executeQuery(qs, queryType, query.getNr(), query.getQueryMix());
 	}
 	
 	/*
@@ -44,7 +47,6 @@ public class SQLConnection implements ServerConnection {
 	 */
 	private void executeQuery(String queryString, byte queryType, int queryNr, QueryMix queryMix) {
 		double timeInSeconds;
-		
 		try {
 			long start = System.nanoTime();
 			ResultSet results = statement.executeQuery(queryString);

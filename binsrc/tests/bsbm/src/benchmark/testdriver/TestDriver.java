@@ -23,32 +23,44 @@ public class TestDriver {
 	private File queryDir = TestDriverDefaultValues.queryDir;//where to take the queries from
 	protected int nrRuns = TestDriverDefaultValues.nrRuns;
 	private long seed = TestDriverDefaultValues.seed;//For the random number generators
-	protected String sparqlEndpoint = null;
+        protected String connUser = "d2r";
+        protected String connPwd = "d2rbsbm";
+	protected String connEndpoint = null;
 	protected String defaultGraph = TestDriverDefaultValues.defaultGraph;
 	private String resourceDir = TestDriverDefaultValues.resourceDir;//Where to take the Test Driver data from
 	private String xmlResultFile = TestDriverDefaultValues.xmlResultFile;
 	private static Logger logger = Logger.getLogger( TestDriver.class );
 	protected boolean[] ignoreQueries;//Queries to ignore
-	protected boolean doSQL = false;
-	protected boolean isParametrized = false;
-	private boolean multithreading=false;
+	public static final byte DB_CONNECTION = 11;
+	public static final byte WS_CONNECTION = 12;
+	public static final byte DEFAULT_FAMILY = 21;
+	public static final byte MYSQL_FAMILY = 22;
+	public static final byte VIRTUOSO_FAMILY = 23;
+	public static final byte SPARQL_LANG = 31;
+	public static final byte SQL_LANG = 32;
+	public byte connectionType = WS_CONNECTION;
+	public byte queryLang = SPARQL_LANG;
+	public byte querySyntax = DEFAULT_FAMILY;
+	public boolean runParametrized = false;
+	public boolean multithreading = false;
 	protected int nrThreads;
+        protected String driverClassName = "com.mysql.jdbc.Driver";
 	
 	public TestDriver(String[] args) {
 		processProgramParameters(args);
 		System.out.print("Reading Test Driver data...");
 		System.out.flush();
-		if(doSQL)
+		if (TestDriver.SQL_LANG == queryLang)
 			parameterPool = new SQLParameterPool(new File(resourceDir),seed);
 		else
 			parameterPool = new LocalSPARQLParameterPool(new File(resourceDir),seed);
 		System.out.println("done");
 	
-		if(sparqlEndpoint!=null && !multithreading){
-			if(doSQL)
-				server = new SQLConnection(sparqlEndpoint);
+		if(connEndpoint!=null && !multithreading){
+			if(connectionType == TestDriver.DB_CONNECTION)
+				server = new SQLConnection(connEndpoint, driverClassName, connUser, connPwd);
 			else
-				server = new SPARQLConnection(sparqlEndpoint, defaultGraph, isParametrized);
+				server = new SPARQLConnection(connEndpoint);
 		} else if(multithreading) {
 			//do nothing
 		}
@@ -93,17 +105,13 @@ public class TestDriver {
 		for(int i=0;i<queries.length;i++) {
 			queries[i] = null;
 		}
-		
 		for(int i=0;i<queryRun.length;i++) {
 			if(queryRun[i]!=null) {
 				Integer qnr = queryRun[i];
 				if(queries[qnr-1]==null) {
 					File queryFile = new File(queryDir, "query" + qnr + ".txt");
 					File queryDescFile = new File(queryDir, "query" + qnr + "desc.txt");
-					if(doSQL)
-						queries[qnr-1] = new Query(queryFile, queryDescFile, "@");
-					else
-						queries[qnr-1] = new Query(queryFile, queryDescFile, "%");
+					queries[qnr-1] = new Query(queryFile, queryDescFile, queryLang, querySyntax, defaultGraph, runParametrized);
 				}
 			}
 		}
@@ -188,8 +196,8 @@ public class TestDriver {
 	 */
 	private void processProgramParameters(String[] args) {
 		int i=0;
-		while(i<args.length) {
 			try {
+			while(i<args.length) {
 				if(args[i].equals("-runs")) {
 					nrRuns = Integer.parseInt(args[i++ + 1]);
 				}
@@ -209,21 +217,45 @@ public class TestDriver {
 					defaultGraph = args[i++ + 1];
 				}
 				else if(args[i].startsWith("-sql")) {
-					doSQL = true;
+					queryLang = SQL_LANG;
 				}
-				else if(args[i].startsWith("-param"))
+				else if(args[i].startsWith("-sparql")){
+					queryLang = SPARQL_LANG;
+				}
+				else if(args[i].startsWith("-dbconnect")) {
+					connectionType = DB_CONNECTION;
+				}
+				else if(args[i].startsWith("-webservice")) {
+					connectionType = WS_CONNECTION;
+				}
+				else if(args[i].startsWith("-mysql")) {
+					querySyntax = MYSQL_FAMILY;
+				}
+				else if(args[i].startsWith("-virtuoso")) {
+					querySyntax = VIRTUOSO_FAMILY;
+				}
+				else if(args[i].startsWith("-param")) {
+					runParametrized = true;
+				}
+				else if (args[i].startsWith("-mt"))
 				{
-					isParametrized = true;
-				}
-				else if(args[i].startsWith("-mt")) {
 					multithreading = true;
 					nrThreads = Integer.parseInt(args[i++ + 1]);
+				}
+				else if (args[i].startsWith("-dbdriver")) {
+					driverClassName = args[i++ + 1];
+				}
+				else if (args[i].startsWith("-connuser")) {
+					connUser = args[i++ + 1];
+				}
+				else if (args[i].startsWith("-connpwd")) {
+					connPwd = args[i++ + 1];
 				}
 				else if(args[i].startsWith("-seed")) {
 					seed = Long.parseLong(args[i++ + 1]);
 				}
 				else if(!args[i].startsWith("-")) {
-					sparqlEndpoint = args[i];
+					connEndpoint = args[i];
 				}
 				else {
 					System.err.println("Unknown parameter: " + args[i]);
@@ -232,12 +264,16 @@ public class TestDriver {
 				}
 				
 				i++;
-							
+			}							
 			} catch(Exception e) {
 				System.err.println("Invalid arguments\n");
 				printUsageInfos();
 				System.exit(-1);
 			}
+		if (null == connEndpoint) {
+			System.err.println("Connection endpoint is not set\n");
+			printUsageInfos();
+			System.exit(-1);
 		}
 	}
 	

@@ -6,17 +6,20 @@ import java.io.*;
 import java.util.*;
 
 public class Query {
-	private int nr;
+	public byte queryType;
 	private String[] parameterNames;
 	private Object[] parameters;
 	private Integer[] parameterFills;
 	private Byte[] parameterTypes;
 	private Vector<String> queryStrings;
-	private Byte queryType;
+	private int nr;
 	private QueryMix queryMix;
 	private String parameterChar;
 	private String parametrizedQueryString;
-	
+        public final String defaultGraph;
+	public final byte queryLang;
+	public final byte querySyntax;
+	public final boolean isParametrized;
 	//Parameter constants
 	public static final byte PRODUCT_PROPERTY_NUMERIC = 1;
 	public static final byte PRODUCT_FEATURE_URI = 2;
@@ -34,15 +37,29 @@ public class Query {
 	public static final byte DESCRIBE_TYPE = 2;
 	public static final byte CONSTRUCT_TYPE = 3;
 	
-	public Query(String queryString, String parameterDescription, String c)
+	public Query(String queryString, String parameterDescription, byte ql, byte qs, String dg, boolean isP)
 	{
-		parameterChar = c;
+		queryLang = ql;
+		querySyntax = qs;
+		if (TestDriver.VIRTUOSO_FAMILY == qs)
+			parameterChar = "%";
+		else
+			parameterChar = "@";
+                defaultGraph = dg;
+                isParametrized = isP;
 		init(queryString, parameterDescription);
 	}
 	
-	public Query(File queryFile, File parameterDescriptionFile, String c)
+	public Query(File queryFile, File parameterDescriptionFile, byte ql, byte qs, String dg, boolean isP)
 	{
-		parameterChar = c;
+		queryLang = ql;
+		querySyntax = qs;
+		if (TestDriver.SPARQL_LANG == ql)
+			parameterChar = "%";
+		else
+			parameterChar = "@";
+                defaultGraph = dg;
+                isParametrized = isP;
 		String queryString = "";
 		String parameterDescriptionString = "";
 		

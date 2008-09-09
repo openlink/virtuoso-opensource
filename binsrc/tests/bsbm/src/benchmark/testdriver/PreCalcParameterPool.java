@@ -32,9 +32,7 @@ public class PreCalcParameterPool {
 				Object[] queryParameters = parameterPool.getParametersForQuery(next);
 				next.setParameters(queryParameters);
 
-				queryMixes[nrRun][i++] = new CompiledQuery(
-					next.getQueryString(), next.getParametrizedQueryString(),
-					next.getEncodedParamString(), next.getQueryType(), next.getNr() );
+				queryMixes[nrRun][i++] = new CompiledQuery(next, next.getQueryString(), next.getEncodedParamString());
 				
 				queryMix.setCurrent(0, -1.0);
 			}

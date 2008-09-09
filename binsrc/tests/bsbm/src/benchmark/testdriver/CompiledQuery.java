@@ -1,19 +1,15 @@
 package benchmark.testdriver;
 
 public class CompiledQuery {
+        public final Query source;
 	private String queryString;
-        private String parametrizedQueryString;
 	private String encodedParamString;
-	private byte queryType;
 	private int nr;
-	private int queryMix;
-	
-	CompiledQuery(String queryString, String parametrizedQueryString, String encodedParamString, byte queryType, int queryNr) {
+	int queryMix;
+	CompiledQuery(Query source, String queryString, String encodedParamString) {
+		this.source = source;
 		this.queryString = queryString;
-		this.parametrizedQueryString = parametrizedQueryString;
 		this.encodedParamString = encodedParamString;
-		this.queryType = queryType;
-		this.nr = queryNr;
 	}
 
 	public String getQueryString() {
@@ -22,7 +18,7 @@ public class CompiledQuery {
 
 	public String getParametrizedQueryString()
 	{
-		return parametrizedQueryString;
+		return source.getParametrizedQueryString();
 	}
 
 	public String getEncodedParamString()
@@ -32,7 +28,7 @@ public class CompiledQuery {
 
 	public byte getQueryType()
 	{
-		return queryType;
+		return source.queryType;
 	}
 
 	public int getQueryMix() {

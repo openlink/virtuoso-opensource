@@ -10,30 +10,26 @@ import org.apache.log4j.Level;
 
 public class SPARQLConnection implements ServerConnection{
 	private String serverURL;
-	private String defaultGraph;
-	private boolean isParametrized;
 	private static Logger logger = Logger.getLogger( SPARQLConnection.class );
 	
-	public SPARQLConnection(String serviceURL, String defaultGraph, boolean isParametrized) {
-		this.serverURL = serviceURL;
-		this.defaultGraph = defaultGraph;
-		this.isParametrized = isParametrized;
+	public SPARQLConnection(String url) {
+		this.serverURL = url;
 	}
 	
 	/*
 	 * Execute Query with Query Object
 	 */
 	public void executeQuery(Query query, byte queryType) {
-		if (isParametrized)
-			executeQuery(query.getParametrizedQueryString(), query.getEncodedParamString(), queryType, query.getNr(), query.getQueryMix());
+		if (query.isParametrized)
+			executeQuery(query.getParametrizedQueryString(), query.getEncodedParamString(), query.defaultGraph, queryType, query.getNr(), query.getQueryMix());
 		else
-			executeQuery(query.getQueryString(), "", queryType, query.getNr(), query.getQueryMix());
+			executeQuery(query.getQueryString(), "", query.defaultGraph, queryType, query.getNr(), query.getQueryMix());
 	}
 	
 	/*
 	 * execute Query with Query String
 	 */
-	private void executeQuery(String queryString, String encodedParamString, byte queryType, int queryNr, QueryMix queryMix)
+	private void executeQuery(String queryString, String encodedParamString, String defaultGraph, byte queryType, int queryNr, QueryMix queryMix)
 	{
 		double timeInSeconds;
 
@@ -69,10 +65,10 @@ public class SPARQLConnection implements ServerConnection{
 		byte queryType = query.getQueryType();
 		int queryNr = query.getNr();
                 NetQuery qe;
-		if (isParametrized)
-			qe = new NetQuery(serverURL, parametrizedQueryString, encodedParamString, queryType, defaultGraph);
+		if (query.source.isParametrized)
+			qe = new NetQuery(serverURL, parametrizedQueryString, encodedParamString, queryType, query.source.defaultGraph);
 		else
-			qe = new NetQuery(serverURL, queryString, "", queryType, defaultGraph);
+			qe = new NetQuery(serverURL, queryString, "", queryType, query.source.defaultGraph);
 		int queryMixRun = queryMix.getRun() + 1;
 
 		InputStream is = qe.exec();
