@@ -30,9 +30,11 @@ TOP=@TOP@
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
 	*.sql \
+	MySQLqueries/*.txt \
 	queries/*.txt \
 	run_javac.sh \
-	SQLqueries/*.txt \
+	run_test.sh \
+	SQLQueries/*.txt \
 	src/benchmark/generator/*.java \
 	src/benchmark/model/*.java \
 	src/benchmark/serializer/*.java \
