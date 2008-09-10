@@ -3482,6 +3482,9 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
 	    {
 	    add_href := 0;
 	      inside_href := 1;
+	      -- this phrase already is hyperlinked
+	      if (bit_and (0hex00000004, apa[3]))
+		done [this_apa_id] := 1;
 	    }
 	  else
 	    {
@@ -3498,7 +3501,7 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
 	    {
 	      arr := m_app[this_apa_id];
 	      dta := arr [3];
-	      http (sprintf ('<a href="%s">', dta), res_out);
+	      http (sprintf ('<a href="%V">', dta), res_out);
 	      --http ('[', res_out);
 	    }
 

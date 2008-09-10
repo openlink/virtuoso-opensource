@@ -637,6 +637,7 @@ else if (length (self.catid))
 
  self.owner_iri := sprintf ('http://%s/dataspace/%s/%U', self.chost, self.owner_kind, self.owner_name);
 
+ self.vc_add_attribute ('xmlns', 'http://www.w3.org/1999/xhtml');
  self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
  self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
  self.vc_add_attribute ('xmlns:dct', 'http://purl.org/dc/terms/');
@@ -2378,7 +2379,7 @@ window.onload = function (e)
       { ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction><?vsp }
   ?>
       <span class="dc-subject" property="dc:subject">
-	  <a href="<?V this_url ?>?tag=<?vsp http (BT_TAG); ?><?V self.login_pars ?>" rel="tag"><?vsp http (BT_TAG); ?></a>
+	  <a href="<?V self.blog_iri ?>/tag/<?vsp http (BT_TAG); ?><?V case when length (self.login_pars) then concat ('?', ltrim (self.login_pars, '&')) else '' end ?>" rel="tag"><?vsp http (BT_TAG); ?></a>
       </span>
       <!--a href="http://technorati.com/tag/<?vsp http (BT_TAG); ?>" rel="tag"><?vsp http (BT_TAG); ?></a-->
   <?vsp
@@ -2866,7 +2867,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:about-me">
-   <div instanceof="foaf:Person" about="<?V self.owner_iri ?>#this">
+   <div typeof="foaf:Person" about="<?V self.owner_iri ?>#this">
     <div>
       <vm:photo width="64"/>
     </div>
@@ -2974,7 +2975,7 @@ window.onload = function (e)
             tit := xpath_eval('string(//*|.)', xml_tree_doc(xml_tree(tit, 2, '', 'UTF-8')), 1);
     </xsl:processing-instruction>
       <li>
-	  <v:url name="lm1" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%s" is-local="1"
+	  <v:url name="lm1" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%V" is-local="1"
 	      xhtml_rel="sioc:container_of"
 	      />
       </li>
@@ -11564,7 +11565,7 @@ window.onload = function (e)
 	while (0 = exec_next (h, null, null, dta))
 	  {
 	    style := ODS.WA.tag_style (dta[1], mx, mx2);
-	    http (sprintf ('<a href="index.vspx?page=%s&amp;tag=%s%s"><span style="%s">%s</span></a> ', self.page, dta[0], self.login_pars, style, dta[0]));
+	    http (sprintf ('<a href="%s/tag/%s"><span style="%s">%s</span></a> ', self.blog_iri, dta[0], style, dta[0]));
 	    inx := inx + 1;
 	  }
 	exec_close (h);

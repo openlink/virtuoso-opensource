@@ -139,4 +139,36 @@ DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (''BLOG'')')
 DB.DBA.wa_exec_no_error('delete from DB.DBA.news_groups where NG_TYPE=''BLOG''')
 ;
 
-
+-- API procedures
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.post.new"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.post.edit"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.post.delete"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.post.get"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.comment.get"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.comment.approve"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.comment.delete"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.comment.new"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.get"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.options.set"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.options.get"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.upstreaming.set"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.upstreaming.get"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.upstreaming.remove"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.tagging.set"')
+;
+DB.DBA.wa_exec_no_error('DROP procedure ODS.ODS_API."weblog.tagging.retag"')
+;
