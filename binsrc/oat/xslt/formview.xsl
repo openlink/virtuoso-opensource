@@ -75,11 +75,16 @@
 						onReady:unlink
 					}
 					
-					if (nocred) { options.noCred = 1; }
-					if (!showajax) { OAT.AJAX.startRef = function(){}; }
+					if (nocred == true) { options.noCred = 1; }
+					if (showajax == false) { OAT.AJAX.startRef = function() { return; } }
 					
-					loadingDiv = OAT.Dom.create("div");
-					loadingDiv.innerHTML = "Loading...";
+					loadingDiv = OAT.Dom.create("div", {float:"left"});
+					var img = OAT.Dom.create("img");
+					img.src = OAT.Preferences.imagePath + "Ajax_throbber.gif";
+					var txt = OAT.Dom.text(" Processing form content...");
+
+					loadingDiv.appendChild(img);
+					loadingDiv.appendChild(txt);
 					document.body.appendChild(loadingDiv);
 					var f = new OAT.Form(document.body,options);
 					f.createFromURL(window.location.toString());

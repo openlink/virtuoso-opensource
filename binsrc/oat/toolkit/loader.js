@@ -886,6 +886,8 @@ OAT.MSG = { /* messages */
 	SLB_CLOSED:18,
 	GRID_CELLCLICK:19,
 	GRID_ROWCLICK:20,
+	API_LOADING:21,
+	API_LOADED:22,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }

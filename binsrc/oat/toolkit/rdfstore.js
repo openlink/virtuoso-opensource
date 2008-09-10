@@ -98,9 +98,10 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				/* replace some special characters in objects */
 				t[2] = decode(t[2]);
 				
-				if (!title) 
-					if (t[1] == "http://purl.org/dc/elements/1.1/title")
+				if (!title) {
+					if ((t[0]==url || t[0]==url+'/') && t[1]=="http://purl.org/dc/elements/1.1/title")
 						title = t[2];
+			}
 			}
 			self.addTriples(triples,url,title);
 		}

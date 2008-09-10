@@ -353,6 +353,19 @@ OAT.Form = function(targetElm,optObj) {
 		self.div.style.color = area.getAttribute("fgcolor");
 		self.div.style.fontSize = area.getAttribute("size");
 	
+		var counter = -1;
+		var ready = false;
+
+		/* listen for loading apis */
+		OAT.MSG.attach("*",OAT.MSG.API_LOADING,function() {
+			counter = (counter == -1)? 1 : counter+1;	
+		});
+
+		OAT.MSG.attach("*",OAT.MSG.API_LOADED,function() {
+			counter--;
+			if (!counter && ready) { self.initialData(); }
+		});
+	
 		/* read datasources from xmlDoc */
 		var dselms = xmlDoc.getElementsByTagName("ds");
 		for (var i=0;i<dselms.length;i++) {
@@ -380,7 +393,12 @@ OAT.Form = function(targetElm,optObj) {
 			self.recomputeFields();
 			self.draw();
 			self.options.onDone();
-			self.initialData();
+			ready = true;
+			/* -1 -> no apis needed to be loaded, 
+			   >0 -> api loading in progress,
+			   =0 -> api loading finished
+			 */
+			if (counter == -1 || counter == 0) { this.initialData(); }
 		}
 		
 		var qualifiersCallback = function() { /* what to do when qualifiers are ready */

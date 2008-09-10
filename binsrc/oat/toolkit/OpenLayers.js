@@ -104,7 +104,7 @@ return to;};OpenLayers.Util.getParameterString=function(params){var paramsArray=
 encodedValue=encodedItemArray.join(",");}
 else{encodedValue=encodeURIComponent(value);}
 paramsArray.push(encodeURIComponent(key)+"="+encodedValue);}}
-return paramsArray.join("&");};OpenLayers.ImgPath='';OpenLayers.Util.getImagesLocation=function(){return OpenLayers.ImgPath||(OpenLayers._getScriptLocation()+"img/");};OpenLayers.Util.Try=function(){var returnValue=null;for(var i=0;i<arguments.length;i++){var lambda=arguments[i];try{returnValue=lambda();break;}catch(e){}}
+return paramsArray.join("&");};OpenLayers.ImgPath='http://openlayers.org/api/img/';OpenLayers.Util.getImagesLocation=function(){return OpenLayers.ImgPath||(OpenLayers._getScriptLocation()+"img/");};OpenLayers.Util.Try=function(){var returnValue=null;for(var i=0;i<arguments.length;i++){var lambda=arguments[i];try{returnValue=lambda();break;}catch(e){}}
 return returnValue;};OpenLayers.Util.getNodes=function(p,tagName){var nodes=OpenLayers.Util.Try(function(){return OpenLayers.Util._getNodes(p.documentElement.childNodes,tagName);},function(){return OpenLayers.Util._getNodes(p.childNodes,tagName);});return nodes;};OpenLayers.Util._getNodes=function(nodes,tagName){var retArray=[];for(var i=0;i<nodes.length;i++){if(nodes[i].nodeName==tagName){retArray.push(nodes[i]);}}
 return retArray;};OpenLayers.Util.getTagText=function(parent,item,index){var result=OpenLayers.Util.getNodes(parent,item);if(result&&(result.length>0))
 {if(!index){index=0;}
