@@ -546,6 +546,7 @@ create procedure BMK.WA.domain_delete (
   delete from BMK.WA.SFOLDER         where SF_DOMAIN_ID = domain_id;
   delete from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id;
   delete from BMK.WA.TAGS            where T_DOMAIN_ID = domain_id;
+  delete from BMK.WA.EXCHANGE        where EX_DOMAIN_ID = domain_id;
   delete from BMK.WA.SETTINGS        where S_DOMAIN_ID = domain_id;
 
   for (select WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Bookmark' and WAI_ID = domain_id) do
@@ -724,6 +725,15 @@ create procedure BMK.WA.account_delete(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.account_id (
+  in account_name varchar)
+{
+  return (select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.account_name (
   in account_id integer)
 {
@@ -886,10 +896,9 @@ create procedure BMK.WA.bookmark_parent(
 create procedure BMK.WA.bookmark_import(
   in S any,
   in domain_id integer,
-  in account_id integer,
-  in folder_id integer,
-  in tags varchar,
-  in progress_id varchar)
+  in folder_id integer := null,
+  in tags varchar := '',
+  in progress_id varchar := null)
 {
   declare V any;
 
@@ -907,7 +916,7 @@ create procedure BMK.WA.bookmark_import(
   if (V is null)
     goto _xbel;
 
-  BMK..bookmark_import_netscape (domain_id, account_id, folder_id, tags, xml_cut(V), progress_id);
+  BMK..bookmark_import_netscape (domain_id, folder_id, tags, xml_cut(V), progress_id);
   goto _end;
 
 _xbel:;
@@ -916,17 +925,18 @@ _xbel:;
   V := xpath_eval('/xbel', BMK.WA.string2xml(S));
   if (V is null)
     goto _delicious;
-  BMK..bookmark_import_xbel(domain_id, account_id, folder_id, tags, xml_cut(V), progress_id, 'xbel');
+  BMK..bookmark_import_xbel (domain_id, folder_id, tags, xml_cut(V), progress_id, 'xbel');
   goto _end;
 
 _delicious:;
   V := xtree_doc (S);
   V := xpath_eval('/posts', V);
-  if (V is null) {
+  if (V is null)
+  {
     signal ('BMK01', 'The content being imported was not of a format ODS-Bookmarks understands!<>');
     goto _end;
   }
-  BMK..bookmark_import_delicious(domain_id, account_id, folder_id, tags, xml_cut(V), progress_id);
+  BMK..bookmark_import_delicious (domain_id, folder_id, tags, xml_cut(V), progress_id);
 
 _end:
     return;
@@ -937,13 +947,12 @@ _end:
 --
 create procedure BMK.WA.bookmark_import_netscape(
   in domain_id integer,
-  in account_id integer,
   in folder_id integer,
   in tags varchar,
   in V any,
   in progress_id varchar)
 {
-  declare tmp, T, Q any;
+  declare tmp, UID, T, Q any;
   declare N, M integer;
 
   if (V is null)
@@ -956,6 +965,7 @@ create procedure BMK.WA.bookmark_import_netscape(
     if (T is null)
       goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
+    UID := xpath_eval('/dl/dt/a/@id', V, N);
     commit work;
 
     tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, tags, folder_id);
@@ -979,7 +989,7 @@ _folder:
     tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as varchar));
     T := xpath_eval('/dl/dt/dl', V, N);
     if (not (T is null))
-      BMK.WA.bookmark_import_netscape (domain_id, account_id, tmp, tags, xml_cut(T), progress_id);
+      BMK.WA.bookmark_import_netscape (domain_id, tmp, tags, xml_cut(T), progress_id);
     N := N + 1;
   }
 _exit:
@@ -991,7 +1001,6 @@ _exit:
 --
 create procedure BMK.WA.bookmark_import_xbel(
   in domain_id integer,
-  in account_id integer,
   in folder_id integer,
   in tags varchar,
   in V any,
@@ -1009,7 +1018,8 @@ create procedure BMK.WA.bookmark_import_xbel(
   folder_id := BMK.WA.folder_create2(domain_id, folder_id, cast(T as varchar));
 
   N := 1;
-  while (1) {
+  while (1)
+  {
     Q := xpath_eval(sprintf('/%s/bookmark[%d]/@href', tag, N), V, 1);
     if (Q is null)
       goto _folder;
@@ -1019,7 +1029,8 @@ create procedure BMK.WA.bookmark_import_xbel(
 
     tmp := BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, tags, folder_id);
 
-	  if (not is_empty_or_null (progress_id)) {
+	  if (not is_empty_or_null (progress_id))
+	  {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
 	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
@@ -1029,11 +1040,12 @@ create procedure BMK.WA.bookmark_import_xbel(
   }
 _folder:
   N := 1;
-  while (1) {
+  while (1)
+  {
     T := xpath_eval(sprintf('/%s/folder[%d]', tag, N), V, 1);
     if (T is null)
       goto _exit;
-    BMK.WA.bookmark_import_xbel (domain_id, account_id, folder_id, tags, xml_cut(T), progress_id, 'folder');
+    BMK.WA.bookmark_import_xbel (domain_id, folder_id, tags, xml_cut(T), progress_id, 'folder');
     N := N + 1;
   }
 _exit:
@@ -1045,7 +1057,6 @@ _exit:
 --
 create procedure BMK.WA.bookmark_import_delicious(
   in domain_id integer,
-  in account_id integer,
   in folder_id integer,
   in tags varchar,
   in V any,
@@ -1094,14 +1105,24 @@ _exit:
 --
 create procedure BMK.WA.bookmark_export (
   in domain_id integer,
-  in folder_id integer)
+  in folder_id integer := null,
+  in options any := null)
 {
   declare retValue any;
+  declare tagsInclude, tagsExclude any;
+
+  tagsInclude := null;
+  tagsExclude := null;
+  if (not isnull (options))
+  {
+    tagsInclude := get_keyword ('tagsInclude', options);
+    tagsExclude := get_keyword ('tagsExclude', options);
+  }
 
   retValue := string_output ();
   http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
   http(sprintf('<root name="Bookmarks" id="f#%d">', coalesce(folder_id, -1)), retValue);
-  BMK.WA.bookmark_export_tmp(domain_id, folder_id, retValue);
+  BMK.WA.bookmark_export_tmp (domain_id, folder_id, tagsInclude, tagsExclude, retValue);
   http('</root>', retValue);
 
   return string_output_string (retValue);
@@ -1113,6 +1134,8 @@ create procedure BMK.WA.bookmark_export (
 create procedure BMK.WA.bookmark_export_tmp (
   in domain_id integer,
   in folder_id any,
+  in tagsInclude any,
+  in tagsExclude any,
   inout retValue any)
 {
   declare id, type any;
@@ -1120,15 +1143,18 @@ create procedure BMK.WA.bookmark_export_tmp (
   --  http (sprintf('<bookmark name="%V" desc="%V" uri="%V" id="f#%d" />', BD_NAME, coalesce(BD_DESCRIPTION, ''), B_URI, BD_ID), retValue);
   for (select a.*, b.B_URI from BMK.WA.BOOKMARK_DOMAIN a, BMK.WA.BOOKMARK b where a.BD_BOOKMARK_ID = b.B_ID and a.BD_DOMAIN_ID = domain_id and coalesce(a.BD_FOLDER_ID, -1) = coalesce(folder_id, -1) order by a.BD_NAME) do
   {
-    http (sprintf('<bookmark name="%V" uri="%V" id="b#%d">', BMK.WA.utf2wide (BD_NAME), B_URI, BD_ID), retValue);
+    if (BMK.WA.tags_exchangeTest (BD_TAGS, tagsInclude, tagsExclude))
+    {
+      http (sprintf('<bookmark name="%V" uri="%V" id="%s">', BMK.WA.utf2wide (BD_NAME), B_URI, BD_UID), retValue);
     if (coalesce(BD_DESCRIPTION, '') <> '')
       http (sprintf('<desc>%V</desc>', BD_DESCRIPTION), retValue);
     http ('</bookmark>', retValue);
   }
+  }
   for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, -1) = coalesce(folder_id, -1) order by 2) do
   {
     http (sprintf('<folder name="%V" id="f#%d">', F_NAME, F_ID), retValue);
-    BMK.WA.bookmark_export_tmp(domain_id, F_ID, retValue);
+    BMK.WA.bookmark_export_tmp(domain_id, F_ID, tagsInclude, tagsExclude, retValue);
     http ('</folder>', retValue);
   }
 }
@@ -1228,7 +1254,9 @@ create procedure BMK.WA.folder_id(
         if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null))
           insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_NAME, F_PATH) values (domain_id, aPath[i], '');
         folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null);
-      } else {
+      }
+      else
+      {
         if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID = folder_id))
           insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME, F_PATH) values (domain_id, folder_id, aPath[i], '');
         folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID = folder_id);
@@ -1247,7 +1275,8 @@ create procedure BMK.WA.folder_create(
   in folder_id any)
 {
   folder_name := trim(folder_name);
-  if (folder_name <> '') {
+  if (folder_name <> '')
+  {
     folder_id := BMK.WA.folder_id(domain_id, folder_name);
   } else {
     folder_id := cast(folder_id as integer);
@@ -1300,6 +1329,7 @@ create procedure BMK.WA.folder_delete(
 
   -- delete folder at last
   delete from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id;
+  commit work;
 }
 ;
 
@@ -1867,6 +1897,52 @@ create procedure BMK.WA.tags2unique(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.tags_exchangeTest (
+  inout tagsEntry any,
+  inout tagsInclude any := null,
+  inout tagsExclude any := null)
+{
+  declare N integer;
+  declare tags, testTags any;
+
+  if (is_empty_or_null (tagsEntry) and not is_empty_or_null (tagsInclude))
+    goto _false;
+
+  -- test exclude tags
+  if (is_empty_or_null (tagsExclude))
+    goto _include;
+  if (is_empty_or_null (tagsEntry))
+    goto _include;
+  tags := BMK.WA.tags2vector (tagsEntry);
+  testTags := BMK.WA.tags2vector (tagsExclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (BMK.WA.vector_contains (testTags, tags [N]))
+      goto _false;
+  }
+
+_include:;
+  -- test include tags
+  if (is_empty_or_null (tagsInclude))
+    goto _true;
+  tags := BMK.WA.tags2vector (tagsEntry);
+  testTags := BMK.WA.tags2vector (tagsInclude);
+  for (N := 0; N < length (tags); N := N + 1)
+  {
+    if (BMK.WA.vector_contains (testTags, tags [N]))
+      goto _true;
+  }
+
+_false:;
+  return 0;
+
+_true:;
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.settings (
   inout domain_id integer)
 {
@@ -1992,9 +2068,11 @@ create procedure BMK.WA.host_url ()
   declare ret varchar;
 
   --return '';
-  if (is_http_ctx ()) {
+  if (is_http_ctx ())
+  {
     ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null) {
+    if (isstring (ret) and strchr (ret , ':') is null)
+    {
       declare hp varchar;
       declare hpa any;
 
@@ -2002,7 +2080,9 @@ create procedure BMK.WA.host_url ()
       hpa := split_and_decode ( hp , 0 , '\0\0:');
       ret := ret || ':' || hpa [1];
     }
-  } else {
+  }
+  else
+  {
     ret := sys_connected_server_address ();
     if (ret is null)
       ret := sys_stat ('st_host_name') || ':' || server_http_port ();
@@ -2212,6 +2292,273 @@ create procedure BMK.WA.url_fix (
     S := S || T || 'realm=' || realm;
   }
   return S;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure BMK.WA.uid ()
+{
+  return sprintf ('%s@%s', uuid (), sys_stat ('st_host_name'));
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure BMK.WA.exchange_exec (
+  in _id integer,
+  in _mode integer := 0,
+  in _exMode integer := null)
+{
+  declare retValue any;
+
+  declare exit handler for SQLSTATE '*'
+  {
+    update BMK.WA.EXCHANGE
+       set EX_EXEC_LOG = __SQL_STATE || ' ' || BMK.WA.test_clear (__SQL_MESSAGE)
+     where EX_ID = _id;
+    commit work;
+
+    if (_mode)
+      resignal;
+  };
+
+  retValue := BMK.WA.exchange_exec_internal (_id, _exMode);
+
+  update BMK.WA.EXCHANGE
+     set EX_EXEC_TIME = now (),
+         EX_EXEC_LOG = null
+   where EX_ID = _id;
+  commit work;
+
+  return retValue;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure BMK.WA.exchange_entry_update (
+  in _domain_id integer)
+{
+  for (select EX_ID from BMK.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  {
+    BMK.WA.exchange_exec (EX_ID);
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure BMK.WA.exchange_exec_internal (
+  in _id integer,
+  in _exMode integer := null)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from BMK.WA.EXCHANGE where EX_ID = _id) do
+  {
+    declare _type, _name, _user, _password, _tagsInclude, _tagsExclude, _tags, _folderPath, _folder_id any;
+    declare _content any;
+
+    _type := get_keyword ('type', _options);
+    _name := get_keyword ('name', _options);
+    _user := get_keyword ('user', _options);
+    _password := get_keyword ('password', _options);
+    _tagsInclude := get_keyword ('tagsInclude', _options);
+    _tagsExclude := get_keyword ('tagsExclude', _options);
+    _tags := get_keyword ('tags', _options);
+    _folderPath := get_keyword ('folderPath', _options);
+    _folder_id := BMK.WA.folder_create (_domain_id, _folderPath, null);
+
+    -- publish
+    if (_direction = 0)
+    {
+      _content := BMK.WA.export_netscape (_domain_id, _folder_id, _options);
+      if (_type = 1)
+      {
+        declare retValue, permissions any;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('BMK02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
+          };
+          permissions := BMK.WA.dav_permissions (_name, _user, _password);
+          _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
+          retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
+          if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+          {
+            signal ('BMK01', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue) || '.<>');
+          }
+        }
+      }
+      else if (_type = 2)
+      {
+        declare retContent, resHeader, reqHeader any;
+
+        reqHeader := null;
+        if (_user <> '')
+        {
+          reqHeader := sprintf ('Authorization: Basic %s', encode_base64 (_user || ':' || _password));
+        }
+        commit work;
+        {
+          declare exit handler for SQLSTATE '*'
+          {
+            signal ('BMK02', 'Connection Error in HTTP Client!<>');
+          };
+          retContent := http_get (_name, resHeader, 'PUT', reqHeader, _content);
+          if (not (length (resHeader) > 0 and (resHeader[0] like 'HTTP/1._ 2__ %' or  resHeader[0] like 'HTTP/1._ 3__ %')))
+          {
+            signal ('BMK02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
+          }
+        }
+      }
+    }
+    -- subscribe
+    else if (_direction = 1)
+    {
+      if (_type = 1)
+      {
+        _name := BMK.WA.host_url () || _name;
+      }
+      _content := BMK.WA.dav_content (_name, _user, _password);
+      if (isnull(_content))
+      {
+        signal ('BMK01', 'Bad import/subscription source!<>');
+      }
+      BMK.WA.bookmark_import (_content, _domain_id, _folder_id, _tags);
+    }
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure BMK.WA.exchange_scheduler ()
+{
+  declare id, days, rc, err integer;
+  declare bm any;
+
+  declare _error integer;
+  declare _bookmark any;
+  declare _dt datetime;
+  declare exID any;
+
+  _dt := now ();
+  declare cr static cursor for select EX_ID
+                                 from BMK.WA.EXCHANGE
+                                where EX_UPDATE_TYPE = 2
+                                  and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt);
+
+  whenever not found goto _done;
+  open cr (exclusive, prefetch 1);
+  fetch cr into exID;
+  while (1)
+  {
+    _bookmark := bookmark(cr);
+    _error := 0;
+    close cr;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        _error := 1;
+
+        goto _next;
+      };
+      BMK.WA.exchange_exec (exID, 1);
+    }
+
+  _next:
+    open cr (exclusive, prefetch 1);
+    fetch cr bookmark _bookmark into exID;
+    if (_error)
+      fetch cr next into exID;
+  }
+_done:;
+  close cr;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_check_authenticate (
+  in _path varchar,
+  in _user varchar,
+  in _password varchar,
+  in _permissions varchar)
+{
+  declare _type varchar;
+
+  _type := case when (strrchr (_path, '/') = length (_path) - 1) then 'C' else 'R' end;
+  if (DB.DBA.DAV_AUTHENTICATE (DB.DBA.DAV_SEARCH_ID (_path, _type), _type, _permissions, _user, _password) < 0)
+    return 0;
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_parent (
+  in path varchar)
+{
+  declare pos integer;
+
+  path := trim (path, '/');
+  pos := strrchr (path, '/');
+  if (not isnull (pos))
+    path := substring (path, 1, pos);
+  return '/' || path || '/';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_permissions (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare uid, gid integer;
+  declare permissions varchar;
+
+  permissions := -1;
+  permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+  if (permissions < 0)
+  {
+    path := BMK.WA.dav_parent (path);
+    if (path <> BMK.WA.dav_home (BMK.WA.account_id (auth_name)))
+      permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+    if (permissions < 0)
+      permissions := USER_GET_OPTION (auth_name, 'PERMISSIONS');
+  }
+  return permissions;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.export_netscape (
+  in domain_id integer,
+  in folder_id integer,
+  in options any)
+{
+  declare retValue any;
+
+  retValue := string_output ();
+  http_value (xslt (BMK.WA.xslt_full ('Netscape.xsl'), xtree_doc (BMK.WA.bookmark_export (domain_id, folder_id, options))), null, retValue);
+  return string_output_string (retValue);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.export_xbel (
+  in domain_id integer,
+  in options any)
+{
+  declare retValue any;
+
+  retValue := string_output ();
+  http_value (xslt (BMK.WA.xslt_full ('XBEL.xsl'), xtree_doc (BMK.WA.bookmark_export (domain_id, null, options))), null, retValue);
+  return string_output_string (retValue);
 }
 ;
 
@@ -3237,11 +3584,12 @@ create procedure BMK.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
+
+  declare N integer;
+  declare ch, S varchar;
 
   S := '';
   N := 1;

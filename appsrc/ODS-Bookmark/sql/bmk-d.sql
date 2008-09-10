@@ -37,6 +37,9 @@ create procedure BMK.WA.uninstall ()
 BMK.WA.uninstall ()
 ;
 
+-- Scheduler
+BMK.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Bookmark Exchange Scheduler\'');
+
 VHOST_REMOVE (lpath => '/bookmark');
 VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
 
@@ -64,6 +67,7 @@ BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DOMAIN');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.SFOLDER');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.FOLDER');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK');
+BMK.WA.exec_no_error('DROP TABLE BMK.WA.EXCHANGE');
 
 -- Types
 BMK.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'Bookmark\'');
@@ -114,6 +118,28 @@ BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_bmk_tags');
 -- dropping SIOC procs
 BMK.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_import');
 BMK.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_export');
+BMK.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_update');
+
+-- dropping API procs
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.get"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.new"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.edit"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.delete"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.folder.new"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.folder.delete"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.import"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.export"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.comment.get"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.comment.new"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.comment.delete"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.publication.new"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.publication.edit"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.publication.delete"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.subscription.new"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.subscription.edit"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.subscription.delete"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.options.set"');
+BMK.WA.exec_no_error('DROP procedure ODS.ODS_API."bookmark.options.get"');
 
 -- final proc
 BMK.WA.exec_no_error('DROP procedure BMK.WA.exec_no_error');

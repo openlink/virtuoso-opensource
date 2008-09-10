@@ -849,7 +849,7 @@ create function "bookmark_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, 
 	}
 	cond_key := sprintf ('Bookmark&%d', coalesce (domain_id, 0));
 	condtext := get_keyword (cond_key, compilation);
-	if (condtext is null)
+    if (condtext is null and 0)
 	{
 	  cond_list := get_keyword ('', compilation);
 	  if (sub is not null)

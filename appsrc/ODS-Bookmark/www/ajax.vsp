@@ -115,7 +115,7 @@
         {
         	goto _end;
         };
-        BMK.WA.bookmark_import (S, _domain_id, _account_id, folder_id, tags, progressID);
+        BMK.WA.bookmark_import (S, _domain_id, folder_id, tags, progressID);
       }
 	  _end:;
 

@@ -38,3 +38,20 @@ create procedure BMK.WA.tmp_update ()
 --
 BMK.WA.tmp_update ()
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tmp_update ()
+{
+  if (registry_get ('bmk_uid_update') = '1')
+    return;
+
+  set triggers off;
+  update BMK.WA.BOOKMARK_DOMAIN set BD_UID = BMK.WA.uid () where BD_UID is null;
+  set triggers on;
+
+  registry_set ('bmk_uid_update', '1');
+}
+;
+BMK.WA.tmp_update ();
+

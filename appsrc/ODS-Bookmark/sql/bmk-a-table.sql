@@ -242,6 +242,7 @@ create procedure BMK.WA.tags_update (
 BMK.WA.exec_no_error('
   create table BMK.WA.BOOKMARK_DOMAIN (
     BD_ID integer identity,
+    BD_UID varchar,
   	BD_DOMAIN_ID integer not null,
   	BD_BOOKMARK_ID integer not null,
   	BD_FOLDER_ID integer,
@@ -260,6 +261,10 @@ BMK.WA.exec_no_error('
 ');
 
 BMK.WA.exec_no_error(
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_UID varchar', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_UID'
+);
+
+BMK.WA.exec_no_error (
   'alter table BMK.WA.BOOKMARK_DOMAIN add BD_TAGS varchar', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_TAGS'
 );
 
@@ -285,7 +290,18 @@ BMK.WA.exec_no_error('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AI after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    declare _uid varchar;
+
+    _uid := N.BD_UID;
+    if (isnull (_uid))
+    {
+      _uid := BMK.WA.uid ();
+      set triggers off;
+      update BMK.WA.BOOKMARK_DOMAIN set BD_UID = _uid where BD_ID = N.BD_ID;
+      set triggers on;
+    }
     BMK.WA.tags_update (N.BD_DOMAIN_ID, \'\', N.BD_TAGS);
+    BMK.WA.exchange_entry_update (N.BD_DOMAIN_ID);
     BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
@@ -295,7 +311,18 @@ BMK.WA.exec_no_error ('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AU after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N  {
+    declare _uid varchar;
+
+    _uid := N.BD_UID;
+    if (isnull (_uid))
+    {
+      _uid := BMK.WA.uid ();
+      set triggers off;
+      update BMK.WA.BOOKMARK_DOMAIN set BD_UID = _uid where BD_ID = N.BD_ID;
+      set triggers on;
+    }
     BMK.WA.tags_update (N.BD_DOMAIN_ID, O.BD_TAGS, N.BD_TAGS);
+    BMK.WA.exchange_entry_update (N.BD_DOMAIN_ID);
     BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
@@ -652,6 +679,78 @@ DB.DBA.vt_batch_update('BMK.WA.BOOKMARK_DOMAIN', 'off', null);
 -------------------------------------------------------------------------------
 --
 BMK.WA.exec_no_error ('drop trigger WA_MEMBER_AU_BMK');
+
+-------------------------------------------------------------------------------
+--
+--  PUBLISH & SUBSCRIBE
+--
+-------------------------------------------------------------------------------
+BMK.WA.exec_no_error ('
+  create table BMK.WA.EXCHANGE (
+    EX_ID integer identity,
+    EX_DOMAIN_ID integer not null,
+    EX_TYPE integer not null,
+    EX_NAME varchar not null,
+    EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_INTERVAL integer,
+    EX_UPDATE_PERIOD varchar,
+    EX_UPDATE_FREQ integer,
+    EX_OPTIONS varchar,
+	  EX_EXEC_LOG long varchar,
+    EX_EXEC_TIME datetime,
+
+    primary key (EX_ID)
+  )
+');
+
+BMK.WA.exec_no_error ('
+  create trigger EXCHANGE_AI AFTER INSERT ON BMK.WA.EXCHANGE referencing new as N
+  {
+    BMK.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+BMK.WA.exec_no_error ('
+  create trigger EXCHANGE_AU AFTER UPDATE on BMK.WA.EXCHANGE referencing old as O, new as N
+  {
+    BMK.WA.calc_update_interval (N.EX_ID, N.EX_UPDATE_TYPE, N.EX_UPDATE_PERIOD, N.EX_UPDATE_FREQ);
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.calc_update_interval (
+  in _id any,
+  in _type any,
+  in _period any,
+  in _freq any)
+{
+  declare _update integer;
+
+  if (_type < 2)
+    return;
+
+  _update := case lower (coalesce (_period, 'daily'))
+               when 'hourly' then 60
+               when 'daily' then 1440
+               else 1440
+             end / coalesce (_freq, 1);
+
+  set triggers off;
+  update BMK.WA.EXCHANGE
+     set EX_UPDATE_INTERVAL = _update
+   where EX_ID = _id;
+  set triggers on;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+BMK.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'Bookmark Exchange Scheduler\', now(), \'BMK.WA.exchange_scheduler ()\', 30)
+')
+;
 
 -------------------------------------------------------------------------------
 --
