@@ -32,6 +32,14 @@ create procedure AB.WA.uninstall ()
 AB.WA.uninstall ()
 ;
 
+-- Triggers
+AB.WA.exec_no_error ('drop trigger WS.WS.ADDRESSBOOK_SYS_DAV_RES_AI');
+AB.WA.exec_no_error ('drop trigger WS.WS.ADDRESSBOOK_SYS_DAV_RES_AU');
+AB.WA.exec_no_error ('drop trigger WS.WS.ADDRESSBOOK_SYS_DAV_RES_AD');
+
+-- Scheduler
+AB.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'AddressBook Exchange Scheduler\'');
+
 VHOST_REMOVE (lpath => '/addressbook');
 VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
 
@@ -42,12 +50,12 @@ DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.ADDRESSBOOK_NEWS_MSG_D');
 DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (\'ADDRESSBOOK\')');
 
 -- Tables
-AB.WA.exec_no_error('DROP TABLE AB.WA.EXCHANGE');
 AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSON_COMMENTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.ANNOTATIONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.CATEGORIES');
+AB.WA.exec_no_error ('DROP TABLE AB.WA.EXCHANGE');
 AB.WA.exec_no_error('DROP TABLE AB.WA.TAGS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.SETTINGS');
 
@@ -87,6 +95,25 @@ AB.WA.exec_no_error('DROP procedure SIOC.DBA.ods_addressbook_sioc_init');
 -- dropping SIOC procs
 AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_import');
 AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_export');
+
+-- dropping API procs
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.get"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.new"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.edit"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.delete"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.import"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.export"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.comment.get"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.comment.new"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.comment.delete"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.publication.new"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.publication.edit"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.publication.delete"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.subscription.new"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.ssubscription.edit"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.subscription.delete"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.options.set"');
+AB.WA.exec_no_error ('DROP procedure ODS.ODS_API."addressbook.options.get"');
 
 -- final proc
 AB.WA.exec_no_error('DROP procedure AB.WA.exec_no_error');

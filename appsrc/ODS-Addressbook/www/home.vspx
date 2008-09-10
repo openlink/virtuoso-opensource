@@ -1539,11 +1539,11 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_foaf" value="FOAF file URL" />
+                          <v:label for="ab_foaf" value="Person Entity URI" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" xhtml_title="Identifier for Entity of type Person" />
                         </vm:if>
                         <?vsp self.viewField (self.v_foaf); ?>
                       </td>
@@ -4408,7 +4408,7 @@
                   <v:button action="simple" value="--case when self.abSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
-                        declare _type, _name, _user, _password, _mode, _tagsInclude, _tagsExclude, _tags any;
+                        declare _type, _name, _nameTest, _user, _password, _mode, _tagsInclude, _tagsExclude, _tags any;
                         declare tmp, params any;
 
                         declare exit handler for SQLSTATE '*'
@@ -4456,7 +4456,9 @@
                         }
                         }
                         _name := trim (self.exc_options_name.ufl_value);
-                        _name := '/' || _name || '/';
+                        _name := '/' || _name;
+                        if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
+                          _name := _name || '/';
                         _name := replace (_name, '//', '/');
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
                         {
@@ -4468,8 +4470,14 @@
                         _password := self.exc_options_password.ufl_value;
                         if (_type = 1)
                         {
-                          tmp := case when ((self.ve_type = 0) or (self.ve_type = 2)) then '11_' else '1__' end;
-                          if (not AB.WA.dav_check_authenticate (_name, _user, _password, tmp))
+                          _nameTest := _name;
+                          tmp := '1__';
+                          if ((self.ve_type = 0) or (self.ve_type = 2))
+                          {
+                            _nameTest := AB.WA.dav_parent (_name);
+                            tmp := '11_';
+                          }
+                          if (not AB.WA.dav_check_authenticate (_nameTest, _user, _password, tmp))
                           {
                             signal ('TEST', 'The user has no rights for this folder.<>');
                           }

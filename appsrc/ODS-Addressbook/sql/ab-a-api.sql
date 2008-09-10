@@ -547,6 +547,266 @@ create procedure ODS.ODS_API."addressbook.comment.delete" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."addressbook.publication.new" (
+  in inst_id integer,
+  in name varchar,
+  in updateType varchar := 1,
+  in updatePeriod varchar := 'hourly',
+  in updateFreq integr := 1,
+  in destinationType varchar := 'WebDAV',
+  in destination varchar,
+  in userName varchar := null,
+  in userPassword varchar := null,
+  in tagsInclude varchar := '',
+  in tagsExclude varchar := '') __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare _type, options any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (lcase (destinationType) = 'webdav')
+  {
+    _type := 1;
+  }
+  else if (lcase (destinationType) = 'url')
+  {
+    _type := 2;
+  }
+  else
+  {
+	  signal ('CAL106', 'The source type must be WebDAV or URL.');
+  }
+  options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
+  insert into AB.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
+    values (inst_id, 0, name, updateType, updatePeriod, updateFreq, serialize (options));
+  rc := (select max (EX_ID) from AB.WA.EXCHANGE);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.publication.edit" (
+  in publication_id integer,
+  in name varchar,
+  in updateType varchar := 1,
+  in updatePeriod varchar := 'hourly',
+  in updateFreq integr := 1,
+  in destinationType varchar := 'WebDAV',
+  in destination varchar,
+  in userName varchar := null,
+  in userPassword varchar := null,
+  in tagsInclude varchar := '',
+  in tagsExclude varchar := '') __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+  declare _type, options any;
+
+  inst_id := (select EX_DOMAIN_ID from AB.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (lcase (destinationType) = 'webdav')
+  {
+    _type := 1;
+  }
+  else if (lcase (destinationType) = 'url')
+  {
+    _type := 2;
+  }
+  else
+  {
+	  signal ('CAL106', 'The source type must be WebDAV or URL.');
+  }
+  options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
+  update AB.WA.EXCHANGE
+     set EX_NAME = name,
+         EX_UPDATE_TYPE = updateType,
+         EX_UPDATE_PERIOD = updatePeriod,
+         EX_UPDATE_FREQ = updateFreq,
+         EX_OPTIONS = serialize (options)
+   where EX_ID = publication_id;
+
+  return ods_serialize_int_res (publication_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.publication.delete" (
+  in publication_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from AB.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from AB.WA.EXCHANGE where EX_ID = publication_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.subscription.new" (
+  in inst_id integer,
+  in name varchar,
+  in updateType varchar := 1,
+  in updatePeriod varchar := 'hourly',
+  in updateFreq integr := 1,
+  in sourceType varchar := 'WebDAV',
+  in source varchar,
+  in userName varchar := null,
+  in userPassword varchar := null,
+  in tagsInclude varchar := '',
+  in tagsExclude varchar := '') __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare _type, options any;
+
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (lcase (sourceType) = 'webdav')
+  {
+    _type := 1;
+  }
+  else if (lcase (sourceType) = 'url')
+  {
+    _type := 2;
+  }
+  else
+  {
+	  signal ('CAL106', 'The source type must be WebDAV or URL.');
+  }
+  options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
+  insert into AB.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
+    values (inst_id, 1, name, updateType, updatePeriod, updateFreq, serialize (options));
+  rc := (select max (EX_ID) from AB.WA.EXCHANGE);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.ssubscription.edit" (
+  in subscription_id integer,
+  in name varchar,
+  in updateType varchar := 1,
+  in updatePeriod varchar := 'hourly',
+  in updateFreq integr := 1,
+  in sourceType varchar := 'WebDAV',
+  in source varchar,
+  in userName varchar := null,
+  in userPassword varchar := null,
+  in tagsInclude varchar := '',
+  in tagsExclude varchar := '') __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+  declare _type, options any;
+
+  inst_id := (select EX_DOMAIN_ID from AB.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (lcase (sourceType) = 'webdav')
+  {
+    _type := 1;
+  }
+  else if (lcase (sourceType) = 'url')
+  {
+    _type := 2;
+  }
+  else
+  {
+	  signal ('CAL106', 'The source type must be WebDAV or URL.');
+  }
+  options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
+  update AB.WA.EXCHANGE
+     set EX_NAME = name,
+         EX_UPDATE_TYPE = updateType,
+         EX_UPDATE_PERIOD = updatePeriod,
+         EX_UPDATE_FREQ = updateFreq,
+         EX_OPTIONS = serialize (options)
+   where EX_ID = subscription_id;
+
+  return ods_serialize_int_res (subscription_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.subscription.delete" (
+  in subscription_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from AB.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from AB.WA.EXCHANGE where EX_ID = subscription_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."addressbook.options.set" (
   in inst_id int, in options any) __soap_http 'text/xml'
 {
@@ -625,6 +885,13 @@ grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."addressbook.publication.new" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.publication.edit" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.publication.delete" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.subscription.new" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.subscription.edit" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.subscription.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."addressbook.options.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.options.set" to ODS_API;
