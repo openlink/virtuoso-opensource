@@ -62,6 +62,7 @@
       </head>
       <body>
         <xsl:value-of select="//ods/bar" disable-output-escaping="yes" />
+          <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <div id="app_area">
         <xsl:call-template name="header"/>
         <xsl:call-template name="nav_2"/>
@@ -77,18 +78,27 @@
                 <xsl:call-template name="folder_tree" />
               </td>
             </xsl:if>
-            <xsl:if test="contains('folders,ch_pop3',/page/@id)">
+              <xsl:if test="contains('folders,filters,ch_pop3',/page/@id)">
               <td valign="top" class="left">
                 <ul class="lmenu">
                   <li class="lmenu_title">
                     <xsl:call-template name="make_href">
                       <xsl:with-param name="url">folders.vsp</xsl:with-param>
-                      <xsl:with-param name="label">Manage Folders</xsl:with-param>
+                        <xsl:with-param name="params"></xsl:with-param>
+                        <xsl:with-param name="label">Folders</xsl:with-param>
+                      </xsl:call-template>
+                    </li>
+                    <li class="lmenu_title">
+                      <xsl:call-template name="make_href">
+                        <xsl:with-param name="url">filters.vsp</xsl:with-param>
+                        <xsl:with-param name="params"></xsl:with-param>
+                        <xsl:with-param name="label">Filters</xsl:with-param>
                     </xsl:call-template>
                   </li>
                   <li class="lmenu_title">
                     <xsl:call-template name="make_href">
                       <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
+                        <xsl:with-param name="params"></xsl:with-param>
                       <xsl:with-param name="label">External POP3 Accounts</xsl:with-param>
                     </xsl:call-template>
                   </li>
@@ -112,16 +122,19 @@
           <div id="FT_R">
             <xsl:call-template name="make_href">
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>faq.html</xsl:with-param>
+              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">FAQ</xsl:with-param>
             </xsl:call-template>
             |
             <xsl:call-template name="make_href">
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>privacy.html</xsl:with-param>
+              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">Privacy</xsl:with-param>
             </xsl:call-template>
             |
             <xsl:call-template name="make_href">
               <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>rabuse.vspx</xsl:with-param>
+              <xsl:with-param name="params"></xsl:with-param>
               <xsl:with-param name="label">Report Abuse</xsl:with-param>
             </xsl:call-template>
             <div><xsl:call-template name="copyright"/></div>
@@ -147,6 +160,7 @@
         <xsl:call-template name="javaScript"/>
       </head>
       <body style="margin: 5px; font-size: 9pt;">
+        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <div style="padding: 0 0 0.5em 0;">
           <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
           <hr/>
@@ -177,6 +191,7 @@
         <xsl:call-template name="javaScript"/>
       </head>
       <body topmargin="0" leftmargin="6" marginwidth="6" marginheight="0">
+        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
           <tr>
             <td class="left">
@@ -233,17 +248,23 @@
   <xsl:template name="javaScript">
     <script type="text/javascript" src="/oMail/i/js/jslib.js"></script>
     <script type="text/javascript" src="/oMail/i/js/script.js"></script>
+    <script type="text/javascript" src="/oMail/i/js/CalendarPopup.js"></script>
     <script type="text/javascript">
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax2", "anchor", "dav"];
+      var featureList=["ajax2", "combolist", "json", "anchor", "dav"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
+      // CalendarPopup
+      var cPopup = new CalendarPopup('cDiv');
+      cPopup.isShowYearNavigation = true;
+
       function myInit() {
         OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.showAjax = false;
 
         // WebDAV
         var options = { imagePath: OAT.Preferences.imagePath,
@@ -260,9 +281,16 @@
         OAT.Anchor.zIndex = 1001;
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
+        {
           generateAPP('app_area', {appActivation: "click", searchECRM: true});
-        if (<xsl:value-of select="//user_info/app" /> == 2)
+        }
+        else if (<xsl:value-of select="//user_info/app" /> == 2)
+        {
           generateAPP('app_area', {appActivation: "hover", searchECRM: true});
+      }
+
+        // Init OMAIL object
+        OMAIL.init();
       }
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>
@@ -488,6 +516,24 @@
       <xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
     </input>
     <br/>
+  </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template name="empty_row">
+    <xsl:param name="count"/>
+    <xsl:param name="colspan"/>
+    <xsl:if test="$count < 10">
+      <tr>
+        <td height="24">
+          <xsl:attribute name="colspan"><xsl:value-of select="$colspan"/></xsl:attribute>
+          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
+        </td>
+      </tr>
+      <xsl:call-template name="empty_row">
+        <xsl:with-param name="count" select="$count+1"/>
+        <xsl:with-param name="colspan" select="$colspan"/>
+      </xsl:call-template>
+    </xsl:if>
   </xsl:template>
 
   <!--========================================================================-->

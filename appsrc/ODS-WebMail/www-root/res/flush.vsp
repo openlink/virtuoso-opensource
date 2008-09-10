@@ -25,14 +25,18 @@
   http_request_status ('HTTP/1.1 200 OK');
   http_flush ();
 
-  declare domain_id, user_id, msg_id integer;
-  declare options, address, error integer;
+  declare domain_id, user_id, msg_id, error integer;
+  declare scopy, options, settings, address any;
 
   domain_id := cast(get_keyword('did', params, '0') as integer);
   user_id := cast(get_keyword('uid', params, '0') as integer);
   msg_id := cast(get_keyword('mid', params, '0') as integer);
   address := get_keyword('addr', params);
 
-  options := vector();
+  settings := OMAIL.WA.omail_get_settings (domain_id, user_id, 'base_settings');
+  dbg_obj_print ('settings', settings);
+  scopy    := get_keyword ('save_copy', settings, '1');
+  options  := vector ('scopy', scopy);
+  dbg_obj_print ('', domain_id, user_id, options, msg_id, address, error);
   OMAIL.WA.omail_send_msg(domain_id, user_id, options, msg_id, address, error);
 ?>

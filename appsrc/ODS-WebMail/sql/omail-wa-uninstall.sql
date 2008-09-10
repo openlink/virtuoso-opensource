@@ -60,6 +60,7 @@ OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.FOLDERS');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.SETTINGS');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.SHARES');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.CONVERSATION');
+OMAIL.WA.exec_no_error ('DROP TABLE OMAIL.WA.FILTERS');
 
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.RES_MIME_EXT');
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.RES_MIME_TYPES');
@@ -104,6 +105,20 @@ OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_AGG_acc');
 OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_AGG_final');
 OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL');
 
+-- API procedures
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API.mail_folder_id');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API.mail_folder_new');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API.mail_setting_set');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API.mail_setting_xml');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.message.get"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.message.new"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.message.delete"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.message.move"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.folder.new"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.folder.delete"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.folder.rename"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.options.set"');
+OMAIL.WA.exec_no_error ('DROP procedure ODS.ODS_API."mail.options.get"');
+
 -- final proc
 OMAIL.WA.exec_no_error('DROP procedure OMAIL.WA.exec_no_error');
-

@@ -195,6 +195,21 @@ OMAIL.WA.exec_no_error (
 ;
 
 OMAIL.WA.exec_no_error (
+  'create table OMAIL.WA.FILTERS (
+    F_ID integer identity,
+    F_DOMAIN_ID integer not null,
+    F_NAME varchar not null,
+    F_MODE integer default 1,
+    F_ACTIVE integer default 1,
+    F_CRITERIA long varchar,
+    F_ACTIONS long varchar,
+
+    PRIMARY KEY (F_ID)
+  )'
+)
+;
+
+OMAIL.WA.exec_no_error (
   'ALTER TABLE OMAIL.WA.MESSAGES         ADD FOREIGN KEY (DOMAIN_ID,USER_ID,FOLDER_ID) REFERENCES OMAIL.WA.FOLDERS     (DOMAIN_ID,USER_ID,FOLDER_ID)'
 )
 ;

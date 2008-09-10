@@ -290,7 +290,7 @@
           <xsl:call-template name="nbsp">
             <xsl:with-param name="count" select="4"/>
           </xsl:call-template>
-          <input type="checkbox" name="scopy" value="1" onClick="saveCheckbox(this);">
+          <input type="checkbox" name="scopy" value="1">
             <xsl:if test="//save_copy = 1">
               <xsl:attribute name="checked">checked</xsl:attribute>
             </xsl:if>

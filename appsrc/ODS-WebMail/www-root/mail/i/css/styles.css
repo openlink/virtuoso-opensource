@@ -25,7 +25,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: Verdana, Arial, Helvetica, Sans-Serif;
-  font-size: 9px}
+  font-size: 12px}
 
 /*
   Fields
@@ -287,6 +287,12 @@ colgroup col.w80p
   border-width: 0px 1px 1px 0px;
 }
 
+.content thead th.checkbox {
+  width: 1%;
+  padding: 0;
+  text-align: center;
+}
+
 .content tbody th
 {
   font-weight: bold;
@@ -441,7 +447,7 @@ input.button
   font-family: verdana, sans-serif;
   color: #ffffff;
   font-weight: bold;
-  padding: 0.1em 1em 0.1em 1em ;
+  padding: 5px 5px 2px 5px;
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
@@ -859,7 +865,6 @@ a.tab.activeTab {
   background-color: #99B3C5;
   background-image: url(../stl_blu1_grad.gif);
   background-repeat: repeat-x;
-  font-size: 90%;
   font-weight: bold;
 }
 .lmenu_title a {
@@ -875,4 +880,51 @@ a.tab.activeTab {
   height: 25px;
   color: #FEFEFE;
   text-decoration: underline;
+}
+
+/* Popup Calendar */
+.cpYearNavigation,.cpMonthNavigation
+{
+ background-color: #C0C0C0;
+ color: #000000;
+ font-weight: bold;
+ text-align: center;
+ text-decoration: none;
+ vertical-align: middle;
+}
+
+.cpDayColumnHeader, .cpYearNavigation,.cpMonthNavigation,.cpCurrentMonthDate,.cpCurrentMonthDateDisabled,.cpOtherMonthDate,.cpOtherMonthDateDisabled,.cpCurrentDate,.cpCurrentDateDisabled,.cpTodayText,.cpTodayTextDisabled,.cpText
+{
+ font-family: arial;
+ font-size: 8pt;
+}
+
+td.cpDayColumnHeader
+{
+ border: solid thin #C0C0C0;
+ border-width: 0px 0px 1px 0px;
+ text-align: right;
+}
+
+.cpCurrentMonthDate, .cpOtherMonthDate, .cpCurrentDate
+{
+ text-align: right;
+ text-decoration: none;
+}
+
+.cpCurrentMonthDateDisabled, .cpOtherMonthDateDisabled, .cpCurrentDateDisabled
+{
+ color: #D0D0D0;
+ text-align: right;
+ text-decoration: line-through;
+}
+
+.cpCurrentMonthDate, .cpCurrentDate
+{
+ color: #000000;
+}
+
+.cpOtherMonthDate
+{
+ color: #808080;
 }

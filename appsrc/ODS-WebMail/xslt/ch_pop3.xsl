@@ -44,36 +44,30 @@
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="accounts">
+  	<div>
+	    <xsl:call-template name="make_href">
+	      <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
+	      <xsl:with-param name="params">cp=-1</xsl:with-param>
+	      <xsl:with-param name="label">Create POP3 Account</xsl:with-param>
+	      <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
+	      <xsl:with-param name="img_label"> Create POP3 Account</xsl:with-param>
+	      <xsl:with-param name="class">button2</xsl:with-param>
+	    </xsl:call-template>
+	  </div>
+    <br />
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="content">
       <thead>
         <tr>
           <th>Accounts</th>
           <th>Options</th>
-          <th nowrap="nowrap" width="25%">Action</th>
+          <th width="10%">Action</th>
         </tr>
       </thead>
       <xsl:apply-templates select="acc"/>
-      <xsl:if test="not(acc)">
-        <tr>
-          <td height="50" colspan="3">
-            You do not have any external accounts.
-          </td>
-        </tr>
-      </xsl:if>
-      <tfoot>
-        <tr>
-          <td colspan="3">
-            <xsl:call-template name="make_href">
-              <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
-              <xsl:with-param name="params">cp=-1</xsl:with-param>
-              <xsl:with-param name="label">Create POP3 Account</xsl:with-param>
-              <xsl:with-param name="img">/oMail/i/add_16.png</xsl:with-param>
-              <xsl:with-param name="img_label"> Create POP3 Account</xsl:with-param>
-              <xsl:with-param name="class">button</xsl:with-param>
+      <xsl:call-template name="empty_row">
+        <xsl:with-param name="count" select="count(acc)"/>
+        <xsl:with-param name="colspan" select="3"/>
             </xsl:call-template>
-          </td>
-        </tr>
-      </tfoot>
     </table>
   </xsl:template>
   <!-- ====================================================================================== -->
@@ -132,7 +126,7 @@
           <xsl:with-param name="label">Check Now</xsl:with-param>
           <xsl:with-param name="title">Check pop3 account now</xsl:with-param>
           <xsl:with-param name="params">cp=<xsl:value-of select="acc_id"/>,1</xsl:with-param>
-          <xsl:with-param name="class">button</xsl:with-param>
+          <xsl:with-param name="class">button2</xsl:with-param>
         </xsl:call-template>
         <xsl:call-template name="nbsp"/>
         <xsl:call-template name="make_href">
@@ -141,7 +135,7 @@
           <xsl:with-param name="label">Edit POP3 Account</xsl:with-param>
           <xsl:with-param name="img">/oMail/i/edit_16.png</xsl:with-param>
           <xsl:with-param name="img_label"> Edit</xsl:with-param>
-          <xsl:with-param name="class">button</xsl:with-param>
+          <xsl:with-param name="class">button2</xsl:with-param>
         </xsl:call-template>
         <xsl:call-template name="nbsp"/>
         <xsl:call-template name="make_href">
@@ -149,7 +143,7 @@
           <xsl:with-param name="label">Delete POP3 Account</xsl:with-param>
           <xsl:with-param name="img">/oMail/i/del_16.png</xsl:with-param>
           <xsl:with-param name="img_label"> Delete</xsl:with-param>
-          <xsl:with-param name="class">button</xsl:with-param>
+          <xsl:with-param name="class">button2</xsl:with-param>
         </xsl:call-template>
       </td>
     </tr>
