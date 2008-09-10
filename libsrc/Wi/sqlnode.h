@@ -214,6 +214,7 @@ struct query_s
     dk_set_t		qr_used_udts;  /* ref'd udts' qualified names */
     dk_set_t		qr_used_jsos;  /* ref'd JSO IRIs (for SPARQL queries with quad maps) */
     bitf_t		qr_to_recompile:1;
+    bitf_t		qr_parse_tree_to_reparse:1;
     bitf_t		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
     bitf_t  		qr_text_is_constant:1;
     bitf_t		qr_is_bunion_term:1;

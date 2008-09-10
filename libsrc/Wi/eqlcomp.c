@@ -153,7 +153,7 @@ qr_uses_table (query_t * qr, const char *tb)
 
 
 void
-object_mark_affected (const char *tb, dependence_def_t *ddef)
+object_mark_affected (const char *tb, dependence_def_t *ddef, int force_text_reparsing)
 {
   dk_set_t *place;
   mutex_enter (ddef->ddef_mtx);
@@ -162,6 +162,8 @@ object_mark_affected (const char *tb, dependence_def_t *ddef)
     {
       DO_SET (query_t *, aqr, place)
 	{
+          if (force_text_reparsing)
+            aqr->qr_parse_tree_to_reparse = 1;
 	  aqr->qr_to_recompile = 1;
 	}
       END_DO_SET ();
@@ -174,7 +176,7 @@ void
 tb_mark_affected (const char *tb)
 {
   ALLOC_DEPS;
-  object_mark_affected (tb, tb_name_to_qr_dep);
+  object_mark_affected (tb, tb_name_to_qr_dep, 0);
 }
 
 
@@ -208,14 +210,14 @@ void
 udt_mark_affected (const char *tb)
 {
   ALLOC_DEPS;
-  object_mark_affected (tb, udt_name_to_qr_dep);
+  object_mark_affected (tb, udt_name_to_qr_dep, 0);
 }
 
 void
 jso_mark_affected (const char *jso_inst)
 {
   ALLOC_DEPS;
-  object_mark_affected (jso_inst, jso_iri_to_qr_dep);
+  object_mark_affected (jso_inst, jso_iri_to_qr_dep, 1);
 }
 
 

@@ -4627,7 +4627,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
     {
       int cr_type = qr->qr_cursor_type;
       caddr_t text = QR_IS_MODULE_PROC (qr) ?  qr->qr_module->qr_text : qr->qr_text;
-      ST * tree = (ST *) (QR_IS_MODULE_PROC (qr) ?  qr->qr_module->qr_parse_tree : qr->qr_parse_tree);
+      ST * tree = qr->qr_parse_tree_to_reparse ? (ST *)NULL : ((ST *) (QR_IS_MODULE_PROC (qr) ?  qr->qr_module->qr_parse_tree : qr->qr_parse_tree));
       if (cr_type <= _SQL_CURSOR_FORWARD_ONLY)
 	cr_type = SQLC_DO_NOT_STORE_PROC;
       bootstrap_cli->cli_user = owner_user;

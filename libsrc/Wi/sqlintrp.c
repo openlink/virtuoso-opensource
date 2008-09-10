@@ -1742,6 +1742,9 @@ code_vec_run (code_vec_t code_vec, caddr_t * qst)
   volatile int nesting_level = 0;
   instruction_t * volatile ins = code_vec;
   instruction_t * volatile prev_ins = NULL;
+#ifdef PLDBG
+  instruction_t * volatile prev_breakpoint_ins = NULL;
+#endif
   query_instance_t *qi = (query_instance_t *)qst;
 
   qi_check_trx_error (qi, 0);
@@ -1901,6 +1904,7 @@ again:
 		  break;
 #ifdef PLDBG
               case INS_BREAKPOINT:
+		  prev_breakpoint_ins = (instruction_t *) ins;
 		  ins_break ((instruction_t *) ins, qst);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.breakpoint)));
 		  break;

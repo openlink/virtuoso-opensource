@@ -1249,6 +1249,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   if (!has_similar)
     tb_mark_affected (qr->qr_trig_dbe_table->tb_name);
   qr->qr_to_recompile = 0;
+  qr->qr_parse_tree_to_reparse = 0;
 
   if (DO_LOG(LOG_DDL))
     {

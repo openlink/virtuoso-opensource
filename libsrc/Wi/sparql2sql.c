@@ -3429,7 +3429,7 @@ sparp_collect_atable_uses (sparp_t *sparp, ccaddr_t singletablename, qm_atable_a
 void
 sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
 {
-  int fld_ctr, max_uses = 0;
+  int fld_ctr, max_uses = 0, default_qm_table_used = 0;
   ptrlong use_count = 0;
   qm_atable_use_t *uses;
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
@@ -3448,11 +3448,28 @@ sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
   uses = dk_alloc_box_zero (sizeof (qm_atable_use_t) * max_uses, DV_ARRAY_OF_LONG);
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
     {
+      int col_ctr, default_qm_val_table_used = 0;
       qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
-      if (NULL != qmv)
-        sparp_collect_atable_uses (sparp, qmv->qmvTableName, qmv->qmvATables, uses, &use_count);
+      if (NULL == qmv)
+        continue;
+      DO_BOX_FAST (qm_column_t *, col, col_ctr, qmv->qmvColumns)
+        {
+          if ((NULL == col->qmvcAlias) || ('\0' == col->qmvcAlias[0]))
+            {
+              if ((NULL != qmv->qmvTableName) && ('\0' != qmv->qmvTableName[0]))
+                default_qm_val_table_used++;
+              else
+                default_qm_table_used++;
     }
-  sparp_collect_atable_uses (sparp, qm->qmTableName, qm->qmATables, uses, &use_count);
+        }
+      END_DO_BOX_FAST;
+      sparp_collect_atable_uses (sparp,
+        (default_qm_val_table_used ? qmv->qmvTableName : NULL),
+        qmv->qmvATables, uses, &use_count );
+    }
+  sparp_collect_atable_uses (sparp,
+    (default_qm_table_used ? qm->qmTableName : NULL),
+    qm->qmATables, uses, &use_count );
   qm->qmAllATableUses = (ptrlong *)uses;
   qm->qmAllATableUseCount = use_count;
 }

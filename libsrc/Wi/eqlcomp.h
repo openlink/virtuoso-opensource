@@ -160,7 +160,7 @@ typedef dk_set_t dependent_t;
 
 dependence_def_t *dependence_def_new (int sz);
 void qr_uses_object (query_t *qr, const char *object, dependent_t *dep, dependence_def_t *dependence);
-void object_mark_affected (const char *object, dependence_def_t *dependence);
+void object_mark_affected (const char *object, dependence_def_t *dependence, int force_text_reparsing);
 void qr_drop_obj_dependencies (query_t *qr, dependent_t *dep, dependence_def_t *ddef);
 
 void qr_uses_table (query_t * qr, const char *tb);
