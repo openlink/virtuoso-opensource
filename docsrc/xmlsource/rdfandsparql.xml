@@ -5576,7 +5576,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 ]]></programlisting>
-<para>Finally we create the rulelist and define virtual directory <emphasis>/Northwind</emphasis>. Requests that match rewriting rules will be properly redirected and produce the requested data, access to the root will execute default page of the application, namely <emphasis>sfront.vspx</emphasis>.</para>
+<para>Then we create the rulelist and define virtual directory <emphasis>/Northwind</emphasis>. Requests that match rewriting rules will be properly redirected and produce the requested data, access to the root will execute default page of the application, namely <emphasis>sfront.vspx</emphasis>.</para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
@@ -5591,6 +5591,10 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
 VHOST_REMOVE (lpath=>'/Northwind');
 DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
           is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
+]]></programlisting>
+<para>Finally, to register the namespace prefix <emphasis>northwind</emphasis> as persistent we execute:</para>
+<programlisting><![CDATA[
+DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
 ]]></programlisting>
 </sect2>
 <sect2 id="rdfproxyservice"><title>RDF proxy service</title>

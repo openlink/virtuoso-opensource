@@ -1035,6 +1035,7 @@ Type HELP; for help and EXIT; to exit.
 
 Done. -- 10 msec.
 ]]></programlisting>
+<para>See <link linkend="ASYNCEXECMULTITHREAD">Asynchronous Execution and Multithreading in Virtuoso/PL</link> for background jobs execution details.</para>
 </sect1>
 
 	&createassembly;

@@ -978,8 +978,8 @@ LIMIT 1000
 					<formalpara>
 						<title>ServerPort</title>
 						<para>This specifies the initial HTTP listen port for the HTTP server.
-            Once Virtuoso is started it is possible to create multiple listeners
-            using virtual directories.</para>
+            Can be specified also as ipaddress:port. Once Virtuoso is started it is possible to create
+            multiple listeners using virtual directories.</para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_HTTPServer_HTTPThreadSize">
@@ -1168,7 +1168,7 @@ these should only reference resources with paths starting with this.  This is th
                 <listitem id="ini_HTTPServer_SSLPort">
 					<formalpara>
 						<title>SSLPort=4433</title>
-						<para>this is the port on which SSL HTTPS connections will be accepted.  If unspecified
+						<para>this is the port on which SSL HTTPS connections will be accepted. Can be specified also as ipaddress:port. If unspecified
 then the service will be disabled.</para>
 					</formalpara>
 				</listitem>
