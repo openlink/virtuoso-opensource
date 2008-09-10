@@ -843,6 +843,15 @@ create procedure CAL.WA.account_delete(
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.account_id (
+  in account_name varchar)
+{
+  return (select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.account_name (
   in account_id integer)
 {
@@ -5206,11 +5215,7 @@ create procedure CAL.WA.exchange_exec_internal (
           {
             signal ('CAL02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           };
-          permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
-          if (isnull (permissions))
-          {
-            permissions := '110100000RR';
-          }
+          permissions := CAL.WA.dav_permissions (_name, _user, _password);
           _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
@@ -5387,9 +5392,51 @@ create procedure CAL.WA.dav_check_authenticate (
   in _password varchar,
   in _permissions varchar)
 {
-  if (DB.DBA.DAV_AUTHENTICATE (DB.DBA.DAV_SEARCH_ID (_path, 'C'), 'C', _permissions, _user, _password) < 0)
+  declare _type varchar;
+
+  _type := case when (strrchr (_path, '/') = length (_path) - 1) then 'C' else 'R' end;
+  if (DB.DBA.DAV_AUTHENTICATE (DB.DBA.DAV_SEARCH_ID (_path, _type), _type, _permissions, _user, _password) < 0)
     return 0;
   return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dav_parent (
+  in path varchar)
+{
+  declare pos integer;
+
+  path := trim (path, '/');
+  pos := strrchr (path, '/');
+  if (not isnull (pos))
+    path := substring (path, 1, pos);
+  return '/' || path || '/';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dav_permissions (
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare uid, gid integer;
+  declare permissions varchar;
+
+  permissions := -1;
+  permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+  if (permissions < 0)
+  {
+    path := CAL.WA.dav_parent (path);
+    if (path <> CAL.WA.dav_home (CAL.WA.account_id (auth_name)))
+      permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+    if (permissions < 0)
+      permissions := USER_GET_OPTION (auth_name, 'PERMISSIONS');
+  }
+  return permissions;
 }
 ;
 

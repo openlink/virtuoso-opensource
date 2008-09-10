@@ -183,7 +183,7 @@
               </v:on-post>
             </v:button>
             |
-            <v:button action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
+              <v:button name="tAdvanced" action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
               <v:on-post>
                 <![CDATA[
                   if (CAL.WA.page_name () <> 'home.vspx') {
@@ -208,7 +208,7 @@
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
             <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
-          <v:button action="simple" style="url" value="Preferences" xhtml_title="Preferences">
+              <v:button name="tPreferences" action="simple" style="url" value="Preferences" xhtml_title="Preferences">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'settings';
@@ -219,7 +219,7 @@
           </v:button>
           |
         </v:template>
-        <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
+            <v:button name="tHelp" action="simple" style="url" value="Help" xhtml_alt="Help" />
       </div>
         </div>
       <v:include url="calendar_login.vspx"/>

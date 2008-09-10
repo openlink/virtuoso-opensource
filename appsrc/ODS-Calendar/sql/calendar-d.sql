@@ -41,6 +41,7 @@ CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AD');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Alarm Scheduler\'');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Upstream Scheduler\'');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Attendees Scheduler\'');
+CAL.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Exchange Scheduler\'');
 
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
@@ -96,6 +97,29 @@ CAL.WA.exec_no_error('DROP procedure CAL.WA.drop_procedures');
 -- dropping SIOC procs
 CAL.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_calendar_sioc');
 CAL.WA.exec_no_error('DROP procedure SIOC.DBA.ods_calendar_sioc_init');
+
+-- dropping API procs
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."setting_set"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."setting_xml"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.get"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.event.new"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.event.edit"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.task.new"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.task.edit"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.delete"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.import"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.export"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.comment.get"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.comment.new"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.comment.delete"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.publication.new"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.publication.edit"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.publication.delete"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.subscription.new"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.subscription.edit"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.subscription.delete"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.options.set"');
+CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.options.get"');
 
 -- final proc
 CAL.WA.exec_no_error('DROP procedure CAL.WA.exec_no_error');
