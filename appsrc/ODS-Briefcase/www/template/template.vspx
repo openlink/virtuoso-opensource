@@ -74,13 +74,10 @@
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
-          if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-          {
-            if ($('app_area'))
+          if ((<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0) && $('app_area'))
             {
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
         }
-          }
 
           // Init ODRIVE object
           ODRIVE.init();

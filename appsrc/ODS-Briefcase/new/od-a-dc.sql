@@ -67,7 +67,17 @@ create procedure ODRIVE.WA.dc_set_criteria (
   in fProperty any := null)
 {
   declare S varchar;
+  declare aXml any;
 
+  if (is_empty_or_null (id))
+  {
+	  aXml := ODRIVE.WA.dc_xml_doc (search);
+	  id := cast (xpath_eval ('count (/dc/criteria/entry)', aXml) as varchar);
+    if (is_empty_or_null (id))
+    {
+	    id := '0';
+	  }
+  }
   S := '';
   if (not isnull (fField))
     S := sprintf ('%s field="%V"', S, fField);
@@ -114,8 +124,9 @@ create procedure ODRIVE.WA.dc_cut (
 
   aXml := ODRIVE.WA.dc_xml_doc (search);
   if (not isnull(xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), aXml)))
+  {
     aXml := XMLUpdate(aXml, sprintf('/dc/%s/entry[@ID = "%s"]', tag, id), null);
-
+  }
   search := ODRIVE.WA.xml2string(aXml);
   return search;
 }
@@ -130,14 +141,50 @@ create procedure ODRIVE.WA.dc_get(
   in defaultValue any := '')
 {
   declare aXml any;
-  declare value any;
+  declare retValue any;
 
   aXml := ODRIVE.WA.dc_xml_doc (search);
-  value := cast(xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]/.', tag, id), aXml) as varchar);
-  if (is_empty_or_null(value))
+  retValue := cast(xpath_eval(sprintf('/dc/%s/entry[@ID = "%s"]/.', tag, id), aXml) as varchar);
+  if (is_empty_or_null(retValue))
     return defaultValue;
 
-  return value;
+  return retValue;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_get_criteria (
+  inout search varchar,
+  in id varchar,
+  in fField any,
+  in fCriteria any,
+  in getValue varchar := '.',
+  in defaultValue any := '')
+{
+  declare aXml any;
+  declare S, retValue any;
+
+  S := '';
+  if (not isnull (id))
+  {
+  	S := S || case when S = '' then '' else ' and ' end || sprintf('@ID = "%s"', id);
+  }
+  if (not isnull (fField))
+  {
+  	S := S || case when S = '' then '' else ' and ' end || sprintf('@field = "%s"', fField);
+  }
+  if (not isnull (fCriteria))
+  {
+  	S := S || case when S = '' then '' else ' and ' end || sprintf('@criteria = "%s"', fCriteria);
+  }
+  aXml := ODRIVE.WA.dc_xml_doc (search);
+  retValue := cast (xpath_eval (sprintf('/dc/criteria/entry[%s]/%s', S, getValue), aXml) as varchar);
+  if (is_empty_or_null(retValue))
+  {
+    return defaultValue;
+  }
+  return retValue;
 }
 ;
 
@@ -165,7 +212,7 @@ create procedure ODRIVE.WA.dc_filter (
 --
 create procedure ODRIVE.WA.dc_subfilter (
   inout filter any,
-  inout criteria any)
+  in criteria any)
 {
   declare V, fField, fSchema, fProperty, fCriteria, fValue, fValueType any;
 
@@ -175,11 +222,14 @@ create procedure ODRIVE.WA.dc_subfilter (
 
   fCriteria := cast (xpath_eval ('@criteria', criteria) as varchar);
   if (is_empty_or_null (fCriteria))
+  {
     signal ('TEST', 'Condition can not be empry!<>');
-
+  }
   fValue := cast (xpath_eval ('.', criteria) as varchar);
   if (is_empty_or_null (fCriteria))
+  {
     signal ('TEST', 'Value can not be empry!<>');
+  }
   fValueType := ODRIVE.WA.dc_valueType (fField);
   fValue := ODRIVE.WA.dc_cast (fValue, fValueType);
   if (is_empty_or_null (fValue))
@@ -197,12 +247,15 @@ create procedure ODRIVE.WA.dc_subfilter (
 
   fSchema := cast (xpath_eval ('@schema', criteria) as varchar);
   if (not isnull (fSchema))
+  {
     V := vector_concat (V, vector ('http://local.virt/DAV-RDF'));
+  }
 
   fProperty := cast (xpath_eval ('@property', criteria) as varchar);
   if (not isnull (fProperty))
+  {
     V := vector_concat (V, vector (fProperty));
-
+  }
   filter := vector_concat (filter, vector(V));
 }
 ;
@@ -244,7 +297,9 @@ create procedure ODRIVE.WA.dc_valueType (
 	ODRIVE.WA.dc_predicateMetas (fPredicates);
 	fPredicate := get_keyword (fField, fPredicates);
 	if (isnull (fPredicate))
+	{
 	  return null;
+	}
   return fPredicate[4];
 }
 ;

@@ -74,7 +74,7 @@
                   self._opage := '';
                   self.v_image := '';
                   self.v_dav := '';
-                  self.v_owner := 'dav';
+                  self.v_owner := ODRIVE.WA.account_name (self.account_id);
                   self.v_description := '';
                   self.v_host := '';
                   self.v_url := '';
@@ -84,7 +84,7 @@
                   self.v_store := 1;
                   self.v_redirect := 1;
                   self.v_target_url := '';
-                  self.v_target_uid := '';
+                  self.v_target_uid := self.v_owner;
                   self.v_target_pwd := '';
                   self.v_data := vector ();
 
@@ -129,7 +129,8 @@
         <hr />
         <v:data-set name="ds" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="1000" scrollable="1" cursor-type="keyset" edit="1">
           <v:param name="instance" value="--self.domain_id" />
-          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds_header_template">
+
+          <v:template name="ds_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
             <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
@@ -142,8 +143,9 @@
               </thead>
             </table>
           </v:template>
-          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds_repeat_template">
-            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds_if_not_exists_template">
+
+          <v:template name="ds_repeat_template" type="repeat" name-to-remove="" set-to-remove="">
+            <v:template name="ds_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr class="listing_count">
                   <td align="center" colspan="5" class="listing_row_count">
@@ -152,7 +154,8 @@
                 </tr>
               </table>
             </v:template>
-            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds_browse_template">
+
+            <v:template name="ds_browse_template" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td>
@@ -234,8 +237,10 @@
                 </tr>
               </table>
             </v:template>
+
           </v:template>
-          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds_footer_template">
+
+          <v:template name="ds_footer_template" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
             </table>
           </v:template>
@@ -336,7 +341,7 @@
                     ]]>
                   </v:after-data-bind>
                 </v:text>
-                <v:template type="simple" name="t1" enabled="-- case when ODRIVE.WA.check_admin (self.account_id) then 1 else 0 end;">
+                <v:template name="subscriptions_t1" type="simple" enabled="-- case when ODRIVE.WA.check_admin (self.account_id) then 1 else 0 end;">
                   <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=owner:s1;')" class="button" />
                 </v:template>
               </td>
@@ -661,7 +666,8 @@
         <hr />
         <v:data-set name="data_set2" sql="select VS_DESCR, VQ_HOST, VQ_STAT, VQ_ROOT, VQ_URL from WS.WS.VFS_QUEUE, WS.WS.VFS_SITE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_URL = VS_URL and VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
-          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
+
+          <v:template name="data_set2_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
             <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
@@ -675,8 +681,10 @@
               </thead>
             </table>
           </v:template>
-          <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set2_repeat_template">
-            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set2_if_not_exists_template">
+
+          <v:template name="data_set2_repeat_template" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="data_set2_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr class="listing_count">
                   <td class="listing_row_count" colspan="6">
@@ -685,7 +693,8 @@
                 </tr>
               </table>
             </v:template>
-            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set2_browse_template">
+
+            <v:template name="data_set2_browse_template" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td>
@@ -814,7 +823,8 @@
               </table>
             </v:template>
           </v:template>
-          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set2_footer_template">
+
+          <v:template name="data_set2_footer_template" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
             </table>
           </v:template>
@@ -824,7 +834,8 @@
         <hr />
         <v:data-set name="ds3" sql="select a.SE_NAME, a.SE_START, a.SE_INTERVAL, a.SE_LAST_COMPLETED, a.SE_SQL, b.VS_SQL from DB.DBA.SYS_SCHEDULED_EVENT a, (select concat('WS.WS.SERV_QUEUE_TOP(\'',VS_HOST,'\',\'',VS_ROOT,'\', 1, 0, null, null)') as VS_SQL from WS.WS.VFS_SITE where VS_INST_ID = :instance) b where a.SE_SQL = b.VS_SQL" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
-          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds3_header_template">
+
+          <v:template name="ds3_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
             <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
@@ -837,8 +848,10 @@
               </thead>
             </table>
           </v:template>
-          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds3_repeat_template">
-            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds3_if_not_exists_template">
+
+          <v:template name="ds3_repeat_template" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds3_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td class="listing_count" colspan="5">
@@ -847,7 +860,8 @@
                 </tr>
               </table>
             </v:template>
-            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds3_browse_template">
+
+            <v:template name="ds3_browse_template" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td>
@@ -892,7 +906,8 @@
               </table>
             </v:template>
           </v:template>
-          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds3_footer_template">
+
+          <v:template name="ds3_footer_template" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
               <tr class="browse_button_row">
                 <td colspan="5" align="center">
@@ -954,7 +969,9 @@
               select count(*) into cnt from WS.WS.VFS_URL where VU_HOST = self.v_host and VU_ROOT = self.v_root;
             }
             select count(*) into wait from WS.WS.VFS_QUEUE where VQ_HOST = self.v_host and VQ_ROOT = self.v_root and VQ_STAT = 'waiting';
-            http(concat('<h4>Results for ', self.v_host,'</h4>'));
+            self.v_description := (select VS_DESCR from WS.WS.VFS_SITE where VS_HOST = self.v_host and VS_ROOT = self.v_root);
+            http ('<h3>Target: ' || self.v_description || '</h3>');
+            http ('<h4>Results for: ' || self.v_host || '</h4>');
             if (refr)
             {
           ?>
@@ -1019,7 +1036,7 @@
               }
               if (updated_l > 0)
               {
-                http(sprintf('<p><strong>Total updated : %d</strong></p>', updated_l));
+                http(sprintf('<p>Total updated: <strong>%d</strong></p>', updated_l));
               }
               else
               {
@@ -1028,13 +1045,13 @@
             }
           ?>
           <p>
-            <b>Download finished</b>
+            Download: <b>Finished</b>
           </p>
           <?vsp
           }
           ?>
           <p>
-            Total downloads: <b><?V cnt ?></b> pages
+            Total downloads: <b><?V cnt ?> page(s)</b>
           </p>
           <?vsp
             if (refr)
@@ -1145,7 +1162,8 @@
         <hr />
         <v:data-set name="ds4" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE where VS_INST_ID = :instance" nrows="0" scrollable="1" cursor-type="dynamic" edit="1">
           <v:param name="instance" value="--self.domain_id" />
-          <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds4_header_template">
+
+          <v:template name="ds4_header_template" type="simple" name-to-remove="table" set-to-remove="bottom">
             <table id="groups" class="OD_grid" cellspacing="0">
               <thead class="sortHeader">
                 <tr>
@@ -1160,8 +1178,9 @@
             </table>
           </v:template>
 
-          <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds4_repeat_template">
-            <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds4_if_not_exists_template">
+          <v:template name="ds4_repeat_template" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds4_if_not_exists_template" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td class="listing_count" colspan="6">
@@ -1170,7 +1189,8 @@
                 </tr>
               </table>
             </v:template>
-            <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds4_browse_template">
+
+            <v:template name="ds4_browse_template" type="browse" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr>
                   <td>
@@ -1217,7 +1237,8 @@
               </table>
             </v:template>
           </v:template>
-          <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds4_footer_template">
+
+          <v:template name="ds4_footer_template" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
             </table>
           </v:template>
@@ -1239,15 +1260,18 @@
           <v:data-set name="data_set1" sql=" select VU_URL, VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = :ehost and VU_ROOT = :eroot" nrows="0" scrollable="1" cursor-type="keyset" edit="0">
             <v:param name="ehost" value="--self.v_host" />
             <v:param name="eroot" value="--self.v_root" />
-            <v:template type="repeat" name="tmpl3">
-              <v:template type="if-not-exists" name="tmpl1">
+
+            <v:template name="tmpl3" type="repeat">
+
+              <v:template name="tmpl1" type="if-not-exists">
                 <tr>
                   <td colspan="4" align="center">
                     <b>There are no URLs</b>
                   </td>
                 </tr>
               </v:template>
-              <v:template type="browse" name="tmpl2">
+
+              <v:template name="tmpl2" type="browse">
                 <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                   <td>
                     <?V control.te_rowset[0] ?>

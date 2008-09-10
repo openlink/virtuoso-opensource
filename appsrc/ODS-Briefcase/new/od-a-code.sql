@@ -1104,7 +1104,8 @@ create procedure ODRIVE.WA.odrive_proc(
 
   declare exit handler for SQLSTATE '*'
   {
-    result(__SQL_STATE, __SQL_MESSAGE, 0, '', '', '', '', '', '');
+  	-- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+    result(__SQL_STATE, substring (__SQL_MESSAGE, 1, 255), 0, '', '', '', '', '', '');
     return;
   };
 
@@ -1141,26 +1142,30 @@ create procedure ODRIVE.WA.odrive_proc(
     }
     if (trim(path, '/') = ODRIVE.WA.shared_name())
     {
-      sharedRoot := ODRIVE.WA.odrive_sharing_dir_list(ODRIVE.WA.account());
+      sharedRoot := ODRIVE.WA.odrive_sharing_dir_list ( coalesce (dir_account, ODRIVE.WA.account ()));
       foreach (any item in sharedRoot) do
       {
         if (item[1] = 'C')
         {
           sharedList := ODRIVE.WA.DAV_DIR_FILTER(item[0], 1, dirFilter);
-        } else {
+        }
+        else
+        {
           pos := strrchr (item[0], '/');
           if (not isnull(pos))
           {
             sharedPath := subseq (item[0], 0, pos+1);
             sharedFilter := dirFilter;
-            ODRIVE.WA.dc_subfilter(sharedFilter, 'RES_NAME', '=', item[10]);
-            sharedList := ODRIVE.WA.DAV_DIR_FILTER(sharedPath, 0, sharedFilter);
+            sharedFilter := vector_concat (sharedFilter, vector (vector ('RES_NAME', '=', item[10])));
+            sharedList := ODRIVE.WA.DAV_DIR_FILTER (sharedPath, 0, sharedFilter, dir_account, dir_password);
           }
         }
         if (isarray(sharedList))
           dirList := vector_concat(dirList, sharedList);
       }
-    } else {
+    }
+    else
+    {
       dirList := ODRIVE.WA.DAV_DIR_FILTER(path, 1, dirFilter);
     }
     dirFilter := '%';
@@ -1234,8 +1239,8 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   declare auth_name varchar;
 
   auth_name := ODRIVE.WA.account();
-  uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
-  gid := (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_name);
+  gid := (select U_GROUP from DB.DBA.SYS_USERS where U_NAME = auth_name);
 
   if (isinteger(ODRIVE.WA.DAV_GET(item, 'id')))
   {
@@ -1256,7 +1261,9 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   declare N, I, nPermission integer;
   if (isstring(permission))
     permission := vector(permission);
-  for (N := 0; N < length(permission); N := N + 1) {
+
+  for (N := 0; N < length (permission); N := N + 1)
+  {
     if (DB.DBA.DAV_CHECK_PERM(ODRIVE.WA.DAV_GET(item, 'permissions'), permission[N], uid, gid, ODRIVE.WA.DAV_GET(item, 'groupID'), ODRIVE.WA.DAV_GET(item, 'ownerID')))
       return 1;
 
@@ -2429,22 +2436,34 @@ create procedure ODRIVE.WA.det_action_enable(
   declare det_class, det_category any;
 
   retValue := either(equ(ODRIVE.WA.odrive_permission (path), 'W'), 1, 0);
-  if (retValue) {
+  if (retValue)
+  {
     det_class := ODRIVE.WA.det_class (path);
-    if (det_class = 'Versioning') {
-      if (action = 'createContent') {
-        retValue := 0;
-      } else if (action = 'edit') {
-        retValue := 0;
-      } if (action = 'version') {
+    if (det_class = 'Versioning')
+    {
+      if (action = 'createContent')
+      {
         retValue := 0;
       }
-    } else if (det_class = '') {
+      else if (action = 'edit')
+      {
+        retValue := 0;
+      }
+      if (action = 'version')
+      {
+        retValue := 0;
+      }
+    }
+    else if (det_class = '')
+    {
       det_category := ODRIVE.WA.det_category(path, 'C');
-      if (det_category = 'Versioning') {
+      if (det_category = 'Versioning')
+      {
         if (action = 'createContent')
           retValue := 0;
-      } else if (det_category = 'News3') {
+      }
+      else if (det_category = 'News3')
+      {
         if (action = 'createContent')
           retValue := 0;
       }
@@ -3909,7 +3928,7 @@ create procedure ODRIVE.WA.ui_alt (
 --
 create procedure ODRIVE.WA.ui_size (
   in itemSize integer,
-  in itemType varchar)
+  in itemType varchar := 'R')
 {
   declare S varchar;
 

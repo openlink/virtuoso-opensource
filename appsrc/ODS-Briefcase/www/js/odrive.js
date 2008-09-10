@@ -169,9 +169,26 @@ function getParent (o, tag)
 }
 
 // ---------------------------------------------------------------------------
+function getDocument (doc)
+{
+  if (!doc)
+  {
+    if (window.frameElement)
+    {
+      doc = window.frameElement.contentDocument;
+  }
+    else
+    {
+      doc = document;
+    }
+  }
+  return doc;
+}
+
+// ---------------------------------------------------------------------------
 function enableElement (id, id_gray, flag, doc)
 {
-  if (!doc) {doc = document;}
+  doc = getDocument (doc);
   var mode = 'block';
   var o = getObject(id, doc);
   if (o)
@@ -188,49 +205,6 @@ function enableElement (id, id_gray, flag, doc)
   var o = getObject(id_gray, doc);
   if (o)
     o.style.display = mode;
-}
-
-// ---------------------------------------------------------------------------
-function enableToolbars2 (objForm, prefix)
-{
-  var oCount = 0;
-  var fCount = 0;
-  var rCount = 0;
-  for (var i = 0; i < objForm.elements.length; i++)
-  {
-    var o = objForm.elements[i];
-    if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked)
-    {
-      oCount++;
-      if (o.name[o.name.length-1] == '/') {
-        fCount++;
-      } else {
-        rCount++;
-  }
-    }
-  }
-  enableElement('tbMail', 'tbMail_gray', rCount>0);
-}
-
-// ---------------------------------------------------------------------------
-function enableElement2 (id, id_gray, idFlag)
-{
-  var mode = 'block';
-  var element = document.getElementById(id);
-  if (element != null)
-  {
-    if (idFlag)
-    {
-      element.style.display = 'block';
-      mode = 'none';
-    } else {
-      element.style.display = 'none';
-      mode = 'block';
-    }
-  }
-  element = document.getElementById(id_gray);
-  if (element != null)
-    element.style.display = mode;
 }
 
 // ---------------------------------------------------------------------------
@@ -725,23 +699,14 @@ function createHidden(frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function getObject(id)
+function getObject(id, doc)
 {
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
+  if (!doc) {doc = document;}
+  return doc.getElementById(id);
 }
 
 // ---------------------------------------------------------------------------
 showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
-
-// ---------------------------------------------------------------------------
-function toggleCell(cell)
-{
-  var c = getObject(cell);
-  if (c)
-    c.style.display = (c.style.display == "none") ? showRow : "none";
-}
 
 // ---------------------------------------------------------------------------
 function showTableRow(cell)
@@ -933,9 +898,18 @@ ODRIVE.init = function ()
   }
   ODRIVE.state = s;
 
-  OAT.AJAX.GET('ajax.vsp?a=search&sa=metas', '', function(data) {var o = OAT.JSON.parse(data); ODRIVE.searchPredicates = o[0]; ODRIVE.searchCompares = o[1];}, {async:false});
-
   ODRIVE.coloriseTables();
+}
+
+ODRIVE.initFilter = function ()
+{
+  if (ODRIVE.searchPredicates) {return;}
+  var x = function(data) {
+    var o = OAT.JSON.parse(data);
+    ODRIVE.searchPredicates = o[0];
+    ODRIVE.searchCompares = o[1];
+  }
+  OAT.AJAX.GET('ajax.vsp?a=search&sa=metas', '', x, {async:false});
 }
 
 ODRIVE.formParams = function (doc)
@@ -962,13 +936,13 @@ ODRIVE.formParams = function (doc)
 
 ODRIVE.resetToolbars = function ()
 {
-  enableElement('tb_rename', 'tb_rename_gray', 0, doc);
-  enableElement('tb_copy', 'tb_copy_gray', 0, doc);
-  enableElement('tb_move', 'tb_move_gray', 0, doc);
-  enableElement('tb_delete', 'tb_delete_gray', 0, doc);
+  enableElement('tb_rename', 'tb_rename_gray', 0);
+  enableElement('tb_copy', 'tb_copy_gray', 0);
+  enableElement('tb_move', 'tb_move_gray', 0);
+  enableElement('tb_delete', 'tb_delete_gray', 0);
 
-  enableElement('tb_tag', 'tb_tag_gray', 0, doc);
-  enableElement('tb_properties', 'tb_properties_gray', 0, doc);
+  enableElement('tb_tag', 'tb_tag_gray', 0);
+  enableElement('tb_properties', 'tb_properties_gray', 0);
 }
 
 ODRIVE.formShow = function (action, id, params)
@@ -1062,8 +1036,6 @@ ODRIVE.formPostAfter = function (action)
       }
     }
   }
-  if (formDialog)
-    formDialog.hide();
 }
 
 ODRIVE.propertyCombo = function (propertyNo, propertyValue)

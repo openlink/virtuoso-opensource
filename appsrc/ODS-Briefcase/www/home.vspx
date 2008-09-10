@@ -99,7 +99,9 @@
         if (self.command_mode <> 1)
           self.search_filter := null;
         if (self.command_mode <> 2)
+        {
           self.search_simple := null;
+        }
         if (self.command_mode <> 3)
         {
           self.search_advanced := null;
@@ -299,7 +301,6 @@
       tmp := sprintf ('&did=%d&aid=%d', self.domain_id, self.account_id);
       if (self.command_mode = 2)
       {
-        tmp := tmp || '&mode=s';
         tmp := tmp || sprintf ('&path=%U', ODRIVE.WA.odrive_real_path (self.dir_path));
         tmp := tmp || sprintf ('&f0_0=RES_NAME&f0_3=like&f0_4=%U', trim (self.search_simple));
       }
@@ -311,7 +312,7 @@
         for (N := 1; N <= I; N := N + 1)
         {
           criteria := xpath_eval('/dc/criteria/entry', aCriteria, N);
-          T := cast (xpath_eval ('@type', criteria) as varchar);
+          T := cast (xpath_eval ('@field', criteria) as varchar);
           if (not isnull (T))
             tmp := tmp || sprintf ('&f%d_0=%U', I, T);
           T := cast (xpath_eval ('@schema', criteria) as varchar);
@@ -331,7 +332,7 @@
       T := self.getColumn(self.dir_order);
       if (not is_empty_or_null(T) and (T[1] <> 'c0'))
         tmp := concat(tmp, sprintf ('&order=%U', T[1]));
-      if (not is_empty_or_null(self.dir_direction) and self.dir_direction <> 'desc')
+      if (not is_empty_or_null(self.dir_direction) and self.dir_direction <> 'asc')
         tmp := concat(tmp, sprintf ('&direction=%U', self.dir_direction));
 
       return tmp;
@@ -967,6 +968,8 @@
                     declare tmp any;
 
                     tmp := ODRIVE.WA.odrive_real_path (self.path.ufl_value);
+                    if (trim (tmp, '/') <> ODRIVE.WA.shared_name())
+                    {
                     if (ODRIVE.WA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID(tmp, 'C')))
                     {
                       self.vc_error_message := concat('Can not find the folder with name ', ODRIVE.WA.odrive_refine_path(self.path.ufl_value));
@@ -979,6 +982,7 @@
                       self.vc_is_valid := 0;
                       return;
                     }
+                  }
                   }
                   self.dir_path := self.path.ufl_value;
                   self.ds_items.vc_reset();
@@ -1039,27 +1043,29 @@
                 }
                 else if (_action = 'tag_search')
                 {
-                  declare tag, tags, tagType any;
+                  declare _mode, tag, tags, tagType, tagsID any;
 
                   tag := get_keyword ('tag_hidden', params, '');
-                  tagType := 'public';
+                  tagType := 'RES_PUBLIC_TAGS';
                   if (not isnull (strstr(tag, '#_')))
                   {
                     tag := replace(tag,  '#_', '');
-                    tagType := 'private';
+                    tagType := 'RES_PRIVATE_TAGS';
                   }
-                  if (self.command_mode < 2)
+                  if (self.command_mode < 3)
                   {
+                    _mode := self.command_mode;
                     self.command_set (0, 3);
                     ODRIVE.WA.dc_set_base (self.search_dc, 'path', ODRIVE.WA.odrive_real_path (self.dir_path));
-                    if (trim (self.simple.ufl_value) <> '')
-                      ODRIVE.WA.dc_set_criteria (self.search_dc, '0', 'REAS_NAME', 'like', trim (self.simple.ufl_value));
+                    if ((_mode = 2) and (trim (self.simple.ufl_value) <> ''))
+                      ODRIVE.WA.dc_set_criteria (self.search_dc, '0', 'RES_NAME', 'like', trim (self.simple.ufl_value));
                   }
                   else
                   {
                     self.command_mode := 3;
                   }
-                  tags := ODRIVE.WA.dc_get (self.search_dc, 'advanced', concat(tagType, 'Tags12'), '');
+                  tags := ODRIVE.WA.dc_get_criteria (self.search_dc, null, tagType, 'contains_tags');
+                  tagsID := ODRIVE.WA.dc_get_criteria (self.search_dc, null, tagType, 'contains_tags', '@ID');
                   if (is_empty_or_null(tags))
                   {
                     tags := tag;
@@ -1068,7 +1074,7 @@
                   {
                     tags := concat(tags, ', ', tag);
                   }
-                  ODRIVE.WA.dc_set_advanced (self.search_dc, concat(tagType, 'Tags12'), tags);
+                  ODRIVE.WA.dc_set_criteria (self.search_dc, tagsID, tagType, 'contains_tags', tags);
                   self.search_advanced := self.search_dc;
                 }
                 self.vc_data_bind (e);
@@ -1131,14 +1137,16 @@
                   -- save & validate metadata
                   declare rValue any;
 
+                  self.search_advanced := self.search_dc;
+                  self.search_dc := null;
                   rValue := self.dc_prepare ();
 		              if (not isnull (rValue))
 		              {
 		                self.vc_error_message := rValue;
 		                self.vc_is_valid := 0;
+                    self.search_dc := self.search_advanced;
 		                return;
 		              }
-
                   self.search_advanced := self.search_dc;
                   self.dir_order := get_keyword ('ts_order', e.ve_params, '');
                   self.dir_direction := get_keyword ('ts_direction', e.ve_params, '');
@@ -1200,25 +1208,73 @@
           Confirm replace
         </div>
         <div class="form-confirm">
-          <v:label>
-            <v:before-data-bind>
-              <![CDATA[
-                declare res_cr_date varchar;
-                declare res_size integer;
+          <?vsp
+            declare old_vector any;
 
-                res_size := ODRIVE.WA.ui_size(ODRIVE.WA.DAV_PROP_GET(self.dav_vector[0], ':getcontentlength'), 'R');
-                res_cr_date := ODRIVE.WA.ui_date(ODRIVE.WA.DAV_PROP_GET(self.dav_vector[0], ':creationdate'));
-                control.ufl_value := sprintf ('Do you want to replace <b>%s</b> with size <b>%s</b> and created on <b>%s</b><br/> with file with size <b>%s</b>?', self.dav_vector[0], res_size, res_cr_date, ODRIVE.WA.ui_size(length(self.dav_vector[1]), 'R'));
-              ]]>
-            </v:before-data-bind>
-          </v:label>
+            old_vector := ODRIVE.WA.DAV_INIT (self.dav_vector[0]);
+            -- self.dav_vector := vector (dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
+          ?>
+          <table cellspacing="4">
+            <tr>
+              <td colspan="7"><b>Replace confirmation for file: <?V self.dav_vector[0] ?></b><hr /></td>
+            </tr>
+            <tr>
+              <th>Name</th>
+              <th>Size</th>
+              <th>Modified</th>
+              <th>Type</th>
+              <th>Owner</th>
+              <th>Group</th>
+              <th>Perms</th>
+            </tr>
+            <tr>
+              <td colspan="7"><br /><b><i>Original file attributes:</i></b></td>
+            </tr>
+            <tr>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'name') ?></td>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'length') ?></td>
+              <td><?V left ( cast (ODRIVE.WA.dav_get (old_vector, 'modificationTime') as varchar), 19) ?></td>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'mimeType') ?></td>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'ownerName') ?></td>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'groupName') ?></td>
+              <td><?V DB.DBA.DAV_PERM_D2U (ODRIVE.WA.dav_get (old_vector, 'permissions')) ?></td>
+            </tr>
+            <tr>
+              <td colspan="7"><br /><b><i>New file attributes:</i></b></td>
+            </tr>
+            <tr>
+              <td><?V ODRIVE.WA.dav_get (old_vector, 'name') ?></td>
+              <td><?V length (self.dav_vector [1]) ?></td>
+              <td><?V left (cast (now() as varchar), 19) ?></td>
+              <td><?V self.dav_vector [2] ?></td>
+              <td><?V ODRIVE.WA.odrive_user_name (self.dav_vector [4]) ?></td>
+              <td><?V ODRIVE.WA.odrive_user_name (self.dav_vector [5]) ?></td>
+              <td><?V DB.DBA.DAV_PERM_D2U (self.dav_vector [3]) ?></td>
+            </tr>
+            <tr>
+              <td colspan="7">
+                <br /><input type="checkbox" name="save_perms" id="save_perms" value="1" checked="checked"><label for="save_perms">Keep original owner/permissions</label></input>
+              </td>
+            </tr>
+          </table>
         </div>
         <div class="new-form-footer">
           <v:button action="simple" name="rReplace" value="Replace">
             <v:on-post>
               <![CDATA[
                 declare retValue integer;
+
+                if (get_keyword('save_perms', e.ve_params) = '1')
+                {
+                  declare old_vector any;
+
+                  old_vector := ODRIVE.WA.DAV_INIT (self.dav_vector[0]);
+                  retValue := ODRIVE.WA.DAV_RES_UPLOAD(self.dav_vector[0], self.dav_vector[1], ODRIVE.WA.dav_get (old_vector, 'mimeType'), ODRIVE.WA.dav_get (old_vector, 'permissions'), ODRIVE.WA.dav_get (old_vector, 'ownerID'), ODRIVE.WA.dav_get (old_vector, 'groupID'));
+                }
+                else
+                {
                 retValue := ODRIVE.WA.DAV_RES_UPLOAD(self.dav_vector[0], self.dav_vector[1], self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
+                }
                 if (ODRIVE.WA.DAV_ERROR(retValue))
                 {
                   self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
@@ -1251,7 +1307,9 @@
             self.dav_propEnable := self.dav_enable;
             if (self.command_mode = 10)
             {
-              self.dav_enable := ODRIVE.WA.det_action_enable(self.dav_path, 'edit');
+              self.dav_enable := ODRIVE.WA.odrive_write_permission (self.dav_path);
+              if (self.dav_enable)
+                ODRIVE.WA.det_action_enable (self.dav_path, 'edit');
               self.dav_item := ODRIVE.WA.DAV_INIT(self.dav_path);
               if (ODRIVE.WA.DAV_ERROR(self.dav_item))
               {
@@ -1267,7 +1325,9 @@
             else if (self.command_mode = 5)
             {
               self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
-            } else {
+            }
+            else
+            {
               self.dav_item := ODRIVE.WA.DAV_INIT_COLLECTION (self.dir_path);
               if (self.command_mode = 1)
                 self.vc_page.vc_event.ve_params := vector_concat(self.vc_page.vc_event.ve_params, vector ('dav_det', 'ResFilter', 'attr_dav_det', ''));
@@ -1275,7 +1335,9 @@
             self.dav_type := ODRIVE.WA.DAV_GET (self.dav_item, 'type');
             self.dav_detType := get_keyword ('dav_det', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType'));
             if (isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
+            {
               self.dav_acl := ODRIVE.WA.DAV_GET (self.dav_item, 'acl');
+            }
             if (self.command_mode = 10)
             {
               if (isnull(get_keyword ('dav_group', self.vc_page.vc_event.ve_params)))
@@ -1588,8 +1650,10 @@
                       <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
                     </th>
                     <td>
-                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" /><xsl:call-template name="nbsp" />
+                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" xhtml_disabled="disabled" /><xsl:call-template name="nbsp" />
+                      <v:template name="tform_18_1" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_public').value = ''" class="button" />
+                      </v:template>
                     </td>
                   </tr>
                   <tr id="davRow_tagsPrivate">
@@ -1597,8 +1661,10 @@
                       <v:label for="f_tags_private" value="Private tags (comma-separated)"/>
                     </th>
                     <td>
-                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" /><xsl:call-template name="nbsp" />
+                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" xhtml_disabled="disabled" /><xsl:call-template name="nbsp" />
+                      <v:template name="tform_18_2" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_private').value = ''" class="button" />
+                      </v:template>
                     </td>
                   </tr>
                 </v:template>

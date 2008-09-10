@@ -147,7 +147,7 @@
           	</v:on-post>
 	        </v:button>
           |
-          <v:button action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
+            <v:button name="template_advanced" action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
           	<v:on-post>
               self.vc_redirect(sprintf('home.vspx?keywords=%U&amp;mode=advanced', self.keywords.ufl_value));
           	</v:on-post>
@@ -164,7 +164,7 @@
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
           |
         </v:template>
-          <v:button action="simple" style="url" value="Help" xhtml_title="Help"/>
+            <v:button name="template_help" action="simple" style="url" value="Help" xhtml_title="Help"/>
       </div>
         </div>
       <v:include url="odrive_login.vspx"/>
@@ -615,6 +615,7 @@
           </tr>
     		  <![CDATA[
     		    <script type="text/javascript">
+              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, ODRIVE.initFilter);
     		  <?vsp
               for (N := 1; N <= I; N := N + 1)
               {
@@ -698,7 +699,7 @@
               <v:label value="--sprintf ('Content is %s in Version Conrol', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
             <td valign="center">
-              <v:button action="simple" value="--sprintf ('%s VC', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button">
+              <v:button name="template_vc" action="simple" value="--sprintf ('%s VC', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_disabled="disabled">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -729,7 +730,7 @@
               File commands
             </th>
             <td valign="center">
-              <v:button action="simple" value="Lock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 0 else 1 end" xhtml_class="button">
+              <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 0 else 1 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -745,7 +746,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Unlock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_unlock" action="simple" value="Unlock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -768,7 +769,7 @@
               Versioning commands
             </th>
             <td valign="center">
-              <v:button action="simple" value="Check-In" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_checkIn" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -783,7 +784,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button">
+              <v:button  name="tepmpate_checkOut" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -799,7 +800,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+              <v:button  name="tepmpate_uncheckOut" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(ODRIVE.WA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
@@ -872,7 +873,7 @@
 
                 <v:template name="ds_versions_repeat" type="repeat">
 
-                  <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <v:template name="ds_versions_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr align="center">
                         <td colspan="5">No versions</td>
@@ -884,7 +885,7 @@
                     <table>
                       <tr>
                         <td nowrap="nowrap">
-                          <v:button style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s">
+                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s">
                             <v:on-post>
                               <![CDATA[
                                 declare path varchar;
@@ -927,7 +928,7 @@
                           </v:label>
                         </td>
                         <td nowrap="nowrap">
-                          <v:button action="simple" style="image" value="image/del_16.png" enabled="-- (control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_onclick="javascript: return confirm(\'Are you sure you want to delete the chosen version and all previous versions?\');">
+                          <v:button  name="button_versions_delete" action="simple" style="image" value="image/del_16.png" enabled="-- (control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_onclick="javascript: return confirm(\'Are you sure you want to delete the chosen version and all previous versions?\');">
                             <v:on-post>
                               <![CDATA[
                                 declare retValue any;
@@ -950,7 +951,7 @@
 
                 </v:template>
 
-                <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                <v:template name="ds_versions_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
                   </table>
                 </v:template>
