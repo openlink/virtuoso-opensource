@@ -218,7 +218,7 @@ nf_uid2:;
 <?vsp http(ods_bar_css(self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
-<script type="text/javascript">
+<script type="text/javascript"><![CDATA[
 
 var _head=document.getElementsByTagName('head')[0];
 
@@ -395,7 +395,7 @@ if (typeof (OAT) == 'undefined')
     }
 
 
-</script>
+]]]]><![CDATA[></script>
 ]]>
 
   <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
@@ -672,7 +672,7 @@ if (typeof (OAT) == 'undefined')
 
 <![CDATA[ <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
 
-<script  type="text/javascript">
+<script  type="text/javascript"><![CDATA[
 
   var userIsLogged;
   userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
@@ -917,7 +917,7 @@ odsbarSafeInit();
 //ODSInitArray.push(odsbarSafeShow);
 
 
-</script>
+]]]]><![CDATA[></script>
 ]]>
 
  </v:template>
@@ -1293,7 +1293,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
         {
 
 ?>
-       <li><a href="<?vsp http(wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.odsbar_app_type), self.odsbar_loginparams)); ?>">more...</a></li>
+       <li><a href="<?vsp http(wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&amp;q=' || WA_GET_APP_NAME(self.odsbar_app_type), self.odsbar_loginparams)); ?>">more...</a></li>
 
 <?vsp
         }

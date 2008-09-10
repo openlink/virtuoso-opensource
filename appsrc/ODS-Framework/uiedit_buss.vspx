@@ -223,7 +223,7 @@
                             }
                           ?>
                         }
-                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                        ODSInitArray.push ( function () { OAT.Loader.loadFeatures(["combolist"], categoryCombo); } );
                        </script>
                     ]]>
                   </span>
