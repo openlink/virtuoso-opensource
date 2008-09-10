@@ -38,6 +38,8 @@ grant select on DB.DBA.producer to public
 ;
 create index producer_homepage on DB.DBA.producer (homepage)
 ;
+create index producer_country on DB.DBA.producer (country)
+;
 
 CREATE TABLE DB.DBA.product (
   nr integer primary key,
@@ -141,7 +143,7 @@ CREATE TABLE DB.DBA.offer (
 grant select on DB.DBA.offer to public
 ;
 
-create index offer_product on DB.DBA.offer (product, deliveryDays)
+create index offer_product on DB.DBA.offer (product, deliveryDays, validTo)
 ;
 create unique index offer_producer_product on DB.DBA.offer (producer, product, nr)
 ;
@@ -187,6 +189,12 @@ grant select on DB.DBA.review to public
 ;
 
 create unique index review_product on DB.DBA.review (product, producer, nr)
+;
+
+create index review_person on DB.DBA.review (person)
+;
+
+create unique index review_product on DB.DBA.review (product, person, producer, nr)
 ;
 
 create unique index review_producer_product on DB.DBA.review (producer, product, nr)
