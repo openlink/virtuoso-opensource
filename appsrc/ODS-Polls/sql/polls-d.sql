@@ -78,5 +78,24 @@ POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.polls_insert');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.polls_delete');
 POLLS.WA.exec_no_error('DROP procedure SIOC.DBA.ods_polls_sioc_init');
 
+
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.get"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.new"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.edit"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.delete"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.question.new"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.question.delete"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.activate"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.close"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.clear"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.vote"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.vote.answer"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.result"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.comment.get"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.comment.new"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.comment.delete"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.options.set"');
+POLLS.WA.exec_no_error ('DROP procedure ODS.ODS_API."poll.options.get"');
+
 -- final proc
 POLLS.WA.exec_no_error('DROP procedure POLLS.WA.exec_no_error');

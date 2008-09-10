@@ -146,5 +146,23 @@ ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ENEWS');
 ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ADD_ENEWS_TAG');
 ENEWS.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_enews_tags');
 
+-- dropping API procs
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds_setting_set"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds_setting_xml"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.get"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.subscribe"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.unsubscribe"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.refresh"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.folder.new"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.folder.delete"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.comment.get"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.comment.new"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.comment.delete"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.blog.subscribe"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.blog.unsubscribe"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.blog.refresh"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.options.set"');
+ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.options.get"');
+
 -- final proc
 ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.exec_no_error');

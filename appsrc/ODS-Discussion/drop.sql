@@ -74,3 +74,14 @@ drop type ODS.DISCUSSION.discussion
 ;
 DELETE FROM DB.DBA.WA_TYPES       WHERE WAT_NAME      = 'Discussion'
 ;
+
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.groups.get"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.group.get"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.group.new"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.group.remove"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.feed.new"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.feed.remove"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.message.new"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.message.get"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.comment.new"');
+DB.DBA.wa_exec_no_error('drop procedure ODS.ODS_API."discussion.comment.get"');
