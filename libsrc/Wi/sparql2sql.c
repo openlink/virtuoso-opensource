@@ -2493,7 +2493,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
   DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
         {
-      if (required_source_type == SPART_TYPE(source))
+      if ((0 == required_source_type) || (SPART_TYPE(source) == required_source_type))
             {
           tmp_tcc.tcc_check_source_graphs++;
           tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;
@@ -2577,12 +2577,14 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
   int old_cases_count, new_cases_count, ctr;
   int field_ctr;
   SPART *graph;
+  int graph_type;
   int required_source_type;
   old_cases_count = BOX_ELEMENTS_0 (triple->_.triple.tc_list);
   if ((0 < old_cases_count) && (4 > old_cases_count))
     return;
   graph = triple->_.triple.tr_graph;
-  required_source_type = ((SPAR_VARIABLE == SPART_TYPE(graph)) ? NAMED_L : FROM_L);
+  graph_type = SPART_TYPE(graph);
+  required_source_type = ((SPAR_VARIABLE == graph_type) ? NAMED_L : ((SPAR_BLANK_NODE_LABEL == graph_type) ? FROM_L : 0));
   new_cases = sparp_find_triple_cases (sparp, triple, sources, required_source_type);
   new_cases_count = BOX_ELEMENTS (new_cases);
   if ((NULL == triple->_.triple.tc_list) &&
