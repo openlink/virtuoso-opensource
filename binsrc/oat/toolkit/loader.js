@@ -780,7 +780,17 @@ OAT.Browser = { /* Browser helper */
 	isWebKit:OAT.Dom.isWebKit(),
 	isMac:OAT.Dom.isMac(),
 	isLinux:OAT.Dom.isLinux(),
-	isWindows:OAT.Dom.isWindows()
+	isWindows:OAT.Dom.isWindows(),
+	isChrome:function() { // true if Mozilla Chrome is accessible
+		try {
+			if (Components.classes)
+				return true;
+			else
+				return false;
+		} catch(e) {
+			return false;
+		}
+	}
 }
 
 OAT.Event = { /* Event helper */
