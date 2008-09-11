@@ -585,10 +585,10 @@ int lh_normalize_word__xany (const unichar *srcbuf, size_t srcbufsize, unichar *
 #define LH_ITERATE_WORDS_NAME lh_iterate_words__xany
 #define LH_ITERATE_PATCHED_WORDS_NAME lh_iterate_patched_words__xany
 #define UNICHAR_GETPROPS_EXPN(buf,bufsize,pos) (unichar_getprops(buf[pos]))
-#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in text, start %d, length %d\n", word_start, word_length))
-#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in text, start %d, length %d\n", word_start, word_length))
+#define DBG_PRINTF_NOISE_WORD(word_start,word_length) dbg_printf (("Noise word in text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of word failed in text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_NOISE_IDEO(word_start,word_length) dbg_printf (("Noise ideograph in text, start %ld, length %ld\n", (long)word_start, (long)word_length))
+#define DBG_PRINTF_IDEO_PATCH_FAILED(word_start,word_length) dbg_printf (("Patch of ideograph failed in text, start %ld, length %ld\n", (long)word_start, (long)word_length))
 #include "langfunc_templ.c"
 #undef LH_COUNT_WORDS_NAME
 #undef LH_ITERATE_WORDS_NAME
