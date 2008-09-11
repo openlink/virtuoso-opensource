@@ -133,6 +133,9 @@
 	  <xsl:when test="$url like 'lsidres:urn:lsid:%'">
 	      <rdfs:seeAlso rdf:resource="{substring-after ($url, 'lsidres:')}"/>
 	  </xsl:when>
+	  <xsl:otherwise>
+	      <sioc:links_to rdf:resource="{$url}"/>
+	  </xsl:otherwise>
       </xsl:choose>
   </xsl:template>
   <xsl:template match="*|text()"/>
