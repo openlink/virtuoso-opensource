@@ -2586,6 +2586,12 @@ done:
 	  http (sprintf (' if (rate = 0 AND vals_%I <> 0 ) { rate := 1; }; \n', col_name), proc);
 	  http (sprintf (' if (n_dist_%I < 20) { ndist_rate := 1; } else {ndist_rate := rate; }; \n', col_name), proc);
 
+	  if (col_dtp = 189 or col_dtp = 247) -- DV_INT & DV_INT64
+	    {
+	      http (sprintf (' if ((n_dist_%I * ndist_rate) > (max_%I - min_%I)) { ndist_rate := 1; n_dist_%I := max_%I - min_%I; } \n',
+	      	col_name, col_name, col_name, col_name, col_name, col_name), proc);
+	    }
+
       	  http ('insert into DB.DBA.SYS_COL_STAT (CS_TABLE,CS_COL,CS_N_DISTINCT,CS_MIN,CS_MAX, CS_AVG_LEN, CS_N_VALUES,CS_N_ROWS) ', proc);
       	  http (sprintf ('values (\'%S\',\'%S\',%s, n_rows * %s); \n',
 		tb_name, col_name, SYS_GENERATE_ALL_VARS (col_name, 'rate', 'ndist_rate'), 'rate'), proc);
