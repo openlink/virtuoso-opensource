@@ -3027,9 +3027,9 @@ PrpcSessionFree (dk_session_t * ses)
   dk_free_box (ses->dks_own_name);
   dk_free_tree ((box_t) ses->dks_caller_id_opts);
   if (ses->dks_in_buffer)
-    dk_free (ses->dks_in_buffer, DKSES_IN_BUFFER_LENGTH);
+    dk_free (ses->dks_in_buffer, ses->dks_in_length);
   if (ses->dks_out_buffer)
-    dk_free (ses->dks_out_buffer, DKSES_OUT_BUFFER_LENGTH);
+    dk_free (ses->dks_out_buffer, ses->dks_out_length);
   dk_free (SESSION_SCH_DATA (ses), sizeof (scheduler_io_data_t));
   session_free (ses->dks_session);
 #ifdef NO_THREAD  

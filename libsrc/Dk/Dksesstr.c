@@ -1130,9 +1130,9 @@ strses_destroy (dk_session_t *ses)
   if (ses->dks_refcount)
     return 1;
   strses_flush (ses);
-  dk_free (ses->dks_out_buffer, DKSES_OUT_BUFFER_LENGTH);
+  dk_free (ses->dks_out_buffer, ses->dks_out_length);
   if (ses->dks_in_buffer)
-    dk_free (ses->dks_in_buffer, DKSES_IN_BUFFER_LENGTH);
+    dk_free (ses->dks_in_buffer, ses->dks_in_length);
   dk_free (SESSION_SCH_DATA (ses), sizeof (scheduler_io_data_t));
   session_free (ses->dks_session);
   return 0;
