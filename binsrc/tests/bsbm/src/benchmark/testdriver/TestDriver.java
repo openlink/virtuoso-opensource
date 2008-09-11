@@ -325,6 +325,7 @@ public class TestDriver {
 					sb.append("Count: " + nrq[i] + " times executed in whole run\n");
 					sb.append("AQET: " + String.format(Locale.US, "%.6f",qavga[i]) + " seconds (arithmetic mean)\n");
 					sb.append("AQET(geom.): " + String.format(Locale.US, "%.6f",qavgg[i]) + " seconds (geometric mean)\n");
+					sb.append("Cumulative time in run  " + String.format(Locale.US, "%.6f",qavga[i]*nrq[i]) + " seconds\n");
 					if(multithreading)
 						sb.append("QPS: " + String.format(Locale.US, "%.2f",singleMultiRatio/qavga[i]) + " Queries per second\n");
 					else
