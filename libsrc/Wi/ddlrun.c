@@ -504,6 +504,24 @@ ddl_col_nullable (char *name)
   return (dk_alloc_box (0, DV_DB_NULL));
 }
 
+int
+ddl_col_is_not_nullable (char *name)
+{
+  if (DV_SYMBOL != box_tag (name))
+    {
+      /* sql type. elt 0 is type spec, elt 1 is options list. */
+      caddr_t *opts = ((caddr_t **) name)[1];
+      int inx;
+      DO_BOX (ST *, opt, inx, opts)
+      {
+	if (opt == (ST *) COL_NOT_NULL || (IS_BOX_POINTER (opt) && opt->type == INDEX_DEF))
+	  return 1;
+      }
+      END_DO_BOX;
+    }
+  return 0;
+}
+
 
 int
 ddl_dv_default_prec (dtp_t dtp)
@@ -2284,6 +2302,11 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
     sqlr_new_error ("42000", "SQ178", "Cannot change the type for column %s from %s (%d) to %s (%d).",
 	col->col_name, dv_type_title (col->col_sqt.sqt_dtp), col->col_sqt.sqt_dtp,
 	dv_type_title (dtp), dtp);
+  if (ddl_col_is_not_nullable (((caddr_t *)column)[1]) != col->col_sqt.sqt_non_null && count_exceed (qi, tb->tb_name, 0, NULL))
+    sqlr_new_error ("42000", "SQ178", "Cannot change the nullable flag for column %s from %s to %s. "
+	"Either specify correct nullable flag or drop column and add as a new.",
+	col->col_name, (col->col_sqt.sqt_non_null ? "NOT NULL" : "NULL"), (col->col_sqt.sqt_non_null ? "NULL" : "NOT NULL"));
+
   if (prec < (long) col->col_precision)
     sqlr_new_error ("42000", "SQ179", "Cannot decrease the precision for column %s from %ld to %ld.",
 	col->col_name, (long) col->col_precision, prec);
