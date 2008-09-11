@@ -2205,6 +2205,12 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
   bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
+  /* Short aliases for use in generated SQL text: */
+  bif_define ("__i2idn", bif_iri_to_id_nosignal);
+  bif_define ("__i2id", bif_iri_to_id);
+  bif_define ("__i2idc", bif_iri_to_id_if_cached);
+  bif_define ("__id2i", bif_id_to_iri);
+  bif_define ("__id2in", bif_id_to_iri_nosignal);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif

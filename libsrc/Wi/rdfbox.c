@@ -1263,5 +1263,7 @@ rdf_box_init ()
   bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
   bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
   bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
-
+  /* Short aliases for use in generated SQL text: */
+  bif_define ("__ro2lo", bif_rdf_long_of_obj);
+  bif_define ("__ro2sq", bif_rdf_sqlval_of_obj);
 }

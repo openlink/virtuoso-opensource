@@ -13725,9 +13725,15 @@ sql_bif_init (void)
   bif_define ("v_bit_all_pos", bif_v_bit_all_pos);
   bif_define ("v_equal", bif_v_equal);
   bif_define ("bit_print", bif_bit_print);
-
-
   bif_define ("search_excerpt", bif_search_excerpt);
+
+  /* Short aliases for use in generated SQL text: */
+  bif_define ("__bft", bif_box_flags_tweak);
+  bif_define ("__spf", bif_sprintf);
+  bif_define ("__spfn", bif_sprintf_or_null);
+  bif_define ("__spfi", bif_sprintf_iri);
+  bif_define ("__spfin", bif_sprintf_iri_or_null);
+  bif_define ("__spfinv", bif_sprintf_inverse);
 
   sqlbif2_init ();
 #ifdef BIF_PURIFY

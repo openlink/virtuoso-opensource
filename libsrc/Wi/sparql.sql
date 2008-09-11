@@ -4071,6 +4071,270 @@ describe_physical_subjects:
 }
 ;
 
+create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, in graphs any, in storage_name any, in options any)
+{
+  declare all_subj_descs, phys_subjects, sorted_graphs, res any;
+  declare g_ctr, g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare rdf_type_iid IRI_ID;
+  rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+  res := dict_new ();
+  if (isinteger (consts))
+    return res;
+  foreach (any c in consts) do
+    {
+      if (isiri_id (c))
+        dict_put (subj_dict, c, 0);
+    }
+  all_subj_descs := dict_list_keys (subj_dict, 1);
+  all_s_count := length (all_subj_descs);
+  if (0 = all_s_count)
+    return res;
+  gvector_sort (all_subj_descs, 1, 0, 0);
+  vectorbld_init (sorted_graphs);
+  foreach (any g in graphs) do
+    {
+      if (isiri_id (g))
+        vectorbld_acc (sorted_graphs, __min (g, min_bnode_iri_id ()));
+    }
+  vectorbld_final (sorted_graphs);
+  g_count := length (sorted_graphs);
+  vectorbld_init (phys_subjects);
+  if (isinteger (storage_name))
+    storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
+  else if ('' = storage_name)
+    {
+      for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
+        {
+          declare s, phys_s any;
+          s := all_subj_descs [s_ctr];
+          if (isiri_id (s))
+            vectorbld_acc (phys_subjects, s);
+          else
+            {
+              phys_s := iri_to_id (s, 0, 0);
+              if (not isinteger (phys_s))
+                vectorbld_acc (phys_subjects, phys_s);
+            }
+        }
+      vectorbld_final (phys_subjects);
+      goto describe_physical_subjects;
+    }
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_graphs=', sorted_graphs);
+  for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
+    {
+      declare s, phys_s, maps any;
+      declare maps_len integer;
+      s := all_subj_descs [s_ctr];
+      maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, sorted_graphs);
+      -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
+      maps_len := length (maps);
+      if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+        {
+          if (isiri_id (s))
+            {
+              phys_s := s;
+              vectorbld_acc (phys_subjects, phys_s);
+            }
+          else
+            {
+              phys_s := iri_to_id (s, 0, 0);
+              if (not isinteger (phys_s))
+                vectorbld_acc (phys_subjects, phys_s);
+            }
+          maps := subseq (maps, 0, maps_len-1);
+          maps_len := maps_len - 1;
+        }
+      if (maps_len > 0)
+        all_subj_descs [s_ctr] := vector (s, maps);
+      else
+        all_subj_descs [s_ctr] := 0;
+      -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
+      -- dbg_obj_princ ('all_subj_descs [', s_ctr, '] = ', all_subj_descs [s_ctr]);
+    }
+  vectorbld_final (phys_subjects);
+  for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
+    {
+      declare s_desc, s, maps any;
+      declare map_ctr, maps_len integer;
+      declare fname varchar;
+      s_desc := all_subj_descs [s_ctr];
+      if (isinteger (s_desc))
+        goto end_of_s;
+      s := s_desc[0];
+      maps := s_desc[1];
+      maps_len := length (maps);
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || md5_box (maps)));
+      if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
+        {
+          declare ses, txt, saved_user any;
+          ses := string_output ();
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any)\n', ses);
+          http ('{\n', ses);
+          http ('  declare subj_iri varchar;\n', ses);
+          http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
+          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> select ?p1 ?o1\n', ses);
+          http ('      where { graph ?g {\n', ses);
+          for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
+            {
+              if (map_ctr > 0) http ('              union\n', ses);
+              http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
+            }
+          http ('            } } ) do { dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
+          txt := string_output_string (ses);
+          -- dbg_obj_princ ('Procedure text: ', txt);
+	  saved_user := user;
+	  set_user_id ('dba', 1);
+          exec (txt);
+	  set_user_id (saved_user);
+        }
+      -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
+      call ('DB.DBA.' || fname)(s, res);
+end_of_s: ;
+    }
+
+describe_physical_subjects:
+  gvector_sort (phys_subjects, 1, 0, 0);
+  phys_s_count := length (phys_subjects);
+  -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
+  if (0 = phys_s_count)
+    return res;
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
+  gvector_sort (sorted_graphs, 1, 0, 0);
+  g_count := length (sorted_graphs);
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
+  for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+    {
+      declare graph any;
+      graph := sorted_graphs [g_ctr];
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+        {
+          declare subj any;
+          subj := phys_subjects [s_ctr];
+          for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+            {
+              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
+              dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
+            }
+        }
+    }
+  return res;
+}
+;
+
+create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in consts any, in graphs any, in storage_name any, in options any)
+{
+  declare all_subj_descs, phys_subjects, sorted_graphs, res any;
+  declare g_ctr, g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare rdf_type_iid IRI_ID;
+  rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+  res := dict_new ();
+  if (isinteger (consts))
+    return res;
+  foreach (any c in consts) do
+    {
+      if (isiri_id (c))
+        dict_put (subj_dict, c, 0);
+    }
+  all_subj_descs := dict_list_keys (subj_dict, 1);
+  all_s_count := length (all_subj_descs);
+  if (0 = all_s_count)
+    return res;
+  gvector_sort (all_subj_descs, 1, 0, 0);
+  vectorbld_init (sorted_graphs);
+  foreach (any g in graphs) do
+    {
+      if (isiri_id (g))
+        vectorbld_acc (sorted_graphs, __min (g, min_bnode_iri_id ()));
+    }
+  vectorbld_final (sorted_graphs);
+  g_count := length (sorted_graphs);
+  vectorbld_init (phys_subjects);
+  for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
+    {
+      declare s, phys_s any;
+      s := all_subj_descs [s_ctr];
+      if (isiri_id (s))
+        vectorbld_acc (phys_subjects, s);
+      else
+        {
+          phys_s := iri_to_id (s, 0, 0);
+          if (not isinteger (phys_s))
+            vectorbld_acc (phys_subjects, phys_s);
+        }
+    }
+  vectorbld_final (phys_subjects);
+  gvector_sort (phys_subjects, 1, 0, 0);
+  phys_s_count := length (phys_subjects);
+  -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
+  if (0 = phys_s_count)
+    return res;
+  if (0 = length (sorted_graphs))
+    {
+      declare g_dict any;
+      g_dict := dict_new ();
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+        {
+          declare subj, graph any;
+          subj := phys_subjects [s_ctr];
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj));
+          if (graph is not null)
+            dict_put (g_dict, graph, 0);
+        }
+      sorted_graphs := dict_list_keys (g_dict, 1);
+    }
+  if (0 = length (sorted_graphs))
+    {
+      declare g_dict any;
+      g_dict := dict_new ();
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+        {
+          declare subj, graph any;
+          subj := phys_subjects [s_ctr];
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid));
+          if (graph is not null)
+            dict_put (g_dict, graph, 0);
+        }
+      sorted_graphs := dict_list_keys (g_dict, 1);
+    }
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
+  gvector_sort (sorted_graphs, 1, 0, 0);
+  g_count := length (sorted_graphs);
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
+  for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+    {
+      declare graph any;
+      graph := sorted_graphs [g_ctr];
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+        {
+          declare subj any;
+          subj := phys_subjects [s_ctr];
+          for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+            {
+              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
+              dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
+--              if (isiri_id (obj1))
+--                {
+--                  for (select P as p2, O as obj2
+--                    from DB.DBA.RDF_QUAD
+--                    where G = graph and S = obj1 and not (isiri_id (O)) ) do
+--                    {
+--                      dict_put (dict, vector (obj1, p2, __rdf_long_of_obj (obj2)), 0);
+--                    }
+--                }
+            }
+          for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
+            where G = graph and O = subj and P <> rdf_type_iid
+            option (QUIETCAST)) do
+            {
+              -- dbg_obj_princ ('found ', s1, p1, subj, ' in ', graph);
+              dict_put (res, vector (s1, p1, subj), 1);
+            }
+        }
+    }
+  return res;
+}
+;
+
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)
 {
@@ -10886,7 +11150,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-08-04 0001'
+                virtrdf:version '2008-09-11 0002'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -11053,6 +11317,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARQL_DESC_AGG_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_DICT to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_SPO to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_FIN to SPARQL_SELECT',

@@ -496,7 +496,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name}^ inside a loop, should be ^{as-name-N}^", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name*/ ");
+#endif
               ssg_prin_id (ssg, asname);
             }
           asname_printed = 1;
@@ -509,7 +513,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, 0);
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name-0*/ ");
+#endif
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
             }
@@ -522,7 +530,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, 1);
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name-0*/ ");
+#endif
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
             }
@@ -535,7 +547,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-dt}^ inside a loop", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name-dt*/ ");
+#endif
               ssg_prin_id_with_suffix (ssg, asname, "_dt");
             }
           asname_printed = 1;
@@ -548,7 +564,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-lang}^ inside a loop", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name-lang*/ ");
+#endif
               ssg_prin_id_with_suffix (ssg, asname, "_lang");
             }
           asname_printed = 1;
@@ -563,7 +583,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, col_idx);
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*as-name-N*/ ");
+#endif
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
         }
@@ -867,7 +891,11 @@ print_cut:
   asname_printed = ssg_print_tmpl_phrase (ssg, qm_fmt, tmpl, tmpl_end, alias, qm_val, tree, -1, asname);
   if (IS_BOX_POINTER (asname) && !asname_printed)
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*tmpl*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
 }
@@ -1699,7 +1727,11 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
         value = lit->_.lit.val;
+#ifdef NDEBUG
+          ssg_puts (" __bft (");
+#else
           ssg_puts (" /* QNAME as sql atom */ __box_flags_tweak (");
+#endif
           ssg_print_box_as_sql_atom (ssg, value, 0);
           ssg_puts (", 1)");
           return;
@@ -1785,7 +1817,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           ssg_print_box_as_sql_atom (ssg, value, 0);
           return;
         }
+#ifdef NDEBUG
+      ssg_puts (" __ro2sq (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
+#else
       ssg_puts (" /* sqlval of typed literal */ __rdf_sqlval_of_obj (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
+#endif
       ssg_print_box_as_sql_atom (ssg, value, 0);
       ssg_putchar (',');
       if (NULL != type)
@@ -1880,7 +1916,11 @@ ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr
   if (IS_BOX_POINTER (asname) &&
     ((NULL == name_as_expn) || strcmp (asname, name_as_expn)) )
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*equiv*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
 }
@@ -1984,7 +2024,11 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
             {
               char buf[210];
               snprintf (buf, sizeof (buf), "%.100s~%d", asname, col_ctr);
+#ifdef NDEBUG
+              ssg_puts (" AS ");
+#else
               ssg_puts (" AS /*tr_var_expn*/ ");
+#endif
               ssg_prin_id (ssg, buf);
             }
         }
@@ -3792,7 +3836,11 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*scalar*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
 }
@@ -3879,7 +3927,11 @@ retval_without_var:
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*scalar*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
 }
@@ -3939,6 +3991,7 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
     }
     }
   ssg->ssg_where_l_printed = 1;
+#ifndef NDEBUG
   if (NULL != location)
     {
       ssg_puts (" /* ");
@@ -3946,6 +3999,7 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
       ssg_puts (" */ ");
       ssg_newline (1);
     }
+#endif
 }
 
 void
@@ -4505,7 +4559,11 @@ write_assuffix:
   if (IS_BOX_POINTER (asname) &&
     ((NULL == name_as_expn) || strcmp (asname, name_as_expn)) )
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*eqretval*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
   return 1;
@@ -5058,7 +5116,11 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
+#ifdef NDEBUG
+      ssg_puts (" AS ");
+#else
       ssg_puts (" AS /*retsimple*/ ");
+#endif
       ssg_prin_id (ssg, asname);
     }
 }
@@ -5114,7 +5176,11 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
       ssg_puts (" 1 /*fake*/");
       if (NULL != asname)
         {
+#ifdef NDEBUG
+          ssg_puts (" AS ");
+#else
           ssg_puts (" AS /*retexpn*/ ");
+#endif
           ssg_prin_id (ssg, asname);
         }
       return;

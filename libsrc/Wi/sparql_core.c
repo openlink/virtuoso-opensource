@@ -740,6 +740,9 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       if (!strcmp (param, "sql:select-option")) {
           t_set_push (&(sparp->sparp_env->spare_sql_select_options), t_box_dv_uname_string (value));
           return; }
+      if (!strcmp (param, "sql:describe-mode")) {
+          sparp->sparp_env->spare_describe_mode = t_box_dv_uname_string (value);
+          return; }
       if (!strcmp (param, "sql:signal-void-variables")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if ((0 > val) || (1 < val))
@@ -1135,6 +1138,54 @@ in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
 }
 
+
+int
+spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
+{
+  SPART **sources = sparp->sparp_expr->_.req_top.sources;
+  SPART *dflt_s = NULL;
+  SPART *triple;
+  int s_ctr;
+  spar_selid_push_reused (sparp, uname__ref);
+  triple = spar_make_plain_triple (sparp,
+    spar_make_fake_blank_node (sparp),
+    NULL,
+    spar_make_fake_blank_node (sparp),
+    spar_make_fake_blank_node (sparp),
+    (caddr_t)(_STAR), NULL );
+  spar_selid_pop (sparp);
+  DO_BOX_FAST (SPART *, s, s_ctr, retvals)
+    {
+      triple_case_t **cases;
+      int case_ctr;
+      int s_type = SPART_TYPE (s);      
+      if (SPAR_ALIAS == s_type)
+        {
+          s = s->_.alias.arg;
+          s_type = SPART_TYPE (s);
+        }
+      if ((SPAR_VARIABLE == s_type) || (SPAR_BLANK_NODE_LABEL == s_type) || (SPAR_QNAME == s_type) || (SPAR_LIT == s_type))
+        triple->_.triple.tr_subject = s;
+      else
+        {
+          if (NULL == dflt_s)
+            dflt_s = spar_make_fake_blank_node (sparp);
+          triple->_.triple.tr_subject = dflt_s;
+        }
+      cases = sparp_find_triple_cases (sparp, triple, sources, FROM_L);
+      DO_BOX_FAST_REV (triple_case_t *, tc, case_ctr, cases)
+        {
+          triple_case_t *tc = cases [case_ctr];
+          caddr_t table_name = tc->tc_qm->qmTableName;
+          if ((NULL == table_name) || strcmp ("DB.DBA.RDF_QUAD", table_name))
+            return 0;
+        }
+      END_DO_BOX_FAST_REV;
+    }
+  END_DO_BOX_FAST;
+  return 1;
+}
+
 SPART **
 spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset)
 {
@@ -1147,6 +1198,8 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   SPART *var_vector_expn;
   SPART *var_vector_arg;
   caddr_t limofs_name;
+  caddr_t descr_mode;
+  const char *descr_name;
   int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
   for (retval_ctr = BOX_ELEMENTS_INT (retvals); retval_ctr--; /* no step */)
@@ -1183,7 +1236,17 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
     var_vector_arg = var_vector_expn;
   agg_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_AGG",
       (SPART **)t_list (1, var_vector_arg ) );
-  descr_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_DICT",
+  if (NULL != sparp->sparp_env->spare_describe_mode)
+    {
+      int phys_only = spar_describe_restricted_by_physical (sparp, retvals);
+      if (phys_only)
+        descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s_PHYSICAL", sparp->sparp_env->spare_describe_mode);
+      else
+        descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s", sparp->sparp_env->spare_describe_mode);
+    }
+  else
+    descr_name = "sql:SPARQL_DESC_DICT";
+  descr_call = spar_make_funcall (sparp, 0, descr_name,
       (SPART **)t_list (5,
         agg_call,
         spar_make_funcall (sparp, 0, "LONG::bif:vector",
@@ -1459,6 +1522,18 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
       SPAR_BLANK_NODE_LABEL, name,
       env->spare_selids->data, NULL,
       (ptrlong)(bracketed), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+  res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
+  return res;
+}
+
+SPART *spar_make_fake_blank_node (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  SPART *res;
+  res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+      SPAR_BLANK_NODE_LABEL, uname__ref,
+      uname__ref, NULL,
+      (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
   res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
   return res;
 }
