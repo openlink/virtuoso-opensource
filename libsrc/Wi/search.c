@@ -2666,17 +2666,38 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
   dk_hash_iterator (&it, itc->itc_st.cols);
   while (dk_hit_next (&it, (void**) &col, (void**) &cs))
     {
+      boxint min = 0, max = 0;
+      int is_first = 1;
+      int is_int = DV_LONG_INT == col->col_sqt.sqt_dtp || DV_INT64 == col->col_sqt.sqt_dtp;
       if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
 	{
 	  col->col_stat = cs;
+	  is_int = 0;
 	}
       else
 	{
       id_hash_iterator (&hit, cs->cs_distinct);
       while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
 	{
+	      if (is_int)
+		{
+		  boxint d = unbox (*data);
+		  if (is_first)
+		    {
+		      is_first = 0;
+		      min = max = d;
+		    }
+		  else
+		    {
+		      if (d > max)
+			max = d;
+		      if (d < min)
+			min = d;
+		    }
+		}
 	  dk_free_tree (*data);
 	}
+	  
 	}
       if (upd_col)
 	{
@@ -2689,6 +2710,14 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	      else 
 		col->col_n_distinct = (float)cs->cs_distinct->ht_inserts / (float)itc->itc_st.n_sample_rows * est;
 	      col->col_avg_len = cs->cs_len / itc->itc_st.n_sample_rows;
+	      if (is_int && !is_first)
+		{
+		  /* if it is an int then the max distinct is the difference between min and max seen */
+		  col->col_min = box_num (min);
+		  col->col_max = box_num (max);
+		  if (col->col_n_distinct > max - min)
+		    col->col_n_distinct = max - min;
+		}
 	    }
 	  else 
 	    {
