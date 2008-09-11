@@ -1,12 +1,11 @@
 use DB;
 
-DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'')
+DB.DBA.exec_stmt ('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'', 0)
 ;
 
-DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'')
+DB.DBA.exec_stmt ('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'', 0)
 ;
 
---GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
@@ -18,400 +17,6 @@ GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 
-create function DB.DBA.NORTHWIND_ID_TO_IRI(in _prefix varchar,in _id varchar)
-{
-  declare iri, uriqa_host any;
-  uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  iri := 'http://' || uriqa_host || '/Northwind/' || _prefix || '/' || _id || '#this';
-  return sprintf ('http://%s/DAV/home/demo/RDFData/All/iid%%20(%d).rdf', uriqa_host, iri_id_num (iri_to_id (iri)));
-}
-;
-
-create function DB.DBA.NORTHWIND_IRI_TO_ID(in _iri varchar)
-{
-    declare parts any;
-    parts := sprintf_inverse (_iri, 'http://%s/DAV/home/demo/RDFData/All/iid (%d).rdf', 1 );
-    if (parts is not null)
-    {
-        declare uriqa_host, iri any;
-        uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-        if (parts[0] = uriqa_host)
-        {
-            iri := id_to_iri(iri_id_from_num(parts[1]));
-            parts := sprintf_inverse (iri, 'http://%s/Northwind/%s/%s#this', 1 );
-            if (parts[0] = uriqa_host)
-            {
-                return parts[2];
-            }
-        }
-    }
-    return NULL;
-}
-;
-
-create function DB.DBA.CATEGORY_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Category', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CATEGORY_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CATEGORYDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CategoryDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CATEGORYDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SHIPPER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Shipper', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SHIPPER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SHIPPERDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('ShipperDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SHIPPERDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SUPPLIER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Supplier', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SUPPLIER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.SUPPLIERDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('SupplierDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.SUPPLIERDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.PRODUCT_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Product', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.PRODUCT_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.PRODUCTDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('ProductDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.PRODUCTDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CUSTOMER_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Customer', _id);
-}
-;
-
-create function DB.DBA.CUSTOMER_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.CUSTOMERDOC_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CustomerDoc', _id);
-}
-;
-
-create function DB.DBA.CUSTOMERDOC_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.EMPLOYEE_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Employee', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.EMPLOYEE_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.EMPLOYEEDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('EmployeeDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.EMPLOYEEDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDER_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Order', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.ORDER_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('OrderDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.ORDERDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CUSTOMERCONTACT_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CustomerContact', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CUSTOMERCONTACTDOC_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CustomerContactDoc', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CUSTOMERCONTACTDOC_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINE_IRI (in _id1 integer, in _id2 integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('OrderLine', sprintf('%d/%d', _id1, _id2));
-}
-;
-
-create function DB.DBA.ORDERLINE_IRI_INV_1 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINE_IRI_INV_2 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINEDOC_IRI (in _id1 integer, in _id2 integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('OrderLineDoc', sprintf('%d/%d', _id1, _id2));
-}
-;
-
-create function DB.DBA.ORDERLINEDOC_IRI_INV_1 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.ORDERLINEDOC_IRI_INV_2 (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-
-create function DB.DBA.PROVINCE_IRI (in _id1 varchar, in _id2 varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Province', sprintf('%s/%s', _id1, _id2));
-}
-;
-
-create function DB.DBA.PROVINCE_IRI_INV_1 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.PROVINCE_IRI_INV_2 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.PROVINCEDOC_IRI (in _id1 varchar, in _id2 varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('ProvinceDoc', sprintf('%s/%s', _id1, _id2));
-}
-;
-
-create function DB.DBA.PROVINCEDOC_IRI_INV_1 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.PROVINCEDOC_IRI_INV_2 (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.COUNTRY_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Country', _id);
-}
-;
-
-create function DB.DBA.COUNTRY_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.COUNTRYDOC_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CountryDoc', _id);
-}
-;
-
-create function DB.DBA.COUNTRYDOC_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.FLAG_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('Flag', _id);
-}
-;
-
-create function DB.DBA.FLAG_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.FLAGDOC_IRI (in _id varchar) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('FlagDoc', _id);
-}
-;
-
-create function DB.DBA.FLAGDOC_IRI_INVERSE (in _iri varchar) returns varchar
-{
-    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
-};
-
-create function DB.DBA.EMPLOYEEPHOTO_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('EmployeePhoto', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-create function DB.DBA.CATEGORYPHOTO_IRI (in _id integer) returns varchar
-{
-    return NORTHWIND_ID_TO_IRI('CategoryPhoto', cast(_id as varchar));
-}
-;
-
-create function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in _iri varchar) returns integer
-{
-    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
-};
-
-grant execute on DB.DBA.CATEGORY_IRI to "SPARQL";
-grant execute on DB.DBA.CATEGORY_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CATEGORYDOC_IRI to "SPARQL";
-grant execute on DB.DBA.CATEGORYDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SHIPPER_IRI to "SPARQL";
-grant execute on DB.DBA.SHIPPER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SHIPPERDOC_IRI to "SPARQL";
-grant execute on DB.DBA.SHIPPERDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SUPPLIER_IRI to "SPARQL";
-grant execute on DB.DBA.SUPPLIER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.SUPPLIERDOC_IRI to "SPARQL";
-grant execute on DB.DBA.SUPPLIERDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.PRODUCT_IRI to "SPARQL";
-grant execute on DB.DBA.PRODUCT_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.PRODUCTDOC_IRI to "SPARQL";
-grant execute on DB.DBA.PRODUCTDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMER_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMERDOC_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMERDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.EMPLOYEE_IRI to "SPARQL";
-grant execute on DB.DBA.EMPLOYEE_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEDOC_IRI to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.ORDER_IRI to "SPARQL";
-grant execute on DB.DBA.ORDER_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.ORDERDOC_IRI to "SPARQL";
-grant execute on DB.DBA.ORDERDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACT_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACT_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACTDOC_IRI to "SPARQL";
-grant execute on DB.DBA.CUSTOMERCONTACTDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.ORDERLINE_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.ORDERLINEDOC_IRI to "SPARQL";
-grant execute on DB.DBA.ORDERLINEDOC_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.ORDERLINEDOC_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.PROVINCE_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.PROVINCEDOC_IRI to "SPARQL";
-grant execute on DB.DBA.PROVINCEDOC_IRI_INV_1 to "SPARQL";
-grant execute on DB.DBA.PROVINCEDOC_IRI_INV_2 to "SPARQL";
-grant execute on DB.DBA.COUNTRY_IRI to "SPARQL";
-grant execute on DB.DBA.COUNTRY_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.COUNTRYDOC_IRI to "SPARQL";
-grant execute on DB.DBA.COUNTRYDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.FLAG_IRI to "SPARQL";
-grant execute on DB.DBA.FLAG_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.FLAGDOC_IRI to "SPARQL";
-grant execute on DB.DBA.FLAGDOC_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEPHOTO_IRI to "SPARQL";
-grant execute on DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.CATEGORYPHOTO_IRI to "SPARQL";
-grant execute on DB.DBA.CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
 
 SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
 ;
@@ -506,88 +111,8 @@ create iri class northwind:FlagDoc "http://^{URIQADefaultHost}^%U" (in flag_path
 create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
-create iri class northwind:category_iri using
-    function DB.DBA.CATEGORY_IRI (in category_id integer) returns varchar,
-    function DB.DBA.CATEGORY_IRI_INVERSE (in category_iri varchar) returns integer .
-create iri class northwind:categorydoc_iri using
-    function DB.DBA.CATEGORYDOC_IRI (in category_id integer) returns varchar,
-    function DB.DBA.CATEGORYDOC_IRI_INVERSE (in category_iri varchar) returns integer .
-create iri class northwind:shipper_iri using
-    function DB.DBA.SHIPPER_IRI (in shipper_id integer) returns varchar,
-    function DB.DBA.SHIPPER_IRI_INVERSE (in shipper_iri varchar) returns integer .
-create iri class northwind:shipperdoc_iri using
-    function DB.DBA.SHIPPERDOC_IRI (in shipper_id integer) returns varchar,
-    function DB.DBA.SHIPPERDOC_IRI_INVERSE (in shipper_iri varchar) returns integer .
-create iri class northwind:supplier_iri using
-    function DB.DBA.SUPPLIER_IRI (in supplier_id varchar) returns varchar,
-    function DB.DBA.SUPPLIER_IRI_INVERSE (in supplier_iri varchar) returns varchar.
-create iri class northwind:supplierdoc_iri using
-    function DB.DBA.SUPPLIERDOC_IRI (in supplier_id varchar) returns varchar,
-    function DB.DBA.SUPPLIERDOC_IRI_INVERSE (in supplier_iri varchar) returns varchar .
-create iri class northwind:product_iri using
-    function DB.DBA.PRODUCT_IRI (in product_id integer) returns varchar,
-    function DB.DBA.PRODUCT_IRI_INVERSE (in product_iri varchar) returns integer .
-create iri class northwind:productdoc_iri using
-    function DB.DBA.PRODUCTDOC_IRI (in product_id integer) returns varchar,
-    function DB.DBA.PRODUCTDOC_IRI_INVERSE (in product_iri varchar) returns integer .
-create iri class northwind:customer_iri using
-    function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar .
-create iri class northwind:customerdoc_iri using
-    function DB.DBA.CUSTOMERDOC_IRI (in customer_id varchar) returns varchar,
-    function DB.DBA.CUSTOMERDOC_IRI_INVERSE (in customer_iri varchar) returns varchar .
-create iri class northwind:employee_iri using
-    function DB.DBA.EMPLOYEE_IRI (in employee_id integer) returns varchar,
-    function DB.DBA.EMPLOYEE_IRI_INVERSE (in employee_iri varchar) returns integer .
-create iri class northwind:employeedoc_iri using
-    function DB.DBA.EMPLOYEEDOC_IRI (in employee_id integer) returns varchar,
-    function DB.DBA.EMPLOYEEDOC_IRI_INVERSE (in employee_iri varchar) returns integer .
-create iri class northwind:order_iri using
-    function DB.DBA.ORDER_IRI (in order_id integer) returns varchar,
-    function DB.DBA.ORDER_IRI_INVERSE (in order_iri varchar) returns integer .
-create iri class northwind:orderdoc_iri using
-    function DB.DBA.ORDERDOC_IRI (in order_id integer) returns varchar,
-    function DB.DBA.ORDERDOC_IRI_INVERSE (in order_iri varchar) returns integer .
-create iri class northwind:customercontact_iri using
-    function DB.DBA.CUSTOMERCONTACT_IRI (in customercontact_id varchar) returns varchar,
-    function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customercontact_iri varchar) returns varchar .
-create iri class northwind:customercontactdoc_iri using
-    function DB.DBA.CUSTOMERCONTACTDOC_IRI (in customercontact_id varchar) returns varchar,
-    function DB.DBA.CUSTOMERCONTACTDOC_IRI_INVERSE (in customercontact_iri varchar) returns varchar .
-create iri class northwind:orderline_iri using
-    function DB.DBA.ORDERLINE_IRI (in orderline_id integer, in orderline_id2 integer) returns varchar,
-    function DB.DBA.ORDERLINE_IRI_INV_1 (in orderline_iri varchar) returns integer,
-    function DB.DBA.ORDERLINE_IRI_INV_2 (in orderline_iri varchar) returns integer .
-create iri class northwind:orderlinedoc_iri using
-    function DB.DBA.ORDERLINEDOC_IRI (in orderline_id integer, in orderline_id2 integer) returns varchar,
-    function DB.DBA.ORDERLINEDOC_IRI_INV_1 (in orderline_iri varchar) returns integer,
-    function DB.DBA.ORDERLINEDOC_IRI_INV_2 (in orderline_iri varchar) returns integer .
-create iri class northwind:province_iri using
-    function DB.DBA.PROVINCE_IRI (in province_id varchar, in province_id2 varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_1 (in province_iri varchar) returns varchar,
-    function DB.DBA.PROVINCE_IRI_INV_2 (in province_iri varchar) returns varchar .
-create iri class northwind:provincedoc_iri using
-    function DB.DBA.PROVINCEDOC_IRI (in province_id varchar, in province_id2 varchar) returns varchar,
-    function DB.DBA.PROVINCEDOC_IRI_INV_1 (in province_iri varchar) returns varchar,
-    function DB.DBA.PROVINCEDOC_IRI_INV_2 (in province_iri varchar) returns varchar .
-create iri class northwind:country_iri using
-    function DB.DBA.COUNTRY_IRI (in country_id varchar) returns varchar,
-    function DB.DBA.COUNTRY_IRI_INVERSE (in country_iri varchar) returns varchar .
-create iri class northwind:countrydoc_iri using
-    function DB.DBA.COUNTRYDOC_IRI (in country_id varchar) returns varchar,
-    function DB.DBA.COUNTRYDOC_IRI_INVERSE (in country_iri varchar) returns varchar .
-create iri class northwind:employeephoto_iri using
-    function DB.DBA.EMPLOYEEPHOTO_IRI (in employeephoto_id integer) returns varchar,
-    function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in employeephoto_iri varchar) returns integer .
-create iri class northwind:categoryphoto_iri using
-    function DB.DBA.CATEGORYPHOTO_IRI (in categoryphoto_id integer) returns varchar,
-    function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in categoryphoto_iri varchar) returns integer .
-create iri class northwind:flag_iri using
-    function DB.DBA.FLAG_IRI (in flag_id varchar) returns varchar,
-    function DB.DBA.FLAG_IRI_INVERSE (in flag_iri varchar) returns varchar .
-create iri class northwind:flagdoc_iri using
-    function DB.DBA.FLAGDOC_IRI (in flag_id varchar) returns varchar,
-    function DB.DBA.FLAGDOC_IRI_INVERSE (in flag_iri varchar) returns varchar .
+create iri class northwind:Phone "tel:%s" (in phone_number varchar) .
+create iri class northwind:Fax "fax:%s" (in fax_number varchar) .
 ;
 
 SPARQL
@@ -626,13 +151,13 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContact-CustomerContact;
                         foaf:name customers.ContactName
                                 as virtrdf:CustomerContact-contact_name ;
-                        foaf:phone customers.Phone
+                        foaf:phone northwind:Phone (customers.Phone)
                                 as virtrdf:CustomerContact-foaf_phone ;
                         northwind:is_contact_at northwind:Customer (customers.CustomerID)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
                                 as virtrdf:CustomerContact-country ;
-                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:CustomerContactDoc (customers.CustomerID)
                         a northwind:CustomerContactDoc
@@ -641,7 +166,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerContactDoc-foaf_DocCustomerID ;
                         foaf:primaryTopic northwind:CustomerContact (customers.CustomerID)
                                 as virtrdf:CustomerContactDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:customercontactdoc_iri (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -668,7 +193,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
                                 as virtrdf:Product-discontinued ;
-                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:ProductDoc (products.ProductID)
                         a northwind:ProductDoc
@@ -677,7 +202,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ProductDoc-foaf_DocProductID ;
                         foaf:primaryTopic northwind:Product (products.ProductID)
                                 as virtrdf:ProductDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:productdoc_iri (products.ProductID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Category (products.CategoryID)
                         northwind:category_of northwind:Product (products.ProductID) as virtrdf:Product-category_of .
@@ -696,9 +221,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-contact_title ;
                         northwind:address suppliers.Address
                                 as virtrdf:Supplier-address ;
-                        northwind:city suppliers.City
-                                as virtrdf:Supplier-city ;
-                        northwind:dbpedia_city northwind:dbpedia_iri(suppliers.City)
+                        northwind:city northwind:dbpedia_iri(suppliers.City)
                                 as virtrdf:Supplier-dbpediacity ;
                         northwind:region suppliers.Region
                                 as virtrdf:Supplier-region ;
@@ -706,13 +229,13 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-postal_code ;
                         northwind:country northwind:Country(suppliers.Country)
                                 as virtrdf:Supplier-country ;
-                        northwind:phone suppliers.Phone
+                        northwind:phone northwind:Phone (suppliers.Phone)
                                 as virtrdf:Supplier-phone ;
-                        northwind:fax suppliers.Fax
+                        northwind:fax northwind:Fax (suppliers.Fax)
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
                                 as virtrdf:Supplier-home_page ;
-                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:SupplierDoc (suppliers.SupplierID)
                         a northwind:SupplierDoc
@@ -721,7 +244,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:SupplierDoc-foaf_DocSupplierID ;
                         foaf:primaryTopic northwind:Supplier (suppliers.SupplierID)
                                 as virtrdf:SupplierDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:supplierdoc_iri (suppliers.SupplierID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Country (suppliers.Country)
                         northwind:is_country_of
@@ -736,7 +259,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Category-description ;
 			foaf:img northwind:CategoryPhoto(categories.CategoryID)
                                 as virtrdf:Category-categories.CategoryPhoto ;
-                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) .
+                        rdfs:isDefinedBy northwind: .
 				
                 northwind:CategoryDoc (categories.CategoryID)
                         a northwind:CategoryDoc
@@ -745,21 +268,21 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CategoryDoc-foaf_DocCategoryID ;
                         foaf:primaryTopic northwind:Category (categories.CategoryID)
                                 as virtrdf:CategoryDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:categorydoc_iri (categories.CategoryID) .
+                        rdfs:isDefinedBy northwind: .
 
 				northwind:CategoryPhoto(categories.CategoryID)
 						a northwind:CategoryPhoto
                                 as virtrdf:Category-categories.CategoryPhotoID ;
-                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Shipper (shippers.ShipperID)
                         a northwind:Shipper
                                 as virtrdf:Shipper-ShipperID ;
                         northwind:companyName shippers.CompanyName
                                 as virtrdf:Shipper-company_name ;
-                        northwind:phone shippers.Phone
+                        northwind:phone northwind:Phone (shippers.Phone)
                                 as virtrdf:Shipper-phone ;
-                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:ShipperDoc (shippers.ShipperID)
                         a northwind:ShipperDoc
@@ -768,7 +291,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ShipperDoc-foaf_DocShipperID ;
                         foaf:primaryTopic northwind:Shipper (shippers.ShipperID)
                                 as virtrdf:ShipperDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:shipperdoc_iri (shippers.ShipperID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Customer (customers.CustomerID)
                         a  northwind:Customer
@@ -789,21 +312,19 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-contact_title ;
                         northwind:address customers.Address
                                 as virtrdf:Customer-address ;
-                        northwind:city customers.City
-                                as virtrdf:Customer-city ;
-                        northwind:dbpedia_city northwind:dbpedia_iri(customers.City)
+                        northwind:city northwind:dbpedia_iri(customers.City)
                                 as virtrdf:Customer-dbpediacity ;
                         northwind:region customers.Region
                                 as virtrdf:Customer-region ;
                         northwind:PostalCode customers.PostalCode
                                 as virtrdf:Customer-postal_code ;
-                        foaf:phone customers.Phone
+                        foaf:phone northwind:Phone (customers.Phone)
                                 as virtrdf:Customer-foaf_phone ;
-                        northwind:phone customers.Phone
+                        northwind:phone northwind:Phone (customers.Phone)
                                 as virtrdf:Customer-phone ;
-                        northwind:fax customers.Fax
+                        northwind:fax northwind:Fax (customers.Fax)
                                 as virtrdf:Customer-fax ;
-                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:CustomerDoc (customers.CustomerID)
                         a  northwind:CustomerDoc
@@ -812,7 +333,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CustomerDoc-CustomerID3 ;
                         foaf:primaryTopic northwind:Customer (customers.CustomerID)
                                 as virtrdf:CustomerDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:customerdoc_iri (customers.CustomerID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Country (customers.Country)
                         northwind:is_country_of
@@ -843,9 +364,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-hire_date ;
                         northwind:address employees.Address
                                 as virtrdf:Employee-address ;
-                        northwind:city employees.City
-                                as virtrdf:Employee-city ;
-                        northwind:dbpedia_city northwind:dbpedia_iri(employees.City)
+                        northwind:city northwind:dbpedia_iri(employees.City)
                                 as virtrdf:Employee-dbpediacity ;
                         northwind:region employees.Region
                                 as virtrdf:Employee-region ;
@@ -863,7 +382,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-reports_to ;
 			foaf:img northwind:EmployeePhoto(employees.EmployeeID)                                                                                                      
                                 as virtrdf:Employee-employees.EmployeePhoto ;
-                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:EmployeeDoc (employees.FirstName, employees.LastName, employees.EmployeeID)
                         a  northwind:EmployeeDoc
@@ -872,12 +391,12 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:EmployeeDoc-EmployeeID3 ;
                         foaf:primaryTopic northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID)
                                 as virtrdf:EmployeeDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:employeedoc_iri (employees.EmployeeID) .
+                        rdfs:isDefinedBy northwind: .
 
 				northwind:EmployeePhoto(employees.EmployeeID)
 						a northwind:EmployeePhoto
                                 as virtrdf:Employee-employees.EmployeePhotoId ;
-                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of
@@ -910,9 +429,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_name ;
                         northwind:shipAddress orders.ShipAddress
                                 as virtrdf:Order-ship_address ;
-                        northwind:shipCity orders.ShipCity
-                                as virtrdf:Order-ship_city ;
-                        northwind:dbpedia_shipCity northwind:dbpedia_iri(orders.ShipCity)
+                        northwind:shipCity northwind:dbpedia_iri(orders.ShipCity)
                                 as virtrdf:Order-dbpediaship_city ;
                         northwind:shipRegion orders.ShipRegion
                                 as virtrdf:Order-ship_region ;
@@ -920,7 +437,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country ;
-                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:OrderDoc (orders.OrderID)
                         a  northwind:OrderDoc
@@ -929,7 +446,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderDoc-OrderID3 ;
                         foaf:primaryTopic northwind:Order (orders.OrderID)
                                 as virtrdf:OrderDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:orderdoc_iri (orders.OrderID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Country (orders.ShipCountry)
                         northwind:is_ship_country_of
@@ -954,7 +471,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
                                 as virtrdf:OrderLine-discount ;
-                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) .
+                        rdfs:isDefinedBy northwind: .
                                 
                 northwind:OrderLineDoc (order_lines.OrderID, order_lines.ProductID)
                         a  northwind:OrderLineDoc
@@ -963,7 +480,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:OrderLineDoc-OrderLineID3 ;
                         foaf:primaryTopic northwind:OrderLine (order_lines.OrderID, order_lines.ProductID)
                                 as virtrdf:OrderLineDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:orderlinedoc_iri (order_lines.OrderID, order_lines.ProductID) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Order (orders.OrderID)
                         northwind:is_order_of
@@ -995,7 +512,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng ;
-                        rdfs:isDefinedBy northwind:country_iri (countries.Name) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:CountryDoc (countries.Name)
                         a  northwind:CountryDoc
@@ -1004,7 +521,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:CountryDoc-CountryID3 ;
                         foaf:primaryTopic northwind:Country (countries.Name)
                                 as virtrdf:CountryDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:countrydoc_iri (countries.Name) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Country (countries.Name)
                         northwind:has_province
@@ -1017,7 +534,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
                                 as virtrdf:Province-ProvinceName ;
-                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:ProvinceDoc (provinces.CountryCode, provinces.Province)
                         a  northwind:ProvinceDoc
@@ -1026,7 +543,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:ProvinceDoc-ProvinceID3 ;
                         foaf:primaryTopic northwind:Province (provinces.CountryCode, provinces.Province)
                                 as virtrdf:ProvinceDoc-foaf_primarytopic ;
-                        rdfs:isDefinedBy northwind:provincedoc_iri (provinces.CountryCode, provinces.Province) .
+                        rdfs:isDefinedBy northwind: .
 
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         northwind:is_province_of
@@ -1034,34 +551,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
         }.
 }.
 ;
-
-create procedure DB.DBA.REMOVE_DEMO_RDF_DET()
-{
-  declare colid int;
-  colid := DAV_SEARCH_ID('/DAV/home/demo/', 'C');
-  if (colid < 0)
-    return;
-  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
-}
-;
-
-DB.DBA.REMOVE_DEMO_RDF_DET();
-
-drop procedure DB.DBA.REMOVE_DEMO_RDF_DET;
-
-create procedure DB.DBA.NORTHWIND_MAKE_RDF_DET()
-{
-    declare uriqa_str varchar;
-    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-    uriqa_str := 'http://' || uriqa_str || '/Northwind';
-    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/RDFData/', uriqa_str, NULL);
-    VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
-    DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
-}
-;
-
-DB.DBA.NORTHWIND_MAKE_RDF_DET();
-drop procedure DB.DBA.NORTHWIND_MAKE_RDF_DET;
 
 delete from DB.DBA.URL_REWRITE_RULE_LIST where urrl_list like 'demo_nw%';
 delete from DB.DBA.URL_REWRITE_RULE where urr_rule like 'demo_nw%';
