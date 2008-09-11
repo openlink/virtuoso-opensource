@@ -323,7 +323,10 @@ void
 shcompo_compile__qr(shcompo_t *shc, query_instance_t *qi, void *env)
 {
   caddr_t txt = ((caddr_t *)(shc->shcompo_key))[0];
+  long saved_mrows = qi->qi_client->cli_resultset_max_rows;
+  qi->qi_client->cli_resultset_max_rows = -1;
   shc->shcompo_data = sql_compile (txt, qi->qi_client, &(shc->shcompo_error), 0);
+  qi->qi_client->cli_resultset_max_rows = saved_mrows;
 }
 
 int
@@ -338,7 +341,10 @@ shcompo_recompile__qr (shcompo_t *old_shc, shcompo_t *new_shc)
 {
   query_t *qr = (query_t *)(old_shc->shcompo_data);
   query_t *new_qr;
+/*  long saved_mrows = bootstrap_cli->cli_resultset_max_rows;*/
+  bootstrap_cli->cli_resultset_max_rows = -1;
   new_qr = qr_recompile (qr, &(new_shc->shcompo_error));
+/*  bootstrap_cli->cli_resultset_max_rows = saved_mrows; */
   new_shc->shcompo_data = new_qr;
 }
 
@@ -416,7 +422,7 @@ bif_exec_shcompo_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t txt = bif_string_arg (qst, args, 0, "bif_exec_shcompo_test");
   caddr_t err = NULL;
-  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, list (3, txt, 11, 22), 1, qi, NULL, &err);
+  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, list (4, txt, (ptrlong)11, (ptrlong)22, (ptrlong)0), 1, qi, NULL, &err);
   if (NULL != err)
     sqlr_resignal (err);
   shcompo_recompile_if_needed (&shc);
