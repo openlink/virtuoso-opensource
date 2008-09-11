@@ -297,9 +297,12 @@ public class VirtuosoConnection implements Connection
 #endif
 	 socket = new Socket(host,port);
 	 socket.setSoTimeout(timeout*1000);
+	 socket.setTcpNoDelay(true);
+         socket.setReceiveBufferSize(32768);
+
          // Get streams corresponding to the socket
-         in = new VirtuosoInputStream(this,socket,4096);
-	 out = new VirtuosoOutputStream(this,socket,2048);
+         in = new VirtuosoInputStream(this,socket, 32768);
+	 out = new VirtuosoOutputStream(this,socket, 32768);
          // RPC caller identification
 	 synchronized (this)
 	   {
