@@ -23,6 +23,8 @@ public class SQLConnection implements ServerConnection {
 			statement = conn.createStatement();
 			
 			statement.setQueryTimeout(TestDriverDefaultValues.timeoutInMs/1000);
+                        statement.setFetchSize(TestDriverDefaultValues.fetchSize);
+
 		} catch(SQLException e) {
 			while(e!=null) {
 				e.printStackTrace();
