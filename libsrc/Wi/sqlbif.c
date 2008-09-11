@@ -7728,7 +7728,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  they_match = boxes_match (wide, value);
 	  dk_free_box (wide);
 	}
-      else if (item_dtp != val_dtp)
+      else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
 	{
 	  caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
 	  if (*err_ret)
