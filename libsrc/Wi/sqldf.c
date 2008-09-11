@@ -3910,7 +3910,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
   float sub_arity = 1;
   if (!dfe)
     return 1;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 128))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 1000))
     sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow");
   while (dfe->dfe_prev)
     {
