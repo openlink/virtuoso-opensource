@@ -86,6 +86,8 @@ public class SQLConnection implements ServerConnection {
 		String queryString = query.getQueryString();
 		byte queryType = query.getQueryType();
 		int queryNr = query.getNr();
+		if (query.source.querySyntax == TestDriver.VIRTUOSO_FAMILY && query.source.queryLang == TestDriver.SPARQL_LANG)
+			queryString = "SPARQL define input:default-graph-uri <" + query.source.defaultGraph + "> " + queryString;
 		
 		try {
 			long start = System.nanoTime();
