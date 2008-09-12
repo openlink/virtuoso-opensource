@@ -1,0 +1,10 @@
+select * from (
+SELECT distinct  o.nr, o.price
+FROM offer o, vendor v
+WHERE o.product=@ProductXYZ@ 
+	AND o.deliveryDays<=3 AND v.country='US'
+	AND o.validTo>to_date ('@currentDate@', 'YYYY-MM-DD') AND o.vendor=v.nr
+Order BY o.price)
+where rownum < 11
+
+

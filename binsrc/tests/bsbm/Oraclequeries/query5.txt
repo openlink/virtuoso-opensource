@@ -1,0 +1,11 @@
+select * from (
+SELECT distinct  p.nr, p.label
+FROM product p, product po,
+    (Select distinct ptp1.product FROM producttypeproduct ptp1, (SELECT productType FROM producttypeproduct WHERE product=@ProductXYZ@) ptp2 WHERE ptp2.productType=ptp1.productType) ptp, productfeatureproduct pfp
+WHERE p.nr=ptp.product AND p.nr=pfp.product AND po.nr=@ProductXYZ@ AND p.nr<>po.nr
+	AND p.propertyNum1<(po.propertyNum1+120) AND p.propertyNum1>(po.propertyNum1-120)
+	AND p.propertyNum2<(po.propertyNum2+170) AND p.propertyNum2>(po.propertyNum2-170)
+	AND pfp.productFeature IN (SELECT productFeature FROM productfeatureproduct WHERE product=@ProductXYZ@)
+ORDER BY p.label)
+where rownum < 6
+
