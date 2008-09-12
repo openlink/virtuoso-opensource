@@ -882,17 +882,22 @@ f2_v_is_U:
   s1_tail = s1;
   for (;;)
     {
-      if (!isplainURIchar (s1_tail[0]))
+      if (isplainURIchar (s1_tail[0]))
         {
+          s1_tail++;
+          continue;
+        }
+      if (('%' == s1_tail[0]) && isxdigit (s1_tail[1]) && isxdigit (s1_tail[2]))
+        {
+          s1_tail += 3;
+          continue;
+        }
           if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
             goto tails_are_in_sync; /* see below */
           if ('\0' == f2_tail[0])
             return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
           return SFF_ISECT_DISJOIN;
         }
-      else
-        s1_tail++;
-    }
   GPF_T; /* never reached */
 
 f2_v_is_d:
