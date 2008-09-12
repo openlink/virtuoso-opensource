@@ -299,6 +299,7 @@ public class VirtuosoConnection implements Connection
 	 socket.setSoTimeout(timeout*1000);
 	 socket.setTcpNoDelay(true);
          socket.setReceiveBufferSize(32768);
+         socket.setSendBufferSize(32768);
 
          // Get streams corresponding to the socket
          in = new VirtuosoInputStream(this,socket, 32768);
