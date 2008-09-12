@@ -4,7 +4,7 @@ public class CompiledQuery {
         public final Query source;
 	private String queryString;
 	private String encodedParamString;
-	private int nr;
+//	private int nr;
 	int queryMix;
 	CompiledQuery(Query source, String queryString, String encodedParamString) {
 		this.source = source;
@@ -31,15 +31,15 @@ public class CompiledQuery {
 		return source.queryType;
 	}
 
-	public int getQueryMix() {
-		return queryMix;
-	}
+//	public int getQueryMix() {
+//		return queryMix;
+//	}
 
-	public void setQueryMix(int queryMix) {
-		this.queryMix = queryMix;
-	}
+//	public void setQueryMix(int queryMix) {
+//		this.queryMix = queryMix;
+//	}
 
 	public int getNr() {
-		return nr;
+		return source.getNr();
 	}
 }
