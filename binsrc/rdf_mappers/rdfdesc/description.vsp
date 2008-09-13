@@ -91,7 +91,7 @@
           <?vsp if (white_page = 0) http ('at <a href="http://dbpedia.org/">DBpedia.org</a>'); ?>
         </div>
         <div class="page-resource-uri">
-	  <label for="page_res_uri">Description of:</label> <a id="page_res_uri" href="<?=page_resource_uri?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
+	  <label for="page_res_uri">About Resource:</label> <a id="page_res_uri" href="<?=page_resource_uri?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -175,7 +175,7 @@ skip_rev:
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || '&output=n3'?>">N3</a> |
         <a href="<?=rdf_link || '&output=xml'?>">RDF/XML</a>
-        &nbsp; &nbsp;<a href="http://www.openlinksw.com/virtuoso">About</a>&nbsp; &nbsp;
+        &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
