@@ -208,12 +208,12 @@ ECHO BOTH ": member i=[{k:l}] " $LAST[1] "\n";
 
 DB.DBA.RDF_OBJ_FT_RULE_ADD (null,null,'all');
 VT_INC_INDEX_DB_DBA_RDF_OBJ();
-sparql select count (1) where { graph <http://www.openlinksw.com/schemas/virtrdf#> { <http://www.openlinksw.com/virtrdf-data-formats#multipart-uri> <http://www.openlinksw.com/schemas/virtrdf#qmfStrsqlvalOfShortTmpl> ?o . ?o bif:contains "sprintf" }};
+sparql select count (1) where { graph <http://www.openlinksw.com/schemas/virtrdf#> { <http://www.openlinksw.com/virtrdf-data-formats#multipart-uri> <http://www.openlinksw.com/schemas/virtrdf#qmfStrsqlvalOfShortTmpl> ?o . ?o bif:contains "'__spfi'" }};
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": search for word in a single graph " $LAST[1] "\n";
 
-sparql select count (1) where { <http://www.openlinksw.com/virtrdf-data-formats#multipart-uri> <http://www.openlinksw.com/schemas/virtrdf#qmfStrsqlvalOfShortTmpl> ?o . ?o bif:contains "sprintf" };
+sparql select count (1) where { <http://www.openlinksw.com/virtrdf-data-formats#multipart-uri> <http://www.openlinksw.com/schemas/virtrdf#qmfStrsqlvalOfShortTmpl> ?o . ?o bif:contains "'__spfi'" };
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": search for word in all graphs " $LAST[1] "\n";
