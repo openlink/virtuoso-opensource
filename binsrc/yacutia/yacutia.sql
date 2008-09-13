@@ -5366,26 +5366,6 @@ create procedure view URL_REWRITE_LIST_DUMP as URL_REWRITE_LIST_DUMP (rule_list)
 	U_TARGET_EXPR varchar, U_ACCEPT_PATTERN varchar,
 	U_NO_CONTINUATION int, U_HTTP_REDIRECT int, U_HTTP_HEADERS varchar);
 
--- lte (x, y)
-create procedure YAC_VER_LTE (in x varchar, in y varchar)
-{
-  declare xx, yy any;
-  xx := split_and_decode (x, 0, '\0\0.');
-  yy := split_and_decode (y, 0, '\0\0.');
-  if (length (xx) <> length (yy))
-    return 0;
-  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
-    {
-      declare xi, yi int;
-      xi := atoi (xx[i]);
-      yi := atoi (yy[i]);
-      if (gt (xi, yi))
-	return 0;
-    }
-  return 1;
-}
-;
-
 create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 {
   declare vads, name, ver, arr, isdav any;
@@ -5470,7 +5450,7 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	nisdav := 1;
       if ((pos := position (nlist[i], ilist)))
 	{
-	  if (YAC_VER_LTE (ilist[pos][2], nlist[i+1][0]) and ilist[pos][9] = nisdav)
+	  if (VAD.DBA.VERSION_COMPARE (ilist[pos][2], nlist[i+1][0]) = -1 and ilist[pos][9] = nisdav)
 	    {
 	      ilist[pos][6] := nlist[i+1][0];
 	      ilist[pos][7] := nlist[i+1][1];
