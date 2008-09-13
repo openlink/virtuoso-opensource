@@ -1,3 +1,29 @@
+2008-09-13 20:40  source
+
+	* Updated version to 5.0.9-rc3
+
+2008-09-13 20:39  source
+
+	* Fixed problem comparing VAD version numbers
+
+2008-09-13 20:27  source
+
+	* Fixed table names to recover from all-lowercase spelling
+
+2008-09-13 20:26  source
+
+	* Fixed title or resource URI to "About Resource"
+	* Changed About: link destination href to http://ode.openlinksw.com
+
+2008-09-13 17:41  source
+
+	* Fixed needless calls to _all_eq when multiple eqs on a col
+	* Fixed redundant invariant preds
+
+2008-09-13 17:38  source
+
+	* Fixed shorter names of iri funcs
+
 2008-09-13 09:08  source
 
 	* Updated version to 5.0.9-rc2
