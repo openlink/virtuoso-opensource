@@ -580,6 +580,7 @@ extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in real parse trees! */
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options);
+extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode);

@@ -1173,7 +1173,7 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 
 spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')'	*/
 	: REGEX_L _LPAR spar_expn _COMMA spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (2, $3, $5)); }
+		{ $$ = spar_make_regex_or_like_or_eq (sparp_arg, $3, $5); }
 	| REGEX_L _LPAR spar_expn _COMMA spar_expn _COMMA spar_expn _RPAR
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (3, $3, $5, $7)); }
 	;
