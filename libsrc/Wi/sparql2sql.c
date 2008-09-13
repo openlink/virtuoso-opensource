@@ -3830,11 +3830,65 @@ sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_ma
   return 1;
 }
 
+static void
+sparp_try_reuse_tabid_in_join_via_key_qname (sparp_t *sparp, SPART *curr, int base_idx, qm_value_t *key_qmv, ccaddr_t qname)
+{
+  SPART *base = curr->_.gp.members[base_idx];
+  int dep_triple_idx, memb_count = BOX_ELEMENTS (curr->_.gp.members);
+  for (dep_triple_idx = base_idx; dep_triple_idx < memb_count; dep_triple_idx++)
+    {
+      int dep_field_idx;
+      SPART *dep_triple = curr->_.gp.members[dep_triple_idx];
+      quad_map_t *dep_qm;
+      if (SPAR_TRIPLE != SPART_TYPE (dep_triple))
+        continue;
+      if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list))
+        continue;
+      if (!strcmp (base->_.triple.tabid, dep_triple->_.triple.tabid))
+        continue; /* tabid is already reused */
+      dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
+      for (dep_field_idx = 0; dep_field_idx < SPART_TRIPLE_FIELDS_COUNT; dep_field_idx++)
+        {
+          qm_value_t *dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_idx);
+          SPART *dep_field;
+          int dep_field_type;
+          if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
+            continue;
+          dep_field = dep_triple->_.triple.tr_fields[dep_field_idx];
+          dep_field_type = SPART_TYPE (dep_field);
+          if (SPAR_QNAME == dep_field_type)
+            {
+              if (strcmp (qname, dep_field->_.lit.val))
+                continue;
+            }
+          else if ((SPAR_VARIABLE == dep_field_type) || (SPAR_BLANK_NODE_LABEL == dep_field_type))
+            {
+              if (((SPART_VARR_FIXED | SPART_VARR_IS_IRI) != ((SPART_VARR_FIXED | SPART_VARR_IS_IRI) & dep_field->_.var.rvr.rvrRestrictions)) ||
+                strcmp (qname, dep_field->_.var.rvr.rvrFixedValue) )
+                continue;
+            }
+          else
+            continue;
+          /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+          sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
+          if (dep_triple_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep_triple is of zero importance because there's no more dep_triple as a separate subtable */
+            {
+              int swap_ctr;
+              for (swap_ctr = dep_triple_idx; swap_ctr > (base_idx + 1); swap_ctr--)
+                curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
+              curr->_.gp.members[base_idx + 1] = dep_triple;
+            }
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+          break;
+        }
+    }
+}
 
 void
 sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
 {
-  SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
+  SPART *base = curr->_.gp.members[base_idx];
   quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
   int key_field_idx;
           for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
@@ -3844,12 +3898,23 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
               qm_value_t *key_qmv;
               sparp_equiv_t *key_eq;
               int dep_ctr;
+      int key_field_type;
               sparp_jso_validate_format (sparp, key_fmt);
-              if (!SPAR_IS_BLANK_OR_VAR (key_field)) /* Non-variables can not result in tabid reuse atm, !!!TBD: support for { <pk> ?p1 ?o1 . <pk> ?p2 ?o2 } */
-                continue;
+      key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
+      if (NULL == key_qmv)
+        continue; /* Const field of mapping can add a filter but can not specify a unique key of row */
               key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
               if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
                 continue;
+      key_field_type = SPART_TYPE (key_field);
+      if ((SPAR_BLANK_NODE_LABEL != key_field_type) && (SPAR_VARIABLE != key_field_type))
+        {
+          if (SPAR_QNAME == key_field_type)
+            sparp_try_reuse_tabid_in_join_via_key_qname (sparp, curr, base_idx, key_qmv, key_field->_.lit.val);
+          continue;
+        }
+      if ((SPART_VARR_FIXED | SPART_VARR_IS_IRI) == ((SPART_VARR_FIXED | SPART_VARR_IS_IRI) & key_field->_.var.rvr.rvrRestrictions))
+        sparp_try_reuse_tabid_in_join_via_key_qname (sparp, curr, base_idx, key_qmv, key_field->_.var.rvr.rvrFixedValue);
               key_eq = sparp_equiv_get (sparp, curr, key_field, SPARP_EQUIV_GET_ASSERT);
               if (2 > key_eq->e_gspo_uses) /* No reuse of key -- no reuse of triples */
                 continue;
