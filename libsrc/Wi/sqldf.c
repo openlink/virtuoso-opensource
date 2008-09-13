@@ -59,14 +59,14 @@ sql_tree_hash_1 (ST * st)
   switch (dtp)
     {
     case DV_LONG_INT:
-      return (uint32)(ptrlong)st;
+      return (uint32)(ptrlong) unbox ((caddr_t)st);
     case DV_STRING: 
     case DV_C_STRING:
     case DV_SYMBOL:
     case DV_UNAME:
       {
 	char * str = (char *)st;
-	int len = box_length ((caddr_t)st);
+	int len = box_length ((caddr_t)st) - 1;
 	uint32 hash = 1234567;
 	if (len > 10)
 	  {
@@ -2191,6 +2191,23 @@ cmp_max_func (int op)
 }
 
 
+int
+sqlo_not_eq_with_any (sqlo_t * so, dk_set_t args, df_elt_t *right)
+{
+  /* if the arg is a col and it is not known eq with any of the args */
+  if (DFE_COLUMN != right->dfe_type)
+    return 1;
+  DO_SET (df_elt_t *, other, &args)
+    {
+      if (DFE_COLUMN == other->dfe_type 
+	  && sqlo_is_col_eq  (so->so_this_dt, other, right))
+	return 0;
+    }
+  END_DO_SET();
+  return 1;
+}
+
+
 df_elt_t *
 sqlo_merge_dfe (sqlo_t *so, df_elt_t * pred, dk_set_t merge_with, int allow_contr)
 {
@@ -2215,9 +2232,15 @@ sqlo_merge_dfe (sqlo_t *so, df_elt_t * pred, dk_set_t merge_with, int allow_cont
 		cnst = right;
 	    }
 	}
+      if (!dk_set_member (args, (void*)right)
+	  && sqlo_not_eq_with_any (so, args, right))
+	{
       t_set_push (&args, right);
     }
+    }
   END_DO_SET();
+  if (!args->next)
+    return NULL;
   arg_tree = (ST**)  t_list_to_array (args);
   DO_BOX (df_elt_t *, arg, inx, arg_tree)
     {
@@ -2232,6 +2255,7 @@ dk_set_t
 sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t *to_place)
 {
   /* equalities of same col */
+  df_elt_t * merge_dfe;
   dk_set_t res = NULL;
   dk_set_t merged = NULL;
   DO_SET (df_elt_t *, pred, &col_preds)
@@ -2257,10 +2281,10 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 	    }
 	  END_DO_SET();
 	}
-      if (merged_with)
+      if (merged_with
+	  && (merge_dfe = sqlo_merge_dfe (so, pred, merged_with, !tb_dfe->_.table.ot->ot_is_outer)))
 	{
 	  df_elt_t * new_pred = sqlo_new_dfe (so, DFE_BOP_PRED, NULL);
-	  df_elt_t * merge_dfe = sqlo_merge_dfe (so, pred, merged_with, !tb_dfe->_.table.ot->ot_is_outer);
 	  t_set_push (&merged, (void*) pred);
 	  if (merge_dfe == (df_elt_t *) MERGE_CONTRADICTION)
 	    return ((dk_set_t) MERGE_CONTRADICTION);
@@ -3651,6 +3675,8 @@ sqlo_tb_check_invariant_preds (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 		  NULL != (pred_invariant = sqlo_preds_make_invariant (so, tb_dfe, pred, pred2)))
 
 		{
+		  df_elt_t * val = sqlo_const_cond (so, pred_invariant);
+		  if (DFE_TRUE != val)
 		  t_set_push (&so->so_this_dt->ot_invariant_preds, pred_invariant);
 		}
 	    }
