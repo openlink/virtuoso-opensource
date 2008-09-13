@@ -34,7 +34,8 @@ EXTRA_DIST= \
 	queries/*.txt \
 	run_javac.sh \
 	run_test.sh \
-	SQLQueries/*.txt \
+	SQLqueries/*.txt \
+	Oraclequeries/*.txt \
 	src/benchmark/generator/*.java \
 	src/benchmark/model/*.java \
 	src/benchmark/serializer/*.java \
