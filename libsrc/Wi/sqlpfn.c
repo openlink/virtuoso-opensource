@@ -2078,7 +2078,7 @@ sqlp_patch_call_if_special (ST * funcall_tree)
       goto generic_check;
     }
 #endif
-  if (0 == strnicmp (call_name, "IRI_TO_ID", 9)
+  if (0 == strnicmp (call_name, "__I2ID", 6)
       && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
