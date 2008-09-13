@@ -4038,7 +4038,7 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
   if (ssg->ssg_where_l_printed)
     {
       ssg_newline (0);
-      ssg_puts ("AND");
+      ssg_puts ("AND ");
     }
   else if (NULL != ssg->ssg_where_l_text)
     {
