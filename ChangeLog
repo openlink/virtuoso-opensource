@@ -1,3 +1,358 @@
+2008-09-13 09:08  source
+
+	* Updated version to 5.0.9-rc2
+
+2008-09-13 09:05  source
+
+	* Added spar_make_regex_or_like_or_eq() optimization
+
+2008-09-13 07:47  source
+
+	* Added missing files
+
+2008-09-13 07:18  source
+
+	* Fixed test to reflect changes in metadata
+
+2008-09-13 07:16  source
+
+	* Fixed problem with where_or_and codegen in NDEBUG
+
+2008-09-13 00:34  source
+
+	* Added detection of self-join on key values that are equal to same
+	  constant QName
+
+2008-09-13 00:34  source
+
+	* Fixed SQL generation in NDEBUG build
+
+2008-09-12 13:57  source
+
+	* Fixed problem with multithreaded jdbc/spasql run
+
+2008-09-12 13:57  source
+
+	* Added queries for Oracle
+
+2008-09-12 09:19  source
+
+	* Fixed problem ...Country/Saint%20Lucia#this is not sff_like
+	  ...Country/%U#this
+
+2008-09-12 09:16  source
+
+	* Regenerated
+
+2008-09-12 06:27  source
+
+	* Rebuild drivers
+
+2008-09-12 06:24  source
+
+	* Fixed problem with multithreaded SQL runs
+
+2008-09-11 23:06  source
+
+	* Updated version to 5.0.9-rc1
+
+2008-09-11 23:05  source
+
+	* Fixed compiler warnings
+
+2008-09-11 23:04  source
+
+	* Added support for define sql:describe-mode "SPO"
+	* Fixed SQL generation in NDEBUG build
+
+2008-09-11 23:03  source
+
+	* Fixed problem with tsparql_demo.sh
+
+2008-09-11 23:02  source
+
+	* Fixed use of isDefinedBy to show definition source
+	* Fixed use of dbpediaIRIs for city
+	* Fixed use of address schema e.g. tel: and fax:
+	* Removed redundant dbpedia_city
+
+2008-09-11 15:51  source
+
+	* Regenerated driver
+
+2008-09-11 15:51  source
+
+	* Added TCPNoDelay
+	* Fixed send/recieve buffer size
+
+2008-09-11 15:15  source
+
+	* Added support for setting fetchbuffer
+
+2008-09-11 13:06  source
+
+	* Fixed sampling; distinct count of an int col cannot be more than the
+	  difference of max and min
+
+2008-09-11 13:03  source
+
+	* Fixed longer buffersize for dkses with settable length
+
+2008-09-11 08:36  source
+
+	* Fixed alter table modify column checks for change in nullable flag that
+	  affect layout
+
+2008-09-11 08:35  source
+
+	* Fixed for integer columns do not allow random stats to generate
+	  distinct > max-min
+
+2008-09-11 08:34  source
+
+	* Fixed IN cast for non-null args only
+
+2008-09-11 08:33  source
+
+	* Fixed size to allow for calling sql_new_error and descendants
+
+2008-09-11 08:30  source
+
+	* Added cumulative time of query in the run
+
+2008-09-11 08:30  source
+
+	* Fixed links_to for //a[@hrefs]
+
+2008-09-10 14:32  source
+
+	* Fixed indexes
+
+2008-09-10 12:17  source
+
+	* Fixed use of description page
+
+2008-09-10 12:07  source
+
+	* Fixed FROM <x> FROM NAMED <y> ... GRAPH <y> {...}
+
+2008-09-10 11:20  source
+
+	* Fixed XHTML compatibility
+	* Fixed bug with state/province field in Safari
+
+2008-09-10 11:19  source
+
+	* Added Filters (Rules)
+	* Fixed uninstall ODS API
+
+2008-09-10 11:18  source
+
+	* Fixed uninstall ODS API
+
+2008-09-10 11:18  source
+
+	* Fixed XHTML compatibility of weblog
+	* Fixed uninstall ODS API
+
+2008-09-10 11:17  source
+
+	* Fixed Publish/Subscribe WebDAV permissions
+	* Fixed uninstall ODS API
+	* Fixed tag search
+
+2008-09-10 11:16  source
+
+	* Added target name
+	* Fixed Upload/Replace
+	* Fixed JS error and optimize AJAX calls
+	* Fixed search and gems bugs
+
+2008-09-10 11:15  source
+
+	* Fixed Publish/Subscribe WebDAV permissions
+	* Fixed uninstall ODS API and added subscriptions
+	* Fixed tag search
+
+2008-09-10 11:14  source
+
+	* Fixed Publish/Subscribe WebDAV permissions
+	* Fixed uninstall ODS API
+
+2008-09-10 10:55  source
+
+	* Updated documentation
+
+2008-09-10 10:53  source
+
+	* Merged from upstream project
+
+2008-09-10 10:52  source
+
+	* Fixed support for re-compilation of queries if RDF views are changed
+
+2008-09-10 10:50  source
+
+	* Fixed IN predicate list now attempts cast when different datatypes
+
+2008-09-09 19:46  source
+
+	* Cleanups
+
+2008-09-09 19:44  source
+
+	* Added initial support for virtuoso JDBC SQL
+	* Added oracle ddl
+
+2008-09-09 10:07  source
+
+	* Rebuild provider
+
+2008-09-09 10:07  source
+
+	* Small enhancement
+
+2008-09-09 10:07  source
+
+	* Added test to make sure we can use manual commit
+
+2008-09-09 10:04  source
+
+	* Fixed serialize XHTML escape & etc in attribute values
+
+2008-09-09 10:02  source
+
+	* Merged latest fixes
+
+2008-09-09 09:41  source
+
+	* Updated documentation
+
+2008-09-08 08:37  source
+
+	* Added support for Accept header in /proxy/rdf
+
+2008-09-08 08:37  source
+
+	* Fixed remember the url where we started from and record the end of the
+	  redirect location
+
+2008-09-08 08:35  source
+
+	* Fixed bitmap index can not have more than one non-fixed column.
+
+2008-09-08 08:34  source
+
+	* Fixed reloading of an RDF view deletes old metadata triples
+
+2008-09-08 08:32  source
+
+	* Fixed removed commit in order to allow providers to do transactions
+
+2008-09-08 08:30  source
+
+	* Added caching of precompiled queries to SPARQL endpoint
+	* Added caching of precompiled queries for bif_exec()
+
+2008-09-08 08:25  source
+
+	* Fixed skip reverse links
+	* Fixed oai
+	* Fixed small bugs
+
+2008-09-08 08:21  source
+
+	* Fixed ignore sql_no_data_found returned by trigger
+
+2008-09-04 11:18  source
+
+	* Added hook for freeing content of hash table box
+
+2008-09-04 11:15  source
+
+	* Updated documentation
+
+2008-09-04 11:15  source
+
+	* Added doc iri classes
+
+2008-09-04 11:14  source
+
+	* Added /about[rdf|html] pattern for URLs
+
+2008-09-04 09:48  source
+
+	* Merged from upstream project
+
+2008-09-04 09:29  source
+
+	* Added /proxy/rdf rule to allow adding more rules by rdf_mappers/rdfdesc
+
+2008-09-04 09:28  source
+
+	* Added dba only PL function exec_as
+
+2008-09-04 09:26  source
+
+	* Added check if terms are mergeable ie all terms to be near and chain
+
+2008-09-04 09:14  source
+
+	* NS prefixes unification load all known NS prefixes in persistent store
+	* Fixed datasource attribution attributes for OAI
+	* Fixed references from demo.openlinksw.com to www.openlinksw.com
+	* Fixed grddl RDFa wikipedia mapper
+	* fixed handling rev propery in RDFa
+
+2008-09-04 09:09  source
+
+	* Added initial support to display an rdf object
+
+2008-09-04 08:58  source
+
+	* Added option to return rdf description when http resource is not found
+
+2008-09-04 08:57  source
+
+	* Added CustomerDoc
+	* Fixed too many params to output
+	* Fixed describe of one with #this and the one w/o #this
+	* Fixed dropping IRI classes before create solve some problems registering
+	* Fixed bad sprintf inverse format
+	* Fixed URL rewrite rules
+
+2008-09-04 08:54  source
+
+	* Fixed sparql compiler error
+
+2008-09-04 08:53  source
+
+	* Fixed grddl RDFa for wikipedia mapper
+
+2008-09-04 08:51  source
+
+	* Fixed leave background semaphore in order to do exit with sigint/sigterm
+
+2008-09-04 08:50  source
+
+	* Added initial support for parameterized query execution
+
+2008-09-04 08:49  source
+
+	* Fixed IRI for offers
+
+2008-08-28 09:46  source
+
+	* Regenerated driver
+
+2008-08-28 09:45  source
+
+	* Fixed problem replacing literal instead of appending language or type
+
+2008-08-27 14:13  source
+
+	* Merged latest fixes from BSBM project
+
 2008-08-27 10:35  source
 
 	* Updated version number to 5.0.8 for final release
