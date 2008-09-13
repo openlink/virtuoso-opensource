@@ -1775,7 +1775,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
         value = lit->_.lit.val;
+#ifdef NDEBUG
+          ssg_puts (" __bft (");
+#else
           ssg_puts (" /* QName as sqlval */ __box_flags_tweak (");
+#endif
           ssg_print_box_as_sql_atom (ssg, value, 0);
           ssg_puts (", 1)");
           return;
@@ -1788,7 +1792,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     }
   else if (DV_UNAME == lit_dtp)
     {
+#ifdef NDEBUG
+      ssg_puts (" __bft (");
+#else
       ssg_puts (" /* UNAME as sqlval */ __box_flags_tweak (");
+#endif
       ssg_print_box_as_sql_atom (ssg, lit, 0);
       ssg_puts (", 1)");
       return;
@@ -2310,10 +2318,10 @@ ssg_find_nullable_superformat (ssg_valmode_t fmt)
 }
 
 #define SSG_MAGIC_SPLIT_MULTIPART \
-	"^{comma-list-begin}^ sprintf_inverse (^{tree}^, ^{custom-string-1}^, 2)[^{N}^]^{as-name-N}^^{end}^"
+	"^{comma-list-begin}^ __spfinv (^{tree}^, ^{custom-string-1}^, 2)[^{N}^]^{as-name-N}^^{end}^"
 
 #define SSG_MAGIC_SPLIT_SINGLEPART \
-	" sprintf_inverse (^{tree}^, ^{custom-string-1}^, 2)[0]"
+	" __spfinv (^{tree}^, ^{custom-string-1}^, 2)[0]"
 
 caddr_t *
 ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tree_is_qname, ssg_valmode_t fmt)
@@ -2758,12 +2766,20 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
         if (arg1_restr_bits & SPART_VARR_NOT_NULL)
           {
+#ifdef NDEBUG
+            ssg_puts (" 1");
+#else
             ssg_puts (" 1 /* optimized BOUND */");
+#endif
             return;
           }
         if (arg1_restr_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
           {
+#ifdef NDEBUG
+            ssg_puts (" 0");
+#else
             ssg_puts (" 0 /* optimized BOUND */");
+#endif
             return;
           }
       if (top_filter_op)
@@ -2944,7 +2960,11 @@ IN_op_fnt_found:
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
+#ifdef NDEBUG
+              ssg_puts (" 0");
+#else
               ssg_puts (" 0 /* optimized isBLANK */");
+#endif
               return;
             }
         if (IS_BOX_POINTER (arg1_native))
@@ -2973,7 +2993,11 @@ IN_op_fnt_found:
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL))
             {
+#ifdef NDEBUG
+              ssg_puts (" NULL");
+#else
               ssg_puts (" NULL /* optimized LANG */");
+#endif
               return;
             }
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LANGUAGE, NULL_ASNAME);
@@ -2988,12 +3012,20 @@ IN_op_fnt_found:
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
+#ifdef NDEBUG
+              ssg_puts (" 0");
+#else
               ssg_puts (" 0 /* optimized isIRI */");
+#endif
               return;
             }
           if (arg1_restr_bits & SPART_VARR_IS_REF & SPART_VARR_NOT_NULL)
             {
+#ifdef NDEBUG
+              ssg_puts (" 1");
+#else
               ssg_puts (" 1 /* optimized isIRI */");
+#endif
               return;
             }
         if (IS_BOX_POINTER (arg1_native))
@@ -3022,12 +3054,20 @@ IN_op_fnt_found:
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
+#ifdef NDEBUG
+              ssg_puts (" 0");
+#else
               ssg_puts (" 0 /* optimized isLITERAL */");
+#endif
               return;
             }
           if (arg1_restr_bits & SPART_VARR_IS_LIT & SPART_VARR_NOT_NULL)
             {
+#ifdef NDEBUG
+              ssg_puts (" 1");
+#else
               ssg_puts (" 1 /* optimized isLITERAL */");
+#endif
               return;
             }
         if (IS_BOX_POINTER (arg1_native))
@@ -3143,7 +3183,11 @@ IN_op_fnt_found:
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL))
             {
+#ifdef NDEBUG
+              ssg_puts (" 0");
+#else
               ssg_puts (" 0 /* optimized LANGMATCHES */");
+#endif
               return;
             }
           ssg_puts (" DB.DBA.RDF_LANGMATCHES (");
@@ -3863,7 +3907,11 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
         if (IS_BOX_POINTER (vmode) && (1 < vmode->qmfColumnCount) && (IS_BOX_POINTER (asname) || (NULL == asname)))
           {
             int colctr;
+#ifdef NDEBUG
+      ssg_putchar (' ');
+#else
             ssg_puts (" /*retval-list[*/ ");
+#endif
             for (colctr = 0; colctr < vmode->qmfColumnCount; colctr++)
               {
                 char buf[210];
@@ -3889,12 +3937,19 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
                 ssg_prin_id (ssg, buf);
               }
               }
+#ifdef NDEBUG
+      ssg_putchar (' ');
+#else
             ssg_puts (" /*]retval-list*/ ");
+#endif
             return;
           }
 retval_without_var:
-                ssg_puts (" /*retval[*/ ");
+#ifdef NDEBUG
                 ssg_putchar (' ');
+#else
+  ssg_puts (" /*retval[*/ ");
+#endif
                 if (NULL != tree->_.retval.tabid)
                   {
                     ssg_prin_id (ssg, tree->_.retval.tabid);
@@ -3910,7 +3965,9 @@ retval_without_var:
                 if ((NULL == asname) || IS_BOX_POINTER (asname))
                   {
             ssg_prin_id (ssg, full_vname);
+#ifndef NDEBUG
                     ssg_puts (" /* "); ssg_puts (e_varname); ssg_puts (" */");
+#endif
                   }
                 else
                   {
@@ -3918,12 +3975,18 @@ retval_without_var:
                     char buf[210];
 		    snprintf (buf, sizeof (buf), "%.100s~%d", full_vname, col_idx);
                     ssg_prin_id (ssg, buf);
+#ifndef NDEBUG
             if (0 == col_idx)
               {
                 ssg_puts (" /* "); ssg_puts (e_varname); ssg_puts (" */");
               }
+#endif
                   }
+#ifdef NDEBUG
+      ssg_putchar (' ');
+#else
                 ssg_puts (" /*]retval*/ ");
+#endif
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
@@ -4349,9 +4412,13 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
     goto try_write_null; /* see below */
   if (SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions)
     {
+#ifdef NDEBUG
+      ssg_puts (" NULL");
+#else
       ssg_puts (" NULL /* due to conflict on ");
       ssg_puts (eq->e_varnames[0]);
       ssg_puts (" */");
+#endif
       goto write_assuffix;
     }
 #if 0 /* no longer needed */
@@ -4973,7 +5040,13 @@ ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compo
     }
   ssg_puts (")");
   if (compose_report)
+    {
+#ifdef NDEBUG
+      ssg_puts (", 1");
+#else
     ssg_puts (", 1 /* to compose report */");
+#endif
+    }
   ssg_puts (")");
   ssg->ssg_indent -= 2;
 
@@ -5044,7 +5117,11 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
           }
             if ((SSG_VALMODE_SQLVAL == needed) && (SSG_VALMODE_LONG == native))
           {
+#ifdef NDEBUG
+                ssg_puts (" __ro2sq (");
+#else
                 ssg_puts (" __rdf_sqlval_of_obj /*l*/ (");
+#endif
                 ssg_print_retval_simple_expn (ssg, gp, tree, SSG_VALMODE_LONG, NULL_ASNAME);
                 ssg_puts (")");
                 goto print_asname;
@@ -5173,7 +5250,11 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
   if (IS_BOX_POINTER (needed) && (0 == needed->qmfColumnCount))
     {
+#ifdef NDEBUG
+      ssg_puts (" 1");
+#else
       ssg_puts (" 1 /*fake*/");
+#endif
       if (NULL != asname)
         {
 #ifdef NDEBUG
@@ -5596,7 +5677,11 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   spar_sqlgen_t subq_ssg;
   sql_comp_t subq_sc;
+#ifdef NDEBUG
+  ssg_puts (" (");
+#else
   ssg_puts (" ( /* subq begin */ ");
+#endif
   ssg->ssg_indent++;
   ssg_newline (1);
   memset (&subq_ssg, 0, sizeof (spar_sqlgen_t));
@@ -5617,7 +5702,11 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   subq_ssg.ssg_indent = ssg->ssg_indent;
   ssg_make_sql_query_text (&subq_ssg);
   ssg_newline (1);
+#ifdef NDEBUG
+  ssg_puts (" ) AS ");
+#else
   ssg_puts (" /* subq end */ ) AS ");
+#endif
   ssg->ssg_indent--;
   ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
 }
@@ -5628,7 +5717,11 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   spar_sqlgen_t subq_ssg;
   sql_comp_t subq_sc;
+#ifdef NDEBUG
+  ssg_puts (" ( ");
+#else
   ssg_puts (" ( /* scalar subq begin */ ");
+#endif
   ssg->ssg_indent++;
   ssg_newline (1);
   memset (&subq_ssg, 0, sizeof (spar_sqlgen_t));
@@ -5655,7 +5748,11 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   subq_ssg.ssg_indent = ssg->ssg_indent;
   ssg_make_sql_query_text (&subq_ssg);
   ssg_newline (1);
+#ifdef NDEBUG
+  ssg_putchar (')');
+#else
   ssg_puts (" /* scalar subq end */ )");
+#endif
   ssg->ssg_indent--;
 }
 
@@ -5862,7 +5959,11 @@ fld_restrictions_may_vary:
         continue;
       if (0 != left_tc)
         {
+#ifdef NDEBUG
+          ssg_putchar (',');
+#else
           ssg_puts (", /* table list of next triple starts here */ ");
+#endif
           ssg_newline (0);
         }
       selected_triples_count = 0;
