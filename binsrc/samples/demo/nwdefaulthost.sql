@@ -443,7 +443,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
+    '/about/html/http://^{URIQADefaultHost}^%s%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
