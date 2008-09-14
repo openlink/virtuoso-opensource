@@ -25,7 +25,7 @@
     xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:admin="http://webns.net/mvcb/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:hlisting="http://demo.openlinksw.com/schemas/hlisting/"
+    xmlns:review="http:/www.purl.org/stuff/rev#" xmlns:hlisting="http://www.openlinksw.com/schemas/hlisting/"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.w3.org/2006/vcard/ns#"
     version="1.0">
     <xsl:output indent="yes" omit-xml-declaration="yes" method="xml" />
