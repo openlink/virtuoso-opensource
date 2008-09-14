@@ -272,7 +272,7 @@ directory_init() {
   cp -f load_ontology_dav.sql                                   vad/data/demo/sql
   cp -f mkdemo_vad.sql                                          vad/data/demo/sql
   cp -f $HOME/binsrc/tutorial/rdfview/rd_v_1/rd_v_1.sql         vad/data/demo/sql
-#  cp -f sql_rdf.sql                                             vad/data/demo/sql
+  cp -f sql_rdf.sql                                             vad/data/demo/sql
   cp -f tpc-h/tpch.sql	                                        vad/data/demo/sql
   cp -f test_thalia.sql                                         vad/data/demo/sql
   cp -f thalia_sql_to_rdf_views_generation.sql                  vad/data/demo/sql
@@ -456,13 +456,13 @@ sticker_init() {
   echo "      VHOST_DEFINE (lpath=>'/PetShop', ppath=>'/PetShop/Web/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/drop_petshop.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
-#  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/tpch.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/virtuoso_sql_schema_generation.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/thalia_sql_to_rdf_views_generation.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/load_ontology_dav.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/nwdynamic.sql', 1, 'report', 1);" >> $STICKER
+#  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/nwdynamic.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

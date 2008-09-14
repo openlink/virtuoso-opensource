@@ -50,9 +50,10 @@ drop iri class northwind:Country .
 drop iri class northwind:CountryDoc .
 drop iri class northwind:Flag .
 drop iri class northwind:FlagDoc .
-drop iri class northwind:dbpedia_iri .
+drop iri class northwind:dbpedia_iri2 .
 drop iri class northwind:EmployeePhoto .
 drop iri class northwind:CategoryPhoto .
+
 drop iri class northwind:category_iri .
 drop iri class northwind:categorydoc_iri .
 drop iri class northwind:shipper_iri .
@@ -108,7 +109,7 @@ create iri class northwind:Country "http://^{URIQADefaultHost}^/Northwind/Countr
 create iri class northwind:CountryDoc "http://^{URIQADefaultHost}^/Northwind/Country/%U" (in country_name varchar not null) .
 create iri class northwind:Flag "http://^{URIQADefaultHost}^%U#this" (in flag_path varchar not null) .
 create iri class northwind:FlagDoc "http://^{URIQADefaultHost}^%U" (in flag_path varchar not null) .
-create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
+create iri class northwind:dbpedia_iri2 "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
 create iri class northwind:Phone "tel:%s" (in phone_number varchar) .
@@ -221,7 +222,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-contact_title ;
                         northwind:address suppliers.Address
                                 as virtrdf:Supplier-address ;
-                        northwind:city northwind:dbpedia_iri(suppliers.City)
+                        northwind:city northwind:dbpedia_iri2(suppliers.City)
                                 as virtrdf:Supplier-dbpediacity ;
                         northwind:region suppliers.Region
                                 as virtrdf:Supplier-region ;
@@ -312,7 +313,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-contact_title ;
                         northwind:address customers.Address
                                 as virtrdf:Customer-address ;
-                        northwind:city northwind:dbpedia_iri(customers.City)
+                        northwind:city northwind:dbpedia_iri2(customers.City)
                                 as virtrdf:Customer-dbpediacity ;
                         northwind:region customers.Region
                                 as virtrdf:Customer-region ;
@@ -364,7 +365,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-hire_date ;
                         northwind:address employees.Address
                                 as virtrdf:Employee-address ;
-                        northwind:city northwind:dbpedia_iri(employees.City)
+                        northwind:city northwind:dbpedia_iri2(employees.City)
                                 as virtrdf:Employee-dbpediacity ;
                         northwind:region employees.Region
                                 as virtrdf:Employee-region ;
@@ -429,7 +430,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_name ;
                         northwind:shipAddress orders.ShipAddress
                                 as virtrdf:Order-ship_address ;
-                        northwind:shipCity northwind:dbpedia_iri(orders.ShipCity)
+                        northwind:shipCity northwind:dbpedia_iri2(orders.ShipCity)
                                 as virtrdf:Order-dbpediaship_city ;
                         northwind:shipRegion orders.ShipRegion
                                 as virtrdf:Order-ship_region ;
@@ -495,7 +496,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Country-Type2 ;
                         a wgs:SpatialThing
                                 as virtrdf:Country-Type ;
-                        owl:sameAs northwind:dbpedia_iri (countries.Name) ;
+                        owl:sameAs northwind:dbpedia_iri2 (countries.Name) ;
                         northwind:name countries.Name
                                 as virtrdf:Country-Name ;
                         northwind:code countries.Code
@@ -530,6 +531,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         a northwind:Province
                                 as virtrdf:Province-Provinces ;
+                        owl:sameAs northwind:dbpedia_iri2 (provinces.Province) ;
                         northwind:has_country_code provinces.CountryCode
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
