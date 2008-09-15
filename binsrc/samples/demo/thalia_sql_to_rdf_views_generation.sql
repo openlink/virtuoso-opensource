@@ -451,3 +451,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
 
 DB.DBA.VHOST_REMOVE (lpath=>'/thalia');
 DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/Thalia/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
+
+DB.DBA.XML_SET_NS_DECL ('th', 'http://purl.org/ontology/thalia/1.0/', 2);
+
