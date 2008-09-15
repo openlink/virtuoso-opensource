@@ -233,8 +233,6 @@ ODS_SPARQL_QM_RUN (
       from DB.DBA.ODS_FOAF_PERSON as person
       where (^{person.}^.U_NAME = ^{users.}^.U_NAME)
       where (^{forums.}^.U_NAME = ^{users.}^.U_NAME)
-      where (^{knows.}^.TO_NAME = ^{users.}^.U_NAME)
-      where (^{knows.}^.FROM_NAME = ^{users.}^.U_NAME)
       where (^{grants.}^.U_NAME = ^{users.}^.U_NAME)
       where (^{roles.}^.U_NAME = ^{users.}^.U_NAME)
 
