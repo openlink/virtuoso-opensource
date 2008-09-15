@@ -1709,62 +1709,6 @@ bad_regex:
 }
 
 SPART *
-spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
-{
-  caddr_t val, like_tmpl;
-  char *tail;
-  int ctr, val_len, final_len, start_is_fixed, end_is_fixed;
-  if (SPAR_LIT != SPART_TYPE (regexpn))
-    goto bad_regex; /* see below */
-  val = SPAR_LIT_VAL (regexpn);
-  if (DV_STRING != DV_TYPE_OF (val))
-    goto bad_regex; /* see below */
-  val_len = box_length (val)-1;
-  final_len = val_len + 2;
-  start_is_fixed = 0;
-  end_is_fixed = 0;
-  if ('^' == val[0])
-    {
-      final_len -= 2;
-      start_is_fixed = 1;
-    }
-  for (ctr = start_is_fixed; ctr < val_len; ctr++)
-    {
-      if (NULL == strchr ("%_.+*?\\[($", val[ctr]))
-        continue;
-      if (('$' == val[ctr]) && (ctr == val_len-1) && ((0 == ctr) || ('\\' != val[ctr-1])))
-        {
-          final_len -= 2;
-          end_is_fixed = 1;
-          break;
-        }
-      goto bad_regex; /* see below */
-    }
-  if (start_is_fixed && end_is_fixed)
-    return spartlist (sparp, 3, BOP_EQ, strg, 
-      spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_nchars (val+1, final_len), NULL, NULL) );
-  like_tmpl = t_alloc_box (final_len + 1, DV_STRING);
-  tail = like_tmpl;
-  if (!start_is_fixed)
-    (tail++)[0] = '%';
-  memcpy (tail, val + start_is_fixed, val_len - (start_is_fixed + end_is_fixed));
-  tail += val_len - (start_is_fixed + end_is_fixed);
-  if (!end_is_fixed)
-    (tail++)[0] = '%';
-  tail[0] = '\0';
-/*#ifndef NDEBUG*/
-  if (tail != like_tmpl + final_len)
-    GPF_T1 ("spar_" "make_regex_or_like_or_eq (): pointer arithmetic error on like_tmpl");
-/*#endif*/
-  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L,
-    t_list (2, strg, 
-      spartlist (sparp, 4, SPAR_LIT, like_tmpl, NULL, NULL) ) );
-
-bad_regex:
- return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (2, strg, regexpn));
-}
-
-SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
   if (NULL == args)
