@@ -2791,11 +2791,11 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
   return;
  is_key:
   tree = (ST*) t_list (4, BOP_LTE, pred->_.bin.left->dfe_tree,
-		     t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__like_max"), t_list (1, pred->_.bin.right->dfe_tree)),
+		     t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__like_max"), t_list (2, pred->_.bin.right->dfe_tree, pred->_.bin.escape)),
 		     NULL);
   t_set_push (col_preds, (void*) sqlo_df (so, tree));
   tree = (ST*) t_list (4, BOP_GTE, pred->_.bin.left->dfe_tree,
-		     t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__like_min"), t_list (1, pred->_.bin.right->dfe_tree)),
+		     t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__like_min"), t_list (2, pred->_.bin.right->dfe_tree, pred->_.bin.escape)),
 		     NULL);
   t_set_push (col_preds, (void*) sqlo_df (so, tree));
 }

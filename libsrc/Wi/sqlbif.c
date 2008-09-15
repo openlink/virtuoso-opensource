@@ -4343,17 +4343,39 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len;
   caddr_t res;
-  caddr_t str = bif_string_or_null_arg (qst, args, 0, "__like_min");
-  char * ctr;
-  if (!str)
+  caddr_t str_in = bif_string_or_null_arg (qst, args, 0, "__like_min");
+  char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_min") : 0);
+  char * ctr = NULL;
+  caddr_t str;
+  if (!str_in)
     return dk_alloc_box (0, DV_DB_NULL);
+  str = box_copy (str_in);
+  if (esc != '\0' && NULL != strchr (str, esc))
+    {
+      char * ptr = str, * end = str + strlen (str);
+      for (;;)
+	{
+	  ctr = strpbrk (ptr, "%_*[]");
+	  ptr = strchr (ptr, esc);
+	  if ((ctr && ctr < ptr) || !ptr)
+	    break;
+	  memmove (ptr, ptr+1, end - ptr);
+	  ptr ++;
+	} 
+    }
+  else
   ctr = strpbrk (str, "%_*[]");
   if (!ctr)
-    return box_copy (str);
+    {
+      res = box_dv_short_string (str);
+      goto ret;
+    }
   len = ctr - str;
   res = dk_alloc_box (1+len, DV_STRING);
   memcpy (res, str, len);
   res[len] = 0;
+ret:
+  dk_free_box (str);
   return res;
 }
 
@@ -4363,13 +4385,32 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len;
   caddr_t res;
-  caddr_t str = bif_string_or_null_arg (qst, args, 0, "__like_min");
+  caddr_t str, str_in = bif_string_or_null_arg (qst, args, 0, "__like_max");
+  char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_max") : 0);
   char * ctr;
-  if (!str)
+  if (!str_in)
     return dk_alloc_box (0, DV_DB_NULL);
+  str = box_copy (str_in);
+  if (esc != '\0' && NULL != strchr (str, esc))
+    {
+      char * ptr = str, * end = str + strlen (str);
+      for (;;)
+	{
+	  ctr = strpbrk (ptr, "%_*[]");
+	  ptr = strchr (ptr, esc);
+	  if ((ctr && ctr < ptr) || !ptr)
+	    break;
+	  memmove (ptr, ptr+1, end - ptr);
+	  ptr ++;
+	} 
+    }
+  else
   ctr = strpbrk (str, "%_*[]");
   if (!ctr)
-    return (box_copy (str));
+    {
+      res = box_dv_short_string (str);
+      goto ret;
+    }
   len = ctr - str;
   if (0 == len || 0xff == (unsigned char) ctr[0])
     {
@@ -4380,7 +4421,6 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       res[len+2] = 0xff;
       res[len+3] = 0xff;
       res[len + 4] = 0;
-      return res;
     }
   else
     {
@@ -4388,8 +4428,10 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       memcpy (res, str, len);
       res[len-1]++;
       res[len] = 0;
-      return res;
     }
+ret:
+  dk_free_box (str);
+  return res;
 }
 
 
