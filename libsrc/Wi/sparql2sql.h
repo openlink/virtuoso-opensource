@@ -156,8 +156,15 @@ typedef struct sparp_equiv_s
 #endif
   } sparp_equiv_t;
 
+#define SPARP_FIXED_AND_NOT_NULL(v) ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & (v)))
+
+#define SPARP_ASSIGNED_EXTERNALLY(v) \
+  (SPARP_FIXED_AND_NOT_NULL (v) || ((v) & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)))
+
+#define SPARP_EQ_IS_FIXED_AND_NOT_NULL(eq) SPARP_FIXED_AND_NOT_NULL ((eq)->e_rvr.rvrRestrictions)
+
 #define SPARP_EQ_IS_ASSIGNED_EXTERNALLY(eq) \
-  ((eq)->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL))
+  (SPARP_ASSIGNED_EXTERNALLY ((eq)->e_rvr.rvrRestrictions))
 
 #define SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) \
   ((0 != (eq)->e_gspo_uses) || (0 != (eq)->e_subquery_uses) || (0 != (eq)->e_nested_bindings) || (0 != BOX_ELEMENTS_0 ((eq)->e_subvalue_idxs)))

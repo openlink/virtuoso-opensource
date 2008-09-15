@@ -531,6 +531,8 @@ sparp_expn_rside_rank (SPART *tree)
     case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
       {
         ptrlong restr = tree->_.var.rvr.rvrRestrictions;
+        if (SPARP_FIXED_AND_NOT_NULL (restr))
+          return 0x40;
         if (SPART_VARR_FIXED & restr)
           return 0x20;
         if ((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & restr)
@@ -543,9 +545,9 @@ sparp_expn_rside_rank (SPART *tree)
           return 0x2;
         return 0x0;
       }
-    case SPAR_LIT: return 0x40;
-    case SPAR_QNAME: return 0x100;
-    case SPAR_BUILT_IN_CALL: return 0x1000;
+    case SPAR_LIT: return 0x400;
+    case SPAR_QNAME: return 0x1000;
+    case SPAR_BUILT_IN_CALL: return 0x4000;
     case SPAR_FUNCALL: return 0x10000;
     }
   return 0x20000;
@@ -1923,7 +1925,7 @@ recv_of_subv_ok: ;
 #if 0
       if ((0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
         (0 == eq->e_nested_bindings) &&
-        !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) &&
+        !SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq) &&
         ((0 != eq->e_const_reads) || /* no check for (0 != eq->e_optional_reads) */
           (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) /*||
           (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)*/ ) )
@@ -3217,7 +3219,9 @@ sparp_calc_importance_of_eq (sparp_t *sparp, sparp_equiv_t *eq)
     3 * eq->e_optional_reads +
     2 * eq->e_const_reads +
     2 * BOX_ELEMENTS_0 (eq->e_receiver_idxs);
-  if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+  if (SPARP_EQ_IS_FIXED_AND_NOT_NULL (eq))
+    res *= 5;
+  else if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
     res *= 4;
   if (SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions)
     res *= 2;

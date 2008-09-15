@@ -1909,7 +1909,7 @@ void
 ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr_t asname)
 {
   caddr_t name_as_expn = NULL;
-  if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+  if (SPARP_EQ_IS_FIXED_AND_NOT_NULL (eq))
     ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrFixedValue));
   else
     {
@@ -4161,7 +4161,7 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       litvalue = (caddr_t)fld_tree;
       littype = litlang = NULL;
     }
-  if ((SPART_VARR_FIXED & field_restr) && (SPART_VARR_IS_LIT & field_restr))
+  if (SPARP_FIXED_AND_NOT_NULL (field_restr) && (SPART_VARR_IS_LIT & field_restr))
     {
       if ((DVC_MATCH == cmp_boxes ((caddr_t)(field->qmvFormat->qmfValRange.rvrDatatype), littype, NULL, NULL)) &&
         (DVC_MATCH == cmp_boxes ((caddr_t)(field->qmvFormat->qmfValRange.rvrFixedValue), litvalue, NULL, NULL)) )
@@ -4217,7 +4217,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   SPART_buf rv_buf;
   SPART *rv = NULL;
   ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
-  if ((SPART_VARR_FIXED & field_restr) && (SPART_VARR_IS_REF & field_restr))
+  if (SPARP_FIXED_AND_NOT_NULL(field_restr) && (SPART_VARR_IS_REF & field_restr))
     {
       if (DVC_MATCH == cmp_boxes ((caddr_t)(field->qmvFormat->qmfValRange.rvrFixedValue), uri, NULL, NULL))
         return;
@@ -4307,7 +4307,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
       {
         ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
         ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
-        if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & tree_restr)
+        if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
           return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
         if (SPART_VARR_CONFLICT & tree_restr) 
           {
@@ -4427,7 +4427,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       ssg_puts (" /* LONG retval */");
     }
 #endif
-  if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+  if (SPARP_EQ_IS_FIXED_AND_NOT_NULL (eq) && (!(flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)))
     {
       ssg_print_scalar_expn (ssg, (SPART *)(eq->e_rvr.rvrFixedValue), needed, asname);
       return 1;
@@ -4785,7 +4785,7 @@ if (NULL != jright_alias)
 
 print_cross_equalities:
   /* Printing cross-equalities */
-  if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & eq->e_rvr.rvrRestrictions)
+  if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq))
     return; /* As soon as all are equal to globals, no need in cross-equalities */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
