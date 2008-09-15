@@ -9,14 +9,14 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
-				:hasInstructor ?instructor.
+		?course a th:Course;
+				th:hasInstructor ?instructor.
 		?instructor foaf:name ?name.
 		FILTER regex(?name, "Mark")
 	}
@@ -34,15 +34,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 			dc:title ?Title;
-			:hasLecture ?lecture.
+			th:hasLecture ?lecture.
 		?lecture event:time [time:inDateTime ?dateTime].
 		?dateTime time:hour ?hour.
 		FILTER regex(?Title, "Database System")
@@ -62,15 +62,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT DISTINCT ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:title ?title;
-				:forUniversity 'http://purl.org/thalia/university/umd'.
+				th:forUniversity 'http://purl.org/thalia/university/umd'.
 		FILTER regex(?title, "Data Structures")
 	}
 ;
@@ -86,15 +86,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 			dc:title ?Title;
-			:hasUnits ?credits.
+			th:hasUnits ?credits.
 		FILTER (xsd:integer(?credits) > 10)
 		FILTER regex(?Title, "Database")
 	}
@@ -112,15 +112,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:title ?title;
-				:forUniversity 'http://purl.org/thalia/university/umd'.
+				th:forUniversity 'http://purl.org/thalia/university/umd'.
 		FILTER regex(?title, "Database")
 	}
 ;
@@ -137,15 +137,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?text_
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:title ?title;
-				:text ?text_.
+				th:text ?text_.
 		FILTER regex(?title, "Verification")
 	}
 ;
@@ -162,15 +162,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?course
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:description ?description;
-				:forUniversity 'http://purl.org/thalia/university/gatech'.
+				th:forUniversity 'http://purl.org/thalia/university/gatech'.
 		FILTER regex(?description, "JR")
 	}
 ;
@@ -187,15 +187,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?room
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:title ?title;
-				:hasLecture ?lecture.
+				th:hasLecture ?lecture.
 		?lecture event:place [dc:title ?room].
 		FILTER regex(?title, "Software Engineering")
 	}
@@ -213,15 +213,15 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?instructor
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:title ?title;
-				:hasInstructor ?instructor.
+				th:hasInstructor ?instructor.
 		FILTER regex(?title, "Software")
 	}
 ;
@@ -239,14 +239,14 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT distinct ?instructor
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
-				:hasInstructor ?instructor;
+		?course a th:Course;
+				th:hasInstructor ?instructor;
 				dc:title  ?title.
 		FILTER regex(?title, "Database")
 	}
@@ -264,14 +264,14 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT ?day, ?hour
   from <http://localhost:8889/thalia>
 	WHERE
 	{
-		?course a :Course;
-				:hasLecture [event:time ?time];
+		?course a th:Course;
+				th:hasLecture [event:time ?time];
 				dc:title ?title.
 		?time time:inDateTime [time:dayOfWeek ?day];
 			  time:inDateTime [time:hour ?hour].
