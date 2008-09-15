@@ -16,8 +16,8 @@ SELECT distinct ?course
   from <http://demo.openlinksw.com/thalia>
 	WHERE
 	{
-		?course a :Course;
+		?course a th:Course;
 				dc:description ?description;
-				:forUniversity 'http://purl.org/thalia/university/gatech'.
+				th:forUniversity 'http://purl.org/thalia/university/gatech'.
 		FILTER regex(?description, "JR")
 	}

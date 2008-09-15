@@ -10,14 +10,14 @@ PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX : <http://purl.org/ontology/thalia/1.0/>
+PREFIX th: <http://purl.org/ontology/thalia/1.0/>
 
 SELECT ?day, ?hour ?course
 from <http://demo.openlinksw.com/thalia>
 WHERE
 {
-?course a :Course;
-:hasLecture [event:time ?time];
+?course a th:Course;
+th:hasLecture [event:time ?time];
 dc:title ?title.
 ?time time:inDateTime [time:dayOfWeek ?day];
 time:inDateTime [time:hour ?hour].
