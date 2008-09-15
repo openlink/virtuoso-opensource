@@ -306,10 +306,14 @@
 
 							<div id="opttoggler"><span id="togglerarrow">&#8681;</span> Sponger Options</div>
 
+							<fieldset class="endpoint" id="endpoint" style="display:none"> <!-- endpoint -->
+								<legend>Endpoint</legend>
+							</fieldset>
+
 							<fieldset class="derefOpts" id="derefOpts" style="display:none">
 								<legend>Data dereferencing options:</legend>
 								<table style="border-collapse: collapse;"><tr><td style="padding-right: 8px;">
-									<span class="title">Caching Schemes<br/>
+									<span class="title">Caching Schemas<br/>
 									<select id="cachingSchemesCtl" style="margin-bottom:5px;width: 100px;">
 										<option value="">Default</span></option>
 										<option value="soft">Automatic</span></option>
@@ -339,7 +343,7 @@
 										<option value="10">Max 10</option>
 									</select>
 									</td><td style="border-left: 2px outset #ddd;padding-left: 10px;vertical-align:top;width:325px;">
-									<span class="title">Path Traversal Schemes<span><br/>
+									<span class="title">Path Traversal Schemas<span><br/>
 									<input type="radio" name="pathTraversalSchemes" value="" id="pathTravSchemesDefault" checked="checked"/> <label for="pathTravSchemesDefault" id="pathTravSchemesDefaultLabel">Default settings</label><br/>
 									<input type="radio" name="pathTraversalSchemes" value="grab-all" id="pathTravSchemesGraball"/> <label for="pathTravSchemesGraball" id="pathTravSchemesGraballLabel">Follow all Properties</label><br/>
 									<input type="radio" name="pathTraversalSchemes" value="grab-seealso" id="pathTravSchemesSeealso"/> <label for="pathTravSchemesSeealso" id="pathTravSchemesSeealsoLabel">Follow Properties</label><br/>
@@ -360,11 +364,6 @@
 									<input type="button" id="spongerVarsAdd" value="Add" style="margin-top:10px;"/>
 									<input type="button" id="spongerVarsDel" style="margin-top:10px;" value="Remove"/><br/> 
 								</tr></table>
-							</fieldset>
-
-							<fieldset class="endpoint" id="endpoint" style="display:none"> <!-- endpoint -->
-								<legend>Endpoint</legend>
-								<div id="service_div"></div>
 							</fieldset>
 
 							<br style="clear:both;"/>

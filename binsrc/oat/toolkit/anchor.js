@@ -180,6 +180,7 @@ OAT.Anchor = {
 			if (!opts) { return; }
 			if (opts.activation == "hover") { opts.startClose(); }
 		}
+		OAT.Dom.addClass(win.dom.container,"oat_anchor");
 		OAT.Dom.attach(win.dom.container,"mouseover",checkOver);
 		OAT.Dom.attach(win.dom.container,"mouseout",checkOut);
 		var arrow = OAT.Dom.create("div",{});
@@ -283,7 +284,7 @@ OAT.Anchor = {
 	close:function(elem, recursive) {
 		elem = $(elem);
 		if (elem.tagName=='BODY' || elem.tagName=='HTML') return;
-		if (elem.className.match(/^oat_win.+_container$/)) {
+		if (elem.className.match(/oat_anchor/)) {
 			OAT.Dom.hide(elem);
 			if (recursive) this.close(elem.parentNode);
 		} else {
@@ -301,7 +302,7 @@ OAT.Anchor.closeOnBlur = function() {
 			return false;
 		if (elem.tagName=='BODY' || elem.tagName=='HTML' || !elem.className.match)
 			return true;
-		if (elem.className.match(/^oat_win.+_container$/)) {
+		if (elem.className.match(/oat_anchor/)) {
 			return false;
 		} else {
 			return checkIfClickedOutside(elem.parentNode);
@@ -309,7 +310,7 @@ OAT.Anchor.closeOnBlur = function() {
 	}
 	if ( !checkIfClickedOutside((OAT.Browser.isIE)?event.srcElement:event.target) )
 		return;
-	var opened = $$("oat_win_container");
+	var opened = $$("oat_anchor");
 	for (i in opened) {
 		if (!opened[i].tagName) continue;
 		OAT.Anchor.close(opened[i], true);

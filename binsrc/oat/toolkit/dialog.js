@@ -24,12 +24,16 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		resize:1,
 		close:1,
 		autoEnter:1,
-		imagePath:OAT.Preferences.imagePath
+		imagePath:OAT.Preferences.imagePath,
+		type:OAT.WinData.TYPE_MS
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
 	
-	var win = new OAT.Window({close:options.close, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize,imagePath:options.imagePath});
-	OAT.Dom.hide(win.div); 
+	var winbuttons = "";
+	if (options.close) winbuttons += "c"; 
+	if (options.resize) winbuttons += "r";
+
+	var win = new OAT.Win({visibleButtons:winbuttons,enabledButtons:winbuttons, max:0, min:0, outerWidth:options.width, outerHeight:options.height, x:0, y:0, imagePath:options.imagePath, title:title, type:options.type, stackGroupBase:false});
 
  	$(contentDiv).style.margin = "10px";
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
@@ -49,15 +53,30 @@ OAT.Dialog = function(title,contentDiv,optObj) {
  	tbody.appendChild(row);
  	nav.appendChild(tbody);
  	if (options.buttons) { $(contentDiv).appendChild(nav); }
- 	document.body.appendChild(win.div);
-	win.content.appendChild($(contentDiv)); 
-	win.div.style.zIndex = options.zIndex;
+
+ 	document.body.appendChild(win.dom.container);
+	win.dom.content.appendChild($(contentDiv)); 
+	win.dom.container.style.zIndex = options.zIndex;
 	if (options.modal) {
-		this.show = function() { OAT.Dimmer.show(win.div,{}); win.accomodate(); OAT.Dom.center(win.div,1,1); options.onshow(); }
-		this.hide = function() { OAT.Dimmer.hide(); options.onhide(); }
+		this.show = function() {
+			OAT.Dimmer.show(win.dom.container,{});
+			OAT.Dom.attach(win.dom.buttons.c, "click", self.cancel);
+			OAT.Dom.center(win.dom.container,1,1);
+			options.onshow(); }
+		this.hide = function() {
+			OAT.Dimmer.hide();
+			options.onhide();
+		}
 	} else {
-		this.show = function() { OAT.Dom.show(win.div); win.accomodate(); OAT.Dom.center(win.div,1,1); options.onshow(); }
-		this.hide = function() { OAT.Dom.hide(win.div); options.onhide(); }
+		this.show = function() {
+			win.show();
+			win.accomodate(win.dom.container);
+			OAT.Dom.center(win.dom.container,1,1);
+			options.onshow(); }
+		this.hide = function() {
+			win.hide();
+			options.onhide();
+		}
 	}
 	
 	win.onclose = this.hide;
@@ -74,6 +93,6 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		if (event.keyCode == 13) { self.ok(); }
 		if (event.keyCode == 27) { self.cancel(); }
 	}
-	if (options.autoEnter) { OAT.Dom.attach(win.div,"keypress",keyPress); }
+	if (options.autoEnter) { OAT.Dom.attach(win.dom.container,"keypress",keyPress); }
 }
 OAT.Loader.featureLoaded("dialog");

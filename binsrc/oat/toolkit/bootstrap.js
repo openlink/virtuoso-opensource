@@ -36,7 +36,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	calendar:["drag","notify"],
 	graph:"canvas",
 	dav:["grid","tree","toolbar","ajax2","xml","dialog"],
-	dialog:["window","dimmer"],
+	dialog:["win","dimmer"],
 	datasource:["jsobj","json","xml","connection","dstransport","ajax2"],
 	simplefx:"animation",
 	ws:["xml","soap","ajax2","schema","connection"],

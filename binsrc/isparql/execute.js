@@ -342,6 +342,7 @@ var QueryExec = function(optObj) {
 		
 		if (self.options.executeCallback) { self.options.executeCallback(item); }
 		
+		OAT.Dom.clear(self.dom.request);
 		var r = decodeURIComponent(request);
 		var parts = r.split("&");
 		var req = OAT.Dom.create("pre");

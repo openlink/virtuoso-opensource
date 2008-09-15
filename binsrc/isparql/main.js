@@ -94,10 +94,9 @@ function init() {
 		}
 
   		var showEndpoints = function() {	
-  			OAT.Dom.clear('service_div');
 			var c = new OAT.Combolist(defaultEndpoints,"/sparql",{name:"service",onchange:setEndpoint});
   			c.input.id = "service";
-			$("service_div").appendChild(c.div);
+			$("endpoint").appendChild(c.div);
 		}
 
 		/* toggle options */

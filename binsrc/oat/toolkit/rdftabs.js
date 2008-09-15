@@ -1466,50 +1466,48 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 			var out = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
 			OAT.Dom.clear(self.mainElm);
 			self.mainElm.innerHTML = OAT.Xml.unescape(OAT.Xml.serializeXmlDoc(out));
-			return;
+			var foaf = "http://xmlns.com/foaf/0.1/";
 
-			/* FIXME: NOTREACHED, skip this until full implementation is available */
-
-			/* gimme a string, i'll return a triple with string as object */
 			var find = function(str) {
 				var triples = self.parent.data.triples;
 				for (var i=0;i<triples.length;i++) {
 					var t = triples[i];
-					var o = t[2];
-					if (str == o) { return t; }	
+					if ((t[1] != foaf+"name") && (t[1] != foaf+"knows")) { continue; }
+					if (t[2] == str) { return t; }	
 				}
 				return false;
 			}
 
-			/* get all spans and hrefs from fresnell processed page */
+			var isBnode = function(str) {
+				return (str.match(/^_:/));
+			}
+
+			/* get all relevant elements from fresnel processed page */
 			var all = [];
 			var spans = self.mainElm.getElementsByTagName("span");
-			var hrefs = self.mainElm.getElementsByTagName("a");
 
 			for (var i=0;i<spans.length;i++) { all.push(spans[i]); }
-			for (var i=0;i<hrefs.length;i++) { all.push(hrefs[i]); }
 			
 			for (var i=0;i<all.length;i++) {
-				/* get the nodes content */
 				var node = all[i];
 				var str = decodeURIComponent(node.innerHTML);
-				/* do we have a matching triple? we should, since
-				 * the fresnel processed same RDF as we did
-				 * FIXME: there could be more than one triple matching
-				 */
 				var triple = find(str);
 				if (!triple) { continue; }
 
 				/* create link */
 				var a = OAT.Dom.create("a");
-				a.innerHTML = str;
-
-				/* href is a resource */
-				a.href = triple[0];
+				a.innerHTML = self.parent.simplify(str);
 				OAT.Dom.clear(node);
 				node.appendChild(a);
-				/* attach a++, or do something else */
+
+				/* href is a literal */
+				if (triple[1] == foaf+"name" && !isBnode(triple[0])) {
+					a.href = triple[0];
 				self.parent.processLink(a,triple[0]);
+				} else if (triple[1] == foaf+"knows" && !isBnode(triple[2])) {
+					a.href = triple[2];
+					self.parent.processLink(a,triple[2]);
+				}
 			}
 		}
 		OAT.AJAX.GET(OAT.Preferences.xsltPath+"fresnel2html.xsl",false,cb,{type:OAT.AJAX.TYPE_XML});

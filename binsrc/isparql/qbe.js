@@ -389,7 +389,7 @@ iSPARQL.QBE = function () {
 			endpoint:false,
 			canvas:false,
 			defaultGraph:false,
-			schemas:[],
+			prefixes:[],
 			pragmas:{},
 		};
 
