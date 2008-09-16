@@ -11,8 +11,8 @@
 /* handles dynamic library loading */
 
 OAT.Loader.Dependencies = { /* dependency tree */
-	ajax2:"xml",
 	ajax:"crypto",
+	ajax2:"xml",
 	anchor:"win",
 	calendar:["drag","notify"],
 	color:"drag",
@@ -45,10 +45,10 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	piechart:"svg",
 	pivot:["ghostdrag","statistics","instant","barchart"],
 	quickedit:"instant",
+	rdf:"xml",
 	rdfbrowser:["rdfstore","tree","anchor","rdftabs","tab","dav","notify"],
 	rdfmini:["rdfstore","rdftabs","notify"],
 	rdfstore:["rdf","dereference","n3"],
-	rdf:"xml",
 	rectwin:["drag","resize"],
 	roundwin:["drag","resize","simplefx"],
 	rssreader:"xml",
@@ -64,7 +64,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	webclip:"webclipbinding",
 	win:["drag","resize","layers"],
 	ws:["xml","soap","ajax2","schema","connection"],
-	xmla:["soap","xml","connection"],
+	xmla:["soap","xml","connection"]
 }
 
 OAT.Loader.Files = { /* only those whose names differ */

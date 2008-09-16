@@ -307,7 +307,7 @@ function init() {
 
 		/* endpoint combolist */
 		showEndpoints();	
-		setEndpoint($("service").value);
+		setEndpoint($("service"));
 	}
 
 	redrawSpongerOpts();
