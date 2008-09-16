@@ -131,265 +131,265 @@ from thalia.demo.umd as umds
         create virtrdf:ThaliaDemo as graph iri ("http://^{URIQADefaultHost}^/thalia") option (exclusive)
         {
                 th:Asu (asus.code)
-                	a th:Course
-                		as virtrdf:Asu-Course ;
-                	dc:title asus.Title
-                		as virtrdf:Asu-Title ;
-                	dc:description asus.Description
-                		as virtrdf:Asu-Description ;
-                	rdfs:seeAlso asus.MoreInfoURL
-                		as virtrdf:Asu-MoreInfoURL ;
+                    a th:Course
+                        as virtrdf:Asu-Course ;
+                    dc:title asus.Title
+                        as virtrdf:Asu-Title ;
+                    dc:description asus.Description
+                        as virtrdf:Asu-Description ;
+                    rdfs:seeAlso asus.MoreInfoURL
+                        as virtrdf:Asu-MoreInfoURL ;
                         th:forUniversity "http://purl.org/thalia/university/asu"
-                        	as virtrdf:Asu-University ;
+                            as virtrdf:Asu-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Asu-Subject
-                        	.
+                            as virtrdf:Asu-Subject
+                            .
 
                 th:Brown (browns.Code)
                         a th:Course
                                 as virtrdf:Brown-Course ;
                         dc:title browns.Title
-                        	as virtrdf:Brown-Title ;
+                            as virtrdf:Brown-Title ;
                         th:hasInstructor th:BrownInstructor (browns.Code)
-                        	as virtrdf:Brown-hasInstructor ;
-                        th:hasLecture th:BrownLecture(browns.Code) 
-                        	as virtrdf:Brown-hasLecture ;
+                            as virtrdf:Brown-hasInstructor ;
+                        th:hasLecture th:BrownLecture(browns.Code)
+                            as virtrdf:Brown-hasLecture ;
                         th:forUniversity "http://purl.org/thalia/university/brown"
-                        	as virtrdf:Brown-University ;
+                            as virtrdf:Brown-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Brown-Subject
-                        	.
+                            as virtrdf:Brown-Subject
+                            .
                 th:BrownInstructor (browns.Code)
                         a th:Instructor
                                 as virtrdf:Brown-Instructor ;
                         dc:homepage browns.Instructor
-                        	as virtrdf:Brown-Instructor-Homepage
-                        	.
+                            as virtrdf:Brown-Instructor-Homepage
+                            .
                 th:BrownLecture (browns.Code)
                         a event:Event
                                 as virtrdf:Brown-Lecture ;
                         event:place th:BrownPlace(browns.Code)
-                        	as virtrdf:Brown-hasPlace
-                        	.
+                            as virtrdf:Brown-hasPlace
+                            .
                 th:BrownPlace (browns.Code)
                         a geo:Point
                                 as virtrdf:Brown-Place;
                         dc:title browns.Room
-                        	as virtrdf:Brown-Room
-                        	.
+                            as virtrdf:Brown-Room
+                            .
 
                 th:Cmu (cmus.Code, cmus.Sec)
-                	a th:Course
-                		as virtrdf:Cmu-Course ;
-                	dc:title cmus.CourseTitle
-                		as virtrdf:Cmu-CourseTitle ;
+                    a th:Course
+                        as virtrdf:Cmu-Course ;
+                    dc:title cmus.CourseTitle
+                        as virtrdf:Cmu-CourseTitle ;
                         th:hasInstructor th:CmuInstructor (cmus.Code, cmus.Sec)
-                        	as virtrdf:Cmu-hasInstructor ;
-                        th:hasLecture th:CmuLecture(cmus.Code, cmus.Sec) 
-                        	as virtrdf:Cmu-hasLecture ;
-                        th:hasUnits cmus.Units 
-                        	as virtrdf:Cmu-hasUnits ;
+                            as virtrdf:Cmu-hasInstructor ;
+                        th:hasLecture th:CmuLecture(cmus.Code, cmus.Sec)
+                            as virtrdf:Cmu-hasLecture ;
+                        th:hasUnits cmus.Units
+                            as virtrdf:Cmu-hasUnits ;
                         th:forUniversity "http://purl.org/thalia/university/cmu"
-                        	as virtrdf:Cmu-University ;
+                            as virtrdf:Cmu-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Cmu-Subject
-                		.
-		th:CmuInstructor (cmus.Code, cmus.Sec)
+                            as virtrdf:Cmu-Subject
+                        .
+        th:CmuInstructor (cmus.Code, cmus.Sec)
                         a th:Instructor
                                 as virtrdf:Cmu-Instructor ;
-                	foaf:name cmus.Lecturer
-                		as virtrdf:Cmu-Lecturer
-                        	.
-		th:CmuLecture (cmus.Code, cmus.Sec)
+                    foaf:name cmus.Lecturer
+                        as virtrdf:Cmu-Lecturer
+                            .
+        th:CmuLecture (cmus.Code, cmus.Sec)
                         a event:Event
                                 as virtrdf:Cmu-Lecture ;
                         event:time th:CmuEventTime(cmus.Code, cmus.Sec)
-                        	as virtrdf:Cmu-hasEventTime ;
+                            as virtrdf:Cmu-hasEventTime ;
                         event:place th:CmuPlace(cmus.Code, cmus.Sec)
-                        	as virtrdf:Cmu-hasPlace
-                        	.
-		th:CmuPlace (cmus.Code, cmus.Sec)
+                            as virtrdf:Cmu-hasPlace
+                            .
+        th:CmuPlace (cmus.Code, cmus.Sec)
                         a geo:Point
                                 as virtrdf:Cmu-Place;
                         dc:title cmus.Room
-                        	as virtrdf:Cmu-Room
-                        	.
-		th:CmuEventTime (cmus.Code, cmus.Sec)
+                            as virtrdf:Cmu-Room
+                            .
+        th:CmuEventTime (cmus.Code, cmus.Sec)
                         a time:Interval
                                 as virtrdf:Cmu-EventTime;
                         time:inDateTime th:CmuDatetime(cmus.Code, cmus.Sec)
-                        	as virtrdf:Cmu-inDateTime
-                        	.
-		th:CmuDatetime (cmus.Code, cmus.Sec)
+                            as virtrdf:Cmu-inDateTime
+                            .
+        th:CmuDatetime (cmus.Code, cmus.Sec)
                         a time:DateTimeDescription
                                 as virtrdf:Cmu-Datetime;
-                	time:dayOfWeek cmus.Day_
-                		as virtrdf:Cmu-Day ;
-                	time:hour cmus.Time_
-                		as virtrdf:Cmu-Time 
-                        	.
+                    time:dayOfWeek cmus.Day_
+                        as virtrdf:Cmu-Day ;
+                    time:hour cmus.Time_
+                        as virtrdf:Cmu-Time
+                            .
 
                 th:Gatech (gatechs.Department, gatechs.Code, gatechs.Section)
-                	a th:Course
-                		as virtrdf:Gatech-Course ;
-                	dc:title gatechs.Title
-                		as virtrdf:Gatech-Title ;
+                    a th:Course
+                        as virtrdf:Gatech-Course ;
+                    dc:title gatechs.Title
+                        as virtrdf:Gatech-Title ;
                         th:hasInstructor th:GatechInstructor(gatechs.Department, gatechs.Code, gatechs.Section)
-                        	as virtrdf:Gatech-hasInstructor ;
-                	dc:description gatechs.Description
-                		as virtrdf:Gatech-Description ;
+                            as virtrdf:Gatech-hasInstructor ;
+                    dc:description gatechs.Description
+                        as virtrdf:Gatech-Description ;
                         th:hasLecture th:GatechLecture(gatechs.Department, gatechs.Code, gatechs.Section)
-                        	as virtrdf:Gatech-hasLecture ;
+                            as virtrdf:Gatech-hasLecture ;
                         th:forUniversity "http://purl.org/thalia/university/gatech"
-                        	as virtrdf:Gatech-University ;
+                            as virtrdf:Gatech-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Gatech-Subject
-                        	.
-		th:GatechInstructor (gatechs.Department, gatechs.Code, gatechs.Section)
+                            as virtrdf:Gatech-Subject
+                            .
+        th:GatechInstructor (gatechs.Department, gatechs.Code, gatechs.Section)
                         a th:Instructor
                                 as virtrdf:Gatech-Instructor ;
-                	foaf:name gatechs.Instructor
-                		as virtrdf:Gatech-InstructorName
-				.
-		th:GatechLecture (gatechs.Department, gatechs.Code, gatechs.Section)
+                    foaf:name gatechs.Instructor
+                        as virtrdf:Gatech-InstructorName
+                .
+        th:GatechLecture (gatechs.Department, gatechs.Code, gatechs.Section)
                         a event:Event
                                 as virtrdf:Gatech-Lecture ;
                         event:time th:GatechEventTime(gatechs.Department, gatechs.Code, gatechs.Section)
-                        	as virtrdf:Gatech-hasEventTime ;
+                            as virtrdf:Gatech-hasEventTime ;
                         event:place th:GatechPlace(gatechs.Department, gatechs.Code, gatechs.Section)
-                        	as virtrdf:Gatech-hasPlace
-				.
-		th:GatechEventTime (gatechs.Department, gatechs.Code, gatechs.Section)
+                            as virtrdf:Gatech-hasPlace
+                .
+        th:GatechEventTime (gatechs.Department, gatechs.Code, gatechs.Section)
                         a time:Interval
                                 as virtrdf:Gatech-EventTime ;
                         time:inDateTime th:GatechDatetime(gatechs.Department, gatechs.Code, gatechs.Section)
-                        	as virtrdf:Gatech-inDateTime
-				.
-		th:GatechDatetime (gatechs.Department, gatechs.Code, gatechs.Section)
+                            as virtrdf:Gatech-inDateTime
+                .
+        th:GatechDatetime (gatechs.Department, gatechs.Code, gatechs.Section)
                         a time:DateTimeDescription
                                 as virtrdf:Gatech-Datetime ;
-                	time:dayOfWeek gatechs.Days
-                		as virtrdf:Gatech-Days ;
-                	time:hour gatechs.Time_
-                		as virtrdf:Gatech-Time_
-				.
-		th:GatechPlace (gatechs.Department, gatechs.Code, gatechs.Section)
+                    time:dayOfWeek gatechs.Days
+                        as virtrdf:Gatech-Days ;
+                    time:hour gatechs.Time_
+                        as virtrdf:Gatech-Time_
+                .
+        th:GatechPlace (gatechs.Department, gatechs.Code, gatechs.Section)
                         a geo:Point
                                 as virtrdf:Gatech-Place ;
                         dc:title gatechs.Place
-                        	as virtrdf:Gatech-RoomBuilding
-				.
+                            as virtrdf:Gatech-RoomBuilding
+                .
 
                 th:Toronto (torontos.No_)
                         a th:Course
                                 as virtrdf:Toronto-Course ;
                         dc:title torontos.title
-                        	as virtrdf:Toronto-Title ;
+                            as virtrdf:Toronto-Title ;
                         dc:description torontos.text_
-                        	as virtrdf:Toronto-Description ;
+                            as virtrdf:Toronto-Description ;
                         th:hasInstructor th:TorontoInstructor(torontos.No_)
-                        	as virtrdf:Toronto-hasInstructor ;
+                            as virtrdf:Toronto-hasInstructor ;
                         th:hasLecture th:TorontoLecture(torontos.No_)
-                        	as virtrdf:Toronto-hasLecture ;
+                            as virtrdf:Toronto-hasLecture ;
                         rdfs:seeAlso torontos.coursewebsite
-                        	as virtrdf:Toronto-CourseWebSite ;
+                            as virtrdf:Toronto-CourseWebSite ;
                         th:hasPrerequisite torontos.prereq
-                        	as virtrdf:Toronto-prereq ;
+                            as virtrdf:Toronto-prereq ;
                         th:text torontos.text_
-                        	as virtrdf:Toronto-text;
+                            as virtrdf:Toronto-text;
                         th:forUniversity "http://purl.org/thalia/university/toronto"
-                        	as virtrdf:Toronto-University ;
+                            as virtrdf:Toronto-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Toronto-Subject
-                        	.
-		th:TorontoInstructor (torontos.No_)
+                            as virtrdf:Toronto-Subject
+                            .
+        th:TorontoInstructor (torontos.No_)
                         a th:Instructor
                                 as virtrdf:Toronto-Instructor ;
                         foaf:name torontos.instructorName
-                        	as virtrdf:Toronto-InstructorName ;
+                            as virtrdf:Toronto-InstructorName ;
                         foaf:mbox torontos.instructorEmail
-                        	as virtrdf:Toronto-InstructorEmail
-				.
-		th:TorontoLecture (torontos.No_)
+                            as virtrdf:Toronto-InstructorEmail
+                .
+        th:TorontoLecture (torontos.No_)
                         a event:Event
                                 as virtrdf:Toronto-Lecture ;
                         event:place th:TorontoPlace(torontos.No_)
-                        	as virtrdf:Toronto-hasPlace
-				.
-		th:TorontoPlace (torontos.No_)
+                            as virtrdf:Toronto-hasPlace
+                .
+        th:TorontoPlace (torontos.No_)
                         a geo:Point
                                 as virtrdf:Toronto-Place ;
                         dc:title torontos.location
-                        	as virtrdf:Toronto-Location
-				.
+                            as virtrdf:Toronto-Location
+                .
 
                 th:Ucsd (ucsds.Number)
                         a th:Course
                                 as virtrdf:Ucsd-Course ;
                         dc:title ucsds.Title
-                        	as virtrdf:Ucsd-Title ;
+                            as virtrdf:Ucsd-Title ;
                         th:hasInstructor1 th:UcsdInstructor1 (ucsds.Number)
-                        	as virtrdf:Ucsd-hasInstructor1 ;
+                            as virtrdf:Ucsd-hasInstructor1 ;
                         th:hasInstructor2 th:UcsdInstructor2 (ucsds.Number)
-                        	as virtrdf:Ucsd-hasInstructor2 ;
+                            as virtrdf:Ucsd-hasInstructor2 ;
                         th:hasInstructor3 th:UcsdInstructor3 (ucsds.Number)
-                        	as virtrdf:Ucsd-hasInstructor3 ;
+                            as virtrdf:Ucsd-hasInstructor3 ;
                         th:forUniversity "http://purl.org/thalia/university/ucsd"
-                        	as virtrdf:Ucsd-University ;
+                            as virtrdf:Ucsd-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Ucsd-Subject
-                        	.
+                            as virtrdf:Ucsd-Subject
+                            .
                 th:UcsdInstructor1 (ucsds.Number)
                         a th:Instructor
                                 as virtrdf:Ucsd-Instructor1 ;
                         foaf:name ucsds.Fall2003
-                        	as virtrdf:Ucsd-Instructor-Fall2003
-                        	.
+                            as virtrdf:Ucsd-Instructor-Fall2003
+                            .
                 th:UcsdInstructor2 (ucsds.Number)
                         a th:Instructor
                                 as virtrdf:Ucsd-Instructor2 ;
                         foaf:name ucsds.Winter2004
-                        	as virtrdf:Ucsd-Instructor-Winter2004
-                        	.
+                            as virtrdf:Ucsd-Instructor-Winter2004
+                            .
                 th:UcsdInstructor3 (ucsds.Number)
                         a th:Instructor
                                 as virtrdf:Ucsd-Instructor3 ;
                         foaf:name ucsds.Spring2004
-                        	as virtrdf:Ucsd-Instructor-Spring2004
-                        	.
+                            as virtrdf:Ucsd-Instructor-Spring2004
+                            .
 
                 th:Umd (umds.Code)
-                	a th:Course
-                		as virtrdf:Umd-Course ;
-                	dc:title umds.CourseName
-                		as virtrdf:Umd-Title ;
+                    a th:Course
+                        as virtrdf:Umd-Course ;
+                    dc:title umds.CourseName
+                        as virtrdf:Umd-Title ;
                         th:hasSection th:SectionTitle
-                        	as virtrdf:Umd-hasSection ;
+                            as virtrdf:Umd-hasSection ;
                         th:hasLecture th:UmdLecture(umds.Code)
-                        	as virtrdf:Umd-hasLecture ;
+                            as virtrdf:Umd-hasLecture ;
                         th:forUniversity "http://purl.org/thalia/university/umd"
-                        	as virtrdf:Umd-University ;
+                            as virtrdf:Umd-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
-                        	as virtrdf:Umd-Subject
-                        	.
-		th:UmdLecture (umds.Code)
+                            as virtrdf:Umd-Subject
+                            .
+        th:UmdLecture (umds.Code)
                         a event:Event
                                 as virtrdf:Umd-Lecture ;
                         event:time th:UmdEventTime(umds.Code)
-                        	as virtrdf:Umd-hasEventTime 
-				.
-		th:UmdEventTime (umds.Code)
+                            as virtrdf:Umd-hasEventTime
+                .
+        th:UmdEventTime (umds.Code)
                         a time:Interval
                                 as virtrdf:Umd-EventTime ;
                         time:inDateTime th:UmdDatetime(umds.Code)
-                        	as virtrdf:Umd-inDateTime
-				.
-		th:UmdDatetime (umds.Code)
+                            as virtrdf:Umd-inDateTime
+                .
+        th:UmdDatetime (umds.Code)
                         a time:DateTimeDescription
                                 as virtrdf:Umd-Datetime ;
-                	time:hour umds.SectionTime
-                		as virtrdf:Umd-SectionTime
-				.
+                    time:hour umds.SectionTime
+                        as virtrdf:Umd-SectionTime
+                .
         }
 }
 ')

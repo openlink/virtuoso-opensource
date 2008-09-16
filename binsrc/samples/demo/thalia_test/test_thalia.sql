@@ -279,6 +279,3 @@ SELECT ?day, ?hour
 	}
 ;
 
-
-
-
