@@ -79,6 +79,10 @@ OAT.Win = function(optObj) {
 	if (self.options.type == OAT.WinData.TYPE_RECT) { OAT.WinRECT(self); }
 	if (self.options.type == OAT.WinData.TYPE_ROUND) { OAT.WinROUND(self); }
 	if (self.options.type == OAT.WinData.TYPE_ODS) { OAT.WinODS(self); }
+        if (self.options.type == OAT.WinData.TYPE_AUTO) {
+            if (OAT.Browser.isMac) OAT.WinMAC(self);
+            else OAT.WinMS(self);
+        }
 
 	/* assign events */
 	if (self.options.enabledButtons.indexOf("m") != -1 && self.dom.buttons.m) {

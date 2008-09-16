@@ -89,8 +89,8 @@ function init() {
 	/* FIXME: outfactor this into separate class ? */
 	var redrawSpongerOpts = function() {
 
-		var setEndpoint = function(endpoint) {
-			iSPARQL.Common.setEndpoint(endpoint);
+		var setEndpoint = function(endpointElm) {
+			iSPARQL.Common.setEndpoint(endpointElm.value);
 		}
 
   		var showEndpoints = function() {	

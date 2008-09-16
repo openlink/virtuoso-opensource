@@ -113,7 +113,7 @@ OAT.WebDav = {
 		if (this.mode == 0) { /* open */
 			if (OAT.WebDav.options.foldersOnly) {
 				if (OAT.WebDav.options.callback) {
-					OAT.Dom.hide(OAT.WebDav.window.div);
+					OAT.WebDav.window.hide();
 					OAT.WebDav.options.callback(p,'');
 				}
 			} else {
@@ -130,7 +130,7 @@ OAT.WebDav = {
 				}
 				OAT.WebDav.updateOptions(o);
 				var response = function(data) {
-					OAT.Dom.hide(OAT.WebDav.window.div);
+					OAT.WebDav.window.hide();
 					if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f,data); }
 				}
 				OAT.AJAX.GET(url,false,response,o);
@@ -154,7 +154,7 @@ OAT.WebDav = {
 
 			/* ready to save */
 			if (!this.options.dataCallback) {
-				OAT.Dom.hide(OAT.WebDav.window.div);
+				OAT.WebDav.window.hide();
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
 				return;
 			}
@@ -224,26 +224,20 @@ OAT.WebDav = {
 
 		/* create window */
 		var wopts = {
-			min:0,
-			max:0,
-			close:1,
-			width:this.options.width,
-			height:this.options.height,
+                        visibleButtons:"cr",
+			enabledButtons:"cr",
+			outerWidth:this.options.width,
+			outerHeight:this.options.height,
 			imagePath:this.options.imagePath,
 			title:"WebDAV Browser"
 		}
-		this.window = new OAT.Window(wopts);
-		var div = this.window.div;
+		this.window = new OAT.Win(wopts);
+		var div = this.window.dom.content;
 		var content = OAT.Dom.create("div",{paddingLeft:"2px",paddingRight:"5px"});
 
-		this.window.content.appendChild(content);
+		this.window.dom.content.appendChild(content);
 		div.style.zIndex = 1001;
 		div.id = "dav_browser";
-		this.window.onclose = function() {
-			OAT.Dom.hide(div);
-		}
-		OAT.Dom.hide(div);
-		document.body.appendChild(div);
 
 		/* create toolbar */
 		var toolbarDiv = OAT.Dom.create("div");
@@ -306,17 +300,7 @@ OAT.WebDav = {
 		OAT.Resize.create(main_splitter,main_tree,OAT.Resize.TYPE_X,restrict);
 		OAT.Resize.create(main_splitter,main_right,-OAT.Resize.TYPE_X,restrict);
 		OAT.Resize.create(main_splitter,main_content,-OAT.Resize.TYPE_X,restrict);
-		OAT.Resize.create(this.window.resize,main,OAT.Resize.TYPE_Y);
-		OAT.Resize.create(this.window.resize,main_tree,OAT.Resize.TYPE_Y);
-		OAT.Resize.create(this.window.resize,main_right,OAT.Resize.TYPE_X);
-		OAT.Resize.create(this.window.resize,main_content,OAT.Resize.TYPE_X);
 
-		if (OAT.Browser.isIE && document.compatMode == "BackCompat") {
-			main_right.style.height = h1;
-			OAT.Resize.create(this.window.resize,main_right,OAT.Resize.TYPE_Y);
-		}
-
-		this.window.resize.style.cursor = "nw-resize";
 		this.dom.content = main_content;
 
 		/* bottom part */
@@ -803,7 +787,7 @@ OAT.WebDav = {
 		});
 		OAT.Dom.attach(this.dom.ok,"click",useRef);
 		OAT.Dom.attach(this.dom.cancel,"click",function(event) {
-			OAT.Dom.hide(OAT.WebDav.window.div);
+			OAT.WebDav.window.hide();
 		});
 		OAT.Dom.attach(this.dom.ext,"change",function(event) {
 			var ext = OAT.WebDav.options.extensionFilters[OAT.WebDav.dom.ext.selectedIndex];
@@ -906,8 +890,8 @@ OAT.WebDav = {
 			return;
 		}
 
-		OAT.Dom.show(this.window.div);
-		OAT.Dom.center(this.window.div,1,1);
+		this.window.show();
+		OAT.Dom.center(this.window.dom.container,1,1);
 		OAT.Dom.show("dav_permissions");
 		this.dom.file.value = this.options.file; /* preselected file name */
 

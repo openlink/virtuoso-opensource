@@ -25,7 +25,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		close:1,
 		autoEnter:1,
 		imagePath:OAT.Preferences.imagePath,
-		type:OAT.WinData.TYPE_MS
+		type:OAT.WinData.TYPE_AUTO
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
 	
@@ -33,7 +33,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	if (options.close) winbuttons += "c"; 
 	if (options.resize) winbuttons += "r";
 
-	var win = new OAT.Win({visibleButtons:winbuttons,enabledButtons:winbuttons, max:0, min:0, outerWidth:options.width, outerHeight:options.height, x:0, y:0, imagePath:options.imagePath, title:title, type:options.type, stackGroupBase:false});
+	var win = new OAT.Win({visibleButtons:winbuttons,enabledButtons:winbuttons, outerWidth:options.width, outerHeight:options.height, x:0, y:0, imagePath:options.imagePath, title:title, type:options.type, stackGroupBase:false});
 
  	$(contentDiv).style.margin = "10px";
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
