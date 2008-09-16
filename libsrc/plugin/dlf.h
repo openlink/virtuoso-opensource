@@ -31,13 +31,15 @@
 #if defined (__APPLE__)
 #include <AvailabilityMacros.h>
 
-# if MAC_OS_X_VERSION_MIN_REQUIRED <= 1030
 /*
  *  Mac OS X < 10.3 does not have dlopen
  *  Mac OS X 10.3 has dlopen, but has some problems so we use DLDAPI_MACX instead
  */
+# if MAC_OS_X_VERSION_MIN_REQUIRED <= 1030
 #  undef HAVE_LIBDL
 #  define DLDAPI_MACX 1
+# else
+#  define DLDAPI_SVR4_DLFCN 1
 # endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
 #endif /* defined (__APPLE_) */
 
