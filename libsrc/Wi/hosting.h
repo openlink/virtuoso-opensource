@@ -65,18 +65,10 @@ void virtuoso_restore_sig_handlers (void);
 
 #define HOSTING_TITLE "Hosting"
 #define HOSTING_VERSION "Hosting"
-#if defined (__APPLE__)
-# define HOSTING_HTTP_HANDLER "_virtm_http_handler"
-# define HOSTING_CLIENT_ATTACH "_virtm_client_attach"
-# define HOSTING_CLIENT_DETACH "_virtm_client_detach"
-# define HOSTING_CLIENT_FREE "_virtm_client_free"
-# define HOSTING_CLIENT_CLONE "_virtm_client_clone"
-#else
 # define HOSTING_HTTP_HANDLER "virtm_http_handler"
 # define HOSTING_CLIENT_ATTACH "virtm_client_attach"
 # define HOSTING_CLIENT_DETACH "virtm_client_detach"
 # define HOSTING_CLIENT_FREE "virtm_client_free"
 # define HOSTING_CLIENT_CLONE "virtm_client_clone"
-#endif
 
 #endif

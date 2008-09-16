@@ -97,11 +97,7 @@ unit_version_t *plain_plugin_load (const char *plugin_dll_name, const char *plug
   filename = (char *) dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_name) + 1);
   snprintf (filename, strlen (plugin_load_path) + 1 + strlen (plugin_name) + 1, "%s/%s", plugin_load_path, plugin_name);
   funname = (char *) dk_alloc (strlen (plugin_name) + 6 + 1 /* == strlen ("_check") */ + 1);
-#if defined (__APPLE__)
-  snprintf (funname, strlen (plugin_name) + 6 + 1 + 1, "_%s_check", plugin_name);
-#else
   snprintf (funname, strlen (plugin_name) + 6 + 1, "%s_check", plugin_name);
-#endif
   dk_free_box (plugin_name);
   return uv_load_and_check_plugin (filename, funname, &plain_plugin_version, NULL);
 }

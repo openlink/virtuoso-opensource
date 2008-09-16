@@ -181,11 +181,7 @@ hosting_plugin_load (const char *plugin_dll_name, const char *plugin_load_path)
 
   filename = (char *) dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_dll_name) + 1);
   snprintf (filename, file_name_max_len, "%s/%s", plugin_load_path, plugin_dll_name);
-#if defined (__APPLE__)
-  funname_max_len = strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1 /* leading underscore */ + 1;
-#else
   funname_max_len = strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1;
-#endif
 
   filename = (char *) dk_alloc (file_name_max_len);
   snprintf (filename, file_name_max_len, "%s/%s", plugin_load_path, plugin_dll_name);
@@ -193,14 +189,8 @@ hosting_plugin_load (const char *plugin_dll_name, const char *plugin_load_path)
   dot = strchr (plugin_dll_name, '.');
   if (!dot)
     dot = plugin_dll_name + strlen (plugin_dll_name);
-#if defined (__APPLE__)
-  funname[0]='_';
-  strncpy (funname + 1, plugin_dll_name, dot - plugin_dll_name);
-  funname[dot - plugin_dll_name + 1] = 0;
-#else
   strncpy (funname, plugin_dll_name, dot - plugin_dll_name);
   funname[dot - plugin_dll_name] = 0;
-#endif
   strncat_size_ck (funname, "_check", funname_max_len - strlen (funname) - 1, funname_max_len);
   hver = hosting_load_and_check_plugin (filename, funname, &dock_hosting_version, NULL);
 
