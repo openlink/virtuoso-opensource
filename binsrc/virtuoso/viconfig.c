@@ -406,6 +406,9 @@ int32 c_sql_warnings_to_syslog = 0;
 int32 c_temp_db_size = 0;
 int32 c_dbev_enable = 1;
 
+extern long sparql_result_set_max_rows;
+int32 c_sparql_result_set_max_rows = 0;
+
 /* for use in bif_servers */
 int
 virtuoso_cfg_getstring (char *section, char * key, char **pret)
@@ -1238,6 +1241,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DynamicLocal", &c_uriqa_dynamic_local) == -1)
     c_uriqa_dynamic_local = 0;
 
+  section = "SPARQL";
+  if (cfg_getlong (pconfig, section, "ResultSetMaxRows", &c_sparql_result_set_max_rows) == -1)
+    c_sparql_result_set_max_rows = 1000;
+
   /* Now open the HTTP log */
   if (http_log_file)
     {
@@ -1616,6 +1623,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   dbev_enable = c_dbev_enable;
   iri_cache_size = c_iri_cache_size;
   uriqa_dynamic_local = c_uriqa_dynamic_local;
+  sparql_result_set_max_rows = c_sparql_result_set_max_rows;
 }
 
 

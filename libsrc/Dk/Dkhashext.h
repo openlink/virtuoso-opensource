@@ -73,6 +73,8 @@ struct id_hash_s
     int         ht_rehash_threshold;
     long	ht_dict_refctr;		/*!< Number of references to dictionary, if the hastable is used as a box */
     long	ht_dict_version;	/*!< Version of dictionary, to track parallel access */
+    long 	ht_dict_size;		/* size of dictonary : lenght of key + len of the data, check it against 500 * ht_dict_size */
+    long 	ht_dict_max_entries;	/* maximum number of entries kept in dictonary, limit to prevent exausting of the physical memory */
     dk_mutex_t *ht_mutex;		/*!< Optional mutex, esp. popular when this is a dictionary propagated across threads of async queue. The mutex is NOT owned by the hashtable box! */
     id_hash_free_t	ht_free_hook;
 } ;

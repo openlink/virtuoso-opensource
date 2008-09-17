@@ -241,6 +241,7 @@ caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_sequence_set_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_sequence_next_no_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+long raw_length (caddr_t arg);
 
 #define AS_DBA(qi, exp) \
 { \

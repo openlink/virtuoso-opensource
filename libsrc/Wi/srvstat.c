@@ -266,6 +266,8 @@ long fe_replication_support = 1;
 long fe_replication_support = 0;
 #endif
 
+long sparql_result_set_max_rows = 1000;
+
 static long thr_cli_running;
 static long thr_cli_waiting;
 static long thr_cli_vdb;
@@ -1330,6 +1332,10 @@ stat_desc_t stat_descs [] =
     {"backup_dir_index", &bp_ctx.db_bp_index, NULL},
     {"backup_dir_bytes", &bp_ctx.db_bp_wr_bytes, NULL},
     {"backup_processed_pages", &bp_ctx.db_bp_pages, NULL},
+
+    /* sparql vars */
+    {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
+
     {NULL, NULL, NULL}
 };
 

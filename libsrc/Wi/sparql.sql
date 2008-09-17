@@ -3761,7 +3761,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
   declare blank_ids any;
   if (214 <> __tag(_env))
     {
-      _env := dict_new ();
+      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'));
       if (0 < length (stats))
         DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector());
     }
@@ -3852,7 +3852,9 @@ create procedure DB.DBA.SPARQL_DESC_AGG_ACC (inout _env any, in vars any)
   declare var_ctr integer;
   declare blank_ids any;
   if (214 <> __tag(_env))
-    _env := dict_new ();
+    {
+      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'));
+    }
   for (var_ctr := length (vars) - 1; var_ctr >= 0; var_ctr := var_ctr - 1)
     {
       declare i any;

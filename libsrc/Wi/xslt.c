@@ -3135,6 +3135,12 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   ht = (id_hash_t *)box_dv_dict_hashtable (size);
   ht->ht_rehash_threshold = 120;
+  if (BOX_ELEMENTS (args) > 1)
+    {
+      long max_entries = (long) bif_long_arg (qst, args, 1, "dict_new");
+      if (max_entries > 0)
+	ht->ht_dict_max_entries = max_entries;
+    }
   hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)ht);
   return (caddr_t)hit;
 }
@@ -3161,7 +3167,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t key = bif_arg (qst, args, 1, "dict_put");
   caddr_t val = bif_arg (qst, args, 2, "dict_put");
   caddr_t *old_val;
-  long res;
+  long res, len;
   if (ht->ht_mutex)
     {
       caddr_t unsafe_val_subtree;
@@ -3175,9 +3181,14 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       mutex_enter (ht->ht_mutex);
     }
+  if (ht->ht_dict_max_entries > 0 && 
+      (((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) || 
+       (ht->ht_dict_size > (ht->ht_dict_max_entries * 500))))
+    goto ret;
   old_val = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
   if (NULL != old_val)
     {
+      len = raw_length (val) - raw_length (old_val[0]);
       dk_free_tree (old_val[0]);
       val = box_copy_tree (val);
       if (ht->ht_mutex)
@@ -3207,10 +3218,13 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           box_make_tree_mt_safe (val);
         }
       id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
+      len = raw_length (val) + raw_length (key);
     }
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
+  ht->ht_dict_size += len;
   hit->hit_dict_version = ht->ht_dict_version;
+ret:  
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
   res = ht->ht_inserts - ht->ht_deletes;
@@ -3264,6 +3278,7 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   old_key = old_key_ptr[0];
   old_val = old_val_ptr[0];
   id_hash_remove (ht, (caddr_t)(&key));
+      ht->ht_dict_size -= (raw_length (old_key) + raw_length (old_val));
   dk_free_tree (old_key);
   dk_free_tree (old_val);
   id_hash_iterator (hit, ht);
@@ -3322,6 +3337,7 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       id_hash_clear (ht);
       ht->ht_dict_version++;
+      ht->ht_dict_size = 0;
     }
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
@@ -3363,6 +3379,7 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       id_hash_clear (ht);
       ht->ht_dict_version++;
+      ht->ht_dict_size = 0;
     }
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
