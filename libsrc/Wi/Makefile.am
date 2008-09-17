@@ -636,10 +636,10 @@ SQL_FILES_IMSG		 = \
 	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
 endif
 
-json_p.c json_p.h: $(srcdir)/json.y Makefile
+json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
-json_l.c: $(srcdir)/json.l json_p.h Makefile
+json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
@@ -721,14 +721,14 @@ turtle_l.c: turtle_l.l turtle_p.h
 
 AWK_FILES = $(srcdir)/sql_to_c.awk
 
-sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile
+sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code.c \
 		-f $(srcdir)/sql_to_c.awk \
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES)
 
-sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES) Makefile
+sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_1.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -736,7 +736,7 @@ sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_1)
 
-sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES) Makefile
+sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_ddk.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -744,7 +744,7 @@ sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DDK)
 
-sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES) Makefile
+sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_adm.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -752,7 +752,7 @@ sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_ADM)
 
-sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES) Makefile
+sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_dav.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -760,7 +760,7 @@ sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DAV)
 
-sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES) Makefile
+sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_vad.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -768,7 +768,7 @@ sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VAD)
 
-sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES) Makefile
+sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_dbp.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -776,7 +776,7 @@ sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DBP)
 
-sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES) Makefile
+sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_uddi.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -784,7 +784,7 @@ sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_UDDI)
 
-sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES) Makefile
+sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_imsg.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -792,7 +792,7 @@ sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_IMSG)
 
-sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES) Makefile
+sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_auto.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -800,7 +800,7 @@ sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_AUTO)
 
-sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile
+sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_2pc.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -812,7 +812,7 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile
 #	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
 #		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
-sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile
+sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_vdb.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -820,7 +820,7 @@ sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VDB)
 
-sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile
+sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_sparql.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -838,7 +838,7 @@ blog_pages.sql: FORCE
 JSO_FILES	= $(srcdir)/rdf_mapping.jso
 JSO_AWK		= $(srcdir)/jso_reformat.awk
 
-rdf_mapping_jso.h: $(JSO_FILES) $(JSO_AWK) Makefile
+rdf_mapping_jso.h: $(JSO_FILES) $(JSO_AWK) Makefile.am
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.h \
 		-f $(JSO_AWK) \
@@ -847,7 +847,7 @@ rdf_mapping_jso.h: $(JSO_FILES) $(JSO_AWK) Makefile
 		-v "init_name=rdf_mapping" \
 		$(JSO_FILES)
 
-rdf_mapping_jso.c: $(JSO_FILES) $(JSO_AWK) Makefile
+rdf_mapping_jso.c: $(JSO_FILES) $(JSO_AWK) rdf_mapping_jso.h Makefile.am
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.c \
 		-f $(JSO_AWK) \
@@ -855,7 +855,7 @@ rdf_mapping_jso.c: $(JSO_FILES) $(JSO_AWK) Makefile
 		-v "init_name=rdf_mapping" \
 		$(JSO_FILES)
 
-rdf_mapping_jso.ttl: $(JSO_FILES) $(JSO_AWK) Makefile
+rdf_mapping_jso.ttl: $(JSO_FILES) $(JSO_AWK) Makefile.am
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.ttl \
 		-f $(JSO_AWK) \
@@ -863,7 +863,7 @@ rdf_mapping_jso.ttl: $(JSO_FILES) $(JSO_AWK) Makefile
 		-v "init_name=rdf_mapping" \
 		$(JSO_FILES)
 
-rdf_mapping_jso.ttl-sample: $(JSO_FILES) $(JSO_AWK) Makefile
+rdf_mapping_jso.ttl-sample: $(JSO_FILES) $(JSO_AWK) Makefile.am
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.ttl-sample \
 		-f $(JSO_AWK) \
@@ -927,10 +927,12 @@ EXTRA_DIST = \
 	name.c \
 	plugin_gate.c \
 	rdf_mapping.jso \
+	rdf_mapping_jso.ttl \
+	rdf_mapping_jso.ttl-sample \
 	sql3_vc.c \
+	scn3split.c \
 	sql_code_cache_impl.c \
 	sql_to_c.awk \
 	sqlwords.gperf \
 	ssl.c \
 	string_tmpl.c
-
