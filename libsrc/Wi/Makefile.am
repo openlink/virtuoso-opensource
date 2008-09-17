@@ -36,7 +36,7 @@ if WITH_IMSG
 endif
 
 
-GEN=${top_srcdir}/bin/generate
+GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 
 noinst_LTLIBRARIES = libwi.la libwic.la $(IODBC_LIBS)
@@ -97,7 +97,6 @@ generated_code = \
 
 BUILT_SOURCES = $(generated_code)
 CLEANFILES = \
-	$(generated_code) \
 	sparql_p.output sql3.output turtle_p.output xpathp.output
 
 
@@ -638,21 +637,21 @@ SQL_FILES_IMSG		 = \
 endif
 
 json_p.c json_p.h: $(srcdir)/json.y Makefile
-	$(YACC) -vd -ojson_p.c -pjsonyy $(srcdir)/json.y
+	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
 json_l.c: $(srcdir)/json.l json_p.h Makefile
-	$(LEX) -Pjsonyy -ojson_l.c $(srcdir)/json.l
+	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
 sqlwords.h: $(srcdir)/sqlwords.gperf
-	@${GEN} ${GPERF} \
+	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
 		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
 sql3.c: sql3.y
-	$(YACC) -vd -osql3.c $(srcdir)/sql3.y
+	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
 
 sql3.h: sql3.c
 	## Recover from the removal of $@
@@ -662,17 +661,17 @@ sql3.h: sql3.c
 	fi
 
 scn3.c: scn3.l sql3.c sqlwords.h
-	$(LEX) -oscn3.c $(srcdir)/scn3.l
+	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
 
 scn3split.c: scn3.l sql3.c sqlwords.h
-	$(LEX) -Pscn3splityy -oscn3split.c $(srcdir)/scn3.l
+	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
 sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
 xpathp.c: xpathp.y
-	$(YACC) -vd -oxpathp.c -pxpyy $(srcdir)/xpathp.y
+	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
 xpathp.h: xpathp.c
 	## Recover from the removal of $@
@@ -685,10 +684,10 @@ xpathp_lex_props.c: list_lex_props.sh xpathp.y
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
 
 xpscn.c: xpscn.l xpathp.h
-	$(LEX) -Pxpyy -oxpscn.c $(srcdir)/xpscn.l
+	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
 sparql_p.c: sparql_p.y
-	$(YACC) -vd -osparql_p.c -psparyy $(srcdir)/sparql_p.y
+	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
 sparql_p.h: sparql_p.c
 	## Recover from the removal of $@
@@ -701,10 +700,10 @@ sparql_lex_props.c: list_lex_props.sh sparql_p.y
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
 sparql_l.c: sparql_l.l sparql_p.h
-	$(LEX) -Psparyy -osparql_l.c $(srcdir)/sparql_l.l
+	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
 turtle_p.c: turtle_p.y
-	$(YACC) -vd -oturtle_p.c -pttlyy $(srcdir)/turtle_p.y
+	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
 turtle_p.h: turtle_p.c
 	## Recover from the removal of $@
@@ -717,7 +716,7 @@ turtle_lex_props.c: list_lex_props.sh turtle_p.y
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
 turtle_l.c: turtle_l.l turtle_p.h
-	$(LEX) -Pttlyy -oturtle_l.c $(srcdir)/turtle_l.l
+	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
 
 
 AWK_FILES = $(srcdir)/sql_to_c.awk

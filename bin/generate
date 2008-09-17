@@ -41,11 +41,13 @@ N=`tput sgr0 2>/dev/null`
 # ----------------------------------------------------------------------
 #  Globals
 # ----------------------------------------------------------------------
-OUTPUT_FILE=
-EXTRA_ARGS=
+OUTPUT_FILE=""
+OUTPUT_ARG=""
+EXTRA_ARGS=""
 ERROR="${B}** ERROR **${N}"
 WARNING="${B}* WARNING *${N}"
 USAGE=0
+USE_STDOUT=0
 
 
 # ----------------------------------------------------------------------
@@ -54,6 +56,10 @@ USAGE=0
 while  test "x$1" != "x"
 do
    case "$1" in
+	--stdout)
+ 	  USE_STDOUT=1
+	  ;;
+
        -o)	
           shift
 	  OUTPUT_FILE="$1"
@@ -76,9 +82,10 @@ if test "$USAGE" -eq 1 || test -z "$EXTRA_ARGS"
 then
     cat <<-EOF_USAGE
 
-	Usage: $0 prog -o outputfile [args]...
+	Usage: $0 [--stdout] prog -o outputfile [args]...
 
-	This script tries to runs a command and pipe standard output to a file.
+	This script tries to runs a command and optionally pipe standard
+	output to a file.
 
 	If the program does not exist but the output file already exists,
 	the user is warned that any new data is not parsed and the output
@@ -100,6 +107,12 @@ set - $EXTRA_ARGS
 PROG=$1
 shift
 
+case "$PROG" in
+  gawk|*/gawk)
+    USE_STDOUT=1
+    ;;
+esac
+
 VERSION=`$PROG --version 2>/dev/null | head -1`
 
 if test -z "$VERSION"
@@ -107,17 +120,18 @@ then
     if test -f "$OUTPUT_FILE"
     then
 	#
-	#  Program not found, but outputfile already exists
+	#  Program not found, but output file already exists
 	#
         cat >&2 <<-EOF_WARNING
 
 	${WARNING}: You should have the ${B}${PROG}${N} program installed on your system.
 
-	Please check the ${B}INSTALL${N} and ${B}README${N} files for
+	Please check the ${B}INSTALL${N} and ${B}README${N} files for package 
+	dependencies, recommended versions and operating system dependent 
 	instructions to build and install Virtuoso on your system.
 
-	However since the file ${OUTPUT_FILE} exists on your system we
-	will try to use it, but all changes you made to the underlying
+	However since the file ${B}${OUTPUT_FILE}${N} exists on your system 
+	we will try to use it, but all changes you made to the underlying
 	source files will be ignored.
 
 	Please rerun 'make'
@@ -136,13 +150,14 @@ EOF_WARNING
 
     else
 	#
-	#  Program not found, and outputfile does not exists
+	#  Program not found, and output file does not exists
 	#
 	cat >&2 <<-EOF_MISSING
 
 	${ERROR}: You must have the ${B}${PROG}${N} program installed on your system.
 
-	Please check the ${B}INSTALL${N} and ${B}README${N} files for
+	Please check the ${B}INSTALL${N} and ${B}README${N} files for package 
+	dependencies, recommended versions and operating system dependent 
 	instructions to build and install Virtuoso on your system.
 	         
 EOF_MISSING
@@ -158,25 +173,48 @@ fi
 # ----------------------------------------------------------------------
 #  Generate some output
 # ----------------------------------------------------------------------
-echo "* Generating $OUTPUT_FILE using $VERSION"
 
-$PROG $* > tmp.$OUTPUT_FILE
-STATUS=$?
-
-if test $STATUS -eq 0 && test -s tmp.$OUTPUT_FILE
+if test -z "$OUTPUT_FILE"
 then
-    mv tmp.$OUTPUT_FILE $OUTPUT_FILE
+  echo "* Running $PROG using $VERSION"
 else
+  echo "* Generating $OUTPUT_FILE using $VERSION"
+  test $USE_STDOUT -eq 0 && OUTPUT_ARG="-o $OUTPUT_FILE"
+fi
+
+if test $USE_STDOUT -eq 0 || test -z "$OUTPUT_FILE"
+then
+  $PROG $OUTPUT_ARG $*
+  STATUS=$?
+else
+  $PROG $* > "tmp.$OUTPUT_FILE"
+  STATUS=$?
+  if test $STATUS -eq 0 && test -s "tmp.$OUTPUT_FILE"
+  then
+      mv "tmp.$OUTPUT_FILE" "$OUTPUT_FILE"
+  fi
+fi
+
+if test $STATUS -gt 0
+then
     cat >&2 <<-EOF_FAILED
 
-	${ERROR}: Code generation failed. Please check the above error(s).
+	${ERROR}: Code generation failed while running the following command:
+
+	  $PROG $*
+
+	Please fix the above error(s) before continuing.
+
+	Please check the ${B}INSTALL${N} and ${B}README${N} files for package 
+	dependencies, recommended versions and operating system dependent 
+	instructions to build and install Virtuoso on your system.
 
 EOF_FAILED
     
     #
     #  Abort make
     #
-    rm -f tmp.$OUTPUT_FILE
+    rm -f "tmp.$OUTPUT_FILE"
     exit 1
 fi
 

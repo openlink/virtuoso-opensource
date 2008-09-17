@@ -78,37 +78,32 @@ creolewiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 creolewiki_la_LDFLAGS = $(LTFLAGS) -export-symbols creolewiki.exp
 
 BUILT_SOURCES = \
-	maclex.c wikilex.c \
-	media_maclex.c media_wikilex.c \
-	creole_maclex.c creole_wikilex.c
+	maclex.c \
+	wikilex.c \
+	creole_maclex.c \
+	creole_wikilex.c \
+	media_maclex.c \
+	media_wikilex.c
 
-CLEANFILES = \
-	maclex.c wikilex.c \
-	media_maclex.c media_wikilex.c \
-	creole_maclex.c creole_wikilex.c \
-	lex.macyy.c lex.wikiyy.c \
-	lex.mediamacyy.c lex.mediawikiyy.c \
-	lex.creolemacyy.c lex.creolewikiyy.c
-
-GEN=${top_srcdir}/bin/generate
+GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 maclex.c: maclex.l
-	$(GEN) $(FLEX) -o maclex.c -t -8 -Pmacyy $(srcdir)/maclex.l
+	@$(GEN) $(FLEX) -o maclex.c -8 -Pmacyy $(srcdir)/maclex.l
 
 wikilex.c: wikilex.l
-	$(GEN) $(FLEX) -o wikilex.c -t -8 -Pwikiyy $(srcdir)/wikilex.l
+	@$(GEN) $(FLEX) -o wikilex.c -8 -Pwikiyy $(srcdir)/wikilex.l
 
 media_maclex.c: media_maclex.l
-	$(GEN) $(FLEX) -o media_maclex.c -t -8 -Pmediamacyy $(srcdir)/media_maclex.l
+	@$(GEN) $(FLEX) -o media_maclex.c -8 -Pmediamacyy $(srcdir)/media_maclex.l
 
 media_wikilex.c: media_wikilex.l
-	$(GEN) $(FLEX) -o media_wikilex.c -t -8 -Pmediawikiyy $(srcdir)/media_wikilex.l
+	@$(GEN) $(FLEX) -o media_wikilex.c -8 -Pmediawikiyy $(srcdir)/media_wikilex.l
 
 creole_maclex.c: creole_maclex.l
-	$(GEN) $(FLEX) -o creole_maclex.c -t -8 -Pcreolemacyy $(srcdir)/creole_maclex.l
+	@$(GEN) $(FLEX) -o creole_maclex.c -8 -Pcreolemacyy $(srcdir)/creole_maclex.l
 
 creole_wikilex.c: creole_wikilex.l
-	$(GEN) $(FLEX) -o creole_wikilex.c -t -8 -Pcreolewikiyy $(srcdir)/creole_wikilex.l
+	@$(GEN) $(FLEX) -o creole_wikilex.c -8 -Pcreolewikiyy $(srcdir)/creole_wikilex.l
 
 
 # ----------------------------------------------------------------------

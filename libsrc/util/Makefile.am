@@ -17,7 +17,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
-#  
+
+GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 noinst_LTLIBRARIES = libutil.la
 noinst_HEADERS		= \
@@ -94,10 +95,9 @@ libutil_la_SOURCES = \
 
 
 BUILT_SOURCES = getdate.c
-CLEANFILES = getdate.c
 
 getdate.c: getdate.y
-	$(YACC) -ogetdate.c $(top_srcdir)/libsrc/util/getdate.y
+	@$(GEN) $(YACC) -o getdate.c $(top_srcdir)/libsrc/util/getdate.y
 	
 
 
