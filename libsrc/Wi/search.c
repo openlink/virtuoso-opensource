@@ -2638,6 +2638,59 @@ itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   itc_read_ahead_blob (itc, itc_read_ahead1 (itc, buf_ret));
 }
 
+
+extern long tc_bp_get_buffer;
+int enable_read_aside = 1;
+
+ra_req_t *
+itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * dp)
+{
+  /* take leaves that are not dp.  If all are absent, schedule them all for read ahead */
+  dp_addr_t leaves[1000];
+  int fill = 0;
+  db_buf_t page = buf->bd_buffer;
+  ra_req_t *ra=NULL;
+  int pos = SHORT_REF (page + DP_FIRST);
+
+  if (tc_bp_get_buffer > main_bufs - 100 || !enable_read_aside)
+    return NULL;
+  while (pos)
+    {
+      dp_addr_t leaf = 0;
+      leaf = leaf_pointer (page, pos);
+      if (leaf && leaf != dp)
+	{
+	  buffer_desc_t decoy;
+	  dp_addr_t phys;
+	  buffer_desc_t * btmp;
+	  ITC_IN_KNOWN_MAP (itc, leaf);
+	  if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, leaf) 
+	      ||dbs_is_free_page (itc->itc_tree->it_storage, leaf) || 0 == leaf)
+	    {
+	      log_error ("*** read-ahead of a free or out of range page dp L=%ld, database not necessarily corrupted.",
+			 leaf);
+	      ITC_LEAVE_MAP_NC (itc);
+	      return NULL;
+	    }
+	  btmp = IT_DP_TO_BUF (itc->itc_tree, leaf);
+	  if (btmp)
+	    {
+	      ITC_LEAVE_MAP_NC (itc);
+	      return NULL;
+	    }
+	  ITC_LEAVE_MAP_NC (itc);
+	  leaves[fill++] = leaf;
+	}
+      pos = IE_NEXT (page + pos);
+    }
+
+  ra= (ra_req_t *) dk_alloc_box(sizeof(ra_req_t),DV_CUSTOM);
+  memset (ra, 0, sizeof (*ra));
+  memcpy (&ra->ra_dp, leaves, fill * sizeof (dp_addr_t));
+  ra->ra_fill = fill;
+  return ra;
+}
+
 /* random search support */
 
 

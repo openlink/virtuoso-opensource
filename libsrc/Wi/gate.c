@@ -151,6 +151,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
   buf = IT_DP_TO_BUF (itc->itc_tree, dp);
   if (!buf)
     {
+      ra_req_t * ra = NULL;
       IT_DP_REMAP (itc->itc_tree, dp, phys_dp);
       if ((DP_DELETED == phys_dp || dbs_is_free_page (itc->itc_tree->it_storage, phys_dp))
 	  && !strchr (wi_inst.wi_open_mode, 'a'))
@@ -176,7 +177,8 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       sethash (DP_ADDR2VOID (dp), &IT_DP_MAP (itc->itc_tree, dp)->itm_dp_to_buf, (void*)&decoy);
       ITC_LEAVE_MAPS (itc);
       buf = bp_get_buffer (NULL, BP_BUF_REQUIRED);
-
+      if (buf_from && !itc->itc_landed)
+	ra = itc_read_aside (itc, buf_from, dp);
       is_read_pending++;
       buf->bd_being_read = 1;
       buf->bd_page = dp;
@@ -189,6 +191,8 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       buf->bd_tree = itc->itc_tree;
       buf_disk_read (buf);
       is_read_pending--;
+      if (ra)
+	itc_read_ahead_blob (itc, ra);
       if (buf_from)
 	{
 	  ITC_IN_TRANSIT (itc, dp, buf_from->bd_page)

@@ -138,6 +138,7 @@ int itc_ra_quota (it_cursor_t * itc);
 struct ra_req_s *itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra);
 void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
+struct ra_req_s * itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * dp);
 
 #define DV_COMPARE_SPEC(r, sp, it) \
   if (sp->sp_min_op == CMP_EQ) \
