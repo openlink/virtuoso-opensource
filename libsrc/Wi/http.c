@@ -1407,6 +1407,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_ignore_disconnect = 0;
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
+  ws->ws_proxy_request = 0;
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
@@ -4583,6 +4584,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       ws->ws_p_path_string = box_copy (new_phy_path);
       parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
+      ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
     }
 #endif  
   if (BOX_ELEMENTS (args) > 2)
