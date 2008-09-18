@@ -354,7 +354,7 @@ extern int sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *e
 /*!< Adds variables to equivalence classes and set counters of usages */
 extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
 
-/*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE */
+/*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
 void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
 
 /*! Performs all basic term rewritings of the query tree. */
@@ -591,7 +591,8 @@ extern int sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr);
 /*! Finalization part of sparp_rewrite_qm(), including invocation of whole support of recursive sponge. */
 extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 
-/*! Expand '*' retval list into actual list of variables, add MAX around non-grouped variables etc. */
+/*! Expand '*' retval list into actual list of variables, add MAX around non-grouped variables etc.
+This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate ORDER BY <int> */
 extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
 
 /* PART 3. OUTPUT GENERATOR */

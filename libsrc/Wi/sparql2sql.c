@@ -120,6 +120,44 @@ int sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_
   return SPAR_GPT_NODOWN;
 }
 
+static void
+sparp_preprocess_obys (sparp_t *sparp, SPART *root)
+{
+  int oby_ctr;
+  SPART *retvals = root->_.req_top.retvals;
+  int rv_count = (IS_BOX_POINTER (retvals) ? BOX_ELEMENTS (retvals) : -1);
+  DO_BOX_FAST (SPART *, oby, oby_ctr, root->_.req_top.order)
+    {
+      SPART *oby_expn = oby->_.oby.expn;
+      if (IS_BOX_POINTER (oby_expn))
+        {
+          if (SPAR_VARIABLE == SPART_TYPE (oby_expn))
+            {
+              int rv_ctr;
+              caddr_t vname = oby_expn->_.var.vname;
+              for (rv_ctr = 0; rv_ctr < rv_count; rv_ctr++)
+                {
+                  SPART *rv = root->_.req_top.retvals[rv_ctr];
+                  if ((SPAR_ALIAS == SPART_TYPE (rv)) && !strcmp (vname, rv->_.alias.aname))
+                    {
+                      oby->_.oby.expn = (SPART *)((ptrlong)(rv_ctr+1));
+                      break;
+                    }
+                }
+            }
+        }
+      else
+        {
+          long i = (ptrlong)(oby_expn);
+          if (0 >= rv_count)
+            spar_error (sparp, "SELECT query should contain explicit list of returned columns if ORDER BY refers to indexes of that columns");
+          if ((0 >= i) || (rv_count < i))
+            spar_error (sparp, "ORDER BY refers to resulting column index %ld, should be in range 1 to %d", i, rv_count );
+        }
+    }
+  END_DO_BOX_FAST;
+}
+
 void
 sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars)
 {
@@ -128,6 +166,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   dk_set_t names = NULL;
   dk_set_t new_vars = NULL;
   SPART **retvals = query->_.req_top.retvals;
+  sparp_preprocess_obys (sparp, query);
   if (IS_BOX_POINTER (retvals))
     {
       if (safely_copy_all_vars)
@@ -3169,6 +3208,7 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
     {
       SPART *single_var = NULL;
       sparp_equiv_t *sv_eq;
+      int filt_is_detached = 0;
       int subval_ctr, subval_count;
       sparp_gp_trav_int (sparp, filt, sts_this, &(single_var),
         NULL, NULL,
@@ -3196,12 +3236,19 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
       END_DO_BOX_FAST_REV;
       if (10 < subval_count)
         continue; /* Too many subvalues found after correction for member unions */
-      sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
       DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
           SPART *sub_gp = sub_eq->e_gp;
-          SPART *filter_clone = sparp_tree_full_copy (sparp, filt, curr);
+          SPART *filter_clone;
+          if (SELECT_L == sub_gp->_.gp.subtype)
+            continue; /*!!!TBD remove when HAVING is supported so filter can be moved inside subselect safely. Now that is impossible for e.g. { select count (...) as ?x ... } filter (?x < 10) */
+          if (!filt_is_detached)
+            {
+              sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
+              filt_is_detached = 1;
+            }
+          filter_clone = sparp_tree_full_copy (sparp, filt, curr);
           sparp_gp_attach_filter (sparp, sub_gp, filter_clone, 0, NULL);
         }
       END_DO_BOX_FAST_REV;
