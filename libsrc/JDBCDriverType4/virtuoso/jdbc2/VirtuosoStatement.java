@@ -122,6 +122,7 @@ public class VirtuosoStatement implements Statement
       this.concurrency = VirtuosoResultSet.CONCUR_READ_ONLY;
       this.rpc_timeout = connection.timeout;
       this.txn_timeout = connection.txn_timeout;
+      this.prefetch = connection.fbs;
    }
 
    /**
@@ -146,6 +147,8 @@ public class VirtuosoStatement implements Statement
       else
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
       this.rpc_timeout = connection.timeout;
+      this.txn_timeout = connection.txn_timeout;
+      this.prefetch = connection.fbs;
    }
 
 #if JDK_VER >= 14

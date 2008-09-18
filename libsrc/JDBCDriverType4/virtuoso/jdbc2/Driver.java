@@ -62,15 +62,16 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 24;
+   protected static final int minor = 25;
 
    // Some variables
    private String host, port, user, password, database, charset, pwdclear;
-	private Integer timeout, log_enable;
+   private Integer timeout, log_enable;
 #ifdef SSL
    private String keystore_cert, keystore_pass, keystore_path;
    private String ssl_provider;
 #endif
+   private Integer fbs, sendbs, recvbs;
 
    /**
     * Constructs a Virtuoso DBMS Driver instance. This function has not to be called
@@ -160,6 +161,9 @@ public class Driver implements java.sql.Driver
             if(keystore_path!=null) info.put("keystorepath",keystore_path);
             if(ssl_provider!=null) info.put("provider",ssl_provider);
 #endif
+            if(fbs!=null) info.put("fbs",fbs);
+            if(sendbs!=null) info.put("sendbs",sendbs);
+            if(recvbs!=null) info.put("recvbs",recvbs);
 	    //System.err.println ("PwdClear is " + pwdclear);
             return new VirtuosoConnection(url,host,Integer.parseInt(port),info);
          }
@@ -194,6 +198,9 @@ public class Driver implements java.sql.Driver
       keystore_cert = keystore_pass = keystore_path = null;
 #endif
       database = user = password = null;
+      fbs = new Integer(VirtuosoTypes.DEFAULTPREFETCH);
+      recvbs = sendbs = new Integer(32768);
+
       if((i = url.indexOf("//")) > 0)
       {
          String part1 = url.substring(0,i), part2 = url.substring(i + 2);
@@ -269,6 +276,15 @@ public class Driver implements java.sql.Driver
          if((j = part2.toLowerCase().indexOf("/pwdtype=")) >= 0)
             pwdclear = (part2.substring(j + 9).indexOf("/") < 0) ? part2.substring(j + 9) :
                 part2.substring(j + 9,j + 9 + part2.substring(j + 9).indexOf("/"));
+         if((j = part2.toLowerCase().indexOf("/fbs=")) >= 0)
+            fbs = new Integer((part2.substring(j + 5).indexOf("/") < 0) ? part2.substring(j + 5) :
+                part2.substring(j + 5,j + 5 + part2.substring(j + 5).indexOf("/")));
+         if((j = part2.toLowerCase().indexOf("/sendbs=")) >= 0)
+            sendbs = new Integer((part2.substring(j + 8).indexOf("/") < 0) ? part2.substring(j + 8) :
+                part2.substring(j + 8,j + 8 + part2.substring(j + 8).indexOf("/")));
+         if((j = part2.toLowerCase().indexOf("/recvbs=")) >= 0)
+            recvbs = new Integer((part2.substring(j + 8).indexOf("/") < 0) ? part2.substring(j + 8) :
+                part2.substring(j + 8,j + 8 + part2.substring(j + 8).indexOf("/")));
 	 //System.err.println ("2PwdClear is " + pwdclear);
       }
       else
@@ -380,6 +396,21 @@ public class Driver implements java.sql.Driver
          pinfo[7].required = false;
       }
 #endif
+      if(info.get("fbs") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("fbs",null);
+         pinfo[3].required = false;
+      }
+      if(info.get("sendbs") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("sendbs",null);
+         pinfo[3].required = false;
+      }
+      if(info.get("recvbs") == null)
+      {
+         pinfo[3] = new DriverPropertyInfo("recvbs",null);
+         pinfo[3].required = false;
+      }
       return pinfo;
    }
 

@@ -373,7 +373,7 @@ class VirtuosoTypes
 
    public static final int PAGESIZ = 8172;
 
-   public static final int DEFAULTPREFETCH = 20;
+   public static final int DEFAULTPREFETCH = 100;
 
    /**
     * Array type

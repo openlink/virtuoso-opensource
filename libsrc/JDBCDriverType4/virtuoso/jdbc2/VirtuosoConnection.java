@@ -116,6 +116,8 @@ public class VirtuosoConnection implements Connection
    protected int timeout = 60;
    protected int txn_timeout = 0;
 
+   protected int fbs = VirtuosoTypes.DEFAULTPREFETCH;
+
    // utf8_encoding for statements
    protected boolean utf8_execs = false;
 
@@ -145,6 +147,8 @@ public class VirtuosoConnection implements Connection
     */
    VirtuosoConnection(String url, String host, int port, Properties prop) throws VirtuosoException
    {
+      int sendbs = 32768;
+      int recvbs = 32768;
       // Set some variables
       this.req_no = 0;
       this.url = url;
@@ -170,6 +174,12 @@ public class VirtuosoConnection implements Connection
       if(prop.get("timeout") != null)
 		   timeout = ((Number)prop.get("timeout")).intValue();
       pwdclear = (String)prop.get("pwdclear");
+      if(prop.get("sendbs") != null)
+		   sendbs = ((Number)prop.get("sendbs")).intValue();
+      if(prop.get("recvbs") != null)
+		   recvbs = ((Number)prop.get("recvbs")).intValue();
+      if(prop.get("fbs") != null)
+		   fbs = ((Number)prop.get("fbs")).intValue();
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
       keystore_cert = (String)prop.get("certificate");
@@ -188,7 +198,7 @@ public class VirtuosoConnection implements Connection
       rdf_type_rev = new Hashtable ();
       rdf_lang_rev = new Hashtable ();
       // Connect to the database
-      connect(host,port,(String)prop.get("database"), (prop.get("log_enable") != null ? ((Number)prop.get("log_enable")).intValue() : -1));
+      connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? ((Number)prop.get("log_enable")).intValue() : -1));
    }
 
    /**
@@ -200,10 +210,10 @@ public class VirtuosoConnection implements Connection
     * @exception	virtuoso.jdbc2.VirtuosoException	An error occurred during the
     * connection.
     */
-   private void connect(String host, int port,String db, int log_enable) throws VirtuosoException
+   private void connect(String host, int port,String db, int sendbs, int recvbs, int log_enable) throws VirtuosoException
    {
       // Connect to the database
-      connect(host,port);
+      connect(host,port,sendbs,recvbs);
       // Set database with statement
       if(db!=null) new VirtuosoStatement(this).executeQuery("use "+db);
       //System.out.println  ("log enable="+log_enable);
@@ -234,7 +244,7 @@ public class VirtuosoConnection implements Connection
     * @exception	virtuoso.jdbc2.VirtuosoException	An error occurred during the
     * connection.
     */
-  private void connect(String host, int port) throws VirtuosoException
+  private void connect(String host, int port, int sendbs, int recvbs) throws VirtuosoException
    {
       try
       {
@@ -298,12 +308,12 @@ public class VirtuosoConnection implements Connection
 	 socket = new Socket(host,port);
 	 socket.setSoTimeout(timeout*1000);
 	 socket.setTcpNoDelay(true);
-         socket.setReceiveBufferSize(32768);
-         socket.setSendBufferSize(32768);
+         socket.setReceiveBufferSize(recvbs);
+         socket.setSendBufferSize(sendbs);
 
          // Get streams corresponding to the socket
-         in = new VirtuosoInputStream(this,socket, 32768);
-	 out = new VirtuosoOutputStream(this,socket, 32768);
+         in = new VirtuosoInputStream(this,socket, recvbs);
+	 out = new VirtuosoOutputStream(this,socket, sendbs);
          // RPC caller identification
 	 synchronized (this)
 	   {
