@@ -837,7 +837,7 @@ void
 cv_compare (dk_set_t * code, int bop,
      state_slot_t * l, state_slot_t * r, jmp_label_t succ, jmp_label_t fail, jmp_label_t unkn)
 {
-  if (bop != BOP_NULL)
+  if (bop != BOP_NULL && bop != BOP_LIKE)
     {
       if (l && l->ssl_column && IS_BLOB_DTP (l->ssl_column->col_sqt.sqt_dtp))
 	sqlc_new_error (NULL, "22023", "SQ167",

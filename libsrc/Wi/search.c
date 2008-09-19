@@ -1065,8 +1065,17 @@ itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec)
   ITC_COL (itc, spec->sp_cl, off, len1);
   dv1 = itc->itc_row_data + off;
   dtp1 = spec->sp_cl.cl_sqt.sqt_dtp;
+  if (DV_BLOB == dtp1 || DV_BLOB_WIDE == dtp1)
+    {
+      dtp1 = *dv1;
+      if (dtp1 == DV_SHORT_STRING || dtp1 == DV_LONG_STRING || dtp1 == DV_WIDE || dtp1 == DV_LONG_WIDE)
+	{
+	  dv1++;
+	  len1--;
+	}
+    }
   if (DV_ANY == dtp1 && DV_STRING == dtp2)
-    return itc_like_any_check (itc, dv1, len1, pattern);
+    return itc_like_any_check (itc, dv1, len1, (db_buf_t)pattern);
 
   if (dtp2 != DV_SHORT_STRING && dtp2 != DV_LONG_STRING && dtp2 != DV_WIDE && dtp2 != DV_LONG_WIDE )
     return DVC_LESS;
@@ -1091,6 +1100,20 @@ itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec)
       st = LIKE_ARG_UTF;
       collation = NULL;
       break;
+    case DV_BLOB:
+    case DV_BLOB_WIDE:
+	{
+	  blob_handle_t * bh;
+	  caddr_t temp_str; 
+	  collation = NULL;
+	  bh = bh_from_dv (dv1, itc);
+	  blob_check (bh);
+	  temp_str = blob_to_string (itc->itc_ltrx, (caddr_t) bh);
+	  dk_free_box (bh);
+	  res = cmp_like (temp_str, pattern, collation, spec->sp_like_escape, st, pt);
+	  dk_free_box (temp_str);
+	  return res;
+	}
     default:
       return DVC_LESS;
     }

@@ -716,6 +716,14 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
     return KS_CAST_NULL;
   DTP_NORMALIZE (dtp);
   DTP_NORMALIZE (target_dtp);
+  if (CMP_LIKE == sp->sp_min_op)
+    {
+      switch (target_dtp)
+	{
+	  case DV_BLOB: target_dtp = DV_STRING; break;
+	  case DV_BLOB_WIDE: target_dtp = DV_LONG_WIDE; break;
+	}
+    }
   if (IS_UDT_DTP (target_dtp))
     {
       char* cl_name = __get_column_name (sp->sp_cl.cl_col_id,
@@ -1476,7 +1484,17 @@ itc_get_alt_key (it_cursor_t * cr_itc, it_cursor_t * del_itc,
   DO_SET (dbe_column_t *, col, &alt_key->key_parts)
   {
     caddr_t err = NULL, any;
-    caddr_t value = itc_box_column (cr_itc, image, col->col_id, NULL);
+    caddr_t value;
+    dbe_col_loc_t * cl = itc_col_loc (cr_itc, image, col->col_id);
+    if (!cl)
+      { 
+	if (col->col_non_null && col->col_default)
+	  value = box_cast_to (NULL, col->col_default, DV_TYPE_OF (col->col_default), col->col_sqt.sqt_dtp, col->col_precision, col->col_scale, NULL);
+        else
+	  value = NEW_DB_NULL;
+      }
+    else
+      value = itc_box_column (cr_itc, image, col->col_id, cl);
     if (DV_ANY == col->col_sqt.sqt_dtp)
       {
 	any = box_to_any (value, &err);

@@ -433,6 +433,7 @@ extern resource_t * idp_rc;
 /* row.c */
 
 dbe_col_loc_t * key_find_cl (dbe_key_t * key, oid_t col);
+dbe_col_loc_t * itc_col_loc (it_cursor_t * itc, db_buf_t page, oid_t col_id);
 dbe_col_loc_t *cl_list_find (dbe_col_loc_t * cl, oid_t col_id);
 search_spec_t * key_add_spec (search_spec_t * last, it_cursor_t * it,
 			      dk_session_t * ses);
