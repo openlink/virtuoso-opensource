@@ -762,9 +762,16 @@ case $1 in
    fi
    # Prepare GRDDL tests to run locally
    gzip -c -d ../grddl-tests.tar.gz | tar xf -
+   if grep ":14300" grddl-tests/*
+   then
+       echo "The port number to replace is correct."
+   else
+       LOG "***ABORTED: The port number to replace in GRDDL test-case sources is incorrect, please modify port"
+       exit 1
+   fi
    for f in `find grddl-tests -type f`
    do
-       cat $f | sed -e "s/:12555/:$HTTPPORT/g" > tmp.tmp
+       cat $f | sed -e "s/:14300/:$HTTPPORT/g" > tmp.tmp
        cp -f tmp.tmp $f
        rm -f tmp.tmp
    done
