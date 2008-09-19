@@ -229,7 +229,8 @@ OAT.WebDav = {
 			outerWidth:this.options.width,
 			outerHeight:this.options.height,
 			imagePath:this.options.imagePath,
-			title:"WebDAV Browser"
+			title:"WebDAV Browser",
+                        stackGroupBase:998
 		}
 		this.window = new OAT.Win(wopts);
 		var div = this.window.dom.content;

@@ -52,11 +52,23 @@ OAT.Win = function(optObj) {
 		resizeContainer:false
 	}
 	self.moveTo = function(x,y) {
+                if (x>0)
 		self.dom.container.style.left = x+"px";
+		else
+                    self.dom.container.style.right = Math.abs(x)+"px";
+                if (y>0)
 		self.dom.container.style.top = y+"px";
+                else
+                    self.dom.container.style.top = Math.abs(y)+"px";
 	}
-	self.innerResizeTo = function(w,h) { }
-	self.outerResizeTo = function(w,h) { }
+	self.innerResizeTo = function(w,h) {
+            self.dom.content.style.width = w + "px";
+            self.dom.content.style.height = h + "px";
+        }
+	self.outerResizeTo = function(w,h) {
+            self.dom.container.style.width = w + "px";
+            self.dom.container.style.height = h + "px";
+	}
 	self.show = function() { 
 		document.body.appendChild(self.dom.container);
 		OAT.Dom.show(self.dom.container);
@@ -64,10 +76,42 @@ OAT.Win = function(optObj) {
 	self.hide = function() { OAT.Dom.hide(self.dom.container); }
 	self.close = self.hide();
 	self.onclose = function() {}
-	self.minimize = function() { }
-	self.maximize = function() { }
+	self.minimize = function(force) {
+		if ((self.dom.content.style.display=='none' && self.dom.status.style.display=='none') || !force) { // deminimize
+			self.dom.content.style.display = '';
+			self.dom.status.style.display = '';
+			self.dom.container.style.height = 'auto';
+			self.dom.buttons.r.style.display = '';
+                } else { // minimize
+			self.dom.content.style.display = 'none';
+			self.dom.status.style.display = 'none';
+			self.dom.container.style.height = '15px';
+			if (self.options.visibleButtons.indexOf('r')>-1)
+			    self.dom.buttons.r.style.display = 'none';
+		}
+        }
+	self.maximize = function() {
+		if (self.dom.container.style.width=='98%' && self.dom.container.style.height=='96%') { // demaximize
+			self.dom.container.style.top = self.options.y+'px';
+			self.dom.container.style.left = self.options.x+'px';
+			self.dom.container.style.width = self.options.outerWidth+'px';
+			self.dom.container.style.height = self.options.outerHeight+'px';
+                } else { // maximize
+			self.minimize(false);
+			var dim = OAT.Dom.getWH(self.dom.container);
+			var pos = OAT.Dom.position(self.dom.container);
+			self.options.outerWidth = dim[0];
+			self.options.outerHeight = dim[1];
+			self.options.x = pos[0];
+			self.options.y = pos[1];
+			self.dom.container.style.width = '98%';
+			self.dom.container.style.left = '1%';
+			self.dom.container.style.height = '96%';
+			self.dom.container.style.top = '2%';
+		}
+        }
 	self.flip = function(side) { }
-	self.accomodate = function(node) { 
+	self.accomodate = function(node) { // sets width and height according to the specified element
 		var dims = OAT.Dom.getWH(node);
 		self.innerResizeTo(dims[0],dims[1]);
 	}
@@ -89,7 +133,7 @@ OAT.Win = function(optObj) {
 		OAT.Dom.attach(self.dom.buttons.m,"click",self.minimize);
 	}
 	if (self.options.enabledButtons.indexOf("M") != -1 && self.dom.buttons.M) {
-		OAT.Dom.attach(self.dom.buttons.M,"click",self.maximize);
+		OAT.Dom.attach(self.dom.buttons.M,"click",self.maximize);;
 	}
 	if (self.options.enabledButtons.indexOf("c") != -1 && self.dom.buttons.c) {
 		OAT.Dom.attach(self.dom.buttons.c,"click",self.hide);

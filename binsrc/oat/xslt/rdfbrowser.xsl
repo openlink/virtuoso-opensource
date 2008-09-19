@@ -35,7 +35,7 @@
 	</script>
 </head>
 
-<body></body>
+<body onload="init();"></body>
 </html>
 </xsl:template>
 </xsl:stylesheet>

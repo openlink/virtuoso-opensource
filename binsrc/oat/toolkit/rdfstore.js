@@ -40,6 +40,8 @@ OAT.RDFStoreData = {
 OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	var self = this;
 	
+        this.labelProps = ["name","nick","label","title","summary","prefLabel"]; // properties used as labels
+        
 	this.options = {
 		ajaxStart:false,
 		ajaxEnd:false
@@ -99,7 +101,8 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				t[2] = decode(t[2]);
 				
 				if (!title) {
-					if ((t[0]==url || t[0]==url+'/') && t[1]=="http://purl.org/dc/elements/1.1/title")
+                                        var t1 = self.simplify(t[1]);
+					if ((t[0]==url || t[0]==url+'/') && self.labelProps.find(t1)!=-1)
 						title = t[2];
 			}
 			}
@@ -402,11 +405,10 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	
 	this.getTitle = function(item) {
 		var result = self.simplify(item.uri);
-		var props = ["name","nick","label","title","summary","prefLabel"];
 		var preds = item.preds;
 		for (var p in preds) {
 			var simple = self.simplify(p);
-			if (props.find(simple) != -1) { 
+			if (self.labelProps.find(simple) != -1) { 
 				var x = preds[p][0];
 				if (typeof(x) != "object") { return x; }
 			}
