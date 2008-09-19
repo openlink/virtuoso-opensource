@@ -1007,7 +1007,7 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
       declare _mail_body any;
       _mail_body := WA_GET_EMAIL_TEMPLATE('WS_MEM_TEMPLATE');
       -- WA_MAIL_TEMPLATES(templ, web_app, user_name, app_action_url)
-      _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('%s/login.vspx?URL=%s/members.vspx?wai_id=%d', wa_link (1), wa_link (), _wai_id));
+      _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('%s/login.vspx?URL=%s/members.vspx?wai_id=%d', rtrim (wa_link (1), '/'), wa_link (), _wai_id));
       _mail_body := dat || 'Subject: Application registration notification\r\nContent-Type: text/plain; charset=UTF-8\r\n' || _mail_body;
       smtp_send(_smtp_server, _user_e_mail, _owner_e_mail, _mail_body);
       -- place request on hold and wait owner approval
@@ -1023,7 +1023,7 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
       declare _mail_body any;
       _mail_body := WA_GET_EMAIL_TEMPLATE('WS_MEM_TEMPLATE');
       -- WA_MAIL_TEMPLATES(templ, web_app, user_name, app_action_url)
-      _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('%s/login.vspx?URL=%s/members.vspx?wai_id=%d', wa_link (1), wa_link (), _wai_id));
+      _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('%s/login.vspx?URL=%s/members.vspx?wai_id=%d', rtrim (wa_link (1), '/'), wa_link (), _wai_id));
       _mail_body := dat || 'Subject: Application registration notification\r\nContent-Type: text/plain; charset=UTF-8\r\n' || _mail_body;
       smtp_send(_smtp_server, _user_e_mail, _owner_e_mail, _mail_body);
 
@@ -1043,7 +1043,8 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
 closed:
     signal('WA001', '%%Application is closed for join. Please ask owner.%%');
   }
-  if(otype is null and ostatus is null and ntype is not null and nstatus = 4) {
+  if (otype is null and ostatus is null and ntype is not null and nstatus = 4) 
+  {
     -- Invitation from owner
     if(not _smtp_server or length(_smtp_server) = 0) {
       signal('WA002', '%%Mail Server is not defined. Mail verification impossible.%%');
@@ -1051,10 +1052,7 @@ closed:
     -- notify user by e-mail
     declare _mail_body, _url, _sid any;
     _sid := connection_get('__sid');
-    _url := sprintf('%s/conf_app.vspx?app_id=%d&sid=%s&realm=wa',
-                    wa_link (1),
-                    _wai_id,
-                    _sid);
+    _url := sprintf('%s/conf_app.vspx?app_id=%d&sid=%s&realm=wa', rtrim (wa_link (1), '/'), _wai_id, _sid);
     _mail_body := WA_GET_EMAIL_TEMPLATE('WS_INV_TEMPLATE');
     -- WA_MAIL_TEMPLATES(templ, web_app, user_name, app_action_url)
     _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, _url);
@@ -1062,7 +1060,8 @@ closed:
     smtp_send(_smtp_server, _owner_e_mail, _user_e_mail, _mail_body);
     return;
   }
-  if(ntype is not null and ostatus = 3 and nstatus = 2) {
+  if (ntype is not null and ostatus = 3 and nstatus = 2) 
+  {
     -- owner's approval after user's join request
     if(not _smtp_server or length(_smtp_server) = 0) {
       signal('WA002', '%%Mail Server is not defined. Mail verification impossible.%%');
@@ -1076,7 +1075,8 @@ closed:
     smtp_send(_smtp_server, _owner_e_mail, _user_e_mail, _mail_body);
     return;
   }
-  if(ntype is null and nstatus is null and ostatus = 3) {
+  if (ntype is null and nstatus is null and ostatus = 3) 
+  {
     -- Join request rejection
     if(not _smtp_server or length(_smtp_server) = 0) {
       signal('WA002', '%%Mail Server is not defined. Mail verification impossible.%%');
@@ -1090,7 +1090,8 @@ closed:
     smtp_send(_smtp_server, _owner_e_mail, _user_e_mail, _mail_body);
     return;
   }
-  if(ntype is null and nstatus is null and ostatus = 2) {
+  if (ntype is null and nstatus is null and ostatus = 2) 
+  {
     -- user was not owner and want to terminate his membership
     if(_member_model in (2, 3, 4)) {
       if(not _smtp_server or length(_smtp_server) = 0) {
@@ -5109,6 +5110,7 @@ create procedure WA_LINK (in add_host int := 0, in url varchar := null)
     {
       ret := WS.WS.EXPAND_URL (wa_url, url);
     }
+    -- dbg_obj_print ('', ret);
   return ret;
 };
 

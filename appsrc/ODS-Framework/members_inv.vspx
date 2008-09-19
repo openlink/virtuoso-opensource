@@ -196,12 +196,8 @@
 		    return;
 		  }
 
-
-		url := sprintf ('%s/join.vspx?wai_id=%d&join_id=%s',
-		  wa_link (1), self.iid, sid);
-
+		url := sprintf ('%s/join.vspx?wai_id=%d&join_id=%s', rtrim (wa_link (1), '/'), self.iid, sid);
 		msg := replace (msg, '%url%', url);
-
 
 		declare exit handler for sqlstate '*'
 		{
