@@ -37,7 +37,7 @@ h2 { font-weight: normal; font-size: 124%; margin: 1.2em 0 0.2em; }
 .page-resource-uri { font-size: 124%; margin: 0.2em 0; font-style: italic; }
 .page-resource-uri a { color: black; text-decoration: none; }
 .page-resource-uri a:hover { color: red; text-decoration: underline; }
-.page-resource-uri label { font-size: smaller; font-style: normal;}
+.page-resource-uri label { font-size: smaller; font-style: normal; font-weight: bold}
 
 a.sparql-uri { color: black; text-decoration: none; }
 a.sparql-uri:hover { color: red; text-decoration: underline; }
