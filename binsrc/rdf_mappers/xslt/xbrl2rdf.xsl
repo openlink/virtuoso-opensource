@@ -27,6 +27,7 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY sioct 'http://rdfs.org/sioc/types#'>
 <!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -34,9 +35,11 @@
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
 	xmlns:virt-xbrl="http://www.openlinksw.com/schemas/xbrl/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:v="http://www.openlinksw.com/xsltext/"
 	xmlns:sioct="&sioct;"
 	xmlns:sioc="&sioc;"
+	xmlns:foaf="&foaf;"
 	version="1.0">
 
 	<xsl:output method="xml" indent="yes" />
@@ -48,11 +51,11 @@
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="xbrl">
-		<sioc:Space rdf:about="{$baseUri}">
+		<sioc:Container rdf:about="{$baseUri}">
 			<xsl:for-each select="context">
 				<sioc:space_of rdf:resource="{concat('#', @id)}"/>
 			</xsl:for-each>
-		</sioc:Space>
+		</sioc:Container>
 		<xsl:apply-templates select="*" />
 	</xsl:template>
 	<xsl:template match="context">
@@ -75,12 +78,18 @@
 		<xsl:variable name="identifier_value" select="identifier" />
 		<xsl:variable name="segment_value" select="segment" />
 		<virt-xbrl:scheme rdf:datatype="&xsd;string">
-			<xsl:apply-templates select="identifier" />
+		    <xsl:value-of select="identifier/@scheme" />
 		</virt-xbrl:scheme>
 		<xsl:if test="string-length($identifier_value) &gt; 0">
 			<virt-xbrl:identifier rdf:datatype="&xsd;string">
 				<xsl:value-of select="identifier" />
 			</virt-xbrl:identifier>
+			<xsl:if test="identifier/@scheme = 'http://www.sec.gov/CIK'">
+			    <xsl:variable name="nam" select="virt:getNameByCIK ($identifier_value)"/>
+			    <xsl:if test="$nam != ''">
+				<dc:title><xsl:value-of select="$nam"/></dc:title>
+			    </xsl:if>
+			</xsl:if>
 		</xsl:if>
 		<xsl:if test="string-length($segment_value) &gt; 0">
 			<virt-xbrl:segment rdf:datatype="&xsd;string">
@@ -89,6 +98,7 @@
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="identifier">
+	        <xsl:message terminate="no"><xsl:value-of select="."/></xsl:message>
 		<xsl:value-of select="@scheme" />
 	</xsl:template>
 	<xsl:template match="period">

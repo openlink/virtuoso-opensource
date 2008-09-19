@@ -71,6 +71,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
+-- upgrade old youtube pattern
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*youtube.com/.*)' where RM_PATTERN =
+	    '(http://.*youtube.com/results\\?search_query=.*)|'||
+	    '(http://ru.youtube.com/results\\?search_query=.*)|'||
+	    '(http://.*youtube.com/results\\?)';
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*youtube.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
@@ -182,10 +188,21 @@ EXEC_STMT(
     GM_NAME varchar,
     GM_PROFILE varchar,
     GM_XSLT varchar,
+    GM_FLAG integer default 0,
     primary key (GM_NAME)
 )
 create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE)', 0)
 ;
+
+create procedure RM_UPGRADE_TBL (in tbl varchar, in col varchar, in coltype varchar)
+{
+  if (exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = upper(tbl) and upper("COLUMN") = upper(col)))
+    return;
+  exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
+}
+;
+
+RM_UPGRADE_TBL ('DB.DBA.SYS_GRDDL_MAPPING', 'GM_FLAG', 'integer default 0');
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('eRDF', 'http://purl.org/NET/erdf/profile', registry_get ('_rdf_mappers_path_') || 'xslt/erdf2rdfxml.xsl')
@@ -219,8 +236,9 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('relLicense', '', registry_get ('_rdf_mappers_path_') || 'xslt/cc2rdf.xsl')
 ;
 
-insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
-    values ('XBRL', '', registry_get ('_rdf_mappers_path_') || 'xslt/xbrl2rdf.xsl')
+-- specific case, so we put the GM_FLAG
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT, GM_FLAG)
+    values ('XBRL', '', registry_get ('_rdf_mappers_path_') || 'xslt/xbrl2rdf.xsl', 1)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
@@ -2474,7 +2492,7 @@ try_grddl:
   if (mdta = 0)
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
-      for select GM_XSLT, GM_PROFILE from DB.DBA.SYS_GRDDL_MAPPING do
+      for select GM_XSLT, GM_PROFILE, GM_FLAG from DB.DBA.SYS_GRDDL_MAPPING do
 	{
 	  if (position (GM_PROFILE, profs_done) > 0)
 	    goto try_next1;
@@ -2486,7 +2504,11 @@ try_grddl:
 	      --dbg_obj_print ('plan B:', GM_XSLT, xd);
 	      xd := serialize_to_UTF8_xml (xd);
           --dbg_obj_princ('Result2: ', xd);
+	  if (GM_FLAG = 2)
+	    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
 	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	  if (GM_FLAG > 0)
+	    return mdta;
 	    }
 	  try_next1:;
 	}
@@ -3158,6 +3180,39 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'))
 ;
 
+EXEC_STMT('create table DB.DBA.XBRL_CIK_CACHE (XC_CIK varchar primary key, XC_NAME varchar not null, XC_TS timestamp)', 0);
+
+create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
+{
+  declare ret, cnt, xt, xp varchar;
+  declare exit handler for sqlstate '*'
+    {
+      return '';
+    };
+  whenever not found goto retr;
+  set isolation='comitted';
+  select XC_NAME into ret from DB.DBA.XBRL_CIK_CACHE where XC_CIK = cik;
+  return ret;
+  retr:
+  cnt := http_client (sprintf ('http://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&output=atom', cik));
+  xt := xtree_doc (cnt);
+  xp := cast (xpath_eval ('string (/feed/title)', xt) as varchar);
+  if (length (xp))
+    xp := trim(replace (xp, sprintf ('(%s)', cik), ''));
+  else
+    return '';
+  insert into DB.DBA.XBRL_CIK_CACHE (XC_CIK, XC_NAME) values (cik, xp);
+  return xp;
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'))
+;
+
+
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('xbrl_rule1', 1, '/schemas/xbrl/(.*)', vector('path'), 1,
 '/sparql?query=DESCRIBE%%20%%3Chttp%%3A//www.openlinksw.com/schemas/xbrl/%U%%3E%%20FROM%%20%%3Chttp%%3A//www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/%%3E',
@@ -3300,6 +3355,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
 {
   declare nss, dict, vec any;
   dict := dict_new (33);
+  XML_REMOVE_NS_BY_PREFIX ('virt-xbrl', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -3322,6 +3378,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
       if (__xml_get_ns_prefix (vec[i+1], 2) is null)
         DB.DBA.XML_SET_NS_DECL (vec[i+1], vec[i], 2);
     }
+  XML_SET_NS_DECL ('umbel', 'http://umbel.org/umbel/sc/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
