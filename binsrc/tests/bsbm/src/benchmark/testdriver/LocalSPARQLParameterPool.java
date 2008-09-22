@@ -92,7 +92,7 @@ public class LocalSPARQLParameterPool extends AbstractParameterPool {
 			reviewCount = currentDateAndLabelWordsInput.readInt();
 			offerCount = currentDateAndLabelWordsInput.readInt();
 			currentDate = (GregorianCalendar) currentDateAndLabelWordsInput.readObject();
-			currentDateString = "\"" + DateGenerator.formatDate(currentDate) + "\"^^<" + XSD.Date + ">";
+			currentDateString = "\"" + DateGenerator.formatDateTime(currentDate) + "\"^^<" + XSD.DateTime + ">";
 			wordHash = (HashMap<String, Integer>) currentDateAndLabelWordsInput.readObject();
 			wordList = wordHash.keySet().toArray(new String[0]);
 		} catch(IOException e) {

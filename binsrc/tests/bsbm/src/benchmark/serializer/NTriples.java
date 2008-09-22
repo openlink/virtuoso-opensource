@@ -160,20 +160,20 @@ public class NTriples implements Serializer {
 		//bsbm:validFrom
 		GregorianCalendar validFrom = new GregorianCalendar();
 		validFrom.setTimeInMillis(offer.getValidFrom());
-		String validFromString = DateGenerator.formatDate(validFrom);
+		String validFromString = DateGenerator.formatDateTime(validFrom);
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.validFrom),
-				createDataTypeLiteral(validFromString, createURIref(XSD.Date))));
+				createDataTypeLiteral(validFromString, createURIref(XSD.DateTime))));
 		
 		//bsbm:validTo
 		GregorianCalendar validTo = new GregorianCalendar();
 		validTo.setTimeInMillis(offer.getValidTo());
-		String validToString = DateGenerator.formatDate(validTo);
+		String validToString = DateGenerator.formatDateTime(validTo);
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.validTo),
-				createDataTypeLiteral(validToString, createURIref(XSD.Date))));
+				createDataTypeLiteral(validToString, createURIref(XSD.DateTime))));
 		
 		//bsbm:deliveryDays
 		result.append(createTriple(
@@ -556,11 +556,11 @@ public class NTriples implements Serializer {
 		//bsbm:reviewDate
 		GregorianCalendar reviewDate = new GregorianCalendar();
 		reviewDate.setTimeInMillis(review.getReviewDate());
-		String reviewDateString = DateGenerator.formatDate(reviewDate);
+		String reviewDateString = DateGenerator.formatDateTime(reviewDate);
 		result.append(createTriple(
 				subjectURIREF,
 				createURIref(BSBM.reviewDate),
-				createDataTypeLiteral(reviewDateString, createURIref(XSD.Date))));
+				createDataTypeLiteral(reviewDateString, createURIref(XSD.DateTime))));
 		
 		//dc:title
 		result.append(createTriple(

@@ -240,18 +240,18 @@ public class Turtle implements Serializer {
 		//bsbm:validFrom
 		GregorianCalendar validFrom = new GregorianCalendar();
 		validFrom.setTimeInMillis(offer.getValidFrom());
-		String validFromString = DateGenerator.formatDate(validFrom);
+		String validFromString = DateGenerator.formatDateTime(validFrom);
 		result.append(createTriplePO(
 				BSBM.prefixed("validFrom"),
-				createDataTypeLiteral(validFromString, XSD.prefixed("date"))));
+				createDataTypeLiteral(validFromString, XSD.prefixed("dateTime"))));
 		
 		//bsbm:validTo
 		GregorianCalendar validTo = new GregorianCalendar();
 		validTo.setTimeInMillis(offer.getValidTo());
-		String validToString = DateGenerator.formatDate(validTo);
+		String validToString = DateGenerator.formatDateTime(validTo);
 		result.append(createTriplePO(
 				BSBM.prefixed("validTo"),
-				createDataTypeLiteral(validToString, XSD.prefixed("date"))));
+				createDataTypeLiteral(validToString, XSD.prefixed("dateTime"))));
 		
 		//bsbm:deliveryDays
 		result.append(createTriplePO(
@@ -624,10 +624,10 @@ public class Turtle implements Serializer {
 		//bsbm:reviewDate
 		GregorianCalendar reviewDate = new GregorianCalendar();
 		reviewDate.setTimeInMillis(review.getReviewDate());
-		String reviewDateString = DateGenerator.formatDate(reviewDate);
+		String reviewDateString = DateGenerator.formatDateTime(reviewDate);
 		result.append(createTriplePO(
 				BSBM.prefixed("reviewDate"),
-				createDataTypeLiteral(reviewDateString, XSD.prefixed("date"))));
+				createDataTypeLiteral(reviewDateString, XSD.prefixed("dateTime"))));
 		
 		//dc:publisher
 		result.append(createTriplePO(
