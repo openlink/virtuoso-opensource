@@ -19,9 +19,9 @@ public class ResultTransform {
 	
 	private final static String[] queries = { "Query 1", "Query 2", "Query 3", "Query 4",
 		 								"Query 5", "Query 6", "Query 7", "Query 8",
-		 								"Query 9", "Query 10"};
-//	private static final String[] sizes = { "50K", "250K", "1M", "5M", "25M", "100M" };
-	private static final String[] sizes = { "25M", "100M" };
+		 								"Query 9", "Query 10", "Query 11", "Query 12"};
+	private static final String[] sizes = { "250K", "1M", "25M", "100M" };
+//	private static final String[] sizes = { "25M", "100M" };
 	private static HashMap<String, Integer> sizeMap = new HashMap<String, Integer>();
 	
 	public static void main(String argv[]) {
@@ -57,6 +57,10 @@ public class ResultTransform {
 		    ResultHandler handler = new ResultHandler();
 		for(int x=0; x<storeNames.length;x++) {
 			File[] files = storeDirs[x].listFiles(new FileFilter());
+			if(files==null) {
+				System.err.println("Can't read files from directory: " + storeDirs[x].getAbsolutePath());
+				System.exit(-1);
+			}
 			for(int i=0;i<files.length;i++) {
 				File file = files[i];
 				int sizeIndex = checkSizeIndex(file.getName());
@@ -263,9 +267,10 @@ class IntReference {
 }
 
 class ResultHandler extends DefaultHandler {
-	boolean aqet;
+	boolean inAttr;
 	String[] resultArray;
 	int index;
+	String attr = "qps";
 	
 	ResultHandler() {
 	}
@@ -276,19 +281,19 @@ class ResultHandler extends DefaultHandler {
             Attributes attrs ) {
 		if(qName.equals("bsbm"))
 			init();
-		else if(qName.equals("aqet"))
-			aqet = true;
+		else if(qName.equals(attr))
+			inAttr = true;
 	}
 	
 	public void endElement(String uri, String localName, String qName) {
-		if(qName.equals("aqet"))
-			aqet = false;
+		if(qName.equals(attr))
+			inAttr = false;
 	}
 	
 	public void characters(char[] ch,
             int start,
             int length) {
-		if(aqet) {
+		if(inAttr) {
 			String t = "";
 		    for ( int i = start; i < (start + length); i++ )
 		      t += ch[i];
@@ -303,7 +308,7 @@ class ResultHandler extends DefaultHandler {
 	}
 	
 	private void init() {
-		aqet = false;
+		inAttr = false;
 		index = 0;
 	}
 }
