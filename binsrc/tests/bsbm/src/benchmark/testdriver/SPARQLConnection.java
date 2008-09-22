@@ -1,6 +1,7 @@
 package benchmark.testdriver;
 
 import java.io.*;
+import java.net.SocketTimeoutException;
 import javax.xml.parsers.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
@@ -10,10 +11,14 @@ import org.apache.log4j.Level;
 
 public class SPARQLConnection implements ServerConnection{
 	private String serverURL;
+	private String defaultGraph;
 	private static Logger logger = Logger.getLogger( SPARQLConnection.class );
+	private int timeout;
 	
-	public SPARQLConnection(String url) {
-		this.serverURL = url;
+	public SPARQLConnection(String serviceURL, String defaultGraph, int timeout) {
+		this.serverURL = serviceURL;
+		this.defaultGraph = defaultGraph;
+		this.timeout = timeout;
 	}
 	
 	/*
@@ -21,30 +26,47 @@ public class SPARQLConnection implements ServerConnection{
 	 */
 	public void executeQuery(Query query, byte queryType) {
 		if (query.isParametrized)
-			executeQuery(query.getParametrizedQueryString(), query.getEncodedParamString(), query.defaultGraph, queryType, query.getNr(), query.getQueryMix());
+			executeQuery(query.getParametrizedQueryString(), query.getEncodedParamString(), queryType, query.getNr(), query.getQueryMix());
 		else
-			executeQuery(query.getQueryString(), "", query.defaultGraph, queryType, query.getNr(), query.getQueryMix());
+			executeQuery(query.getQueryString(), "", queryType, query.getNr(), query.getQueryMix());
 	}
 	
 	/*
 	 * execute Query with Query String
 	 */
-	private void executeQuery(String queryString, String encodedParamString, String defaultGraph, byte queryType, int queryNr, QueryMix queryMix)
+	private void executeQuery(String queryString, String encodedParamString, byte queryType, int queryNr, QueryMix queryMix)
 	{
 		double timeInSeconds;
 
-		NetQuery qe = new NetQuery(serverURL, queryString, encodedParamString, queryType, defaultGraph);
+		NetQuery qe = new NetQuery(serverURL, queryString, encodedParamString, queryType, defaultGraph, timeout);
 		int queryMixRun = queryMix.getRun() + 1;
 
 		InputStream is = qe.exec();
-			
+		if (is==null) {
+			double t = this.timeout/1000.0;
+			System.out.println("Query " + queryNr + ": " + t + " seconds timeout!");
+			queryMix.reportTimeOut();//inc. timeout counter
+			queryMix.setCurrent(0, t);
+			qe.close();
+			return;
+		}
+
 		int resultCount = 0;
 		//Write XML result into result
-		if(queryType==Query.SELECT_TYPE)
-			resultCount = countResults(is);
-		else
-			resultCount = countBytes(is);
-		
+		try {
+			if(queryType==Query.SELECT_TYPE)
+				resultCount = countResults(is);
+			else
+				resultCount = countBytes(is);
+		} catch(SocketTimeoutException e) {
+			double t = this.timeout/1000.0;
+			System.out.println("Query " + queryNr + ": " + t + " seconds timeout!");
+			queryMix.reportTimeOut();//inc. timeout counter
+			queryMix.setCurrent(0, t);
+			qe.close();
+			return;
+		}
+
 		timeInSeconds = qe.getExecutionTimeInSeconds();
 
 		if(logger.isEnabledFor( Level.ALL ) && queryMixRun > 0)
@@ -66,32 +88,41 @@ public class SPARQLConnection implements ServerConnection{
 		int queryNr = query.getNr();
                 NetQuery qe;
 		if (query.source.isParametrized)
-			qe = new NetQuery(serverURL, parametrizedQueryString, encodedParamString, queryType, query.source.defaultGraph);
+			qe = new NetQuery(serverURL, parametrizedQueryString, encodedParamString, queryType, defaultGraph, timeout);
 		else
-			qe = new NetQuery(serverURL, queryString, "", queryType, query.source.defaultGraph);
+			qe = new NetQuery(serverURL, queryString, "", queryType, defaultGraph, timeout);
 		int queryMixRun = queryMix.getRun() + 1;
 
 		InputStream is = qe.exec();
 
 		if(is==null) {//then Timeout!
-			double timeout = TestDriverDefaultValues.timeoutInMs/1000.0;
-			System.out.println("Query " + queryNr + ": " + timeout + " seconds timeout!");
+			double t = this.timeout/1000.0;
+			System.out.println("Query " + queryNr + ": " + t + " seconds timeout!");
 			queryMix.reportTimeOut();//inc. timeout counter
-			queryMix.setCurrent(0, timeout);
+			queryMix.setCurrent(0, t);
 			qe.close();
 			return;
 		}
 		
 		int resultCount = 0;
 		//Write XML result into result
-		if(queryType==Query.SELECT_TYPE)
-			resultCount = countResults(is);
-		else
-			resultCount = countBytes(is);
+		try {
+			if(queryType==Query.SELECT_TYPE)
+				resultCount = countResults(is);
+			else
+				resultCount = countBytes(is);
+
+		} catch(SocketTimeoutException e) {
+			double t = this.timeout/1000.0;
+			System.out.println("Query " + queryNr + ": " + t + " seconds timeout!");
+			queryMix.reportTimeOut();//inc. timeout counter
+			queryMix.setCurrent(0, t);
+			qe.close();
+			return;
+		}
 		
 		timeInSeconds = qe.getExecutionTimeInSeconds();
 		
-
 		if(logger.isEnabledFor( Level.ALL ) && queryMixRun > 0)
 			logResultInfo(queryNr, queryMixRun, timeInSeconds,
 	                   queryString, queryType,
@@ -144,7 +175,7 @@ private int countBytes(InputStream is) {
 		logger.log(Level.ALL, sb.toString());
 	}
 	
-	private int countResults(InputStream s) {
+	private int countResults(InputStream s) throws SocketTimeoutException {
 		ResultHandler handler = new ResultHandler();
 		int count=0;
 		try {
@@ -152,6 +183,8 @@ private int countBytes(InputStream is) {
 //		  ByteArrayInputStream bis = new ByteArrayInputStream(s.getBytes("UTF-8"));
 	      saxParser.parse( s, handler );
 	      count = handler.getCount();
+		} catch(SocketTimeoutException e) {
+			throw new SocketTimeoutException();
 		} catch(Exception e) {
 			System.err.println("SAX Error");
 			e.printStackTrace();

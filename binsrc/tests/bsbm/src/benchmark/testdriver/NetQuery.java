@@ -10,7 +10,7 @@ public class NetQuery {
 	Long start;
 	Long end;
 	
-	protected NetQuery(String serviceURL, String query, String encodedParamString, byte queryType, String defaultGraph) {
+	protected NetQuery(String serviceURL, String query, String encodedParamString, byte queryType, String defaultGraph, int timeout) {
 		try {
 			String urlString = serviceURL + "?query=" + URLEncoder.encode(query, "UTF-8") + encodedParamString;
 //			System.out.println(urlString);
@@ -24,7 +24,7 @@ public class NetQuery {
 			conn.setDefaultUseCaches(false);
 			conn.setDoOutput(true);
 			conn.setUseCaches(false);
-			conn.setReadTimeout(TestDriverDefaultValues.timeoutInMs);
+			conn.setReadTimeout(timeout);
 			if(queryType==Query.DESCRIBE_TYPE || queryType==Query.CONSTRUCT_TYPE)
 				conn.setRequestProperty("Accept", "application/rdf+xml");
 			else

@@ -10,7 +10,7 @@ public class SQLConnection implements ServerConnection {
 	private Connection conn;
 	private static Logger logger = Logger.getLogger( SQLConnection.class );
 	
-	public SQLConnection(String serviceURL, String driverClassName, String connUser, String connPwd)
+	public SQLConnection(String serviceURL, String driverClassName, String connUser, String connPwd, int timeout)
 	{
 		try {
 			Class.forName(driverClassName);
@@ -22,7 +22,7 @@ public class SQLConnection implements ServerConnection {
 			conn = DriverManager.getConnection(serviceURL, connUser, connPwd);
 			statement = conn.createStatement();
 			
-			statement.setQueryTimeout(TestDriverDefaultValues.timeoutInMs/1000);
+			statement.setQueryTimeout(timeout/1000);
                         statement.setFetchSize(TestDriverDefaultValues.fetchSize);
 
 		} catch(SQLException e) {

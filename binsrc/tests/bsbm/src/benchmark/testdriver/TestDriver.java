@@ -45,6 +45,7 @@ public class TestDriver {
 	public boolean multithreading = false;
 	protected int nrThreads;
         protected String driverClassName = "com.mysql.jdbc.Driver";
+	protected int timeout = TestDriverDefaultValues.timeoutInMs;
 	
 	public TestDriver(String[] args) {
 		processProgramParameters(args);
@@ -58,9 +59,9 @@ public class TestDriver {
 	
 		if(connEndpoint!=null && !multithreading){
 			if(connectionType == TestDriver.DB_CONNECTION)
-				server = new SQLConnection(connEndpoint, driverClassName, connUser, connPwd);
+				server = new SQLConnection(connEndpoint, driverClassName, connUser, connPwd, timeout);
 			else
-				server = new SPARQLConnection(connEndpoint);
+				server = new SPARQLConnection(connEndpoint, defaultGraph, timeout);
 		} else if(multithreading) {
 			//do nothing
 		}
@@ -253,6 +254,9 @@ public class TestDriver {
 				}
 				else if(args[i].startsWith("-seed")) {
 					seed = Long.parseLong(args[i++ + 1]);
+				}
+				else if(args[i].startsWith("-t")) {
+					timeout = Integer.parseInt(args[i++ + 1]);
 				}
 				else if(!args[i].startsWith("-")) {
 					connEndpoint = args[i];
@@ -451,7 +455,10 @@ public class TestDriver {
 						"\t\tdefault: not set\n" +
 						"\t-seed <Long Integer>\n" +
 						"\t\tInit the Test Driver with another seed than the default.\n" +
-						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n";
+						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n"+
+						"\t-t <timeout in ms>\n" +
+						"\t\tTimeouts will be logged for the result report.\n" +
+						"\t\tdefault: " + TestDriverDefaultValues.timeoutInMs + "\n";
 		
 		System.out.print(output);
 	}

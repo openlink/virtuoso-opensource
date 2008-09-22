@@ -32,9 +32,9 @@ public class ClientManager {
 		for(int i=0;i<nrThreads;i++) {
 			ServerConnection sConn;
 			if(parent.connectionType == TestDriver.DB_CONNECTION)
-				sConn = new SQLConnection(parent.connEndpoint, parent.driverClassName, parent.connUser, parent.connPwd);
+				sConn = new SQLConnection(parent.connEndpoint, parent.driverClassName, parent.connUser, parent.connPwd, parent.timeout);
 			else
-				sConn = new SPARQLConnection(parent.connEndpoint);
+				sConn = new SPARQLConnection(parent.connEndpoint, parent.defaultGraph, parent.timeout);
 				
 			clients[i] = new ClientThread(pool, sConn, ignoreQueries.length, this, i+1);
 		}
