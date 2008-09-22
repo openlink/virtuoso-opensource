@@ -2691,7 +2691,7 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
     return;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 8000))
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");

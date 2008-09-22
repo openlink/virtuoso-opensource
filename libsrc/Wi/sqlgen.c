@@ -3247,7 +3247,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   if (!qr)
     DK_ALLOC_QUERY (qr);
   sc->sc_cc->cc_query = qr;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sel_out_ret, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &generated_loci, 8000))
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");

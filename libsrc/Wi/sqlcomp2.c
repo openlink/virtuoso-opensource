@@ -899,7 +899,7 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 {
   ST *tree = *ptree;
 
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 8000))
     sqlc_error (sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (sc->sc_cc, ".....", "Out of memory");

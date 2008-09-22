@@ -498,7 +498,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 
   if (dfe)
     return dfe;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 8000))
     sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
@@ -3936,7 +3936,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
   float sub_arity = 1;
   if (!dfe)
     return 1;
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_arity, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_arity, 8000))
     sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow");
   while (dfe->dfe_prev)
     {
@@ -5036,7 +5036,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
   float this_score;
   int any_tried = 0;
   must_be_next = sqlo_next_joined (ot->ot_work_dfe);
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &any_tried, 1000))
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &any_tried, 8000))
     sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
