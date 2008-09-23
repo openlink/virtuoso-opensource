@@ -2235,7 +2235,7 @@ sqlo_is_identity_join (op_table_t * ot1, op_table_t * ot2, dk_set_t top_and)
 void
 sqlo_col_pref_replace (ST * tree, caddr_t old_pref, caddr_t new_pref)
 {
-  if (ST_P (tree, COL_DOTTED) && !strcmp (tree->_.col_ref.prefix, old_pref))
+  if (ST_P (tree, COL_DOTTED) && tree->_.col_ref.prefix && !strcmp (tree->_.col_ref.prefix, old_pref))
     {
       tree->_.col_ref.prefix = new_pref;
       return;

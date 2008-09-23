@@ -1164,11 +1164,28 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
 {
   if (!ts->ts_is_outer)
     return;
-  DO_SET (state_slot_t *, sl, &ts->ts_order_ks->ks_out_slots)
-  {
-    qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
-  }
-  END_DO_SET ();
+  if (ts->ts_inx_op)
+    {
+      int inx;
+      inx_op_t *iop = ts->ts_inx_op;
+      DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
+      {
+	DO_SET (state_slot_t *, sl, &term->iop_ks->ks_out_slots)
+	{
+	  qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	}
+	END_DO_SET ();
+      }
+      END_DO_BOX;
+    }
+  else
+    {
+      DO_SET (state_slot_t *, sl, &ts->ts_order_ks->ks_out_slots)
+      {
+	qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+      }
+      END_DO_SET ();
+    }
   if (ts->ts_main_ks)
     {
       DO_SET (state_slot_t *, sl, &ts->ts_main_ks->ks_out_slots)
