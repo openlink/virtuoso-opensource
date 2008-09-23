@@ -81,17 +81,17 @@ bif_hs_Resolve (caddr_t * qst, caddr_t * err, state_slot_t ** args)
       HDLValue* val =  vals[i];
       if (!res && val->typeLen == 3)
 	{
-	  char* tmpStr = (char*) NullTerminatedMemDup(val->type, val->typeLen);
+	  char* tmpStr = (char*) MALLOC (val->typeLen + 1);
 	  unsigned int j;
+	  memcpy (tmpStr, val->type, val->typeLen);
 	  for (j = 0; j < val->typeLen; j++)
 	    tmpStr[j] = tolower(tmpStr[j]);
 	  if (!strcmp (tmpStr, "url"))
 	    res = box_dv_short_nchars (val->data, val->dataLen);
 	  FREE(tmpStr);
 	}
-      HDLDestroyValue(vals[i]);
     }
-  FREE(vals);
+  HDLDestroyValueList (vals, numVals);
   HDLDestroyResolver(ctx);
 #else  
   void* ctx;
