@@ -34,7 +34,7 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
-	xmlns:virt-xbrl="http://www.openlinksw.com/schemas/xbrl/"
+	xmlns:opl-xbrl="http://www.openlinksw.com/schemas/xbrl/"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:v="http://www.openlinksw.com/xsltext/"
 	xmlns:sioct="&sioct;"
@@ -69,32 +69,33 @@
 	<xsl:template match="unit">
 		<xsl:variable name="id" select="concat('#', @id)" />
 		<sioc:Item rdf:about="{$id}">
-			<virt-xbrl:measure>
+			<opl-xbrl:measure>
 				<xsl:value-of select="measure" />
-			</virt-xbrl:measure>
+			</opl-xbrl:measure>
 		</sioc:Item>
 	</xsl:template>
 	<xsl:template match="entity">
 		<xsl:variable name="identifier_value" select="identifier" />
 		<xsl:variable name="segment_value" select="segment" />
-		<virt-xbrl:scheme rdf:datatype="&xsd;string">
+		<opl-xbrl:scheme rdf:datatype="&xsd;string">
 		    <xsl:value-of select="identifier/@scheme" />
-		</virt-xbrl:scheme>
+		</opl-xbrl:scheme>
 		<xsl:if test="string-length($identifier_value) &gt; 0">
-			<virt-xbrl:identifier rdf:datatype="&xsd;string">
+			<opl-xbrl:identifier rdf:datatype="&xsd;string">
 				<xsl:value-of select="identifier" />
-			</virt-xbrl:identifier>
+			</opl-xbrl:identifier>
 			<xsl:if test="identifier/@scheme = 'http://www.sec.gov/CIK'">
-			    <xsl:variable name="nam" select="virt:getNameByCIK ($identifier_value)"/>
+			    <dc:subject rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
+			    <!--xsl:variable name="nam" select="virt:getNameByCIK ($identifier_value)"/>
 			    <xsl:if test="$nam != ''">
 				<dc:title><xsl:value-of select="$nam"/></dc:title>
-			    </xsl:if>
+			    </xsl:if-->
 			</xsl:if>
 		</xsl:if>
 		<xsl:if test="string-length($segment_value) &gt; 0">
-			<virt-xbrl:segment rdf:datatype="&xsd;string">
+			<opl-xbrl:segment rdf:datatype="&xsd;string">
 				<xsl:value-of select="segment" />
-			</virt-xbrl:segment>
+			</opl-xbrl:segment>
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="identifier">
@@ -109,25 +110,25 @@
 	<xsl:template match="instant">
 		<xsl:variable name="prop_value" select="." />
 		<xsl:if test="string-length($prop_value) &gt; 0">
-			<virt-xbrl:instant rdf:datatype="&xsd;date">
+			<opl-xbrl:instant rdf:datatype="&xsd;date">
 				<xsl:value-of select="." />
-			</virt-xbrl:instant>
+			</opl-xbrl:instant>
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="startDate">
 		<xsl:variable name="prop_value" select="." />
 		<xsl:if test="string-length($prop_value) &gt; 0">
-			<virt-xbrl:startDate rdf:datatype="&xsd;date">
+			<opl-xbrl:startDate rdf:datatype="&xsd;date">
 				<xsl:value-of select="." />
-			</virt-xbrl:startDate>
+			</opl-xbrl:startDate>
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="endDate">
 		<xsl:variable name="prop_value" select="." />
 		<xsl:if test="string-length($prop_value) &gt; 0">
-			<virt-xbrl:endDate rdf:datatype="&xsd;date">
+			<opl-xbrl:endDate rdf:datatype="&xsd;date">
 				<xsl:value-of select="." />
-			</virt-xbrl:endDate>
+			</opl-xbrl:endDate>
 		</xsl:if>
 	</xsl:template>
 	<xsl:template match="*">

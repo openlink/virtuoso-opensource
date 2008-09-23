@@ -36,7 +36,6 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
-    xmlns:virt-xbrl="http://www.openlinksw.com/schemas/xbrl/"
 	xmlns:v="http://www.openlinksw.com/xsltext/"
 	xmlns:sioct="&sioct;"
 	xmlns:sioc="&sioc;"

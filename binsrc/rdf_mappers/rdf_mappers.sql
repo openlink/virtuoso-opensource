@@ -289,6 +289,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
   --dbg_printf ('%s', string_output_string (ses));
   DB.DBA.TTLP (ses, base, graph);
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
+  --DB.DBA.RDF_LOAD_POST_PROCESS (graph, base, null, strg, null);
 }
 ;
 
@@ -3356,6 +3357,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   declare nss, dict, vec any;
   dict := dict_new (33);
   XML_REMOVE_NS_BY_PREFIX ('virt-xbrl', 2);
+  XML_REMOVE_NS_BY_PREFIX ('opl-xbrl', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));

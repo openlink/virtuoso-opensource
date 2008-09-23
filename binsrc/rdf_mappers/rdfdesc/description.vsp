@@ -33,8 +33,19 @@
    arr [5] := '';
    _G := DB.DBA.vspx_uri_compose (arr);
 
+   if (_G not like 'nodeID://%')
+     {
    DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z }', _G), 'SPARQL');
    commit work;
+     }
+   else
+     {
+       -- blank node is subject 
+       exec (sprintf ('sparql select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S), 
+	  null, null, vector (), 0, meta, data);
+        if (length (data))
+	  _G := data[0][0];
+     }
 
    exec (sprintf ('sparql ask where { graph <%S> { <%S> ?p ?o }}', _G, _S), null, null, vector (), 0, meta, data);
    if (not length (data))
@@ -91,7 +102,8 @@
           <?vsp if (white_page = 0) http ('at <a href="http://dbpedia.org/">DBpedia.org</a>'); ?>
         </div>
         <div class="page-resource-uri">
-	  <label for="page_res_uri">About Resource:</label> <a id="page_res_uri" href="<?=page_resource_uri?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
+	  <label for="page_res_uri">About Resource:</label> 
+		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">

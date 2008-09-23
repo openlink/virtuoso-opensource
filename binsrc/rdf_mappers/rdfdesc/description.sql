@@ -105,7 +105,7 @@ again:
        _object := dat;
        goto again;
      }
-   else if (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object)= 1))
+   else if (__tag (_object) = 243 or (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%')))
      {
        declare _url, p_t any;
 
