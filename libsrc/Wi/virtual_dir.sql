@@ -817,13 +817,15 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
   if (header is not null)
     req_hdr := header;
   arr := rfc1808_parse_uri (url);
-  arr [5] := '';
+  arr[5] := '';
+  if (arr[0] = 'nodeID')
+    arr[2] := '';
   url := DB.DBA.vspx_uri_compose (arr);
   if (force is not null)
     {
       if (lower (force) = 'rdf')
 	{
-	  declare params, defs, host, pref any;
+	  declare params, defs, host, pref, sponge any;
 	  params := http_param ();
 	  defs := '';
 	  for (declare i,l int, i := 0, l := length (params); i < l; i := i + 2)
@@ -873,10 +875,18 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	  url := replace (url, '>', '%3E');
 	  url := replace (url, ' ', '%20');
 
+	  sponge := sprintf ('define get:soft "%s"', get);
+
 	  set_user_id ('SPARQL');
-          exec (sprintf ('sparql %s %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
-		defs, login, get, url),
-	    stat, msg, vector (), 0, metas, rset);
+          if (url not like 'nodeID://%')
+	    {
+	      exec (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
+	            defs, login, sponge, url), stat, msg, vector (), 0, metas, rset);
+            }
+	  else
+	    {
+	      exec (sprintf ('sparql %s DESCRIBE <%S>', defs, url), stat, msg, vector (), 0, metas, rset);
+	    }
 	  if (stat <> '00000')
 	    signal (stat, msg);
 	  ses := string_output (1000000);

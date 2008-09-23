@@ -10374,6 +10374,8 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       if (groupdest is not null)
         DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, options);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -10393,6 +10395,8 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, options);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
