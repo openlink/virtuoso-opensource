@@ -1290,7 +1290,7 @@ rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
           else
             {
               crop_begin = hit-1;
-              while ('/' != crop_begin[0]) crop_begin--;
+              while ('/' != crop_begin[0] && crop_begin > buf_prev_tail) crop_begin--;
             }
           hit = crop_begin;
           while ('\0' != (crop_begin[0] = crop_end[0])) { crop_begin++; crop_end++; }
