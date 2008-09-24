@@ -8948,13 +8948,13 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
   -- if timeout specified and it's over 1 second
   if (timeout is not null)
-    {
       timeout := atoi (timeout) * 1000;
+  else
+    timeout := 0;
       if (timeout >= 1000)
 	{
 	  set TRANSACTION_TIMEOUT=timeout;
         }
-    }
   get_user := '';
   soap_ver := 0;
   soap_action := http_request_header (lines, 'SOAPAction', null, null);
@@ -9401,6 +9401,10 @@ host_found:
   -- dbg_obj_princ ('qry_params = ', qry_params);
   set_user_id ('SPARQL');
   commit work;
+  if (timeout >= 1000)
+    {
+      set TRANSACTION_TIMEOUT=timeout;
+    }
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas);
