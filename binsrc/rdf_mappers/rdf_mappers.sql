@@ -3181,37 +3181,46 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_label_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME'))
 ;
 
-EXEC_STMT('create table DB.DBA.XBRL_CIK_CACHE (XC_CIK varchar primary key, XC_NAME varchar not null, XC_TS timestamp)', 0);
+EXEC_STMT('create table DB.DBA.XBRL_CIK_CACHE (XC_CIK varchar primary key, XC_NAME varchar not null, XC_URL varchar, XC_TS timestamp)', 0);
+RM_UPGRADE_TBL ('DB.DBA.XBRL_CIK_CACHE', 'XC_URL', 'varchar');
 
 create procedure DB.DBA.GET_XBRL_NAME_BY_CIK (in cik varchar)
 {
-  declare ret, cnt, xt, xp varchar;
+  declare url, nam, ret, cnt, xt, xp varchar;
   declare exit handler for sqlstate '*'
     {
       return '';
     };
   whenever not found goto retr;
   set isolation='comitted';
-  select XC_NAME into ret from DB.DBA.XBRL_CIK_CACHE where XC_CIK = cik;
+  select XC_URL into ret from DB.DBA.XBRL_CIK_CACHE where XC_CIK = cik;
+  if (ret is null)
+    {
+      delete from XBRL_CIK_CACHE where XC_CIK = cik;
+      goto retr;
+    }
   return ret;
   retr:
-  cnt := http_client (sprintf ('http://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&output=atom', cik));
+  url := sprintf ('http://www.rdfabout.com/sparql?query=%U',
+  	sprintf ('select ?url ?name '||
+	' where { <http://www.rdfabout.com/rdf/usgov/sec/id/cik%s> <http://www.w3.org/2002/07/owl#sameAs> ?url ; '||
+	' <http://xmlns.com/foaf/0.1/name> ?name . }', cik));
+  cnt := http_client (url);
   xt := xtree_doc (cnt);
-  xp := cast (xpath_eval ('string (/feed/title)', xt) as varchar);
-  if (length (xp))
-    xp := trim(replace (xp, sprintf ('(%s)', cik), ''));
-  else
+  url := cast (xpath_eval ('string (//binding[@name="url"]/uri)', xt) as varchar);
+  nam := cast (xpath_eval ('string (//binding[@name="name"]/literal)', xt) as varchar);
+  if (not length (url))
     return '';
-  insert into DB.DBA.XBRL_CIK_CACHE (XC_CIK, XC_NAME) values (cik, xp);
-  return xp;
+  insert into DB.DBA.XBRL_CIK_CACHE (XC_CIK, XC_NAME, XC_URL) values (cik, nam, url);
+  return url;
 }
 ;
 
 grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'))
-;
+xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:getIRIbyCIK', fix_identifier_case ('DB.DBA.GET_XBRL_NAME_BY_CIK'));
 
 
 

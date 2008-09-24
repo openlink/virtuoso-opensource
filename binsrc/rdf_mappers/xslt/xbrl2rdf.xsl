@@ -53,7 +53,7 @@
 	<xsl:template match="xbrl">
 		<sioc:Container rdf:about="{$baseUri}">
 			<xsl:for-each select="context">
-				<sioc:space_of rdf:resource="{concat('#', @id)}"/>
+				<sioc:container_of rdf:resource="{concat('#', @id)}"/>
 			</xsl:for-each>
 		</sioc:Container>
 		<xsl:apply-templates select="*" />
@@ -61,7 +61,7 @@
 	<xsl:template match="context">
 		<xsl:variable name="id" select="concat('#', @id)" />
 		<sioc:Container rdf:about="{$id}">
-			<sioc:has_space rdf:resource="{$baseUri}"/>
+			<sioc:has_container rdf:resource="{$baseUri}"/>
 			<xsl:apply-templates select="entity" />
 			<xsl:apply-templates select="period" />
 		</sioc:Container>
@@ -86,10 +86,10 @@
 			</opl-xbrl:identifier>
 			<xsl:if test="identifier/@scheme = 'http://www.sec.gov/CIK'">
 			    <dc:subject rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
-			    <!--xsl:variable name="nam" select="virt:getNameByCIK ($identifier_value)"/>
+			    <xsl:variable name="nam" select="virt:getIRIbyCIK ($identifier_value)"/>
 			    <xsl:if test="$nam != ''">
-				<dc:title><xsl:value-of select="$nam"/></dc:title>
-			    </xsl:if-->
+				<dc:subject rdf:resource="{$nam}"/>
+			    </xsl:if>
 			</xsl:if>
 		</xsl:if>
 		<xsl:if test="string-length($segment_value) &gt; 0">
