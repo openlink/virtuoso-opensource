@@ -984,6 +984,124 @@ Timothy Berners-Lee TimBL
 1 Rows. -- 30 msec.
 ]]></programlisting>
 </sect2>
+<sect2 id="rdfsqlfromsparqldescribe"><title>SPARQL DESCRIBE</title>
+  <para>SPARQL spec does not define the precise output of DESCRIBE, so different
+applications may need different result for the same subject. Some
+applications needs quick generation of short and incomplete results
+whereas may need detailed reports composed from multiple sources.
+  </para>
+  <para>If define <emphasis>sql:describe-mode "xxx"</emphasis> is specified then the generated SQL
+code will use procedures named:
+  </para>
+<programlisting><![CDATA[
+DB.DBA.SPARQL_DESC_DICT_xxx (in subj_dict any, in consts any, in graphs
+any, in storage_name any, in options any)
+]]></programlisting>
+  <para>and
+  </para>
+<programlisting><![CDATA[
+DB.DBA.SPARQL_DESC_DICT_xxx_PHYSICAL (in subj_dict any, in consts any,
+in graphs any, in storage_name any, in options any)
+]]></programlisting>
+  <para>In the blank new database, only one pair of such procedures is created,
+<emphasis>DB.DBA.SPARQL_DESC_DICT_SPO</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL</emphasis>, so
+only define <emphasis>sql:describe-mode "SPO"</emphasis> makes sense. This pair of procedures
+searches for all triples where input IRIs are used as subjects; it is a bit faster than the default
+routine that performs better search for related triples.
+  </para>
+  <para>Both procedures have same semantics but the second one is used if and
+only if the SPARQL compiler can prove that all subjects to process are
+from physical storage <emphasis>(DB.DBA.RDF_QUAD)</emphasis>. Thus the second procedure may
+omit search for subject in RDF Views.
+  </para>
+  <para>Both procedures should return dictionary with triples as keys and
+integer 1 as values. So the dictionary is filled by calls like:
+  </para>
+<programlisting><![CDATA[
+dict_put (resulting_dict,
+          vector (subj_iri_id, pred_iri_id, obj_iri_id_or_rdf_box),
+          1);
+]]></programlisting>
+  <para>Procedure arguments are as follows:
+  </para>
+  <itemizedlist mark="bullet">
+     <listitem><emphasis>subj_dict</emphasis> - a dictionary whose keys are IRI IDs and maybe values of
+other types, esp. RDF boxes. Keys are subjects to be described, so
+values other than IRI IDs should usually be ignored. Values should be
+ignored.</listitem>
+     <listitem><emphasis>consts</emphasis> - vector of IRI IDs and values of other types. Items of vector
+are subjects to be described, like keys of subj_dict.</listitem>
+     <listitem><emphasis>graphs</emphasis> - vector of IRI IDs of graphs that can be used for DESCRIBE. The
+vector may contain garbage, like in two previous cases. A NULL can be
+passed instead of vector indicating that source graphs are not specified
+in the source query.</listitem>
+     <listitem><emphasis>storage_name</emphasis> -  the value of "define input:storage" from the original
+SPARQL query, NULL if missing.</listitem>
+     <listitem><emphasis>options</emphasis> - reserved for future use, can be ignored.</listitem>
+   </itemizedlist>
+  <para>One should grant execute on both procedures to SPARQL_SELECT before referring to them in SPARQL.</para>
+  <para>Example:
+  </para>
+<programlisting><![CDATA[
+SQL>set blobs on;
+SQL>sparql
+sparql
+define sql:describe-mode "SPO"
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX sioct: <http://rdfs.org/sioc/types#>
+
+DESCRIBE ?forum
+FROM <http://demo.openlinksw.com/dataspace>
+WHERE {
+  ?forum rdf:type sioct:Weblog .
+}
+LIMIT 1;
+
+callret-0
+LONG VARCHAR
+_______________________________________________________________________________
+
+<http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Weblog> ,
+                <http://atomowl.org/ontologies/atomrdf#Feed> ;
+        <http://rdfs.org/sioc/ns#description> "XML templates demo's Weblog" ;
+        <http://rdfs.org/sioc/ns#has_space> <http://demo.openlinksw.com/dataspace/bloguser/space#this> ;
+        <http://rdfs.org/sioc/ns#container_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/20> ,
+                <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/21> ;
+        <http://rdfs.org/sioc/ns#id> "bloguser_blog" ;
+        <http://xmlns.com/foaf/0.1/maker> <http://demo.openlinksw.com/dataspace/person/bloguser#this> ;
+        <http://rdfs.org/sioc/ns#link> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> ;
+        <http://atomowl.org/ontologies/atomrdf#entry> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/20> ,
+                <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/21> ;
+        <http://atomowl.org/ontologies/atomrdf#contains> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/21> ,
+                <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/20> ;
+        <http://atomowl.org/ontologies/atomrdf#title> "bloguser_blog" ;
+        <http://www.w3.org/2000/01/rdf-schema#label> "XML templates demo's Weblog" ;
+        <http://rdfs.org/sioc/ns#scope_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog#owner> ;
+        <http://rdfs.org/sioc/ns#has_owner> <http://demo.openlinksw.com/dataspace/bloguser#this> ;
+        <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/sioc.rdf> ;
+        <http://purl.org/dc/elements/1.1/identifier> "62"^^<http://www.w3.org/2001/XMLSchema#integer> ;
+        <http://rdfs.org/sioc/services#has_service> <http://demo.openlinksw.com/RPC2> ,
+                <http://demo.openlinksw.com/mt-tb> ,
+                <http://demo.openlinksw.com/Atom/bloguser-blog-0> ,
+                <http://demo.openlinksw.com/GData/bloguser-blog-0> .
+<http://demo.openlinksw.com/RPC2> <http://rdfs.org/sioc/services#service_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/mt-tb> <http://rdfs.org/sioc/services#service_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog#owner> <http://rdfs.org/sioc/ns#has_scope> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/20> <http://rdfs.org/sioc/ns#has_container> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> ;
+        <http://atomowl.org/ontologies/atomrdf#source> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog/21> <http://rdfs.org/sioc/ns#has_container> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> ;
+        <http://atomowl.org/ontologies/atomrdf#source> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/bloguser#this> <http://rdfs.org/sioc/ns#owner_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/bloguser/space#this> <http://rdfs.org/sioc/ns#space_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/dataspace/person/bloguser#this> <http://xmlns.com/foaf/0.1/made> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/Atom/bloguser-blog-0> <http://rdfs.org/sioc/services#service_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+<http://demo.openlinksw.com/GData/bloguser-blog-0> <http://rdfs.org/sioc/services#service_of> <http://demo.openlinksw.com/dataspace/bloguser/weblog/bloguser_blog> .
+
+
+1 Rows. -- 240 msec.
+
+]]></programlisting>
+</sect2>
 </sect1>
    <sect1 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
      <sect2 id="rdfsparulintro"><title>Introduction</title>

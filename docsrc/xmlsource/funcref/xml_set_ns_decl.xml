@@ -28,7 +28,8 @@
   </refmeta>
   <refnamediv>
     <refname>xml_set_ns_decl</refname>
-    <refpurpose>Registers the XML NS prefix as persistent.</refpurpose>
+    <refpurpose>Registers the XML NS prefix as persistent or keeps it in properties of client
+connection depending on the persistance bits input value.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xml_set_ns_decl">
@@ -41,8 +42,8 @@
    </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-    <para>
-Registers the XML NS prefix as persistent.</para>
+    <para>Registers the XML NS prefix as persistent or keeps it in properties of client
+connection depending on the persistance bits input value.</para>
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>n_prefix</title>

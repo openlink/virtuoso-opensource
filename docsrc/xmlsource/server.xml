@@ -1352,6 +1352,12 @@ Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains det
 	<para>This controls processing of the "query-uri" parameter of the SPARQL query protocol webservice, means enable 1 or prohibited 0.</para>
     </formalpara>
 </listitem>
+<listitem id="ini_MaxCacheExpiration">
+    <formalpara>
+	<title>MaxCacheExpiration = 1</title>
+	<para>Cache Expiration time in seconds that overrides Sponger's default cache invaliadation.</para>
+    </formalpara>
+</listitem>
 <listitem id="ini_SPARQL_ExternalXsltSource">
     <formalpara>
 	<title>ExternalXsltSource = 1 or 0</title>
@@ -1857,10 +1863,17 @@ Encodings</link> for more details.</para>
 						module load number, required and starting with 1.
 						<computeroutput>&lt;module type&gt;</computeroutput>
 						specifies the type of module that is to be loaded, and
-						hence how Virtuoso is to use it.  So far only the "Hosting" type exists.
+						hence how Virtuoso is to use it.  So far "Hosting" and "attach" types exist.
 						<computeroutput>&lt;module name&gt;</computeroutput> is
 						the file name of the modules shared library or object.
-						(e.g. <computeroutput>Load1 = Hosting, hosting_perl.so</computeroutput>)</para>
+                                                </para>
+                                                <para>Example:</para>
+                                                <para><computeroutput>Load6 = attach, libphp5.so</computeroutput>)</para>
+                                                <para><computeroutput>Load7 = Hosting, hosting_php.so</computeroutput>)</para>
+                                                <para>"Attach" is used for now for the php library. It can be used to load other libraries in future too.
+                                                The reason is to load PHP5 functionality into virtuoso namespace, so when actually is loaded the hosting plugin,
+                                                it can bind to the already available symbols for php5.
+                                                </para>
 					</formalpara>
 				</listitem>
 			</itemizedlist>

@@ -55,7 +55,7 @@ attr-name is supplied then the mime attribute from the field_name will
 be returned.
 </para>
 <para>
-    Note that when field value is requested then it will be treated as a MIME field and only value will be returned if found. For example consider presence of following header line: "Content-Type: text/plain; charset=utf-8", then if 'Content-Type' is requested, only "text/plain" will be returned. To obtain whole field_value must be used http_request_header_full function.
+    Note that when field value is requested then it will be treated as a MIME field and only value will be returned if found. For example consider presence of following header line: "Content-Type: text/plain; charset=utf-8", then if 'Content-Type' is requested, only "text/plain" will be returned. Use http_request_header_full to obtain the full field value.
     </para>
   </refsect1>
   <refsect1 id="examples_http_request_header"><title>Examples</title>
