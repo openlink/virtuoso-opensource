@@ -82,6 +82,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*discogs.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_DISCOGS', null, 'Discogs');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
         '(http://.*/show_bug.cgi\\?id.*)|'||
         '(http://.*bugzilla.*)|'||
@@ -1223,6 +1227,56 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+	asin := null;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	
+	api_key := _key;
+	--api_key := '85f444b562';
+	if (new_origin_uri like 'http://www.discogs.com/artist/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.discogs.com/artist/%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://www.discogs.com/artist/%s?f=xml&api_key=%s',
+			asin, api_key);
+	}
+	else if (new_origin_uri like 'http://www.discogs.com/release/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.discogs.com/release/%s', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://www.discogs.com/release/%s?f=xml&api_key=%s',
+			asin, api_key);
+	}
+	else if (new_origin_uri like 'http://www.discogs.com/search?ev=hs&q=%&btn=Search')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.discogs.com/search?ev=hs&q=%s&btn=Search', 0);
+		asin := rtrim (tmp[0], '/');
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://www.discogs.com/search?type=all&q=%s&f=xml&api_key=%s',
+			asin, api_key);
+	}
+    else
+		return 0;
+	tmp := http_get (url);
+	xd := xtree_doc (tmp, 2);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/discogs2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
 }
 ;
 
