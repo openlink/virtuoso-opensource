@@ -69,8 +69,11 @@ OAT.Win = function(optObj) {
             self.dom.container.style.width = w + "px";
             self.dom.container.style.height = h + "px";
 	}
-	self.show = function() { 
+	self.preload = function() {
 		document.body.appendChild(self.dom.container);
+        }
+	self.show = function() {
+		self.preload();
 		OAT.Dom.show(self.dom.container);
 	}
 	self.hide = function() { OAT.Dom.hide(self.dom.container); }

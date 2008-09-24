@@ -147,7 +147,7 @@ OAT.Anchor = {
 			content:false, /* node or function to be inserted */
 			status:false, /* window status */
 			title:false, /* window title */
-			result_control:"grid", /* for url fetch */
+			result_control:false, /* for url fetch */
 			activation:"hover",
 			width:340,
 			height:false, /* false is 'auto' */
@@ -157,7 +157,8 @@ OAT.Anchor = {
 			type:OAT.WinData.TYPE_RECT,
 			visibleButtons:"cr",
 			enabledButtons:"cr",
-			template:false /* use with type:OAT.WinData.TYPE_TEMPLATE - see win component documentation */
+			template:false, /* use with type:OAT.WinData.TYPE_TEMPLATE - see win component documentation */
+			preload:false /* include the a++ node in the page DOM right at the assing time - do not use when large number of a++ windows on the page */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
 
@@ -196,7 +197,7 @@ OAT.Anchor = {
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 
-		options.displayRef = function(event) {
+		options.displayRef = function(event,preload) {
 			OAT.Dom.prevent(event);
 			var win = options.window;
 			win.hide(); /* close existing window */
@@ -213,13 +214,22 @@ OAT.Anchor = {
 			} else { 
 				OAT.Anchor.appendContent(options);
 			}
+            
+            if (!preload) {
 			if (options.activation=="focus") {
 				pos = OAT.Dom.position(elm);
 			}
 			options.anchorTo(pos[0],pos[1]);
 			win.show();
-			options.anchorTo(pos[0],pos[1]); /* after adding arrows, window can be shifted a bit */
+			window.setTimeout(function(){options.anchorTo(pos[0],pos[1]);},60); /* after adding arrows, window can be shifted a bit */
 		}
+		}
+        
+        if (options.preload) {
+            win.preload();
+            options.displayRef(false, true);
+        }
+        
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;
 			var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */

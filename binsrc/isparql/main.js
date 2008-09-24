@@ -394,7 +394,7 @@ function init() {
 			default: $('should-sponge-none').checked = true; break;
 		}
 	}
-	dialogs.goptions = new OAT.Dialog("Preferences","goptions",{width:450,height:500,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
+	dialogs.goptions = new OAT.Dialog("Preferences","goptions",{width:450,height:0,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
 	dialogs.goptions.cancel = function() {
   		OAT.WebDav.init({imageExt:"png",silentStart:true,user:"demo",pass:"demo"});
 	    dialogs.goptions.hide();

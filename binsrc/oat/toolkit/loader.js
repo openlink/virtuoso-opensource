@@ -188,12 +188,14 @@ Date.prototype.toHumanString = function() {
 }
 
 OAT.Dom = { /* DOM common object */
-	create:function(tagName,styleObj,className) {	
+	create:function(tagName,obj,className) {	
 		var elm = document.createElement(tagName);
-		if (styleObj) {
-			for (prop in styleObj) { elm.style[prop] = styleObj[prop]; }
-		}
 		if (className) { elm.className = className; }
+		if (obj) {
+			for (p in obj) {
+				if (p in elm.style) { elm.style[p] = obj[p]; } else { elm[p] = obj[p];  }
+			}
+		}
 		return elm;
 	},
 

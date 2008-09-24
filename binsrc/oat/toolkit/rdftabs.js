@@ -656,12 +656,11 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var remain = false;
 		for (var p in obj) {
 			if (p == " ") { 
-				remain = obj[p]; 
+				continue; // WAS: [no type specified]
 			} else {
 				self.drawSpotlightType(p,obj[p],tbody);
 			}
 		}
-		if (remain) { self.drawSpotlightType("[no type specified]",remain,tbody); }
 	}
 	
 	this.redraw = function() {
