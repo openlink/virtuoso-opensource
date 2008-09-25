@@ -484,6 +484,7 @@ void sqlc_meta_data_hook (sql_comp_t * sc, ST * tree);
 void sqlc_proc_table_cols (sql_comp_t * sc, comp_table_t * ct);
 
 void sqlc_top_select_dt (sql_comp_t * sc, ST * tree);
+ST ** sqlc_selection_names (ST * tree);
 
 #define P_NO_MATCH 0
 #define P_EXACT 1

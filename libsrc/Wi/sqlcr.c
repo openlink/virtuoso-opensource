@@ -587,6 +587,32 @@ qc_make_static (sql_comp_t * sc, query_cursor_t * qc, ST ** ptree)
   qc->qc_n_select_cols = BOX_ELEMENTS ((*ptree)->_.select_stmt.selection);
 }
 
+void
+sqlc_top_select_wrap_dt (sql_comp_t * sc, ST * tree)
+{
+  /* given select top xx ...) splices it to be select ... from (select top xx... ) __ */
+  ST * top, * texp, * sel;
+  if (!ST_P (tree, SELECT_STMT))
+    return;
+  top = SEL_TOP (tree);
+  if (top)
+    {
+      ST * out_names = (ST *) sqlc_selection_names (tree);
+      ST ** oby = tree->_.select_stmt.table_exp->_.table_exp.order_by;
+      if (oby)
+	{
+	  sel = (ST*) /*list*/ t_list (5, SELECT_STMT, NULL, tree->_.select_stmt.selection, NULL,
+	      tree->_.select_stmt.table_exp);
+	  texp = (ST*) /*list*/ t_list (9, TABLE_EXP,
+	      /*list*/ t_list (1, /*list*/ t_list (3, DERIVED_TABLE, sel, t_box_string ("__"))),
+	      NULL, NULL, NULL, NULL, NULL,NULL, NULL);
+	  tree->_.select_stmt.table_exp = sqlp_infoschema_redirect (texp);
+	  tree->_.select_stmt.selection = (caddr_t *) out_names;
+	  tree->_.select_stmt.top = top;
+	}
+      sqlc_top_select_dt (sc, tree);
+    }
+}
 
 void
 sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type)
@@ -603,7 +629,7 @@ sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type)
       tree = sqlc_union_dt_wrap (tree);
       *ptree = tree;
     }
-  sqlc_top_select_dt (sc, tree);
+  sqlc_top_select_wrap_dt (sc, tree);
   sql_stmt_comp (sc, ptree);
   tree = *ptree;
 
