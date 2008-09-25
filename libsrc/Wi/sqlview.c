@@ -971,7 +971,7 @@ sqlc_top_select_dt (sql_comp_t * sc, ST * tree)
       sel = (ST*) /*list*/ t_list (5, SELECT_STMT, top, tree->_.select_stmt.selection, NULL,
 			tree->_.select_stmt.table_exp);
       texp = (ST*) /*list*/ t_list (9, TABLE_EXP,
-	  /*list*/ t_list (1, /*list*/ t_list (3, DERIVED_TABLE, sel, box_string ("__"))),
+	  /*list*/ t_list (1, /*list*/ t_list (3, DERIVED_TABLE, sel, t_box_string ("__"))),
 			 NULL, NULL, NULL, NULL, NULL,NULL, NULL);
       tree->_.select_stmt.table_exp = sqlp_infoschema_redirect (texp);
       tree->_.select_stmt.selection = (caddr_t *) out_names;
