@@ -214,7 +214,7 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/doc/h
                         rdfs:isDefinedBy doc:File (resources.RES_ID, resources.RES_NAME) ;
                         rdfs:seeAlso doc:Collection(resources.RES_COL, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
-                                as virtrdf:File-RES_COL .
+                                as virtrdf:File-RES_COL2 .
 
 
                 doc:DocPath(resources.RES_FULL_PATH)
