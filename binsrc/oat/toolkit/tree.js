@@ -156,7 +156,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	}
 	
 	this.toggleSelect = function(event) {
-		if (event.ctrlKey) {
+		if (event.ctrlKey || (OAT.Browser.isMac && event.metaKey)) {
 			if (self.selected) { self.deselect(); } else { self.select(); }
 		} else {
 			while (self.root.selectedNodes.length) { self.root.selectedNodes[0].deselect(); }

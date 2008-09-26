@@ -72,6 +72,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		
 	this.addURL = function(u,onstart,onend,title) {
 		var url = u.toString().trim();
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,url);
 		var cback = function(str) {
 			if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
 				var triples = OAT.N3.toTriples(str);
@@ -107,6 +108,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			}
 			}
 			self.addTriples(triples,url,title);
+			OAT.MSG.send(this,OAT.MSG.STORE_LOADED,url);
 		}
 		var start = onstart ? onstart : self.options.ajaxStart;
 		var end = onend ? onend : self.options.ajaxEnd;
@@ -114,6 +116,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	}
 	
 	this.addXmlDoc = function(xmlDoc,href) {
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,xmlDoc.baseURI);
 		var triples = OAT.RDF.toTriples(xmlDoc);
 		/* sanitize triples */
 		for (var i=0;i<triples.length;i++) {
@@ -121,6 +124,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			t[2] = t[2].replace(/<script[^>]*>/gi,'');
 		}
 		self.addTriples(triples,href);
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,xmlDoc.baseURI);
 	}
 		
 	this.addTriples = function(triples,href,title) {
@@ -145,6 +149,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.clear = function() {
 		self.items = [];
 		self.rebuild(true);
+		OAT.MSG.send(self,OAT.MSG.STORE_CLEARED);
 	}
 		
 	this.remove = function(url) {
@@ -152,6 +157,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items.splice(index,1);
 		self.rebuild(true);
+		OAT.MSG.send(self,OAT.MSG.STORE_REMOVED,url);
 	}
 		
 	this.enable = function(url) {
@@ -159,6 +165,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items[index].enabled = true;
 		self.rebuild(true);
+		OAT.MSG.send(self,OAT.MSG.STORE_ENABLED,url);
 	}
 	
 	this.enableAll = function() {
@@ -171,6 +178,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items[index].enabled = false;
 		self.rebuild(true);
+		OAT.MSG.send(self,OAT.MSG.STORE_DISABLED,url);
 	}
 
 	this.disableAll = function() {

@@ -900,6 +900,12 @@ OAT.MSG = { /* messages */
 	GRID_ROWCLICK:20,
 	API_LOADING:21,
 	API_LOADED:22,
+	STORE_LOADING:23,
+	STORE_LOADED:24,
+	STORE_ENABLED:25,
+	STORE_DISABLED:26,
+	STORE_CLEARED:27,
+	STORE_REMOVED:28,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }
@@ -922,7 +928,7 @@ OAT.MSG = { /* messages */
 			var msgOK = (msg == record[1] || record[1] == "*");
 			if (!msgOK && record[1].toString().match(/\*/)) { /* try regexp match */
 				var re = new RegExp(record[1]);
-				var str = "";
+				var str = msg;
 				for (var p in OAT.MSG) {
 					var v = OAT.MSG[p];
 					if (v == msg) { str = p; }
