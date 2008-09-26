@@ -762,7 +762,7 @@ case $1 in
    fi
    # Prepare GRDDL tests to run locally
    gzip -c -d ../grddl-tests.tar.gz | tar xf -
-   if grep ":14300" grddl-tests/*
+   if grep ":14300" grddl-tests/* > /dev/null
    then
        echo "The port number to replace is correct."
    else
