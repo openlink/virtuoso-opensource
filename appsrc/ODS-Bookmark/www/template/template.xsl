@@ -165,9 +165,7 @@
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
               <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
-            |
       	  </v:template>
-            <v:button action="simple" url="#" style="url" value="Help" xhtml_alt="Help"/>
       </div>
         </div>
       <v:include url="bmk_login.vspx"/>
