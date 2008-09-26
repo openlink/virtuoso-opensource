@@ -64,6 +64,7 @@ extern "C" {
 #define SPAR_TRIPLE		(ptrlong)1014
 #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
 #define SPAR_CODEGEN		(ptrlong)1016
+#define SPAR_LIST		(ptrlong)1017
 /* Don't forget to update sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 30
@@ -387,6 +388,7 @@ typedef struct spar_tree_s
         ptrlong *equiv_indexes;		/*!< Array of indexes of equivs used in triples and filters of this GP, some items at the tail of the array may be spare and temporarily not in use */
         ptrlong equiv_count;		/*!< Number of items in \c equiv_indexes array that contains valid data. */
         ptrlong glued_filters_count;	/*!< Last \c glued_filters_count members of \c filters are expressions for ON statement of LEFT OUTER JOIN. They can not be moved to some other GP because they were moved already and next move will break semantics. */
+        SPART **options;
       } gp;
     struct {
         /* #define SPAR_LIT		(ptrlong)1009 */
@@ -469,6 +471,10 @@ typedef struct spar_tree_s
         ssg_codegen_callback_t **cgen_cbk;	/*!< Pointer to the code generation function as a boxed number */
         SPART *args[1];				/*!< Data for the callback, maybe more then one SPART *, depending on structure size */
       } codegen;
+    struct {
+        /* #define SPAR_LIST		(ptrlong)1017 */
+        SPART **items;	/*!< Some trees, say, items of T_IN_L list of variables */
+      } list;
   } _;
 } sparp_tree_t;
 
@@ -553,8 +559,8 @@ extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
-extern SPART *spar_gp_finalize (sparp_t *sparp);
-extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART *subquery);
+extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
+extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern int spar_filter_is_freetext (SPART *filt);

@@ -1226,14 +1226,30 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
     }
   if (SELECT_L == gp->_.gp.subtype)
     {
-      int retvalctr;
-      caddr_t vname = eq->e_varnames[0];
-      DO_BOX_FAST (SPART *, retval, retvalctr, gp->_.gp.subquery->_.req_top.orig_retvals)
+      caddr_t varname = eq->e_varnames[0];
+      SPART *retval = sparp_find_subexpn_in_retlist (sparp, varname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
+      if (NULL != retval)
+        return sparp_expn_native_valmode (sparp, retval);
+      if (NULL != gp->_.gp.options)
+        {
+          int ctr;
+          for (ctr = BOX_ELEMENTS (gp->_.gp.options); 1 < ctr; ctr -= 2)
+            {
+              SPART *val = gp->_.gp.options[ctr-1];
+              if (T_STEP_L == ((ptrlong)(gp->_.gp.options[ctr-2])) && !strcmp (val->_.alias.aname, varname))
     {
-          if ((SPAR_ALIAS == SPART_TYPE (retval)) && !strcmp (retval->_.alias.aname, vname))
+                  if (SPAR_VARIABLE == SPART_TYPE (val))
+                    {
+                      retval = sparp_find_subexpn_in_retlist (sparp, val->_.var.vname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
+                      if (NULL == retval)
+                        spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): no retval for T_STEP variable");
             return sparp_expn_native_valmode (sparp, retval);
     }
-  END_DO_BOX_FAST;
+                  else
+                    return SSG_VALMODE_SQLVAL;
+                }
+            }
+        }
       return SSG_VALMODE_LONG;
     }
   if (UNION_L == gp->_.gp.subtype)
@@ -3839,7 +3855,11 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg_print_literal_as_long (ssg, tree);
       else if (SSG_VALMODE_SQLVAL == needed)
         {
+#ifdef NDEBUG
+          ssg_puts (" __bft (");
+#else
           ssg_puts (" __box_flags_tweak (");
+#endif
           ssg_print_literal_as_sqlval (ssg, NULL, tree);
           ssg_puts (", 1)");
         }
@@ -5650,13 +5670,9 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
       ssg_prin_id (ssg, tabid);
       {
         int idx;
-        caddr_t active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
-        SPART **triple_opts = tree->_.triple.options;
-        for (idx = BOX_ELEMENTS_0 (triple_opts) - 2; idx >= 0; idx -= 2)
-          {
-            if ((ptrlong)INFERENCE_L == (ptrlong)(triple_opts [idx]))
-              active_inference = (caddr_t)(triple_opts [idx+1]);
-          }
+        caddr_t active_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, tree->_.triple.options);
+        if (NULL == active_inference)
+          active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
         if (NULL != active_inference)
           t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
       }
@@ -5685,9 +5701,11 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   ssg->ssg_indent++;
   ssg_newline (1);
   memset (&subq_ssg, 0, sizeof (spar_sqlgen_t));
+  subq_ssg.ssg_parent_ssg = ssg;
   subq_ssg.ssg_sparp = sub_sparp;
   subq_ssg.ssg_tree = sub_sparp->sparp_expr = wrapping_gp->_.gp.subquery;
-  sub_sparp->sparp_parent_sparp = NULL; /* not a scalar subquery -- no searchas in surrounding query */
+  subq_ssg.ssg_wrapping_gp = wrapping_gp;
+  sub_sparp->sparp_parent_sparp = NULL; /* not a scalar subquery -- no searches in surrounding query */
   sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
   if (NULL != ssg->ssg_sc)
     subq_ssg.ssg_sc = ssg->ssg_sc;
@@ -6232,7 +6250,98 @@ ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
     }
 }
 
-void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
+void
+ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
+{
+  SPART	*tree = ssg->ssg_tree;
+  SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
+  SPART *val;
+  int ctr, vctr;
+  if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
+    return;
+  ssg_puts (" TRANSITIVE");
+  for (ctr = BOX_ELEMENTS (opts); 1 < ctr; ctr -= 2)
+    {
+      ptrlong key = (ptrlong)(opts [ctr-2]);
+      SPART *val = opts [ctr-1];
+      char buf[40];
+      switch (key)
+        {
+        case T_IN_L: case T_OUT_L:
+          ssg_puts (((T_IN_L == key) ? " T_IN" : " T_OUT"));
+          DO_BOX_FAST (SPART *, v, vctr, val->_.list.items)
+            {
+              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, v->_.var.vname, tree->_.req_top.orig_retvals);
+              sprintf (buf, "%c%d", vctr ? ',': '(', pos);
+              ssg_puts (buf);
+            }
+          END_DO_BOX_FAST;
+          ssg_putchar (')');
+          break;
+        case T_MIN_L: case T_MAX_L:
+          ssg_puts (((T_MIN_L == key) ? " T_MIN(" : " T_MAX("));
+          ssg_print_scalar_expn (ssg->ssg_parent_ssg, val, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+          ssg_putchar (')');
+          break;
+        case T_DIRECTION_L:
+          sprintf (buf, " T_DIRECTION %ld", (long)((ptrlong)val));
+          ssg_puts (buf);
+          break;
+        case T_END_FLAG_L:
+          sprintf (buf, " T_END_FLAG %ld", (long)((ptrlong)val));
+          ssg_puts (buf);
+          break;
+        case T_CYCLES_ONLY_L: ssg_puts (" T_CYCLES_ONLY"); break;
+        case T_DISTINCT_L: ssg_puts (" T_DISTINCT"); break;
+        case T_EXISTS_L: ssg_puts (" T_EXISTS"); break;
+        case T_NO_CYCLES_L: ssg_puts (" T_NO_CYCLES"); break;
+        case T_NO_ORDER_L: ssg_puts (" T_NO_ORDER"); break;
+        case T_SHORTEST_ONLY_L: ssg_puts (" T_SHORTEST_ONLY"); break;
+        case T_FINAL_AS_L: spar_error (ssg->ssg_sparp, "Option T_FINAL_AS is not supported is SPARQL in this version of Virtuoso"); break;
+        default: break;
+        }
+    }
+}
+
+void
+ssg_print_t_steps_of_select (spar_sqlgen_t *ssg)
+{
+  SPART	*tree = ssg->ssg_tree;
+  SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
+  SPART *val;
+  int ctr, vctr;
+  if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
+    return;
+  for (ctr = BOX_ELEMENTS (opts); 1 < ctr; ctr -= 2)
+    {
+      ptrlong key = (ptrlong)(opts [ctr-2]);
+      SPART *val = opts [ctr-1];
+      char buf[40];
+      switch (key)
+        {
+        case T_STEP_L:
+          ssg_puts ("");
+          if (SPAR_VARIABLE == SPART_TYPE (val->_.alias.arg))
+            {
+              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, val->_.alias.arg->_.var.vname, tree->_.req_top.orig_retvals);
+              sprintf (buf, ", T_STEP(%d) AS ", pos);
+              ssg_puts (buf);
+            }
+          else
+            {
+              ssg_puts (", T_STEP(");
+              ssg_print_scalar_expn (ssg, val->_.alias.arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+              ssg_puts (") AS ");
+            }
+          ssg_prin_id (ssg, val->_.alias.aname);
+          break;
+        default: break;
+        }
+    }
+}
+
+void
+ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
   int gby_ctr, oby_ctr;
   long lim, ofs;
@@ -6333,9 +6442,13 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         ssg_puts (" DISTINCT");
       if (has_limofs)
         ssg_puts (limofs_strg);
+      if ((NULL != ssg->ssg_wrapping_gp) && (NULL != ssg->ssg_wrapping_gp->_.gp.options))
+        ssg_print_t_options_of_select (ssg);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
         retvals, BOX_ELEMENTS_INT (retvals),
         top_retval_flags, tree->_.req_top.pattern, retvalmode );
+      if ((NULL != ssg->ssg_wrapping_gp) && (NULL != ssg->ssg_wrapping_gp->_.gp.options))
+        ssg_print_t_steps_of_select (ssg);
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:

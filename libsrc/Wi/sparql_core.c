@@ -817,7 +817,7 @@ void spar_gp_replace_selid (sparp_t *sparp, dk_set_t membs, caddr_t old_selid, c
 }
 
 SPART *
-spar_gp_finalize (sparp_t *sparp)
+spar_gp_finalize (sparp_t *sparp, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t orig_selid = env->spare_selids->data;
@@ -841,7 +841,7 @@ spar_gp_finalize (sparp_t *sparp)
       if (_STAR_GT == pv->sparpv_op)
         {
           SPART *pv_gp;
-          pv_gp = spar_gp_finalize (sparp);
+          pv_gp = spar_gp_finalize (sparp, NULL);
           t_set_push (((dk_set_t *)(&(env->spare_acc_req_triples->data))) /* not &req_membs */, pv_gp);
         }
     }
@@ -865,7 +865,7 @@ spar_gp_finalize (sparp_t *sparp)
       spar_gp_init (sparp, 0);
       spar_gp_replace_selid (sparp, req_membs, orig_selid, env->spare_selids->data);
       env->spare_acc_req_triples->data = req_membs;
-      left_group = spar_gp_finalize (sparp);
+      left_group = spar_gp_finalize (sparp, NULL);
       req_membs = NULL;
       t_set_push (&req_membs, left_group);
     }
@@ -880,32 +880,34 @@ spar_gp_finalize (sparp_t *sparp)
       env->spare_acc_req_triples->data = req_membs;
       spar_gp_replace_selid (sparp, opt_membs, orig_selid, env->spare_selids->data);
       env->spare_acc_opt_triples->data = opt_membs;
-      left_group = spar_gp_finalize (sparp);
+      left_group = spar_gp_finalize (sparp, NULL);
       req_membs = NULL;
       t_set_push (&req_membs, left_group);
       opt_membs = NULL;
       t_set_push (&opt_membs, last_opt);
     }
 /* Plain composing of SPAR_GP tree node */
-  res = spartlist (sparp, 9,
+  res = spartlist (sparp, 10,
     SPAR_GP, subtype,
     /* opt members are at the first place in NCONC because there's a reverse in t_revlist_to_array */
     t_revlist_to_array (t_NCONC (opt_membs, req_membs)),
     t_revlist_to_array (filts),
     NULL,
     orig_selid,
-    NULL, (ptrlong)(0), (ptrlong)(0) );
+    NULL, (ptrlong)(0), (ptrlong)(0), options );
   spar_selid_pop (sparp);
   return res;
 }
 
 SPART *
-spar_gp_finalize_with_subquery (sparp_t *sparp, SPART *subquery)
+spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery)
 {
   SPART *gp;
-  gp = spar_gp_finalize (sparp);
+  gp = spar_gp_finalize (sparp, options);
   gp->_.gp.subquery = subquery;
   gp->_.gp.subtype = SELECT_L;
+  if (NULL != options)
+    sparp_validate_options_of_tree (sparp, gp);
   return gp;
 }
 
@@ -1414,6 +1416,8 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
   if (SPAR_IS_BLANK_OR_VAR (graph))
     graph->_.var.selid = env->spare_selids->data;
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri, options);
+  if (NULL != options)
+    sparp_validate_options_of_tree (sparp, triple);
   spar_gp_add_member (sparp, triple);
 }
 
@@ -1837,7 +1841,7 @@ spar_make_fake_action_solution (sparp_t *sparp)
 {
   SPART * fake_gp;
   spar_gp_init (sparp, WHERE_L);
-  fake_gp = spar_gp_finalize (sparp);
+  fake_gp = spar_gp_finalize (sparp, NULL);
   return (SPART **)t_list (5,
     fake_gp, NULL, NULL, t_box_num(1), t_box_num(0));
 }

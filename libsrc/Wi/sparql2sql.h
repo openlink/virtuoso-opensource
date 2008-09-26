@@ -376,6 +376,12 @@ extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPA
 /*! This finds a variable that is a source of value of a given external variable. */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
 
+/*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */
+extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals, int return_alias);
+
+/*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the 1-based position in \c retvals */
+extern int sparp_subexpn_position1_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals);
+
 /*! This returns a mapping of \c var.
 If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
 extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var);
@@ -595,6 +601,12 @@ extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate ORDER BY <int> */
 extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
 
+/*! Returns list of options of a GP or TRIPLE tree */
+extern SPART **sparp_get_options_of_tree (sparp_t *sparp, SPART *tree);
+extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree);
+extern SPART *sparp_get_option (sparp_t *sparp, ptrlong key, SPART **options);
+
+
 /* PART 3. OUTPUT GENERATOR */
 
 struct spar_sqlgen_s;
@@ -675,6 +687,8 @@ typedef struct spar_sqlgen_s
   SPART			*ssg_tree;		/*!< Select tree to process, of type SPAR_REQ_TOP */
   sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_equivs */
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_equiv_count */
+  struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
+  SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* Codegen temporary values */
@@ -682,7 +696,6 @@ typedef struct spar_sqlgen_s
   int			ssg_where_l_printed;	/*!< Flags what to print before a filter: " WHERE" if 0, " AND" otherwise */
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
-  struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
 } spar_sqlgen_t;
 
 

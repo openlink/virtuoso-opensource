@@ -354,6 +354,13 @@ sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
 \c trav_env_this points to the innermost graph pattern.
 \c common_env is not used. */
 
+int sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+int sparp_gp_trav_cu_out_triples_1 (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+int sparp_gp_trav_cu_out_triples_2 (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+int sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+int sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+int sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
+
 int
 sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -390,6 +397,33 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
 ignore_retval_name: ;
             }
           END_DO_BOX_FAST;
+          if (NULL != curr->_.gp.options)
+            {
+              int ctr;
+              for (ctr = BOX_ELEMENTS (curr->_.gp.options); 1 < ctr; ctr -= 2)
+                {
+                  ptrlong key = ((ptrlong)(curr->_.gp.options[ctr-2]));
+                  switch (key)
+                    {
+                    case T_STEP_L:
+                      {
+                        caddr_t name = curr->_.gp.options[ctr-1]->_.alias.aname;
+                        sparp_equiv_get (sparp, curr, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
+                        break;
+                      }
+                    case T_MIN_L: case T_MAX_L:
+                      {
+                        sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+                        memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+                        stss[1].sts_ancestor_gp = curr;
+                        sparp_gp_trav_int (sparp, curr->_.gp.options[ctr-1], stss+1, common_env,
+                          sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
+                          sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
+                        break;
+                      }
+                    }
+                }
+            }
         }
       return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: break;
@@ -1508,15 +1542,11 @@ skip_ext_ext_unlinks:
 void
 sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  int retvalctr;
   SPART *gp = eq->e_gp;
   caddr_t vname = eq->e_varnames[0];
-  SPART *sub_expn;
-  DO_BOX_FAST (SPART *, retval, retvalctr, gp->_.gp.subquery->_.req_top.orig_retvals)
+  SPART *sub_expn = sparp_find_subexpn_in_retlist (sparp, vname, gp->_.gp.subquery->_.req_top.orig_retvals, 0);
+  if (NULL != sub_expn)
     {
-      if ((SPAR_ALIAS != SPART_TYPE (retval)) || strcmp (retval->_.alias.aname, vname))
-        continue;
-      sub_expn = retval->_.alias.arg;
       if (SPAR_IS_BLANK_OR_VAR(sub_expn))
         {
           sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
@@ -1531,9 +1561,7 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
             SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
             SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL );
         }
-      break;
     }
-  END_DO_BOX_FAST;
 }
 
 void
@@ -1880,6 +1908,8 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   int eq_ctr, var_ctr, recv_ctr, subv_ctr;
+  if (NULL == sparp->sparp_expr)
+    return; /* Internal error during parsing phase, there's no complete query to validate equivalence classes in it. */
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
   sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.pattern, stss+1, (void *)((ptrlong)flags),
@@ -2678,7 +2708,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
               if (NULL != qmv)
                 spar_internal_error (sparp, "Invalid quad map storage metadata: quad map has set both quad map value and a constant for same field.");
               memset (&qmv_rvr, 0, sizeof (rdf_val_range_t));
-              qmv_rvr.rvrRestrictions |= SPART_VARR_FIXED;
+              /* qmv_rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_NOT_NULL; This is set below */
 #ifdef DEBUG
               if ((SPART_TRIPLE_GRAPH_IDX == field_ctr) && (DV_UNAME != DV_TYPE_OF (fld_const)))
                 GPF_T1("sparp_" "refresh_triple_cases(): const GRAPH field of qm is not a UNAME");
@@ -2727,7 +2757,8 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
         ((UNION_L == memb->_.gp.subtype) ||
          ((0 == memb->_.gp.subtype) &&
            (1 == BOX_ELEMENTS (memb->_.gp.members)) &&
-           (SPAR_GP == SPART_TYPE (memb->_.gp.members[0])) ) ) )
+           (SPAR_GP == SPART_TYPE (memb->_.gp.members[0])) ) ) &&
+         (NULL == memb->_.gp.options) )
         {
           int sub_count = BOX_ELEMENTS (memb->_.gp.members);
           int sub_ctr;
@@ -2764,10 +2795,11 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
         continue;
       if (OPTIONAL_L == memb->_.gp.subtype)
         break; /* No optimizations at left of LEFT OUTER JOIN. */
-      if (((0 == memb->_.gp.subtype) &&
+      if ((((0 == memb->_.gp.subtype) &&
            (1 <= BOX_ELEMENTS (memb->_.gp.members)) ) ||
          ((UNION_L == memb->_.gp.subtype) &&
-          (1 == BOX_ELEMENTS (memb->_.gp.members)) ) )
+            (1 == BOX_ELEMENTS (memb->_.gp.members)) ) ) &&
+        (NULL == memb->_.gp.options) )
         {
           int sub_count = BOX_ELEMENTS (memb->_.gp.members);
           int sub_ctr;
@@ -3034,13 +3066,13 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
 SPART *
 sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline)
 {
-  SPART *res = spartlist (sparp, 9,
+  SPART *res = spartlist (sparp, 10,
     SPAR_GP, subtype,
     t_list (0),
     t_list (0),
     NULL,
     spar_mkid (sparp, "s"),
-    NULL, (ptrlong)(0), (ptrlong)(0) );
+    NULL, (ptrlong)(0), (ptrlong)(0), NULL );
   res->srcline = t_box_num (srcline);
   return res;
 }
@@ -3653,6 +3685,8 @@ sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_trip
         return NULL;
       if (1 != BOX_ELEMENTS (gp_triple->_.triple.tc_list))
         return NULL;
+      if (NULL != gp_triple->_.triple.options)
+        return NULL;
       if (gp_triple->_.triple.ft_type)
         return NULL; /* TBD: support of free-text indexing in breakup */
     }
@@ -3895,6 +3929,8 @@ sparp_try_reuse_tabid_in_join_via_key_qname (sparp_t *sparp, SPART *curr, int ba
         continue;
       if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list))
         continue;
+      if (NULL != dep_triple->_.triple.options)
+        continue;
       if (!strcmp (base->_.triple.tabid, dep_triple->_.triple.tabid))
         continue; /* tabid is already reused */
       dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
@@ -4052,6 +4088,8 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
             continue;
           if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
             continue;
+          if (NULL != base->_.triple.options)
+            continue;
           sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
         }
       END_DO_BOX_FAST;
@@ -4065,6 +4103,8 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
         if ((0 != BOX_ELEMENTS_0 (curr->_.gp.filters)) ||
           (1 != BOX_ELEMENTS_0 (curr->_.gp.members)) ||
           (SPAR_TRIPLE != SPART_TYPE (curr->_.gp.members[0])) )
+          break;
+        if (NULL != curr->_.triple.options)
           break;
         SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
           {

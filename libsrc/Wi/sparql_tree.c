@@ -2149,6 +2149,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           tgt->_.qm_sql_funcall.named[arg_ctr] = sparp_tree_full_clone_int (sparp, arg, parent_gp);
         }
       END_DO_BOX_FAST_REV;
+      return tgt;
+    case SPAR_LIST:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.list.items = sparp_treelist_full_clone_int (sparp, orig->_.list.items, parent_gp);
+      return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
     }
@@ -2263,6 +2268,10 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.qm_sql_funcall.fixed = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.fixed, parent_gp);
       tgt->_.qm_sql_funcall.named = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.named, parent_gp);
       return tgt;
+    case SPAR_LIST:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.list.items = sparp_treelist_full_copy (sparp, orig->_.list.items, parent_gp);
+      return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
     }
@@ -2289,7 +2298,12 @@ sparp_gp_detach_member (sparp_t *sparp, SPART *parent_gp, int member_idx, sparp_
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL != touched_equivs_ptr) ? &touched_equivs_set : NULL);
   SPART **old_members = parent_gp->_.gp.members;
-  SPART *memb = sparp_gp_detach_member_int (sparp, parent_gp, member_idx, touched_equivs_set_ptr);
+  SPART *memb;
+  memb = sparp_gp_detach_member_int (sparp, parent_gp, member_idx, touched_equivs_set_ptr);
+#ifndef NDEBUG
+  if (NULL != sparp_get_options_of_tree (sparp, memb))
+    spar_internal_error (sparp, "sparp_" "gp_detach_member(): the detached member has options");
+#endif
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   parent_gp->_.gp.members = (SPART **)t_list_remove_nth ((caddr_t)old_members, member_idx);
@@ -2883,7 +2897,171 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
   return NULL;
 }
 
+SPART *
+sparp_find_subexpn_in_retlist (sparp_t *sparp, ccaddr_t varname, SPART **retvals, int return_alias)
+{
+  int retvalctr;
+  DO_BOX_FAST (SPART *, retval, retvalctr, retvals)
+    {
+      switch (SPART_TYPE (retval))
+        {
+        case SPAR_ALIAS:
+          if (!strcmp (retval->_.alias.aname, varname))
+            return (return_alias ? retval : retval->_.alias.arg);
+          break;
+        case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+          if (!strcmp (retval->_.var.vname, varname))
+            return retval;
+          break;
+        }
+    }
+  END_DO_BOX_FAST;
+  return NULL;
+}
+
+int
+sparp_subexpn_position1_in_retlist (sparp_t *sparp, ccaddr_t varname, SPART **retvals)
+{
+  int retvalctr;
+  DO_BOX_FAST (SPART *, retval, retvalctr, retvals)
+    {
+      switch (SPART_TYPE (retval))
+        {
+        case SPAR_ALIAS:
+          if (!strcmp (retval->_.alias.aname, varname))
+            return 1+retvalctr;
+          break;
+        case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+          if (!strcmp (retval->_.var.vname, varname))
+            return 1+retvalctr;
+          break;
+        }
+    }
+  END_DO_BOX_FAST;
+  return 0;
+}
+
+
 /* MISCELLANIA */
+
+SPART **
+sparp_get_options_of_tree (sparp_t *sparp, SPART *tree)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_GP: return tree->_.gp.options; 
+    case SPAR_TRIPLE: return tree->_.triple.options; 
+    }
+  return NULL;
+}
+
+void
+sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
+{
+  SPART **options = NULL;
+  int ttype = SPART_TYPE (tree);
+  int has_inference = 0;
+  int has_transitive = 0;
+  int needs_transitive = 0;
+  SPART **subq_orig_retvals = NULL;
+  int idx;
+  switch (ttype)
+    {
+    case SPAR_GP:
+      options = tree->_.gp.options;
+      if (SELECT_L == tree->_.gp.subtype)
+        subq_orig_retvals = tree->_.gp.subquery->_.req_top.orig_retvals;
+      break;
+    case SPAR_TRIPLE: options = tree->_.triple.options; break;
+    }
+  if (NULL == options)
+    return;
+  for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
+    {
+      ptrlong key = ((ptrlong)(options [idx]));
+      SPART *val = options [idx+1];
+      switch (key)
+        {
+        case INFERENCE_L: has_inference = 1; continue;
+        case TRANSITIVE_L: has_transitive = 1; continue;
+        case T_CYCLES_ONLY_L:
+        case T_DISTINCT_L:
+        case T_END_FLAG_L:
+        case T_EXISTS_L:
+        case T_MAX_L:
+        case T_MIN_L:
+        case T_NO_CYCLES_L:
+        case T_NO_ORDER_L:
+        case T_SHORTEST_ONLY_L:
+          needs_transitive++; continue;
+        case T_DIRECTION_L: needs_transitive++;
+          if (((ptrlong)(val)) > 3 || ((ptrlong)(val)) < 1)
+            spar_error (sparp, "The value of T_DIRECTION option should be an integer value 1, 2 or 3");
+          continue;
+        case T_IN_L: case T_OUT_L:
+          {
+            int v_ctr;
+            if (NULL == subq_orig_retvals)
+              spar_error (sparp, "T_IN and T_OUT options can be used only for SELECT subquery because they should refer to result-set of a subquery");
+            DO_BOX_FAST (SPART *, v, v_ctr, val->_.list.items)
+              {
+                if (NULL == sparp_find_subexpn_in_retlist (sparp, v->_.var.vname, subq_orig_retvals, 1))
+                  spar_error (sparp, "Variable ?%.100s is used in %s option but not in the result-set of a subquery",
+                    v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
+              }
+            END_DO_BOX_FAST;
+            continue;
+          }
+        case T_STEP_L:
+          {
+            SPART *arg = val->_.alias.arg;
+            if (SPAR_VARIABLE == SPART_TYPE (arg))
+              {
+                caddr_t vname = arg->_.var.vname;
+                if (NULL == sparp_find_subexpn_in_retlist (sparp, vname, subq_orig_retvals, 1))
+                  spar_error (sparp, "Variable ?%.100s is used in T_STEP option but not in the result-set of a subquery",
+                    vname );
+              }
+            else
+              {
+                if (strcmp ((caddr_t)arg, "path_id") && strcmp ((caddr_t)arg, "step_no"))
+                  spar_error (sparp, "T_STEP option support only \"path_id\" and \"step_no\" output values, not \"%.100s\"",
+                    (caddr_t)arg );
+              }
+            if (sparp_subexpn_position1_in_retlist (sparp, val->_.alias.aname, subq_orig_retvals))
+              spar_error (sparp, "The alias ?%.100s of T_STEP option conflicts with same name in the result-set of a subquery",
+                (caddr_t)(val->_.alias.aname) );
+            continue;
+          }
+        default: spar_internal_error (sparp, "sparp_" "validate_options_of_tree(): unsupported option");
+        }
+    }
+  switch (ttype)
+    {
+    case SPAR_GP:
+      if (has_inference)
+        spar_error (sparp, "Inference options can be specified only for triples, not for group patterns");
+      if (needs_transitive && !has_transitive)
+        spar_error (sparp, "Transitive-specific options are used without TRANSITIVE option");
+      break;
+    case SPAR_TRIPLE:
+      if (needs_transitive || has_transitive)
+        spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triples");
+      break;
+    }
+}
+
+SPART *
+sparp_get_option (sparp_t *sparp, ptrlong key, SPART **options)
+{
+  int idx;
+  for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
+    {
+      if (((ptrlong)(options [idx])) == key)
+        return options [idx+1];
+    }
+  return (SPART *)NULL;
+}
 
 caddr_t
 spar_var_name_of_ret_column (SPART *tree)
@@ -3276,6 +3454,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.gp.subquery, ses, indent+2, "SUBQUERY", -1);
 	      spart_dump (tree->_.gp.filters, ses, indent+2, "FILTERS", -2);
 	      spart_dump (tree->_.gp.selid, ses, indent+2, "SELECT ID", 0);
+	      spart_dump (tree->_.gp.options, ses, indent+2, "OPTIONS", -2);
 	      /* spart_dump (tree->_.gp.results, ses, indent+2, "RESULTS", -2); */
               session_buffered_write_char ('\n', ses);
 	      for (ctr = indent+2; ctr--; /*no step*/ )
@@ -3372,6 +3551,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
 	      spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
 	      spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
+	      spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
 	      break;
 	    }
 	  case BOP_EQ: case BOP_NEQ:
@@ -3411,6 +3591,12 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      SES_PRINT (ses, buf);
 	      spart_dump (tree->_.lit.val, ses, indent+2, "IRI", 0);
 	      break;
+	    }
+	  case SPAR_LIST:
+	    {
+	      sprintf (buf, "LIST:");
+	      SES_PRINT (ses, buf);
+	      spart_dump (tree->_.list.items, ses, indent+2, "ITEMS", -2);
 	    }
 	  default:
 	    {
