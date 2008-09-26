@@ -4850,6 +4850,75 @@ http://dbpedia.org/resource/At_Fillmore_East                                    
 http://dbpedia.org/resource/August_and_Everything_After                           August and Everything After
 ...
 ]]></programlisting>
+<emphasis>Equivalence between classes</emphasis>
+<para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integraion:</para>
+<programlisting><![CDATA[
+-- Load UMBEL & DBpedia Instance Level Cross-Links (owl:sameAs) Triples
+select ttlp_mt (file_to_string_output ('umbel_dbpedia_linkage_v071.n3'), '', 'http://dbpedia.org');
+
+-- Load UMBEL and DBpedia Type (rdf:type) association Triples
+select ttlp_mt (file_to_string_output ('umbel_dbpedia_types_v071.n3'), '', 'http://dbpedia.org');
+
+--- Load UMBEL Subject Concept Class Hierarchy into a Named Graph
+select ttlp_mt (file_to_string_output ('umbel_class_hierarchy_v071.n3'), '', 'http://dbpedia.org/resource/classes/umbel#');
+
+--- load UMBEL Subject Concepts Instance Data
+select ttlp_mt (file_to_string_output ('umbel_subject_concepts.n3'), '', 'http://dbpedia.org/resource/classes/umbel#');
+
+--- Load UMBEL Abstract Concepts Instance Data
+select ttlp_mt (file_to_string_output ('umbel_abstract_concepts.n3'), '', 'http://dbpedia.org/resource/classes/umbel#');
+
+
+-- Load UMBEL External Ontology Mapping into a Named Graph
+select ttlp_mt (file_to_string_output ('umbel_external_ontologies_linkage.n3'), '', 'http://dbpedia.org/resource/classes/umbel#');
+
+-- Create UMBEL Inference Rules
+
+rdfs_rule_set ('http://dbpedia.org/resource/inference/rules/umbel#', 'http://dbpedia.org/resource/classes/umbel#');
+]]></programlisting>
+<para>Now let's execute the following queries:</para>
+<programlisting><![CDATA[
+SQL>sparql define input:inference 'http://dbpedia.org/resource/inference/rules/umbel#'
+prefix umbel: <http://umbel.org/umbel/sc/>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+prefix opencyc: <http://sw.opencyc.org/2008/06/10/concept/en/>
+select ?s
+where
+{
+ ?s a opencyc:Motorcycle.
+ ?s dbpedia:name ?n.
+ ?n bif:contains "BMW".
+};
+
+s
+____________________________________________
+http://dbpedia.org/resource/BMW_K1200GT
+http://dbpedia.org/resource/BMW_F650CS
+http://dbpedia.org/resource/BMW_C1
+http://dbpedia.org/resource/BMW_R75
+4 Rows. -- 26 msec.
+]]></programlisting>
+<programlisting><![CDATA[
+SQL>sparql define input:inference 'http://dbpedia.org/resource/inference/rules/umbel#'
+prefix umbel: <http://umbel.org/umbel/sc/>
+PREFIX dbpedia: <http://dbpedia.org/property/>
+prefix opencyc: <http://sw.opencyc.org/2008/06/10/concept/en/>
+select ?s
+where
+{
+ ?s a umbel:Motorcycle.
+ ?s dbpedia:name ?n.
+ ?n bif:contains "BMW".
+};
+
+s
+____________________________________________
+http://dbpedia.org/resource/BMW_K1200GT
+http://dbpedia.org/resource/BMW_F650CS
+http://dbpedia.org/resource/BMW_C1
+http://dbpedia.org/resource/BMW_R75
+4 Rows. -- 26 msec.
+]]></programlisting>
 </sect2>
 </sect1>
 <sect1 id="rdfsparqlrulefulltext"><title>Using Full Text Search in SPARQL</title>
