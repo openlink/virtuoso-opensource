@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
 <HTML>
 <HEAD>
-	<TITLE>Virtuoso Documenation Project Readme</TITLE>
+	<TITLE>Virtuoso Documentation Project Readme</TITLE>
 <LINK REL="stylesheet" TYPE="text/css" HREF="html/virtdoc.css">
 <STYLE>
 #contents {
@@ -17,7 +17,7 @@
 </STYLE>
 </HEAD>
 <BODY>
-<DIV CLASS="chaphead"><H1>Virtuoso Documenation Project Readme</H1></DIV>
+<DIV CLASS="chaphead"><H1>Virtuoso Documentation Project Readme</H1></DIV>
 <DIV ID="contents">
 <H2 CLASS="sect1head">Contents</H2>
 <DIV><A HREF="#desc">Archive Description</A></DIV>
@@ -44,7 +44,7 @@
   <TD CLASS="data">HTML output directory.  Generated HTML will be placed here.</TD></TR>
 <TR>
   <TD CLASS="data">images</TD>
-  <TD CLASS="data"><DIV>All images pertenant to the Virtuoso documentation project.</DIV>
+  <TD CLASS="data"><DIV>All images pertinent to the Virtuoso documentation project.</DIV>
     <DIV>All documentation images are contained in the root of images.  </DIV>
 	<DIV>Images for the navigation tree are in the images/tree directory.</DIV>
 	<DIV>Other images such as titles and bullet points are contained in the images/misc directory.</DIV></TD></TR>
@@ -95,11 +95,11 @@
 </TABLE>
 
 
-<A NAME="instructions" /><H2 CLASS="sect1head">Intructions For Win32</H2>
+<A NAME="instructions" /><H2 CLASS="sect1head">Instructions For Win32</H2>
 <P>The XML sources are contained in the xmlsource directory.  
 The top level document is virtdocs.xml.  This file must contain a reference for 
 all external files that are included in the documentation, this includes chapters,
-sections, and functions.  See the relevent section in this document for more 
+sections, and functions.  See the relevant section in this document for more 
 information about adding content to the documentation.</P>
 <P>The documentation can be built from the makehtml.bat script.  
 You will firstly need to configure your environment by editing the makehtml.bat 
@@ -129,7 +129,7 @@ chapter to be rendered an entry for the file must be made in the
 chapter_list.txt file of the bin directory.  </P>
 <P>The file name and chapter label attribute of new chapters 
 must mach exactly.  The id attribute of the new chapter must be the same 
-as the label but without the extention.  The entry in the chapter_list.txt file 
+as the label but without the extension.  The entry in the chapter_list.txt file 
 then must match the id attribute.  </P>
 <P>New chapters begin with the following template: 
 <PRE CLASS="programlisting">
@@ -174,7 +174,7 @@ makes life easier in the future.</P>
 <P>Adding text to an existing section is a no brainer, use the 
 existing document content for examples.  If you are adding new sections 
 (sect[12345]'s) it may be suitable to add a new file and include this in the 
-relevent chapter if the topic is long and isolated.  There are many examples of 
+relevant chapter if the topic is long and isolated.  There are many examples of 
 this such as the wsdl.xml file, which is a section included in the webservices.xml 
 file.  Sections must have an entity definition in the virtdocs.xml file like 
 chapters do but the entity is not output in that file!  That means you include a:
@@ -189,7 +189,7 @@ a sect1...</P>
 <P>Try and stick to the 
 <A HREF="http://www.oasis-open.org/docbook/documentation/reference/html/docbook.html">DocBook</A> 
 DTD.</P>
-<P>RFC links should come from the authorative location of: <BR />
+<P>RFC links should come from the authoritative location of: <BR />
 <STRONG>http://www.rfc-editor.org/rfc/rfc####.txt</STRONG></P>
 
 </DIV>
