@@ -1808,9 +1808,11 @@ create procedure ODRIVE.WA.odrive_real_path_int(
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_real_path(
-  in path varchar) returns varchar
+  in path varchar,
+  in showType integer := 1,
+  in pathType varchar := 'C')
 {
-  return ODRIVE.WA.odrive_real_path_int(path, 1);
+  return ODRIVE.WA.odrive_real_path_int (path, showType, pathType);
 }
 ;
 
@@ -2261,7 +2263,7 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
 create procedure ODRIVE.WA.odrive_name_compose(
   in name any,
   in id integer,
-  in mode integer := 0) returns varchar
+  in mode integer := 0)
 {
   if (mode = 0)
     return name;
@@ -2292,7 +2294,8 @@ create procedure ODRIVE.WA.odrive_name_restore(
   fext := subseq (name, pairs[6], pairs[7]);
 
   pairs := regexp_parse ('^(.*) [(][\$]id-([1-9][0-9]*)[)]\044', fname, 0);
-  if (pairs is null) {
+  if (pairs is null)
+  {
     _name := fname || fext;
     _id := null;
   } else {
@@ -3958,3 +3961,70 @@ create procedure ODRIVE.WA.ui_date (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.send_mail (
+  in _from integer,
+  in _to integer,
+  in _text varchar)
+{
+  declare _smtp_server, _from_address, _to_address, _body, _message any;
+
+  if ((select max (WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length (max (WS_SMTP)) from WA_SETTINGS) = 0)
+  {
+    _smtp_server := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'DefaultMailServer');
+  } else {
+    _smtp_server := (select max (WS_SMTP) from WA_SETTINGS);
+  }
+  if (_smtp_server <> 0)
+  {
+    _body := sprintf ('Dear %s,\n\n%s\n\nBest wishes,\n%s', ODRIVE.WA.account_name (_to), _text, ODRIVE.WA.account_name (_from));
+    _message := 'Subject: Sharing notification\r\nContent-Type: text/plain\r\n' || _body;
+    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
+    _to_address := (select U_E_MAIL from SYS_USERS where U_ID = _to);
+    {
+      declare exit handler for sqlstate '*'
+      {
+        return;
+      };
+      smtp_send (_smtp_server, _from_address, _to_address, _message);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_send_mail (
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  declare N, M integer;
+  declare oACLs, oACL, nACLs, nACL any;
+
+  oACLs := ODRIVE.WA.acl_vector (_old_acl);
+  nACLs := ODRIVE.WA.acl_vector (_new_acl);
+  for (N := 0; N < length (nACLs); N := N + 1)
+  {
+    for (M := 0; M < length (oACLs); M := M + 1)
+    {
+      if (nACLs[N][0] = oACLs[M][0])
+        goto _skip;
+    }
+    ODRIVE.WA.send_mail (_from, nACLs[N][0], sprintf ('The resource ''%s'' has shared to you.', _path));
+  _skip:;
+  }
+  for (N := 0; N < length (oACLs); N := N + 1)
+  {
+    for (M := 0; M < length (nACLs); M := M + 1)
+    {
+      if (oACLs[N][0] = nACLs[M][0])
+        goto _skip2;
+    }
+    ODRIVE.WA.send_mail (_from, oACLs[N][0], sprintf ('The resource ''%s'' has not shared yet to you.', _path));
+  _skip2:;
+  }
+}
+;

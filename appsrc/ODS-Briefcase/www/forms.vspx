@@ -145,7 +145,7 @@
         declare prop_owner, prop_group integer;
         declare prop_mime, prop_add_perms, prop_rem_perms, prop_perms, one, zero varchar;
         declare c_properties, c_seq, c_property, c_value, c_action any;
-        declare dav_acl, acl_value any;
+        declare old_dav_acl, dav_acl, acl_value any;
         declare itemList any;
 
         params := e.ve_params;
@@ -256,6 +256,7 @@
             if (length (acl_value))
             {
               dav_acl := ODRIVE.WA.DAV_GET (item, 'acl');
+              old_dav_acl := dav_acl;
               foreach (any acl in acl_value) do
               {
                 if ((ODRIVE.WA.DAV_GET (item, 'type') = 'C') or (acl[2] = 0))
@@ -263,7 +264,13 @@
                   WS.WS.ACL_ADD_ENTRY (dav_acl, acl[0], acl[3], acl[1], acl[2]);
                 }
               }
-              ODRIVE.WA.DAV_SET (self.items[I], 'acl', dav_acl);
+              if (old_dav_acl <> dav_acl)
+              {
+                if (not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.items[I], 'acl', dav_acl)))
+                {
+                  ODRIVE.WA.acl_send_mail (self.account_id, self.items[I], old_dav_acl, dav_acl);
+                }
+              }
             }
           }
         }

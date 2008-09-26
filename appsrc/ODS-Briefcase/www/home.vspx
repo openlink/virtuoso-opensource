@@ -341,10 +341,10 @@
 
   <v:on-init>
     <![CDATA[
-      declare N, retValue, dav_id, dav_owner, dav_group integer;
+      declare N, M, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
       declare properties, c_properties any;
-      declare dav_filename, dav_file, rdf_content any;
+      declare dav_acl, dav_filename, dav_file, rdf_content any;
       declare params, itemList any;
 
       params := self.vc_page.vc_event.ve_params;
@@ -496,11 +496,12 @@
               }
             }
           }
-
-          dav_fullPath := concat(ODRIVE.WA.odrive_real_path (self.dir_path), dav_name);
+          dav_fullPath := rtrim (self.dir_path, '/') || '/' || dav_name;
+          if (self.dav_type = 'C')
+            dav_fullPath := dav_fullPath || '/';
+          dav_fullPath := ODRIVE.WA.odrive_real_path (dav_fullPath, 1, self.dav_type);
             if (self.dav_type = 'C')
             {
-            dav_fullPath := concat(dav_fullPath, '/');
             dav_detType := get_keyword ('dav_det', params);
               if (isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath))
               {
@@ -597,9 +598,6 @@
           -- changing properties
           c_properties := ODRIVE.WA.prop_params (params, self.account_id);
 
-          -- acl
-          self.dav_acl := ODRIVE.WA.acl_params (params);
-
           -- Update
             if (self.command_mode = 10)
             {
@@ -616,8 +614,15 @@
               ODRIVE.WA.DAV_SET(self.dav_path, 'groupID', dav_group);
 
             -- ACL
-            if (ODRIVE.WA.DAV_GET(self.dav_item, 'acl') <> self.dav_acl)
-                ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl);
+            dav_acl := ODRIVE.WA.DAV_GET (self.dav_item, 'acl');
+            self.dav_acl := ODRIVE.WA.acl_params (params);
+            if (dav_acl <> self.dav_acl)
+            {
+              if (not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
+              {
+                ODRIVE.WA.acl_send_mail (self.account_id, self.dav_path, dav_acl, self.dav_acl);
+              }
+            }
 
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
               ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
@@ -887,8 +892,11 @@
               self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
             ODRIVE.WA.dc_set_base (self.search_dc, 'path', ODRIVE.WA.odrive_real_path (self.dir_path));
             tmp := trim (get_keyword ('keywords', _params));
+            if (tmp = '')
+              tmp := trim (self.simple.ufl_value);
             if (tmp <> '')
               ODRIVE.WA.dc_set_criteria (self.search_dc, '0', 'RES_NAME', 'like', tmp);
+            self.simple.ufl_value := '';
           }
           self.dir_right := ODRIVE.WA.odrive_permission(concat(ODRIVE.WA.path_show (self.dir_path), '/'));
         ]]>
@@ -1092,27 +1100,9 @@
           <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
           <xsl:call-template name="nbsp" />
           |
-          <v:button action="simple" style="url" name="sAdvanced" value="Advanced" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.command_set (0, 3);
-                ODRIVE.WA.dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
-                if (trim (self.simple.ufl_value) <> '')
-                  ODRIVE.WA.dc_set_criteria(self.search_dc, '0', 'RES_NAME', 'like', trim (self.simple.ufl_value));
-                self.vc_data_bind (e);
-              ]]>
-            </v:on-post>
-          </v:button>
+          <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>
           |
-          <v:button action="simple" style="url" name="sCancel" value="Cancel" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.vc_is_valid := 1;
-                self.command_set (0, 0);
-                self.vc_data_bind (e);
-              ]]>
-            </v:on-post>
-          </v:button>
+          <v:url url="home.vspx" value="Cancel" xhtml_title="Cancel" />
         </div>
       </v:template>
 
@@ -1798,14 +1788,15 @@
                       </vm:if>
 		                </td>
                     <td width="1%">
-                      <?vsp http (sprintf ('<select name="acl_inheritance_%d" id="acl_inheritance_%d" disabled="disabled" %s>', N, N, D)); ?>
-                        <option value="0" selected="<?V case when acl[1] = 0 then 'selected' else '' end ?>">This object only</option>
-                        <option value="1" selected="<?V case when acl[1] = 1 then 'selected' else '' end ?>">This object, subfolders and files</option>
-                        <option value="2" selected="<?V case when acl[1] = 2 then 'selected' else '' end ?>">Subfolders and files</option>
-                        <vm:if test="acl[1] = 3">
-                        <option value="3" selected="<?V case when acl[1] = 3 then 'selected' else '' end ?>">Inherited</option>
-                        </vm:if>
-                      <?vsp http ('</select>'); ?>
+                      <?vsp
+                        http (sprintf ('<select name="acl_inheritance_%d" id="acl_inheritance_%d" disabled="disabled" %s>', N, N, D));
+                          http (sprintf ('<option value="0" %s>This object only</option>', case when acl[1] = 0 then 'selected="selected"' else '' end));
+                          http (sprintf ('<option value="1" %s>This object, subfolders and files</option>', case when acl[1] = 1 then 'selected="selected"' else '' end));
+                          http (sprintf ('<option value="2" %s>Subfolders and files</option>', case when acl[1] = 2 then 'selected="selected"' else '' end));
+                          if (acl[1] = 3)
+                            http (sprintf ('<option value="3" %s>Inherited</option>', case when acl[1] = 3 then 'selected="selected"' else '' end));
+                        http ('</select>');
+                      ?>
                     </td>
                     <td width="1%" align="center">
                       <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_r_deny_%d\')" name="acl_r_grant_%d" id="acl_r_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 4) <> 0 then 'checked="checked"' else '' end, D)); ?>

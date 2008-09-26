@@ -139,19 +139,11 @@
             ?>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(event, \'F1\', \'GO\')"/>
+            <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('action', '_cmd', 'search', 'mode', 'simple'); return false;" />
           <xsl:call-template name="nbsp"/>
-          <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
-          	<v:on-post>
-              self.vc_redirect(sprintf('home.vspx?keywords=%U&amp;mode=simple', self.keywords.ufl_value));
-          	</v:on-post>
-	        </v:button>
+            <v:url url="home.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
           |
-            <v:button name="template_advanced" action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
-          	<v:on-post>
-              self.vc_redirect(sprintf('home.vspx?keywords=%U&amp;mode=advanced', self.keywords.ufl_value));
-          	</v:on-post>
-	        </v:button>
+            <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
         </div>
         <br style="clear: left;"/>
       </div>
@@ -162,9 +154,7 @@
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
             <v:template name="t1" type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
-          |
         </v:template>
-            <v:button name="template_help" action="simple" style="url" value="Help" xhtml_title="Help"/>
       </div>
         </div>
       <v:include url="odrive_login.vspx"/>
