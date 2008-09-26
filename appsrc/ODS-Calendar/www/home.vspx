@@ -4478,10 +4478,13 @@
                     }
                       }
                     _name := trim (self.exc_options_name.ufl_value);
-                      _name := '/' || _name;
                       if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
                         _name := _name || '/';
+                      if (_type = 1)
+                      {
+                        _name := '/' || _name;
                       _name := replace (_name, '//', '/');
+                      }
                       if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
                       {
                         if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcalendar_11', 'vcalendar_12')))

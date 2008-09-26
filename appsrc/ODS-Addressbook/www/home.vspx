@@ -4456,10 +4456,13 @@
                         }
                         }
                         _name := trim (self.exc_options_name.ufl_value);
-                        _name := '/' || _name;
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
                           _name := _name || '/';
+                        if (_type = 1)
+                        {
+                          _name := '/' || _name;
                         _name := replace (_name, '//', '/');
+                        }
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
                         {
                           if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcard_11', 'vcard_12')))
