@@ -871,11 +871,12 @@ create procedure ODS.ODS_API.appendProperty (
 
 create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
 {
+  declare V any;
+  declare data, meta any;
   foafIRI := trim (foafIRI);
   exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', foafIRI), null, null, vector (), 0);
 
-  for (select * from
-                 (sparql
+  exec (sprintf ('sparql
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   select ?title
@@ -896,7 +897,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
                          ?workplaceHomepage
                          ?homepage
                          ?phone
-                   where {graph ?:foafIRI
+                   where {
+		           graph <%S>
                            {
                              [] a foaf:PersonalProfileDocument ;
                              foaf:primaryTopic ?person .
@@ -918,12 +920,33 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
                              optional { ?person foaf:homepage ?homepage } .
                              optional { ?person foaf:phone ?phone } .
                            }
-                         }
-                 ) sub) do
-  {
-    declare V vector;
+                         }', foafIRI), null, null, vector (), 0, meta, data);
 
     V := vector ();
+ if (length (data))
+  {
+    declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng", "icqChatID",
+    "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone" any;
+
+    "title" := data[0][0];
+    "name" := data[0][1];
+    "nick" := data[0][2];
+    "firstName" := data[0][3];
+    "givenname" := data[0][4];
+    "family_name" := data[0][5];
+    "mbox" := data[0][6];
+    "gender" := data[0][7];
+    "birthday" := data[0][8];
+    "lat" := data[0][9];
+    "lng" := data[0][10];
+    "icqChatID" := data[0][11];
+    "msnChatID" := data[0][12];
+    "aimChatID" := data[0][13];
+    "yahooChatID" := data[0][14];
+    "workplaceHomepage" := data[0][15];
+    "homepage" := data[0][16];
+    "phone" := data[0][17];
+
     appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
     appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
@@ -941,9 +964,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
     appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
     appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
     appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
-
-    return V;
   }
+ return V;
   }
 ;
 
