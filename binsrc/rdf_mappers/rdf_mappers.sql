@@ -391,7 +391,10 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   declare cname any;
   declare ret any;
   declare default_host varchar;
-  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (is_http_ctx ())
+    default_host := http_request_header(http_request_header (), 'Host', null, null);
+  else
+    default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   if (default_host is not null)
     cname := default_host;
   else
