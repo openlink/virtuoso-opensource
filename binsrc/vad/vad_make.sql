@@ -976,13 +976,62 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
 }
 ;
 
+create procedure "VAD"."DBA"."VAD_GET_STICKER_DATA_LEN" (
+  in fname varchar,
+  in is_dav integer )
+{
+  declare flen, pos, i, n, statusid integer;
+  declare s varchar;
+  declare data any;
+  declare val integer;
+  declare _len integer;
+
+  pos := 0;
+  flen := 200; -- must be sufficient to get sticker len
+  declare v1, v2, parr any;
+  parr := null;
+  declare continue handler for sqlstate '39000' { goto error_nofile; };
+  declare continue handler for sqlstate '42000' { goto error_nofile; };
+
+  if (is_dav = 0)
+  {
+    v1 := file_to_string_output (fname, 0, flen);
+  }
+  else
+  {
+    v1 := string_output();
+    "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, 0, flen, v1);
+  }
+
+  "VAD"."DBA"."VAD_GET_ROW" (v1, pos, s, data);
+  if (s <> 'VAD')
+    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file with illegal header');
+  val := "VAD"."DBA"."VAD_GET_CHAR" (v1, pos);
+  if (val <> 182)
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (v1, pos);
+  s := cast (ses_read (v1, _len) as varchar);
+  pos := pos + _len;
+  if (s <> 'STICKER')
+    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file with illegal sticker');
+  val := "VAD"."DBA"."VAD_GET_CHAR" (v1, pos);
+  if (val <> 223)
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (v1, pos);
+  return pos + _len;
+  error_nofile:
+  "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('VAD file (%s) problems:\n%s', fname, __SQL_MESSAGE));
+}
+;
+
 create procedure "VAD"."DBA"."VAD_TEST_READ" (
   in fname varchar,
   inout pkg_name varchar,
   inout pkg_vers varchar,
   inout pkg_fullname varchar,
   inout pkg_date varchar,
-  in is_dav integer )
+  in is_dav integer,
+  in fast_no_md5 integer := 0)
 {
   declare flen, pos, i, n, statusid integer;
   declare fstat integer;
@@ -1017,6 +1066,9 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
   declare continue handler for sqlstate '39000' { goto error_nofile; };
   declare continue handler for sqlstate '42000' { goto error_nofile; };
 
+  if (fast_no_md5)
+    flen := "VAD"."DBA"."VAD_GET_STICKER_DATA_LEN" (fname, is_dav);
+
   if (is_dav = 0)
   {
     v1 := file_to_string_output (fname, 0, flen);
@@ -1027,14 +1079,17 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
     "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, 0, flen, v1);
   }
 
-  --  Get md5 checksum from package
-  v2 := cast (subseq (v1, flen-32, flen) as varchar);
+  if (fast_no_md5 = 0)
+  {
+    --  Get md5 checksum from package
+    v2 := cast (subseq (v1, flen-32, flen) as varchar);
 
-  -- Check MD5 sum before trying to install package
-  declare md5package varchar;
-  md5package := md5(subseq (v1, 0, flen-45));
-  if (neq (md5package, v2))
-    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file checksum mismatch');
+    -- Check MD5 sum before trying to install package
+    declare md5package varchar;
+    md5package := md5(subseq (v1, 0, flen-45));
+    if (neq (md5package, v2))
+      "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file checksum mismatch');
+  }
 
   i := 0;
   while ("VAD"."DBA"."VAD_GET_ROW" (v1, pos, s, data) <> 0)
@@ -2241,7 +2296,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
            if (f like '%_dav.vad')
              pisdav := 1;
 
-	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, 0);
+	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, 0, 1);
 
 	   ver := vad_check_version (pname);
 	   if (ver is not null)

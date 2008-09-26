@@ -5372,10 +5372,12 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
   declare pname, pver, pfull, pisdav, pdate any;
   declare vaddir any;
   declare nlist, ilist, alist, tmp any;
+  declare pcols int;
 
   declare PKG_NAME, PKG_VER, PKG_DATE, PKG_INST, PKG_DESC, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST varchar;
 
   result_names (PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST);
+  pcols := length (procedure_cols ('VAD.DBA.VAD_TEST_READ'));
 
   nlist := vector ();
   vaddir := dir;
@@ -5415,6 +5417,9 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	   st := msec_time ();
 	   rc := 0;
 	   pname := null;
+	   if (pcols = 7)
+	     rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type, 1);
+	   else
 	   rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type);
 	   next_pkg:;
            if (pname is not null)
