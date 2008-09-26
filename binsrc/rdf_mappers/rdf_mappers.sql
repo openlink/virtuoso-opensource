@@ -86,6 +86,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_DISCOGS', null, 'Discogs');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*disqus.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_DISQUS', null, 'Disqus');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
         '(http://.*/show_bug.cgi\\?id.*)|'||
         '(http://.*bugzilla.*)|'||
@@ -169,8 +173,24 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTT
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 3 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2048 where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
+
+create procedure RM_MAPPERS_SET_ORDER ()
+{
+   declare inx int;
+   inx := 0;
+   for select RM_PID as pid from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+     {
+       update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
+       inx := inx + 1;
+     }
+   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
+   update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
+}
+;
+
+RM_MAPPERS_SET_ORDER ();
+
 
 --
 -- The GRDDL filters
@@ -1230,12 +1250,45 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare qr, path, hdr any;
+	declare tree, xt, xd, types, api_key, is_search any;
+	declare base, cnt, url, suffix, tmp, asin varchar;
+	hdr := null;
+	declare exit handler for sqlstate '*'
+	{
+		--dbg_printf ('%s', __SQL_MESSAGE);
+		return 0;
+	};
+
+	if (new_origin_uri like 'http://%.disqus.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.disqus.com/%s', 0);
+		asin := tmp[0];
+		if (asin is null)
+			return 0;
+		url := sprintf ('http://%s.disqus.com/comments.rss', asin);
+	}
+	else
+		return 0;
+	tmp := http_get (url);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
 	asin := null;
 	declare exit handler for sqlstate '*'
 	{
+		--dbg_printf ('%s', __SQL_MESSAGE);
 		return 0;
 	};
 	
@@ -1271,7 +1324,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
     else
 		return 0;
 	tmp := http_get (url);
-	xd := xtree_doc (tmp, 2);
+	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/discogs2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
@@ -1423,7 +1476,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   --tmp := RDF_HTTP_URL_GET (url, url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
-  xd := xtree_doc (tmp, 2);
+  xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atomentry2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
@@ -1460,7 +1513,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
       --DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-      DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri), '1');
+      DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri), 1);
   return 1;
     }
   else if (new_origin_uri like 'http://digg.com/%')

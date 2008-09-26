@@ -92,7 +92,7 @@
 </xsl:template>
 
 <xsl:template match="channel|r:channel">
-  <channel rdf:about="{link|r:link}">
+  <channel rdf:about="{link|r:link|a:link/@href}">
     <xsl:apply-templates/>
     <items>
       <rdf:Seq>
@@ -104,6 +104,14 @@
 
 
 <!-- channel content conversions -->
+
+<xsl:template match="link|r:link">
+  <link><xsl:value-of select="." /></link>
+</xsl:template>
+
+<xsl:template match="a:link[@href]">
+  <dc:source><xsl:value-of select="@href" /></dc:source>
+</xsl:template>
 
 <xsl:template match="title|r:title">
   <title><xsl:value-of select="." /></title>
@@ -242,8 +250,7 @@
 
 <xsl:template name="date">
   <xsl:variable name="m" select="substring(., 9, 3)" />
-  <xsl:value-of select="substring(., 13, 4)"
-  />-<xsl:choose>
+  <xsl:value-of select="substring(., 13, 4)" />-<xsl:choose>
     <xsl:when test="$m='Jan'">01</xsl:when>
     <xsl:when test="$m='Feb'">02</xsl:when>
     <xsl:when test="$m='Mar'">03</xsl:when>
