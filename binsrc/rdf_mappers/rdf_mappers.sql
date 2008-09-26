@@ -178,8 +178,10 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 create procedure RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
+   declare arr any;
+   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS order by RM_ID);
    inx := 0;
-   for select RM_PID as pid from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+   foreach (int pid in arr) do
      {
        update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
        inx := inx + 1;
