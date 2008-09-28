@@ -2666,7 +2666,7 @@ extern long tc_bp_get_buffer;
 int enable_read_aside = 1;
 
 ra_req_t *
-itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * dp)
+itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
 {
   /* take leaves that are not dp.  If all are absent, schedule them all for read ahead */
   dp_addr_t leaves[1000];
@@ -2683,8 +2683,6 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * dp)
       leaf = leaf_pointer (page, pos);
       if (leaf && leaf != dp)
 	{
-	  buffer_desc_t decoy;
-	  dp_addr_t phys;
 	  buffer_desc_t * btmp;
 	  ITC_IN_KNOWN_MAP (itc, leaf);
 	  if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, leaf) 
