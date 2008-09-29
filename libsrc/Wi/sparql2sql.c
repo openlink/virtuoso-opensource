@@ -124,7 +124,7 @@ static void
 sparp_preprocess_obys (sparp_t *sparp, SPART *root)
 {
   int oby_ctr;
-  SPART *retvals = root->_.req_top.retvals;
+  SPART **retvals = root->_.req_top.retvals;
   int rv_count = (IS_BOX_POINTER (retvals) ? BOX_ELEMENTS (retvals) : -1);
   DO_BOX_FAST (SPART *, oby, oby_ctr, root->_.req_top.order)
     {
@@ -361,6 +361,50 @@ int sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *
 int sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 int sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 
+static void
+sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
+{
+  int ctr;
+  for (ctr = BOX_ELEMENTS (curr->_.gp.options); 1 < ctr; ctr -= 2)
+    {
+      ptrlong key = ((ptrlong)(curr->_.gp.options[ctr-2]));
+      SPART *val = curr->_.gp.options[ctr-1];
+      switch (key)
+        {
+        case T_STEP_L:
+          {
+            caddr_t name = val->_.alias.aname;
+            sparp_equiv_get (sparp, curr, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
+            break;
+          }
+        case T_MIN_L: case T_MAX_L:
+          {
+            sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+            memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+            stss[1].sts_ancestor_gp = curr;
+            sparp_gp_trav_int (sparp, val, stss+1, common_env,
+              sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
+              sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
+            break;
+          }
+        case T_IN_L: case T_OUT_L:
+          {
+            int v_ctr;
+            DO_BOX_FAST (SPART *, v, v_ctr, val->_.list.items)
+              {
+                sparp_equiv_t *eq = sparp_equiv_get (sparp, curr, (SPART *)(v->_.var.vname), SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT);
+                ptrlong *pos1_ptr = ((T_IN_L == key) ? &(eq->e_pos1_t_in) : &(eq->e_pos1_t_out));
+                if ((0 != pos1_ptr[0]) && ((1+v_ctr) != pos1_ptr[0]))
+                  spar_error (sparp, "Variable ?%.100s is used twice in %s option (directly or via equality with other variable)",
+                    v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
+                pos1_ptr[0] = 1+v_ctr;
+              }
+            END_DO_BOX_FAST;
+          }
+        }
+    }
+}
+
 int
 sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -398,32 +442,7 @@ ignore_retval_name: ;
             }
           END_DO_BOX_FAST;
           if (NULL != curr->_.gp.options)
-            {
-              int ctr;
-              for (ctr = BOX_ELEMENTS (curr->_.gp.options); 1 < ctr; ctr -= 2)
-                {
-                  ptrlong key = ((ptrlong)(curr->_.gp.options[ctr-2]));
-                  switch (key)
-                    {
-                    case T_STEP_L:
-                      {
-                        caddr_t name = curr->_.gp.options[ctr-1]->_.alias.aname;
-                        sparp_equiv_get (sparp, curr, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
-                        break;
-                      }
-                    case T_MIN_L: case T_MAX_L:
-                      {
-                        sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
-                        memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
-                        stss[1].sts_ancestor_gp = curr;
-                        sparp_gp_trav_int (sparp, curr->_.gp.options[ctr-1], stss+1, common_env,
-                          sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
-                          sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
-                        break;
-                      }
-                    }
-                }
-            }
+            sparp_gp_trav_cu_in_options (sparp, curr, common_env);
         }
       return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: break;
@@ -792,6 +811,22 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
   return 0;
 }
 
+int
+sparp_equiv_contains_t_io (sparp_t *sparp, sparp_equiv_t *eq)
+{
+  int sub_ctr;
+  if ((0 != eq->e_pos1_t_in) || (0 != eq->e_pos1_t_in))
+    return 1;
+  DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
+    {
+      sparp_equiv_t *sub = SPARP_EQUIV (sparp, sub_idx);
+      if (sparp_equiv_contains_t_io (sparp, sub))
+        return 1;        
+    }
+  END_DO_BOX_FAST_REV;
+  return 0;
+}
+
 /* For an equality in group \c curr between member of \c eq_l and expression \c r,
 the function restricts \c eq_l or even merges it with variable of other equiv.
 \returns 1 if equality is no longer needed due to merge, 0 otherwise */
@@ -811,11 +846,23 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
         sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
         eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
         ret = sparp_equiv_merge (sparp, eq_l, eq_r);
+        if (
+          (SPARP_EQUIV_MERGE_OK != ret) &&
+          (SPARP_EQUIV_MERGE_CONFLICT != ret) &&
+          (SPARP_EQUIV_MERGE_DUPE != ret) )
+          return 0;
+        if (sparp_equiv_contains_t_io (sparp, eq_r))
+          return 0;
         break;
       }
     case SPAR_LIT: case SPAR_QNAME:
       {
         ret = sparp_equiv_restrict_by_constant (sparp, eq_l, NULL, r);
+        if (
+          (SPARP_EQUIV_MERGE_OK != ret) &&
+          (SPARP_EQUIV_MERGE_CONFLICT != ret) &&
+          (SPARP_EQUIV_MERGE_DUPE != ret) )
+          return 0;
         break;
       }
     case SPAR_BUILT_IN_CALL:
@@ -825,15 +872,13 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
           case STR_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
           case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
           }
-        break;
+        return 0;
       }
+     default: return 0;
     }
-  if (
-    (SPARP_EQUIV_MERGE_OK == ret) ||
-    (SPARP_EQUIV_MERGE_CONFLICT == ret) ||
-    (SPARP_EQUIV_MERGE_DUPE == ret) )
-    return 1;
+  if (sparp_equiv_contains_t_io (sparp, eq_l))
   return 0;
+  return 1;
 }
 
 /* For an != in group \c curr between member of \c eq_l and expression \c r,
@@ -1523,7 +1568,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
             (1 == BOX_ELEMENTS (sub_eq->e_varnames)) &&
             !strcmp (eq->e_varnames[0], sub_eq->e_varnames[0]) )
             can_unlink = 1;
-          if (sparp_equivs_have_same_fixedvalue (sparp, eq, sub_eq))
+          else if (sparp_equivs_have_same_fixedvalue (sparp, eq, sub_eq))
             can_unlink = 1;
           if (can_unlink)
             sparp_equiv_disconnect (sparp, eq, sub_eq);
@@ -4274,6 +4319,65 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   sparp_rewrite_qm (sparp);
 }
 
+/*! This fixes sparql select * where {{ select * where { ?s <knows> ?o }} . filter (?s=<me>)}.
+Without the fix, the SQL text lacks s=<me> condition in WHERE because it's converted to SPART_VARR_FIXED of equiv but not printed in any triple pattern */
+int
+sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  int eq_ctr;
+  if (SPAR_GP != SPART_TYPE (curr))
+    return SPAR_GPT_NODOWN;
+  if (SELECT_L != curr->_.gp.subtype)
+    return SPAR_GPT_ENV_PUSH;
+  SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
+    {
+      sparp_equiv_t *subq_eq, *recv_eq;
+      SPART *parent_gp;
+      ptrlong missing_restrictions;
+      subq_eq = sparp_equiv_get (sparp,
+        curr->_.gp.subquery->_.req_top.pattern, (SPART *)(eq->e_varnames[0]),
+        SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
+      missing_restrictions = (eq->e_rvr.rvrRestrictions & ~subq_eq->e_rvr.rvrRestrictions) & SPART_VARR_FIXED;
+      if (!missing_restrictions)
+        continue;
+      parent_gp = sts_this->sts_parent;
+      if (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs))
+        {
+          recv_eq = SPARP_EQUIV (sparp, eq->e_receiver_idxs[0]);
+          if ((0 != recv_eq->e_gspo_uses) && (recv_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL) &&
+            (0 == eq->e_pos1_t_in) && (0 == eq->e_pos1_t_out) )
+            continue;
+        }
+      else
+        recv_eq = NULL;
+      if (missing_restrictions & SPART_VARR_FIXED)
+        {
+          SPART *l = NULL, *r, *filt;
+          l = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+            SPAR_VARIABLE, eq->e_varnames[0],
+            parent_gp->_.gp.selid, NULL,
+            (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+            memcpy (&(l->_.var.rvr.rvrRestrictions), &(subq_eq->e_rvr), sizeof (rdf_val_range_t));
+          if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
+            r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
+          else if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (eq->e_rvr.rvrFixedValue))
+            r = (SPART *)eq->e_rvr.rvrFixedValue;
+          else
+            r = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
+          filt = spartlist (sparp, 3, BOP_EQ, l, r);
+          sparp_gp_attach_filter (sparp, parent_gp, filt, 0, NULL);
+          if (NULL == recv_eq)
+            {
+              recv_eq = SPARP_EQUIV (sparp, l->_.var.equiv_idx);
+              sparp_equiv_connect (sparp, recv_eq, eq, 1);
+            }
+          recv_eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
+          eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
+        }
+    }
+  END_SPARP_FOREACH_GP_EQUIV;
+  return SPAR_GPT_NODOWN;
+}
 
 void
 sparp_rewrite_qm (sparp_t *sparp)
@@ -4493,6 +4597,10 @@ retry_after_reducing_optionals:
   sparp_trav_out_clauses (sparp, sparp->sparp_expr, NULL,
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
+    NULL );
+  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+    NULL, sparp_gp_trav_restore_filters_for_weird_subq,
+    NULL, NULL, NULL,
     NULL );
 /* Final processing: */
   switch (root->_.req_top.subtype)

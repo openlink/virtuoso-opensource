@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
-
+ *   
+*/
 %pure_parser
 
 %{
@@ -620,11 +620,13 @@ spar_dataset_clauses_opt
 spar_dataset_clause	/* [9]  	DatasetClause	  ::=  	'FROM' ( DefaultGraphClause | NamedGraphClause )	*/
 	: FROM_L spar_iriref spar_sponge_optionlist_opt {			/* [10]*	DefaultGraphClause	 ::=  SourceSelector SpongeOptionList?	*/
                 if (0 == sparp_env()->spare_default_graphs_locked)
-                  t_set_push (&(sparp_env()->spare_default_graph_precodes),
+                  sparp_push_new_graph_precode (sparp_arg, 
+                    &(sparp_env()->spare_default_graph_precodes),
                     sparp_make_graph_precode (sparp_arg, $2, $3) ); }
 	| FROM_L NAMED_L spar_iriref spar_sponge_optionlist_opt {		/* [11]*	NamedGraphClause	 ::=  'NAMED' SourceSelector SpongeOptionList?	*/
                 if (0 == sparp_env()->spare_named_graphs_locked)
-                  t_set_push (&(sparp_env()->spare_named_graph_precodes),
+                  sparp_push_new_graph_precode (sparp_arg, 
+                    &(sparp_env()->spare_named_graph_precodes),
                     sparp_make_graph_precode (sparp_arg, $3, $4) ); }
 	;
 
@@ -914,8 +916,8 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 	| T_NO_ORDER_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_NO_ORDER_L, (ptrlong)1); }
 	| T_OUT_L _LPAR spar_triple_option_var_commalist _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_OUT_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
 	| T_SHORTEST_ONLY_L		{ $$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
-	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, NULL)); }
-	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, NULL)); }
+	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
+	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
 	| TRANSITIVE_L			{ $$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
 	;
 

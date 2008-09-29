@@ -151,6 +151,8 @@ typedef struct sparp_equiv_s
     ptrlong e_external_src_idx;	/*!< Index in \c req_top.equivs of the binding of external variable at ancestor of scalar subquery */
     ptrlong e_merge_dest_idx;	/*!< After the merge of equiv into some destination equiv, e_merge_dest_idx keeps destination */
     ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
+    ptrlong e_pos1_t_in;	/*!< 1-based bosition of variable in T_IN list */
+    ptrlong e_pos1_t_out;	/*!< 1-based bosition of variable in T_OUT list */
 #ifdef DEBUG
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to same the pointer after \c e_gp is set to NULL */
 #endif

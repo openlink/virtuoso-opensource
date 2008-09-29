@@ -2300,10 +2300,6 @@ sparp_gp_detach_member (sparp_t *sparp, SPART *parent_gp, int member_idx, sparp_
   SPART **old_members = parent_gp->_.gp.members;
   SPART *memb;
   memb = sparp_gp_detach_member_int (sparp, parent_gp, member_idx, touched_equivs_set_ptr);
-#ifndef NDEBUG
-  if (NULL != sparp_get_options_of_tree (sparp, memb))
-    spar_internal_error (sparp, "sparp_" "gp_detach_member(): the detached member has options");
-#endif
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   parent_gp->_.gp.members = (SPART **)t_list_remove_nth ((caddr_t)old_members, member_idx);
@@ -2964,6 +2960,9 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
   int has_transitive = 0;
   int needs_transitive = 0;
   SPART **subq_orig_retvals = NULL;
+  SPART **in_list = NULL;
+  SPART **out_list = NULL;
+  ptrlong direction = 0;
   int idx;
   switch (ttype)
     {
@@ -2995,7 +2994,8 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
         case T_SHORTEST_ONLY_L:
           needs_transitive++; continue;
         case T_DIRECTION_L: needs_transitive++;
-          if (((ptrlong)(val)) > 3 || ((ptrlong)(val)) < 1)
+          direction = (ptrlong)(val);
+          if ((direction > 3) || (direction < 1))
             spar_error (sparp, "The value of T_DIRECTION option should be an integer value 1, 2 or 3");
           continue;
         case T_IN_L: case T_OUT_L:
@@ -3003,11 +3003,21 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
             int v_ctr;
             if (NULL == subq_orig_retvals)
               spar_error (sparp, "T_IN and T_OUT options can be used only for SELECT subquery because they should refer to result-set of a subquery");
+            ((T_IN_L == key) ? &in_list : &out_list)[0] = val->_.list.items;
             DO_BOX_FAST (SPART *, v, v_ctr, val->_.list.items)
               {
-                if (NULL == sparp_find_subexpn_in_retlist (sparp, v->_.var.vname, subq_orig_retvals, 1))
+                int pos1_ret;
+                SPART *ret;
+                if (SPART_VARNAME_IS_GLOB(v->_.var.vname))
+                  spar_error (sparp, "Global variable ?%.100s can not be used in %s option",
+                    v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
+                pos1_ret = sparp_subexpn_position1_in_retlist (sparp, v->_.var.vname, subq_orig_retvals);
+                if (0 == pos1_ret)
                   spar_error (sparp, "Variable ?%.100s is used in %s option but not in the result-set of a subquery",
                     v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
+                ret = subq_orig_retvals [pos1_ret-1];
+                if (SPAR_ALIAS != SPART_TYPE (ret))
+                  subq_orig_retvals [pos1_ret-1] = spartlist (sparp, 4, SPAR_ALIAS, ret, v->_.var.vname, SSG_VALMODE_AUTO);
               }
             END_DO_BOX_FAST;
             continue;
@@ -3048,6 +3058,15 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
       if (needs_transitive || has_transitive)
         spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triples");
       break;
+    }
+  if (has_inference)
+    {
+      if (NULL == in_list)
+        spar_error (sparp, "TRANSITIVE option require T_IN option as well");
+      if (NULL == out_list)
+        spar_error (sparp, "TRANSITIVE option require T_OUT option as well");
+      if (BOX_ELEMENTS (in_list) != BOX_ELEMENTS (out_list))
+        spar_error (sparp, "Mismatch in length of T_IN and T_OUT lists of names");
     }
 }
 

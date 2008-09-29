@@ -118,7 +118,9 @@ JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_ftext virtrdf QuadMapFText		--!< Free text parameters of a quad map value
 JSO_SCALAR qmvftAlias STRING REQUIRED			--!< Alias of a table with free-text data
+JSO_SCALAR qmvftAuxAlias STRING OPTIONAL		--!< Alias of a table that links free-text data back to object (if needed)
 JSO_SCALAR qmvftTableName STRING OPTIONAL		--!< Name of a table with free-text data
+JSO_SCALAR qmvftAuxTableName STRING OPTIONAL		--!< Name of a table that links free-text data back to object (if needed)
 JSO_SCALAR qmvftColumnName STRING REQUIRED		--!< Name of a column with free-text data
 JSO_SCALAR qmvftConds STRING_array OPTIONAL		--!< Templates of filters and join conditions related to the free-text indexing table
 JSO_SCALAR qmvftXmlIndex BOOLEAN OPTIONAL		--!< Flags if the free-text index is XML so can use xcontains (ditto xpath_contains)

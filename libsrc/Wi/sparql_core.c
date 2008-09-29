@@ -272,17 +272,18 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
 void
 spar_internal_error (sparp_t *sparp, const char *msg)
 {
+  const char *txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
 #if 0
   FILE *core_reason1;
-  fprintf (stderr, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, sparp->sparp_text);
+  fprintf (stderr, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
   core_reason1 = fopen ("core_reason1","wt");
-  fprintf (core_reason1, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, sparp->sparp_text);
+  fprintf (core_reason1, "Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
   fclose (core_reason1);
   GPF_T1(msg);
 #else
 #ifdef DEBUG
-  printf ("Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, sparp->sparp_text);
-  if (!sparp->sparp_internal_error_runs_audit)
+  printf ("Internal error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
+  if ((NULL != sparp) && !sparp->sparp_internal_error_runs_audit)
     {
       sparp->sparp_internal_error_runs_audit = 1;
       sparp_audit_mem (sparp);
@@ -580,13 +581,16 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           SPART *new_precode = sparp_make_graph_precode ( sparp,
         spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
         NULL );
-              t_set_push ((dk_set_t *) &(sparp->sparp_env->spare_default_graph_precodes), new_precode);
+              sparp_push_new_graph_precode (sparp, 
+                &(sparp->sparp_env->spare_default_graph_precodes),
+                new_precode );
           sparp->sparp_env->spare_default_graphs_locked = 1;
       return;
     }
   if (!strcmp (param, "input:named-graph-uri"))
     {
-              t_set_push ((dk_set_t *) &(sparp->sparp_env->spare_named_graph_precodes),
+              sparp_push_new_graph_precode (sparp, 
+                &(sparp->sparp_env->spare_named_graph_precodes),
         sparp_make_graph_precode (sparp,
           spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
           NULL ) );
@@ -1609,6 +1613,26 @@ do_sql_cast:
 cannot_cast:
   sparyyerror_impl (sparp, strg, "The string representation can not be converted to a valid typed value");
   return NULL;
+}
+
+void
+sparp_push_new_graph_precode (sparp_t *sparp, dk_set_t *set_ptr, SPART *precode)
+{
+  caddr_t iri = SPAR_LIT_OR_QNAME_VAL (precode);
+  if ((NULL != iri) &&
+    ((DV_STRING == DV_TYPE_OF (iri)) || (DV_UNAME == DV_TYPE_OF (iri))) )
+    {
+      DO_SET (SPART *, c, set_ptr)
+        {
+          caddr_t c_iri = SPAR_LIT_OR_QNAME_VAL (c);
+          if ((NULL != c_iri) &&
+            ((DV_STRING == DV_TYPE_OF (c_iri)) || (DV_UNAME == DV_TYPE_OF (c_iri))) &&
+            !strcmp (iri, c_iri) )
+            return;
+        }
+      END_DO_SET()
+    }
+  t_set_push (set_ptr, precode);
 }
 
 SPART *

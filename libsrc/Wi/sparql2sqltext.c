@@ -1486,6 +1486,46 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
   return NULL; /* Never reached, to keep compiler happy */
 }
 
+static void
+sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapping_gp)
+{
+  SPART **t_in_vars, **t_out_vars, **retvals;
+  int v_ctr;
+  if (NULL == sparp_get_option (sparp, TRANSITIVE_L, wrapping_gp->_.gp.options))
+    return;
+  t_in_vars = sparp_get_option (sparp, T_IN_L, wrapping_gp->_.gp.options)->_.list.items;
+  t_out_vars = sparp_get_option (sparp, T_OUT_L, wrapping_gp->_.gp.options)->_.list.items;
+  retvals = wrapping_gp->_.gp.subquery->_.req_top.orig_retvals;
+  for (v_ctr = BOX_ELEMENTS_0 (t_in_vars); v_ctr--; /*no step*/)
+    {
+      caddr_t in_vname, out_vname;
+      SPART *in_alias, *out_alias;
+      ssg_valmode_t in_vmode, out_vmode, mixed_vmode;
+      in_vname = t_in_vars [v_ctr]->_.var.vname;
+      out_vname = t_out_vars [v_ctr]->_.var.vname;
+      in_alias = sparp_find_subexpn_in_retlist (sparp, in_vname, retvals, 1);
+      out_alias = sparp_find_subexpn_in_retlist (sparp, out_vname, retvals, 1);
+      in_vmode = sparp_expn_native_valmode (sub_sparp, in_alias);
+      out_vmode = sparp_expn_native_valmode (sub_sparp, out_alias);
+      if (!IS_BOX_POINTER (in_vmode))
+        spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", in_vname);
+      if (!in_vmode->qmfIsBijection)
+        spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", in_vname);
+      if (1 != in_vmode->qmfColumnCount)
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", in_vname);
+      if (!IS_BOX_POINTER (out_vmode))
+        spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", out_vname);
+      if (!out_vmode->qmfIsBijection)
+        spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", out_vname);
+      if (1 != out_vmode->qmfColumnCount)
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname);
+      mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode);
+      if (!IS_BOX_POINTER (mixed_vmode))
+        spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vmode, out_vname);
+      in_alias->_.alias.native = out_alias->_.alias.native = mixed_vmode;
+    }
+}
+
 ptrlong sparp_restr_bits_of_dtp (dtp_t dtp)
 {
   switch (dtp)
@@ -5472,6 +5512,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
         {
           qm_ftext_t *qmft;
           qm_atable_t *ft_atable = (qm_atable_t *)t_alloc_box (sizeof (qm_atable_t), DV_ARRAY_OF_POINTER);
+          qm_atable_t **ft_atables;
           if (NULL == qm->qmObjectMap)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");
           qmft = qm->qmObjectMap->qmvFText;
@@ -5479,8 +5520,17 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");
           ft_atable->qmvaAlias = qmft->qmvftAlias;
 	  ft_atable->qmvaTableName = qmft->qmvftTableName;
+          if (NULL != qmft->qmvftAuxTableName)
+            {
+              qm_atable_t *aux_atable = (qm_atable_t *)t_alloc_box (sizeof (qm_atable_t), DV_ARRAY_OF_POINTER);
+              aux_atable->qmvaAlias = qmft->qmvftAuxAlias;
+              aux_atable->qmvaTableName = qmft->qmvftAuxTableName;
+              ft_atables = (qm_atable_t **)t_list (2, ft_atable, aux_atable);
+            }
+          else
+            ft_atables = (qm_atable_t **)t_list (1, ft_atable);
           ssg_collect_aliases_tables_and_conds (
-            (qm_atable_t **)t_list (1, ft_atable),
+            ft_atables,
             qmft->qmvftConds,
             &ata_aliases, &ata_tables, &queued_row_filters );
         }
@@ -5718,6 +5768,8 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   subq_ssg.ssg_sources = subq_ssg.ssg_tree->_.req_top.sources;
   subq_ssg.ssg_out = ssg->ssg_out;
   subq_ssg.ssg_indent = ssg->ssg_indent;
+  if ((NULL != wrapping_gp) && (NULL != wrapping_gp->_.gp.options))
+    sparp_set_valmodes_of_t_inouts (ssg->ssg_sparp, sub_sparp, wrapping_gp);
   ssg_make_sql_query_text (&subq_ssg);
   ssg_newline (1);
 #ifdef NDEBUG
