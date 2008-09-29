@@ -11477,6 +11477,14 @@ qr_set:
 		  dk_set_push (&rlist, (void *) row);
 		}
 	      curr_row += 1;
+	      if (curr_row >= MAX_BOX_ELEMENTS)
+		{
+		  dk_free_tree (list_to_array (rlist));
+		  lc_free (lc);
+		  res = bif_exec_error (qst, args,
+		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %ld rows", MAX_BOX_ELEMENTS));
+		  goto done;
+		}
 	    }
 	  if (rs_needed)
 	    qst_set (qst, args[6],
