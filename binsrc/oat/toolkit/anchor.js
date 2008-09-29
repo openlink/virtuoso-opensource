@@ -23,7 +23,6 @@ OAT.Anchor = {
 		if (options.content && options.window) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
 			var win = options.window;
-			//win.outerResizeTo(options.width,options.height);
 			OAT.Dom.clear(win.dom.content);
 			win.dom.content.appendChild(options.content);
 			OAT.Anchor.fixSize(win);
@@ -117,6 +116,9 @@ OAT.Anchor = {
 				if (OAT.AJAX && OAT.AJAX.requests.length) {
 					OAT.Anchor.fixSize(win);
 				} else {
+					if (win.dom.container.style.height=='auto' || win.dom.container.style.width=='auto') { /* if auto, keep auto */
+					    return;
+                                        }
 					var height = OAT.Dom.getWH(win.dom.content)[1];
 					while (OAT.Dom.getWH(win.dom.content)[1]+50 > OAT.Dom.getWH(win.dom.container)[1]) {
 						if (OAT.Dom.getWH(win.dom.container)[0] < 650)
@@ -221,8 +223,11 @@ OAT.Anchor = {
 			}
 			options.anchorTo(pos[0],pos[1]);
 			win.show();
-			window.setTimeout(function(){options.anchorTo(pos[0],pos[1]);},60); /* after adding arrows, window can be shifted a bit */
+			    window.setTimeout(function(){
+				options.anchorTo(pos[0],pos[1]);
+			    },60); /* after adding arrows, window can be shifted a bit */
 		}
+			
 		}
         
         if (options.preload) {

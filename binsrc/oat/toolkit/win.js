@@ -62,12 +62,12 @@ OAT.Win = function(optObj) {
                     self.dom.container.style.top = Math.abs(y)+"px";
 	}
 	self.innerResizeTo = function(w,h) {
-            self.dom.content.style.width = w + "px";
-            self.dom.content.style.height = h + "px";
+            self.dom.content.style.width = (w ? w+"px" : "auto");
+            self.dom.content.style.height = (h ? h+"px" : "auto");
         }
 	self.outerResizeTo = function(w,h) {
-            self.dom.container.style.width = w + "px";
-            self.dom.container.style.height = h + "px";
+            self.dom.container.style.width = (w ? w+"px" : "auto");
+            self.dom.container.style.height = (h ? h+"px" : "auto");
 	}
 	self.preload = function() {
 		document.body.appendChild(self.dom.container);
@@ -114,8 +114,12 @@ OAT.Win = function(optObj) {
 		}
         }
 	self.flip = function(side) { }
-	self.accomodate = function(node) { // sets width and height according to the specified element
+	self.accomodate = function(node) { // sets width and height according to the specified element of auto if none specified
+		if (node) {
 		var dims = OAT.Dom.getWH(node);
+                } else {
+		    var dims = [false,false];
+                }
 		self.innerResizeTo(dims[0],dims[1]);
 	}
 	
@@ -202,14 +206,6 @@ OAT.WinTemplate = function(obj) {
 		obj.dom.container.style.left = x+"px";
 		obj.dom.container.style.top = y+"px";
 	}
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
-	}
-	obj.innerResizeTo = function(w,h) {
-		obj.dom.content.style.width = (w ? w+"px" : "auto");
-		obj.dom.content.style.height = (h ? h+"px" : "auto");
-	}
 }
 
 OAT.WinMS = function(obj) { /* MS-like window */
@@ -242,11 +238,6 @@ OAT.WinMS = function(obj) { /* MS-like window */
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
 
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
-	}
-	
 }
 
 OAT.WinMAC = function(obj) { /* MacOSX-like window */
@@ -284,11 +275,6 @@ OAT.WinMAC = function(obj) { /* MacOSX-like window */
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
 
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? (h-8)+"px" : "auto");
-	}
-	
 }
 
 OAT.WinRECT = function(obj) { /* rectangular window */
@@ -313,11 +299,6 @@ OAT.WinRECT = function(obj) { /* rectangular window */
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
 
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
-	}
-	
 }
 
 OAT.WinROUND = function(obj) { /* rounded window */
@@ -376,11 +357,6 @@ OAT.WinROUND = function(obj) { /* rounded window */
 		OAT.Dom.append([obj.dom.container,obj.dom.table]);
 	}
 
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
-	}
-	
 }
 
 OAT.WinODS = function(obj) { /* rounded window */
@@ -405,11 +381,6 @@ OAT.WinODS = function(obj) { /* rounded window */
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
 
-	obj.outerResizeTo = function(w,h) {
-		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
-	}
-	
 }
 
 OAT.WinManager = { /* stacking management */
