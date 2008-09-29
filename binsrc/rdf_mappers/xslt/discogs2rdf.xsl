@@ -66,10 +66,18 @@
 
     <xsl:template match="resp[@stat='ok']/release|release">
 	<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
+		<xsl:if test="artists/artist/name">
 		<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
+		</xsl:if>
+		<xsl:if test="title">
 	    <dc:title><xsl:value-of select="title"/></dc:title>
+	    </xsl:if>
+	    <xsl:if test="format">
 		<dc:format><xsl:value-of select="format"/></dc:format>
+		</xsl:if>
+		<xsl:if test="year">
 		<dc:date><xsl:value-of select="year"/></dc:date>
+		</xsl:if>
 	    <xsl:for-each select="tracklist/track">
 			<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>
 	    </xsl:for-each>
