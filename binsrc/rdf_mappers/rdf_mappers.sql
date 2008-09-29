@@ -169,18 +169,25 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_CRUNCHBASE', null, 'CrunchBase', null);
 
 -- we do default http & html handler first of all
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
-update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 3 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+--update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
+--update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
+--update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2 where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
+--update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 3 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
 create procedure RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
-   declare arr any;
-   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS order by RM_ID);
+   declare top_arr, arr, http, html, feed, calais any;
+   http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
+   html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
+   feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
+   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
+   top_arr := vector (http, html, feed, calais);
+
+   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
    inx := 0;
+   arr := vector_concat (top_arr, arr);
    foreach (int pid in arr) do
      {
        update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
@@ -313,11 +320,71 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
   --dbg_printf ('%s', string_output_string (ses));
-  DB.DBA.TTLP (ses, base, graph);
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
+  DB.DBA.RM_UMBEL_POST_PROCESS (base, graph);
+  DB.DBA.TTLP (ses, base, graph);
   --DB.DBA.RDF_LOAD_POST_PROCESS (graph, base, null, strg, null);
 }
 ;
+
+create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar)
+{
+  declare data, meta any;
+  declare ses, cont, xt, xd, arr any;
+  ses := string_output ();
+  declare exit handler for sqlstate '*'
+    {
+      return;
+    };
+  exec (sprintf (
+      'sparql select ?o from <%S> where { ?s ?p ?o . filter (isLiteral (?o) and ?o != "") }', graph, base), null, null, vector (), 0, meta, data);
+  foreach (any str in data) do
+    {
+      if (isstring (str[0]))
+	{
+	  http (str[0], ses);
+	  http (' ', ses);
+	}
+    }
+  ses := string_output_string (ses);
+  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', ses));
+  xt := xtree_doc (cont);
+  arr := xpath_eval ('//isAbout/@resource', xt, 0);
+  ses := string_output ();
+  foreach (nvarchar url in arr) do
+    {
+      url := cast (url as varchar);
+      http (sprintf ('<%S> <http://umbel.org/umbel#isAbout> <%S> .\n', base, url), ses);
+    }
+  DB.DBA.TTLP (ses, base, graph);
+  return;
+}
+;
+
+create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
+{
+  declare data, meta any;
+  declare ses, cont, xt, xd, arr any;
+  declare exit handler for sqlstate '*'
+    {
+      return;
+    };
+  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', strg));
+  xt := xtree_doc (cont);
+  arr := xpath_eval ('//isAbout/@resource', xt, 0);
+  ses := string_output ();
+  http ('<results>', ses);
+  foreach (nvarchar url in arr) do
+    {
+      url := cast (url as varchar);
+      http (sprintf ('<result>%V</result>\n', url), ses);
+    }
+  http ('</results>', ses);
+  return xtree_doc (string_output_string (ses));
+}
+;
+
+grant execute on DB.DBA.RM_UMBEL_GET to public;
 
 create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 {
@@ -512,6 +579,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
 
 --create procedure RDF_LOAD_AMAZON_ARTICLE_INIT ()
 --{
@@ -3502,6 +3570,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
         DB.DBA.XML_SET_NS_DECL (vec[i+1], vec[i], 2);
     }
   XML_SET_NS_DECL ('umbel', 'http://umbel.org/umbel/sc/', 2);
+  XML_SET_NS_DECL ('umbel-owl', 'http://umbel.org/umbel#', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();

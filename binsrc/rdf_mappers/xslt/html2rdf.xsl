@@ -37,6 +37,7 @@
   xmlns:foaf="&foaf;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+  xmlns:umbel="http://umbel.org/umbel#"
   version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
@@ -92,14 +93,14 @@
       </dc:rights>
   </xsl:template>
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
+      <xsl:variable name="res" select="vi:umbelGet (@content)"/>
 	  <xsl:for-each select="$res/results/result">
-	  <dc:subject rdf:resource="{vi:dbpIRI ($base, .)}"/>
-	      <sioc:topic>
-		  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}" >
+	  <umbel:isAbout rdf:resource="{.}"/>
+	  <!--sioc:topic>
+	      <skos:Concept rdf:about="{.}" >
 		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 		  </skos:Concept>
-	      </sioc:topic>
+	  </sioc:topic-->
 	  </xsl:for-each>
   </xsl:template>
   <!--xsl:template match="meta[@name='keywords']" mode="meta">
