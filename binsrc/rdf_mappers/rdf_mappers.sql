@@ -1326,6 +1326,7 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare qr, path, hdr any;
+	declare test integer;
 	declare tree, xt, xd, types, api_key, is_search any;
 	declare base, cnt, url, suffix, tmp, asin varchar;
 	hdr := null;
@@ -1334,8 +1335,19 @@ create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri
 		--dbg_printf ('%s', __SQL_MESSAGE);
 		return 0;
 	};
-
-	if (new_origin_uri like 'http://%.disqus.com/%')
+	if (new_origin_uri like 'http://disqus.com/people/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://disqus.com/people/%s', 0);
+		asin := tmp[0];
+		if (asin is null)
+			return 0;
+		asin := trim(asin, '/');
+		test := strchr(asin, '/');
+		if (test is not NULL)
+			asin := subseq(asin, 0, test);
+		url := sprintf ('http://disqus.com/people/%s/comments.rss', asin);
+	}
+	else if (new_origin_uri like 'http://%.disqus.com/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://%s.disqus.com/%s', 0);
 		asin := tmp[0];
