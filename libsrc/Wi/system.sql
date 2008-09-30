@@ -5340,6 +5340,7 @@ create constructor method XMLType (in _src any, in _schema varchar := null, in _
 }
 ;
 
+--!AWK PUBLIC
 create function createXML (in _src any, in _schema varchar := null, in _validated integer := 0, in _wellformed integer := 0) returns XMLType
 {
   declare _res XMLType;

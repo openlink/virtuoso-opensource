@@ -450,7 +450,6 @@ BEGIN   {
 		    if ((pieces[2] == "PROCEDURE" || pieces[2] == "FUNCTION") &&  three_part != "VIEW" )
 		      {
 			_defines1 = "\n  " define_proc_macro " (\"" pieces[3] "\", proc" nproc ");"
-			define_proc_macro = "DEFINE_PROC"
                         # Here is a debug comment code
 			if (pl_stats == "PLDBG")
 			  print "static const char *proc" nproc " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
@@ -545,6 +544,7 @@ BEGIN   {
 		else
 		  defines = _defines _defines1
 
+	    define_proc_macro = "DEFINE_PROC"
 	}
 
 END 	{
