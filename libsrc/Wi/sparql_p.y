@@ -191,6 +191,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token REGEX_L		/*:: PUNCT_SPAR_LAST("REGEX") ::*/
 %token REDUCED_L	/*:: PUNCT_SPAR_LAST("REDUCED") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
+%token SAME_AS_L	/*:: PUNCT_SPAR_LAST("SAME_AS") ::*/
+%token SAME_AS_S_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S") ::*/
+%token SAME_AS_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_O") ::*/
 %token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
@@ -315,6 +318,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_triple_option_commalist
 %type <trees> spar_triple_option
 %type <backstack> spar_triple_option_var_commalist
+%type <token_type> spar_same_as_option
 %type <tree> spar_verb
 %type <tree> spar_triples_node
 %type <nothing> spar_cons_collection
@@ -919,11 +923,19 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
 	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
 	| TRANSITIVE_L			{ $$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
+	| spar_same_as_option _LPAR spar_expns _RPAR	{ $$ = (SPART **)t_list (2, $1, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
+	| spar_same_as_option		{ $$ = (SPART **)t_list (2, $1, (ptrlong)1); }
 	;
 
 spar_triple_option_var_commalist
 	: spar_var	{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_triple_option_var_commalist _COMMA spar_var	{ $$ = $1; t_set_push (&($$), $3); }
+	;
+
+spar_same_as_option
+	: SAME_AS_L	{ $$ = SAME_AS_L; }
+	| SAME_AS_S_L	{ $$ = SAME_AS_S_L; }
+	| SAME_AS_O_L	{ $$ = SAME_AS_O_L; }
 	;
 
 spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/

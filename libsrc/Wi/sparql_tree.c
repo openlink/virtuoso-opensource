@@ -126,6 +126,12 @@ scan_for_children:
 	sub_expn_count = SPART_TRIPLE_FIELDS_COUNT;
         break;
       }
+    case SPAR_LIST:
+      {
+        sub_expns = tree->_.list.items;
+	sub_expn_count = BOX_ELEMENTS (sub_expns);
+        break;
+      }
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! BTW, 'IN' is also BOP */
@@ -157,7 +163,7 @@ scan_for_children:
       }
     default:
       {
-        spar_error (sparp, "Internal SPARQL compiler error: unsupported subexpression type %d", tree->type);
+        spar_internal_error (sparp, "Internal SPARQL compiler error: unsupported subexpression type");
         break;
       }
     }
@@ -1877,6 +1883,8 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
             {
               sparp_equiv_t *subv_eq = SPARP_EQUIV (sparp, subv_eq_idx);
               SPART *subv_gp = sparp_find_gp_by_eq_idx (sparp, subv_eq_idx);
+              if (subv_gp != subv_eq->e_gp)
+                spar_internal_error (sparp, "sparp_" "gp_detach_member(): subv_gp != subv_eq->e_gp");
               if (subv_gp == memb)
                 spar_internal_error (sparp, "sparp_" "gp_detach_member(): receiver not disconnected");
             }
@@ -2982,6 +2990,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
       switch (key)
         {
         case INFERENCE_L: has_inference = 1; continue;
+        case SAME_AS_L: case SAME_AS_S_L: case SAME_AS_O_L: has_inference = 1; continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
         case T_CYCLES_ONLY_L:
         case T_DISTINCT_L:
@@ -3059,7 +3068,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
         spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triples");
       break;
     }
-  if (has_inference)
+  if (has_transitive)
     {
       if (NULL == in_list)
         spar_error (sparp, "TRANSITIVE option require T_IN option as well");

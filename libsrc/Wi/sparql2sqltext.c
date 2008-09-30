@@ -3720,8 +3720,13 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         else
           {
-        sparp_equiv_t *eq = ssg->ssg_equivs[tree->_.var.equiv_idx];
-        SPART *gp = sparp_find_gp_by_alias (ssg->ssg_sparp, tree->_.var.selid);
+            ptrlong eq_idx = tree->_.var.equiv_idx;
+            sparp_equiv_t *eq;
+            SPART *gp;
+            if (SPART_BAD_EQUIV_IDX == eq_idx)
+              spar_error (ssg->ssg_sparp, "Unable to use variable ?%.100s in OPTION () clause, try to rephrase the query", tree->_.var.vname);
+            eq = ssg->ssg_equivs[eq_idx];
+            gp = sparp_find_gp_by_alias (ssg->ssg_sparp, tree->_.var.selid);
         if ((NULL == gp) && (SPART_VARR_EXPORTED & tree->_.var.rvr.rvrRestrictions))
           gp = ssg->ssg_tree->_.req_top.pattern;
         ssg_print_equiv_retval_expn (ssg, gp, eq, SSG_RETVAL_FROM_JOIN_MEMBER | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_USES_ALIAS, needed, asname);
@@ -3932,6 +3937,20 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         }
       ssg_print_scalar_subquery_exp (ssg, tree->_.gp.subquery, tree, needed);
       goto print_asname;
+    case SPAR_LIST:
+      {
+        int ctr;
+        if (NULL_ASNAME != asname)
+          spar_sqlprint_error ("ssg_" "print_scalar_expn(): SPAR_LIST with asname");
+        DO_BOX_FAST (SPART *, e, ctr, tree->_.list.items)
+          {
+            if (ctr)
+              ssg_putchar(',');
+            ssg_print_scalar_expn (ssg, e, needed, NULL_ASNAME);
+          }
+        END_DO_BOX_FAST;
+        return;
+      }
     default:
       spar_sqlprint_error ("ssg_" "print_scalar_expn(): unsupported scalar expression type");
       goto print_asname;
@@ -5713,23 +5732,67 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
   ssg_qr_uses_jso (ssg, (ccaddr_t)qm, NULL);
   if (1 == pass)
     {
+      int has_table_options = 0;
+#define SAME_AS__VARIANT_COUNT 3
+      SPART **opts = NULL, *same_as__lists [SAME_AS__VARIANT_COUNT];
+static ptrlong same_as__keys [SAME_AS__VARIANT_COUNT] = {SAME_AS_L, SAME_AS_S_L, SAME_AS_O_L};
+static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_AS_S", "SAME_AS_O"};
       ssg_putchar (' ');
       ssg_puts (qm->qmTableName);
       ssg_qr_uses_table (ssg, qm->qmTableName);
       ssg_puts (" AS ");
       ssg_prin_id (ssg, tabid);
+      opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
+      if (NULL != opts)
       {
         int idx;
-        caddr_t active_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, tree->_.triple.options);
+          caddr_t active_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, opts);
         if (NULL == active_inference)
           active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
         if (NULL != active_inference)
           t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
+          if (NULL != opts)
+            {
+              int sav_ctr;
+              for (sav_ctr = SAME_AS__VARIANT_COUNT; sav_ctr--; /* no step */)
+                {
+                  SPART *val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, same_as__keys[sav_ctr], opts);
+                  if (NULL != val)
+                    has_table_options = 1;
+                }
+            }
       }
       if (NULL != tblopts)
+        has_table_options = 1;
+      if (has_table_options)
         {
+          int needs_comma = 0;
           ssg_puts (" TABLE OPTION (");
+          if (NULL != tblopts)
+            {
           ssg_prin_option_commalist (ssg, tblopts, 0);
+              needs_comma = 1;
+            }
+          if (NULL != opts)
+            {
+              int sav_ctr;
+              for (sav_ctr = SAME_AS__VARIANT_COUNT; sav_ctr--; /* no step */)
+                {
+                  SPART *val = same_as__lists [sav_ctr];
+                  if (NULL == val)
+                    continue;
+                  if (needs_comma)
+                    ssg_putchar (',');
+                  ssg_puts (same_as__names [sav_ctr]);
+                  if (IS_BOX_POINTER (val))
+                    {
+                      ssg_puts (" vector (");
+                      ssg_print_scalar_expn (ssg, val, SSG_VALMODE_LONG, NULL_ASNAME);
+                      ssg_puts (")");
+                    }
+                  needs_comma = 1;
+                }
+            }
           ssg_puts (") ");
           }
       }

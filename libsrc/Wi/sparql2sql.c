@@ -400,6 +400,25 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
                 pos1_ptr[0] = 1+v_ctr;
               }
             END_DO_BOX_FAST;
+            break;
+          }
+        case SAME_AS_L: case SAME_AS_S_L: case SAME_AS_O_L:
+          {
+            int expn_ctr;
+            if (!IS_BOX_POINTER (val))
+              break;
+            DO_BOX_FAST (SPART *, expn, expn_ctr, val->_.list.items)
+              {
+                sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+                memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+                stss[1].sts_ancestor_gp = curr;
+                sparp_gp_trav_int (sparp, val, stss+1, common_env,
+                  sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
+                  sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
+                break;
+              }
+            END_DO_BOX_FAST;
+            break;
           }
         }
     }
@@ -4336,7 +4355,9 @@ sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp
       ptrlong missing_restrictions;
       subq_eq = sparp_equiv_get (sparp,
         curr->_.gp.subquery->_.req_top.pattern, (SPART *)(eq->e_varnames[0]),
-        SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
+        SPARP_EQUIV_GET_NAMESAKES );
+      if (NULL == subq_eq)
+        continue;
       missing_restrictions = (eq->e_rvr.rvrRestrictions & ~subq_eq->e_rvr.rvrRestrictions) & SPART_VARR_FIXED;
       if (!missing_restrictions)
         continue;

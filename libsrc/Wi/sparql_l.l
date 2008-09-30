@@ -24,7 +24,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
+ *  
+*/
 
 #include "Dk.h"
 #include "xmltree.h"
@@ -480,6 +481,9 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 <SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L	; }
 <SPARQL>{R}{E}{D}{U}{C}{E}{D}		{ return REDUCED_L	; }
 <SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
+<SPARQL>{S}{A}{M}{E}_{A}{S}		{ return SAME_AS_L	; }
+<SPARQL>{S}{A}{M}{E}_{A}{S}_{S}		{ return SAME_AS_S_L	; }
+<SPARQL>{S}{A}{M}{E}_{A}{S}_{O}		{ return SAME_AS_O_L	; }
 <SPARQL>{S}{A}{M}{E}{T}{E}{R}{M}	{ return SAMETERM_L	; }
 <SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
 <SPARQL>{S}{I}{L}{E}{N}{T}		{ return SILENT_L	; }
