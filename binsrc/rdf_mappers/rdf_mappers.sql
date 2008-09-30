@@ -1396,7 +1396,7 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 	}
     else
 		return 0;
-	tmp := http_get (url);
+	tmp := http_get (url, null, 'GET', 'Accept-Encoding: gzip');
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/discogs2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
