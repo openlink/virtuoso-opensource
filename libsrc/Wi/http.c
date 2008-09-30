@@ -6078,7 +6078,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (res);
       res = NULL;
     }
-  if (0 == strncmp (cont_enc, "gzip", 4))
+  if (cont_enc && 0 == strncmp (cont_enc, "gzip", 4))
     {
       dk_session_t *out = strses_allocate ();
       zlib_box_gzip_uncompress (res, out, err_ret);
