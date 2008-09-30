@@ -212,13 +212,12 @@ nf_uid2:;
 
     </v:before-data-bind>
 
-<![CDATA[
-
 <div id="odsBarCss" style="display:none">
 <?vsp http(ods_bar_css(self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
-<script type="text/javascript"><![CDATA[
+<![CDATA[
+<script type="text/javascript">
 
 var _head=document.getElementsByTagName('head')[0];
 
@@ -395,7 +394,7 @@ if (typeof (OAT) == 'undefined')
     }
 
 
-]]]]><![CDATA[></script>
+</script>
 ]]>
 
   <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
@@ -670,9 +669,10 @@ if (typeof (OAT) == 'undefined')
  </div><!-- HD-ODS-BAR -->
  </div>
 
-<![CDATA[ <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
+ <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
 
-<script  type="text/javascript"><![CDATA[
+<![CDATA[
+<script  type="text/javascript">
 
   var userIsLogged;
   userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
@@ -917,7 +917,7 @@ odsbarSafeInit();
 //ODSInitArray.push(odsbarSafeShow);
 
 
-]]]]><![CDATA[></script>
+</script>
 ]]>
 
  </v:template>
