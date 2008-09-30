@@ -37,9 +37,9 @@ namespace OpenLink.Data.Virtuoso
 {
 	public sealed class VirtuosoParameterCollection : 
 #if ADONET2
-        DbParameterCollection,	IDataParameterCollection, ICollection, IEnumerable, IList
+        DbParameterCollection
 #else
-        MarshalByRefObject,	IDataParameterCollection, ICollection, IEnumerable, IList
+        MarshalByRefObject, IDataParameterCollection, ICollection, IEnumerable, IList
 #endif
 	{
 		private VirtuosoCommand command;
@@ -64,6 +64,7 @@ namespace OpenLink.Data.Virtuoso
 			get { return items.Count; }
 		}
 
+#if !ADONET2
 		bool ICollection.IsSynchronized
 		{
 			get { return false; }
@@ -73,6 +74,7 @@ namespace OpenLink.Data.Virtuoso
 		{
 			get { return items.SyncRoot; }
 		}
+#endif
 
 #if ADONET2
         public override void CopyTo (Array array, int index)
@@ -100,6 +102,8 @@ namespace OpenLink.Data.Virtuoso
 		// METHODS / PROPERTIES FROM IList
 		//=================================
 
+
+#if !ADONET2
 		bool IList.IsFixedSize
 		{
 			get { return false; }
@@ -122,6 +126,8 @@ namespace OpenLink.Data.Virtuoso
 				items[index] = value;
 			}
 		}
+#endif
+
 
 #if ADONET2
         public override int Add (object value)
@@ -199,6 +205,7 @@ namespace OpenLink.Data.Virtuoso
 		// METHODS / PROPERTIES FROM IDataParameterCollection
 		//====================================================
 
+#if !ADONET2
 		object IDataParameterCollection.this[string parameterName]
 		{
 			get
@@ -210,7 +217,8 @@ namespace OpenLink.Data.Virtuoso
 				CheckParameter (value);
 				items[IndexOf (parameterName)] = value;
 			}
-		}
+	}
+#endif
 
 #if ADONET2
         public override bool Contains (string parameterName)
@@ -378,7 +386,7 @@ namespace OpenLink.Data.Virtuoso
 
 		protected override DbParameter GetParameter (int index)
 		{
-				return (VirtuosoParameter) items[index];
+				return (DbParameter) items[index];
         }
 
 		protected override DbParameter GetParameter (string parameterName)

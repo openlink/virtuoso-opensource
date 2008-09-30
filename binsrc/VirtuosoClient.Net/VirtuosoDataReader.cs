@@ -421,7 +421,12 @@ namespace OpenLink.Data.Virtuoso
 			// Return the count of the number of columns, which in
 			// this case is the size of the column metadata
 			// array.
-			get { return columns == null ? 0 : columns.Length; }
+			get { 
+                        int col;
+                        col = (columns == null ? 0 : columns.Length);
+
+			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.FieldCount() = " + col);
+			return columns == null ? 0 : columns.Length; }
 		}
 
 #if ADONET2

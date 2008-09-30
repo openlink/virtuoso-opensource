@@ -48,7 +48,7 @@ namespace OpenLink.Data.Virtuoso
 #endif
     public sealed class VirtuosoCommand : 
 #if ADONET2
-    DbCommand, ICloneable, IDbCommand
+    DbCommand, ICloneable
 #else
     System.ComponentModel.Component, ICloneable, IDbCommand
 #endif
@@ -193,7 +193,7 @@ namespace OpenLink.Data.Virtuoso
 		}
 
 #if ADONET2
-		protected override DbConnection DbConnection
+		public new VirtuosoConnection Connection
 #else
 		public VirtuosoConnection Connection
 #endif
@@ -223,14 +223,23 @@ namespace OpenLink.Data.Virtuoso
 				}
 			}
 		}
+#if ADONET2
+		protected override DbConnection DbConnection
+		{
+			get { return Connection; }
+			set { Connection = (VirtuosoConnection) value; }
+		}
+#else
 		IDbConnection IDbCommand.Connection
 		{
 			get { return Connection; }
 			set { Connection = (VirtuosoConnection) value; }
 		}
+#endif
+
 
 #if ADONET2
-		protected override DbParameterCollection DbParameterCollection
+		public new VirtuosoParameterCollection Parameters
 #else
 		public VirtuosoParameterCollection Parameters
 #endif
@@ -238,13 +247,20 @@ namespace OpenLink.Data.Virtuoso
 			get { return parameters; }
 		}
 
+#if ADONET2
+		protected override DbParameterCollection DbParameterCollection
+		{
+			get { return parameters; }
+		}
+#else
 		IDataParameterCollection IDbCommand.Parameters
 		{
 			get { return parameters; }
 		}
+#endif
 
 #if ADONET2
-		protected override DbTransaction DbTransaction
+		public new VirtuosoTransaction Transaction
 #else
 		public VirtuosoTransaction Transaction
 #endif
@@ -268,11 +284,19 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
+#if ADONET2
+		protected override DbTransaction DbTransaction
+		{
+			get { return Transaction; }
+			set { Transaction = (VirtuosoTransaction) value; }
+		}
+#else
 		IDbTransaction IDbCommand.Transaction
 		{
 			get { return Transaction; }
 			set { Transaction = (VirtuosoTransaction) value; }
 		}
+#endif
 
 #if ADONET2
 		public override UpdateRowSource UpdatedRowSource
@@ -309,21 +333,33 @@ namespace OpenLink.Data.Virtuoso
 		object ICloneable.Clone ()
 		{
 			VirtuosoCommand command = new VirtuosoCommand ();
-			command.connection = connection;
-			command.transaction = transaction;
-			command.commandText = commandText;
-			command.CommandType = commandType;
-			command.timeout = timeout;
-			return command;
-		}
+			command.Connection = this.Connection;
+			command.CommandText = this.CommandText;
+			command.CommandType = this.CommandType;
+			command.CommandTimeout = this.CommandTimeout;
+			command.DesignTimeVisible = this.DesignTimeVisible;
+			command.Transaction = this.Transaction;
+			command.UpdatedRowSource = this.UpdatedRowSource;
 
-		IDbDataParameter IDbCommand.CreateParameter ()
-		{
-			return CreateParameter ();
+			foreach (VirtuosoParameter p in this.Parameters)
+				command.Parameters.Add (((ICloneable) p).Clone());
+			return command;
 		}
 
 #if ADONET2
 		protected override DbParameter CreateDbParameter ()
+		{
+			return CreateParameter ();
+		}
+#else
+		IDbDataParameter IDbCommand.CreateParameter ()
+		{
+			return CreateParameter ();
+		}
+#endif
+
+#if ADONET2
+        public new VirtuosoParameter CreateParameter()
 #else
         public VirtuosoParameter CreateParameter()
 #endif
@@ -362,25 +398,33 @@ namespace OpenLink.Data.Virtuoso
 			return records;
 		}
 
+#if !ADONET2
 		IDataReader IDbCommand.ExecuteReader ()
 		{
 			return ExecuteReader ();
 		}
+#endif
 
-#if !ADONET2
+#if ADONET2
+		public new VirtuosoDataReader ExecuteReader ()
+#else
 		public VirtuosoDataReader ExecuteReader ()
+#endif
 		{
 			return ExecuteReader (CommandBehavior.Default);
 		}
-#endif
 
+#if ADONET2
+		protected override DbDataReader ExecuteDbDataReader (CommandBehavior behavior)
+#else
 		IDataReader IDbCommand.ExecuteReader (CommandBehavior behavior)
+#endif
 		{
 			return ExecuteReader (behavior);
 		}
 
 #if ADONET2
-        protected override DbDataReader ExecuteDbDataReader (CommandBehavior behavior)
+        public new VirtuosoDataReader ExecuteReader (CommandBehavior behavior)
 #else
         public VirtuosoDataReader ExecuteReader (CommandBehavior behavior)
 #endif
@@ -406,17 +450,19 @@ namespace OpenLink.Data.Virtuoso
 			innerCommand.SetCommandBehavior (behavior);
 
 			bool schemaOnly = SchemaOnlyDataReader (behavior);
+			string text = GetCommandText ();
 			if (schemaOnly)
 			{
 				if (!isPrepared)
-					innerCommand.Prepare (GetCommandText ());
+				{
+					innerCommand.Prepare (text);
+				}
 			}
 			else
 			{
 				innerCommand.SetParameters (parameters);
 				if (!isPrepared)
 				{
-					string text = GetCommandText ();
 					try
 					{
 						isExecuting = true;

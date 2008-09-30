@@ -39,7 +39,7 @@ namespace OpenLink.Data.Virtuoso
 {
 	public sealed class VirtuosoParameter : 
 #if ADONET2
-        DbParameter, IDbDataParameter, IDataParameter, ICloneable
+        DbParameter, IDataParameter, ICloneable
 #else    
 	    MarshalByRefObject, IDbDataParameter, IDataParameter, ICloneable
 #endif
