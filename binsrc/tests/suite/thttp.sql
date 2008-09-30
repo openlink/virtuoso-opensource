@@ -220,14 +220,14 @@ test_gz (in _port varchar)
 
   test := cast (test as varchar);
 
-  test2 := file_to_string ('etalon_ouput_gz');
+  test2 := string_output_string (gzip_uncompress (file_to_string ('etalon_ouput_gz')));
 
   http_enable_gz (0);
 
   if (length (test) <> length (test2))
     return 0;
 
-  if (test = test2)
+  if (md5(test) = md5 (test2))
     return 1;
 
   return 0;
