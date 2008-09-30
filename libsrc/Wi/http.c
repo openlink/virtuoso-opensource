@@ -5866,6 +5866,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t body = NULL;
   caddr_t volatile proxy = NULL;
   char * trf_enc = NULL;
+  char * cont_enc = NULL;
   int resp_code = 0, no_body = 0;
   char * code_pos = NULL;
 #ifdef _USE_CACHED_SES
@@ -5918,6 +5919,9 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   trf_enc = ws_header_field (head, "Transfer-Encoding:", "");
   while (*trf_enc && *trf_enc <= '\x20')
 	trf_enc++;
+  cont_enc = ws_header_field (head, "Content-Encoding:", "");
+  while (*cont_enc && *cont_enc <= '\x20')
+    cont_enc++;
   /* method head take length w/o body */
   if (method != NULL)
     if (strstr (method, "HEAD"))
@@ -6074,6 +6078,14 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (res);
       res = NULL;
     }
+  if (0 == strncmp (cont_enc, "gzip", 4))
+    {
+      dk_session_t *out = strses_allocate ();
+      zlib_box_gzip_uncompress (res, out, err_ret);
+      dk_free_tree (res);
+      res = strses_string (out);
+      dk_free_box (out);
+    } 
   http_client_cache_register ((query_instance_t *)qst, uri, header, body, head, res);
   if (to_free_head)
     dk_free_tree ((caddr_t) head);

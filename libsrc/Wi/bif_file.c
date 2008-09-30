@@ -3815,6 +3815,109 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+static int
+zget_byte (z_stream * stream)
+{
+  if (stream->avail_in == 0) 
+    return EOF;
+  stream->avail_in--;
+  return *(stream->next_in)++;
+}
+
+static void
+zcheck_header (z_stream * stream, caddr_t * err_ret)
+{
+#define ASCII_FLAG   0x01 /* bit 0 set: file probably ascii text */
+#define HEAD_CRC     0x02 /* bit 1 set: header CRC present */
+#define EXTRA_FIELD  0x04 /* bit 2 set: extra field present */
+#define ORIG_NAME    0x08 /* bit 3 set: original file name present */
+#define COMMENT      0x10 /* bit 4 set: file comment present */
+#define RESERVED     0xE0 /* bits 5..7: reserved */
+  int method; /* method byte */
+  int flags;  /* flags byte */
+  unsigned int len;
+  int c;
+
+  if (stream->next_in[0] != 0x1f || stream->next_in[1] != 0x8b) 
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("22025", "SR104", "Error in header, gz magic number not found");
+      return;
+    }
+  stream->avail_in -= 2;
+  stream->next_in += 2;
+
+  /* Check the rest of the gzip header */
+  method = zget_byte(stream);
+  flags = zget_byte(stream);
+  if (method != Z_DEFLATED || (flags & RESERVED) != 0) 
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("22025", "SR104", "Error in header, gz method unknown");
+      return;
+    }
+
+  /* Discard time, xflags and OS code: */
+  for (len = 0; len < 6; len++) (void) zget_byte(stream);
+
+  if ((flags & EXTRA_FIELD) != 0) 
+    { /* skip the extra field */
+      len  =  (unsigned int)zget_byte(stream);
+      len += ((unsigned int)zget_byte(stream))<<8;
+      /* len is garbage if EOF but the loop below will quit anyway */
+      while (len-- != 0 && zget_byte(stream) != EOF) ;
+    }
+  if ((flags & ORIG_NAME) != 0) 
+    { /* skip the original file name */
+      while ((c = zget_byte(stream)) != 0 && c != EOF) ;
+    }
+  if ((flags & COMMENT) != 0) 
+    {   /* skip the .gz file comment */
+      while ((c = zget_byte(stream)) != 0 && c != EOF) ;
+    }
+  if ((flags & HEAD_CRC) != 0) 
+    {  /* skip the header crc */
+      for (len = 0; len < 2; len++) (void)zget_byte(stream);
+    }
+}
+
+void
+zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
+{
+  z_stream zs;
+  int rc;
+  char szBuffer[DKSES_OUT_BUFFER_LENGTH];
+
+  ZLIB_INIT_DK_STREAM (zs);
+  inflateInit2 (&zs, -MAX_WBITS);
+  zs.next_in = (Bytef *) src;
+  zs.avail_in = box_length (src) - 1;
+  zcheck_header (&zs, err_ret);
+  if (err_ret && *err_ret)
+    {
+      inflateEnd (&zs);
+      return;
+    }
+  do
+    {
+      zs.next_out = (Bytef *) szBuffer;
+      zs.avail_out = sizeof (szBuffer);
+      rc = inflate (&zs, Z_NO_FLUSH);
+      if (rc != Z_OK && rc != Z_STREAM_END)
+	{
+	  if (err_ret)
+	    *err_ret =
+		srv_make_new_error ("22025", "SR104",
+		"Error in decompressing");
+	  break;
+	}
+      if (sizeof (szBuffer) - zs.avail_out > 0)
+	session_buffered_write (out, szBuffer,
+	    sizeof (szBuffer) - zs.avail_out);
+    }
+  while (rc != Z_STREAM_END);
+  inflateEnd (&zs);
+}
 
 long
 strses_write_out_compressed (dk_session_t * ses, dk_session_t * out)
@@ -3916,6 +4019,17 @@ bif_gz_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	" not an argument of type %s (%d)", dv_type_title (out_dtp), out_dtp);
   zlib_box_uncompress (src, out, err_ret);
   return NULL;
+}
+
+static caddr_t
+bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "gzip_uncompress";
+  caddr_t src = bif_string_arg (qst, args, 0, szMe);
+  dk_session_t *out = strses_allocate ();
+
+  zlib_box_gzip_uncompress (src, out, err_ret);
+  return (caddr_t) out;
 }
 
 static caddr_t
@@ -5565,6 +5679,7 @@ bif_file_init (void)
   bif_define_typed ("string_output_gz_compress",
       bif_string_output_gz_compress, &bt_integer);
   bif_define ("gz_uncompress", bif_gz_uncompress);
+  bif_define ("gzip_uncompress", bif_gzip_uncompress);
   bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
   bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);

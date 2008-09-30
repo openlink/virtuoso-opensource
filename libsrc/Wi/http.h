@@ -365,5 +365,6 @@ caddr_t ws_soap_get_url (ws_connection_t *ws, int full_path);
 caddr_t ws_http_error_header (int code);
 caddr_t http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t body, state_slot_t ** args, int arg_pos);
 void http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, caddr_t req_body, caddr_t * head, caddr_t body);
+void zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret);
 
 #endif /* _HTTP_H */
