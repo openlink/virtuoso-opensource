@@ -911,7 +911,7 @@
           http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
 
           self.toolbarShow ('home', 'Home', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'home\');"', 'home_32.png', '', 0);
-          self.toolbarShow ('shared', 'Shared Folders', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'shared\');"', 'folder_violet.png', 'folder_grey.png', 0);
+          self.toolbarShow ('shared', 'Shared Resources', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'shared\');"', 'folder_violet.png', 'folder_grey.png', 0);
           self.toolbarShow ('new', 'New Folder', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'new\');"', 'new_fldr_32.png', 'grey_new_fldr_32.png', 0);
 
           http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
