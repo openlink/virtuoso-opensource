@@ -1108,7 +1108,7 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
       ap_set_t *aps = curr_hit->aph_.aph_candidate.aph_set;
       ptrlong aps_id = aps->aps_id;
       caddr_t err = NULL;
-      local_cursor_t *lc;
+      local_cursor_t *lc = NULL;
       err = qr_quick_exec (app_find_by_hit__qr, appi->appi_qi->qi_client, "", &lc, 2,
 		":0", (ptrlong) aps_id, QRP_INT,
 		":1", (ptrlong) chksum, QRP_INT
@@ -1135,7 +1135,7 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
 	  app->app_chksum = chksum;
 	  app->app_set = aps;
 	  app->app_text = mp_box_copy (appi->appi_mp, lc_nth_col (lc, 0));
-	  app->app_link_data = mp_box_copy_tree (appi->appi_mp, lc_nth_col (lc, 1));
+	  app->app_link_data = mp_full_box_copy_tree (appi->appi_mp, lc_nth_col (lc, 1));
           mp_set_push (appi->appi_mp, &(appi->appi_phrases_revlist), app);
           phrase_count ++;
 #ifdef AP_CHKSUM_DEBUG
@@ -1166,6 +1166,11 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
               if (aps_id != curr_hit->aph_.aph_candidate.aph_set->aps_id)
 		break;
 	    }
+	}
+      if (lc)
+	{
+	  lc_free (lc);
+	  lc = NULL;
 	}
     }
   appi->appi_phrases = (ap_phrase_t **) appi_alloc (phrase_count * sizeof (ap_phrase_t *));
