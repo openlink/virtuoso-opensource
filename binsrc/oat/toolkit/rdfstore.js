@@ -10,7 +10,7 @@
 
 /*
 	rb = new OAT.RDFStore(callback, optObj);
-	rb.addURL(url,onstart,onend);
+	rb.addURL(url,onstart,onend,title,source);
 	rb.addTriples(triples,href);
 	rb.addXmlDoc(xmlDoc,href);
 	rb.disable(url); // must be dereferenced! 
@@ -70,10 +70,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.filtersProperty = [];
 	this.items = [];
 		
-	this.addURL = function(u,onstart,onend,title) {
+	/* FIXME: passing an optObj here? */
+	this.addURL = function(u,onstart,onend,title,proxy) {
 		var url = u.toString().trim();
+		
 		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,url);
-		var cback = function(str) {
+		var cback = function(endpoint,str) {
 			if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
 				var triples = OAT.N3.toTriples(str);
 			} else {
@@ -107,12 +109,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 						title = t[2];
 			}
 			}
-			self.addTriples(triples,url,title);
+			self.addTriples(triples,url,title,endpoint);
 			OAT.MSG.send(this,OAT.MSG.STORE_LOADED,url);
 		}
 		var start = onstart ? onstart : self.options.ajaxStart;
 		var end = onend ? onend : self.options.ajaxEnd;
-		OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_TEXT,onend:end,onstart:start});
+		OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_TEXT,onend:end,onstart:start,endpoint:proxy});
 	}
 	
 	this.addXmlDoc = function(xmlDoc,href) {
@@ -127,11 +129,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,xmlDoc.baseURI);
 	}
 		
-	this.addTriples = function(triples,href,title) {
+	this.addTriples = function(triples,href,title,endpoint) {
 		var o = {
 			triples:triples,
 			href:href || "",
 			enabled:true,
+			endpoint:endpoint,
 			title:title
 		}
 		self.items.push(o);

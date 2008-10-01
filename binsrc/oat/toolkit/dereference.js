@@ -14,7 +14,8 @@
 OAT.Dereference = {
 	pragmas:{},
 
-	endpoint:"/proxy?url=", /* this can be changed only when used from inside chrome:// 
+	endpoint:"/proxy?url=", /* this can be changed to generic domain only 
+				   when used from inside chrome:// 
 				   or similar because of XSS security restrictions */
 	virtuoso:true, /* if virtuoso proxy is used */
 	virt_proxy_ver:1, /* Normal proxy type - default */
@@ -33,6 +34,9 @@ OAT.Dereference = {
 	},
 
 	go:function(url,callback,optObj) {
+
+		var endpoint = optObj.endpoint || this.endpoint;
+
 		var addParam = function(uri, param, value) {
 			if (uri.match(/.*\?.*/)) {
 				return uri + "&" + param + "=" + value;
@@ -40,60 +44,42 @@ OAT.Dereference = {
 				return uri + "?" + param + "=" + value;
 			}
 		}
-		if (url.match(/^http/i) && this.virtuoso) { /* Virtuoso proxy: */
-		    if (this.virt_proxy_ver == 1) {
+
+		if (this.virtuoso && url.match(/^http/i)) {
 			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
 			var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
 			var encoded = encodeURIComponent(r[1] + r[3]);
-			encoded = addParam(this.endpoint + encoded, "force", "rdf");
+			
+			/* triplr-style endpoint cannot process URL params as they are passed through to the remote */
+		    	if (this.virt_proxy_ver != 1) {
+					optObj["noSecurityCookie"] = true;
+		    	} else {
+					encoded = addParam(endpoint + encoded, "force", "rdf");
 			if (user) { encoded = addParam(encoded, "login", encodeURIComponent(user)); }
 			if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
 			if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
 			for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
 		    }
-		    else {
-			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
-			var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
-			var encoded = (this.endpoint + r[1] + r[3]);
-			//
-			// triplr-style endpoint cannot process URL params as they are passed through to the remote
-			//
-			//			if (user) { encoded = addParam(encoded, "login", encodeURIComponent(user)); }
-			//			if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
-			//			if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
-			//			for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
-			optObj = {
-			    noSecurityCookie: true
-			};
-		    }
-		} else if ((url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) && this.virtuoso) { /* Virtuoso proxy: */
-		    if (this.virt_proxy_ver == 1) {
+
+		} else if (this.virtuoso && (url.match(/^(urn|doi|oai):/i))) {
+		    	if (this.virt_proxy_ver != 1) {
+				var encoded = this.endpoint + url;
+				optObj["noSecurityCookie"] = true;
+			} else {
 			var encoded = encodeURIComponent(url);
-			encoded = addParam(this.endpoint + encoded, "force", "rdf");
+				encoded = addParam(endpoint + encoded, "force", "rdf");
 			if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
 			if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
 			for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
 		    }
-		    else {
-			var encoded = this.endpoint + url;
-			// triplr-style endpoint cannot process URL params as they are passed through to the remote
-			//
-			// if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
-			// if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
-			// for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
-			optObj = {
-			    noSecurityCookie: true
-			};
-		    }
-		} else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i) || url.match(/^http/i)) { /* other than Virtuoso: */
-			var encoded = this.endpoint + decodeURIComponent(url);
-			optObj = {
-				noSecurityCookie:true
-			};
+		} else if (url.match(/^(urn|doi|oai|http):/i)) { /* other than Virtuoso: */
+			var encoded = endpoint + decodeURIComponent(url);
+			optObj["noSecurityCookie"] = true;
 		} else { /* relative uri */
 			var encoded = url;
 		}
-		OAT.AJAX.GET(encoded,false,callback,optObj);
+		var cb = function(data) { if (callback) { callback(endpoint,data); } }
+		OAT.AJAX.GET(encoded,false,cb,optObj);
 	}
 }
 OAT.Loader.featureLoaded("dereference");
