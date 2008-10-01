@@ -1355,7 +1355,7 @@ _again:
   if (xpath_eval ('/html', xt, 1) is null)
     return content;
   newUri := cast (xpath_eval ('/html/head/link[@rel="alternate" and @type="text/calendar"]/@href', xt, 1) as varchar);
-  return CAL.WA.dav_content (newUri);
+  return CAL.WA.dav_content (newUri, auth_uid, auth_pwd);
 }
 ;
 

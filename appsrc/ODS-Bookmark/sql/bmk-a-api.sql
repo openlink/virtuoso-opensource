@@ -39,7 +39,9 @@ create procedure ODS.ODS_API."bookmark.get" (
 
   inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
+  {
     return ods_auth_failed ();
+  }
   iri := SIOC..bmk_post_iri (inst_id, bookmark_id);
   q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
   exec_sparql (q);
@@ -279,6 +281,128 @@ create procedure ODS.ODS_API."bookmark.export" (
   http (BMK.WA.dav_content (sprintf('%s/bookmark/%d/export.vspx?did=%d&output=BMK&file=export&format=%s', BMK.WA.host_url (), inst_id, inst_id, contentType)));
 
   return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.annotation.get" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare inst_id, bookmark_id integer;
+  declare uname varchar;
+  declare q, iri varchar;
+
+  whenever not found goto _exit;
+
+  select A_DOMAIN_ID, A_OBJECT_ID into inst_id, bookmark_id from BMK.WA.ANNOTATIONS where A_ID = annotation_id;
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  iri := SIOC..bmk_annotation_iri (inst_id, bookmark_id, annotation_id);
+  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+  exec_sparql (q);
+
+_exit:
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.annotation.new" (
+  in bookmark_id integer,
+  in author varchar,
+  in body varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  insert into BMK.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
+    values (inst_id, bookmark_id, body, author, now (), now ());
+  rc := (select max (A_ID) from BMK.WA.ANNOTATIONS);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.annotation.claim" (
+  in annotation_id integer,
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare claims any;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from BMK.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  claims := (select deserialize (A_CLAIMS) from BMK.WA.ANNOTATIONS where A_ID = annotation_id);
+  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+  update BMK.WA.ANNOTATIONS
+     set A_CLAIMS = serialize (claims),
+         A_UPDATED = now ()
+   where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.annotation.delete" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from BMK.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from BMK.WA.ANNOTATIONS where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -733,6 +857,12 @@ grant execute on ODS.ODS_API."bookmark.folder.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.folder.delete" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.import" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.export" to ODS_API;
+
+grant execute on ODS.ODS_API."bookmark.annotation.get" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.annotation.new" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.annotation.claim" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.annotation.delete" to ODS_API;
+
 grant execute on ODS.ODS_API."bookmark.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.delete" to ODS_API;

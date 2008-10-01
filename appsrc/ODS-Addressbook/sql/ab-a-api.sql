@@ -439,6 +439,128 @@ create procedure ODS.ODS_API."addressbook.export" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."addressbook.annotation.get" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare inst_id, contact_id integer;
+  declare uname varchar;
+  declare q, iri varchar;
+
+  whenever not found goto _exit;
+
+  select A_DOMAIN_ID, A_OBJECT_ID into inst_id, contact_id from AB.WA.ANNOTATIONS where A_ID = annotation_id;
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  iri := SIOC..addressbook_annotation_iri (inst_id, contact_id, annotation_id);
+  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+  exec_sparql (q);
+
+_exit:
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.annotation.new" (
+  in contact_id integer,
+  in author varchar,
+  in body varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = contact_id);
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  insert into AB.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
+    values (inst_id, contact_id, body, author, now (), now ());
+  rc := (select max (A_ID) from AB.WA.ANNOTATIONS);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.annotation.claim" (
+  in annotation_id integer,
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare claims any;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from AB.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  claims := (select deserialize (A_CLAIMS) from AB.WA.ANNOTATIONS where A_ID = annotation_id);
+  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+  update AB.WA.ANNOTATIONS
+     set A_CLAIMS = serialize (claims),
+         A_UPDATED = now ()
+   where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."addressbook.annotation.delete" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from AB.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from AB.WA.ANNOTATIONS where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."addressbook.comment.get" (
   in comment_id integer) __soap_http 'text/xml'
 {
@@ -880,6 +1002,11 @@ grant execute on ODS.ODS_API."addressbook.edit" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.delete" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.import" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.export" to ODS_API;
+
+grant execute on ODS.ODS_API."addressbook.annotation.get" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.annotation.new" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.annotation.claim" to ODS_API;
+grant execute on ODS.ODS_API."addressbook.annotation.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;

@@ -225,6 +225,128 @@ create procedure ODS.ODS_API."feeds.folder.delete" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."feeds.annotation.get" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare inst_id, item_id integer;
+  declare uname varchar;
+  declare q, iri varchar;
+
+  whenever not found goto _exit;
+
+  select A_DOMAIN_ID, A_OBJECT_ID into inst_id, item_id from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id;
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  iri := SIOC..feed_annotation_iri (inst_id, item_id, annotation_id);
+  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+  exec_sparql (q);
+
+_exit:
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."feeds.annotation.new" (
+  in inst_id integer,
+  in item_id integer,
+  in author varchar,
+  in body varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+
+  rc := -1;
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  insert into ENEWS.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
+    values (inst_id, item_id, body, author, now (), now ());
+  rc := (select max (A_ID) from ENEWS.WA.ANNOTATIONS);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."feeds.annotation.claim" (
+  in annotation_id integer,
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare claims any;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  claims := (select deserialize (A_CLAIMS) from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id);
+  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+  update ENEWS.WA.ANNOTATIONS
+     set A_CLAIMS = serialize (claims),
+         A_UPDATED = now ()
+   where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."feeds.annotation.delete" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."feeds.comment.get" (
   in comment_id integer) __soap_http 'text/xml'
 {
@@ -509,6 +631,12 @@ grant execute on ODS.ODS_API."feeds.unsubscribe" to ODS_API;
 grant execute on ODS.ODS_API."feeds.refresh" to ODS_API;
 grant execute on ODS.ODS_API."feeds.folder.new" to ODS_API;
 grant execute on ODS.ODS_API."feeds.folder.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."feeds.annotation.get" to ODS_API;
+grant execute on ODS.ODS_API."feeds.annotation.new" to ODS_API;
+grant execute on ODS.ODS_API."feeds.annotation.claim" to ODS_API;
+grant execute on ODS.ODS_API."feeds.annotation.delete" to ODS_API;
+
 grant execute on ODS.ODS_API."feeds.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."feeds.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."feeds.comment.delete" to ODS_API;

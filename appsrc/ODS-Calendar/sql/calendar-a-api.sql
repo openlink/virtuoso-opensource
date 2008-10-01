@@ -441,8 +441,8 @@ create procedure ODS.ODS_API."calendar.comment.get" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare uname varchar;
   declare inst_id, event_id integer;
+  declare uname varchar;
   declare q, iri varchar;
 
   whenever not found goto _exit;
@@ -478,9 +478,8 @@ create procedure ODS.ODS_API."calendar.comment.new" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc integer;
+  declare rc, inst_id integer;
   declare uname varchar;
-  declare inst_id integer;
 
   rc := -1;
   inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
@@ -522,9 +521,8 @@ create procedure ODS.ODS_API."calendar.comment.delete" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc integer;
+  declare rc, inst_id integer;
   declare uname varchar;
-  declare inst_id integer;
 
   rc := -1;
   inst_id := (select EC_DOMAIN_ID from CAL.WA.EVENT_COMMENTS where EC_ID = comment_id);
@@ -532,6 +530,128 @@ create procedure ODS.ODS_API."calendar.comment.delete" (
     return ods_auth_failed ();
 
   delete from CAL.WA.EVENT_COMMENTS where EC_ID = comment_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.annotation.get" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare inst_id, event_id integer;
+  declare uname varchar;
+  declare q, iri varchar;
+
+  whenever not found goto _exit;
+
+  select A_DOMAIN_ID, A_OBJECT_ID into inst_id, event_id from CAL.WA.ANNOTATIONS where A_ID = annotation_id;
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  iri := SIOC..calendar_annotation_iri (inst_id, event_id, annotation_id);
+  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+  exec_sparql (q);
+
+_exit:
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.annotation.new" (
+  in event_id integer,
+  in author varchar,
+  in body varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
+
+  if (not ods_check_auth (uname, inst_id, 'reader'))
+    return ods_auth_failed ();
+
+  insert into CAL.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
+    values (inst_id, event_id, body, author, now (), now ());
+  rc := (select max (A_ID) from CAL.WA.ANNOTATIONS);
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.annotation.claim" (
+  in annotation_id integer,
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare claims any;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from CAL.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  claims := (select deserialize (A_CLAIMS) from CAL.WA.ANNOTATIONS where A_ID = annotation_id);
+  claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
+  update CAL.WA.ANNOTATIONS
+     set A_CLAIMS = serialize (claims),
+         A_UPDATED = now ()
+   where A_ID = annotation_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."calendar.annotation.delete" (
+  in annotation_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+
+  rc := -1;
+  inst_id := (select A_DOMAIN_ID from CAL.WA.ANNOTATIONS where A_ID = annotation_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  delete from CAL.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
@@ -919,9 +1039,13 @@ grant execute on ODS.ODS_API."calendar.import" to ODS_API;
 grant execute on ODS.ODS_API."calendar.export" to ODS_API;
 
 grant execute on ODS.ODS_API."calendar.comment.get" to ODS_API;
-grant execute on ODS.ODS_API."calendar.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."calendar.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."calendar.comment.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."calendar.annotation.get" to ODS_API;
+grant execute on ODS.ODS_API."calendar.annotation.new" to ODS_API;
+grant execute on ODS.ODS_API."calendar.annotation.claim" to ODS_API;
+grant execute on ODS.ODS_API."calendar.annotation.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."calendar.publication.new" to ODS_API;
 grant execute on ODS.ODS_API."calendar.publication.edit" to ODS_API;
