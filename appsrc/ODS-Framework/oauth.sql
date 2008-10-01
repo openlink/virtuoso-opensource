@@ -144,9 +144,12 @@ create procedure normalize_url (in url any, in lines any)
 }
 ;
 
-
-create procedure sign_hmac_sha1
-(in meth varchar, in url varchar, in params varchar, in consumer_secret varchar, in token_secret varchar)
+create procedure sign_hmac_sha1 (
+  in meth varchar,
+  in url varchar,
+  in params varchar,
+  in consumer_secret varchar,
+  in token_secret varchar)
 {
   declare str, k, kname, ret varchar;
   str := meth || '&' || replace (sprintf ('%U', url), '/', '%2F') || '&' || sprintf ('%U', params);
@@ -162,18 +165,29 @@ create procedure sign_hmac_sha1
 }
 ;
 
-create procedure sign_plaintext
-(in meth varchar, in url varchar, in params varchar, in consumer_secret varchar, in token_secret varchar)
+create procedure sign_plaintext (
+  in meth varchar,
+  in url varchar,
+  in params varchar,
+  in consumer_secret varchar,
+  in token_secret varchar)
 {
   return sprintf ('%U', consumer_secret||'&'||token_secret);
 }
 ;
 
-create procedure check_signature
-(in algo varchar, in sig varchar,
- in meth varchar, in url varchar, in params varchar, in lines any,  in consumer_secret varchar, in token_secret varchar)
+create procedure check_signature (
+  in algo varchar,
+  in sig varchar,
+  in meth varchar,
+  in url varchar,
+  in params varchar,
+  in lines any,
+  in consumer_secret varchar,
+  in token_secret varchar)
 {
   declare c_sig varchar;
+
   url := normalize_url (url, lines);
   params := normalize_params (params);
   if (algo = 'HMAC-SHA1')
@@ -181,8 +195,8 @@ create procedure check_signature
   else
     c_sig := sign_plaintext (meth, url, params, consumer_secret, token_secret);
 
---  dbg_obj_print ('algo=', algo);
 --  dbg_obj_print ('sig=', sig, ' calculated=', c_sig);
+  -- dbg_obj_print ('algo=', algo);
 --  dbg_obj_print ('meth=', meth);
 --  dbg_obj_print ('url=', url);
 --  dbg_obj_print ('params=', params);
@@ -195,13 +209,17 @@ create procedure check_signature
 }
 ;
 
-create procedure get_req_url (in path varchar, in lines any)
+create procedure get_req_url (
+  in path varchar,
+  in lines any)
 {
   return;
 }
 ;
 
-create procedure get_key_and_secret (out k any, out s any)
+create procedure get_key_and_secret (
+  out k any,
+  out s any)
 {
   k := xenc_rand_bytes (20, 1);
   s := xenc_rand_bytes (16, 1);
@@ -214,10 +232,7 @@ create procedure request_token (
     in oauth_signature varchar,
     in oauth_timestamp varchar,
     in oauth_nonce varchar,
-    in oauth_version varchar := '1.0'
-    )
-    --__SOAP_HTTP 'application/x-www-form-urlencoded'
-    __SOAP_HTTP 'text/plain'
+  in oauth_version varchar := '1.0') __SOAP_HTTP 'text/plain'
 {
   declare ret, tok, sec varchar;
   declare sid, app_sec, url, meth, params, cookie varchar;
@@ -271,10 +286,7 @@ create procedure access_token (
     in oauth_signature varchar,
     in oauth_timestamp varchar,
     in oauth_nonce varchar,
-    in oauth_version varchar := '1.0'
-    )
-    --__SOAP_HTTP 'application/x-www-form-urlencoded'
-    __SOAP_HTTP 'text/plain'
+  in oauth_version varchar := '1.0') __SOAP_HTTP 'text/plain'
 {
   declare ret, tok, sec varchar;
   declare sid, app_sec, url, meth, params, cookie, req_sec, uname varchar;
@@ -333,9 +345,7 @@ create procedure access_token (
 
 create procedure authorize (
     in oauth_token varchar,
-    in oauth_callback varchar
-    )
-    __SOAP_HTTP 'text/plain'
+  in oauth_callback varchar) __SOAP_HTTP 'text/plain'
 {
   declare url any;
   if (not exists (select 1 from SESSIONS where s_req_key = oauth_token and s_ip = http_client_ip () and s_state = 1))
@@ -350,7 +360,11 @@ create procedure authorize (
 }
 ;
 
-create procedure check_authentication_safe (in inparams any := null, in lines any := null, out uname varchar, in inst_id int := null)
+create procedure check_authentication_safe (
+  in inparams any := null,
+  in lines any := null,
+  out uname varchar,
+  in inst_id int := null)
 {
   if (inparams is null)
     inparams := http_param ();
@@ -490,7 +504,7 @@ create procedure get_auth_token (in sid varchar)
 }
 ;
 
-create procedure get_consumer_key (in sid varchar)
+create procedure get_consumer_key (in sid varchar) __SOAP_HTTP 'text/plain'
 {
   if (sid is null)
     return null;
@@ -544,7 +558,7 @@ create procedure parse_response (in sid any, in consumer_key varchar, in ret any
 }
 ;
 
-create procedure sign_request (in meth varchar := 'GET', in url varchar, in params varchar, in consumer_key varchar, in sid varchar)
+create procedure sign_request (in meth varchar := 'GET', in url varchar, in params varchar, in consumer_key varchar, in sid varchar) __SOAP_HTTP 'text/plain'
 {
   declare signature, timest, nonce varchar;
   declare ret varchar;
@@ -581,8 +595,25 @@ create procedure sign_request (in meth varchar := 'GET', in url varchar, in para
 }
 ;
 
+create procedure keys_request (in consumer varchar) __SOAP_HTTP 'text/plain'
+{
+  declare options varchar;
+
+  options := '';
+  for (select A_NAME, A_KEY from OAUTH..APP_REG, DB.DBA.SYS_USERS where A_OWNER = U_ID and U_NAME = consumer) do
+  {
+    options := options || sprintf ('<option value="%V">%V</option>', A_KEY, A_NAME);
+  }
+  return options;
+}
+;
+
 grant execute on request_token to "OAuth";
 grant execute on access_token to "OAuth";
 grant execute on authorize to "OAuth";
+
+grant execute on get_consumer_key to "OAuth";
+grant execute on sign_request to "OAuth";
+grant execute on keys_request to "OAuth";
 
 use DB;

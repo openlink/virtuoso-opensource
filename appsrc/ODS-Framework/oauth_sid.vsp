@@ -1,0 +1,151 @@
+<html>
+  <?vsp
+    declare sid, consumer, consumer_key, srv, res, ret_url, url, tmp varchar;
+    declare hostURL varchar;
+
+    declare exit handler for sqlstate '*' { goto _default; };
+
+    if (is_http_ctx ())
+    {
+      hostURL := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
+      if (isstring (hostURL) and strchr (hostURL , ':') is null)
+      {
+        declare hp varchar;
+        declare hpa any;
+
+        hp := sys_connected_server_address ();
+        hpa := split_and_decode ( hp , 0 , '\0\0:');
+        hostURL := hostURL || ':' || hpa [1];
+      }
+      goto _exit;
+    }
+
+  _default:;
+    hostURL := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (hostURL is null)
+    {
+      hostURL := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+        hostURL := hostURL || ':' || server_http_port ();
+    }
+
+  _exit:;
+    if (hostURL not like 'http://%')
+      hostURL := 'http://' || hostURL;
+
+
+    consumer := {?'consumer'};
+    consumer_key := {?'key'};
+    srv := sprintf ('%s/OAuth/', hostURL);
+    sid := null;
+
+    if ({?'rt'} is not null)
+    {
+      -- request new token for the session
+      url := srv||'request_token';
+      url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+      res := http_get (url);
+      sid := OAUTH..parse_response (sid, consumer_key, res);
+      OAUTH..set_session_data (sid, params);
+      ret_url := sprintf ('%s/ods/oauth_sid.vsp?ready=%U&consumer=%U', hostURL, sid, {?'name'});
+      -- call authorize
+      url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url);
+      http_status_set (301);
+      http_header (sprintf ('Location: %s\r\n', url));
+      return;
+    }
+    else if ({?'ready'} is not null) -- get access token
+    {
+      -- we go here when token above is authorized
+      sid := {?'ready'};
+      url := srv||'access_token';
+      consumer_key := OAUTH..get_consumer_key (sid);
+      url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+      res := http_get (url);
+      sid := OAUTH..parse_response (sid, consumer_key, res);
+    }
+  ?>
+  <head>
+    <link rel="stylesheet" type="text/css" href="openid_login.css" />
+    <title>OAuth Application Key</title>
+    <script type="text/javascript">
+      // OAT
+      var toolkitPath="/ods/oat";
+      var imagePath="/ods/images/oat/";
+
+      var featureList=["ajax2"];
+
+      function updateList()
+      {
+        var keys = $('key');
+        if (!keys) {return;}
+        var consumer = $('name');
+        if (!consumer) {return;}
+
+        // clear options
+        keys.innerHTML = '';
+
+        var S = '/OAuth/keys_request?consumer='+encodeURIComponent(consumer.value);
+        OAT.AJAX.GET(S, '', function(data) {keys.innerHTML = data;});
+      }
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
+  <body>
+    <div id="PG">
+      <div id="MD">
+        <div id="login_page">
+          <div id="id_col">
+            <div id="site_id">
+              <p><img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" /></p>
+            </div>
+          </div>
+          <div id="form_col">
+            <h1>OAuth Application Key for ODS Controllers</h1>
+	          <div id="login_form_ctr">
+              <div id="login_form">
+                <form method="POST">
+                  <input type="hidden" name="sid" value="<?V sid ?>"/>
+                  <?vsp
+                    if (sid is not null)
+                    {
+                      http (sprintf ('<br/> <b>SID:</b> %s<br/>', sid));
+                    }
+                  ?>
+                  <br/>
+                  <b>User:</b>
+                  <br/>
+                  <input type="text" name="name" id="name" value="<?V consumer ?>" onblur="javascript: updateList();"/>
+                  <br/><br/>
+                  <b>Application:</b>
+                  <br/>
+                  <select name="key" id="key">
+                    <?vsp for (select a_name, a_key from OAUTH..APP_REG, DB.DBA.SYS_USERS where A_OWNER = U_ID and U_NAME = consumer) do { ?>
+                      <option value="<?V a_key ?>" <?vsp if (consumer_key = a_key) http ('selected'); ?>><?V a_name ?></option>
+                    <?vsp } ?>
+                  </select>
+                  <br/>
+                  <br/>
+                  <input type="submit" value="Execute" name="rt" />
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="FT">
+        <div id="FT_LC">
+          <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="images/virt_power_no_border.png" border="0"/>
+          </a>
+        </div>
+        <div id="FT_RC"><a href="/ods/faq.html">FAQ</a> |
+          <a href="/ods/privacy.html">Privacy</a> |
+          <a href="/ods/rabuse.vspx">Report Abuse</a>
+          <div class="copyright">
+            Copyright &copy; 1999-2008 OpenLink Software
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
