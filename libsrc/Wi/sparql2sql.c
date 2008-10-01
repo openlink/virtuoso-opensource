@@ -2096,7 +2096,7 @@ sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
     NULL, NULL,
     sparp_gp_trav_check_if_local, NULL, NULL /*!!!TBD add*/,
     NULL );
-  return (SPAR_GPT_COMPLETED & res);
+  return !(SPAR_GPT_COMPLETED & res);
 }
 
 int sparp_gp_trav_expn_reads_equiv (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)

@@ -9405,6 +9405,7 @@ host_found:
     {
       set TRANSACTION_TIMEOUT=timeout;
     }
+  __set_user_id ('SPARQL');
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas);
@@ -11160,7 +11161,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-09-11 0002'
+                virtrdf:version '2008-10-01 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

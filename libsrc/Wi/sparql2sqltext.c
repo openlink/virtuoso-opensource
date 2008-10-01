@@ -2479,10 +2479,24 @@ Without the special optization it becomes iri_to_id ('graph iri string from view
       (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, right) )
     {
-      if ((BOP_NEQ == ttype) && (IS_BOX_POINTER (left_vmode)) && !left_vmode->qmfOkForAnySqlvalue)
-        min_mode = SSG_VALMODE_SQLVAL;
-      else
+      if ((BOP_NEQ != ttype) || !(IS_BOX_POINTER (left_vmode)) || left_vmode->qmfOkForAnySqlvalue)
+        {
       min_mode = left_vmode;
+      goto vmodes_found; /* see below */
+    }
+      if (-1 == left_restr_bits)
+        left_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, left);
+      if (-1 == right_restr_bits)
+        right_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, right);
+      if ((left_vmode->qmfIsSubformatOfLongWhenRef) &&
+        (SPART_VARR_IS_REF & left_restr_bits) &&
+        (SPART_VARR_IS_REF & right_restr_bits) &&
+        !sparp_tree_is_global_expn (ssg->ssg_sparp, left) )
+        {
+          min_mode = left_vmode;
+          goto vmodes_found; /* see below */
+        }
+      min_mode = SSG_VALMODE_SQLVAL;
       goto vmodes_found; /* see below */
     }
   if (!bop_is_comparison && (SSG_VALMODE_SQLVAL == left_vmode) &&
@@ -5713,6 +5727,7 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
   quad_map_t *qm;
   dk_set_t common_tblopts = ssg->ssg_sparp->sparp_env->spare_common_sql_table_options;
   dk_set_t tblopts = common_tblopts;
+  caddr_t active_inference;
 #ifdef DEBUG
   if (1 != BOX_ELEMENTS_0 (tc_list))
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_table_exp(): qm_list does not contain exactly one qm");
@@ -5742,18 +5757,14 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_A
       ssg_qr_uses_table (ssg, qm->qmTableName);
       ssg_puts (" AS ");
       ssg_prin_id (ssg, tabid);
-      opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
-      if (NULL != opts)
-      {
-        int idx;
-          caddr_t active_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, opts);
-        if (NULL == active_inference)
           active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
-        if (NULL != active_inference)
-          t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
+      opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
           if (NULL != opts)
             {
-              int sav_ctr;
+          int idx;  int sav_ctr;
+          caddr_t local_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, opts);
+          if (NULL != local_inference)
+            active_inference = local_inference;
               for (sav_ctr = SAME_AS__VARIANT_COUNT; sav_ctr--; /* no step */)
                 {
                   SPART *val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, same_as__keys[sav_ctr], opts);
@@ -5761,7 +5772,8 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_A
                     has_table_options = 1;
                 }
             }
-      }
+      if (NULL != active_inference)
+        t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
       if (NULL != tblopts)
         has_table_options = 1;
       if (has_table_options)
