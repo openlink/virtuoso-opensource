@@ -154,6 +154,8 @@ sparp_ctor_fields_are_disjoin_with_where_pattern (sparp_t *sparp, SPART **ctor_f
               }
             END_DO_BOX_FAST;
             return CTOR_MAY_INTERSECTS_WHERE;
+          case SELECT_L:
+            return CTOR_MAY_INTERSECTS_WHERE;
           default: GPF_T1 ("sparp_" "ctor_triple_is_disjoin_with_where_pattern (): wrong gp subtype");
           }
       }
