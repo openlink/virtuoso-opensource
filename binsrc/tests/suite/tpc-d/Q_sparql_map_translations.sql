@@ -419,8 +419,6 @@ where
 ;
 
 WRITE_TRANSLATIONS ('Q15', '
-insert into OUT_Q15 select * from (
-sparql
 define sql:signal-void-variables 1
 prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
