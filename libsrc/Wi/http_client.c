@@ -790,6 +790,20 @@ http_cli_get_resp_hdr (http_cli_ctx * ctx, caddr_t hdr_match)
   return (NULL);
 }
 
+static caddr_t *
+http_cli_get_resp_headers (http_cli_ctx * ctx)
+{
+  dk_set_t hdrs = NULL;
+  caddr_t * head;
+  DO_SET (caddr_t, line, &(ctx->hcctx_resp_hdrs))
+    {
+      dk_set_push (&hdrs, box_dv_short_string (line));
+    }
+  END_DO_SET();
+  head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
+  return (head);
+}
+
 HC_RET
 http_cli_read_resp_body (http_cli_ctx * ctx)
 {
@@ -1579,14 +1593,17 @@ http_cli_resp_reset (http_cli_ctx * ctx)
 }
 
 HC_RET
-http_cli_send_request (http_cli_ctx * ctx)
+http_cli_send_request_1 (http_cli_ctx * ctx, int connect)
 {
   int ret = HC_RET_OK;
 
   do
     {
       http_cli_req_init (ctx);
+      if (connect)
+	{
       CATCH_ABORT (http_cli_connect, ctx, ret);
+	}
       ctx->hcctx_req_start_time = get_msec_real_time ();
       CATCH_ABORT (http_cli_send_req, ctx, ret);
     }
@@ -1617,6 +1634,12 @@ http_cli_read_response (http_cli_ctx * ctx)
   return (ret);
 }
 
+
+HC_RET
+http_cli_send_request (http_cli_ctx * ctx)
+{
+  return http_cli_send_request_1 (ctx, 1);
+}
 
 
 HC_RET
@@ -1805,8 +1828,159 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (ret);
 }
 
+caddr_t
+bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_set_t reqs = NULL; /* requests */
+  dk_set_t ress = NULL; /* responses */
+  char* me = "http_pipeline";
+  caddr_t * urls = (caddr_t *)bif_array_or_null_arg (qst, args, 0, me);
+  caddr_t ret = NULL;
+  caddr_t _err_ret = NULL;
+  int meth = HC_METHOD_GET;
+  int inx, len;
+  caddr_t * ents = NULL;
+  caddr_t http_hdr = NULL;
+  dk_session_t * ses = NULL;
+  caddr_t host = NULL;
+
+  if (BOX_ELEMENTS (args) > 1)
+    {
+      caddr_t method = bif_string_or_null_arg (qst, args, 1, me);
+      if (method)
+	{
+	  if (!stricmp (method, "GET"))
+	    meth = HC_METHOD_GET;
+	  else if (!stricmp (method, "POST"))
+	    meth = HC_METHOD_POST;
+	  else if (!stricmp (method, "HEAD"))
+	    meth = HC_METHOD_HEAD;
+	  else if (!stricmp (method, "PUT"))
+	    meth = HC_METHOD_PUT;
+	}
+    }
+  if (BOX_ELEMENTS (args) > 2)
+    http_hdr = bif_string_or_null_arg (qst, args, 2, me);
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      ents = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, me);
+      if (ARRAYP (ents) && ARRAYP (urls) && BOX_ELEMENTS (ents) != BOX_ELEMENTS (urls))
+	sqlr_new_error ("22023", "HTC01", "Entities must be same number as URLs");
+    }
+  if (!ARRAYP (ents) && !ARRAYP (urls))
+    sqlr_new_error ("22023", "HTC01", "Either URLs or entities must be an array");
+
+  len = ARRAYP (urls) ? BOX_ELEMENTS (urls) : BOX_ELEMENTS (ents);
+
+  for (inx = 0; inx < len; inx ++)
+    {
+      http_cli_ctx * ctx;
+      caddr_t url = ARRAYP (urls) ? urls[inx] : (caddr_t) urls;
+
+      if (!DV_STRINGP (url))
+	{
+	  *err_ret = srv_make_new_error ("22023", "HTC03", "URLs must be array of strings or single string");
+	  goto error_ret;
+	}
+
+      ctx = http_cli_std_init (url);
+      http_cli_set_ua_id (ctx, http_client_id_string);
+      http_cli_set_method (ctx, meth);
+      if (http_hdr)
+	http_cli_add_req_hdr (ctx, http_hdr);
+
+      if (ents && ARRAYP(ents))
+	{
+	  caddr_t body = ents[inx];
+	  if (!DV_STRINGP (body))
+	    {
+	      *err_ret = srv_make_new_error ("22023", "HTC03", "Entities must be array of strings or null");
+	      goto error_ret;
+	    }
+	  session_buffered_write (ctx->hcctx_req_body, body, box_length (body) - 1);
+	  if (meth == HC_METHOD_POST && (!http_hdr ||
+		!nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "Content-Type:")))
+	    http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
+	}
+      if (!host)
+	host = ctx->hcctx_host;
+      else if (0 != strcmp (host, ctx->hcctx_host))
+	{
+	  *err_ret = srv_make_new_error ("22023", "HTC02", "The pipeline requests must be to same host");
+	  goto error_ret;
+	}
+      dk_set_push (&reqs, ctx);
+    }
+  
+  reqs = dk_set_nreverse (reqs);
+
+  IO_SECT(qst);
+  ses = http_dks_connect (host, &_err_ret);
+  if (_err_ret)
+    sqlr_resignal (_err_ret);
+
+  DO_SET (http_cli_ctx *, ctx, &reqs)
+    {
+      ctx->hcctx_http_out = ses;
+      http_cli_send_request_1 (ctx, 0);
+      _err_ret = http_cli_get_err (ctx);
+      if (_err_ret)
+	{
+	  _err_ret = box_copy_tree (_err_ret);
+	  sqlr_resignal (_err_ret);
+	}
+    }
+  END_DO_SET ();
+  DO_SET (http_cli_ctx *, ctx, &reqs)
+    {
+      caddr_t resp;
+      caddr_t hdr;
+      resp = NULL;
+      if (!http_cli_read_response (ctx))
+	{ 
+	  if (ctx->hcctx_resp_body)
+	    resp = box_copy_tree (ctx->hcctx_resp_body);
+	  else
+	    resp = NEW_DB_NULL;
+	}
+      hdr = (caddr_t) http_cli_get_resp_headers (ctx);
+      dk_set_push (&ress, list (2, resp, hdr));
+      _err_ret = http_cli_get_err (ctx);
+      if (_err_ret)
+	{
+	  dk_free_tree (list_to_array (dk_set_nreverse (ress)));
+	  ress = NULL;
+	  _err_ret = box_copy_tree (_err_ret);
+	  sqlr_resignal (_err_ret);
+	}
+    }
+  END_DO_SET ();
+  END_IO_SECT (err_ret);
+error_ret:
+  if (ses)
+    {
+      PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
+    }
+  DO_SET (http_cli_ctx *, ctx, &reqs)
+    {
+      ctx->hcctx_http_out = NULL;
+      http_cli_ctx_free (ctx);
+    }
+  END_DO_SET ();
+  dk_set_free (reqs);
+  ret = list_to_array (dk_set_nreverse (ress));
+  if (*err_ret)
+    {
+      dk_free_tree (ret);
+      ret = NULL;
+    }
+  return (ret);
+}
+
 void
 bif_http_client_init (void)
 {
   bif_define_typed ("http_client_internal", bif_http_client, &bt_varchar);
+  bif_define_typed ("http_pipeline", bif_http_pipeline, &bt_any);
 }

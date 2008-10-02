@@ -6249,33 +6249,62 @@ bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_ses_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int n_read = 0;
   caddr_t volatile res;
-  dk_session_t * volatile ses;
-  int volatile error = 0;
+  dk_session_t * volatile ses, * out;
+  int volatile error = 0, ret_ses = 0;
   long n;
+  char buff [4096];
+  int readed = 0;
+  volatile int to_read = 0;
+  volatile int to_read_len = 0;
 
   ses = http_session_arg (qst, args, 0, "ses_read");
   n = bif_long_arg (qst, args, 1, "ses_read");
+  if (BOX_ELEMENTS (args) > 2)
+    ret_ses = bif_long_arg (qst, args, 2, "ses_read");
 
-  if (n > 10000000)
+
+  if (n > 10000000 && 0 == ret_ses)
     sqlr_new_error ("22023", ".....", "string too long in ses_read");
 
+  out = strses_allocate ();
   IO_SECT (qst);
+  to_read = n;
+  to_read_len = sizeof (buff);
+  do
+    {
+
+      if (to_read < to_read_len)
+	to_read_len = to_read;
   CATCH_READ_FAIL (ses)
     {
-      res = dk_alloc_box_zero (n + 1, DV_STRING);
-      session_buffered_read_n (ses, res, n, &n_read);
+	  readed = session_buffered_read (ses, buff, to_read_len);
     }
   FAILED
     {
-      dk_free_box (res);
+	  strses_flush (out);
+	  dk_free_box ((box_t) out);
       error = 1;
+	  goto err_end;
     }
   END_READ_FAIL (ses);
+
+      to_read -= readed;
+      if (readed > 0)
+	session_buffered_write (out, buff, readed);
+    }
+  while (to_read > 0);
+err_end:      
   END_IO_SECT (err_ret);
   if (error)
     return dk_alloc_box (0, DV_DB_NULL);
+  else if (0 == ret_ses)
+    {
+      res = strses_string (out);
+      dk_free_box ((box_t) out);
+    }
+  else
+    res = (caddr_t) out;
   return res;
 }
 
