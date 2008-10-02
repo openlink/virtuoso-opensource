@@ -486,7 +486,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	/* names */
 <SQL>"\\"[A-Za-z_\x80-\xFF][A-Za-z0-9_:\\\x80-\xFF]*	TOKBOX(1, NAME);
 	/* the commented double-quote below is to cure syntax highlighting */
-<SQL>\"([^\"\n]|(\"\"))*\"	{ /*"*/ TOKBOX_QUOTED(1, NAME); }
+<SQL>\"([^\"\n]|(\"\"))+\"	{ /*"*/ TOKBOX_QUOTED(1, NAME); }
 	/*<SQL>\"[^\"\n]*\"	TOKBOX_QUOTED(1, NAME)*/
 <SQL>[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]* {
   const struct keyword *k;

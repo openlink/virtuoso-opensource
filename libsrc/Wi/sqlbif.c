@@ -9541,10 +9541,10 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
 
-  if (box_length (q) >= MAX_NAME_LEN)
+  if (box_length (q) >= MAX_NAME_LEN || strlen (q) < 1)
     {
       dk_free_box (q);
-      sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters", MAX_NAME_LEN);
+      sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters nor empty string", MAX_NAME_LEN);
     }
   sch_normalize_new_table_case (isp_schema (qi->qi_space), q, box_length (q), NULL, 0);
   semaphore_enter (parse_sem);

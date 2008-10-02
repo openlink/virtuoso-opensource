@@ -218,6 +218,8 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
     _sql_enable := cast (get_keyword_ucase ('SQL_ENABLE', options, 1) as integer);
     _dav_enable := cast (get_keyword_ucase ('DAV_ENABLE', options, 0) as integer);
     _login_qual := get_keyword_ucase ('LOGIN_QUALIFIER', options, 'DB');
+    if (not length (_login_qual))
+      signal ('22023', 'Qualifier cannot be empty string');
     _prim_group := get_keyword_ucase ('PRIMARY_GROUP', options, NULL);
 
     _u_e_mail := get_keyword_ucase ('E-MAIL', options, '');
@@ -376,6 +378,8 @@ USER_SET_QUALIFIER (in _name varchar, in qual varchar)
 {
   if (exists (select 1 from SYS_USERS where U_NAME = _name and U_IS_ROLE = 0))
     {
+      if (not length (qual))
+	signal ('22023', 'Qualifier cannot be empty string');
       update DB.DBA.SYS_USERS set U_DATA = concatenate ('Q ', qual), U_DEF_QUAL = qual where U_NAME = _name;
       sec_set_user_data (_name, concatenate ('Q ', qual));
       log_text ('sec_set_user_data(?,?)', _name, concatenate ('Q ', qual));
@@ -641,7 +645,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
       U_SQL_ENABLE = _sql_enable,
       U_DAV_ENABLE = _dav_enable,
       U_DEF_QUAL = _login_qual,
-      U_DATA = case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end,
+      U_DATA = case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end,
       U_GROUP = _u_group_id,
       U_E_MAIL = _u_e_mail,
       U_FULL_NAME = _u_full_name,

@@ -5553,6 +5553,7 @@ const char *proc_add_col_recursive =
 const char *proc_user_qual =
 "create procedure user_set_qualifier_1 (in u varchar, in q varchar) "
 "{ "
+"  if (not length (q)) signal ('22023', 'Qualifier cannot be empty string');"
 "  update DB.DBA.SYS_USERS set U_DATA = concatenate ('Q ', q) where U_NAME = u;"
 "  sec_set_user_data (u, concatenate ('Q ', q));"
 "}";
