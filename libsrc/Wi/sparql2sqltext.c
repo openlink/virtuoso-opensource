@@ -5603,7 +5603,7 @@ from_printed:
                 save_where_l_printed = ssg->ssg_where_l_printed;
                 save_where_l_text = ssg->ssg_where_l_text;
                 ssg->ssg_where_l_printed = 0;
-                ssg->ssg_where_l_text = " WHERE";
+  		ssg->ssg_where_l_text = " WHERE ";
                 DO_SET (caddr_t, cond, &queued_row_filters)
                   {
                     ssg_print_where_or_and (ssg, "inter-alias join cond");
