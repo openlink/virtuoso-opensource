@@ -3174,10 +3174,23 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
 
 int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  if (SPAR_TRIPLE != curr->type) /* Not a triple ? -- nothing to do */
-    return 0;
+  switch (curr->type)
+    {
+    case SPAR_TRIPLE:
   sparp_refresh_triple_cases (sparp, curr);
   return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
+    case SPAR_GP:
+      if (SELECT_L == curr->_.gp.subtype)
+        {
+          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+          if (sparp_rewrite_qm_optloop (sub_sparp, (ptrlong)common_env))
+            sparp->sparp_rewrite_dirty = 1;
+          sparp_up_from_sub (sparp, curr, sub_sparp);
+          return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
+        }
+      break;
+    }
+  return 0;
 }
 
 
@@ -4527,6 +4540,10 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
   sparp->sparp_rewrite_dirty = 0;
 /* Converting to GP_UNION of every triple such that many quad maps contains triples that matches the mapping pattern */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, (void *)((ptrlong)opt_ctr),
+    sparp_gp_trav_refresh_triple_cases, sparp_gp_trav_multiqm_to_unions,
+    NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
+    NULL );
+  sparp_trav_out_clauses (sparp, sparp->sparp_expr, (void *)((ptrlong)opt_ctr),
     sparp_gp_trav_refresh_triple_cases, sparp_gp_trav_multiqm_to_unions,
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
