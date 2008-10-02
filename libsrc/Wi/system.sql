@@ -6023,7 +6023,7 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 
 -- RDF Schema objects
 
-create procedure view_from_tbl (in _dir varchar, in _tbls any)
+create procedure VIEW_FROM_TBL (in _dir varchar, in _tbls any)
 {
    declare create_class_stmt, create_view_stmt, prefix, ns, uriqa_str, ret any;
 
