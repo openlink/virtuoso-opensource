@@ -171,7 +171,7 @@ create procedure "VAD"."DBA"."VAD_DAV_GET_RES" (
 create procedure "VAD"."DBA"."VAD_DAV_UPLOAD_RES" (
   inout ini any,
   in name varchar,
-  in data any,
+  inout data any,
   in dav_owner varchar,
   in dav_grp varchar,
   in dav_perm varchar) returns integer
@@ -184,7 +184,7 @@ create procedure "VAD"."DBA"."VAD_DAV_UPLOAD_RES" (
   declare ret integer;
   usr := 'dav';
   pwd := pwd_magic_calc('dav', (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME='dav'), 1);
-  ret := "DB"."DBA"."DAV_RES_UPLOAD" (name, data, '', dav_perm, dav_owner, dav_grp, usr, pwd);
+  ret := "DB"."DBA"."DAV_RES_UPLOAD_STRSES" (name, data, '', dav_perm, dav_owner, dav_grp, usr, pwd);
   return ret;
 }
 ;
@@ -507,7 +507,7 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
   _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos);
   if (0 <> _len) 
-    data := ses_read (ses, _len);
+    data := ses_read (ses, _len, 1);
   else
     data := '';
   pos := pos + _len;
