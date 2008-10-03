@@ -3306,9 +3306,12 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 {
   declare urihost varchar;
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  for select cast (RES_CONTENT as varchar) as content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
+  for select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
   {
-    DB.DBA.RDF_LOAD_RDFXML (content1, 'http://www.openlinksw.com/schemas/xbrl/', 'http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
+	declare str_out any;
+	str_out := string_output();
+	http(RES_CONTENT, str_out);
+    DB.DBA.RDF_LOAD_RDFXML (str_out, 'http://www.openlinksw.com/schemas/xbrl/', 'http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
   }
 }
 ;
