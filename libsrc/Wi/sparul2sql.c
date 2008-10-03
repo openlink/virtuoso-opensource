@@ -57,6 +57,9 @@ spar_compose_report_flag (sparp_t *sparp)
   return t_box_num (((NULL != fmtname) && !strcmp (fmtname, "_JAVA_")) ? 0 : 1);
 }
 
+extern int sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields);
+extern int sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_fields, SPART *req, int the_query_is_topmost);
+
 int
 sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields)
 {
@@ -89,7 +92,8 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
         case SPAR_VARIABLE:
           {
             sparp_equiv_t *src_equiv = sparp_equiv_get_ro (top_eqs, top_eq_count,
-              top_gp, ctor_fld, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT );
+              top_gp, ctor_fld, SPARP_EQUIV_GET_NAMESAKES );
+            if (NULL != src_equiv) /* src_equiv may be NULL in subqueries */
             sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~1); 
             break;
           }
@@ -125,43 +129,67 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
 }
 
 int
-sparp_ctor_fields_are_disjoin_with_where_pattern (sparp_t *sparp, SPART **ctor_fields, SPART *pattern)
+sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  switch (SPART_TYPE (pattern))
+  switch (curr->type)
     {
     case SPAR_TRIPLE:
-      return sparp_ctor_fields_are_disjoin_with_where_fields (sparp, ctor_fields, pattern->_.triple.tr_fields);
+      if (CTOR_MAY_INTERSECTS_WHERE ==
+        sparp_ctor_fields_are_disjoin_with_where_fields (sparp, (SPART **)common_env, curr->_.triple.tr_fields) )
+        return SPAR_GPT_COMPLETED;
+      return SPAR_GPT_NODOWN;
     case SPAR_GP:
+      if (SELECT_L == curr->_.gp.subtype)
       {
-        int memb_ctr;
-        switch (pattern->_.gp.subtype)
-          {
-          case UNION_L:
-            DO_BOX_FAST (SPART *, memb, memb_ctr, pattern->_.gp.members)
-              {
-                if (CTOR_MAY_INTERSECTS_WHERE ==
-                  sparp_ctor_fields_are_disjoin_with_where_pattern (sparp, ctor_fields, memb) )
-                  return CTOR_MAY_INTERSECTS_WHERE;
+#if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
+          return SPAR_GPT_COMPLETED;
+#else
+          int isect_res;
+          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+          isect_res = sparp_ctor_fields_are_disjoin_with_data_gathering (sub_sparp, (SPART **)common_env, curr->_.gp.subquery, 1);
+          sparp_up_from_sub (sparp, curr, sub_sparp);
+          if (CTOR_MAY_INTERSECTS_WHERE == isect_res)
+            return SPAR_GPT_COMPLETED;
+          return SPAR_GPT_NODOWN;
+#endif
               }
-            END_DO_BOX_FAST;
-            return CTOR_DISJOIN_WHERE;
-          case 0: case WHERE_L: case OPTIONAL_L:
-            DO_BOX_FAST (SPART *, memb, memb_ctr, pattern->_.gp.members)
-              {
-                if (CTOR_DISJOIN_WHERE ==
-                  sparp_ctor_fields_are_disjoin_with_where_pattern (sparp, ctor_fields, memb) )
-                  return CTOR_DISJOIN_WHERE;
+      break;
               }
-            END_DO_BOX_FAST;
+  return 0;
+}
+
+
+int
+sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_fields, SPART *req, int the_query_is_topmost)
+{
+  int res;
+  SPART **saved_orig_retvals = NULL;
+  SPART **saved_retvals = NULL;
+  res = sparp_gp_trav (sparp, req->_.req_top.pattern, ctor_fields,
+    sparp_gp_trav_find_isect_with_ctor, NULL,
+    NULL, NULL, sparp_gp_trav_find_isect_with_ctor,
+    NULL );
+  if (res & SPAR_GPT_COMPLETED)
             return CTOR_MAY_INTERSECTS_WHERE;
-          case SELECT_L:
-            return CTOR_MAY_INTERSECTS_WHERE;
-          default: GPF_T1 ("sparp_" "ctor_triple_is_disjoin_with_where_pattern (): wrong gp subtype");
-          }
-      }
-    default: GPF_T1 ("sparp_" "ctor_triple_is_disjoin_with_where_pattern (): wrong pattern type");
+  if (the_query_is_topmost)
+    {
+      saved_orig_retvals = req->_.req_top.orig_retvals;
+      req->_.req_top.orig_retvals = NULL;
+      saved_retvals = req->_.req_top.retvals;
+      req->_.req_top.retvals = NULL;
     }
-  return 0; /* never reached */
+  res = sparp_trav_out_clauses (sparp, req, ctor_fields,
+    sparp_gp_trav_find_isect_with_ctor, NULL,
+    NULL, NULL, sparp_gp_trav_find_isect_with_ctor,
+    NULL );
+  if (the_query_is_topmost)
+    {
+      req->_.req_top.orig_retvals = saved_orig_retvals;
+      req->_.req_top.retvals = saved_retvals;
+    }
+  if (res & SPAR_GPT_COMPLETED)
+    return CTOR_MAY_INTERSECTS_WHERE;
+  return CTOR_DISJOIN_WHERE;
 }
 
 typedef struct ctor_var_enumerator_s
@@ -582,7 +610,7 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
         (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
         t_set_push (&positions_with_bnodes, ((void *)((ptrlong)tctr)));
       if (CTOR_DISJOIN_WHERE ==
-        sparp_ctor_fields_are_disjoin_with_where_pattern (sparp, quad_fields, top->_.req_top.pattern) )
+        sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
         {
           t_set_push (&good_positions, ((void *)((ptrlong)tctr)));
           bad_triple_count--;
@@ -663,7 +691,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
       quad_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
       quad_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
       if (CTOR_DISJOIN_WHERE ==
-        sparp_ctor_fields_are_disjoin_with_where_pattern (sparp, quad_fields, top->_.req_top.pattern) )
+        sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
         {
           t_set_push (&good_positions, ((void *)((ptrlong)del_tctr)));
           bad_del_triple_count--;
@@ -692,7 +720,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
         (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
         t_set_push (&positions_with_bnodes, ((void *)((ptrlong)ins_tctr)));
       if (CTOR_DISJOIN_WHERE !=
-        sparp_ctor_fields_are_disjoin_with_where_pattern (sparp, quad_fields, top->_.req_top.pattern) )
+        sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
         goto ins_is_bad; /* see below */
       for (del_tctr = all_del_triple_count; del_tctr--; /* no step */)
         {
