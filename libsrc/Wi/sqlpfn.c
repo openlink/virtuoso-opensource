@@ -1007,7 +1007,8 @@ sqlp_proc_name (char *q, size_t max_q, char *o, size_t max_o, char *mn, char *fn
 ST *
 sqlp_union_tree_select (ST * tree)
 {
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 4000))
+  char margin;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &margin, 6000))
     yyerror ("Nesting of union to deep. If using SPARQL use more specific query specifying graph and predicates.");
   if (ST_P (tree, UNION_ALL_ST) || ST_P (tree, UNION_ST)
       || ST_P (tree, EXCEPT_ST) || ST_P (tree, EXCEPT_ALL_ST)
@@ -1020,7 +1021,8 @@ sqlp_union_tree_select (ST * tree)
 ST *
 sqlp_union_tree_right (ST * tree)
 {
-  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 4000))
+  char margin;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &margin, 6000))
     yyerror ("Nesting of union to deep. If using SPARQL use more specific query specifying graph and predicates.");
   if (ST_P (tree, UNION_ALL_ST) || ST_P (tree, UNION_ST)
       || ST_P (tree, EXCEPT_ST) || ST_P (tree, EXCEPT_ALL_ST)
