@@ -3670,7 +3670,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 
   post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
 
-  if (is_http_ctx () and  upper(http_current_charset ()) = 'UTF-8')
+  if (is_http_ctx ())
     {
       xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
       auto_href := 1;
