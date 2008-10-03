@@ -850,6 +850,58 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
 }
 ;
 
+create procedure ODS.ODS_API."user.annotation.add" (
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+  declare _u_id int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  insert into DB.DBA.WA_USER_RELATED_RES (WUR_U_ID, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI)
+    values (_u_id, claimValue, claimIri, claimRelation);
+  rc := (select max (WUR_ID) from DB.DBA.WA_USER_RELATED_RES);
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.annotation.delete" (
+  in claimIri varchar,
+  in claimRelation varchar,
+  in claimValue varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+  declare _u_id int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  delete
+    from DB.DBA.WA_USER_RELATED_RES
+   where WUR_U_ID = _u_id
+     and WUR_LABEL = claimValue
+     and WUR_SEEALSO_IRI = claimIri
+     and WUR_P_IRI = claimRelation;
+  rc := 1;
+  return ods_serialize_int_res (rc);
+}
+;
+
 create procedure ODS.ODS_API.appendProperty (
   inout V any,
   in propertyName varchar,
@@ -1337,7 +1389,10 @@ grant execute on ODS.ODS_API."user.tagging_rules.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.add" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.update" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.annotation.add" to ODS_API;
+grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
+
 grant execute on ODS.ODS_API."instance.create" to ODS_API;
 grant execute on ODS.ODS_API."instance.update" to ODS_API;
 grant execute on ODS.ODS_API."instance.delete" to ODS_API;
