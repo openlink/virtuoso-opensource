@@ -902,10 +902,11 @@ OAT.MSG = { /* messages */
 	API_LOADED:22,
 	STORE_LOADING:23,
 	STORE_LOADED:24,
-	STORE_ENABLED:25,
-	STORE_DISABLED:26,
-	STORE_CLEARED:27,
-	STORE_REMOVED:28,
+	STORE_LOAD_FAILED:25,
+	STORE_ENABLED:26,
+	STORE_DISABLED:27,
+	STORE_CLEARED:28,
+	STORE_REMOVED:29,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }

@@ -12,74 +12,93 @@
 */
 
 OAT.Dereference = {
-	pragmas:{},
+	options:{
+		endpoint:"/proxy",	/* can be specified as urlParam */
 
-	endpoint:"/proxy?url=", /* this can be changed to generic domain only 
-				   when used from inside chrome:// 
-				   or similar because of XSS security restrictions */
+		urlParams:{},		/* key->value pairs */
+
+		endpointOpts:{
 	virtuoso:true, /* if virtuoso proxy is used */
-	virt_proxy_ver:1, /* Normal proxy type - default */
-	setPragmas:function(pragmaObj) {
-		for (var p in pragmaObj) { 
-			if (pragmaObj[p]) {
-				this.pragmas[p] = pragmaObj[p];
-			} else {
-				delete(this.pragmas[p]);
-			} 
-		}
+			proxyVersion:1	/* normal proxy type - default */
 	},
 
-	clearPragmas:function() {
-		this.pragmas = {};
+		ajaxOpts:{}
 	},
 
-	go:function(url,callback,optObj) {
+	addParam:function(url, param, value) {
+		if (url.match(/.*\?.*/)) {
+			return url + "&" + param + "=" + value;
+		} 
+		return url + "?" + param + "=" + value;
+	},
 
-		var endpoint = optObj.endpoint || this.endpoint;
+	copy:function(srcObj,dstObj,propObj) {
+		if (!propObj) { propObj = srcObj; }
+		for (var p in propObj) { dstObj[p] = srcObj[p]; }
+	},
 
-		var addParam = function(uri, param, value) {
-			if (uri.match(/.*\?.*/)) {
-				return uri + "&" + param + "=" + value;
-			} else {
-				return uri + "?" + param + "=" + value;
-			}
+	go:function(u,callback,optObj) {
+		var ajaxOpts = {};
+		var endpointOpts = {};
+		var urlParams = {};
+
+		/* deep copy defaults */
+		this.copy(this.options.ajaxOpts,ajaxOpts);
+		this.copy(this.options.endpointOpts,endpointOpts);
+		this.copy(this.options.urlParams,urlParams);
+
+		/* now the settings */
+		this.copy(optObj.ajaxOpts,ajaxOpts);
+		this.copy(optObj.endpointOpts,endpointOpts);
+		this.copy(optObj.urlParams,urlParams);
+
+		/* endpoint can be specified directly, or via urlparams */
+
+		var endpoint = optObj.endpoint || this.options.endpoint;
+		if ("endpoint" in urlParams) { 
+			endpoint = urlParams["endpoint"]; 
+			delete(urlParams["endpoint"]); 
 		}
 
-		if (this.virtuoso && url.match(/^http/i)) {
+		/* backward compat */
+		urlParams.url = urlParams.url || u;
+		var url = urlParams.url;
+
+		if (endpointOpts.virtuoso && url.match(/^http/i)) {
 			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
 			var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
-			var encoded = encodeURIComponent(r[1] + r[3]);
+			urlParams.url = encodeURIComponent(r[1] + r[3]);
 			
 			/* triplr-style endpoint cannot process URL params as they are passed through to the remote */
-		    	if (this.virt_proxy_ver != 1) {
-					optObj["noSecurityCookie"] = true;
+		   	if (endpointOpts.proxyVersion != 1) {
+				ajaxOpts["noSecurityCookie"] = true;
 		    	} else {
-					encoded = addParam(endpoint + encoded, "force", "rdf");
-			if (user) { encoded = addParam(encoded, "login", encodeURIComponent(user)); }
-			if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
-			if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
-			for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
-		    }
-
-		} else if (this.virtuoso && (url.match(/^(urn|doi|oai):/i))) {
-		    	if (this.virt_proxy_ver != 1) {
-				var encoded = this.endpoint + url;
-				optObj["noSecurityCookie"] = true;
+				encoded = this.addParam(endpoint, "force", "rdf");
+				if (user) { encoded = this.addParam(encoded, "login", encodeURIComponent(user)); }
+				if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
+				if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+				for (var p in urlParams) { encoded = this.addParam(encoded, p, urlParams[p]); }
+		   	}
+		} else if (endpointOpts.virtuoso && (url.match(/^(urn|doi|oai):/i))) {
+		    if (opt.endpointOpts.proxyVersion != 1) {
+				var encoded = endpoint + url;
+				ajaxOpts["noSecurityCookie"] = true;
 			} else {
-			var encoded = encodeURIComponent(url);
-				encoded = addParam(endpoint + encoded, "force", "rdf");
-			if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
-			if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
-			for (var p in this.pragmas) { encoded = addParam(encoded, p, this.pragmas[p]); }
+				urlParams.url = encodeURIComponent(url);
+				var encoded = this.addParam(endpoint, "force", "rdf");
+				if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
+				if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+				for (var p in urlParams) { encoded = this.addParam(encoded, p, urlParams[p]); }
 		    }
 		} else if (url.match(/^(urn|doi|oai|http):/i)) { /* other than Virtuoso: */
 			var encoded = endpoint + decodeURIComponent(url);
-			optObj["noSecurityCookie"] = true;
+			ajaxOpts["noSecurityCookie"] = true;
 		} else { /* relative uri */
 			var encoded = url;
 		}
-		var cb = function(data) { if (callback) { callback(endpoint,data); } }
-		OAT.AJAX.GET(encoded,false,cb,optObj);
+
+		var cb = function(data) { if (callback) { callback(data,{endpoint:endpoint,url:url,params:urlParams}); } }
+		OAT.AJAX.GET(encoded,false,cb,ajaxOpts);
 	}
 }
 OAT.Loader.featureLoaded("dereference");

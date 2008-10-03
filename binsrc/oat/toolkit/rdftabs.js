@@ -404,7 +404,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			var end = function() {
 				OAT.Dom.unlink(img);
 			}
-			self.parent.store.addURL(uri,start,end);
+			self.parent.store.addURL(uri,{ajaxOpts:{onstart:start,onend:end}});
 		});
 	}
 	

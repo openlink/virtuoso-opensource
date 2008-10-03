@@ -10,7 +10,7 @@
 
 /*
 	rb = new OAT.RDFStore(callback, optObj);
-	rb.addURL(url,onstart,onend,title,source);
+	rb.addURL(url,optObj);
 	rb.addTriples(triples,href);
 	rb.addXmlDoc(xmlDoc,href);
 	rb.disable(url); // must be dereferenced! 
@@ -43,8 +43,9 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
         this.labelProps = ["name","nick","label","title","summary","prefLabel"]; // properties used as labels
         
 	this.options = {
-		ajaxStart:false,
-		ajaxEnd:false
+		onstart:false,
+		onend:false,
+		onerror:false
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
@@ -71,11 +72,19 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.items = [];
 		
 	/* FIXME: passing an optObj here? */
-	this.addURL = function(u,onstart,onend,title,proxy) {
+	this.addURL = function(u,optObj) {
+		var opt = {};
+
+		for (var p in optObj) { opt[p] = optObj[p]; } 
+
+		/* fallback to defaults */
+		if (!opt.ajaxOpts) { opt.ajaxOpts = {}; }
+		for (var p in self.options) { if (!opt.ajaxOpts[p]) { opt.ajaxOpts[p] = self.options[p]; } }
+
+		var title = opt.title; delete(opt.title);
 		var url = u.toString().trim();
 		
-		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,url);
-		var cback = function(endpoint,str) {
+		var add = function(str,options) {
 			if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
 				var triples = OAT.N3.toTriples(str);
 			} else {
@@ -105,20 +114,27 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				
 				if (!title) {
                                         var t1 = self.simplify(t[1]);
-					if ((t[0]==url || t[0]==url+'/') && self.labelProps.find(t1)!=-1)
-						title = t[2];
+					if ((t[0]==url || t[0]==url+'/') && self.labelProps.find(t1)!=-1) { title = t[2]; }
 			}
 			}
-			self.addTriples(triples,url,title,endpoint);
-			OAT.MSG.send(this,OAT.MSG.STORE_LOADED,url);
+			self.addTriples(triples,url,title,options.endpoint);
+			OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:url});
 		}
-		var start = onstart ? onstart : self.options.ajaxStart;
-		var end = onend ? onend : self.options.ajaxEnd;
-		OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_TEXT,onend:end,onstart:start,endpoint:proxy});
+
+		var onerror = opt.ajaxOpts.onerror || false;
+
+		opt.ajaxOpts.onerror = function(xhr) {
+			if (onerror) { onerror(xhr); }
+			OAT.MSG.send(this,OAT.MSG.STORE_LOAD_FAILED,{url:url,xhr:xhr});
+		}
+		opt.ajaxOpts.type = OAT.AJAX.TYPE_TEXT;
+
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,{url:url});
+		OAT.Dereference.go(url,add,opt);
 	}
 	
 	this.addXmlDoc = function(xmlDoc,href) {
-		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,xmlDoc.baseURI);
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,{url:xmlDoc.baseURI});
 		var triples = OAT.RDF.toTriples(xmlDoc);
 		/* sanitize triples */
 		for (var i=0;i<triples.length;i++) {
@@ -126,7 +142,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			t[2] = t[2].replace(/<script[^>]*>/gi,'');
 		}
 		self.addTriples(triples,href);
-		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,xmlDoc.baseURI);
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:xmlDoc.baseURI});
 	}
 		
 	this.addTriples = function(triples,href,title,endpoint) {
@@ -152,7 +168,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.clear = function() {
 		self.items = [];
 		self.rebuild(true);
-		OAT.MSG.send(self,OAT.MSG.STORE_CLEARED);
+		OAT.MSG.send(self,OAT.MSG.STORE_CLEARED,{});
 	}
 		
 	this.remove = function(url) {
@@ -160,7 +176,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items.splice(index,1);
 		self.rebuild(true);
-		OAT.MSG.send(self,OAT.MSG.STORE_REMOVED,url);
+		OAT.MSG.send(self,OAT.MSG.STORE_REMOVED,{url:url});
 	}
 		
 	this.enable = function(url) {
@@ -168,7 +184,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items[index].enabled = true;
 		self.rebuild(true);
-		OAT.MSG.send(self,OAT.MSG.STORE_ENABLED,url);
+		OAT.MSG.send(self,OAT.MSG.STORE_ENABLED,{url:url});
 	}
 	
 	this.enableAll = function() {
@@ -181,7 +197,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		if (index == -1) { return; }
 		self.items[index].enabled = false;
 		self.rebuild(true);
-		OAT.MSG.send(self,OAT.MSG.STORE_DISABLED,url);
+		OAT.MSG.send(self,OAT.MSG.STORE_DISABLED,{url:url});
 	}
 
 	this.disableAll = function() {

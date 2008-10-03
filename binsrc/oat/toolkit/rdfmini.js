@@ -135,7 +135,7 @@ OAT.RDFMini = function(div,optObj) {
 	var ajaxStart = function() { OAT.Dom.show(self.throbber); }
 	var ajaxEnd = function() { OAT.Dom.hide(self.throbber); }
 
-	this.store = new OAT.RDFStore(self.reset,{ajaxStart:ajaxStart,ajaxEnd:ajaxEnd});
+	this.store = new OAT.RDFStore(self.reset,{onstart:ajaxStart,onend:ajaxEnd});
 	this.data = self.store.data;
 
 	this.getContent = function(data_,disabledActions) {

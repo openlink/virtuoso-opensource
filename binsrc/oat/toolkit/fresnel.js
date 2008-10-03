@@ -17,8 +17,8 @@
 OAT.Fresnel = function(optObj) {
 	var self = this;
 	this.options = {
-		ajaxStart:false,
-		ajaxEnd:false
+		onstart:false,
+		onend:false
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	this.callback = false;
