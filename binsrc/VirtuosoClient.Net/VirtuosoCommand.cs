@@ -337,7 +337,9 @@ namespace OpenLink.Data.Virtuoso
 			command.CommandText = this.CommandText;
 			command.CommandType = this.CommandType;
 			command.CommandTimeout = this.CommandTimeout;
+#if (!MONO || ADONET2)
 			command.DesignTimeVisible = this.DesignTimeVisible;
+#endif
 			command.Transaction = this.Transaction;
 			command.UpdatedRowSource = this.UpdatedRowSource;
 
