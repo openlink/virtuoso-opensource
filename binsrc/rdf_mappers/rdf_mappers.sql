@@ -3562,6 +3562,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   dict := dict_new (33);
   XML_REMOVE_NS_BY_PREFIX ('virt-xbrl', 2);
   XML_REMOVE_NS_BY_PREFIX ('opl-xbrl', 2);
+  XML_REMOVE_NS_BY_PREFIX ('umbel', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -3584,8 +3585,10 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
       if (__xml_get_ns_prefix (vec[i+1], 2) is null)
         DB.DBA.XML_SET_NS_DECL (vec[i+1], vec[i], 2);
     }
-  XML_SET_NS_DECL ('umbel', 'http://umbel.org/umbel/sc/', 2);
+  XML_SET_NS_DECL ('umbel-sc', 'http://umbel.org/umbel/sc/', 2);
   XML_SET_NS_DECL ('umbel-owl', 'http://umbel.org/umbel#', 2);
+  XML_SET_NS_DECL ('umbel-ac', 'http://umbel.org/umbel/ac/', 2);
+  XML_SET_NS_DECL ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
