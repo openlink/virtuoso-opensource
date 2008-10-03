@@ -288,54 +288,33 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
   sparp_gp_trav_cbk_t *literal_cbk
  )
 {
-  int ctr;
+  SPART **lists[4];
+  int list_ctr;
   int retcode = 0;
   if (SPAR_REQ_TOP != SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "trav_out_clauses_int(): bad req_top");
-  DO_BOX_FAST (SPART *, expn, ctr, req_top->_.req_top.orig_retvals)
+  lists[0] = req_top->_.req_top.orig_retvals;
+  lists[1] = req_top->_.req_top.retvals;
+  lists[2] = req_top->_.req_top.groupings;
+  lists[3] = req_top->_.req_top.order;
+  for (list_ctr = 0; list_ctr < 4; list_ctr++)
     {
-      retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
-        gp_in_cbk, gp_out_cbk,
-        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
-        literal_cbk );
-      if (retcode & SPAR_GPT_COMPLETED)
-        goto completed; /* see below */
+      SPART **list = lists [list_ctr];
+      int ctr;
+      DO_BOX_FAST (SPART *, expn, ctr, list)
+        {
+          if (SPAR_GP == SPART_TYPE (expn))
+            retcode = ((NULL != expn_subq_cbk) ? expn_subq_cbk (sparp, expn, sts_this, common_env) : 0);
+          else retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
+            gp_in_cbk, gp_out_cbk,
+            expn_in_cbk, expn_out_cbk, expn_subq_cbk,
+            literal_cbk );
+          if (retcode & SPAR_GPT_COMPLETED)
+            return retcode;
+        }
+      END_DO_BOX_FAST;
     }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, expn, ctr, req_top->_.req_top.retvals)
-    {
-      retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
-        gp_in_cbk, gp_out_cbk,
-        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
-        literal_cbk );
-      if (retcode & SPAR_GPT_COMPLETED)
-        goto completed; /* see below */
-    }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, expn, ctr, req_top->_.req_top.groupings)
-    {
-      retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
-        gp_in_cbk, gp_out_cbk,
-        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
-        literal_cbk );
-      if (retcode & SPAR_GPT_COMPLETED)
-        goto completed; /* see below */
-    }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, expn, ctr, req_top->_.req_top.order)
-    {
-      retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
-        gp_in_cbk, gp_out_cbk,
-        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
-        literal_cbk );
-      if (retcode & SPAR_GPT_COMPLETED)
-        goto completed; /* see below */
-    }
-  END_DO_BOX_FAST;
-  retcode = 0;
-
-completed:
-  return retcode;
+  return 0;
 }
 
 int
@@ -3803,4 +3782,3 @@ void ssg_jso_validate_format (spar_sqlgen_t *ssg, ssg_valmode_t fmt)
     spar_sqlprint_error ("ssg_jso_validate_format(): custom format does not have JSO RTTI");
 }
 #endif
-

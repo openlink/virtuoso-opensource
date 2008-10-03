@@ -174,17 +174,17 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       else
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
       if (0 == sparp->sparp_query_uses_aggregates)
-    return;
+        return;
       sparp_gp_localtrav_treelist (sparp, retvals,
         NULL, &names,
-            NULL, NULL,
+        NULL, NULL,
         sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
         NULL );
       sparp_gp_localtrav_treelist (sparp, query->_.req_top.order,
         NULL, &names,
         NULL, NULL,
         sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
-            NULL );
+        NULL );
       if (0 != BOX_ELEMENTS_0 (query->_.req_top.groupings))
         {
           dk_set_t names_in_groupings = NULL;
@@ -201,7 +201,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
             }
           return;
         }
-      t_set_push (&(env->spare_selids), retselid);
+      t_set_push (&(env->spare_selids), retselid);      
       while (NULL != names)
         {
           caddr_t varname = t_set_pop (&names);
@@ -218,7 +218,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     sparp_gp_trav_int (sparp, query->_.req_top.pattern, stss+1, &names,
       sparp_gp_trav_list_subquery_retvals, NULL,
       sparp_gp_trav_list_expn_retvals, NULL, NULL,
-    NULL );
+      NULL );
   }
   t_set_push (&(env->spare_selids), retselid);
   while (NULL != names)
@@ -469,20 +469,20 @@ ignore_retval_name: ;
     }
   if (UNION_L != gp->_.gp.subtype)
     {
-  for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
-    {
-      SPART *fld = curr->_.triple.tr_fields[fctr];
-      sparp_equiv_t *eq;
-      switch (SPART_TYPE(fld))
+      for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
         {
-	case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
-	default: continue;
-	}
+          SPART *fld = curr->_.triple.tr_fields[fctr];
+          sparp_equiv_t *eq;
+          switch (SPART_TYPE(fld))
+            {
+              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
+              default: continue;
+            }
           if (OPTIONAL_L == curr->_.triple.subtype)
             continue;
-      eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
-        sparp_rvr_tighten (sparp, &(eq->e_rvr), &(fld->_.var.rvr), ~0);
-    }
+          eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
+          sparp_rvr_tighten (sparp, &(eq->e_rvr), &(fld->_.var.rvr), ~0);
+        }
     }
   if (UNION_L == gp->_.gp.subtype)
     {
@@ -497,7 +497,7 @@ ignore_retval_name: ;
               acc.rvrRestrictions = SPART_VARR_CONFLICT;
               for (varctr = eq->e_var_count; varctr--; /*no step*/)
                 sparp_rvr_loose (sparp, &acc, &(eq->e_vars[varctr]->_.var.rvr), ~SPART_VARR_NOT_NULL);
-              sparp_rvr_tighten (sparp, &(eq->e_rvr), &acc, ~0);              
+              sparp_rvr_tighten (sparp, &(eq->e_rvr), &acc, ~0);
             }
         }
       END_SPARP_FOREACH_GP_EQUIV;
@@ -608,7 +608,7 @@ sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret)
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, optvars_ret,
     sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
     sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq,
-        NULL );
+    NULL );
   sparp_trav_out_clauses (sparp, sparp->sparp_expr, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_cu_in_retvals, NULL, sparp_gp_trav_cu_in_subq,
@@ -617,7 +617,7 @@ sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret)
     sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, optvars_ret,
       NULL, sparp_gp_trav_cu_out_triples_2,
       NULL, NULL, sparp_gp_trav_cu_in_subq,
-        NULL );
+      NULL );
 }
 
 int
@@ -896,7 +896,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
      default: return 0;
     }
   if (sparp_equiv_contains_t_io (sparp, eq_l))
-  return 0;
+    return 0;
   return 1;
 }
 
@@ -948,7 +948,6 @@ spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPAR
 /* Processing of simple filters that introduce restrictions on variables
 \c trav_env_this is not used.
 \c common_env is not used. */
-
 int
 sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 {
@@ -964,15 +963,15 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
         switch (SPART_TYPE (l))
           {
           case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
-          {
-		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
+            {
+              sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
               if (spar_var_eq_to_equiv (sparp, curr, eq_l, r))
                 {
                   eq_l->e_replaces_filter++;
                   return 1;
                 }
               return 0;
-	      }
+            }
           case SPAR_QNAME:
             {
               caddr_t lval = l->_.lit.val;
@@ -1007,7 +1006,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
             }
           }
         break;
-     }
+      }
     case BOP_NEQ:
       {
         SPART *l = filt->_.bin_exp.left;
@@ -1149,9 +1148,9 @@ sparp_gp_trav_make_common_eqs_in (sparp_t *sparp, SPART *curr, sparp_trav_state_
         {
           if (NULL != ((dk_set_t *)common_env)[0])
             GPF_T;
-      sts_this[0].sts_env = NULL;
+          sts_this[0].sts_env = NULL;
         }
-      return SPAR_GPT_ENV_PUSH;      
+      return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
@@ -1307,8 +1306,8 @@ sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state
         {
           if (SPAR_ALIAS == SPART_TYPE(curr_retvar))
             curr_retvar = curr_retvar->_.alias.arg;
-        sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, sts_this, NULL);
-    }
+          sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, sts_this, NULL);
+        }
     }
   return SPAR_GPT_ENV_PUSH;
 }
@@ -1429,7 +1428,7 @@ sparp_make_aliases (sparp_t *sparp)
     NULL, NULL, NULL,
     NULL );
   sparp_trav_out_clauses (sparp, top, NULL,
-    NULL, sparp_gp_trav_cu_out_triples_1,
+    NULL, NULL /* was sparp_gp_trav_cu_out_triples_1 */,
     NULL, NULL, sparp_gp_trav_make_aliases_expn_subq,
     NULL );
 }
@@ -1505,7 +1504,7 @@ sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps)
   tmp_env.data = top_pattern;
   tmp_env.next = parent_gps;
   sparp_trav_out_clauses (sparp, top, &tmp_env,
-    sparp_gp_trav_label_external_vars_gp_in, NULL,
+    NULL, NULL,
     NULL, NULL, sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
   sparp_gp_trav (sparp, top_pattern, parent_gps,
@@ -1561,7 +1560,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
     NULL, NULL, sparp_gp_trav_remove_redundant_connections,
     NULL );
   sparp_trav_out_clauses (sparp, top, NULL,
-    NULL, sparp_gp_trav_cu_out_triples_1,
+    NULL, NULL /* was sparp_gp_trav_cu_out_triples_1*/,
     NULL, NULL, sparp_gp_trav_remove_redundant_connections,
     NULL );
   if (!(SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY & flags))
@@ -1642,15 +1641,15 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
     {
       sparp_equiv_t *sub_eq = equivs[sub_eq_idx];
       SPART *sub_gp = sub_eq->e_gp;
-          DO_BOX_FAST (caddr_t, varname, varname_ctr, sub_eq->e_varnames)
-            {
-              if (!SPART_VARNAME_IS_GLOB (varname))
-                continue;
+      DO_BOX_FAST (caddr_t, varname, varname_ctr, sub_eq->e_varnames)
+        {
+          if (!SPART_VARNAME_IS_GLOB (varname))
+            continue;
           if (0 > dk_set_position_of_string (common_vars, varname))
             continue;
-              t_set_push (&common_vars, varname);
-            }
-          END_DO_BOX_FAST;
+          t_set_push (&common_vars, varname);
+        }
+      END_DO_BOX_FAST;
       if (sub_eq->e_rvr.rvrRestrictions & SPART_VARR_CONFLICT)
         nice_sub_count++; /* Conflict is nice because it will be removed soon */
       else
@@ -1675,7 +1674,7 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
         }
       END_DO_BOX_FAST;
       eq->e_varnames = t_list_to_array (common_vars);
-    }            
+    }
 }
 
 void
@@ -2081,13 +2080,13 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
     {
       caddr_t varname = curr->_.var.vname;
       if (!SPART_VARNAME_IS_GLOB(varname))
-          return SPAR_GPT_COMPLETED;
+        return SPAR_GPT_COMPLETED;
       return SPAR_GPT_NODOWN;
     }
   if (SPAR_BLANK_NODE_LABEL == curr->type)
     return SPAR_GPT_COMPLETED;
   return 0;
-}  
+}
 
 int
 sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
@@ -2152,18 +2151,18 @@ sparp_check_field_mapping_of_cvalue (sparp_t *sparp, SPART *cvalue, rdf_val_rang
       return SSG_QM_PROVEN_MATCH;
     }
   if (NULL != qmv_or_fmt_rvr)
-            {
-      if (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions)
     {
+      if (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions)
+        {
           if (!rvr_sprintffs_like ((caddr_t) cvalue, qmv_or_fmt_rvr))
             return SSG_QM_NO_MATCH;
-    }
+        }
       if (SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions)
-    {
+        {
           if (!sparp_fixedvalues_equal (sparp, cvalue, (SPART *)(qmv_or_fmt_rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
           return SSG_QM_PROVEN_MATCH;
-    }
+        }
     }
   return SSG_QM_APPROX_MATCH;
 }
@@ -2179,7 +2178,7 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
     GPF_T1("Bad invocation of sparp_check_mapping_of_sources()");
 #endif
   DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
-            {
+    {
       int chk_res;
       if (tcc->tcc_source_invalidation_masks[source_ctr])
         continue;
@@ -2230,7 +2229,7 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
   for (source_ctr = BOX_ELEMENTS_0 (tcc->tcc_sources); source_ctr--; /* no step */)
     tcc->tcc_source_invalidation_masks[source_ctr] &= (1 << invalidation_level) - 1;
   if (tcc->tcc_check_source_graphs)
-        {
+    {
       int chk_res = sparp_check_mapping_of_sources (sparp, tcc, qmv_or_fmt_rvr, rvr, invalidation_level);
       if (SSG_QM_NO_MATCH == chk_res)
         return SSG_QM_NO_MATCH;
@@ -2246,9 +2245,9 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
           int chk_res = sparp_check_mapping_of_sources (sparp, tcc, &(field->_.var.rvr), NULL, invalidation_level);
           if (SSG_QM_NO_MATCH == chk_res)
             return SSG_QM_NO_MATCH;
-    }
+        }
       if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
-    {
+        {
           sparp_equiv_t *eq_g = sparp->sparp_equivs[field->_.var.equiv_idx];
           int chk_res;
           if (DV_UNAME != DV_TYPE_OF (eq_g->e_rvr.rvrFixedValue))
@@ -2258,17 +2257,17 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
 #else
               return SSG_QM_NO_MATCH;
 #endif
-    }
+            }
           chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), qmv_or_fmt_rvr, rvr);
           return chk_res;
         }
       if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
-    {
+        {
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
               caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
               if (NULL != fv)
-        {
+                {
                   int ctr;
                   for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
                     if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
@@ -2276,8 +2275,8 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
                   return SSG_QM_NO_MATCH; /* reached if no match found */
 
 fixed_field_matches_qmv_sff: ;
-	}
-    }
+                }
+            }
           if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
             { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
               int fld_ctr, qmv_ctr;
@@ -2297,8 +2296,8 @@ fixed_field_matches_qmv_sff: ;
                      goto field_sff_isects_qmv_sff;
               return SSG_QM_NO_MATCH; /* reached if no match found */
 field_sff_isects_qmv_sff: ;
-	}
-    }
+            }
+        }
       if (NULL == rvr->rvrFixedValue)
         return SSG_QM_APPROX_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
       return SSG_QM_PARTIAL_MATCH;
@@ -2314,7 +2313,7 @@ field_sff_isects_qmv_sff: ;
 #else
           return SSG_QM_NO_MATCH;
 #endif
-    }
+        }
       if (tcc->tcc_check_source_graphs)
         {
           rdf_val_range_t fake_rvr;
@@ -2323,7 +2322,7 @@ field_sff_isects_qmv_sff: ;
           chk_res = sparp_check_mapping_of_sources (sparp, tcc, NULL, &fake_rvr, invalidation_level);
           if (SSG_QM_NO_MATCH == chk_res)
             return SSG_QM_NO_MATCH;
-    }
+        }
       chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *) eff_val, qmv_or_fmt_rvr, rvr);
       return chk_res;
     }
@@ -2345,7 +2344,7 @@ sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         {
           if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED | SPART_VARR_IS_LIT | SPART_VARR_IS_REF) & qmv->qmvFormat->qmfValRange.rvrRestrictions)
             qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
-    }
+        }
     }
   if ((SPAR_BLANK_NODE_LABEL == field_type) || (SPAR_VARIABLE == field_type))
     {
@@ -2354,22 +2353,22 @@ sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
           if (!sparp_fixedvalues_equal (sparp, (SPART *)(field->_.var.rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
           return SSG_QM_PROVEN_MATCH;
-    }
+        }
       if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
-    {
+        {
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
               caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
               if (NULL != fv)
-    {
+                {
                   int ctr;
                   for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
                     if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
                       goto fixed_field_matches_qmv_sff; /* see below */
                   return SSG_QM_NO_MATCH; /* reached if no match found */
 fixed_field_matches_qmv_sff: ;
-    }
-    }
+                }
+            }
           if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
             { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
               int fld_ctr, qmv_ctr;
@@ -2389,8 +2388,8 @@ fixed_field_matches_qmv_sff: ;
                      goto field_sff_isects_qmv_sff;
               return SSG_QM_NO_MATCH; /* reached if no match found */
 field_sff_isects_qmv_sff: ;
-    }
-    }
+            }
+        }
       if (NULL == rvr->rvrFixedValue)
         return SSG_QM_APPROX_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
       return SSG_QM_PARTIAL_MATCH;
@@ -2399,12 +2398,12 @@ field_sff_isects_qmv_sff: ;
     {
       rdf_val_range_t *some_map_rvr = ((NULL != qmv_or_fmt_rvr) ? qmv_or_fmt_rvr : rvr);
       if (SPAR_LIT == field_type)
-    {
+        {
           if (SPART_VARR_IS_REF & some_map_rvr->rvrRestrictions)
             return SSG_QM_NO_MATCH;
-    }
+        }
       else
-                {
+        {
           if (SPART_VARR_IS_LIT & some_map_rvr->rvrRestrictions)
             return SSG_QM_NO_MATCH;
         }
@@ -2415,10 +2414,10 @@ field_sff_isects_qmv_sff: ;
           return SSG_QM_PROVEN_MATCH;
         }
       if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
-            {
+        {
           caddr_t fv = SPAR_LIT_OR_QNAME_VAL (field);
           if ((NULL != fv) && IS_STRING_DTP (DV_TYPE_OF (fv)))
-                {
+            {
               int ctr;
               for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
                 if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
@@ -2445,7 +2444,7 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int 
     return SSG_QM_NO_MATCH;
   /* First of all we perform check for cached matches, esp. for failures. */
   if ((NULL != qm->qmGraphMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] == qm->qmGraphMap))
-        {
+    {
       g_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_GRAPH_IDX];
       if (SSG_QM_NO_MATCH == g_match)
         return SSG_QM_NO_MATCH;
@@ -2457,35 +2456,35 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int 
         return SSG_QM_NO_MATCH;
     }
   if ((NULL != qm->qmPredicateMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_PREDICATE_IDX] == qm->qmPredicateMap))
-        {
+    {
       p_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_PREDICATE_IDX];
       if (SSG_QM_NO_MATCH == p_match)
         return SSG_QM_NO_MATCH;
-        }
+    }
   if ((NULL != qm->qmObjectMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_OBJECT_IDX] == qm->qmObjectMap))
-        {
+    {
       o_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_OBJECT_IDX];
       if (SSG_QM_NO_MATCH == o_match)
         return SSG_QM_NO_MATCH;
     }
   /* Check of predicate first, because it's more selective than other */
   if (SSG_QM_UNSET == p_match)
-            {
+    {
       p_match = sparp_check_field_mapping_spo (sparp, tcc, src_p, qm, qm->qmPredicateMap, &(qm->qmPredicateRange));
       if (NULL != qm->qmPredicateMap)
-                {
+        {
           tcc->tcc_last_qmvs [SPART_TRIPLE_PREDICATE_IDX] = qm->qmPredicateMap;
           tcc->tcc_last_qmv_results [SPART_TRIPLE_PREDICATE_IDX] = p_match;
-            }
+        }
       if (SSG_QM_NO_MATCH == p_match)
         return SSG_QM_NO_MATCH;
-        }
+    }
   /* Check of graph */
   if (SSG_QM_UNSET == g_match)
-                    {
+    {
       g_match = sparp_check_field_mapping_g (sparp, tcc, src_g, qm, qm->qmGraphMap, &(qm->qmGraphRange), invalidation_level);
       if (NULL != qm->qmGraphMap)
-                    {
+        {
           tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] = qm->qmGraphMap;
           tcc->tcc_last_qmv_results [SPART_TRIPLE_GRAPH_IDX] = g_match;
         }
@@ -2497,16 +2496,16 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int 
     {
       s_match = sparp_check_field_mapping_spo (sparp, tcc, src_s, qm, qm->qmSubjectMap, &(qm->qmSubjectRange));
       if (NULL != qm->qmSubjectMap)
-    {
+        {
           tcc->tcc_last_qmvs [SPART_TRIPLE_SUBJECT_IDX] = qm->qmSubjectMap;
           tcc->tcc_last_qmv_results [SPART_TRIPLE_SUBJECT_IDX] = s_match;
-    }
+        }
       if (SSG_QM_NO_MATCH == s_match)
         return SSG_QM_NO_MATCH;
-        }
+    }
   /* Check of object */
   if (SSG_QM_UNSET == o_match)
-        {
+    {
       o_match = sparp_check_field_mapping_spo (sparp, tcc, src_o, qm, qm->qmObjectMap, &(qm->qmObjectRange));
       if (NULL != qm->qmObjectMap)
         {
@@ -2537,7 +2536,7 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
   if ((NULL == tcc->tcc_top_allowed_qm) || (qm == tcc->tcc_top_allowed_qm))
     inside_allowed_qm = 1;
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
-        {
+    {
       int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm, invalidation_level+1);
       if (SSG_QM_MATCH_AND_CUT == status)
         return SSG_QM_MATCH_AND_CUT;
@@ -2567,9 +2566,9 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
         {
           if (NULL != tcc->tcc_cuts [fld_ctr])
             tc->tc_red_cuts [fld_ctr] = (ccaddr_t *)t_revlist_to_array (tcc->tcc_cuts [fld_ctr]);
-      else
+          else
             tc->tc_red_cuts [fld_ctr] = NULL;
-    }
+        }
       tcc->tcc_nonfiltered_cases_found += 1;
       if (inside_allowed_qm)
         dk_set_push (&(tcc->tcc_found_cases), tc);
@@ -2594,7 +2593,7 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
             {
               single_fixed_fld = -3;
               break;
-                }
+            }
         }
       if (0 <= single_fixed_fld)
         {
@@ -2627,13 +2626,13 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   tmp_tcc.tcc_sources = sources;
   tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
   DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
-        {
+    {
       if ((0 == required_source_type) || (SPART_TYPE(source) == required_source_type))
-            {
+        {
           tmp_tcc.tcc_check_source_graphs++;
           tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;
-    }
-  else
+        }
+      else
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
@@ -2780,16 +2779,16 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
               qmv_rvr.rvrFixedValue = fld_const;
               if (all_cases_make_only_refs && (DV_UNAME != DV_TYPE_OF (fld_const)))
                 all_cases_make_only_refs = 0;
-    }
+            }
           else
             spar_internal_error (sparp, "Invalid quad map storage metadata: neither quad map value nor a constant is set for a field of a quad map.");
           if ((NULL != qmv_rvr.rvrFixedValue) && !(SPART_VARR_FIXED & qmv_rvr.rvrRestrictions))
-    {
+            {
               if (DV_UNAME == DV_TYPE_OF (qmv_rvr.rvrFixedValue))
                 qmv_rvr.rvrRestrictions |= (SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL);
               else
                 qmv_rvr.rvrRestrictions |= (SPART_VARR_FIXED | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
-    }
+            }
           if (NULL != qmv)
             sparp_rvr_tighten (sparp, &qmv_rvr, &(qmv->qmvFormat->qmfValRange), ~SPART_VARR_IRI_CALC);
           sparp_rvr_loose (sparp, &acc_rvr, &qmv_rvr, ~0);
@@ -2860,8 +2859,8 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
       if (OPTIONAL_L == memb->_.gp.subtype)
         break; /* No optimizations at left of LEFT OUTER JOIN. */
       if ((((0 == memb->_.gp.subtype) &&
-           (1 <= BOX_ELEMENTS (memb->_.gp.members)) ) ||
-         ((UNION_L == memb->_.gp.subtype) &&
+             (1 <= BOX_ELEMENTS (memb->_.gp.members)) ) ||
+          ((UNION_L == memb->_.gp.subtype) &&
             (1 == BOX_ELEMENTS (memb->_.gp.members)) ) ) &&
         (NULL == memb->_.gp.options) )
         {
@@ -3161,7 +3160,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
         {
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
           if (UNION_L != recv_eq->e_gp->_.gp.subtype)
-          recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           sparp_equiv_disconnect (sparp, recv_eq, eq);
         }
       END_DO_BOX_FAST;
@@ -3177,8 +3176,8 @@ int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_
   switch (curr->type)
     {
     case SPAR_TRIPLE:
-  sparp_refresh_triple_cases (sparp, curr);
-  return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
+      sparp_refresh_triple_cases (sparp, curr);
+      return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
     case SPAR_GP:
       if (SELECT_L == curr->_.gp.subtype)
         {
@@ -3443,7 +3442,7 @@ sparp_gp_trav_union_of_joins_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t
     {
     case SPAR_GP:
       sts_this[0].sts_env = curr;
-      return SPAR_GPT_ENV_PUSH;      
+      return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN |  SPAR_GPT_NOOUT;
     default: return 0;
     }
@@ -3559,20 +3558,20 @@ static void
 sparp_collect_single_atable_use (sparp_t *sparp, ccaddr_t alias, ccaddr_t tablename, qm_atable_use_t *uses, ptrlong *use_count_ptr )
 {
   ptrlong old_qmatu_idx = ecm_find_name (alias, uses, use_count_ptr[0], sizeof (qm_atable_use_t));
-      if (ECM_MEM_NOT_FOUND == old_qmatu_idx)
-        {
+  if (ECM_MEM_NOT_FOUND == old_qmatu_idx)
+    {
       ptrlong use_idx = ecm_add_name (alias, (void **)(&uses), use_count_ptr, sizeof (qm_atable_use_t));
-          qm_atable_use_t *use = uses + use_idx;
+      qm_atable_use_t *use = uses + use_idx;
       use->qmatu_alias = (char *) alias;
       use->qmatu_tablename = tablename;
-          use->qmatu_more = NULL;
-        }
-      else
-        {
-          qm_atable_use_t *qmatu = uses + old_qmatu_idx;
+      use->qmatu_more = NULL;
+    }
+  else
+    {
+      qm_atable_use_t *qmatu = uses + old_qmatu_idx;
       if (strcmp (tablename, qmatu->qmatu_tablename))
-            spar_internal_error (sparp, "sparp_" "collect_atable_uses(): probable corruption of some quad map");
-        }
+        spar_internal_error (sparp, "sparp_" "collect_atable_uses(): probable corruption of some quad map");
+    }
 }
 
 static void
@@ -3590,7 +3589,7 @@ sparp_collect_atable_uses (sparp_t *sparp, ccaddr_t singletablename, qm_atable_a
 
 void
 sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
-{
+{    
   int fld_ctr, max_uses = 0, default_qm_table_used = 0;
   ptrlong use_count = 0;
   qm_atable_use_t *uses;
@@ -3601,8 +3600,8 @@ sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
         {
           if (NULL != qmv->qmvTableName)
             max_uses++;
-        max_uses += BOX_ELEMENTS_0 (qmv->qmvATables);
-    }
+          max_uses += BOX_ELEMENTS_0 (qmv->qmvATables);
+        }
     }
   if (NULL != qm->qmTableName)
     max_uses++;
@@ -3622,7 +3621,7 @@ sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
                 default_qm_val_table_used++;
               else
                 default_qm_table_used++;
-    }
+            }
         }
       END_DO_BOX_FAST;
       sparp_collect_atable_uses (sparp,
@@ -3897,7 +3896,7 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
               new_base_tabid = t_box_sprintf (200, "%s-b%d", base_triple->_.triple.tabid, breakup_unictr);
               sparp_set_triple_selid_and_tabid (sparp, base_triple, base->_.gp.selid, new_base_tabid);
               base_should_change_tabid = 0;
-        }
+            }
           else
             new_base_tabid = base_triple->_.triple.tabid;
           sparp_set_triple_selid_and_tabid (sparp, dep_triple, dep->_.gp.selid, new_base_tabid);
@@ -3949,8 +3948,6 @@ next_dep: ;
     }
   return breakup_shift;
 }
-
-
 
 static int
 sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_map_t *qm)
@@ -4055,21 +4052,21 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
   SPART *base = curr->_.gp.members[base_idx];
   quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
   int key_field_idx;
-          for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
-            {
-              SPART *key_field = base->_.triple.tr_fields[key_field_idx];
-              ssg_valmode_t key_fmt = base->_.triple.native_formats[key_field_idx];
-              qm_value_t *key_qmv;
-              sparp_equiv_t *key_eq;
-              int dep_ctr;
+  for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
+    {
+      SPART *key_field = base->_.triple.tr_fields[key_field_idx];
+      ssg_valmode_t key_fmt = base->_.triple.native_formats[key_field_idx];
+      qm_value_t *key_qmv;
+      sparp_equiv_t *key_eq;
+      int dep_ctr;
       int key_field_type;
-              sparp_jso_validate_format (sparp, key_fmt);
+      sparp_jso_validate_format (sparp, key_fmt);
       key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
       if (NULL == key_qmv)
         continue; /* Const field of mapping can add a filter but can not specify a unique key of row */
-              key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
-              if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
-                continue;
+      key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
+      if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
+        continue;
       key_field_type = SPART_TYPE (key_field);
       if ((SPAR_BLANK_NODE_LABEL != key_field_type) && (SPAR_VARIABLE != key_field_type))
         {
@@ -4079,63 +4076,63 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
         }
       if ((SPART_VARR_FIXED | SPART_VARR_IS_IRI) == ((SPART_VARR_FIXED | SPART_VARR_IS_IRI) & key_field->_.var.rvr.rvrRestrictions))
         sparp_try_reuse_tabid_in_join_via_key_qname (sparp, curr, base_idx, key_qmv, key_field->_.var.rvr.rvrFixedValue);
-              key_eq = sparp_equiv_get (sparp, curr, key_field, SPARP_EQUIV_GET_ASSERT);
-              if (2 > key_eq->e_gspo_uses) /* No reuse of key -- no reuse of triples */
-                continue;
-              for (dep_ctr = key_eq->e_var_count; dep_ctr--; /* no step */)
-                {
-                  SPART *dep_field = key_eq->e_vars[dep_ctr];
-                  int dep_triple_idx, dep_field_tr_idx;
+      key_eq = sparp_equiv_get (sparp, curr, key_field, SPARP_EQUIV_GET_ASSERT);
+      if (2 > key_eq->e_gspo_uses) /* No reuse of key -- no reuse of triples */
+        continue;
+      for (dep_ctr = key_eq->e_var_count; dep_ctr--; /* no step */)
+        {
+          SPART *dep_field = key_eq->e_vars[dep_ctr];
+          int dep_triple_idx, dep_field_tr_idx;
           SPART *dep_triple = NULL;
-                  quad_map_t *dep_qm;
-                  qm_value_t *dep_qmv;
-                  if (NULL == dep_field->_.var.tabid) /* The variable is not a field in a triple (const read, not gspo use) */
-                    continue;
-                  if (!strcmp (dep_field->_.var.tabid, key_field->_.var.tabid)) /* Either tabid is reused already or reference to self -- nothing to do in both cases */
-                    continue;
-                  dep_field_tr_idx = dep_field->_.var.tr_idx;
-                  for (dep_triple_idx = BOX_ELEMENTS (curr->_.gp.members); dep_triple_idx--; /* no step */)
-                    {
-                      dep_triple = curr->_.gp.members[dep_triple_idx];
-                      if (SPAR_TRIPLE != dep_triple->type)
-                        continue;
-                      if (dep_triple->_.triple.tr_fields [dep_field_tr_idx] == dep_field)
-                        break;
-                    }
-                  if (0 > dep_triple_idx)
+          quad_map_t *dep_qm;
+          qm_value_t *dep_qmv;
+          if (NULL == dep_field->_.var.tabid) /* The variable is not a field in a triple (const read, not gspo use) */
+            continue;
+          if (!strcmp (dep_field->_.var.tabid, key_field->_.var.tabid)) /* Either tabid is reused already or reference to self -- nothing to do in both cases */
+            continue;
+          dep_field_tr_idx = dep_field->_.var.tr_idx;
+          for (dep_triple_idx = BOX_ELEMENTS (curr->_.gp.members); dep_triple_idx--; /* no step */)
+            {
+              dep_triple = curr->_.gp.members[dep_triple_idx];
+              if (SPAR_TRIPLE != dep_triple->type)
+                continue;
+              if (dep_triple->_.triple.tr_fields [dep_field_tr_idx] == dep_field)
+                break;
+            }
+          if (0 > dep_triple_idx)
             {
               sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
-                    spar_internal_error (sparp, "sparp_" "gp_trav_reuse_tabids(): dep_field not found in members");
+              spar_internal_error (sparp, "sparp_" "gp_trav_reuse_tabids(): dep_field not found in members");
             }
           if (dep_triple_idx <= base_idx) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
             continue;
           if (OPTIONAL_L == dep_triple->_.triple.subtype) /* Optional is bad candidate for reuse */
-                    continue;
-                  if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
-                    continue;
-                  dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
+            continue;
+          if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
+            continue;
+          dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
           #if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
-                  if (strcmp (dep_qm->qmTableName, base_qm->qmTableName)) /* Can not reuse tabid for different tables */
-                    continue;
+          if (strcmp (dep_qm->qmTableName, base_qm->qmTableName)) /* Can not reuse tabid for different tables */
+            continue;
           #endif
-                  dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
-                  if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
-                    continue;
-                  if (!sparp_qmv_forms_reusable_key_of_qm (sparp, dep_qmv, dep_qm))
-                    continue;
-                  /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
+          dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
+          if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
+            continue;
+          if (!sparp_qmv_forms_reusable_key_of_qm (sparp, dep_qmv, dep_qm))
+            continue;
+          /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
           sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
-                  sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
+          sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
           if (dep_triple_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
-                    {
-                      int swap_ctr;
+            {
+              int swap_ctr;
               for (swap_ctr = dep_triple_idx; swap_ctr > (base_idx + 1); swap_ctr--)
                 curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
               curr->_.gp.members[base_idx + 1] = dep_triple;
-                    }
-          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
-                }
             }
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+        }
+    }
 }
 
 
@@ -4488,12 +4485,12 @@ retry_preopt:
       /* At this point we know that some variable is used but not assigned. It may be non-optional variable in FILTER inside OPTIONAL or an error. */
       if (sparp_dig_and_glue_loj_filter_for_eq (sparp, eq))
         goto retry_preopt; /* see above */
-          if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
-            spar_error (sparp, "Variable '%.100s' is used in the query result set but not assigned", eq->e_varnames[0]);
-          if ((0 != eq->e_const_reads) || /* note: no check for (0 != eq->e_optional_reads) */
-            (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) )
-            {
-            spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but not assigned", eq->e_varnames[0]);
+      if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
+        spar_error (sparp, "Variable '%.100s' is used in the query result set but not assigned", eq->e_varnames[0]);
+      if ((0 != eq->e_const_reads) || /* note: no check for (0 != eq->e_optional_reads) */
+        (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) )
+        {
+          spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but not assigned", eq->e_varnames[0]);
         }
     }
   sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
@@ -4544,7 +4541,7 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
   sparp_trav_out_clauses (sparp, sparp->sparp_expr, (void *)((ptrlong)opt_ctr),
-    sparp_gp_trav_refresh_triple_cases, sparp_gp_trav_multiqm_to_unions,
+    NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
@@ -4755,7 +4752,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     t_set_push (&sa_graphs, spar_make_qm_sql (sparp, "iri_to_id", (SPART **)t_list (1, rgc->rgc_group_destination), NULL));
   t_set_pop (&(env->spare_selids));
   if (NULL != new_vars)
-  grab_retvals = (SPART **)t_revlist_to_array (new_vars);
+    grab_retvals = (SPART **)t_revlist_to_array (new_vars);
   else
     grab_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.expanded_orig_retvals, NULL);
 /* Making subqueries: seed */
@@ -4810,7 +4807,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
   sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN, /* #0 */
-    t_box_num ((ptrlong)(ssg_grabber_codegen)),
+    t_box_num ((ptrlong)(ssg_grabber_codegen)), 
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
     sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */
@@ -4887,30 +4884,30 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
     }
   else
     {
-  ssg_puts ("SELECT ");
+      ssg_puts ("SELECT ");
       if (0 == varcount) ssg_puts ("TOP 1 1 as __ask_retval "); /* IvAn/Bug12961/071109 Added special case for ASK */
-  for (varctr = 0; varctr < varcount; varctr++)
-    {
-      char buf[30];
-      char *asname;
-      if (varctr)
-        ssg_puts (", ");
-      ssg_prin_id (ssg, call_alias);
-      sprintf (buf, ".rset[%d] as ", varctr);
-      ssg_puts (buf);
-      asname = spar_alias_name_of_ret_column (retvals [varctr]);
-      if (NULL == asname)
+      for (varctr = 0; varctr < varcount; varctr++)
         {
-          sprintf (buf, "callret-%d", varctr);
-          asname = buf;
+          char buf[30];
+          char *asname;
+          if (varctr)
+            ssg_puts (", ");
+          ssg_prin_id (ssg, call_alias);
+          sprintf (buf, ".rset[%d] as ", varctr);
+          ssg_puts (buf);
+          asname = spar_alias_name_of_ret_column (retvals [varctr]);
+          if (NULL == asname)
+            {
+              sprintf (buf, "callret-%d", varctr);
+              asname = buf;
+            }
+          ssg_prin_id (ssg, asname);
         }
-      ssg_prin_id (ssg, asname);
-    }
-  ssg_newline (0);
-  ssg_puts ("FROM ");
-  ssg_prin_function_name (ssg, procedure_name);
+      ssg_newline (0);
+      ssg_puts ("FROM ");
+      ssg_prin_function_name (ssg, procedure_name);
       ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _refresh_free_text, _plain_ret, _grabber_flags) (rset any) ");
-  ssg_prin_id (ssg, call_alias);
+      ssg_prin_id (ssg, call_alias);
       ssg_newline (0);
       ssg_puts ("WHERE _grabber_params = ");
     }
@@ -4934,9 +4931,9 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
       } \
     else \
       { \
-    ssg_newline (0); \
+        ssg_newline (0); \
         ssg_puts (" AND "); \
-    ssg_puts (txt); \
+        ssg_puts (txt); \
         ssg_puts (" = "); \
       } \
     ssg_print_scalar_expn (ssg, (SPART *)(var), SSG_VALMODE_SQLVAL, NULL_ASNAME); \
@@ -4968,3 +4965,4 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
       ssg_prin_id (ssg, call_alias);
     }
 }
+
