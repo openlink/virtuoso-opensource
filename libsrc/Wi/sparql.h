@@ -67,7 +67,7 @@ extern "C" {
 #define SPAR_LIST		(ptrlong)1017
 /* Don't forget to update sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
-#define SPARP_MAX_LEXDEPTH 30
+#define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 
 #define SPARP_MAXLIMIT 0x7Fffffff /* Default value for LIMIT clause of SELECT */
@@ -166,7 +166,7 @@ typedef struct sparp_env_s
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
-    caddr_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
+    dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
     struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
 #if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */

@@ -1238,12 +1238,16 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
               SPART *val = gp->_.gp.options[ctr-1];
               if (T_STEP_L == ((ptrlong)(gp->_.gp.options[ctr-2])) && !strcmp (val->_.alias.aname, varname))
                 {
-                  if (SPAR_VARIABLE == SPART_TYPE (val))
+                  SPART *expn = val->_.alias.arg;
+                  if (SSG_VALMODE_AUTO != val->_.alias.native)
+                    return val->_.alias.native;
+                  if (SPAR_VARIABLE == SPART_TYPE (expn))
                     {
-                      retval = sparp_find_subexpn_in_retlist (sparp, val->_.var.vname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
+                      retval = sparp_find_subexpn_in_retlist (sparp, expn->_.var.vname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
                       if (NULL == retval)
                         spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): no retval for T_STEP variable");
-                      return sparp_expn_native_valmode (sparp, retval);
+                      val->_.alias.native = sparp_expn_native_valmode (sparp, retval);
+                      return val->_.alias.native;
                     }
                   else
                     return SSG_VALMODE_SQLVAL;

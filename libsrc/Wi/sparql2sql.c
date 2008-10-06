@@ -134,9 +134,8 @@ sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav
       break;
     case SPAR_GP:
   return SPAR_GPT_NODOWN;
-    default:
-      return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
     }
+  return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
 }
 
 static void
@@ -427,12 +426,9 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
           }
         case SAME_AS_L: case SAME_AS_S_L: case SAME_AS_O_L:
           {
-            int expn_ctr;
+            sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))
               break;
-            DO_BOX_FAST (SPART *, expn, expn_ctr, val->_.list.items)
-              {
-                sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
                 memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
                 stss[1].sts_ancestor_gp = curr;
                 sparp_gp_trav_int (sparp, val, stss+1, common_env,
@@ -440,9 +436,6 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
                   sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
                 break;
               }
-            END_DO_BOX_FAST;
-            break;
-          }
         }
     }
 }

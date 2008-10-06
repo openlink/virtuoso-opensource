@@ -2162,7 +2162,7 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 
 create procedure DB.DBA.RDF_TTL2SQLHASH_EXEC_GET_IID (inout uri varchar, inout g_iid IRI_ID, inout app_env any, inout res IRI_ID) {
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2SQLHASH_EXEC_GET_IID (', uri, g_iid, app_env, ')');
-  res := __box_flags_tweak (uri, 1);
+  res := __bft (uri, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2SQLHASH_EXEC_GET_IID (', uri, g_iid, app_env, ') returns ', res);
 }
 ;
@@ -2174,9 +2174,9 @@ create procedure DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE (
 {
   dict_put (app_env,
     vector (
-      __box_flags_tweak (s_uri, 1),
-      __box_flags_tweak (p_uri, 1),
-      __box_flags_tweak (o_uri, 1) ),
+      __bft (s_uri, 1),
+      __bft (p_uri, 1),
+      __bft (o_uri, 1) ),
     0 );
 }
 ;
@@ -2192,8 +2192,8 @@ create procedure DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE_L (
     o_lang := null;
   dict_put (app_env,
     vector (
-      __box_flags_tweak (s_uri, 1),
-      __box_flags_tweak (p_uri, 1),
+      __bft (s_uri, 1),
+      __bft (p_uri, 1),
       DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
         case (isstring (o_type)) when 0 then null else o_type end,
         case (isstring (o_lang)) when 0 then null else o_lang end) ),
