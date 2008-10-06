@@ -111,6 +111,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_TWFY', null, 'TWFY');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*getsatisfaction.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_GETSATISFATION', null, 'GetSatisfaction');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://friendfeed.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_FRIENDFEED', null, 'FriendFeed');
 
@@ -879,6 +883,143 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
   ses := string_output_string (ses);  
   ses := xtree_doc (ses);
   return ses;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare qr, path, hdr any;
+	declare tree, xt, xd, types, is_search any;
+	declare base, cnt, url, suffix, tmp, url_, what varchar;
+	declare url_vec any;
+	declare cur, len integer;
+	declare what_, name_, where_, file varchar;
+
+	hdr := null;
+	declare exit handler for sqlstate '*'
+	{
+		--dbg_printf ('%s', __SQL_MESSAGE);
+		return 0;
+	};
+	if (new_origin_uri like 'http://getsatisfaction.com/%')
+	{
+		new_origin_uri := concat(new_origin_uri, '/');
+		tmp := sprintf_inverse (new_origin_uri, 'http://getsatisfaction.com/%s', 0);
+		url_ := trim (tmp[0], '/');
+		if (url_ is null)
+			return 0;
+		url_vec := vector();
+		len := length(url_);
+		while (len > 0)
+		{
+			cur := strchr(url_, '/');
+			if (cur is null or cur = 0)
+			{
+				what_ := url_;
+				url_ := '';
+			}
+			else
+			{
+				what_ := subseq(url_, 0, cur);
+				url_ := right(url_, len - cur);
+				url_ := trim(url_ , '/');
+			}
+			len := length(url_);
+			url_vec := vector_concat(url_vec, vector(what_));
+		}
+		len := length(url_vec);
+		if (len > 0)
+		{
+			if (url_vec[0] <> 'people')
+			{
+				url := 'http://api.getsatisfaction.com/companies/';
+				url := concat(url, url_vec[0]);
+				if (len > 1)
+				{
+					if (url_vec[1] = 'overheard')
+					{
+						url := concat(url, '.json');
+						what_ := 'company';
+					}
+					else
+					{
+						url := concat(url, '/', url_vec[1]);
+						if (len > 2)
+						{	
+							if (url_vec[1] = 'topics')
+							{
+								url := concat(url, '/', url_vec[2]);
+								what_ := 'topics';
+							}
+							else if (url_vec[1] = 'products')
+							{
+								url := concat(url, '/', url_vec[2], '.json');
+								what_ := 'product';
+							}
+							else 
+								return 0; -- TODO: add for people if exists
+						}
+						else
+						{
+							what_ := url_vec[1];
+							url := concat(url, '.json');
+						}
+					}
+				}
+				else
+				{
+					what_ := 'topics';
+					url := concat(url, '/topics');
+				}
+			}
+			else
+			{	
+				url := 'http://api.getsatisfaction.com/people/';
+				url := concat(url, url_vec[1]);
+				if (len > 2)
+				{
+					if (url_vec[2] = 'uses')
+					{
+						url := concat(url, '/companies.json');
+						what_ := 'companies';
+					}
+					else
+					{
+						url := concat(url, '/products.json');
+						what_ := 'products2';
+					}
+				}
+				else
+				{
+					url := concat(url, '.json');
+					what_ := 'people2';
+				}
+			}
+		}
+	}
+	else
+		return 0;
+	tmp := http_get(url);
+	--tmp := file_to_string(file);
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	
+	if (what_ = 'topics')
+	{
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd,
+			vector ('baseUri', new_origin_uri, 'what', what_));	
+	}
+	else
+	{	
+		tree := json_parse (tmp);	
+		xt := DB.DBA.MQL_TREE_TO_XML (tree);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/getsatisfaction2rdf.xsl', xt,
+			vector ('baseUri', new_origin_uri, 'what', what_));
+	}
+	xd := serialize_to_UTF8_xml (xt);   
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
 }
 ;
 
