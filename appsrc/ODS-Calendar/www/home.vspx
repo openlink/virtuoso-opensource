@@ -6059,7 +6059,7 @@
                 <th>
                   Name
                 </th>
-                <th width="10%">
+                        <th nowrap="nowrap" width="10%">
                   Start At
                 </th>
               </tr>

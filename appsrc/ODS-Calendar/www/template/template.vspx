@@ -42,7 +42,6 @@
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -76,6 +75,7 @@
           }
 
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
 
           // WebDAV
           var options = { imagePath: OAT.Preferences.imagePath,
@@ -117,6 +117,7 @@
           if ($('reminderDiv'))
           {
           	reminderDialog = new OAT.Dialog("Reminder", "reminderDiv", {width:400, heigth:400, resize:0, buttons:0, modal:1});
+  	          reminderDialog.cancel = reminderDialog.hide;
             OAT.Dom.show('reminderDiv');
           }
         }

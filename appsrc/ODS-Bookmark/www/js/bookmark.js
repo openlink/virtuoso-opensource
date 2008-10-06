@@ -1470,6 +1470,7 @@ BMK.formShow = function (action, id, params)
   formDiv = OAT.Dom.create('div', {width:dx+'px', height:dy+'px'});
   formDiv.id = 'formDiv';
   formDialog = new OAT.Dialog('', formDiv, {width:parseInt(dx)+20, buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
+  formDialog.cancel = formDialog.hide;
 
   var s = 'forms.vspx?sa='+encodeURIComponent(action)+BMK.sessionParams();
   if (id) {s += '&id='+encodeURIComponent(id);}

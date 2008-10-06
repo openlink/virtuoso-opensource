@@ -38,6 +38,7 @@
         function myInit()
         {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Preferences.showAjax = false;
 
           ODRIVE.coloriseTables();

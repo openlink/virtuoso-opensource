@@ -33,8 +33,6 @@
       }
       http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
     ?>
-    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css"/>
-    <link rel="stylesheet" href="/ods/oat/styles/winms.css" type="text/css"/>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
     <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
@@ -58,6 +56,7 @@
         function myInit()
         {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Preferences.showAjax = false;
 
           // WebDAV

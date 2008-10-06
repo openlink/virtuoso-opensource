@@ -41,9 +41,6 @@
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <link rel="stylesheet" href="/ods/oat/styles/webdav.css" type="text/css" />
-    <link rel="stylesheet" href="/ods/oat/styles/winms.css" type="text/css"/>
-    <link rel="stylesheet" href="/ods/winrect.css" type="text/css" />
     <meta name="dc.description" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V BMK.WA.utf2wide (BMK.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -63,6 +60,7 @@
 
         function myInit() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Preferences.showAjax = false;
 
           // WebDAV
