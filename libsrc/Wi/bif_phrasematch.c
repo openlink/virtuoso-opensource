@@ -641,7 +641,6 @@ ap_set_t **aps_tryrdlock_array (caddr_t *set_ids, int load_phrases, query_instan
         goto oblom;
       sets[set_ctr] = set;
     }
-  mutex_leave (ap_globals.apg_mutex);
   if (load_phrases)
     {
       for (set_ctr = 0; set_ctr < set_count; set_ctr++)
@@ -654,6 +653,7 @@ ap_set_t **aps_tryrdlock_array (caddr_t *set_ids, int load_phrases, query_instan
 #endif
         }
     }
+  mutex_leave (ap_globals.apg_mutex);
   return sets;
 
 oblom:
