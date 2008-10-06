@@ -458,7 +458,7 @@ ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
 
 
 void
-dt_to_timestamp_struct (caddr_t dt, TIMESTAMP_STRUCT * ts)
+dt_to_timestamp_struct (ccaddr_t dt, TIMESTAMP_STRUCT * ts)
 {
   int year, month, day;
   num2date (DT_DAY (dt), &year, &month, &day);
@@ -638,7 +638,7 @@ dt_part_ck (char *str, int min, int max, int *err)
 }
 
 void
-dt_to_string (char *dt, char *str, int len)
+dt_to_string (const char *dt, char *str, int len)
 {
   int dt_type;
   TIMESTAMP_STRUCT ts;
@@ -662,7 +662,7 @@ dt_to_string (char *dt, char *str, int len)
 }
 
 void
-dt_to_iso8601_string (char *dt, char *str, int len)
+dt_to_iso8601_string (const char *dt, char *str, int len)
 {
   TIMESTAMP_STRUCT ts;
   int tz = DT_TZ (dt);
@@ -708,7 +708,7 @@ dt_to_iso8601_string (char *dt, char *str, int len)
 }
 
 void
-dt_to_rfc1123_string (char *dt, char *str, int len)
+dt_to_rfc1123_string (const char *dt, char *str, int len)
 {
   TIMESTAMP_STRUCT ts;
   char * wkday [] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -724,7 +724,7 @@ dt_to_rfc1123_string (char *dt, char *str, int len)
 }
 
 void
-dt_to_ms_string (char *dt, char *str, int len)
+dt_to_ms_string (const char *dt, char *str, int len)
 {
   TIMESTAMP_STRUCT ts;
   char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};

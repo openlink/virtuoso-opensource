@@ -3449,7 +3449,7 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-sprintf_inverse (caddr_t *qst, caddr_t *err_ret, caddr_t str, caddr_t fmt, long hide_errors)
+sprintf_inverse (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors)
 {
   dtp_t str_dtp = DV_TYPE_OF (str);
   dk_set_t res = NULL;

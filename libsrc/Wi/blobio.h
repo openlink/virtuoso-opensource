@@ -130,10 +130,10 @@ void iri_id_write (iri_id_t *iid, dk_session_t * ses);
 
 void blobio_init (void);
 caddr_t datetime_serialize (caddr_t dt, dk_session_t * out);
-void dt_to_string (char *dt, char *str, int len);
-void dt_to_iso8601_string (char *dt, char *str, int len);
-void dt_to_rfc1123_string (char *dt, char *str, int len);
-void dt_to_ms_string (char *dt, char *str, int len);
+void dt_to_string (const char *dt, char *str, int len);
+void dt_to_iso8601_string (const char *dt, char *str, int len);
+void dt_to_rfc1123_string (const char *dt, char *str, int len);
+void dt_to_ms_string (const char *dt, char *str, int len);
 void sec_login_digest (char *ses_name, char *user, char *pwd, unsigned char *digest);
 int iso8601_to_dt (char *str, char *dt, dtp_t dtp);
 int http_date_to_dt (const char *http_date, char *dt);

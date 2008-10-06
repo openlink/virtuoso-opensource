@@ -1857,7 +1857,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
       ssg_puts (" /* UNAME as sqlval */ __box_flags_tweak (");
 #endif
-      ssg_print_box_as_sql_atom (ssg, lit, 0);
+      ssg_print_box_as_sql_atom (ssg, (ccaddr_t)(lit), 0);
       ssg_puts (", 1)");
       return;
     }
@@ -5771,7 +5771,7 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_A
       opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
       if (NULL != opts)
         {
-          int idx;  int sav_ctr;
+          int sav_ctr;
           caddr_t local_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, opts);
           if (NULL != local_inference)
             active_inference = local_inference;
@@ -6392,7 +6392,6 @@ ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
 {
   SPART	*tree = ssg->ssg_tree;
   SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
-  SPART *val;
   int ctr, vctr;
   if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
     return;
@@ -6446,8 +6445,7 @@ ssg_print_t_steps_of_select (spar_sqlgen_t *ssg)
 {
   SPART	*tree = ssg->ssg_tree;
   SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
-  SPART *val;
-  int ctr, vctr;
+  int ctr;
   if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
     return;
   for (ctr = BOX_ELEMENTS (opts); 1 < ctr; ctr -= 2)

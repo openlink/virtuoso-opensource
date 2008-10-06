@@ -1181,7 +1181,6 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
       cases = sparp_find_triple_cases (sparp, triple, sources, FROM_L);
       DO_BOX_FAST_REV (triple_case_t *, tc, case_ctr, cases)
         {
-          triple_case_t *tc = cases [case_ctr];
           caddr_t table_name = tc->tc_qm->qmTableName;
           if ((NULL == table_name) || strcmp ("DB.DBA.RDF_QUAD", table_name))
             return 0;
@@ -1204,7 +1203,6 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   SPART *var_vector_expn;
   SPART *var_vector_arg;
   caddr_t limofs_name;
-  caddr_t descr_mode;
   const char *descr_name;
   int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
@@ -1536,7 +1534,6 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 
 SPART *spar_make_fake_blank_node (sparp_t *sparp)
 {
-  sparp_env_t *env = sparp->sparp_env;
   SPART *res;
   res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, uname__ref,
