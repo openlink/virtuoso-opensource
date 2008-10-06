@@ -87,7 +87,7 @@ ODS = {
       };
 
 ////////////////////////////////////
-///// ods-controller //////////////
+///// ods common commands //////////
 ////////////////////////////////////
 
 CmdUtils.CreateCommand({
@@ -178,6 +178,377 @@ CmdUtils.CreateCommand({
   }
 });
 
+////////////////////////////////////
+///// ods commands /////////////////
+////////////////////////////////////
+
+CmdUtils.CreateCommand({
+  name: "ods-set-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_oauth.vsp",
+  help: "Type ods-set-oauth <oauth>. Get your oauth at " + ODS.getOAuthServer(),
+
+  execute: function(oauth) {
+    if (oauth.text.length < 1)
+    {
+      displayMessage("Please, enter your ODS OAuth");
+      return;
+    }
+
+    ODS.setOAuth("", oauth.text);
+    displayMessage("Your your ODS OAuth has been set.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user",
+  takes: {"user": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-user <username>",
+
+  execute: function (user) {
+    odsExecute ("user.delete", {name: user.text}, "", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-freese-user",
+  takes: {"user": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-freese-user <username>",
+
+  execute: function (user) {
+    odsExecute ("user.freese", {name: user.text}, "", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-user",
+  takes: {"user": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-user <username>",
+
+  preview: function (previewBlock, user) {
+    var res = odsExecute ("user.get", {name: user.text}, "");
+    CmdUtils.log('res: ' + res);
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  },
+
+  execute: function (user) {
+    odsExecute ("user.get", {name: user.text}, "", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-new-user-annotation",
+  takes: {"iri": noun_arb_text},
+  modifiers: {"has": noun_arb_text, "with": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-new-user-annotation <iri> has <relation> with <value>",
+
+  execute: function (iri, modifiers) {
+    var relation = (modifiers.has)? modifiers.has.text: undefined;
+    var value = (modifiers.with)? modifiers.with.text: undefined;
+    odsExecute ("user.annotation.new", {claimIri: iri.text, claimRelation: relation, claimValue: value}, "", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-user-annotation",
+  takes: {"iri": noun_arb_text},
+  modifiers: {"has": noun_arb_text, "with": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-new-user-annotation <iri> has <relation> with <value>",
+
+  execute: function (iri, modifiers) {
+    var relation = (modifiers.has)? modifiers.has.text: undefined;
+    var value = (modifiers.with)? modifiers.with.text: undefined;
+    odsExecute ("user.annotation.delete", {claimIri: iri.text, claimRelation: relation, claimValue: value}, "", "execute")
+  }
+});
+
+////////////////////////////////////
+///// ods briefcase ////////////////
+////////////////////////////////////
+
+CmdUtils.CreateCommand({
+  name: "ods-set-briefcase-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS briefcase OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_oauth.vsp",
+  help: "Type ods-set-briefcase-oauth <oauth>. Get your oauth at " + ODS.getOAuthServer(),
+
+  execute: function(oauth) {
+    if (oauth.text.length < 1)
+    {
+      displayMessage("Please, enter your briefcase instance OAuth");
+      return;
+    }
+
+    ODS.setOAuth("briefcase", oauth.text);
+    displayMessage("Your ODS briefcase instance OAuth has been set.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-briefcase-resource",
+  takes: {"path": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Get your ODS briefcase resource content",
+  help: "Type ods-get-briefcase-resource <path>",
+
+  preview: function (previewBlock, path) {
+    var res = odsExecute ("briefcase.resource.get", {path: path.text}, "briefcase");
+    CmdUtils.log('res: ' + res);
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  },
+
+  execute: function(path) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your resource path");
+      return;
+    }
+    odsExecute ("briefcase.resource.get", {path: path.text}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-store-briefcase-resource",
+  takes: {"path": noun_arb_text},
+  modifiers: {"with": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Store content on resource path",
+  help: "Type ods-store-briefcase-resource <path> with <content>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your resource path");
+      return;
+    }
+    var content;
+    if (modifiers.with)
+      content = modifiers.with.text;
+    odsExecute ("briefcase.resource.store", {path: path.text, content: content}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-briefcase-resource",
+  takes: {"path": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Get your ODS briefcase resource content",
+  help: "Type ods-get-briefcase-resource <path>",
+
+  execute: function(path) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your resource path");
+      return;
+    }
+    odsExecute ("briefcase.resource.remove", {path: path.text}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-briefcase-collection",
+  takes: {"path": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Create ODS briefcase collection (folder)",
+  help: "Type ods-create-briefcase-collection <path>",
+
+  execute: function(path) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection path");
+      return;
+    }
+    odsExecute ("briefcase.collection.create", {path: path.text}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-briefcase-collection",
+  takes: {"path": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Delete existing ODS Briefcase collection (folder)",
+  help: "Type ods-delete-briefcase-collection <path>",
+
+  execute: function(path) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection path");
+      return;
+    }
+    odsExecute ("briefcase.collection.delete", {path: path.text}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-copy-briefcase-collection",
+  takes: {"path": noun_arb_text},
+  modifiers: {"to": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Copy existing ODS Briefcase collection (folder)",
+  help: "Type ods-copy-briefcase-collection <fromPath> to <toPath>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection path");
+      return;
+    }
+    var toPath;
+    if (modifiers.to)
+      toPath = modifiers.to.text;
+    odsExecute ("briefcase.copy", {from_path: path.text, to_path: toPath}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-move-briefcase-collection",
+  takes: {"path": noun_arb_text},
+  modifiers: {"to": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Copy existing ODS Briefcase collection (folder)",
+  help: "Type ods-copy-briefcase-collection <fromPath> to <toPath>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection path");
+      return;
+    }
+    var toPath;
+    if (modifiers.to)
+      toPath = modifiers.to.text;
+    odsExecute ("briefcase.move", {from_path: path.text, to_path: toPath}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-briefcase-property",
+  takes: {"path": noun_arb_text},
+  modifiers: {"property": noun_arb_text, "with": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set property to existing ODS Briefcase collection/resource",
+  help: "Type ods-set-briefcase-property <path> property <property_name> with <value>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collectiom/resource path");
+      return;
+    }
+    var property;
+    if (modifiers.property)
+      property = modifiers.property.text;
+    var value;
+    if (modifiers.with)
+      value = modifiers.with.text;
+    odsExecute ("briefcase.property.set", {path: path.text, property: property, value: value}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-briefcase-property",
+  takes: {"path": noun_arb_text},
+  modifiers: {"property": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Get property from existing ODS Briefcase collection/resource",
+  help: "Type ods-get-briefcase-property <path> property <property_name>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection/resource path");
+      return;
+    }
+    var property;
+    if (modifiers.property)
+      property = modifiers.property.text;
+    odsExecute ("briefcase.property.get", {path: path.text, property: property}, "briefcase", "execute")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-briefcase-property",
+  takes: {"path": noun_arb_text},
+  modifiers: {"property": noun_arb_text},
+  homepage: "http://demo.openlinksw.com/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Delete property from existing ODS Briefcase collection/resource",
+  help: "Type ods-delete-briefcase-property <path> property <property_name>",
+
+  execute: function(path, modifiers) {
+    if (path.text.length < 1)
+    {
+      displayMessage("Please, enter your collection/resource path");
+      return;
+    }
+    var property;
+    if (modifiers.property)
+      property = modifiers.property.text;
+    odsExecute ("briefcase.property.delete", {path: path.text, property: property}, "briefcase", "execute")
+  }
+});
+
+////////////////////////////////////
+///// ods bookmark /////////////////
+////////////////////////////////////
+
 CmdUtils.CreateCommand({
   name: "ods-set-bookmark-oauth",
   takes: {"oauth": noun_arb_text},
@@ -185,8 +556,8 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  description: "Set your ODS bookmark oauth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_oauth.vsp",
-  help: "Type ods-bookmark-oauth <oauth>. Get your oauth at " + ODS.getOAuthServer(),
+  description: "Set your ODS bookmark OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_oauth.vsp",
+  help: "Type ods-set-bookmark-oauth <oauth>. Get your oauth at " + ODS.getOAuthServer(),
 
   execute: function(oauth) {
     if (oauth.text.length < 1)
@@ -196,7 +567,7 @@ CmdUtils.CreateCommand({
     }
 
     ODS.setOAuth("bookmark", oauth.text);
-    displayMessage("Your your bookmark instance OAuth has been set.");
+    displayMessage("Your ODS bookmark instance OAuth has been set.");
   }
 });
 
