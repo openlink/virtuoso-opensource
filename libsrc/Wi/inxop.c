@@ -594,6 +594,8 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  int res;
 	  if (itc->itc_is_registered)
 	    return IOP_AT_END; /*found something already, type no longer castable but was, so no more hits possible */
+          itc_free_owned_params (itc);
+          ITC_START_SEARCH_PARS (itc);
 	  res = inxop_next (iop, qi, IOP_START, ts);
 	  if (IOP_ON_ROW == res)
 	    return IOP_NEW_VAL;
