@@ -753,6 +753,7 @@ int tcpses_client_port (session_t *ses);
 int tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len);
 void tcpses_set_reuse_address (int f);
 int tcpses_is_read_ready (session_t * ses, timeout_t * to);
+int tcpses_is_write_ready (session_t * ses, timeout_t * to);
 int tcpses_select (int ses_count, session_t **reads, session_t **writes, timeout_t *timeout);
 int tcpses_addr_info (session_t * ses, char * buf, size_t max_buf, int deflt, int from);
 void tcpses_print_client_ip (session_t * ses, char *buf, int buf_len);

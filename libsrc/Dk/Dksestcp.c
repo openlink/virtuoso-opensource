@@ -1002,6 +1002,11 @@ tcpses_read (session_t * ses, char *buffer, int n_bytes)
 
 
 extern char *build_thread_model;	/* from Thread */
+
+
+long read_block_usec;
+long write_block_usec;
+
 int
 tcpses_is_read_ready (session_t * ses, timeout_t * to)
 {
@@ -1044,7 +1049,49 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
     {
       SESSTAT_SET (ses, SST_TIMED_OUT);
     }
+  if (to)
+    read_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
 #endif
+  return SER_SUCC;
+}
+
+
+int
+tcpses_is_write_ready (session_t * ses, timeout_t * to)
+{
+#ifndef FOR_GTK_TESTS
+  int rc;
+  struct timeval to_2;
+  fd_set fds;
+  int fd = ses->ses_device->dev_connection->con_s;
+  if (to)
+    {
+      memset (&to_2, 0, sizeof (to_2));
+      to_2.tv_sec = to->to_sec;
+      to_2.tv_usec = to->to_usec;
+    }
+
+  if (ses->ses_device->dev_connection->con_is_file)
+    return 1;
+
+  if (fd < 0)			/* the sequential read will throw exception */
+    return SER_SUCC;
+
+  FD_ZERO (&fds);
+  FD_SET (fd, &fds);
+#endif
+  SESSTAT_CLR (ses, SST_TIMED_OUT);
+
+#ifndef FOR_GTK_TESTS
+  rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
+  if (!rc)
+    {
+      SESSTAT_SET (ses, SST_TIMED_OUT);
+    }
+  if (to)
+    write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
+#endif
+
   return SER_SUCC;
 }
 
