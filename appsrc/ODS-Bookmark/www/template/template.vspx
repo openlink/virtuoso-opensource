@@ -37,7 +37,7 @@
       }
       http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.rss'));
       http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.atom'));
-      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, BMK.WA.bookmarks_url (self.domain_id), self.account_id, self.domain_id));
+      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%s" />', domainName, BMK.WA.gems_url (self.domain_id)||'Bookmark.opml'));
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
