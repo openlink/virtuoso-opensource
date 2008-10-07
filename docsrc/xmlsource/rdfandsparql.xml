@@ -2051,6 +2051,10 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
     </sect2>
 </sect1>
 <sect1 id="virtuososponger"><title>Virtuoso Sponger</title>
+<figure id="virtuosospongerdiagram" float="1">
+		<title>Virtuoso Sponger</title>
+		<graphic fileref="linked_data_gen_opts3.png"/>
+        </figure>
 <para>The Virtuoso Sponger is a middleware component of Virtuoso that generates RDF Linked Data from
 a variety of data sources. The sponger is transparently integrated into the Virtuoso SPARQL Query
 Processor, where it serves as part of the URI/IRI dereferencing functionality. It is also optionally
