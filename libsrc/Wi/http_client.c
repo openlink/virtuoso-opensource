@@ -1911,6 +1911,8 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       dk_set_push (&reqs, ctx);
     }
+  if (!host) /* pipeline post, but no data at all */
+    return list (0);
   
   reqs = dk_set_nreverse (reqs);
 
