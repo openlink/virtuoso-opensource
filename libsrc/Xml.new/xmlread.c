@@ -2738,6 +2738,8 @@ start_token_again:
 		  int must_be_finished = 0;
 		  if (ws_required && !test_ws (parser))
 		    must_be_finished = 1;
+                  if (parser->msglog_ctrs [XCFG_FATAL])
+                    return XML_TOK_INVALID;
 		  if (test_char (parser, '>'))
 		    {
 		      if (parser->masters.start_element_handler)
