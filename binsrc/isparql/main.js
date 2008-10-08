@@ -460,11 +460,13 @@ function init() {
 	window.adv = new iSPARQL.Advanced();
 
 	var execCB = function(req) {
+		/* FIXME: nicely call redraw here */
 		tab.go(2); /* go to results after query execution */
 		if (qbe.QueryGenerate() == req.opts.query) { return; }
 		qbe.loadFromString(req.opts.query);
 		qbe.svgsparql.reposition();
 		$("query").value = req.opts.query;
+		$("qbe_graph").value = req.opts.defaultGraph;
 		}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 

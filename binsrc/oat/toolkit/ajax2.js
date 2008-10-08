@@ -214,8 +214,21 @@ OAT.AJAX = {
 				if (xhr.options.onerror) { 
 					xhr.options.onerror(xhr);
 				} else if (OAT.AJAX.httpError) {
-					var tmp = confirm("Problem retrieving data, status="+xhr.getStatus()+", do you want to see returned problem description?");
-					if (tmp) { alert(xhr.getResponseText()); }
+					var errtext = "Problem retrieving data, status="+xhr.getStatus()+".";
+					if (OAT.AJAX.SHOW_POPUP) { // show the error message inside the popup
+					    $('oat_ajax').innerHTML = errtext+"<br/><br/>";
+					    if ($('oat_ajax_title')) $('oat_ajax_title').innerHTML = 'Error';
+					    var button1 = OAT.Dom.create("input",{type:'button'});
+					    button1.value = "Details";
+					    button1.onclick = function() { window.alert(xhr.getResponseText()); }
+					    var button2 = OAT.Dom.create("input",{type:'button'});
+					    button2.value = "Continue";
+					    button2.onclick = function() { OAT.AJAX.endNotify(OAT.Preferences.showAjax); }
+					    OAT.Dom.append([$('oat_ajax'),button1,button2]);
+                                        } else { // if no popup
+					    var tmp = window.confirm(errtext);
+					    if (tmp) { window.alert(xhr.getResponseText()); }
+					}
 				}
 			} /* http error */
 		} /* readystate == 4 */
@@ -237,7 +250,7 @@ OAT.AJAX = {
 				if (!OAT.AJAX.dialog) {
 					// create an AJAX window
 					var imagePath = OAT.AJAX.imagePath;
-					var div = OAT.Dom.create("div",{textAlign:"center"});
+					var div = OAT.Dom.create("div",{textAlign:"center",id:'oat_ajax'});
 					var img = OAT.Dom.create("img");
 					img.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
 					OAT.Dom.append([div,img,OAT.Dom.create("br"),OAT.Dom.text("Ajax call in progress...")]);
@@ -255,8 +268,10 @@ OAT.AJAX = {
 			if ($('oat_ajax_throbber')) {
 				OAT.Dom.show($('oat_ajax_throbber'));	
 			} else {
-				var win = new OAT.Win({type:OAT.WinData.TYPE_ROUND,title:"Processing...",outerWidth:135,outerHeight:115,visibleButtons:""});
+				var win = new OAT.Win({type:OAT.WinData.TYPE_ROUND,title:"Processing...",outerWidth:165,outerHeight:125,visibleButtons:""});
 				win.dom.container.id = 'oat_ajax_throbber';
+				win.dom.content.id = 'oat_ajax';
+				win.dom.title.id = 'oat_ajax_title';
 				win.show();
 
 				var img = OAT.Dom.image('./imgs/throbber.gif');

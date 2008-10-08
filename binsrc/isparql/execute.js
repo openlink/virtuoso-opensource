@@ -523,8 +523,8 @@ var QueryExec = function(optObj) {
 		
 		var request = self.buildRequest(opts);
 		var callback = function(data) {
-			if (opts.callback) { opts.callback(data); }
 			self.addResponse(request,optObj,0,data);
+			if (opts.callback) { opts.callback(data); }
 		}
 		var onerror = function(xhr) {
 			var txt = xhr.getResponseText();
@@ -535,8 +535,8 @@ var QueryExec = function(optObj) {
 				newO.backupQuery = false;
 				self.execute(newO);
 			} else {
-				if (opts.onerror) { opts.onerror(txt); }
 				self.addResponse(request,optObj,1,txt);
+				if (opts.onerror) { opts.onerror(txt); }
 			}
 		}
 		var o = {
