@@ -670,7 +670,7 @@ yy_new_error (const char *s, const char *state, const char *native)
       }
   else
     strcpy (buf_for_next, " immediately before end of statement");
-  strcat_ck (sql_err_text, buf_for_next);
+  strncat_ck (sql_err_text, buf_for_next, (sizeof (sql_err_text) - 1));
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
 
 jmp:
