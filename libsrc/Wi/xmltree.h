@@ -921,6 +921,7 @@ extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
+extern caddr_t uname_nodeID_ns;
 extern caddr_t uname_rdf_ns_uri;
 extern caddr_t uname_rdf_ns_uri_Description;
 extern caddr_t uname_rdf_ns_uri_ID;

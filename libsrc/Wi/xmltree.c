@@ -9920,6 +9920,7 @@ caddr_t uname__txt;
 caddr_t uname__xslt;
 caddr_t uname_lang;
 caddr_t uname_nil;
+caddr_t uname_nodeID_ns;
 caddr_t uname_rdf_ns_uri;
 caddr_t uname_rdf_ns_uri_Description;
 caddr_t uname_rdf_ns_uri_ID;
@@ -10006,6 +10007,7 @@ xml_tree_init (void)
   UNAME_IT(uname__xslt				, " xslt"			);
   UNAME_IT(uname_lang				, "lang"			);
   UNAME_IT(uname_nil				, "nil"				);
+  UNAME_IT(uname_nodeID_ns			, "nodeID://"			);
   UNAME_IT(uname_rdf_ns_uri			, RDF_NS_URI			);
   UNAME_IT(uname_rdf_ns_uri_Description		, RDF_NS_URI "Description"	);
   UNAME_IT(uname_rdf_ns_uri_ID			, RDF_NS_URI "ID"		);
