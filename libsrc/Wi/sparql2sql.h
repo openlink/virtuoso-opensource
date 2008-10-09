@@ -375,7 +375,7 @@ extern SPART *sparp_find_triple_of_var (sparp_t *sparp, SPART *gp, SPART *var);
 contains the field whose selid, tabid, name and tr_idx matches \c var. */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var);
 
-/*! This finds a variable that is a source of value of a given external variable. */
+/*! This finds a variable that is a source of value of a given external variable or an appropriate retval. */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
 
 /*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */

@@ -590,18 +590,23 @@ sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_t
   sparp_up_from_sub (sparp, curr, sub_sparp);
   DO_SET (caddr_t, varname, &all_sub_vars)
     {
+      SPART *rel_gp;
       sparp_equiv_get (sparp, curr, (SPART *)varname, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_OPTIONAL_READ);
       if (NULL != sts_this->sts_ancestor_gp)
-        sparp_equiv_get (sparp, sts_this->sts_ancestor_gp, (SPART *)varname, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_OPTIONAL_READ);
+        rel_gp = sts_this->sts_ancestor_gp;
+      else
+        rel_gp = sparp->sparp_expr->_.req_top.pattern;
+      sparp_equiv_get (sparp, rel_gp, (SPART *)varname, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_OPTIONAL_READ);
     }
   END_DO_SET ()
+  sparp_gp_trav_cu_out_triples_1 (sparp, curr, sts_this, common_env);
   return 0;
 }
 
 int
 sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  SPART *top_gp = (SPART *)(common_env);
+  SPART *top_gp = sparp->sparp_expr->_.req_top.pattern;
   sparp_equiv_t *eq;
   switch (SPART_TYPE(curr))
     {
@@ -625,7 +630,7 @@ sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret)
     sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
     sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq,
     NULL );
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, sparp->sparp_expr->_.req_top.pattern,
+  sparp_trav_out_clauses (sparp, sparp->sparp_expr, optvars_ret,
         NULL, NULL,
         sparp_gp_trav_cu_in_retvals, NULL, sparp_gp_trav_cu_in_subq,
         NULL );

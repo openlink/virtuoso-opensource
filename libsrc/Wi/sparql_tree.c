@@ -2848,7 +2848,8 @@ SPART *
 sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
 {
   sparp_equiv_t *eq, *esrc;
-  int vctr;
+  SPART *esub_res_gp = NULL, *esub_res = NULL;
+  int vctr, subv_ctr;
 #ifdef DEBUG
   if (!(SPART_VARR_EXTERNAL & var->_.var.rvr.rvrRestrictions))
     spar_internal_error (sparp, "sparp_" "find_origin_of_external_var(): non-external variable as argument");
@@ -2869,6 +2870,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
        if ((NULL != source->_.var.tabid) && !strcmp (source->_.var.vname, var->_.var.vname))
          return source;
     }
+#if 0
 /* If nothing really good is found then let's find any appropriate item. */
   for (vctr = esrc->e_var_count; vctr--; /*no step*/)
      {
@@ -2876,6 +2878,49 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
        if (!strcmp (source->_.var.vname, var->_.var.vname))
          return source;
     }
+#endif
+/* If nothing is found then a fake variable should be created. This is for cases like ?friend at top GP of query
+<code>
+  sparql select ((select count(1) where { ?friend <knows> ?z }))
+    where {{select * where { <me> <knows> ?friend }} option (transitive...)}.
+</code>
+ */
+  DO_BOX_FAST (ptrlong, subeq_idx, subv_ctr, esrc->e_subvalue_idxs)
+    {
+      sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
+      SPART *esub_gp = esub_eq->e_gp;
+      if ((OPTIONAL_L == esub_gp->_.gp.subtype) && (NULL != esub_res_gp) && (OPTIONAL_L != esub_res_gp->_.gp.subtype))
+        continue; /* There is a better variant already */
+      for (vctr = esub_eq->e_var_count; vctr--; /*no step*/)
+         {
+           SPART *source = esub_eq->e_vars[vctr];
+           if (strcmp (source->_.var.vname, var->_.var.vname))
+             continue;
+           if ((NULL == source->_.var.tabid) && (NULL != esub_res->_.var.tabid))
+             continue;
+           esub_res_gp = esub_gp;
+           esub_res = source;
+        }
+    }
+  END_DO_BOX_FAST;
+  if (NULL != esub_res)
+    return esub_res;
+  DO_BOX_FAST (ptrlong, subeq_idx, subv_ctr, esrc->e_subvalue_idxs)
+    {
+      sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
+      SPART *esub_gp = esub_eq->e_gp;
+      SPART *rv;
+      if (SELECT_L != esub_gp->_.gp.subtype)
+        continue;
+      rv = t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
+      rv->_.retval.equiv_idx = esub_eq->e_own_idx;
+      rv->_.retval.gp = esub_gp;
+      memcpy (&(rv->_.retval.rvr), &(esub_eq->e_rvr), sizeof (rdf_val_range_t));
+      rv->_.retval.selid = esub_gp->_.gp.selid;
+      rv->_.retval.vname = var->_.var.vname;
+      return rv;
+    }
+  END_DO_BOX_FAST;
   spar_internal_error (sparp, "sparp_" "find_origin_of_external_var(): external source equiv is found, external source var is not");
   return NULL;
 }
