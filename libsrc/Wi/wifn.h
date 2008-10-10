@@ -875,6 +875,7 @@ extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
 
 /* bif_file.c */
 void init_file_acl_set (char *acl_string1, dk_set_t * acl_set_ptr);
+void init_server_cwd (void);
 char *virt_strerror (int eno);
 
 

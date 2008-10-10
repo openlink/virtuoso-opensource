@@ -207,20 +207,26 @@ int acl_initilized = 0;
 
 /* initialize file ACL & explicit deny for db files & make full path for WWW root */
 void
-init_file_acl (void)
+init_server_cwd (void)
 {
-  char *p_www_abs_path = www_abs_path;
-  static char fdb[PATH_MAX + 1], *pfdb = fdb;
-  char tmpdir[PATH_MAX + 1];
-
-  {
     size_t cwd_len = 0;
     _srv_cwd[0] = 0;
     getcwd (_srv_cwd, sizeof (_srv_cwd));
     cwd_len = strlen (_srv_cwd);
     if (cwd_len > 0 && _srv_cwd[cwd_len - 1] == DIR_SEP)
       _srv_cwd[cwd_len - 1] = 0;
-  }
+}
+
+
+void
+init_file_acl (void)
+{
+  char *p_www_abs_path = www_abs_path;
+  static char fdb[PATH_MAX + 1], *pfdb = fdb;
+  char tmpdir[PATH_MAX + 1];
+  id_hash_t * sys_files = wi_inst.wi_files;
+  id_hash_iterator_t it;
+  caddr_t *sys_name, *sys_file;
 
   get_tmp_dirs (tmpdir, sizeof (tmpdir) - 1);
   init_file_acl_set (tmpdir, &a_dirs);
@@ -272,6 +278,11 @@ init_file_acl (void)
   rel_to_abs_path (pfdb, "virtuoso.lic", sizeof (fdb));	/* license file */
   dk_set_push (&d_db_files, box_dv_short_string (fdb));
   /* log segments */
+  id_hash_iterator (&it, sys_files);
+  while (hit_next (&it, (char**) &sys_name, (char**) &sys_file)) 
+    {
+      dk_set_push (&d_db_files, box_dv_short_string (*sys_name));
+    }
   acl_initilized = 1;
 }
 
@@ -366,27 +377,40 @@ int
 is_allowed (char *path)
 {
   int rc = 0;
-  static char abs_path[PATH_MAX + 1], *p_abs_path = abs_path;
+  caddr_t abs_path = NULL;
 
   if (!path)
     return 0;
 
+  abs_path = dk_alloc_box (PATH_MAX + 1, DV_STRING);
   abs_path[0] = 0;
-  if (!rel_to_abs_path (p_abs_path, path, sizeof (abs_path)))
-    return 0;
-  p_abs_path = abs_path;
+  if (!rel_to_abs_path (abs_path, path, box_length (abs_path) - 1))
+    {
+      rc = 0;
+      goto ret;
+    }
+
 
   /* explicitly deny any db file */
-  if (is_db_file (p_abs_path))
-    return 0;
+  if (is_db_file (abs_path))
+    {
+      rc = 0;
+      goto ret;
+    }
 
   /* allow any file under WWW root */
   if (www_root && BEGIN_WITH (abs_path, www_root) && !strstr (abs_path, ".."))
-    return 1;
+    {
+      rc = 1;
+      goto ret;
+    }
 
 
   if (!*abs_path || !a_dirs)
-    return 0;
+    {
+      rc = 0;
+      goto ret;
+    }
   /* check in allowed dirs */
   if (a_dirs)
     {
@@ -413,6 +437,8 @@ is_allowed (char *path)
         }
       END_DO_SET ();
     }
+ret:  
+  dk_free_box (abs_path);
   return rc;
 }
 

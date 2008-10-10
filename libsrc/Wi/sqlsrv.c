@@ -3584,6 +3584,7 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
+  init_server_cwd ();
   wi_open (mode);
   dbs_cpt_recov ();
   sql_bif_init ();
