@@ -1,0 +1,37 @@
+This package was debianized by OpenLink Virtuoso Maintainer
+<vos.admin@openlinksw.com> on Wed, 08 Oct 2008 17:10:32 +0100.
+
+It was downloaded from <http://sourceforge.net/projects/virtuoso/>
+
+Upstream Author(s):
+
+    OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>
+
+Copyright:
+
+    <Copyright (C) 2008 OpenLink Software>
+
+License:
+
+    This package is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 2 dated June 1991.
+
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this package; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
+
+The Debian packaging is (C) 2008, OpenLink Software <vos.admin@openlinksw.com>
+and is licensed under the GPL, see above.
+
+
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.

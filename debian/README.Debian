@@ -1,0 +1,19 @@
+virtuoso-opensource for Debian
+------------------------------
+
+On Debian systems, Virtuoso is built with the following substantive
+modifications:
+a) --with-layout=debian
+b) --localstatedir=/var
+c) the isql program is renamed to isql-v; isqlw becomes isql-vw.
+
+For usage notes, see the homepage,
+<http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main> especially the
+"Getting Started" section.
+
+The first time virtuoso-t is run it will create an empty database in
+/var/lib/virtuoso/db/ and install the Conductor package. Point your
+web-browser at <http://hostname:8890/> and use the conductor (default user
+and password of dba/dba) to install other VAD packages to taste.
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Wed, 08 Oct 2008 17:10:32 +0100

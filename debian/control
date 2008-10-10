@@ -1,0 +1,22 @@
+Source: virtuoso-opensource
+Section: misc
+Priority: extra
+Maintainer: OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>
+Build-Depends: debhelper (>= 5), autotools-dev, autoconf (>= 2.57), automake (>= 1.9), libtool (>= 1.5), flex (>= 2.5.33), bison (>= 2.3), gperf (>= 2.7.2), gawk (>= 3.1.1), m4 (>= 1.4.1), make (>= 3.79.1), libssl-dev (>= 0.9.7)
+Standards-Version: 3.7.2
+
+Package: virtuoso-opensource
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Homepage: http://virtuoso.openlinksw.com/
+Description: OpenLink Virtuoso Open-Source Edition
+ Virtuoso is a high-performance object-relational SQL database. As a
+ database, it provides transactions, a smart SQL compiler, powerful
+ stored-procedure language with optional Java and .Net server-side
+ hosting, hot backup, SQL-99 support and more. It has all major
+ data-access interfaces, such as ODBC, JDBC, ADO .Net and OLE/DB.
+ .
+ OpenLink Virtuoso supports SPARQL embedded into SQL for querying RDF
+ data stored in Virtuoso's database. SPARQL benefits from low-level
+ support in the engine itself, such as SPARQL-aware type-casting rules
+ and a dedicated IRI data type. 
