@@ -13,12 +13,12 @@
 
 OAT.Dereference = {
 	options:{
-		endpoint:"/proxy",	/* can be specified as urlParam */
+		endpoint:"/proxy?url=",	 /* endpoint for dereferencing *this* resource */
 
-		urlParams:{},		/* key->value pairs */
+		pragmas:{},				/* key->value pairs */
 
 		endpointOpts:{
-	virtuoso:true, /* if virtuoso proxy is used */
+			virtuoso:true,		/* is virtuoso? */
 			proxyVersion:1	/* normal proxy type - default */
 	},
 
@@ -37,68 +37,61 @@ OAT.Dereference = {
 		for (var p in propObj) { dstObj[p] = srcObj[p]; }
 	},
 
-	go:function(u,callback,optObj) {
+	go:function(url,callback,optObj) {
 		var ajaxOpts = {};
 		var endpointOpts = {};
-		var urlParams = {};
+		var pragmas = {};
 
 		/* deep copy defaults */
 		this.copy(this.options.ajaxOpts,ajaxOpts);
 		this.copy(this.options.endpointOpts,endpointOpts);
-		this.copy(this.options.urlParams,urlParams);
+		this.copy(this.options.pragmas,pragmas);
 
 		/* now the settings */
+		if (optObj) {
 		this.copy(optObj.ajaxOpts,ajaxOpts);
 		this.copy(optObj.endpointOpts,endpointOpts);
-		this.copy(optObj.urlParams,urlParams);
-
-		/* endpoint can be specified directly, or via urlparams */
-
-		var endpoint = optObj.endpoint || this.options.endpoint;
-		if ("endpoint" in urlParams) { 
-			endpoint = urlParams["endpoint"]; 
-			delete(urlParams["endpoint"]); 
+			this.copy(optObj.pragmas,pragmas);
 		}
 
-		/* backward compat */
-		urlParams.url = urlParams.url || u;
-		var url = urlParams.url;
+		var endpoint = this.options.endpoint;
 
-		if (endpointOpts.virtuoso && url.match(/^http/i)) {
+		if (url.match(/^http/i) && endpointOpts.virtuoso) { /* Virtuoso proxy: */
+		    if (endpointOpts.proxyVersion == 1) {
 			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
 			var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
-			urlParams.url = encodeURIComponent(r[1] + r[3]);
+				var encoded = encodeURIComponent(r[1] + r[3]);
+				encoded = this.addParam(endpoint + encoded, "force", "rdf");
 			
-			/* triplr-style endpoint cannot process URL params as they are passed through to the remote */
-		   	if (endpointOpts.proxyVersion != 1) {
-				ajaxOpts["noSecurityCookie"] = true;
-		    	} else {
-				encoded = this.addParam(endpoint, "force", "rdf");
 				if (user) { encoded = this.addParam(encoded, "login", encodeURIComponent(user)); }
 				if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
 				if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
-				for (var p in urlParams) { encoded = this.addParam(encoded, p, urlParams[p]); }
+				for (var p in pragmas) { encoded = this.addParam(encoded, p, pragmas[p]); }
+		    } else {
+				var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
+				var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
+				var encoded = (endpoint + r[1] + r[3]);
+				ajaxOpts["noSecurityCookie"] = true;
 		   	}
-		} else if (endpointOpts.virtuoso && (url.match(/^(urn|doi|oai):/i))) {
-		    if (opt.endpointOpts.proxyVersion != 1) {
+		} else if ((url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) && endpointOpts.virtuoso) { /* Virtuoso proxy: */
+		    if (endpointOpts.proxyVersion == 1) {
+				var encoded = encodeURIComponent(url);
+				encoded = addParam(endpoint + encoded, "force", "rdf");
+				if (url.match(/\.n3$/)) { encoded = addParam(encoded, "output-format", "n3"); }
+				if (url.match(/\.ttl$/)) { encoded = addParam(encoded, "output-format", "ttl"); }
+				for (var p in pragmas) { encoded = this.addParam(encoded, p, pragmas[p]); }
+		    } else {
 				var encoded = endpoint + url;
 				ajaxOpts["noSecurityCookie"] = true;
-			} else {
-				urlParams.url = encodeURIComponent(url);
-				var encoded = this.addParam(endpoint, "force", "rdf");
-				if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
-				if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
-				for (var p in urlParams) { encoded = this.addParam(encoded, p, urlParams[p]); }
 		    }
-		} else if (url.match(/^(urn|doi|oai|http):/i)) { /* other than Virtuoso: */
+		} else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i) || url.match(/^http/i)) { /* other than Virtuoso: */
 			var encoded = endpoint + decodeURIComponent(url);
 			ajaxOpts["noSecurityCookie"] = true;
 		} else { /* relative uri */
 			var encoded = url;
 		}
 
-		var cb = function(data) { if (callback) { callback(data,{endpoint:endpoint,url:url,params:urlParams}); } }
-		OAT.AJAX.GET(encoded,false,cb,ajaxOpts);
+		OAT.AJAX.GET(encoded,false,callback,ajaxOpts); 
 	}
 }
 OAT.Loader.featureLoaded("dereference");

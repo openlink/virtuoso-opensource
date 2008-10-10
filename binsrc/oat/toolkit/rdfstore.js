@@ -71,8 +71,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.filtersProperty = [];
 	this.items = [];
 		
-	/* FIXME: passing an optObj here? */
-	this.addURL = function(u,optObj) {
+	this.addURL = function(url,optObj) {
 		var opt = {};
 
 		for (var p in optObj) { opt[p] = optObj[p]; } 
@@ -82,9 +81,8 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		for (var p in self.options) { if (!opt.ajaxOpts[p]) { opt.ajaxOpts[p] = self.options[p]; } }
 
 		var title = opt.title; delete(opt.title);
-		var url = u.toString().trim();
 		
-		var add = function(str,options) {
+		var add = function(str) {
 			if (url.match(/\.n3$/) || url.match(/\.ttl$/)) {
 				var triples = OAT.N3.toTriples(str);
 			} else {
@@ -117,7 +115,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 					if ((t[0]==url || t[0]==url+'/') && self.labelProps.find(t1)!=-1) { title = t[2]; }
 			}
 			}
-			self.addTriples(triples,url,title,options.endpoint);
+			self.addTriples(triples,url,title);
 			OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:url});
 		}
 
@@ -145,12 +143,11 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:xmlDoc.baseURI});
 	}
 		
-	this.addTriples = function(triples,href,title,endpoint) {
+	this.addTriples = function(triples,href,title) {
 		var o = {
 			triples:triples,
 			href:href || "",
 			enabled:true,
-			endpoint:endpoint,
 			title:title
 		}
 		self.items.push(o);
