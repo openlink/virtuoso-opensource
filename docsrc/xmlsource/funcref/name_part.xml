@@ -36,6 +36,7 @@
         <funcdef>varchar <function>name_part</function></funcdef> 
 	<paramdef>in <parameter>string</parameter> varchar</paramdef>
 	<paramdef>in <parameter>idx</parameter> integer</paramdef>
+        <paramdef>in <parameter>dstring</parameter> varchar</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -53,6 +54,8 @@
       <para>The string to be disected.</para></refsect2>
     <refsect2><title>idx</title>
       <para>The part index starting from 0.</para></refsect2>
+    <refsect2><title>dstring</title>
+      <para>The default value if the found value is null.</para></refsect2>
   </refsect1>
   <refsect1 id="ret_name_part"><title>Return Types</title>
     <para>A string will be returned containing the text from 
