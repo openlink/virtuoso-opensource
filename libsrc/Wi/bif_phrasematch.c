@@ -190,6 +190,7 @@ typedef struct ap_proc_inst_s {
   int		appi_hit_ffree_serial;				/*!< The first not-yet-set serial of a confirmed hit */
   ap_hit_t **	appi_hits;					/*!< Checksum hits, this will become sorted */
   dk_set_t	appi_phrases_revlist;				/*!< Temporary revlist of all found phrases */
+  vt_batch_t *  appi_vtb;
 } ap_proc_inst_t;
 
 #define AP_FREE_LOCK		0x1	/*!< Unlock the structure (and maybe class) */
@@ -925,6 +926,7 @@ ap_proc_inst_t *appi_create (query_instance_t *qi, caddr_t source_UTF8, ap_set_t
   appi->appi_source_UTF8 = source_UTF8;
   appi->appi_lh = lh;
   appi->appi_elh_UTF8 = elh_get_handler (&eh__UTF8, lh);
+  appi->appi_vtb = NULL;
   appi->appi_sets = (ap_set_t **) appi_alloc(set_count * sizeof (ap_set_t *));
   for (set_ctr = 0; set_ctr < set_count; set_ctr++)
     {
@@ -1357,6 +1359,17 @@ void appi_word_cbk_ptext (const utf8char *buf, size_t bufsize, void *userdata)
   unsigned apa_start = buf - (const utf8char *)appi->appi_source_UTF8;
   unsigned apa_end = apa_start + bufsize;
   appi_add_word_arrow (buf, bufsize, apa_start, apa_end, 0, 0, (ap_proc_inst_t *)userdata);
+  if (NULL != appi->appi_vtb)
+    {
+      vt_batch_t * vtb = appi->appi_vtb;
+      lh_iterate_patched_words (
+	  vtb->vtb_default_eh, 
+	  appi->appi_lh, 
+	  buf, bufsize, 
+	  appi->appi_lh->lh_is_vtb_word, 
+	  appi->appi_lh->lh_normalize_word,
+	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
+    }
 }
 
 
@@ -1421,12 +1434,24 @@ void appi_id (void *userdata, const char * name)
 void appi_word_cbk_html (const utf8char *buf, size_t bufsize, void *userdata)
 {
   appi_html_ctx_t * ah = (appi_html_ctx_t*) userdata;
+  ap_proc_inst_t *appi = ah->ah_appi;
   unsigned apa_start = buf - ah->ah_chars_begin;
   unsigned apa_end = apa_start + bufsize;
   appi_add_word_arrow (buf, bufsize, 
     apa_start, apa_end,
     ah->ah_tags[ah->ah_depth - 1]->apa_htmltm_bits, ah->ah_arrow_idx[ah->ah_depth - 1],
     ah->ah_appi );
+  if (NULL != appi->appi_vtb)
+    {
+      vt_batch_t * vtb = appi->appi_vtb;
+      lh_iterate_patched_words (
+	  vtb->vtb_default_eh, 
+	  appi->appi_lh, 
+	  buf, bufsize, 
+	  appi->appi_lh->lh_is_vtb_word, 
+	  appi->appi_lh->lh_normalize_word,
+	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
+    }
 }
 
 void appi_character (void *userdata, const char * s, size_t len)
@@ -1951,6 +1976,11 @@ bif_ap_build_match_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   set_count = BOX_ELEMENTS (set_ids);
   sets = aps_tryrdlock_array (set_ids, 1, (query_instance_t *)qst);
   appi = appi_create ((query_instance_t *)qst, source_UTF8, sets, set_count, lh);
+  if (BOX_ELEMENTS (args) > 5)
+    {
+      vt_batch_t * vtb = bif_vtb_arg (qst, args, 5, "ap_build_match_list"); 
+      appi->appi_vtb = vtb;
+    }
   if (is_html)
     {
       caddr_t err = NULL;
