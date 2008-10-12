@@ -79,8 +79,8 @@
           <![CDATA[
             declare _idx, _oth varchar;
             declare _n_own integer;
-            self.mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.mode);
-            if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
+            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
             {
               _oth := '';
               _n_own := 0;
@@ -90,7 +90,7 @@
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
                 self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._get_rdf, self._udata
-                from WS.WS.VFS_SITE where VS_HOST = get_keyword('EDIT', self.vc_page.vc_event.ve_params) and VS_ROOT = get_keyword ('root', self.vc_page.vc_event.ve_params);
+                from WS.WS.VFS_SITE where VS_HOST = get_keyword ('EDIT', self.vc_page.vc_event.ve_params) and VS_ROOT = get_keyword ('root', self.vc_page.vc_event.ve_params);
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
               update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
               self._root := concat('/DAV/', self._root);
@@ -111,7 +111,7 @@
 		}
               self.target_url := concat(self.target_url, self._host, self._url);
             }
-            else if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'create')
+            else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'create')
             {
               self._newd := '1900-01-01 00-00-00';
               self._del := '';
@@ -179,7 +179,7 @@
                       <td valign="top">
       <v:form name="robot_form" type="simple" method="POST" action="">
         <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
-            <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="name" value="<?V get_keyword ('name', self.vc_page.vc_event.ve_params) ?>"/>
             <tr>
               <td>Target description</td>
               <td>
@@ -377,7 +377,7 @@
                         declare item, idx, len, _idx, _oth, tar_url, sav_host varchar;
                         declare ret_arr, opts any;
                         declare pos integer;
-                        tar_url := get_keyword('tar_url', params, '');
+                        tar_url := trim (get_keyword ('tar_url', params, ''));
                         if (length(tar_url) <= 0)
                         {
                           self.vc_error_message := 'Incorrect target URL';
@@ -411,32 +411,32 @@
 			  }
 
 
-                        self._descr := get_keyword('descr', params);
+                        self._descr := trim (get_keyword ('descr', params));
                         self._url := aref(ret_arr, 2);
                         if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
                         {
                           self._url := concat(self._url, '?', aref(ret_arr, 4));
                           self._url := trim(self._url);
                         }
-                        self._root := get_keyword('root', params);
+                        self._root := trim (get_keyword ('root', params));
                         if (self.mode <> 'edit' and right(self._root, 1) <> '/')
                           self._root := concat(self._root, '/');
                         if (left(self._root, 5) = '/DAV/')
                           self._root := right(self._root, length(self._root) - 5);
-                        self._newd := get_keyword('newd', params);
-                        self._flow := get_keyword('flow', params);
-                        self._dflow := get_keyword('dflow', params);
-                        self._del := get_keyword('del', params);
+                        self._newd := get_keyword ('newd', params);
+                        self._flow := get_keyword ('flow', params);
+                        self._dflow := get_keyword ('dflow', params);
+                        self._del := get_keyword ('del', params);
                         if (self.mode = 'edit')
                           self._opage := self._opage;
                         else
-                          self._opage := get_keyword('opage', params);
+                          self._opage := get_keyword ('opage', params);
                         _idx := null;
-                        self._img := get_keyword('img', params);
-                        self._dav := get_keyword('dav', params);
-                        self._own := get_keyword('own', params);
-                        self._redir := get_keyword('redir', params);
-			self._store := get_keyword('store', params);
+                        self._img := get_keyword ('img', params);
+                        self._dav := get_keyword ('dav', params);
+                        self._own := get_keyword ('own', params);
+                        self._redir := get_keyword ('redir', params);
+			self._store := get_keyword ('store', params);
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 
 			opts := vector ();
