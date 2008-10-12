@@ -999,7 +999,8 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
   t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_acc_filters->data)), filt);
 }
 
-void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names)
+void
+spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t varname;
@@ -1020,15 +1021,6 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
             (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
             spar_make_variable (sparp, varname) :
             spar_make_blank_node (sparp, varname, 0) );
-#if 0
-  filter = spar_make_funcall (sparp, 0, "LONG::bif:position",
-    (SPART **)t_list (2,
-              graph_expn_copy,
-      spar_make_funcall (sparp, 0, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES",
-        (SPART **)t_list (1,
-          spar_make_funcall (sparp, 0, "SQLVAL::bif:vector",
-            (SPART **)t_list_to_array (precodes) ) ) ) ) );
-#else
   if (1 == dk_set_length (precodes))
     filter = spartlist (sparp, 3,
       BOP_EQ, graph_expn_copy, precodes->data);
@@ -1038,7 +1030,6 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
       filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L, 
         (SPART **)t_list_to_array (precodes) );
     }
-#endif
           spar_gp_add_filter (sparp, filter);
 }
 
@@ -1388,6 +1379,12 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           break;
         }
       dflts = env->spare_default_graph_precodes;
+      if ((NULL == dflts) && (NULL != env->spare_named_graph_precodes))
+        { /* Special case: if no FROM clauses specified but there are some FROM NAMED then default graph is totally empty */
+          graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+          graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+          break;
+        }
       if ((NULL != dflts) && (NULL == dflts->next))
         { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
           SPART *single_dflt = (SPART *)(dflts->data);

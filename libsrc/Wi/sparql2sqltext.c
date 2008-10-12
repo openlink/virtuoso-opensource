@@ -5673,7 +5673,11 @@ from_printed:
                   int precode_len;
                   dk_set_t good_precodes = NULL;
                   if ((SPAR_BLANK_NODE_LABEL == SPART_TYPE (g)) && !strncmp (g->_.var.vname, "_::default", 10))
+                    {
+                      if (NULL == ssg->ssg_sparp->sparp_env->spare_named_graph_precodes)
                     good_precodes = ssg->ssg_sparp->sparp_env->spare_default_graph_precodes;
+                      else good_precodes = NULL;
+                    }
                   else
                     good_precodes = ssg->ssg_sparp->sparp_env->spare_named_graph_precodes;
                   precode_len = dk_set_length (good_precodes);
@@ -5758,10 +5762,10 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
   if (1 == pass)
     {
       int has_table_options = 0;
-#define SAME_AS__VARIANT_COUNT 3
+#define SAME_AS__VARIANT_COUNT 5
       SPART **opts = NULL, *same_as__lists [SAME_AS__VARIANT_COUNT];
-static ptrlong same_as__keys [SAME_AS__VARIANT_COUNT] = {SAME_AS_L, SAME_AS_S_L, SAME_AS_O_L};
-static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_AS_S", "SAME_AS_O"};
+static ptrlong same_as__keys [SAME_AS__VARIANT_COUNT] = {SAME_AS_L, SAME_AS_O_L, SAME_AS_P_L, SAME_AS_S_L, SAME_AS_S_O_L};
+static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_AS_O", "SAME_AS_P", "SAME_AS_S", "SAME_AS_S_O"};
       ssg_putchar (' ');
       ssg_puts (qm->qmTableName);
       ssg_qr_uses_table (ssg, qm->qmTableName);
@@ -6476,6 +6480,42 @@ ssg_print_t_steps_of_select (spar_sqlgen_t *ssg)
     }
 }
 
+int
+ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
+{
+  SPART	*tree = ssg->ssg_tree;
+  ptrlong subtype = tree->_.req_top.subtype;
+  ssg_valmode_t retvalmode;
+  if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
+    return 0;
+  if (NULL != tree->_.req_top.formatmode_name)
+    return 0;
+  retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
+  if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
+    return 0;
+  if (DISTINCT_L == subtype)
+    return 1;
+  if ((0 != BOX_ELEMENTS_0 (tree->_.req_top.order)) || (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings)))
+    return 1;
+  return 0;
+}
+
+void
+ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
+{
+  SPART	*tree = ssg->ssg_tree;
+  SPART **retvals = tree->_.req_top.retvals;
+  caddr_t rbc_selid = t_box_sprintf (50, "%.40s_rbc", tree->_.req_top.retselid);
+  ssg_puts (" SELECT ");
+  ssg_print_retval_cols (ssg, retvals, rbc_selid, "bif:__ro2sq", 1);
+  ssg_puts (" FROM (");
+  ssg->ssg_indent++;
+  ssg_make_sql_query_text (ssg);
+  ssg->ssg_indent--;
+  ssg_puts (") AS ");
+  ssg_prin_id (ssg, rbc_selid);  
+}
+
 void
 ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
@@ -6819,9 +6859,16 @@ void ssg_make_whole_sql_text (spar_sqlgen_t *ssg)
       switch (SPART_TYPE (ssg->ssg_tree))
         {
         case SPAR_REQ_TOP:
+          {
+            int need_rb_complete;
           ssg->ssg_sources = ssg->ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+            need_rb_complete = ssg_req_top_needs_rb_complete (ssg);
+            if (need_rb_complete)
+              ssg_make_rb_complete_wrapped (ssg);
+            else
           ssg_make_sql_query_text (ssg);
           break;
+          }
         case SPAR_CODEGEN:
           {
             ssg_codegen_callback_t *cbk = ssg->ssg_tree->_.codegen.cgen_cbk[0];

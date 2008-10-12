@@ -192,8 +192,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token REDUCED_L	/*:: PUNCT_SPAR_LAST("REDUCED") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
 %token SAME_AS_L	/*:: PUNCT_SPAR_LAST("SAME_AS") ::*/
-%token SAME_AS_S_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S") ::*/
 %token SAME_AS_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_O") ::*/
+%token SAME_AS_P_L	/*:: PUNCT_SPAR_LAST("SAME_AS_P") ::*/
+%token SAME_AS_S_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S") ::*/
+%token SAME_AS_S_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S_O") ::*/
 %token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
@@ -934,8 +936,10 @@ spar_triple_option_var_commalist
 
 spar_same_as_option
 	: SAME_AS_L	{ $$ = SAME_AS_L; }
-	| SAME_AS_S_L	{ $$ = SAME_AS_S_L; }
 	| SAME_AS_O_L	{ $$ = SAME_AS_O_L; }
+	| SAME_AS_P_L	{ $$ = SAME_AS_P_L; }
+	| SAME_AS_S_L	{ $$ = SAME_AS_S_L; }
+	| SAME_AS_S_O_L	{ $$ = SAME_AS_S_O_L; }
 	;
 
 spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/

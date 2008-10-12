@@ -790,6 +790,10 @@ extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_it
 
 /*! Fills in ssg->ssg_out with an SQL text of a query */
 extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);
+/*! Fills in ssg->ssg_out with a wrapping query with rdf box completeions for a result of \c ssg_make_sql_query_text() */
+extern void ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg);
+/*! Makes a decision whether \c ssg_make_rb_complete_wrapped() is needed or plain \c ssg_make_sql_query_text() is adequate */
+extern int ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with an SQL text of quad map manipulation statement */
 extern void ssg_make_qm_sql_text (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with an SQL text of arbitrary statement, by calling ssg_make_sql_query_text(), ssg_make_qm_sql_text(), or some special codegen callback */

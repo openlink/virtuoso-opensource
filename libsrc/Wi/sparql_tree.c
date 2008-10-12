@@ -2912,7 +2912,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
       SPART *rv;
       if (SELECT_L != esub_gp->_.gp.subtype)
         continue;
-      rv = t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
+      rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
       rv->_.retval.equiv_idx = esub_eq->e_own_idx;
       rv->_.retval.gp = esub_gp;
       memcpy (&(rv->_.retval.rvr), &(esub_eq->e_rvr), sizeof (rdf_val_range_t));
@@ -3014,7 +3014,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
       switch (key)
         {
         case INFERENCE_L: has_inference = 1; continue;
-        case SAME_AS_L: case SAME_AS_S_L: case SAME_AS_O_L: has_inference = 1; continue;
+        case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
         case T_CYCLES_ONLY_L:
         case T_DISTINCT_L:

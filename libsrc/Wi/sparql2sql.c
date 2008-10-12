@@ -424,7 +424,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
             END_DO_BOX_FAST;
             break;
           }
-        case SAME_AS_L: case SAME_AS_S_L: case SAME_AS_O_L:
+        case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))
