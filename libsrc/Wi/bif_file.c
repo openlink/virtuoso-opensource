@@ -278,10 +278,13 @@ init_file_acl (void)
   rel_to_abs_path (pfdb, "virtuoso.lic", sizeof (fdb));	/* license file */
   dk_set_push (&d_db_files, box_dv_short_string (fdb));
   /* log segments */
-  id_hash_iterator (&it, sys_files);
-  while (hit_next (&it, (char**) &sys_name, (char**) &sys_file)) 
+  if (sys_files) /* during backup restore, db is not open, therefore we skip this part */
     {
-      dk_set_push (&d_db_files, box_dv_short_string (*sys_name));
+      id_hash_iterator (&it, sys_files);
+      while (hit_next (&it, (char **) &sys_name, (char **) &sys_file))
+	{
+	  dk_set_push (&d_db_files, box_dv_short_string (*sys_name));
+	}
     }
   acl_initilized = 1;
 }
