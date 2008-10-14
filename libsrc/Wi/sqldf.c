@@ -5330,6 +5330,7 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   ret->_.sub.is_contradiction = ot->ot_is_contradiction;
   if (!ret->dfe_tree)
     ret->dfe_tree = ot->ot_dt;
+  ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
   ret->dfe_unit = so->so_best_score;
   so->so_this_dt = prev_dt;
   so->so_best = best1;
@@ -5432,6 +5433,7 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
   dfe_locus_copy (so, copy_super);
   copy_super->_.sub.ot = super->_.sub.ot;
   copy_super->dfe_tree = super->dfe_tree;
+  copy_super->dfe_hash = super->dfe_hash;
   copy_super->_.sub.org_in = super->_.sub.org_in;
   copy_super->_.sub.after_join_test = dfe_pred_body_copy (so, super->_.sub.after_join_test, copy_super);
   copy_super->_.sub.vdb_join_test = dfe_pred_body_copy (so, super->_.sub.vdb_join_test, copy_super);
