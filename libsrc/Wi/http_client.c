@@ -446,7 +446,7 @@ http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
 	{
 	  dk_free_box (ctx->hcctx_ua_id);
 	}
-      ctx->hcctx_ua_id = box_dv_short_string (ua_id);
+      ctx->hcctx_ua_id = ua_id ? box_dv_short_string (ua_id) : NULL;
     }
   return (HC_RET_OK);
 }
@@ -1708,7 +1708,6 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   ctx = http_cli_std_init (url);
   ctx->hcctx_method = HC_METHOD_GET;
-  http_cli_set_ua_id (ctx, ua_id);
 
   if (BOX_ELEMENTS (args) > 1)
     {
@@ -1738,8 +1737,13 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_hdr = bif_string_or_null_arg (qst, args, 4, me);
       if (http_hdr)
-        http_cli_add_req_hdr (ctx, http_hdr);
+	{
+	  if (NULL != nc_strstr ((unsigned char *) http_hdr, (unsigned char *) "User-Agent:"))	/* we already have ua id in headers */
+	    ua_id = NULL;
+	  http_cli_add_req_hdr (ctx, http_hdr);
+	}
     }
+  http_cli_set_ua_id (ctx, ua_id);
   if (BOX_ELEMENTS (args) > 5)
     {
       body = bif_string_or_null_arg (qst, args, 5, me);

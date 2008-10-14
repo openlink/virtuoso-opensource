@@ -10279,7 +10279,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
   if (lower (url) like 'https://%')
     is_https := 1;
 
-  if (is_https)
+  if (proxy is null)
     content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt);
   else
     content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
