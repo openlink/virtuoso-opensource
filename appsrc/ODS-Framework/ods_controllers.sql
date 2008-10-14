@@ -279,12 +279,12 @@ create procedure params2json (in o any)
 --! Will estabilish a session in VSPX_SESSION table
 create procedure ODS.ODS_API."user.authenticate" (
     	in user_name varchar,
-	in password_hash varchar
-	) __soap_http 'text/plain'
+	in password_hash varchar) __soap_http 'text/plain'
 {
   declare uname varchar;
   declare sid varchar;
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -391,6 +391,28 @@ create procedure ODS.ODS_API."user.freeze" (in name varchar) __soap_http 'text/x
   if (uname in ('dav', 'dba'))
     {
       DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
+      rc := 1;
+    }
+  else
+    rc := -13;
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.unfreeze" (in name varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+  if (uname in ('dav', 'dba'))
+    {
+      DB.DBA.USER_SET_OPTION (name, 'DISABLED', 0);
       rc := 1;
     }
   else
@@ -1376,6 +1398,7 @@ grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.freeze" to ODS_API;
+grant execute on ODS.ODS_API."user.unfreeze" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
@@ -1416,47 +1439,84 @@ create procedure __user_password (in uname varchar)
 
 
 -- WebDAV
-
-create procedure get_briefcase_inst (in path varchar)
+create procedure get_briefcase_inst (
+  in path varchar)
 {
   declare uname, arr varchar;
   declare inst_id int;
+
+  path := dav_path_normalize (path);
+  if (chr (path[0]) = '~')
+  {
+    arr := sprintf_inverse (path, '~%s/%s', 1);
+  } else {
   arr := sprintf_inverse (path, '/DAV/home/%s/%s', 1);
+  }
   if (length (arr) <> 2)
     return 0;
   uname := arr[0];
   inst_id := 0;
   whenever not found goto ret;
-  select WAI_ID into inst_id from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where
-      WAM_USER = U_ID and U_NAME = uname and WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1;
+  select WAI_ID
+    into inst_id
+    from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+   where WAM_USER = U_ID and U_NAME = uname and WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1;
 ret:
   return inst_id;
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.resource.get" (in path varchar) __soap_http 'text/xml'
+create procedure dav_path_normalize (
+  in path varchar,
+  in path_type varchar := 'P')
 {
-  declare uname varchar;
+  declare N integer;
+
+  path := trim (path);
+  N := length (path);
+  if (N > 0)
+  {
+    if (chr (path[0]) <> '/')
+    {
+      path := '/' || path;
+    }
+    if ((path_type = 'C') and (chr (path[N-1]) <> '/'))
+    {
+      path := path || '/';
+    }
+    if (chr (path[1]) = '~')
+    {
+      path := replace (path, '/~', '/DAV/home/');
+    }
+  }
+  return path;
+}
+;
+
+create procedure ODS.ODS_API."briefcase.resource.get" (
+  in path varchar) __soap_http 'text/xml'
+{
+  declare uname, upassword varchar;
   declare rc int;
   declare content, tp any;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'R');
 
   rc := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (path, 'R'), content, tp, 0, 0, uname, null);
   if (rc < 0)
     return ods_serialize_int_res (rc);
-  else
-    {
+
       http_header (sprintf ('Content-Type: %s\r\n', tp));
       http (content);
-    }
   return '';
 }
 ;
@@ -1465,23 +1525,22 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
 	in path varchar,
 	in content varchar,
 	in "type" varchar := null,
-	in permissions varchar := '110100100RM'
-	)
-	__soap_http 'text/xml'
+	in permissions varchar := '110100100RM') __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare uid, gid int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'R');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1491,42 +1550,47 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.resource.delete" (in path varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.resource.delete" (
+  in path varchar) __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare uname, upassword varchar;
   declare rc int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'R');
 
-  rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null);
-ret:
+  upassword := coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_NAME = uname), '');
+  rc := DB.DBA.DAV_DELETE (path, 0, uname, upassword);
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.collection.create" (in path varchar, in permissions varchar := '110100100RM') __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.collection.create" (
+  in path varchar,
+  in permissions varchar := '110100100RM') __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare uid, gid int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'C');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1536,38 +1600,41 @@ ret:
 }
 ;
 
-
-create procedure ODS.ODS_API."briefcase.collection.delete" (in path varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.collection.delete" (
+  in path varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'C');
 
   rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null, 0);
-ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.copy"
-(in from_path varchar, in to_path varchar, in overwrite int := 0, in permissions varchar := '110100000RR')
-__soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.copy" (
+  in from_path varchar,
+  in to_path varchar,
+  in overwrite int := 0,
+  in permissions varchar := '110100000RR') __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare uid, gid int;
   declare inst_id, inst_id2 int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1575,9 +1642,10 @@ __soap_http 'text/xml'
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
     inst_id := 0;
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  from_path := dav_path_normalize (from_path, 'C');
+  to_path := dav_path_normalize (to_path, 'C');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1587,13 +1655,16 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.move" (in from_path varchar, in to_path varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.move" (
+  in from_path varchar,
+  in to_path varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare inst_id, inst_id2 int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1601,83 +1672,86 @@ create procedure ODS.ODS_API."briefcase.move" (in from_path varchar, in to_path 
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
     inst_id := 0;
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  from_path := dav_path_normalize (from_path, 'C');
+  to_path := dav_path_normalize (to_path, 'C');
 
   rc := DB.DBA.DAV_MOVE_INT (from_path, to_path, 0, uname, null, 0);
-ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.property.set" (in path varchar, in property varchar, in value varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.property.set" (
+  in path varchar,
+  in property varchar,
+  in value varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'P');
 
   rc := DB.DBA.DAV_PROP_SET_INT (path, property, value, uname, null, 0, 1, 0);
-ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.property.remove" (in path varchar, in property varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.property.remove" (
+  in path varchar,
+  in property varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
-
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'P');
 
   rc := DB.DBA.DAV_PROP_REMOVE_INT (path, property, uname, null, 0);
-ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."briefcase.property.get" (in path varchar, in property varchar := null)
-__soap_http 'text/xml'
+create procedure ODS.ODS_API."briefcase.property.get" (
+  in path varchar,
+  in property varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
   declare st char;
   declare inst_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
+  path := dav_path_normalize (path, 'P');
 
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+  st := case when ((path <> '') and (path[length(path)-1] = 47)) then 'C' else 'R' end;
   rc := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, st), st, property, 0, uname);
-ret:
   if (rc < 0)
     return ods_serialize_int_res (rc);
-  else
     return rc;
 }
 ;

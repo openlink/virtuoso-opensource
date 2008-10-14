@@ -363,6 +363,25 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     NULL,
     2);
 
+-- Wiki item is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html1', 1,
+    '/dataspace/([^/]*)/ecrm/([^/]*)/([^\\?]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '%s%s', vector('inst', 'item'),
+    'DB.DBA.ODS_WIKI_ITEM_PAGE',
+    NULL,
+    2);
+
+-- Wiki item is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_item_html2', 1,
+    '/dataspace/([^/]*)/eCRM/([^/]*)/([^\\?]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '%s%s', vector('inst', 'item'),
+    'DB.DBA.ODS_WIKI_ITEM_PAGE',
+    NULL,
+    2);
+
+
 -- Wiki atop-pub is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_atom_html', 1,
     '/dataspace/([^/]*)/wiki/([^/]*)/atom-pub([^\\?]*)',
@@ -536,6 +555,8 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_item_html',
 	  'ods_wiki_item_html',
 	  'ods_wiki_atom_html',
+	  'ods_ecrm_item_html1',
+	  'ods_ecrm_item_html2',
 	  'ods_feed_item_html',
 	  'ods_feed_item_html2',
 	  'ods_feed_item_html3',
