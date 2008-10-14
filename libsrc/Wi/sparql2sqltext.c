@@ -5326,10 +5326,10 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
   if (NULL == var_name)
     {
-      if ((SSG_VALMODE_AUTO == needed) && (SPAR_ALIAS == SPART_TYPE (ret_column)))
+      if (SSG_VALMODE_AUTO == needed)
         needed = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column); /* This is a special case of value returned from SPARQL subquery where AUTO valmode is set. */
       if (SSG_VALMODE_AUTO == needed)
-        spar_sqlprint_error ("ssg_print_retval_expn(): SSG_VALMODE_AUTO for not a variable");
+        spar_sqlprint_error ("ssg_print_retval_expn(): SSG_VALMODE_AUTO for not a variable and no way to find a type");
       if ((NULL_ASNAME == asname) && (flags & SSG_RETVAL_USES_ALIAS))
         {
           char buf[30];
@@ -6572,12 +6572,6 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case DISTINCT_L:
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
-      else if (SSG_VALMODE_AUTO == retvalmode)
-        {
-          SPART **retvals = tree->_.req_top.retvals;
-          if (1 == BOX_ELEMENTS (retvals))
-            retvalmode = sparp_expn_native_valmode (ssg->ssg_sparp, retvals[0]);
-        }
       if ((DISTINCT_L == subtype) && (SSG_VALMODE_SQLVAL != retvalmode))
         {
           if (SSG_VALMODE_LONG == retvalmode)

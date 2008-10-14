@@ -4610,11 +4610,63 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
   return res;
 }
 
+void
+sparp_assign_retvalmode_name_for_distinct (sparp_t *sparp, SPART *tree)
+{
+  int ctr, sqlvalmode_is_ok = 1, prefered_long_count = 0;
+  SPART **retvals = tree->_.req_top.retvals;
+  DO_BOX_FAST(SPART *, rv, ctr, retvals)
+    {
+      ssg_valmode_t rv_valmode = sparp_expn_native_valmode (sparp, rv);
+      if (SSG_VALMODE_SQLVAL == rv_valmode)
+        continue;
+      if (SSG_VALMODE_LONG == rv_valmode)
+        {
+          ptrlong rv_restr = sparp_restr_bits_of_expn (sparp, rv);
+          if (rv_restr & SPART_VARR_IS_REF)
+            {
+              prefered_long_count++;
+              continue;
+            }
+          sqlvalmode_is_ok = 0;
+          break;
+        }
+      if (IS_BOX_POINTER(rv_valmode))
+        {
+          ptrlong rv_restr;
+          rv_restr = sparp_restr_bits_of_expn (sparp, rv);
+          if (rv_restr & SPART_VARR_IS_REF)
+            {
+              if ((rv_valmode->qmfIsSubformatOfLong) || (rv_valmode->qmfIsSubformatOfLongWhenRef))
+                prefered_long_count++;
+              continue;
+            }
+          sqlvalmode_is_ok = 0;
+          break;
+        }
+      /* Don't know what could it be, but I want to stay at safe side */
+      sqlvalmode_is_ok = 0;
+      break;
+    }
+  END_DO_BOX_FAST;
+  if (!sqlvalmode_is_ok || (prefered_long_count == BOX_ELEMENTS (retvals)))
+    tree->_.req_top.retvalmode_name = t_box_dv_short_string ("LONG");
+  else
+    tree->_.req_top.retvalmode_name = t_box_dv_short_string ("SQLVAL");
+}
+
+
+
 int
 sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+  sparp_t *sub_sparp;
+  if ((SPAR_GP != SPART_TYPE (curr)) || (SELECT_L != curr->_.gp.subtype))
+    return 0;
+  sub_sparp = sparp_down_to_sub (sparp, curr);
   sparp_rewrite_qm_postopt (sub_sparp);
+  if (DISTINCT_L == curr->_.gp.subquery->_.req_top.subtype)
+    sparp_assign_retvalmode_name_for_distinct (sparp, curr->_.gp.subquery);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }
@@ -4636,7 +4688,7 @@ sparp_rewrite_qm_postopt (sparp_t *sparp)
 retry_after_reducing_optionals:
   optionals_to_reduce = NULL;
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &optionals_to_reduce,
-    NULL, sparp_gp_trav_reuse_tabids,
+    sparp_gp_trav_rewrite_qm_postopt, sparp_gp_trav_reuse_tabids,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
   while (NULL != optionals_to_reduce)

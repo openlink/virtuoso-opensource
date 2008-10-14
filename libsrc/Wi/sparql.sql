@@ -4543,7 +4543,7 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
 
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any -- DEPRECATED
+create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any
 {
   if (not (isstring (val)))
     {
@@ -4564,7 +4564,7 @@ create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any -- DEPRECATED
 ;
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any -- DEPRECATED
+create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
 {
   if (not (isstring (strg)))
     return strg;
@@ -10550,7 +10550,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
         }
     }
   else
-    if ('replacing' = get_soft)
+    if (('replacing' = get_soft) or ('replace' = get_soft))
       {
         -- dbg_obj_princ ('get:soft=replacing');
         ;
