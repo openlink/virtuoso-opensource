@@ -61,6 +61,8 @@
 
         function myInit() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
+
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         

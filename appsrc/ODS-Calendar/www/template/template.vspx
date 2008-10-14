@@ -77,6 +77,10 @@
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Preferences.stylePath = '/ods/oat/styles/';
 
+        	/* load stylesheets */
+        	OAT.Style.include("grid.css");
+        	OAT.Style.include("webdav.css");
+
           // WebDAV
           var options = { imagePath: OAT.Preferences.imagePath,
                           pathHome: '/home/',

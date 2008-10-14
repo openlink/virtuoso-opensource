@@ -264,7 +264,12 @@
 
       function myInit() {
         OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
         OAT.Preferences.showAjax = false;
+
+      	/* Load Stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
 
         // WebDAV
         var options = { imagePath: OAT.Preferences.imagePath,
