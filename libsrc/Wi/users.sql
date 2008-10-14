@@ -408,6 +408,7 @@ GET_INHERITED_GRANTS (in g_id integer, in prim integer, inout inh any)
 	-- check to not have cycles
 	if (GI_SUB <> prim)
 	  {
+	    if (not position (GI_SUB, inh))
 	    inh := vector_concat (inh, vector (GI_SUB));
 	    GET_INHERITED_GRANTS (GI_SUB, prim, inh);
 	  }
