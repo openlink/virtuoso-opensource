@@ -8912,7 +8912,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare http_meth, content_type, ini_dflt_graph, get_user varchar;
   declare state, msg varchar;
   declare metas, rset any;
-  declare accept, soap_action varchar;
+  declare accept, soap_action, user_id varchar;
 
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
@@ -8947,6 +8947,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
   -- if timeout specified and it's over 1 second
+  user_id := connection_get ('SPARQLUserId', 'SPARQL');
   if (timeout is not null)
       timeout := atoi (timeout) * 1000;
   else
@@ -9399,13 +9400,12 @@ host_found:
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
-  set_user_id ('SPARQL');
   commit work;
   if (timeout >= 1000)
     {
       set TRANSACTION_TIMEOUT=timeout;
     }
-  __set_user_id ('SPARQL');
+  set_user_id (user_id);
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas);
