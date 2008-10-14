@@ -25,6 +25,16 @@ ODS = {
           }
         },
 
+        setLog: function(logMode)
+        {
+          ODS.setValue('ods_log', logMode);
+        },
+
+        getLog: function()
+        {
+          return ODS.getValue('ods_log', false);
+        },
+
         setServer: function(serverUrl)
         {
           ODS.setValue('ods_server', serverUrl);
@@ -89,16 +99,21 @@ ODS = {
 function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
 {
   var res = '';
+  var logMode = ODS.getLog();
 
+  if (logMode)
+    CmdUtils.log(cmdName + " - start");
   if (authMode)
   {
     var res = jQuery.ajax({
       type: "GET",
       url: ODS.getServer() + "/api/" + cmdName,
       data: cmdParams,
-      error: function(msg) {
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
           if (!cmdMode)
             displayMessage("ODS Controller error - coomand not executed");
+          if (logMode)
+            CmdUtils.log(cmdName + ": " + textStatus);
         },
       async: false
       }).responseText;
@@ -110,10 +125,12 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
     var consumer_key = jQuery.ajax({
       type: "GET",
       url: ODS.getOAuthServer() + "/get_consumer_key",
-      data: {"oauth": oauth},
-      error: function(msg) {
+      data: {"sid": oauth},
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
           if (!cmdMode)
             displayMessage("ODS Controller error - coomand not executed");
+          if (logMode)
+            CmdUtils.log(ODS.getOAuthServer() + "/get_consumer_key" + " - text status: " + textStatus);
         },
       async: false
       }).responseText;
@@ -128,15 +145,17 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       url: ODS.getServer() + "/api/" + cmdName,
       params: params,
       consumer_key: consumer_key,
-      oauth: oauth};
+      sid: oauth};
 
     var apiURL = jQuery.ajax({
       type: "GET",
       url: ODS.getOAuthServer() + "/sign_request",
       data: params,
-      error: function(msg) {
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
           if (!cmdMode)
             displayMessage("ODS Controller error - coomand not executed");
+          if (logMode)
+            CmdUtils.log(ODS.getOAuthServer() + "/sign_request" + " - text status: " + textStatus);
         },
       async: false
       }).responseText;
@@ -144,6 +163,12 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
     res = jQuery.ajax({
       type: "GET",
       url: apiURL,
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
+          if (!cmdMode)
+            displayMessage("ODS Controller error - coomand not executed");
+          if (logMode)
+            CmdUtils.log(apiURL + " - text status: " + textStatus);
+        },
       async: false
       }).responseText;
   }
@@ -156,15 +181,19 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       type: "GET",
       url: ODS.getServer() + "/api/" + cmdName,
       data: cmdParams,
-      error: function(msg) {
+      error: function(XMLHttpRequest, textStatus, errorThrown) {
           if (!cmdMode)
             displayMessage("ODS Controller error - coomand not executed");
+          if (logMode)
+            CmdUtils.log(cmdName + ": " + textStatus);
         },
       async: false
       }).responseText;
   }
   if (!cmdMode)
     displayMessage(res);
+  if (logMode)
+    CmdUtils.log(cmdName + " - end");
   return res;
 }
 
@@ -327,6 +356,36 @@ function sha (input)
 ////////////////////////////////////
 
 CmdUtils.CreateCommand({
+  name: "ods-log-enable",
+  takes: {},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Enable log messages",
+  help: "Type ods-log-enable",
+
+  execute: function(sid) {
+    ODS.setLog(true);
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-log-disable",
+  takes: {},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Disable log messages",
+  help: "Type ods-log-disable",
+
+  execute: function(sid) {
+    ODS.setLog(false);
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-host",
   takes: {"host-url": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
@@ -426,12 +485,13 @@ CmdUtils.CreateCommand({
   help: "Type ods-params",
 
   preview: function(previewBlock) {
-    var previewTemplate = "<br />ODS Server: <b>${ods_server}</b><br />ODS OAuth server: <b>${oauth_server}</b><br />ODS authenticate mode: <b>${ods_mode}</b><br />ODS sid: <b>${ods_sid}</b><br />";
+    var previewTemplate = "<br />ODS Server: <b>${ods_server}</b><br />ODS OAuth server: <b>${oauth_server}</b><br />ODS authenticate mode: <b>${ods_mode}</b><br />ODS sid: <b>${ods_sid}</b><br />ODS log enable: <b>${ods_log}</b><br />";
     var previewData = {
       ods_server: ODS.getServer(),
       oauth_server: ODS.getOAuthServer(),
       ods_mode: ODS.getMode(),
-      ods_sid: ODS.getSid()
+      ods_sid: ODS.getSid(),
+      ods_log: ODS.getLog()
     };
     previewBlock.innerHTML = CmdUtils.renderTemplate(previewTemplate, previewData);     ;
   }
@@ -646,7 +706,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   description: "Get your ODS briefcase resource content",
-  help: "Type ods-get-briefcase-resource &lt;path&gt;",
+  help: "Type ods-delete-briefcase-resource &lt;path&gt;",
 
   execute: function(path) {
     if (!checkParameter(path.text, "path")) {return;}
@@ -1396,7 +1456,7 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-create-calendar-task &lt;instance_id&gt; subject &lt;subject&gt; [description &lt;description&gt;] [attendees &lt;attendees&gt;] [privacy &lt;privacy&gt;] [tags &lt;tags&gt;] eventStart &lt;eventStart&gt; eventEnd &lt;eventEnd&gt; [priority &lt;priority&gt;], [status &lt;status&gt;], [complete &lt;complete&gt;], [completed &lt;completed&gt;] [notes &lt;notes&gt;]",
+  help: "Type ods-create-calendar-task &lt;instance_id&gt; subject &lt;subject&gt; [description &lt;description&gt;] [attendees &lt;attendees&gt;] [privacy &lt;privacy&gt;] [tags &lt;tags&gt;] eventStart &lt;eventStart&gt; eventEnd &lt;eventEnd&gt; [priority &lt;priority&gt;] [status &lt;status&gt;] [complete &lt;complete&gt;] [completed &lt;completed&gt;] [notes &lt;notes&gt;]",
 
   execute: function (instance_id, modifiers) {
     if (!checkParameter(instance_id.text, "instance_id")) {return;}
@@ -1426,7 +1486,7 @@ CmdUtils.CreateCommand({
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-update-calendar-task &lt;event_id&gt; subject &lt;subject&gt; [description &lt;description&gt;] [attendees &lt;attendees&gt;] [privacy &lt;privacy&gt;] [tags &lt;tags&gt;] eventStart &lt;eventStart&gt; eventEnd &lt;eventEnd&gt; [priority &lt;priority&gt;], [status &lt;status&gt;], [complete &lt;complete&gt;], [completed &lt;completed&gt;] [notes &lt;notes&gt;]",
+  help: "Type ods-update-calendar-task &lt;event_id&gt; subject &lt;subject&gt; [description &lt;description&gt;] [attendees &lt;attendees&gt;] [privacy &lt;privacy&gt;] [tags &lt;tags&gt;] eventStart &lt;eventStart&gt; eventEnd &lt;eventEnd&gt; [priority &lt;priority&gt;] [status &lt;status&gt;] [complete &lt;complete&gt;] [completed &lt;completed&gt;] [notes &lt;notes&gt;]",
 
   execute: function (event_id, modifiers) {
     if (!checkParameter(event_id.text, "event_id")) {return;}
