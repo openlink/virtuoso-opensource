@@ -436,6 +436,18 @@ input.button {
   background: #99b3c5;
 }
 
+.button3 {
+  text-decoration: none;
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 5px 5px 2px 5px;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+}
+
 .form-header
 {
   font-size: 1.1em;

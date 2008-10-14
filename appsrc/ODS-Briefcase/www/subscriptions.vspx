@@ -40,7 +40,7 @@
       <v:variable name="v_newer" type="varchar" default="''" persist="0" />
       <v:variable name="v_follow" type="varchar" default="''" persist="0" />
       <v:variable name="v_notFollow" type="varchar" default="''" persist="0" />
-      <v:variable name="_opage" type="varchar" default="''" persist="0" />
+      <v:variable name="v_opage" type="varchar" default="''" persist="0" />
       <v:variable name="v_image" type="varchar" default="''" persist="0" />
       <v:variable name="v_dav" type="varchar" default="''" persist="0" />
       <v:variable name="v_delete" type="varchar" default="''" persist="0" />
@@ -48,7 +48,7 @@
       <v:variable name="v_store" type="varchar" default="1" persist="0" />
       <v:variable name="v_get_rdf" type="int" default="0" persist="0" />
       <v:variable name="v_data" type="any" default="NULL" persist="0" />
-      <v:variable name="_auth" type="varchar" default="''" persist="0" />
+      <v:variable name="v_auth" type="varchar" default="''" persist="0" />
       <v:variable name="v_old_url" type="varchar" default="''" persist="0" />
       <v:variable name="v_target_url" type="varchar" default="''" persist="0" />
       <v:variable name="v_target_uid" type="varchar" default="''" persist="0" />
@@ -71,7 +71,7 @@
                 <![CDATA[
                   self.v_newer := '1900-01-01 00-00-00';
                   self.v_delete := '';
-                  self._opage := '';
+                  self.v_opage := '';
                   self.v_image := '';
                   self.v_dav := '';
                   self.v_owner := ODRIVE.WA.account_name (self.account_id);
@@ -184,7 +184,7 @@
                           _oth := '';
                           _n_own := 0;
                           select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS, VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA)
-                            into self.v_description, self.v_host, self.v_url, _idx, self.v_root, self.v_newer, self.v_delete, self.v_follow, self.v_notFollow, self._auth, self.v_image, self.v_dav, _n_own, _oth, self._opage, self.v_redirect, self.v_store, self.v_get_rdf, self.v_data
+                            into self.v_description, self.v_host, self.v_url, _idx, self.v_root, self.v_newer, self.v_delete, self.v_follow, self.v_notFollow, self.v_auth, self.v_image, self.v_dav, _n_own, _oth, self.v_opage, self.v_redirect, self.v_store, self.v_get_rdf, self.v_data
                             from WS.WS.VFS_SITE
                            where VS_HOST = self.v_host
                              and VS_ROOT = self.v_root;
@@ -202,10 +202,10 @@
                           {
                             self.v_data := vector ();
                           }
-                          if (length (self._auth))
+                          if (length (self.v_auth))
                           {
                             declare auth any;
-                            auth := split_and_decode (self._auth, 0, '\0\0:');
+                            auth := split_and_decode (self.v_auth, 0, '\0\0:');
                             if (length (auth) = 2)
                             {
                               self.v_target_uid := auth[0];
@@ -316,11 +316,11 @@
                   if (self.v_mode <> 'targetEdit')
                   {
                 ?>
-                <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
+                <v:check-box name="opage" value="1" initial-checked="--case when self.v_opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
                 <?vsp
                   } else {
                 ?>
-                <v:check-box name="opage1" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
+                <v:check-box name="opage1" value="1" initial-checked="--case when self.v_opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
                 <?vsp
                   }
                 ?>
@@ -473,7 +473,7 @@
                 declare params any;
 
                 params := e.ve_params;
-                target_url := get_keyword('target_url', params, '');
+                target_url := trim (get_keyword ('target_url', params, ''));
                 if (length(target_url) <= 0)
                 {
                   self.vc_error_message := 'Incorrect target URL';
@@ -482,14 +482,14 @@
                 }
                 ret_arr := WS.WS.PARSE_URI(target_url);
                 pos := coalesce (strchr (ret_arr[1], '@'), 0);
-                self._auth := left (ret_arr[1], pos);
+                self.v_auth := left (ret_arr[1], pos);
                 sav_host := self.v_host;
                 self.v_host := right (ret_arr[1], length (ret_arr[1]) - pos);
 
-                self._auth := '';
+                self.v_auth := '';
                 if (length (self.target_uid.ufl_value) and length (self.target_pwd.ufl_value))
                 {
-                   self._auth := concat (self.target_uid.ufl_value,':',self.target_pwd.ufl_value);
+                   self.v_auth := concat (self.target_uid.ufl_value,':',self.target_pwd.ufl_value);
                 }
                 if (self.v_host[0] = ascii ('@'))
                 {
@@ -502,7 +502,7 @@
                   self.vc_is_valid := 0;
                   return;
                 }
-                self.v_description := get_keyword('descr', params);
+                self.v_description := trim (get_keyword ('descr', params));
                 self.v_url := ret_arr[2];
                 if (ret_arr[4] is not null and length (ret_arr[4]) > 0)
                 {
@@ -510,9 +510,9 @@
                   self.v_url := trim(self.v_url);
                 }
                 self.v_root := get_keyword('root', params);
-                if (self.v_mode <> 'targetEdit' and right(self.v_root, 1) <> '/')
+                if (self.v_mode <> 'targetEdit')
                 {
-                  self.v_root := concat(self.v_root, '/');
+                  self.v_root := ODRIVE.WA.path_normalize (self.v_root, 'C');
                 }
                 if (left(self.v_root, 5) = '/DAV/')
                 {
@@ -524,14 +524,14 @@
                 self.v_delete := get_keyword('del', params);
                 if (self.v_mode = 'targetEdit')
                 {
-                  self._opage := self._opage;
+                  self.v_opage := self.v_opage;
                 } else {
-                  self._opage := get_keyword('opage', params);
+                  self.v_opage := get_keyword ('opage', params);
                 }
                 _idx := null;
                 self.v_image := get_keyword('img', params);
-                self.v_dav := get_keyword('dav', params);
-                self.v_owner := get_keyword('owner', params);
+                self.v_dav := trim (get_keyword ('dav', params));
+                self.v_owner := trim (get_keyword ('owner', params));
                 self.v_redirect := get_keyword('redir', params);
                 self.v_store := get_keyword('store', params);
                 self.v_get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
@@ -539,8 +539,8 @@
                 opts := vector ();
                 self.v_data := opts;
 
-                if (self.v_mode = 'targetEdit' and self._opage = '1')
-                  self._opage := 'checked';
+                if (self.v_mode = 'targetEdit' and self.v_opage = '1')
+                  self.v_opage := 'checked';
                 if (self.v_delete = '1')
                   self.v_delete := 'checked';
                 if (self.v_image = '1')
@@ -564,7 +564,7 @@
                   self.vc_is_valid := 0;
                   return;
                 }
-                if (self._opage = 'checked')
+                if (self.v_opage = 'checked')
                 {
                   declare u_arr any;
                   declare target_page varchar;
@@ -600,10 +600,10 @@
                          VS_FOLLOW = self.v_follow,
                          VS_NFOLLOW = self.v_notFollow,
                          VS_SRC = self.v_image,
-                         VS_OPAGE = self._opage,
+                         VS_OPAGE = self.v_opage,
                          VS_METHOD = self.v_dav,
                          VS_OTHER = _oth,
-                         VS_OPTIONS = self._auth,
+                         VS_OPTIONS = self.v_auth,
                          VS_URL = self.v_url,
                          VS_REDIRECT = self.v_redirect,
                          VS_STORE = self.v_store,
@@ -625,7 +625,7 @@
                     self.v_host := hinf[1];
                   }
                   insert into WS.WS.VFS_SITE (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA, VS_INST_ID)
-                    values (self.v_description, self.v_host, self.v_url, _idx, ODRIVE.WA.account_id (self.v_owner), self.v_root, stringdate(self.v_newer), self.v_delete, self.v_follow, self.v_notFollow, self.v_image, self.v_dav, _oth, self._auth, self._opage, self.v_redirect, self.v_store, self.v_get_rdf, serialize (self.v_data), self.domain_id);
+                    values (self.v_description, self.v_host, self.v_url, _idx, ODRIVE.WA.account_id (self.v_owner), self.v_root, stringdate(self.v_newer), self.v_delete, self.v_follow, self.v_notFollow, self.v_image, self.v_dav, _oth, self.v_auth, self.v_opage, self.v_redirect, self.v_store, self.v_get_rdf, serialize (self.v_data), self.domain_id);
                   insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self.v_host, self.v_url, now(), 'waiting', self.v_root);
                 }
 
@@ -1226,6 +1226,7 @@
                           self.v_mode := 'retrievedExport';
                           self.v_description := (control.vc_parent as vspx_row_template).te_rowset[0];
                           self.v_host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                          self.v_url := (control.vc_parent as vspx_row_template).te_rowset[2];
                           self.v_root := (control.vc_parent as vspx_row_template).te_rowset[3];
 
                           self.vc_data_bind(e);

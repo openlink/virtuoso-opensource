@@ -614,20 +614,20 @@ create procedure ODRIVE.WA.dt_format(
                             S := concat(S, xslt_format_number(second(pDate), '##'));
                           } else {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     N := N + 1;
-  };
+  }
   return S;
 };
 
@@ -637,15 +637,9 @@ create procedure ODRIVE.WA.dt_deformat(
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   N := 1;
   I := 0;
@@ -4026,5 +4020,34 @@ create procedure ODRIVE.WA.acl_send_mail (
     ODRIVE.WA.send_mail (_from, oACLs[N][0], sprintf ('The resource ''%s'' has not shared yet to you.', _path));
   _skip2:;
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.path_normalize (
+  in path varchar,
+  in path_type varchar := 'C')
+{
+  declare N integer;
+
+  path := trim (path);
+  N := length (path);
+  if (N > 0)
+  {
+    if (chr (path[0]) <> '/')
+    {
+      path := '/' || path;
+    }
+    if ((path_type = 'C') and (chr (path[N-1]) <> '/'))
+    {
+      path := path || '/';
+    }
+    if (chr (path[1]) = '~')
+    {
+      path := replace (path, '/~', '/DAV/home/');
+    }
+  }
+  return path;
 }
 ;

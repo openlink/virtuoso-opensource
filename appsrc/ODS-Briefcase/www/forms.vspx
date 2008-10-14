@@ -426,7 +426,6 @@
                     </th>
                     <td>
                       <input type="text" name="prop_mime" class="field-short" />
-                      &amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" class="button" />
                     </td>
                   </tr>
@@ -454,7 +453,6 @@
                     </th>
                     <td>
                       <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
-                      &amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
                     </td>
                   </tr>
@@ -559,8 +557,8 @@
                               <option value="R">Remove</option>
                             </select>
                           </td>
-                          <td>
-                            <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.propertyUpdate('xxx');" />
+                          <td nowrap="nowrap">
+                            <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Proporty" title="Add Proporty"/> Add</span>
                           </td>
                         </tr>
                       </table>
@@ -606,8 +604,8 @@
                       <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
                       <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
                     </td>
-                    <td width="1%">
-                      <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.aclUpdate('xxx');"/>
+                    <td nowrap="nowrap" width="1%">
+                      <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                     </td>
                   </tr>
                 </table>

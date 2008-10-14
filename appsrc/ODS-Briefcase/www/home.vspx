@@ -1709,8 +1709,8 @@
                               </vm:if>
                             </td>
                             <vm:if test="self.dav_propEnable">
-                              <td>
-                                <img class="pointer" src="image/del_16.png" border="0" alt="Delete Proporty" title="Delete Proporty" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"/>
+                              <td nowrap="nowrap">
+                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Proporty" title="Delete Proporty" /> Delete</span>
                               </td>
                             </vm:if>
                           </tr>
@@ -1735,8 +1735,8 @@
                               <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
                             </td>
                             <vm:if test="self.dav_propEnable">
-                              <td>
-                                <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.propertyUpdate('xxx');"/>
+                              <td nowrap="nowrap">
+                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Proporty" title="Add Proporty"/> Add</span>
                               </td>
                             </vm:if>
                           </tr>
@@ -1808,9 +1808,9 @@
                       <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_w_grant_%d\')" name="acl_w_deny_%d" id="acl_w_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 2) <> 0 then 'checked="checked"' else '' end, D)); ?>
                       <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_x_grant_%d\')" name="acl_x_deny_%d" id="acl_x_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 1) <> 0 then 'checked="checked"' else '' end, D)); ?>
                     </td>
-                    <td width="1%">
+                    <td nowrap="nowrap" width="1%">
                       <vm:if test="(acl[1] <> 3) and self.dav_enable">
-                      <img class="pointer" src="image/del_16.png" border="0" alt="Delete Security" title="Delete Security" onclick="javascript: ODRIVE.aclUpdate('<?V cast (N as varchar) ?>');"/>
+                        <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Security" title="Delete Security" /> Delete</span>
                       </vm:if>
                     </td>
                   </tr>
@@ -1847,8 +1847,8 @@
                       <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
                       <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
                     </td>
-                    <td width="1%">
-                      <img class="pointer" src="image/add_16.png" border="0" onclick="javascript: ODRIVE.aclUpdate('xxx');"/>
+                    <td nowrap="nowrap" width="1%">
+                      <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                     </td>
                   </tr>
                   <?vsp

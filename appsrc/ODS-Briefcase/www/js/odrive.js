@@ -1070,6 +1070,7 @@ ODRIVE.propertyUpdate = function (claimNo)
         var S = tr.innerHTML;
         S = S.replace(/xxx/g, ''+seqNo);
         S = S.replace(/add_16/g, 'del_16');
+        S = S.replace(/Add/g, 'Delete');
 
         var tr_parent = $('c_tr').parentNode;
         tr_parent.insertBefore(tr_add, $('c_tr'));
@@ -1137,6 +1138,7 @@ ODRIVE.aclUpdate = function (claimNo)
         var S = tr.innerHTML;
         S = S.replace(/xxx/g, ''+seqNo);
         S = S.replace(/add_16/g, 'del_16');
+        S = S.replace(/Add/g, 'Delete');
 
         var tr_parent = $('acl_tr').parentNode;
         tr_parent.insertBefore(tr_add, $('acl_tr'));
@@ -1177,9 +1179,14 @@ ODRIVE.searchRowAction = function (rowID)
     var seqNo = parseInt($v('search_seqNo'));
     if (seqNo == rowID)
     {
-      var img = $('search_img_5_' + seqNo);
-      if (img)
-        img.src = 'image/del_16.png';
+      var span = $('search_span_5_' + seqNo);
+      if (span)
+      {
+        var S = span.innerHTML;
+        S = S.replace(/add_16/g, 'del_16');
+        S = S.replace(/Add/g, 'Delete');
+        span.innerHTML = S;
+      }
       OAT.Dom.unlink('search_tr');
       var tr = OAT.Dom.create('tr');
       tr.id = 'search_tr';
@@ -1261,11 +1268,18 @@ ODRIVE.searchRowCreate = function (rowID, values)
 
     var td = OAT.Dom.create('td');
     td.id = 'search_td_5_' + rowID;
+    td.style['whiteSpace'] = 'nowrap';
+    var span = OAT.Dom.create('span');
+    span.id = 'search_span_5_' + rowID;
+    span.onclick = function (){ODRIVE.searchRowAction(rowID)};
+    OAT.Dom.addClass(span, 'button3');
+    OAT.Dom.addClass(span, 'pointer');
     var imgSrc = (seqNo != rowID)? 'image/del_16.png': 'image/add_16.png';
     var img = OAT.Dom.image(imgSrc);
     img.id = 'search_img_5_' + rowID;
-    img.onclick = function (){ODRIVE.searchRowAction(rowID)};
-    td.appendChild(img);
+    span.appendChild(img);
+    span.appendChild((seqNo != rowID)? OAT.Dom.text(' Delete'): OAT.Dom.text(' Add'));
+    td.appendChild(span);
     tr.appendChild(td);
     if (values['field_5'])
       ODRIVE.searchColumnCreate(rowID, 5, values['field_5']);

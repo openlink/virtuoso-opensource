@@ -594,7 +594,7 @@
             <th id="search_th_2" width="20%" style="display: none;">Property</th>
             <th id="search_th_3" width="20%">Condition</th>
             <th id="search_th_4" width="20%">Value</th>
-            <th id="search_th_5" width="1%"><xsl:call-template name="nbsp"/></th>
+            <th id="search_th_5" width="1%" nowrap="nowrap"><xsl:call-template name="nbsp"/></th>
           </tr>
         </thead>
         <tbody id="search_tbody">
