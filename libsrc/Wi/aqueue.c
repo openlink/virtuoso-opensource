@@ -386,7 +386,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
   if (!proc)
     {
       dk_free_tree ((caddr_t) params);
-      *err_ret = (caddr_t) 2;
+      *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure in aq %s", full_name ? full_name : "<no name>");
       return NULL;
     }
   if (proc->qr_to_recompile)
