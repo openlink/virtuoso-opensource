@@ -155,6 +155,7 @@ SPAR_NCNAME_X		({SPAR_NCCHAR1}([A-Za-z0-9_./#\x7f-\xfe-]*{SPAR_NCCHAR})?)
 <INITIAL>"!"		{ return _BANG; }
 
 <INITIAL>"@a"				{ return _AT_a_L; }
+<INITIAL>"@base"			{ return _AT_base_L; }
 <INITIAL>"@has"				{ return _AT_has_L; }
 <INITIAL>"@is"				{ return _AT_is_L; }
 <INITIAL>"@of"				{ return _AT_of_L; }

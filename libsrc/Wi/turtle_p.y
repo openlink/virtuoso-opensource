@@ -85,6 +85,7 @@
 %token _BANG		/*:: PUNCT_TTL_LAST("!") ::*/
 
 %token _AT_a_L		/*:: PUNCT_TTL_LAST("@a") ::*/
+%token _AT_base_L	/*:: PUNCT_TTL_LAST("@base") ::*/
 %token _AT_has_L	/*:: PUNCT_TTL_LAST("@has") ::*/
 %token _AT_is_L		/*:: PUNCT_TTL_LAST("@is") ::*/
 %token _AT_keywords_L	/*:: PUNCT_TTL_LAST("@keywords") ::*/
@@ -131,6 +132,7 @@ turtledoc
 
 clause
         : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
+	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_base_uri); ttlp_arg->ttlp_base_uri = $2; }
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		dk_set_push (&(ttlp_arg->ttlp_namespaces), $3);
 		dk_set_push (&(ttlp_arg->ttlp_namespaces), $2); }
@@ -463,6 +465,14 @@ q_complete
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		 }
 	| QNAME
+		{
+                  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		    ttlyyerror_action ("Internal error: proven memory leak");
+		  ttlp_arg->ttlp_last_complete_uri = $1;
+		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
+		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
+		}
+	| QNAME_NS
 		{
                   if (NULL != ttlp_arg->ttlp_last_complete_uri)
 		    ttlyyerror_action ("Internal error: proven memory leak");
