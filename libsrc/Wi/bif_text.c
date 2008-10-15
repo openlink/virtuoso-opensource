@@ -24,6 +24,7 @@
 #include "xml.h"
 #include "bif_xper.h"
 #include "srvmultibyte.h"
+#include "security.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -205,6 +206,9 @@ four forms will be stored. To avoid this, temporary table will be filled;
 meanwhile dummy (= empty) hashtable will be used to provide valid non-NULL
 pointer for language-specific callbacks. */
 
+id_hash_t * vt_stop_words;
+static dk_mutex_t *stop_words_mtx;
+
 void
 noise_word_init_callback(const utf8char *buf, size_t bufsize, void *future_noise_words)
 {
@@ -221,8 +225,9 @@ noise_word_init_callback(const utf8char *buf, size_t bufsize, void *future_noise
   id_hash_set ((id_hash_t *)future_noise_words, (char *) &lm, (char *) &one);
 }
 
+
 void
-vt_noise_word_init (void)
+vt_noise_word_init (char *file, id_hash_t ** noise_ht)
 {
   char nw[1000];
   char *tail;
@@ -230,9 +235,9 @@ vt_noise_word_init (void)
   int res;
   encoding_handler_t *eh = &eh__UTF8;
   lang_handler_t *lh = server_default_lh;
-  FILE *noise = fopen ("noise.txt", "r");
+  FILE *noise = fopen (file, "r");
   id_hash_t *future_noise_words = id_hash_allocate (2039, sizeof (lenmem_t), sizeof (caddr_t), lenmemhash, lenmemhashcmp);
-  lh_noise_words = id_hash_allocate (7, sizeof (lenmem_t), sizeof (caddr_t), lenmemhash, lenmemhashcmp);
+  *noise_ht = id_hash_allocate (7, sizeof (lenmem_t), sizeof (caddr_t), lenmemhash, lenmemhashcmp);
   if (NULL == noise)
     return;
   while (fgets (nw, sizeof (nw), noise))
@@ -241,16 +246,20 @@ vt_noise_word_init (void)
       if (!memcmp(nw,"Language:",strlen("Language:")))
 	{
 	  name = nw+strlen("Language:");
-	  while((tail>nw) && ((unsigned char)(tail[-1]) <= 32)) (--tail)[0] = '\0';
-	  while((name<=tail) && ((unsigned char)(name[0]) <= 32)) name++;
+	  while ((tail > nw) && ((unsigned char) (tail[-1]) <= 32))
+	    (--tail)[0] = '\0';
+	  while ((name <= tail) && ((unsigned char) (name[0]) <= 32))
+	    name++;
 	  lh = lh_get_handler(name);
 	  continue;
 	}
       if (!memcmp(nw,"Encoding:",strlen("Encoding:")))
 	{
 	  name = nw+strlen("Encoding:");
-	  while((tail>nw) && ((unsigned char)(tail[-1]) <= 32)) (--tail)[0] = '\0';
-	  while((name<=tail) && ((unsigned char)(name[0]) <= 32)) name++;
+	  while ((tail > nw) && ((unsigned char) (tail[-1]) <= 32))
+	    (--tail)[0] = '\0';
+	  while ((name <= tail) && ((unsigned char) (name[0]) <= 32))
+	    name++;
 	  eh = eh_get_handler(name);
 	  if (NULL == eh)
 	    log_error("Unsupported encoding \"%s\" used in noise.txt file, some strings may be ignored", name);
@@ -266,7 +275,8 @@ vt_noise_word_init (void)
 	log_error("Broken text in noise.txt file, (encoding \"%s\"): %s", eh->eh_names[0], nw);
     }
   fclose (noise);
-  lh_noise_words = future_noise_words;
+  id_hash_free (*noise_ht);
+  *noise_ht = future_noise_words;
 }
 
 
@@ -298,6 +308,57 @@ box_n_chars_reuse2 (char * str, int n, caddr_t replace1, caddr_t replace2)
   return res;
 }
 
+/* depends of get_existing we either initialize explicitly or only when not initialized */
+id_hash_t *
+vt_load_stop_words (char *file, int get_existing)
+{
+  id_hash_t *ht, **place;
+  caddr_t copy;
+
+  mutex_enter (stop_words_mtx);
+  place = (id_hash_t **) id_hash_get (vt_stop_words, (caddr_t) & file);
+  if (get_existing && place)
+    {
+      ht = *place;
+      goto ret;
+    }
+  vt_noise_word_init (file, &ht);
+  if (place)
+    {
+      id_hash_free (*place);
+      *place = ht;
+    }
+  else
+    {
+      copy = box_copy (file);
+      id_hash_set (vt_stop_words, (caddr_t) & copy, (caddr_t) & ht);
+    }
+ret:
+  mutex_leave (stop_words_mtx);
+  return ht;
+}
+
+#define TA_NOISE_HT 2201
+
+
+int
+is_vtb_word__xany (const unichar * buf, size_t bufsize)
+{
+  lenmem_t lm;
+  char *nw;
+  id_hash_t *ht = THR_ATTR (THREAD_CURRENT_THREAD, TA_NOISE_HT);
+  if (1 > bufsize)
+    return 0;
+  if (NULL == ht)
+    return 1;
+  lm.lm_length = bufsize * sizeof (unichar);
+  lm.lm_memblock = ( /*const */ char *) buf;
+  nw = id_hash_get (ht, (char *) &lm);
+  if (NULL == nw)
+    return 1;
+  return 0;
+}
+
 
 caddr_t
 bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -319,11 +380,37 @@ bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   cnt = lh_count_words (eh, lh, word, strlen(word), NULL);
   if (1 != cnt)
     return (box_num (0));
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      id_hash_t **ht, *ht_n = NULL;
+      caddr_t file = bif_string_arg (qst, args, 3, "vt_is_noise");
+      ht = (id_hash_t **) id_hash_get (vt_stop_words, (caddr_t) & file);
+      if (NULL == ht && sec_bif_caller_is_dba ((query_instance_t *) qst) && is_allowed (file))
+	ht_n = vt_load_stop_words (file, 1);
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_NOISE_HT, (ht ? *ht : (ht_n ? ht_n : NULL)));
+      cnt = lh_count_words (eh, lh, word, strlen (word), is_vtb_word__xany);
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_NOISE_HT, NULL);
+    }
+  else
+    {
   cnt = lh_count_words (eh, lh, word, strlen(word), lh_get_handler(lang_name)->lh_is_vtb_word);
+    }
   if (1 != cnt)
     return (box_num (1));
   return (box_num (0));
 #endif
+}
+
+
+caddr_t
+bif_vt_load_stop_words (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t file = bif_string_arg (qst, args, 0, "vt_load_stop_words");
+  sec_check_dba ((query_instance_t *) qst, "vt_load_stop_words");
+  if (!is_allowed (file))
+    sqlr_new_error ("42000", "FA...", "Access to %s is denied due to access control in ini file", file);
+  vt_load_stop_words (file, 0);
+  return NULL;
 }
 
 
@@ -3073,6 +3160,8 @@ static char *vt_clear_free_text_index_text =
 void
 bif_text_init (void)
 {
+  stop_words_mtx = mutex_allocate ();
+  vt_stop_words = id_hash_allocate (11, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   bif_define ("vt_word_string_ends", bif_vt_word_string_ends);
   bif_define ("vt_word_string_details", bif_vt_word_string_details);
   bif_define_typed ("wb_all_done_bif", bif_wb_all_done, &bt_integer);
@@ -3090,7 +3179,8 @@ bif_text_init (void)
   bif_define ("vt_batch_words_length", bif_vt_batch_words_length);
 
   bif_define_typed ("vt_is_noise", bif_vt_is_noise, &bt_integer);
-  vt_noise_word_init ();
+  bif_define_typed ("vt_load_stop_words", bif_vt_load_stop_words, &bt_any);
+  vt_noise_word_init ("noise.txt", &lh_noise_words);
   dk_mem_hooks(DV_TEXT_BATCH, box_non_copiable, (box_destr_f) vtb_destroy, 0);
   PrpcSetWriter (DV_TEXT_BATCH, (ses_write_func) vtb_serialize);
 
