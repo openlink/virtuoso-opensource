@@ -295,11 +295,11 @@
     <virtrdf:label>Mood</virtrdf:label>
     <virtrdf:catName>Mood</virtrdf:catName>
   </rdf:Property>
-  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#MucisianCreditsList">
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#MusicianCreditsList">
     <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     <virtrdf:cardinality>single</virtrdf:cardinality>
-    <virtrdf:label>MucisianCreditsList</virtrdf:label>
-    <virtrdf:catName>MucisianCreditsList</virtrdf:catName>
+    <virtrdf:label>MusicianCreditsList</virtrdf:label>
+    <virtrdf:catName>MusicianCreditsList</virtrdf:catName>
   </rdf:Property>
   <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalFileName">
     <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
