@@ -507,7 +507,11 @@ function init() {
   
 	OAT.Dom.attach("query","keyup",function() { iSPARQL.Common.setQuery($v("query")); });
 	OAT.Dom.attach("default-graph-uri","keyup",function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
-  
+	OAT.Dom.attach("query","change",function() { iSPARQL.Common.setQuery($v("query")); });
+	OAT.Dom.attach("default-graph-uri","change",function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
+	/* get content even after user pasted something (via menu/middlemouse), which wont trigger the events above */
+	OAT.Dom.attach("query","mouseout",function() { iSPARQL.Common.setQuery($v("query")); });
+	OAT.Dom.attach("default-graph-uri","mouseout",function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
   
   OAT.Dom.attach("menu_b_reset","click",function() {
     if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
