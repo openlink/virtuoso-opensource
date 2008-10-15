@@ -1027,7 +1027,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-get-bookmark-annotation-by-id &lt;annotation_id&gt;",
 
-  preview: function (instance_id, modifiers) {
+  preview: function (annotation_id, modifiers) {
     if (!checkParameter(annotation_id.text)) {return;}
     var params = {annotation_id: annotation_id.text};
     var res = odsExecute ("bookmark.annotation.get", params, "bookmark", "preview")
@@ -1083,7 +1083,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-create-bookmark-annotation-claim &lt;annotation_id&gt; iri &lt;iri&gt; relation &lt;relation&gt; value &lt;value&gt;",
 
-  execute: function (iri, modifiers) {
+  execute: function (annotation_id, modifiers) {
     if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
     var params = {annotation_id: annotation_id.text};
     addParameter(modifiers, "iri", params, "claimIri", true);
@@ -1564,11 +1564,11 @@ CmdUtils.CreateCommand({
     var params = {inst_id: instance_id.text};
     addParameter(modifiers, "source", params, "source", true);
     addParameter(modifiers, "sourceType", params, "sourceType", true);
-    addParameter(modifiers, "userName", params, "userName", true);
-    addParameter(modifiers, "userPassword", params, "userPassword", true);
-    addParameter(modifiers, "events", params, "events", true);
-    addParameter(modifiers, "tasks", params, "tasks", true);
-    addParameter(modifiers, "tags", params, "tags", true);
+    addParameter(modifiers, "userName", params, "userName");
+    addParameter(modifiers, "userPassword", params, "userPassword");
+    addParameter(modifiers, "events", params, "events");
+    addParameter(modifiers, "tasks", params, "tasks");
+    addParameter(modifiers, "tags", params, "tags");
     odsExecute ("calendar.import", params, "calendar")
   }
 });
@@ -1582,7 +1582,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-get-calendar-annotation-by-id &lt;annotation_id&gt;",
 
-  preview: function (instance_id, modifiers) {
+  preview: function (annotation_id, modifiers) {
     if (!checkParameter(annotation_id.text)) {return;}
     var params = {annotation_id: annotation_id.text};
     var res = odsExecute ("calendar.annotation.get", params, "calendar", "preview")
@@ -1638,7 +1638,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-create-calendar-annotation-claim &lt;annotation_id&gt; iri &lt;iri&gt; relation &lt;relation&gt; value &lt;value&gt;",
 
-  execute: function (iri, modifiers) {
+  execute: function (annotation_id, modifiers) {
     if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
     var params = {annotation_id: annotation_id.text};
     addParameter(modifiers, "iri", params, "claimIri", true);
