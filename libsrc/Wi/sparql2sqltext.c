@@ -5318,7 +5318,11 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
       asname = spar_alias_name_of_ret_column (ret_column);
       var_name = spar_var_name_of_ret_column (ret_column);
     }
-  if (SSG_RETVAL_DIST_SER_LONG & flags)
+#ifndef NDEBUG
+  if ((SSG_RETVAL_DIST_SER_LONG & flags) && (gp != ssg->ssg_tree->_.req_top.pattern))
+    spar_sqlprint_error ("ssg_" "print_retval_expn(): weird usage of SSG_RETVAL_DIST_SER_LONG");
+#endif
+  if ((SSG_RETVAL_DIST_SER_LONG & flags) && sparp_retval_should_wrap_distinct (ssg->ssg_sparp, ssg->ssg_tree, ret_column))
     {
       ret_column = spar_make_funcall (ssg->ssg_sparp, 0, "SPECIAL::sql:RDF_DIST_SER_LONG",
         (SPART **) t_list (1, ret_column) );
@@ -5329,7 +5333,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
       if (SSG_VALMODE_AUTO == needed)
         needed = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column); /* This is a special case of value returned from SPARQL subquery where AUTO valmode is set. */
       if (SSG_VALMODE_AUTO == needed)
-        spar_sqlprint_error ("ssg_print_retval_expn(): SSG_VALMODE_AUTO for not a variable and no way to find a type");
+        spar_sqlprint_error ("ssg_" "print_retval_expn(): SSG_VALMODE_AUTO for not a variable and no way to find a type");
       if ((NULL_ASNAME == asname) && (flags & SSG_RETVAL_USES_ALIAS))
         {
           char buf[30];
@@ -5377,7 +5381,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
 }
 
-void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid, const char *deser_name, int print_asname)
+void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, ccaddr_t selid, const char *deser_name_or_code, int print_asname)
 {
   int col_idx;
   DO_BOX_FAST (SPART *, ret_column, col_idx, retvals)
@@ -5395,6 +5399,19 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid,
         ssg_putchar (' ');
       if (NULL != selid)
         {
+          const char *deser_name = deser_name_or_code;
+          if ((NULL != deser_name) && (!IS_BOX_POINTER (deser_name)))
+            {
+              if ((ptrlong)DISTINCT_L == (ptrlong)deser_name)
+                {
+                  if (sparp_retval_should_wrap_distinct (ssg->ssg_sparp, tree, ret_column))
+                    deser_name = "SPECIAL::sql:RDF_DIST_DESER_LONG";
+                  else
+                    deser_name = NULL;
+                }
+              else
+                spar_sqlprint_error("ssg" "_print_retval_cols(): bad deser_name_or_code");
+            }
           if (NULL != deser_name)
             {
               ssg_prin_function_name (ssg, deser_name);
@@ -6507,7 +6524,7 @@ ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
   SPART **retvals = tree->_.req_top.retvals;
   caddr_t rbc_selid = t_box_sprintf (50, "%.40s_rbc", tree->_.req_top.retselid);
   ssg_puts (" SELECT ");
-  ssg_print_retval_cols (ssg, retvals, rbc_selid, "bif:__ro2sq", 1);
+  ssg_print_retval_cols (ssg, tree, retvals, rbc_selid, "bif:__ro2sq", 1);
   ssg_puts (" FROM (");
   ssg->ssg_indent++;
   ssg_make_sql_query_text (ssg);
@@ -6528,7 +6545,6 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ptrlong subtype = tree->_.req_top.subtype;
   SPART **retvals;
   const char *formatter;
-  const char *deser_name = NULL;
   ssg_valmode_t retvalmode;
   int top_retval_flags =
     SSG_RETVAL_TOPMOST |
@@ -6572,16 +6588,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case DISTINCT_L:
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
-      if ((DISTINCT_L == subtype) && (SSG_VALMODE_SQLVAL != retvalmode))
-        {
-          if (SSG_VALMODE_LONG == retvalmode)
-            {
+      if ((DISTINCT_L == subtype) && sparp_some_retvals_should_wrap_distinct (ssg->ssg_sparp, tree))
               top_retval_flags |= SSG_RETVAL_DIST_SER_LONG;
-              deser_name = "SPECIAL::sql:RDF_DIST_DESER_LONG";
-            }
-          else
-            spar_sqlprint_error ("This version of SPARQL compiler does not fully support 'output:valmode' declaration for SELECT DISTINCT");
-        }
       if (COUNT_DISTINCT_L == subtype)
         {
           ssg_puts ("SELECT COUNT (*) AS \"callret-0\" FROM (");
@@ -6590,19 +6598,22 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         }
       else if (NULL != formatter)
         {
+          const char *deser_name = NULL;
+          if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
+            deser_name = (const char *)((ptrlong)DISTINCT_L);
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_puts ("vector (");
-          ssg_print_retval_cols (ssg, retvals, top_selid, deser_name, 0);
+          ssg_print_retval_cols (ssg, tree, retvals, top_selid, deser_name, 0);
           ssg_puts ("), vector (");
-          ssg_print_retval_cols (ssg, retvals, NULL_ASNAME, NULL, 0);
+          ssg_print_retval_cols (ssg, tree, retvals, NULL_ASNAME, NULL, 0);
           ssg_puts (")) AS \"callret-0\" LONG VARCHAR\nFROM (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
         }
-      else if (NULL != deser_name)
+      else if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
         {
           ssg_puts ("SELECT "); 
-          ssg_print_retval_cols (ssg, retvals, top_selid, deser_name, 1);
+          ssg_print_retval_cols (ssg, tree, retvals, top_selid, (const char *)((ptrlong)DISTINCT_L), 1);
           ssg_puts (" FROM (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
@@ -6749,7 +6760,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     ssg_puts (", SAME_AS");
   ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
   ssg_puts (")");
-  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != deser_name))
+  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {
       switch (tree->_.req_top.subtype)
         {

@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2008-10-01 0001' ;
+  virtrdf:version '2008-10-16 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -201,6 +201,7 @@ rdfdf:default
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
   virtrdf:qmfTypeminTmpl " DB.DBA.RDF_TYPEMIN_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " DB.DBA.RDF_TYPEMAX_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+  virtrdf:qmfWrapDistinct 1;
 # Metadata about values that can be stored in this field
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 1;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)

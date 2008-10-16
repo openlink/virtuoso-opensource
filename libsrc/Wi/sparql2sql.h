@@ -788,6 +788,11 @@ extern void ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int
 
 extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm);
 
+/*! Returns nonzero if \c rv may produce value that may screw up result of SELECT DISTINCT if not wrapped in RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG */
+extern int sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv);
+/*! Returns nonzero if some retvals of \c tree may screw up the result if not wrapped in RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG */
+extern int sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree);
+
 /*! Fills in ssg->ssg_out with an SQL text of a query */
 extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with a wrapping query with rdf box completeions for a result of \c ssg_make_sql_query_text() */

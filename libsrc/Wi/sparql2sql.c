@@ -4610,52 +4610,49 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
   return res;
 }
 
-void
-sparp_assign_retvalmode_name_for_distinct (sparp_t *sparp, SPART *tree)
+int
+sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv)
 {
-  int ctr, sqlvalmode_is_ok = 1, prefered_long_count = 0;
-  SPART **retvals = tree->_.req_top.retvals;
-  DO_BOX_FAST(SPART *, rv, ctr, retvals)
-    {
       ssg_valmode_t rv_valmode = sparp_expn_native_valmode (sparp, rv);
       if (SSG_VALMODE_SQLVAL == rv_valmode)
-        continue;
+    return 0;
       if (SSG_VALMODE_LONG == rv_valmode)
         {
           ptrlong rv_restr = sparp_restr_bits_of_expn (sparp, rv);
           if (rv_restr & SPART_VARR_IS_REF)
-            {
-              prefered_long_count++;
-              continue;
-            }
-          sqlvalmode_is_ok = 0;
-          break;
+        return 0;
+      return 1;
         }
       if (IS_BOX_POINTER(rv_valmode))
         {
           ptrlong rv_restr;
+      if (!rv_valmode->qmfWrapDistinct)
+        return 0;
           rv_restr = sparp_restr_bits_of_expn (sparp, rv);
           if (rv_restr & SPART_VARR_IS_REF)
-            {
-              if ((rv_valmode->qmfIsSubformatOfLong) || (rv_valmode->qmfIsSubformatOfLongWhenRef))
-                prefered_long_count++;
-              continue;
-            }
-          sqlvalmode_is_ok = 0;
-          break;
+        return 0;
+      return 1;
         }
-      /* Don't know what could it be, but I want to stay at safe side */
-      sqlvalmode_is_ok = 0;
-      break;
-    }
-  END_DO_BOX_FAST;
-  if (!sqlvalmode_is_ok || (prefered_long_count == BOX_ELEMENTS (retvals)))
-    tree->_.req_top.retvalmode_name = t_box_dv_short_string ("LONG");
-  else
-    tree->_.req_top.retvalmode_name = t_box_dv_short_string ("SQLVAL");
+  return 0;
 }
 
-
+int
+sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree)
+{
+  int ctr;
+  SPART **retvals = tree->_.req_top.retvals;
+#ifndef NDEBUG
+  if (DISTINCT_L != tree->_.req_top.subtype)
+    spar_internal_error (sparp, "sparp_" "some_retvals_should_wrap_distinct() for non-DISTINCT");
+#endif
+  DO_BOX_FAST(SPART *, rv, ctr, retvals)
+    {
+      if (sparp_retval_should_wrap_distinct (sparp, tree, rv))
+        return 1;
+    }
+  END_DO_BOX_FAST;
+  return 0;
+}
 
 int
 sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
@@ -4665,8 +4662,6 @@ sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_
     return 0;
   sub_sparp = sparp_down_to_sub (sparp, curr);
   sparp_rewrite_qm_postopt (sub_sparp);
-  if (DISTINCT_L == curr->_.gp.subquery->_.req_top.subtype)
-    sparp_assign_retvalmode_name_for_distinct (sparp, curr->_.gp.subquery);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }

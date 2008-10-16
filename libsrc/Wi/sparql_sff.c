@@ -108,7 +108,6 @@ sprintff_is_proven_unparseable (const char *f)
 
   while ('\0' != tail[0])
     {
-      char next;
       char fmt_type;
       char left_fmt_type;
       if ('%' != tail[0])
@@ -1051,7 +1050,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
 {
   int old_len = rvr->rvrSprintffCount;
   int max_reslen, old_ctr, isect_ctr, res_ctr, res_count, res_buf_len, oldsize;
-  caddr_t *res = sparp->sparp_sprintff_isect_buf;
+  ccaddr_t *res = sparp->sparp_sprintff_isect_buf;
   max_reslen = old_len * isect_count;
   if (0 == max_reslen)
     {
@@ -1063,7 +1062,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
     {
       int newsize = res_buf_len ? res_buf_len : 1;
       do newsize *= 2; while (newsize < max_reslen);
-      res = sparp->sparp_sprintff_isect_buf = (caddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      res = sparp->sparp_sprintff_isect_buf = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
       res_buf_len = newsize;
     }
 #ifdef SFF_DEBUG

@@ -89,6 +89,7 @@ JSO_SCALAR qmfIsSubformatOfLongWhenRef BOOLEAN OPTIONAL	--!< Nonzero if the form
 JSO_SCALAR qmfCmpFuncName STRING REQUIRED		--!< Name of comparison function that acts like strcmp but args are of this type
 JSO_SCALAR qmfTypeminTmpl STRING REQUIRED		--!< Template of expn that returns the smallest value of the type of value of arg
 JSO_SCALAR qmfTypemaxTmpl STRING REQUIRED		--!< Template of expn that returns the biggest possible value of the type of value of arg
+JSO_SCALAR qmfWrapDistinct BOOLEAN OPTIONAL		--!< Nonzero if SELECT DISTINCT requires RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG wrapping.
 -- Metadata about values that can be stored in this field
 JSO_SCALAR qmfColumnCount INTEGER OPTIONAL		--!< Number of columns of the original data (usually 1, zero if variable and not yet set)
 JSO_SCALAR qmfOkForAnySqlvalue BOOLEAN REQUIRED		--!< Nonzero if the field format can store any possible SQL value (even if the field itself can not)
