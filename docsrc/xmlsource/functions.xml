@@ -252,7 +252,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &xml_load_schema_decl; &xml_load_mapping_schema_decl;
 &xml_namespace_scope; &xml_path;
 &xml_persistent; &xml_template; &xml_tree; &xml_tree_doc; &xml_tree_doc_media_type;
-&xml_uri_get; &xml_validate_dtd; &xml_validate_schema; &xml_view_dtd; &xml_set_ns_decl;
+&xml_uri_get; &xml_validate_dtd; &xml_validate_schema; &xml_view_dtd; &xml_set_ns_decl;xml_remove_ns_by_prefix;
 &xml_view_schema; &xmlsql_update; &xmlupdate; &xpath_eval; &xper_cut; &xper_doc;
 &xper_locate_words; &xper_navigation; &xpf_extension; &xpf_extension_remove;
 &xquery_eval; &xslt; &xslt_format_number;

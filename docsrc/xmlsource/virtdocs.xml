@@ -589,6 +589,7 @@
 <!ENTITY xml_validate_dtd			SYSTEM "funcref/xml_validate_dtd.xml">
 <!ENTITY xml_validate_schema			SYSTEM "funcref/xml_validate_schema.xml">
 <!ENTITY xml_set_ns_decl			SYSTEM	"funcref/xml_set_ns_decl.xml">
+<!ENTITY xml_remove_ns_by_prefix	        SYSTEM	"funcref/xml_remove_ns_by_prefix">
 <!ENTITY xml_view_dtd				SYSTEM "funcref/xml_view_dtd.xml">
 <!ENTITY xml_view_schema			SYSTEM "funcref/xml_view_schema.xml">
 <!ENTITY xmlStorageSystem.registerUser 		SYSTEM "funcref/xmlStorageSystem.registerUser.xml">

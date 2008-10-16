@@ -21,51 +21,45 @@
  -
  -
 -->
-<refentry id="fn_xml_set_ns_decl">
+<refentry id="fn_xml_remove_ns_by_prefix">
   <refmeta>
-    <refentrytitle>xml_set_ns_decl</refentrytitle>
+    <refentrytitle>xml_remove_ns_by_prefix</refentrytitle>
     <refmiscinfo>xml</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>xml_set_ns_decl</refname>
-    <refpurpose>Registers the XML NS prefix as persistent or keeps it in properties of client
-connection depending on the persistance bits input value.</refpurpose>
+    <refname>xml_remove_ns_by_prefix</refname>
+   <refpurpose>Removes the registration of a namespace prefix.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_xml_set_ns_decl">
-      <funcprototype id="fproto_xml_set_ns_decl">
-        <funcdef><function>xml_set_ns_decl</function></funcdef>
+    <funcsynopsis id="fsyn_xml_remove_ns_by_prefix">
+      <funcprototype id="fproto_xml_remove_ns_by_prefix">
+        <funcdef><function>xml_remove_ns_by_prefix</function></funcdef>
         <paramdef>in <parameter>prefix</parameter> varchar</paramdef>
-        <paramdef>in <parameter>iri</parameter> varchar</paramdef>
-        <paramdef>in <parameter>bits</parameter> integer</paramdef>
+        <paramdef>in <parameter>persist</parameter> integer</paramdef>
       </funcprototype>
    </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-    <para>Registers the XML NS prefix as persistent or keeps it in properties of client
-connection depending on the persistance bits input value.</para>
+    <para>Cancel the registration of a namespace prefix  done with
+<link linkend="fn_xper_doc">xml_set_ns_decl()</link>.</para>
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>prefix</title>
       <para>namespace prefix</para></refsect2>
-    <refsect2><title>iri</title>
-      <para>namespace IRI</para></refsect2>
-    <refsect2><title>bits</title>
-      <para>persistance bits: bit 1  - keeps NS decl in properties of client connection
-i.e stores the assignment in connection parameters so only the current connection will
-see the namespace prefix declaration;
-bit 2 - makes NS decl persistent, i.e. stores the declaration in global in-memory hashtable
-as well as in a system table, loaded at server startup time, visible from all connections</para></refsect2>
+    <refsect2><title>persist</title>
+      <para>persistance bits: bit 1  - removes connection-specific declaration;
+bit 2 - removes global one; bit 3 - both.</para></refsect2>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
-    <example id="ex_xml_set_ns_north"><title>Northwind</title>
+    <example id="ex_xml_remove_ns_north"><title>Northwind</title>
 <programlisting><![CDATA[
 DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
+DB.DBA.XML_REMOVE_NS_BY_PREFIX('northwind', 2);
 ]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_remove_ns_by_prefix">xml_remove_ns_by_prefix</link></para>
+    <para><link linkend="fn_xml_set_ns_decl">xml_set_ns_decl</link></para>
   </refsect1>
 </refentry>
 
