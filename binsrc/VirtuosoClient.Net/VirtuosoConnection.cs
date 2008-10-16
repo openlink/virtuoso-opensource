@@ -1288,6 +1288,7 @@ namespace OpenLink.Data.Virtuoso
             table = (table.Length == 0) ? "%" : table;
             column = (column.Length == 0) ? "%" : column;
    
+            DataTable dtColumns = new DataTable("Columns");
             String cmdText;
             cmdText = (innerConnection.IdentCase ==
           		CLI.IdentCase.SQL_IC_MIXED) ? getWideColumsText_case2 :
@@ -1312,7 +1313,7 @@ namespace OpenLink.Data.Virtuoso
             cmd.Parameters.Add (p4);
    
             VirtuosoDataReader reader = (VirtuosoDataReader)cmd.ExecuteReader();
-            dt.Load(reader);
+            dtColumns.Load(reader);
 
             return dt;
          }

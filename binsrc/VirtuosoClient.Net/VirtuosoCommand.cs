@@ -64,7 +64,7 @@ namespace OpenLink.Data.Virtuoso
 		private bool isExecuted = false;
 		private bool isFetching = false;
 		private bool isExecuting = false;
-/*		private bool isCanceling = false;*/
+		private bool isCanceling = false;
 		private WeakReference dataReaderWeakRef = null;
 		private IInnerCommand innerCommand;
 
@@ -322,7 +322,7 @@ namespace OpenLink.Data.Virtuoso
 
 			if (innerCommand != null && (isExecuting || isExecuted))
 			{
-				/*isCanceling = true;*/
+				isCanceling = true;
 				innerCommand.Cancel ();
 				isExecuted = false;
 				isFetching = false;
@@ -564,10 +564,14 @@ namespace OpenLink.Data.Virtuoso
 
 		internal void CloseDataReader ()
 		{
-			Debug.Assert (isFetching);
 			Debug.Assert (dataReaderWeakRef != null);
 			VirtuosoDataReader reader = (VirtuosoDataReader) dataReaderWeakRef.Target;
-			CloseCursor (true, reader);
+                        if (!isCanceling)
+                        {
+				Debug.Assert (isFetching);
+				CloseCursor (true, reader);
+                        }
+
 			dataReaderWeakRef = null;
 			isFetching = false;
 		}
