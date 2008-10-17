@@ -218,8 +218,6 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
     _sql_enable := cast (get_keyword_ucase ('SQL_ENABLE', options, 1) as integer);
     _dav_enable := cast (get_keyword_ucase ('DAV_ENABLE', options, 0) as integer);
     _login_qual := get_keyword_ucase ('LOGIN_QUALIFIER', options, 'DB');
-    if (not length (_login_qual))
-      signal ('22023', 'Qualifier cannot be empty string');
     _prim_group := get_keyword_ucase ('PRIMARY_GROUP', options, NULL);
 
     _u_e_mail := get_keyword_ucase ('E-MAIL', options, '');
@@ -242,6 +240,8 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
         i := i + 2;
       }
   }
+  if (_login_qual = '')
+    signal ('22023', 'Qualifier cannot be empty string');
 
   _pwd := pwd_magic_calc (_name, passwd, 0);
   _u_sys_name := pwd_magic_calc (_name, _u_sec_sys_name, 0);
