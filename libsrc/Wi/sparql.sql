@@ -8738,13 +8738,25 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
       DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
       DB.DBA.EXEC_STMT ('grant SPARQL_SELECT to "SPARQL"', 0);
     }
+  if (registry_get ('__SPARQL_VHOST_RESET') = '1')
+    return;
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-auth',
+    ppath => '/!sparql/',
+    is_dav => 1,
+    vsp_user => 'dba',
+    opts => vector('noinherit', 1),
+    auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
+    realm=>'SPARQL',
+    sec=>'digest');
 --DB.DBA.EXEC_STMT ('grant execute on DB.."querySoap" to "SPARQL", 0);
 --VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
 --              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'));
+  registry_set ('__SPARQL_VHOST_RESET', '1');
 }
 ;
 

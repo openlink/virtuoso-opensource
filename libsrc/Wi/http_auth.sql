@@ -533,3 +533,61 @@ CREATE PROCEDURE WS.WS.DIGEST_AUTH (in realm varchar)
 }
 ;
 
+create procedure
+DB.DBA.HP_AUTH_SPARQL_USER (in realm varchar)
+{
+  declare _u_name, _u_password varchar;
+  declare allow_basic integer;
+  declare sec, lev varchar;
+  declare _user varchar;
+  declare lines, auth any;
+
+  lines := http_request_header ();
+  sec := http_map_get ('security_level');
+  if (isstring (sec))
+    sec := lower (sec);
+  if (sec = 'digest')
+    allow_basic := 0;
+  else
+    allow_basic := 1;
+
+  auth := DB.DBA.vsp_auth_vec (lines);
+  if (0 <> auth)
+    {
+
+      lev := get_keyword ('authtype', auth, '');
+      if (allow_basic = 0 and 'basic' = lev)
+	goto nf;
+      _user := get_keyword ('username', auth, '');
+
+      if ('' = _user)
+	return 0;
+
+      whenever not found goto nf;
+
+      select U_NAME, U_PASSWORD
+	into _u_name, _u_password from DB.DBA.SYS_USERS
+	where U_NAME = _user and U_IS_ROLE = 0 and U_SQL_ENABLE = 1 with (prefetch 1);
+
+      if (1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+					       get_keyword ('realm', auth, ''),
+					       get_keyword ('uri', auth, ''),
+					       get_keyword ('nonce', auth, ''),
+					       get_keyword ('nc', auth, ''),
+					       get_keyword ('cnonce', auth, ''),
+					       get_keyword ('qop', auth, ''),
+					       _u_password))
+	{
+	  connection_set ('SPARQLUserId', _u_name);
+	  commit work;
+	  return 1;
+	}
+    }
+ nf:
+  DB.DBA.vsp_auth_get (realm, http_path (),
+		md5 (datestring (now ())),
+		md5 ('secret'),
+		'false', lines, allow_basic);
+  return 0;
+}
+;

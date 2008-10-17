@@ -807,26 +807,190 @@ create procedure virt_proxy_init ()
 virt_proxy_init ()
 ;
 
+create procedure
+proxy_sp_html_error_page (in title varchar, in hd varchar, in message varchar)
+{
+  http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
+  http ('<html>');
+  http ('<head>');
+  http ('  <title>' || title || '</title>');
+  http ('  <style type="text/css">');
+  http ('  </style>');
+  http ('</head>');
+  http ('<body>');
+  http ('  <h1>' || hd || '</h1>');
+  http ('  <p>' || message || '</p>');
+  http ('</body>');
+  http ('</html>');
+}
 
-create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null, in "output-format" varchar := null, in get varchar := 'soft', in login varchar := '') __SOAP_HTTP 'text/html'
+
+--
+-- Python-style format - takes a format string and an array of params.
+-- It''s handier for templating, etc.
+--
+
+create procedure
+str_fmt (in fmt_str varchar, in parm_arr any)
+{
+  declare f_l,l,p,st,cnt integer;
+  declare s varchar;
+
+  s := '';
+  st := 1;
+  l := length (parm_arr);
+  f_l := length (fmt_str);
+
+  while (1)
+    {
+      p := locate ('%', fmt_str, st);
+
+      if (p = 0)
+        {
+	  if (cnt < l)
+	    signal ('42000','Too many values in parm_arr in str_fmt');
+
+	  if (cnt > l)
+	    signal ('42000', 'Too few values in parm_arr in str_fmt');
+
+          if (st < f_l)
+            s := s || subseq (fmt_str, st-1, f_l);
+	  return s;
+        }
+
+-- XXX should make special case for %{XXX}U and any other multiple char parms to generalise further
+
+      p := p + 1;
+
+      s := s || sprintf (subseq (fmt_str, st-1, p), parm_arr[cnt]);
+      cnt := cnt + 1;
+      st := p + 1;
+    }
+}
+
+-- Run a canned query with supplied param values
+-- XXX XXX check for potential SQL injection vuln !
+create table proxy_sp_qry
+(
+  qry_id integer identity,
+  qry varchar,
+  n_parms integer,
+  primary key (qry_id)
+)
+;
+
+create procedure
+ext_http_proxy_exec_qry (in exec varchar, in params any)
+{
+  declare qt, stat, msg, accept varchar;
+  declare metas, rset, triples, ses any;
+  declare parm_arr any;
+
+  stat := '00000';
+
+  set_user_id ('SPARQL');
+
+  declare exit handler for not found
+    {
+      http_request_status ('HTTP/1.1 400 Bad request');
+      proxy_sp_html_error_page ('Error: invalid query id', 'Invalid Query ID', 'The query id was invalid.');
+    };
+
+  declare _qry varchar;
+  declare _n_parms integer;
+
+  select qry, n_parms
+    into _qry, _n_parms
+    from proxy_sp_qry
+    where qry_id = exec;
+
+  parm_arr := make_array (_n_parms, 'any');
+
+  declare parm_cnt integer;
+  parm_cnt := 0;
+
+  for (declare i, l int, i := 0, l := length (params); i < l; i := i + 2)
+    {
+      if (params[i] like 'p%')
+        {
+          aset (parm_arr, atoi ("RIGHT" (params[i], length (params[i]) - 1)) - 1, params[i+1]);
+	  parm_cnt := parm_cnt + 1;
+        }
+    }
+
+  if (parm_cnt < _n_parms)
+    {
+      http_rewrite();
+      http_request_status ('HTTP/1.1 400 Bad request');
+      proxy_sp_html_error_page ('Error: insufficient no of params',
+        		        'Insufficient number of parameters',
+                                'This query takes exactly ' || _n_parms || 'parameters');
+    }
+
+  declare xec_str varchar;
+  xec_str := str_fmt (_qry, parm_arr);
+  exec (xec_str, stat, msg, vector (), 0, metas, rset);
+
+  accept := 'application/rdf+xml';
+
+  if (stat <> '00000')
+    signal (stat, msg);
+
+  ses := string_output (1000000);
+  commit work;
+
+  http_rewrite();
+
+  if (rset is not null)
+    DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+
+  http (ses);
+}
+;
+
+-- XXX now REALLY check for that SQL injection!
+
+create procedure
+ext_http_proxy (in url varchar := null,
+                in exec varchar := null,
+                in header varchar := null,
+                in force varchar := null,
+                in "output-format" varchar := null,
+                in get varchar := 'soft',
+                in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
   declare ct any;
   declare stat, msg, metas, accept, rset, triples, ses, arr any;
+  declare local_qry integer; local_qry := 0;
+
+  declare params any;
+  params := http_param ();
+
+  if (exec is not null)
+    {
+      ext_http_proxy_exec_qry (exec, params);
+      return '';
+    }
+
   req_hdr := null;
+
   if (header is not null)
     req_hdr := header;
+
   arr := rfc1808_parse_uri (url);
   arr[5] := '';
+
   if (arr[0] = 'nodeID')
     arr[2] := '';
+
   url := DB.DBA.vspx_uri_compose (arr);
+
   if (force is not null)
     {
       if (lower (force) = 'rdf')
 	{
-	  declare params, defs, host, pref, sponge any;
-	  params := http_param ();
+	  declare defs, host, pref, sponge any;
 	  defs := '';
 	  for (declare i,l int, i := 0, l := length (params); i < l; i := i + 2)
 	    {
@@ -834,12 +998,18 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 		{
 		  declare nam varchar;
 		  nam := subseq (params[i], 7);
+		  if (nam := 'local') {
+		    local_qry := 1; -- special dirty hack case for b3s queries
+		    defs := '';
+		    goto end_loop;
+		  }
 		  if (nam in ('input:grab-depth', 'input:grab-limit', 'sql:log-enable', 'sql:signal-void-variables'))
 		    defs := defs || ' define '||nam||' '||params[i+1]||' ';
 		  else
 		    defs := defs || ' define '||nam||' "'||params[i+1]||'" ';
 		}
 	    }
+end_loop:;
 	  set http_charset='utf-8';
           accept := '';
 	  if (header is not null and length (header))
@@ -878,6 +1048,13 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	  sponge := sprintf ('define get:soft "%s"', get);
 
 	  set_user_id ('SPARQL');
+
+	  if (local_qry)
+            {
+	      exec (sprintf ('sparql %s DESCRIBE <%S>', defs, url), stat, msg, vector (), 0, metas, rset);
+            }
+
+          else
           if (url not like 'nodeID://%')
 	    {
 	      exec (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
