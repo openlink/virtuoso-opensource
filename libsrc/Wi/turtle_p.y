@@ -44,6 +44,9 @@
 #define ttlyyerror_action(strg) ttlyyerror_impl(ttlp_arg, NULL, (strg))
 #endif
 
+extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
+
+
 #ifdef TTLDEBUG
 #define YYDEBUG 1
 #endif

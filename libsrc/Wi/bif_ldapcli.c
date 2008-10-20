@@ -115,6 +115,7 @@
 #define ldap_msgid(lm) (lm->lm_msgid)
 #define LDAP_PARSE_REFERENCE(a, b, c, d, e) ldap_parse_reference (a, b, c)
 #else
+#define LDAP_DEPRECATED 1	/* Enable deprecated prototypes openldap 2.3 */
 #include <ldap.h>
 #define LDAP_PARSE_REFERENCE(a, b, c, d, e) ldap_parse_reference (a, b, c, d, e)
 #endif

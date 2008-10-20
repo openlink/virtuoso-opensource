@@ -522,6 +522,7 @@ float  sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t 
 /* sqloinx.c */
 void sqlo_init_eqs (sqlo_t * so, op_table_t * ot);
 void sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, float best);
+int sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val);
 void sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
 			 dk_set_t * after_preds);
 void sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, float * best_group);
