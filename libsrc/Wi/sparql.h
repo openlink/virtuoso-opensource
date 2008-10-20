@@ -486,7 +486,7 @@ typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
     ptr->type = t; \
     } while (0)
 
-extern sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre);
+extern sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all);
 extern int sparyyparse (void *sparp);
 
 extern const char *spart_dump_opname (ptrlong opname, int is_op);

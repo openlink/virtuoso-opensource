@@ -603,11 +603,16 @@ extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate ORDER BY <int> */
 extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
 
+#define SPARP_SET_OPTION_NEW		0	/*!< Set an option only if it do not exists yet */
+#define SPARP_SET_OPTION_REPLACING	1	/*!< Set an option, owerwriting any existing value */
+#define SPARP_SET_OPTION_APPEND1	2	/*!< Adds an item to an exising value that is SPAR_LIST already (or creates a new single-item SPAR_LIST) */
+/*! Creates a new option (or changes existing one), alters \c options_ptr if needed and returns the whole value changed or created */
+extern SPART *sparp_set_option (sparp_t *sparp, SPART ***options_ptr, ptrlong key, SPART *value, ptrlong mode);
+/*! Scans the \c options vector and returns an option value for the given option key */
+extern SPART *sparp_get_option (sparp_t *sparp, SPART **options, ptrlong key);
 /*! Returns list of options of a GP or TRIPLE tree */
 extern SPART **sparp_get_options_of_tree (sparp_t *sparp, SPART *tree);
 extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree);
-extern SPART *sparp_get_option (sparp_t *sparp, ptrlong key, SPART **options);
-
 
 /* PART 3. OUTPUT GENERATOR */
 

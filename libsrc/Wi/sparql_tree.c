@@ -799,8 +799,8 @@ sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner,
 #endif
   if (!add_if_missing)    
     return 0;
-  outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, inner->e_own_idx);
-  inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, outer->e_own_idx);
+  outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
+  inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, (ptrlong)(outer->e_own_idx));
   if ((0 < inner->e_gspo_uses) || (0 < inner->e_nested_bindings) || (0 < inner->e_subquery_uses))
     outer->e_nested_bindings += 1;
   return 1;
@@ -3104,7 +3104,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
 }
 
 SPART *
-sparp_get_option (sparp_t *sparp, ptrlong key, SPART **options)
+sparp_get_option (sparp_t *sparp, SPART **options, ptrlong key)
 {
   int idx;
   for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
@@ -3113,6 +3113,48 @@ sparp_get_option (sparp_t *sparp, ptrlong key, SPART **options)
         return options [idx+1];
     }
   return (SPART *)NULL;
+}
+
+SPART *
+sparp_set_option (sparp_t *sparp, SPART ***options_ptr, ptrlong key, SPART *value, ptrlong mode)
+{
+  SPART **options = options_ptr[0];
+  int idx;
+  for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
+    {
+      if (((ptrlong)(options [idx])) != key)
+        continue;
+      switch (mode)
+        {
+        case SPARP_SET_OPTION_NEW:
+          spar_internal_error (sparp, "SPARP_SET_OPTION_NEW with existing option");
+          return NULL;
+        case SPARP_SET_OPTION_REPLACING:
+          options [idx+1] = value;
+          return options [idx+1];
+        case SPARP_SET_OPTION_APPEND1:
+          if (SPAR_LIST != SPART_TYPE (options [idx+1]))
+            spar_internal_error (sparp, "SPARP_SET_OPTION_APPEND1 with existing option that is not SPAR_LIST");
+          if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (value))
+            spar_internal_error (sparp, "SPARP_SET_OPTION_APPEND1 with non-array value");
+          options [idx+1]->_.list.items = (SPART **)t_list_concat_tail ((caddr_t)(options [idx+1]->_.list.items), 1, (caddr_t)value);
+          return options [idx+1];
+        default: spar_internal_error (sparp, "sparp_set_option(): bad mode");
+        }
+    }
+  switch (mode)
+    {
+    case SPARP_SET_OPTION_NEW: break;
+    case SPARP_SET_OPTION_REPLACING: break;
+    case SPARP_SET_OPTION_APPEND1:
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (value))
+        spar_internal_error (sparp, "SPARP_SET_OPTION_APPEND1 with non-array value");
+      value = spartlist (sparp, 2, SPAR_LIST, value);
+      return NULL;
+    default: spar_internal_error (sparp, "sparp_set_option(): bad mode");
+    }
+  options_ptr[0] = (SPART **)t_list_concat_tail ((caddr_t)options, 2, (ptrlong)key, value);
+  return value;
 }
 
 caddr_t
@@ -3649,6 +3691,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      sprintf (buf, "LIST:");
 	      SES_PRINT (ses, buf);
 	      spart_dump (tree->_.list.items, ses, indent+2, "ITEMS", -2);
+	      break;
 	    }
 	  default:
 	    {

@@ -1172,7 +1172,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
       cases = sparp_find_triple_cases (sparp, triple, sources, FROM_L);
       DO_BOX_FAST_REV (triple_case_t *, tc, case_ctr, cases)
         {
-          caddr_t table_name = tc->tc_qm->qmTableName;
+          ccaddr_t table_name = tc->tc_qm->qmTableName;
           if ((NULL == table_name) || strcmp ("DB.DBA.RDF_QUAD", table_name))
             return 0;
         }
@@ -1317,6 +1317,106 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     limit, offset, env );
 }
 
+void
+spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
+{
+#ifdef DEBUG
+  sparp_env_t *saved_env = sparp->sparp_env;
+  dk_set_t selid_stack = sparp->sparp_env->spare_selids;
+  dk_set_t filters_stack = sparp->sparp_env->spare_acc_filters;
+  dk_set_t members_stack = sparp->sparp_env->spare_acc_req_triples;
+#endif
+  SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
+  SPART *subj_var, *obj_var, **retvals;
+  caddr_t subj_vname, obj_vname, retval_selid, gp_selid;
+  int subj_is_plain_var, obj_is_plain_var, retvalctr, fld_ctr;
+  int subj_stype = SPART_TYPE (subject);
+  int obj_stype = SPART_TYPE (object);
+  if ((SPAR_VARIABLE != subj_stype) && (SPAR_QNAME != subj_stype))
+    spar_error (sparp, "Subject of transitive triple pattern should be variable or QName, not literal or blank node");
+  if ((SPAR_VARIABLE != obj_stype) && (SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
+    spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
+  subj_is_plain_var = ((SPAR_VARIABLE == subj_stype) && (NULL == strchr (subject->_.var.vname, '>')));
+  obj_is_plain_var = ((SPAR_VARIABLE == obj_stype) && (NULL == strchr (object->_.var.vname, '>')));
+  subj_vname = (subj_is_plain_var ? subject->_.var.vname :
+    t_box_sprintf (40, "trans-subj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data)) );
+  obj_vname = (obj_is_plain_var ? object->_.var.vname :
+    t_box_sprintf (40, "trans-obj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data)) );
+  spar_gp_init (sparp, 0);
+  spar_env_push (sparp);
+  spar_selid_push (sparp);
+  fields[0] = graph;
+  fields[1] = spar_make_variable (sparp, subj_vname);
+  fields[2] = predicate;
+  fields[3] = spar_make_variable (sparp, obj_vname);
+  retvalctr = 0;
+  for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
+    {
+      if (SPAR_IS_BLANK_OR_VAR (fields[fld_ctr]))
+        retvalctr++;
+    }
+  if (0 == retvalctr)
+    retvalctr = 1;
+  retvals = (SPART **)t_alloc_box (retvalctr * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+  retval_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
+  retvalctr = 0;
+  for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
+    {
+      switch (SPART_TYPE (fields[fld_ctr]))
+        {
+        case SPAR_BLANK_NODE_LABEL: retvals[retvalctr++] = spar_make_blank_node (sparp, fields[fld_ctr]->_.var.vname, 0); break;
+        case SPAR_VARIABLE: retvals[retvalctr++] = spar_make_variable (sparp, fields[fld_ctr]->_.var.vname); break;
+        }
+    }
+  if (0 == retvalctr)
+    retvals[0] = t_box_num_nonull (1);
+  t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL);
+  spar_gp_init (sparp, WHERE_L);
+  gp_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
+  subj_var = spar_make_variable (sparp, subj_vname);
+  obj_var = spar_make_variable (sparp, obj_vname);
+  for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
+    {
+      if (SPAR_IS_BLANK_OR_VAR (fields[fld_ctr]))
+        fields[fld_ctr]->_.var.selid = gp_selid;
+    }
+  spar_gp_add_triple_or_special_filter (sparp, graph, subj_var, predicate, obj_var, qm_iri, NULL);
+  sparp_set_option (sparp, &options, T_IN_L,
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
+    SPARP_SET_OPTION_REPLACING );
+  sparp_set_option (sparp, &options, T_OUT_L,
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
+    SPARP_SET_OPTION_REPLACING );
+  where_gp = spar_gp_finalize (sparp, NULL); 
+  subselect_top = spar_make_top (sparp, SELECT_L, retvals, 
+    spar_selid_pop (sparp), where_gp, 
+    (SPART **)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
+  sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
+  spar_env_pop (sparp);
+  t_check_tree (options);
+  wrapper_gp = spar_gp_finalize_with_subquery (sparp, options, subselect_top);
+  spar_gp_add_member (sparp, wrapper_gp);
+  if (!subj_is_plain_var)
+    {
+      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, subj_vname), subject);
+      spar_gp_add_filter (sparp, eq);
+    }
+  if (!obj_is_plain_var)
+    {
+      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, obj_vname), object);
+      spar_gp_add_filter (sparp, eq);
+    }
+#ifdef DEBUG
+  if (saved_env != sparp->sparp_env)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in env");
+  if (selid_stack != sparp->sparp_env->spare_selids)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in selid");
+  if (filters_stack != sparp->sparp_env->spare_acc_filters)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in filters");
+  if (members_stack != sparp->sparp_env->spare_acc_req_triples)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in req_triples");
+#endif
+}
 
 static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
   SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL,	/* graph	*/
@@ -1353,6 +1453,15 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         }
       ctx_qm = (SPART *)qm_iri;
       break;
+    }
+  if (NULL != options)
+    {
+      SPART *trans = sparp_get_option (sparp, options, TRANSITIVE_L);
+      if (NULL != trans)
+        {
+          spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options);
+          return;
+        }
     }
   if (SPAR_QNAME == SPART_TYPE (predicate))
     {
@@ -1980,7 +2089,8 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
 sparp_t * dbg_curr_sparp;
 #endif
 
-sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
+sparp_t *
+sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
 {
   wcharset_t *query_charset = sparqre->sparqre_query_charset;
   t_NEW_VAR (sparp_t, sparp);
@@ -2022,6 +2132,7 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
     {
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
+      if (rewrite_all)
       sparp_rewrite_all (sparp, 0 /* top is never cloned, hence zero safely_copy_retvals */);
     }
   QR_RESET_CODE
@@ -2185,7 +2296,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   strses_free (sparqre->sparqre_src->sif_skipped_part);
   sparqre->sparqre_src->sif_skipped_part = NULL;
   sparqre->sparqre_cli = sqlc_client();
-  sparp = sparp_query_parse (str, sparqre);
+  sparp = sparp_query_parse (str, sparqre, 1);
   dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
@@ -2235,12 +2346,13 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
+  int rewrite_all = (0 != ((2 > BOX_ELEMENTS (args)) ? 1 : bif_long_arg (qst, args, 1, "sparql_explain")));
   dk_session_t *res;
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
-  sparp = sparp_query_parse (str, &sparqre);
+  sparp = sparp_query_parse (str, &sparqre, rewrite_all);
   if (NULL != sparqre.sparqre_catched_error)
     {
       MP_DONE ();
@@ -2279,7 +2391,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
-  sparp = sparp_query_parse (str, &sparqre);
+  sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
       MP_DONE ();

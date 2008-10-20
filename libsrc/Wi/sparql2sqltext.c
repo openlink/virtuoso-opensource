@@ -1495,10 +1495,10 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
 {
   SPART **t_in_vars, **t_out_vars, **retvals;
   int v_ctr;
-  if (NULL == sparp_get_option (sparp, TRANSITIVE_L, wrapping_gp->_.gp.options))
+  if (NULL == sparp_get_option (sparp, wrapping_gp->_.gp.options, TRANSITIVE_L))
     return;
-  t_in_vars = sparp_get_option (sparp, T_IN_L, wrapping_gp->_.gp.options)->_.list.items;
-  t_out_vars = sparp_get_option (sparp, T_OUT_L, wrapping_gp->_.gp.options)->_.list.items;
+  t_in_vars = sparp_get_option (sparp, wrapping_gp->_.gp.options, T_IN_L)->_.list.items;
+  t_out_vars = sparp_get_option (sparp, wrapping_gp->_.gp.options, T_OUT_L)->_.list.items;
   retvals = wrapping_gp->_.gp.subquery->_.req_top.orig_retvals;
   for (v_ctr = BOX_ELEMENTS_0 (t_in_vars); v_ctr--; /*no step*/)
     {
@@ -5793,12 +5793,12 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_A
       if (NULL != opts)
         {
           int sav_ctr;
-          caddr_t local_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, INFERENCE_L, opts);
+          caddr_t local_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, opts, INFERENCE_L);
           if (NULL != local_inference)
             active_inference = local_inference;
           for (sav_ctr = SAME_AS__VARIANT_COUNT; sav_ctr--; /* no step */)
             {
-              SPART *val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, same_as__keys[sav_ctr], opts);
+              SPART *val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, opts, same_as__keys[sav_ctr]);
               if (NULL != val)
                 has_table_options = 1;
             }
@@ -6414,7 +6414,7 @@ ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
   SPART	*tree = ssg->ssg_tree;
   SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
   int ctr, vctr;
-  if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
+  if (NULL == sparp_get_option (ssg->ssg_sparp, opts, TRANSITIVE_L))
     return;
   ssg_puts (" TRANSITIVE");
   for (ctr = BOX_ELEMENTS (opts); 1 < ctr; ctr -= 2)
@@ -6467,7 +6467,7 @@ ssg_print_t_steps_of_select (spar_sqlgen_t *ssg)
   SPART	*tree = ssg->ssg_tree;
   SPART	**opts = ssg->ssg_wrapping_gp->_.gp.options;
   int ctr;
-  if (NULL == sparp_get_option (ssg->ssg_sparp, TRANSITIVE_L, opts))
+  if (NULL == sparp_get_option (ssg->ssg_sparp, opts, TRANSITIVE_L))
     return;
   for (ctr = BOX_ELEMENTS (opts); 1 < ctr; ctr -= 2)
     {
