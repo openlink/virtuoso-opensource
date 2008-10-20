@@ -31,7 +31,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	env CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs" ./configure $(CROSS) --with-layout=debian  --program-transform-name="s/isql/isql-v/" --localstatedir=/var 
+	env CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs" ./configure $(CROSS) --with-layout=debian  --program-transform-name="s/isql/isql-v/"
 
 
 build: build-stamp

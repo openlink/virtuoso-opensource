@@ -4,8 +4,7 @@ virtuoso-opensource for Debian
 On Debian systems, Virtuoso is built with the following substantive
 modifications:
 a) --with-layout=debian
-b) --localstatedir=/var
-c) the isql program is renamed to isql-v; isqlw becomes isql-vw.
+b) the isql program is renamed to isql-v; isqlw becomes isql-vw.
 
 For usage notes, see the homepage,
 <http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main> especially the
