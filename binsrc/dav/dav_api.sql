@@ -6002,6 +6002,7 @@ create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(in mime_type varchar) returns
 }
 ;
 
+-- /* extracting metadata */
 create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resname varchar, in restype varchar, inout _rescontent any)
 {
   declare resttype, res_type_uri, full_name varchar;
@@ -6020,6 +6021,7 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
   -- dbg_obj_princ ('restype is ', restype);
   if (restype is not null)
     {
+      declare p_name varchar;
       declare exit handler for sqlstate '*'
         {
           -- dbg_obj_princ ('Failed to call DB.DBA.DAV_EXTRACT_RDF_' || restype, '(', resname, ',... ): ', __SQL_STATE, __SQL_MESSAGE);
@@ -6028,10 +6030,15 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
         select RES_FULL_PATH into full_name from WS.WS.SYS_DAV_RES where RES_ID = resid;
         if (full_name is null)
             full_name := resname;
-        addon_n3 := call ('DB.DBA.DAV_EXTRACT_RDF_' || restype)(full_name, rescontent, html_start);
+	p_name := 'DB.DBA.DAV_EXTRACT_RDF_' || restype;
+	if (__proc_exists (p_name) is not null)
+	  {
+	    addon_n3 := call (p_name) (full_name, rescontent, html_start);
       res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
-	  type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' || res_type_uri || '"/>' );
+	    type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' ||
+	    	res_type_uri || '"/>' );
 	  addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+	  }
 	  --dbg_obj_princ ('test:', addon_n3);
 addon_n3_set: ;      
     }

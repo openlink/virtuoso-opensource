@@ -1818,8 +1818,12 @@ again:
       declare fpath any;
       if (http_path () not like '%/') -- This is for default pages that refer to css in same directory and the like.
 	{
+	  declare url_pars varchar;
+	  url_pars := http_request_get ('QUERY_STRING');
+	  if (length (url_pars))
+	    url_pars := '?' || url_pars;
 	  http_request_status ('HTTP/1.1 301 Moved Permanently');
-	  http_header (sprintf ('Location: %s/\r\n', http_path ()));
+	  http_header (sprintf ('Location: %s/%s\r\n', http_path (), url_pars));
 	  return (0);
 	}
       def_page := WS.WS.GET_DAV_DEFAULT_PAGE (path);

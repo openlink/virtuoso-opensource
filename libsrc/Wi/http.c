@@ -1387,6 +1387,8 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 #endif
       dk_free_tree ((box_t) ws->ws_path);
       ws->ws_path = NULL;
+      dk_free_tree ((box_t) ws->ws_params);
+      ws->ws_params = NULL;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
@@ -2634,6 +2636,21 @@ error_end:
 #endif
 }
 
+static caddr_t 
+http_get_url_params (ws_connection_t * ws)
+{
+  char *qmark_pos = strchr (ws->ws_req_line, '?');
+  if (qmark_pos)
+    {
+      char *end_ptr = qmark_pos + strlen (qmark_pos) - 1;
+
+      while (isspace (*end_ptr))
+	end_ptr--;
+      return box_varchar_string ((db_buf_t) (qmark_pos), end_ptr - qmark_pos + 1, DV_STRING);
+    }
+  return NULL;
+}
+
 static void http_get_def_page (caddr_t fpath, caddr_t *ts2, caddr_t all_str, char *def_page, int def_page_len)
 {
   char *tmp, *tok_s = NULL, *tok;
@@ -3093,11 +3110,14 @@ run_in_dav:
 		    {
 		      /* If the requested link is directory but no slash at the end - redirect it
 		       otherwise all relative links will be broken */
-		      caddr_t loc = dk_alloc_box_zero (plen + 14, DV_LONG_STRING);
+		      caddr_t url_pars = http_get_url_params (ws);
+		      int url_pars_len = url_pars ? box_length (url_pars) - 1 : 0;
+		      caddr_t loc = dk_alloc_box_zero (plen + url_pars_len + 14, DV_LONG_STRING);
 		      ws->ws_status_line = box_dv_short_string ("HTTP/1.1 301 Moved Permanently");
 		      ws->ws_status_code = 301;
-		      snprintf (loc, box_length (loc), "Location: %s/\r\n", ws->ws_path_string);
+		      snprintf (loc, box_length (loc), "Location: %s/%s\r\n", ws->ws_path_string, url_pars ? url_pars : "");
 		      ws->ws_header = loc;
+		      dk_free_box (url_pars);
 		      dk_free_box (dir_probe); dk_free_box (fpath);
 		      goto error_in_procedure;
 		    }
@@ -6081,10 +6101,16 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (cont_enc && 0 == strncmp (cont_enc, "gzip", 4))
     {
       dk_session_t *out = strses_allocate ();
+      strses_enable_paging (out, http_ses_size);
       zlib_box_gzip_uncompress (res, out, err_ret);
       dk_free_tree (res);
-      res = strses_string (out);
-      dk_free_box (out);
+      if (!STRSES_CAN_BE_STRING (out))
+	res = (caddr_t) out;
+      else
+	{
+	  res = strses_string (out);
+	  dk_free_box (out);
+	} 
     } 
   http_client_cache_register ((query_instance_t *)qst, uri, header, body, head, res);
   if (to_free_head)
