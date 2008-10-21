@@ -870,12 +870,15 @@ str_fmt (in fmt_str varchar, in parm_arr any)
 
 -- Run a canned query with supplied param values
 -- XXX XXX check for potential SQL injection vuln !
-create table proxy_sp_qry
-(
-  qry_id integer identity,
-  qry varchar,
-  n_parms integer,
-  primary key (qry_id)
+create table proxy_sp_qry (
+  pspq_id integer identity,
+  pspq_qry varchar,
+  pspq_n_parms integer,
+  pspq_def_values any,
+  pspq_descr varchar,
+  pspq_expln varchar,
+  pspq_isparql_path varchar,
+  primary key (pspq_id)
 )
 ;
 
@@ -899,10 +902,10 @@ ext_http_proxy_exec_qry (in exec varchar, in params any)
   declare _qry varchar;
   declare _n_parms integer;
 
-  select qry, n_parms
+  select pspq_qry, pspq_n_parms
     into _qry, _n_parms
     from proxy_sp_qry
-    where qry_id = exec;
+    where pspq_id = exec;
 
   parm_arr := make_array (_n_parms, 'any');
 
@@ -998,7 +1001,7 @@ ext_http_proxy (in url varchar := null,
 		{
 		  declare nam varchar;
 		  nam := subseq (params[i], 7);
-		  if (nam := 'local') {
+		  if (nam in ('local')) {
 		    local_qry := 1; -- special dirty hack case for b3s queries
 		    defs := '';
 		    goto end_loop;
