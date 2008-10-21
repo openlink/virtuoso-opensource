@@ -520,7 +520,11 @@ sqlo_iri_constant_name_1 (ST* tree)
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name) 
+#ifdef NDEBUG
       && 0 == stricmp (tree->_.call.name, "__BFT")
+#else
+      && 0 == stricmp (tree->_.call.name, "__box_flags_tweak")
+#endif      
       && DV_STRINGP (tree->_.call.params[0]))
     return (caddr_t) tree->_.call.params[0];
   return NULL;
