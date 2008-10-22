@@ -24,10 +24,10 @@
 ?>
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <?vsp
-  declare have_cond, have_wa, have_doc, have_tut, deadl int;
+  declare have_cond, have_wa, have_doc, have_tut, have_phpbb, deadl int;
 
   deadl := 0;
-  have_cond := 0; have_wa := 0; have_doc := 0; have_tut := 0;
+  have_cond := 0; have_wa := 0; have_doc := 0; have_tut := 0; have_phpbb := 0;
   
   declare exit handler for sqlstate '40001'
   {
@@ -50,6 +50,8 @@ again:
     have_doc := 1;
   if (VAD_CHECK_VERSION ('tutorial') is not null)
     have_tut := 1;
+  if (VAD_CHECK_VERSION ('phpBB3') is not null)
+    have_phpbb := 1;
 
 ?><html>
   <head>
@@ -65,6 +67,12 @@ again:
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">
 	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="<?V wa_link () ?>" target="_top">OpenLink Data Spaces</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <?vsp if (have_phpbb) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/phpBB3/" target="_top">phpBB</a></li>
       </ul>
       <?vsp } ?>
 
