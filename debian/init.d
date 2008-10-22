@@ -103,7 +103,11 @@ case "$1" in
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-	echo "shutdown;" | isql-v -K 
+	cd "$DBBASE" || exit -1
+	. ./virtuoso.lck
+	if running ; then
+	    kill $VIRT_PID
+	fi
 	echo "$NAME."
 	;;
   force-stop)

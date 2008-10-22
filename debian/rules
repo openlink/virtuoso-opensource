@@ -20,7 +20,10 @@ else
 CROSS= --build $(DEB_BUILD_GNU_TYPE)
 endif
 
-
+# Building from CVS requires autogen.sh to create configure script
+configure:	autogen.sh
+	. ./.profile
+	./autogen.sh
 
 config.status: configure
 	dh_testdir
@@ -31,7 +34,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	env CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs" ./configure $(CROSS) --with-layout=debian  --program-transform-name="s/isql/isql-v/"
+	env CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs" ./configure $(CROSS) --with-layout=debian --program-transform-name="s/isql/isql-v/" --with-readline
 
 
 build: build-stamp
