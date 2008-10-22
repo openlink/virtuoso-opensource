@@ -258,3 +258,8 @@ sparql define input:inference "inft" select ?s ?o from <gr> where { ?s a <c2> . 
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 echo both ": " $rowcnt " triples with equivalent property p2\n";
 
+exec (sprintf ('sparql ask where { graph <http://he.wikipedia.org/wiki/%U> { <http://he.wikipedia.org/wiki/%U> ?p ?o }}',
+      repeat ('G', 4000), repeat ('G', 4000)));
+echo both $if $equ $state OK  "PASSED" "***FAILED";
+echo both " sparql query with long IRI.\n";
+
