@@ -125,7 +125,8 @@ create procedure BMK.WA.folder_paths(
   declare folder_id integer;
   declare name varchar;
 
-  for (select F_NAME, F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_PARENT_ID = parent_id) do {
+  for (select F_NAME, F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_PARENT_ID = parent_id) do
+  {
     folder_id := F_ID;
     name := F_NAME;
     update BMK.WA.FOLDER
@@ -660,7 +661,8 @@ create procedure BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_int (inout vtb any, inout
       vt_batch_feed (vtb, '^public', mode);
 
     tags := split_and_decode (BD_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do  {
+    foreach (any tag in tags) do
+    {
       tag := concat('^T', trim(tag));
       tag := replace (tag, ' ', '_');
       tag := replace (tag, '+', '_');
@@ -692,6 +694,7 @@ BMK.WA.exec_no_error ('
     EX_TYPE integer not null,
     EX_NAME varchar not null,
     EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_SUBTYPE integer,
     EX_UPDATE_INTERVAL integer,
     EX_UPDATE_PERIOD varchar,
     EX_UPDATE_FREQ integer,
@@ -702,6 +705,10 @@ BMK.WA.exec_no_error ('
     primary key (EX_ID)
   )
 ');
+
+BMK.WA.exec_no_error(
+  'alter table BMK.WA.EXCHANGE add EX_UPDATE_SUBTYPE integer', 'C', 'BMK.WA.EXCHANGE', 'EX_UPDATE_SUBTYPE'
+);
 
 BMK.WA.exec_no_error ('
   create trigger EXCHANGE_AI AFTER INSERT ON BMK.WA.EXCHANGE referencing new as N

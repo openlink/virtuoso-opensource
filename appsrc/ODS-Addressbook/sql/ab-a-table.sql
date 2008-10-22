@@ -596,6 +596,7 @@ AB.WA.exec_no_error ('
     EX_TYPE integer not null,
     EX_NAME varchar not null,
     EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_SUBTYPE integer,
     EX_UPDATE_INTERVAL integer,
     EX_UPDATE_PERIOD varchar,
     EX_UPDATE_FREQ integer,
@@ -606,6 +607,10 @@ AB.WA.exec_no_error ('
     primary key (EX_ID)
   )
 ');
+
+AB.WA.exec_no_error(
+  'alter table AB.WA.EXCHANGE add EX_UPDATE_SUBTYPE integer', 'C', 'AB.WA.EXCHANGE', 'EX_UPDATE_SUBTYPE'
+);
 
 AB.WA.exec_no_error ('
   create trigger EXCHANGE_AI AFTER INSERT ON AB.WA.EXCHANGE referencing new as N

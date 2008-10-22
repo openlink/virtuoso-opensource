@@ -968,7 +968,9 @@ create procedure BMK.WA.bookmark_import_netscape(
     UID := xpath_eval('/dl/dt/a/@id', V, N);
     commit work;
 
+    connection_set ('__bookmark_import', '1');
     tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, tags, folder_id);
+    connection_set ('__bookmark_import', '0');
 
 	  if (not is_empty_or_null (progress_id))
 	  {
@@ -1027,7 +1029,9 @@ create procedure BMK.WA.bookmark_import_xbel(
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
     commit work;
 
+    connection_set ('__bookmark_import', '1');
     tmp := BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, tags, folder_id);
+    connection_set ('__bookmark_import', '0');
 
 	  if (not is_empty_or_null (progress_id))
 	  {
@@ -1086,7 +1090,9 @@ create procedure BMK.WA.bookmark_import_delicious(
           nTags := concat(nTags, tag, ',');
     }
     nTags := trim(tags || ',' || nTags, ',');
+    connection_set ('__bookmark_import', '1');
     BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, nTags, folder_id);
+    connection_set ('__bookmark_import', '0');
 
 	  if (not is_empty_or_null (progress_id)) {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
@@ -2229,7 +2235,8 @@ _again:
   oldUri := newUri;
   commit work;
   content := http_get (newUri, resHdr, 'GET', reqHdr);
-  if (resHdr[0] like 'HTTP/1._ 30_ %') {
+  if (resHdr[0] like 'HTTP/1._ 30_ %')
+  {
     newUri := http_request_header (resHdr, 'Location');
     newUri := WS.WS.EXPAND_URL (oldUri, newUri);
     if (N > 15)
@@ -2327,7 +2334,8 @@ create procedure BMK.WA.exchange_exec (
 
   update BMK.WA.EXCHANGE
      set EX_EXEC_TIME = now (),
-         EX_EXEC_LOG = null
+         EX_EXEC_LOG = null,
+         EX_UPDATE_SUBTYPE = null
    where EX_ID = _id;
   commit work;
 
@@ -2340,9 +2348,16 @@ create procedure BMK.WA.exchange_exec (
 create procedure BMK.WA.exchange_entry_update (
   in _domain_id integer)
 {
-  for (select EX_ID from BMK.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  for (select EX_ID as _id from BMK.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
   {
-    BMK.WA.exchange_exec (EX_ID);
+    if (connection_get ('__bookmark_import') = '1')
+    {
+      update BMK.WA.EXCHANGE
+         set EX_UPDATE_SUBTYPE = 1
+       where EX_ID = _id;
+    } else {
+      BMK.WA.exchange_exec (_id);
+    }
   }
 }
 ;
@@ -2355,7 +2370,7 @@ create procedure BMK.WA.exchange_exec_internal (
 {
   for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from BMK.WA.EXCHANGE where EX_ID = _id) do
   {
-    declare _type, _name, _user, _password, _tagsInclude, _tagsExclude, _tags, _folderPath, _folder_id any;
+    declare _type, _name, _pName, _user, _password, _tagsInclude, _tagsExclude, _tags, _folderPath, _folder_id any;
     declare _content any;
 
     _type := get_keyword ('type', _options);
@@ -2381,8 +2396,17 @@ create procedure BMK.WA.exchange_exec_internal (
             signal ('BMK02', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           };
           permissions := BMK.WA.dav_permissions (_name, _user, _password);
-          _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
-          retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/calendar', permissions, _user, null, _user, _password);
+          _pName := replace (_name, ' ', '%20');
+          _name := http_physical_path_resolve (_name);
+          if (_name is null)
+          {
+            _name := _pName;
+          }
+          else if (_name not like '/DAV/%')
+          {
+            _name := '/DAV' || _name;
+          }
+          retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/html', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
             signal ('BMK01', 'WebDAV: ' || DB.DBA.DAV_PERROR (retValue) || '.<>');
@@ -2445,8 +2469,8 @@ create procedure BMK.WA.exchange_scheduler ()
   _dt := now ();
   declare cr static cursor for select EX_ID
                                  from BMK.WA.EXCHANGE
-                                where EX_UPDATE_TYPE = 2
-                                  and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt);
+                                where (EX_UPDATE_TYPE = 2 and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt))
+                                   or (EX_UPDATE_TYPE = 1 and EX_UPDATE_SUBTYPE is not null);
 
   whenever not found goto _done;
   open cr (exclusive, prefetch 1);
@@ -2464,6 +2488,7 @@ create procedure BMK.WA.exchange_scheduler ()
         goto _next;
       };
       BMK.WA.exchange_exec (exID, 1);
+      commit work;
     }
 
   _next:

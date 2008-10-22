@@ -159,6 +159,7 @@ CAL.WA.exec_no_error ('
     EX_TYPE integer not null,
     EX_NAME varchar not null,
     EX_UPDATE_TYPE integer not null,
+    EX_UPDATE_SUBTYPE integer,
     EX_UPDATE_INTERVAL integer,
     EX_UPDATE_PERIOD varchar,
     EX_UPDATE_FREQ integer,
@@ -169,6 +170,10 @@ CAL.WA.exec_no_error ('
     primary key (EX_ID)
   )
 ');
+
+CAL.WA.exec_no_error(
+  'alter table CAL.WA.EXCHANGE add EX_UPDATE_SUBTYPE integer', 'C', 'CAL.WA.EXCHANGE', 'EX_UPDATE_SUBTYPE'
+);
 
 CAL.WA.exec_no_error ('
   create trigger EXCHANGE_AI AFTER INSERT ON CAL.WA.EXCHANGE referencing new as N

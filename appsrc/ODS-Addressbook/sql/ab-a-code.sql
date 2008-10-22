@@ -3456,7 +3456,10 @@ create procedure AB.WA.import_vcard (
         if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_UPDATED >= updatedBefore))
           goto _skip;
       }
+      commit work;
+      connection_set ('__addressbook_import', '1');
       id := AB.WA.contact_update4 (id, domain_id, pFields, pValues, oTags, validation);
+      connection_set ('__addressbook_import', '0');
       vcardImported := vector_concat (vcardImported, id);
 
     _skip:;
@@ -3671,7 +3674,10 @@ create procedure AB.WA.import_foaf (
               pValues := vector_concat (pValues, vector (tmp2));
             }
           }
+      commit work;
+      connection_set ('__addressbook_import', '1');
         AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
+      connection_set ('__addressbook_import', '0');
       }
   _next:;
   }
@@ -3898,7 +3904,10 @@ create procedure AB.WA.import_csv (
            }
          }
       }
+      commit work;
+      connection_set ('__addressbook_import', '1');
       AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
+      connection_set ('__addressbook_import', '0');
     }
   }
 }
@@ -3933,7 +3942,10 @@ create procedure AB.WA.import_ldap (
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
         }
+      commit work;
+      connection_set ('__addressbook_import', '1');
       AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
+      connection_set ('__addressbook_import', '0');
     }
   }
 }
@@ -4305,7 +4317,8 @@ create procedure AB.WA.exchange_exec (
 
   update AB.WA.EXCHANGE
      set EX_EXEC_TIME = now (),
-         EX_EXEC_LOG = null
+         EX_EXEC_LOG = null,
+         EX_UPDATE_SUBTYPE = null
    where EX_ID = _id;
   commit work;
 
@@ -4318,9 +4331,16 @@ create procedure AB.WA.exchange_exec (
 create procedure AB.WA.exchange_entry_update (
   in _domain_id integer)
 {
-  for (select EX_ID from AB.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
+  for (select EX_ID as _id from AB.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 0 and EX_UPDATE_TYPE = 1) do
   {
-    AB.WA.exchange_exec (EX_ID);
+    if (connection_get ('__addressbook_import') = '1')
+  {
+      update AB.WA.EXCHANGE
+         set EX_UPDATE_SUBTYPE = 1
+       where EX_ID = _id;
+    } else {
+      AB.WA.exchange_exec (_id);
+    }
   }
 }
 ;
@@ -4333,7 +4353,7 @@ create procedure AB.WA.exchange_exec_internal (
 {
   for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_ID = _id) do
   {
-    declare _type, _name, _user, _password, _mode, _tags, _tagsInclude, _tagsExclude any;
+    declare _type, _name, _pName, _user, _password, _mode, _tags, _tagsInclude, _tagsExclude any;
     declare _content any;
 
     _type := get_keyword ('type', _options);
@@ -4358,7 +4378,16 @@ create procedure AB.WA.exchange_exec_internal (
             signal ('AB002', 'The export/publication did not pass successfully. Please verify the path and parameters values!<>');
           };
           permissions := AB.WA.dav_permissions (_name, _user, _password);
-          _name := http_physical_path_resolve (replace (_name, ' ', '%20'));
+          _pName := replace (_name, ' ', '%20');
+          _name := http_physical_path_resolve (_name);
+          if (_name is null)
+          {
+            _name := _pName;
+          }
+          else if (_name not like '/DAV/%')
+          {
+            _name := '/DAV' || _name;
+          }
           retValue := DB.DBA.DAV_RES_UPLOAD (_name, _content, 'text/text/x-vCard', permissions, _user, null, _user, _password);
           if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
           {
@@ -4470,8 +4499,8 @@ create procedure AB.WA.exchange_scheduler ()
   _dt := now ();
   declare cr static cursor for select EX_ID
                                  from AB.WA.EXCHANGE
-                                where EX_UPDATE_TYPE = 2
-                                  and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt);
+                                where (EX_UPDATE_TYPE = 2 and (EX_EXEC_TIME is null or dateadd ('minute', EX_UPDATE_INTERVAL, EX_EXEC_TIME) < _dt))
+                                   or (EX_UPDATE_TYPE = 1 and EX_UPDATE_SUBTYPE is not null);
 
   whenever not found goto _done;
   open cr (exclusive, prefetch 1);
@@ -4489,6 +4518,7 @@ create procedure AB.WA.exchange_scheduler ()
         goto _next;
       };
       AB.WA.exchange_exec (exID, 1);
+      commit work;
     }
 
   _next:
