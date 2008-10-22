@@ -643,6 +643,7 @@ void
 yy_new_error (const char *s, const char *state, const char *native)
 {
   int nlen;
+  int is_semi;
   int this_lineno = scn3_lineno;
   char buf_for_next [2000];
   if (scn3_inside_error_reporter)
@@ -658,6 +659,7 @@ yy_new_error (const char *s, const char *state, const char *native)
       strncpy (sql_err_native, native, sizeof (sql_err_native));
       sql_err_native[sizeof (sql_err_native) - 1] = 0;
     }
+  is_semi = !strcmp (yytext, ";");
   snprintf (sql_err_text + nlen, sizeof (sql_err_text)-nlen, ": %s at '%s'", s, yytext);
   scn3_inside_error_reporter ++;
   if (0 != yylex ())
@@ -669,7 +671,15 @@ yy_new_error (const char *s, const char *state, const char *native)
 	buf_for_next [sizeof (buf_for_next) - 1] = 0;
       }
   else
+    {
+      if (is_semi)
+        {
+          sql_err_text [sizeof (sql_err_text)-1] = '\0';
+          sql_err_text [strlen (sql_err_text)-7] = '\0'; 
+        }
+      else
     strcpy (buf_for_next, " immediately before end of statement");
+    }
   strncat_ck (sql_err_text, buf_for_next, (sizeof (sql_err_text) - 1));
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
 

@@ -592,7 +592,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
       curr_eq->e_vars = (SPART **)t_list (2, needle_var, NULL);
       needle_var->_.var.equiv_idx = curr_eq->e_own_idx;
       curr_eq->e_var_count = 1;
-      if (SPARP_EQUIV_ADD_GPSO_USE & flags)
+      if (SPARP_EQUIV_ADD_GSPO_USE & flags)
         curr_eq->e_gspo_uses++;
       if (SPARP_EQUIV_ADD_CONST_READ & flags)
         curr_eq->e_const_reads++;
@@ -634,7 +634,7 @@ namesake_found:
 #endif
       curr_eq->e_vars = curr_vars = new_vars;
     }
-  if (SPARP_EQUIV_ADD_GPSO_USE & flags)
+  if (SPARP_EQUIV_ADD_GSPO_USE & flags)
     curr_eq->e_gspo_uses++;
   if (SPARP_EQUIV_ADD_CONST_READ & flags)
     curr_eq->e_const_reads++;
@@ -2022,6 +2022,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       END_DO_BOX_FAST_REV;
       if (NULL != orig->_.gp.subquery)
           tgt->_.gp.subquery = sparp_tree_full_clone_int (sparp, orig->_.gp.subquery, orig);
+      if (NULL != orig->_.gp.options)
+        tgt->_.gp.options = sparp_treelist_full_clone_int (sparp, orig->_.gp.options, orig);
       tgt->_.gp.selid = sparp_clone_id (sparp, orig->_.gp.selid);
       for (eq_ctr = 0; eq_ctr < orig->_.gp.equiv_count; eq_ctr++)
         {
@@ -2084,6 +2086,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           sparp_jso_validate_format (sparp, tgt->_.triple.native_formats[fld_ctr]);
           tgt->_.triple.tr_fields[fld_ctr] = sparp_tree_full_clone_int (sparp, orig->_.triple.tr_fields[fld_ctr], parent_gp);
         }
+      if (NULL != orig->_.triple.options)
+        tgt->_.triple.options = sparp_treelist_full_clone_int (sparp, orig->_.triple.options, parent_gp);
       return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -2344,7 +2348,7 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
             {
               sparp_equiv_t *parent_eq;
               field->_.var.selid = t_box_copy (parent_gp->_.gp.selid);
-              parent_eq = sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GPSO_USE);
+              parent_eq = sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GSPO_USE);
             }
         }
       memb->_.triple.selid = t_box_copy (parent_gp->_.gp.selid);
@@ -2685,39 +2689,11 @@ sparp_find_gp_by_alias (sparp_t *sparp, caddr_t alias)
 }
 
 SPART *
-sparp_find_triple_of_var (sparp_t *sparp, SPART *gp, SPART *var)
+sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match)
 {
   int ctr;
   SPART **members;
-  if (NULL == var->_.var.tabid)
-    return NULL;
-  if (NULL == gp)
-    {
-      sparp_equiv_t *eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
-      gp = eq->e_gp;
-/*      gp = sparp_find_gp_by_alias_int (sparp, sparp->sparp_expr->_.req_top.pattern, var->_.var.selid);
-      if (NULL == gp)
-        return NULL;*/
-    }
-  members = gp->_.gp.members;
-  for (ctr = BOX_ELEMENTS_0 (members); ctr--; /*no step*/)
-    {
-      SPART *memb = members[ctr];
-      if (SPAR_TRIPLE != SPART_TYPE (memb))
-        continue;
-      if (memb->_.triple.tr_fields[var->_.var.tr_idx] == var)
-        return memb;
-    }
-  spar_internal_error (sparp, "sparp_" "find_triple_of_var(): triple not found");
-  return NULL; /* Never reached */
-}
-
-
-SPART *
-sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var)
-{
-  int ctr;
-  SPART **members;
+  ptrlong tr_idx;
   if (NULL == var->_.var.tabid)
     return NULL;
   if (NULL == gp)
@@ -2727,6 +2703,7 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var)
         return NULL;
     }
   members = gp->_.gp.members;
+  tr_idx = var->_.var.tr_idx;
   for (ctr = BOX_ELEMENTS_0 (members); ctr--; /*no step*/)
     {
       SPART *memb = members[ctr];
@@ -2735,29 +2712,57 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var)
         continue;
       if (strcmp (memb->_.triple.tabid, var->_.var.tabid))
         continue;
-      fld = memb->_.triple.tr_fields[var->_.var.tr_idx];
-      if (!SPAR_IS_BLANK_OR_VAR (fld))
-        continue;
-      if (!strcmp (fld->_.var.vname, var->_.var.vname))
+      if (tr_idx < SPART_TRIPLE_FIELDS_COUNT)
+        {
+          fld = memb->_.triple.tr_fields[tr_idx];
+          if (need_strong_match)
+            {
+              if (fld == var)
         return memb;
     }
+          else
+            {
+              if (SPAR_IS_BLANK_OR_VAR (fld) && !strcmp (fld->_.var.vname, var->_.var.vname))
+                return memb;
+            }
+        }
+      else
+        {
+          fld = sparp_get_option (sparp, memb->_.triple.options, tr_idx);
+          if (need_strong_match)
+            {
+              if (fld == var)
+                return memb;
+            }
+          else
+            {
+              if (SPAR_IS_BLANK_OR_VAR (fld) && !strcmp (fld->_.var.vname, var->_.var.vname))
+                return memb;
+            }
+        }
+    }
+  if (need_strong_match)
+    spar_internal_error (sparp, "sparp_" "find_triple_of_var_or_retval(): triple not found for strong match");
   return NULL;
 }
 
 qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var)
 {
+  int tr_idx = var->_.var.tr_idx;
   quad_map_t *qm;
   qm_value_t *qmv;
+  if (tr_idx >= SPART_TRIPLE_FIELDS_COUNT)
+    spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): side effect var passed");
   if (NULL == var_triple)
     {
       switch (SPART_TYPE (var))
         {
         case SPAR_BLANK_NODE_LABEL:
         case SPAR_VARIABLE:
-          var_triple = sparp_find_triple_of_var (sparp, gp, var);
+          var_triple = sparp_find_triple_of_var_or_retval (sparp, gp, var, 1);
           break;
         case SPAR_RETVAL:
-          var_triple = sparp_find_triple_of_var_or_retval (sparp, gp, var);
+          var_triple = sparp_find_triple_of_var_or_retval (sparp, gp, var, 0);
           break;
         default:
           spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): var expected");
@@ -2767,7 +2772,7 @@ qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, 
         spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): can't find triple");
     }
   qm = var_triple->_.triple.tc_list[0]->tc_qm;
-  qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+  qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[tr_idx])[0];
   return qmv;   
 }
 
@@ -2984,10 +2989,10 @@ sparp_get_options_of_tree (sparp_t *sparp, SPART *tree)
 }
 
 void
-sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
+sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
 {
-  SPART **options = NULL;
   int ttype = SPART_TYPE (tree);
+  int has_ft = 0;
   int has_inference = 0;
   int has_transitive = 0;
   int needs_transitive = 0;
@@ -2996,17 +3001,10 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
   SPART **out_list = NULL;
   ptrlong direction = 0;
   int idx;
-  switch (ttype)
-    {
-    case SPAR_GP:
-      options = tree->_.gp.options;
-      if (SELECT_L == tree->_.gp.subtype)
-        subq_orig_retvals = tree->_.gp.subquery->_.req_top.orig_retvals;
-      break;
-    case SPAR_TRIPLE: options = tree->_.triple.options; break;
-    }
   if (NULL == options)
     return;
+  if ((SPAR_GP == ttype) && (SELECT_L == tree->_.gp.subtype))
+    subq_orig_retvals = tree->_.gp.subquery->_.req_top.orig_retvals;
   for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
     {
       ptrlong key = ((ptrlong)(options [idx]));
@@ -3014,6 +3012,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
       switch (key)
         {
         case INFERENCE_L: has_inference = 1; continue;
+        case OFFBAND_L: case SCORE_L: has_ft = 1; continue;
         case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
         case T_CYCLES_ONLY_L:
@@ -3083,13 +3082,23 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree)
     {
     case SPAR_GP:
       if (has_inference)
-        spar_error (sparp, "Inference options can be specified only for triples, not for group patterns");
+        spar_error (sparp, "Inference options can be specified only for plain triple patterns, not for group patterns");
+      if (has_ft)
+        spar_error (sparp, "Free-text options can be specified only for triple patterns with special predicates, not for group patterns");
       if (needs_transitive && !has_transitive)
         spar_error (sparp, "Transitive-specific options are used without TRANSITIVE option");
       break;
     case SPAR_TRIPLE:
       if (needs_transitive || has_transitive)
-        spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triples");
+        spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triple patterns");
+      if (has_ft)
+        spar_error (sparp, "Free-text options can be specified only for triple patterns with special predicates, not for plain patterns");
+      break;
+    default:
+      if (has_inference)
+        spar_error (sparp, "Inference options can be specified only for plain triple patterns");
+      if (needs_transitive || has_transitive)
+        spar_error (sparp, "Transitive-specific options can be specified only for group patterns");
       break;
     }
   if (has_transitive)
@@ -3243,6 +3252,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case NAMED_L: return "NAMED";
     case NIL_L: return "NIL";
     case OBJECT_L: return "OBJECT";
+    case OFFBAND_L: return "OFFBAND";
     case OFFSET_L: return "OFFSET";
     case OPTIONAL_L: return "OPTIONAL gp";
     case ORDER_L: return "ORDER";
@@ -3250,6 +3260,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case PREFIX_L: return "PREFIX";
     case REGEX_L: return "REGEX builtin";
     case SAMETERM_L: return "sameTerm builtin";
+    case SCORE_L: return "SCORE";
     case SELECT_L: return "SELECT result-mode";
     case STR_L: return "STR builtin";
     case SUBJECT_L: return "SUBJECT";
@@ -3619,8 +3630,15 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               spart_dump_rvr (ses, &(tree->_.var.rvr));
               if (NULL != tree->_.var.tabid)
                 {
+                  ptrlong tr_idx = tree->_.var.tr_idx;
                   static const char *field_full_names[] = {"graph", "subject", "predicate", "object"};
-                  sprintf (buf, " (%s)", field_full_names[tree->_.var.tr_idx]); SES_PRINT (ses, buf);
+                  if (tr_idx < SPART_TRIPLE_FIELDS_COUNT)
+                    {
+                      sprintf (buf, " (%s)", field_full_names[tr_idx]);
+                      SES_PRINT (ses, buf);
+                    }
+                  else
+                    spart_dump_opname (tr_idx, 0);
                 }
 	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
 	      spart_dump (tree->_.var.selid, ses, indent+2, "SELECT ID", 0);

@@ -179,7 +179,7 @@ typedef struct sparp_equiv_s
 #define SPARP_EQUIV_INS_CLASS		0x02	/*!< \c sparp_equiv_get() has a right to add a new equiv to the \c haystack_gp */
 #define SPARP_EQUIV_INS_VARIABLE	0x04	/*!< \c sparp_equiv_get() has a right to insert \c needle_var into an equiv */
 #define SPARP_EQUIV_GET_ASSERT		0x08	/*!< \c sparp_equiv_get() will signal internal error instead of returning NULL */
-#define SPARP_EQUIV_ADD_GPSO_USE	0x10	/*!< \c sparp_equiv_get() will increment \c e_gspo_uses if variable is added */
+#define SPARP_EQUIV_ADD_GSPO_USE	0x10	/*!< \c sparp_equiv_get() will increment \c e_gspo_uses if variable is added */
 #define SPARP_EQUIV_ADD_CONST_READ	0x20	/*!< \c sparp_equiv_get() will increment \c e_const_reads if variable is added */
 #define SPARP_EQUIV_ADD_SUBQUERY_USE	0x40	/*!< \c sparp_equiv_get() will increment \c e_subquery_uses if variable is added */
 #define SPARP_EQUIV_ADD_OPTIONAL_READ	0x80	/*!< \c sparp_equiv_get() will increment \c e_optional_reads if variable is added */
@@ -368,12 +368,11 @@ extern SPART *sparp_find_gp_by_alias (sparp_t *sparp, caddr_t alias);
 
 /*! Returns triple that contains the given variable \c var as a field.
 If \c gp is not NULL the search is restricted by triples that
-are direct members of \c gp, otherwise the gp to search will be found by selid of the variable. */
-extern SPART *sparp_find_triple_of_var (sparp_t *sparp, SPART *gp, SPART *var);
-
-/*! This is like \c sparp_find_triple_of_var() but returns triple that
-contains the field whose selid, tabid, name and tr_idx matches \c var. */
-extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var);
+are direct members of \c gp, otherwise the gp to search will be found by selid of the variable.
+If \c need_strong_match is nonzero then the triple should contain pointer to var,
+othervise a triple should contain a field whose selid, tabid, name and tr_idx matches \c var.
+The \c var may b blank node or retval as well, but retval has no meaning if \c need_strong_match is set */
+extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match);
 
 /*! This finds a variable that is a source of value of a given external variable or an appropriate retval. */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var);
@@ -612,7 +611,7 @@ extern SPART *sparp_set_option (sparp_t *sparp, SPART ***options_ptr, ptrlong ke
 extern SPART *sparp_get_option (sparp_t *sparp, SPART **options, ptrlong key);
 /*! Returns list of options of a GP or TRIPLE tree */
 extern SPART **sparp_get_options_of_tree (sparp_t *sparp, SPART *tree);
-extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree);
+extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options);
 
 /* PART 3. OUTPUT GENERATOR */
 

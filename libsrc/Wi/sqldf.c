@@ -2617,7 +2617,8 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
       else if (0 == stricmp ((char *) arg, "OFFBAND") ||
 	  0 == stricmp ((char *) arg, "RANGES") ||
 	  0 == stricmp ((char *) arg, "MAIN_RANGES") ||
-	  0 == stricmp ((char *) arg, "ATTR_RANGES"))
+	  0 == stricmp ((char *) arg, "ATTR_RANGES") ||
+	  0 == stricmp ((char *) arg, "SCORE"))
 	{ /* output col(s) : do nothing */
 	  inx ++;
 	}
@@ -2635,7 +2636,7 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	}
       else if (inx >= surely_option_idx)
 	SQL_GPF_T1 (sc->sc_cc, "Argument not a keyword from list "
-	    "OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, START_ID, END_ID, SCORE_LIMIT");
+	    "OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, START_ID, END_ID, SCORE, SCORE_LIMIT");
     }
   if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
     {

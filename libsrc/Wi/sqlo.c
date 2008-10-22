@@ -1345,11 +1345,20 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx++;
 	  continue;
 	}
+      if (0 == stricmp ((char *)arg, "score"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1 || !ST_P (args[inx + 1], COL_DOTTED))
+	    sqlc_error (sc->sc_cc, "37000",
+		"The SCORE argument of %s must reference a column", (char *)arg, sqlo_spec_predicate_name (type));
+	  ot->ot_text_score = sqlo_virtual_col_crr (so, ot, args[inx + 1]->_.col_ref.name, DV_LONG_INT, 1);
+	  inx++;
+	  continue;
+	}
       if (0 == stricmp ((char *)arg, "attr_ranges"))
 	{
 	  if (BOX_ELEMENTS (args) <= inx + 1 || !ST_P (args[inx + 1], COL_DOTTED))
 	    sqlc_error (sc->sc_cc, "37000",
-		"The attr_ranges argument of %s must reference a column", sqlo_spec_predicate_name (type));
+		"The ATTR_RANGES argument of %s must reference a column", sqlo_spec_predicate_name (type));
 	  ot->ot_attr_range_out = sqlo_virtual_col_crr (so, ot, args[inx + 1]->_.col_ref.name, DV_ARRAY_OF_POINTER, 1);
 	  inx++;
 	  continue;
@@ -1357,7 +1366,7 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
       if (0 == stricmp ((char *) arg, "start_id"))
 	{
 	  if (BOX_ELEMENTS (args) <= inx + 1)
-	    sqlc_error (sc->sc_cc, "37000", "contains start_id option must have an argument");
+	    sqlc_error (sc->sc_cc, "37000", "contains START_ID option must have an argument");
 	  ot->ot_text_start = args[inx + 1];
 	  inx++;
 	  continue;
@@ -1365,7 +1374,7 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
       if (0 == stricmp ((char *) arg, "end_id"))
 	{
 	  if (BOX_ELEMENTS (args) <= inx + 1)
-	    sqlc_error (sc->sc_cc, "37000", "contains end_id option must have an argument");
+	    sqlc_error (sc->sc_cc, "37000", "contains END_ID option must have an argument");
 	  ot->ot_text_end = args[inx + 1];
 	  inx++;
 	  continue;
@@ -1373,7 +1382,7 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
       if (0 == stricmp ((char *) arg, "score_limit"))
 	{
 	  if (BOX_ELEMENTS (args) <= inx + 1)
-	    sqlc_error (sc->sc_cc, "37000", "contains score_limit option must have an argument");
+	    sqlc_error (sc->sc_cc, "37000", "contains SCORE_LIMIT option must have an argument");
 	  ot->ot_text_score_limit = args[inx + 1];
 	  inx++;
 	  continue;
@@ -1464,10 +1473,10 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree)
 	      if (NULL == (text_key = tb_text_key (ot->ot_table)))
 		sqlc_error (so->so_sc->sc_cc, "37000",
 		    "Table referenced in %s does not have a text index", sqlo_spec_predicate_name (ctype));
-	      if (NULL == ot->ot_text_score)
-		ot->ot_text_score = sqlo_virtual_col_crr (so, ot, "SCORE", DV_LONG_INT, 1);
 	      if (ctype == 'x' || ctype == 'c')
 		sqlo_check_ft_offband (so, ot, args, (char) ctype);
+	      if (NULL == ot->ot_text_score)
+		ot->ot_text_score = sqlo_virtual_col_crr (so, ot, "SCORE", DV_LONG_INT, 1);
 	      if ((ctype == 'x') || (NULL != ot->ot_main_range_out))
 		{
 		  sqlo_xpath_col (so, ot, args, -1, ctype);

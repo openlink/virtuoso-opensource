@@ -1320,18 +1320,23 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       ssg_valmode_t tr_valmode;
       if (NULL == tabid)
         continue; /* because next loop will do complex cases with care, and OPTIONs are not good candidates if there are SPART_VARR_NOT_NULL items */
-      triple = sparp_find_triple_of_var (sparp, gp, var);
+      triple = sparp_find_triple_of_var_or_retval (sparp, gp, var, 1);
 #ifdef DEBUG
       if (SPAR_TRIPLE != SPART_TYPE (triple))
         spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): bad tabid of a variable");
 #endif
       tr_idx = var->_.var.tr_idx;
+      if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
+        tr_valmode = SSG_VALMODE_SQLVAL;
+      else
+        {
 #ifdef DEBUG
       if (NULL == triple->_.triple.tc_list)
         spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): NULL == qm_list");
 #endif
       tr_valmode = triple->_.triple.native_formats[tr_idx];
       sparp_jso_validate_format (sparp, tr_valmode);
+        }
       largest_intersect = ssg_largest_intersect_valmode (largest_intersect, tr_valmode);
     }
   DO_BOX_FAST (SPART *, gp_member, gp_member_idx, gp->_.gp.members)
@@ -1410,12 +1415,14 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           SPART *triple;
           int tr_idx;
           ssg_valmode_t tr_valmode;
-          triple = sparp_find_triple_of_var (sparp, NULL, tree);
+          triple = sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1);
 #ifdef DEBUG
           if (SPAR_TRIPLE != SPART_TYPE (triple))
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad tabid of a variable");
 #endif
           tr_idx = tree->_.var.tr_idx;
+          if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
+            return SSG_VALMODE_SQLVAL;
 #ifdef DEBUG
           if (NULL == triple->_.triple.tc_list)
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): NULL == qm_list");
@@ -1449,6 +1456,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           ssg_valmode_t tr_valmode;
           if (SPAR_TRIPLE != SPART_TYPE (triple))
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad triple of a retval");
+          if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
+            return SSG_VALMODE_SQLVAL;
           if (1 != BOX_ELEMENTS_0 (triple->_.triple.tc_list))
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): lengths of triple->_.triple.qm_list differs from 1");
           tr_valmode = triple->_.triple.native_formats[tr_idx];
@@ -1624,6 +1633,8 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           ssg_valmode_t tr_valmode;
           if (SPAR_TRIPLE != SPART_TYPE (triple))
             spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): bad triple of a retval");
+          if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
+            return SPART_VARR_IS_LIT;
           if (1 != BOX_ELEMENTS_0 (triple->_.triple.tc_list))
             spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): lengths of triple->_.triple.qm_list differs from 1");
           tr_valmode = triple->_.triple.native_formats[tr_idx];
@@ -2053,7 +2064,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
     {
       SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
       memcpy (&(rv->_.retval), &(var->_.var), sizeof (rv->_.var));
-      triple = rv->_.retval.triple = sparp_find_triple_of_var (ssg->ssg_sparp, NULL, var);
+      triple = rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
     }
   native = sparp_expn_native_valmode (ssg->ssg_sparp, rv);
   if (IS_BOX_POINTER (native) && native->qmfValRange.rvrRestrictions & SPART_VARR_NOT_NULL &&
@@ -2069,17 +2080,22 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
     ssg_valmode_is_subformat_of (needed, native) )
     needed = native; /* !!!TBD: proper check for safety of this replacement (the value returned may be of an unexpected type) */
   qm = triple->_.triple.tc_list[0]->tc_qm;
+  if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
+    qmv = SSG_VALMODE_SQLVAL;
+  else
   qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
   if (NULL != qmv)
     {
-      int col_count = (IS_BOX_POINTER (native) ? BOX_ELEMENTS (qmv->qmvColumns) : 1);
+      int col_count = (IS_BOX_POINTER (needed) ? needed->qmfColumnCount : 1);
       int col_ctr;
       if ((1 == col_count) || (needed != native) || ((NULL != asname) && !IS_BOX_POINTER (asname)))
         {
           if (0 == col_count)
             rv->_.retval.vname = NULL;
-          else
+          else if (IS_BOX_POINTER (qmv) && (0 != BOX_ELEMENTS (qmv->qmvColumns)))
             rv->_.retval.vname = (caddr_t)(qmv->qmvColumns[0]->qmvcColumnName);
+          else
+            rv->_.retval.vname = var->_.var.vname;
           ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
           return;
         }
@@ -2910,23 +2926,27 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)),
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
-                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                spartlist (ssg->ssg_sparp, 3, BOP_NOT,
                   spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1))))),
-                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)) ) ),
+                  NULL ),
+                spartlist (ssg->ssg_sparp, 3, BOP_NOT,
                   spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2))))) ) ),
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ) ),
+                  NULL ) ) ),
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
               spartlist (ssg->ssg_sparp, 3, BOP_EQ,
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)),
                 spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
-                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                spartlist (ssg->ssg_sparp, 3, BOP_NOT,
                   spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1))))),
-                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)) ) ),
+                  NULL ),
+                spartlist (ssg->ssg_sparp, 3, BOP_NOT,
                   spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
-                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2))))) ) ) ) );
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ) ),
+                  NULL ) ) ) ) );
 
 expanded_sameterm_ready:
         ssg_print_bop_bool_expn (ssg, expanded, " AND ", " __and (", top_filter_op, needed);
@@ -3642,6 +3662,8 @@ caddr_t
 ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int col_idx, const char *simple_vname)
 {
   quad_map_t *qm;
+  if (SPART_TRIPLE_FIELDS_COUNT <= field_idx)
+    return t_box_dv_short_string (simple_vname);
   qm = triple->_.triple.tc_list[0]->tc_qm;
   if ((0 != triple->_.triple.ft_type) || (NULL == qm->qmTableName) || (NULL == strstr (qm->qmTableName, "DB.DBA.RDF_QUAD")))
     {
@@ -4595,7 +4617,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           memcpy (&(rv->_.retval), &(var->_.var), sizeof (rv->_.var));
           rv->_.var.selid = selid;
           rv->_.var.tabid = NULL;
-          rv->_.retval.triple = sparp_find_triple_of_var (ssg->ssg_sparp, NULL, var);
+          rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
           native = sparp_expn_native_valmode (ssg->ssg_sparp, rv);
           if ((native == needed) || (SSG_VALMODE_AUTO == needed))
             name_as_expn = var->_.var.vname;
@@ -4764,13 +4786,16 @@ if (NULL != jright_alias)
       if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
         {
           ssg_valmode_t vmode;
-          SPART *var_triple = sparp_find_triple_of_var (ssg->ssg_sparp, NULL, var);
+          SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
           SPART_buf var_rv_buf/*, glob_rv_buf*/;
           SPART *var_rv/*, *glob_rv*/;
           quad_map_t *qm;
           qm_value_t *qmv;
           int col_ctr, col_count;
           qm = var_triple->_.triple.tc_list[0]->tc_qm;
+          if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
+            qmv = SSG_VALMODE_SQLVAL;
+          else
           qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
           if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
             continue;
@@ -4778,7 +4803,7 @@ if (NULL != jright_alias)
           memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
           var_rv->_.retval.triple = var_triple;
           vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
-          col_count = (IS_BOX_POINTER (vmode) ? BOX_ELEMENTS (qmv->qmvColumns) : 1);
+          col_count = (IS_BOX_POINTER (vmode) ? vmode->qmfColumnCount : 1);
           for (col_ctr = 0; col_ctr < col_count; col_ctr++)
             {
               const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
@@ -4806,7 +4831,7 @@ if (NULL != jright_alias)
           int col_ctr, col_count;
           SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
           memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
-          var_rv->_.retval.triple = sparp_find_triple_of_var (ssg->ssg_sparp, eq->e_gp, var);
+          var_rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, eq->e_gp, var, 1);
           var_rv->_.retval.vname = "";
           vmode = sparp_expn_native_valmode (ssg->ssg_sparp, var_rv);
           SPART_AUTO (glob_rv, glob_rv_buf, SPAR_RETVAL);
@@ -4824,7 +4849,7 @@ if (NULL != jright_alias)
               if (!(SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions))
                 {
                   glob_rv->_.retval.gp = sparp_find_gp_by_alias (ssg->ssg_sparp, glob_rv->_.retval.selid);
-                  glob_rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, glob_rv->_.retval.gp, glob_rv);
+                  glob_rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, glob_rv->_.retval.gp, glob_rv, 0);
                 }
               else
                 {
@@ -5561,9 +5586,26 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           if (NULL != colcodes)
             ssg_puts (", ");
           else
-            ssg_puts (" (SELECT");
+            ssg_puts (" (SELECT ");
           ssg_print_tr_field_expn (ssg, qmv, sub_tabid, fmt, asname);
           t_set_push (&colcodes, (caddr_t)colcode);
+        }
+      if (NULL != tree->_.triple.options)
+        {
+          int optctr;
+          for (optctr = BOX_ELEMENTS (tree->_.triple.options); optctr >= 0; optctr -= 2)
+            {
+              SPART *val = tree->_.triple.options[optctr+1];
+              switch ((ptrlong)(tree->_.triple.options[optctr]))
+                {
+                case OFFBAND_L: case SCORE_L:
+                  if (NULL != colcodes)
+                    ssg_puts (", ");
+                  else
+                    ssg_puts (" (SELECT ");
+                  ssg_prin_id (ssg, val->_.var.vname);
+                }
+            }
         }
       ssg_collect_aliases_tables_and_conds (qm->qmATables, qm->qmConds,
         &ata_aliases, &ata_tables, &queued_row_filters );
@@ -5649,10 +5691,10 @@ from_printed:
       if (tree->_.triple.ft_type)
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, *ft_arg1;
+          SPART *ft_pred = NULL, **args, *ft_arg1;
           qm_ftext_t *qmft = qm->qmObjectMap->qmvFText;
           caddr_t ft_alias = t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
-          int ctr;
+          int ctr, argctr, argcount;
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
               if (!spar_filter_is_freetext (filt))
@@ -5671,7 +5713,9 @@ from_printed:
           END_DO_BOX_FAST;
           if (NULL == ft_pred)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == ft_predicate");
-          ft_arg1 = ft_pred->_.funcall.argtrees[1];
+          args = ft_pred->_.funcall.argtrees;
+          ft_arg1 = args[1];
+          argcount = BOX_ELEMENTS (args);
           if ((SPAR_FT_CONTAINS == tree->_.triple.ft_type) &&
             !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName))
             {
@@ -5718,6 +5762,15 @@ ft_arg1_is_patched:
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
           ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+          for (argctr = 2; argctr < argcount; argctr += 2)
+            {
+              switch ((ptrlong)(args[argctr]))
+                {
+                case OFFBAND_L: ssg_puts (", OFFBAND, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
+                case SCORE_L: ssg_puts (", SCORE, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
+                default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+                }
+            }
           ssg_puts (")");
         }
       if ((0 == tree_ctr) || !inside_breakup)

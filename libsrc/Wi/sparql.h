@@ -65,7 +65,7 @@ extern "C" {
 #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
 #define SPAR_CODEGEN		(ptrlong)1016
 #define SPAR_LIST		(ptrlong)1017
-/* Don't forget to update sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
+/* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
@@ -392,11 +392,14 @@ typedef struct spar_tree_s
       } gp;
     struct {
         /* #define SPAR_LIT		(ptrlong)1009 */
-        /* #define SPAR_QNAME		(ptrlong)1011 */
       caddr_t val;
       caddr_t datatype;
       caddr_t language;
       } lit;
+    struct { /* Note that all first members of \c qname case should match to \c lit case */
+        /* #define SPAR_QNAME		(ptrlong)1011 */
+        caddr_t val;
+      } qname;
     struct {
         /* #define SPAR_REQ_TOP		(ptrlong)1007 */
       ptrlong subtype;

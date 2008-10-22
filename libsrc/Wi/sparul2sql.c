@@ -335,7 +335,7 @@ bnode_found_or_added:
       (SPART **)t_list (3, arg1, var_vector_arg, arg3) );
   if (cve->cve_limofs_var_alias)
     {
-      SPART *alias = spartlist (sparp, 3, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias);
+      SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
       retvals[0] = (SPART **)t_list (2, ctor_call, alias);
     }
   else

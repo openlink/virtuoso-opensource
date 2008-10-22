@@ -50,6 +50,40 @@ int spartlist_impl_line;
 
 extern void jsonyyerror_impl(const char *s);
 
+size_t
+spart_count_specific_elems_by_type (ptrlong type)
+{
+  static SPART sample;
+  switch (type)
+    {
+    case SPAR_ALIAS:		return sizeof (sample._.alias);
+    case SPAR_BLANK_NODE_LABEL:	return sizeof (sample._.var);
+    case SPAR_BUILT_IN_CALL:	return sizeof (sample._.builtin);
+    case SPAR_CONV:		return sizeof (sample._.conv);
+    case SPAR_FUNCALL:		return sizeof (sample._.funcall);
+    case SPAR_GP:		return sizeof (sample._.gp);
+    case SPAR_REQ_TOP:		return sizeof (sample._.req_top);
+    case SPAR_RETVAL:		return sizeof (sample._.retval);
+    case SPAR_LIT:		return sizeof (sample._.lit);
+    case SPAR_QNAME:		return sizeof (sample._.qname);
+    case SPAR_SQLCOL:		return sizeof (sample._.qm_sqlcol);
+    case SPAR_VARIABLE:		return sizeof (sample._.var);
+    case SPAR_TRIPLE:		return sizeof (sample._.triple);
+    case SPAR_QM_SQL_FUNCALL:	return sizeof (sample._.qm_sql_funcall);
+    case SPAR_CODEGEN:		return sizeof (sample._.codegen);
+    case SPAR_LIST:		return sizeof (sample._.list);
+    case FROM_L: case NAMED_L:	return sizeof (sample._.qname);
+    case ORDER_L:		return sizeof (sample._.oby);
+    case BOP_NOT:
+    case BOP_OR: case BOP_AND:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_LIKE:		return sizeof (sample._.bin_exp);
+    }
+  GPF_T;
+  return 0;
+}
+
 SPART*
 spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
 {
@@ -58,8 +92,8 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
   int inx;
   va_start (ap, type);
 #ifdef DEBUG
-  if (IS_POINTER(type))
-    GPF_T;
+  if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length-1))
+    spar_internal_error (sparp, "length mismatch in spartlist()");
 #endif
   length += 1;
 #ifdef MALLOC_DEBUG
@@ -95,8 +129,8 @@ spartlist_with_tail_impl (sparp_t *sparp, ptrlong length, caddr_t tail, ptrlong 
   ptrlong tail_len = BOX_ELEMENTS(tail);
   va_start (ap, type);
 #ifdef DEBUG
-  if (IS_POINTER(type))
-    GPF_T;
+  if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length+tail_len-1))
+    spar_internal_error (sparp, "length mismatch in spartlist()");
 #endif
 #ifdef MALLOC_DEBUG
   tree = (SPART *) dbg_dk_alloc_box (spartlist_impl_file, spartlist_impl_line, sizeof (caddr_t) * (1+length+tail_len), DV_ARRAY_OF_POINTER);
@@ -911,7 +945,7 @@ spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery
   gp->_.gp.subquery = subquery;
   gp->_.gp.subtype = SELECT_L;
   if (NULL != options)
-    sparp_validate_options_of_tree (sparp, gp);
+    sparp_validate_options_of_tree (sparp, gp, options);
   return gp;
 }
 
@@ -944,6 +978,22 @@ spar_filter_is_freetext (SPART *filt)
   return 0;
 }
 
+int
+spar_tree_is_var_with_forbidden_ft_name (sparp_t *sparp, SPART *tree, int report_error)
+{
+  caddr_t vname;
+  if (!SPAR_IS_BLANK_OR_VAR (tree))
+    return 0;
+  vname = tree->_.var.vname;
+  if (strcasecmp (vname, "SCORE") &&
+    strcasecmp (vname, "XCONTAINS_MAIN_RANGES") &&
+    strcasecmp (vname, "XCONTAINS_ATTR_RANGES") )
+    return 0;
+  if (report_error)
+    spar_error (sparp, "Free-text triple pattern uses variable name '%s'; this name has special meaning in free-text SQL; please rename it to avoid unexpected effects", vname);
+  return 1;
+}
+
 void
 spar_gp_add_filter (sparp_t *sparp, SPART *filt)
 {
@@ -962,8 +1012,11 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       SPART *ft_literal_var;
       caddr_t var_name;
       dk_set_t *req_triples_ptr;
-      SPART *triple_with_var_obj = NULL;
-      if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
+      SPART **args, *triple_with_var_obj = NULL;
+      int argctr, argcount, fld_ctr;
+      args = filt->_.funcall.argtrees;
+      argcount = BOX_ELEMENTS (args);
+      if (2 > args)
         spar_error (sparp, "Not enough parameters for special predicate %s()", ft_pred_name);
       ft_literal_var = filt->_.funcall.argtrees[0];
       if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
@@ -989,6 +1042,23 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       if (NULL == triple_with_var_obj)
         spar_error (sparp, "The group does not contain triple pattern with '$%s' object before %s() predicate", var_name, ft_pred_name);
       triple_with_var_obj->_.triple.ft_type = ft_type;
+      if (2 < argcount)
+        for (argctr = 2; argctr < argcount; argctr += 2)
+          {
+            SPART *arg_value = args[argctr+1];
+            SPART *opt_value;
+            if (SPAR_VARIABLE != SPART_TYPE (arg_value))
+              continue;
+            spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
+            opt_value = t_box_copy_tree (arg_value);
+            opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
+            opt_value->_.var.tr_idx = (ptrlong)args[argctr];
+            triple_with_var_obj->_.triple.options = (SPART **) t_list_concat (
+              (caddr_t)(triple_with_var_obj->_.triple.options),
+              t_list (2, args[argctr], opt_value) );
+          }
+      for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+        spar_tree_is_var_with_forbidden_ft_name (sparp, triple_with_var_obj->_.triple.tr_fields[fld_ctr], 1);
       if (IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
         ((boxint *)(sparp->sparp_env->spare_sql_refresh_free_text))[0] = 1;
       else
@@ -1471,9 +1541,21 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         uname_virtrdf_ns_uri_isSpecialPredicate );
       if (0 != BOX_ELEMENTS (spec_pred_names))
         {
+          if (NULL != options)
+            {
+              int ctr;
+              sparp_validate_options_of_tree (sparp, NULL /*no tree*/, options);
+              for (ctr = BOX_ELEMENTS (options) - 2; ctr >= 0; ctr -= 2)
+                {
+                  SPART *option_value = options[ctr+1];
+                  if (SPAR_VARIABLE != SPART_TYPE (option_value))
+                    continue;
+                  option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                }
+            }
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, spec_pred_names[0],
-              (SPART **)t_list (2, subject, object) ) );
+              (SPART **)t_list_concat (t_list (2, subject, object), (caddr_t)options) ) );
           return;
         }
     }
@@ -1525,7 +1607,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     graph->_.var.selid = env->spare_selids->data;
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri, options);
   if (NULL != options)
-    sparp_validate_options_of_tree (sparp, triple);
+    sparp_validate_options_of_tree (sparp, triple, options);
   spar_gp_add_member (sparp, triple);
 }
 

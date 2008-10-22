@@ -384,26 +384,31 @@ int sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *s
 int sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env);
 
 static void
-sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
+sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **options, void *common_env)
 {
   int ctr;
-  for (ctr = BOX_ELEMENTS (curr->_.gp.options); 1 < ctr; ctr -= 2)
+  for (ctr = BOX_ELEMENTS (options); 1 < ctr; ctr -= 2)
     {
-      ptrlong key = ((ptrlong)(curr->_.gp.options[ctr-2]));
-      SPART *val = curr->_.gp.options[ctr-1];
+      ptrlong key = ((ptrlong)(options[ctr-2]));
+      SPART *val = options[ctr-1];
       switch (key)
         {
+        case OFFBAND_L: case SCORE_L:
+          {
+            sparp_equiv_get (sparp, gp, val, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
+            break;
+          }
         case T_STEP_L:
           {
             caddr_t name = val->_.alias.aname;
-            sparp_equiv_get (sparp, curr, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
+            sparp_equiv_get (sparp, gp, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
             break;
           }
         case T_MIN_L: case T_MAX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
-            stss[1].sts_ancestor_gp = curr;
+            stss[1].sts_ancestor_gp = gp;
             sparp_gp_trav_int (sparp, val, stss+1, common_env,
               sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
               sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
@@ -414,7 +419,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
             int v_ctr;
             DO_BOX_FAST (SPART *, v, v_ctr, val->_.list.items)
               {
-                sparp_equiv_t *eq = sparp_equiv_get (sparp, curr, (SPART *)(v->_.var.vname), SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT);
+                sparp_equiv_t *eq = sparp_equiv_get (sparp, gp, (SPART *)(v->_.var.vname), SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT);
                 ptrlong *pos1_ptr = ((T_IN_L == key) ? &(eq->e_pos1_t_in) : &(eq->e_pos1_t_out));
                 if ((0 != pos1_ptr[0]) && ((1+v_ctr) != pos1_ptr[0]))
                   spar_error (sparp, "Variable ?%.100s is used twice in %s option (directly or via equality with other variable)",
@@ -430,7 +435,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *curr, void *common_env)
             if (!IS_BOX_POINTER (val))
               break;
                 memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
-                stss[1].sts_ancestor_gp = curr;
+            stss[1].sts_ancestor_gp = gp;
                 sparp_gp_trav_int (sparp, val, stss+1, common_env,
                   sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
                   sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
@@ -477,7 +482,7 @@ ignore_retval_name: ;
             }
           END_DO_BOX_FAST;
           if (NULL != curr->_.gp.options)
-            sparp_gp_trav_cu_in_options (sparp, curr, common_env);
+            sparp_gp_trav_cu_in_options (sparp, curr, curr, curr->_.gp.options, common_env);
         }
       return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: break;
@@ -496,9 +501,11 @@ ignore_retval_name: ;
             }
           if (OPTIONAL_L == curr->_.triple.subtype)
             continue;
-          eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
+          eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
           sparp_rvr_tighten (sparp, &(eq->e_rvr), &(fld->_.var.rvr), ~0);
         }
+      if (NULL != curr->_.triple.options)
+        sparp_gp_trav_cu_in_options (sparp, gp, curr, curr->_.triple.options, common_env);
     }
   if (UNION_L == gp->_.gp.subtype)
     {
@@ -575,7 +582,9 @@ sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_
     case SPAR_BLANK_NODE_LABEL: break;
     default: return 0;
     }
-  eq = sparp_equiv_get (sparp, gp, curr, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_CONST_READ);
+  eq = sparp_equiv_get (sparp, gp, curr,
+    SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE |
+    ((NULL == curr->_.var.tabid) ? SPARP_EQUIV_ADD_CONST_READ : SPARP_EQUIV_ADD_GSPO_USE) );
   sparp_rvr_tighten (sparp, &(eq->e_rvr), &(curr->_.var.rvr), ~0);
   return 0;
 }
@@ -2028,14 +2037,22 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
               int triple_idx;
               for (triple_idx = BOX_ELEMENTS (gp->_.gp.members); triple_idx--; /* no step */)
                 {
-                  SPART *var_triple = gp->_.gp.members[triple_idx];
-                  if (SPAR_TRIPLE != var_triple->type)
+                  SPART *triple = gp->_.gp.members[triple_idx];
+                  if (SPAR_TRIPLE != triple->type)
                     continue;
-                  if (var_triple->_.triple.tr_fields[var_tr_idx] == var)
+                  if (var_tr_idx < SPART_TRIPLE_FIELDS_COUNT)
+                    {
+                      if (triple->_.triple.tr_fields[var_tr_idx] == var)
                     break;
                 }
+                  else
+                    {
+                      if (sparp_get_option (sparp, triple->_.triple.options, var_tr_idx) == var)
+                        break;
+                    }
+                }
               if (0 > triple_idx)
-                spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s/%s", var->_.var.selid, var->_.var.tabid, var->_.var.vname);
+                spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
             }
         }
       recv_ctr = BOX_ELEMENTS_0 (eq->e_receiver_idxs);
@@ -3121,7 +3138,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
               new_fld_expn->_.var.vname = t_box_copy (fld_expn->_.var.vname);
               new_fld_expn->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
               sparp_rvr_copy (sparp, &(new_fld_expn->_.var.rvr), &(fld_expn->_.var.rvr)); 
-              eq = sparp_equiv_get (sparp, qm_case_gp, new_fld_expn, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
+              eq = sparp_equiv_get (sparp, qm_case_gp, new_fld_expn, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
               if (NULL == fld_qmv)
                 sparp_equiv_restrict_by_constant (sparp, eq, NULL, (SPART *)fld_const);
               else
