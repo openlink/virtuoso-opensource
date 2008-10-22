@@ -38,7 +38,6 @@
 	<title>OpenLink iSPARQL</title>
 	<link type="text/css" rel="stylesheet" href="/isparql/styles/style.css"/>
 	<link type="text/css" rel="stylesheet" href="/isparql/styles/execute.css"/>
-	<link type="text/css" rel="stylesheet" href="/isparql/toolkit/styles/winrect.css"/> 
 
 	<script type="text/javascript">
                 window.YMAPPID = 'yahoo-id';
@@ -50,6 +49,21 @@
 	<script type="text/javascript" src="main.js"></script>
 	<script type="text/javascript" src="qbe.js"></script>
 	<script type="text/javascript" src="execute.js"></script>
+  <script type="text/javascript">
+    function myInit() {
+      OAT.Preferences.imagePath = '/isparql/toolkit/images/';
+      OAT.Preferences.stylePath = '/isparql/toolkit/styles/';
+
+    	/* load stylesheets */
+    	OAT.Style.include("grid.css");
+    	OAT.Style.include("webdav.css");
+
+      // <a>++
+      OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+      OAT.Anchor.zIndex = 1001;
+    }
+    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+  </script>
 </head>
 <body>
 	<div id="page">

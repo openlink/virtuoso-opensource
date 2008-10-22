@@ -70,7 +70,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	} else {
 		this.show = function() {
 			win.show();
-			win.accomodate(win.dom.container);
+			win.accomodate(win.dom.content);
 			OAT.Dom.center(win.dom.container,1,1);
 			options.onshow(); }
 		this.hide = function() {
