@@ -754,8 +754,21 @@ thr_free_alloc_cache (thread_t * thr)
 
 #ifdef MALLOC_DEBUG
 #undef dk_alloc
-void * dk_alloc (size_t c) { return dbg_malloc (__FILE__, __LINE__, c); }
-void * dbg_dk_alloc (DBG_PARAMS size_t c) { return dbg_malloc (DBG_ARGS c); }
+void * dk_alloc (size_t c) 
+{ 
+  void * thing = dbg_malloc (__FILE__, __LINE__, c); 
+  if (NULL == thing) 
+    GPF_T1 ("Out of memory"); 
+  return thing; 
+}
+
+void * dbg_dk_alloc (DBG_PARAMS size_t c) 
+{ 
+  void * thing = dbg_malloc (DBG_ARGS c); 
+  if (NULL == thing) 
+    GPF_T1 ("Out of memory"); 
+  return thing; 
+}
 #undef dk_try_alloc
 void * dk_try_alloc (size_t c) { return dbg_malloc (__FILE__, __LINE__, c); }
 void * dbg_dk_try_alloc (DBG_PARAMS size_t c) { return dbg_malloc (DBG_ARGS c); }
