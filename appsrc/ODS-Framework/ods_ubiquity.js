@@ -96,7 +96,15 @@ ODS = {
         },
       };
 
-function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
+function odsExecuteError (XMLHttpRequest, textStatus, errorThrown, cmdName, showMode, logMode)
+{
+  if (!showMode)
+    displayMessage("ODS Controller Error - command not executed");
+  if (logMode)
+    CmdUtils.log(cmdName + ": " + XMLHttpRequest.status + " - " + XMLHttpRequest.statusText);
+}
+
+function odsExecute (cmdName, cmdParams, cmdApplication, showMode, authMode)
 {
   var res = '';
   var logMode = ODS.getLog();
@@ -110,10 +118,7 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       url: ODS.getServer() + "/api/" + cmdName,
       data: cmdParams,
       error: function(XMLHttpRequest, textStatus, errorThrown) {
-          if (!cmdMode)
-            displayMessage("ODS Controller error - coomand not executed");
-          if (logMode)
-            CmdUtils.log(cmdName + ": " + textStatus);
+          odsExecuteError (XMLHttpRequest, textStatus, errorThrown, ODS.getServer() + "/api/" + cmdName, showMode, logMode);
         },
       async: false
       }).responseText;
@@ -127,10 +132,7 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       url: ODS.getOAuthServer() + "/get_consumer_key",
       data: {"sid": oauth},
       error: function(XMLHttpRequest, textStatus, errorThrown) {
-          if (!cmdMode)
-            displayMessage("ODS Controller error - coomand not executed");
-          if (logMode)
-            CmdUtils.log(ODS.getOAuthServer() + "/get_consumer_key" + " - text status: " + textStatus);
+          odsExecuteError (XMLHttpRequest, textStatus, errorThrown, ODS.getOAuthServer() + "/get_consumer_key", showMode, logMode);
         },
       async: false
       }).responseText;
@@ -152,10 +154,7 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       url: ODS.getOAuthServer() + "/sign_request",
       data: params,
       error: function(XMLHttpRequest, textStatus, errorThrown) {
-          if (!cmdMode)
-            displayMessage("ODS Controller error - coomand not executed");
-          if (logMode)
-            CmdUtils.log(ODS.getOAuthServer() + "/sign_request" + " - text status: " + textStatus);
+          odsExecuteError (XMLHttpRequest, textStatus, errorThrown, ODS.getOAuthServer() + "/sign_request", showMode, logMode);
         },
       async: false
       }).responseText;
@@ -164,10 +163,7 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       type: "GET",
       url: apiURL,
       error: function(XMLHttpRequest, textStatus, errorThrown) {
-          if (!cmdMode)
-            displayMessage("ODS Controller error - coomand not executed");
-          if (logMode)
-            CmdUtils.log(apiURL + " - text status: " + textStatus);
+          odsExecuteError (XMLHttpRequest, textStatus, errorThrown, apiURL, showMode, logMode);
         },
       async: false
       }).responseText;
@@ -182,18 +178,18 @@ function odsExecute (cmdName, cmdParams, cmdApplication, cmdMode, authMode)
       url: ODS.getServer() + "/api/" + cmdName,
       data: cmdParams,
       error: function(XMLHttpRequest, textStatus, errorThrown) {
-          if (!cmdMode)
-            displayMessage("ODS Controller error - coomand not executed");
-          if (logMode)
-            CmdUtils.log(cmdName + ": " + textStatus);
+          odsExecuteError (XMLHttpRequest, textStatus, errorThrown, ODS.getServer() + "/api/" + cmdName, showMode, logMode);
         },
       async: false
       }).responseText;
   }
-  if (!cmdMode)
+  if (!showMode)
     displayMessage(res);
   if (logMode)
+  {
+    CmdUtils.log(res);
     CmdUtils.log(cmdName + " - end");
+  }
   return res;
 }
 
@@ -468,8 +464,9 @@ CmdUtils.CreateCommand({
     var params = {user_name: user.text};
     addParameter(modifiers, "password", params, "password_hash", true);
     params["password_hash"] = sha (params["user_name"] + params["password_hash"]);
-    var sid = odsExecute ("user.authenticate", params, "", false, true);
+    var sid = odsExecute ("user.authenticate", params, "", "preview", true);
     ODS.setSid(sid);
+    ODS.setMode('sid');
     displayMessage("Your was authenticated. Your ODS session ID has been set to " + ODS.getSid());
   }
 });
@@ -618,6 +615,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "has", params, "claimRelation", true);
     addParameter(modifiers, "with", params, "claimValue", true);
     odsExecute ("user.annotation.new", params, "")
+    displayMessage("User's annotation was created.");
   }
 });
 
@@ -637,6 +635,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "has", params, "claimRelation", true);
     addParameter(modifiers, "with", params, "claimValue", true);
     odsExecute ("user.annotation.delete", params, "")
+    displayMessage("User's annotation was deleted.");
   }
 });
 
@@ -662,14 +661,14 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-  name: "ods-get-briefcase-resource",
+  name: "ods-get-briefcase-resource-info-by-path",
   takes: {"path": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   description: "Get your ODS briefcase resource content",
-  help: "Type ods-get-briefcase-resource &lt;path&gt;",
+  help: "Type ods-get-briefcase-resource-info-by-path &lt;path&gt;",
 
   preview: function (previewBlock, path) {
     if (!checkParameter(path.text)) {return;}
@@ -1051,6 +1050,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "author", params, "author", true);
     addParameter(modifiers, "body", params, "body", true);
     odsExecute ("bookmark.annotation.new", params, "bookmark")
+    displayMessage("Bookmark annotation was created.");
   }
 });
 
@@ -1070,6 +1070,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "author", params, "author", true);
     addParameter(modifiers, "body", params, "body", true);
     odsExecute ("bookmark.annotation.edit", params, "bookmark")
+    displayMessage("Bookmark annotation was updated.");
   }
 });
 
@@ -1090,6 +1091,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "relation", params, "claimRelation", true);
     addParameter(modifiers, "value", params, "claimValue", true);
     odsExecute ("bookmark.annotation.claim", params, "bookmark")
+    displayMessage("Bookmark annotation claim was created.");
   }
 });
 
@@ -1106,6 +1108,7 @@ CmdUtils.CreateCommand({
     if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
     var params = {annotation_id: annotation_id.text};
     odsExecute ("bookmark.annotation.delete", params, "bookmark")
+    displayMessage("Bookmark annotation was deleted.");
   }
 });
 
@@ -1145,6 +1148,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "authorMail", params, "email", true);
     addParameter(modifiers, "authorUrl", params, "url", true);
     odsExecute ("bookmark.comment.new", params, "bookmark")
+    displayMessage("Bookmark comment was created.");
   }
 });
 
@@ -1161,6 +1165,7 @@ CmdUtils.CreateCommand({
     if (!checkParameter(comment_id.text, "comment_id")) {return;}
     var params = {comment_id: comment_id.text};
     odsExecute ("bookmark.comment.delete", params, "bookmark")
+    displayMessage("Bookmark comment was deleted.");
   }
 });
 
@@ -1700,6 +1705,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "authorMail", params, "email", true);
     addParameter(modifiers, "authorUrl", params, "url", true);
     odsExecute ("calendar.comment.new", params, "calendar")
+    displayMessage("Calendar comment was created.");
   }
 });
 
@@ -1716,6 +1722,7 @@ CmdUtils.CreateCommand({
     if (!checkParameter(comment_id.text, "comment_id")) {return;}
     var params = {comment_id: comment_id.text};
     odsExecute ("calendar.comment.delete", params, "calendar")
+    displayMessage("Calendar comment was deleted.");
   }
 });
 
@@ -1793,12 +1800,12 @@ CmdUtils.CreateCommand({
 CmdUtils.CreateCommand({
   name: "ods-create-calendar-subscription",
   takes: {"instance_id": noun_arb_text},
-  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "sourceType": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "folderPath": noun_arb_text, "tags": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "sourceType": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "events": noun_arb_text, "tasks": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-create-calendar-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [folderPath &lt;folderPath&gt;] [tags &lt;tags&gt;]",
+  help: "Type ods-create-calendar-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [events &lt;events&gt;] [tasks &lt;tasks&gt;]",
 
   execute: function (instance_id) {
     if (!checkParameter(instance_id.text, "instance_id")) {return;}
@@ -1891,6 +1898,917 @@ CmdUtils.CreateCommand({
     if (!checkParameter(instance_id.text)) {return;}
     var params = {instance_id: instance_id.text};
     var res = odsExecute ("calendar.options.get", params, "calendar", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+////////////////////////////////////
+///// ODS AddressBook /////////////////
+////////////////////////////////////
+
+CmdUtils.CreateCommand({
+  name: "ods-set-addressbook-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS AddressBook OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-addressbook-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getOAuthServer(),
+
+  execute: function(oauth) {
+    if (!checkParameter(oauth.text, "addressbook instance OAuth")) {return;}
+    ODS.setOAuth("addressbook", oauth.text);
+    displayMessage("Your ODS AddressBook instance OAuth has been set.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-by-id",
+  takes: {"contact_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-by-id &lt;contact_id&gt;",
+
+  preview: function (previewBlock, contact_id) {
+    if (!checkParameter(contact_id.text)) {return;}
+    var params = {contact_id: contact_id.text};
+    var res = odsExecute ("addressbook.get", params, "addressbook", "preview");
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "title": noun_arb_text, "fName": noun_arb_text, "mName": noun_arb_text, "lName": noun_arb_text, "fullName": noun_arb_text, "gender": noun_arb_text, "birthday": noun_arb_text, "iri": noun_arb_text, "foaf": noun_arb_text, "mail": noun_arb_text, "web": noun_arb_text, "icq": noun_arb_text, "skype": noun_arb_text, "aim": noun_arb_text, "yahoo": noun_arb_text, "msn": noun_arb_text, "hCountry": noun_arb_text, "hState": noun_arb_text, "hCity": noun_arb_text, "hCode": noun_arb_text, "hAddress1": noun_arb_text, "hAddress2": noun_arb_text, "hTzone": noun_arb_text, "hLat": noun_arb_text, "hLng": noun_arb_text, "hPhone": noun_arb_text, "hMobile": noun_arb_text, "hFax": noun_arb_text, "hMail": noun_arb_text, "hWeb": noun_arb_text, "bCountry": noun_arb_text, "bState": noun_arb_text, "bCity": noun_arb_text, "bCode": noun_arb_text, "bAddress1": noun_arb_text, "bAddress2": noun_arb_text, "bTzone": noun_arb_text, "bLat": noun_arb_text, "bLng": noun_arb_text, "bPhone": noun_arb_text, "bMobile": noun_arb_text, "bFax": noun_arb_text, "bIndustry": noun_arb_text, "bOrganization": noun_arb_text, "bDepartment": noun_arb_text, "bJob": noun_arb_text, "bMail": noun_arb_text, "bWeb": noun_arb_text, "tags": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook &lt;instance_id&gt; name &lt;name&gt; [title &lt;title&gt;] [fName &lt;fName&gt;] [mName &lt;mName&gt;] [lName &lt;lName&gt;] [fullName &lt;fullName&gt;] [gender &lt;gender&gt;] [birthday &lt;birthday&gt;] [iri &lt;iri&gt;] [foaf &lt;foaf&gt;] [mail &lt;mail&gt;] [web &lt;web&gt;] [icq &lt;icq&gt;] [skype &lt;skype&gt;] [aim &lt;aim&gt;] [yahoo &lt;yahoo&gt;] [msn &lt;msn&gt;] [hCountry &lt;hCountry&gt;] [hState &lt;hState&gt;] [hCity &lt;hCity&gt;] [hCode &lt;hCode&gt;] [hAddress1 &lt;hAddress1&gt;] [hAddress2 &lt;hAddress2&gt;] [hTzone &lt;hTzone&gt;] [hLat &lt;hLat&gt;] [hLng &lt;hLng&gt;] [hPhone &lt;hPhone&gt;] [hMobile &lt;hMobile&gt;] [hFax &lt;hFax&gt;] [hMail &lt;hMail&gt;] [hWeb &lt;hWeb&gt;] [bCountry &lt;bCountry&gt;] [bState &lt;bState&gt;] [bCity &lt;bCity&gt;] [bCode &lt;bCode&gt;] [bAddress1 &lt;bAddress1&gt;] [bAddress2 &lt;bAddress2&gt;] [bTzone &lt;bTzone&gt;] [bLat &lt;bLat&gt;] [bLng &lt;bLng&gt;] [bPhone &lt;bPhone&gt;] [bMobile &lt;bMobile&gt;] [bFax &lt;bFax&gt;] [bIndustry &lt;bIndustry&gt;] [bOrganization &lt;bOrganization&gt;] [bDepartment &lt;bDepartment&gt;] [bJob &lt;bJob&gt;] [bMail &lt;bMail&gt;] [bWeb &lt;bWeb&gt;] [tags &lt;tags&gt;]",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers,"title", params,"title");
+    addParameter(modifiers,"fName", params,"fName");
+    addParameter(modifiers,"mName", params,"mName");
+    addParameter(modifiers,"lName", params,"lName");
+    addParameter(modifiers,"fullName", params,"fullName");
+    addParameter(modifiers,"gender", params,"gender");
+    addParameter(modifiers,"birthday", params,"birthday");
+    addParameter(modifiers,"iri", params,"iri");
+    addParameter(modifiers,"foaf", params,"foaf");
+    addParameter(modifiers,"mail", params,"mail");
+    addParameter(modifiers,"web", params,"web");
+    addParameter(modifiers,"icq", params,"icq");
+    addParameter(modifiers,"skype", params,"skype");
+    addParameter(modifiers,"aim", params,"aim");
+    addParameter(modifiers,"yahoo", params,"yahoo");
+    addParameter(modifiers,"msn", params,"msn");
+    addParameter(modifiers,"hCountry", params,"hCountry");
+    addParameter(modifiers,"hState", params,"hState");
+    addParameter(modifiers,"hCity", params,"hCity");
+    addParameter(modifiers,"hCode", params,"hCode");
+    addParameter(modifiers,"hAddress1", params,"hAddress1");
+    addParameter(modifiers,"hAddress2", params,"hAddress2");
+    addParameter(modifiers,"hTzone", params,"hTzone");
+    addParameter(modifiers,"hLat", params,"hLat");
+    addParameter(modifiers,"hLng", params,"hLng");
+    addParameter(modifiers,"hPhone", params,"hPhone");
+    addParameter(modifiers,"hMobile", params,"hMobile");
+    addParameter(modifiers,"hFax", params,"hFax");
+    addParameter(modifiers,"hMail", params,"hMail");
+    addParameter(modifiers,"hWeb", params,"hWeb");
+    addParameter(modifiers,"bCountry", params,"bCountry");
+    addParameter(modifiers,"bState", params,"bState");
+    addParameter(modifiers,"bCity", params,"bCity");
+    addParameter(modifiers,"bCode", params,"bCode");
+    addParameter(modifiers,"bAddress1", params,"bAddress1");
+    addParameter(modifiers,"bAddress2", params,"bAddress2");
+    addParameter(modifiers,"bTzone", params,"bTzone");
+    addParameter(modifiers,"bLat", params,"bLat");
+    addParameter(modifiers,"bLng", params,"bLng");
+    addParameter(modifiers,"bPhone", params,"bPhone");
+    addParameter(modifiers,"bMobile", params,"bMobile");
+    addParameter(modifiers,"bFax", params,"bFax");
+    addParameter(modifiers,"bIndustry", params,"bIndustry");
+    addParameter(modifiers,"bOrganization", params,"bOrganization");
+    addParameter(modifiers,"bDepartment", params,"bDepartment");
+    addParameter(modifiers,"bJob", params,"bJob");
+    addParameter(modifiers,"bMail", params,"bMail");
+    addParameter(modifiers,"bWeb", params,"bWeb");
+    addParameter(modifiers,"tags", params,"tags");
+    odsExecute ("addressbook.new", params, "addressbook")
+    displayMessage("AddressBook contact was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-addressbook",
+  takes: {"contact_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "title": noun_arb_text, "fName": noun_arb_text, "mName": noun_arb_text, "lName": noun_arb_text, "fullName": noun_arb_text, "gender": noun_arb_text, "birthday": noun_arb_text, "iri": noun_arb_text, "foaf": noun_arb_text, "mail": noun_arb_text, "web": noun_arb_text, "icq": noun_arb_text, "skype": noun_arb_text, "aim": noun_arb_text, "yahoo": noun_arb_text, "msn": noun_arb_text, "hCountry": noun_arb_text, "hState": noun_arb_text, "hCity": noun_arb_text, "hCode": noun_arb_text, "hAddress1": noun_arb_text, "hAddress2": noun_arb_text, "hTzone": noun_arb_text, "hLat": noun_arb_text, "hLng": noun_arb_text, "hPhone": noun_arb_text, "hMobile": noun_arb_text, "hFax": noun_arb_text, "hMail": noun_arb_text, "hWeb": noun_arb_text, "bCountry": noun_arb_text, "bState": noun_arb_text, "bCity": noun_arb_text, "bCode": noun_arb_text, "bAddress1": noun_arb_text, "bAddress2": noun_arb_text, "bTzone": noun_arb_text, "bLat": noun_arb_text, "bLng": noun_arb_text, "bPhone": noun_arb_text, "bMobile": noun_arb_text, "bFax": noun_arb_text, "bIndustry": noun_arb_text, "bOrganization": noun_arb_text, "bDepartment": noun_arb_text, "bJob": noun_arb_text, "bMail": noun_arb_text, "bWeb": noun_arb_text, "tags": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-addressbook &lt;contact_id&gt; name &lt;name&gt; [title &lt;title&gt;] [fName &lt;fName&gt;] [mName &lt;mName&gt;] [lName &lt;lName&gt;] [fullName &lt;fullName&gt;] [gender &lt;gender&gt;] [birthday &lt;birthday&gt;] [iri &lt;iri&gt;] [foaf &lt;foaf&gt;] [mail &lt;mail&gt;] [web &lt;web&gt;] [icq &lt;icq&gt;] [skype &lt;skype&gt;] [aim &lt;aim&gt;] [yahoo &lt;yahoo&gt;] [msn &lt;msn&gt;] [hCountry &lt;hCountry&gt;] [hState &lt;hState&gt;] [hCity &lt;hCity&gt;] [hCode &lt;hCode&gt;] [hAddress1 &lt;hAddress1&gt;] [hAddress2 &lt;hAddress2&gt;] [hTzone &lt;hTzone&gt;] [hLat &lt;hLat&gt;] [hLng &lt;hLng&gt;] [hPhone &lt;hPhone&gt;] [hMobile &lt;hMobile&gt;] [hFax &lt;hFax&gt;] [hMail &lt;hMail&gt;] [hWeb &lt;hWeb&gt;] [bCountry &lt;bCountry&gt;] [bState &lt;bState&gt;] [bCity &lt;bCity&gt;] [bCode &lt;bCode&gt;] [bAddress1 &lt;bAddress1&gt;] [bAddress2 &lt;bAddress2&gt;] [bTzone &lt;bTzone&gt;] [bLat &lt;bLat&gt;] [bLng &lt;bLng&gt;] [bPhone &lt;bPhone&gt;] [bMobile &lt;bMobile&gt;] [bFax &lt;bFax&gt;] [bIndustry &lt;bIndustry&gt;] [bOrganization &lt;bOrganization&gt;] [bDepartment &lt;bDepartment&gt;] [bJob &lt;bJob&gt;] [bMail &lt;bMail&gt;] [bWeb &lt;bWeb&gt;] [tags &lt;tags&gt;]",
+
+  execute: function (contact_id, modifiers) {
+    if (!checkParameter(contact_id.text, "contact_id")) {return;}
+    var params = {contact_id: contact_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers,"title", params,"title");
+    addParameter(modifiers,"fName", params,"fName");
+    addParameter(modifiers,"mName", params,"mName");
+    addParameter(modifiers,"lName", params,"lName");
+    addParameter(modifiers,"fullName", params,"fullName");
+    addParameter(modifiers,"gender", params,"gender");
+    addParameter(modifiers,"birthday", params,"birthday");
+    addParameter(modifiers,"iri", params,"iri");
+    addParameter(modifiers,"foaf", params,"foaf");
+    addParameter(modifiers,"mail", params,"mail");
+    addParameter(modifiers,"web", params,"web");
+    addParameter(modifiers,"icq", params,"icq");
+    addParameter(modifiers,"skype", params,"skype");
+    addParameter(modifiers,"aim", params,"aim");
+    addParameter(modifiers,"yahoo", params,"yahoo");
+    addParameter(modifiers,"msn", params,"msn");
+    addParameter(modifiers,"hCountry", params,"hCountry");
+    addParameter(modifiers,"hState", params,"hState");
+    addParameter(modifiers,"hCity", params,"hCity");
+    addParameter(modifiers,"hCode", params,"hCode");
+    addParameter(modifiers,"hAddress1", params,"hAddress1");
+    addParameter(modifiers,"hAddress2", params,"hAddress2");
+    addParameter(modifiers,"hTzone", params,"hTzone");
+    addParameter(modifiers,"hLat", params,"hLat");
+    addParameter(modifiers,"hLng", params,"hLng");
+    addParameter(modifiers,"hPhone", params,"hPhone");
+    addParameter(modifiers,"hMobile", params,"hMobile");
+    addParameter(modifiers,"hFax", params,"hFax");
+    addParameter(modifiers,"hMail", params,"hMail");
+    addParameter(modifiers,"hWeb", params,"hWeb");
+    addParameter(modifiers,"bCountry", params,"bCountry");
+    addParameter(modifiers,"bState", params,"bState");
+    addParameter(modifiers,"bCity", params,"bCity");
+    addParameter(modifiers,"bCode", params,"bCode");
+    addParameter(modifiers,"bAddress1", params,"bAddress1");
+    addParameter(modifiers,"bAddress2", params,"bAddress2");
+    addParameter(modifiers,"bTzone", params,"bTzone");
+    addParameter(modifiers,"bLat", params,"bLat");
+    addParameter(modifiers,"bLng", params,"bLng");
+    addParameter(modifiers,"bPhone", params,"bPhone");
+    addParameter(modifiers,"bMobile", params,"bMobile");
+    addParameter(modifiers,"bFax", params,"bFax");
+    addParameter(modifiers,"bIndustry", params,"bIndustry");
+    addParameter(modifiers,"bOrganization", params,"bOrganization");
+    addParameter(modifiers,"bDepartment", params,"bDepartment");
+    addParameter(modifiers,"bJob", params,"bJob");
+    addParameter(modifiers,"bMail", params,"bMail");
+    addParameter(modifiers,"bWeb", params,"bWeb");
+    addParameter(modifiers,"tags", params,"tags");
+    odsExecute ("addressbook.edit", params, "addressbook")
+    displayMessage("AddressBook contact was updated.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-addressbook-by-id",
+  takes: {"contact_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-by-id &lt;contact_id&gt;",
+
+  execute: function (contact_id) {
+    if (!checkParameter(contact_id.text, "contact_id")) {return;}
+    var params = {contact_id: contact_id.text};
+    odsExecute ("addressbook.delete", params, "addressbook")
+    displayMessage("AddressBook contact was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-export-addressbook",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"contentType": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-export-addressbook &lt;instance_id&gt; [contentType &lt;contentType&gt;]",
+
+  preview: function (previewBlock, instance_id, modifiers) {
+    if (!checkParameter(instance_id.text)) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "contentType", params, "contentType");
+    var res = odsExecute ("addressbook.export", params, "addressbook", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  },
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-import-addressbook",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"source": noun_arb_text, "sourceType": noun_arb_text, "contentType": noun_arb_text, "tags": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-import-addressbook &lt;instance_id&gt; source &lt;source&gt; [sourceType &lt;WebDAV|URL&gt;] [tasks &lt;tasks&gt;] [contentType &lt;contentType&gt;] [tags &lt;tags&gt;]",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "source", params, "source", true);
+    addParameter(modifiers, "sourceType", params, "sourceType");
+    addParameter(modifiers, "contentType", params, "contentType");
+    addParameter(modifiers, "tags", params, "tags");
+    odsExecute ("addressbook.import", params, "addressbook")
+    displayMessage("AddressBook import was finished.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-annotation-by-id",
+  takes: {"annotation_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-annotation-by-id &lt;annotation_id&gt;",
+
+  preview: function (annotation_id, modifiers) {
+    if (!checkParameter(annotation_id.text)) {return;}
+    var params = {annotation_id: annotation_id.text};
+    var res = odsExecute ("addressbook.annotation.get", params, "addressbook", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-annotation",
+  takes: {"contact_id": noun_arb_text},
+  modifiers: {"author": noun_arb_text, "body": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-annotation &lt;contact_id&gt; author &lt;author&gt; body &lt;body&gt;",
+
+  execute: function (contact_id, modifiers) {
+    if (!checkParameter(contact_id.text, "contact_id")) {return;}
+    var params = {contact_id: contact_id.text};
+    addParameter(modifiers, "author", params, "author", true);
+    addParameter(modifiers, "body", params, "body", true);
+    odsExecute ("addressbook.annotation.new", params, "addressbook")
+    displayMessage("AddressBook annotation was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-addressbook-annotation",
+  takes: {"annotation_id": noun_arb_text},
+  modifiers: {"author": noun_arb_text, "body": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-addressbook-annotation &lt;annotation_id&gt; author &lt;author&gt; body &lt;body&gt;",
+
+  execute: function (annotation_id, modifiers) {
+    if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
+    var params = {annotation_id: annotation_id.text};
+    addParameter(modifiers, "author", params, "author", true);
+    addParameter(modifiers, "body", params, "body", true);
+    odsExecute ("addressbook.annotation.edit", params, "addressbook")
+    displayMessage("AddressBook annotation was updated.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-annotation-claim",
+  takes: {"annotation_id": noun_arb_text},
+  modifiers: {"iri": noun_arb_text, "relation": noun_arb_text, "value": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-annotation-claim &lt;annotation_id&gt; iri &lt;iri&gt; relation &lt;relation&gt; value &lt;value&gt;",
+
+  execute: function (annotation_id, modifiers) {
+    if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
+    var params = {annotation_id: annotation_id.text};
+    addParameter(modifiers, "iri", params, "claimIri", true);
+    addParameter(modifiers, "relation", params, "claimRelation", true);
+    addParameter(modifiers, "value", params, "claimValue", true);
+    odsExecute ("addressbook.annotation.claim", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-addressbook-annotation",
+  takes: {"annotation_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-annotation &lt;annotation_id&gt;",
+
+  execute: function (annotation_id) {
+    if (!checkParameter(annotation_id.text, "annotation_id")) {return;}
+    var params = {annotation_id: annotation_id.text};
+    odsExecute ("addressbook.annotation.delete", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-comment-by-id",
+  takes: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-comment-by-id &lt;comment_id&gt;",
+
+  preview: function (previewBlock, comment_id) {
+    if (!checkParameter(comment_id.text)) {return;}
+    var params = {comment_id: comment_id.text};
+    var res = odsExecute ("addressbook.comment.get", params, "addressbook", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-comment",
+  takes: {"contact_id": noun_arb_text},
+  modifiers: {"title": noun_arb_text, "body": noun_arb_text, "author": noun_arb_text, "authorMail": noun_arb_text, "authorUrl": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-comment &lt;contact_id&gt; title &lt;title&gt; body &lt;body&gt; author &lt;author&gt; authorMail &lt;authorMail&gt; authorUrl &lt;authorUrl&gt;",
+
+  execute: function (contact_id, modifiers) {
+    if (!checkParameter(contact_id.text, "contact_id")) {return;}
+    var params = {contact_id: contact_id.text};
+    addParameter(modifiers, "title", params, "title", true);
+    addParameter(modifiers, "body", params, "text", true);
+    addParameter(modifiers, "author", params, "name", true);
+    addParameter(modifiers, "authorMail", params, "email", true);
+    addParameter(modifiers, "authorUrl", params, "url", true);
+    odsExecute ("addressbook.comment.new", params, "addressbook")
+    displayMessage("AddressBook comment was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-addressbook-comment",
+  takes: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-comment &lt;comment_id&gt;",
+
+  execute: function (comment_id) {
+    if (!checkParameter(comment_id.text, "comment_id")) {return;}
+    var params = {comment_id: comment_id.text};
+    odsExecute ("addressbook.comment.delete", params, "addressbook")
+    displayMessage("AddressBook comment was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-publication",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "destinationType": noun_arb_text, "destination": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-publication &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+
+  execute: function (instance_id) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {instance_id: instance_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "updateType", params, "updateType");
+    addParameter(modifiers, "updatePeriod", params, "updatePeriod");
+    addParameter(modifiers, "updateFreq", params, "updateFreq");
+    addParameter(modifiers, "destinationType", params, "destinationType");
+    addParameter(modifiers, "destination", params, "destination", true);
+    addParameter(modifiers, "userName", params, "userName");
+    addParameter(modifiers, "userPassword", params, "userPassword");
+    addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+    addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+    odsExecute ("addressbook.publication.new", params, "addressbook")
+  }
+});
+
+
+CmdUtils.CreateCommand({
+  name: "ods-update-addressbook-publication",
+  takes: {"publication_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "destinationType": noun_arb_text, "destination": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-addressbook-publication &lt;publication_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+
+  execute: function (publication_id) {
+    if (!checkParameter(publication_id.text, "publication_id")) {return;}
+    var params = {publication_id: publication_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "updateType", params, "updateType");
+    addParameter(modifiers, "updatePeriod", params, "updatePeriod");
+    addParameter(modifiers, "updateFreq", params, "updateFreq");
+    addParameter(modifiers, "destinationType", params, "destinationType");
+    addParameter(modifiers, "destination", params, "destination", true);
+    addParameter(modifiers, "userName", params, "userName");
+    addParameter(modifiers, "userPassword", params, "userPassword");
+    addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+    addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+    odsExecute ("addressbook.publication.edit", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-addressbook-publication",
+  takes: {"publication_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-publication &lt;publication_id&gt;",
+
+  execute: function (publication_id) {
+    if (!checkParameter(publication_id.text, "publication_id")) {return;}
+    var params = {publication_id: publication_id.text};
+    odsExecute ("addressbook.publication.delete", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-addressbook-subscription",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "sourceType": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-addressbook-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+
+  execute: function (instance_id) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {instance_id: instance_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "updateType", params, "updateType");
+    addParameter(modifiers, "updatePeriod", params, "updatePeriod");
+    addParameter(modifiers, "updateFreq", params, "updateFreq");
+    addParameter(modifiers, "sourceType", params, "sourceType");
+    addParameter(modifiers, "source", params, "source", true);
+    addParameter(modifiers, "userName", params, "userName");
+    addParameter(modifiers, "userPassword", params, "userPassword");
+    addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+    addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+    odsExecute ("addressbook.subscription.new", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-addressbook-subscription",
+  takes: {"subscription_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "updateType": noun_arb_text, "updatePeriod": noun_arb_text, "updateFreq": noun_arb_text, "sourceType": noun_arb_text, "source": noun_arb_text, "userName": noun_arb_text, "userPassword": noun_arb_text, "tagsInclude": noun_arb_text, "tagsExclude": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-addressbook-subscription &lt;subscription_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
+
+  execute: function (subscription_id) {
+    if (!checkParameter(subscription_id.text, "subscription_id")) {return;}
+    var params = {subscription_id: subscription_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "updateType", params, "updateType");
+    addParameter(modifiers, "updatePeriod", params, "updatePeriod");
+    addParameter(modifiers, "updateFreq", params, "updateFreq");
+    addParameter(modifiers, "sourceType", params, "sourceType");
+    addParameter(modifiers, "source", params, "source", true);
+    addParameter(modifiers, "userName", params, "userName");
+    addParameter(modifiers, "userPassword", params, "userPassword");
+    addParameter(modifiers, "tagsInclude", params, "tagsInclude");
+    addParameter(modifiers, "tagsExclude", params, "tagsExclude");
+    odsExecute ("addressbook.subscription.edit", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({ name: "ods-delete-addressbook-subscription",
+  takes: {"subscription_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software",
+  email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-subscription &lt;subscription_id&gt;",
+
+  execute: function (subscription_id) {
+    if (!checkParameter(subscription_id.text, "subscription_id")) {return;}
+    var params = {subscription_id: subscription_id.text};
+    odsExecute ("addressbook.subscription.delete", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-addressbook-options",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"options": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-addressbook-options &lt;instance_id&gt; options &lt;options&gt;",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {instance_id: instance_id.text};
+    addParameter(modifiers, "options", params, "options");
+    odsExecute ("addressbook.options.set", params, "addressbook")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-options",
+  takes: {"instance_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-options &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    if (!checkParameter(instance_id.text)) {return;}
+    var params = {instance_id: instance_id.text};
+    var res = odsExecute ("addressbook.options.get", params, "addressbook", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+////////////////////////////////////
+///// ods polls /////////////////
+////////////////////////////////////
+
+CmdUtils.CreateCommand({
+  name: "ods-set-poll-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS poll OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-poll-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getOAuthServer(),
+
+  execute: function(oauth) {
+    if (!checkParameter(oauth.text, "poll instance OAuth")) {return;}
+    ODS.setOAuth("poll", oauth.text);
+    displayMessage("Your ODS poll instance OAuth has been set.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-poll-by-id",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-poll-by-id &lt;poll_id&gt;",
+
+  preview: function (previewBlock, poll_id) {
+    if (!checkParameter(poll_id.text)) {return;}
+    var params = {poll_id: poll_id.text};
+    var res = odsExecute ("poll.get", params, "poll", "preview");
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-poll",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "date_start": noun_type_date, "date_end": noun_type_date, "mode": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-poll &lt;instance_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;multi_vote&gt;] [vote_result &lt;vote_result&gt;] [vote_result_before &lt;vote_result_before&gt;] [vote_result_opened &lt;vote_result_opened&gt;] [date_start &lt;date_start&gt;] [date_end &lt;date_end&gt;] [mode &lt;mode&gt;]",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "description", params, "description");
+    addParameter(modifiers, "tags", params, "tags");
+    addParameter(modifiers, "multi_vote", params, "multi_vote");
+    addParameter(modifiers, "vote_result", params, "vote_result");
+    addParameter(modifiers, "vote_result_before", params, "vote_result_before");
+    addParameter(modifiers, "vote_result_opened", params, "vote_result_opened");
+    addParameter(modifiers, "date_start", params, "date_start");
+    addParameter(modifiers, "date_end", params, "date_end");
+    addParameter(modifiers, "mode", params, "mode");
+    odsExecute ("poll.new", params, "poll")
+    displayMessage("Poll was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-poll",
+  takes: {"poll_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "tags": noun_arb_text, "multi_vote": noun_arb_text, "vote_result": noun_arb_text, "vote_result_before": noun_arb_text, "vote_result_opened": noun_arb_text, "date_start": noun_type_date, "date_end": noun_type_date, "mode": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-poll &lt;poll_id&gt; name &lt;name&gt; [description &lt;description&gt;] [tags &lt;tags&gt;] [multi_vote &lt;multi_vote&gt;] [vote_result &lt;vote_result&gt;] [vote_result_before &lt;vote_result_before&gt;] [vote_result_opened &lt;vote_result_opened&gt;] [date_start &lt;date_start&gt;] [date_end &lt;date_end&gt;] [mode &lt;mode&gt;]",
+
+  execute: function (poll_id, modifiers) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "description", params, "description");
+    addParameter(modifiers, "tags", params, "tags");
+    addParameter(modifiers, "multi_vote", params, "multi_vote");
+    addParameter(modifiers, "vote_result", params, "vote_result");
+    addParameter(modifiers, "vote_result_before", params, "vote_result_before");
+    addParameter(modifiers, "vote_result_opened", params, "vote_result_opened");
+    addParameter(modifiers, "date_start", params, "date_start");
+    addParameter(modifiers, "date_end", params, "date_end");
+    addParameter(modifiers, "mode", params, "mode");
+    odsExecute ("poll.new", params, "poll")
+    displayMessage("Poll was updated.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-poll-by-id",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-poll-by-id &lt;poll_id&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    odsExecute ("poll.delete", params, "poll")
+    displayMessage("Poll was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-new-poll-question",
+  takes: {"poll_id": noun_arb_text},
+  modifiers: {"questionNo": noun_arb_text, "text": noun_arb_text, "description": noun_arb_text, "required": noun_arb_text, "type": noun_arb_text, "answer": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-new-poll-question &lt;poll_id&gt; questionNo &lt;questionNo&gt; text &lt;text&gt; [description &lt;description&gt;] [required &lt;required&gt;] [type &lt;type&gt;] [answer &lt;answer&gt;]",
+
+  execute: function (poll_id, modifiers) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    addParameter(modifiers, "questionNo", params, "questionNo", true);
+    addParameter(modifiers, "text", params, "text", true);
+    addParameter(modifiers, "description", params, "description");
+    addParameter(modifiers, "required", params, "required");
+    addParameter(modifiers, "type", params, "type");
+    addParameter(modifiers, "answer", params, "answer");
+    odsExecute ("poll.question.new", params, "poll")
+    displayMessage("Poll question was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-poll-question",
+  takes: {"poll_id": noun_arb_text},
+  modifiers: {"questionNo": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-new-poll-question &lt;poll_id&gt; questionNo &lt;questionNo&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    addParameter(modifiers, "questionNo", params, "questionNo", true);
+    odsExecute ("poll.question.delete", params, "poll")
+    displayMessage("Poll question was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-activate-poll",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-activate-poll &lt;poll_id&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    odsExecute ("poll.activate", params, "poll")
+    displayMessage("Poll was activated.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-close-poll",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-close-poll &lt;poll_id&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    odsExecute ("poll.close", params, "poll")
+    displayMessage("Poll was closed.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-clear-poll",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-clear-poll &lt;poll_id&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    odsExecute ("poll.clear", params, "poll")
+    displayMessage("Poll votes was cleared.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-vote-poll",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-vote-poll &lt;poll_id&gt;",
+
+  execute: function (poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    odsExecute ("poll.activate", params, "poll")
+    displayMessage("Poll vote was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-poll-vote-answer",
+  takes: {"vote_id": noun_arb_text},
+  modifiers: {"questionNo": noun_arb_text, "answerNo": noun_arb_text, "value": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-poll-vote-answer &lt;vote_id&gt; questionNo &lt;questionNo&gt; answerNo &lt;answerNo&gt; value &lt;value&gt;",
+
+  execute: function (vote_id, modifiers) {
+    if (!checkParameter(vote_id.text, "vote_id")) {return;}
+    var params = {vote_id: vote_id.text};
+    addParameter(modifiers, "questionNo", params, "questionNo", true);
+    addParameter(modifiers, "answerNo", params, "answerNo", true);
+    addParameter(modifiers, "value", params, "value", true);
+    odsExecute ("poll.vote.answer", params, "poll")
+    displayMessage("poll vote answer was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-result-poll",
+  takes: {"poll_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-result-poll &lt;poll_id&gt;",
+
+  preview: function (previewBlock, poll_id) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    var res = odsExecute ("poll.result", params, "poll")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-poll-comment-by-id",
+  takes: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-poll-comment-by-id &lt;comment_id&gt;",
+
+  preview: function (previewBlock, comment_id) {
+    if (!checkParameter(comment_id.text)) {return;}
+    var params = {comment_id: comment_id.text};
+    var res = odsExecute ("poll.comment.get", params, "poll", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-poll-comment",
+  takes: {"poll_id": noun_arb_text},
+  modifiers: {"title": noun_arb_text, "body": noun_arb_text, "author": noun_arb_text, "authorMail": noun_arb_text, "authorUrl": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-poll-comment &lt;poll_id&gt; title &lt;title&gt; body &lt;body&gt; author &lt;author&gt; authorMail &lt;authorMail&gt; authorUrl &lt;authorUrl&gt;",
+
+  execute: function (poll_id, modifiers) {
+    if (!checkParameter(poll_id.text, "poll_id")) {return;}
+    var params = {poll_id: poll_id.text};
+    addParameter(modifiers, "title", params, "title", true);
+    addParameter(modifiers, "body", params, "text", true);
+    addParameter(modifiers, "author", params, "name", true);
+    addParameter(modifiers, "authorMail", params, "email", true);
+    addParameter(modifiers, "authorUrl", params, "url", true);
+    odsExecute ("poll.comment.new", params, "poll")
+    displayMessage("poll comment was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-poll-comment",
+  takes: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-poll-comment &lt;comment_id&gt;",
+
+  execute: function (comment_id) {
+    if (!checkParameter(comment_id.text, "comment_id")) {return;}
+    var params = {comment_id: comment_id.text};
+    odsExecute ("poll.comment.delete", params, "poll")
+    displayMessage("Poll comment was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-poll-options",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"options": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-poll-options &lt;instance_id&gt; options &lt;options&gt;",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {instance_id: instance_id.text};
+    addParameter(modifiers, "options", params, "options");
+    odsExecute ("poll.options.set", params, "poll")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-poll-options",
+  takes: {"instance_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-poll-options &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    if (!checkParameter(instance_id.text)) {return;}
+    var params = {instance_id: instance_id.text};
+    var res = odsExecute ("poll.options.get", params, "poll", "preview")
     previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
   }
 });
