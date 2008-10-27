@@ -970,7 +970,6 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
   int check_buf_length, word_idx, aps_ctr, max_phrase_len;
   size_t patch_buf_length;
   uint32 word_hash;
-  arr = appi_add_arrow (APA_PLAIN_WORD, apa_start, apa_end, htmltm_bits, innermost_tag, appi);
   check_buf_length = eh_decode_buffer__UTF8 (check_buf, WORD_MAX_CHARS, &check_src_begin, buf+bufsize);
   if ((check_buf_length <= 0) || (check_src_begin != buf+bufsize))
     { /* This is not a word of reasonable size or an encoding error. That is strange but...*/
@@ -979,6 +978,7 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
 #endif
       return;
     }
+  arr = appi_add_arrow (APA_PLAIN_WORD, apa_start, apa_end, htmltm_bits, innermost_tag, appi);
   appi->appi_lh->lh_toupper_word (check_buf, check_buf_length, patch_buf, &patch_buf_length);
   chksum_end = eh_encode_buffer__UTF8 (patch_buf, patch_buf + patch_buf_length, chksum_buf, chksum_buf + BUFSIZEOF__UTF8_WORD);
   BYTE_BUFFER_HASH(word_hash, chksum_buf, chksum_end - chksum_buf);
