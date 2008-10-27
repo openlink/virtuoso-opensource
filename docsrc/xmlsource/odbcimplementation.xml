@@ -35,7 +35,7 @@
   <orderedlist>
   <listitem><para>Go to the Windows <emphasis>Control panel</emphasis>.</para></listitem>
   <listitem><para>Double click on the <emphasis>ODBC Administrator</emphasis> applet.
-	On Windows 2000 the ODBC Administrator applet may be called
+	On Windows 2000 / XP the ODBC Administrator applet may be called
 	<emphasis>Data Source (ODBC)</emphasis> and may be found under Administrative
 	tools icon of the Control Panel.</para></listitem>
 	<listitem><para>Once the ODBC Administrator has been loaded choose by selecting
@@ -48,17 +48,16 @@
 	Driver&apos;s DSN configuration dialog:</para>
 
     <figure id="virtdsn001" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
-      <graphic fileref="virtdsn001.jpg" width="420px" depth="333px"/></figure>
+      <graphic fileref="virtdsn001.png"/></figure>
 
-  <para><emphasis>DSN:</emphasis> provide a name that will act as a logical
+  <para><emphasis>Name:</emphasis> provide a name that will act as a logical
 	reference to the Virtuoso database server that you will be connecting to.
 	Subsequent references to this database will be made to this value when ODBC
 	compliant applications interact with your Virtuoso driver.</para>
   <para><emphasis>Description:</emphasis> allows you to provide a short
 	description about the nature of the connection.  This is optional.</para>
   <para><emphasis>Server:</emphasis> enter the hostname or IP address of the
-	machine hosting your Virtuoso server.</para>
-  <para><emphasis>Port:</emphasis> enter the port number that Virtuoso is
+	machine hosting your Virtuoso server and enter the port number that Virtuoso is
 	listening at.  This is configured in the <link linkend="VIRTINI">Virtuoso ini</link>
 	file on the server.</para></listitem>
 
@@ -66,19 +65,12 @@
 	details about the connection</para>
 
     <figure id="virtdsn002" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
-      <graphic fileref="virtdsn002.jpg" width="420px" depth="333px"/></figure>
+      <graphic fileref="virtdsn002.ong"/></figure>
 
-  <para><emphasis>User name:</emphasis> allows you to specify the default username
-	for the connection.</para>
-	<para><emphasis>Automatically adjust clock for daylight saving changes</emphasis>
-	lets you choose whether time data values  are adjusted to counter the effects of
-	daylight saving.</para>
-	<para><emphasis>Connect to the Virtuoso Server to obtain databases list</emphasis>
-	when checked will allow you to provide a <emphasis>Password</emphasis> which
-	will be used with the default user name setting to automatically interrogate
-	the database for a list of database names.</para>
-	<para><emphasis>Password:</emphasis> where you specify the password required
-	for the automatic connection to the database for retrieval of database names</para>
+  <para><emphasis>Connect to the Virtuoso Servet to obtain default settings for the
+        additional configuration options:</emphasis> allows you to specify the default username
+        and password for the connection.</para>
+        <para>Press the <emphasis>Next</emphasis> button</para>
 	<para><emphasis>Database:</emphasis> allows you to select the default database
 	for the connection.  You will need to check the box above and supply a password
 	to refresh this list.  Objects created or selected without an explicit
@@ -86,19 +78,22 @@
 	<para><emphasis>Charset:</emphasis> lets you choose the default character set
 	for the connection.</para>
 
-  <para><emphasis>Test database connection</emphasis> can be used to
+<!--  <para><emphasis>Test database connection</emphasis> can be used to
 	test your configuration</para>
+<para>supply the remaining details (usually only password) and press ok to test.
+	If all is well then you will have returned the confirmation box</para>
+-->
+
 
     <figure id="virtdsn003" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
-      <graphic fileref="virtdsn003.jpg" width="354px" depth="287px"/></figure>
+      <graphic fileref="virtdsn003.png" width="354px" depth="287px"/></figure>
 
-  <para>supply the remaining details (usually only password) and press ok to test.
-	If all is well then you will have returned the confirmation box</para>
-
+  <!--
     <figure id="virtdsn004" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
       <graphic fileref="virtdsn004.jpg" width="380px" depth="126px"/></figure>
-
+-->
   </listitem>
+<!--
 	<listitem><para>Press <emphasis>Next</emphasis> to configure encryption</para>
 
     <figure id="virtdsn005" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
@@ -110,7 +105,7 @@
 	for the server to authorize the connection.
 	See <link linkend="x509odbcclient">Using SSL For Secure  ODBC connections</link> for
 	more information regarding this.</para></listitem>
-
+-->
 	<listitem><para>When the configuration is complete, and indeed at any time
 	you are satisfied with the configuration press the <emphasis>Finish</emphasis>
 	button to save the DSN.</para></listitem>
