@@ -465,6 +465,17 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_space_html', 1,
     NULL,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_ecrm_rdf',
+	1,
+    '/dataspace/([^/]*)/eCRM/(.*)',
+    vector('uname', 'path'),
+    1,
+    '/ecrm/%U',
+    vector('path'),
+    'DB.DBA.ECRM_DET_REF2',
+    'application/rdf.xml',
+    2,
+    303);
 
 --DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');
 --DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba',
@@ -573,5 +584,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_rdf_next',
 	  'ods_rdf_res',
 	  'ods_moat_res',
+	  'ods_ecrm_rdf',
 	  'ods_error'
 	  ));

@@ -1,3 +1,26 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2008 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+*/
+
 ODS = {
         getValue: function(prefName, defaultValue)
         {
@@ -2550,7 +2573,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "date_start", params, "date_start");
     addParameter(modifiers, "date_end", params, "date_end");
     addParameter(modifiers, "mode", params, "mode");
-    odsExecute ("poll.new", params, "poll")
+    odsExecute ("poll.edit", params, "poll")
     displayMessage("Poll was updated.");
   }
 });
@@ -2810,5 +2833,358 @@ CmdUtils.CreateCommand({
     var params = {instance_id: instance_id.text};
     var res = odsExecute ("poll.options.get", params, "poll", "preview")
     previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+////////////////////////////////////
+///// ods weblog /////////////////
+////////////////////////////////////
+
+CmdUtils.CreateCommand({
+  name: "ods-set-weblog-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS weblog OAuth. Get your oauth at " + ODS.getOAuthServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-weblog-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getOAuthServer(),
+
+  execute: function(oauth) {
+    if (!checkParameter(oauth.text, "weblog instance OAuth")) {return;}
+    ODS.setOAuth("weblog", oauth.text);
+    displayMessage("Your ODS Weblog instance OAuth has been set.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-weblog-by-id",
+  takes: {"instance_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-weblog-by-id &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    if (!checkParameter(instance_id.text)) {return;}
+    var params = {inst_id: instance_id.text};
+    var res = odsExecute ("weblog.get", params, "weblog", "preview");
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-weblog-post-by-id",
+  takes: {"post_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-weblog-post-by-id &lt;post_id&gt;",
+
+  preview: function (previewBlock, post_id) {
+    if (!checkParameter(post_id.text)) {return;}
+    var params = {post_id: post_id.text};
+    var res = odsExecute ("weblog.post.get", params, "weblog", "preview");
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-weblog-post",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"title": noun_arb_text, "description": noun_arb_text, "categories": noun_arb_text, "dateCreated": noun_type_date, "enclosure": noun_arb_text, "source": noun_arb_text, "link": noun_arb_text, "author": noun_arb_text, "comments": noun_arb_text, "allowComments": noun_arb_text, "allowPings": noun_arb_text, "convertBreaks": noun_arb_text, "excerpt": noun_arb_text, "pingUrls": noun_arb_text, "textMore": noun_arb_text, "keywords": noun_arb_text, "publish": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-weblog-post &lt;instance_id&gt; title &lt;title&gt; description &lt;description&gt; [categories &lt;categories&gt;] [dateCreated &lt;dateCreated&gt;] [enclosure &lt;enclosure&gt;] [source &lt;source&gt;] [link &lt;link&gt;] [author &lt;author&gt;] [comments &lt;comments&gt;] [allowComments &lt;allowComments&gt;] [allowPings &lt;allowPings&gt;] [convertBreaks &lt;convertBreaks&gt;] [excerpt &lt;excerpt&gt;] [pingUrls &lt;pingUrls&gt;] [textMore &lt;textMore&gt;] [keywords &lt;keywords&gt;] [publish &lt;publish&gt;]",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "title", params, "title", true);
+    addParameter(modifiers, "description", params, "description", true);
+    addParameter(modifiers, "categories", params, "categories");
+    addParameter(modifiers, "dateCreated", params, "date_created");
+    addParameter(modifiers, "enclosure", params, "enclosure");
+    addParameter(modifiers, "source", params, "source");
+    addParameter(modifiers, "link", params, "link");
+    addParameter(modifiers, "comments", params, "comments");
+    addParameter(modifiers, "allowComments", params, "allow_comments");
+    addParameter(modifiers, "allowPings", params, "allow_pings");
+    addParameter(modifiers, "convertBreaks", params, "convert_breaks");
+    addParameter(modifiers, "excerpt", params, "excerpt");
+    addParameter(modifiers, "pingUrls", params, "tb_ping_urls");
+    addParameter(modifiers, "textMore", params, "text_more");
+    addParameter(modifiers, "keywords", params, "keywords");
+    addParameter(modifiers, "publish", params, "publish");
+    odsExecute ("weblog.post.new", params, "weblog")
+    displayMessage("Weblog post was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-weblog-post",
+  takes: {"post_id": noun_arb_text},
+  modifiers: {"title": noun_arb_text, "description": noun_arb_text, "categories": noun_arb_text, "dateCreated": noun_type_date, "enclosure": noun_arb_text, "source": noun_arb_text, "link": noun_arb_text, "author": noun_arb_text, "comments": noun_arb_text, "allowComments": noun_arb_text, "allowPings": noun_arb_text, "convertBreaks": noun_arb_text, "excerpt": noun_arb_text, "pingUrls": noun_arb_text, "textMore": noun_arb_text, "keywords": noun_arb_text, "publish": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-weblog-post &lt;post_id&gt; title &lt;title&gt; description &lt;description&gt; [categories &lt;categories&gt;] [dateCreated &lt;dateCreated&gt;] [enclosure &lt;enclosure&gt;] [source &lt;source&gt;] [link &lt;link&gt;] [author &lt;author&gt;] [comments &lt;comments&gt;] [allowComments &lt;allowComments&gt;] [allowPings &lt;allowPings&gt;] [convertBreaks &lt;convertBreaks&gt;] [excerpt &lt;excerpt&gt;] [pingUrls &lt;pingUrls&gt;] [textMore &lt;textMore&gt;] [keywords &lt;keywords&gt;] [publish &lt;publish&gt;]",
+
+  execute: function (post_id, modifiers) {
+    if (!checkParameter(post_id.text, "post_id")) {return;}
+    var params = {post_id: post_id.text};
+    addParameter(modifiers, "title", params, "title", true);
+    addParameter(modifiers, "description", params, "description", true);
+    addParameter(modifiers, "categories", params, "categories");
+    addParameter(modifiers, "dateCreated", params, "date_created");
+    addParameter(modifiers, "enclosure", params, "enclosure");
+    addParameter(modifiers, "source", params, "source");
+    addParameter(modifiers, "link", params, "link");
+    addParameter(modifiers, "comments", params, "comments");
+    addParameter(modifiers, "allowComments", params, "allow_comments");
+    addParameter(modifiers, "allowPings", params, "allow_pings");
+    addParameter(modifiers, "convertBreaks", params, "convert_breaks");
+    addParameter(modifiers, "excerpt", params, "excerpt");
+    addParameter(modifiers, "pingUrls", params, "tb_ping_urls");
+    addParameter(modifiers, "textMore", params, "text_more");
+    addParameter(modifiers, "keywords", params, "keywords");
+    addParameter(modifiers, "publish", params, "publish");
+    odsExecute ("weblog.post.edit", params, "weblog")
+    displayMessage("Weblog post was updated.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-weblog-post-by-id",
+  takes: {"post_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-weblog-post-by-id &lt;post_id&gt;",
+
+  execute: function (post_id) {
+    if (!checkParameter(post_id.text, "post_id")) {return;}
+    var params = {post_id: post_id.text};
+    odsExecute ("weblog.post.delete", params, "weblog")
+    displayMessage("Poll was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-weblog-comment-by-id",
+  takes: {"post_id": noun_arb_text},
+  modifiers: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-weblog-comment-by-id &lt;post_id&gt; comment_id &lt;comment_id&gt;",
+
+  preview: function (previewBlock, post_id, modifiers) {
+    if (!checkParameter(post_id.text)) {return;}
+    var params = {post_id: post_id.text};
+    addParameter(modifiers, "comment_id", params, "comment_id", true);
+    var res = odsExecute ("weblog.comment.get", params, "weblog", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-weblog-comment",
+  takes: {"post_id": noun_arb_text},
+  modifiers: {"name": noun_arb_text, "title": noun_arb_text, "authorMail": noun_arb_text, "authorUrl": noun_arb_text, "text": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-weblog-comment &lt;post_id&gt; name &lt;name&gt; title &lt;title&gt; authorMail &lt;authorMail&gt; authorUrl &lt;authorUrl&gt; text &lt;text&gt;",
+
+  execute: function (post_id, modifiers) {
+    if (!checkParameter(post_id.text, "post_id")) {return;}
+    var params = {post_id: post_id.text};
+    addParameter(modifiers, "name", params, "name", true);
+    addParameter(modifiers, "title", params, "title", true);
+    addParameter(modifiers, "authorMail", params, "email", true);
+    addParameter(modifiers, "authorUrl", params, "url", true);
+    addParameter(modifiers, "text", params, "text", true);
+    odsExecute ("weblog.comment.new", params, "weblog")
+    displayMessage("Weblog comment was created.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-approve-weblog-comment",
+  takes: {"post_id": noun_arb_text},
+  modifiers: {"comment_id": noun_arb_text, "flag": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-approve-weblog-comment &lt;post_id&gt; comment_id &lt;comment_id&gt; flag &lt;flag&gt;",
+
+  execute: function (post_id, modifiers) {
+    if (!checkParameter(post_id.text)) {return;}
+    var params = {post_id: post_id.text};
+    addParameter(modifiers, "comment_id", params, "comment_id", true);
+    addParameter(modifiers, "flag", params, "flag", true);
+    odsExecute ("weblog.comment.approve", params, "weblog", "preview")
+    displayMessage("Weblog comment was approved.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-weblog-comment",
+  takes: {"post_id": noun_arb_text},
+  modifiers: {"comment_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-weblog-comment post_id comment_id &lt;comment_id&gt;",
+
+  execute: function (post_id, modifiers) {
+    if (!checkParameter(post_id.text)) {return;}
+    var params = {post_id: post_id.text};
+    addParameter(modifiers, "comment_id", params, "comment_id", true);
+    odsExecute ("weblog.comment.delete", params, "weblog", "preview")
+    displayMessage("Weblog comment was deleted.");
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-weblog-options",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"options": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-weblog-options &lt;instance_id&gt; options &lt;options&gt;",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "options", params, "options");
+    odsExecute ("weblog.options.set", params, "weblog")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-weblog-options",
+  takes: {"instance_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-weblog-options &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    if (!checkParameter(instance_id.text)) {return;}
+    var params = {inst_id: instance_id.text};
+    var res = odsExecute ("weblog.options.get", params, "weblog", "preview")
+    previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-weblog-upstreaming",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"targetRpcUrl": noun_arb_text, "targetBlogId": noun_arb_text, "targetProtocolId": noun_arb_text, "targetUserName": noun_arb_text, "targetPassword": noun_arb_text, "aclAllow": noun_arb_text, "aclDeny": noun_arb_text, "syncInterval": noun_arb_text, "keepRemote": noun_arb_text, "maxRetries": noun_arb_text, "maxRetransmits": noun_arb_text, "initializeLog": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-weblog-upstreaming &lt;instance_id&gt; targetRpcUrl &lt;targetRpcUrl&gt; targetBlogId &lt;targetBlogId&gt; targetProtocolId &lt;targetProtocolId&gt; targetUserName &lt;targetUserName&gt; targetPassword &lt;targetPassword&gt; aclAllow &lt;aclAllow&gt; aclDeny &lt;aclDeny&gt; syncInterval &lt;syncInterval&gt; keepRemote &lt;keepRemote&gt; maxRetries &lt;maxRetries&gt; [maxRetransmits &lt;maxRetransmits&gt;] [initializeLog &lt;initializeLog&gt;]",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "targetRpcUrl", params, "target_rpc_url", true);
+    addParameter(modifiers, "targetBlogId", params, "target_blog_id", true);
+    addParameter(modifiers, "targetProtocolId", params, "target_protocol_id", true);
+    addParameter(modifiers, "targetUserName", params, "target_uname", true);
+    addParameter(modifiers, "targetPassword", params, "target_password", true);
+    addParameter(modifiers, "aclAllow", params, "acl_allow", true);
+    addParameter(modifiers, "aclDeny", params, "acl_deny", true);
+    addParameter(modifiers, "syncInterval", params, "sync_interval", true);
+    addParameter(modifiers, "keepRemote", params, "keep_remote", true);
+    addParameter(modifiers, "maxRetries", params, "max_retries", true);
+    addParameter(modifiers, "maxRetransmits", params, "max_retransmits");
+    addParameter(modifiers, "initializeLog", params, "initialize_log");
+    odsExecute ("weblog.upstreaming.set", params, "weblog")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-weblog-upstreaming",
+  takes: {"job_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-weblog-upstreaming &lt;job_id&gt;",
+
+  execute: function (job_id) {
+    if (!checkParameter(job_id.text, "job_id")) {return;}
+    var params = {job_id: job_id.text};
+    odsExecute ("weblog.upstreaming.get", params, "weblog")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-weblog-upstreaming",
+  takes: {"job_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-weblog-upstreaming &lt;job_id&gt;",
+
+  execute: function (job_id) {
+    if (!checkParameter(job_id.text, "job_id")) {return;}
+    var params = {job_id: job_id.text};
+    odsExecute ("weblog.upstreaming.remove", params, "weblog")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-weblog-tagging",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"flag": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-weblog-tagging &lt;instance_id&gt; flag &lt;flag&gt;",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "flag", params, "flag", true);
+    odsExecute ("weblog.tagging.set", params, "weblog")
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-retag-weblog-tagging",
+  takes: {"instance_id": noun_arb_text},
+  modifiers: {"keepExistingTags": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-retag-weblog-tagging &lt;instance_id&gt; keepExistingTags &lt;keepExistingTags&gt;",
+
+  execute: function (instance_id, modifiers) {
+    if (!checkParameter(instance_id.text, "instance_id")) {return;}
+    var params = {inst_id: instance_id.text};
+    addParameter(modifiers, "keepExistingTags", params, "keep_existing_tags", true);
+    odsExecute ("weblog.tagging.retag", params, "weblog")
   }
 });
