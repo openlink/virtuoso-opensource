@@ -2731,7 +2731,24 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   D_SET_INITIAL (&d_id_next);
   for (;;)
     {
+      QR_RESET_CTX 
+	{
       sst_next (sst, &d_id_next, 0);
+	}
+      QR_RESET_CODE 
+	{
+	  du_thread_t * self = THREAD_CURRENT_THREAD;
+	  caddr_t err = thr_get_error_code (self);
+	  POP_QR_RESET;
+	  *err_ret = err;
+	  /* cleanup */
+	  dk_free_box ((caddr_t) sst);
+	  dk_free_tree (list_to_array (dk_set_nreverse (score_list)));
+	  dk_free_tree (list_to_array (dk_set_nreverse (ranges_list)));
+	  dk_free_tree (list_to_array (dk_set_nreverse (res)));
+	  return NULL;
+	}
+      END_QR_RESET
       if (D_AT_END (&sst->sst_d_id))
 	break;
       D_SET_NEXT (&d_id_next);
