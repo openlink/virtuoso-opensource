@@ -584,4 +584,9 @@ caddr_t id_hash_add_new (id_hash_t *ht, caddr_t key, caddr_t data)
 {
   return dbg_id_hash_add_new (__FILE__, __LINE__, ht, key, data);
 }
+#undef id_hash_set_with_hash_number 
+void id_hash_set_with_hash_number (id_hash_t *ht, caddr_t key, caddr_t data, id_hashed_key_t inx)
+{
+  dbg_id_hash_set_with_hash_number (__FILE__, __LINE__, ht, key, data, inx);
+}
 #endif
