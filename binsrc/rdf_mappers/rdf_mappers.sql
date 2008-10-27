@@ -90,6 +90,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_DISQUS', null, 'Disqus');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*slideshare.net/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
         '(http://.*/show_bug.cgi\\?id.*)|'||
         '(http://.*bugzilla.*)|'||
@@ -1464,6 +1468,96 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure slideshare_hex_sha1_digest(in str varchar)
+{
+    declare res_str varchar;
+    declare i integer;
+    res_str:='';
+    str:=decode_base64 (xenc_sha1_digest(str));
+    for (i := 0; i < length (str); i := i + 1)
+        res_str:=res_str||sprintf('%02x',str[i]);
+    return res_str;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare qr, path, hdr any;
+	declare test integer;
+	declare tree, xt, xd, types, api_key, is_search, hash1 any;
+	declare base, cnt, url, suffix, tmp, asin, SharedSecret, ApiKey, username, itemname  varchar;
+	declare ts, query varchar;
+	hdr := null;
+	ApiKey := 'lyWPSMr6';
+	SharedSecret := 'vqOBAQzX';
+	declare exit handler for sqlstate '*'
+	{
+		--dbg_printf ('%s', __SQL_MESSAGE);
+		return 0;
+	};
+	ts :=  cast(datediff ('second', stringdate ('1970-1-1'), now ()) as varchar);
+	hash1 := slideshare_hex_sha1_digest(concat(SharedSecret, ts));
+	if (new_origin_uri like 'http://www.slideshare.net/search/slideshow?q=%&%' or
+		new_origin_uri like 'http://www.slideshare.net/search/slideshow?%&q=%&%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/search/slideshow?q=%s&%s', 0);
+		query := tmp[0];
+		if (query is null)
+		{
+			tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/search/slideshow?%sq=%s&%s', 0);
+			query := tmp[1];
+			if (query is null)
+				return 0;
+		}
+		url := sprintf ('http://www.slideshare.net/api/1/search_slideshows?api_key=%U&ts=%U&hash=%U&q=%U', ApiKey, ts, hash1, query);
+	}
+	else if (new_origin_uri like 'http://www.slideshare.net/tag/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/tag/%s', 0);
+		query := tmp[0];
+		if (query is null)
+			return 0;
+		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_tag?api_key=%U&ts=%U&hash=%U&tag=%U', ApiKey, ts, hash1, query);
+	}
+	else if (new_origin_uri like 'http://www.slideshare.net/group/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/group/%s', 0);
+		query := tmp[0];
+		if (query is null)
+			return 0;
+		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_group?api_key=%U&ts=%U&hash=%U&group_name=%U', ApiKey, ts, hash1, query);
+	}
+	else if (new_origin_uri like 'http://www.slideshare.net/%/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/%s/%s', 0);
+		username := trim(tmp[0], '/');
+		itemname := trim(tmp[1], '/');
+		if (username is null)
+			return 0;
+		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_info?api_key=%U&ts=%U&hash=%U&slideshow_url=%U', ApiKey, ts, hash1, new_origin_uri);
+	}
+	else if (new_origin_uri like 'http://www.slideshare.net/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/%s', 0);
+		query := tmp[0];
+		if (query is null)
+			return 0;
+		url := sprintf ('http://www.slideshare.net/api/1/get_slideshow_by_user?api_key=%U&ts=%U&hash=%U&username_for=%U', ApiKey, ts, hash1, query);
+	}
+	else
+		return 0;
+	tmp := http_get (url);
+	string_to_file('tmp.xml', tmp, 0);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/slideshare2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	string_to_file('tmp.rdf', xd, 0);
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare qr, path, hdr any;
@@ -1674,6 +1768,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare xsl2 varchar;
   declare exit handler for sqlstate '*'
     {
       return 0;
@@ -1688,6 +1783,7 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     return 0;
   url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
     tmp := RDF_HTTP_URL_GET (url, url, hdr);
+    xsl2 := 'xslt/atom2rdf.xsl';
   }
   else if (new_origin_uri like 'http://%.youtube.com/watch?v=%')
   {
@@ -1697,18 +1793,15 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
   tmp := RDF_HTTP_URL_GET (url, url, hdr);
+    xsl2 := 'xslt/atomentry2rdf.xsl';
   }
-  --url := concat('http://gdata.youtube.com/feeds/api/videos?vq=', img_id);
-  --tmp := RDF_HTTP_URL_GET (url, url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atomentry2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || xsl2, xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-  --delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-  --DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;

@@ -21,6 +21,22 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
+<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+<!ENTITY wf "http://www.w3.org/2005/01/wf/flow#">
+]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -30,11 +46,12 @@
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
+  xmlns:wf="&wf;"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:bugzilla="http://www.openlinksw.com/schemas/bugzilla#"
-  xmlns:sioct="http://rdfs.org/sioc/types#"
-  xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:sioct="&sioct;"
+  xmlns:sioc="&sioc;"
+  xmlns:xsd="&xsd;"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
@@ -45,51 +62,79 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="issuezilla/issue">
-		<wf:Task rdf:about="{$baseUri}">
-			<xsl:apply-templates select="*"/>
-		</wf:Task>
-		<sioct:Discussion rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&sioc;Thread"/>
+			<rdf:type rdf:resource="&sioct;Discussion"/>
+			<rdf:type rdf:resource="&wf;Task"/>
+			<dcterms:created rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="creation_ts"/>
+			</dcterms:created>
+			<dc:title>
+				<xsl:value-of select="short_desc"/>			
+			</dc:title>
 		    <xsl:for-each select="long_desc">
 			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
+				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
 		    </xsl:for-each>
-		</sioct:Discussion>
+		</rdf:Description>
 		<xsl:for-each select="long_desc">
-			<sioc:Post rdf:about="{vi:proxyIRI($baseUri,'',issue_when)}">
-				<sioc:has_container rdf:resource="{$baseUri}"/>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',issue_when)}">
+				<rdf:type rdf:resource="&sioct;Comment"/>
+				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>
 					<xsl:value-of select="issue_when"/>
 				</dc:date>
 				<dc:creator>
 					<xsl:value-of select="who"/>
 				</dc:creator>
+				<sioc:has_container rdf:resource="{$baseUri}"/>
+				<sioc:has_creator rdf:resource="{concat(who/@name, ' (', who, ')' )}"/>
+				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
 				</dc:description>
-			</sioc:Post>
+				<dcterms:created rdf:datatype="&xsd;dateTime">
+					<xsl:value-of select="issue_when"/>
+				</dcterms:created>
+			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
     <xsl:template match="bugzilla/bug">
-		<wf:Task rdf:about="{$baseUri}">
-			<xsl:apply-templates select="*"/>
-		</wf:Task>
-		<sioct:Discussion rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{$baseUri}">
+			<rdf:type rdf:resource="&sioc;Thread"/>
+			<rdf:type rdf:resource="&sioct;Discussion"/>
+			<rdf:type rdf:resource="&wf;Task"/>
+			<dc:title>
+				<xsl:value-of select="short_desc"/>			
+			</dc:title>
+			<dcterms:created rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="creation_ts"/>
+			</dcterms:created>
 		    <xsl:for-each select="long_desc">
 			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
+				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
 		    </xsl:for-each>
-		</sioct:Discussion>
+		</rdf:Description>
 		<xsl:for-each select="long_desc">
-			<sioc:Post rdf:about="{vi:proxyIRI($baseUri, '', bug_when)}">
-				<sioc:has_container rdf:resource="{$baseUri}"/>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',bug_when)}">
+				<rdf:type rdf:resource="&sioct;Comment"/>
+				<rdf:type rdf:resource="&sioc;Post"/>
 				<dc:date>
 					<xsl:value-of select="bug_when"/>
 				</dc:date>
 				<dc:creator>
 					<xsl:value-of select="who"/>
 				</dc:creator>
+				<sioc:has_container rdf:resource="{$baseUri}"/>
+				<sioc:has_creator rdf:resource="{concat(who/@name, ' (', who, ')' )}"/>
+				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
 				</dc:description>
-			</sioc:Post>
+				<dcterms:created rdf:datatype="&xsd;dateTime">
+					<xsl:value-of select="bug_when"/>
+				</dcterms:created>
+			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
     <xsl:template match="version">

@@ -21,6 +21,21 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
+<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -66,6 +81,16 @@
 	    </rdf:Seq>
 	</items>
     </channel>
+	<rdf:Description rdf:about="{a:link[@rel='self']/@href}">
+		<rdf:type rdf:resource="&sioc;Thread"/>
+		<dc:description>
+			<xsl:value-of select="a:entry[a:link/@rel='topic_at_sfn']/content"/>
+		</dc:description>
+		<xsl:for-each select="a:entry/a:link[@rel='reply']">
+				<sioc:container_of rdf:resource="{@href}" />
+				<sioc:has_reply rdf:resource="{@href}" />
+		</xsl:for-each>
+    </rdf:Description>
     <xsl:apply-templates select="a:entry" mode="rdfitem" />
 </xsl:template>
 
@@ -108,6 +133,14 @@
 </xsl:template>
 
 <xsl:template match="a:entry" mode="rdfitem">
+	<xsl:if test="a:link[@rel='reply']">
+		<rdf:Description rdf:about="{a:link[@rel='reply']/@href}">
+			<xsl:apply-templates/>
+			<sioc:has_container rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
+			<sioc:reply_of rdf:resource="{/a:feed/a:link[@rel='self']/@href}"/>
+			<rdf:type rdf:resource="&sioc;Comment"/>
+		</rdf:Description>
+    </xsl:if>
     <item rdf:about="{a:link[@href]/@href}">
 	<xsl:apply-templates/>
 	<xsl:if test="a:category[@term]">
