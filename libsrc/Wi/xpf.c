@@ -2052,9 +2052,9 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int cu
 load_next_rel_uri:
       dk_free_box (abs_uri);
       abs_uri = xml_uri_resolve (xqi->xqi_qi, &loading_error, (caddr_t)uri, rel_uri, "_WIDE_");
-      cache_key->xdcs_abs_uri = box_wide_as_utf8_char (abs_uri, box_length (abs_uri) / sizeof (wchar_t) - 1, DV_STRING);
       if (loading_error)
 	goto loading_error;
+      cache_key->xdcs_abs_uri = box_wide_as_utf8_char (abs_uri, box_length (abs_uri) / sizeof (wchar_t) - 1, DV_STRING);
 #ifdef DEBUG
       if (NULL == cache_key->xdcs_abs_uri)
 	GPF_T;
