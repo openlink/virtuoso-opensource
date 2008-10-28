@@ -83,12 +83,14 @@
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S)); 
 
+  declare __res_desc varchar;
+  __res_desc := rdfdesc_uri_curie(page_resource_uri);
 ?>
 
 <!-- header -->
 <head>
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/">
-    <title><?=_resource_?> | <?=project_name?></title>
+    <title><?=__res_desc?> | <?=project_name?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -103,7 +105,7 @@
         </div>
         <div class="page-resource-uri">
 	  <label for="page_res_uri">About Resource:</label> 
-		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', page_resource_uri)); ?></a>
+		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', __res_desc)); ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -117,7 +119,7 @@
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
 
 <!-- proptable -->
-      <table class="description"><tr><th width="25%">Property</th><th>Value</th></tr>
+      <table class="description"><tr><th class="property">Property</th><th class="value">Value</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S), 

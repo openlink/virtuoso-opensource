@@ -46,6 +46,41 @@ create procedure rdfdesc_page_get_type (in val any)
 }
 ;
 
+
+create procedure rdfdesc_uri_curie (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix varchar;
+
+  delim := -1;
+
+  uriSearch := uri;
+  nsPrefix := null;
+  while (nsPrefix is null and delim <> 0) {
+
+    delim := coalesce (strrchr (uriSearch, '/'), 0);
+    delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+    delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+
+    nsPrefix := coalesce(__xml_get_ns_prefix(subseq(uriSearch, 0, delim + 1),2), __xml_get_ns_prefix(subseq(uriSearch, 0, delim),2));
+    uriSearch := subseq(uriSearch, 0, delim);
+    dbg_obj_print(uriSearch);
+  }
+
+  if (nsPrefix is not null) {
+	declare rhs varchar;
+	rhs := subseq(uri, length(uriSearch) + 1, null);
+	if (length(rhs) = 0) {
+		return uri;
+	} else {
+		return nsPrefix || ':' || rhs;
+	}
+  } 
+  return uri;
+}
+;
+
+
 create procedure rdfdesc_http_url (in url varchar)
 {
   declare host, pref varchar;
@@ -62,20 +97,12 @@ create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int)
    declare short_p, p_prefix, int_redirect, url any;
 
    odd_position :=  odd_position + 1;
-   short_p := rdfdesc_page_get_short (p_text);
-   p_prefix := rdfdesc_page_get_type (p_text);
+   p_prefix := rdfdesc_uri_curie (p_text);
    url := rdfdesc_http_url (p_text);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
 
-   if (p_prefix = p_text)
-     {
-       http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_text, p_text));
-     }
-   else
-     {
-       http (sprintf ('<a class="uri" href="%s" title="%s"><small>%s:</small>%s</a>\n', url, p_text, p_prefix, short_p));
-     }
+   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, p_prefix));
 
    http ('</td><td><ul>');
 }
@@ -113,16 +140,8 @@ again:
 	 _url := id_to_iri (_object);
        else
 	 _url := _object;
-       p_t  := rdfdesc_page_get_type (_url);
-       if (p_t = _url)
-	 {
-	   http (sprintf ('<a class="uri" href="%s">%s</a>', rdfdesc_http_url (_url), _url));
-	 }
-       else
-	 {
-	   http (sprintf ('<a class="uri" href="%s"><small>%s</small>:%s</a>',
-		 rdfdesc_http_url (_url), p_t, rdfdesc_page_get_short (_url)));
-	 }
+
+	   http (sprintf ('<a class="uri" href="%s">%s</a>', rdfdesc_http_url (_url), rdfdesc_uri_curie(_url)));
 
      }
    else if (__tag (_object) = 189)
@@ -161,14 +180,14 @@ again:
        _object := replace (_object, '<xhtml:', '<');
        _object := replace (_object, '</xhtml:', '</');
        http (_object);
-       http (sprintf ('<small> (%s)</small>', rdfs_type));
+       http (sprintf ('(%s)', rdfs_type));
      }
    else
      http (sprintf ('FIXME %i', __tag (_object)));
 
    if (lang is not NULL and lang <> '')
      {
-       http (sprintf ('<small> (%s)</small>', lang));
+       http (sprintf ('(%s)', lang));
      }
 
    http ('</span></li>');
