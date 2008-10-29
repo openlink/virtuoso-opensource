@@ -570,6 +570,7 @@ int log_text_array_sync (lock_trx_t * lt, caddr_t box);
 
 void log_sequence (lock_trx_t * lt, char * text, boxint count);
 void log_sequence_remove (lock_trx_t * lt, char *text);
+void log_registry_set (lock_trx_t * lt, char * k, const char * d);
 
 int log_commit (lock_trx_t * lt);
 int log_final_transact(lock_trx_t* lt, int is_commit);

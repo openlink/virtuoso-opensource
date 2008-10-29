@@ -9496,6 +9496,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
   registry_set_1 (name, val, 1, err_ret);
+  log_registry_set (((query_instance_t *) qst)->qi_trx, name, val);
   LEAVE_TXN;
   if (in_log_replay && DV_STRINGP (val))
     {

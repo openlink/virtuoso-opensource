@@ -401,6 +401,28 @@ sql_escaped_string_literal (char *target, char *text, int max)
   return inx - 1;
 }
 
+void
+log_registry_set (lock_trx_t * lt, char * k, const char * d)
+{
+  int llen = 0;
+  char temp[2000];
+
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || !d || !k || in_log_replay)
+    return;
+
+  ASSERT_IN_TXN;
+  if (0 == strncmp (k, "__key__", 7))
+    return;
+  tailprintf (temp, sizeof (temp), &llen, "registry_set ('%s', '", k);
+  llen += sql_escaped_string_literal (&temp[llen], d, sizeof (temp) - llen);
+  if (llen + 3 > sizeof (temp))
+    return;
+  tailprintf (temp, sizeof (temp), &llen, "')");
+  session_buffered_write_char (LOG_TEXT, lt->lt_log);
+  session_buffered_write_char (DV_LONG_STRING, lt->lt_log);
+  print_long ((long)llen, lt->lt_log);
+  session_buffered_write (lt->lt_log, temp, llen);
+}
 
 void
 db_log_registry (dk_session_t * log)
