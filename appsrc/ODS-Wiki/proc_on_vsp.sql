@@ -250,7 +250,7 @@ ins:
     ODS.BAR._EXEC(null,params, lines);
   declare _ods_bar, _app_js any;
   _ods_bar := http_get_string_output();
-  _ods_bar := xtree_doc(_ods_bar, 2);
+  _ods_bar := xtree_doc(_ods_bar);
   _app_js := xtree_doc (WV.Wiki.WIKI_APLUSLINK (_uid), 0);
   _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar, 'ods-app', _app_js));
   http_rewrite ();
