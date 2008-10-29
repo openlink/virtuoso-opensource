@@ -8635,6 +8635,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
       goto body_complete;
     }
+  if (strstr (accept, 'application/vnd.ms-excel') is not null)
+    {
+      ret_mime := 'application/vnd.ms-excel';
+      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
+      goto body_complete;
+    }
   if (strstr (accept, 'application/javascript') is not null)
     {
       ret_mime := 'application/javascript';
@@ -9147,6 +9153,7 @@ http('			  <label for="format" class="n">Display Results As:</label>\n');
 http('			  <select name="format">\n');
 http('			    <option value="auto">Auto</option>\n');
 http('			    <option value="text/html" selected="selected">HTML</option>\n');
+http('			    <option value="application/vnd.ms-excel">Spreadsheet</option>\n');
 http('			    <option value="application/sparql-results+xml">XML</option>\n');
 http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
@@ -11823,6 +11830,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       when 'json' then 'application/sparql-results+json'
       when 'js' then 'application/javascript'
       when 'html' then 'text/html'
+      when 'spreadsheet' then 'application/vnd.ms-excel'
       when 'sparql' then 'application/sparql-results+xml'
       when 'xml' then 'application/sparql-results+xml'
       when 'rdf' then 'application/rdf+xml'
