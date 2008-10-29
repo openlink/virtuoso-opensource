@@ -455,10 +455,10 @@ public class TestDriver {
 						"\t\tdefault: not set\n" +
 						"\t-seed <Long Integer>\n" +
 						"\t\tInit the Test Driver with another seed than the default.\n" +
-						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n"+
+						"\t\tdefault: " + TestDriverDefaultValues.seed + "\n" +
 						"\t-t <timeout in ms>\n" +
 						"\t\tTimeouts will be logged for the result report.\n" +
-						"\t\tdefault: " + TestDriverDefaultValues.timeoutInMs + "\n";
+						"\t\tdefault: " + TestDriverDefaultValues.timeoutInMs + "ms\n";
 		
 		System.out.print(output);
 	}
