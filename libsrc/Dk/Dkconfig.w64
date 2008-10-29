@@ -272,3 +272,5 @@
 #define HAVE_STRFTIME	1
 #define HAVE_STRDUP	1
 #define HAVE_MEMMOVE	1
+#define HAVE_WCSTOD	1
+#define HAVE_WCSTOL	1
