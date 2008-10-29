@@ -10539,6 +10539,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
+  graph_iri := cast (graph_iri as varchar);
   set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
