@@ -216,8 +216,8 @@ nf_uid2:;
 <?vsp http(ods_bar_css(self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
-<![CDATA[
 <script type="text/javascript">
+<![CDATA[<]]><![CDATA[![CDATA[
 
 var _head=document.getElementsByTagName('head')[0];
 
@@ -263,25 +263,6 @@ function loadCSS(cssContainer)
     cssNode.rel = 'stylesheet';
     cssNode.href = cssUrl;
 
-//   synch get of .css field by url ... if you want to control behaviour of ods-bar depending on load time.
-//
-//    var cssNode = document.createElement('style');
-//    cssNode.type = 'text/css';
-//    cssNode.textContent ='';
-//
-//		var httpReq = false;
-//		if (window.XMLHttpRequest) {
-//			httpReq = new XMLHttpRequest(); /* gecko */
-//		} else if (window.ActiveXObject) {
-//			httpReq = new ActiveXObject("Microsoft.XMLHTTP"); /* ie */
-//		} else {
-//      //			alert("XMLHTTPRequest not available!");
-//		}
-//
-//    httpReq.open('GET', cssUrl, false);
-//    httpReq.onreadystatechange = function() {cssNode.textContent=httpReq.responseText;};
-//    httpReq.send(null);
-
     _head.appendChild(cssNode);
   }
   return;
@@ -290,9 +271,6 @@ function loadCSS(cssContainer)
 if(odsbarCSSloaded==0)
 {
    loadCSS('odsBarCss');
-//   loadCSS('<?V self.odsbar_ods_gpath ?>winrect.css');
-// loadCSS('<?V self.odsbar_ods_gpath ?>ods-bar.css');
-
 }
 
 var ODSInitArray = new Array();
@@ -392,10 +370,8 @@ if (typeof (OAT) == 'undefined')
       else
         return true;
     }
-
-
+]]]]><![CDATA[>]]>
 </script>
-]]>
 
   <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
      <img src="/ods/images/oat/Ajax_throbber.gif" alt="loading..." /><span> Loading... please wait.</span>
@@ -671,8 +647,8 @@ if (typeof (OAT) == 'undefined')
 
  <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
 
-<![CDATA[
 <script  type="text/javascript">
+<![CDATA[<]]><![CDATA[![CDATA[
 
   var userIsLogged;
   userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
@@ -877,48 +853,8 @@ if(top.location.href!=window.location.href)
         }
     }
 odsbarSafeInit();
-
-//function odsbarSafeShow()
-//{
-//      if(inFrame)
-//      {
-//         return;
-//      }
-//
-//      if (typeof (OAT) != 'undefined')
-//        {
-//          ods_bar_state_set (read_cookie ('odsbar_state'));
-//
-//          if (userIsLogged || notLoggedShowOdsBar)
-//            {
-//              OAT.Dom.hide('ods_bar_loading');
-//              OAT.Dom.show('HD_ODS_BAR');
-//            }
-//          else
-//            {
-//              if (notLoggedShowSignIn != 0)
-//                {
-//                  OAT.Dom.hide('ods_bar_loading');
-//                  OAT.Dom.show('ods_bar_odslogin');
-//                };
-//            }
-//        }
-//      else
-//        {
-//          OATWaitCount++;
-//
-//          if (OATWaitCount > 100)
-//            return; // alert('ods_bar.xsl: OAT is taking too long to initialize - page navigation disabled.');
-//          else
-//            setTimeout(odsbarSafeShow, 200);
-//
-//        }
-//}
-//ODSInitArray.push(odsbarSafeShow);
-
-
+]]]]><![CDATA[>]]>
 </script>
-]]>
 
  </v:template>
 
@@ -958,7 +894,7 @@ declare _search_link varchar;
 _search_link:=self.odsbar_ods_gpath||'search.vspx';
 
 if(self.sid is not null)
-  _search_link:=_search_link||'?sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
+  _search_link:=_search_link||'?sid='||self.sid||'&amp;realm='||coalesce(self.realm,'wa');
 if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null)
    if (self.sid is not null)
    _search_link:=_search_link||'&ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr));
