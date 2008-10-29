@@ -6411,6 +6411,7 @@ CONSTRUCT pattern or WHERE pattern: an expression can be used instead
 of constant or variable name for subject, predicate or object. In this
 case, an expression is surrounded by backquotes.</para>
 
+<para><emphasis>Example with WHERE Clause:</emphasis></para>
 <para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
 <programlisting><![CDATA[
 SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
@@ -6435,6 +6436,36 @@ select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
        filter (! bif:isnull (bif:strchr (?s, '#') ) )
        filter (?newvariable = (2+2)) .
      } };
+]]></programlisting>
+<para><emphasis>Example with CONSTRUCT:</emphasis></para>
+<programlisting><![CDATA[
+CONSTRUCT {
+  <http://bio2rdf.org/interpro:IPR000181>
+<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
+`(select (count(?s)) as ?countS
+   where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
+where { ?s1 ?p1 ?o1 } limit 1
+]]></programlisting>
+<para>The result should be:</para>
+<programlisting><![CDATA[
+<http://bio2rdf.org/interpro:IPR000181> <http://bio2rdf.org/ns/bio2rdf#hasLinkCount> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+]]></programlisting>
+<para><emphasis>Example create graph:</emphasis></para>
+<programlisting><![CDATA[
+SQL>sparql insert into graph <http://MyNewGraph.com/> {
+<http://bio2rdf.org/interpro:IPR000181>
+<http://bio2rdf.org/ns/bio2rdf#hasLinkCount>
+  `(select (count(?s)) as ?countS
+    where { ?s ?p <http://bio2rdf.org/interpro:IPR000181> })` }
+ where { ?s1 ?p1 ?o1 } limit 1  ;
+
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://MyNewGraph.com/>, 1 triples -- done
+
+1 Rows. -- 30 msec.
 ]]></programlisting>
 </sect2>	
 </sect1>
