@@ -3419,7 +3419,7 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
   if (not length (ap_set_ids))
     return source_UTF8;
 
-  match_list := ap_build_match_list ( ap_set_ids, source_UTF8, 'x-any', 1, 0);
+  match_list := ap_build_match_list ( ap_set_ids, source_UTF8, 'x-any', 2, 0);
   m_apc   := aref_set_0 (match_list, 0);
   m_aps   := aref_set_0 (match_list, 1);
   m_app   := aref_set_0 (match_list, 2);
