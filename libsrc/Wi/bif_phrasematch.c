@@ -1598,7 +1598,7 @@ void appi_entity (void *userdata, const char *refname, size_t reflen, int ispara
   appi_other (userdata);
 }
 
-void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
+void appi_markup_html (ap_proc_inst_t *appi, int is_html, caddr_t *err_ret)
 {
   query_instance_t * qi = appi->appi_qi;
   caddr_t text = appi->appi_source_UTF8;
@@ -1614,7 +1614,7 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
   memset (&config, 0, sizeof(config));
   config.input_is_wide = 0;
   config.input_is_ge = GE_XML;
-  config.input_is_html = FINE_HTML;
+  config.input_is_html = is_html;
   config.input_is_xslt = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = "!UTF-8";
@@ -1973,6 +1973,9 @@ bif_ap_build_match_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lh = lh_get_handler (lang_name);
   if (NULL == lh)
     sqlr_new_error ("OBLOM", "APD01", "Unknown language name '%.300s'", lang_name);
+  if (is_html < 0 || is_html > DEAD_HTML)
+    sqlr_new_error ("22023", "APG11", "The flag for HTML mode must be between 0 and 2, use 0 to indicate plain text 1 or 2 for HTML mode");
+
   set_count = BOX_ELEMENTS (set_ids);
   sets = aps_tryrdlock_array (set_ids, 1, (query_instance_t *)qst);
   appi = appi_create ((query_instance_t *)qst, source_UTF8, sets, set_count, lh);
@@ -1984,7 +1987,7 @@ bif_ap_build_match_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (is_html)
     {
       caddr_t err = NULL;
-      appi_markup_html (appi, &err);
+      appi_markup_html (appi, is_html, &err);
       if (NULL != err)
         {
 	  appi_free (appi);
