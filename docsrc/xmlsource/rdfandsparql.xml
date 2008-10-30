@@ -6289,6 +6289,73 @@ where {
 
 -- Get counts and total prices of ordered items, grouped by item status.
 ]]></programlisting>
+   <para><emphasis>Example with dataset of people, some duplicated:</emphasis></para>
+   <para>Suppose there is a dataset with many people, some of them duplicated. To list execute the query:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT DISTINCT
+ (?name) ?person ?mail
+ WHERE {
+   ?person rdf:type foaf:Person .
+   ?person foaf:name ?name .
+   ?person foaf:mbox_sha1sum ?mail
+ };
+]]></programlisting>
+   <para>Note the newline after DISTINCT to read the query.</para>
+   <para>SELECT DISTINCT is as in plain SPARQL, return values are expression ?name and two variables
+?person and ?mail. Unfortunately, there's no such thing as DISTINCT for a part of the result set row.
+If there's a regular need in such feature and duplicates are seldom then we may introduce an aggregate
+called, say, SPECIMEN, that will return the very first of aggregated values, unchanged:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?name (specimen(?person)) (specimen(?mail))
+WHERE
+  {
+    ?person rdf:type foaf:Person .
+    ?person foaf:name ?name .
+    ?person foaf:mbox_sha1sum ?mail
+  };
+]]></programlisting>
+   <para>If duplicates are seldom and there's no requirement that ?person should correspond to ?mail
+(so the result should contains some person node and some mail but they don't have to be connected by
+foaf:mbox_sha1sum), then MIN aggregate will work:
+   </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?name (min(?person)) (min(?mail))
+WHERE
+  {
+    ?person rdf:type foaf:Person .
+    ?person foaf:name ?name .
+    ?person foaf:mbox_sha1sum ?mail
+  };
+]]></programlisting>
+   <para>Otherwise, a complicated query is needed:</para>
+<programlisting><![CDATA[
+sparql
+SELECT
+ ?name
+ ((select (min (?person3))
+     where {
+         ?person3 rdf:type foaf:Person .
+         ?person3 foaf:name ?name .
+         ?person3 foaf:mbox_sha1sum ?mail } )) as ?person
+ ?mail
+ WHERE {
+     { select distinct ?name
+       where {
+           ?person1 rdf:type foaf:Person .
+           ?person1 foaf:name ?name .
+           ?person1 foaf:mbox_sha1sum ?mail1 } }
+     { select ?name (min(?mail2)) as ?mail
+       where {
+           ?person2 rdf:type foaf:Person .
+           ?person2 foaf:name ?name .
+           ?person2 foaf:mbox_sha1sum ?mail2 } }
+ };
+]]></programlisting>
 </sect3>
 </sect2>
 <sect2 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
