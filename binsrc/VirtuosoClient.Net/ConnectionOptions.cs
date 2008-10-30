@@ -129,7 +129,7 @@ namespace OpenLink.Data.Virtuoso
 		internal const string USERID = "UserId";
 		internal const string PWD = "PWD";
 		internal const string PASSWORD = "Password";
-		internal const string DATABASE = "DATABASE";
+		internal const string DATABASE = "Database";
 		internal const string INITIALCATALOG = "Initial Catalog";
 		internal const string CHARSET = "Charset";
 		internal const string ENCRYPT = "Encrypt";

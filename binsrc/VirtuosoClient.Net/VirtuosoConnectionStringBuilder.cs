@@ -174,13 +174,13 @@ namespace OpenLink.Data.Virtuoso
 		}
     }
 
-    public string InitialCatalog
+    public string Database
     {
         get
         {
-            string key = ConnectionOptions.INITIALCATALOG;
-            if (ContainsKey(ConnectionOptions.DATABASE))
-               key = ConnectionOptions.DATABASE;
+            string key = ConnectionOptions.DATABASE;
+            if (ContainsKey(ConnectionOptions.INITIALCATALOG))
+               key = ConnectionOptions.INITIALCATALOG;
 
             object value;
             if (base.TryGetValue(key, out value))
@@ -190,9 +190,9 @@ namespace OpenLink.Data.Virtuoso
         }
         set 
 		{ 
-            string key = ConnectionOptions.INITIALCATALOG;
-            if (ContainsKey(ConnectionOptions.DATABASE))
-               key = ConnectionOptions.DATABASE;
+            string key = ConnectionOptions.DATABASE;
+            if (ContainsKey(ConnectionOptions.INITIALCATALOG))
+               key = ConnectionOptions.INITIALCATALOG;
 
 			this[key] = value; 
 		}

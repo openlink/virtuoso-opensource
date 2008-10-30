@@ -1082,7 +1082,7 @@ namespace OpenLink.Data.Virtuoso
         private DataTable GetSchemaColumnPrivileges(string catalog, string schema, string table, string column)
         {
             DataTable dt = new DataTable("ColumnPrivileges");
-            StringBuilder cmdText = new StringBuilder ("select * from DB.INFORMATION_SCHEMA.COLUMN_PRIVILEGES where ");
+            StringBuilder cmdText = new StringBuilder ("select * from INFORMATION_SCHEMA.COLUMN_PRIVILEGES where ");
 
             if (catalog != null && catalog.Length != 0)
               cmdText.Append ("TABLE_CATALOG like '" + catalog + "' AND ");
@@ -1104,7 +1104,7 @@ namespace OpenLink.Data.Virtuoso
         private DataTable GetSchemaTablePrivileges(string catalog, string schema, string table)
         {
             DataTable dt = new DataTable("TablePrivileges");
-            StringBuilder cmdText = new StringBuilder ("select * from DB.INFORMATION_SCHEMA.TABLE_PRIVILEGES where ");
+            StringBuilder cmdText = new StringBuilder ("select * from INFORMATION_SCHEMA.TABLE_PRIVILEGES where ");
 
             if (catalog != null && catalog.Length != 0)
               cmdText.Append ("TABLE_CATALOG like '" + catalog + "' AND ");
@@ -2175,7 +2175,7 @@ namespace OpenLink.Data.Virtuoso
         private DataTable GetSchemaTables(string catalog, string schema, string table, string types)
         {
             DataTable dt = new DataTable("Tables");
-            StringBuilder cmdText = new StringBuilder ("select TABLE_CATALOG as TABLE_CAT, TABLE_SCHEMA as TABLE_SCHEM, TABLE_NAME, TABLE_TYPE from DB.INFORMATION_SCHEMA.TABLES where ");
+            StringBuilder cmdText = new StringBuilder ("select TABLE_CATALOG as TABLE_CAT, TABLE_SCHEMA as TABLE_SCHEM, TABLE_NAME, TABLE_TYPE from INFORMATION_SCHEMA.TABLES where ");
 
             if (catalog != null && catalog.Length != 0)
               cmdText.Append ("TABLE_CATALOG like '" + catalog + "' AND ");
@@ -2197,7 +2197,7 @@ namespace OpenLink.Data.Virtuoso
         {
             DataTable dt = new DataTable("Views");
 
-            StringBuilder cmdText = new StringBuilder ("select TABLE_CATALOG as TABLE_CAT, TABLE_SCHEMA as TABLE_SCHEM, TABLE_NAME, 'VIEW' as TABLE_TYPE from DB.INFORMATION_SCHEMA.VIEWS where ");
+            StringBuilder cmdText = new StringBuilder ("select TABLE_CATALOG as TABLE_CAT, TABLE_SCHEMA as TABLE_SCHEM, TABLE_NAME, 'VIEW' as TABLE_TYPE from INFORMATION_SCHEMA.VIEWS where ");
 
             if (catalog != null && catalog.Length != 0)
               cmdText.Append ("TABLE_CATALOG like '" + catalog + "' AND ");
