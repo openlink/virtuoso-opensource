@@ -323,7 +323,7 @@ create procedure column_privileges (in TableQualifier varchar,
 	   else 'NO'
 	 end				AS IS_GRANTABLE			VARCHAR (3)
 	from
-	  DB.DBA.SYS_GRANTS, SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
+	  DB.DBA.SYS_GRANTS, DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
 	where
 	  "TABLE" = G_OBJECT
 	  and c."COLUMN" = G_COL
@@ -415,7 +415,7 @@ create procedure column_privileges_utf8 (in TableQualifier varchar,
 	   else 'NO'
 	 end				AS IS_GRANTABLE			VARCHAR (3)
 	from
-	  DB.DBA.SYS_GRANTS, SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
+	  DB.DBA.SYS_GRANTS, DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
 	where
 	  "TABLE" = G_OBJECT
 	  and (c."COLUMN" = G_COL or G_COL = '_all')
@@ -661,7 +661,7 @@ select
  NULL			AS SCOPE_CATALOG		VARCHAR(128),
  NULL			AS SCOPE_SCHEMA			VARCHAR(128),
  NULL			AS SCOPE_NAME			VARCHAR(128)
-from SQL_PROCEDURE_COLUMNS (qual,owner,name,col,casemode,is_odbc3) (
+from DB.DBA.SQL_PROCEDURE_COLUMNS (qual,owner,name,col,casemode,is_odbc3) (
 	PROCEDURE_CAT		varchar,
 	PROCEDURE_SCHEM		varchar,
 	PROCEDURE_NAME		varchar,
@@ -828,7 +828,7 @@ select
    V_EXT))		AS VIEW_DEFINITION	VARCHAR,
  NULL			AS CHECK_OPTION		VARCHAR(7),
  case
-   when (exists (select 1 from SYS_TRIGGERS where T_TABLE = V_NAME))
+   when (exists (select 1 from DB.DBA.SYS_TRIGGERS where T_TABLE = V_NAME))
     then 'YES'
    else 'NO'
  end			AS IS_UPDATABLE		VARCHAR(3)
