@@ -32,7 +32,7 @@ var iSPARQL = {
 };
 
 iSPARQL.Preferences = {
-	xslt:'/DAV/JS/isparql/xslt/',
+	xslt:'/isparql/xslt/',
 	debug:false
 }
 

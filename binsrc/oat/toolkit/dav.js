@@ -180,7 +180,7 @@ OAT.WebDav = {
 
 			var response = function() {
 				if (OAT.WebDav.options.isDav) { OAT.WebDav.updatePermissions(p+f); }
-				OAT.Dom.hide(OAT.WebDav.window.div);
+				OAT.WebDav.window.hide();
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
 			}
 
@@ -657,7 +657,7 @@ OAT.WebDav = {
 		if (this.options.foldersOnly) {
 			this.dom.file.value = parts[parts.length-1];
 		} else {
-			this.dom.file.value = '';
+			//this.dom.file.value = '';
 		}
 		node.toggleSelect({ctrlKey:false});
 	},
