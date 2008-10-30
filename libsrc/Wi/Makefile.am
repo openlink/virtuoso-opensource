@@ -507,6 +507,7 @@ SQL_FILES		= \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
 	$(srcdir)/rdf_net.sql \
+	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/soap.sql \
 	$(srcdir)/wsrp_ultim.xsl \
 	$(srcdir)/wsrp_resp.xsl \
