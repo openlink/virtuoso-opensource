@@ -466,16 +466,21 @@ HC_RET
 http_cli_connect (http_cli_ctx * ctx)
 {
   http_cli_hook_dispatch (ctx, HC_HTTP_CONN_PRE);
+  if (ctx->hcctx_http_out) /* if client do a retry the previous connection must be shut down */
+    {
+      PrpcDisconnect (ctx->hcctx_http_out);
+      PrpcSessionFree (ctx->hcctx_http_out);
+    }
+  ctx->hcctx_http_out = NULL; /* at this point we have no connection, if there was previous retry it's shut'd */
 #ifdef _USE_CACHED_SES
-  if (!ctx->hcctx_no_cached)
+  if (!ctx->hcctx_no_cached) /* first we try to get from cache */
     ctx->hcctx_http_out = http_cached_session (ctx->hcctx_host);
-  else
-    ctx->hcctx_http_out = NULL;
-  if (ctx->hcctx_http_out)
+
+  if (ctx->hcctx_http_out) /* if connection is from cache, flag it */
     ctx->hcctx_http_out_cached = 1;
   else
 #endif
-    ctx->hcctx_http_out = http_dks_connect (ctx->hcctx_host, &ctx->hcctx_err);
+    ctx->hcctx_http_out = http_dks_connect (ctx->hcctx_host, &ctx->hcctx_err); /* in every other case we do new connect */
   if (ctx->hcctx_http_out == NULL)
     http_cli_hook_dispatch (ctx, HC_HTTP_CONN_ERR);
   else
