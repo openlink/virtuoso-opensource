@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Virtuoso define RDF views</vm:pagetitle>
+  <vm:pagetitle>RDF View definition</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -37,74 +37,105 @@
   <vm:variables>
       <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
       <v:variable persist="0" name="base_url" type="any" default="null"/>
-      <v:variable persist="0" name="body_c" type="any" default="null"/>
-      <v:variable persist="0" name="body_v" type="any" default="null"/>
+      <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
+      <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
   </vm:variables>
 
-  <vm:header caption="Virtuoso define RDF views"/>
+  <vm:header caption="RDF View definition"/>
   <vm:pagebody>
       <table>
       <v:form name="account_form" type="simple" method="POST" action="">
-      <v:before-data-bind><v:script><![CDATA[
+      <v:before-data-bind><![CDATA[
 	  declare _base_url, _db_object_to_process, e_array any;
 
 	  if (self.db_object_to_process is NULL)
 	    {
 	       self.db_object_to_process := get_keyword('list', self.vc_event.ve_params, NULL);
+               if (self.db_object_to_process is null)
+	         self.db_object_to_process := vector (get_keyword('name', self.vc_event.ve_params));
+               else
 	       self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
 	    }
 
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
-	  self.body_c := get_keyword('cr_class', self.vc_event.ve_params, NULL);
-	  self.body_v := get_keyword('cr_view', self.vc_event.ve_params, NULL);
+          if (_base_url is null)
+	    _base_url := name_part (get_keyword('name', self.vc_event.ve_params), 0);
 
-	  if (self.body_c is NULL)
+	  if (self.body_v is NULL)
 	    {
-	      e_array := DB.DBA.view_from_tbl (_base_url, self.db_object_to_process);
-	      self.body_c := e_array[0];
-	      self.body_v := e_array[1];
+	      self.body_v := DB.DBA.rdf_view_from_tbl (_base_url, self.db_object_to_process);
 	    }
 
-	  if (get_keyword('exec', self.vc_event.ve_params, NULL) is not NULL)
+	    ]]>
+    </v:before-data-bind>
+  <tr>
+      <td>
+	  <?vsp
+	  if (self.text_e)
 	    {
-	        self.text_e := 1;
+	  ?>
+	  <table class="listing">
+	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
+	      <?vsp
+	      foreach (any elm in self.exec_ret) do
+                {
+		  if (elm <> 0) {
+		    foreach (any _row in elm) do {
+	      ?>
+	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
+	      <?vsp
 	    }
-
-	  ]]></v:script></v:before-data-bind>
-      <tr><td>
-      <v:textarea name="cr_class" xhtml_cols="80" xhtml_rows="25" value="-- self.body_c"/>
-      </td></tr>
-      <tr><td>
-	      <v:label name="exec_1" enabled="-- equ(self.text_e, 1)" value="Executed." format="%s"/>
-      </td></tr>
-      <tr><td>
-      <v:textarea name="cr_view" xhtml_cols="80" xhtml_rows="25" value="-- self.body_v"/>
-      <input type="hidden" name="host" value="<?= get_keyword('host', control.vc_page.vc_event.ve_params) ?>"/>
+	           }
+	        }
+	      ?>
+	  </table>
+	  <?vsp
+	    }
+	  ?>
+      </td>
+  </tr>
+  <tr>
+      <td>
+      <?vsp if (self.text_e = 0) { ?>
+      <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="25" value="--self.body_v"/>
+      <?vsp } ?>
+      <input type="hidden" name="host" value="<?= get_keyword('host', control.vc_page.vc_event.ve_params) ?>"/><br/>
       <v:button action="simple" name="exec" value="Execute">
 	  <v:on-post><![CDATA[
-	      declare stat, msg any;
+	      declare stat, msg varchar;
+	      declare res, arr, data, meta any;
+	      declare inx int;
 
-	      stat := '00000';
-	      exec(self.body_c, stat, msg);
-	      if (stat <> '00000')
+	      arr := sql_split_text (self.body_v);
+	      res := make_array (length (arr), 'any');
+
+	      inx := 0;
+	      foreach (varchar q in arr) do
 	        {
-		  signal ('.....', msg);
+		  stat := '00000';
+		  exec (q, stat, msg, vector (), 0, meta, data);
+                  if (stat = '00000')
+                    res[inx] := data;
+	          else
+                    res[inx] := vector (vector (stat, msg));
+		  inx := inx + 1;
 		}
-
-	      exec(self.body_v, stat, msg);
-	      if (stat <> '00000')
-	        {
-	      	  dbg_obj_print (msg);
-		  signal ('.....', msg);
-		}
-
+	     self.text_e := 1;
+	     self.exec_ret := res;
+	     self.back.vc_enabled := 1;
+	     control.vc_enabled := 0;
+	    ]]></v:on-post>
+    </v:button>
+    <v:button name="back" action="simple" value="Back" enabled="--self.text_e">
+	  <v:on-post><![CDATA[
+	      self.text_e := 0;
+	      control.vc_enabled := 0;
+	      self.exec.vc_enabled := 1;
 	    ]]></v:on-post>
       </v:button>
-      </td></tr>
-      <tr><td>
-	      <v:label name="exec_2" enabled="-- equ(self.text_e, 1)" value="Executed." format="%s"/>
-      </td></tr>
+</td>
+  </tr>
       </v:form>
       </table>
   </vm:pagebody>
