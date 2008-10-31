@@ -848,7 +848,7 @@ create procedure ODS.ODS_API."addressbook.subscription.new" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."addressbook.ssubscription.edit" (
+create procedure ODS.ODS_API."addressbook.subscription.edit" (
   in subscription_id integer,
   in name varchar,
   in updateType varchar := 1,
