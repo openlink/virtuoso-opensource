@@ -77,7 +77,7 @@ create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 ;
 
 --! Performs HTTP, OAuth, session based authentication in same order
-create procedure ods_check_auth (out uname varchar, in inst_id int := null, in mode char := 'owner')
+create procedure ods_check_auth (out uname varchar, in inst_id integer := null, in mode char := 'owner')
 {
   declare rc int;
   declare params, lines any;
@@ -377,29 +377,7 @@ create procedure ODS.ODS_API."user.delete" (in name varchar) __soap_http 'text/x
 ;
 
 -- ODS admin privilege
-create procedure ODS.ODS_API."user.freeze" (in name varchar) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc int;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-  if (uname in ('dav', 'dba'))
-    {
-      DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
-      rc := 1;
-    }
-  else
-    rc := -13;
-  return ods_serialize_int_res (rc);
-}
-;
-
-create procedure ODS.ODS_API."user.unfreeze" (in name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.enable" (in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -413,6 +391,29 @@ create procedure ODS.ODS_API."user.unfreeze" (in name varchar) __soap_http 'text
   if (uname in ('dav', 'dba'))
     {
       DB.DBA.USER_SET_OPTION (name, 'DISABLED', 0);
+      rc := 1;
+    }
+  else
+    rc := -13;
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.disable" (in name varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+  if (uname in ('dav', 'dba'))
+    {
+    delete from DB.DBA.VSPX_SESSION where VS_UID = name;
+    DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
       rc := 1;
     }
   else
@@ -1063,8 +1064,7 @@ create procedure ODS.ODS_API."instance.create" (
     	in name varchar,
 	in description varchar,
 	in model int,
-	in "public" int
-	) __soap_http 'text/xml'
+	in "public" int) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -1090,12 +1090,11 @@ create procedure ODS.ODS_API."instance.create" (
 
 
 create procedure ODS.ODS_API."instance.update" (
-	in inst_id int,
+	in inst_id integer,
     	in name varchar,
 	in description varchar,
 	in model int,
-	in "public" int
-	) __soap_http 'text/xml'
+	in "public" int) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -1124,7 +1123,8 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.delete" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.delete" (
+  in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -1161,7 +1161,8 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.join" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.join" (
+  in inst_id integer) __soap_http 'text/xml'
 {
   declare _wai_name, acc_type, app_type any;
   declare uname varchar;
@@ -1206,7 +1207,8 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.disjoin" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.disjoin" (
+  in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -1226,7 +1228,9 @@ create procedure ODS.ODS_API."instance.disjoin" (in inst_id int) __soap_http 'te
 }
 ;
 
-create procedure ODS.ODS_API."instance.join_approve" (in inst_id int, in uname varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.join_approve" (
+  in inst_id integer,
+  in uname varchar) __soap_http 'text/xml'
 {
   return;
 }
@@ -1248,7 +1252,7 @@ create procedure ODS.ODS_API."notification.services" () __soap_http 'text/xml'
 }
 ;
 
-create procedure ODS.ODS_API."instance.notification.services" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.notification.services" (in inst_id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, dummy int;
@@ -1265,7 +1269,7 @@ ret:
 ;
 
 
-create procedure ODS.ODS_API."instance.notification.set" (in inst_id int, in services any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.notification.set" (in inst_id integer, in services any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, dummy int;
@@ -1292,7 +1296,7 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id int, in services any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id integer, in services any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, dummy int;
@@ -1322,7 +1326,7 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.notification.log" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.notification.log" (in inst_id integer) __soap_http 'text/xml'
 {
   return;
 }
@@ -1345,22 +1349,96 @@ create procedure ODS.ODS_API."instance.search" (in pattern varchar) __soap_http 
 }
 ;
 
-create procedure ODS.ODS_API."instance.get" (in inst_id int) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.get" (
+  in inst_id integer) __soap_http 'text/xml'
 {
   declare q varchar;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf (
-  'select * from <%s> where '||
-  ' { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ',
+  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ',
   sioc..get_graph(), inst_id);
   exec_sparql (q);
   return '';
 }
 ;
 
+create procedure ODS.ODS_API."instance.get.id" (
+  in instanceName varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  rc := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = instanceName);
+  if (isnull (rc))
+    return ods_serialize_sql_error ('-1', 'No such instance');
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."instance.freeze" (
+  in inst_id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname, inst_id))
+    return ods_auth_failed ();
+
+  if (uname in ('dav', 'dba'))
+  {
+    update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 1 where WAI_ID = inst_id;
+    rc := row_count ();
+  }
+  else
+  {
+    rc := -13;
+  }
+ret:
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."instance.unfreeze" (
+  in inst_id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc int;
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname, inst_id))
+    return ods_auth_failed ();
+
+  if (uname in ('dav', 'dba'))
+  {
+    update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 0 where WAI_ID = inst_id;
+    rc := row_count ();
+  }
+  else
+  {
+    rc := -13;
+  }
+ret:
+  return ods_serialize_int_res (rc);
+}
+;
 
 -- global actions
 
@@ -1397,8 +1475,8 @@ grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.freeze" to ODS_API;
-grant execute on ODS.ODS_API."user.unfreeze" to ODS_API;
+grant execute on ODS.ODS_API."user.enable" to ODS_API;
+grant execute on ODS.ODS_API."user.disable" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
@@ -1428,6 +1506,10 @@ grant execute on ODS.ODS_API."instance.notification.cancel" to ODS_API;
 grant execute on ODS.ODS_API."instance.notification.log" to ODS_API;
 grant execute on ODS.ODS_API."instance.search" to ODS_API;
 grant execute on ODS.ODS_API."instance.get" to ODS_API;
+grant execute on ODS.ODS_API."instance.get.id" to ODS_API;
+grant execute on ODS.ODS_API."instance.freeze" to ODS_API;
+grant execute on ODS.ODS_API."instance.unfreeze" to ODS_API;
+
 grant execute on ODS.ODS_API."site.search" to ODS_API;
 
 
@@ -1443,7 +1525,7 @@ create procedure get_briefcase_inst (
   in path varchar)
 {
   declare uname, arr varchar;
-  declare inst_id int;
+  declare inst_id integer;
 
   path := dav_path_normalize (path);
   if (chr (path[0]) = '~')
@@ -1499,7 +1581,7 @@ create procedure ODS.ODS_API."briefcase.resource.get" (
   declare uname, upassword varchar;
   declare rc int;
   declare content, tp any;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1530,7 +1612,7 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
   declare uname varchar;
   declare rc int;
   declare uid, gid int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1555,7 +1637,7 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (
 {
   declare uname, upassword varchar;
   declare rc int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1580,7 +1662,7 @@ create procedure ODS.ODS_API."briefcase.collection.create" (
   declare uname varchar;
   declare rc int;
   declare uid, gid int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1605,7 +1687,7 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
 {
   declare uname varchar;
   declare rc int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1689,7 +1771,7 @@ create procedure ODS.ODS_API."briefcase.property.set" (
 {
   declare uname varchar;
   declare rc int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1712,7 +1794,7 @@ create procedure ODS.ODS_API."briefcase.property.remove" (
 {
   declare uname varchar;
   declare rc int;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -1736,7 +1818,7 @@ create procedure ODS.ODS_API."briefcase.property.get" (
   declare uname varchar;
   declare rc int;
   declare st char;
-  declare inst_id int;
+  declare inst_id integer;
 
   declare exit handler for sqlstate '*'
   {
