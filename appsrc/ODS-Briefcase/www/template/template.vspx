@@ -120,6 +120,29 @@
         ]]>
       </v:on-init>
 
+      <v:after-data-bind>
+        <![CDATA[
+          if (ODRIVE.WA.frozen_check (ODRIVE.WA.session_domain (self.vc_page.vc_event.ve_params)))
+          {
+            declare freeze_page varchar;
+            freeze_page := ODRIVE.WA.frozen_page (0);
+            if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+            {
+              http_rewrite ();
+              http_request_status ('HTTP/1.1 404 Not found');
+              http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (ODRIVE.WA.page_name())));
+              http_flush();
+              return;
+            }
+            http_rewrite ();
+            http_request_status ('HTTP/1.1 302 Found');
+            http_header(sprintf('Location: %s\r\n\r\n', freeze_page));
+            http_flush();
+            return;
+          }
+        ]]>
+      </v:after-data-bind>
+
       <v:placeholder />
     </v:page>
   </body>

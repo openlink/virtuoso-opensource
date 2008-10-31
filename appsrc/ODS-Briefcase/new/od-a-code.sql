@@ -69,29 +69,44 @@ create procedure ODRIVE.WA.session_user_description(
 -- Session Functions
 --
 -------------------------------------------------------------------------------
-create procedure ODRIVE.WA.session_restore (
+create procedure ODRIVE.WA.session_domain (
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare aPath, domain_id, options any;
 
-  declare exit handler for sqlstate '*', not found {
+  declare exit handler for sqlstate '*'
+  {
     domain_id := -1;
     goto _end;
   };
 
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, 'wa');
-
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  domain_id := cast (domain_id as integer);
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
 
-_end:
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.session_restore (
+  inout params any)
+{
+  declare domain_id, user_id, user_name, user_role, sid, realm, options any;
+
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, 'wa');
+
+  domain_id := ODRIVE.WA.session_domain (params);
   user_id := -1;
   if (domain_id <> -1)
     for (select U_ID,
@@ -111,8 +126,10 @@ _end:
   if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
     domain_id := -1;
 
-  if (user_id = -1) {
-    if (domain_id = -1) {
+  if (user_id = -1)
+  {
+    if (domain_id = -1)
+    {
       user_role := 'expire';
       user_name := 'Expire session';
     } else {
@@ -124,7 +141,8 @@ _end:
                               and B.WAM_MEMBER_TYPE = 1
                               and B.WAM_INST = C.WAI_NAME
                               and C.WAI_ID = domain_id), -1);
-      if (user_id = -1) {
+      if (user_id = -1)
+      {
         user_role := 'expire';
         user_name := 'Expire session';
       } else {
@@ -132,7 +150,9 @@ _end:
         user_name := 'Public User';
       }
     }
-  } else if (domain_id <> -1) {
+  }
+  else if (domain_id <> -1)
+  {
     if (ODRIVE.WA.domain_owner_id (domain_id) <> user_id)
       user_role := 'public';
   }
@@ -150,14 +170,10 @@ _end:
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure ODRIVE.WA.frozen_check()
+create procedure ODRIVE.WA.frozen_check (
+  in domain_id integer)
 {
-  declare owner_id integer;
-
-  declare exit handler for not found { return 1; };
-
-  owner_id := (select U_ID from SYS_USERS where U_NAME = ODRIVE.WA.account());
-  if (is_empty_or_null((select TOP 1 1 from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive' and  WAI_IS_FROZEN = 1 and WAI_NAME = WAM_INST and WAM_USER = owner_id)))
+  if (is_empty_or_null ((select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = domain_id)))
     return 0;
 
   if (ODRIVE.WA.check_admin(connection_get ('vspx_user')))
