@@ -1016,7 +1016,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       int argctr, argcount, fld_ctr;
       args = filt->_.funcall.argtrees;
       argcount = BOX_ELEMENTS (args);
-      if (2 > args)
+      if (2 > argcount)
         spar_error (sparp, "Not enough parameters for special predicate %s()", ft_pred_name);
       ft_literal_var = filt->_.funcall.argtrees[0];
       if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
