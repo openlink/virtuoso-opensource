@@ -10236,7 +10236,7 @@ create table DB.DBA.SYS_RDF_MAPPERS (
     RM_ENABLED integer default 1,
     RM_OPTIONS any,
     RM_PID integer identity,		-- permanent id for fk in application tables
-    primary key (RM_TYPE, RM_PATTERN))
+    primary key (RM_HOOK))
 create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID)
 create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID)
 ;
