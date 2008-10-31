@@ -141,6 +141,12 @@
     <xsl:copy-of select="geo:lat|geo:long"/>
 </xsl:template>
 
+<xsl:template match="wfw:commentRss">
+    <wfw:commentRss>
+	<xsl:value-of select="."/>
+    </wfw:commentRss>
+</xsl:template>
+
 <xsl:template match="georss:point[../geo:Point]"/>
 
 <xsl:template match="georss:point[not(../geo:Point)]">

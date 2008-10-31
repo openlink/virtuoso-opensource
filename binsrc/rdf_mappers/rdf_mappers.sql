@@ -183,6 +183,34 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 --update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 3 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
+create procedure RM_MAPPERS_UPGRADE ()
+{
+  declare pk any;
+  pk := DB.DBA.REPL_PK_COLS ('DB.DBA.SYS_RDF_MAPPERS');
+  if (length (pk) = 2 and pk[0][0] = 'RM_TYPE' and pk[1][0] = 'RM_PATTERN')
+    {
+      declare skip_up int;
+      skip_up := 0;
+      for select RM_HOOK from DB.DBA.SYS_RDF_MAPPERS group by 1 having count(*) > 1 do
+	{
+	  if (skip_up = 0)
+	    log_message ('The DB.DBA.SYS_RDF_MAPPERS cannot be upgraded');
+	  log_message (sprintf ('The %s cartridge is defined multiple times, remove dublicate', RM_HOOK));
+	  skip_up := skip_up + 1;
+	}
+      if (skip_up = 0)
+	{
+	  exec ('alter table DB.DBA.SYS_RDF_MAPPERS modify primary key (RM_HOOK)');
+	  log_message ('The DB.DBA.SYS_RDF_MAPPERS have been upgraded');
+	}
+    }
+  return;
+}
+;
+
+RM_MAPPERS_UPGRADE ()
+;
+
 create procedure RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
@@ -208,6 +236,39 @@ create procedure RM_MAPPERS_SET_ORDER ()
 
 RM_MAPPERS_SET_ORDER ();
 
+-- /* to insert cartridge after another */
+create procedure RM_MAPPERS_SET_CONSEQ (in proc_1 varchar, in proc_2 varchar)
+{
+   declare inx int;
+   declare top_arr, arr, http, html, feed, calais, pid_1, pid_2, do_update any;
+
+   pid_1 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_1);
+   pid_2 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_2);
+   top_arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
+   	where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE','DB.DBA.RDF_LOAD_CALAIS')
+	order by RM_ID);
+   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
+   inx := 0;
+   do_update := 0;
+   arr := vector_concat (top_arr, arr);
+   foreach (int pid in arr) do
+     {
+       if (pid = pid_1)
+	 {
+	   inx := inx + 1;
+           update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid_2;
+	   do_update := 1;
+	 }
+       else if (do_update)
+	 {
+           update DB.DBA.SYS_RDF_MAPPERS set RM_ID = inx where RM_PID = pid;
+	 }
+       inx := inx + 1;
+     }
+   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', inx);
+   update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 10000 + inx where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
+}
+;
 
 --
 -- The GRDDL filters
@@ -1148,12 +1209,45 @@ grant execute on DB.DBA.RDF_MQL_RESOLVE_IMAGE to public
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:mql-image-by-name', fix_identifier_case ('DB.DBA.RDF_MQL_RESOLVE_IMAGE'))
 ;
 
+create procedure DB.DBA.RM_ACCEPT ()
+{
+  return 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
+  || 'Accept: application/rdf+xml; q=1.0,'
+  || ' text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7,'
+  || ' application/x-turtle; q=0.6, application/turtle; q=0.5,'
+  || ' application/xml; q=0.2, */*; q=0.1';
+}
+;
+
+create procedure DB.DBA.RM_FREEBASE_DOC_LINK (in graph varchar, in doc varchar, in iri varchar, in sa varchar)
+{
+  declare ses, data, meta, state, message any;
+  ses := string_output ();
+  http ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n', ses);
+  http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  -- we classify source as document and set primary topic
+  http (sprintf ('<%s> a foaf:Document .\n', doc), ses);
+  http (sprintf ('<%s> foaf:primaryTopic <%s> .\n', doc, iri), ses);
+  http (sprintf ('<%s> rdfs:seeAlso <%s> .\n', iri, sa), ses);
+  state := '00000';
+  -- if object is a person we also classify him as foaf:Person
+  exec (sprintf ('sparql ask from <%s> where { <%s> a <http://rdf.freebase.com/ns/people.person> }', graph, iri),
+     state, message, vector (), 0, meta, data);
+  if (state = '00000' and length (data) > 0 and data[0][0] = 1)
+    http (sprintf ('<%s> a foaf:Person .\n', iri), ses);
+  TTLP (ses, doc, graph);
+  return;
+}
+;
+
+-- /* Freebase cartridge */
 create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare qr, path, hdr any;
   declare tree, xt, xd, types any;
-  declare k, cnt, url, sa varchar;
+  declare k, cnt, url, sa, lang, new_url, cnt, mime varchar;
+  declare have_rdf, ord int;
 
   hdr := null;
   sa := '';
@@ -1164,9 +1258,25 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     };
 
   path := split_and_decode (new_origin_uri, 0, '%\0/');
-  if (length (path) < 1)
+  if (length (path) < 2)
     return 0;
+
   k := path [length(path) - 1];
+  lang := path [length(path) - 2];
+  have_rdf := 0;
+  new_url := sprintf ('http://rdf.freebase.com/ns/%U/%U', lang, k);
+  cnt := RDF_HTTP_URL_GET (new_url, '', hdr, 'GET', RM_ACCEPT ());
+  -- /* check return mime type */
+  mime := http_request_header (hdr, 'Content-Type', null, null);
+  if (mime = 'application/rdf+xml')
+    {
+      sa := DB.DBA.RDF_MQL_GET_WIKI_URI (k);
+      delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+      DB.DBA.RM_RDF_LOAD_RDFXML (cnt, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RM_FREEBASE_DOC_LINK (coalesce (dest, graph_iri), new_origin_uri, sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k), sa);
+      have_rdf := 1;
+      goto done;
+    }
   if (path [length(path) - 2] = 'guid')
     k := sprintf ('"id":"/guid/%s"', k);
   else
@@ -1195,7 +1305,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       types := vector_concat (types, tmp);
     }
   --types := get_keyword ('type', xt);
-  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+  delete from DB.DBA.RDF_QUAD where g = iri_to_id (coalesce (dest, graph_iri));
   foreach (any tp in types) do
     {
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
@@ -1212,7 +1322,14 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       xd := serialize_to_UTF8_xml (xt);
 --      dbg_printf ('%s', xd);
       DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      have_rdf := 1;
     }
+done:;
+  -- /* see if other cartridges can process it, e.g. NYT */
+  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = upper (current_proc_name ()));
+  if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 and
+	regexp_match (RM_PATTERN, new_origin_uri) is not null))
+    return 0;
   return 1;
 }
 ;
@@ -3823,6 +3940,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('umbel-owl', 'http://umbel.org/umbel#', 2);
   XML_SET_NS_DECL ('umbel-ac', 'http://umbel.org/umbel/ac/', 2);
   XML_SET_NS_DECL ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#', 2);
+  XML_SET_NS_DECL ('fbase', 'http://rdf.freebase.com/ns/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();

@@ -51,6 +51,7 @@
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:digg="http://digg.com/docs/diggrss/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   version="1.0">
 
 <xsl:output indent="yes" />
@@ -107,6 +108,9 @@
 	    <xsl:when test="$isDiscussion = '1'">
 		<rdf:type rdf:resource="&sioct;BoardPost"/>
 	    </xsl:when>
+	    <xsl:when test="wfw:commentRss">
+		<rdf:type rdf:resource="&sioc;Thread"/>
+	    </xsl:when>
 	    <xsl:otherwise>
 		<rdf:type rdf:resource="&sioc;Post"/>
 	    </xsl:otherwise>
@@ -116,6 +120,9 @@
 	<xsl:copy-of select="rss:*"/>
 	<xsl:copy-of select="sioc:*"/>
 	<xsl:copy-of select="geo:*"/>
+	<xsl:if test="wfw:commentRss">
+	    <rdfs:seeAlso rdf:resource="{wfw:commentRss}"/>
+	</xsl:if>
     </rdf:Description>
 </xsl:template>
 
@@ -129,7 +136,9 @@
 
 <xsl:template match="rss:link">
     <sioc:link rdf:resource="{string(.)}"/>
+    <xsl:if test="not (../wfw:commentRss)">
     <rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}"/>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="dc:date">
