@@ -46,8 +46,8 @@
   set ISOLATION = 'Committed';
   set http_charset = 'utf-8';
 
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
 
 exec_start:;
 
@@ -78,7 +78,7 @@ exec_start:;
     procID   := procName[0];
     procName := concat('OMAIL.WA.omail_',procID);
 
-    if (OMAIL.WA.frozen_check(waID, sid))
+    if (OMAIL.WA.frozen_check (waID, sid))
     {
       declare freeze_page varchar;
 
@@ -134,7 +134,7 @@ exec_start:;
     if (waPublic)
       params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
   } else {
-    if (get_keyword('logout', params, ''))
+    if (get_keyword ('logout', params, ''))
     {
       OMAIL.WA.utl_redirect(wa_home_link || sprintf ('?logout=true&sid=%s&realm=%s', sid, realm));
     } else {

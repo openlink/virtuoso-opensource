@@ -56,24 +56,31 @@ _end:;
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.frozen_check(in domain_id integer, in sid varchar)
+create procedure OMAIL.WA.frozen_check (
+  in domain_id integer,
+  in sid varchar)
 {
   declare user_id integer;
-  declare vsState integer;
+  declare vsState any;
 
   declare exit handler for not found { return 1; };
+
+  vsState := coalesce ((select deserialize(VS_STATE) from DB.DBA.VSPX_SESSION where VS_SID = sid), vector());
+  user_id := (select U_ID from SYS_USERS where U_NAME = get_keyword ('vspx_user', vsState, ''));
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_ACCOUNT_DISABLED = 1 and U_ID = user_id))
+    return 1;
 
   if (is_empty_or_null((select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = domain_id)))
     return 0;
 
-  vsState := (select deserialize(VS_STATE) from DB.DBA.VSPX_SESSION where VS_SID = sid);
-
-  user_id := (select U_ID from SYS_USERS where U_NAME = get_keyword('vspx_user', vsState, ''));
   if (OMAIL.WA.check_admin(user_id))
     return 0;
 
-  user_id := (select U_ID from SYS_USERS where U_NAME = get_keyword('owner_user', vsState, ''));
-  if (OMAIL.WA.check_admin(user_id))
+  declare owner_id integer;
+  owner_id := (select U_ID from SYS_USERS where U_NAME = get_keyword ('owner_user', vsState, ''));
+
+  if (OMAIL.WA.check_admin (owner_id))
     return 0;
 
   return 1;
