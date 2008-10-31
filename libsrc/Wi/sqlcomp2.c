@@ -676,6 +676,7 @@ yy_new_error (const char *s, const char *state, const char *native)
         {
           sql_err_text [sizeof (sql_err_text)-1] = '\0';
           sql_err_text [strlen (sql_err_text)-7] = '\0'; 
+	  buf_for_next[0] = '\0';
         }
       else
     strcpy (buf_for_next, " immediately before end of statement");
