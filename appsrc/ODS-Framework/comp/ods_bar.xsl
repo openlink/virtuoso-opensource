@@ -28,6 +28,7 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
 
+<xsl:output method="xml" indent="yes" />
 <xsl:template match="vm:ods-bar">
   <v:template name="ods_bar" type="simple" enabled="1">
     <v:variable name="odsbar_app_type" type="varchar" default="null" param-name="app" />
@@ -217,8 +218,8 @@ nf_uid2:;
 </div>
 
 <script type="text/javascript">
-<![CDATA[<]]><![CDATA[![CDATA[
-
+<![CDATA[
+<!--
 var _head=document.getElementsByTagName('head')[0];
 
 var odsbarCSSloaded=0;
@@ -370,8 +371,8 @@ if (typeof (OAT) == 'undefined')
       else
         return true;
     }
-]]]]><![CDATA[>]]>
-</script>
+//-->
+]]></script>
 
   <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
      <img src="/ods/images/oat/Ajax_throbber.gif" alt="loading..." /><span> Loading... please wait.</span>
@@ -648,7 +649,8 @@ if (typeof (OAT) == 'undefined')
  <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
 
 <script  type="text/javascript">
-<![CDATA[<]]><![CDATA[![CDATA[
+<![CDATA[
+  <!--
 
   var userIsLogged;
   userIsLogged=<?V case when length(self.sid) then '1' else '0' end ?>;
@@ -853,8 +855,8 @@ if(top.location.href!=window.location.href)
         }
     }
 odsbarSafeInit();
-]]]]><![CDATA[>]]>
-</script>
+//-->
+]]></script>
 
  </v:template>
 
