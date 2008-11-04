@@ -30,6 +30,7 @@ TOP=@TOP@
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
 	*.sql \
+	*.txt \
 	MySQLqueries/*.txt \
 	queries/*.txt \
 	run_javac.sh \
