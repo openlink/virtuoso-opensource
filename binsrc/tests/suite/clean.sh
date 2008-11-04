@@ -125,6 +125,7 @@ rm -rf t2
 rm -rf t3
 rm -rf tdav_meta
 rm -rf tproxy
+rm -rf tpcdremote1
 rm -rf tutorial_test
 rm -rf vad
 rm -rf vspx

@@ -85,6 +85,20 @@ EXTRA_DIST = \
 	bin/generate \
 	bin/libtool.macosx \
 	bin/installer/virtuoso.ini bin/installer/demo.ini \
+	debian/changelog \
+	debian/compat \
+	debian/control \
+	debian/copyright \
+	debian/dirs \
+	debian/docs \
+	debian/files \
+	debian/init.d \
+	debian/README.Debian \
+	debian/rules \
+	debian/virtuoso-opensource.postinst.debhelper \
+	debian/virtuoso-opensource.postrm.debhelper \
+	debian/virtuoso-opensource.prerm.debhelper \
+	debian/virtuoso-opensource.substvars \
 	win32/mkperlenv.pl \
 	win32/mkpythonenv.py \
 	win32/*.bat \

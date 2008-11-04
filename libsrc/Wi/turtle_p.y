@@ -46,7 +46,6 @@
 
 extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
-
 #ifdef TTLDEBUG
 #define YYDEBUG 1
 #endif
