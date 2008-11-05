@@ -1,3 +1,63 @@
+November 3, 2008, V5.0.9:
+  * Database engine
+    - Added optimizations to SQL engine
+    - Added optimizations to ODBC and JDBC drivers
+    - Added new http_pipeline for very large HTTP client requests
+    - Added support for LIKE on LOBs
+    - Fixed compiler warnings
+    - Fixed memory leaks
+    - Fixed IN argument cast
+    - Fixed select TOP N .. order by ... using cursor
+    - Fixed log registry settings
+    - Fixed scalar subqueries in result sets
+    - Fixed checks for empty owners and qualifiers
+    - Fixed problem tagging procedures as public
+    - Fixed alter table modify column checks for change in nullable flag
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added optimizations to SPARQL engine
+    - Added support for triple option bif:contains .
+    - Added application/vnd.ms-excel output option to SPARQL endpoint
+    - Added Atom entry, DISCOGS, GETSATISFACTION, SlideShare, XBRL cardridges
+    - Added support for option(transitive) for triples
+    - Added sparql-auth endpoint similar to /proxy
+    - Added check if endpoint needs to be redefined
+    - Added support for SAME_AS_S_O_L
+    - Added iri_split_ttl_qname
+    - Added ssg_make_rb_complete_wrapped
+    - Added initial support for SPARQL triple options SAME_AS, SAME_AS_S
+      and SAME_AS_O
+    - Added draft support of TRANSITIVE in SPARQL
+    - Added support for UMBEL service
+    - Added support for two free-text tables (RO_OBJ and RO_FT)
+    - Added support for define sql:describe-mode "SPO"
+    - Added support for ORDER BY ?alias where ?alias is used in top-level
+      result set
+    - Fixed INFERENCE
+    - Fixed support for SELECT DISTINCT subqueries in SPARQL
+    - Fixed transaction problem in rdf_mapper
+    - Fixed codegen for SPARQL SELECT DISTINCT
+    - Fixed FROM <x> FROM NAMED <y> ... GRAPH <y> {...}
+    - Fixed sparql constructions like T_STOP
+    - Fixed automatic grouping result-sets of SPARQL queries using
+      subqueries with aggregates
+    - Fixed handle blank nodes in proxy service
+    - Fixed support for re-compilation of queries if RDF views are changed
+    - Fixed small bugs in cartridges
+
+  * ODS Applications
+    - Added initial suppport for Ubiquity command set
+    - Fixed xhtml validation problem with javascript and ODS bar
+    - Fixed sharing UI
+    - Fixed subscription
+    - Fixed Publish/Subscribe actions
+    - Fixed publication errors
+    - Fixed JS error and optimize AJAX calls
+    - Fixed search and gems bugs
+    - Fixed small bugs
+  
+
 August 27, 2008, V5.0.8:
   * Database engine
     - Added optimizations to SQL compiler
