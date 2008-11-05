@@ -21,6 +21,7 @@ November 3, 2008, V5.0.9:
     - Added optimizations to SPARQL engine
     - Added support for triple option bif:contains .
     - Added application/vnd.ms-excel output option to SPARQL endpoint
+    - Added /about/html/<iri> endpoint for html representation of rdf data
     - Added Atom entry, DISCOGS, GETSATISFACTION, SlideShare, XBRL cardridges
     - Added support for option(transitive) for triples
     - Added sparql-auth endpoint similar to /sparql plus digest authentication
