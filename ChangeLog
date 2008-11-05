@@ -1,3 +1,39 @@
+2008-11-05 14:58  source
+
+	* Updated version to 5.0.9 for final release
+
+2008-11-05 14:12  source
+
+	* Updated version to 5.0.9-rc8
+
+2008-11-04 16:26  source
+
+	* Added missing files
+
+2008-11-04 16:03  source
+
+	* Reverted last patch
+
+2008-11-04 15:34  source
+
+	* Regenerated
+
+2008-11-04 15:33  source
+
+	* Regenerated driver
+
+2008-11-04 15:33  source
+
+	* Regenerated file
+
+2008-11-04 15:11  source
+
+	* Fixed missing files from make dist
+
+2008-11-04 15:09  source
+
+	* Added debian control files
+
 2008-11-03 12:58  source
 
 	* Updated version to 05.09
