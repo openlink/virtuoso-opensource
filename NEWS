@@ -2,17 +2,19 @@ November 3, 2008, V5.0.9:
   * Database engine
     - Added optimizations to SQL engine
     - Added optimizations to ODBC and JDBC drivers
-    - Added new http_pipeline for very large HTTP client requests
+    - Added support for very large HTTP client requests
     - Added support for LIKE on LOBs
     - Fixed compiler warnings
     - Fixed memory leaks
     - Fixed IN argument cast
+    - Fixed LIKE ... ESCAPE on indexed fields
     - Fixed select TOP N .. order by ... using cursor
     - Fixed log registry settings
     - Fixed scalar subqueries in result sets
     - Fixed checks for empty owners and qualifiers
     - Fixed problem tagging procedures as public
     - Fixed alter table modify column checks for change in nullable flag
+    - Fixed small bugs
     - Updated documentation
 
   * SPARQL and RDF
@@ -21,13 +23,9 @@ November 3, 2008, V5.0.9:
     - Added application/vnd.ms-excel output option to SPARQL endpoint
     - Added Atom entry, DISCOGS, GETSATISFACTION, SlideShare, XBRL cardridges
     - Added support for option(transitive) for triples
-    - Added sparql-auth endpoint similar to /proxy
-    - Added check if endpoint needs to be redefined
-    - Added support for SAME_AS_S_O_L
-    - Added iri_split_ttl_qname
-    - Added ssg_make_rb_complete_wrapped
+    - Added sparql-auth endpoint similar to /sparql plus digest authentication
     - Added initial support for SPARQL triple options SAME_AS, SAME_AS_S
-      and SAME_AS_O
+      SAME_AS_O and SAME_AS_S_O_L
     - Added draft support of TRANSITIVE in SPARQL
     - Added support for UMBEL service
     - Added support for two free-text tables (RO_OBJ and RO_FT)
@@ -35,9 +33,8 @@ November 3, 2008, V5.0.9:
     - Added support for ORDER BY ?alias where ?alias is used in top-level
       result set
     - Fixed INFERENCE
-    - Fixed support for SELECT DISTINCT subqueries in SPARQL
+    - Fixed support for SELECT DISTINCT
     - Fixed transaction problem in rdf_mapper
-    - Fixed codegen for SPARQL SELECT DISTINCT
     - Fixed FROM <x> FROM NAMED <y> ... GRAPH <y> {...}
     - Fixed sparql constructions like T_STOP
     - Fixed automatic grouping result-sets of SPARQL queries using
