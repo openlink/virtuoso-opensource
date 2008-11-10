@@ -30,7 +30,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>RDF Cartridges</vm:pagetitle>
+ <vm:pagetitle>RDF Meta Cartridges</vm:pagetitle>
  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="del_item" default="null" type="int" param-name="del"/>
@@ -38,13 +38,13 @@
       <v:variable name="step" default="0" type="int" persist="0"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="RDF Cartridges"/>
+   <vm:menuitem value="RDF Meta Cartridges"/>
   </vm:menu>
-  <vm:header caption="RDF Cartridges"/>
+  <vm:header caption="RDF Meta Cartridges"/>
   <vm:pagebody>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
-          <td>
+	    <td>
 		<!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
@@ -58,15 +58,15 @@
                       <col/>
                     </colgroup>
                     <tr>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          RDF Cartridges
-		        </td>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url2" value="RDF Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                          <v:url name="url1" value="RDF Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          RDF Meta Cartridges
 		        </td>
 			<?vsp if (check_package('rdf_mappers')) { ?>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url1" value="GRDDL Mappings" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
+                          <v:url name="url2" value="GRDDL Mappings" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
 		        </td>
                         <?vsp } ?>
                         <td class="page_tab_empty" align="center" width="100%">
@@ -99,13 +99,13 @@
 		  <th>Pattern</th>
 		  <th>Action</th>
 	      </tr>
-	      <v:data-set name="maps" sql="select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RM_ENABLED, RM_OPTIONS
-		  from DB.DBA.SYS_RDF_MAPPERS order by 4"
+	      <v:data-set name="maps" sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ
+		  from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
 		  scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_item is not null)
 {
-  delete from DB.DBA.SYS_RDF_MAPPERS where RM_ID = self.del_item;
+  delete from DB.DBA.RDF_META_CARTRIDGES where MC_ID = self.del_item;
 }
 		  </v:before-data-bind>
 		  <v:after-data-bind>
@@ -113,8 +113,8 @@ if (self.vc_event.ve_button is not null and self.vc_event.ve_button.vc_name = 'm
 {
   declare cb vspx_field;
   cb := self.vc_event.ve_initiator;
-  update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = case when RM_ENABLED = 1 then 0 else 1 end where RM_ID = cb.ufl_value;
-  cb.ufl_selected := (select RM_ENABLED from DB.DBA.SYS_RDF_MAPPERS where RM_ID = cb.ufl_value);
+  update DB.DBA.RDF_META_CARTRIDGES set MC_ENABLED = case when MC_ENABLED = 1 then 0 else 1 end where MC_ID = cb.ufl_value;
+  cb.ufl_selected := (select MC_ENABLED from DB.DBA.RDF_META_CARTRIDGES where MC_ID = cb.ufl_value);
 }
 		  </v:after-data-bind>
 
@@ -154,13 +154,13 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 			  <tr class="<?V case when self.edit_item = control.te_rowset[3] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 			      <td>
 				  <v:check-box name="cb1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" auto-submit="1"/>
-				  <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
+				  <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[8]" />
 			      </td>
 			      <td>
 				  <v:url name="ur1"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
 				      format="%s"
-				      url="--sprintf ('rdf_filters.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
+				      url="--sprintf ('rdf_filters_pp.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
 				      xhtml_title="Edit"
 				      xhtml_alt="Edit"
 				      />
@@ -176,7 +176,7 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 				  &#160;
 				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
-				      url="--sprintf ('rdf_filters.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
+				      url="--sprintf ('rdf_filters_pp.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />
@@ -188,22 +188,21 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 					  return;
 					to_swap := null;
 					to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
-					for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+					for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
 					  {
-					    if (RM_ID = to_move)
+					    if (MC_ID = to_move)
 					      {
-					        mv_ord := RM_ID;
+					        mv_ord := MC_SEQ;
 					        goto swapit;
 					      }
-					    to_swap := RM_ID;
-					    sw_ord := RM_ID;
+					    to_swap := MC_ID;
+					    sw_ord := MC_SEQ;
 					  }
 					swapit:
 					if (to_swap is not null)
 					  {
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+					    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
+					    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
 					  }
 					self.vc_data_bind (e);
 				]]></v:on-post>
@@ -217,25 +216,24 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 					to_swap := null;
 					to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
 					mv_ord := null;
-					for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+					for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
 					  {
-					    if (RM_ID = to_move)
+					    if (MC_ID = to_move)
 					      {
-					        mv_ord := RM_ID;
+					        mv_ord := MC_SEQ;
 					      }
 					    else if (mv_ord is not null)
 					      {
-					        to_swap := RM_ID;
-						sw_ord := RM_ID;
+					        to_swap := MC_ID;
+						sw_ord := MC_SEQ;
 						goto swapit;
 					      }
 					  }
 					swapit:
 					if (to_swap is not null)
 					  {
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
-					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+					    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
+					    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
 					  }
 					self.vc_data_bind (e);
 				]]></v:on-post>
@@ -359,20 +357,20 @@ if (not length (self.desc1.ufl_value) or
 
 if (self.edit_item is null)
 {
-  insert into DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN,RM_TYPE,RM_HOOK,RM_KEY,RM_DESCRIPTION, RM_OPTIONS)
+  insert into DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN,MC_TYPE,MC_HOOK,MC_KEY,MC_DESC, MC_OPTIONS)
   values (self.patt1.ufl_value,self.typ1.ufl_value,self.pl1.ufl_value,_key,self.desc1.ufl_value, opts)
   ;
 }
 else
 {
-   update DB.DBA.SYS_RDF_MAPPERS set
-    RM_PATTERN = self.patt1.ufl_value,
-    RM_TYPE = self.typ1.ufl_value,
-    RM_HOOK = self.pl1.ufl_value,
-    RM_KEY = _key,
-    RM_DESCRIPTION = self.desc1.ufl_value,
-    RM_OPTIONS = opts
-    where RM_ID = self.edit_item;
+   update DB.DBA.RDF_META_CARTRIDGES set
+    MC_PATTERN = self.patt1.ufl_value,
+    MC_TYPE = self.typ1.ufl_value,
+    MC_HOOK = self.pl1.ufl_value,
+    MC_KEY = _key,
+    MC_DESC = self.desc1.ufl_value,
+    MC_OPTIONS = opts
+    where MC_ID = self.edit_item;
 }
 
 self.desc1.ufl_value := '';
@@ -393,7 +391,7 @@ self.maps.vc_data_bind (e);
   </v:form>
                 </td>
               </tr>
-            </table>
+	  </table>
 	  <!-- end tab  -->
       </td>
   </tr>
