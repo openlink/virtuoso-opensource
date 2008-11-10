@@ -49,7 +49,7 @@ The terms security object or grantee refer collectively to users and
 groups.</para></note>
 
 <para>User manipulation functions do not generally return values.  In case of 
-error an error condition will be signalled.</para>
+error an error condition will be signaled.</para>
 
 <para>Users and roles are in the same namespace and are identified by name.  
 One name will not both designate a user and a group.  A user or group may be 
@@ -63,7 +63,7 @@ privileges of a user are those granted to public, those granted to the user
 plus those granted to a direct or indirect role of the user.  The relationship 
 between users and roles is many to many.  A role can be granted multiple other 
 roles as well as direct permissions.  Cycles in granting roles are not allowed, 
-an error will be signalled if an operation would result in a cycle in the 
+an error will be signaled if an operation would result in a cycle in the
 role inheritance graph.</para>
 
 <para>When SQL procedures or queries are executing, the effective privileges 
@@ -324,7 +324,7 @@ will give the grantee full dba privileges, or in other words, add to the dba gro
 
 <para>The GRANT statement accepts any valid SQL security object in the TO clause. 
 One cannot log in or perform any operations as a role.  Roles are exclusively 
-shorthands for specific sets of permissions which are changed together and 
+shorthand for specific sets of permissions which are changed together and
 are needed for multiple users. </para>
 </sect2>
 

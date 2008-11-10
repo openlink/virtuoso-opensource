@@ -44,10 +44,10 @@
   organizations, then, entries representing people, printers, documents, 
   anything else...</para>
   <para>LDAP provides methods for authentication.  Directories can be made 
-  accessible to the general public or protected however the case my be.</para>
+  accessible to the general public or protected however the case may be.</para>
   <para>LDAP is made for finding people and resources on a network.  It provides 
   a completely different functionality from web searches such as yahoo or 
-  webcrawler, which work simply by text matching and often return many thousand’s 
+  webcrawler, which work simply by text matching and often return many thousand's
   of entries.  Using an LDAP directory to locate something however, if you know 
   the approximate location of where it is, such as what organization and country 
   it is in, then you can do a search and return much fewer entries.  LDAP is 

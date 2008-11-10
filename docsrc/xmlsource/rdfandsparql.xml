@@ -4735,22 +4735,22 @@ as part of the graphs making up the rule context. Transitivity is observed, thus
 a subpredicate of c, then a is also a subpredicate of c.
 </para>
 </sect2>
-<sect2 id="rdfsameas"><title>OWL same-as Support</title>
+<sect2 id="rdfsameas"><title>OWL sameAs Support</title>
 <para>
-Virtuoso has limited support for the OWL same-as predicate.
+Virtuoso has limited support for the OWL sameAs predicate.
 </para>
 <para>
-In the following, the abbreviation owl:sameAs is used for  the IRI http://www.w3.org/2002/07/owl#same-as .
+In the following, the abbreviation owl:sameAs is used for  the IRI http://www.w3.org/2002/07/owl#sameAs .
 </para>
 <para>
-If same-as traversal is enabled and a triple pattern with a given
+If sameAs traversal is enabled and a triple pattern with a given
 subject or object is being matched, all the synonyms of the S and O
 will be tried and results generated for all the tried bindings of S
 and O.  The set of synonyms is generated at run time by following all
 owl:sameAs triples where the IRI in question is either the subject or
 the object.  These are followed recursively from object to subject and
 subject to object until the complete transitive closure is generated.
-All same-as triples from all the graphs applicable to instantiating
+All sameAs triples from all the graphs applicable to instantiating
 the triple pattern at hand are considered.
 </para>
 <para>
