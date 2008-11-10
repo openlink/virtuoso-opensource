@@ -2793,10 +2793,16 @@ create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
 	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
 	       values (id, p_id, 'I', local_time);
 
-        if (__proc_exists ('CAL.WA.syncml2event'))
+        if (__proc_exists ('CAL.WA.syncml2entry'))
         {
           connection_set ('__sync_dav_upl', '1');
-          CAL.WA.syncml2event (line[0], new_name, p_id);
+          CAL.WA.syncml2entry (line[0], new_name, p_id);
+          connection_set ('__sync_dav_upl', '0');
+        }
+        if (__proc_exists ('AB.WA.syncml2entry'))
+        {
+          connection_set ('__sync_dav_upl', '1');
+          AB.WA.syncml2entry (line[0], new_name, p_id);
           connection_set ('__sync_dav_upl', '0');
         }
       }
@@ -2969,8 +2975,7 @@ create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing
 
     if (connection_get ('__sync_dav_upl') = '1')
     {
-    	 update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
-		where RLOG_RES_ID = O.RES_ID;
+      update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time where RLOG_RES_ID = O.RES_ID;
 	 return;
      }
 
@@ -3023,10 +3028,16 @@ create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing
 	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
 	       values (id, N.RES_COL, 'U', local_time);
 
-        if (__proc_exists ('CAL.WA.syncml2event'))
+        if (__proc_exists ('CAL.WA.syncml2entry'))
         {
           connection_set ('__sync_dav_upl', '1');
-          CAL.WA.syncml2event (line[0], new_name, p_id);
+          CAL.WA.syncml2entry (line[0], new_name, p_id);
+          connection_set ('__sync_dav_upl', '0');
+        }
+        if (__proc_exists ('AB.WA.syncml2entry'))
+        {
+          connection_set ('__sync_dav_upl', '1');
+          AB.WA.syncml2entry (line[0], new_name, p_id);
           connection_set ('__sync_dav_upl', '0');
         }
 	 }
