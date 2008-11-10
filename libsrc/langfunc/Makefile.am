@@ -34,6 +34,7 @@ liblangfunc_la_SOURCES = \
 	langman.c \
 	language__en_US.c \
 	language__x_ViDoc.c \
+	language__x_ViAny.c \
 	latin1ctype.c \
 	ucm2enc.c \
 	unicode3.c

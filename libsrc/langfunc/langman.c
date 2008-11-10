@@ -349,6 +349,7 @@ void langfunc_kernel_init (void)
   elh_load_handler (&elh__xany__UTF8);
   connect__enUS (NULL);
   connect__xViDoc (NULL);
+  connect__xViAny (NULL);
 }
 
 
