@@ -56,9 +56,6 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
             'MIME', 'DB.DBA.RDF_LOAD_FEED_RESPONSE', null, 'Feeds', null);
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
-    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1);
-
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://farm[0-9]*.static.flickr.com/.*',
             'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
@@ -211,6 +208,33 @@ create procedure RM_MAPPERS_UPGRADE ()
 RM_MAPPERS_UPGRADE ()
 ;
 
+EXEC_STMT(
+'create table DB.DBA.RDF_META_CARTRIDGES (
+  	MC_ID integer identity,
+	MC_SEQ integer identity,
+	MC_HOOK varchar,
+	MC_TYPE varchar default \'URL\',
+	MC_PATTERN varchar not null,
+	MC_KEY varchar,
+	MC_OPTIONS any,
+	MC_DESC long varchar,
+	MC_ENABLED int not null default 1,
+	primary key (MC_HOOK)
+)', 0)
+;
+
+create procedure MIGRATE_CALAIS ()
+{
+  insert into DB.DBA.RDF_META_CARTRIDGES (MC_HOOK, MC_TYPE, MC_PATTERN, MC_KEY, MC_OPTIONS, MC_DESC, MC_ENABLED)
+      select RM_HOOK, RM_TYPE, RM_PATTERN, RM_KEY, RM_OPTIONS, RM_DESCRIPTION, RM_ENABLED from DB.DBA.SYS_RDF_MAPPERS
+      where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+  delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
+}
+;
+
+MIGRATE_CALAIS ();
+
+
 create procedure RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
@@ -218,8 +242,8 @@ create procedure RM_MAPPERS_SET_ORDER ()
    http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
    html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
    feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
-   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
-   top_arr := vector (http, html, feed, calais);
+--   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
+   top_arr := vector (http, html, feed);
 
    arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
    inx := 0;
@@ -245,7 +269,7 @@ create procedure RM_MAPPERS_SET_CONSEQ (in proc_1 varchar, in proc_2 varchar)
    pid_1 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_1);
    pid_2 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_2);
    top_arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
-   	where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE','DB.DBA.RDF_LOAD_CALAIS')
+   	where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE')
 	order by RM_ID);
    arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
    inx := 0;
@@ -390,43 +414,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
     }
   --dbg_printf ('%s', string_output_string (ses));
   DB.DBA.RDF_LOAD_RDFXML (strg, base, graph);
-  DB.DBA.RM_UMBEL_POST_PROCESS (base, graph);
   DB.DBA.TTLP (ses, base, graph);
-  --DB.DBA.RDF_LOAD_POST_PROCESS (graph, base, null, strg, null);
-}
-;
-
-create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar)
-{
-  declare data, meta any;
-  declare ses, cont, xt, xd, arr any;
-  ses := string_output ();
-  declare exit handler for sqlstate '*'
-    {
-      return;
-    };
-  exec (sprintf (
-      'sparql select ?o from <%S> where { ?s ?p ?o . filter (isLiteral (?o) and ?o != "") }', graph, base), null, null, vector (), 0, meta, data);
-  foreach (any str in data) do
-    {
-      if (isstring (str[0]))
-	{
-	  http (str[0], ses);
-	  http (' ', ses);
-	}
-    }
-  ses := string_output_string (ses);
-  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', ses));
-  xt := xtree_doc (cont);
-  arr := xpath_eval ('//isAbout/@resource', xt, 0);
-  ses := string_output ();
-  foreach (nvarchar url in arr) do
-    {
-      url := cast (url as varchar);
-      http (sprintf ('<%S> <http://umbel.org/umbel#isAbout> <%S> .\n', base, url), ses);
-    }
-  DB.DBA.TTLP (ses, base, graph);
-  return;
 }
 ;
 
@@ -2329,62 +2317,6 @@ create procedure DB.DBA.RDF_CALAIS_OPTS (in mime varchar)
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
-    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
-{
-  declare cnt, xt, xp, xd, mime, html_start, paras, doc_tree, frag any;
-  declare flag int;
-
-  flag := 0;
-
-  declare exit handler for sqlstate '*'
-    {
-    --  dbg_obj_print (__SQL_MESSAGE);
-      return 0;
-    };
-
-  if (not length (ser_key) or length (_ret_body) > 100000)
-    return 0;
-
-  mime := get_keyword ('content-type', opts);
-  --dbg_obj_print (mime);
-  if (mime is null)
-    return 0;
-
-  --doc_tree := xtree_doc (_ret_body, 2);
-  --paras := xpath_eval ('//p', doc_tree);
-  --frag := serialize_to_UTF8_xml (paras);
-
-  --dbg_printf ('%s', frag);
-  frag := _ret_body;
-
-  cnt := http_get ('http://api.opencalais.com/enlighten/calais.asmx/Enlighten',
-  	null, 'POST', null,
-	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, frag, DB.DBA.RDF_CALAIS_OPTS (mime)));
-  xt := xtree_doc (cnt, 0, '', 'UTF-8');
-  xp := xpath_eval('string(//text())', xt);
-  xd := charset_recode (xp, '_WIDE_', 'UTF-8');
-  xt := xtree_doc (xd, 0, '', 'UTF-8');
-  xp := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/calais_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
-  xd := serialize_to_UTF8_xml (xp);
-  --string_to_file ('/tmp/oc.xml', xd, -2);
-  --dbg_printf ('%s', xd);
-  if (xd is not null)
-    {
-      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-      flag := 1;
-    }
-  declare ord any;
-  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
-  for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
-    {
-      if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
-        flag := 0;
-    }
-  return flag;
-}
-;
-
 
 create procedure RDF_MAPPER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
 {
@@ -3667,12 +3599,6 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 }
 ;
 
-DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
-;
-
-drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
-;
-
 create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
 {
     declare cur varchar;
@@ -3944,3 +3870,173 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
+
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1);
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_UMBEL_POST_PROCESS', null, 'UMBEL', 1);
+
+
+create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
+    inout ret_body any, in ret_content_type varchar, inout options any)
+{
+  declare new_opts any;
+  declare dummy any;
+  declare rc int;
+
+  dummy := null;
+  for select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
+    {
+      declare val_match any;
+
+      if (MC_TYPE = 'MIME')
+	{
+	  val_match := ret_content_type;
+	}
+      else if (MC_TYPE = 'URL')
+	{
+	  val_match := new_origin_uri;
+	}
+      else
+	val_match := null;
+
+      if (registry_get ('__sparql_mappers_debug') = '1')
+	dbg_printf ('Trying PP %s', MC_HOOK);
+      if (isstring (val_match) and regexp_match (MC_PATTERN, val_match) is not null)
+	{
+	  if (__proc_exists (MC_HOOK) is null)
+	    goto try_next_mapper;
+
+	  declare exit handler for sqlstate '*'
+	    {
+	      goto try_next_mapper;
+	    };
+          if (registry_get ('__sparql_mappers_debug') = '1')
+	    dbg_printf ('Match PP %s', MC_HOOK);
+	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type));
+	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
+          if (registry_get ('__sparql_mappers_debug') = '1')
+	    {
+	      dbg_printf ('Return PP [%d] %s', rc, MC_HOOK);
+	      if (rc < 0 or rc > 0)
+	        dbg_printf ('END of PP mappings');
+	    }
+	  if (rc < 0 or rc > 0)
+	    {
+	      return (case when rc < 0 then 0 else 1 end);
+	    }
+	}
+      try_next_mapper:;
+    }
+  if (registry_get ('__sparql_mappers_debug') = '1')
+    dbg_printf ('END of PP mappings');
+}
+;
+
+create procedure DB.DBA.RDF_UMBEL_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+  DB.DBA.RM_UMBEL_POST_PROCESS (new_origin_uri, coalesce (dest, graph_iri));
+  return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+  declare cnt, xt, xp, xd, mime, html_start, paras, doc_tree, frag any;
+  declare flag int;
+
+  flag := 0;
+
+  declare exit handler for sqlstate '*'
+    {
+    --  dbg_obj_print (__SQL_MESSAGE);
+      return 0;
+    };
+
+  if (not length (ser_key) or length (_ret_body) > 100000)
+    return 0;
+
+  mime := get_keyword ('content-type', opts);
+  --dbg_obj_print (mime);
+  if (mime is null)
+    return 0;
+
+  --doc_tree := xtree_doc (_ret_body, 2);
+  --paras := xpath_eval ('//p', doc_tree);
+  --frag := serialize_to_UTF8_xml (paras);
+
+  --dbg_printf ('%s', frag);
+  frag := _ret_body;
+
+  cnt := http_get ('http://api.opencalais.com/enlighten/calais.asmx/Enlighten',
+  	null, 'POST', null,
+	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, frag, DB.DBA.RDF_CALAIS_OPTS (mime)));
+  xt := xtree_doc (cnt, 0, '', 'UTF-8');
+  xp := xpath_eval('string(//text())', xt);
+  xd := charset_recode (xp, '_WIDE_', 'UTF-8');
+  xt := xtree_doc (xd, 0, '', 'UTF-8');
+  xp := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/calais_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xp);
+  --string_to_file ('/tmp/oc.xml', xd, -2);
+  --dbg_printf ('%s', xd);
+  if (xd is not null)
+    {
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      flag := 1;
+    }
+  declare ord any;
+  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
+  for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
+    {
+      if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
+        flag := 0;
+    }
+  return 0; -- was flag;
+}
+;
+
+
+create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar)
+{
+  declare data, meta any;
+  declare ses, cont, xt, xd, arr any;
+  ses := string_output ();
+  declare exit handler for sqlstate '*'
+    {
+      return;
+    };
+  exec (sprintf (
+      'sparql select ?o from <%S> where { ?s ?p ?o . filter (isLiteral (?o) and ?o != "") }', graph, base), null, null, vector (), 0, meta, data);
+  foreach (any str in data) do
+    {
+      if (isstring (str[0]))
+	{
+	  http (str[0], ses);
+	  http (' ', ses);
+	}
+    }
+  ses := string_output_string (ses);
+  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', ses));
+  xt := xtree_doc (cont);
+  arr := xpath_eval ('//isAbout/@resource', xt, 0);
+  ses := string_output ();
+  foreach (nvarchar url in arr) do
+    {
+      url := cast (url as varchar);
+      http (sprintf ('<%S> <http://umbel.org/umbel#isAbout> <%S> .\n', base, url), ses);
+    }
+  DB.DBA.TTLP (ses, base, graph);
+  return;
+}
+;
+
+DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
+;
+
+drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
+;
+

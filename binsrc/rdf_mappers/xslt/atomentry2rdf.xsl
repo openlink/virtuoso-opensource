@@ -21,6 +21,10 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY nfo "http://www.semanticdesktop.org/ontologies/nfo/#">
+]>
+
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -40,10 +44,14 @@
   xmlns:g="http://base.google.com/ns/1.0"
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
+  xmlns:nfo="&nfo;"
+  xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:yt="http://gdata.youtube.com/schemas/2007"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
 
+<xsl:param name="baseUri" />
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -82,6 +90,7 @@
 </xsl:template>
 
 <xsl:template match="a:entry">
+	<xsl:apply-templates select="media:*|yt:*"/>
     <item rdf:about="{a:link[@href]/@href}">
 	<xsl:apply-templates/>
 	<xsl:if test="a:category[@term]">
@@ -95,6 +104,24 @@
 	</xsl:if>
 	<xsl:apply-templates select="g:*|gd:*"/>
     </item>
+</xsl:template>
+
+<xsl:template match="yt:statistics">
+	<rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&nfo;Video"/>
+		<nfo:frameCount>
+			<xsl:value-of select="./@viewCount"/>
+		</nfo:frameCount>	
+	</rdf:Description>
+</xsl:template>
+
+<xsl:template match="media:group">
+	<rdf:Description rdf:about="{$baseUri}">
+		<rdf:type rdf:resource="&nfo;Video"/>
+		<nfo:duration>
+			<xsl:value-of select="yt:duration/@seconds"/>
+		</nfo:duration>	
+	</rdf:Description>
 </xsl:template>
 
 <xsl:template match="g:*|gd:*">

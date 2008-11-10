@@ -74,7 +74,7 @@
 
     <xsl:if test="ContactInfo">
     <cv:aboutPerson>
-        <cv:Person rdf:about="#{ContactInfo/PersonName/FormattedName}">
+        <cv:Person rdf:about="#{translate(ContactInfo/PersonName/FormattedName, ' ', '_')}">
             <foaf:name>
               <xsl:value-of select="ContactInfo/PersonName/FormattedName"/>
             </foaf:name>
@@ -128,7 +128,7 @@
 
     <xsl:if test="Objective">
     <cv:hasTarget>
-        <cv:Target rdf:about="#{normalize-space(Objective)}">
+        <cv:Target rdf:about="#{translate(Objective, ' ', '_')}">
             <cv:targetJobDescription>
                 <xsl:value-of select="Objective"/>
             </cv:targetJobDescription>
@@ -139,9 +139,9 @@
     <xsl:if test="EmploymentHistory">
     <cv:hasWorkHistory>
         <xsl:for-each select="EmploymentHistory/EmployerOrg">
-        <cv:WorkHistory rdf:about="#WorkHistory/{EmployerOrgName}">
+        <cv:WorkHistory rdf:about="#WorkHistory/{translate(EmployerOrgName, ' ', '_')}">
             <cv:employedIn>
-                <cv:Company rdf:about="#{EmployerOrgName}">
+                <cv:Company rdf:about="#{translate(EmployerOrgName, ' ', '_')}">
                     <cv:Name>
                         <xsl:value-of select="EmployerOrgName"/>
                     </cv:Name>
@@ -176,9 +176,9 @@
     <xsl:if test="EducationHistory">
     <cv:hasEducation>
         <xsl:for-each select="EducationHistory/SchoolOrInstitution">
-        <cv:Education rdf:about="#Education/{School/SchoolName}">
+        <cv:Education rdf:about="#Education/{translate(School/SchoolName, ' ', '_')}">
             <cv:studiedIn>
-                <cv:EducationalOrg rdf:about="#{School/SchoolName}">
+                <cv:EducationalOrg rdf:about="#{translate(School/SchoolName, ' ', '_')}">
                     <cv:Name>
                         <xsl:value-of select="School/SchoolName"/>
                     </cv:Name>
@@ -207,7 +207,7 @@
     <xsl:if test="LicensesAndCertifications">
     <cv:hasCourse>
         <xsl:for-each select="LicensesAndCertifications/LicenseOrCertification">
-        <cv:Course rdf:about="#Course/{Name}">
+        <cv:Course rdf:about="#Course/{translate(Name, ' ', '_')}">
             <cv:organizedBy>
                 <cv:Organization rdf:about="#{IssuingAuthority}">
                     <cv:Name>
@@ -235,7 +235,7 @@
     <xsl:if test="Qualifications or Languages">
     <xsl:for-each select="Qualifications/Competency">
         <cv:hasSkill>
-          <cv:Skill rdf:about="#{@name}">
+          <cv:Skill rdf:about="#{translate(@name, ' ', '_')}">
             <cv:skillName>
                 <xsl:value-of select="@name"/>
             </cv:skillName>
@@ -253,7 +253,7 @@
     </xsl:for-each>
     <xsl:for-each select="Languages/Language">
       <cv:hasSkill>
-        <cv:LanguageSkill rdf:about="#{LanguageCode}">
+        <cv:LanguageSkill rdf:about="#{translate(LanguageCode, ' ', '_')}">
             <cv:skillName>
                 <xsl:value-of select="LanguageCode"/>
             </cv:skillName>
@@ -274,9 +274,9 @@
     <xsl:if test="References/Reference">
     <cv:hasReference>
         <xsl:for-each select="References/Reference">
-        <cv:Reference rdf:about="#Reference/{PersonName/FormattedName}">
+        <cv:Reference rdf:about="#Reference/{translate(PersonName/FormattedName, ' ', '_')}">
             <cv:referenceBy>
-                <cv:Person rdf:about="#{PersonName/FormattedName}">
+                <cv:Person rdf:about="#{translate(PersonName/FormattedName, ' ', '_')}">
                     <v:n>
                       <xsl:value-of select="PersonName/FormattedName"/>
                     </v:n>

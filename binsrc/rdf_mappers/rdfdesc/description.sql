@@ -64,7 +64,7 @@ create procedure rdfdesc_uri_curie (in uri varchar)
 
     nsPrefix := coalesce(__xml_get_ns_prefix(subseq(uriSearch, 0, delim + 1),2), __xml_get_ns_prefix(subseq(uriSearch, 0, delim),2));
     uriSearch := subseq(uriSearch, 0, delim);
-    dbg_obj_print(uriSearch);
+--    dbg_obj_print(uriSearch);
   }
 
   if (nsPrefix is not null) {
