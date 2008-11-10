@@ -104,6 +104,9 @@ DBG_NAME (strdev_get_buf) (DBG_PARAMS dk_session_t *ses)
   return (new_buf);
 }
 
+#ifdef MALLOC_DEBUG
+#define strdev_get_buf(ses) dbg_strdev_get_buf (__FILE__, __LINE__, ses)
+#endif
 
 static void
 strdev_free_buf (buffer_elt_t *b, caddr_t arg)
@@ -556,6 +559,7 @@ strses_flush (dk_session_t *ses)
   ses->dks_buffer_chain = ses->dks_buffer_chain_tail = strdev->strdev_buffer_ptr = NULL;
   ses->dks_out_fill = strdev->strdev_in_read = 0;
   ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  ses->dks_bytes_sent = 0;
   if (ses->dks_in_buffer)
     {
       ses->dks_in_length = DKSES_OUT_BUFFER_LENGTH;
