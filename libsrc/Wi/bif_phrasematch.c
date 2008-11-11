@@ -185,10 +185,10 @@ typedef struct ap_proc_inst_s {
   int		appi_place_idx_last [APPI_MAX_PHRASE_NONNOISE];	/*!< Up to APPI_MAX_PHRASE_NONNOISE last nonnoise words, as indexes in appi_places, circular buffer */
   int		appi_place_last_ffree_idx;			/*!< Circular index of the first unused or outdated item in appi_place_idx_last */
   uint32	appi_chksums [APPI_MAX_PHRASE_NONNOISE];	/*!< Known checksums of phrases that end at current word. Index is (phrase_len - 1) */
-  dk_set_t	appi_hits_revlist;				/*!< Temporary revlist of all found checksum hits */
-  int		appi_hit_count;					/*!< Accumulated length of appi_hits (unconfirmed) */
-  int		appi_hit_ffree_serial;				/*!< The first not-yet-set serial of a confirmed hit */
-  ap_hit_t **	appi_hits;					/*!< Checksum hits, this will become sorted */
+  dk_set_t	appi_candidate_hits_revlist;			/*!< Temporary revlist of all found checksum hits */
+  int		appi_candidate_hit_count;			/*!< Accumulated length of appi_candidate_hits_revlist */
+  dk_set_t	appi_confirmed_hits_list;			/*!< Temporary list of all found real hits */
+  int		appi_confirmed_hit_count;			/*!< Accumulated length of appi_confirmed_hits_list */
   dk_set_t	appi_phrases_revlist;				/*!< Temporary revlist of all found phrases */
   vt_batch_t *  appi_vtb;
 } ap_proc_inst_t;
@@ -970,7 +970,7 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
   int check_buf_length, word_idx, aps_ctr, max_phrase_len;
   size_t patch_buf_length;
   uint32 word_hash;
-  check_buf_length = eh_decode_buffer__UTF8 (check_buf, WORD_MAX_CHARS, &check_src_begin, buf+bufsize);
+  check_buf_length = eh_decode_buffer__UTF8 (check_buf, WORD_MAX_CHARS, (__constcharptr *)(&check_src_begin), (const char *)(buf+bufsize));
   if ((check_buf_length <= 0) || (check_src_begin != buf+bufsize))
     { /* This is not a word of reasonable size or an encoding error. That is strange but...*/
 #ifdef DEBUG
@@ -980,7 +980,7 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
     }
   arr = appi_add_arrow (APA_PLAIN_WORD, apa_start, apa_end, htmltm_bits, innermost_tag, appi);
   appi->appi_lh->lh_toupper_word (check_buf, check_buf_length, patch_buf, &patch_buf_length);
-  chksum_end = eh_encode_buffer__UTF8 (patch_buf, patch_buf + patch_buf_length, chksum_buf, chksum_buf + BUFSIZEOF__UTF8_WORD);
+  chksum_end = (utf8char *)eh_encode_buffer__UTF8 (patch_buf, patch_buf + patch_buf_length, (char *)chksum_buf, (char *)(chksum_buf + BUFSIZEOF__UTF8_WORD));
   BYTE_BUFFER_HASH(word_hash, chksum_buf, chksum_end - chksum_buf);
 
   appi->appi_word_count += 1;
@@ -1031,8 +1031,8 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
 	  aph->aph_last_idx = appi->appi_place_idx_last [(appi->appi_place_last_ffree_idx + APPI_MAX_PHRASE_NONNOISE - 1) % APPI_MAX_PHRASE_NONNOISE];
 	  aph->aph_.aph_candidate.aph_chksum = chksum;
           aph->aph_.aph_candidate.aph_set = aps;
-	  mp_set_push (appi->appi_mp, &(appi->appi_hits_revlist), aph);
-	  appi->appi_hit_count += 1;
+	  mp_set_push (appi->appi_mp, &(appi->appi_candidate_hits_revlist), aph);
+	  appi->appi_candidate_hit_count += 1;
 #ifdef AP_CHKSUM_DEBUG
           do {
               /*
@@ -1074,8 +1074,9 @@ from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = ? and AP_CHKSUM = ?";
 /*! This converts revlists into arrays, sort hits by checksums and extracts phrase data. */
 void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
 {
-  int place_ctr, place_count, word_ctr, word_count, hit_ctr, hit_count, phrase_ctr, phrase_count;
+  int place_ctr, place_count, word_ctr, word_count, candidate_hit_ctr, candidate_hit_count, phrase_ctr, phrase_count;
   dk_set_t tail;
+  ap_hit_t **candidate_hits;
   /* All places and words */
   place_ctr = place_count = appi->appi_place_count;
   word_ctr = word_count = appi->appi_word_count;
@@ -1091,46 +1092,42 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
   if ((0 != place_ctr) || (0 != word_ctr))
     GPF_T;
   /* All hits */
-  hit_ctr = hit_count = appi->appi_hit_count;
-  appi->appi_hits = (ap_hit_t **) appi_alloc (hit_count * sizeof (ap_hit_t *));
-  for (tail = appi->appi_hits_revlist; NULL != tail; tail = tail->next)
+  candidate_hit_ctr = candidate_hit_count = appi->appi_candidate_hit_count;
+  candidate_hits = (ap_hit_t **) appi_alloc (candidate_hit_count * sizeof (ap_hit_t *));
+  for (tail = appi->appi_candidate_hits_revlist; NULL != tail; tail = tail->next)
    {
      ap_hit_t *curr = (ap_hit_t *)(tail->data);
-     appi->appi_hits [--hit_ctr] = curr;
+     candidate_hits [--candidate_hit_ctr] = curr;
    }
-  if (0 != hit_ctr)
+  if (0 != candidate_hit_ctr)
     GPF_T;
-  qsort (appi->appi_hits, hit_count, sizeof (ap_hit_t *), ap_hit_cmp);
-  hit_ctr = 0;
+  qsort (candidate_hits, candidate_hit_count, sizeof (ap_hit_t *), ap_hit_cmp);
+  candidate_hit_ctr = 0;
   phrase_count = 0;
-  while (hit_ctr < hit_count)
+  while (candidate_hit_ctr < candidate_hit_count)
     {
-      ap_hit_t *curr_hit = appi->appi_hits [hit_ctr];
+      ap_hit_t *curr_hit = candidate_hits [candidate_hit_ctr];
       uint32 chksum = curr_hit->aph_.aph_candidate.aph_chksum;
       ap_set_t *aps = curr_hit->aph_.aph_candidate.aph_set;
       ptrlong aps_id = aps->aps_id;
       caddr_t err = NULL;
       local_cursor_t *lc = NULL;
+      int aux_hit_ctr, next_diff_hit_ctr;
+      for (next_diff_hit_ctr = candidate_hit_ctr + 1; next_diff_hit_ctr < candidate_hit_count; next_diff_hit_ctr++)
+        {
+	  ap_hit_t *next_hit = candidate_hits [next_diff_hit_ctr];
+	  if (chksum != next_hit->aph_.aph_candidate.aph_chksum)
+            break;
+          if (aps_id != next_hit->aph_.aph_candidate.aph_set->aps_id)
+            break;
+        }
       err = qr_quick_exec (app_find_by_hit__qr, appi->appi_qi->qi_client, "", &lc, 2,
 		":0", (ptrlong) aps_id, QRP_INT,
 		":1", (ptrlong) chksum, QRP_INT
 		 );
-      if (((caddr_t) SQL_SUCCESS != err) || !lc_next (lc))
-	{ /* The hit is not confirmed */
-	  for (;;)
-	    {
-	      appi->appi_hits [hit_ctr] = NULL;
-	      hit_ctr++;
-	      if (hit_ctr >= hit_count)
-		break;
-	      curr_hit = appi->appi_hits [hit_ctr];
-	      if (chksum != curr_hit->aph_.aph_candidate.aph_chksum)
-                break;
-              if (aps_id != curr_hit->aph_.aph_candidate.aph_set->aps_id)
-		break;
-	    }
-	}
-      else
+      if ((caddr_t) SQL_SUCCESS == err)
+	{
+	  while (lc_next (lc))
 	{
           ap_phrase_t *app = appi_alloc_type (ap_phrase_t);
 	  int prev_serial = -1;
@@ -1143,30 +1140,32 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
 #ifdef AP_CHKSUM_DEBUG
 	  aps->aps_real_hits += 1;
 #endif
-	  for (;;)
+              for (aux_hit_ctr = candidate_hit_ctr; aux_hit_ctr < next_diff_hit_ctr; aux_hit_ctr++)
 	    {
-              int first_idx = curr_hit->aph_first_idx;
-              int last_idx = curr_hit->aph_last_idx;
-              int curr_idx;
-	      curr_hit->aph_.aph_confirmed.aph_phrase = app;
-	      curr_hit->aph_.aph_confirmed.aph_serial = appi->appi_hit_ffree_serial;
-	      curr_hit->aph_.aph_confirmed.aph_prev = prev_serial;
-	      prev_serial = appi->appi_hit_ffree_serial;
-	      appi->appi_hit_ffree_serial += 1;
-              for (curr_idx = first_idx; curr_idx <= last_idx; curr_idx++)
+		  int first_idx;
+		  int last_idx;
+                  int word_idx;
+		  ap_hit_t *confirmed;
+	          curr_hit = candidate_hits [aux_hit_ctr];
+		  first_idx = curr_hit->aph_first_idx;
+		  last_idx = curr_hit->aph_last_idx;
+                  confirmed = appi_alloc_type (ap_hit_t);
+                  confirmed->aph_first_idx = curr_hit->aph_first_idx;
+                  confirmed->aph_last_idx = curr_hit->aph_last_idx;
+                  confirmed->aph_htmltm_bits = curr_hit->aph_htmltm_bits;
+		  confirmed->aph_.aph_confirmed.aph_phrase = app;
+		  confirmed->aph_.aph_confirmed.aph_serial = appi->appi_confirmed_hit_count;
+		  confirmed->aph_.aph_confirmed.aph_prev = prev_serial;
+		  prev_serial = appi->appi_confirmed_hit_count;
+                  mp_set_push (appi->appi_mp, &(appi->appi_confirmed_hits_list), confirmed);
+                  appi->appi_confirmed_hit_count += 1;
+		  for (word_idx = first_idx; word_idx <= last_idx; word_idx++)
                 {
-	          ap_arrow_t *apa = appi->appi_places [curr_idx];
+		      ap_arrow_t *apa = appi->appi_places [word_idx];
 		  if (APA_PLAIN_WORD == apa->apa_is_markup)
-		    mp_set_push (appi->appi_mp, &(apa->apa_all_hits), curr_hit);
+			mp_set_push (appi->appi_mp, &(apa->apa_all_hits), confirmed);
+		    }
 		}
-	      hit_ctr++;
-	      if (hit_ctr >= hit_count)
-		break;
-	      curr_hit = appi->appi_hits [hit_ctr];
-	      if (chksum != curr_hit->aph_.aph_candidate.aph_chksum)
-                break;
-              if (aps_id != curr_hit->aph_.aph_candidate.aph_set->aps_id)
-		break;
 	    }
 	}
       if (lc)
@@ -1174,6 +1173,7 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
 	  lc_free (lc);
 	  lc = NULL;
 	}
+      candidate_hit_ctr = next_diff_hit_ctr;
     }
   appi->appi_phrases = (ap_phrase_t **) appi_alloc (phrase_count * sizeof (ap_phrase_t *));
   phrase_ctr = phrase_count;
@@ -1194,6 +1194,7 @@ caddr_t appi_prepare_match_list (ap_proc_inst_t *appi, int collapse_flags)
   caddr_t *m_apc, *m_aps, *m_app, *m_apa, *m_apa_w, *m_aph;
   dk_hash_t *apc_hash, *aps_hash, *app_hash;
   ap_arrow_t **apa_farray;
+  dk_set_t aph_tail;
   aps_count = appi->appi_set_count;
   apc_hash = hash_table_allocate (aps_count);
   aps_hash = hash_table_allocate (aps_count);
@@ -1328,14 +1329,14 @@ caddr_t appi_prepare_match_list (ap_proc_inst_t *appi, int collapse_flags)
       if (APA_PLAIN_WORD == apa->apa_is_markup)
 	m_apa_w [apa_w_ctr ++] = box_num (apa_fctr);
     }
-  m_aph = dk_alloc_box_zero (appi->appi_hit_ffree_serial * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  aph_ctr = appi->appi_hit_count;
+  m_aph = dk_alloc_box_zero (appi->appi_confirmed_hit_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  aph_ctr = appi->appi_confirmed_hit_count;
+  aph_tail = appi->appi_confirmed_hits_list;
   while (aph_ctr--)
     {
-      ap_hit_t *aph = appi->appi_hits[aph_ctr];
       caddr_t aph_itm;
-      if (NULL == aph) /* if unconfirmed checksum hit */
-	continue;
+      ap_hit_t *aph = aph_tail->data;
+      aph_tail = aph_tail->next;
       aph_itm = list (4,
 	  box_num (aph->aph_first_idx),
 	  box_num (aph->aph_last_idx),
@@ -1365,7 +1366,7 @@ void appi_word_cbk_ptext (const utf8char *buf, size_t bufsize, void *userdata)
       lh_iterate_patched_words (
 	  vtb->vtb_default_eh, 
 	  appi->appi_lh, 
-	  buf, bufsize, 
+	  (const char *)buf, bufsize, 
 	  appi->appi_lh->lh_is_vtb_word, 
 	  appi->appi_lh->lh_normalize_word,
 	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
@@ -1447,7 +1448,7 @@ void appi_word_cbk_html (const utf8char *buf, size_t bufsize, void *userdata)
       lh_iterate_patched_words (
 	  vtb->vtb_default_eh, 
 	  appi->appi_lh, 
-	  buf, bufsize, 
+	  (const char *)buf, bufsize, 
 	  appi->appi_lh->lh_is_vtb_word, 
 	  appi->appi_lh->lh_normalize_word,
 	  (lh_word_callback_t *) vtb_hash_string_ins_callback, (void *)vtb);
@@ -1474,7 +1475,7 @@ void appi_character (void *userdata, const char * s, size_t len)
     {
       orig_s--;
     }
-  ah->ah_chars_begin = s;
+  ah->ah_chars_begin = (const utf8char *)s;
   appi->appi_elh_UTF8->elh_iterate_words (
     s, len,
     appi->appi_lh->lh_is_vtb_word, appi_word_cbk_html, ah);
