@@ -443,7 +443,7 @@ int strses_aref (caddr_t ses1, int idx);
 caddr_t box_narrow_string_as_utf8 (caddr_t _str, caddr_t narrow, long max_len,
     caddr_t _charset);
 caddr_t box_wide_as_utf8_char (caddr_t _wide, long wide_len, dtp_t dtp);
-caddr_t box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len,
+caddr_t box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len,
     caddr_t _charset);
 extern caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest,
     long utf8_len, long max_wide_len, dtp_t dtp);

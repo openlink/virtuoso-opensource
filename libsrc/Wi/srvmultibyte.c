@@ -866,11 +866,11 @@ compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 
 
 caddr_t
-box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
+box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
 {
   virt_mbstate_t state;
   long len, inx;
-  unsigned char *str = (unsigned char *) _str, *src = (unsigned char *) _str;
+  const unsigned char *str = (const unsigned char *) _str, *src = (const unsigned char *) _str;
   caddr_t box;
   if (!charset)
     {
@@ -908,11 +908,11 @@ box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_
 }
 
 caddr_t
-t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
+t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
 {
   virt_mbstate_t state;
   long len, inx;
-  unsigned char *str = (unsigned char *) _str, *src = (unsigned char *) _str;
+  const unsigned char *str = (const unsigned char *) _str, *src = (const unsigned char *) _str;
   caddr_t box;
   if (!charset)
     {
