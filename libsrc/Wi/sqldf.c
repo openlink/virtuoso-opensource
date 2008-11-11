@@ -2763,7 +2763,7 @@ sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * c
   if (DFE_COLUMN != col->dfe_type || DV_ANY != col->_.col.col->col_sqt.sqt_dtp)
     return 0;
   BIN_OP (tree, BOP_LIKE, col->dfe_tree, (ST *) t_box_dv_short_string (iri_like));
-  dk_set_push (col_preds, sqlo_df (so, tree));
+  t_set_push (col_preds, sqlo_df (so, tree));
   return 1;
 }
 

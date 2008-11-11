@@ -574,7 +574,7 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
       DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.all_preds)
 	{
 	  if (!dk_set_member (dio->dio_table->_.table.col_preds, (void*)cp))
-	    dk_set_push (&all_preds, (void*) cp);
+	    t_set_push (&all_preds, (void*) cp);
 	  cp->dfe_is_placed = DFE_PLACED;
 	}
       END_DO_SET();
