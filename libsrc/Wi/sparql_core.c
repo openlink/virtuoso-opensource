@@ -1123,9 +1123,16 @@ spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qnam
     verb_qname->_.lit.val,
     uname_virtrdf_ns_uri_isSpecialPredicate );
   if (0 != BOX_ELEMENTS (spec_pred_names))
-    spar_error (sparp, "?%.200s %s ?%.200s is not allowed because it uses special predicate name", lvar->_.var.vname, optext, verb_lexem_text);
+    {
+      dk_free_tree (spec_pred_names);
+      spar_error (sparp, "?%.200s %s ?%.200s is not allowed because it uses special predicate name", lvar->_.var.vname, optext, verb_lexem_text);
+    }
   if (NULL == sparp->sparp_env->spare_propvar_sets)
-    spar_error (sparp, "?%.200s %s ?%.200s is used in illegal context", lvar->_.var.vname, optext, verb_lexem_text);
+    {
+      dk_free_tree (spec_pred_names);
+      spar_error (sparp, "?%.200s %s ?%.200s is used in illegal context", lvar->_.var.vname, optext, verb_lexem_text);
+    }
+  dk_free_tree (spec_pred_names);
 
   lvar_blen = box_length (lvar->_.var.vname);
   verb_qname_blen = box_length (verb_qname->_.lit.val);
@@ -1556,8 +1563,10 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, spec_pred_names[0],
               (SPART **)t_list_concat (t_list (2, subject, object), (caddr_t)options) ) );
+	  dk_free_tree (spec_pred_names);
           return;
         }
+      dk_free_tree (spec_pred_names);
     }
   for (;;)
     {

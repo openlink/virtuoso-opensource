@@ -789,10 +789,10 @@ sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
 #endif
       res = box_dv_short_string (full_res_buf);
     }
-  if (ignore_cache)
-    return res; /* mutex is not entered and it's OK to bypass mutex_leave() at the end. */
   if (full_res_buf != res_local_buf)
     dk_free (full_res_buf, res_maxsize);
+  if (ignore_cache)
+    return res; /* mutex is not entered and it's OK to bypass mutex_leave() at the end. */
   key_pair [0] = box_dv_short_string (f1);
   key_pair [1] = box_dv_short_string (f2);
 #if 0
