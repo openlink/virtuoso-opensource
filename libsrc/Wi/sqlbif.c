@@ -12345,8 +12345,8 @@ bif_hic_set_memcache_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 caddr_t
 bif_bit_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_and"));
-  long x2 = (long) (0xffffffff & bif_long_arg (qst, args, 1, "bit_and"));
+  int64 x1 = (int64) bif_long_arg (qst, args, 0, "bit_and");
+  int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_and");
   return box_num (x1 & x2);
 }
 
@@ -12354,8 +12354,8 @@ bif_bit_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_bit_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_or"));
-  long x2 = (long) (0xffffffff & bif_long_arg (qst, args, 1, "bit_or"));
+  int64 x1 = (int64) bif_long_arg (qst, args, 0, "bit_or");
+  int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_or");
   return box_num (x1 | x2);
 }
 
@@ -12363,8 +12363,8 @@ bif_bit_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_bit_xor (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_xor"));
-  long x2 = (long) (0xffffffff & bif_long_arg (qst, args, 1, "bit_xor"));
+  int64 x1 = (int64) bif_long_arg (qst, args, 0, "bit_xor");
+  int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_xor");
   return box_num (x1 ^ x2);
 }
 
@@ -12372,7 +12372,7 @@ bif_bit_xor (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_bit_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_or"));
+  int64 x1 = (int64) bif_long_arg (qst, args, 0, "bit_not");
   return box_num (~x1);
 }
 
@@ -12380,17 +12380,12 @@ bif_bit_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_bit_shift (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_shift"));
-  long x2 = bif_long_arg (qst, args, 1, "bit_shift");
+  int64 x1 = (int64) bif_long_arg (qst, args, 0, "bit_shift");
+  int64 x2 = (int64) bif_long_arg (qst, args, 1, "bit_shift");
   if (x2 >= 0)
     return box_num (x1 << x2);
-  else /* The trick here is for guaranteed accurate work on 64-bit platforms. */
-    {
-      if (x1 & 0x80000000)
-        return box_num (0xffffffff ^ ((x1 ^ 0xffffffff) >> (-x2)));
       else
         return box_num (x1 >> (-x2));
-    }
 }
 
 caddr_t
