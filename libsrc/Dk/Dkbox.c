@@ -188,6 +188,10 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   unsigned char *ptr = NULL;
   size_t align_bytes;
 
+#ifdef MALLOC_DEBUG
+  if (bytes & ~0xffffff)
+    GPF_T1 ("box to allocate is too large");
+#endif
   /* This assumes dk_alloc aligns at least at 4 */
   align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
 

@@ -3281,6 +3281,10 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
 
+  if (bytes > 10000000) /* if no such error further we will try to alloc larger box and so on, bad error message */
+    sqlr_new_error ("22023", "SR102",
+	"BLOB larger than 10mb cannot be converted into a string.");
+
   if (!bytes)
     goto return_empty_string;		/* see below */
 

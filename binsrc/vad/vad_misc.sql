@@ -34,6 +34,7 @@ DB.DBA.DAV_RES_GET (in path varchar,
 {
   declare id, ouid, ogid, rc integer;
   declare st char;
+  declare tmp any;
 
   if (0 > (id := DB.DBA.DAV_SEARCH_ID (path, 'r')))
     return id;
@@ -45,7 +46,15 @@ DB.DBA.DAV_RES_GET (in path varchar,
   if (0 <> (rc := DB.DBA.DAV_IS_LOCKED (id , st)))
     return rc;
 
-  select cast (RES_CONTENT as varchar) into data from WS.WS.SYS_DAV_RES where RES_ID = id;
+  select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_ID = id;
+  if (length (tmp) > 10000000)
+    {
+      data := string_output ();
+      http (tmp, data);
+    }
+  else
+    data := blob_to_string (tmp);
+
   return 1;
 }
 ;

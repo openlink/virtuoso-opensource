@@ -432,14 +432,20 @@ create procedure "VAD"."DBA"."VAD_OUT_ROW_DAV" (
     i := i + 1;
   }
   declare data varchar;
-  if ("VAD"."DBA"."VAD_DAV_GET_RES" (ini, fname, data) < 0)
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('Inexistent DAV resource (%s)', name));
+  declare tmp any;
   declare search_id integer;
   search_id := DB.DBA.DAV_SEARCH_ID (fname, 'R');
   if (search_id < 0)
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('Inexistent DAV resource (%s)', name));
-  select cast (RES_CONTENT as varchar) into data from WS.WS.SYS_DAV_RES
+  select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES
     where RES_ID = search_id;
+  if (length (tmp) > 10000000)
+    {
+      data := string_output ();
+      http (tmp, data);
+    }
+  else
+    data := blob_to_string (tmp);
   _len := length (data);
   "VAD"."DBA"."VAD_OUT_CHAR" (ses, pos, 223, ctx);
   "VAD"."DBA"."VAD_OUT_LONG" (ses, pos, _len, ctx);
