@@ -2693,20 +2693,43 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sst_tctx_t context;
   search_stream_t * sst;
   query_instance_t * qi = (query_instance_t *) qst;
-  caddr_t err = NULL;
+  caddr_t err = NULL, name;
   caddr_t * tree;
+  lang_handler_t *lh = server_default_lh;
+  encoding_handler_t *eh = &eh__ISO8859_1;
   vt_batch_t * vtb = bif_vtb_arg (qst, args, 0, "vt_batch_match");
   caddr_t str = bif_array_arg (qst, args, 1, "vt_batch_match"); /* use an array as argument bif_string_arg */
   state_slot_t * scores = BOX_ELEMENTS (args) > 2 && ssl_is_settable (args[2]) ? args[2] : NULL;
   state_slot_t * ranges = BOX_ELEMENTS (args) > 3 && ssl_is_settable (args[3]) ? args[3] : NULL;
   dtp_t dtp = DV_TYPE_OF (str);
 
+  switch (BOX_ELEMENTS (args))
+    {
+      case 6:
+	name = bif_string_arg (qst, args, 5, "vt_batch_match");
+	if (strcmp (name, "*ini*"))
+	  {
+	    eh = eh_get_handler (name);
+	    if (NULL == eh)
+	      sqlr_new_error ("42000", "FT036", "Invalid encoding name '%s' is specified by an argument of vt_batch_match()", name);
+	  }
+	/* no break */
+      case 5:
+	name = bif_string_arg (qst, args, 4, "vt_batch_match");
+	if (strcmp (name, "*ini*"))
+	  {
+	    lh = lh_get_handler (name);
+	    if (NULL == lh)
+	      sqlr_new_error ("42000", "FT037", "Invalid language name '%s' is specified by an argument of vt_batch_match()", name);
+	  }
+    }
+
   D_SET_INITIAL (&d_id_next);
   if (!vtb->vtb_strings_taken)
     sqlr_new_error ("42000", "FT005", "vtb_match only allowed after vt_batch_strings");
   if (IS_STRING_DTP (dtp))
     {
-      tree = xp_text_parse (str, &eh__ISO8859_1, server_default_lh, NULL /* ignore run-time options */, &err);
+      tree = xp_text_parse (str, eh, lh, NULL /* ignore run-time options */, &err);
       if (err)
 	{
 	  dk_free_tree ((caddr_t) tree);
