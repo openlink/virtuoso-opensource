@@ -7925,17 +7925,18 @@ create procedure get_date_array (in dt date)
 {
   declare i, l int;
   declare m, y, w, d int;
-  declare dw int;
+  declare dw, dm int;
   declare arr, res any;
 
   arr := vector ('','','','','','','');
   i := 0;
   m := month (dt);
   y := year (dt);
+  dm := BLOG..GET_DAYS_IN_MONTH (dt);
 
   res := vector ();
   i := 1;
-  while (i < 32)
+  while (i <= dm)
     {
       declare tmp date;
       whenever sqlstate '*' goto endd;
@@ -8337,5 +8338,20 @@ create procedure RE_TAG_POST (in blogid varchar, in post_id varchar, in user_id 
 	delete from BLOG..BLOG_TAG where BT_BLOG_ID = blogid and BT_POST_ID = post_id;
       }
    return flag;
+}
+;
+
+CREATE FUNCTION BLOG..GET_DAYS_IN_MONTH (in pDate  DATETIME) RETURNS INT
+{
+    RETURN CASE WHEN MONTH(pDate) IN (1, 3, 5, 7, 8, 10, 12) THEN 31
+                WHEN MONTH(pDate) IN (4, 6, 9, 11) THEN 30
+                ELSE CASE WHEN (mod (YEAR(pDate), 4)    = 0 AND
+                                mod (YEAR(pDate), 100)  <> 0) OR
+                               (mod (YEAR(pDate), 400)  = 0)
+                          THEN 29
+                          ELSE 28
+                     END
+           END;
+
 }
 ;

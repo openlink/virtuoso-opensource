@@ -389,7 +389,7 @@
 	    }
 	  else
             {
-	      qry := qry || ' b.SCORE '|| case when self.ord_type.ufl_selected = 0 then 'asc' else 'desc' end;
+	      qry := qry || ' b.SCORE desc'; --|| case when self.ord_type.ufl_selected = 0 then 'asc' else 'desc' end;
             }
 
 	  --dbg_obj_print (qry, pars);
