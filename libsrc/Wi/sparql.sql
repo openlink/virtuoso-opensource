@@ -9230,6 +9230,19 @@ http('</html>\n');
       pvalue := params [paramctr+1];
       if ('query' = pname)
         query := pvalue;
+      else if ('find' = pname)
+	{
+	  declare cls, words, ft, vec, cond varchar;
+	  cls := get_keyword ('class', params);
+	  if (cls is not null)
+	    cond := sprintf (' ?s a %s . ', cls);
+         else
+	   cond := '';
+	  ft := trim (DB.DBA.FTI_MAKE_SEARCH_STRING_INNER (pvalue, words), '()');
+	  vec := DB.DBA.SYS_SQL_VECTOR_PRINT (words);
+	  query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), ?o)) ' ||
+	   'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) }', vec, cond, ft);
+	}
       else if ('default-graph-uri' = pname and length (pvalue))
         {
 	  if (position (pvalue, dflt_graphs) <= 0)
