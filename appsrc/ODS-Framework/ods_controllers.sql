@@ -79,7 +79,7 @@ create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 --! Performs HTTP, OAuth, session based authentication in same order
 create procedure ods_check_auth (out uname varchar, in inst_id integer := null, in mode char := 'owner')
 {
-  declare rc int;
+  declare rc, authType integer;
   declare params, lines any;
 
   params := http_param ();
@@ -99,6 +99,7 @@ create procedure ods_check_auth (out uname varchar, in inst_id integer := null, 
     {
       select VS_UID into uname from DB.DBA.VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_REALM = get_keyword ('realm', params);
       rc := 1;
+      authType := 1;
     }
   else if (get_keyword ('user_name', params) is not null and get_keyword ('password_hash', params) is not null)
     {
@@ -107,6 +108,7 @@ create procedure ods_check_auth (out uname varchar, in inst_id integer := null, 
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into pwd from DB.DBA.SYS_USERS where U_NAME = uname;
       if (_hex_sha1_digest (uname||pwd) = get_keyword ('password_hash', params))
 	rc := 1;
+      authType := 1;
     }
   -- check ACL
   if (inst_id > 0 and rc > 0)
@@ -116,11 +118,10 @@ create procedure ods_check_auth (out uname varchar, in inst_id integer := null, 
 	member_type := 1;
       else
        {
-	 member_type := (select WMT_ID from DB.DBA.WA_MEMBER_TYPE, DB.DBA.WA_INSTANCE where
-	   WAI_ID = inst_id and WMT_NAME = mode and WMT_APP = WAI_TYPE_NAME);
+	      member_type := (select WMT_ID from DB.DBA.WA_MEMBER_TYPE, DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WMT_NAME = mode and WMT_APP = WAI_TYPE_NAME);
        }
-      if (not exists (select 1 from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
-	    where WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE <= member_type))
+      if ((authType = 0) or (uname not in ('dba', 'dav')))
+        if (not exists (select 1 from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAI_ID = inst_id and WAM_INST = WAI_NAME and WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE <= member_type))
 	rc := 0;
     }
   else if (inst_id = -1 and rc > 0)
@@ -191,7 +192,6 @@ create procedure exec_sparql (in qr varchar)
   qr := 'SPARQL define output:valmode "LONG" ' ||
   ' define input:inference "' || sioc..get_graph() || '"' ||
   sioc..std_pref_declare () || qr;
-  -- dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, metas, rset);
   if (stat <> '00000')
     {
@@ -390,11 +390,14 @@ create procedure ODS.ODS_API."user.enable" (in name varchar) __soap_http 'text/x
     return ods_auth_failed ();
   if (uname in ('dav', 'dba'))
     {
+    update DB.DBA.WA_INSTANCE
+       set WAI_IS_FROZEN = 0
+     where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
       DB.DBA.USER_SET_OPTION (name, 'DISABLED', 0);
       rc := 1;
-    }
-  else
+  } else {
     rc := -13;
+  }
   return ods_serialize_int_res (rc);
 }
 ;
@@ -413,11 +416,14 @@ create procedure ODS.ODS_API."user.disable" (in name varchar) __soap_http 'text/
   if (uname in ('dav', 'dba'))
     {
     delete from DB.DBA.VSPX_SESSION where VS_UID = name;
+    update DB.DBA.WA_INSTANCE
+       set WAI_IS_FROZEN = 1
+     where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
     DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
       rc := 1;
-    }
-  else
+  } else {
     rc := -13;
+  }
   return ods_serialize_int_res (rc);
 }
 ;

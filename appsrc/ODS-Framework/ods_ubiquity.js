@@ -162,7 +162,15 @@ function odsExecute (cmdName, cmdParams, cmdApplication, showMode, authMode)
   var logMode = ODS.getLog();
 
   if (logMode)
+  {
     CmdUtils.log(cmdName + " - start");
+    var S = "";
+    for(var param in cmdParams)
+    {
+      S += param + " value :" + cmdParams[param] + "\n";
+    }
+    CmdUtils.log(S);
+  }
   if (authMode)
   {
     var res = jQuery.ajax({
@@ -266,8 +274,12 @@ function addParameter(modifiers, modifierName, parameters, parameterName, modifi
     if (!modifiers[modifierName]) {throw "Please, enter " + modifierName;}
       checkParameter(modifiers[modifierName].text, modifierName);
   }
-  if (modifiers[modifierName] && modifiers[modifierName].text && (modifiers[modifierName].text.length > 0))
+  if (modifiers[modifierName] && modifiers[modifierName].text)
+  {
+    var S = modifiers[modifierName].text.toString();
+    if (S.length > 0)
     parameters[parameterName] = modifiers[modifierName].text;
+}
 }
 
 function xml_encode(xml)
@@ -674,14 +686,14 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-  name: "ods-new-user-annotation",
+  name: "ods-create-user-annotation",
   takes: {"iri": noun_arb_text},
   modifiers: {"has": noun_arb_text, "with": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-new-user-annotation &lt;iri&gt; has &lt;relation&gt; with &lt;value&gt;",
+  help: "Type ods-create-user-annotation &lt;iri&gt; has &lt;relation&gt; with &lt;value&gt;",
   execute: function (iri, modifiers) {
     try {
       checkParameter(iri.text, "iri");
@@ -1244,28 +1256,6 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-  name: "ods-update-bookmark-annotation",
-  takes: {"annotation_id": noun_type_id},
-  modifiers: {"author": noun_arb_text, "body": noun_arb_text},
-  homepage: "http://myopenlink.net/ods/",
-  icon: "http://www.openlinksw.com/favicon.ico",
-  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
-  license: "MPL",
-  help: "Type ods-update-bookmark-annotation &lt;annotation_id&gt; author &lt;author&gt; body &lt;body&gt;",
-  execute: function (annotation_id, modifiers) {
-    try {
-      checkParameter(annotation_id.text, "annotation_id");
-    var params = {annotation_id: annotation_id.text};
-    addParameter(modifiers, "author", params, "author", true);
-    addParameter(modifiers, "body", params, "body", true);
-      odsExecute("bookmark.annotation.edit", params, "bookmark");
-    } catch (ex) {
-      displayMessage(ex);
-    }
-  }
-});
-
-CmdUtils.CreateCommand({
   name: "ods-create-bookmark-annotation-claim",
   takes: {"annotation_id": noun_type_id},
   modifiers: {"iri": noun_arb_text, "relation": noun_arb_text, "value": noun_arb_text},
@@ -1661,6 +1651,7 @@ CmdUtils.CreateCommand({
     try {
       checkParameter(event_id.text, "event_id");
     var params = {event_id: event_id.text};
+      CmdUtils.log(modifiers["eventStart"].data);
     addParameter(modifiers, "subject", params, "subject", true);
     addParameter(modifiers, "description", params, "description");
     addParameter(modifiers, "location", params, "location");
@@ -1854,28 +1845,6 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "author", params, "author", true);
     addParameter(modifiers, "body", params, "body", true);
       odsExecute("calendar.annotation.new", params, "calendar");
-    } catch (ex) {
-      displayMessage(ex);
-    }
-  }
-});
-
-CmdUtils.CreateCommand({
-  name: "ods-update-calendar-annotation",
-  takes: {"annotation_id": noun_type_id},
-  modifiers: {"author": noun_arb_text, "body": noun_arb_text},
-  homepage: "http://myopenlink.net/ods/",
-  icon: "http://www.openlinksw.com/favicon.ico",
-  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
-  license: "MPL",
-  help: "Type ods-update-calendar-annotation &lt;annotation_id&gt; author &lt;author&gt; body &lt;body&gt;",
-  execute: function (annotation_id, modifiers) {
-    try {
-      checkParameter(annotation_id.text, "annotation_id");
-    var params = {annotation_id: annotation_id.text};
-    addParameter(modifiers, "author", params, "author", true);
-    addParameter(modifiers, "body", params, "body", true);
-      odsExecute("calendar.annotation.edit", params, "calendar");
     } catch (ex) {
       displayMessage(ex);
     }
@@ -2476,28 +2445,6 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-  name: "ods-update-addressbook-annotation",
-  takes: {"annotation_id": noun_type_id},
-  modifiers: {"author": noun_arb_text, "body": noun_arb_text},
-  homepage: "http://myopenlink.net/ods/",
-  icon: "http://www.openlinksw.com/favicon.ico",
-  author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
-  license: "MPL",
-  help: "Type ods-update-addressbook-annotation &lt;annotation_id&gt; author &lt;author&gt; body &lt;body&gt;",
-  execute: function (annotation_id, modifiers) {
-    try {
-      checkParameter(annotation_id.text, "annotation_id");
-    var params = {annotation_id: annotation_id.text};
-    addParameter(modifiers, "author", params, "author", true);
-    addParameter(modifiers, "body", params, "body", true);
-      odsExecute("addressbook.annotation.edit", params, "addressbook");
-    } catch (ex) {
-      displayMessage(ex);
-    }
-  }
-});
-
-CmdUtils.CreateCommand({
   name: "ods-create-addressbook-annotation-claim",
   takes: {"annotation_id": noun_type_id},
   modifiers: {"iri": noun_arb_text, "relation": noun_arb_text, "value": noun_arb_text},
@@ -2569,13 +2516,13 @@ CmdUtils.CreateCommand({
   help: "Type ods-create-addressbook-comment &lt;contact_id&gt; title &lt;title&gt; body &lt;body&gt; author &lt;author&gt; authorMail &lt;authorMail&gt; authorUrl &lt;authorUrl&gt;",
   execute: function (contact_id, modifiers) {
     try {
-      checkParameter2(contact_id.text, "contact_id");
+      checkParameter(contact_id.text, "contact_id");
     var params = {contact_id: contact_id.text};
-      addParameter2(modifiers, "title", params, "title", true);
-      addParameter2(modifiers, "body", params, "text", true);
-      addParameter2(modifiers, "author", params, "name", true);
-      addParameter2(modifiers, "authorMail", params, "email", true);
-      addParameter2(modifiers, "authorUrl", params, "url", true);
+      addParameter(modifiers, "title", params, "title", true);
+      addParameter(modifiers, "body", params, "text", true);
+      addParameter(modifiers, "author", params, "name", true);
+      addParameter(modifiers, "authorMail", params, "email", true);
+      addParameter(modifiers, "authorUrl", params, "url", true);
       odsExecute("addressbook.comment.new", params, "addressbook");
     } catch (ex) {
       displayMessage(ex);
@@ -2925,14 +2872,14 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-  name: "ods-new-poll-question",
+  name: "ods-create-poll-question",
   takes: {"poll_id": noun_type_id},
   modifiers: {"questionNo": noun_type_integer, "text": noun_arb_text, "description": noun_arb_text, "required": noun_arb_text, "type": noun_arb_text, "answer": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
-  help: "Type ods-new-poll-question &lt;poll_id&gt; questionNo &lt;questionNo&gt; text &lt;text&gt; [description &lt;description&gt;] [required &lt;required&gt;] [type &lt;type&gt;] [answer &lt;answer&gt;]",
+  help: "Type ods-create-poll-question &lt;poll_id&gt; questionNo &lt;questionNo&gt; text &lt;text&gt; [description &lt;description&gt;] [required &lt;required&gt;] [type &lt;type&gt;] [answer &lt;answer&gt;]",
   execute: function (poll_id, modifiers) {
     try {
       checkParameter(poll_id.text, "poll_id");
@@ -2942,7 +2889,7 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "description", params, "description");
     addParameter(modifiers, "required", params, "required");
     addParameter(modifiers, "type", params, "type");
-    addParameter(modifiers, "answer", params, "answer");
+      addParameter(modifiers, "answer", params, "answer", true);
       odsExecute("poll.question.new", params, "poll");
     } catch (ex) {
       displayMessage(ex);
@@ -2959,7 +2906,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-delete-poll-question &lt;poll_id&gt; questionNo &lt;questionNo&gt;",
-  execute: function (poll_id) {
+  execute: function (poll_id, modifiers) {
     try {
       checkParameter(poll_id.text, "poll_id");
     var params = {poll_id: poll_id.text};
@@ -3040,7 +2987,7 @@ CmdUtils.CreateCommand({
     try {
       checkParameter(poll_id.text, "poll_id");
     var params = {poll_id: poll_id.text};
-      odsExecute("poll.activate", params, "poll");
+      odsExecute("poll.vote", params, "poll");
     } catch (ex) {
       displayMessage(ex);
     }
