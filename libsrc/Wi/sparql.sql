@@ -3717,10 +3717,9 @@ done_rdf_quad:
 --!AWK PUBLIC
 create function DB.DBA.RDF_REGEX (in s varchar, in p varchar, in coll varchar := null)
 {
--- !!!TBD proper use of third argument
   if (not iswidestring (s) and not isstring (s))
     return 0;
-  if (regexp_match (p, s, 0) is not null)
+  if (regexp_match (p, s, 0, coalesce (coll, ''), 1) is not null)
     return 1;
   return 0;
 }

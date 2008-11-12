@@ -3259,7 +3259,7 @@ IN_op_fnt_found:
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
         { /*!!!TBD extra 'between'*/
-          ssg_puts (" DB.DBA.RDF_REGEX (");
+          ssg_puts (" rdf_regex_impl (");
           ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
