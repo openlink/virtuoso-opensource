@@ -908,13 +908,13 @@
                       _name := trim (self.exc_options_name.ufl_value);
                       _user := trim (self.exc_options_user.ufl_value);
                       _password := self.exc_options_password.ufl_value;
+                      _nameTest := ODS..dav_path_normalize(_name);
                       if (_type = 1)
                       {
-                        _nameTest := _name;
                         tmp := '1__';
                         if ((self.ve_type = 0) or (self.ve_type = 2))
                         {
-                          _nameTest := BMK.WA.dav_parent (_name);
+                          _nameTest := BMK.WA.dav_parent (_nameTest);
                           tmp := '11_';
                         }
                         if (not BMK.WA.dav_check_authenticate (_nameTest, _user, _password, tmp))

@@ -294,7 +294,6 @@
                 action := get_keyword ('action', params, '');
                 if (action = 'search')
                 {
-                dbg_obj_print ('gogo', get_keyword ('keywords', params, ''));
                   self.vc_redirect (sprintf ('search.vspx?keywords=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
                   return;
                 }

@@ -107,6 +107,8 @@ create procedure ODS.ODS_API."bookmark.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   rc := BMK.WA.bookmark_update (
           bookmark_id,
           inst_id,
@@ -139,6 +141,8 @@ create procedure ODS.ODS_API."bookmark.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id;
   rc := row_count ();
 
@@ -188,6 +192,8 @@ create procedure ODS.ODS_API."bookmark.folder.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = inst_id and F_PATH = path))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.FOLDER where F_DOMAIN_ID = inst_id and F_PATH = path;
   rc := row_count ();
 
@@ -368,6 +374,8 @@ create procedure ODS.ODS_API."bookmark.annotation.claim" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   claims := (select deserialize (A_CLAIMS) from BMK.WA.ANNOTATIONS where A_ID = annotation_id);
   claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
   update BMK.WA.ANNOTATIONS
@@ -399,6 +407,8 @@ create procedure ODS.ODS_API."bookmark.annotation.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -507,6 +517,8 @@ create procedure ODS.ODS_API."bookmark.comment.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.BOOKMARK_COMMENT where BC_ID = comment_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.BOOKMARK_COMMENT where BC_ID = comment_id;
   rc := row_count ();
 
@@ -595,6 +607,8 @@ create procedure ODS.ODS_API."bookmark.publication.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -639,6 +653,8 @@ create procedure ODS.ODS_API."bookmark.publication.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -725,6 +741,8 @@ create procedure ODS.ODS_API."bookmark.subscription.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -769,6 +787,8 @@ create procedure ODS.ODS_API."bookmark.subscription.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from BMK.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 
@@ -779,7 +799,8 @@ create procedure ODS.ODS_API."bookmark.subscription.delete" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."bookmark.options.set" (
-  in inst_id int, in options any) __soap_http 'text/xml'
+  in inst_id int,
+  in options any) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {
