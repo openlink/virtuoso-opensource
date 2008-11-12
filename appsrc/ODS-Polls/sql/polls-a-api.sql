@@ -120,6 +120,8 @@ create procedure ODS.ODS_API."poll.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   rc := POLLS.WA.poll_update (
     poll_id,
     inst_id,
@@ -151,6 +153,8 @@ create procedure ODS.ODS_API."poll.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from POLLS.WA.POLL where P_ID = poll_id;
   rc := row_count ();
 
@@ -224,6 +228,10 @@ create procedure ODS.ODS_API."poll.question.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
+  if (not exists (select 1 from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER >= questionNo))
+    return ods_serialize_sql_error ('37000', 'The item question not found');
   POLLS.WA.question_delete2 (poll_id, questionNo);
   rc := row_count ();
   update POLLS.WA.QUESTION
@@ -254,6 +262,8 @@ create procedure ODS.ODS_API."poll.activate" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (not POLLS.WA.poll_enable_activate (poll_id))
   {
     signal ('POLLS', 'The activation is not allowed');
@@ -282,6 +292,8 @@ create procedure ODS.ODS_API."poll.close" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (not POLLS.WA.poll_enable_close (poll_id))
   {
     signal ('POLLS', 'The close is not allowed');
@@ -311,6 +323,8 @@ create procedure ODS.ODS_API."poll.clear" (
     return ods_auth_failed ();
 
   rc := 0;
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (not POLLS.WA.poll_enable_clear (poll_id))
   {
     signal ('POLLS', 'The clear is not allowed');
@@ -333,6 +347,8 @@ create procedure ODS.ODS_API."poll.vote" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (not POLLS.WA.poll_enable_vote (poll_id))
   {
     signal ('POLLS', 'The vote is not allowed');
@@ -348,7 +364,7 @@ create procedure ODS.ODS_API."poll.vote.answer" (
   in vote_id integer,
   in questionNo integer,
   in answerNo integer,
-  in value varchar) __soap_http 'text/xml'
+  in "value" varchar) __soap_http 'text/xml'
 {
   declare rc integer;
   declare uname varchar;
@@ -359,6 +375,8 @@ create procedure ODS.ODS_API."poll.vote.answer" (
     return ods_auth_failed ();
 
   poll_id := (select V_POLL_ID from POLLS.WA.VOTE where V_ID = vote_id);
+  if (isnull (poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   for (select * from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = questionNo) do
   {
     if (Q_TYPE = 'M')
@@ -387,6 +405,8 @@ create procedure ODS.ODS_API."poll.result" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (not POLLS.WA.poll_enable_result (poll_id))
   {
     signal ('POLLS', 'The result is not allowed');
@@ -422,8 +442,6 @@ create procedure ODS.ODS_API."poll.result" (
         }
         if (Q_TYPE = 'M')
         {
-          declare choices, allowed, answer any;
-
           choices := cast (get_keyword ('choices', answers, '1') as integer);
           allowed := cast (get_keyword ('allowed', answers, '2') as integer);
           for (N := 1; N <= choices; N := N + 1)
@@ -459,8 +477,8 @@ create procedure ODS.ODS_API."poll.comment.get" (
   };
 
   declare uname varchar;
-  declare inst_id, poll_id integer;
-  declare q, iri varchar;
+  declare inst_id integer;
+  declare q, iri, poll_id varchar;
 
   whenever not found goto _exit;
 
@@ -548,6 +566,8 @@ create procedure ODS.ODS_API."poll.comment.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from POLLS.WA.POLL_COMMENT where PC_ID = comment_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from POLLS.WA.POLL_COMMENT where PC_ID = comment_id;
   rc := row_count ();
 
