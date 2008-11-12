@@ -330,6 +330,8 @@ create procedure ODS.ODS_API."calendar.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EVENTS where E_ID = event_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   CAL.WA.event_delete (event_id);
   rc := row_count ();
 
@@ -529,6 +531,8 @@ create procedure ODS.ODS_API."calendar.comment.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EVENT_COMMENTS where EC_ID = comment_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from CAL.WA.EVENT_COMMENTS where EC_ID = comment_id;
   rc := row_count ();
 
@@ -651,6 +655,8 @@ create procedure ODS.ODS_API."calendar.annotation.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from CAL.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -737,6 +743,8 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -781,6 +789,8 @@ create procedure ODS.ODS_API."calendar.publication.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from CAL.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -867,6 +877,8 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -911,6 +923,8 @@ create procedure ODS.ODS_API."calendar.subscription.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from CAL.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 

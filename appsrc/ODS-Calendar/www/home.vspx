@@ -4486,9 +4486,10 @@
                         _name := '/' || _name;
                       _name := replace (_name, '//', '/');
                       }
+                      _nameTest := ODS..dav_path_normalize(_name);
                       if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))
                       {
-                        if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcalendar_11', 'vcalendar_12')))
+                        if ((DB.DBA.yac_syncml_version_get (_nameTest) = 'N') or (DB.DBA.yac_syncml_type_get (_nameTest) not in ('vcalendar_11', 'vcalendar_12')))
                           signal ('TEST', 'Bad SyncML folder.<>');
                       }
 
@@ -4496,11 +4497,10 @@
                     _password := self.exc_options_password.ufl_value;
                       if (_type = 1)
                       {
-                        _nameTest := _name;
                         tmp := '1__';
                         if ((self.ve_type = 0) or (self.ve_type = 2))
                         {
-                          _nameTest := CAL.WA.dav_parent (_name);
+                          _nameTest := CAL.WA.dav_parent (_nameTest);
                           tmp := '11_';
                         }
                         if (not CAL.WA.dav_check_authenticate (_nameTest, _user, _password, tmp))
@@ -5630,7 +5630,7 @@
                     </table>
                   </div>
                   <div class="new-form-footer">
-                    <v:button action="simple" value="--case when self.cSubAction = 'grantCreate' then 'Create' else 'Update' end" name="sg_save" xhtml_class="form-button">
+                    <v:button action="simple" value="Share" name="sg_save" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
                           declare tmp, params any;
@@ -5724,6 +5724,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
+                  <input class="button" type="button" title="Help" alt="Help" value="Help" onclick="javascript: window.open ('help.vspx?page=proba', 'calendar_help', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500'); return false;"/>
                   <v:data-set name="ds_shared" sql="select a.*, b.WAI_NAME from CAL.WA.SHARED a, DB.DBA.WA_INSTANCE b where a.S_DOMAIN_ID = :p0 and a.S_CALENDAR_ID = b.WAI_ID order by b.WAI_NAME" nrows="0" scrollable="1">
                     <v:param name="p0" value="--self.domain_id" />
 

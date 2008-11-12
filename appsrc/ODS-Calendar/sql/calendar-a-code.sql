@@ -5348,7 +5348,7 @@ create procedure CAL.WA.exchange_event_update (
   {
     if (connection_get ('__calendar_import') = '1')
   {
-      update BMK.WA.EXCHANGE
+      update CAL.WA.EXCHANGE
          set EX_UPDATE_SUBTYPE = 1
        where EX_ID = _id;
     } else {

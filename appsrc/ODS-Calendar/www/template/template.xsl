@@ -217,9 +217,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          |
         </v:template>
-            <v:button name="tHelp" action="simple" style="url" value="Help" xhtml_alt="Help" />
       </div>
         </div>
       <v:include url="calendar_login.vspx"/>

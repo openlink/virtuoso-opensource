@@ -137,7 +137,7 @@
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="calendars" class="grid" cellspacing="0">
+          <table id="calendars" class="CAL_grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
                 <th>
@@ -166,8 +166,8 @@
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')" format="%s"/>
                 </td>
                   <td nowrap="nowrap">
-                    <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('WAI_NAME')"/>
-                    <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')"/>
+                  <v:text name="s1" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_NAME')"/>
+                  <v:text name="s2" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')"/>
                     <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
                   </td>
               </tr>
