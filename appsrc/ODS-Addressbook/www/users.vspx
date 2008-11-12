@@ -181,7 +181,7 @@
       <v:data-set name="ds_users" data-source="self.dsrc_users" scrollable="1">
 
         <v:template name="ds_users_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="users" class="grid" cellspacing="0">
+          <table id="users" class="AB_grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">

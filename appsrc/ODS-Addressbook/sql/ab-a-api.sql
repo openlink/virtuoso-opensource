@@ -246,6 +246,8 @@ create procedure ODS.ODS_API."addressbook.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   rc := AB.WA.contact_update (
           contact_id,
           inst_id,
@@ -325,6 +327,8 @@ create procedure ODS.ODS_API."addressbook.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from AB.WA.PERSONS where P_ID = contact_id;
   rc := row_count ();
 
@@ -521,6 +525,8 @@ create procedure ODS.ODS_API."addressbook.annotation.claim" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   claims := (select deserialize (A_CLAIMS) from AB.WA.ANNOTATIONS where A_ID = annotation_id);
   claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
   update AB.WA.ANNOTATIONS
@@ -552,6 +558,8 @@ create procedure ODS.ODS_API."addressbook.annotation.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from AB.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -660,6 +668,8 @@ create procedure ODS.ODS_API."addressbook.comment.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.PERSON_COMMENTS where PC_ID = comment_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from AB.WA.PERSON_COMMENTS where PC_ID = comment_id;
   rc := row_count ();
 
@@ -746,6 +756,8 @@ create procedure ODS.ODS_API."addressbook.publication.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -790,6 +802,8 @@ create procedure ODS.ODS_API."addressbook.publication.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = publication_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from AB.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -876,6 +890,8 @@ create procedure ODS.ODS_API."addressbook.subscription.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -920,6 +936,8 @@ create procedure ODS.ODS_API."addressbook.subscription.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = subscription_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from AB.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 

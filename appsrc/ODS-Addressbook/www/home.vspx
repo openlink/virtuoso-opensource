@@ -1222,7 +1222,7 @@
               </table>
             </div>
             <div class="new-form-footer">
-                <v:button action="simple" name="s_save" value="Save" xhtml_class="form-button">
+                <v:button action="simple" name="s_save" value="Share" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     declare N integer;
@@ -4464,9 +4464,10 @@
                           _name := '/' || _name;
                         _name := replace (_name, '//', '/');
                         }
+                        _nameTest := ODS..dav_path_normalize(_name);
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))
                         {
-                          if ((DB.DBA.yac_syncml_version_get (_name) = 'N') or (DB.DBA.yac_syncml_type_get (_name) not in ('vcard_11', 'vcard_12')))
+                          if ((DB.DBA.yac_syncml_version_get (_nameTest) = 'N') or (DB.DBA.yac_syncml_type_get (_nameTest) not in ('vcard_11', 'vcard_12')))
                             signal ('TEST', 'Bad SyncML folder.<>');
                         }
 
@@ -4474,11 +4475,10 @@
                         _password := self.exc_options_password.ufl_value;
                         if (_type = 1)
                         {
-                          _nameTest := _name;
                           tmp := '1__';
                           if ((self.ve_type = 0) or (self.ve_type = 2))
                           {
-                            _nameTest := AB.WA.dav_parent (_name);
+                            _nameTest := AB.WA.dav_parent (_nameTest);
                             tmp := '11_';
                           }
                           if (not AB.WA.dav_check_authenticate (_nameTest, _user, _password, tmp))

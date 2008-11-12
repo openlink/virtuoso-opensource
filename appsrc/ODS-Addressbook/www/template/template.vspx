@@ -174,10 +174,12 @@
 
       <v:after-data-bind>
         <![CDATA[
-          if (AB.WA.frozen_check(self.domain_id)) {
+          if (AB.WA.frozen_check(self.domain_id))
+          {
             declare freeze_page varchar;
             freeze_page := AB.WA.frozen_page(self.domain_id);
-            if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+            if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+            {
               http_rewrite ();
               http_request_status ('HTTP/1.1 404 Not found');
               http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (AB.WA.page_name())));
