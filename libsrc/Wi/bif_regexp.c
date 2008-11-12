@@ -71,64 +71,95 @@ static caddr_t get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
     pcre_info_t * pcre_info, int options);
 
 #define SET_INVALID_ARG(fmt) \
-   *err_ret = srv_make_new_error ("22023", "SR375", fmt, nth + 1, func)
+  do { \
+      *err_ret = srv_make_new_error ("22023", "SR375", fmt, nth + 1, func); \
+      return NULL; \
+    } while (0)
 
-static caddr_t
+caddr_t
 bif_regexp_str_arg (caddr_t * qst, state_slot_t ** args, int nth,
   char *func, int *utf8, caddr_t *ret_to_free, caddr_t *err_ret)
 {
   caddr_t arg = NULL;
-  caddr_t ret = NULL;
-
+  dtp_t arg_dtp;
+  *ret_to_free = NULL;
+  *err_ret = NULL;
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     SET_INVALID_ARG("Missing argument %d to %s");
-  else
-    {
       arg = bif_arg (qst, args, nth, func);
+  arg_dtp = DV_TYPE_OF (arg);
+  if (DV_RDF == arg_dtp)
+	{
+      rdf_box_t *rb = (rdf_box_t *)arg;
+      if (!rb->rb_is_complete)
+        SET_INVALID_ARG("Argument %d of %s is an incomplete RDF box. Must be complete RDF box or narrow or wide string");
+      if (DV_STRING != DV_TYPE_OF (rb->rb_box))
+        return NULL;
       if (*utf8 == 1)
-	{
-	  if (DV_STRINGP (arg))
-	    *ret_to_free = ret = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1);
-	  else if (DV_WIDESTRINGP (arg))
-	    *ret_to_free = ret =
-		box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
-	  else if (DV_DB_NULL == DV_TYPE_OF (arg))
-	    *ret_to_free = ret = NULL;
-	  else
-	    SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string");
-	}
-      else if (*utf8 == 0)
-	{
-	  if (DV_WIDESTRINGP (arg))
+        return rb->rb_box;
+      if (*utf8 == 0)
 	    {
 	      *utf8 = 1;
-	      *ret_to_free = ret =
-		  box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+          return rb->rb_box;
 	    }
-	  else if (DV_STRINGP (arg))
-	    {
-	      ret = arg;
-	      ret_to_free = NULL;
+      SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow string");
 	    }
-	  else if (DV_DB_NULL == DV_TYPE_OF (arg))
-	    *ret_to_free = ret = NULL;
-	  else
-	    SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string");
+  if (DV_DB_NULL == DV_TYPE_OF (arg))
+    return NULL;
+  if (*utf8 == 1)
+    {
+      if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
+        return (*ret_to_free = box_narrow_string_as_utf8 (NULL, arg, 0, QST_CHARSET (qst), err_ret, 1));
+      if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
+        return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
+      SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
 	}
-      else if (*utf8 == 2)
+  if (*utf8 == 0)
 	{
-	  if (DV_STRINGP (arg))
+      if (DV_WIDE == arg_dtp || DV_LONG_WIDE == arg_dtp)
 	    {
-	      ret = arg;
-	      ret_to_free = NULL;
+          *utf8 = 1;
+          return (*ret_to_free = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_SHORT_STRING));
 	    }
-	  else if (DV_DB_NULL == DV_TYPE_OF (arg))
-	    *ret_to_free = ret = NULL;
-	  else
+      if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
+        return arg;
+      SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow or wide string or an complete string RDF box");
+    }
+  /* The rest is for *utf8 == 2 */
+  if (DV_STRING == arg_dtp || DV_UNAME == arg_dtp)
+    return arg;
 	    SET_INVALID_ARG("Invalid argument %d to %s. Must be narrow string");
+  return NULL;
+}
+
+
+static int
+regexp_optchars_to_bits (const char *strg)
+{
+  int res = 0;
+  const char *tail;
+  for (tail = strg; '\0' != tail[0]; tail++)
+    {
+      switch (tail[0])
+        {
+        case 'i': case 'I': res |= PCRE_CASELESS; break;
+        case 'm': case 'M': res |= PCRE_MULTILINE; break;
+        /*
+#define PCRE_DOTALL             0x0004
+#define PCRE_EXTENDED           0x0008
+#define PCRE_ANCHORED           0x0010
+#define PCRE_DOLLAR_ENDONLY     0x0020
+#define PCRE_EXTRA              0x0040
+#define PCRE_NOTBOL             0x0080
+#define PCRE_NOTEOL             0x0100
+#define PCRE_UNGREEDY           0x0200
+#define PCRE_NOTEMPTY           0x0400
+#define PCRE_UTF8               0x0800
+#define PCRE_NO_AUTO_CAPTURE    0x1000
+        */
 	}
     }
-  return ret;
+  return res;
 }
 
 
@@ -146,18 +177,24 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long replace_the_instr = 0;
 
   utf8_mode = 0;
+  switch ((BOX_ELEMENTS (args)))
+    {
+    default:
+    case 5: utf8_mode = (long) bif_long_arg (qst, args, 4, "regexp_match");
+    case 4: c_opts |= regexp_optchars_to_bits (bif_string_arg (qst, args, 3, "regexp_match"));
+    case 3: replace_the_instr = (long) bif_long_arg (qst, args, 2, "regexp_match");
+    case 2: case 1: case 0: ;
+    }
   pattern = bif_regexp_str_arg (qst, args, 0, "regexp_match", &utf8_mode, &p_to_free, err_ret);
   if (*err_ret) goto done;
   str = bif_regexp_str_arg (qst, args, 1, "regexp_match", &utf8_mode, &str_to_free, err_ret);
   if (*err_ret) goto done;
-  if (BOX_ELEMENTS (args) > 2)
-    replace_the_instr = (long) bif_long_arg (qst, args, 2, "regexp_match");
-
-  if (!pattern || !str)
-    goto done;
 
   if (utf8_mode)
     c_opts |= PCRE_UTF8;
+
+  if (!pattern || !str)
+    goto done;
 
   *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
 
@@ -222,6 +259,53 @@ done:
   return *err_ret ? NULL : (ret_str ? ret_str : NEW_DB_NULL);
 }
 
+static caddr_t
+bif_rdf_regex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int utf8_mode = 1;
+  int str_len;
+  pcre_info_t cd_info;
+  caddr_t p_to_free = NULL, str_to_free = NULL;
+  char *pattern;
+  char *str;
+  int c_opts = 0, r_opts = 0;
+  int result = -1;
+  caddr_t err = NULL;
+  switch ((BOX_ELEMENTS (args)))
+    {
+    default:
+    case 3: c_opts |= regexp_optchars_to_bits (bif_string_arg (qst, args, 2, "rdf_regex_impl"));
+    case 2: case 1: case 0: ;
+    }
+  pattern = bif_regexp_str_arg (qst, args, 1, "rdf_regex_impl", &utf8_mode, &p_to_free, &err);
+  if (err) goto done;
+  str = bif_regexp_str_arg (qst, args, 0, "rdf_regex_impl", &utf8_mode, &str_to_free, &err);
+  if (err) goto done;
+
+  if (utf8_mode)
+    c_opts |= PCRE_UTF8;
+
+  if (!pattern || !str)
+    goto done;
+
+  *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+
+  if (cd_info.code && !*err_ret)
+    {
+      int offvect[NOFFSETS];
+      str_len = (int) strlen (str);
+      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
+	  offvect, NOFFSETS);
+    }
+
+done:
+  if (err)
+    dk_free_tree (err);
+  dk_free_tree (p_to_free);
+  dk_free_tree (str_to_free);
+  return (caddr_t)((ptrlong)((-1 == result) ? 0 : 1));
+}
+
 /* string regexp_substr(in pattern string, in str string, in offset number); */
 static caddr_t
 bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -242,7 +326,12 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   str = bif_regexp_str_arg (qst, args, 1, "regexp_substr", &utf8_mode, &str_to_free, err_ret);
   if (*err_ret) goto done;
   offset = (int) bif_long_arg (qst, args, 2, "regexp_substr");
-
+  switch ((BOX_ELEMENTS (args)))
+    {
+    default:
+    case 4: c_opts |= regexp_optchars_to_bits (bif_string_arg (qst, args, 3, "regexp_substr"));
+    case 3: case 2: case 1: case 0: ;
+    }
   if (!pattern || !str)
     goto done;
 
@@ -326,6 +415,13 @@ bif_regexp_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   pattern = bif_regexp_str_arg (qst, args, 0, "regexp_parse", &utf8_mode2, &p_to_free, err_ret);
   if (*err_ret) goto done;
 
+  switch ((BOX_ELEMENTS (args)))
+    {
+    default:
+    case 4: c_opts |= regexp_optchars_to_bits (bif_string_arg (qst, args, 3, "regexp_parse"));
+    case 3: case 2: case 1: case 0: ;
+    }
+
   if (!pattern || !str)
     goto done;
   *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
@@ -387,7 +483,7 @@ get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
 
   if (!pcre_info_ref)
     {
-      dbg_printf (("compiling (%s) ...\n", pattern));
+      dbg_printf (("regex compiling (%s) with options %x ...\n", pattern, options));
       pcre_info->code = pcre_compile (pattern, options, &error, &erroff, 0);
       if (pcre_info->code)
 	{
@@ -434,6 +530,7 @@ bif_regexp_init ()
       strhash, strhashcmp);
 
   bif_define_typed ("regexp_match", bif_regexp_match, &bt_varchar);
+  bif_define_typed ("rdf_regex_impl", bif_rdf_regex_impl, &bt_varchar);
   bif_define_typed ("regexp_substr", bif_regexp_substr, &bt_varchar);
   bif_define_typed ("regexp_parse", bif_regexp_parse, &bt_any);
   bif_define_typed ("regexp_version", bif_regexp_version, &bt_varchar);
