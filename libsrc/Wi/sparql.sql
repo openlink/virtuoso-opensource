@@ -10450,7 +10450,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       if (groupdest is not null)
         DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
-	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, options);
+	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -10471,7 +10471,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
-	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, options);
+	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -10539,10 +10539,12 @@ load_grddl:;
 	      if (rc < 0 or rc > 0)
 	        dbg_printf ('END of mappings');
 	    }
-	  if (rc < 0)
-	    return 0;
-	  else if (rc > 0)
-	    return 1;
+	  if (rc < 0 or rc > 0)
+	    {
+	      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+	      return (case when rc < 0 then 0 else 1 end);
+	    }
 	}
       try_next_mapper:;
     }
@@ -10697,6 +10699,7 @@ create function DB.DBA.RDF_SPONGE_UP_LIST (in sources any)
     VT_INC_INDEX_DB_DBA_RDF_OBJ();
   return 1;
 }
+;
 
 -----
 -- Free text index on DB.DBA.RDF_OBJ
