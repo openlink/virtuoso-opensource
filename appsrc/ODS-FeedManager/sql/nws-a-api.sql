@@ -307,6 +307,8 @@ create procedure ODS.ODS_API."feeds.annotation.claim" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   claims := (select deserialize (A_CLAIMS) from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id);
   claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
   update ENEWS.WA.ANNOTATIONS
@@ -338,6 +340,8 @@ create procedure ODS.ODS_API."feeds.annotation.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from ENEWS.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -450,6 +454,8 @@ create procedure ODS.ODS_API."feeds.comment.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = comment_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   delete from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = comment_id;
   rc := row_count ();
 
@@ -509,6 +515,8 @@ create procedure ODS.ODS_API."feeds.blog.unsubscribe" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from ENEWS.WA.BLOG where EB_ID = blog_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   ENEWS.WA.blog_delete (blog_id);
   rc := row_count ();
 

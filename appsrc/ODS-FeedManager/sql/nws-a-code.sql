@@ -52,34 +52,6 @@ _end:;
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.session_domain (
-  inout params any)
-{
-  declare aPath, domain_id, options any;
-
-  declare exit handler for sqlstate '*'
-  {
-    domain_id := -1;
-    goto _end;
-  };
-
-  options := http_map_get('options');
-  if (not is_empty_or_null (options))
-    domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
-    domain_id := -1;
-
-_end:;
-  return cast (domain_id as integer);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ENEWS.WA.session_restore(
   inout params any)
 {

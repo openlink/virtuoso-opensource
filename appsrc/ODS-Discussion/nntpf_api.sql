@@ -129,6 +129,8 @@ create procedure ODS.ODS_API."discussion.group.remove" (
   if (not ods_check_auth (uname, -1, 'owner'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
   declare nmc cursor for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = group_id;
 	whenever not found goto _exit;
 	open nmc (exclusive, prefetch 1);
