@@ -1171,6 +1171,201 @@ ODRIVE.aclUpdate = function (claimNo)
   }
 }
 
+ODRIVE.aclEmptyCreate = function ()
+{
+  var tbody = $('acl_tbody');
+  if (tbody)
+  {
+    var rows = tbody.getElementsByTagName("tr");
+    if (rows.length == 0)
+    {
+      var tr_empty = $('acl_empty');
+      if (!tr_empty)
+      {
+        var tr_empty = OAT.Dom.create('tr');
+        tr_empty.id = 'acl_empty';
+        tbody.appendChild(tr_empty);
+
+        var td = OAT.Dom.create('td');
+        td.colSpan = "5";
+        td.style.textAlign = 'center';
+        td.innerHTML = '<br />No Security Properties<br /><br />';
+        tr_empty.appendChild(td);
+      }
+    }
+  }
+}
+
+ODRIVE.aclEmptyRemove = function ()
+{
+  OAT.Dom.unlink('acl_empty');
+}
+
+ODRIVE.aclRowRemove = function (rowID)
+{
+  OAT.Dom.unlink('acl_tr_'+rowID);
+  ODRIVE.aclEmptyCreate();
+}
+
+ODRIVE.aclRowCreate = function (aclEnable, rowEnable, values)
+{
+  var tbody = $('acl_tbody');
+  if (tbody)
+  {
+    ODRIVE.aclEmptyRemove();
+    var seqNo = parseInt($v('acl_seqNo'));
+    var tr = OAT.Dom.create('tr');
+    tr.id = 'acl_tr_' + seqNo;
+    tbody.appendChild(tr);
+
+    // column 0
+    var td = OAT.Dom.create('td');
+    tr.appendChild(td);
+    td.style['whiteSpace'] = 'nowrap';
+		var field = OAT.Dom.create("input");
+		field.type = 'text';
+    field.id = 'acl_user_' + seqNo;
+    field.name = field.id;
+    field.style.width = '90%';
+    if (values && values.user)
+      field.value = values.user;
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+    if (aclEnable && rowEnable)
+    {
+      td.appendChild(OAT.Dom.text(' '));
+      var img = OAT.Dom.image('image/select.gif');
+      img.className = "pointer";
+      img.onclick = function (){windowShow('users_select.vspx?dst=m&params=acl_user_'+seqNo+':s1;',520)};
+      td.appendChild(img);
+    }
+
+    // column 1
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    tr.appendChild(td);
+		var field = OAT.Dom.create('select');
+    field.id = 'acl_inheritance_' + seqNo;
+    field.name = field.id;
+    OAT.Dom.option('This object only', '0', field);
+    OAT.Dom.option('This object, subfolders and files', '1', field);
+    OAT.Dom.option('Subfolders and files', '2', field);
+    if (!rowEnable)
+      OAT.Dom.option('Inherited', '3', field);
+    if (values && values.inheritance)
+      field.value = values.inheritance;
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+
+    // column 2
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    td.style.textAlign = 'center';
+    tr.appendChild(td);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_r_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (!values)
+    {
+      field.checked = true;
+    } else if (values.r_grant) {
+      field.checked = true;
+    }
+    field.onclick = function (){uncheck('acl_r_deny_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_w_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (!values)
+    {
+      field.checked = true;
+    } else if (values.w_grant) {
+      field.checked = true;
+    }
+    field.onclick = function (){uncheck('acl_w_deny_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_x_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.x_grant)
+      field.checked = true;
+    field.onclick = function (){uncheck('acl_x_deny_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+
+    // column 3
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    td.style.textAlign = 'center';
+    tr.appendChild(td);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_r_deny_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.r_deny)
+      field.checked = true;
+    field.onclick = function (){uncheck('acl_r_grant_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_w_deny_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.w_deny)
+      field.checked = true;
+    field.onclick = function (){uncheck('acl_w_grant_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'acl_x_deny_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.x_deny)
+      field.checked = true;
+    field.onclick = function (){uncheck('acl_x_grant_'+seqNo)};
+    if (!aclEnable || !rowEnable)
+      field.disabled = true;
+    td.appendChild(field);
+
+    // column 4
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    tr.appendChild(td);
+    td.style['whiteSpace'] = 'nowrap';
+    if (aclEnable && rowEnable)
+    {
+      var span = OAT.Dom.create('span');
+      span.id = 'acl_span_5_' + seqNo;
+      span.onclick = function (){ODRIVE.aclRowRemove(''+seqNo)};
+      OAT.Dom.addClass(span, 'button3');
+      OAT.Dom.addClass(span, 'pointer');
+      var img = OAT.Dom.image('image/del_16.png');
+      span.appendChild(img);
+      span.appendChild(OAT.Dom.text(' Delete'));
+      td.appendChild(span);
+    }
+    $('acl_seqNo').value = seqNo+1;
+  }
+}
+
 ODRIVE.searchRowAction = function (rowID)
 {
   var tbody = $('search_tbody');

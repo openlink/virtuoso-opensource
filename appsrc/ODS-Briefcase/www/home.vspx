@@ -615,7 +615,7 @@
 
             -- ACL
             dav_acl := ODRIVE.WA.DAV_GET (self.dav_item, 'acl');
-            self.dav_acl := ODRIVE.WA.acl_params (params);
+            self.dav_acl := ODRIVE.WA.acl_params (params, dav_acl);
             if (dav_acl <> self.dav_acl)
             {
               if (not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
@@ -1758,103 +1758,37 @@
                   declare acl_values, acl, D any;
 
                   acl_values := ODRIVE.WA.acl_vector (self.dav_acl);
-                  http (sprintf ('<input type="hidden" name="c_seqNo" id="c_seqNo" value="%d" />', length (acl_values)));
+                  http (sprintf ('<input type="hidden" name="acl_seqNo" id="acl_seqNo" value="%d" />', length (acl_values)));
+                  if (self.dav_enable)
+                    http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
                 ?>
                 <table id="aceProperties" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
                     <th align="center" nowrap="nowrap">User/Group</th>
                     <th align="center">Inheritance</th>
-                    <th align="center" nowrap="nowrap">Allow<br />(Read, Write, eXecute)</th>
-                    <th align="center" nowrap="nowrap">Deny<br />(Read, Write, eXecute)</th>
+                    <th align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                    <th align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                     <th>&amp;nbsp;</th>
                   </tr>
+                  <tbody id="acl_tbody">
+              		  <![CDATA[
+              		    <script type="text/javascript">
                   <?vsp
-                  if ((length (acl_values) = 0) and (self.dav_enable = 0))
-                  {
-                    http ('<tr><td colspan="5">No Security Properties</tr></tr>');
-                  }
-                  else
-                  {
+              		      declare aclEnable, rowEnable, aclValues varchar;
+
+                        aclEnable := case when self.dav_enable then 'true' else 'false' end;
                     for (N := 0; N < length (acl_values); N := N + 1)
                     {
                       acl := acl_values[N];
-                      D := case when (acl[1] = 3) then 'class="disabled"' else '' end;
-                  ?>
-                  <tr id="acl_tr_<?V cast (N as varchar) ?>">
-                    <td nowrap="nowrap">
-                      <?vsp http (sprintf ('<input id="acl_user_%d" name="acl_user_%d" style="width: 95%%;" value="%s" disabled="disabled" %s />', N, N, ODRIVE.WA.account_name (acl[0]), D)); ?>
-                      <vm:if test="(acl[1] <> 3) and self.dav_enable">
-                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_<?V cast (N as varchar) ?>:s1;',520)" />
-                      </vm:if>
-		                </td>
-                    <td width="1%">
-                      <?vsp
-                        http (sprintf ('<select name="acl_inheritance_%d" id="acl_inheritance_%d" disabled="disabled" %s>', N, N, D));
-                          http (sprintf ('<option value="0" %s>This object only</option>', case when acl[1] = 0 then 'selected="selected"' else '' end));
-                          http (sprintf ('<option value="1" %s>This object, subfolders and files</option>', case when acl[1] = 1 then 'selected="selected"' else '' end));
-                          http (sprintf ('<option value="2" %s>Subfolders and files</option>', case when acl[1] = 2 then 'selected="selected"' else '' end));
-                          if (acl[1] = 3)
-                            http (sprintf ('<option value="3" %s>Inherited</option>', case when acl[1] = 3 then 'selected="selected"' else '' end));
-                        http ('</select>');
-                      ?>
-                    </td>
-                    <td width="1%" align="center">
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_r_deny_%d\')" name="acl_r_grant_%d" id="acl_r_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 4) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_w_deny_%d\')" name="acl_w_grant_%d" id="acl_w_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 2) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_x_deny_%d\')" name="acl_x_grant_%d" id="acl_x_grant_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[2], 1) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                    </td>
-                    <td width="1%" align="center">
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_r_grant_%d\')" name="acl_r_deny_%d" id="acl_r_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 4) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_w_grant_%d\')" name="acl_w_deny_%d" id="acl_w_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 2) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                      <?vsp http (sprintf ('<input type="checkbox" onclick="javascript: uncheck(\'acl_x_grant_%d\')" name="acl_x_deny_%d" id="acl_x_deny_%d" value="1" disabled="disabled" %s %s />', N, N, N, case when bit_and (acl[3], 1) <> 0 then 'checked="checked"' else '' end, D)); ?>
-                    </td>
-                    <td nowrap="nowrap" width="1%">
-                      <vm:if test="(acl[1] <> 3) and self.dav_enable">
-                        <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Security" title="Delete Security" /> Delete</span>
-                      </vm:if>
-                    </td>
-                  </tr>
-                  <?vsp
-                    }
-                    if (self.dav_enable)
-                    {
-                  ?>
-                  <tr id="acl_tr">
-                    <td colspan="5">
-                      <hr />
-                    </td>
-                  </tr>
-                  <tr id="acl_tr_xxx">
-                    <td nowrap="nowrap">
-                      <input id="acl_user_xxx" name="acl_user_xxx" style="width: 95%;" />
-                      <xsl:call-template name="nbsp" />
-                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_xxx:s1;',520)" />
-		                </td>
-                    <td width="1%">
-                      <select name="acl_inheritance_xxx" id="acl_inheritance_xxx">
-                        <option value="0">This object only</option>
-                        <option value="1">This object, subfolders and files</option>
-                        <option value="2">Subfolders and files</option>
-                      </select>
-                    </td>
-                    <td width="1%" align="center">
-                      <input type="checkbox" onclick="javascript: uncheck('acl_r_deny_xxx')" checked="checked" name="acl_r_grant_xxx" id="acl_r_grant_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_w_deny_xxx')" checked="checked" name="acl_w_grant_xxx" id="acl_w_grant_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_x_deny_xxx')" name="acl_x_grant_xxx" id="acl_x_grant_xxx" value="1"/>
-                    </td>
-                    <td width="1%" align="center">
-                      <input type="checkbox" onclick="javascript: uncheck('acl_r_grant_xxx')" name="acl_r_deny_xxx" id="acl_r_deny_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
-                    </td>
-                    <td nowrap="nowrap" width="1%">
-                      <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
-                    </td>
-                  </tr>
-                  <?vsp
-                    }
+                          rowEnable := case when acl[1] <> 3 then 'true' else 'false' end;
+                          aclValues := sprintf ('{user: \'%s\', inheritance: %d, r_grant: %d, w_grant: %d, x_grant: %d, r_deny: %d, w_deny: %d, x_deny: %d}', ODRIVE.WA.account_name (acl[0]), acl[1], bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1));
+                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclRowCreate(%s, %s, %s);});', aclEnable, rowEnable, aclValues));
                   }
                   ?>
+                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclEmptyCreate();})
+              		    </script>
+              		  ]]>
+              		</tbody>
                 </table>
               </div>
             </v:template>

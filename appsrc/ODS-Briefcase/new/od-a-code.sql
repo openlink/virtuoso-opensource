@@ -2055,12 +2055,21 @@ create procedure ODRIVE.WA.prop_params (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.acl_params (
-  inout params any)
+  inout params any,
+  in acl_dav any := null)
 {
   declare I, N integer;
   declare acl_value, acl_seq, acl_users, acl_user, acl_inheritance any;
 
   acl_value := WS.WS.ACL_CREATE();
+  if (not isnull (acl_dav))
+  {
+    acl_dav := WS.WS.ACL_PARSE (acl_dav, '3', 0);
+    for (I := 0; I < length (acl_dav); I := I + 1)
+    {
+      WS.WS.ACL_ADD_ENTRY (acl_value, acl_dav[I][0], acl_dav[I][3], acl_dav[I][1], acl_dav[I][2]);
+    }
+  }
   for (I := 0; I < length (params); I := I + 2)
   {
     if ((params[I] like 'acl_user_%') and (params[I] <> 'acl_user_xxx'))
@@ -2073,6 +2082,8 @@ create procedure ODRIVE.WA.acl_params (
         if (acl_user <> -1)
         {
           acl_inheritance := atoi (get_keyword ('acl_inheritance_' || acl_seq, params));
+          if (acl_inheritance <> 3)
+          {
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
                                bit_shift (atoi (get_keyword ('acl_r_grant_' || acl_seq, params, '0')), 2) +
@@ -2090,6 +2101,7 @@ create procedure ODRIVE.WA.acl_params (
         }
       }
     }
+  }
   }
   return acl_value;
 }

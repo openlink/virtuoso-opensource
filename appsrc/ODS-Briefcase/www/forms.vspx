@@ -568,46 +568,23 @@
               </div>
 
               <div id="2" class="tabContent">
-                <v:text name="acl_seqNo" xhtml_id="acl_seqNo" type="hidden" value="0" />
+                <input name="acl_seqNo" id="acl_seqNo" type="hidden" value="0" />
+                <span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                 <table id="aceProperties" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
                     <th align="center" nowrap="nowrap">User/Group</th>
                     <th align="center">Inheritance</th>
-                    <th align="center" nowrap="nowrap">Allow<br />(Read, Write, eXecute)</th>
-                    <th align="center" nowrap="nowrap">Deny<br />(Read, Write, eXecute)</th>
+                    <th align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                    <th align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                     <th>&amp;nbsp;</th>
                   </tr>
-                  <tr id="acl_tr">
-                    <td colspan="5">
-                      <hr />
-                    </td>
-                  </tr>
-                  <tr id="acl_tr_xxx">
-                    <td nowrap="nowrap">
-                      <input id="acl_user_xxx" name="acl_user_xxx" style="width: 93%;" />
-                      <img class="pointer" src="image/select.gif" border="0" onclick="javascript: windowShow('users_select.vspx?dst=m&amp;params=acl_user_xxx:s1;',520)" />
-		                </td>
-                    <td width="1%">
-                      <select name="acl_inheritance_xxx" id="acl_inheritance_xxx">
-                        <option value="0">This object only</option>
-                        <option value="1">This object, subfolders and files</option>
-                        <option value="2">Subfolders and files</option>
-                      </select>
-                    </td>
-                    <td width="1%" align="center">
-                      <input type="checkbox" onclick="javascript: uncheck('acl_r_deny_xxx')" checked="checked" name="acl_r_grant_xxx" id="acl_r_grant_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_w_deny_xxx')" checked="checked" name="acl_w_grant_xxx" id="acl_w_grant_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_x_deny_xxx')" name="acl_x_grant_xxx" id="acl_x_grant_xxx" value="1"/>
-                    </td>
-                    <td width="1%" align="center">
-                      <input type="checkbox" onclick="javascript: uncheck('acl_r_grant_xxx')" name="acl_r_deny_xxx" id="acl_r_deny_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_w_grant_xxx')" name="acl_w_deny_xxx" id="acl_w_deny_xxx" value="1"/>
-                      <input type="checkbox" onclick="javascript: uncheck('acl_x_grant_xxx')" name="acl_x_deny_xxx" id="acl_x_deny_xxx" value="1"/>
-                    </td>
-                    <td nowrap="nowrap" width="1%">
-                      <span class="button3 pointer" onclick="javascript: ODRIVE.aclUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
-                    </td>
-                  </tr>
+                  <tbody id="acl_tbody">
+              		  <![CDATA[
+              		    <script type="text/javascript">
+                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclEmptyCreate();})
+              		    </script>
+              		  ]]>
+              		</tbody>
                 </table>
               </div>
             </div>
