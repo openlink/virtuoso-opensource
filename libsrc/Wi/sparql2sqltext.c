@@ -1166,11 +1166,13 @@ sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements)
   return tres;
 }
 
+#ifndef spar_sqlprint_error_impl
 void
 spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg)
   {
     ssg_putchar ('!'); ssg_puts (msg); ssg_putchar ('!');
   }
+#endif
 
 void
 ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
@@ -1462,6 +1464,13 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): lengths of triple->_.triple.qm_list differs from 1");
           tr_valmode = triple->_.triple.native_formats[tr_idx];
           sparp_jso_validate_format (sparp, tr_valmode);
+          if (SSG_VALMODE_AUTO == tr_valmode)
+            {
+              ptrlong rvr = sparp_restr_bits_of_expn (sparp, triple->_.triple.tr_fields[tr_idx]);
+              if ((rvr & SPART_VARR_IS_REF) || ((rvr & (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL)) == (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL)))
+                return SSG_VALMODE_SQLVAL;
+              return SSG_VALMODE_LONG;
+            }
           return tr_valmode;
         }
       else
@@ -2081,7 +2090,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
     needed = native; /* !!!TBD: proper check for safety of this replacement (the value returned may be of an unexpected type) */
   qm = triple->_.triple.tc_list[0]->tc_qm;
   if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
-    qmv = SSG_VALMODE_SQLVAL;
+    qmv = (qm_value_t *)1;
   else
   qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
   if (NULL != qmv)
@@ -2104,6 +2113,8 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
           const char *eq_idx_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
           if (col_ctr)
             ssg_puts (", ");
+          if (!IS_BOX_POINTER (qmv))
+            spar_sqlprint_error ("ssg_" "print_tr_var_expn(): multicolumn printing of special binding");
           rv->_.retval.vname = (caddr_t)(qmv->qmvColumns[col_ctr]->qmvcColumnName);
           ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, eq_idx_asname);
           if (IS_BOX_POINTER (asname))
@@ -3667,11 +3678,22 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
   qm = triple->_.triple.tc_list[0]->tc_qm;
   if ((0 != triple->_.triple.ft_type) || (NULL == qm->qmTableName) || (NULL == strstr (qm->qmTableName, "DB.DBA.RDF_QUAD")))
     {
-      qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[field_idx])[0];
+      qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, field_idx);
       caddr_t full_vname;
       if (NULL == qmv)
-        spar_sqlprint_error2 ("ssg_" "ssg_qm_retval_alias(): NULL qmv", t_box_dv_short_string (simple_vname));
-      if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
+        {
+          caddr_t v = SPARP_FIELD_CONST_OF_QM (qm, field_idx);
+          const char *tail = "";
+          if ((DV_UNAME == DV_TYPE_OF (v)) || (DV_STRING == DV_TYPE_OF (v)))
+            {
+              const char *t = v + box_length (v) - 1;
+              int ctr = 20;
+              while ((0 < ctr--) && (v < t) && (isalnum (t[-1]))) t--;
+              tail = t;
+            }
+          full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash (v), tail);
+        }
+      else if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
         {
           if (col_idx > 0)
             spar_internal_error (ssg->ssg_sparp, "ssg_triple_retval_alias (): col_idx is too big");
@@ -4790,15 +4812,14 @@ if (NULL != jright_alias)
           SPART_buf var_rv_buf/*, glob_rv_buf*/;
           SPART *var_rv/*, *glob_rv*/;
           quad_map_t *qm;
-          qm_value_t *qmv;
           int col_ctr, col_count;
           qm = var_triple->_.triple.tc_list[0]->tc_qm;
-          if (SPART_TRIPLE_FIELDS_COUNT <= var->_.var.tr_idx)
-            qmv = SSG_VALMODE_SQLVAL;
-          else
-          qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
+          if (SPART_TRIPLE_FIELDS_COUNT > var->_.var.tr_idx)
+            {
+              qm_value_t *qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[var->_.var.tr_idx])[0];
           if ((NULL == qmv) && (!SPART_VARNAME_IS_GLOB (var->_.var.vname))) /* It's fixed and it's constant in qm hence it matches compile-time, no run-time check needed */
             continue;
+            }
           SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
           memcpy (&(var_rv->_.retval), &(var->_.var), sizeof (var->_.var));
           var_rv->_.retval.triple = var_triple;

@@ -4240,16 +4240,61 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
             if (!SPAR_IS_BLANK_OR_VAR (key_field)) /* Non-variables can not result in tabid reuse atm, !!!TBD: support for { <pk> ?p1 ?o1 . OPTIONAL { <pk> ?p2 ?o2 } } */
               continue;
             key_qmv = SPARP_FIELD_QMV_OF_QM (base_qm,key_field_idx);
-            if (sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
-              {
+            if (!sparp_qmv_forms_reusable_key_of_qm (sparp, key_qmv, base_qm))
+              continue;
                 t_set_push (((dk_set_t *)(common_env)), curr);
                 return 0;
               }
-          }
         break;
       }
     }
   return 0;
+}
+
+#define SPARP_QM_CONDS_SOME_A_NOT_IN_B 0x1
+#define SPARP_QM_CONDS_SOME_B_NOT_IN_A 0x2
+
+int
+sparp_qm_conds_cmp (sparp_t *sparp, quad_map_t *qm_a, quad_map_t *qm_b)
+{
+  int a_ctr, a_count = qm_a->qmAllCondCount;
+  int b_ctr, b_count = qm_b->qmAllCondCount;
+  int res = 0;
+  for (a_ctr = a_count; a_ctr--; /* no step */)
+    {
+      ccaddr_t a_cond = qm_a->qmAllConds [a_ctr];
+      int a_in_b = 0;
+      for (b_ctr = b_count; b_ctr--; /* no step */)
+        {
+          ccaddr_t b_cond = qm_b->qmAllConds [b_ctr];
+          if (strcmp (a_cond, b_cond))
+            continue;
+          a_in_b = 1;
+          break;
+        }
+      if (a_in_b)
+        continue;
+      res |= SPARP_QM_CONDS_SOME_A_NOT_IN_B;
+      break;
+    }
+  for (b_ctr = b_count; b_ctr--; /* no step */)
+    {
+      ccaddr_t b_cond = qm_a->qmAllConds [b_ctr];
+      int b_in_a = 0;
+      for (a_ctr = a_count; a_ctr--; /* no step */)
+        {
+          ccaddr_t a_cond = qm_b->qmAllConds [a_ctr];
+          if (strcmp (b_cond, a_cond))
+            continue;
+          b_in_a = 1;
+          break;
+        }
+      if (b_in_a)
+        continue;
+      res |= SPARP_QM_CONDS_SOME_B_NOT_IN_A;
+      break;
+    }
+  return res;
 }
 
 static int
@@ -4265,9 +4310,12 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
       SPART *opt_triple;
       SPART *opt_parent;
       SPART *dep_field = key_recv_eq->e_vars[dep_ctr];
-      int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr;
+      int dep_triple_idx, dep_field_tr_idx, o_p_idx, field_ctr, optimizable_field_idx;
+      int optimization_blocked_by_filters;	/*!< Flags if the OPTIONAL can not be elimintaed because it contains conditions that can not be moved to the receiver */
+      int optimizable_field_count;	/*!< Number of variable fields in OPTIONAL that are not known as NOT NULL in the receiving GP */
+      int really_nullable_count;	/*!< Number of variable fields in OPTIONAL that can in principle be NULL if key is not null */
       SPART *dep_triple = NULL;
-      quad_map_t *dep_qm;
+      quad_map_t *dep_qm, *opt_qm;
       qm_value_t *dep_qmv;
       if (NULL == dep_field->_.var.tabid) /* The variable is not a field in a triple (const read, not gspo use) */
         continue;
@@ -4295,9 +4343,79 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
         continue;
       if (!sparp_qmv_forms_reusable_key_of_qm (sparp, dep_qmv, dep_qm))
         continue;
+      opt_triple = opt->_.gp.members[0];
+      opt_qm = opt_triple->_.triple.tc_list[0]->tc_qm;
+      if (SPARP_QM_CONDS_SOME_B_NOT_IN_A & sparp_qm_conds_cmp (sparp, dep_qm, opt_qm))
+        continue; /* If some WHERE conditions of optional are not in WHERE list of required then this is true LEFT OUTER */
+      optimizable_field_count = 0;
+      really_nullable_count = 0;
+      optimization_blocked_by_filters = 0;
+      /* Now we're looking for a field that may be NOT NULL outside the OPTIONAL but should be NOT NULL inside the ontional binding but may be NULL in the data set */
+      for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
+        {
+          SPART *fld_expn = opt_triple->_.triple.tr_fields[field_ctr];
+          qm_value_t *fld_qmv;
+          sparp_equiv_t *fld_eq;
+          int recv_ctr, some_recv_is_nullable;
+          if (fld_expn == key_field)
+            continue; /* key field can't be NULL inside OPTIONAL and non-NULL outside OPTIONAL */
+          fld_qmv = SPARP_FIELD_QMV_OF_QM (opt_qm, field_ctr);
+          if (!SPAR_IS_BLANK_OR_VAR (fld_expn))
+            {
+              if (NULL == fld_qmv)
+                continue; /* Const is equal to const, otherwise it would not be wiped away before as conflict */
+              /* constant in triple pattern and a quad map value implies the equality condition in the OPTIONAL, can't optimize under any circumstances */
+              return 0;
+            }
+          if ((NULL != fld_qmv) && !(SPART_VARR_NOT_NULL & fld_qmv->qmvRange.rvrRestrictions))
+            really_nullable_count++;
+          some_recv_is_nullable = 0;
+          fld_eq = sparp_equiv_get (sparp, opt, fld_expn, SPARP_EQUIV_GET_ASSERT);
+          if (1 < fld_eq->e_gspo_uses)
+            return 0; /* two vars inside equiv implies the equality condition in the OPTIONAL, can't optimize after that */
+          if ((NULL != fld_qmv) && (SPART_VARR_FIXED & fld_eq->e_rvr.rvrRestrictions))
+            return 0; /* a fiexed value for a var implies the equality condition in the OPTIONAL, can't optimize after that */
+          DO_BOX_FAST (ptrlong, recv_idx, recv_ctr, fld_eq->e_receiver_idxs)
+            {
+              sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_idx);
+              if (!(recv_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
+                some_recv_is_nullable = 1;
+/* A non-nullable variable outside should be equal to a variable inside, that implies an equality condition in join, so we can't optimize after that.
+There's one exception. If the only use of a variable is in dep_triple and it is made by same quad map value then there's no need in equality condition
+because both variable outside and variable inside will produce identical SQL code, hence no need to check the equality at all. */
+              if ((1 < recv_eq->e_gspo_uses) || recv_eq->e_subquery_uses || (1 < BOX_ELEMENTS_0 (recv_eq->e_subvalue_idxs)))
+                return 0; 
+              if (1 == recv_eq->e_gspo_uses)
+                {
+                  int d_fld_ctr;
+                  for (d_fld_ctr = SPART_TRIPLE_FIELDS_COUNT; d_fld_ctr--; /* no step */)
+                    {
+                      SPART *d_fld = dep_triple->_.triple.tr_fields[d_fld_ctr];
+                      if (SPAR_IS_BLANK_OR_VAR (d_fld) && (d_fld->_.var.equiv_idx == recv_idx))
+                        break;
+                    }
+                  if (0 > d_fld_ctr)
+                    { /* The GSPO use is not found in dep_triple, hence that's not an exception. */
+                      optimization_blocked_by_filters = 1;
+                      break;
+                    }
+                  if (SPARP_FIELD_QMV_OF_QM (dep_qm, d_fld_ctr) != fld_qmv)
+                    { /* The inner var occurs only in dep_triple, but made by other qmv, hence that's not an exception. */
+                      optimization_blocked_by_filters = 1;
+                      break;
+                    }
+                }
+            }
+          END_DO_BOX_FAST;
+          if (!some_recv_is_nullable)
+            continue;
+          optimizable_field_idx = field_ctr;
+          optimizable_field_count++;
+        }
+      if (optimization_blocked_by_filters || ((0 != really_nullable_count) && (1 < optimizable_field_count)))
+        continue; /* If more than one variable is not known outside as NOT_NULL then the optimized variant may produce a sulution with one optional variable bound and one NULL */
       /* Glory, glory, hallelujah; we can cut optional triple reuse the tabid so the final SQL query will have one join less. */
       sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
-      opt_triple = opt->_.gp.members[0];
       key_field_eq = SPARP_EQUIV (sparp, key_field->_.var.equiv_idx);
       opt_parent = SPARP_EQUIV (sparp, key_field_eq->e_receiver_idxs[0])->e_gp;
       sparp_gp_detach_member (sparp, opt, 0, NULL);
@@ -4307,13 +4425,15 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
       sparp_gp_detach_member (sparp, opt_parent, o_p_idx, NULL);
       sparp_gp_attach_member (sparp, key_recv_gp, opt_triple, dep_triple_idx+1, NULL);
       sparp_set_triple_selid_and_tabid (sparp, opt_triple, key_recv_gp->_.gp.selid, dep_triple->_.triple.tabid);
-      opt_triple->_.triple.subtype = OPTIONAL_L;
-      for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
+      if (0 != really_nullable_count)
         {
-          SPART *fld_expn = opt_triple->_.triple.tr_fields[field_ctr];
-          if (!SPAR_IS_BLANK_OR_VAR (fld_expn))
-            continue;
-          fld_expn->_.var.rvr.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
+      opt_triple->_.triple.subtype = OPTIONAL_L;
+          if (optimizable_field_count)
+        {
+              SPART *optimizable_field = opt_triple->_.triple.tr_fields [optimizable_field_idx];
+              if (SPAR_IS_BLANK_OR_VAR (optimizable_field))
+                optimizable_field->_.var.rvr.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
+            }
         }
       sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
       return 1;

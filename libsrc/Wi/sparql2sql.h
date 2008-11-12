@@ -702,31 +702,39 @@ typedef struct spar_sqlgen_s
   int			ssg_where_l_printed;	/*!< Flags what to print before a filter: " WHERE" if 0, " AND" otherwise */
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
+  int			ssg_line_count;		/*!< Number of lines of generated SQL code */
 } spar_sqlgen_t;
 
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
 
+#ifdef DEBUG
+extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
+#define spar_sqlprint_error(x) do { spar_sqlprint_error_impl (ssg, (x)); return; } while (0)
+#define spar_sqlprint_error2(x,v) do { spar_sqlprint_error_impl (ssg, (x)); return (v); } while (0)
+#else
+#define spar_sqlprint_error_impl(ssg,msg) spar_internal_error (NULL, (msg))
+#define spar_sqlprint_error(x) spar_internal_error (NULL, (x))
+#define spar_sqlprint_error2(x,v) spar_internal_error (NULL, (x))
+#endif
+
+
 #define SSG_INDENT_FACTOR 4
+#define SSG_MAX_ALLOWED_LINE_COUNT 10000
 #define ssg_newline(back) \
   do { \
     int ind = ssg->ssg_indent; \
     if (ind) \
       ind = 1 + ind * SSG_INDENT_FACTOR - (back); \
     else \
+      { \
       ind = 1; \
+        if (SSG_MAX_ALLOWED_LINE_COUNT == ssg->ssg_line_count++) \
+          spar_sqlprint_error_impl (ssg, "The length of generated SQL text has exceeded 10000 lines of code"); \
+      } \
     session_buffered_write (ssg->ssg_out, "\n                              ", (ind > 31) ? 31 : ind); \
     } while (0)
-
-#ifdef DEBUG
-extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
-#define spar_sqlprint_error(x) do { spar_sqlprint_error_impl (ssg, (x)); return; } while (0)
-#define spar_sqlprint_error2(x,v) do { spar_sqlprint_error_impl (ssg, (x)); return (v); } while (0)
-#else
-#define spar_sqlprint_error(x) spar_internal_error (NULL, (x))
-#define spar_sqlprint_error2(x,v) spar_internal_error (NULL, (x))
-#endif
 
 /*! Adds either iri of \c jso_inst or \c jso_name into dependencies of the generated query. \c jso_inst is used only if \c jso_name is NULL */
 extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
