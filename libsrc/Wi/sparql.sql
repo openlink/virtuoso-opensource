@@ -6295,6 +6295,55 @@ create function DB.DBA.RDF_BAD_CLASS_INV_FUNCTION (inout val any) returns any
 }
 ;
 
+--!AWK PUBLIC
+create function DB.DBA.SQLNAME_NOTATION_TO_NAME (in str varchar) returns varchar
+{
+  if ('' = str)
+    return NULL;
+  if (34 = str[0])
+    return subseq (str, 1, length (str) - 1);
+  return fix_identifier_case (str);
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.SQLQNAME_NOTATION_TO_QNAME (in str varchar, in expected_part_count integer) returns varchar
+{
+  declare part_ctr, dot_pos integer;
+  declare name, res varchar;
+  res := '';
+  part_ctr := 1;
+next_dot:
+  dot_pos := strchr (str, '.');
+  if (dot_pos is not null)
+    {
+      if (0 = dot_pos)
+        {
+          if (2 = part_ctr)
+            res := res || USER || '.';
+          else
+            return NULL;
+        }
+      else
+        {
+          name := DB.DBA.SQLNAME_NOTATION_TO_NAME(subseq (str, 0, dot_pos));
+          if (name is null)
+            return NULL;
+          res := res || name  || '.';
+        }
+      str := subseq (str, dot_pos + 1);
+      part_ctr := part_ctr + 1;
+      goto next_dot;
+    }
+  if (expected_part_count <> part_ctr)
+    return NULL;
+  name := DB.DBA.SQLNAME_NOTATION_TO_NAME (str);
+  if (name is null)
+    return NULL;
+  return res || name;
+}
+;
+
 create procedure DB.DBA.RDF_QM_CHECK_CLASS_FUNCTION_HEADERS (inout fheaders any, in is_iri_decl integer, in only_one_arg integer, in pdesc varchar, in invdesc varchar, in bij integer, in deref integer)
 {
   declare uriprint any;
@@ -6644,15 +6693,18 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (colctr := 0; colctr < colcount; colctr := colctr + 1)
     {
       declare sqlcol any;
+      declare final_tblname, final_colname varchar;
       sqlcol := sqlcols [colctr];
-      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = sqlcol[0]))
+      final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
+      final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
+      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = final_tblname))
         {
           if (sqlcol[1] is not null)
             signal ('22023', 'No table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
           else
             signal ('22023', 'No table ' || sqlcol[0] || ' in database, please check spelling and character case');
         }
-      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = sqlcol[0] and "COLUMN" = sqlcol[2]))
+      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname))
         {
           if (sqlcol[1] is not null)
             signal ('22023', 'No column ' || sqlcol[2] || ' in table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
