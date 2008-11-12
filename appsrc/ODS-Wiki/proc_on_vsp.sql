@@ -2086,7 +2086,6 @@ create function WV.WIKI.VSPDIFF (
 
   if (0 < DB.DBA.DAV_RES_CONTENT (WV.WIKI.DIFF_DAV_PATH (_topic, _rev), content, type, _auth, _pwd))
     {
-      if (isblob (content))
         content := blob_to_string (content);
       declare _report, _xml_content any;
       _xml_content := xtree_doc ('<text><![CDATA[' || content || ']]></text>');
@@ -3141,6 +3140,45 @@ CREATE PROCEDURE WV.WIKI.CLUSTER_TREE_BUILD_TEMP(
   }
   if (_ul = 1)
     http('</ul>', retValue);
+}
+;
+
+-- Return a div of top-10 most recently modified DAV files matching FILTER
+create function WV.WIKI.RecentPages(inout filter varchar)
+{
+  declare ret varchar;
+  ret:='<div id="recentpages">\n<ul>\n';
+  for ( select top 10 left(res_name, length(res_name)-4) as fname from ws..sys_dav_res where res_full_path like filter order by res_mod_time desc )
+    do
+      {
+	ret:=ret || '<li>' || fname || '</li>\n';
+      }
+  ret:=ret || '</ul>\n</div>\n';
+  return xtree_doc(ret);
+}
+;
+
+grant execute on WV.WIKI.RecentPages to public
+;
+
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:RecentPages', 'WV.WIKI.RecentPages')
+;
+
+create function WV.WIKI.member_of_cluster (in _user varchar, in _cluster_name varchar)
+{
+  if (exists (select 1 from DB.DBA.WA_INSTANCE
+               where WAI_NAME = _cluster_name
+                 and WAI_TYPE_NAME = 'oWiki'
+                 and WAI_IS_PUBLIC = 1))
+    return 1;
+  if (exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER
+               where U_NAME = _user
+                 and WAM_USER = U_ID
+                 and WAM_INST = _cluster_name
+                 and WAM_MEMBER_TYPE <= 3
+                 and WAM_STATUS <= 2))
+    return 1;
+  return 0;
 }
 ;
 

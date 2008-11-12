@@ -2172,6 +2172,7 @@ create procedure WV.WIKI.UPLOADPAGE (
     return -03;
   _perms := WV.WIKI.GETDEFAULTPERMS (_cluster_id);
   connection_set ('HTTP_CLI_UID', _user);
+  connection_set ('oWiki_cluster_id', _cluster_id);
   _res_id := DB.DBA.DAV_RES_UPLOAD (
      _path,
      _text,
@@ -2182,6 +2183,7 @@ create procedure WV.WIKI.UPLOADPAGE (
      'dav', 
      (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()),
      coalesce ( (select Token from WV.WIKI.LOCKTOKEN where UserName = _user and ResPath = _path), 1));
+  connection_set ('oWiki_cluster_id', null);
   declare wiki_user varchar;
   declare user_id int;
   user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
@@ -4471,6 +4473,8 @@ WS.WS.META_WIKI_HOOK (inout vtb any, inout r_id any)
   declare _cluster varchar;
   _cluster := (select ClusterName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS 
 	where ResId = r_id);
+  if (_cluster is null)
+    _cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = connection_get ('oWiki_cluster_id'));
   if (_cluster is not null)
     {
       -- it is a wiki

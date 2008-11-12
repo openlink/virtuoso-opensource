@@ -268,7 +268,7 @@ topic_search:
           cr_text := 'select ' || case when s_off <> ''
                              then 'top (' || cast (s_off as varchar) || ',' || cast (self.rowcnt as varchar) || ')'
                              else '' end
-               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR'
+               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR, \'\' as SCORE'
                || '   from WS.WS.SYS_DAV_RES'
                || '  where RES_ID in (select t.ResId from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c'
                || '                    where (t.LocalName = \'' || _search_name || '\' or t.LocalName2 = \'' ||_search_name || '\')'
@@ -278,9 +278,9 @@ topic_search:
 	cr_text := 'select ' || case when s_off <> '' 
 	                          then 'top (' || cast (s_off as varchar) || ',' || cast (self.rowcnt as varchar) || ')'
 	                          else '' end
-               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR'
+               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR, SCORE'
                || '   from WS.WS.SYS_DAV_RES'
-               || '  where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
+               || '  where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?)) order by SCORE desc';
 
         if (self.stype > 0)
         {
@@ -363,8 +363,13 @@ topic_search:
 	    
 	while (0 = exec_next (h, null, null, dta))
     {
+	  declare uf_name varchar;
        _res_id := dta[0];
-       _u_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = dta[1]);
+	  for select U_NAME, U_FULL_NAME from DB.DBA.SYS_USERS where U_ID = dta[1] do
+	    {
+	      _u_name := U_NAME;
+	      uf_name := coalesce (U_FULL_NAME, _u_name);
+	    }
        _res_name := dta[2];
        _res_len := dta[3];
        _cr_time := dta[4];
@@ -382,10 +387,19 @@ topic_search:
             _text := '';
             if (self.stype = 0)
             {
-          declare _text_ses varchar;
+              declare _text_ses, cl_name, lexer, lexer_name, txt, xt, xd varchar;
           _text_ses := string_output ();
-          http_value(blob_to_string ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = _res_id)), NULL, _text_ses);
-          _text := coalesce (search_excerpt (hit_words,  WV.WIKI.DELETE_SYSINFO_FOR (string_output_string (_text_ses), null), 200000, 90, 200, 'b', 1), '');
+	      cl_name := (select ClusterName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where ResId = _res_id);
+	      WV..LEXER (cl_name, lexer, lexer_name);
+	      _text_ses := blob_to_string ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = _res_id));
+	      lexer_name := cast (call (lexer_name) () as varchar);
+	      txt := call (lexer) (_text_ses || '\r\n', cl_name, '', cl_name, vector ('SYNTAX', lexer_name));
+	      xt := xtree_doc ('<text>' || txt || '</text>', 2);
+	      xd := xpath_eval ('string (//*)', xt);
+	      txt := serialize_to_UTF8_xml (xd);
+
+              _text := coalesce (search_excerpt (hit_words, txt, 200000, 90, 200, 'b', 1), '');
+              --_text := coalesce (search_excerpt (hit_words,  WV.WIKI.DELETE_SYSINFO_FOR (string_output_string (_text_ses), null), 200000, 90, 200, 'b', 1), '');
             }
           vectorbld_acc (res, vector (
 	     	  		link,
@@ -395,7 +409,9 @@ topic_search:
 			       	_text,
 			       	WV.WIKI.TOPICNAME (_res_id),
 		       		href,
-				_cr_time
+		   _cr_time,
+		   dta[8], -- SCORE
+		   uf_name
 		));
 	     }
 	 }
@@ -591,12 +607,12 @@ endf:
 									</span>
 								</div>
               <table id="content" class="search-result">
-									<tr>
+                <!--tr>
 										<th align="left" width="20%">Name</th>
 										<th align="left" width="10%">Size</th>
 										<th align="left" width="10%">Owner</th>
 										<th align="left" width="10%">Date</th>
-									</tr>
+                </tr-->
 									<v:template name="tmpl1" type="repeat">
 										<v:template name="tmpl7" type="if-not-exists">
 											<div class="message">No matches found</div>
@@ -604,27 +620,19 @@ endf:
 										<v:template name="tmp18" type="browse">
 											<tr class="search-first-col">
 												<td>
+			  <span>
                                       <?vsp
                                         http (sprintf ('<a href="%s%s">%s</a>', WV.WIKI.READONLYWIKIIRI (subseq (control.te_rowset[5], 0, strstr(control.te_rowset[5], '.')), subseq (control.te_rowset[5], strstr(control.te_rowset[5], '.') + 1)),
 													 case when (self.sid is not null and self.sid <> '')
 													   then '?sid=' || self.sid || '&realm=' || self.realm
 													   else ''
                           end, control.te_rowset[5] ));
-                        ?>
-												</td>
-												<td>
-													<?vsp http (control.te_rowset[1]); ?>
-												</td>
-												<td>
-													<?vsp http (control.te_rowset[2]); ?>
-												</td>
-												<td>
-													<?vsp http (WV.WIKI.DATEFORMAT(control.te_rowset[3])); ?>
-												</td>
-											</tr>
-											<tr>
-												<td colspan="4">
+			  ?> by <?vsp http (sprintf ('<a href="%s">%V</a>',
+			  	sioc..person_iri (sioc..user_obj_iri (control.te_rowset[2])), control.te_rowset[9])); ?><br />
 													<?vsp http (control.te_rowset[4]); ?>
+			<br/>
+			<small><i>Last change: <?V DB.DBA.wa_abs_date(control.te_rowset[3]) ?></i></small>
+		    </span>
 												</td>
 											</tr>
 										</v:template>
