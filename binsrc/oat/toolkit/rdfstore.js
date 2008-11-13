@@ -143,6 +143,12 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:xmlDoc.baseURI});
 	}
 		
+	this.addTripleList = function(triples,href,title) {
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADING,{url:href});
+		self.addTriples(triples,href,title);
+		OAT.MSG.send(this,OAT.MSG.STORE_LOADED,{url:href});
+	}
+		
 	this.addTriples = function(triples,href,title) {
 		var o = {
 			triples:triples,
