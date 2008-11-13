@@ -2330,14 +2330,6 @@ bif_md5_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
-md5_update_map (buffer_elt_t * buf, caddr_t arg)
-{
-  MD5_CTX *pctx = (MD5_CTX *) arg;
-  MD5Update (pctx, (unsigned char *) buf->data, buf->fill);
-}
-
-
 caddr_t
 md5_ses (dk_session_t * ses)
 {
