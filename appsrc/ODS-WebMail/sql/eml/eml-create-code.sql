@@ -3704,7 +3704,8 @@ create procedure OMAIL.WA.omail_message_body_parse_func(
   declare _pattern, _img_tag any;
 
   _pattern := sprintf('[pic|%d]',_part_id);
-  if (strstr(_body, _pattern)){
+  if (strstr(_body, _pattern))
+  {
     _content_id := md5(concat(_content_id,cast(_part_id as varchar)));
     _img_tag    := sprintf('<img src="cid:%s" hspace="5" vspace="5" align="left">', _content_id);
     _body       := replace(_body, _pattern, _img_tag);
@@ -4325,7 +4326,7 @@ create procedure OMAIL.WA.omail_open_message_full(
 
       if (N > 1){
          _hh := sprintf('%s<alternative>\n',_hh);
-         _hh := sprintf('%s<boundary2>%s</boundary2>\n', _hh,sprintf('------2_NextPart_%s',md5(concat(cast(now() as varchar),cast('xx' as varchar)))));
+         _hh := sprintf ('%s<boundary2>%s</boundary2>\n', _hh,sprintf ('------2_NextPart_%s',md5 (concat (cast (now() as varchar), 'xx'))));
          _hh := sprintf('%s%s',_hh,_rs);
          _hh := sprintf('%s</alternative>\n',_hh);
 
@@ -5485,7 +5486,7 @@ create procedure OMAIL.WA.omail_send_msg(
   _body := '<message>';
   _body := sprintf('%s<boundary>%s</boundary>', _body, _boundary);
   _body := sprintf('%s<charset>%s</charset>', _body, 'us-ascii');
-  _body := sprintf('%s<srv_msg_id>%s</srv_msg_id>', _body, md5(concat(cast(_domain_id as varchar),cast(_user_id as varchar),cast(_msg_id as varchar),cast(now() as varchar))));
+  _body := sprintf ('%s<srv_msg_id>%s</srv_msg_id>', _body, OMAIL.WA.rfc_id ());
   _body := sprintf('%s%s%s</message>', _body, _sql_result1, _sql_result2);
   _body := xslt(_xslt_url, xml_tree_doc(xml_tree(_body)));
 
@@ -8149,6 +8150,14 @@ create procedure OMAIL.WA.dcc_update (
   update OMAIL.WA.CONVERSATION
      set C_ADDRESSES = addresses
    where C_ADDRESS = address;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.rfc_id ()
+{
+  return sprintf ('%s@%s', uuid (), sys_stat ('st_host_name'));
 }
 ;
 

@@ -34,9 +34,7 @@
   address := get_keyword('addr', params);
 
   settings := OMAIL.WA.omail_get_settings (domain_id, user_id, 'base_settings');
-  dbg_obj_print ('settings', settings);
   scopy    := get_keyword ('save_copy', settings, '1');
   options  := vector ('scopy', scopy);
-  dbg_obj_print ('', domain_id, user_id, options, msg_id, address, error);
   OMAIL.WA.omail_send_msg(domain_id, user_id, options, msg_id, address, error);
 ?>
