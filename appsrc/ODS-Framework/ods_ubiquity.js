@@ -536,7 +536,7 @@ CmdUtils.CreateCommand({
       var sid = odsExecute("user.authenticate", params, "", false, true);
     ODS.setSid(sid);
     ODS.setMode('sid');
-    displayMessage("Your was authenticated. Your ODS session ID has been set to " + ODS.getSid());
+      displayMessage("You were authenticated. Your ODS session ID has been set to " + ODS.getSid());
     } catch (ex) {
       displayMessage(ex);
     }
@@ -626,6 +626,28 @@ CmdUtils.CreateCommand({
     } catch (ex) {
     }
   },
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-user",
+  takes: {"user": noun_arb_text},
+  modifiers: {"password": noun_arb_text, "email": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-user &lt;username&gt; password &lt;password&gt; email &lt;email&gt;",
+  execute: function (user, modifiers) {
+    try {
+      checkParameter(user.text, "user");
+      var params = {name: user.text};
+      addParameter(modifiers, "password", params, "password", true);
+      addParameter(modifiers, "email", params, "email", true);
+      odsExecute("user.register", params, "", false, true);
+    } catch (ex) {
+      displayMessage(ex);
+    }
+  }
 });
 
 CmdUtils.CreateCommand({
@@ -1368,7 +1390,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-bookmarks-publication &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [folderPath &lt;folderPath&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -1399,7 +1421,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-bookmarks-publication &lt;publication_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [folderPath &lt;folderPath&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (publication_id) {
+  execute: function (publication_id, modifiers) {
     try {
       checkParameter(publication_id.text, "publication_id");
     var params = {publication_id: publication_id.text};
@@ -1449,7 +1471,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-bookmarks-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [folderPath &lt;folderPath&gt;] [tags &lt;tags&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -1479,7 +1501,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-bookmarks-subscription &lt;subscription_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [folderPath &lt;folderPath&gt;] [tags &lt;tags&gt;]",
-  execute: function (subscription_id) {
+  execute: function (subscription_id, modifiers) {
     try {
       checkParameter(subscription_id.text, "subscription_id");
     var params = {subscription_id: subscription_id.text};
@@ -1965,7 +1987,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-calendar-publication &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [events &lt;events&gt;] [tasks &lt;tasks&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -1996,7 +2018,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-calendar-publication &lt;publication_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [events &lt;events&gt;] [tasks &lt;tasks&gt;]",
-  execute: function (publication_id) {
+  execute: function (publication_id, modifiers) {
     try {
       checkParameter(publication_id.text, "publication_id");
     var params = {publication_id: publication_id.text};
@@ -2045,7 +2067,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-calendar-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [events &lt;events&gt;] [tasks &lt;tasks&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -2075,7 +2097,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-calendar-subscription &lt;subscription_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [events &lt;events&gt;] [tasks &lt;tasks&gt;]",
-  execute: function (subscription_id) {
+  execute: function (subscription_id, modifiers) {
     try {
       checkParameter(subscription_id.text, "subscription_id");
     var params = {subscription_id: subscription_id.text};
@@ -2558,7 +2580,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-addressbook-publication &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -2589,7 +2611,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-addressbook-publication &lt;publication_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [destinationType &lt;destinationType&gt;] destination &lt;destination&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (publication_id) {
+  execute: function (publication_id, modifiers) {
     try {
       checkParameter(publication_id.text, "publication_id");
     var params = {publication_id: publication_id.text};
@@ -2638,7 +2660,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-create-addressbook-subscription &lt;instance_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (instance_id) {
+  execute: function (instance_id, modifiers) {
     try {
       checkParameter(instance_id.text, "instance_id");
       var params = {inst_id: instance_id.text};
@@ -2668,7 +2690,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-update-addressbook-subscription &lt;subscription_id&gt; name &lt;name&gt; [updateType &lt;updateType&gt;] [updatePeriod &lt;hourly|dayly&gt;] [updateFreq &lt;updateFreq&gt;] [sourceType &lt;sourceType&gt;] source &lt;source&gt; [userName &lt;userName&gt;] [userPassword &lt;userPassword&gt;] [tagsInclude &lt;tagsInclude&gt;] [tagsExclude &lt;tagsExclude&gt;]",
-  execute: function (subscription_id) {
+  execute: function (subscription_id, modifiers) {
     try {
       checkParameter(subscription_id.text, "subscription_id");
     var params = {subscription_id: subscription_id.text};
@@ -3574,13 +3596,12 @@ CmdUtils.CreateCommand({
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-get-discussion-group-by-id &lt;group_id&gt;",
-  execute: function (group_id) {
+  preview: function (previewBlock, group_id) {
     try {
       checkParameter(group_id.text, "group_id");
     var params = {group_id: group_id.text};
-      odsExecute("discussion.group.get", params, "discussion");
+      odsPreview (previewBlock, "discussion.group.get", params, "discussion");
     } catch (ex) {
-      displayMessage(ex);
     }
   }
 });
@@ -3648,7 +3669,7 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   name: "ods-delete-discussion-feed-by-id",
-  takes: {"feed_id": noun_type_id},
+  takes: {"feed_id": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
@@ -3667,7 +3688,7 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   name: "ods-get-discussion-message-by-id",
-  takes: {"message_id": noun_type_id},
+  takes: {"message_id": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
@@ -3707,7 +3728,7 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   name: "ods-get-discussion-comment-by-id",
-  takes: {"comment_id": noun_type_id},
+  takes: {"comment_id": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",
   author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
@@ -3725,7 +3746,7 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
   name: "ods-create-discussion-comment",
-  takes: {"parent_id": noun_type_id},
+  takes: {"parent_id": noun_arb_text},
   modifiers: {"subject": noun_arb_text, "body": noun_arb_text},
   homepage: "http://myopenlink.net/ods/",
   icon: "http://www.openlinksw.com/favicon.ico",

@@ -20,37 +20,6 @@
 
 use ODS;
 
--- User account activity
-
---! User registration
---! name: desired user account name
---! password: desired password
---! email: user's e-mail address
-create procedure ODS.ODS_API."user.register" (
-    	in name varchar,
-	in "password" varchar,
-	in "email" varchar
-	) __soap_http 'text/xml'
-{
-  declare ret any;
-  declare msg varchar;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  ret := DB.DBA.ODS_CREATE_USER (name, "password", "email");
-  if (isinteger (ret))
-    msg := 'Created';
-  else
-    {
-      msg := ret;
-      ret := -1;
-    }
-  return ods_serialize_int_res (ret);
-}
-;
-
 create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
 {
   if (isarray (rc) and length (rc) = 2 and __tag (rc[0]) = 255)
@@ -275,6 +244,30 @@ create procedure params2json (in o any)
 }
 ;
 
+-- User account activity
+
+--! User registration
+--! name: desired user account name
+--! password: desired password
+--! email: user's e-mail address
+create procedure ODS.ODS_API."user.register" (
+  in name varchar,
+	in "password" varchar,
+	in "email" varchar) __soap_http 'text/xml'
+{
+  declare ret any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  ret := DB.DBA.ODS_CREATE_USER (name, "password", "email");
+  if (not isinteger (ret))
+    ret := -1;
+  return ods_serialize_int_res (ret);
+}
+;
+
 --! Authenticate ODS account using name & password hash
 --! Will estabilish a session in VSPX_SESSION table
 create procedure ODS.ODS_API."user.authenticate" (
@@ -298,8 +291,7 @@ create procedure ODS.ODS_API."user.authenticate" (
 
 
 create procedure ODS.ODS_API."user.update" (
-	in user_info any
-	) __soap_http 'text/xml'
+	in user_info any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -330,8 +322,7 @@ create procedure ODS.ODS_API."user.update" (
 ;
 
 create procedure ODS.ODS_API."user.password_change" (
-	in new_password varchar
-	) __soap_http 'text/xml'
+	in new_password varchar) __soap_http 'text/xml'
 {
   declare uname, msg varchar;
   declare rc int;
@@ -354,7 +345,8 @@ create procedure ODS.ODS_API."user.password_change" (
 ;
 
 -- ODS admin privilege
-create procedure ODS.ODS_API."user.delete" (in name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.delete" (
+  in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -365,19 +357,22 @@ create procedure ODS.ODS_API."user.delete" (in name varchar) __soap_http 'text/x
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (uname in ('dav', 'dba'))
     {
       delete from DB.DBA.SYS_USERS where U_NAME = name;
       rc := row_count ();
-    }
-  else
+  } else {
     rc := -13;
+  }
   return ods_serialize_int_res (rc);
 }
 ;
 
 -- ODS admin privilege
-create procedure ODS.ODS_API."user.enable" (in name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.enable" (
+  in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -388,6 +383,8 @@ create procedure ODS.ODS_API."user.enable" (in name varchar) __soap_http 'text/x
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (uname in ('dav', 'dba'))
     {
     update DB.DBA.WA_INSTANCE
@@ -402,7 +399,8 @@ create procedure ODS.ODS_API."user.enable" (in name varchar) __soap_http 'text/x
 }
 ;
 
-create procedure ODS.ODS_API."user.disable" (in name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.disable" (
+  in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -413,6 +411,8 @@ create procedure ODS.ODS_API."user.disable" (in name varchar) __soap_http 'text/
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (uname in ('dav', 'dba'))
     {
     delete from DB.DBA.VSPX_SESSION where VS_UID = name;
@@ -435,25 +435,22 @@ create procedure ODS.ODS_API."user.get" (in name varchar) __soap_http 'text/xml'
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf (
-  'select * from <%s> where '||
-  ' { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ',
+  q := sprintf ('select * from <%s> where { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ',
   sioc..get_graph(), name);
   exec_sparql (q);
   return '';
 }
 ;
 
-create procedure ODS.ODS_API."user.search" (in pattern varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.search" (
+  in pattern varchar) __soap_http 'text/xml'
 {
   declare q varchar;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf (
-  'select * from <%s> where '||
-  ' { ?user a sioc:User ; ?property ?value . ?value bif:contains "%s" } ',
+  q := sprintf ('select * from <%s> where { ?user a sioc:User ; ?property ?value . ?value bif:contains "%s" } ',
   sioc..get_graph(), pattern);
   exec_sparql (q);
   return '';
@@ -462,7 +459,9 @@ create procedure ODS.ODS_API."user.search" (in pattern varchar) __soap_http 'tex
 
 -- Social Network activity
 
-create procedure ODS.ODS_API."user.invite" (in friends_email varchar, in custom_message varchar := '') __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.invite" (
+  in friends_email varchar,
+  in custom_message varchar := '') __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc int;
@@ -879,7 +878,7 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
 }
 ;
 
-create procedure ODS.ODS_API."user.annotation.add" (
+create procedure ODS.ODS_API."user.annotation.new" (
   in claimIri varchar,
   in claimRelation varchar,
   in claimValue varchar) __soap_http 'text/xml'
@@ -1289,7 +1288,9 @@ create procedure ODS.ODS_API."instance.notification.set" (in inst_id integer, in
 
   whenever not found goto ret;
   rc := 'No enough permissions, must be instance owner';
-  select WAI_ID into dummy from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+  select WAI_ID
+    into dummy
+    from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and U_NAME = uname and WAI_ID = inst_id;
    foreach (any psi in services) do
      {
@@ -1302,7 +1303,9 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id integer, in services any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."instance.notification.cancel" (
+  in inst_id integer,
+  in services any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, dummy int;
@@ -1318,7 +1321,9 @@ create procedure ODS.ODS_API."instance.notification.cancel" (in inst_id integer,
   whenever not found goto ret;
   msg := 'No enough permissions, must be instance owner';
   rc := -13;
-  select WAI_ID into dummy from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+  select WAI_ID
+    into dummy
+    from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and U_NAME = uname and WAI_ID = inst_id;
    foreach (any psi in services) do
      {
@@ -1346,9 +1351,7 @@ create procedure ODS.ODS_API."instance.search" (in pattern varchar) __soap_http 
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf (
-  'select * from <%s> where '||
-  ' { ?inst a sioc:Container ; dc:identifier ?inst_id ; ?property ?value . ?value bif:contains "%s" } ',
+  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier ?inst_id ; ?property ?value . ?value bif:contains "%s" } ',
   sioc..get_graph(), pattern);
   exec_sparql (q);
   return '';
@@ -1363,8 +1366,7 @@ create procedure ODS.ODS_API."instance.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ',
-  sioc..get_graph(), inst_id);
+  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ', sioc..get_graph(), inst_id);
   exec_sparql (q);
   return '';
 }
@@ -1408,9 +1410,7 @@ create procedure ODS.ODS_API."instance.freeze" (
   {
     update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 1 where WAI_ID = inst_id;
     rc := row_count ();
-  }
-  else
-  {
+  } else {
     rc := -13;
   }
 ret:
@@ -1496,7 +1496,7 @@ grant execute on ODS.ODS_API."user.tagging_rules.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.add" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.update" to ODS_API;
 grant execute on ODS.ODS_API."user.hyperlinking_rules.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.annotation.add" to ODS_API;
+grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 
@@ -1575,6 +1575,10 @@ create procedure dav_path_normalize (
     if (chr (path[1]) = '~')
     {
       path := replace (path, '/~', '/DAV/home/');
+    }
+    if (path not like '/DAV/%')
+    {
+      path := '/DAV' || path;
     }
   }
   return path;
