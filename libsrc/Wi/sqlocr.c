@@ -206,7 +206,7 @@ sqlo_qc_make_refresh (sqlo_t * so, query_cursor_t * qc)
   END_DO_SET ();
   texp->_.table_exp.from = from;
   sqlp_infoschema_redirect (texp);
-  qc->qc_refresh = sqlc_cr_method (so->so_sc, &(qc->qc_refresh_text), 1);
+  qc->qc_refresh = sqlc_cr_method (so->so_sc, &(qc->qc_refresh_text), 1, 0);
 }
 
 
@@ -274,7 +274,7 @@ sqlo_qc_make_update (sqlo_t * so, query_cursor_t * qc)
 	  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.u_id),
 	  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id)),
       cols, vals, sqlo_qc_position_texp (so, qc));
-  qc->qc_update = sqlc_cr_method (so->so_sc, &upd, 1);
+  qc->qc_update = sqlc_cr_method (so->so_sc, &upd, 1, 1);
   qc->qc_update_text = upd;
   return upd;
 }
@@ -286,7 +286,7 @@ sqlo_qc_make_delete (sqlo_t * so, query_cursor_t * qc)
   ST *del;
 
   del = (ST *) t_list (2, DELETE_SRC, sqlo_qc_position_texp (so, qc));
-  qc->qc_delete = sqlc_cr_method (so->so_sc, &del, 1);
+  qc->qc_delete = sqlc_cr_method (so->so_sc, &del, 1, 1);
   qc->qc_delete_text = del;
 }
 

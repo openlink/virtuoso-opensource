@@ -28,7 +28,7 @@
 #define _SQLOCR_H
 
 /* the functions used from the old cursors */
-query_t *sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state);
+query_t *sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state, int no_err);
 void qc_make_continues (sql_comp_t * sc, query_cursor_t * qc);
 int sqlc_is_updatable (sql_comp_t * sc, ST * tree);
 ST *qc_make_insert (sql_comp_t * sc, query_cursor_t * qc);

@@ -124,13 +124,14 @@ sql_compile_st (ST ** ptree, client_connection_t * cli,
 
 
 query_t *
-sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state)
+sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state, int no_err)
 {
   caddr_t err = NULL;
   query_t *qr = sql_compile_st (ptree, sc->sc_client, &err, pass_state ? sc : NULL);
   if (err)
     {
-      if (!strncmp(ERR_STATE(err), "42000", 5))
+      /* do this only if is compiling update, delete or insert parts of sc */
+      if (no_err && !strncmp(ERR_STATE(err), "42000", 5))
 	{
 	  dk_free_tree (err);	/* IvAn/010411/LeakOnError */
 	  return qr;
@@ -323,7 +324,7 @@ qc_make_refresh (sql_comp_t * sc, query_cursor_t * qc)
   END_DO_BOX;
   texp->_.table_exp.from = from;
   sqlp_infoschema_redirect (texp);
-  qc->qc_refresh = sqlc_cr_method (sc, &(qc->qc_refresh_text), 1);
+  qc->qc_refresh = sqlc_cr_method (sc, &(qc->qc_refresh_text), 1, 0);
 }
 
 ST *
@@ -390,16 +391,16 @@ qc_make_continues (sql_comp_t * sc, query_cursor_t * qc)
 
   fwd[0] = (ST *) t_box_copy_tree ((caddr_t) qc->qc_text_with_ids);
   bwd[0] = qc_make_1_continue (sc, qc, 0, 0, 1);
-  qc->qc_next[0] = sqlc_cr_method (sc, &(fwd[0]), 1);
-  qc->qc_prev[0] = sqlc_cr_method (sc, &(bwd[0]), 1);
+  qc->qc_next[0] = sqlc_cr_method (sc, &(fwd[0]), 1, 0);
+  qc->qc_prev[0] = sqlc_cr_method (sc, &(bwd[0]), 1, 0);
 
   for (inx = 1; inx < n_specs; inx++)
     {
       int is_inner = inx == (n_specs - 1);
       fwd[inx] = qc_make_1_continue (sc, qc, inx, is_inner, 0);
       bwd[inx] = qc_make_1_continue (sc, qc, inx, is_inner, 1);
-      qc->qc_next[inx] = sqlc_cr_method (sc, &(fwd[inx]), 1);
-      qc->qc_prev[inx] = sqlc_cr_method (sc, &(bwd[inx]), 1);
+      qc->qc_next[inx] = sqlc_cr_method (sc, &(fwd[inx]), 1, 0);
+      qc->qc_prev[inx] = sqlc_cr_method (sc, &(bwd[inx]), 1, 0);
     }
   qc->qc_next_text = fwd;
   qc->qc_prev_text = bwd;
@@ -467,7 +468,7 @@ qc_make_update (sql_comp_t * sc, query_cursor_t * qc)
 					  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.u_id),
 					  t_full_box_copy_tree (tb_ref->_.table_ref.table->_.table.g_id)), cols, vals,
 		     qc_position_texp (sc, qc));
-  qc->qc_update = sqlc_cr_method (sc, &upd, 1);
+  qc->qc_update = sqlc_cr_method (sc, &upd, 1, 1);
   qc->qc_update_text = upd;
   return upd;
 }
@@ -506,7 +507,7 @@ qc_make_insert (sql_comp_t * sc, query_cursor_t * qc)
 					   t_box_copy (tb_ref->_.table_ref.table->_.table.g_id)), cols,
 		     t_list (2, INSERT_VALUES, vals), (ptrlong)INS_NORMAL);
 
-  qc->qc_insert = sqlc_cr_method (sc, &ins, 1);
+  qc->qc_insert = sqlc_cr_method (sc, &ins, 1, 1);
   qc->qc_insert_text = ins;
   return ins;
 }
@@ -519,7 +520,7 @@ qc_make_delete (sql_comp_t * sc, query_cursor_t * qc)
 
 
   del = (ST *) t_list (2, DELETE_SRC, qc_position_texp (sc, qc));
-  qc->qc_delete = sqlc_cr_method (sc, &del, 1);
+  qc->qc_delete = sqlc_cr_method (sc, &del, 1, 1);
   qc->qc_delete_text = del;
 }
 
@@ -582,7 +583,7 @@ qc_make_stmts (sql_comp_t * sc, query_cursor_t * qc)
 void
 qc_make_static (sql_comp_t * sc, query_cursor_t * qc, ST ** ptree)
 {
-  qc->qc_next = (query_t **) sc_list (1, sqlc_cr_method (sc, ptree, 1));
+  qc->qc_next = (query_t **) sc_list (1, sqlc_cr_method (sc, ptree, 1, 0));
   qc->qc_cursor_type = _SQL_CURSOR_STATIC;
   qc->qc_n_select_cols = BOX_ELEMENTS ((*ptree)->_.select_stmt.selection);
 }
