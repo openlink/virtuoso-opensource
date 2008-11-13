@@ -4869,7 +4869,7 @@ if (NULL != jright_alias)
               memcpy (&(glob_rv->_.retval), &(glob_var->_.var), sizeof (glob_var->_.var));
               if (!(SPART_VARR_GLOBAL & eq->e_rvr.rvrRestrictions))
                 {
-                  glob_rv->_.retval.gp = sparp_find_gp_by_alias (ssg->ssg_sparp, glob_rv->_.retval.selid);
+                  glob_rv->_.retval.gp = SPARP_EQUIV (ssg->ssg_sparp, glob_var->_.var.equiv_idx)->e_gp; /*sparp_find_gp_by_alias (ssg->ssg_sparp, glob_rv->_.retval.selid);*/
                   glob_rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, glob_rv->_.retval.gp, glob_rv, 0);
                 }
               else
