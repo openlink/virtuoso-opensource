@@ -121,7 +121,7 @@ create procedure ODS.ODS_API."poll.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   rc := POLLS.WA.poll_update (
     poll_id,
     inst_id,
@@ -154,7 +154,7 @@ create procedure ODS.ODS_API."poll.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from POLLS.WA.POLL where P_ID = poll_id;
   rc := row_count ();
 
@@ -229,7 +229,7 @@ create procedure ODS.ODS_API."poll.question.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not exists (select 1 from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER >= questionNo))
     return ods_serialize_sql_error ('37000', 'The item question not found');
   POLLS.WA.question_delete2 (poll_id, questionNo);
@@ -263,7 +263,7 @@ create procedure ODS.ODS_API."poll.activate" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_activate (poll_id))
   {
     signal ('POLLS', 'The activation is not allowed');
@@ -293,7 +293,7 @@ create procedure ODS.ODS_API."poll.close" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_close (poll_id))
   {
     signal ('POLLS', 'The close is not allowed');
@@ -324,7 +324,7 @@ create procedure ODS.ODS_API."poll.clear" (
 
   rc := 0;
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_clear (poll_id))
   {
     signal ('POLLS', 'The clear is not allowed');
@@ -348,7 +348,7 @@ create procedure ODS.ODS_API."poll.vote" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_vote (poll_id))
   {
     signal ('POLLS', 'The vote is not allowed');
@@ -376,7 +376,7 @@ create procedure ODS.ODS_API."poll.vote.answer" (
 
   poll_id := (select V_POLL_ID from POLLS.WA.VOTE where V_ID = vote_id);
   if (isnull (poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   for (select * from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = questionNo) do
   {
     if (Q_TYPE = 'M')
@@ -406,7 +406,7 @@ create procedure ODS.ODS_API."poll.result" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_result (poll_id))
   {
     signal ('POLLS', 'The result is not allowed');
@@ -567,7 +567,7 @@ create procedure ODS.ODS_API."poll.comment.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from POLLS.WA.POLL_COMMENT where PC_ID = comment_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from POLLS.WA.POLL_COMMENT where PC_ID = comment_id;
   rc := row_count ();
 

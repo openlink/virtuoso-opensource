@@ -108,7 +108,7 @@ create procedure ODS.ODS_API."bookmark.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   rc := BMK.WA.bookmark_update (
           bookmark_id,
           inst_id,
@@ -142,7 +142,7 @@ create procedure ODS.ODS_API."bookmark.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id;
   rc := row_count ();
 
@@ -193,7 +193,7 @@ create procedure ODS.ODS_API."bookmark.folder.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = inst_id and F_PATH = path))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.FOLDER where F_DOMAIN_ID = inst_id and F_PATH = path;
   rc := row_count ();
 
@@ -217,7 +217,6 @@ create procedure ODS.ODS_API."bookmark.import" (
 
   declare uname, passwd varchar;
   declare content varchar;
-  declare user_id integer;
   declare tmp any;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
@@ -249,10 +248,10 @@ create procedure ODS.ODS_API."bookmark.import" (
   tags := BMK.WA.vector2tags (tmp);
 
   -- import content
-  if (is_empty_or_null (content))
+  if (DB.DBA.is_empty_or_null (content))
     signal ('BMK04', 'Bad import source!');
 
-  BMK.WA.bookmark_import (content, inst_id, user_id, null, tags, null);
+  BMK.WA.bookmark_import (content, inst_id, null, tags, null);
 
   return ods_serialize_int_res (1);
 }
@@ -375,7 +374,7 @@ create procedure ODS.ODS_API."bookmark.annotation.claim" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.ANNOTATIONS where A_ID = annotation_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   claims := (select deserialize (A_CLAIMS) from BMK.WA.ANNOTATIONS where A_ID = annotation_id);
   claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
   update BMK.WA.ANNOTATIONS
@@ -408,7 +407,7 @@ create procedure ODS.ODS_API."bookmark.annotation.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.ANNOTATIONS where A_ID = annotation_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -491,7 +490,7 @@ create procedure ODS.ODS_API."bookmark.comment.new" (
   BMK.WA.nntp_update_item (inst_id, bookmark_id);
   insert into BMK.WA.BOOKMARK_COMMENT (BC_PARENT_ID, BC_DOMAIN_ID, BC_BOOKMARK_ID, BC_TITLE, BC_COMMENT, BC_U_NAME, BC_U_MAIL, BC_U_URL, BC_UPDATED)
     values (parent_id, inst_id, bookmark_id, title, text, name, email, url, now ());
-  rc := row_count ();
+  rc := (select max (BC_ID) from BMK.WA.BOOKMARK_COMMENT);
 
   return ods_serialize_int_res (rc);
 }
@@ -518,7 +517,7 @@ create procedure ODS.ODS_API."bookmark.comment.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.BOOKMARK_COMMENT where BC_ID = comment_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.BOOKMARK_COMMENT where BC_ID = comment_id;
   rc := row_count ();
 
@@ -608,7 +607,7 @@ create procedure ODS.ODS_API."bookmark.publication.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -654,7 +653,7 @@ create procedure ODS.ODS_API."bookmark.publication.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -742,7 +741,7 @@ create procedure ODS.ODS_API."bookmark.subscription.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -788,7 +787,7 @@ create procedure ODS.ODS_API."bookmark.subscription.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from BMK.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 

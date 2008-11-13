@@ -247,7 +247,7 @@ create procedure ODS.ODS_API."addressbook.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   rc := AB.WA.contact_update (
           contact_id,
           inst_id,
@@ -328,7 +328,7 @@ create procedure ODS.ODS_API."addressbook.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.PERSONS where P_ID = contact_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from AB.WA.PERSONS where P_ID = contact_id;
   rc := row_count ();
 
@@ -526,7 +526,7 @@ create procedure ODS.ODS_API."addressbook.annotation.claim" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   claims := (select deserialize (A_CLAIMS) from AB.WA.ANNOTATIONS where A_ID = annotation_id);
   claims := vector_concat (claims, vector (vector (claimIri, claimRelation, claimValue)));
   update AB.WA.ANNOTATIONS
@@ -559,7 +559,7 @@ create procedure ODS.ODS_API."addressbook.annotation.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.ANNOTATIONS where A_ID = annotation_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from AB.WA.ANNOTATIONS where A_ID = annotation_id;
   rc := row_count ();
 
@@ -642,7 +642,7 @@ create procedure ODS.ODS_API."addressbook.comment.new" (
   AB.WA.nntp_update_item (inst_id, contact_id);
   insert into AB.WA.PERSON_COMMENTS (PC_PARENT_ID, PC_DOMAIN_ID, PC_PERSON_ID, PC_TITLE, PC_COMMENT, PC_U_NAME, PC_U_MAIL, PC_U_URL, PC_UPDATED)
     values (parent_id, inst_id, contact_id, title, text, name, email, url, now ());
-  rc := row_count ();
+  rc := (select max (PC_ID) from AB.WA.PERSON_COMMENTS);
 
   return ods_serialize_int_res (rc);
 }
@@ -669,7 +669,7 @@ create procedure ODS.ODS_API."addressbook.comment.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.PERSON_COMMENTS where PC_ID = comment_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from AB.WA.PERSON_COMMENTS where PC_ID = comment_id;
   rc := row_count ();
 
@@ -757,7 +757,7 @@ create procedure ODS.ODS_API."addressbook.publication.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = publication_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -803,7 +803,7 @@ create procedure ODS.ODS_API."addressbook.publication.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = publication_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from AB.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -891,7 +891,7 @@ create procedure ODS.ODS_API."addressbook.subscription.edit" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = subscription_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -937,7 +937,7 @@ create procedure ODS.ODS_API."addressbook.subscription.delete" (
     return ods_auth_failed ();
 
   if (not exists (select 1 from AB.WA.EXCHANGE where EX_ID = subscription_id))
-    return ods_serialize_sql_error ('37000', 'The item not found');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   delete from AB.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 
