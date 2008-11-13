@@ -240,7 +240,6 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q6 \n";
 
-disabled {
 delete from OUT_Q7;
 
 insert into OUT_Q7 select * from (
@@ -284,8 +283,6 @@ select cmp ('MS_OUT_Q7', 'OUT_Q7');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q7 \n";
-}
-;
 
 delete from OUT_Q8;
 
@@ -453,7 +450,6 @@ select cmp ('MS_OUT_Q11', 'OUT_Q11');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q11 \n";
-;
 
 delete from OUT_Q12;
 
@@ -634,9 +630,7 @@ select cmp ('MS_OUT_Q15', 'OUT_Q15');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q15 \n";
-;
 
-disabled {
 delete from OUT_Q16;
 
 insert into OUT_Q16 select * from (
@@ -650,21 +644,20 @@ select
   ?part+>tpcd:brand,
   ?part+>tpcd:type,
   ?part+>tpcd:size,
-  (count(distinct ?ps)) as ?supplier_cnt
+  (count(distinct ?supp)) as ?supplier_cnt
 from <http://example.com/tpcd>
 where
   {
-    ?ps tpcd:has_part ?part .
-    optional {
-        ?ps tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") }
+    ?ps a tpcd:partsupp ; tpcd:has_part ?part ; tpcd:has_supplier ?supp .
     filter (
       (?part+>tpcd:brand != "Brand#45") &&
       !(?part+>tpcd:type like "MEDIUM POLISHED%") &&
       (?part+>tpcd:size in (49, 14, 23, 45, 19, 3, 36, 9)) &&
-      !bound (?badcomment) )
+      !bif:exists ((select (1) where {
+        ?supp a tpcd:supplier; tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") } ) ) )
   }
 order by
-  desc ((count(distinct ?ps)))
+  desc ((count(distinct ?supp)))
   ?part+>tpcd:brand
   ?part+>tpcd:type
   ?part+>tpcd:size
@@ -680,8 +673,6 @@ select cmp ('MS_OUT_Q16', 'OUT_Q16');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q16 \n";
-}
-;
 
 delete from OUT_Q17;
 
@@ -751,7 +742,6 @@ select cmp ('MS_OUT_Q18', 'OUT_Q18');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q18 \n";
-;
 
 delete from OUT_Q19;
 
@@ -842,7 +832,6 @@ select cmp ('MS_OUT_Q20', 'OUT_Q20');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q20 \n";
-;
 
 delete from OUT_Q21;
 
@@ -890,7 +879,6 @@ select cmp ('MS_OUT_Q21', 'OUT_Q21');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q21 \n";
-;
 
 delete from OUT_Q22;
 
@@ -935,4 +923,4 @@ select cmp ('MS_OUT_Q22', 'OUT_Q22');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q22 \n";
-;
+
