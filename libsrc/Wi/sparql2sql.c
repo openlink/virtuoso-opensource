@@ -3023,6 +3023,8 @@ sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
         (one->_.funcall.agg_mode == two->_.funcall.agg_mode) &&
         !strcmp (one->_.funcall.qname, two->_.funcall.qname) &&
         sparp_expn_lists_are_equal (sparp, one->_.funcall.argtrees, two->_.funcall.argtrees) );
+    case SPAR_GP:
+      return !strcmp (one->_.gp.selid, two->_.gp.selid); /*!!!TBD: this check is good enough for TPC-D Q16. Do we need more accurate check? */
     case BOP_EQ: case BOP_NEQ:
     case BOP_AND: case BOP_OR:
     case BOP_SAME: case BOP_NSAME:
