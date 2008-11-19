@@ -60,6 +60,9 @@
               <p>You have requested deletion of virtual directory <?V self.lpath ?>.<br/>
               This operation cannot be undone. Choose Delete to proceed or Cancel to go back.</p>
             </div>
+	    <p><v:check-box name="urr_del" value="1" initial-checked="1" xhtml_id="urr_del"/>
+		<label for="urr_del">Delete assigned URL rewrite rules.</label>
+	    </p>
             <div class="dialog_buttons">
               <v:button name="conf_cancel" action="simple" value="Cancel">
 		<v:on-post><![CDATA[
@@ -70,6 +73,25 @@
                 <v:on-post>
                   <v:script>
                     <![CDATA[
+		    declare opts, urr any;
+		    if (self.urr_del.ufl_selected)
+		      {
+			for select HP_OPTIONS from HTTP_PATH where HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost and HP_LPATH = self.lpath do
+			  {
+			    opts := deserialize (HP_OPTIONS);
+			    if (opts is not null)
+			      urr := get_keyword ('url_rewrite', opts);
+			    else
+			      urr := null;
+			    if (urr is not null and exists (select 1 from URL_REWRITE_RULE_LIST where  URRL_LIST = urr ))
+			      {
+				for select URRL_MEMBER from URL_REWRITE_RULE_LIST where URRL_LIST = urr do
+				  {
+				    DB.DBA.URLREWRITE_DROP_RULE (URRL_MEMBER, 1);
+				  }
+			      }
+			  }
+		      }
 		    VHOST_REMOVE (self.vhost, self.lhost, self.lpath, 0);
 		    self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
                     ]]>
