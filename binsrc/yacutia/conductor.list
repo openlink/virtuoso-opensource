@@ -1,9 +1,9 @@
-../../xddl.xsd
 ../../xddl_diff.xsl
 ../../xddl_exec.xsl
 ../../xddl_procs.xsd
 ../../xddl_tables.xsd
 ../../xddl_views.xsd
+../../xddl.xsd
 conductor/account_create.vspx
 conductor/account_remove_inc.vspx
 conductor/account_remove.vspx
@@ -55,9 +55,8 @@ conductor/db_drop_errs.vspx
 conductor/db_grant_errs.vspx
 conductor/db_grant_many.vspx
 conductor/db_rdf_class.vspx
-conductor/db_rdf_class.vspx
 conductor/db_rdf_objects.vspx
-conductor/db_rdf_objects.vspx
+conductor/db_rdf_owl.vspx
 conductor/db_repl_basic_create.vspx
 conductor/db_repl_basic_local_create.vspx
 conductor/db_repl_basic_local_start.vspx
@@ -321,8 +320,8 @@ conductor/msg_news_server_info.vspx
 conductor/page.xsl
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
-conductor/rdf_filters.vspx
 conductor/rdf_filters_pp.vspx
+conductor/rdf_filters.vspx
 conductor/robot_control.vspx
 conductor/robot_edit.vspx
 conductor/robot_export.vspx
