@@ -3599,6 +3599,22 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 }
 ;
 
+create procedure DB.DBA.GET_XBRL_ONTOLOGY_CLASS(in elem varchar) returns varchar
+{
+    declare cur varchar;
+    cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
+    if (exists (sparql ask from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a owl:Class } ) )
+        return cur;
+    return (sparql select ?domain from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> where {`iri(?:cur)` rdfs:domain ?domain . } );
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_ONTOLOGY_CLASS to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_ontology_class', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_CLASS'))
+;
+
 create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
 {
     declare cur varchar;

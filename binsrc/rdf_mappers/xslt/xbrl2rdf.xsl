@@ -135,12 +135,20 @@
 		<xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
 		<xsl:variable name="canonical_datatype" select="virt:xbrl_canonical_datatype(local-name(.))" />
 		<xsl:variable name="canonicallabelname" select="virt:xbrl_canonical_label_name(local-name(.))" />
+		<xsl:variable name="ontology_class" select="virt:xbrl_ontology_class(local-name(.))" />
 		<xsl:variable name="contextRef" select="@contextRef" />
 		<xsl:variable name="label" select="concat($ns, $canonicalname)" />
 		<xsl:variable name="dt" />
 		<xsl:if test="$canonicalname">
 			<sioc:Item rdf:about="{$label}">
 				<sioc:has_container rdf:resource="{concat('#', $contextRef)}"/>
+       				<xsl:if test="string-length($ontology_class) &gt; 0">
+       				<rdf:type>
+					<xsl:attribute name="rdf:resource">
+       					<xsl:value-of select="$ontology_class" />
+					</xsl:attribute>
+       				</rdf:type>					
+       				</xsl:if>
 			</sioc:Item>
 			<rdf:Description rdf:ID="{$contextRef}">
 				<xsl:element namespace="{$ns}" name="{$canonicalname}">
