@@ -421,6 +421,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q10 \n";
 };
 
+disabled {
 delete from OUT_Q11;
 
 insert into OUT_Q11 select * from (
@@ -466,6 +467,7 @@ select cmp ('MS_OUT_Q11', 'OUT_Q11');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q11 \n";
+};
 
 delete from OUT_Q12;
 
@@ -582,6 +584,7 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q14 \n";
 
+disabled {
 delete from OUT_Q15;
 
 insert into OUT_Q15 select * from (
@@ -635,8 +638,7 @@ where
   }
 order by
   ?supplier
-) as subq
-;
+) as subq;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -646,6 +648,7 @@ select cmp ('MS_OUT_Q15', 'OUT_Q15');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q15 \n";
+};
 
 delete from OUT_Q16;
 
@@ -720,6 +723,7 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q17 \n";
 
+disabled {
 delete from OUT_Q18;
 
 insert into OUT_Q18 select * from (
@@ -757,6 +761,7 @@ select cmp ('MS_OUT_Q18', 'OUT_Q18');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q18 \n";
+};
 
 delete from OUT_Q19;
 
