@@ -1558,7 +1558,7 @@ next:
   --DB.DBA.vt_batch_update ('DB.DBA.NEWS_MSG', 'OFF', 0);
   --DB.DBA.vt_inc_index_DB_DBA_NEWS_MSG ();
 
-  return;
+  return _id;
 }
 ;
 
