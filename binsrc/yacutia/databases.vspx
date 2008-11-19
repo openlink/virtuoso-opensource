@@ -63,7 +63,7 @@
 	    if (tb is not null)
 	      arr := vector_concat (arr, vector (tb));
 	  }
-	 if (length (arr) > 1)
+	 if (length (arr) > 0)
 	  {
 	    self.db_object_to_drop := arr;
 	    self.vc_redirect ('db_drop_conf.vspx');

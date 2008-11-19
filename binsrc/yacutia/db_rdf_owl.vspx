@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>RDF View definition</vm:pagetitle>
+  <vm:pagetitle>RDF Ontology definition</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -42,7 +42,7 @@
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
   </vm:variables>
 
-  <vm:header caption="RDF View definition"/>
+  <vm:header caption="RDF Ontology definition"/>
   <vm:pagebody>
   <script type="text/javascript"><![CDATA[
     function saveFile ()
@@ -55,8 +55,8 @@
     ]]></script>
       <table>
       <v:form name="account_form" type="simple" method="POST" action="">
-    <v:text type="hidden"
-      name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
+	  <v:text type="hidden"
+	      name="fsave" value="--concat ('/INLINEFILE/ontology.nt?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
       <v:before-data-bind><![CDATA[
 	  declare _base_url, _db_object_to_process, e_array any;
 
@@ -66,7 +66,7 @@
                if (self.db_object_to_process is null)
 	         self.db_object_to_process := vector (get_keyword('name', self.vc_event.ve_params));
                else
-	       self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
+	         self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
 	    }
 
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
@@ -82,8 +82,8 @@
 		self.body_v := '';
 		return;
 	      };
-	      self.body_v := DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process);
-	      self.body_v := self.body_v || '\n\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
+	      self.base_url := _base_url;
+	      self.body_v := DB.DBA.RDF_OWL_FROM_TBL (_base_url, self.db_object_to_process);
 	    }
 
 	    ]]>
@@ -104,7 +104,7 @@
 	      ?>
 	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
 	      <?vsp
-	    }
+	             }
 	           }
 	        }
 	      ?>
@@ -125,26 +125,18 @@
 	      self.vc_redirect ('db_rdf_objects.vspx');
 	      ]]></v:on-post>
       </v:button>
-      <v:button action="simple" name="exec" value="Execute">
+      <v:button action="simple" name="exec" value="Load">
 	  <v:on-post><![CDATA[
-	      declare stat, msg varchar;
-	      declare res, arr, data, meta any;
-	      declare inx int;
+	     declare stat, msg varchar;
+	     declare res, arr, data, meta any;
+	     declare gr varchar;
 
-	      arr := sql_split_text (self.body_v);
-	      res := make_array (length (arr), 'any');
-
-	      inx := 0;
-	      foreach (varchar q in arr) do
-	        {
-		  stat := '00000';
-		  exec (q, stat, msg, vector (), 0, meta, data);
-                  if (stat = '00000')
-                    res[inx] := data;
-	          else
-                    res[inx] := vector (vector (stat, msg));
-		  inx := inx + 1;
-		}
+	     res := make_array (1, 'any');
+	     gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
+	     stat := '00000';
+	     msg := 'OK';
+	     exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_v, gr), 0, meta, data);
+	     res[0] := vector (vector (stat, msg));
 	     self.text_e := 1;
 	     self.exec_ret := res;
 	     self.back.vc_enabled := 1;
@@ -158,7 +150,7 @@
 	      control.vc_enabled := 0;
 	      self.exec.vc_enabled := 1;
 	    ]]></v:on-post>
-      </v:button>
+    </v:button>
 </td>
   </tr>
       </v:form>

@@ -29,17 +29,11 @@
   <vm:pagewrapper>
   <vm:variables>
     <v:variable persist="1" name="browse_cat" type="varchar" default="'DB'"/>
-    <v:variable persist="1" name="browse_sch" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="q_mask" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="browse_mask" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="browse_table" type="integer" default="0"/>
-    <v:variable persist="1" name="base_start" type="varchar" default="''"/>
-    <v:variable persist="1" name="tn_open" type="integer" default="1"/>
+    <v:variable persist="1" name="base_start" type="varchar" default="'DB'"/>
     <v:variable persist="temp" name="row_count" type="integer" default="1"/>
     <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
     <v:variable name="db_tree_state" persist="session" type="any" default="null" />
     <v:variable name="db_ds_state" persist="session" type="any" default="null" />
-    <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
   </vm:variables>
   <vm:menu>
     <vm:menuitem value="RDF Schema Objects Management"/>
@@ -58,47 +52,9 @@
             }
 	</v:on-init>
 	<v:on-post><![CDATA[
-
-	  if (e.ve_button is not null)
-	    {
-	      declare btn vspx_button;
-	      btn := null;
-	      if (e.ve_button.vc_name = 'tr1_toggle')
-	        btn := e.ve_button;
-	      else
-	        {
-	          declare tnode vspx_tree_node;
-		  tnode := e.ve_button.vc_find_parent (e.ve_button, 'vspx_tree_node');
-		  if (tnode is not null)
-		    btn := tnode.vc_find_control ('tr1_toggle');
-		}
-	      if (btn is not null)
-	        self.btn_bmk := 'btn_' || btn.vc_get_name ();
-	      else
-	        self.btn_bmk := null;
-		}
-
               self.base_start := self.browse_cat;
-
 		]]>
 	</v:on-post>
-	<v:after-data-bind>
-	  if (not e.ve_is_post)
-	    {
-	      declare refr, hf any;
-	      refr := http_request_header (e.ve_lines, 'Referer');
-	      if (refr is not null and isstring (refr))
-	        {
-		  hf := WS.WS.PARSE_URI (refr);
-		  if (adm_belongs_to (http_path (), hf[2]))
-		    {
-		      self.btn_bmk := self.last_bmk;
-		    }
-	        }
-              else
-                self.last_bmk := null;
-	    }
-	</v:after-data-bind>
         <![CDATA[
 	<script language="JavaScript" src="admin_utils.js"></script>
         ]]>
@@ -107,7 +63,7 @@
       <tr>
 	      <td>Select Qualifier</td>
 	      <td>
-		  <v:data-list name="qual" sql="select distinct name_part (KEY_TABLE, 0) as qual from SYS_KEYS where KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL" key-column="qual" value-column="qual" defvalue="--self.browse_sch" auto-submit="1">
+		  <v:data-list name="qual" sql="select distinct name_part (KEY_TABLE, 0) as qual from SYS_KEYS where KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL" key-column="qual" value-column="qual" defvalue="--self.browse_cat" auto-submit="1">
 		  <v:on-post>
 			  if (e.ve_initiator is not null and e.ve_initiator.vc_name = control.vc_name)
 			   {
@@ -121,7 +77,7 @@
 	  <tr>
 	      <td>Base URL</td>
 	      <td><?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?>
-		  <input type="text" name="base_start" value="<?=self.base_start?>"/></td>
+		  <input type="text" name="base_start" value="<?V self.base_start ?>"/></td>
 	  </tr>
       <tr>
 	  <td colspan="2">
@@ -167,10 +123,10 @@
                     </td>
                     <td class="listing_col">
 		      <v:button name="b_table_def" value="Generate Single Mapping" action="simple" style="url">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: db_rdf_class.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
+                        <v:on-post><![CDATA[
+			self.vc_redirect (sprintf('db_rdf_class.vspx?mode=definition&name=%U',
+				(control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:on-post>
                       </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
@@ -207,14 +163,11 @@
 
 			  host := get_keyword ('base_start', e.ve_params, '');
 
-			  if (length (arr) > 1)
+			  if (length (arr) > 0)
 			   {
 			     arr := encode_base64 (serialize (arr));
 			     self.db_object_to_process := arr;
-			     http_request_status ('HTTP/1.1 302 Found');
-			     http_header (sprintf ('Location: db_rdf_class.vspx?sid=%s&realm=%s&host=%U&list=%U\r\n',
-			     		self.sid, self.realm, host, arr));
---			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%s', arr));
+			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%U&host=%U', arr, host));
 			   }
 			 else
 			   {
@@ -225,6 +178,45 @@
 		      </v:script>
 		  </v:on-post>
 
+	      </v:button>
+	      <v:button action="simple" value="Generate Ontology" name="generate_owl">
+		  <v:on-post>
+		      <v:script>
+			  <![CDATA[
+			  declare i, arr any;
+			  declare chil vspx_control;
+			  declare cb vspx_check_box;
+			  declare tb varchar;
+			  declare ds vspx_data_set;
+			  declare host varchar;
+
+			  ds := self."ds_tables";
+			  i := 0;
+			  arr := vector ();
+			  while ((chil := ds.ds_iterate_rows (i)) is not null)
+			    {
+			      cb := chil.vc_find_control ('cb_tables_select');
+			      tb := get_keyword (cb.vc_instance_name, e.ve_params);
+			      if (tb is not null)
+			        arr := vector_concat (arr, vector (tb));
+			    }
+
+			  host := get_keyword ('base_start', e.ve_params, '');
+
+			  if (length (arr) > 0)
+			   {
+			     arr := encode_base64 (serialize (arr));
+			     self.db_object_to_process := arr;
+			     self.vc_redirect (sprintf ('db_rdf_owl.vspx?list=%U&host=%U', arr, host));
+			   }
+			 else
+			   {
+			     self.vc_error_message := 'There are no object selected to perform operation.';
+			     self.vc_is_valid := 0;
+			   }
+			  ]]>
+		      </v:script>
+		  </v:on-post>
 	      </v:button>
 
 	</td>
