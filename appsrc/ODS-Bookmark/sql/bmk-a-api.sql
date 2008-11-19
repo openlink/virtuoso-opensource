@@ -280,7 +280,9 @@ create procedure ODS.ODS_API."bookmark.export" (
   if (lcase (contentType) = 'netscape')
   {
     contentType := 'Netscape';
-  } else {
+  }
+  else if (lcase (contentType) = 'xbel')
+  {
     contentType := 'XBEL';
   }
   http (BMK.WA.dav_content (sprintf('%s/bookmark/%d/export.vspx?did=%d&output=BMK&file=export&format=%s', BMK.WA.host_url (), inst_id, inst_id, contentType)));
@@ -338,7 +340,8 @@ create procedure ODS.ODS_API."bookmark.annotation.new" (
 
   rc := -1;
   inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
-
+  if (isnull (inst_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
@@ -455,7 +458,7 @@ create procedure ODS.ODS_API."bookmark.comment.new" (
   in text varchar,
   in name varchar,
   in email varchar,
-  in url varchar) __soap_http 'text/xml'
+  in url varchar := null) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {
@@ -666,8 +669,8 @@ create procedure ODS.ODS_API."bookmark.publication.delete" (
 create procedure ODS.ODS_API."bookmark.subscription.new" (
   in inst_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in sourceType varchar := 'WebDAV',
   in source varchar,
@@ -715,8 +718,8 @@ create procedure ODS.ODS_API."bookmark.subscription.new" (
 create procedure ODS.ODS_API."bookmark.subscription.edit" (
   in subscription_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in sourceType varchar := 'WebDAV',
   in source varchar,

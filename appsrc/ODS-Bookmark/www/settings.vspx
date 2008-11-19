@@ -733,7 +733,7 @@
                       <v:text name="exc_update_freq" value="--self.ve_update_freq" xhtml_size="2" />
                       <v:select-list name="exc_update_period">
                         <v:item value="hourly" name="hour(s)" />
-                        <v:item value="dayly" name="day(s)" />
+                        <v:item value="daily" name="day(s)" />
                         <v:before-data-bind>
                           <![CDATA[
                             control.ufl_value := self.ve_update_period;

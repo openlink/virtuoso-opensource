@@ -2987,8 +2987,14 @@ create procedure BMK.WA.utfClear(
 create procedure BMK.WA.utf2wide (
   inout S any)
 {
+  declare retValue any;
+
   if (isstring (S))
-    return charset_recode (S, 'UTF-8', '_WIDE_');
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
   return S;
 }
 ;
@@ -2998,8 +3004,14 @@ create procedure BMK.WA.utf2wide (
 create procedure BMK.WA.wide2utf (
   in S any)
 {
+  declare retValue any;
+
   if (iswidestring (S))
-    return charset_recode (S, '_WIDE_', 'UTF-8' );
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
   return charset_recode (S, null, 'UTF-8' );
 }
 ;
