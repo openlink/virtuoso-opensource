@@ -557,7 +557,7 @@ create procedure nntpf_post_message (in params any, in auth_uname varchar :='')
   connection_set ('nntp_uid', auth_uname);
 --  connection_set ('nntp_uopenid', nfrom_openid);
 
-  ns_post (new_mess);
+  return ns_post (new_mess);
 }
 ;
 
@@ -565,7 +565,6 @@ create procedure nntpf_post_message (in params any, in auth_uname varchar :='')
 create procedure
 nntpf_uudecode_file (in num integer, in params any)
 {
-  
    declare f_name,f_name_fs,f_value_fs varchar;
    declare is_dav integer;
    declare content, ret any;
@@ -806,8 +805,6 @@ nntpf_search_result (in _search_txt varchar)
 --              _news_group := '%' || _filter[7] || '%';
       }
         
-
-     
       if (_date_s_after is not null)                                                        _ctr := 1; -- Newer than with search text
       if (_date_s_before is not null)                                                       _ctr := 2; -- Older than with search text
       if (_date_s_after is not null and _date_s_before is not null)                         _ctr := 3; -- Between with search text

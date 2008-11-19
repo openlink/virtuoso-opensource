@@ -167,6 +167,9 @@ create procedure ODS.ODS_API."discussion.feed.new" (
   if (not ods_check_auth (uname, -1, 'owner'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
+
   account_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   rss_id := uuid ();
   rss_url := '/nntpf/rss.vsp?rss=' || rss_id;
@@ -209,6 +212,8 @@ create procedure ODS.ODS_API."discussion.message.new" (
   in subject varchar := '',
   in body varchar := '') __soap_http 'text/xml'
 {
+  declare rc any;
+
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -222,6 +227,9 @@ create procedure ODS.ODS_API."discussion.message.new" (
   if (not ods_check_auth (uname, -1, 'owner'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
+
   DB.DBA.nntpf_compose_post_from (uname, post_from);
   params := vector ();
   params := vector_concat (params, vector ('availble_groups', (select NG_NAME from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id)));
@@ -229,9 +237,8 @@ create procedure ODS.ODS_API."discussion.message.new" (
   params := vector_concat (params, vector ('post_body_n', body));
   params := vector_concat (params, vector ('post_from_n', post_from));
 
-  DB.DBA.nntpf_post_message (params, uname);
-
-  return ods_serialize_int_res (1);
+  rc := DB.DBA.nntpf_post_message (params, uname);
+  return rc;
 }
 ;
 
@@ -267,6 +274,8 @@ create procedure ODS.ODS_API."discussion.comment.new" (
   in subject varchar := '',
   in body varchar := '') __soap_http 'text/xml'
 {
+  declare rc any;
+
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -281,6 +290,9 @@ create procedure ODS.ODS_API."discussion.comment.new" (
   if (not ods_check_auth (uname, -1, 'owner'))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.NEWS_MSG where NM_ID = parent_id))
+    return ods_serialize_sql_error ('37000', 'The item not found');
+
   mess_parts := DB.DBA.nntpf_post_get_message_parts (parent_id);
   post_old_header := mess_parts[2];
 
@@ -292,9 +304,8 @@ create procedure ODS.ODS_API."discussion.comment.new" (
   params := vector_concat (params, vector ('post_from_n', post_from));
   params := vector_concat (params, vector ('post_old_hdr', post_old_header));
 
-  DB.DBA.nntpf_post_message (params, uname);
-
-  return ods_serialize_int_res (1);
+  rc := DB.DBA.nntpf_post_message (params, uname);
+  return rc;
 }
 ;
 
