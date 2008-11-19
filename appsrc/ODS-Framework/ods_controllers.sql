@@ -895,6 +895,9 @@ create procedure ODS.ODS_API."user.annotation.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  if (exists (select 1 from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = _u_id and WUR_SEEALSO_IRI = claimIri))
+    return ods_serialize_sql_error ('37000', 'The item already exists');
   insert into DB.DBA.WA_USER_RELATED_RES (WUR_U_ID, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI)
     values (_u_id, claimValue, claimIri, claimRelation);
   rc := (select max (WUR_ID) from DB.DBA.WA_USER_RELATED_RES);
@@ -1406,6 +1409,8 @@ create procedure ODS.ODS_API."instance.freeze" (
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (uname in ('dav', 'dba'))
   {
     update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 1 where WAI_ID = inst_id;
@@ -1432,6 +1437,8 @@ create procedure ODS.ODS_API."instance.unfreeze" (
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (uname in ('dav', 'dba'))
   {
     update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 0 where WAI_ID = inst_id;
@@ -1558,23 +1565,20 @@ create procedure dav_path_normalize (
   in path varchar,
   in path_type varchar := 'P')
 {
-  declare N integer;
-
   path := trim (path);
-  N := length (path);
-  if (N > 0)
+  if (length (path) > 0)
   {
     if (chr (path[0]) <> '/')
     {
       path := '/' || path;
     }
-    if ((path_type = 'C') and (chr (path[N-1]) <> '/'))
+    if ((path_type = 'C') and (chr (path[length (path)-1]) <> '/'))
     {
       path := path || '/';
     }
     if (chr (path[1]) = '~')
     {
-      path := replace (path, '/~', '/DAV/home/');
+      path := replace (path, '/~', '/DAV/home');
     }
     if (path not like '/DAV/%')
     {
@@ -1598,10 +1602,11 @@ create procedure ODS.ODS_API."briefcase.resource.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'R');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'R');
 
   rc := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (path, 'R'), content, tp, 0, 0, uname, null);
   if (rc < 0)
@@ -1629,10 +1634,11 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'R');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'R');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1654,6 +1660,8 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'R');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
@@ -1679,10 +1687,11 @@ create procedure ODS.ODS_API."briefcase.collection.create" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'C');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'C');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1704,10 +1713,11 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'C');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'C');
 
   rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null, 0);
   return ods_serialize_int_res (rc);
@@ -1730,14 +1740,15 @@ create procedure ODS.ODS_API."briefcase.copy" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  from_path := dav_path_normalize (from_path);
+  to_path := dav_path_normalize (to_path, 'C');
+
   inst_id := get_briefcase_inst (from_path);
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
     inst_id := 0;
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  from_path := dav_path_normalize (from_path, 'C');
-  to_path := dav_path_normalize (to_path, 'C');
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -1760,14 +1771,15 @@ create procedure ODS.ODS_API."briefcase.move" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  from_path := dav_path_normalize (from_path);
+  to_path := dav_path_normalize (to_path, 'C');
+
   inst_id := get_briefcase_inst (from_path);
   inst_id2 := get_briefcase_inst (to_path);
   if (inst_id <> inst_id2)
     inst_id := 0;
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  from_path := dav_path_normalize (from_path, 'C');
-  to_path := dav_path_normalize (to_path, 'C');
 
   rc := DB.DBA.DAV_MOVE_INT (from_path, to_path, 0, uname, null, 0);
   return ods_serialize_int_res (rc);
@@ -1788,10 +1800,11 @@ create procedure ODS.ODS_API."briefcase.property.set" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'P');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'P');
 
   rc := DB.DBA.DAV_PROP_SET_INT (path, property, value, uname, null, 0, 1, 0);
   return ods_serialize_int_res (rc);
@@ -1811,10 +1824,11 @@ create procedure ODS.ODS_API."briefcase.property.remove" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'P');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'P');
 
   rc := DB.DBA.DAV_PROP_REMOVE_INT (path, property, uname, null, 0);
   return ods_serialize_int_res (rc);
@@ -1835,10 +1849,11 @@ create procedure ODS.ODS_API."briefcase.property.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+  path := dav_path_normalize (path, 'P');
+
   inst_id := get_briefcase_inst (path);
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
-  path := dav_path_normalize (path, 'P');
 
   st := case when ((path <> '') and (path[length(path)-1] = 47)) then 'C' else 'R' end;
   rc := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, st), st, property, 0, uname);

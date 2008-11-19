@@ -6410,7 +6410,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     1,
     '/home/%s',
     vector('uname'),
-    null, null, 2, null
+    null, null, 2, null, 'MS-Author-Via: DAV'
     );
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
@@ -6420,7 +6420,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
     1,
     '/public_home/%s/Public/%s',
     vector('uname', 'path'),
-    null, null, 2, null
+    null, null, 2, null, 'MS-Author-Via: DAV'
     );
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule'));
