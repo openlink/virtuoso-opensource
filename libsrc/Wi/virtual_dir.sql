@@ -823,6 +823,7 @@ proxy_sp_html_error_page (in title varchar, in hd varchar, in message varchar)
   http ('</body>');
   http ('</html>');
 }
+;
 
 
 --
@@ -867,10 +868,12 @@ str_fmt (in fmt_str varchar, in parm_arr any)
       st := p + 1;
     }
 }
+;
 
 -- Run a canned query with supplied param values
 -- XXX XXX check for potential SQL injection vuln !
-create table proxy_sp_qry (
+
+create table DB.DBA.PROXY_SP_QRY (
   pspq_id integer identity,
   pspq_qry varchar,
   pspq_n_parms integer,
