@@ -504,7 +504,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				if (a.find(value) == -1) { a.push(value);}
 			}
 		}
-		obj["What Links Here"] = item.back;
+		obj["Is Referenced By"] = item.back;
 		self.drawSpotlight(self.parent.getTitle(item),obj);
 	}
 
@@ -661,7 +661,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				self.drawSpotlightType(p,obj[p],tbody);
 			}
 		}
-		if (remain) { self.drawSpotlightType("[no type specified]",remain,tbody); }
+		if (remain) { self.drawSpotlightType("[Is Referenced By]",remain,tbody); }
 	}
 	
 	this.redraw = function() {
