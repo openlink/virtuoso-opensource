@@ -513,11 +513,11 @@ spar_define_val_commalist
 	;
 
 spar_define_val		/* [Virt]	DefValue	 :=  QNAME | Q_IRI_REF | String	*/
-        : QNAME { $$ = (caddr_t *)t_list (2, QNAME, $1); }
-        | Q_IRI_REF { $$ = (caddr_t *)t_list (2, Q_IRI_REF, $1); }
-	| SPARQL_STRING { $$ = (caddr_t *)t_list (2, SPARQL_STRING, $1); }
-	| SPARQL_INTEGER { $$ = (caddr_t *)t_list (2, SPARQL_INTEGER, $1); }
-	| spar_global_var { $$ = (caddr_t *)t_list (2, SPAR_VARIABLE, (caddr_t)$1); }
+        : QNAME { $$ = (SPART *)t_list (2, QNAME, $1); }
+        | Q_IRI_REF { $$ = (SPART *)t_list (2, Q_IRI_REF, $1); }
+	| SPARQL_STRING { $$ = (SPART *)t_list (2, SPARQL_STRING, $1); }
+	| SPARQL_INTEGER { $$ = (SPART *)t_list (2, SPARQL_INTEGER, $1); }
+	| spar_global_var { $$ = (SPART *)t_list (2, SPAR_VARIABLE, (caddr_t)$1); }
 	;
 
 spar_base_decl_opt	/* [3]  	BaseDecl	  ::=  	'BASE' Q_IRI_REF	*/

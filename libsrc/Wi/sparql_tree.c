@@ -1930,6 +1930,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.alias.arg = sparp_tree_full_clone_int (sparp, orig->_.alias.arg, parent_gp);
       return tgt;
     case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
+      if (NULL == parent_gp)
+        return sparp_tree_full_copy (sparp, orig, parent_gp);
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       eq_idx = orig->_.var.equiv_idx;
       if (SPART_BAD_EQUIV_IDX != eq_idx)
@@ -2078,6 +2080,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
     case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
       return (SPART *)t_full_box_copy_tree ((caddr_t)orig);
     case SPAR_TRIPLE:
+      if (NULL == parent_gp)
+        return sparp_tree_full_copy (sparp, orig, parent_gp);
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.triple.selid = sparp_clone_id (sparp, orig->_.triple.selid);
       tgt->_.triple.tabid = sparp_clone_id (sparp, orig->_.triple.tabid);
@@ -2165,6 +2169,21 @@ sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp)
   return tgts;
 }
 
+
+SPART **
+sparp_treelist_full_clone (sparp_t *sparp, SPART **origs)
+{
+  SPART **tgt;
+  sparp_equiv_audit_all (sparp, 0);
+  sparp_audit_mem (sparp);
+  sparp->sparp_cloning_serial++;
+  tgt = sparp_treelist_full_clone_int (sparp, origs, NULL);
+  sparp->sparp_cloning_serial++;
+  sparp_equiv_audit_all (sparp, 0);
+  sparp_audit_mem (sparp);
+  t_check_tree (tgt);
+  return tgt;
+}
 
 SPART *
 sparp_gp_full_clone (sparp_t *sparp, SPART *gp)

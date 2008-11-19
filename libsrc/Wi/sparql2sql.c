@@ -2912,7 +2912,7 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
               sparp_gp_attach_member (sparp, parent_gp, sub_memb, memb_ctr, NULL);
             }
           if (0 != memb_filters_count)
-            sparp_gp_attach_many_filters (sparp, parent_gp, sparp_treelist_full_copy (sparp, memb_filters, NULL), 0, NULL);
+            sparp_gp_attach_many_filters (sparp, parent_gp, memb_filters /*!!! should it be sparp_treelist_full_copy (sparp, memb_filters, NULL) ? */, 0, NULL);
           memb_ctr += sub_count;
           sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
         }
@@ -3561,8 +3561,8 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
         {
           int last_case = (((case_count-1) == case_ctr) ? 1 : 0);
           SPART *new_join = new_union->_.gp.members [case_ctr]; /* equal to union_part if curr_had_one_member */
-          SPART **new_filts_u = (last_case ? detached_union_filters : sparp_treelist_full_copy (sparp, detached_union_filters, NULL));
-          SPART **new_filts_j = (last_case ? detached_join_filters : sparp_treelist_full_copy (sparp, detached_join_filters, NULL));
+          SPART **new_filts_u = (last_case ? detached_union_filters : sparp_treelist_full_clone (sparp, detached_union_filters));
+          SPART **new_filts_j = (last_case ? detached_join_filters : sparp_treelist_full_clone (sparp, detached_join_filters));
           SPART **new_join_filts = (SPART **)t_list_concat ((caddr_t)new_filts_u, (caddr_t)new_filts_j);
           if (!curr_had_one_member)
             {

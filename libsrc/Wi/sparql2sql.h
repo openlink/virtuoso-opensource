@@ -452,6 +452,9 @@ The function will substitute all selids and tabids of all graph patterns and tri
 substitute equiv indexes with indexes of cloned equivs (except SPART_BAD_EQUIV_IDX index that persists). */
 extern SPART *sparp_gp_full_clone (sparp_t *sparp, SPART *gp);
 
+/*! This makes a full clone of \c origs. As a result, triples and variables outside any GPs are copied, inside GPs thay're changed like in case of sparp_gp_full_clone. */
+extern SPART **sparp_treelist_full_clone (sparp_t *sparp, SPART **origs);
+
 /*! This creates a full copy of \c orig subtree without cloning equivs.
 Variables inside copy have unidirectional pointers to equivs until attached to other tree or same place in same tree. */
 extern SPART *sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp);
