@@ -3325,7 +3325,8 @@ create procedure CAL.WA.event_update (
 {
   if (isnull (updated))
     updated := now ();
-  if (id = -1) {
+  if (id = -1)
+  {
     id := sequence_next ('CAL.WA.event_id');
     insert into CAL.WA.EVENTS
       (
@@ -3373,7 +3374,82 @@ create procedure CAL.WA.event_update (
         now (),
         updated
       );
-  } else {
+  }
+  else
+  {
+    declare exit handler for SQLSTATE '*', not found {
+      return -1;
+    };
+
+    declare _subject varchar;
+    declare _description varchar;
+    declare _location varchar;
+    declare _privacy integer;
+    declare _tags varchar;
+    declare _event integer;
+    declare _eEventStart datetime;
+    declare _eEventEnd datetime;
+    declare _eRepeat varchar;
+    declare _eRepeatParam1 integer;
+    declare _eRepeatParam2 integer;
+    declare _eRepeatParam3 integer;
+    declare _eRepeatUntil datetime;
+    declare _eReminder integer;
+    declare _notes varchar;
+
+    select
+           E_SUBJECT,
+           E_DESCRIPTION,
+           E_LOCATION,
+           E_PRIVACY,
+           E_TAGS,
+           E_EVENT,
+           E_EVENT_START,
+           E_EVENT_END,
+           E_REPEAT,
+           E_REPEAT_PARAM1,
+           E_REPEAT_PARAM2,
+           E_REPEAT_PARAM3,
+           E_REPEAT_UNTIL,
+           E_REMINDER,
+           E_NOTES
+      into _subject,
+           _description,
+           _location,
+           _privacy,
+           _tags,
+           _event,
+           _eEventStart,
+           _eEventEnd,
+           _eRepeat,
+           _eRepeatParam1,
+           _eRepeatParam2,
+           _eRepeatParam3,
+           _eRepeatUntil,
+           _eReminder,
+           _notes
+      from CAL.WA.EVENTS
+     where E_ID = id;
+
+    if (
+        (coalesce (subject       , ''    ) = coalesce (_subject       , ''    )) and
+        (coalesce (description   , ''    ) = coalesce (_description   , ''    )) and
+        (coalesce (location      , ''    ) = coalesce (_location      , ''    )) and
+        (coalesce (privacy       , -1    ) = coalesce (_privacy       , -1    )) and
+        (coalesce (tags          , ''    ) = coalesce (_tags          , ''    )) and
+        (coalesce (event         , -1    ) = coalesce (_event         , -1    )) and
+        (coalesce (eEventStart   , now ()) = coalesce (_eEventStart   , now ())) and
+        (coalesce (eEventEnd     , now ()) = coalesce (_eEventEnd     , now ())) and
+        (coalesce (eRepeat       , ''    ) = coalesce (_eRepeat       , ''    )) and
+        (coalesce (eRepeatParam1 , ''    ) = coalesce (_eRepeatParam1 , ''    )) and
+        (coalesce (eRepeatParam2 , ''    ) = coalesce (_eRepeatParam2 , ''    )) and
+        (coalesce (eRepeatParam3 , ''    ) = coalesce (_eRepeatParam3 , ''    )) and
+        (coalesce (eRepeatUntil  , now ()) = coalesce (_eRepeatUntil  , now ())) and
+        (coalesce (eReminder     , -1    ) = coalesce (_eReminder     , -1    )) and
+        (coalesce (notes         , ''    ) = coalesce (_notes         , ''    ))
+       )
+      goto _end;
+
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
@@ -3393,6 +3469,7 @@ create procedure CAL.WA.event_update (
            E_UPDATED = updated
      where E_ID = id;
   }
+_end:;
   CAL.WA.attendees_update (id, attendees);
   return id;
 }
@@ -4140,6 +4217,62 @@ create procedure CAL.WA.task_update (
   }
   else
   {
+    declare exit handler for SQLSTATE '*', not found {
+      return -1;
+    };
+    declare _subject varchar;
+    declare _description varchar;
+    declare _privacy integer;
+    declare _tags varchar;
+    declare _eEventStart datetime;
+    declare _eEventEnd datetime;
+    declare _priority integer;
+    declare _status varchar;
+    declare _complete integer;
+    declare _completed datetime;
+    declare _notes varchar;
+
+    select
+           E_SUBJECT,
+           E_DESCRIPTION,
+           E_PRIVACY,
+           E_TAGS,
+           E_EVENT_START,
+           E_EVENT_END,
+           E_PRIORITY,
+           E_STATUS,
+           E_COMPLETE,
+           E_COMPLETED,
+           E_NOTES
+      into _subject,
+           _description,
+           _privacy,
+           _tags,
+           _eEventStart,
+           _eEventEnd,
+           _priority,
+           _status,
+           _complete,
+           _completed,
+           _notes
+      from CAL.WA.EVENTS
+     where E_ID = id;
+
+    if (
+        (coalesce (subject,     '')     = coalesce (_subject,     ''))     and
+        (coalesce (description, '')     = coalesce (_description, ''))     and
+        (coalesce (privacy,     -1)     = coalesce (_privacy,     -1))     and
+        (coalesce (tags,        '')     = coalesce (_tags,        ''))     and
+        (coalesce (eEventStart, now ()) = coalesce (_eEventStart, now ())) and
+        (coalesce (eEventEnd,   now ()) = coalesce (_eEventEnd,   now ())) and
+        (coalesce (priority,    -1)     = coalesce (_priority,    -1))     and
+        (coalesce (status,      '')     = coalesce (_status,      ''))     and
+        (coalesce (complete,    -1)     = coalesce (_complete,    -1))     and
+        (coalesce (completed,   now ()) = coalesce (_completed,   now ())) and
+        (coalesce (notes,       '')     = coalesce (_notes,       ''))
+       )
+      goto _end;
+
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
@@ -4155,6 +4288,7 @@ create procedure CAL.WA.task_update (
            E_UPDATED = updated
      where E_ID = id;
   }
+_end:;
   CAL.WA.attendees_update (id, attendees);
   return id;
 }
@@ -4949,7 +5083,9 @@ create procedure CAL.WA.import_vcal (
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
           connection_set ('__calendar_import', '0');
           vcalImported := vector_concat (vcalImported, vector (id));
+
         _skip:;
+          commit work;
       }
       }
 
@@ -5011,6 +5147,7 @@ create procedure CAL.WA.import_vcal (
           vcalImported := vector_concat (vcalImported, vector (id));
 
         _skip2:;
+          commit work;
       }
     }
   }
@@ -6268,8 +6405,8 @@ create procedure CAL.WA.make_post_rfc_msg (
   declare ses any;
 
   ses := string_output ();
-  http (head, ses);
-  http (body, ses);
+  http (coalesce (head, ''), ses);
+  http (coalesce (body, ''), ses);
   http ('\r\n.\r\n', ses);
   ses := string_output_string (ses);
   if (tree)

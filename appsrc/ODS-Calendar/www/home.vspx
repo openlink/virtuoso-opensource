@@ -1505,6 +1505,7 @@
                                     CAL.WA.event_delete(id);
                                 }
                               }
+                              commit work;
           		    self.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -2839,6 +2840,7 @@
                 if (not self.vc_is_valid)
                   return;
 
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -2851,6 +2853,7 @@
                 if (not self.vc_is_valid)
                   return;
 
+                      commit work;
                 self.initNewEvent ();
                 self.vc_data_bind(e);
               ]]>
@@ -2859,6 +2862,7 @@
                 <v:button action="simple" name="e_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3022,6 +3026,7 @@
                 <v:button action="simple" name="ev_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3319,6 +3324,7 @@
                 if (not self.vc_is_valid)
                   return;
 
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3331,6 +3337,7 @@
                 if (not self.vc_is_valid)
                   return;
 
+                      commit work;
                 self.initNewTask ();
                 self.vc_data_bind(e);
               ]]>
@@ -3339,6 +3346,7 @@
                 <v:button action="simple" name="t_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3473,6 +3481,7 @@
                 <v:button action="simple" name="tv_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3650,6 +3659,7 @@
                   -- vCard
                           CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags, 'events', 1, 'tasts', 1));
 
+                      commit work;
                   self.cAction := 'browse';
                   self.vc_data_bind(e);
                  ]]>
@@ -3658,6 +3668,7 @@
                 <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                      commit work;
                 self.cAction := 'browse';
                 self.vc_data_bind(e);
               ]]>
@@ -3941,6 +3952,9 @@
                           }
                         }
                       }
+                      commit work;
+
+                      commit work;
                       self.cAction := 'browse';
                       self.vc_data_bind(e);
                      ]]>
@@ -3949,6 +3963,7 @@
                 <v:button action="simple" name="ex_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
+                      commit work;
                       self.cAction := 'browse';
                       self.vc_data_bind(e);
                     ]]>
@@ -4031,6 +4046,7 @@
                     } else {
                       self.cAction := 'subscribeDelete';
                     }
+                    commit work;
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -4131,6 +4147,7 @@
                                     self.cAction := 'syncmlExec';
                                   } else {
                                   CAL.WA.exchange_exec (self.ve_id);
+                                    commit work;
                                   }
                                   self.vc_data_bind(e);
                                 ]]>
@@ -4154,6 +4171,7 @@
                 <v:button action="simple" name="back" value="Back" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
+                      commit work;
                       self.cAction := 'browse';
                       self.vc_data_bind(e);
                     ]]>
@@ -4299,7 +4317,7 @@
                       <v:text name="exc_update_freq" value="--self.ve_update_freq" xhtml_size="2" />
                       <v:select-list name="exc_update_period">
                         <v:item value="hourly" name="hour(s)" />
-                        <v:item value="dayly" name="day(s)" />
+                        <v:item value="daily" name="day(s)" />
                       <v:before-data-bind>
                         <![CDATA[
                             control.ufl_value := self.ve_update_period;
@@ -4535,6 +4553,7 @@
                          where EX_ID = self.ve_id;
                 					}
 
+                      commit work;
                       self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                           self.vc_data_bind(e);
                         ]]>
@@ -4543,6 +4562,7 @@
                 <v:button action="simple" name="exc_cancel" value="Cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
+                      commit work;
                       self.cAction := case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'publishBrowse' else case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 'subscribeBrowse' else 'syncmlBrowse' end end;
                 self.vc_data_bind(e);
               ]]>
@@ -4557,7 +4577,7 @@
               </div>
               <div class="new-form-body">
                 <br />
-                <b>The following subscription(s) will be deleted. For checked subscriptions corresponding enents/tasks will be deleted too.</b>
+                <b>The following subscription(s) will be deleted. For checked subscriptions corresponding events/tasks will be deleted too.</b>
                 <br /><br />
                 <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
                   <thead class="sortHeader">
@@ -4615,6 +4635,7 @@
                           delete from CAL.WA.EXCHANGE where EX_ID = cast (params[N+1] as integer);
                         }
                       }
+                      commit work;
                       self.cAction := 'subscribeBrowse';
                       self.vc_data_bind(e);
                     ]]>
@@ -4623,6 +4644,7 @@
                 <v:button action="simple" name="exc_delete_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
+                      commit work;
                       self.cAction := 'subscribeBrowse';
                       self.vc_data_bind(e);
                     ]]>
@@ -4705,6 +4727,7 @@
                       _mode := cast (self.exc_options_mode2.ufl_value as integer);
                       self.ve_result := CAL.WA.exchange_exec (self.ve_id, 0, _mode);
 
+                      commit work;
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
@@ -4712,6 +4735,7 @@
                 <v:button action="simple" name="exc_sync_cancel" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
+                      commit work;
                       self.cAction := 'syncmlBrowse';
                       self.vc_data_bind(e);
                     ]]>
@@ -5185,6 +5209,7 @@
                 					    CAL.WA.nntp_fill (self.domain_id);
                         }
 
+                          commit work;
                           self.initData ();
                           self.cAction := 'browse';
                           self.cSubAction := '';
@@ -5199,6 +5224,7 @@
                           delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
                           CAL.WA.nntp_update (self.domain_id, null, null, 1, 0);
 
+                          commit work;
                           self.settings := vector ();
                           self.initData ();
 
@@ -5213,6 +5239,7 @@
                   <v:button value="--'New Upstream'" action="simple" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
+                        commit work;
                         self.cSubAction := 'upstreamCreate';
                         self.vc_data_bind(e);
                       ]]>
@@ -5227,6 +5254,7 @@
                           if (e.ve_params[N] = 'cb_item')
                             delete from CAL.WA.UPSTREAM where U_ID = cast (e.ve_params[N+1] as integer);
 
+                        commit work;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -5454,6 +5482,7 @@
                              where U_ID = self.vu_id;
                           }
 
+                          commit work;
                           self.cSubAction := 'upstreamBrowse';
                           self.vc_data_bind(e);
                         ]]>
@@ -5462,6 +5491,7 @@
                     <v:button action="simple" value="Cancel" name="su_cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
+                          commit work;
                           self.cSubAction := 'upstreamBrowse';
                           self.vc_data_bind(e);
                         ]]>
@@ -5474,6 +5504,7 @@
                   <v:button value="--'Share'" action="simple" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
+                        commit work;
                         self.cSubAction := 'grantCreate';
                         self.vc_data_bind(e);
                       ]]>
@@ -5488,6 +5519,7 @@
                           if (e.ve_params[N] = 'cb_item')
                             delete from CAL.WA.GRANTS where G_ID = cast (e.ve_params[N+1] as integer);
 
+                        commit work;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -5686,6 +5718,7 @@
                                and G_ID = self.vg_id;
                           }
 
+                          commit work;
                           self.cSubAction := 'grantBrowse';
                           self.vc_data_bind(e);
                         ]]>
@@ -5694,6 +5727,7 @@
                     <v:button action="simple" value="Cancel" name="sg_cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
+                          commit work;
                           self.cSubAction := 'grantBrowse';
                           self.vc_data_bind(e);
                         ]]>
@@ -5720,6 +5754,7 @@
                           if (e.ve_params[N] = 'cb_item')
                             delete from CAL.WA.SHARED where S_ID = cast (e.ve_params[N+1] as integer);
 
+                        commit work;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -6023,6 +6058,7 @@
                                and S_ID = self.vs_id;
                           }
 
+                          commit work;
                           self.cSubAction := 'sharedBrowse';
                           self.vc_data_bind(e);
                         ]]>
@@ -6031,6 +6067,7 @@
                     <v:button action="simple" value="Cancel" name="ss_cancel" xhtml_class="form-button">
                       <v:on-post>
                         <![CDATA[
+                          commit work;
                           self.cSubAction := 'sharedBrowse';
                           self.vc_data_bind(e);
                         ]]>

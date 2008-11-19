@@ -472,7 +472,7 @@ create procedure ODS.ODS_API."calendar.comment.new" (
   in text varchar,
   in name varchar,
   in email varchar,
-  in url varchar) __soap_http 'text/xml'
+  in url varchar := null) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {
@@ -589,7 +589,8 @@ create procedure ODS.ODS_API."calendar.annotation.new" (
 
   rc := -1;
   inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
-
+  if (isnull (inst_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
@@ -803,8 +804,8 @@ create procedure ODS.ODS_API."calendar.publication.delete" (
 create procedure ODS.ODS_API."calendar.subscription.new" (
   in inst_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in sourceType varchar := 'WebDAV',
   in source varchar,
@@ -852,8 +853,8 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
 create procedure ODS.ODS_API."calendar.subscription.edit" (
   in subscription_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in sourceType varchar := 'WebDAV',
   in source varchar,

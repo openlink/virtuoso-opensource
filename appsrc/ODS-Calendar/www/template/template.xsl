@@ -200,8 +200,8 @@
             </v:button>
           </div>
         </v:template>
-        <br style="clear: left;"/>
       </div>
+        <br style="clear: both;" />
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
             <?vsp http (CAL.WA.utf2wide (CAL.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
@@ -384,7 +384,12 @@
         <?vsp
           for (select * from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id) do
           {
+            if (self.access_role not in ('public', 'guest'))
+            {
             http (sprintf ('<a href="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</a>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+            } else {
+              http (sprintf ('<div class="gems" style="background-color: %s;">%s</div>', S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+            }
           }
         ?>
       </div>
@@ -393,6 +398,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:exchange">
+    <vm:if test="self.access_role not in ('public', 'guest')">
     <div class="lc lc_head" onclick="shCell('exchange')">
       <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Import/Export
     </div>
@@ -412,6 +418,7 @@
       }
       ?>
     </div>
+    </vm:if>
   </xsl:template>
 
   <!--=========================================================================-->
