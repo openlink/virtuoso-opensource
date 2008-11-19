@@ -68,6 +68,7 @@ create table WS.WS.SYS_DAV_COL (
     COL_IID 		IRI_ID,
     COL_AUTO_VERSIONING char(1),
     COL_FORK 		integer not null default 0,
+    COL_INHERIT		char(1) default 'N', 		-- NMR flag denotes, none, members, recursive
     primary key (COL_NAME, COL_PARENT)
 )
 alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
@@ -86,6 +87,9 @@ alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
 ;
 
 alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
 ;
 --#ENDIF
 

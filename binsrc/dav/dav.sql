@@ -262,7 +262,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (in lpath varchar,
 					  in all_prop integer,
 					  in add_not_found integer,
 					  in resources_only integer,
-					  in u_id integer)
+					  in _u_id integer)
 {
   declare dir_len, dir_ctr, ix, len, dt_flag, iso_dt_flag, res_len, parent_col, id, found_cprop, found_sprop, mix integer;
   declare crt, modt datetime;
@@ -1365,7 +1365,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   declare temp varchar;
   declare full_path, _perms, _vsp, uname, upwd varchar;
   declare _u_id, _g_id, _is_xper, is_sparql integer;
-  declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location varchar;
+  declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location, inh varchar;
   declare ses any;
   --set isolation = 'serializable';
 
@@ -3288,7 +3288,7 @@ create procedure DAV_PERMS_INHERIT (inout perms varchar, in parent_perms varchar
 -- Triggers for full_path column
 create trigger SYS_DAV_RES_FULL_PATH_I after insert on WS.WS.SYS_DAV_RES order 0 referencing new as N
 {
-  declare full_path, name, _pflags, _rflags varchar;
+  declare full_path, name, _pflags, _rflags, _inh varchar;
   declare parent_col, col, res integer;
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_I (', N.RES_ID, ')');
 --  if (not WS.WS.DAV_CHECK_QUOTA ())
@@ -3302,7 +3302,9 @@ create trigger SYS_DAV_RES_FULL_PATH_I after insert on WS.WS.SYS_DAV_RES order 0
   res := N.RES_ID;
   _rflags := N.RES_PERMS;
   full_path := concat ('/', N.RES_NAME);
-  select COL_PERMS into _pflags from WS.WS.SYS_DAV_COL where COL_ID = col;
+  select COL_PERMS, COL_INHERIT into _pflags, _inh from WS.WS.SYS_DAV_COL where COL_ID = col;
+  if (_inh = 'R' or _inh = 'M')
+    _rflags := _pflags;
   DAV_PERMS_FIX (_pflags, '000000000TM');
   DAV_PERMS_INHERIT (_rflags, _pflags);
   whenever not found goto not_found;
@@ -3352,14 +3354,16 @@ nfg:;
 
 create trigger SYS_DAV_RES_FULL_PATH_BU before update on WS.WS.SYS_DAV_RES referencing old as O, new as N
 {
-  declare _pflags, _rflags varchar;
+  declare _pflags, _rflags, _inh varchar;
   declare col integer;
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_BU (', N.RES_ID, ')');
   _rflags := N.RES_PERMS;
   if ((O.RES_COL <> N.RES_COL) or (O.RES_PERMS <> N.RES_PERMS))
     {
       col := N.RES_COL;
-      select COL_PERMS into _pflags from WS.WS.SYS_DAV_COL where COL_ID = col;
+      select COL_PERMS, COL_INHERIT into _pflags, _inh from WS.WS.SYS_DAV_COL where COL_ID = col;
+      if (_inh = 'M' or _inh = 'R')
+        _rflags := _pflags;
       DAV_PERMS_FIX (_pflags, '000000000TM');
       DAV_PERMS_INHERIT (_rflags, _pflags, neq (O.RES_COL, N.RES_COL));
     }
@@ -3667,7 +3671,7 @@ not_col:
 
 create trigger SYS_DAV_COL_I after insert on WS.WS.SYS_DAV_COL referencing new as N
 {
-  declare _pflags, _cflags, col_path varchar;
+  declare _pflags, _cflags, col_path, _inh varchar;
   declare _col, _p_col integer;
   -- dbg_obj_princ ('trigger SYS_DAV_COL_I (', N.COL_ID, ')');
   _col := N.COL_ID;
@@ -3675,7 +3679,15 @@ create trigger SYS_DAV_COL_I after insert on WS.WS.SYS_DAV_COL referencing new a
   col_path := WS.WS.COL_PATH (N.COL_ID);
   set triggers off;
   _cflags := N.COL_PERMS;
-  _pflags := coalesce ((select COL_PERMS from WS.WS.SYS_DAV_COL where COL_ID = _p_col), '000000000NN');
+  _pflags := '000000000NN';
+  _inh := 'N';
+  for select COL_PERMS, COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = _p_col do
+    {
+      _pflags := COL_PERMS;
+      _inh := COL_INHERIT;
+    }
+  if (_inh = 'R')
+    _cflags := _pflags;
   DAV_PERMS_FIX (_cflags, _pflags);
   if (_cflags <> N.COL_PERMS)
     update WS.WS.SYS_DAV_COL set COL_PERMS = _cflags where COL_ID = _col;
