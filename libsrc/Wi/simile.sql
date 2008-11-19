@@ -113,13 +113,13 @@ create procedure SIMILE.SIMILE."create_u" (in _user varchar, in lines any)
 
 create procedure SIMILE.SIMILE."remove_u" (in _item varchar)
 {
-;
+  return;
 }
 ;
 
 create procedure SIMILE.SIMILE."persist" (in _obj_uri varchar)
 {
-;
+  return;
 }
 ;
 
