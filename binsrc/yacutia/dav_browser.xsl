@@ -873,6 +873,33 @@ else
                     </select>
                   </td>
                 </tr>
+		<?vsp if (self.crfolder_mode = 1) { ?>
+                <tr>
+                  <th>Permissions Inheritance</th>
+                  <td>
+                    <select name="inh">
+                      <?vsp
+		      {
+                        declare _fidx any;
+                        declare _idx varchar;
+                        declare i integer;
+                        _idx := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
+                        _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                        i := 0;
+                        while (i < length (_fidx))
+                        {
+                          http (sprintf ('<option value="%s" %s>%s</option>',
+                                         aref (_fidx, i),
+                                         select_if (_idx, aref (_fidx, i)),
+                                         aref (_fidx, i + 1)));
+                          i := i + 2;
+                        }
+	               }
+                      ?>
+                    </select>
+                  </td>
+                </tr>
+		<?vsp } ?>
                 <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
                   <tr id="fi8">
                     <td>SyncML version</td>
@@ -931,7 +958,7 @@ else
                         <![CDATA[
                           declare usr, grp vspx_select_list;
                           declare i, _uid, ownern, groupn integer;
-                          declare cname, _perms, _p, _idx, mimetype, owner_name, group_name varchar;
+                          declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh varchar;
 			  declare _file, _graph, is_ttl, is_xml any;
 
 			  if (self.dst_sel.ufl_value = 'rdf')
@@ -1038,6 +1065,7 @@ else
                           if (_perms = '000000000')
                             _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
                           _idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
+			  _inh := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
                           _perms := concat(_perms, _idx);
                           declare ret int;
                           declare full_path varchar;
@@ -1068,6 +1096,9 @@ else
 				   call ('DB.DBA.SYNC_MAKE_DAV_DIR') (get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N'),
 				   ret, cname, full_path, sync_ver);
 				}
+		              set triggers off;
+                              update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh where COL_ID = ret;
+			      set triggers on;
                             }
                           }
                           if (self.crfolder_mode = 2)
@@ -1262,8 +1293,9 @@ else
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
-                  declare _name, perms, cur_user, _res_type varchar;
+                  declare _name, perms, cur_user, _res_type, _inh varchar;
                   declare _res_id, own_id, own_grp, uid, gid, is_dir integer;
+		  _inh := null;
                   if (right(self.source_dir, 1) = '/')
                   {
                     is_dir := 1;
@@ -1278,7 +1310,7 @@ else
                   {
         whenever not found goto nf1;
                     if (is_dir = 1)
-                      select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS into _name, own_id, own_grp, perms from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
+                      select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_INHERIT into _name, own_id, own_grp, perms, _inh from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
                     else
           select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE into _name, own_id, own_grp, perms, _res_type from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
         nf1:;
@@ -1441,6 +1473,33 @@ else
                     </select>
                   </td>
                 </tr>
+                <?vsp if (is_dir = 1) { ?>
+                <tr>
+                  <th>Permissions Inheritance</th>
+                  <td>
+                    <select name="inh">
+                      <?vsp
+		      {
+                        declare _fidx any;
+                        declare _idx varchar;
+                        declare i integer;
+                        _idx := _inh;
+                        _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                        i := 0;
+                        while (i < length (_fidx))
+                        {
+                          http (sprintf ('<option value="%s" %s>%s</option>',
+                                         aref (_fidx, i),
+                                         select_if (_idx, aref (_fidx, i)),
+                                         aref (_fidx, i + 1)));
+                          i := i + 2;
+                        }
+	               }
+                      ?>
+                    </select>
+                  </td>
+                </tr>
+		<?vsp } ?>
                 <v:template name="dav_template011" type="simple" enabled="-- equ(yac_syncml_detect (self.source_dir), 1)">
                   <tr>
                     <th>SyncML version</th>
@@ -1449,7 +1508,6 @@ else
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
---                      idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
                         idx := yac_syncml_version_get (self.source_dir);
                         _fidx := yac_syncml_version ();
                         i := 0;
@@ -1759,7 +1817,7 @@ else
   declare mimetype, _recurse, _res_name varchar;
   declare _fidx, _file any;
   declare _perms, _p, _idx varchar;
-  declare _res_id, is_dir integer;
+  declare _res_id, is_dir, _inh integer;
 
   declare cur_usr varchar;
 
@@ -1824,7 +1882,8 @@ else
   i := 0;
   _perms := '';
   _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-  _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, aref (_fidx, 0));
+  _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
+  _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
 
   while (i < 9)
     {
@@ -1853,15 +1912,8 @@ else
 
   if (is_dir = 1)
     {
-      exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ? where  COL_ID = ?',
-            state,
-            msg,
-            vector (_res_name,
-                    _perms,
-                    own_id,
-                    own_grp,
-                    _res_id),
-            m_dta, res);
+      exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ?, COL_INHERIT = ? where  COL_ID = ?',
+            state, msg, vector (_res_name, _perms, own_id, own_grp, _inh, _res_id), m_dta, res);
 
       if (_recurse)
         {
@@ -1869,9 +1921,7 @@ else
           _target_col := WS.WS.COL_PATH (_res_id);
 
           declare cur_type, cur_perms varchar;
-          declare res_cur cursor for
-            select RES_PERMS, RES_TYPE
-              from WS.WS.SYS_DAV_RES
+          declare res_cur cursor for select RES_PERMS, RES_TYPE from WS.WS.SYS_DAV_RES
               where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
 
           whenever not found goto next_one;
@@ -2486,7 +2536,7 @@ else
                               declare _resname varchar;
                               declare _ind, _tp varchar;
                               declare usr, grp vspx_select_list;
-                              declare _user, _group, _pc, _target_col, _recurse, _col, _own, _grp integer;
+                              declare _user, _group, _pc, _target_col, _recurse, _col, _own, _grp, _inh integer;
                               declare _set_user, _set_group integer;
                               declare _sperm, _rperm, _operm, _mime_type, one, zero, _cmp_perm varchar;
                               declare cur_usr varchar;
