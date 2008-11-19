@@ -1725,19 +1725,31 @@ http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/o
 the Quad Store is updated automatically, or you can load from DAV manually to quad store)</para>
       <para><emphasis>Example:</emphasis></para>
       <para><emphasis>Example 1: Using ODS Briefcase</emphasis></para>
-      <para>Go to your ods location, for ex. http://localhost:8890/ods</para>
-      <para>Register user, for ex. user test1</para>
-      <para>Login if not already in ods</para>
-      <para>Go to ODS ->Briefcase</para>
-      <para>Create new instance</para>
-      <para>Go to the briefcase instance by clicking its name link</para>
-      <para>Upload file in a new created folder mytest or in the rdf_sink folder with:</para>
       <itemizedlist>
-        <listitem>checked option "RDF Store"</listitem>
-        <listitem>set RDF Graph Name, for ex. http://localhost:8890/DAV/home/test1/ of
-the current folder>/ for ex. http://localhost:8890/DAV/home/test1/mytest/ or
-http://localhost:8890/DAV/home/test1/rdf_sink/</listitem>
-        <listitem>For ex. upload the following file with name jose.rdf.</listitem>
+        <listitem>Go to your ods location, for ex. http://localhost:8890/ods</listitem>
+        <listitem>Register user, for ex. user test1</listitem>
+        <listitem>Login if not already in ods</listitem>
+        <listitem>Go to ODS -> Briefcase</listitem>
+        <listitem>Go to ODS -> Briefcase</listitem>
+        <listitem>Click the "New folder" icon from the Main Briefcase horizontal navigation</listitem>
+        <listitem>Enter for name for ex. "mytest" and click the "Create" button.
+          <figure id="uc6" float="1">
+	    <title>Using Briefcase UI</title>
+	    <graphic fileref="ui/uc6.png"/>
+          </figure>
+        </listitem>
+        <listitem>Go to folder "mytest" and click the click the "Upload" icon from the Main Briefcase horizontal navigation</listitem>
+        <listitem>Enter for name for ex. "mytest" and click the "Create" button.
+          <figure id="uc7" float="1">
+	    <title>Using Briefcase UI</title>
+	    <graphic fileref="ui/uc7.png"/>
+          </figure>
+        </listitem>
+        <listitem>In the shown form set:
+          <itemizedlist>
+            <listitem>Destination: RDF Store</listitem>
+            <listitem>RDF graph name for ex. with the value: http://localhost:8890/DAV/home/test2/mytest/</listitem>
+            <listitem>Select URL or File. For ex. you can select the following file with name jose.rdf:
 <programlisting><![CDATA[
 <rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -1767,8 +1779,14 @@ http://localhost:8890/DAV/home/test1/rdf_sink/</listitem>
     </rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
+            </listitem>
       </itemizedlist>
-      <para>Execute the following query:</para>
+        </listitem>
+        <listitem>You can also perform the steps from above by uplaoding the file in the rdf_sink
+folder i.e. in Briefcase it will be with this path: DAV/home/test2/rdf_sink and respectively the "RDF graph name"
+will have this value: http://host:port/DAV/home/username/rdf_sink/</listitem>
+      </itemizedlist>
+      <para>Execute from ISQL or from the SPARQL endpoint the following query:</para>
 <programlisting><![CDATA[
 select * from <>
 where {?s ?p ?o}
@@ -1789,13 +1807,42 @@ http://www.example/jose/foaf.rdf#juan 	  http://www.w3.org/1999/02/22-rdf-syntax
 http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:juan@mail.example
 ]]></programlisting>
       <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
-      <para>Go to Conductor UI, for ex. at http://localhost:8890/conductor</para>
-      <para>Login as dba user</para>
-      <para>Go to Web Application Server and create new folder, for ex. test</para>
-      <para>Upload in the folder test a file, for ex. the file jose.rdf from above with options:</para>
       <itemizedlist>
-        <listitem>Destination: RDF Store</listitem>
-        <listitem>Set the RDF IRI</listitem>
+        <listitem>Go to Conductor UI, for ex. at http://localhost:8890/conductor</listitem>
+        <listitem>Login as dba user</listitem>
+        <listitem>Go to Web Application Server
+          <figure id="uc1" float="1">
+	    <title>Using Conductor UI</title>
+	    <graphic fileref="ui/uc1.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click the "New Folder" button.</listitem>
+        <listitem>Enter for name for ex. test and click the "Create" button.
+          <figure id="uc2" float="1">
+	    <title>Using Conductor UI</title>
+	    <graphic fileref="ui/uc2.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click the new folder "test" name link.
+          <figure id="uc3" float="1">
+	    <title>Using Conductor UI</title>
+	    <graphic fileref="ui/uc3.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click the "Upload" button and in the shown form select Destination: RDF Store.
+        <figure id="uc4" float="1">
+	    <title>Using Conductor UI</title>
+	    <graphic fileref="ui/uc4.png"/>
+          </figure>
+        </listitem>
+        <listitem>In the shown form click the "Browse" button in order to select a file, for ex. the file jose.rdf
+and set the "RDF IRI*"
+          <figure id="uc5" float="1">
+	    <title>Using Conductor UI</title>
+	    <graphic fileref="ui/uc5.png"/>
+          </figure>
+         </listitem>
+         <listitem>Click the "Upload" button.</listitem>
       </itemizedlist>
     </sect2>
     <sect2 id="rdfinsertmethodvirtuosocrawler">
@@ -4673,6 +4720,28 @@ where (^{products_table.}^.FREETEXT_ID = ^{products.}^.FREETEXT_ID)
 
 ]]></programlisting>
 </sect2>
+<sect2 id="rdfviewsrcur"><title>RDF views and recursive FK relationships</title>
+  <para>Here is sample example of a script to include an additional table alias for a table:
+<programlisting><![CDATA[
+alter quad storage virtrdf:DefaultQuadStorage
+  :
+  from isports_rdf.prs10_isports_rdf.VRef_Call      as Ref_Call_tbl
+  from isports_rdf.prs10_isports_rdf.VRef_Call      as Ref_Call_tbl_1
+  :
+{
+  :
+  refcall:ref-call_iri (Ref_Call_tbl.Call_Num) a refcall:Ref-Call as
+virtrdf:ref-call_pk ;
+  :
+  refcall:has_parent  refcall:ref-call_iri (Ref_Call_tbl_1.Call_Num)
+where  ( ^{Ref_Call_tbl.}^.Parent    = ^{Ref_Call_tbl_1.}^.Call_Num )   as
+virtrdf:Ref-Call_has_parent .
+]]></programlisting>
+  </para>
+  <para>This demonstrates the way to self-join the table VRef_Call with itself. Like in SQL,
+are needed two different aliases for one table if you want to join it with itself.
+  </para>
+</sect2>
 </sect1>
 <sect1 id="rdfsparqlrule"><title>RDF Inference in Virtuoso</title>
 <sect2 id="rdfsparqlruleintro"><title>Introduction</title>
@@ -5513,7 +5582,7 @@ At present this uses additional query parameters.</para>
 </itemizedlist>
 </sect2>
 
-<sect2 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint </title>
+<sect2 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint</title>
 <para>Virtuoso reserves the path '/sparql/' and a synonym path '/SPARQL/' for SPARQL service.</para>
 <para>In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port
 specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to one of these
@@ -5523,6 +5592,37 @@ port 8080 then client applications should use the 'service endpoint' string equa
 to find MIME types preferred by the connected client and adjust the output mode of the response.</para>
 <para>The client chooses between GET and POST automatically, using the length of query text as a criterion.</para>
 <para>If the SPARQL endpoint is accessed without any URL and query entered, will be shown page with interactive query form.</para>
+</sect2>
+
+
+<sect2 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint with authenticated SPARUL option</title>
+<para>Virtuoso reserves the path '/sparql-auth/' for SPARQL service with authenticated SPARUL option.</para>
+<para>This endpoint allows specific SQL accounts to perform SPARUL over the SPARQL protocol.</para>
+<para>"SPARQL_UPDATE" is needed to be granted on a user to perform all operations on physical triples and
+the user to be able allowed to perform SQL/ODBC logins:</para>
+<itemizedlist>
+  <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
+  <listitem>Login as dba user</listitem>
+  <listitem>Go to System Admin->User Accounts->Users
+    <figure id="rdf1" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/usr1.png"/>
+    </figure>
+  </listitem>
+  <listitem>Click the link "Edit"</listitem>
+  <listitem>In the shown form check the "Allow SQL/ODBC Logins" check-box.</listitem>
+  <listitem>Select from the list of available Account Roles "SPARQL_UPDATE" role and
+click the ">>" button so to add it to the right-positioned list.</listitem>
+    <figure id="rdf2" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/usr2.png"/>
+    </figure>
+  <listitem>Click the "Save" button.</listitem>
+</itemizedlist>
+<para>Note that if there is a table used in a RDF view, and this table is not granted to SPARQL_SELECT
+( SPARQL_UPDATE inherits it ), then select on all graph will return access violation error as the user
+account has no permissions to read it. Thus the account need to have privileges on all tables included
+in any rdf view in order to be able to select on *all* graphs.</para>
 </sect2>
 
 <sect2 id="rdfsupportedrequestmethodsofprotocol"><title>Request Methods</title>
@@ -6133,8 +6233,16 @@ for SPARQL user:
   <listitem>Go to the Virtuoso Administration Conductor i.e. http://host:port/conductor</listitem>
   <listitem>Login as dba user</listitem>
   <listitem>Go to System Admin->User Accounts->Roles</listitem>
+    <figure id="rl1" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/cn1.png"/>
+    </figure>
   <listitem>Click the link "Edit" for "SPARQL_UPDATE</listitem>
   <listitem>Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.</listitem>
+    <figure id="rl2" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/cn2.png"/>
+    </figure>
   <listitem>Click the button "Update".</listitem>
 </itemizedlist>
     <para>
