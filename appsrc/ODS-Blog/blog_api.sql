@@ -372,11 +372,11 @@ create procedure ODS.ODS_API."weblog.upstreaming.set" (
     in target_protocol_id varchar,
     in target_uname varchar,
     in target_password varchar,
-    in acl_allow any,
-    in acl_deny any,
-    in sync_interval int,
-    in keep_remote smallint,
-    in max_retries int,
+    in acl_allow any := '',
+    in acl_deny any := '',
+    in sync_interval int := 10,
+    in keep_remote smallint := 1,
+    in max_retries int := -1,
     in max_retransmits int := 5,
     in initialize_log int := 0
     ) __soap_http 'text/xml'
@@ -557,8 +557,7 @@ create procedure ODS.ODS_API."weblog.tagging.retag" (
   ruls := DB.DBA.user_tag_rules (user_id);
   for select B_TITLE, B_CONTENT, B_POST_ID from BLOG..SYS_BLOGS where B_BLOG_ID = blog_id do
     {
-      flag := BLOG.DBA.RE_TAG_POST (blog_id, B_POST_ID, user_id, inst_id,
-      B_CONTENT, keep_existing_tags, dummy, job, ruls, 1);
+      flag := BLOG.DBA.RE_TAG_POST (blog_id, B_POST_ID, user_id, inst_id, B_CONTENT, keep_existing_tags, dummy, job, ruls, 1);
       if (job is not null and length (flag))
 	{
 	  insert replacing BLOG..SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE) values (job, B_POST_ID, flag);
