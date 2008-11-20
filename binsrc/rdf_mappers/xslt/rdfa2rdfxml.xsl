@@ -220,7 +220,7 @@
 		    </rdf:Description>
 
 		    <xsl:apply-templates />
-	    <!-- reverse propertes -->
+	    <!-- reverse properties -->
 		    <xsl:if test="@rev">
 		<xsl:variable name="revs" select="vi:split-and-decode(@rev, 0, ' ')"/>
 		<xsl:for-each select="$revs/results/result">
