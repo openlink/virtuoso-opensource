@@ -9015,6 +9015,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
+  def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
   if (timeout is not null)
@@ -9234,14 +9235,21 @@ http('</html>\n');
 	{
 	  declare cls, words, ft, vec, cond varchar;
 	  cls := get_keyword ('class', params);
+	  maxrows := atoi (get_keyword ('maxrows', params, cast (maxrows as varchar)));
+	  if (def_max > 0 and def_max < maxrows)
+	    maxrows := def_max;
 	  if (cls is not null)
 	    cond := sprintf (' ?s a %s . ', cls);
          else
 	   cond := '';
 	  ft := trim (DB.DBA.FTI_MAKE_SEARCH_STRING_INNER (pvalue, words), '()');
 	  vec := DB.DBA.SYS_SQL_VECTOR_PRINT (words);
+	  if (get_keyword ('format', params, '') like '%/rdf+%' or http_request_header (lines, 'Accept', null, '') like '%/rdf+%')
+	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), ?o)` } ' ||
+	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
+	  else
 	  query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), ?o)) ' ||
-	   'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) }', vec, cond, ft);
+	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
 	}
       else if ('default-graph-uri' = pname and length (pvalue))
         {
@@ -9338,7 +9346,6 @@ http('</html>\n');
       end);
   }
 
-  def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   if (def_max > 0 and def_max < maxrows)
     maxrows := def_max;
 
