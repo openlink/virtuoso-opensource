@@ -329,6 +329,9 @@ extern int32 cli_utf8_execs;
 extern int32 cli_binary_timestamp;
 extern int32 cli_no_system_tables;
 
+int32 c_cli_encryption_on_password;
+extern long cli_encryption_on_password;
+
 extern caddr_t client_defaults;
 void srv_client_defaults_init ();
 extern void srv_plugins_init (void);
@@ -1196,15 +1199,15 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "SQL_BINARY_TIMESTAMP", &cli_binary_timestamp) == -1)
     cli_binary_timestamp = 1;
 
-  if (cfg_getlong (pconfig, section, "SQL_ENCRYPTION_ON_PASSWORD", &cli_encryption_on_password) == -1)
-    cli_encryption_on_password = -1;
+  if (cfg_getlong (pconfig, section, "SQL_ENCRYPTION_ON_PASSWORD", &c_cli_encryption_on_password) == -1)
+    c_cli_encryption_on_password = -1;
   else
     {
-      switch (cli_encryption_on_password)
+      switch (c_cli_encryption_on_password)
   {
-    case 1 : cli_encryption_on_password = 2; break;
-    case 0 : cli_encryption_on_password = 1; break;
-    default: cli_encryption_on_password = 0;
+	  case 1 : c_cli_encryption_on_password = 2; break;
+	  case 0 : c_cli_encryption_on_password = 1; break;
+	  default: c_cli_encryption_on_password = 0;
   }
     }
 
@@ -1624,6 +1627,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   iri_cache_size = c_iri_cache_size;
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
+  cli_encryption_on_password = c_cli_encryption_on_password;
 }
 
 
