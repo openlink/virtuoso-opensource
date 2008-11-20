@@ -142,7 +142,7 @@
 	   http ('</ul></td></tr>');
 	}
       exec_close (h1);
-      goto skip_rev;
+      --goto skip_rev;
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S), 
 		null, null, vector (), 0, null, null, h1); 
       inx := 0;	
@@ -150,12 +150,12 @@
 	{
            declare PRED any;
 	   pred := data[0];  
-	   if (inx = 0)
-	     {
-	       http ('<tr><th width="25%">Reverse links</th><th>&nbsp;</th></tr>');
-	     }
+	   --if (inx = 0)
+	   --  {
+	   --    http ('<tr><th width="25%">Reverse links</th><th>&nbsp;</th></tr>');
+	   --  }
 	   inx := inx + 1;
-	   rdfdesc_http_print_l (PRED, odd_position);
+	   rdfdesc_http_print_l (PRED, odd_position, 1);
 	   exec (sprintf ('sparql select ?s where { graph <%S> { ?s <%S> <%S> } } limit 300', _G, PRED, _S),
 		null, null, vector (), 0, null, null, h2);
 	   while (0 = exec_next (h2, null, null, data))	

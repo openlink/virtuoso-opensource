@@ -92,7 +92,7 @@ create procedure rdfdesc_http_url (in url varchar)
   return url;
 };
 
-create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int)
+create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int, in r int := 0)
 {
    declare short_p, p_prefix, int_redirect, url any;
 
@@ -101,8 +101,9 @@ create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int)
    url := rdfdesc_http_url (p_text);
 
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
-
+   if (r) http ('is ');
    http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, p_prefix));
+   if (r) http (' of');
 
    http ('</td><td><ul>');
 }
