@@ -103,6 +103,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_DIGG', null, 'Digg');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicious');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://isbndb.com/.*)|'||
             '(https://isbndb.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
@@ -192,7 +196,7 @@ create procedure RM_MAPPERS_UPGRADE ()
 	{
 	  if (skip_up = 0)
 	    log_message ('The DB.DBA.SYS_RDF_MAPPERS cannot be upgraded');
-	  log_message (sprintf ('The %s cartridge is defined multiple times, remove dublicate', RM_HOOK));
+	  log_message (sprintf ('The %s cartridge is defined multiple times, remove duplicate', RM_HOOK));
 	  skip_up := skip_up + 1;
 	}
       if (skip_up = 0)
@@ -1234,7 +1238,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
 {
   declare qr, path, hdr any;
   declare tree, xt, xd, types any;
-  declare k, cnt, url, sa, lang, new_url, cnt, mime varchar;
+  declare k, url, sa, lang, new_url, cnt, mime varchar;
   declare have_rdf, ord int;
 
   hdr := null;
@@ -1983,6 +1987,42 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
     }
 ret:
   return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, section_name, search, xt, url, tmp any;
+  declare exit handler for sqlstate '*'
+  {
+	dbg_printf ('%s', __SQL_MESSAGE);
+    dbg_printf ('%s', xd);
+    return 0;
+  };
+  if (new_origin_uri like 'http://delicious.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://delicious.com/%s', 0);
+		section_name := trim(tmp[0]);
+		if (section_name is null)
+			return 0;
+		url := sprintf('http://feeds.delicious.com/v2/rss/%s', section_name);
+	}
+	else if (new_origin_uri like 'http://feeds.delicious.com/%')
+	{
+		url := new_origin_uri;
+	}
+    else
+	{
+		return 0;
+	}
+    tmp := http_get (url);
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'isDiscussion', '2'));
+    xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+    --DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri), 2);
+    return 1;
 }
 ;
 
@@ -4050,9 +4090,62 @@ create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar
 }
 ;
 
-DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
+DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/curies.get');
+DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/curies.get', ppath=>'/SOAP/Http/RM_GET_CURIES', soap_user=>'PROXY');
+
+create procedure
+DB.DBA.RM_GET_CURIES () __SOAP_HTTP 'text/json'
+{
+  declare curie, accept varchar;
+  declare res, ses any;
+  declare params any;
+
+  params := http_param ();
+  res := dict_new (3);
+  ses := string_output ();
+  for (declare i, l int, l := length (params); i < l; i := i + 2)
+    {
+      if (params[i] = 'uri')
+	{
+	  curie := rdfdesc_uri_curie (params [i+1]);
+	  dict_put (res, params [i+1], curie);
+	}
+    }
+  res := dict_to_vector (res, 1);
+  if (length (res) = 0)
+    signal ('22023', 'No uri params specified.');
+  accept := http_request_header_full (http_request_header(), 'Accept','*/*');
+  accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  if (accept is null) accept := '';
+  if (accept = 'text/xml')
+    {
+      http ('<?xml version="1.0" ?>\n<results>\n', ses);
+      for (declare i, l int, l := length (res); i < l; i := i + 2)
+	{
+	  http (sprintf ('  <result>\n    <uri>%V</uri>\n    <curie>%s</curie>\n  </result>\n', res[i], res[i+1]), ses);
+	}
+      http ('</results>\n', ses);
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+      ses := string_output_string (ses);
+    }
+  else -- default format is json
+    {
+      http ('{"results":[ ', ses);
+      for (declare i, l int, l := length (res); i < l; i := i + 2)
+	{
+	  http (sprintf ('\n  {"uri":"%s","curie":"%s"},', res[i], res[i+1]), ses);
+	}
+      ses := rtrim (string_output_string (ses), ',');
+      ses := ses || '\n ]}\n';
+    }
+  return ses;
+}
 ;
 
+grant execute on DB.DBA.RM_GET_CURIES to PROXY;
+
+DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
+;
 drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
 ;
 

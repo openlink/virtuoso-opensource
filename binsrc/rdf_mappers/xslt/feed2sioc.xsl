@@ -75,6 +75,9 @@
 	    <xsl:when test="$isDiscussion = '1'">
 		<rdf:type rdf:resource="&sioct;MessageBoard"/>
 	    </xsl:when>
+	    <xsl:when test="$isDiscussion = '2'">
+		<rdf:type rdf:resource="&sioct;BookmarkFolder"/>
+	    </xsl:when>
 	    <xsl:otherwise>
 		<rdf:type rdf:resource="&atom;Feed"/>
 	    </xsl:otherwise>
@@ -107,6 +110,9 @@
 	<xsl:choose>
 	    <xsl:when test="$isDiscussion = '1'">
 		<rdf:type rdf:resource="&sioct;BoardPost"/>
+	    </xsl:when>
+	    <xsl:when test="$isDiscussion = '2'">
+		<rdf:type rdf:resource="&bookmark;Bookmark"/>
 	    </xsl:when>
 	    <xsl:when test="wfw:commentRss">
 		<rdf:type rdf:resource="&sioc;Thread"/>
