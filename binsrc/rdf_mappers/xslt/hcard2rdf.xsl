@@ -440,7 +440,7 @@
 
   <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-					       'abcderghijklmnopqrstuvwxyz')"/>
+					       'abcdefghijklmnopqrstuvwxyz')"/>
 
   <xsl:variable name="rawtel">
     <xsl:call-template name="cleanuptel">
@@ -481,7 +481,7 @@
 
   <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-					       'abcderghijklmnopqrstuvwxyz')"/>
+					       'abcdefghijklmnopqrstuvwxyz')"/>
 
   <xsl:variable name="uri">
     <xsl:choose>
@@ -516,7 +516,7 @@
   <xsl:variable name="type" select=".//h:*[@class='type']"/>
   <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-					       'abcderghijklmnopqrstuvwxyz')"/>
+					       'abcdefghijklmnopqrstuvwxyz')"/>
 
   <xsl:variable name="fields">
     <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Address"/>

@@ -463,7 +463,7 @@
         <xsl:param name="value" select="'+1-800-555-1212'" />
         <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                           'abcderghijklmnopqrstuvwxyz')" />
+                           'abcdefghijklmnopqrstuvwxyz')" />
         <xsl:variable name="rawtel">
             <xsl:call-template name="cleanuptel">
                 <xsl:with-param name="value" select="$value" />
@@ -497,7 +497,7 @@
         <xsl:variable name="lv" select="@href" />
         <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                           'abcderghijklmnopqrstuvwxyz')" />
+                           'abcdefghijklmnopqrstuvwxyz')" />
         <xsl:variable name="uri">
             <xsl:choose>
                 <xsl:when test="$value != ''">
@@ -527,7 +527,7 @@
         <xsl:variable name="type" select=".//*[@class='type']" />
         <xsl:variable name="token" select="translate($type,
                                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                           'abcderghijklmnopqrstuvwxyz')" />
+                           'abcdefghijklmnopqrstuvwxyz')" />
         <xsl:variable name="fields">
             <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Address" />
             <xsl:apply-templates select="." mode="extract-field">
