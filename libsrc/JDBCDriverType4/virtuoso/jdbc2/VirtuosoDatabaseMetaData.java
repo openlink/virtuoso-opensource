@@ -24,6 +24,9 @@
 package virtuoso.jdbc2;
 
 import java.sql.*;
+#if JDK_VER >= 16
+import java.sql.RowIdLifetime;
+#endif
 
 /**
  * The DatabaseMetaData class is an implementation of the DatabaseMetaData interface
@@ -1770,6 +1773,13 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "charset_recode (name_part(\\KEY_TABLE,2), 'UTF-8', '_WIDE_') AS \\TABLE_NAME NVARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
+	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
+	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
+	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
+	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
+#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1787,6 +1797,13 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "charset_recode (name_part(\\KEY_TABLE,2), 'UTF-8', '_WIDE_') AS \\TABLE_NAME NVARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
+	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
+	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
+	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
+	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
+#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1807,6 +1824,13 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "name_part(\\KEY_TABLE,2) AS \\TABLE_NAME VARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
+	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
+	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
+	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
+	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
+#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1824,6 +1848,13 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "name_part(\\KEY_TABLE,2) AS \\TABLE_NAME VARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
+	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
+	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
+	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
+	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
+#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1921,10 +1952,16 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
+#if JDK_VER >= 14
+	", name_part(KEY_TABLE, 0) AS \\TABLE_CAT VARCHAR(128)" +
+#endif
 	"from DB.DBA.SYS_KEYS";
    private static final String getWideSchemasText =
 	"select distinct" +
 	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
+#if JDK_VER >= 14
+	", charset_recode (name_part(KEY_TABLE, 0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128)" +
+#endif
 	"from DB.DBA.SYS_KEYS";
    /**
     * Gets the schema names available in this database.  The results
@@ -2023,6 +2060,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
+	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
+#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2058,6 +2101,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
+	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
+#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2094,6 +2143,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
+	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
+#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2129,6 +2184,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
+#if JDK_VER >= 14
+	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
+	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
+	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
+#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -3872,87 +3933,874 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 #if JDK_VER >= 14
    /* JDK 1.4 functions */
 
+    // ------------------- JDBC 3.0 -------------------------
+
+    /**
+     * Retrieves whether this database supports savepoints.
+     *
+     * @return <code>true</code> if savepoints are supported;
+     *         <code>false</code> otherwise
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public boolean supportsSavepoints() throws SQLException
      {
        return false;
      }
 
+    /**
+     * Retrieves whether this database supports named parameters to callable
+     * statements.
+     *
+     * @return <code>true</code> if named parameters are supported;
+     *         <code>false</code> otherwise
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public boolean supportsNamedParameters() throws SQLException
      {
        return false;
      }
 
+    /**
+     * Retrieves whether it is possible to have multiple <code>ResultSet</code> objects
+     * returned from a <code>CallableStatement</code> object
+     * simultaneously.
+     *
+     * @return <code>true</code> if a <code>CallableStatement</code> object
+     *         can return multiple <code>ResultSet</code> objects
+     *         simultaneously; <code>false</code> otherwise
+     * @exception SQLException if a datanase access error occurs
+     * @since 1.4
+     */
    public boolean supportsMultipleOpenResults() throws SQLException
      {
        return false;
      }
 
+    /**
+     * Retrieves whether auto-generated keys can be retrieved after
+     * a statement has been executed.
+     *
+     * @return <code>true</code> if auto-generated keys can be retrieved
+     *         after a statement has executed; <code>false</code> otherwise
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public boolean supportsGetGeneratedKeys() throws SQLException
      {
        return false;
      }
 
+    /**
+     * Retrieves a description of the user-defined type (UDT) hierarchies defined in a
+     * particular schema in this database. Only the immediate super type/
+     * sub type relationship is modeled.
+     * <P>
+     * Only supertype information for UDTs matching the catalog,
+     * schema, and type name is returned. The type name parameter
+     * may be a fully-qualified name. When the UDT name supplied is a
+     * fully-qualified name, the catalog and schemaPattern parameters are
+     * ignored.
+     * <P>
+     * If a UDT does not have a direct super type, it is not listed here.
+     * A row of the <code>ResultSet</code> object returned by this method
+     * describes the designated UDT and a direct supertype. A row has the following
+     * columns:
+     *  <OL>
+     *  <LI><B>TYPE_CAT</B> String => the UDT's catalog (may be <code>null</code>)
+     *  <LI><B>TYPE_SCHEM</B> String => UDT's schema (may be <code>null</code>)
+     *  <LI><B>TYPE_NAME</B> String => type name of the UDT
+     *  <LI><B>SUPERTYPE_CAT</B> String => the direct super type's catalog
+     *                           (may be <code>null</code>)
+     *  <LI><B>SUPERTYPE_SCHEM</B> String => the direct super type's schema
+     *                             (may be <code>null</code>)
+     *  <LI><B>SUPERTYPE_NAME</B> String => the direct super type's name
+     *  </OL>
+     *
+     * <P><B>Note:</B> If the driver does not support type hierarchies, an
+     * empty result set is returned.
+     *
+     * @param catalog a catalog name; "" retrieves those without a catalog;
+     *        <code>null</code> means drop catalog name from the selection criteria
+     * @param schemaPattern a schema name pattern; "" retrieves those
+     *        without a schema
+     * @param typeNamePattern a UDT name pattern; may be a fully-qualified
+     *        name
+     * @return a <code>ResultSet</code> object in which a row gives information
+     *         about the designated UDT
+     * @throws SQLException if a database access error occurs
+     * @since 1.4
+     */
    public ResultSet getSuperTypes(String catalog, String schemaPattern,
        String typeNamePattern) throws SQLException
      {
-       return new VirtuosoResultSet (connection);
+     String [] col_names = {
+      "TYPE_CAT",
+      "TYPE_SCHEM",
+      "TYPE_NAME",
+      "SUPERTYPE_CAT",  
+      "SUPERTYPE_SCHEM",
+      "SUPERTYPE_NAME" 
+      };
+     int [] col_dtps = {
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
      }
 
+    /**
+     * Retrieves a description of the table hierarchies defined in a particular
+     * schema in this database.
+     *
+     * <P>Only supertable information for tables matching the catalog, schema
+     * and table name are returned. The table name parameter may be a fully-
+     * qualified name, in which case, the catalog and schemaPattern parameters
+     * are ignored. If a table does not have a super table, it is not listed here.
+     * Supertables have to be defined in the same catalog and schema as the
+     * sub tables. Therefore, the type description does not need to include
+     * this information for the supertable.
+     *
+     * <P>Each type description has the following columns:
+     *  <OL>
+     *  <LI><B>TABLE_CAT</B> String => the type's catalog (may be <code>null</code>)
+     *  <LI><B>TABLE_SCHEM</B> String => type's schema (may be <code>null</code>)
+     *  <LI><B>TABLE_NAME</B> String => type name
+     *  <LI><B>SUPERTABLE_NAME</B> String => the direct super type's name
+     *  </OL>
+     *
+     * <P><B>Note:</B> If the driver does not support type hierarchies, an
+     * empty result set is returned.
+     *
+     * @param catalog a catalog name; "" retrieves those without a catalog;
+     *        <code>null</code> means drop catalog name from the selection criteria
+     * @param schemaPattern a schema name pattern; "" retrieves those
+     *        without a schema
+     * @param tableNamePattern a table name pattern; may be a fully-qualified
+     *        name
+     * @return a <code>ResultSet</code> object in which each row is a type description
+     * @throws SQLException if a database access error occurs
+     * @since 1.4
+     */
    public ResultSet getSuperTables(String catalog, String schemaPattern,
        String tableNamePattern) throws SQLException
      {
-       return new VirtuosoResultSet (connection);
+     String [] col_names = {
+      "TYPE_CAT",
+      "TYPE_SCHEM",
+      "TYPE_NAME",
+      "SUPERTABLE_NAME"
+      };
+     int [] col_dtps = {
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
      }
 
+    /**
+     * Retrieves a description of the given attribute of the given type
+     * for a user-defined type (UDT) that is available in the given schema
+     * and catalog.
+     * <P>
+     * Descriptions are returned only for attributes of UDTs matching the
+     * catalog, schema, type, and attribute name criteria. They are ordered by
+     * TYPE_SCHEM, TYPE_NAME and ORDINAL_POSITION. This description
+     * does not contain inherited attributes.
+     * <P>
+     * The <code>ResultSet</code> object that is returned has the following
+     * columns:
+     * <OL>
+     *  <LI><B>TYPE_CAT</B> String => type catalog (may be <code>null</code>)
+     *	<LI><B>TYPE_SCHEM</B> String => type schema (may be <code>null</code>)
+     *	<LI><B>TYPE_NAME</B> String => type name
+     *	<LI><B>ATTR_NAME</B> String => attribute name
+     *	<LI><B>DATA_TYPE</B> short => attribute type SQL type from java.sql.Types
+     *	<LI><B>ATTR_TYPE_NAME</B> String => Data source dependent type name.
+     *  For a UDT, the type name is fully qualified. For a REF, the type name is
+     *  fully qualified and represents the target type of the reference type.
+     *	<LI><B>ATTR_SIZE</B> int => column size.  For char or date
+     *	    types this is the maximum number of characters; for numeric or
+     *	    decimal types this is precision.
+     *	<LI><B>DECIMAL_DIGITS</B> int => the number of fractional digits
+     *	<LI><B>NUM_PREC_RADIX</B> int => Radix (typically either 10 or 2)
+     *	<LI><B>NULLABLE</B> int => whether NULL is allowed
+     *      <UL>
+     *      <LI> attributeNoNulls - might not allow NULL values
+     *      <LI> attributeNullable - definitely allows NULL values
+     *      <LI> attributeNullableUnknown - nullability unknown
+     *      </UL>
+     *	<LI><B>REMARKS</B> String => comment describing column (may be <code>null</code>)
+     * 	<LI><B>ATTR_DEF</B> String => default value (may be <code>null</code>)
+     *	<LI><B>SQL_DATA_TYPE</B> int => unused
+     *	<LI><B>SQL_DATETIME_SUB</B> int => unused
+     *	<LI><B>CHAR_OCTET_LENGTH</B> int => for char types the
+     *       maximum number of bytes in the column
+     *	<LI><B>ORDINAL_POSITION</B> int	=> index of column in table
+     *      (starting at 1)
+     *	<LI><B>IS_NULLABLE</B> String => "NO" means column definitely
+     *      does not allow NULL values; "YES" means the column might
+     *      allow NULL values.  An empty string means unknown.
+     *  <LI><B>SCOPE_CATALOG</B> String => catalog of table that is the
+     *      scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
+     *  <LI><B>SCOPE_SCHEMA</B> String => schema of table that is the
+     *      scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
+     *  <LI><B>SCOPE_TABLE</B> String => table name that is the scope of a
+     *      reference attribute (<code>null</code> if the DATA_TYPE isn't REF)
+     * <LI><B>SOURCE_DATA_TYPE</B> short => source type of a distinct type or user-generated
+     *      Ref type,SQL type from java.sql.Types (<code>null</code> if DATA_TYPE
+     *      isn't DISTINCT or user-generated REF)
+     *  </OL>
+     * @param catalog a catalog name; must match the catalog name as it
+     *        is stored in the database; "" retrieves those without a catalog;
+     *        <code>null</code> means that the catalog name should not be used to narrow
+     *        the search
+     * @param schemaPattern a schema name pattern; must match the schema name
+     *        as it is stored in the database; "" retrieves those without a schema;
+     *        <code>null</code> means that the schema name should not be used to narrow
+     *        the search
+     * @param typeNamePattern a type name pattern; must match the
+     *        type name as it is stored in the database
+     * @param attributeNamePattern an attribute name pattern; must match the attribute
+     *        name as it is declared in the database
+     * @return a <code>ResultSet</code> object in which each row is an
+     *         attribute description
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public ResultSet getAttributes(String catalog, String schemaPattern,
        String typeNamePattern, String attributeNamePattern) throws SQLException
      {
-       return new VirtuosoResultSet (connection);
+     String [] col_names = {
+      "TYPE_CAT",
+      "TYPE_SCHEM",
+      "TYPE_NAME",
+      "ATTR_NAME",
+      "DATA_TYPE",
+      "ATTR_TYPE_NAME",
+      "ATTR_SIZE",
+      "DECIMAL_DIGITS",
+      "NUM_PREC_RADIX",
+      "NULLABLE",
+      "REMARKS",
+      "ATTR_DEF",
+      "SQL_DATA_TYPE",
+      "SQL_DATETIME_SUB",
+      "CHAR_OCTET_LENGTH",
+      "ORDINAL_POSITION",
+      "IS_NULLABLE",
+      "SCOPE_CATALOG",
+      "SCOPE_SCHEMA",
+      "SCOPE_TABLE",
+      "SOURCE_DATA_TYPE"
+      };
+     int [] col_dtps = {
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_SHORT_INT,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_LONG_INT,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_STRING,
+      VirtuosoTypes.DV_SHORT_INT
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
      }
 
+    /**
+     * Retrieves whether this database supports the given result set holdability.
+     *
+     * @param holdability one of the following constants:
+     *          <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
+     *          <code>ResultSet.CLOSE_CURSORS_AT_COMMIT<code>
+     * @return <code>true</code> if so; <code>false</code> otherwise
+     * @exception SQLException if a database access error occurs
+     * @see Connection
+     * @since 1.4
+     */
    public boolean supportsResultSetHoldability(int holdability) throws SQLException
      {
        return (holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT);
      }
 
+    /**
+     * Retrieves the default holdability of this <code>ResultSet</code>
+     * object.
+     *
+     * @return the default holdability; either
+     *         <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
+     *         <code>ResultSet.CLOSE_CURSORS_AT_COMMIT</code>
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getResultSetHoldability() throws SQLException
      {
        return ResultSet.CLOSE_CURSORS_AT_COMMIT;
      }
 
+    /**
+     * Retrieves the major version number of the underlying database.
+     *
+     * @return the underlying database's major version
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getDatabaseMajorVersion() throws SQLException
      {
        return 3;
      }
 
+    /**
+     * Retrieves the minor version number of the underlying database.
+     *
+     * @return underlying database's minor version
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getDatabaseMinorVersion() throws SQLException
      {
        return 0;
      }
 
+    /**
+     * Retrieves the major JDBC version number for this
+     * driver.
+     *
+     * @return JDBC version major number
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getJDBCMajorVersion() throws SQLException
      {
        return 3;
      }
 
+    /**
+     * Retrieves the minor JDBC version number for this
+     * driver.
+     *
+     * @return JDBC version minor number
+     * @exception SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getJDBCMinorVersion() throws SQLException
      {
        return 0;
      }
 
+    /**
+     * Indicates whether the SQLSTATEs returned by <code>SQLException.getSQLState</code>
+     * is X/Open (now known as Open Group) SQL CLI or SQL99.
+     * @return the type of SQLSTATEs, one of:
+     *        sqlStateXOpen or
+     *        sqlStateSQL99
+     * @throws SQLException if a database access error occurs
+     * @since 1.4
+     */
    public int getSQLStateType() throws SQLException
      {
        return sqlStateXOpen;
      }
 
+    /**
+     * Indicates whether updates made to a LOB are made on a copy or directly
+     * to the LOB.
+     * @return <code>true</code> if updates are made to a copy of the LOB;
+     *         <code>false</code> if updates are made directly to the LOB
+     * @throws SQLException if a database access error occurs
+     * @since 1.4
+     */
    public boolean locatorsUpdateCopy() throws SQLException
      {
        return false;
      }
 
+    /**
+     * Retrieves weather this database supports statement pooling.
+     *
+     * @return <code>true</code> is so;
+	       <code>false</code> otherwise
+     * @throws SQLExcpetion if a database access error occurs
+     * @since 1.4
+     */
    public boolean supportsStatementPooling() throws SQLException
      {
-       return false;
+       return true;
      }
+
+
+#if JDK_VER >= 16
+    //------------------------- JDBC 4.0 -----------------------------------
+
+    /**
+     * Indicates whether or not this data source supports the SQL <code>ROWID</code> type,
+     * and if so  the lifetime for which a <code>RowId</code> object remains valid. 
+     * <p>
+     * The returned int values have the following relationship: 
+     * <pre>
+     *     ROWID_UNSUPPORTED < ROWID_VALID_OTHER < ROWID_VALID_TRANSACTION
+     *         < ROWID_VALID_SESSION < ROWID_VALID_FOREVER
+     * </pre>
+     * so conditional logic such as 
+     * <pre>
+     *     if (metadata.getRowIdLifetime() > DatabaseMetaData.ROWID_VALID_TRANSACTION)
+     * </pre>
+     * can be used. Valid Forever means valid across all Sessions, and valid for 
+     * a Session means valid across all its contained Transactions. 
+     *
+     * @return the status indicating the lifetime of a <code>RowId</code>
+     * @throws SQLException if a database access error occurs
+     * @since 1.6
+     */
+  public RowIdLifetime getRowIdLifetime() throws SQLException
+  {
+    return RowIdLifetime.ROWID_UNSUPPORTED;
+  }
+
+
+   private static final String getWideSchemasCaseMode0 =
+       "SELECT distinct " +
+         "charset_recode (name_part(\\KEY_TABLE,1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)," +
+	 "charset_recode (name_part(\\KEY_TABLE,0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128) " +
+       "FROM DB.DBA.SYS_KEYS " +
+       "WHERE " +
+	 "name_part(\\KEY_TABLE,0) LIKE ? AND " +
+	 "name_part(\\KEY_TABLE,1) LIKE ? " +
+       "ORDER BY 1, 2";
+
+   private static final String getWideSchemasCaseMode2 =
+       "SELECT " +
+         "charset_recode (name_part(\\KEY_TABLE,1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)," +
+	 "charset_recode (name_part(\\KEY_TABLE,0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128) " +
+       "FROM DB.DBA.SYS_KEYS " +
+       "WHERE " +
+	 "charset_recode (UPPER(charset_recode (name_part(\\KEY_TABLE,0), 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8')" +
+	 " LIKE charset_recode (UPPER(charset_recode (?, 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8') AND " +
+	 "charset_recode (UPPER(charset_recode (name_part(\\KEY_TABLE,1), 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8')" +
+	 " LIKE charset_recode (UPPER(charset_recode (?, 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8') " +
+       "ORDER BY 1, 2";
+
+   private static final String getSchemasCaseMode0 =
+       "SELECT " +
+         "name_part(\\KEY_TABLE,1) AS \\TABLE_SCHEM VARCHAR(128)," +
+	 "name_part(\\KEY_TABLE,0) AS \\TABLE_CAT VARCHAR(128) " +
+       "FROM DB.DBA.SYS_KEYS " +
+       "WHERE " +
+	 "name_part(\\KEY_TABLE,0) LIKE ? AND " +
+	 "name_part(\\KEY_TABLE,1) LIKE ? " +
+       "ORDER BY 1, 2";
+
+   private static final String getSchemasCaseMode2 =
+       "SELECT " +
+         "name_part(\\KEY_TABLE,1) AS \\TABLE_SCHEM VARCHAR(128)," +
+	 "name_part(\\KEY_TABLE,0) AS \\TABLE_CAT VARCHAR(128) " +
+       "FROM DB.DBA.SYS_KEYS " +
+       "WHERE " +
+	 "UPPER(name_part(\\KEY_TABLE,0)) LIKE UPPER(?) AND " +
+	 "UPPER(name_part(\\KEY_TABLE,1)) LIKE UPPER(?) " +
+       "ORDER BY 1, 2";
+   
+    
+    /**
+     * Retrieves the schema names available in this database.  The results
+     * are ordered by <code>TABLE_CATALOG</code> and 
+     * <code>TABLE_SCHEM</code>.
+     *
+     * <P>The schema columns are:
+     *  <OL>
+     *	<LI><B>TABLE_SCHEM</B> String => schema name
+     *  <LI><B>TABLE_CATALOG</B> String => catalog name (may be <code>null</code>)
+     *  </OL>
+     *
+     *
+     * @param catalog a catalog name; must match the catalog name as it is stored
+     * in the database;"" retrieves those without a catalog; null means catalog
+     * name should not be used to narrow down the search.
+     * @param schemaPattern a schema name; must match the schema name as it is
+     * stored in the database; null means
+     * schema name should not be used to narrow down the search.
+     * @return a <code>ResultSet</code> object in which each row is a
+     *         schema description
+     * @exception SQLException if a database access error occurs
+     * @see #getSearchStringEscape 
+     * @since 1.6
+     */
+  public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException
+  {
+      if (catalog == null)
+	catalog = "%";
+      if (schemaPattern == null)
+	schemaPattern = "%";
+
+      VirtuosoPreparedStatement ps;
+      if (connection.utf8_execs)
+	ps = (VirtuosoPreparedStatement) connection.prepareStatement(
+	    (connection.getCase() == 2) ?
+	    getWideSchemasCaseMode2 :
+	    getWideSchemasCaseMode0);
+      else
+	ps = (VirtuosoPreparedStatement) connection.prepareStatement(
+	    (connection.getCase() == 2) ?
+	    getSchemasCaseMode2 :
+	    getSchemasCaseMode0);
+      ps.setString(1,connection.escapeSQLString(catalog));
+      ps.setString(2,connection.escapeSQLString(schemaPattern));
+      ResultSet rs = ps.executeQuery();
+      return rs;
+  }
+    
+    /**
+     * Retrieves whether this database supports invoking user-defined or vendor functions 
+     * using the stored procedure escape syntax.
+     *
+     * @return <code>true</code> if so; <code>false</code> otherwise 
+     * @exception SQLException if a database access error occurs
+     * @since 1.6
+     */
+  public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException
+  {
+    return true;
+  }
+     
+    /**
+     * Retrieves whether a <code>SQLException</code> while autoCommit is <code>true</code> inidcates 
+     * that all open ResultSets are closed, even ones that are holdable.  When a <code>SQLException</code> occurs while
+     * autocommit is <code>true</code>, it is vendor specific whether the JDBC driver responds with a commit operation, a 
+     * rollback operation, or by doing neither a commit nor a rollback.  A potential result of this difference
+     * is in whether or not holdable ResultSets are closed.
+     *
+     * @return <code>true</code> if so; <code>false</code> otherwise 
+     * @exception SQLException if a database access error occurs
+     * @since 1.6
+     */
+  public boolean autoCommitFailureClosesAllResultSets() throws SQLException
+  {
+    return false;
+  }
+	/**
+	 * Retrieves a list of the client info properties 
+	 * that the driver supports.  The result set contains the following columns
+	 * <p>
+         * <ol>
+	 * <li><b>NAME</b> String=> The name of the client info property<br>
+	 * <li><b>MAX_LEN</b> int=> The maximum length of the value for the property<br>
+	 * <li><b>DEFAULT_VALUE</b> String=> The default value of the property<br>
+	 * <li><b>DESCRIPTION</b> String=> A description of the property.  This will typically 
+	 * 						contain information as to where this property is 
+	 * 						stored in the database.
+	 * </ol>
+         * <p>
+	 * The <code>ResultSet</code> is sorted by the NAME column
+	 * <p>
+	 * @return	A <code>ResultSet</code> object; each row is a supported client info
+         * property
+	 * <p>
+	 *  @exception SQLException if a database access error occurs
+	 * <p>
+	 * @since 1.6
+	 */
+  public ResultSet getClientInfoProperties() throws SQLException
+  {
+     String [] col_names = {
+      "NAME",
+      "MAX_LEN",
+      "DEFAULT_VALUE",
+      "DESCRIPTION"
+      };
+     int [] col_dtps = {
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_LONG_INT,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
+  }
+    
+    /**
+     * Retrieves a description of the  system and user functions available 
+     * in the given catalog.
+     * <P>
+     * Only system and user function descriptions matching the schema and
+     * function name criteria are returned.  They are ordered by
+     * <code>FUNCTION_CAT</code>, <code>FUNCTION_SCHEM</code>,
+     * <code>FUNCTION_NAME</code> and 
+     * <code>SPECIFIC_ NAME</code>.
+     *
+     * <P>Each function description has the the following columns:
+     *  <OL>
+     *	<LI><B>FUNCTION_CAT</B> String => function catalog (may be <code>null</code>)
+     *	<LI><B>FUNCTION_SCHEM</B> String => function schema (may be <code>null</code>)
+     *	<LI><B>FUNCTION_NAME</B> String => function name.  This is the name 
+     * used to invoke the function
+     *	<LI><B>REMARKS</B> String => explanatory comment on the function
+     * <LI><B>FUNCTION_TYPE</B> short => kind of function:
+     *      <UL>
+     *      <LI>functionResultUnknown - Cannot determine if a return value
+     *       or table will be returned
+     *      <LI> functionNoTable- Does not return a table
+     *      <LI> functionReturnsTable - Returns a table
+     *      </UL>
+     *	<LI><B>SPECIFIC_NAME</B> String  => the name which uniquely identifies 
+     *  this function within its schema.  This is a user specified, or DBMS
+     * generated, name that may be different then the <code>FUNCTION_NAME</code> 
+     * for example with overload functions
+     *  </OL>
+     * <p>
+     * A user may not have permission to execute any of the functions that are
+     * returned by <code>getFunctions</code>
+     *
+     * @param catalog a catalog name; must match the catalog name as it
+     *        is stored in the database; "" retrieves those without a catalog;
+     *        <code>null</code> means that the catalog name should not be used to narrow
+     *        the search
+     * @param schemaPattern a schema name pattern; must match the schema name
+     *        as it is stored in the database; "" retrieves those without a schema;
+     *        <code>null</code> means that the schema name should not be used to narrow
+     *        the search
+     * @param functionNamePattern a function name pattern; must match the
+     *        function name as it is stored in the database 
+     * @return <code>ResultSet</code> - each row is a function description 
+     * @exception SQLException if a database access error occurs
+     * @see #getSearchStringEscape 
+     * @since 1.6
+     */
+  public ResultSet getFunctions(String catalog, String schemaPattern,
+			    String functionNamePattern) throws SQLException
+  {
+     String [] col_names = {
+      "FUNCTION_CAT",
+      "FUNCTION_SCHEM",
+      "FUNCTION_NAME",
+      "REMARKS",  
+      "FUNCTION_TYPE",
+      "SPECIFIC_NAME" 
+      };
+     int [] col_dtps = {
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
+  }
+
+    /**
+     * Retrieves a description of the given catalog's system or user 
+     * function parameters and return type.
+     *
+     * <P>Only descriptions matching the schema,  function and
+     * parameter name criteria are returned. They are ordered by
+     * <code>FUNCTION_CAT</code>, <code>FUNCTION_SCHEM</code>,
+     * <code>FUNCTION_NAME</code> and 
+     * <code>SPECIFIC_ NAME</code>. Within this, the return value,
+     * if any, is first. Next are the parameter descriptions in call
+     * order. The column descriptions follow in column number order.
+     *
+     * <P>Each row in the <code>ResultSet</code> 
+     * is a parameter description, column description or
+     * return type description with the following fields:
+     *  <OL>
+     *  <LI><B>FUNCTION_CAT</B> String => function catalog (may be <code>null</code>)
+     *	<LI><B>FUNCTION_SCHEM</B> String => function schema (may be <code>null</code>)
+     *	<LI><B>FUNCTION_NAME</B> String => function name.  This is the name 
+     * used to invoke the function
+     *	<LI><B>COLUMN_NAME</B> String => column/parameter name 
+     *	<LI><B>COLUMN_TYPE</B> Short => kind of column/parameter:
+     *      <UL>
+     *      <LI> functionColumnUnknown - nobody knows
+     *      <LI> functionColumnIn - IN parameter
+     *      <LI> functionColumnInOut - INOUT parameter
+     *      <LI> functionColumnOut - OUT parameter
+     *      <LI> functionColumnReturn - function return value
+     *      <LI> functionColumnResult - Indicates that the parameter or column
+     *  is a column in the <code>ResultSet</code>
+     *      </UL>
+     *  <LI><B>DATA_TYPE</B> int => SQL type from java.sql.Types
+     *	<LI><B>TYPE_NAME</B> String => SQL type name, for a UDT type the
+     *  type name is fully qualified
+     *	<LI><B>PRECISION</B> int => precision
+     *	<LI><B>LENGTH</B> int => length in bytes of data
+     *	<LI><B>SCALE</B> short => scale -  null is returned for data types where  
+     * SCALE is not applicable.
+     *	<LI><B>RADIX</B> short => radix
+     *	<LI><B>NULLABLE</B> short => can it contain NULL.
+     *      <UL>
+     *      <LI> functionNoNulls - does not allow NULL values
+     *      <LI> functionNullable - allows NULL values
+     *      <LI> functionNullableUnknown - nullability unknown
+     *      </UL>
+     *	<LI><B>REMARKS</B> String => comment describing column/parameter
+     *	<LI><B>CHAR_OCTET_LENGTH</B> int  => the maximum length of binary 
+     * and character based parameters or columns.  For any other datatype the returned value 
+     * is a NULL
+     *	<LI><B>ORDINAL_POSITION</B> int  => the ordinal position, starting 
+     * from 1, for the input and output parameters. A value of 0
+     * is returned if this row describes the function's return value. 
+     * For result set columns, it is the
+     * ordinal position of the column in the result set starting from 1.  
+     *	<LI><B>IS_NULLABLE</B> String  => ISO rules are used to determine 
+     * the nullability for a parameter or column.
+     *       <UL>
+     *       <LI> YES           --- if the parameter or column can include NULLs
+     *       <LI> NO            --- if the parameter or column  cannot include NULLs
+     *       <LI> empty string  --- if the nullability for the 
+     * parameter  or column is unknown
+     *       </UL>
+     *	<LI><B>SPECIFIC_NAME</B> String  => the name which uniquely identifies 
+     * this function within its schema.  This is a user specified, or DBMS
+     * generated, name that may be different then the <code>FUNCTION_NAME</code> 
+     * for example with overload functions
+     *  </OL>
+     * 
+     * <p>The PRECISION column represents the specified column size for the given 
+     * parameter or column. 
+     * For numeric data, this is the maximum precision.  For character data, this is the length in characters. 
+     * For datetime datatypes, this is the length in characters of the String representation (assuming the 
+     * maximum allowed precision of the fractional seconds component). For binary data, this is the length in bytes.  For the ROWID datatype, 
+     * this is the length in bytes. Null is returned for data types where the
+     * column size is not applicable.
+     * @param catalog a catalog name; must match the catalog name as it
+     *        is stored in the database; "" retrieves those without a catalog;
+     *        <code>null</code> means that the catalog name should not be used to narrow
+     *        the search
+     * @param schemaPattern a schema name pattern; must match the schema name
+     *        as it is stored in the database; "" retrieves those without a schema;
+     *        <code>null</code> means that the schema name should not be used to narrow
+     *        the search
+     * @param functionNamePattern a procedure name pattern; must match the
+     *        function name as it is stored in the database 
+     * @param columnNamePattern a parameter name pattern; must match the 
+     * parameter or column name as it is stored in the database 
+     * @return <code>ResultSet</code> - each row describes a 
+     * user function parameter, column  or return type
+     *
+     * @exception SQLException if a database access error occurs
+     * @see #getSearchStringEscape 
+     * @since 1.6
+     */
+  public ResultSet getFunctionColumns(String catalog,
+				  String schemaPattern,
+				  String functionNamePattern, 
+				  String columnNamePattern) throws SQLException
+  {
+     String [] col_names = {
+       "FUNCTION_CAT",
+       "FUNCTION_SCHEM",
+       "FUNCTION_NAME",
+       "COLUMN_NAME",
+       "COLUMN_TYPE",
+       "DATA_TYPE",
+       "TYPE_NAME",
+       "PRECISION",
+       "LENGTH",
+       "SCALE",
+       "RADIX",
+       "NULLABLE",
+       "REMARKS",
+       "CHAR_OCTET_LENGTH",
+       "ORDINAL_POSITION",
+       "IS_NULLABLE",
+       "SPECIFIC_NAME"
+      };
+     int [] col_dtps = {
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_SHORT_INT,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_LONG_INT,
+       VirtuosoTypes.DV_LONG_INT,
+       VirtuosoTypes.DV_SHORT_INT,
+       VirtuosoTypes.DV_SHORT_INT,
+       VirtuosoTypes.DV_SHORT_INT,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_LONG_INT,
+       VirtuosoTypes.DV_LONG_INT,
+       VirtuosoTypes.DV_STRING,
+       VirtuosoTypes.DV_STRING
+       };
+
+     return new VirtuosoResultSet (connection, col_names, col_dtps);
+  }
+   
+
+    /**
+     * Returns an object that implements the given interface to allow access to
+     * non-standard methods, or standard methods not exposed by the proxy.
+     * 
+     * If the receiver implements the interface then the result is the receiver 
+     * or a proxy for the receiver. If the receiver is a wrapper
+     * and the wrapped object implements the interface then the result is the
+     * wrapped object or a proxy for the wrapped object. Otherwise return the
+     * the result of calling <code>unwrap</code> recursively on the wrapped object 
+     * or a proxy for that result. If the receiver is not a
+     * wrapper and does not implement the interface, then an <code>SQLException</code> is thrown.
+     *
+     * @param iface A Class defining an interface that the result must implement.
+     * @return an object that implements the interface. May be a proxy for the actual implementing object.
+     * @throws java.sql.SQLException If no object found that implements the interface 
+     * @since 1.6
+     */
+  public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
+  {
+    try {
+      // This works for classes that aren't actually wrapping anything
+      return iface.cast(this);
+    } catch (ClassCastException cce) {
+      throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
+    }
+  }
+
+    /**
+     * Returns true if this either implements the interface argument or is directly or indirectly a wrapper
+     * for an object that does. Returns false otherwise. If this implements the interface then return true,
+     * else if this is a wrapper then return the result of recursively calling <code>isWrapperFor</code> on the wrapped
+     * object. If this does not implement the interface and is not a wrapper, return false.
+     * This method should be implemented as a low-cost operation compared to <code>unwrap</code> so that
+     * callers can use this method to avoid expensive <code>unwrap</code> calls that may fail. If this method
+     * returns true then calling <code>unwrap</code> with the same argument should succeed.
+     *
+     * @param iface a Class defining an interface.
+     * @return true if this implements the interface or directly or indirectly wraps an object that does.
+     * @throws java.sql.SQLException  if an error occurs while determining whether this is a wrapper
+     * for an object with the given interface.
+     * @since 1.6
+     */
+  public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
+  {
+    // This works for classes that aren't actually wrapping anything
+    return iface.isInstance(this);
+  }
+
+#endif
 #endif
 }

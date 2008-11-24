@@ -41,9 +41,15 @@ abstract public class BaseMessage {
   protected String defaultMessage;
   protected String msgPrefix;
 
-/*JDBC3*/  public static final String err_Prefix = "[OpenLink][OPLJDBC3]"; /*_JDBC3*/
-/*JDBC2    public static final String err_Prefix = "[OpenLink][OPLJDBC2]";   _JDBC2*/
-/*JDBC1    public static final String err_Prefix = "[OpenLink][OPLJDBC]";    _JDBC1*/
+#if JDK_VER >= 16
+    public static final String err_Prefix = "[OpenLink][OPLJDBC4]";
+#elif JDK_VER >= 14
+    public static final String err_Prefix = "[OpenLink][OPLJDBC3]";
+#elif JDK_VER >= 12
+    public static final String err_Prefix = "[OpenLink][OPLJDBC2]";
+#else
+    public static final String err_Prefix = "[OpenLink][OPLJDBC]";
+#endif
 
   protected void init(String resourceFile) {
     defaultMessage = RESBUNDLE_NOTFOUND + (resourceFile != null ? resourceFile : "null") + "'";

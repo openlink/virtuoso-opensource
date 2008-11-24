@@ -29,7 +29,9 @@ package virtuoso.javax;
 
 import java.text.MessageFormat;
 import java.sql.SQLException;
-
+#if JDK_VER >= 16
+import java.sql.SQLFeatureNotSupportedException;
+#endif
 class OPLMessage_x extends openlink.util.BaseMessage {
 
   protected static final int errx_Physical_Connection_is_closed = 1;
@@ -69,6 +71,8 @@ class OPLMessage_x extends openlink.util.BaseMessage {
   protected static final int errx_RowSetMetaData_is_not_defined = 32;
   protected static final int errx_XX_can_not_determine_the_table_name = 33;
   protected static final int errx_XX_can_not_determine_the_keyCols = 34;
+  protected static final int errx_Method_XX_not_yet_implemented = 35;
+  protected static final int errx_Unable_to_unwrap_to_XX = 36;
 
 
 
@@ -93,6 +97,14 @@ class OPLMessage_x extends openlink.util.BaseMessage {
   {
     return new SQLException (err_Prefix + getMessage(err_id), S_GENERAL_ERR);
   }
+
+#if JDK_VER >= 16
+  protected static SQLFeatureNotSupportedException makeFExceptionV (int err_id, String p0)
+  {
+    Object params[] = { p0 };
+    return new SQLFeatureNotSupportedException (err_Prefix + getMessage(err_id, params), S_GENERAL_ERR);
+  }
+#endif
 
   protected static SQLException makeExceptionV (int err_id, String p0)
   {

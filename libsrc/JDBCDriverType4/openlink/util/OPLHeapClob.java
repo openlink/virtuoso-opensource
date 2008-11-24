@@ -36,18 +36,26 @@ public class OPLHeapClob implements Clob, Serializable {
   static final long serialVersionUID = 6296947263965593908L;
 
   private char[] blobData = null;
+  private long  blobLength = 0;
   private final static int buf_size = 0x8000;
   private Object lck;
+
+  public OPLHeapClob() {
+    lck = this;
+    blobData = new char[1];
+  }
 
   public OPLHeapClob(String b) {
     lck = this;
     blobData = b.toCharArray();
+    blobLength = blobData.length;
   }
 
   public OPLHeapClob(char[] b) {
     lck = this;
     blobData = new char[b.length];
     System.arraycopy(b, 0, blobData, 0, b.length);
+    blobLength = b.length;
   }
 
   public OPLHeapClob(Reader is) throws SQLException {
@@ -63,6 +71,7 @@ public class OPLHeapClob implements Clob, Serializable {
 	sz = in.read(tmp, 0, buf_size);
       }
       blobData = out.toCharArray();
+      blobLength = blobData.length;
     } catch( IOException e ) {
       throw OPLMessage_u.makeException(e);
     }
@@ -79,8 +88,9 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public long length() throws SQLException {
+    ensureOpen();
     synchronized(lck) {
-      return blobData.length;
+      return blobLength;
     }
   }
 
@@ -102,8 +112,8 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public String getSubString(long pos, int len) throws SQLException {
+    ensureOpen();
     synchronized(lck) {
-      long blobLength = blobData.length;
       pos--;
       if ( pos >= blobLength )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
@@ -128,6 +138,7 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public Reader getCharacterStream() throws SQLException {
+    ensureOpen();
     return new OPLHeapClob.BlobInputReader(lck);
   }
 
@@ -143,6 +154,7 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public InputStream getAsciiStream() throws SQLException {
+    ensureOpen();
     return new BlobInputStream(getCharacterStream());
   }
 
@@ -162,13 +174,13 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public long position(String searchstr, long start) throws SQLException {
+    ensureOpen();
     synchronized(lck) {
       if ( start < 1 )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
 
       start--;
       boolean match;
-      long blobLength = length();
 
       if (start > blobLength)
         return -1;
@@ -210,6 +222,7 @@ public class OPLHeapClob implements Clob, Serializable {
    * @since 1.2
    */
   public long position(Clob searchstr, long start) throws SQLException {
+    ensureOpen();
     if( start < 1 )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
 
@@ -217,7 +230,8 @@ public class OPLHeapClob implements Clob, Serializable {
   }
 
     //---------------------------- jdbc 3.0 -----------------------------------
-/*DROP_FOR_JDBC2*/
+
+#if JDK_VER >= 14
 
     /**
      * Writes the given Java <code>String</code> to the <code>CLOB</code>
@@ -235,6 +249,7 @@ public class OPLHeapClob implements Clob, Serializable {
      * @since 1.4
      */
   public int setString(long pos, String str) throws SQLException {
+    ensureOpen();
     return setString(pos, str, 0, str.length());
   }
 
@@ -257,6 +272,7 @@ public class OPLHeapClob implements Clob, Serializable {
      * @since 1.4
      */
   public int setString(long pos, String str, int offset, int len) throws SQLException {
+    ensureOpen();
     synchronized (lck) {
       Writer os = new BlobOutputWriter(lck, pos);
       try {
@@ -283,7 +299,8 @@ public class OPLHeapClob implements Clob, Serializable {
      * @since 1.4
      */
   public java.io.OutputStream setAsciiStream(long pos) throws SQLException {
-    return new BlobOutputStream(new BlobOutputWriter(lck, 0));
+    ensureOpen();
+    return new BlobOutputStream(new BlobOutputWriter(lck, pos));
   }
 
     /**
@@ -302,6 +319,7 @@ public class OPLHeapClob implements Clob, Serializable {
      * @since 1.4
      */
   public java.io.Writer setCharacterStream(long pos) throws SQLException {
+    ensureOpen();
     return new BlobOutputWriter(lck, pos);
   }
 
@@ -317,6 +335,7 @@ public class OPLHeapClob implements Clob, Serializable {
      * @since 1.4
      */
   public void truncate(long len) throws SQLException {
+    ensureOpen();
     synchronized(lck) {
       int newLen = (int)len;
       if (newLen < 0 || newLen > blobData.length)
@@ -326,25 +345,90 @@ public class OPLHeapClob implements Clob, Serializable {
         System.arraycopy(blobData, 0, newbuf, 0, newLen);
         blobData = newbuf;
       }
+      blobLength = len;
     }
   }
 
-/*_DROP_FOR_JDBC2*/
+#if JDK_VER >= 16
+    /**
+     * This method frees the <code>Clob</code> object and releases the resources the resources
+     * that it holds.  The object is invalid once the <code>free</code> method
+     * is called. 
+     * <p>
+     * After <code>free</code> has been called, any attempt to invoke a
+     * method other than <code>free</code> will result in a <code>SQLException</code> 
+     * being thrown.  If <code>free</code> is called multiple times, the subsequent
+     * calls to <code>free</code> are treated as a no-op.
+     * <p>
+     * @throws SQLException if an error occurs releasing
+     * the Clob's resources
+     *
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void free() throws SQLException 
+  {
+    synchronized (lck) {
+        blobData = null;
+    }
+  }
+
+    /**
+     * Returns a <code>Reader</code> object that contains a partial <code>Clob</code> value, starting
+     * with the character specified by pos, which is length characters in length.
+     *
+     * @param pos the offset to the first character of the partial value to
+     * be retrieved.  The first character in the Clob is at position 1.
+     * @param length the length in characters of the partial value to be retrieved.
+     * @return <code>Reader</code> through which the partial <code>Clob</code> value can be read.
+     * @throws SQLException if pos is less than 1 or if pos is greater than the number of
+     * characters in the <code>Clob</code> or if pos + length is greater than the number of
+     * characters in the <code>Clob</code>
+     *
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public Reader getCharacterStream(long pos, long length) throws SQLException
+  {
+    ensureOpen();
+    return new OPLHeapClob.BlobInputReader(lck, pos, length);
+  }
+
+
+#endif
+#endif
+
+  private void ensureOpen() throws SQLException 
+  {
+    if (blobData == null)
+       throw OPLMessage_u.makeException(OPLMessage_u.erru_Blob_is_freed);
+  }
+
 
   // === Inner class ===========================================
   protected class BlobInputReader extends Reader {
 
     private boolean isClosed = false;
     private int pos = 0;
+    private long length = 0;
 
     protected BlobInputReader(Object lck) {
       super(lck);
+      length = blobData.length;
+    }
+
+    protected BlobInputReader(Object lck, long pos, long length) {
+      super(lck);
+      this.pos = (int)pos;
+      this.length = length;
     }
 
     public int read() throws IOException {
       synchronized (lock) {
         ensureOpen();
-        return (pos < blobData.length) ? blobData[pos++] : -1;
+        return (pos < length) ? blobData[pos++] : -1;
       }
     }
 
@@ -358,11 +442,11 @@ public class OPLHeapClob implements Clob, Serializable {
 		   ((off + len) > b.length) || ((off + len) < 0))
 	    throw new IndexOutOfBoundsException();
 
-	if (pos >= blobData.length)
+	if (pos >= length)
 	    return -1;
 
-	if (pos + len > blobData.length)
-	    len = blobData.length - pos;
+	if (pos + len > length)
+	    len = (int)(length - pos);
 
         if (len <= 0)
            return 0;
@@ -376,8 +460,8 @@ public class OPLHeapClob implements Clob, Serializable {
     public synchronized long skip(long n) throws IOException {
 	synchronized (lock) {
 	    ensureOpen();
-	    if (pos + n > blobData.length)
-		n = blobData.length - pos;
+	    if (pos + n > length)
+		n = length - pos;
 
 	    if (n < 0)
 		return 0;
@@ -399,7 +483,7 @@ public class OPLHeapClob implements Clob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-        if (isClosed)
+        if (isClosed || blobData == null)
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed));
     }
   }
@@ -420,7 +504,7 @@ public class OPLHeapClob implements Clob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-      if (in == null)
+      if (in == null || blobData == null)
          throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed));
     }
 
@@ -493,7 +577,7 @@ public class OPLHeapClob implements Clob, Serializable {
 
   }
 
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
   // === Inner class ===========================================
   protected class BlobOutputWriter extends Writer {
 
@@ -562,7 +646,7 @@ public class OPLHeapClob implements Clob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-        if (isClosed)
+        if (isClosed || blobData == null)
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed ));
     }
   }
@@ -597,11 +681,11 @@ public class OPLHeapClob implements Clob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-      if (isClosed)
+      if (isClosed || blobData == null)
          throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed));
     }
 
   }
-/*_DROP_FOR_JDBC2*/
+#endif
 
 }

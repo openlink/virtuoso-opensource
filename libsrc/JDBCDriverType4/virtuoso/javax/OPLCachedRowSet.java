@@ -44,7 +44,9 @@ import javax.sql.*;
 import javax.naming.*;
 import openlink.util.OPLHeapBlob;
 import openlink.util.OPLHeapClob;
-
+#if JDK_VER >= 16
+import openlink.util.OPLHeapNClob;
+#endif
 
 /**
  *
@@ -108,7 +110,11 @@ public class OPLCachedRowSet extends BaseRowSet
     private RowSetMetaData rowSMD;
     private int keyCols[];
     private String tableName;
+#if JDK_VER >= 16
+    private ArrayList<Object> rowsData;
+#else
     private ArrayList rowsData;
+#endif
     private int curState = NOROWS;
     private int curRow;
     private int absolutePos;
@@ -129,7 +135,11 @@ public class OPLCachedRowSet extends BaseRowSet
   public OPLCachedRowSet() throws SQLException {
     rowSetReader = new RowSetReader();
     rowSetWriter = new RowSetWriter();
+#if JDK_VER >= 16
+    rowsData = new ArrayList<Object>();
+#else
     rowsData = new ArrayList();
+#endif
     onInsertRow = false;
     updateRow = null;
     setType(ResultSet.TYPE_SCROLL_INSENSITIVE);
@@ -311,7 +321,11 @@ public class OPLCachedRowSet extends BaseRowSet
     tableName = null;
     keyCols = null;
 
+#if JDK_VER >= 16
+    Map<String,Class<?>> map = getTypeMap();
+#else
     Map map = getTypeMap();
+#endif
     ResultSetMetaData rsmd = rs.getMetaData();
     int colCount = rsmd.getColumnCount();
     int i;
@@ -330,7 +344,11 @@ public class OPLCachedRowSet extends BaseRowSet
         else
         if  (x instanceof Clob)
           x = new OPLHeapClob(((Clob)x).getSubString(0L, (int)((Clob)x).length()));
-
+#if JDK_VER >= 16
+        else
+        if  (x instanceof NClob)
+          x = new OPLHeapNClob(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
+#endif
         row.setOrigColData(j, x);
       }
       rowsData.add(row);
@@ -690,12 +708,20 @@ public class OPLCachedRowSet extends BaseRowSet
     int count = countRows - countDeleted;
     if (count == 0)
       return null;
+#if JDK_VER >= 16
+    ArrayList<Object> tmpRowset = new ArrayList<Object>(count);
+#else
     ArrayList tmpRowset = new ArrayList(count);
+#endif
     int colCount = rowSMD.getColumnCount();
     for(Iterator i = rowsData.iterator(); i.hasNext(); ) {
       Row row = (Row)i.next();
       if (!row.isDeleted) {
+#if JDK_VER >= 16
+        ArrayList<Object> tmpCol = new ArrayList<Object>(colCount);
+#else
         ArrayList tmpCol = new ArrayList(colCount);
+#endif
         for(int j = 1; j <= colCount; j++)
           tmpCol.add(row.getColData(j));
         tmpRowset.add(tmpCol);
@@ -716,7 +742,11 @@ public class OPLCachedRowSet extends BaseRowSet
     int count = countRows - countDeleted;
     if (count == 0)
       return null;
+#if JDK_VER >= 16
+    ArrayList<Object> tmpRowset = new ArrayList<Object>(count);
+#else
     ArrayList tmpRowset = new ArrayList(count);
+#endif
     checkColumnIndex(col);
     for(Iterator i = rowsData.iterator(); i.hasNext(); ) {
       Row row = (Row)i.next();
@@ -1525,6 +1555,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return Bin2Hex(((Blob)x).getBytes(0L, (int)((Blob)x).length()));
       else if (x instanceof Clob)
         return ((Clob)x).getSubString(0L, (int)((Clob)x).length());
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return ((NClob)x).getSubString(0L, (int)((NClob)x).length());
+#endif
       else
         return x.toString();
     }
@@ -1556,6 +1590,11 @@ public class OPLCachedRowSet extends BaseRowSet
       else if (x instanceof Clob) {
         c =((Clob)x).getSubString(0L, 1).charAt(0);
         return (c == 'T' || c == 't' || c == '1');
+#if JDK_VER >= 16
+      }else if (x instanceof NClob) {
+        c =((NClob)x).getSubString(0L, 1).charAt(0);
+        return (c == 'T' || c == 't' || c == '1');
+#endif
       }else if (x instanceof Number)
         return ((Number)x).intValue() != 0;
       else
@@ -1772,6 +1811,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return ((Blob)x).getBytes(0L, (int)((Blob)x).length());
       else if (x instanceof Clob)
         return ((Clob)x).getSubString(0L, (int)((Clob)x).length()).getBytes();
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return ((NClob)x).getSubString(0L, (int)((NClob)x).length()).getBytes();
+#endif
       else if (x instanceof String)
         return ((String)x).getBytes();
       else
@@ -1806,6 +1849,13 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
         return dt;
+#if JDK_VER >= 16
+      } else if (x instanceof NClob) {
+        Date dt = _getDate(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
+        if (dt == null)
+              throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
+        return dt;
+#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
     }
@@ -1838,6 +1888,13 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
         return dt;
+#if JDK_VER >= 16
+      } else if (x instanceof NClob) {
+        Time dt = _getTime(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
+        if (dt == null)
+              throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
+        return dt;
+#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
     }
@@ -1872,6 +1929,13 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
            throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
         return dt;
+#if JDK_VER >= 16
+      } else if (x instanceof NClob) {
+        Timestamp dt = _getTimestamp(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
+        if (dt == null)
+           throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
+        return dt;
+#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
     }
@@ -1906,6 +1970,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = new ByteArrayInputStream(((String)x).getBytes());
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return objInputStream = ((NClob)x).getAsciiStream();
+#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'AsciiStream'");
     }
@@ -1941,6 +2009,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = new ByteArrayInputStream(((String)x).getBytes());
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return objInputStream = ((NClob)x).getAsciiStream();
+#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'UnicodeStream'");
     }
@@ -1978,6 +2050,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = ((Blob)x).getBinaryStream();
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return objInputStream = ((NClob)x).getAsciiStream();
+#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'BinaryStream'");
     }
@@ -2269,6 +2345,10 @@ public class OPLCachedRowSet extends BaseRowSet
         return objReader = new StringReader((String)x);
       else if (x instanceof Clob)
         return objReader = ((Clob)x).getCharacterStream();
+#if JDK_VER >= 16
+      else if (x instanceof NClob)
+        return objReader = ((NClob)x).getCharacterStream();
+#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'CharacterStream'");
     }
@@ -2321,11 +2401,11 @@ public class OPLCachedRowSet extends BaseRowSet
   public synchronized void updateBoolean(int columnIndex, boolean x) throws SQLException {
     Row r = this.getRowForUpdate(columnIndex, "'updateBoolean(...)'");
     switch(rowSMD.getColumnType(columnIndex)) {
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
      case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean(x));
         break;
-/*_DROP_FOR_JDBC2*/
+#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -2341,6 +2421,11 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
+#if JDK_VER >= 16
+     case Types.NCHAR:
+     case Types.NVARCHAR:
+     case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, String.valueOf(x));
         break;
       default:
@@ -2481,11 +2566,11 @@ public class OPLCachedRowSet extends BaseRowSet
       updateNull(columnIndex);
     else
       switch(rowSMD.getColumnType(columnIndex)) {
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
       case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean(x));
         break;
-/*_DROP_FOR_JDBC2*/
+#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -2499,9 +2584,15 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
       case Types.DATALINK:
-/*_DROP_FOR_JDBC2*/
+#endif
+#if JDK_VER >= 16
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+      case Types.NCLOB:
+#endif
       case Types.BLOB:
       case Types.CLOB:
         r.setColData(columnIndex, x);
@@ -2562,6 +2653,12 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
+#if JDK_VER >= 16
+      case Types.NCLOB:
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, Bin2Hex(x));
         break;
       case Types.BLOB:
@@ -2599,6 +2696,12 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
+#if JDK_VER >= 16
+      case Types.NCLOB:
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.DATE:
@@ -2634,6 +2737,12 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
+#if JDK_VER >= 16
+      case Types.NCLOB:
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.TIME:
@@ -2669,6 +2778,12 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
+#if JDK_VER >= 16
+      case Types.NCLOB:
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.TIMESTAMP:
@@ -3419,7 +3534,7 @@ public class OPLCachedRowSet extends BaseRowSet
     return getTimestamp(findColumn (columnName), cal);
   }
 
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
     /**
      * Retrieves the value of the designated column in the current row
@@ -3629,7 +3744,1398 @@ public class OPLCachedRowSet extends BaseRowSet
   public void updateArray(String columnName, java.sql.Array x) throws SQLException {
     updateArray (findColumn (columnName), x);
   }
-/*_DROP_FOR_JDBC2*/
+
+#if JDK_VER >= 16
+    //------------------------- JDBC 4.0 -----------------------------------
+
+    /**
+     * Retrieves the value of the designated column in the current row of this 
+     * <code>ResultSet</code> object as a <code>java.sql.RowId</code> object in the Java
+     * programming language.
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @return the column value; if the value is a SQL <code>NULL</code> the
+     *     value returned is <code>null</code>
+     * @throws SQLException if the columnIndex is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized RowId getRowId(int columnIndex) throws SQLException
+  {
+    checkColumnIndex(columnIndex);
+    Object x = getCurRow().getColData(columnIndex);
+    if (_wasNull = (x == null)) {
+      return null;
+    } else {
+      if (x instanceof RowId)
+        return (RowId)x;
+      else
+        throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'RowId'");
+    }
+  }
+    
+    /**
+     * Retrieves the value of the designated column in the current row of this 
+     * <code>ResultSet</code> object as a <code>java.sql.RowId</code> object in the Java
+     * programming language.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @return the column value ; if the value is a SQL <code>NULL</code> the
+     *     value returned is <code>null</code>
+     * @throws SQLException if the columnLabel is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public RowId getRowId(String columnLabel) throws SQLException
+  {
+    return getRowId(findColumn (columnLabel));
+  }
+    
+    /**
+     * Updates the designated column with a <code>RowId</code> value. The updater
+     * methods are used to update column values in the current row or the insert
+     * row. The updater methods do not update the underlying database; instead 
+     * the <code>updateRow</code> or <code>insertRow</code> methods are called 
+     * to update the database.
+     * 
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param x the column value
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateRowId(int columnIndex, RowId x) throws SQLException
+  {
+    if (x == null)
+      updateNull(columnIndex);
+    else
+      synchronized(this) {
+       Row r = this.getRowForUpdate(columnIndex, "'updateRowId(...)'");
+       r.setColData(columnIndex, x);
+      }
+  }
+    
+    /**
+     * Updates the designated column with a <code>RowId</code> value. The updater
+     * methods are used to update column values in the current row or the insert
+     * row. The updater methods do not update the underlying database; instead 
+     * the <code>updateRow</code> or <code>insertRow</code> methods are called 
+     * to update the database.
+     * 
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param x the column value
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateRowId(String columnLabel, RowId x) throws SQLException
+  {
+    updateRowId (findColumn (columnLabel), x);
+  }
+
+    /**
+     * Retrieves the holdability of this <code>ResultSet</code> object
+     * @return  either <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or <code>ResultSet.CLOSE_CURSORS_AT_COMMIT</code>
+     * @throws SQLException if a database access error occurs 
+     * or this method is called on a closed result set
+     * @since 1.6
+     */
+  public int getHoldability() throws SQLException
+  {
+    return ResultSet.HOLD_CURSORS_OVER_COMMIT;
+  }
+
+    /**
+     * Retrieves whether this <code>ResultSet</code> object has been closed. A <code>ResultSet</code> is closed if the
+     * method close has been called on it, or if it is automatically closed.
+     *
+     * @return true if this <code>ResultSet</code> object is closed; false if it is still open
+     * @throws SQLException if a database access error occurs
+     * @since 1.6
+     */
+  public boolean isClosed() throws SQLException
+  {
+    return (conn == null ? true : false);
+  }
+
+    /**
+     * Updates the designated column with a <code>String</code> value.
+     * It is intended for use when updating <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param nString the value for the column to be updated
+     * @throws SQLException if the columnIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code>
+     * or if a database access error occurs
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateNString(int columnIndex, String nString) throws SQLException
+  {
+    updateString (columnIndex, nString);
+  }
+
+    /**
+     * Updates the designated column with a <code>String</code> value.
+     * It is intended for use when updating <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param nString the value for the column to be updated
+     * @throws SQLException if the columnLabel is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;
+     * the result set concurrency is <CODE>CONCUR_READ_ONLY</code> 
+     *  or if a database access error occurs
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNString(String columnLabel, String nString) throws SQLException
+  {
+    updateNString (findColumn (columnLabel), nString);
+  }
+
+    /**
+     * Updates the designated column with a <code>java.sql.NClob</code> value.
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param nClob the value for the column to be updated
+     * @throws SQLException if the columnIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;  
+     * if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateNClob(int columnIndex, NClob x) throws SQLException
+  {
+    if (x == null)
+      updateNull(columnIndex);
+    else
+      synchronized(this) {
+       Row r = this.getRowForUpdate(columnIndex, "'updateNClob(...)'");
+       x = new OPLHeapNClob(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
+       r.setColData(columnIndex, x);
+      }
+  }
+
+    /**
+     * Updates the designated column with a <code>java.sql.NClob</code> value.
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param nClob the value for the column to be updated
+     * @throws SQLException if the columnLabel is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;
+     *  if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNClob(String columnLabel, NClob nClob) throws SQLException
+  {
+    updateNClob (findColumn (columnLabel), nClob);
+  }
+   
+    /**
+     * Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object as a <code>NClob</code> object
+     * in the Java programming language.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @return a <code>NClob</code> object representing the SQL 
+     *         <code>NCLOB</code> value in the specified column
+     * @exception SQLException if the columnIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set 
+     * or if a database access error occurs
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized NClob getNClob(int columnIndex) throws SQLException
+  {
+    checkColumnIndex(columnIndex);
+    Object x = getCurRow().getColData(columnIndex);
+    if (_wasNull = (x == null)) {
+      return null;
+    } else {
+      if (x instanceof NClob)
+        return (NClob)x;
+      else if (x instanceof byte[])
+        return new OPLHeapNClob(Bin2Hex((byte[])x));
+      else
+        return new OPLHeapNClob(x.toString());
+    }
+  }
+    
+  /**
+     * Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object as a <code>NClob</code> object
+     * in the Java programming language.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @return a <code>NClob</code> object representing the SQL <code>NCLOB</code>
+     * value in the specified column
+     * @exception SQLException if the columnLabel is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set 
+     * or if a database access error occurs
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public NClob getNClob(String columnLabel) throws SQLException
+  {
+    return getNClob(findColumn (columnLabel));
+  }
+
+    /**
+     * Retrieves the value of the designated column in  the current row of
+     *  this <code>ResultSet</code> as a
+     * <code>java.sql.SQLXML</code> object in the Java programming language.
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @return a <code>SQLXML</code> object that maps an <code>SQL XML</code> value
+     * @throws SQLException if the columnIndex is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public SQLXML getSQLXML(int columnIndex) throws SQLException
+  {
+    checkColumnIndex(columnIndex);
+    Object x = getCurRow().getColData(columnIndex);
+    if (_wasNull = (x == null)) {
+      return null;
+    } else {
+      if (x instanceof SQLXML)
+        return (SQLXML)x;
+      else
+        throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'SQLXML'");
+    }
+  }
+
+    /**
+     * Retrieves the value of the designated column in  the current row of
+     *  this <code>ResultSet</code> as a
+     * <code>java.sql.SQLXML</code> object in the Java programming language.
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @return a <code>SQLXML</code> object that maps an <code>SQL XML</code> value
+     * @throws SQLException if the columnLabel is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set    
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public SQLXML getSQLXML(String columnLabel) throws SQLException
+  {
+    return getSQLXML(findColumn (columnLabel));
+  }
+
+    /**
+     * Updates the designated column with a <code>java.sql.SQLXML</code> value.
+     * The updater
+     * methods are used to update column values in the current row or the insert
+     * row. The updater methods do not update the underlying database; instead 
+     * the <code>updateRow</code> or <code>insertRow</code> methods are called 
+     * to update the database.
+     * <p>
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param xmlObject the value for the column to be updated
+     * @throws SQLException if the columnIndex is not valid; 
+     * if a database access error occurs; this method
+     *  is called on a closed result set;
+     * the <code>java.xml.transform.Result</code>,
+     *  <code>Writer</code> or <code>OutputStream</code> has not been closed
+     * for the <code>SQLXML</code> object; 
+     *  if there is an error processing the XML value or   
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code>.  The <code>getCause</code> method 
+     *  of the exception may provide a more detailed exception, for example, if the 
+     *  stream does not contain valid XML.
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method 
+     * @since 1.6
+     */
+  public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException
+  {
+    if (xmlObject == null)
+      updateNull(columnIndex);
+    else
+      synchronized(this) {
+       Row r = this.getRowForUpdate(columnIndex, "'updateSQLXML(...)'");
+       r.setColData(columnIndex, xmlObject);
+      }
+  }
+
+    /**
+     * Updates the designated column with a <code>java.sql.SQLXML</code> value. 
+     * The updater
+     * methods are used to update column values in the current row or the insert
+     * row. The updater methods do not update the underlying database; instead 
+     * the <code>updateRow</code> or <code>insertRow</code> methods are called 
+     * to update the database. 
+     * <p>
+     * 
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param xmlObject the column value
+     * @throws SQLException if the columnLabel is not valid; 
+     * if a database access error occurs; this method
+     *  is called on a closed result set;
+     * the <code>java.xml.transform.Result</code>,
+     *  <code>Writer</code> or <code>OutputStream</code> has not been closed
+     * for the <code>SQLXML</code> object; 
+     *  if there is an error processing the XML value or   
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code>.  The <code>getCause</code> method 
+     *  of the exception may provide a more detailed exception, for example, if the 
+     *  stream does not contain valid XML.
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException
+  {
+    updateSQLXML (findColumn (columnLabel), xmlObject);
+  }
+    
+    /**
+     * Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object as
+     * a <code>String</code> in the Java programming language.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @return the column value; if the value is SQL <code>NULL</code>, the
+     * value returned is <code>null</code>
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized String getNString(int columnIndex) throws SQLException
+  {
+    return getString(columnIndex);
+  }
+    
+    
+    /**
+     * Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object as
+     * a <code>String</code> in the Java programming language.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @return the column value; if the value is SQL <code>NULL</code>, the
+     * value returned is <code>null</code>
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public String getNString(String columnLabel) throws SQLException
+  {
+    return getNString(findColumn (columnLabel));
+  }
+    
+    
+    /**
+     * Retrieves the value of the designated column in the current row 
+     * of this <code>ResultSet</code> object as a
+     * <code>java.io.Reader</code> object.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     *
+     * @return a <code>java.io.Reader</code> object that contains the column
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language.
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized java.io.Reader getNCharacterStream(int columnIndex) throws SQLException
+  {
+    checkColumnIndex(columnIndex);
+    Object x = getCurRow().getColData(columnIndex);
+    closeInputStream();
+    if (_wasNull = (x == null)) {
+      return (objReader = null);
+    } else {
+      if (x instanceof String)
+        return objReader = new StringReader((String)x);
+      else if (x instanceof Clob)
+        return objReader = ((Clob)x).getCharacterStream();
+      else if (x instanceof NClob)
+        return objReader = ((NClob)x).getCharacterStream();
+      else
+        throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'NCharacterStream'");
+    }
+  }
+
+    /**
+     * Retrieves the value of the designated column in the current row 
+     * of this <code>ResultSet</code> object as a
+     * <code>java.io.Reader</code> object.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * 
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @return a <code>java.io.Reader</code> object that contains the column
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public java.io.Reader getNCharacterStream(String columnLabel) throws SQLException
+  {
+    return getNCharacterStream (findColumn (columnLabel));
+  }
+
+    /**
+     * Updates the designated column with a character stream value, which will have
+     * the specified number of bytes.   The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.
+     * It is intended for use when
+     * updating  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs; 
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateNCharacterStream(int columnIndex,
+			     java.io.Reader x,
+		     long length) throws SQLException
+  {
+    updateCharacterStream(columnIndex, x, (int)length);
+  }
+    
+    /**
+     * Updates the designated column with a character stream value, which will have
+     * the specified number of bytes.  The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.  
+     * It is intended for use when
+     * updating  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * <p>    
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader the <code>java.io.Reader</code> object containing
+     *        the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> or this method is called on a closed result set
+      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNCharacterStream(String columnLabel,
+			     java.io.Reader reader,
+			     long length) throws SQLException
+  {
+    updateNCharacterStream (findColumn (columnLabel), reader, length);
+  }
+
+    /** 
+     * Updates the designated column with an ascii stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateAsciiStream(int columnIndex, 
+			   java.io.InputStream x, 
+			   long length) throws SQLException
+  {
+    updateAsciiStream(columnIndex, x, (int)length);
+  }
+
+    /** 
+     * Updates the designated column with a binary stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value     
+     * @param length the length of the stream
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateBinaryStream(int columnIndex, 
+			    java.io.InputStream x,
+			    long length) throws SQLException
+  {
+    updateBinaryStream(columnIndex, x, (int)length);
+  }
+
+    /**
+     * Updates the designated column with a character stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateCharacterStream(int columnIndex,
+			     java.io.Reader x,
+			     long length) throws SQLException
+  {
+    updateCharacterStream(columnIndex, x, (int)length);
+  }
+
+    /** 
+     * Updates the designated column with an ascii stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param x the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateAsciiStream(String columnLabel, 
+			   java.io.InputStream x, 
+			   long length) throws SQLException
+  {
+    updateAsciiStream (findColumn (columnLabel), x, length);
+  }
+
+    /** 
+     * Updates the designated column with a binary stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param x the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBinaryStream(String columnLabel, 
+			    java.io.InputStream x,
+			    long length) throws SQLException
+  {
+    updateBinaryStream (findColumn (columnLabel), x, length);
+  }
+
+    /**
+     * Updates the designated column with a character stream value, which will have
+     * the specified number of bytes.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader the <code>java.io.Reader</code> object containing
+     *        the new column value
+     * @param length the length of the stream
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateCharacterStream(String columnLabel,
+			     java.io.Reader reader,
+			     long length) throws SQLException
+  {
+    updateCharacterStream (findColumn (columnLabel), reader, length);
+  }
+
+    /**
+     * Updates the designated column using the given input stream, which
+     * will have the specified number of bytes.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @param length the number of bytes in the parameter data.
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException
+  {
+    updateBinaryStream(columnIndex, inputStream, (int)length);
+  }
+
+    /** 
+     * Updates the designated column using the given input stream, which
+     * will have the specified number of bytes.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @param length the number of bytes in the parameter data.
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException
+  {
+    updateBlob (findColumn (columnLabel), inputStream, length);
+  }
+
+    /**
+     * Updates the designated column using the given <code>Reader</code>
+     * object, which is the given number of characters long.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object. The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method 
+     * @since 1.6
+     */
+  public synchronized void updateClob(int columnIndex,  Reader reader, long length) throws SQLException
+  {
+    updateCharacterStream(columnIndex, reader, (int)length);
+  }
+
+    /** 
+     * Updates the designated column using the given <code>Reader</code>
+     * object, which is the given number of characters long.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateClob(String columnLabel,  Reader reader, long length) throws SQLException
+  {
+    updateClob (findColumn (columnLabel), reader, length);
+  }
+
+   /**
+     * Updates the designated column using the given <code>Reader</code>
+     * object, which is the given number of characters long.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object. The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @throws SQLException if the columnIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set,  
+     * if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public synchronized void updateNClob(int columnIndex,  Reader reader, long length) throws SQLException
+  {
+    updateNCharacterStream(columnIndex, reader, (int)length);
+  }
+
+    /**
+     * Updates the designated column using the given <code>Reader</code>
+     * object, which is the given number of characters long.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object. The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @throws SQLException if the columnLabel is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;
+     *  if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNClob(String columnLabel,  Reader reader, long length) throws SQLException
+  {
+    updateNClob (findColumn (columnLabel), reader, length);
+  }
+    
+    /**
+     * Updates the designated column with a character stream value.  
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.  The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.
+     * It is intended for use when
+     * updating  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateNCharacterStream</code> which takes a length parameter.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs; 
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNCharacterStream(int columnIndex, java.io.Reader x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateNCharacterStream(columnIndex, x)");
+  }
+      
+    /**
+     * Updates the designated column with a character stream value.  
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.  The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.  
+     * It is intended for use when
+     * updating  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> columns.
+     * <p>    
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateNCharacterStream</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader the <code>java.io.Reader</code> object containing
+     *        the new column value
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> or this method is called on a closed result set
+      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNCharacterStream(String columnLabel, java.io.Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateNCharacterStream(columnLabel, reader)");
+  }
+
+    /** 
+     * Updates the designated column with an ascii stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateAsciiStream</code> which takes a length parameter.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateAsciiStream(int columnIndex, java.io.InputStream x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateAsciiStream(columnIndex, x)");
+  }
+
+    /** 
+     * Updates the designated column with a binary stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateBinaryStream</code> which takes a length parameter.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value     
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBinaryStream(int columnIndex, java.io.InputStream x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateBinaryStream(columnIndex, x)");
+  }
+
+    /**
+     * Updates the designated column with a character stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateCharacterStream</code> which takes a length parameter.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param x the new column value
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateCharacterStream(int columnIndex, java.io.Reader x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateCharacterStream(columnIndex, x)");
+  }
+
+    /** 
+     * Updates the designated column with an ascii stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateAsciiStream</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param x the new column value
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateAsciiStream(String columnLabel, java.io.InputStream x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateAsciiStream(columnLabel, x)");
+  }
+
+    /** 
+     * Updates the designated column with a binary stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateBinaryStream</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param x the new column value
+     * @exception SQLException if the columnLabel is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBinaryStream(String columnLabel, java.io.InputStream x) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateBinaryStream(columnLabel, x)");
+  }
+
+    /**
+     * Updates the designated column with a character stream value.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateCharacterStream</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader the <code>java.io.Reader</code> object containing
+     *        the new column value
+     * @exception SQLException if the columnLabel is not valid; if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateCharacterStream(String columnLabel, java.io.Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateCharacterStream(columnLabel, reader)");
+  }
+
+    /**
+     * Updates the designated column using the given input stream. The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database. 
+     * 
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateBlob</code> which takes a length parameter.     
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @exception SQLException if the columnIndex is not valid; if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateBlob(columnIndex, inputStream)");
+  }
+
+    /** 
+     * Updates the designated column using the given input stream. The data will be read from the stream
+     * as needed until end-of-stream is reached.
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     *   <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateBlob</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @exception SQLException if the columnLabel is not valid; if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateBlob(columnLabel, inputStream)");
+  }
+
+    /**
+     * Updates the designated column using the given <code>Reader</code>
+     * object.
+     *  The data will be read from the stream
+     * as needed until end-of-stream is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     *   <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateClob</code> which takes a length parameter.
+     *     
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param reader An object that contains the data to set the parameter value to.
+     * @exception SQLException if the columnIndex is not valid; 
+     * if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method 
+     * @since 1.6
+     */
+  public void updateClob(int columnIndex,  Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateClob(columnIndex,  reader)");
+  }
+
+    /** 
+     * Updates the designated column using the given <code>Reader</code>
+     * object.
+     *  The data will be read from the stream
+     * as needed until end-of-stream is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     * 
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateClob</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader An object that contains the data to set the parameter value to.
+     * @exception SQLException if the columnLabel is not valid; if a database access error occurs;
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * or this method is called on a closed result set
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateClob(String columnLabel,  Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateClob(columnLabel,  reader)");
+  }
+
+   /**
+     * Updates the designated column using the given <code>Reader</code>
+     * 
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateNClob</code> which takes a length parameter.
+     *
+     * @param columnIndex the first column is 1, the second 2, ...
+     * @param reader An object that contains the data to set the parameter value to.
+     * @throws SQLException if the columnIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set,  
+     * if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNClob(int columnIndex,  Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateNClob(columnIndex,  reader)");
+  }
+
+    /**
+     * Updates the designated column using the given <code>Reader</code>
+     * object.
+     * The data will be read from the stream
+     * as needed until end-of-stream is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     *
+     * <p>
+     * The updater methods are used to update column values in the
+     * current row or the insert row.  The updater methods do not 
+     * update the underlying database; instead the <code>updateRow</code> or
+     * <code>insertRow</code> methods are called to update the database.
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>updateNClob</code> which takes a length parameter.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.  If the SQL AS clause was not specified, then the label is the name of the column
+     * @param reader An object that contains the data to set the parameter value to.
+     * @throws SQLException if the columnLabel is not valid; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; this method is called on a closed result set;
+     *  if a database access error occurs or
+     * the result set concurrency is <code>CONCUR_READ_ONLY</code> 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void updateNClob(String columnLabel,  Reader reader) throws SQLException
+  {
+    throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "updateNClob(columnLabel,  reader)");
+  }
+
+
+    /**
+     * Returns an object that implements the given interface to allow access to
+     * non-standard methods, or standard methods not exposed by the proxy.
+     * 
+     * If the receiver implements the interface then the result is the receiver 
+     * or a proxy for the receiver. If the receiver is a wrapper
+     * and the wrapped object implements the interface then the result is the
+     * wrapped object or a proxy for the wrapped object. Otherwise return the
+     * the result of calling <code>unwrap</code> recursively on the wrapped object 
+     * or a proxy for that result. If the receiver is not a
+     * wrapper and does not implement the interface, then an <code>SQLException</code> is thrown.
+     *
+     * @param iface A Class defining an interface that the result must implement.
+     * @return an object that implements the interface. May be a proxy for the actual implementing object.
+     * @throws java.sql.SQLException If no object found that implements the interface 
+     * @since 1.6
+     */
+  public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
+  {
+    try {
+      // This works for classes that aren't actually wrapping anything
+      return iface.cast(this);
+    } catch (ClassCastException cce) {
+      throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Unable_to_unwrap_to_XX, iface.toString());
+    }
+  }
+
+    /**
+     * Returns true if this either implements the interface argument or is directly or indirectly a wrapper
+     * for an object that does. Returns false otherwise. If this implements the interface then return true,
+     * else if this is a wrapper then return the result of recursively calling <code>isWrapperFor</code> on the wrapped
+     * object. If this does not implement the interface and is not a wrapper, return false.
+     * This method should be implemented as a low-cost operation compared to <code>unwrap</code> so that
+     * callers can use this method to avoid expensive <code>unwrap</code> calls that may fail. If this method
+     * returns true then calling <code>unwrap</code> with the same argument should succeed.
+     *
+     * @param iface a Class defining an interface.
+     * @return true if this implements the interface or directly or indirectly wraps an object that does.
+     * @throws java.sql.SQLException  if an error occurs while determining whether this is a wrapper
+     * for an object with the given interface.
+     * @since 1.6
+     */
+  public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
+  {
+    // This works for classes that aren't actually wrapping anything
+    return iface.isInstance(this);
+  }
+#endif
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -3719,11 +5225,11 @@ public class OPLCachedRowSet extends BaseRowSet
   {
     Row r = this.getRowForUpdate(columnIndex, funcName);
     switch(rowSMD.getColumnType(columnIndex)) {
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
       case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean((val.intValue()!=0? true:false)));
         break;
-/*_DROP_FOR_JDBC2*/
+#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -3739,6 +5245,11 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
+#if JDK_VER >= 16
+      case Types.NCHAR:
+      case Types.NVARCHAR:
+      case Types.LONGNVARCHAR:
+#endif
         r.setColData(columnIndex, val.toString());
         break;
       default:
@@ -4126,7 +5637,11 @@ public class OPLCachedRowSet extends BaseRowSet
       char[] query;
       final static String blankChars = " \t\n\r\f";
       final static String symb = "_-$#";
+#if JDK_VER >= 16
+      HashMap<String,Integer> keywords = new HashMap<String,Integer>();
+#else
       HashMap keywords = new HashMap();
+#endif
       Token tok = null;
 
     private Scanner(String sql) {
@@ -4631,7 +6146,11 @@ public class OPLCachedRowSet extends BaseRowSet
     private int[]  keyCols;
     private ResultSetMetaData rsmd;
     private int colCount;
+#if JDK_VER >= 16
+    private LinkedList<Object> params = new LinkedList<Object>();
+#else
     private LinkedList params = new LinkedList();
+#endif
 
     private boolean writeData(RowSetInternal x) throws java.sql.SQLException {
       OPLCachedRowSet crs = (OPLCachedRowSet)x;
@@ -4705,7 +6224,11 @@ public class OPLCachedRowSet extends BaseRowSet
         return true; //ERROR , data isn't found
 
       StringBuffer tmpSQL = new StringBuffer(updateSQL);
+#if JDK_VER >= 16
+      LinkedList<Object> setData = new LinkedList<Object>();
+#else
       LinkedList setData = new LinkedList();
+#endif
       boolean comma = false;
       for (int i = 1; i <= colCount; i++)
         if (crs.columnUpdated(i)) {
@@ -4883,9 +6406,9 @@ public class OPLCachedRowSet extends BaseRowSet
             case Types.DECIMAL:
             case Types.NUMERIC:
             case Types.BIT:
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
             case Types.BOOLEAN:
-/*_DROP_FOR_JDBC2*/
+#endif
             case Types.CHAR:
             case Types.VARCHAR:
             case Types.BINARY:
@@ -4893,9 +6416,14 @@ public class OPLCachedRowSet extends BaseRowSet
             case Types.DATE:
             case Types.TIME:
             case Types.TIMESTAMP:
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
             case Types.DATALINK:
-/*_DROP_FOR_JDBC2*/
+#endif
+#if JDK_VER >= 16
+            case Types.NCHAR:
+            case Types.ROWID:
+            case Types.NVARCHAR:
+#endif
             case Types.DISTINCT:
               tmpCols[count++] = i;
               break;

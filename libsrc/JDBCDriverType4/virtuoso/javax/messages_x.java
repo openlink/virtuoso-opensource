@@ -77,7 +77,9 @@ public class messages_x extends ListResourceBundle {
    { "jdbcx.err.31", "Unable to get Connection"},
    { "jdbcx.err.32", "RowSetMetaData is not defined"},
    { "jdbcx.err.33", "{0} can not determine the table name."},
-   { "jdbcx.err.34", "{0} can not determine the keyCols."}
+   { "jdbcx.err.34", "{0} can not determine the keyCols."},
+   { "jdbcx.err.35", "Method {0} not yet implemented."},
+   { "jdbcx.err.36", "Unable to unwrap to: {0}"},
 
 
    };

@@ -35,6 +35,7 @@ class OPLMessage_u extends openlink.util.BaseMessage {
   protected static final int erru_Stream_is_closed = 1;
   protected static final int erru_Invalid_start_position = 2;
   protected static final int erru_Invalid_length = 3;
+  protected static final int erru_Blob_is_freed = 4;
 
 
 

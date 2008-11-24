@@ -34,12 +34,17 @@ JDK3_TARGETS = jdk3-target
 JDK3_TEST = jdk3-test
 endif
 
-JDK_TESTS = $(JDK1_TEST) $(JDK2_TEST) $(JDK3_TEST)
+if JDK4
+JDK4_TARGETS = jdk4-target
+JDK4_TEST = jdk4-test
+endif
 
-SUBDIRS	= . virtuoso testsuite_1.2 testsuite_2.0 testsuite_3.0
+JDK_TESTS = $(JDK1_TEST) $(JDK2_TEST) $(JDK3_TEST)  $(JDK4_TEST)
+
+SUBDIRS	= . virtuoso testsuite_1.2 testsuite_2.0 testsuite_3.0  testsuite_4.0
 
 
-all-am: $(JDK1_TARGETS) $(JDK2_TARGETS) $(JDK3_TARGETS)
+all-am: $(JDK1_TARGETS) $(JDK2_TARGETS) $(JDK3_TARGETS)  $(JDK4_TARGETS)
 
 run-tests:
 	$(MAKE) $(JDK_TESTS)
@@ -70,15 +75,27 @@ jdk3-test:
 	env "JDK3=@ac_jdk3_path@" $(SHELL) ./test3.sh
 
 
+.PHONY: jdk4-target
+jdk4-target:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4
+
+jdk4-test:
+	env "JDK4=@ac_jdk4_path@" $(SHELL) ./test4.sh
+
+
 install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-2.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-3.0"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.0"
 	-cp virtjdbc2.jar virtjdbc2ssl.jar "$(DESTDIR)${libdir}/jdbc-2.0"
 	-cp virtjdbc3.jar virtjdbc3ssl.jar "$(DESTDIR)${libdir}/jdbc-3.0"
+	-cp virtjdbc4.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.0"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-2.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-3.0"
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.0"
 
 MAINTAINERCLEANFILES = *.jar
 clean-local:
@@ -95,9 +112,13 @@ EXTRA_DIST = \
 	test2.sh \
 	test3.bat \
 	test3.sh \
+	test4.bat \
+	test4.sh \
 	test.bat \
 	test.sh \
 	virtjdbc2.jar \
 	virtjdbc2ssl.jar \
 	virtjdbc3.jar \
-	virtjdbc3ssl.jar
+	virtjdbc3ssl.jar \
+	virtjdbc4.jar \
+	virtjdbc4ssl.jar

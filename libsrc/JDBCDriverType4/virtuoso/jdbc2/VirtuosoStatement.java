@@ -103,6 +103,8 @@ public class VirtuosoStatement implements Statement
    // Its meta data
    protected VirtuosoResultSetMetaData metaData;
 
+   protected boolean isCached = false;
+
 #if JDK_VER >= 14
    // Its params data
    protected VirtuosoParameterMetaData paramsMetaData = null;
@@ -828,7 +830,7 @@ public class VirtuosoStatement implements Statement
       i = 0;
       for(ListIterator it = batch.listIterator(); it.hasNext(); )
 #else
-      for(i = 0; i < batch.size; i++)
+      for(i = 0; i < batch.size(); i++)
 #endif
       {
          try
@@ -891,9 +893,13 @@ public class VirtuosoStatement implements Statement
      return exec_type;
    }
 
-   /**
-    * Returns if this statement was closed.
-    */
+    /**
+     * Retrieves whether this <code>Statement</code> object has been closed. A <code>Statement</code> is closed if the
+     * method close has been called on it, or if it is automatically closed.
+     * @return true if this <code>Statement</code> object is closed; false if it is still open
+     * @throws SQLException if a database access error occurs
+     * @since 1.6
+     */
    public boolean isClosed ( )
    {
      return close_flag;
@@ -988,4 +994,104 @@ public class VirtuosoStatement implements Statement
 	   throw ve;
        }
    }
+
+#if JDK_VER >= 16
+    //------------------------- JDBC 4.0 -----------------------------------
+  private boolean isPoolable = true;
+    /**
+     * Requests that a <code>Statement</code> be pooled or not pooled.  The value 
+     * specified is a hint to the statement pool implementation indicating 
+     * whether the applicaiton wants the statement to be pooled.  It is up to 
+     * the statement pool manager as to whether the hint is used.
+     * <p>
+     * The poolable value of a statement is applicable to both internal 
+     * statement caches implemented by the driver and external statement caches 
+     * implemented by application servers and other applications.
+     * <p>
+     * By default, a <code>Statement</code> is not poolable when created, and 
+     * a <code>PreparedStatement</code> and <code>CallableStatement</code> 
+     * are poolable when created.
+     * <p>
+     * @param poolable	requests that the statement be pooled if true and
+     * 			that the statement not be pooled if false 
+     * <p>
+     * @throws SQLException if this method is called on a closed 
+     * <code>Statement</code>
+     * <p>
+     * @since 1.6
+     */
+  public void setPoolable(boolean poolable) throws SQLException
+  {
+    isPoolable = poolable;
+  }
+	
+    /**
+     * Returns a  value indicating whether the <code>Statement</code>
+     * is poolable or not.
+     * <p>
+     * @return	<code>true</code> if the <code>Statement</code> 
+     * is poolable; <code>false</code> otherwise
+     * <p>
+     * @throws SQLException if this method is called on a closed 
+     * <code>Statement</code>
+     * <p>
+     * @since 1.6
+     * <p>
+     * @see java.sql.Statement#setPoolable(boolean) setPoolable(boolean)
+     */
+  public boolean isPoolable() throws SQLException
+  {
+    return isPoolable;
+  }
+
+    /**
+     * Returns an object that implements the given interface to allow access to
+     * non-standard methods, or standard methods not exposed by the proxy.
+     * 
+     * If the receiver implements the interface then the result is the receiver 
+     * or a proxy for the receiver. If the receiver is a wrapper
+     * and the wrapped object implements the interface then the result is the
+     * wrapped object or a proxy for the wrapped object. Otherwise return the
+     * the result of calling <code>unwrap</code> recursively on the wrapped object 
+     * or a proxy for that result. If the receiver is not a
+     * wrapper and does not implement the interface, then an <code>SQLException</code> is thrown.
+     *
+     * @param iface A Class defining an interface that the result must implement.
+     * @return an object that implements the interface. May be a proxy for the actual implementing object.
+     * @throws java.sql.SQLException If no object found that implements the interface 
+     * @since 1.6
+     */
+  public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
+  {
+    try {
+      // This works for classes that aren't actually wrapping anything
+      return iface.cast(this);
+    } catch (ClassCastException cce) {
+      throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
+    }
+  }
+
+    /**
+     * Returns true if this either implements the interface argument or is directly or indirectly a wrapper
+     * for an object that does. Returns false otherwise. If this implements the interface then return true,
+     * else if this is a wrapper then return the result of recursively calling <code>isWrapperFor</code> on the wrapped
+     * object. If this does not implement the interface and is not a wrapper, return false.
+     * This method should be implemented as a low-cost operation compared to <code>unwrap</code> so that
+     * callers can use this method to avoid expensive <code>unwrap</code> calls that may fail. If this method
+     * returns true then calling <code>unwrap</code> with the same argument should succeed.
+     *
+     * @param iface a Class defining an interface.
+     * @return true if this implements the interface or directly or indirectly wraps an object that does.
+     * @throws java.sql.SQLException  if an error occurs while determining whether this is a wrapper
+     * for an object with the given interface.
+     * @since 1.6
+     */
+  public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
+  {
+    // This works for classes that aren't actually wrapping anything
+    return iface.isInstance(this);
+  }
+
+
+#endif
 }

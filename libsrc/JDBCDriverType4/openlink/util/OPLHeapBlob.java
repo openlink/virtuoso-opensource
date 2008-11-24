@@ -36,8 +36,14 @@ public class OPLHeapBlob implements Blob, Serializable {
   static final long serialVersionUID = -6793193829176495886L;
 
   private byte[] blobData = null;
+  private long  blobLength = 0;
   private final static int buf_size = 0x8000;
   private Object lck;
+
+  public OPLHeapBlob() {
+    lck = this;
+    blobData = new byte[1];
+  }
 
   public OPLHeapBlob(byte[] b) {
     this(b, 0, b.length);
@@ -47,6 +53,7 @@ public class OPLHeapBlob implements Blob, Serializable {
     lck = this;
     blobData = new byte[len];
     System.arraycopy(b, off, blobData, 0, len);
+    blobLength = len;
   }
 
   public OPLHeapBlob(InputStream is) throws SQLException {
@@ -62,6 +69,7 @@ public class OPLHeapBlob implements Blob, Serializable {
 	sz = in.read(tmp, 0, buf_size);
       }
       blobData = out.toByteArray();
+      blobLength = blobData.length;
     } catch( IOException e ) {
       throw OPLMessage_u.makeException(e);
     }
@@ -76,8 +84,9 @@ public class OPLHeapBlob implements Blob, Serializable {
    * @since 1.2
    */
   public long length() throws SQLException {
+    ensureOpen();
     synchronized (lck) {
-      return blobData.length;
+      return blobLength;
     }
   }
 
@@ -101,8 +110,8 @@ public class OPLHeapBlob implements Blob, Serializable {
    * @since 1.2
    */
   public byte[] getBytes(long pos, int len) throws SQLException {
+    ensureOpen();
     synchronized (lck) {
-      long blobLength = blobData.length;
       pos--;
       if( pos >= blobLength )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
@@ -127,6 +136,7 @@ public class OPLHeapBlob implements Blob, Serializable {
    * @since 1.2
    */
   public InputStream getBinaryStream() throws SQLException {
+    ensureOpen();
     return new BlobInputStream(lck);
   }
 
@@ -146,13 +156,13 @@ public class OPLHeapBlob implements Blob, Serializable {
    * @since 1.2
    */
   public long position(byte[] pattern, long start) throws SQLException {
+    ensureOpen();
     synchronized (lck) {
       if( start < 1 )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
 
       start--;
       boolean match;
-      long blobLength = length();
 
       if (start > blobLength)
         return -1;
@@ -194,6 +204,7 @@ public class OPLHeapBlob implements Blob, Serializable {
    * @since 1.2
    */
   public long position(Blob pattern, long start) throws SQLException {
+    ensureOpen();
     if( start < 1 )
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_start_position);
 
@@ -201,7 +212,7 @@ public class OPLHeapBlob implements Blob, Serializable {
   }
 
     // -------------------------- JDBC 3.0 -----------------------------------
-/*DROP_FOR_JDBC2*/
+#if JDK_VER >= 14
 
     /**
      * Writes the given array of bytes to the <code>BLOB</code> value that
@@ -219,6 +230,7 @@ public class OPLHeapBlob implements Blob, Serializable {
      * @since 1.4
      */
   public int setBytes(long pos, byte[] bytes) throws SQLException {
+    ensureOpen();
     return setBytes(pos, bytes, 0, bytes.length);
   }
 
@@ -244,6 +256,7 @@ public class OPLHeapBlob implements Blob, Serializable {
      * @since 1.4
      */
   public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
+    ensureOpen();
     synchronized (lck) {
       OutputStream os = new BlobOutputStream(lck, pos);
       try {
@@ -270,6 +283,7 @@ public class OPLHeapBlob implements Blob, Serializable {
      * @since 1.4
      */
   public java.io.OutputStream setBinaryStream(long pos) throws SQLException {
+    ensureOpen();
     return new BlobOutputStream(lck, pos);
   }
 
@@ -284,34 +298,101 @@ public class OPLHeapBlob implements Blob, Serializable {
      * @since 1.4
      */
   public void truncate(long len) throws SQLException {
+    ensureOpen();
     synchronized (lck) {
       int newLen = (int)len;
-      if( newLen < 0 || newLen > blobData.length)
+      if( newLen < 0 || newLen > blobLength)
         throw OPLMessage_u.makeException(OPLMessage_u.erru_Invalid_length);
       if (newLen < blobData.length) {
         byte newbuf[] = new byte[newLen];
         System.arraycopy(blobData, 0, newbuf, 0, newLen);
         blobData = newbuf;
       }
+      blobLength = len;
     }
   }
-/*_DROP_FOR_JDBC2*/
+
+#if JDK_VER >= 16
+    /**
+     * This method frees the <code>Blob</code> object and releases the resources that 
+     * it holds. The object is invalid once the <code>free</code>
+     * method is called.
+     *<p>
+     * After <code>free</code> has been called, any attempt to invoke a
+     * method other than <code>free</code> will result in a <code>SQLException</code> 
+     * being thrown.  If <code>free</code> is called multiple times, the subsequent
+     * calls to <code>free</code> are treated as a no-op.
+     *<p>
+     * 
+     * @throws SQLException if an error occurs releasing
+     * the Blob's resources
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void free() throws SQLException 
+  {
+    synchronized (lck) {
+        blobData = null;
+    }
+  }
+
+
+    /**
+     * Returns an <code>InputStream</code> object that contains a partial <code>Blob</code> value, 
+     * starting  with the byte specified by pos, which is length bytes in length.
+     *
+     * @param pos the offset to the first byte of the partial value to be retrieved.
+     *  The first byte in the <code>Blob</code> is at position 1
+     * @param length the length in bytes of the partial value to be retrieved
+     * @return <code>InputStream</code> through which the partial <code>Blob</code> value can be read.
+     * @throws SQLException if pos is less than 1 or if pos is greater than the number of bytes
+     * in the <code>Blob</code> or if pos + length is greater than the number of bytes 
+     * in the <code>Blob</code>
+     *
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public InputStream getBinaryStream(long pos, long length) throws SQLException 
+  {
+    ensureOpen();
+    return new BlobInputStream(lck, pos, length);
+  }
+
+
+#endif
+#endif
+  private void ensureOpen() throws SQLException 
+  {
+    if (blobData == null)
+       throw OPLMessage_u.makeException(OPLMessage_u.erru_Blob_is_freed);
+  }
+
 
   // === Inner class ===========================================
   protected class BlobInputStream extends InputStream {
 
     private boolean isClosed = false;
     private int pos = 0;
+    private long length;
     private Object lock;
 
     protected BlobInputStream(Object lck) {
       this.lock = lck;
+      length = blobLength;
+    }
+
+    protected BlobInputStream(Object lck, long pos, long length) {
+      this.lock = lck;
+      this.pos = (int)pos;
+      this.length = length;
     }
 
     public int read() throws IOException {
       ensureOpen();
       synchronized (lock) {
-        return (pos < blobData.length) ? (blobData[pos++] & 0xff) : -1;
+        return (pos < length) ? (blobData[pos++] & 0xff) : -1;
       }
     }
 
@@ -325,11 +406,11 @@ public class OPLHeapBlob implements Blob, Serializable {
 		   ((off + len) > b.length) || ((off + len) < 0))
 	   throw new IndexOutOfBoundsException();
 
-	if (pos >= blobData.length)
+	if (pos >= length)
 	    return -1;
 
-	if (pos + len > blobData.length)
-	    len = blobData.length - pos;
+	if (pos + len > length)
+	    len = (int)(length - pos);
 
         if (len <= 0)
            return 0;
@@ -343,8 +424,8 @@ public class OPLHeapBlob implements Blob, Serializable {
     public long skip(long n) throws IOException {
       ensureOpen();
       synchronized (lock) {
-	if (pos + n > blobData.length)
-	    n = blobData.length - pos;
+	if (pos + n > length)
+	    n = length - pos;
 
 	if (n < 0)
 	    return 0;
@@ -361,7 +442,7 @@ public class OPLHeapBlob implements Blob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-        if (isClosed)
+        if (isClosed || blobData == null)
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed ));
     }
   }
@@ -389,6 +470,7 @@ public class OPLHeapBlob implements Blob, Serializable {
         }
         blobData[count] = (byte)b;
         count = newcount;
+        blobLength+=1;
       }
     }
 
@@ -409,6 +491,7 @@ public class OPLHeapBlob implements Blob, Serializable {
         }
         System.arraycopy(b, off, blobData, count, len);
         count = newcount;
+        blobLength += len;
       }
     }
 
@@ -419,7 +502,7 @@ public class OPLHeapBlob implements Blob, Serializable {
     }
 
     private void ensureOpen() throws IOException {
-        if (isClosed)
+        if (isClosed || blobData == null)
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed ));
     }
   }

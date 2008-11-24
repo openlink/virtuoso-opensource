@@ -1144,5 +1144,790 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
      {
        throw new VirtuosoException ("DATALINK type not supported", VirtuosoException.NOTIMPLEMENTED);
      }
+
+#if JDK_VER >= 16
+  private int findParam (String paramName) throws SQLException {
+       throw new VirtuosoException ("Named parameters not supported", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    
+    //------------------------- JDBC 4.0 -----------------------------------
+    /**
+     * Retrieves the value of the designated JDBC <code>ROWID</code> parameter as a  
+     * <code>java.sql.RowId</code> object.  
+     *
+     * @param parameterIndex the first parameter is 1, the second is 2,...
+     * @return a <code>RowId</code> object that represents the JDBC <code>ROWID</code>
+     *     value is used as the designated parameter. If the parameter contains
+     * a SQL <code>NULL</code>, then a <code>null</code> value is returned.
+     * @throws SQLException if the parameterIndex is not valid; 
+     * if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public RowId getRowId(int parameterIndex) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'getRowId(parameterIndex)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+    
+    /**
+     * Retrieves the value of the designated JDBC <code>ROWID</code> parameter as a  
+     * <code>java.sql.RowId</code> object.  
+     *
+     * @param parameterName the name of the parameter
+     * @return a <code>RowId</code> object that represents the JDBC <code>ROWID</code>
+     *     value is used as the designated parameter. If the parameter contains
+     * a SQL <code>NULL</code>, then a <code>null</code> value is returned.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public RowId getRowId(String parameterName) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'getRowId(parameterName)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+    
+     /**
+     * Sets the designated parameter to the given <code>java.sql.RowId</code> object. The
+     * driver converts this to a SQL <code>ROWID</code> when it sends it to the
+     * database.
+     *
+     * @param parameterName the name of the parameter
+     * @param x the parameter value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setRowId(String parameterName, RowId x) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setRowId(parameterName, x)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to the given <code>String</code> object.
+     * The driver converts this to a SQL <code>NCHAR</code> or
+     * <code>NVARCHAR</code> or <code>LONGNVARCHAR</code>
+     * @param parameterName the name of the parameter to be set
+     * @param value the parameter value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setNString(String parameterName, String value)
+            throws SQLException
+  {
+    setNString(findParam(parameterName), value);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>Reader</code> object. The
+     * <code>Reader</code> reads the data till end-of-file is reached. The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.
+     * @param parameterName the name of the parameter to be set
+     * @param value the parameter value
+     * @param length the number of characters in the parameter data.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setNCharacterStream(String parameterName, Reader value, long length)
+            throws SQLException
+  {
+    setNCharacterStream(findParam(parameterName), value, length);
+  }
+
+     /**
+     * Sets the designated parameter to a <code>java.sql.NClob</code> object. The object
+     * implements the <code>java.sql.NClob</code> interface. This <code>NClob</code>
+     * object maps to a SQL <code>NCLOB</code>.
+     * @param parameterName the name of the parameter to be set
+     * @param value the parameter value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setNClob(String parameterName, NClob value) throws SQLException
+  {
+    setNClob(findParam(parameterName), value);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>Reader</code> object.  The <code>reader</code> must contain  the number
+     * of characters specified by length otherwise a <code>SQLException</code> will be
+     * generated when the <code>CallableStatement</code> is executed.
+     * This method differs from the <code>setCharacterStream (int, Reader, int)</code> method
+     * because it informs the driver that the parameter value should be sent to
+     * the server as a <code>CLOB</code>.  When the <code>setCharacterStream</code> method is used, the
+     * driver may have to do extra work to determine whether the parameter
+     * data should be send to the server as a <code>LONGVARCHAR</code> or a <code>CLOB</code>
+     * @param parameterName the name of the parameter to be set
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the length specified is less than zero;
+     * a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     *
+     * @since 1.6
+     */
+  public void setClob(String parameterName, Reader reader, long length)
+       throws SQLException
+  {
+    setClob(findParam(parameterName), reader, length);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>InputStream</code> object.  The <code>inputstream</code> must contain  the number
+     * of characters specified by length, otherwise a <code>SQLException</code> will be
+     * generated when the <code>CallableStatement</code> is executed.
+     * This method differs from the <code>setBinaryStream (int, InputStream, int)</code>
+     * method because it informs the driver that the parameter value should be
+     * sent to the server as a <code>BLOB</code>.  When the <code>setBinaryStream</code> method is used,
+     * the driver may have to do extra work to determine whether the parameter
+     * data should be sent to the server as a <code>LONGVARBINARY</code> or a <code>BLOB</code>
+     *
+     * @param parameterName the name of the parameter to be set
+     * the second is 2, ...
+     * 
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @param length the number of bytes in the parameter data.
+     * @throws SQLException  if parameterName does not correspond to a named 
+     * parameter; if the length specified
+     * is less than zero; if the number of bytes in the inputstream does not match
+     * the specfied length; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     *
+     * @since 1.6
+     */
+  public void setBlob(String parameterName, InputStream inputStream, long length)
+        throws SQLException
+  {
+    setBlob(findParam(parameterName), inputStream, length);
+  }
+    /**
+     * Sets the designated parameter to a <code>Reader</code> object.  The <code>reader</code> must contain  the number
+     * of characters specified by length otherwise a <code>SQLException</code> will be
+     * generated when the <code>CallableStatement</code> is executed.
+     * This method differs from the <code>setCharacterStream (int, Reader, int)</code> method
+     * because it informs the driver that the parameter value should be sent to
+     * the server as a <code>NCLOB</code>.  When the <code>setCharacterStream</code> method is used, the
+     * driver may have to do extra work to determine whether the parameter
+     * data should be send to the server as a <code>LONGNVARCHAR</code> or a <code>NCLOB</code>
+     * 
+     * @param parameterName the name of the parameter to be set
+     * @param reader An object that contains the data to set the parameter value to.
+     * @param length the number of characters in the parameter data.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the length specified is less than zero;
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setNClob(String parameterName, Reader reader, long length)
+       throws SQLException
+  {
+    setNClob(findParam(parameterName), reader, length);
+  }
+     
+    /**
+     * Retrieves the value of the designated JDBC <code>NCLOB</code> parameter as a
+     * <code>java.sql.NClob</code> object in the Java programming language.
+     * 
+     * @param parameterIndex the first parameter is 1, the second is 2, and
+     * so on
+     * @return the parameter value as a <code>NClob</code> object in the
+     * Java programming language.  If the value was SQL <code>NULL</code>, the
+     * value <code>null</code> is returned.
+     * @exception SQLException if the parameterIndex is not valid; 
+     * if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public NClob getNClob (int parameterIndex) throws SQLException
+  {
+    return new OPLHeapNClob(getString(parameterIndex));
+  }
+    
+    
+    /**
+     * Retrieves the value of a JDBC <code>NCLOB</code> parameter as a
+     * <code>java.sql.NClob</code> object in the Java programming language.
+     * @param parameterName the name of the parameter
+     * @return the parameter value as a <code>NClob</code> object in the
+     *         Java programming language.  If the value was SQL <code>NULL</code>, 
+     *         the value <code>null</code> is returned.
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public NClob getNClob (String parameterName) throws SQLException
+  {
+    return getNClob(findParam(parameterName));
+  }
+
+    /**
+     * Sets the designated parameter to the given <code>java.sql.SQLXML</code> object. The driver converts this to an
+     * <code>SQL XML</code> value when it sends it to the database.
+     *
+     * @param parameterName the name of the parameter
+     * @param xmlObject a <code>SQLXML</code> object that maps an <code>SQL XML</code> value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs; 
+     * this method is called on a closed <code>CallableStatement</code> or 
+     * the <code>java.xml.transform.Result</code>,
+     *  <code>Writer</code> or <code>OutputStream</code> has not been closed for the <code>SQLXML</code> object 
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     *
+     * @since 1.6
+     */
+  public void setSQLXML(String parameterName, SQLXML xmlObject) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setSQLXML(parameterName, xmlObject)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Retrieves the value of the designated <code>SQL XML</code> parameter as a
+     * <code>java.sql.SQLXML</code> object in the Java programming language.
+     * @param parameterIndex index of the first parameter is 1, the second is 2, ...
+     * @return a <code>SQLXML</code> object that maps an <code>SQL XML</code> value
+     * @throws SQLException if the parameterIndex is not valid; 
+     * if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public SQLXML getSQLXML(int parameterIndex) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'getSQLXML(int parameterIndex)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Retrieves the value of the designated <code>SQL XML</code> parameter as a
+     * <code>java.sql.SQLXML</code> object in the Java programming language.
+     * @param parameterName the name of the parameter
+     * @return a <code>SQLXML</code> object that maps an <code>SQL XML</code> value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public SQLXML getSQLXML(String parameterName) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'getSQLXML(String parameterName)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+    
+    /**
+     * Retrieves the value of the designated <code>NCHAR</code>,
+     * <code>NVARCHAR</code>
+     * or <code>LONGNVARCHAR</code> parameter as
+     * a <code>String</code> in the Java programming language.
+     *  <p>
+     * For the fixed-length type JDBC <code>NCHAR</code>,
+     * the <code>String</code> object
+     * returned has exactly the same value the SQL
+     * <code>NCHAR</code> value had in the
+     * database, including any padding added by the database.
+     *
+     * @param parameterIndex index of the first parameter is 1, the second is 2, ...
+     * @return a <code>String</code> object that maps an 
+     * <code>NCHAR</code>, <code>NVARCHAR</code> or <code>LONGNVARCHAR</code> value
+     * @exception SQLException if the parameterIndex is not valid; 
+     * if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     * @see #setNString
+     */
+  public String getNString(int parameterIndex) throws SQLException
+  {
+    return getString(parameterIndex);
+  }
+    
+    
+    /**
+     *  Retrieves the value of the designated <code>NCHAR</code>,
+     * <code>NVARCHAR</code>
+     * or <code>LONGNVARCHAR</code> parameter as
+     * a <code>String</code> in the Java programming language.
+     * <p>
+     * For the fixed-length type JDBC <code>NCHAR</code>,
+     * the <code>String</code> object
+     * returned has exactly the same value the SQL
+     * <code>NCHAR</code> value had in the
+     * database, including any padding added by the database.
+     *
+     * @param parameterName the name of the parameter
+     * @return a <code>String</code> object that maps an 
+     * <code>NCHAR</code>, <code>NVARCHAR</code> or <code>LONGNVARCHAR</code> value
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; 
+     * if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6 
+     * @see #setNString
+     */
+  public String getNString(String parameterName) throws SQLException
+  {
+    return getNString(findParam(parameterName));
+  }
+      
+    /**
+     * Retrieves the value of the designated parameter as a
+     * <code>java.io.Reader</code> object in the Java programming language.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> parameters.
+     *
+     * @return a <code>java.io.Reader</code> object that contains the parameter
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language.
+     * @param parameterIndex the first parameter is 1, the second is 2, ...
+     * @exception SQLException if the parameterIndex is not valid; 
+     * if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public java.io.Reader getNCharacterStream(int parameterIndex) throws SQLException
+  {
+    return (new OPLHeapNClob(getNString(parameterIndex))).getCharacterStream();
+  }
+
+    /**
+     * Retrieves the value of the designated parameter as a
+     * <code>java.io.Reader</code> object in the Java programming language.
+     * It is intended for use when
+     * accessing  <code>NCHAR</code>,<code>NVARCHAR</code>
+     * and <code>LONGNVARCHAR</code> parameters.
+     * 
+     * @param parameterName the name of the parameter
+     * @return a <code>java.io.Reader</code> object that contains the parameter
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public java.io.Reader getNCharacterStream(String parameterName) throws SQLException
+  {
+    return getNCharacterStream(findParam(parameterName));
+  }
+        
+    /**
+     * Retrieves the value of the designated parameter as a
+     * <code>java.io.Reader</code> object in the Java programming language.
+     *
+     * @return a <code>java.io.Reader</code> object that contains the parameter
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language.
+     * @param parameterIndex the first parameter is 1, the second is 2, ...
+     * @exception SQLException if the parameterIndex is not valid; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @since 1.6
+     */
+  public java.io.Reader getCharacterStream(int parameterIndex) throws SQLException
+  {
+    return (new OPLHeapClob(getString(parameterIndex))).getCharacterStream();
+  }
+
+    /**
+     * Retrieves the value of the designated parameter as a
+     * <code>java.io.Reader</code> object in the Java programming language.
+     * 
+     * @param parameterName the name of the parameter
+     * @return a <code>java.io.Reader</code> object that contains the parameter
+     * value; if the value is SQL <code>NULL</code>, the value returned is
+     * <code>null</code> in the Java programming language
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public java.io.Reader getCharacterStream(String parameterName) throws SQLException
+  {
+    return getCharacterStream(findParam(parameterName));
+  }
+    
+    /**
+     * Sets the designated parameter to the given <code>java.sql.Blob</code> object.
+     * The driver converts this to an SQL <code>BLOB</code> value when it
+     * sends it to the database.
+     *
+     * @param parameterName the name of the parameter
+     * @param x a <code>Blob</code> object that maps an SQL <code>BLOB</code> value
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setBlob (String parameterName, Blob x) throws SQLException
+  {
+    setBlob(findParam(parameterName), x);
+  }
+
+    /**
+     * Sets the designated parameter to the given <code>java.sql.Clob</code> object.
+     * The driver converts this to an SQL <code>CLOB</code> value when it
+     * sends it to the database.
+     *
+     * @param parameterName the name of the parameter
+     * @param x a <code>Clob</code> object that maps an SQL <code>CLOB</code> value
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setClob (String parameterName, Clob x) throws SQLException
+  {
+    setClob(findParam(parameterName), x);
+  }
+
+    /**
+     * Sets the designated parameter to the given input stream, which will have 
+     * the specified number of bytes.
+     * When a very large ASCII value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.InputStream</code>. Data will be read from the stream
+     * as needed until end-of-file is reached.  The JDBC driver will
+     * do any necessary conversion from ASCII to the database char format.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     *
+     * @param parameterName the name of the parameter
+     * @param x the Java input stream that contains the ASCII parameter value
+     * @param length the number of bytes in the stream 
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setAsciiStream(String parameterName, java.io.InputStream x, long length)
+	throws SQLException
+  {
+    setAsciiStream(findParam(parameterName), x, (int)length);
+  }	
+
+    /**
+     * Sets the designated parameter to the given input stream, which will have 
+     * the specified number of bytes.
+     * When a very large binary value is input to a <code>LONGVARBINARY</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.InputStream</code> object. The data will be read from the stream
+     * as needed until end-of-file is reached.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     *
+     * @param parameterName the name of the parameter
+     * @param x the java input stream which contains the binary parameter value
+     * @param length the number of bytes in the stream 
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setBinaryStream(String parameterName, java.io.InputStream x, 
+			 long length) throws SQLException
+  {
+    setBinaryStream(findParam(parameterName), x, (int)length);
+  }
+
+   /**
+     * Sets the designated parameter to the given <code>Reader</code>
+     * object, which is the given number of characters long.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object. The data will be read from the stream
+     * as needed until end-of-file is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     *
+     * @param parameterName the name of the parameter
+     * @param reader the <code>java.io.Reader</code> object that
+     *        contains the UNICODE data used as the designated parameter
+     * @param length the number of characters in the stream 
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.6
+     */
+  public void setCharacterStream(String parameterName,
+			    java.io.Reader reader,
+			    long length) throws SQLException
+  {
+    setCharacterStream(findParam(parameterName), reader, (int)length);
+  }
+
+    /**
+     * Sets the designated parameter to the given input stream.
+     * When a very large ASCII value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.InputStream</code>. Data will be read from the stream
+     * as needed until end-of-file is reached.  The JDBC driver will
+     * do any necessary conversion from ASCII to the database char format.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setAsciiStream</code> which takes a length parameter. 
+     *
+     * @param parameterName the name of the parameter
+     * @param x the Java input stream that contains the ASCII parameter value
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+       * @since 1.6
+    */
+  public void setAsciiStream(String parameterName, java.io.InputStream x)
+	    throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setAsciiStream(parameterName, x)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to the given input stream.
+     * When a very large binary value is input to a <code>LONGVARBINARY</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.InputStream</code> object. The data will be read from the 
+     * stream as needed until end-of-file is reached.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setBinaryStream</code> which takes a length parameter. 
+     *
+     * @param parameterName the name of the parameter
+     * @param x the java input stream which contains the binary parameter value
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     * @since 1.6
+     */
+  public void setBinaryStream(String parameterName, java.io.InputStream x)
+    throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setBinaryStream(parameterName, x)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to the given <code>Reader</code>
+     * object.
+     * When a very large UNICODE value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.Reader</code> object. The data will be read from the stream
+     * as needed until end-of-file is reached.  The JDBC driver will
+     * do any necessary conversion from UNICODE to the database char format.
+     * 
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setCharacterStream</code> which takes a length parameter. 
+     *
+     * @param parameterName the name of the parameter
+     * @param reader the <code>java.io.Reader</code> object that contains the 
+     *        Unicode data
+     * @exception SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     * @since 1.6
+     */
+  public void setCharacterStream(String parameterName,
+       			  java.io.Reader reader) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setCharacterStream(parameterName, reader)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+  /**
+     * Sets the designated parameter to a <code>Reader</code> object. The
+     * <code>Reader</code> reads the data till end-of-file is reached. The
+     * driver does the necessary conversion from Java character format to
+     * the national character set in the database.
+     
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setNCharacterStream</code> which takes a length parameter.
+     *      
+     * @param parameterName the name of the parameter
+     * @param value the parameter value
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national
+     *         character sets;  if the driver can detect that a data conversion
+     *  error could occur; if a database access error occurs; or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     * @since 1.6
+     */
+  public void setNCharacterStream(String parameterName, Reader value) throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setNCharacterStream(parameterName, value)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>Reader</code> object. 
+     * This method differs from the <code>setCharacterStream (int, Reader)</code> method
+     * because it informs the driver that the parameter value should be sent to
+     * the server as a <code>CLOB</code>.  When the <code>setCharacterStream</code> method is used, the
+     * driver may have to do extra work to determine whether the parameter
+     * data should be send to the server as a <code>LONGVARCHAR</code> or a <code>CLOB</code>
+     * 
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setClob</code> which takes a length parameter.
+     *
+     * @param parameterName the name of the parameter
+     * @param reader An object that contains the data to set the parameter value to.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or this method is called on
+     * a closed <code>CallableStatement</code>
+     *
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     * @since 1.6
+     */
+  public void setClob(String parameterName, Reader reader)
+       throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setClob(parameterName, reader)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>InputStream</code> object. 
+     * This method differs from the <code>setBinaryStream (int, InputStream)</code>
+     * method because it informs the driver that the parameter value should be
+     * sent to the server as a <code>BLOB</code>.  When the <code>setBinaryStream</code> method is used,
+     * the driver may have to do extra work to determine whether the parameter
+     * data should be send to the server as a <code>LONGVARBINARY</code> or a <code>BLOB</code>
+     *
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setBlob</code> which takes a length parameter.
+     *
+     * @param parameterName the name of the parameter
+     * @param inputStream An object that contains the data to set the parameter
+     * value to.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     *
+     * @since 1.6
+     */
+  public void setBlob(String parameterName, InputStream inputStream)
+        throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setBlob(parameterName, inputStream)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+    /**
+     * Sets the designated parameter to a <code>Reader</code> object.  
+     * This method differs from the <code>setCharacterStream (int, Reader)</code> method
+     * because it informs the driver that the parameter value should be sent to
+     * the server as a <code>NCLOB</code>.  When the <code>setCharacterStream</code> method is used, the
+     * driver may have to do extra work to determine whether the parameter
+     * data should be send to the server as a <code>LONGNVARCHAR</code> or a <code>NCLOB</code>
+     * <P><B>Note:</B> Consult your JDBC driver documentation to determine if 
+     * it might be more efficient to use a version of 
+     * <code>setNClob</code> which takes a length parameter.
+     *
+     * @param parameterName the name of the parameter
+     * @param reader An object that contains the data to set the parameter value to.
+     * @throws SQLException if parameterName does not correspond to a named 
+     * parameter; if the driver does not support national character sets;
+     * if the driver can detect that a data conversion
+     *  error could occur;  if a database access error occurs or 
+     * this method is called on a closed <code>CallableStatement</code>
+     * @throws SQLFeatureNotSupportedException  if the JDBC driver does not support this method
+     *
+     * @since 1.6
+     */
+  public void setNClob(String parameterName, Reader reader)
+       throws SQLException
+  {
+    throw new VirtuosoException ("Method 'setNClob(parameterName, reader)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
+  }
+
+#endif
 #endif
 }

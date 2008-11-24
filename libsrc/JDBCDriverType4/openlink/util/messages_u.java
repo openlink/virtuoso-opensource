@@ -43,7 +43,8 @@ public class messages_u extends ListResourceBundle {
 //##
    { "jdbcu.err.1", "Stream is closed"},
    { "jdbcu.err.2", "Invalid start position."},
-   { "jdbcu.err.3", "Invalid length."}
+   { "jdbcu.err.3", "Invalid length."},
+   { "jdbcu.err.4", "Blob is freed."},
 
 
 
