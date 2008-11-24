@@ -208,8 +208,10 @@
       nodes := AB.WA.ab_tree2 (domain_id, user_id, node, path);
       if (level = 1)
         self.validateNode (domain_id);
-      for (N := 0; N < length(nodes); N := N + 3) {
-        if (level = 1) {
+      for (N := 0; N < length(nodes); N := N + 3)
+      {
+        if (level = 1)
+        {
           http ('<div style="margin-left:3px; margin-top:3px; white-space: nowrap;">');
         } else {
           http ('<div style="margin-left:12px; white-space: nowrap;">');
@@ -217,7 +219,8 @@
         image := 'plus.gif';
         image2 := 'folder_16.png';
         alt := 'Open Node';
-        if (not AB.WA.ab_node_has_childs (domain_id, user_id, nodes[N+1], nodes[N+2])) {
+        if (not AB.WA.ab_node_has_childs (domain_id, user_id, nodes[N+1], nodes[N+2]))
+        {
           image := 'c.gif';
           image2 := 'folder_16.png';
         } else if (AB.WA.vector_contains(self.abState, nodes[N+2])) {
@@ -237,7 +240,8 @@
           class := 'nolink_a';
           self.abName := nodes[N];
         }
-        if (image = 'c.gif') {
+        if (image = 'c.gif')
+        {
           http (sprintf ('<img src="image/%s" border="0" width="11px" />', image));
         } else {
           http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
@@ -486,6 +490,8 @@
             self.abSubAction := '';
             self.abValue := '';
           }
+          if ((self.account_role in ('public', 'guest')) and (self.abAction = 'settings'))
+            self.abAction := 'browse';
             
           self.mode_test();
         ]]>

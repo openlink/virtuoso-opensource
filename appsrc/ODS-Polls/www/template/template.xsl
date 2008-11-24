@@ -173,19 +173,17 @@
             </v:button>
           </div>
         </v:template>
-        <br style="clear: left;"/>
       </div>
-        <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
-          <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
+        <div style="clear: both; border: solid #935000; border-width: 0px 0px 1px 0px;">
+          <div style="float: left; padding-left: 0.5em;">
             <?vsp http (POLLS.WA.utf2wide (POLLS.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
-          <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
+          <div style="float: right; padding-right: 0.5em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
-          |
         </v:template>
-        <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
       </div>
+          <p style="clear: both; line-height: 0.1em" />
         </div>  
       <v:include url="polls_login.vspx"/>
       <table id="MTB">

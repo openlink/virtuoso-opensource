@@ -4279,8 +4279,8 @@ create procedure BMK.WA.make_post_rfc_msg (
   declare ses any;
 
   ses := string_output ();
-  http (head, ses);
-  http (body, ses);
+  http (coalesce (head, ''), ses);
+  http (coalesce (body, ''), ses);
   http ('\r\n.\r\n', ses);
   ses := string_output_string (ses);
   if (tree)

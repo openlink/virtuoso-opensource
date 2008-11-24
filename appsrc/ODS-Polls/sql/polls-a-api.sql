@@ -193,7 +193,7 @@ create procedure ODS.ODS_API."poll.question.new" (
      where Q_POLL_ID = poll_id
        and Q_NUMBER >= questionNo;
   }
-  answerParams := split_and_decode (answer, 0, '%\0,='); -- XXX: FIXME
+  answerParams := split_and_decode (answer, 0);
   rc := POLLS.WA.question_update (
           -1,
           poll_id,
@@ -265,9 +265,8 @@ create procedure ODS.ODS_API."poll.activate" (
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_activate (poll_id))
-  {
     signal ('POLLS', 'The activation is not allowed');
-  }
+
   POLLS.WA.poll_active (poll_id);
   return ods_serialize_int_res (1);
 }
@@ -349,10 +348,10 @@ create procedure ODS.ODS_API."poll.vote" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   if (not POLLS.WA.poll_enable_vote (poll_id))
-  {
     signal ('POLLS', 'The vote is not allowed');
-  }
+
   rc := POLLS.WA.vote_insert (poll_id, client_attr ('client_ip'));
   return ods_serialize_int_res (rc);
 }
@@ -377,6 +376,10 @@ create procedure ODS.ODS_API."poll.vote.answer" (
   poll_id := (select V_POLL_ID from POLLS.WA.VOTE where V_ID = vote_id);
   if (isnull (poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  if (not POLLS.WA.poll_enable_vote (poll_id))
+    signal ('POLLS', 'The vote is not allowed');
+
   for (select * from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = questionNo) do
   {
     if (Q_TYPE = 'M')
