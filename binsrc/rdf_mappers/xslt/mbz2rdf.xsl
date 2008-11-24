@@ -33,6 +33,7 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -69,7 +70,14 @@
 
     <xsl:template match="mmd:artist[@type='Person']">
 	<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',@id,'.html'))}">
-	    <foaf:name><xsl:value-of select="mmd:name"/></foaf:name>
+	    <foaf:name>
+			<xsl:value-of select="mmd:name"/>
+		</foaf:name>
+	    <owl:sameAs>
+			<xsl:attribute name="rdf:resource">
+				<xsl:value-of select="concat('http://dbpedia.org/resource/', mmd:name)" />
+			</xsl:attribute>
+		</owl:sameAs>
 	    <xsl:for-each select="mmd:release-list/mmd:release|mmd:relation-list[@target-type='Release']/mmd:relation/mmd:release">
 		<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id,'.html'))}"/>
 	    </xsl:for-each>
