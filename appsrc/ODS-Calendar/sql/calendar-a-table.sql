@@ -103,6 +103,10 @@ CAL.WA.exec_no_error ('
   create index SK_SHARED_01 on CAL.WA.SHARED (S_DOMAIN_ID, S_CALENDAR_ID)
 ');
 
+CAL.WA.exec_no_error ('
+  create index SK_SHARED_02 on CAL.WA.SHARED (S_GRANT_ID)
+');
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.my_calendars (

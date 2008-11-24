@@ -1331,6 +1331,7 @@ a.calendar_button {
 .EVL_subject
 {
   font-weight: bold;
+  text-decoration: none;
 }
 
 .chip .chipbody

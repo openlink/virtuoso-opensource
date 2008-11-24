@@ -4541,7 +4541,11 @@ create procedure CAL.WA.search_sql (
        '       a.E_EVENT_END,                \n' ||
        '       a.E_REPEAT,                   \n' ||
        '       a.E_REMINDER,                 \n' ||
+       '       a.E_LOCATION,                 \n' ||
        '       a.E_ATTENDEES,                \n' ||
+       '       a.E_COMPLETED,                \n' ||
+       '       a.E_STATUS,                   \n' ||
+       '       a.E_PRIORITY,                 \n' ||
        '       a.E_CREATED,                  \n' ||
        '       a.E_UPDATED                   \n' ||
        ' from  CAL.WA.EVENTS a,              \n' ||
