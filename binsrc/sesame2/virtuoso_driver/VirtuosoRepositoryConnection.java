@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.NoSuchElementException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import org.openrdf.OpenRDFUtil;
 import org.openrdf.model.BNode;
@@ -2120,7 +2122,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		else if (val instanceof java.sql.Timestamp) {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
-			return getRepository().getValueFactory().createLiteral(val.toString(), type);
+			return getRepository().getValueFactory().createLiteral(Timestamp2String((java.sql.Timestamp)val), type);
 		}
 		else if (val instanceof java.sql.Time) {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
@@ -2420,5 +2422,96 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
+    private String Timestamp2String(java.sql.Timestamp v)
+    {
+      GregorianCalendar cal = new GregorianCalendar();
+      cal.setTime(v);
+
+      int year = cal.get(Calendar.YEAR);
+      int month = cal.get(Calendar.MONTH) + 1;
+      int day = cal.get(Calendar.DAY_OF_MONTH);
+      int hour = cal.get(Calendar.HOUR_OF_DAY);
+      int minute = cal.get(Calendar.MINUTE);
+      int second = cal.get(Calendar.SECOND);
+      int nanos = v.getNanos();
+
+      String yearS;
+      String monthS;
+      String dayS;
+      String hourS;
+      String minuteS;
+      String secondS;
+      String nanosS;
+      String zeros = "000000000";
+      String yearZeros = "0000";
+      StringBuffer timestampBuf;
+
+      if (year < 1000) {
+          yearS = "" + year;
+          yearS = yearZeros.substring(0, (4-yearS.length())) + yearS;
+      } else {
+          yearS = "" + year;
+      }
+
+      if (month < 10)
+          monthS = "0" + month;
+      else
+          monthS = Integer.toString(month);
+
+      if (day < 10)
+          dayS = "0" + day;
+      else
+          dayS = Integer.toString(day);
+
+      if (hour < 10)
+          hourS = "0" + hour;
+      else
+          hourS = Integer.toString(hour);
+
+      if (minute < 10)
+          minuteS = "0" + minute;
+      else
+          minuteS = Integer.toString(minute);
+      
+      if (second < 10)
+          secondS = "0" + second;
+      else
+          secondS = Integer.toString(second);
+      
+      if (nanos == 0) {
+          nanosS = "0";
+      } else {
+          nanosS = Integer.toString(nanos);
+
+          // Add leading 0
+          nanosS = zeros.substring(0, (9-nanosS.length())) + nanosS; 
+
+          // Truncate trailing 0
+          char[] nanosChar = new char[nanosS.length()];
+          nanosS.getChars(0, nanosS.length(), nanosChar, 0);
+          int truncIndex = 8;
+          while (nanosChar[truncIndex] == '0') {
+      	    truncIndex--;
+          }
+          nanosS = new String(nanosChar, 0, truncIndex + 1);
+      }
+
+      timestampBuf = new StringBuffer();
+      timestampBuf.append(yearS);
+      timestampBuf.append("-");
+      timestampBuf.append(monthS);
+      timestampBuf.append("-");
+      timestampBuf.append(dayS);
+      timestampBuf.append("T");
+      timestampBuf.append(hourS);
+      timestampBuf.append(":");
+      timestampBuf.append(minuteS);
+      timestampBuf.append(":");
+      timestampBuf.append(secondS);
+      timestampBuf.append(".");
+      timestampBuf.append(nanosS);
+
+      return (timestampBuf.toString());
+    }
 }
 
