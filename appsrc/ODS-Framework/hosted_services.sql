@@ -1559,6 +1559,13 @@ create procedure
 web_user_password_check (in name varchar, in pass varchar)
 {
   declare rc int;
+  if (length (name))
+    {
+      rc := DB.DBA.LDAP_LOGIN (name, null, vector ('authtype','basic','pass',pass));
+      commit work;
+      if (rc <> -1)
+	return rc;
+    }
   rc := 0;
   if (exists (select 1 from SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and
         pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pass and U_ACCOUNT_DISABLED = 0))

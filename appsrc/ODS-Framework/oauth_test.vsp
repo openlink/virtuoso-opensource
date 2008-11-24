@@ -1,0 +1,297 @@
+<html>
+<?vsp
+  declare serverUrl, consumer_key, api_method, api_params, apiOptions varchar;
+  declare hostUrl, oauthServerUrl, apiServerUrl, requestUri, responseBody, oauthTocken, ret_url, url, tmp, sid varchar;
+  declare errorCode, errorMessage varchar;
+
+  declare exit handler for sqlstate '*' {
+    goto _default;
+  };
+
+  declare exit handler for sqlstate '*' { goto _default; };
+
+  if (is_http_ctx ())
+  {
+    hostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
+    if (isstring (hostUrl) and strchr (hostUrl , ':') is null)
+    {
+      declare hp varchar;
+      declare hpa any;
+
+      hp := sys_connected_server_address ();
+      hpa := split_and_decode (hp , 0 , '\0\0:');
+      if (hpa [1] <> '80')
+        hostUrl := hostUrl || ':' || hpa [1];
+    }
+    goto _exit;
+  }
+
+_default:;
+  hostUrl := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (hostUrl is null)
+  {
+    hostUrl := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      hostUrl := hostUrl || ':' || server_http_port ();
+  }
+
+_exit:;
+  if (hostUrl not like 'http://%')
+    hostUrl := 'http://' || hostUrl;
+
+  errorCode := '';
+  errorMessage := '';
+
+  serverUrl := hostUrl;
+  consumer_key := trim (get_keyword ('consumer_key', params, ''));
+  api_method := trim (get_keyword ('api_method', params, ''));
+  api_params := trim (get_keyword ('api_params', params, ''));
+  apiOptions := get_keyword ('apiOptions', params, 'uriOnly');
+
+  oauthServerUrl := sprintf ('%s/OAuth/', serverUrl);
+  apiServerUrl := sprintf ('%s/ods/api/', serverUrl);
+
+  requestUri := '';
+  responseBody := '';
+  sid := get_keyword ('sid', params, '');
+  if (sid = '')
+  {
+    sid := null;
+  }
+  else
+  {
+    -- if selected token is not same as one from the session we need to get new authentication token
+    if (consumer_key <> OAUTH..get_consumer_key (sid))
+    {
+      -- call get_consumer_key
+      OAUTH..session_terminate (sid);
+      sid := null;
+    }
+  }
+
+  declare exit handler for sqlstate '*' {
+    errorCode := __SQL_STATE;
+    errorMessage := __SQL_MESSAGE;
+
+    goto _end;
+  };
+
+  if (get_keyword ('exec', params) is not null and sid is null)
+  -- request new token for the session
+  {
+    -- call sign_request
+	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', '', consumer_key);
+    url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+    -- http get 'request_token'
+    tmp := http_get (url);
+    -- call parse_response
+	  sid := OAUTH..parse_response (null, consumer_key, tmp);
+    -- call set_session_data
+	  OAUTH..set_session_data (sid, params);
+    -- call get_auth_token
+    oauthTocken := OAUTH..get_auth_token (sid);
+	  -- call authorize
+	  ret_url := sprintf ('%s/ods/oauth_test.vsp?ready=%U&serverUrl=%U&apiOptions=%U', hostUrl, sid, serverUrl, apiOptions);
+    url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', oauthServerUrl, oauthTocken, ret_url);
+	  http_status_set (301);
+    http_header (sprintf ('Location: %s\r\n', url));
+    return;
+  }
+  else if (get_keyword ('ready', params) is not null) -- get access token
+	-- we go here when token above is authorized
+  {
+    sid := get_keyword ('ready', params);
+    -- call get_consumer_key
+	  consumer_key := OAUTH..get_consumer_key (sid);
+    -- call parse_response
+	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'access_token', '', consumer_key, sid);
+    url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+    -- http get 'access_token'
+    tmp := http_get (url);
+    -- call parse_response
+	  sid := OAUTH..parse_response (sid, consumer_key, tmp);
+  }
+
+  if (sid is not null)
+  -- here we are ready to call service
+  {
+	  if (get_keyword ('exec', params) is null)
+    {
+      tmp := OAUTH..get_session_data (sid);
+      api_params := get_keyword ('api_params', tmp, api_params);
+	    api_method := get_keyword ('api_method', tmp, api_method);
+	  }
+    -- call get_consumer_key
+	  consumer_key := OAUTH..get_consumer_key (sid);
+
+	  url := sprintf ('%s%s', apiServerUrl, api_method);
+	  tmp := split_and_decode (api_params);
+	  params := '';
+	  for (declare i, l integer, l := length (tmp); i < l; i := i + 2)
+	  {
+	    params := params || sprintf ('%U=%U&', tmp[i], tmp[i+1]);
+	  }
+    -- get request URI
+	  requestURI := OAUTH..sign_request ('GET', url, params, consumer_key, sid);
+    if (apiOptions = 'uriOnlyAndExec')
+	    -- call request URI
+      responseBody := http_get (requestURI || sprintf ('&oauth_client_ip=%U', http_client_ip ()));
+  }
+_end:;
+?>
+<head>
+  <title>OAuth Test Client</title>
+  <style type="text/css">
+    html {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: gill sans, sans-serif;
+      font-size: 80%;
+      margin: 0;
+      padding: 1.2em 2em;
+    }
+
+    #header {
+      width: 100%;
+      float: left;
+      clear: left;
+      border-bottom: 2px solid #696;
+      margin: 0 0 1.2em;
+      padding: 0 0 0.3em;
+    }
+
+    #main-content
+    {
+     margin-left: 5px;
+     color: #000033;
+     padding-bottom: 5px;
+     padding-top: 0px;
+    }
+
+    h3.section {
+      color: #005395;
+      font-size: small;
+      margin-bottom: 0;
+      padding-bottom: 3px;
+      padding-top: 7px;
+    }
+    .api-results {
+      border: 0 none;
+      float: left;
+      height: 950px;
+      margin-right: 10px;
+      width: 530px;
+    }
+
+    .api-results div
+    {
+     padding-left: 5px;
+    }
+
+    .api-results textarea
+    {
+     width: 500px;
+     font-size: 12px;
+     font-family: "Courier New", Courier, monospace;
+     overflow: visible;
+     /*overflow-y: hidden;*/
+     border: 1px solid #000;
+     padding: 3px;
+    }
+
+
+    .api-inputs {
+      float: right;
+      height: 470px;
+      padding: 5px;
+      width: 180px;
+    }
+
+    .api-inputs label
+    {
+      font-weight: bold;
+    }
+
+    #footer {
+      width: 100%;
+      float: left;
+      clear: left;
+      border-top: 2px solid #696;
+      margin: 1.2em 0 0;
+      padding: 0.3em;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+	<form method="POST" action="oauth_test.vsp">
+    <div>
+      <div style="padding: 10px; background-color: #D9E9F2;">
+        <img src="/ods/images/odslogo_200.png" alt="ODS logo icon" />
+      </div>
+      <div id="main-content">
+        <div>
+        	<h1>OAuth Test Tool for ODS Controllers</h1>
+          <span id="introtip">
+            The ODS OAuth Test Tool creates examples to show users the correct format for constructing HTTP requests signed according to OAuth specifications. The users use this format in their applications to make successful requests to the ODS REST APIs.
+            <br/><br/>
+            The ODS users generate a Consumer Key and a Consumer Secret for their application instances by ODS application UI (Setings -> OAuth Keys).
+            <br/><br/>
+            To reach a specific resource on the ODS REST API, an user must also specify a API method and API parameters.
+            <br/><br/>
+            ODS OAuth standards validate the credentials of an external user by means of the digital signature. If the user signs the request, and the ODS server validates the digital signature, the developer is granted access to the requested resource.
+            <br/><br/>
+          </span>
+        </div>
+        <?vsp
+          if (errorCode <> '')
+            http (sprintf ('<div>%s</div>', errorMessage));
+        ?>
+        <div id="dev-tools" style="width: 735px; height: 550px;">
+          <div class="api-results" style="border: 0px none ; background: transparent none repeat scroll 0% 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; height: 500px;">
+            <div>
+              <h3 class="section">Request Format: URI Representation of the Request</h3>
+              <div>
+                <textarea readonly="readonly" cols="1" rows="5" name="api_result_requestURI"><?V requestURI ?></textarea>
+              </div>
+            </div>
+            <div>
+              <h3 class="section">Response Body</h3>
+              <div>
+                <textarea readonly="readonly" cols="1" rows="25" name="api_result_ResponseBodyTextBox"><?V responseBody ?></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="api-inputs">
+          	<input type="hidden" name="sid" value="<?V sid ?>"/>
+            <label>Server:</label>
+            <br/>
+            <input type="text" name="serverUrl" style="width: 300px;" value="<?V serverUrl ?>/ods/api" readonly="readonly" />
+            <label>Consumer Key:</label>
+            <br/>
+            <input type="text" name="consumer_key" style="width: 300px;" value="<?V consumer_key ?>" />
+            <label>API method</label>
+            <br/>
+            <input type="text" name="api_method" style="width: 300px;" value="<?V api_method ?>" />
+            <label>API parameters</label>
+            <br/>
+            <input type="text" name="api_params" style="width: 300px;" value="<?V api_params ?>" />
+            <label>Query options:</label>
+            <br/>
+            <select name="apiOptions">
+              <option value="uriOnly" <?vsp if (apiOptions = 'uriOnly') http ('selected'); ?> >Generate URI Only</option>
+              <option value="uriOnlyAndExec" <?vsp if (apiOptions = 'uriOnlyAndExec') http ('selected'); ?> >Generate URI and Submit</option>
+            </select>
+            <br/>
+            <br/>
+            <input type="submit" value="Execute" name="exec"/>
+          </div>
+        </div>
+      </div>
+    </div>
+	</form>
+</body>
+</html>
