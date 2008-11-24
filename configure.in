@@ -1964,6 +1964,31 @@ AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x, 1.5.x or 1.6.x at the 
 AC_MSG_RESULT(done)
 
 
+ac_jdk4_path="none"
+AC_ARG_WITH(jdk4, [dnl
+AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified location])dnl
+], [ 
+    case "${withval}" in
+      yes) 	
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)	
+	  ac_jdk4_path="none"  
+	  ;;
+    
+      *)	
+	  if test -d "${withval}" ; then
+	      ac_jdk4_path="${withval}"
+	  else	
+	      AC_MSG_ERROR("Directory specified with --with-jdk4 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
+
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
 AC_DEFUN([AC_PROG_JAVA_WORKS], [
@@ -2027,13 +2052,20 @@ ac_jdk2_works="$ac_cv_prog_java_works"
 AM_CONDITIONAL(JDK2, test "x$ac_jdk2_works" = "xyes")
 AC_SUBST(ac_jdk2_path)
 
-AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 6)
+AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 5)
 ac_jdk3_works="$ac_cv_prog_java_works"
 AM_CONDITIONAL(JDK3, test "x$ac_jdk3_works" = "xyes")
 AC_SUBST(ac_jdk3_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_path, 6, 6)
+ac_jdk4_works="$ac_cv_prog_java_works"
+AM_CONDITIONAL(JDK4, test "x$ac_jdk4_works" = "xyes")
+AC_SUBST(ac_jdk4_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk3_works" = "xyes" ; then
+if test "x$ac_jdk4_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_path"
+elif test "x$ac_jdk3_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk3_path"
 elif test "x$ac_jdk2_works" = "xyes"; then
   ac_integ_jdk="ac_jdk2_path"
@@ -2413,6 +2445,7 @@ AC_CONFIG_FILES([
 	libsrc/JDBCDriverType4/testsuite_1.2/Makefile
 	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
+	libsrc/JDBCDriverType4/testsuite_4.0/Makefile
 	libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile
 	libsrc/JDBCDriverType4/virtuoso/Makefile
 	libsrc/langfunc/Makefile
