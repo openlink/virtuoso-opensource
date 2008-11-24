@@ -94,7 +94,10 @@ DBG_NAME(box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp
   virt_mbstate_t state;
   wchar_t *wide = (wchar_t *) _wide;
   wchar_t *wide_work;
-
+#ifdef DEBUG
+  if (wide_len & ~0xFFFFFF)
+    GPF_T1 ("bad wide_len in cast wide as UTF8");
+#endif
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
   utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
