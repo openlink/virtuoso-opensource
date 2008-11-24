@@ -6836,6 +6836,55 @@ create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Emplo
   option (bijection) .
 ]]></programlisting>
 <para>After running the updated script, the query contains three comparisons of fields that were arguments of <function>sprintf_iri</function> in the previous version.</para>
+<para><emphasis>Example for casting string as IRI type</emphasis></para>
+<programlisting><![CDATA[
+create function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer)
+{
+  declare isrole integer;
+  isrole := coalesce ((select top 1 U_IS_ROLE from DB.DBA.SYS_USERS where U_ID = id));
+  if (isrole is null)
+    return NULL;
+  else if (isrole)
+    return sprintf ('http://%s/sys/group?id=%d', registry_get ('URIQADefaultHost'), id);
+  else
+    return sprintf ('http://%s/sys/user?id=%d', registry_get ('URIQADefaultHost'), id);
+}
+;
+
+grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI to SPARQL_SELECT
+;
+
+create function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar)
+{
+  declare parts any;
+  parts := sprintf_inverse (id_iri, sprintf ('http://%s/sys/user?id=%%d', registry_get ('URIQADefaultHost')), 1);
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = parts[0] and not U_IS_ROLE))
+        return parts[0];
+    }
+  parts := sprintf_inverse (id_iri, sprintf ('http://%s/sys/group?id=%%d', registry_get ('URIQADefaultHost')), 1);
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = parts[0] and U_IS_ROLE))
+        return parts[0];
+    }
+  return NULL;
+}
+;
+
+grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE to SPARQL_SELECT
+;
+
+
+create iri class oplsioc:grantee_iri using
+  function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer) returns varchar ,
+  function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar) returns integer
+  option ( bijection ,
+    returns	"http://^{URIQADefaultHost}^/sys/group?id=%d"
+    union	"http://^{URIQADefaultHost}^/sys/user?id=%d" ) .
+
+]]></programlisting>
 </sect1>
 <sect1 id="rdfperformancetuning"><title>Virtuoso RDF Performance Tuning</title>
 <para>For RDF query performance, we have the following possible questions:</para>
