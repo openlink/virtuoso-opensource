@@ -3019,6 +3019,15 @@ create procedure ODRIVE.WA.DAV_GET (
     return ODRIVE.WA.DAV_PROP_GET (resource[0], 'DAV:checked-out', '');
   }
 
+  if (property = 'permissions-inheritance')
+  {
+    if (isnull (resource[0]))
+      return null;
+    if (resource[1] = 'R')
+      return null;
+    return (select COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = resource[4]);
+  }
+
   return '';
 }
 ;
@@ -3052,7 +3061,8 @@ create procedure ODRIVE.WA.DAV_SET (
     return ODRIVE.WA.DAV_PROP_SET(path, ':virtowneruid', value);
   if (property = 'mimeType')
     return ODRIVE.WA.DAV_PROP_SET(path, ':getcontenttype', value);
-  if (property = 'name') {
+  if (property = 'name')
+  {
     tmp := concat(left(path, strrchr(rtrim(path, '/'), '/')), '/', value, either(equ(right(path, 1), '/'), '/', ''));
     return ODRIVE.WA.DAV_MOVE(path, tmp, 0, auth_name, auth_pwd);
   }
@@ -3066,6 +3076,12 @@ create procedure ODRIVE.WA.DAV_SET (
     return ODRIVE.WA.DAV_PROP_TAGS_SET(path, ':virtpublictags', value);
   if (property = 'autoversion')
     return ODRIVE.WA.DAV_SET_AUTOVERSION (path, value);
+  if (property = 'permissions-inheritance')
+  {
+    set triggers off;
+    update WS.WS.SYS_DAV_COL set COL_INHERIT = value where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C');
+    set triggers on;
+  }
   return 0;
 }
 ;

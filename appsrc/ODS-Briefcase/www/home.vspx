@@ -669,6 +669,8 @@
 				      DB.DBA.SYNC_MAKE_DAV_DIR (sync_type, DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), dav_name, dav_fullPath, sync_version);
             }
 
+            ODRIVE.WA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword('dav_permissions_inheritance', params, 'N'));
+
               -- set new properties
             if (dav_detType in ('ResFilter', 'CatFilter'))
             {
@@ -1575,6 +1577,20 @@
                     </v:select-list>
                   </td>
                 </tr>
+                <v:template name="tform_150" type="simple" enabled="-- case when (self.dav_type = 'C') then 1 else 0 end">
+                  <tr id="davRow_permissions_inheritance">
+                    <th>
+                      <vm:label for="dav_permissions_inheritance" value="--'Permissions Inheritance'" />
+                    </th>
+                    <td>
+                      <v:select-list name="dav_permissions_inheritance" value="-- get_keyword ('dav_permissions_inheritance', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'permissions-inheritance'))" xhtml_disabled="disabled">
+                        <v:item name="Off" value="N" />
+                        <v:item name="Direct members" value="T" />
+                        <v:item name="Recursively" value="R" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                </v:template>
                 <tr id="davRow_metadata">
                   <th>
                     <vm:label for="dav_metagrab" value="--'Metadata Retrieval'" />

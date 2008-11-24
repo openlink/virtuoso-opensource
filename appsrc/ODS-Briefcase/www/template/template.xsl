@@ -145,17 +145,17 @@
           |
             <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
         </div>
-        <br style="clear: left;"/>
       </div>
-        <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
-          <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
+        <div style="clear: both; border: solid #935000; border-width: 0px 0px 1px 0px;">
+          <div style="float: left; padding-left: 0.5em;">
             <?vsp http (ODRIVE.WA.utf2wide (ODRIVE.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
-          <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
+          <div style="float: right; padding-right: 0.5em;">
             <v:template name="t1" type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
         </v:template>
       </div>
+          <p style="clear: both; line-height: 0.1em" />
         </div>
       <v:include url="odrive_login.vspx"/>
     <table id="RCT">

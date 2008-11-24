@@ -37,7 +37,7 @@ VAD_DAV="$VAD_NAME"_dav.vad
 VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
-NEED_VERSION=05.07.3032
+NEED_VERSION=05.09.3035
 
 if [ "x$HOST_OS" != "x" ]
 then
