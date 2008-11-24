@@ -35,6 +35,8 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+<!ENTITY bookmark "http://www.w3.org/2002/01/bookmark#">
+
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
