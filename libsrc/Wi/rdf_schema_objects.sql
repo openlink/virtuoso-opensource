@@ -56,6 +56,47 @@ rdf_view_sp (in i int)
 }
 ;
 
+create procedure rdf_view_sql_tb (in tb varchar)
+{
+  declare q, o, n varchar;
+  q := name_part (tb, 0);
+  o := name_part (tb, 1);
+  n := name_part (tb, 2);
+  return sprintf ('"%I"."%I"."%I"', q, o, n);
+}
+;
+
+create procedure rdf_view_tb (in tb varchar)
+{
+  declare r varchar;
+  r := DB.DBA.SYS_ALFANUM_NAME (tb);
+  r := lower (r);
+  return r;
+}
+;
+
+create procedure rdf_view_sql_col (in col varchar)
+{
+  return sprintf ('"%I"', col);
+}
+;
+
+create procedure rdf_view_col (in col varchar)
+{
+  declare r varchar;
+  r := DB.DBA.SYS_ALFANUM_NAME (col);
+  r := lower (r);
+  return r;
+}
+;
+
+create procedure rdf_view_cls_name (in nam varchar)
+{
+  -- in this case we take only alpha numeric chars
+  return SYS_ALFANUM_NAME (nam);
+}
+;
+
 create procedure
 rdf_view_create_view (in qualifier varchar, in _tbls any)
 {
@@ -70,7 +111,7 @@ rdf_view_create_view (in qualifier varchar, in _tbls any)
    suffix := '_s';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-      ret := ret || ' from ' || _tbls[xx] || ' as ' || lcase (name_part (_tbls[xx], 3) || suffix) || '\n';
+      ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]) || ' as ' || rdf_view_tb (name_part (_tbls[xx], 3) || suffix) || '\n';
 
    ret := ret || rdf_view_get_relations (_tbls, suffix);
 
@@ -81,22 +122,22 @@ rdf_view_create_view (in qualifier varchar, in _tbls any)
       {
 	   tbl := _tbls[xx];
 	   tbl_name := name_part (tbl, 2);
-	   tbl_name_l := lcase (tbl_name);
+	   tbl_name_l := rdf_view_tb (tbl_name);
 	   tname := tbl_name_l || suffix;
 
-	   ret := ret || rdf_view_sp (6) || '# Maps from columns of ' || tbl || '\n';
+	   ret := ret || rdf_view_sp (6) || '# Maps from columns of "' || tbl || '"\n';
 	   ret := ret || rdf_view_sp (6) || rdf_view_get_pk_rel (qualifier, suffix, tbl, 0);
-	   ret := ret || sprintf (' a %s:%s ;\n', qualifier, tbl_name);
+	   ret := ret || sprintf (' a %s:%s ;\n', qualifier, rdf_view_cls_name (tbl_name));
 
 	   for select "COLUMN" from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	     {
 	       ret := ret || rdf_view_sp (6) || sprintf ('%s:%s %s.%s as virtrdf:%s-%s ;\n',
-				qualifier, lcase("COLUMN"), tname, "COLUMN", tbl_name_l, lcase("COLUMN") );
+				qualifier, rdf_view_col("COLUMN"), tname, rdf_view_sql_col ("COLUMN"), tbl_name_l, rdf_view_col("COLUMN") );
 	     }
 	   if (exists (select top 1 1 from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, _tbls))
 	       or
 	       exists (select top 1 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, _tbls)))
-	   ret := ret || rdf_view_sp (6) || '# Maps from foreign-key relations of ' || tbl || '\n';
+	     ret := ret || rdf_view_sp (6) || '# Maps from foreign-key relations of "' || tbl || '"\n';
 	   ret := ret || rdf_view_get_fk_pk_rel (qualifier, suffix, tbl, _tbls);
 	   ret := ret || rdf_view_get_pk_fk_rel (qualifier, suffix, tbl, _tbls);
 
@@ -124,9 +165,9 @@ rdf_view_get_pk_rel (in pref varchar, in suffix varchar, inout tbl varchar, in s
   pk_text := '';
 
   for (declare i any, i := 0; i < length (pks) ; i := i + 1)
-     pk_text := pk_text || tname || '.' || pks[i][0] || ',';
+     pk_text := pk_text || rdf_view_tb (tname) || '.' || rdf_view_sql_col (pks[i][0]) || ',';
   pk_text := trim (pk_text, ',');
-  ret := sprintf ('%s:%s (%s) ', pref, tbl_name_l, pk_text);
+  ret := sprintf ('%s:%s (%s) ', pref, rdf_view_tb (tbl_name_l), pk_text);
   if (set_tb)
     tbl := tbl_name_l;
   return ret;
@@ -140,7 +181,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
 
   tbl_name := name_part (tbl, 3);
-  tbl_name_l := lcase (tbl_name);
+  tbl_name_l := rdf_view_tb (tbl_name);
   tname := tbl_name_l || suffix;
 
   ret := string_output ();
@@ -148,7 +189,7 @@ rdf_view_get_fk_pk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
     {
       declare fk_rel  any;
       pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
-      fk_rel := rdf_view_sp (6) || sprintf ('%s:has_%s %s as virtrdf:%s_has_%s ;\n', pref, pkt, pk_text, tbl_name_l, pkt);
+      fk_rel := rdf_view_sp (6) || sprintf ('%s:has_%s %s as virtrdf:%s_has_%s ;\n', pref, rdf_view_tb (pkt), pk_text, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
   return string_output_string (ret);
@@ -162,7 +203,7 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
   declare tbl_name, tbl_name_l, tname, pk_text varchar;
 
   tbl_name := name_part (tbl, 3);
-  tbl_name_l := lcase (tbl_name);
+  tbl_name_l := rdf_view_tb (tbl_name);
   tname := tbl_name_l || suffix;
 
   ret := string_output ();
@@ -170,7 +211,7 @@ rdf_view_get_pk_fk_rel (in pref varchar, in suffix varchar, in tbl varchar, in t
     {
       declare fk_rel  any;
       pk_text := rdf_view_get_pk_rel (pref, suffix, pkt, 1);
-      fk_rel := rdf_view_sp (6) || sprintf ('%s:%s_of %s as virtrdf:%s_%s_of ;\n', pref, tbl_name_l, pk_text, tbl_name_l, pkt);
+      fk_rel := rdf_view_sp (6) || sprintf ('%s:%s_of %s as virtrdf:%s_%s_of ;\n', pref, tbl_name_l, pk_text, tbl_name_l, rdf_view_tb (pkt));
       http (fk_rel, ret);
     }
   return string_output_string (ret);
@@ -214,7 +255,7 @@ rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar)
 
    qual := name_part (_tbl, 0);
    tbl_name := name_part (_tbl, 3);
-   tbl_name_l := lcase (tbl_name);
+   tbl_name_l := rdf_view_tb (tbl_name);
    pks := rdf_view_get_primary_key (_tbl);
    pk_text := '';
    sk_str := '';
@@ -224,8 +265,8 @@ rdf_view_create_class (in _tbl varchar, in _host varchar, in qualifier varchar)
 
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
      {
-       pk_text := pk_text || 'in ' || pks[i][0] || ' ' || rdf_view_dv_to_sql_str_type(pks[i][1]) || ' not null,';
-       sk_str := sk_str || '/' || pks[i][0] || '/' || rdf_view_dv_to_printf_str_type (pks[i][1]);
+       pk_text := pk_text || 'in ' || rdf_view_cls_name (pks[i][0]) || ' ' || rdf_view_dv_to_sql_str_type(pks[i][1]) || ' not null,';
+       sk_str := sk_str || '/' || rdf_view_cls_name (pks[i][0]) || '/' || rdf_view_dv_to_printf_str_type (pks[i][1]);
      }
    pk_text := trim (pk_text, ',');
    sk_str  := trim (sk_str , '/');
@@ -259,9 +300,9 @@ rdf_view_get_relations (in _tbls varchar, in _suff varchar)
 	 {
 	   if (position (PK_TABLE, _tbls) <> 0)
 	     {
-	       ret := ret || sprintf (' where (^{%s%s.}^."%s" = ^{%s%s.}^."%s") \n',
-	       lcase (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
-	       lcase (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);
+	       ret := ret || sprintf (' where (^{%s%s.}^."%I" = ^{%s%s.}^."%I") \n',
+	       rdf_view_tb (FK_TABLE_NAME), _suff, FK_COLUMN_NAME,
+	       rdf_view_tb (PK_TABLE_NAME), _suff, PK_COLUMN_NAME);
 	     }
 	 }
    return ret;
@@ -283,32 +324,44 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any)
   http (sprintf ('\n%s: a owl:Ontology .\n', qual), ses);
   foreach (varchar tbl in _tbls) do
     {
+      declare cls, ltb varchar;
+      cls := rdf_view_cls_name (name_part (tbl, 2));
+      ltb := rdf_view_tb (name_part (tbl, 2));
+
       http (sprintf ('\n# %s\n', tbl), ses);
-      http (sprintf ('%s:%s a rdfs:Class .\n', qual, name_part (tbl, 2)), ses);
-      http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, name_part (tbl, 2), tbl), ses);
+      http (sprintf ('%s:%s a rdfs:Class .\n', qual, cls), ses);
+      http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, cls, tbl), ses);
       for select "COLUMN" as col, COL_DTP as dtp from SYS_COLS where "TABLE" = tbl order by COL_ID do
 	{
-	  declare xsd varchar;
-	  col := lower (col);
+	  declare xsd, label varchar;
+	  label := col;
+	  col := rdf_view_col (col);
 	  http (sprintf ('%s:%s a rdf:Property .\n', qual, col), ses);
-	  http (sprintf ('%s:%s rdfs:domain %s:%s .\n', qual, col, qual, name_part (tbl, 2)), ses);
+	  http (sprintf ('%s:%s rdfs:domain %s:%s .\n', qual, col, qual, cls), ses);
 	  xsd := rdf_view_dv_to_sql_str_type (dtp);
 	  http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
-	  http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, col, col), ses);
+	  http (sprintf ('%s:%s rdfs:label "%S" .\n', qual, col, label), ses);
 	}
       for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and 0 < position (PK_TABLE, _tbls) do
 	{
-	  http (sprintf ('%s:has_%s a rdf:Property .\n', qual, lcase (name_part (pkt, 2))), ses);
-	  http (sprintf ('%s:has_%s rdfs:domain %s:%s .\n', qual, lcase (name_part (pkt, 2)), qual, name_part (tbl, 2)), ses);
-	  http (sprintf ('%s:has_%s rdfs:range %s:%s .\n', qual, lcase (name_part (pkt, 2)), qual, name_part (pkt, 2)), ses);
-	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, lcase (name_part (pkt, 2)), pkt), ses);
+	  declare pkcls, lpkt varchar;
+	  pkcls := rdf_view_cls_name (name_part (pkt, 2));
+	  lpkt := rdf_view_tb (name_part (pkt, 2));
+
+	  http (sprintf ('%s:has_%s a rdf:Property .\n', qual, lpkt), ses);
+	  http (sprintf ('%s:has_%s rdfs:domain %s:%s .\n', qual, lpkt, qual, cls), ses);
+	  http (sprintf ('%s:has_%s rdfs:range %s:%s .\n', qual, lpkt, qual, pkcls), ses);
+	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, lpkt, pkt), ses);
 	}
       for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, _tbls) do
 	{
-	  http (sprintf ('%s:%s_of a rdf:Property .\n', qual, lcase (name_part (tbl, 2))), ses);
-	  http (sprintf ('%s:%s_of rdfs:domain %s:%s .\n', qual, lcase (name_part (tbl, 2)), qual, name_part (tbl, 2)), ses);
-	  http (sprintf ('%s:%s_of rdfs:range %s:%s .\n', qual, lcase (name_part (tbl, 2)), qual, name_part (pkt, 2)), ses);
-	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, lcase (name_part (tbl, 2)), pkt), ses);
+	  declare pkcls varchar;
+	  pkcls := rdf_view_cls_name (name_part (pkt, 2));
+
+	  http (sprintf ('%s:%s_of a rdf:Property .\n', qual, ltb), ses);
+	  http (sprintf ('%s:%s_of rdfs:domain %s:%s .\n', qual, ltb, qual, cls), ses);
+	  http (sprintf ('%s:%s_of rdfs:range %s:%s .\n', qual, ltb, qual, pkcls), ses);
+	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, ltb, pkt), ses);
 	}
     }
   return string_output_string (ses);
