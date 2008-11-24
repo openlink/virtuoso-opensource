@@ -32,9 +32,18 @@
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
+extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
+extern caddr_t rdf_type_twobyte_to_iri (query_instance_t * qi, short twobyte);
+extern caddr_t rdf_lang_twobyte_to_string (query_instance_t * qi, short twobyte);
 #define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
   box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
   box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
+#define BNODE_IID_TO_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  box_sprintf (30, "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  box_sprintf (30, BOXINT_FMT, (boxint)(iid)) )
+#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  box_sprintf (30, "vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  box_sprintf (30, "v" BOXINT_FMT, (boxint)(iid)) )
 
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */

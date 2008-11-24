@@ -27,6 +27,7 @@
 #include "xmltree.h"
 #include "rdf_core.h"
 #include "http.h" /* For DKS_ESC_XXX constants */
+#include "date.h" /* For DT_TYPE_DATE and the like */
 
 void
 rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
@@ -1226,6 +1227,313 @@ rb_serialize (caddr_t x, dk_session_t * ses)
     }
 }
 
+typedef struct ttl_iriref_s {
+  caddr_t uri, ns, prefix, loc;
+  ptrlong is_bnode;
+} ttl_iriref_t;
+
+typedef struct ttl_iriref_items_s {
+  ttl_iriref_t s, p, o, dt;
+} ttl_iriref_items_t;
+
+int
+iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_prefix_ret, caddr_t *local_ret, ptrlong *is_bnode_ret)
+{
+  is_bnode_ret[0] = 0;
+  switch (DV_TYPE_OF (iri))
+    {
+    case DV_STRING: case DV_UNAME:
+      iri_split_ttl_qname (iri, ns_prefix_ret, local_ret, 1);
+      return 1;
+    case DV_IRI_ID: case DV_IRI_ID_8:
+      {
+        iri_id_t iid = unbox_iri_id (iri);
+        if (0L == iid)
+          return 0;
+        if (min_bnode_iri_id () <= iid)
+          {
+            if (min_named_bnode_iri_id () > iid)
+              {
+                ns_prefix_ret[0] = uname___empty;
+                local_ret[0] = BNODE_IID_TO_TTL_LABEL_LOCAL (iid);
+                is_bnode_ret[0] = 1;
+                return 1;
+              }
+            ns_prefix_ret[0] = uname___empty;
+            local_ret[0] = key_id_to_iri (qi, iid);
+            return 1;
+          }
+        return key_id_to_namespace_and_local (qi, iid, ns_prefix_ret, local_ret);
+      }
+    }
+  return 0;
+}
+
+typedef struct ttl_env_s {
+  id_hash_iterator_t *te_used_prefixes;	/*!< Item 1 is the dictionary of used namespace prefixes */
+  caddr_t te_prev_subj_ns;		/*!< Item 2 is the namespace part of previous subject. It is DV_STRING except the very beginning of the serializetion when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
+  caddr_t te_prev_subj_loc;		/*!< Item 3 is the local part of previous subject */
+  caddr_t te_prev_pred_ns;		/*!< Item 4 is the namespace part of previous predicate. */
+  caddr_t te_prev_pred_loc;		/*!< Item 5 is the local part of previous predicate */
+  ptrlong te_ns_count_s_o;		/*!< Item 6 is a counter of created namespaces for subjects and objects */
+  ptrlong te_ns_count_p_dt;		/*!< Item 7 is a counter of created namespaces for predicates and datatypes */
+} ttl_env_t;
+
+int
+ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, ptrlong *ns_counter_ptr, ttl_iriref_t *ti)
+{
+  id_hash_iterator_t *ns2pref_hit = env->te_used_prefixes;
+  id_hash_t *ns2pref = ns2pref_hit->hit_hash;
+  caddr_t *prefx_ptr;
+  ptrlong ns_counter_val;
+#ifndef NDEBUG
+  if ('\0' == ti->ns[0])
+    GPF_T1("ttl_" "http_write_prefix_if_needed: empty ns");
+#endif
+  if (ti->is_bnode)
+    return 0;
+  if (('_' == ti->ns[0]) && (':' == ti->ns[1]))
+    return 0;
+  prefx_ptr = (caddr_t *)id_hash_get (ns2pref, (caddr_t)(&ti->ns));
+  if (NULL != prefx_ptr)
+    {
+      ti->prefix = prefx_ptr[0];
+      return 0;
+    }
+  ns_counter_val = unbox_inline (ns_counter_ptr[0]);
+  if ((8000 <= ns_counter_val) || ((3 * ns2pref->ht_buckets) <= ns_counter_val))
+    return 0;
+  ti->prefix = xml_get_cli_or_global_ns_prefix (qst, ti->ns, ~0);
+  if (NULL == ti->prefix)
+    ti->prefix = box_sprintf (20, "ns%d", ns2pref->ht_count);
+  id_hash_set (ns2pref, (caddr_t)(&ti->ns), (caddr_t)(&(ti->prefix)));
+  ns_counter_ptr[0] = ns_counter_val + 1;
+  ti->ns = box_copy (ti->ns);
+  if (NULL != env->te_prev_subj_ns)
+    {
+      session_buffered_write (ses, " .\n", 3);
+      dk_free_tree (env->te_prev_subj_ns);
+      dk_free_tree (env->te_prev_subj_loc);
+      dk_free_tree (env->te_prev_pred_ns);
+      dk_free_tree (env->te_prev_pred_loc);
+      env->te_prev_subj_ns = NULL;
+      env->te_prev_subj_loc = NULL;
+      env->te_prev_pred_ns = NULL;
+      env->te_prev_pred_loc = NULL;
+    }
+  session_buffered_write (ses, "@prefix ", 8);
+  session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
+  session_buffered_write (ses, ":\t<", 3);
+  dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+  session_buffered_write (ses, ">\n", 2);
+  return 1;
+}
+
+void
+ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
+{
+  caddr_t full_uri;
+  if (ti->is_bnode)
+    {
+      session_buffered_write (ses, "_:", 2);
+      session_buffered_write (ses, ti->loc, strlen (ti->loc));
+      return;
+    }
+  if (NULL != ti->prefix)
+    {
+      session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
+      session_buffered_write_char (':', ses);
+      session_buffered_write (ses, ti->loc, strlen (ti->loc));
+      return;
+    }
+  session_buffered_write_char ('<', ses);
+  full_uri = ((NULL != ti->uri) ? ti->uri : ti->loc);
+  dks_esc_write (ses, full_uri, box_length (full_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+  session_buffered_write_char ('>', ses);
+}
+
+caddr_t
+bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  ttl_env_t *env = (ttl_env_t *)bif_arg (qst, args, 0, "http_ttl_triple");
+  caddr_t subj = bif_arg (qst, args, 1, "http_ttl_triple");
+  caddr_t pred = bif_arg (qst, args, 2, "http_ttl_triple");
+  caddr_t obj = bif_arg (qst, args, 3, "http_ttl_triple");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ttl_triple");
+  int status = 0;
+  int obj_is_iri = 0;
+  caddr_t obj_box_value;
+  dtp_t obj_dtp;
+  dtp_t obj_box_value_dtp;
+  ttl_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
+    (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
+    (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
+    (((DV_STRING == DV_TYPE_OF (env->te_prev_subj_ns)) || (DV_UNAME == DV_TYPE_OF (env->te_prev_subj_ns))) &&
+      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||	
+        ((DV_STRING != DV_TYPE_OF (env->te_prev_pred_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_pred_ns))) ||
+        (DV_STRING != DV_TYPE_OF (env->te_prev_pred_loc)) ) ) ||
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )	
+    sqlr_new_error ("22023", "SR601", "Argument 1 of http_ttl_triple() should be an array of special format");
+  
+  if (!iri_cast_and_split_ttl_qname (qi, subj, &tii.s.ns, &tii.s.loc, &tii.s.is_bnode))
+    goto fail; /* see below */
+  if (!iri_cast_and_split_ttl_qname (qi, pred, &tii.p.ns, &tii.p.loc, &tii.p.is_bnode))
+    goto fail; /* see below */
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    iri_cast_and_split_ttl_qname (qi, obj, &tii.o.ns, &tii.o.loc, &tii.o.is_bnode);
+  else
+    {
+      if (DV_RDF == obj_dtp)
+        {
+          rdf_box_t *rb = (rdf_box_t *)obj;
+          if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+            {
+              tii.dt.uri = rdf_type_twobyte_to_iri (qi, rb->rb_type);
+              iri_split_ttl_qname (tii.dt.uri, &tii.dt.ns, &tii.dt.loc, 1);
+            }
+          obj_box_value = rb->rb_box;
+          obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
+        }
+      else
+        {
+          obj_box_value = obj;
+          obj_box_value_dtp = obj_dtp;
+          if (DV_DATETIME == obj_box_value_dtp)
+            {
+              switch (DT_DT_TYPE(obj_box_value))
+                {
+                case DT_TYPE_DATE: tii.dt.uri = uname_xmlschema_ns_uri_hash_date; break;
+                case DT_TYPE_TIME: tii.dt.uri = uname_xmlschema_ns_uri_hash_time; break;
+                default : tii.dt.uri = uname_xmlschema_ns_uri_hash_dateTime; break;
+                }
+              iri_split_ttl_qname (tii.dt.uri, &tii.dt.ns, &tii.dt.loc, 1);
+            }
+        }
+    }
+  if ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_subj_ns)))
+    {
+      dk_free_tree (env->te_prev_subj_ns);	env->te_prev_subj_ns = NULL;
+      dk_free_tree (env->te_prev_subj_loc);	env->te_prev_subj_loc = NULL;
+      dk_free_tree (env->te_prev_pred_ns);	env->te_prev_pred_ns = NULL;
+      dk_free_tree (env->te_prev_pred_loc);	env->te_prev_pred_loc = NULL;
+    }
+  if ((NULL != tii.dt.ns) && ('\0' != tii.dt.ns[0]))
+    status += ttl_http_write_prefix_if_needed (qst, ses, env, &(env->te_ns_count_p_dt), &(tii.dt));
+  if ((NULL != tii.p.ns) && ('\0' != tii.p.ns[0]))
+    status += ttl_http_write_prefix_if_needed (qst, ses, env, &(env->te_ns_count_p_dt), &(tii.p));
+  if ((NULL != tii.s.ns) && ('\0' != tii.s.ns[0]))
+    status += ttl_http_write_prefix_if_needed (qst, ses, env, &(env->te_ns_count_s_o), &(tii.s));
+  if ((NULL != tii.o.ns) && ('\0' != tii.o.ns[0]))
+    status += ttl_http_write_prefix_if_needed (qst, ses, env, &(env->te_ns_count_s_o), &(tii.o));
+  if ((NULL == env->te_prev_subj_ns) ||
+    strcmp (env->te_prev_subj_ns, tii.s.ns) ||
+    strcmp (env->te_prev_subj_loc, tii.s.loc) )
+    {
+      if (NULL != env->te_prev_subj_ns)
+        {
+          session_buffered_write (ses, " .\n", 3);
+          dk_free_tree (env->te_prev_subj_ns);	env->te_prev_subj_ns = NULL;
+          dk_free_tree (env->te_prev_subj_loc);	env->te_prev_subj_loc = NULL;
+          dk_free_tree (env->te_prev_pred_ns);	env->te_prev_pred_ns = NULL;
+          dk_free_tree (env->te_prev_pred_loc);	env->te_prev_pred_loc = NULL;
+        }
+      ttl_http_write_ref (ses, env, &(tii.s));
+      session_buffered_write_char ('\t', ses);
+      env->te_prev_subj_ns = tii.s.ns;		tii.s.ns = NULL;
+      env->te_prev_subj_loc = tii.s.loc;	tii.s.loc = NULL;
+    }
+  if ((NULL == env->te_prev_pred_ns) ||
+    strcmp (env->te_prev_pred_ns, tii.p.ns) ||
+    strcmp (env->te_prev_pred_loc, tii.p.loc) )
+    {
+      if (NULL != env->te_prev_pred_ns)
+        {
+          session_buffered_write (ses, " ;\n\t", 4);
+          dk_free_tree (env->te_prev_pred_ns);	env->te_prev_pred_ns = NULL;
+          dk_free_tree (env->te_prev_pred_loc);	env->te_prev_pred_loc = NULL;
+        }
+      ttl_http_write_ref (ses, env, &(tii.p));
+      session_buffered_write_char ('\t', ses);
+      env->te_prev_pred_ns = tii.p.ns;		tii.p.ns = NULL;
+      env->te_prev_pred_loc = tii.p.loc;	tii.p.loc = NULL;
+    }
+  else
+    session_buffered_write (ses, " ,\n\t\t", 5);
+  if (obj_is_iri)
+    ttl_http_write_ref (ses, env, &(tii.o));
+  else
+    {
+      switch (obj_box_value_dtp)
+        {
+        case DV_DATETIME:
+          {
+            char temp [50];
+            dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+            session_buffered_write_char ('"', ses);
+            session_buffered_write (ses, temp, strlen (temp));
+            session_buffered_write_char ('"', ses);
+            if (DV_RDF != obj_dtp)
+              {
+                session_buffered_write (ses, "^^", 2);
+                ttl_http_write_ref (ses, env, &(tii.dt));
+              }
+            break;
+          }
+        case DV_STRING:
+          session_buffered_write_char ('"', ses);
+          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+          session_buffered_write_char ('"', ses);
+          break;
+        case DV_DB_NULL:
+          session_buffered_write (ses, "(NULL)", 6);
+          break;
+        default:
+          {
+            caddr_t tmp_utf8_box = box_cast_to_UTF8 (qst, obj_box_value);
+            if (DV_RDF == obj_dtp)
+              session_buffered_write_char ('"', ses);
+            session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            if (DV_RDF == obj_dtp)
+              session_buffered_write_char ('"', ses);
+            dk_free_box (tmp_utf8_box);
+            break;
+          }
+        }
+      if (DV_RDF == obj_dtp)
+        {
+          rdf_box_t *rb = (rdf_box_t *)obj;
+          if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+            {
+              caddr_t lang_id = rdf_lang_twobyte_to_string (qi, rb->rb_lang);
+              session_buffered_write_char ('@', ses);
+              session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
+            }
+          if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+            {
+              session_buffered_write (ses, "^^", 2);
+              ttl_http_write_ref (ses, env, &(tii.dt));
+            }
+        }
+    }
+fail:
+  dk_free_box (tii.s.uri);	dk_free_box (tii.s.ns);		dk_free_box (tii.s.loc);
+  dk_free_box (tii.p.uri);	dk_free_box (tii.p.ns);		dk_free_box (tii.p.loc);
+  dk_free_box (tii.o.uri);	dk_free_box (tii.o.ns);		dk_free_box (tii.o.loc);
+  dk_free_box (tii.dt.uri);	dk_free_box (tii.dt.ns);	dk_free_box (tii.dt.loc);
+  return (caddr_t)(status);
+}
+
 void
 rdf_box_init ()
 {
@@ -1263,6 +1571,8 @@ rdf_box_init ()
   bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
   bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
   bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
+  bif_define ("http_ttl_triple", bif_http_ttl_triple);
+  bif_set_uses_index (bif_http_ttl_triple);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__ro2lo", bif_rdf_long_of_obj);
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);

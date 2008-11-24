@@ -1493,6 +1493,32 @@ local_start_found:
   return 1;
 }
 
+void
+iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
+{
+  const char *tail;
+  int iri_strlen = strlen (iri);
+  for (tail = iri + iri_strlen; tail > iri; tail--)
+    {
+      char c = tail[-1];
+      if (!isalnum(c) && ('_' != c) && !(c & 0x80))
+        break;
+    }
+  if (isdigit (tail[0]))
+    tail = iri + iri_strlen;
+/*                                                         0123456789 */
+  if (abbreviate_nodeid && (tail-iri >= 9) && !memcmp (iri, "nodeID://", 9))
+    {
+      int boxlen = (tail - iri) - (9 - 1);
+      caddr_t pref = pref_ret[0] = dk_alloc_box (boxlen, DV_STRING);
+      pref[0] = '_';
+      memcpy (pref + 1, iri + 9, tail - (iri + 9));
+      pref[boxlen-1] = '\0';
+    }
+  else
+    pref_ret[0] = box_dv_short_nchars (iri, tail - iri);
+  name_ret[0] = box_dv_short_nchars (tail, iri + iri_strlen - tail);
+}
 
 name_id_cache_t * iri_name_cache;
 name_id_cache_t * iri_prefix_cache;
@@ -1817,7 +1843,10 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
       prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
       dk_free_box (pref_id_box);
       if (!prefix)
+        {
+          dk_free_box (local);
         return NULL;
+        }
       nic_set (iri_prefix_cache, prefix, pref_id);
     }
   name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
@@ -1849,6 +1878,71 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   return name;
 }
 
+int
+key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret)
+{
+  boxint pref_id;
+  caddr_t local, prefix, final_local;
+  local = nic_id_name (iri_name_cache, iid);
+  if (!local)
+    {
+      caddr_t id_box = box_iri_id (iid);
+      local = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_IRI", id_box);
+      dk_free_box (id_box);
+      if (!local)
+	return 0;
+      nic_set (iri_name_cache, local, iid);
+    }
+  pref_id = LONG_REF_NA (local);
+  prefix = nic_id_name (iri_prefix_cache, pref_id);
+  if (!prefix)
+    {
+      caddr_t pref_id_box = box_num (pref_id);
+      prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
+      dk_free_box (pref_id_box);
+      if (!prefix)
+        {
+          dk_free_box (local);
+	  return 0;
+        }
+      nic_set (iri_prefix_cache, prefix, pref_id);
+    }
+/*                    0123456 */
+  if (!strncmp (prefix, "local:", 6))
+    {
+      caddr_t host;
+      host = uriqa_get_host_for_dynamic_local (qi);
+      if (NULL != host)
+        {
+          int prefix_box_len = box_length (prefix);
+          int host_strlen = strlen (host);
+          caddr_t expanded_prefix = dk_alloc_box (prefix_box_len - 6 + (7+host_strlen), DV_STRING);
+/*                                01234567 */
+          memcpy (expanded_prefix, "http://", 7);
+          memcpy (expanded_prefix + 7, host, host_strlen);
+          memcpy (expanded_prefix + 7+host_strlen, prefix + 6, prefix_box_len - 6);
+          dk_free_box (prefix);
+          prefix = expanded_prefix;
+	  dk_free_box (host);
+        }
+    }
+  subj_ns_ret[0] = prefix;
+  subj_loc_ret[0] = box_dv_short_nchars (local+4, box_length (local) - 5);
+  dk_free_tree (local);
+  return 1;
+}
+
+caddr_t
+rdf_type_twobyte_to_iri (query_instance_t * qi, short twobyte)
+{
+  return box_sprintf (30, "fake://type/twobyte%d", twobyte);
+}
+
+caddr_t
+rdf_lang_twobyte_to_string (query_instance_t * qi, short twobyte)
+{
+  return box_sprintf (30, "fake-lang-%d", twobyte);
+}
 
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
