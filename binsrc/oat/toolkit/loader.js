@@ -88,9 +88,11 @@ function $(something) {
 	return elm;
 }
 
-function $$(className, root) {
-	var e = root || document;
-	var elms = e.getElementsByTagName("*");
+function $$(className, root, tag) {
+	var e = $(root) || document;
+	var tag = tag || "*";
+
+	var elms = e.getElementsByTagName(tag);
 	var matches = [];
 
 	if (OAT.Dom.isClass(e,className)) { matches.push(e); }

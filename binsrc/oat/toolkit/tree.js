@@ -21,6 +21,8 @@
 	node.collapse()
 	node.getLabel()
 	node.setLabel(newLabel)
+	node.getValue()
+	node.setValue(newValue)
 	node.setImage(newImage)
 	node.appendChild(oldNode, [index])
 	node.deleteChild(oldNode)
@@ -28,7 +30,7 @@
 	
 */
 
-OAT.TreeNode = function(li,ul,parent,root) {
+OAT.TreeNode = function(li,ul,parent,root,value) {
 	/* this.parent.ul == li.parentNode */
 	var self = this;
 	this.options = root.options;
@@ -41,6 +43,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.state = 1; /* 0 - collapsed, 1 - expanded */
 	this.selected = 0;
 	this.customImage = false;
+	this.value = value; 	/* custom value */
 	this._div = OAT.Dom.create("div"); /* our content */
 	this._sign = false; /* +- image */
 	this._icon = false; /* icon/checkbox */
@@ -522,21 +525,25 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		OAT.Dom.unlink(oldNode.li);
 	}
 	
-	this.createChild = function(label,isNode,index) {
+	this.createChild = function(label,isNode,index,value) {
 		var li = OAT.Dom.create("li");
 		var ul = false;
 		if (isNode) { 
 			var ul = OAT.Dom.create("ul");
 			li.appendChild(ul);
 		}
-		var child = new OAT.TreeNode(li,ul,self,self.root);
+		var child = new OAT.TreeNode(li,ul,self,self.root,value);
 		child.setLabel(label);
+		if (index === false) { index = undefined; }
 		self.appendChild(child,index,true);
 		return child;
 	}
 	
 	this.setLabel = function(newLabel) { self._label.innerHTML = newLabel; }
 	this.getLabel = function() { return self._label.innerHTML; }
+
+	this.setValue = function(newValue) { self.value = newValue; }
+	this.getValue = function() { return self.value; }
 
 	this.removeSignal = function() {
 		self.gdMode = 0;
@@ -650,7 +657,7 @@ OAT.Tree = function(optObj) {
 		}
 		
 		/* get a mirror of existing structure */
-		self.tree = new OAT.TreeNode(false,ul,false,self);
+		self.tree = new OAT.TreeNode(false,ul,false,self,false);
 		var list = ul.childNodes;
 		for (var i=0;i<list.length;i++) {
 			if (list[i].tagName && list[i].tagName.toLowerCase() == "li") { 
