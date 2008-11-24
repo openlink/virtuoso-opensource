@@ -3627,6 +3627,8 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	    sqlr_resignal (err);
 	  return result;
       }
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
     default:
       {
         /* Bug 5763: No need:
