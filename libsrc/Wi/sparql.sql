@@ -11860,10 +11860,33 @@ create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_I
 	PRIMARY KEY (RS_NAME, RS_URI))
 ;
 
-
-select  count (*) from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri)
+create procedure rdfs_schema_boot ()
+{
+  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DeferLoadInferences') = '1')
+    {
+      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
+	  values (1, NULL, 'RDF Inference load', 'DB.DBA.RDFS_INF_LOAD ()', now()) ;
+      return;
+    }
+  DB.DBA.RDFS_INF_LOAD ();
+}
 ;
 
+create procedure
+DB.DBA.RDFS_INF_LOAD ()
+{
+  log_message ('Loading RDF inferences');
+  for select  rs_name, rs_uri from sys_rdf_schema do
+    {
+      rdfs_load_schema (rs_name, rs_uri);
+    }
+  log_message ('Finished loading RDF inferences');
+  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'RDF Inference load';
+}
+;
+
+rdfs_schema_boot ()
+;
 
 create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0)
 {
