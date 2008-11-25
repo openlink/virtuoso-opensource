@@ -537,6 +537,7 @@ const char *dbg_find_allocation_error (void *data, void *expected_pool)
   return NULL;
 }
 
+int dbg_allows_free_nulls = 0;
 
 void
 dbg_free (const char *file, u_int line, void *data)
@@ -550,6 +551,7 @@ dbg_free (const char *file, u_int line, void *data)
       fprintf (stderr, "WARNING: free of NULL pointer in %s (%u)\n",
 	  file, line);
       _free_nulls++;
+      if (0 >= dbg_allows_free_nulls)
       memdbg_abort ();
       return;
     }

@@ -66,6 +66,7 @@
     ({ char *tmp = s; \
        strcpy (malloc (strlen (tmp) + 1), tmp); \
      })
+extern int dbg_allows_free_nulls;
 # endif
 
 #else
