@@ -1568,6 +1568,16 @@ create procedure BMK.WA.sfolder_sql(
       BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf('a.BD_ID = %d', tmp));
   }
 
+  tmp := BMK.WA.xml_get('updatedAfter', data);
+  if (not is_empty_or_null(tmp)) {
+    BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf ('a.BD_UPDATED >= \'%s\'', tmp));
+  }
+
+  tmp := BMK.WA.xml_get('updatedBefore', data);
+  if (not is_empty_or_null(tmp)) {
+    BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf ('a.BD_UPDATED <= \'%s\'', tmp));
+  }
+
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
   S := replace(S, '<MAX>', maxRows);

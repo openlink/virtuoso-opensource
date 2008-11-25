@@ -78,6 +78,9 @@
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
 
+      self.v_updatedAfter := trim (self.v_updatedAfter);
+      self.v_updatedBefore := trim (self.v_updatedBefore);
+
       if (not (self.account_role in ('public', 'guest')))
       {
       self.v_own := self.f_own.ufl_selected;
@@ -108,6 +111,8 @@
           BMK.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         BMK.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
         BMK.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
+        BMK.WA.test (self.v_updatedAfter, vector('name', 'Updated After', 'class', 'date'));
+        BMK.WA.test (self.v_updatedBefore, vector('name', 'Updated Before', 'class', 'date'));
       }
 
       declare data varchar;
@@ -119,6 +124,8 @@
       } else {
         BMK.WA.xml_set('expression', data, self.v_expression);
         BMK.WA.xml_set('tags', data, self.v_tags);
+        BMK.WA.xml_set ('updatedBefore', data, self.v_updatedBefore);
+        BMK.WA.xml_set ('updatedAfter', data, self.v_updatedAfter);
         if (self.v_own = 1)
         {
           BMK.WA.xml_set('myBookmarks', data, self.v_own);
@@ -208,6 +215,10 @@
         tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
       if (not is_empty_or_null(self.v_tags))
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
+      if (not is_empty_or_null (self.v_updatedAfter))
+        tmp := concat(tmp, sprintf('&%supdated_after=%U', prefix, self.v_updatedAfter));
+      if (not is_empty_or_null (self.v_updatedBefore))
+        tmp := concat(tmp, sprintf('&%supdated_before=%U', prefix, self.v_updatedBefore));
       if ((cast(self.v_own as integer) = 1) and (self.v_folder_id <> -1))
         tmp := concat(tmp, sprintf('&%sfolder=%d', prefix, self.v_folder_id));
       if (cast(self.v_own as integer))
@@ -268,6 +279,8 @@
       <v:variable name="v_folder_id" type="integer" default="-1"/>
       <v:variable name="v_shared" type="integer" default="1"/>
       <v:variable name="v_grants" type="varchar" default="''"/>
+      <v:variable name="v_updatedAfter" type="varchar" default="''" />
+      <v:variable name="v_updatedBefore" type="varchar" default="''" />
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
@@ -307,41 +320,45 @@
       ?>
       <v:before-data-bind>
         <![CDATA[
-          declare settings any;
+          declare dt datetime;
+          declare params, settings any;
 
+          params := e.ve_params;
           settings := BMK.WA.settings(self.account_id);
           self.chars := cast(get_keyword('chars', settings, '60') as integer);
 
-          self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
+          self.v_mode := get_keyword ('mode', params, self.v_mode);
 
           -- main
-          self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
-          self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
-          self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
-          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '')
+          self.v_keywords := trim (get_keyword ('a_keywords', params, get_keyword ('s_keywords', params, get_keyword ('keywords', params, ''))));
+          self.v_expression := trim (get_keyword ('f_expression', params, get_keyword ('type', params, self.v_expression)));
+          self.v_tags := trim (get_keyword ('f_tags', params, get_keyword ('tags', params, self.v_tags)));
+          if (get_keyword ('tag', params, '') <> '')
           {
             if (is_empty_or_null(self.v_tags))
               self.v_tags := '';
-            self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
+            self.v_tags := concat(self.v_tags, ', ', get_keyword ('tag', params));
             self.v_tags := BMK.WA.tags2vector(self.v_tags);
             self.v_tags := BMK.WA.tags2unique(self.v_tags);
             self.v_tags := BMK.WA.vector2tags(self.v_tags);
           }
-          self.v_folder_id := cast(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)) as integer);
+          self.v_updatedAfter := trim (get_keyword ('f_updatedAfter', params));
+          self.v_updatedBefore := trim (get_keyword ('f_updatedBefore', params));
+          self.v_folder_id := cast (get_keyword ('f_folder', params, get_keyword ('folder', params, self.v_folder_id)) as integer);
 
           -- options
           if (not (self.account_role in ('public', 'guest')))
           {
           self.v_own := self.f_own.ufl_selected;
           self.v_shared := self.f_shared.ufl_selected;
-            self.v_grants := trim(get_keyword('f_grants', self.vc_page.vc_event.ve_params, get_keyword('grants', self.vc_page.vc_event.ve_params, self.v_grants)));
+            self.v_grants := trim (get_keyword ('f_grants', params, get_keyword ('grants', params, self.v_grants)));
           }
-          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, self.v_max));
-          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, self.v_order));
-          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, self.v_direction));
+          self.v_max := trim (get_keyword ('f_max', params, self.v_max));
+          self.v_order := trim (get_keyword ('f_order', params, self.v_order));
+          self.v_direction := trim (get_keyword ('f_direction', params, self.v_direction));
           self.v_cloud := self.f_cloud.ufl_selected;
 
-          self.sortChange (get_keyword ('sortColumn', e.ve_params, ''));
+          self.sortChange (get_keyword ('sortColumn', params, ''));
         ]]>
       </v:before-data-bind>
       <v:on-post>
@@ -453,7 +470,7 @@
                             account_id := BMK.WA.domain_owner_id (domain_id);
                             uri := (control as vspx_row_template).te_rowset[4];
                             title := (control as vspx_row_template).te_rowset[3];
-                            title2 := BMK.WA.rdfa_value (title, 'dc:title');
+                            title2 := BMK.WA.rdfa_value (sprintf ('%V', title), 'dc:title');
 
                             http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
@@ -584,6 +601,28 @@
                   </th>
                   <td>
                     <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <vm:label for="f_updatedAfter" value="Updated After" />
+                  </th>
+                  <td>
+                    <v:text name="f_updatedAfter" xhtml_id="f_updatedAfter" null-value="--''" value="--self.v_updatedAfter" xhtml_onclick="javascript: cPopup.select ($(\'f_updatedAfter\'), \'f_updatedAfter_select\', \'yyyy-MM-dd\');" xhtml_class="textbox" xhtml_size="10" />
+                    <a href="#" name="f_updatedAfter_select" id="f_updatedAfter_select" onclick="cPopup.select ($('f_updatedAfter'), 'f_updatedAfter_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <vm:label for="f_updatedBefore" value="Updated Before" />
+                  </th>
+                  <td>
+                    <v:text name="f_updatedBefore" xhtml_id="f_updatedBefore" null-value="--''" value="--self.v_updatedBefore" xhtml_onclick="javascript: cPopup.select ($(\'f_updatedBefore\'), \'f_updatedBefore_select\', \'yyyy-MM-dd\');" xhtml_class="textbox" xhtml_size="10" />
+                    <a href="#" name="f_updatedBefore_select" id="f_updatedBefore_select" onclick="cPopup.select ($('f_updatedBefore'), 'f_updatedBefore_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                    </a>
                   </td>
                 </tr>
                 <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">

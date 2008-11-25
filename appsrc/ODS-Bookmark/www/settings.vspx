@@ -64,6 +64,30 @@
       <v:variable name="ve_result" type="any" default="null" />
     </vm:variables>
     <vm:pagebody>
+      <?vsp
+        if (0)
+        {
+      ?>
+          <v:button name="command" action="simple" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare params, action any;
+
+                params := e.ve_params;
+
+                action := get_keyword ('action', params);
+                if (action = 'search')
+                {
+                  self.vc_redirect (sprintf ('search.vspx?keywords=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
+                  return;
+                }
+                self.vc_data_bind(e);
+               ]]>
+             </v:on-post>
+          </v:button>
+      <?vsp
+        }
+      ?>
       <table id="MTB">
         <tr>
           <td id="LC">

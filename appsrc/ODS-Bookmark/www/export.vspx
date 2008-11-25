@@ -30,6 +30,8 @@
   <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
   <v:variable name="v_expression" type="varchar" default="''" param-name="expression"/>
   <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
+  <v:variable name="v_updatedAfter" type="varchar" default="''" param-name="updated_after"/>
+  <v:variable name="v_updatedBefore" type="varchar" default="''" param-name="updated_before"/>
   <v:variable name="v_folder_id" type="integer" default="-1" param-name="folder"/>
   <v:variable name="v_grants" type="varchar" default="''" param-name="grants"/>
 
@@ -44,32 +46,41 @@
       set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
-      if (self.v_output = 'BMK') {
+      if (self.v_output = 'BMK')
+      {
         declare params any;
 
         params := self.vc_page.vc_event.ve_params;
 
         http_header(sprintf ('Content-type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword('file', params, 'Bookmarks.html')));
         http_value(xslt (BMK.WA.xslt_full (get_keyword('format', params, 'Netscape') || '.xsl'), xtree_doc(BMK.WA.bookmark_export(self.domain_id, null))));
-      } else {
+      }
+      else
+      {
         http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
-        if (self.v_output = 'OPML') {
+        if (self.v_output = 'OPML')
+        {
           http(BMK.WA.xml2string(BMK.WA.export_opml_xml(self.domain_id, self.account_id)));
           goto _end;
-
-        } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+        }
+        else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
+        {
           declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
 
           BMK.WA.xml_set('keywords', data, self.v_keywords);
           BMK.WA.xml_set('expression', data, self.v_expression);
           BMK.WA.xml_set('tags', data, self.v_tags);
-          if (self.v_own = 1) {
+          BMK.WA.xml_set ('updatedBefore', data, self.v_updatedBefore);
+          BMK.WA.xml_set ('updatedAfter', data, self.v_updatedAfter);
+          if (self.v_own = 1)
+          {
             BMK.WA.xml_set('myBookmarks', data, self.v_own);
             if (self.v_folder_id > 0)
               BMK.WA.xml_set('folder', data, self.v_folder_id);
           }
-          if (self.v_shared = 1) {
+          if (self.v_shared = 1)
+          {
             BMK.WA.xml_set('mySharedBookmarks', data, self.v_shared);
             if (self.v_grants <> '')
               BMK.WA.xml_set('grants', data, self.v_grants);
@@ -81,7 +92,7 @@
             goto _error;
 
           state := '00000';
-          sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+          sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
             maxRows := self.v_max;
             if (maxRows <> '')
               maxRows := 'TOP ' || maxRows;
@@ -92,11 +103,13 @@
           if (state <> '00000')
             goto _error;
 
-          if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+          if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
+          {
             http ('<?xml version="1.0" encoding="UTF-8"?>\n');
             http ('<rss version="2.0">\n');
             http ('<channel>\n');
-            for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+            for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
+            {
               http ('<title>');
                 http_value (BMK.WA.utf2wide(BMK.WA.domain_name (self.domain_id)));
               http ('</title>\n');
@@ -119,7 +132,8 @@
                 http_value (BMK.WA.bookmarks_url (self.domain_id));
               http ('</link>\n');
             }
-            foreach (any row in rows) do {
+            foreach (any row in rows) do
+            {
               http ('<item>\n');
                 http ('<title>');
                   http_value (BMK.WA.utf2wide (row[3]));
@@ -136,12 +150,14 @@
                 http ('<pubDate>');
                   http_value (BMK.WA.dt_rfc1123 (row[7]));
                 http ('</pubDate>\n');
-                for (select BTV_TAG from BMK..TAGS_VIEW, BMK.WA.BOOKMARK_DOMAIN where domain_id = self.domain_id and account_id = self.account_id and item_id = BD_BOOKMARK_ID and BD_ID = row[1]) do {
+                for (select BTV_TAG from BMK..TAGS_VIEW, BMK.WA.BOOKMARK_DOMAIN where domain_id = self.domain_id and account_id = self.account_id and item_id = BD_BOOKMARK_ID and BD_ID = row[1]) do
+                {
                   http ('<category>');
                     http_value (BTV_TAG);
                   http ('</category>\n');
                 }
-                if (self.v_output <> 'rss') {
+                if (self.v_output <> 'rss')
+                {
                   http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                     http_value (BMK.WA.dt_iso8601 (row[6]));
                   http ('</ods:modified>\n');

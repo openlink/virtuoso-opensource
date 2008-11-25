@@ -613,7 +613,7 @@
                       if (lcase(BMK.WA.node_type ((control as vspx_row_template).te_column_value('_NODE'))) = 'b')
                       {
                         uri := (control as vspx_row_template).te_column_value('_URI');
-                        title2 := BMK.WA.rdfa_value (title, 'dc:title');
+                        title2 := BMK.WA.rdfa_value (sprintf ('%V', title), 'dc:title');
                         onclick := '';
                         if (self.account_id > 0)
                           onclick := sprintf ('onclick="javascript: openBookmark (\'%d\');"', id);
