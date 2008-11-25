@@ -1511,17 +1511,18 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
 		asin := rtrim (tmp[0], '/');
 		if (asin is null)
 			return 0;
-		url := concat(new_origin_uri, '?format=atom');
+		url := sprintf('http://friendfeed.com/api/feed/user/%s?format=atom', asin);
+		--url := concat(new_origin_uri, '?format=atom');
 	}
     else
         return 0;
 	tmp := http_get (url);
     xd := xtree_doc (tmp);
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
-    xd := serialize_to_UTF8_xml (xt);
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-    --DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-    DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
+    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/friendfeed2rdf.xsl', xt, vector ('base', graph_iri, 'isDiscussion', 1));
+	xd := serialize_to_UTF8_xml (xd);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
 }
 ;
@@ -3220,7 +3221,6 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
   xt := xtree_doc (content);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri, 'isDiscussion', is_disc));
   xd := serialize_to_UTF8_xml (xd);
---  string_to_file ('feed2.rdf', xd, -2);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, iri, graph_iri);
   return 1;
   no_sioc:

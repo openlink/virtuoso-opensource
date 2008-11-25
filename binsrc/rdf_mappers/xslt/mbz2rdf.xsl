@@ -54,6 +54,10 @@
 
     <xsl:template match="mmd:artist[@type='Group']">
 	<mo:MusicGroup rdf:about="{vi:proxyIRI (concat($base,'artist/',@id,'.html'))}">
+	    <xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (mmd:name, ' ', '_'))"/>
+		<xsl:if test="not starts-with ($sas-iri, '#')">
+			<owl:sameAs rdf:resource="{$sas-iri}"/>
+		</xsl:if>
 	    <foaf:name><xsl:value-of select="mmd:name"/></foaf:name>
 	    <xsl:for-each select="mmd:relation-list[@target-type='Artist']/mmd:relation/mmd:artist">
 		<mo:member rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', @id, '.html'))}"/>
@@ -73,11 +77,10 @@
 	    <foaf:name>
 			<xsl:value-of select="mmd:name"/>
 		</foaf:name>
-	    <owl:sameAs>
-			<xsl:attribute name="rdf:resource">
-				<xsl:value-of select="concat('http://dbpedia.org/resource/', mmd:name)" />
-			</xsl:attribute>
-		</owl:sameAs>
+		<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (mmd:name, ' ', '_'))"/>
+		<xsl:if test="not starts-with ($sas-iri, '#')">
+			<owl:sameAs rdf:resource="{$sas-iri}"/>
+		</xsl:if>
 	    <xsl:for-each select="mmd:release-list/mmd:release|mmd:relation-list[@target-type='Release']/mmd:relation/mmd:release">
 		<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id,'.html'))}"/>
 	    </xsl:for-each>

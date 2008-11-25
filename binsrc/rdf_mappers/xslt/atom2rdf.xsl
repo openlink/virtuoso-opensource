@@ -32,9 +32,9 @@
 <!ENTITY rss "http://purl.org/rss/1.0/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
-<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
+<!ENTITY ff "http://api.friendfeed.com/2008/03">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -55,6 +55,8 @@
   xmlns:g="http://base.google.com/ns/1.0"
   xmlns:gd="http://schemas.google.com/g/2005"
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
+  xmlns:media="http://search.yahoo.com/mrss/"
+  xmlns:ff="&ff;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -152,7 +154,7 @@
 		</sioc:topic>
 	    </xsl:for-each>
 	</xsl:if>
-	<xsl:apply-templates select="g:*|gd:*" mode="rdfitem"/>
+		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*" mode="rdfitem"/>
     </item>
 </xsl:template>
 
@@ -160,6 +162,10 @@
     <xsl:element name="{local-name(.)}" namespace="http://www.openlinksw.com/schemas/google-base#">
 	<xsl:value-of select="."/>
     </xsl:element>
+</xsl:template>
+
+<xsl:template match="ff:*|media:*" mode="rdfitem">
+	<xsl:copy-of select="." />
 </xsl:template>
 
 <xsl:template name="removeTags">
