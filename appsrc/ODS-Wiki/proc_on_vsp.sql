@@ -3144,14 +3144,20 @@ CREATE PROCEDURE WV.WIKI.CLUSTER_TREE_BUILD_TEMP(
 ;
 
 -- Return a div of top-10 most recently modified DAV files matching FILTER
+-- titles are auto-generated based on case-changes in the page name
 create function WV.WIKI.RecentPages(inout filter varchar)
 {
-  declare ret varchar;
+  declare ret, title varchar;
   ret:='<div id="recentpages">\n<ul>\n';
-  for ( select top 10 left(res_name, length(res_name)-4) as fname from ws..sys_dav_res where res_full_path like filter order by res_mod_time desc )
-    do
-      {
-	ret:=ret || '<li>' || fname || '</li>\n';
+  for ( select top 10 left(res_name, length(res_name)-4) as fname 
+        from ws..sys_dav_res 
+        where res_full_path like filter 
+        order by res_mod_time desc ) do {
+    title:=fname;
+    title:=trim(regexp_replace(regexp_replace(title,
+          '\([A-Z]\)\([a-z]\)', ' \\1\\2', 1, null), 
+        '\([a-z]\)\([A-Z]\)', '\\1 \\2', 1, null));
+    ret:=ret || '<li><a href="' || fname || '">' || title || '</a></li>\n';
       }
   ret:=ret || '</ul>\n</div>\n';
   return xtree_doc(ret);
