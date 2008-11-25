@@ -11862,7 +11862,7 @@ create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_I
 
 create procedure rdfs_schema_boot ()
 {
-  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DeferLoadInferences') = '1')
+  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DeferInferenceRulesInit') = '1')
     {
       insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
 	  values (1, NULL, 'RDF Inference load', 'DB.DBA.RDFS_INF_LOAD ()', now()) ;
