@@ -376,12 +376,12 @@ create procedure ODS.ODS_API."calendar.import" (
   else if (lcase (sourceType) = 'webdav')
   {
     commit work;
-    content := CAL.WA.dav_content (CAL.WA.host_url () || http_physical_path_resolve (replace (source, ' ', '%20')), userName, userPassword);
+    content := CAL.WA.dav_content (CAL.WA.host_url () || http_physical_path_resolve (replace (source, ' ', '%20')), 0, userName, userPassword);
   }
   else if (lcase (sourceType) = 'url')
   {
     commit work;
-    content := CAL.WA.dav_content (source, userName, userPassword);
+    content := CAL.WA.dav_content (source, 0, userName, userPassword);
   }
   else
   {

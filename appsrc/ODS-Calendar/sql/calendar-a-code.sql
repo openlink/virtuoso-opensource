@@ -611,18 +611,18 @@ create procedure CAL.WA.domain_gems_delete (
   path := home || 'Calendar.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
-  declare auth_uid, auth_pwd varchar;
+  declare auth_username, auth_password varchar;
 
-  auth_uid := coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
-  auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
-  if (auth_pwd[0] = 0)
-    auth_pwd := pwd_magic_calc (auth_uid, auth_pwd, 1);
+  auth_username := coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
+  auth_password := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
+  if (auth_password[0] = 0)
+    auth_password := pwd_magic_calc (auth_username, auth_password, 1);
 
-  tmp := DB.DBA.DAV_DIR_LIST (home, 0, auth_uid, auth_pwd);
+  tmp := DB.DBA.DAV_DIR_LIST (home, 0, auth_username, auth_password);
   if (not isinteger(tmp) and not length (tmp))
     DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
-  tmp := DB.DBA.DAV_DIR_LIST (appHome, 0, auth_uid, auth_pwd);
+  tmp := DB.DBA.DAV_DIR_LIST (appHome, 0, auth_username, auth_password);
   if (not isinteger(tmp) and not length (tmp))
     DB.DBA.DAV_DELETE_INT (appHome, 1, null, null, 0);
 
@@ -648,13 +648,13 @@ create procedure CAL.WA.domain_update (
   DB.DBA.DAV_DELETE_INT (path || 'Calendar.rdf', 1, null, null, 0);
   DB.DBA.DAV_DELETE_INT (path || 'Calendar.comment', 1, null, null, 0);
 
-  declare auth_pwd varchar;
-  auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = 'dav'), '');
-  if (auth_pwd[0] = 0)
-    auth_pwd := pwd_magic_calc ('dav', auth_pwd, 1);
-  DB.DBA.DAV_DELETE (path, 1, 'dav', auth_pwd);
-  DB.DBA.DAV_DELETE (home || 'Calendar (DET)/', 1, 'dav', auth_pwd);
-  DB.DBA.DAV_DELETE (home || 'Calendar/', 1, 'dav', auth_pwd);
+  declare auth_password varchar;
+  auth_password := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = 'dav'), '');
+  if (auth_password[0] = 0)
+    auth_password := pwd_magic_calc ('dav', auth_password, 1);
+  DB.DBA.DAV_DELETE (path, 1, 'dav', auth_password);
+  DB.DBA.DAV_DELETE (home || 'Calendar (DET)/', 1, 'dav', auth_password);
+  DB.DBA.DAV_DELETE (home || 'Calendar/', 1, 'dav', auth_password);
 
   path := home || 'Calendar' || '/';
   DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
@@ -820,13 +820,13 @@ create procedure CAL.WA.account()
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.account_access (
-  out auth_uid varchar,
-  out auth_pwd varchar)
+  out auth_username varchar,
+  out auth_password varchar)
 {
-  auth_uid := CAL.WA.account();
-  auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_uid), '');
-  if (auth_pwd[0] = 0)
-    auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
+  auth_username := CAL.WA.account();
+  auth_password := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_username), '');
+  if (auth_password[0] = 0)
+    auth_password := pwd_magic_calc(auth_username, auth_password, 1);
   return 1;
 }
 ;
@@ -1316,8 +1316,9 @@ create procedure CAL.WA.banner_links (
 --
 create procedure CAL.WA.dav_content (
   in uri varchar,
-  in auth_uid varchar := null,
-  in auth_pwd varchar := null)
+  in auth_session varchar := 1,
+  in auth_username varchar := null,
+  in auth_password varchar := null)
 {
   declare exit handler for sqlstate '*'
   {
@@ -1330,9 +1331,15 @@ create procedure CAL.WA.dav_content (
 
   newUri := replace (uri, ' ', '%20');
   reqHdr := null;
-  if (is_empty_or_null (auth_uid))
-  CAL.WA.account_access (auth_uid, auth_pwd);
-  reqHdr := sprintf ('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
+  if (is_empty_or_null (auth_username))
+  {
+    auth_username := null;
+    auth_password := null;
+    if (auth_session = 1)
+      CAL.WA.account_access (auth_username, auth_password);
+  }
+  if (not is_empty_or_null (auth_username))
+    reqHdr := sprintf ('Authorization: Basic %s', encode_base64(auth_username || ':' || auth_password));
 
 _again:
   N := N + 1;
@@ -1355,7 +1362,7 @@ _again:
   if (xpath_eval ('/html', xt, 1) is null)
     return content;
   newUri := cast (xpath_eval ('/html/head/link[@rel="alternate" and @type="text/calendar"]/@href', xt, 1) as varchar);
-  return CAL.WA.dav_content (newUri, auth_uid, auth_pwd);
+  return CAL.WA.dav_content (newUri, auth_session, auth_username, auth_password);
 }
 ;
 
@@ -5409,7 +5416,7 @@ create procedure CAL.WA.exchange_exec_internal (
       {
         _name := CAL.WA.host_url () || _name;
       }
-      _content := CAL.WA.dav_content (_name, _user, _password);
+      _content := CAL.WA.dav_content (_name, 0, _user, _password);
       if (isnull(_content))
       {
         signal ('CAL01', 'Bad import/subscription source!<>');
@@ -5584,18 +5591,18 @@ create procedure CAL.WA.dav_parent (
 create procedure CAL.WA.dav_permissions (
   in path varchar,
   in auth_name varchar := null,
-  in auth_pwd varchar := null)
+  in auth_password varchar := null)
 {
   declare uid, gid integer;
   declare permissions varchar;
 
   permissions := -1;
-  permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+  permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_password);
   if (permissions < 0)
   {
     path := CAL.WA.dav_parent (path);
     if (path <> CAL.WA.dav_home (CAL.WA.account_id (auth_name)))
-      permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_pwd);
+      permissions := DB.DBA.DAV_PROP_GET (path, ':virtpermissions', auth_name, auth_password);
     if (permissions < 0)
       permissions := USER_GET_OPTION (auth_name, 'PERMISSIONS');
   }
