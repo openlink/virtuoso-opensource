@@ -1186,6 +1186,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	this.description = self.options.description;
 	this.desc = self.options.desc;
 	this.dimmer = false;
+	this.imageProperties = ["depiction"];
 
 	this.showBig = function(index) {
 		if (!self.dimmer) {
@@ -1295,12 +1296,24 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		for (var i=0;i<data.length;i++) {
 			var item = data[i];
 			var preds = item.preds;
+			/* if our uri looks like an image */
 			if (self.parent.getContentType(item.uri) == 3)
 				self.addUriItem(item.uri,item);
+			/* FIXME:  perform another regex check ? */
 			if (item.uri.match(/http:[^ ]+\.(jpe?g|png|gif)\?.*/gi))
 				self.addUriItem(item.uri,item);
 			for (var p in preds) {
 				var pred = preds[p];
+				var simple = self.parent.simplify(p);
+
+				/* treat certain predicate values as images automatically */
+				if (self.imageProperties.find(simple) != -1) {
+					for (var j=0;j<pred.length;j++) {
+						var value = pred[j];
+						self.addUriItem(value.uri,item);
+					}
+				} else {
+				/* look for predicates that are/contain image links */
 				for (var j=0;j<pred.length;j++) {
 					var value = pred[j];
 					if (typeof(value) == "object") { continue; }
@@ -1311,6 +1324,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 						if (all) for (var k=0;k<all.length;k++) { self.addUriItem(all[k],item); } /* for all embedded images */
 					} /* if not image */
 				} /* for all values */
+				}
 			} /* for all predicates */
 		} /* for all items */
 	}

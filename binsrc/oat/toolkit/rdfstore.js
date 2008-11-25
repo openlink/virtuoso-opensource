@@ -112,7 +112,8 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				
 				if (!title) {
                                         var t1 = self.simplify(t[1]);
-					if ((t[0]==url || t[0]==url+'/') && self.labelProps.find(t1)!=-1) { title = t[2]; }
+					if ((t[0]==url || t[0]==url+'/') && 
+					    self.labelProps.find(t1)!=-1) { title = t[2]; }
 			}
 			}
 			self.addTriples(triples,url,title);
