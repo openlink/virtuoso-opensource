@@ -2274,6 +2274,8 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 create procedure SYS_STAT_VDB_SYNC ()
 {
   declare _ds_conn_str any;
+  if (sys_stat ('vdb_stat_refresh_disabled') = 1)
+    return;
   for select RT_DSN, RT_REMOTE_NAME, DS_CONN_STR, RT_NAME
     from DB.DBA.SYS_REMOTE_TABLE, DB.DBA.SYS_DATA_SOURCE where RT_DSN = DS_DSN do
       {

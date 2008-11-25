@@ -80,6 +80,7 @@ long tc_pl_moved_in_reentry;
 long tc_enter_transiting_bm_inx;
 extern long tc_aio_seq_read;
 extern long tc_aio_seq_write;
+extern long cfg_disable_vdb_stat_refresh;
 
 long tc_read_absent_while_finalize;
 long tc_fix_outdated_leaf_ptr;
@@ -1292,6 +1293,7 @@ stat_desc_t stat_descs [] =
     {"fe_replication_support", &fe_replication_support, NULL},
 
     {"vdb_attach_autocommit", &vdb_attach_autocommit, NULL},
+    {"vdb_stat_refresh_disabled", &cfg_disable_vdb_stat_refresh, NULL},
     {"vsp_in_dav_enabled", &vsp_in_dav_enabled, NULL},
 
     {"dbev_enable", &dbev_enable, NULL},
