@@ -4281,11 +4281,11 @@ sparp_qm_conds_cmp (sparp_t *sparp, quad_map_t *qm_a, quad_map_t *qm_b)
     }
   for (b_ctr = b_count; b_ctr--; /* no step */)
     {
-      ccaddr_t b_cond = qm_a->qmAllConds [b_ctr];
+      ccaddr_t b_cond = qm_b->qmAllConds [b_ctr];
       int b_in_a = 0;
       for (a_ctr = a_count; a_ctr--; /* no step */)
         {
-          ccaddr_t a_cond = qm_b->qmAllConds [a_ctr];
+          ccaddr_t a_cond = qm_a->qmAllConds [a_ctr];
           if (strcmp (b_cond, a_cond))
             continue;
           b_in_a = 1;
