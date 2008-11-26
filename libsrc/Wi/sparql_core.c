@@ -92,8 +92,16 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
   int inx;
   va_start (ap, type);
 #ifdef DEBUG
+  if (SPAR_CODEGEN == type)
+    {
+      if (spart_count_specific_elems_by_type (type) > sizeof (caddr_t) * (length-1))
+        spar_internal_error (sparp, "length mismatch in spartlist()");
+    }
+  else
+    {
   if (spart_count_specific_elems_by_type (type) != sizeof (caddr_t) * (length-1))
     spar_internal_error (sparp, "length mismatch in spartlist()");
+    }
 #endif
   length += 1;
 #ifdef MALLOC_DEBUG
