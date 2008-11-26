@@ -2091,6 +2091,14 @@ create procedure DB.DBA.TTLP_EV_COMMIT (inout g varchar, inout app_env any) {
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
   declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000));
@@ -2237,9 +2245,17 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar)
+create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar := null)
 {
   declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML() requires a valid IRI as a base argument if graph is not specified');
+    }
   app_env := vector (null, null, __max (length (strg) / 100, 100000));
   rdf_load_rdfxml (strg, 0,
     graph,
@@ -2256,7 +2272,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
 }
 ;
 
-create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in graph varchar)
+create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in graph varchar := null)
 {
   declare res any;
   res := dict_new (length (strg) / 100);
@@ -9768,6 +9784,14 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
 				 in log_mode integer := 2, in threads integer := 3)
 {
   declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP_MT()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.TTLP_MT() requires a valid IRI as a base argument if graph is not specified');
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (async_queue (threads), 0, vector (log_mode, null), __max (length (strg) / 100, 100000));
@@ -9788,6 +9812,14 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
 				 in log_mode integer := 2, in threads integer := 3)
 {
   declare app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP_MT_LOCAL_FILE()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.TTLP_MT_LOCAL_FILE() requires a valid IRI as a base argument if graph is not specified');
+    }
   app_env := vector (async_queue (threads), 0, vector (log_mode, null), 1000000);
   rdf_load_turtle_local_file (filename, base, graph, flags,
     vector (
@@ -9802,10 +9834,18 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
 }
 ;
 
-create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar,
+create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar := null,
   in log_mode integer := 2, in threads integer := 3 )
 {
   declare ro_id_dict, app_env any;
+  if (graph = '')
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDFL_LOAD_RDFXML_MT()');
+  else if (graph is null)
+    {
+      graph := base;
+      if ((graph is null) or (graph = ''))
+        signal ('22023', 'DB.DBA.RDF_LOAD_RDFXML_MT() requires a valid IRI as a base argument if graph is not specified');
+    }
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new ();
   else
