@@ -670,8 +670,8 @@ create procedure ODS.ODS_API."calendar.annotation.delete" (
 create procedure ODS.ODS_API."calendar.publication.new" (
   in inst_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in destinationType varchar := 'WebDAV',
   in destination varchar,
@@ -716,11 +716,70 @@ create procedure ODS.ODS_API."calendar.publication.new" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."calendar.publication.get" (
+  in publication_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare options any;
+
+  inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  for (select * from CAL.WA.EXCHANGE where EX_ID = publication_id) do
+  {
+    options := deserialize (EX_OPTIONS);
+    http (sprintf ('<publication id="%d">\r\n', publication_id));
+
+    http (sprintf ('  <name>%V</name>\r\n', EX_NAME));
+    if (EX_UPDATE_TYPE = 0)
+    {
+      http ('  <updateType>manually</updateType>\r\n');
+    }
+    else if (EX_UPDATE_TYPE = 1)
+    {
+      http ('  <updateType>after any entry is changed</updateType>\r\n');
+    }
+    else
+    {
+      http (sprintf ('  <updatePeriod>%s</updatePeriod>\r\n', EX_UPDATE_PERIOD));
+      http (sprintf ('  <updateFreq>%s</updateFreq>\r\n', cast (EX_UPDATE_FREQ as varchar)));
+    }
+    http (sprintf ('  <destinationType>%V</destinationType>\r\n', get_keyword (get_keyword ('type', options, 1), vector (1, 'WebDAV', 2, 'URL'))));
+    http (sprintf ('  <destination>%V</destination>\r\n', get_keyword ('name', options)));
+    if (get_keyword ('user', options, '') <> '')
+    {
+      http (sprintf ('  <userName>%V</userName>\r\n', get_keyword ('user', options)));
+      http ('  <userPassword>******</userName>\r\n');
+    }
+    http ('  <options>\r\n');
+      http (sprintf ('    <events>%s</events>\r\n', cast (get_keyword ('events', options, 1) as varchar)));
+      http (sprintf ('    <tasks>%s</tasks>\r\n', cast (get_keyword ('tasks', options, 1) as varchar)));
+    http ('  </options>\r\n');
+
+    http ('</publication>');
+  }
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."calendar.publication.edit" (
   in publication_id integer,
   in name varchar,
-  in updateType varchar := 1,
-  in updatePeriod varchar := 'hourly',
+  in updateType varchar := 2,
+  in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
   in destinationType varchar := 'WebDAV',
   in destination varchar,
@@ -744,8 +803,9 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id))
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   if (lcase (destinationType) = 'webdav')
   {
     _type := 1;
@@ -773,6 +833,33 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."calendar.publication.sync" (
+  in publication_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  CAL.WA.exchange_exec (publication_id);
+  return ods_serialize_int_res (1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."calendar.publication.delete" (
   in publication_id integer) __soap_http 'text/xml'
 {
@@ -790,8 +877,9 @@ create procedure ODS.ODS_API."calendar.publication.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id))
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   delete from CAL.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -850,6 +938,65 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."calendar.subscription.get" (
+  in subscription_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare options any;
+
+  inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  for (select * from CAL.WA.EXCHANGE where EX_ID = subscription_id) do
+  {
+    options := deserialize (EX_OPTIONS);
+    http (sprintf ('<publication id="%d">\r\n', subscription_id));
+
+    http (sprintf ('  <name>%V</name>\r\n', EX_NAME));
+    if (EX_UPDATE_TYPE = 0)
+    {
+      http ('  <updateType>manually</updateType>\r\n');
+    }
+    else if (EX_UPDATE_TYPE = 1)
+    {
+      http ('  <updateType>after any entry is changed</updateType>\r\n');
+    }
+    else
+    {
+      http (sprintf ('  <updatePeriod>%s</updatePeriod>\r\n', EX_UPDATE_PERIOD));
+      http (sprintf ('  <updateFreq>%s</updateFreq>\r\n', cast (EX_UPDATE_FREQ as varchar)));
+    }
+    http (sprintf ('  <sourceType>%V</sourceType>\r\n', get_keyword (get_keyword ('type', options, 1), vector (1, 'WebDAV', 2, 'URL'))));
+    http (sprintf ('  <source>%V</source>\r\n', get_keyword ('name', options)));
+    if (get_keyword ('user', options, '') <> '')
+    {
+      http (sprintf ('  <userName>%V</userName>\r\n', get_keyword ('user', options)));
+      http ('  <userPassword>******</userName>\r\n');
+    }
+    http ('  <options>\r\n');
+      http (sprintf ('    <events>%s</events>\r\n', cast (get_keyword ('events', options, 1) as varchar)));
+      http (sprintf ('    <tasks>%s</tasks>\r\n', cast (get_keyword ('tasks', options, 1) as varchar)));
+    http ('  </options>\r\n');
+
+    http ('</publication>');
+  }
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."calendar.subscription.edit" (
   in subscription_id integer,
   in name varchar,
@@ -878,8 +1025,9 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id))
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   if (lcase (sourceType) = 'webdav')
   {
     _type := 1;
@@ -907,6 +1055,34 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."calendar.subscription.sync" (
+  in subscription_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc integer;
+  declare uname varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  CAL.WA.exchange_exec (subscription_id);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."calendar.subscription.delete" (
   in subscription_id integer) __soap_http 'text/xml'
 {
@@ -924,8 +1100,9 @@ create procedure ODS.ODS_API."calendar.subscription.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id))
+  if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   delete from CAL.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 
@@ -1063,10 +1240,14 @@ grant execute on ODS.ODS_API."calendar.annotation.claim" to ODS_API;
 grant execute on ODS.ODS_API."calendar.annotation.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."calendar.publication.new" to ODS_API;
+grant execute on ODS.ODS_API."calendar.publication.get" to ODS_API;
 grant execute on ODS.ODS_API."calendar.publication.edit" to ODS_API;
+grant execute on ODS.ODS_API."calendar.publication.sync" to ODS_API;
 grant execute on ODS.ODS_API."calendar.publication.delete" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.new" to ODS_API;
+grant execute on ODS.ODS_API."calendar.subscription.get" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.edit" to ODS_API;
+grant execute on ODS.ODS_API."calendar.subscription.sync" to ODS_API;
 grant execute on ODS.ODS_API."calendar.subscription.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."calendar.options.get" to ODS_API;

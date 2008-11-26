@@ -1000,39 +1000,6 @@ span.toolbarLabel
   font-size: 0.8em;
 }
 
-/*-------------- charts -----------*/
-
-.legend {
-	background-color: #fff;
-	border: 1px solid #000;
-	font-size: 90%;
-	padding: 1px;
-}
-
-.legend_box {
-	width: 10px;
-	height: 10px;
-	border: 1px solid #000;
-	margin: 2px;
-	float: left;
-	font-size: 0px;
-}
-
-.textX {
-	font-size: 60%;
-	text-align: center;
-}
-
-.textY {
-	font-size: 80%;
-}
-
-/* pie chart */
-.chart_content {
-  padding-top: 1em;
-  padding-left: 7em;
-}
-
 /*====== Calendar pane ======*/
 a.calendar_tab {
   color: #000;

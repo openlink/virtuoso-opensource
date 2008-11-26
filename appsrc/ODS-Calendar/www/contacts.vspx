@@ -32,10 +32,14 @@
       {
         directionStr := 'Ascending';
         imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.v_order = columnName and self.v_direction = 'asc') {
+      }
+      else if (self.v_order = columnName and self.v_direction = 'asc')
+      {
         directionStr := 'Descending';
         imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
+      }
+      else
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;&nbsp;';
       }
@@ -111,7 +115,6 @@
         <v:button action="simple" value="Filter" xhtml_class="button">
           <v:on-post>
             <![CDATA[
-              self.v_filter := get_keyword('filter', self.vc_page.vc_event.ve_params, self.v_filter);
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
               self.vc_data_bind (e);
@@ -151,7 +154,7 @@
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="users" class="grid" cellspacing="0">
+          <table id="users" class="CAL_grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
                 <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">

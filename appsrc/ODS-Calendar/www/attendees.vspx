@@ -468,14 +468,14 @@
                   declare N, M integer;
                   declare V, X any;
 
-                  X := vector ('A', 'Accepted', 'D', 'Declined', 'T', 'Tentative', '', 'Not responded');
+                  X := vector ('A', 'Accepted', 'D', 'Declined', 'T', 'Tentative', 'N', 'Not responded');
                   for (M := 0; M < length (X); M := M + 2)
                   {
                     V := CAL.WA.attendees_select (self.v_id, X[M]);
                     http (sprintf ('<div class="new-form-header">%s (%d)</div>', X[M+1], length (V)));
                     for (N := 0; N < length (V); N := N + 1)
                     {
-                      http (sprintf ('<div style="padding-left: 12px;"><a href="mailto: %s">%s</a> (%s)</div>', V[N][0], V[N][0], CAL.WA.dt_datetimestring (V[N][1], self.cDateFormat, self.cTimeFormat)));
+                      http (sprintf ('<div style="padding-left: 12px;"><a href="mailto: %s">%V</a> (%s)</div>', V[N][1], CAL.WA.mail2string (V[N][0], V[N][1]), CAL.WA.dt_datetimestring (V[N][3], self.cDateFormat, self.cTimeFormat)));
                     }
                     http ('<br />');
                   }
