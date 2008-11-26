@@ -83,6 +83,7 @@
 
 extern dk_session_t *http_session_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
+int dks_read_line (dk_session_t * ses, char *buf, int max);
 
 char *temp_ses_dir;		/* For viconfig.c */
 char _srv_cwd[PATH_MAX + 1], *srv_cwd = _srv_cwd;
@@ -5598,12 +5599,37 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return out_vector;
 }
 
+int 
+filep_destroy (caddr_t fdi)
+{
+  int fd = (int) *(boxint *) fdi;
+  if (fd > 0)
+    fd_close (fd, NULL);
+  return 0;
+}
+
+caddr_t
+bif_file_rlc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fdi = bif_arg (qst, args, 0, "file_rlc");
+  volatile int fd;
+  sec_check_dba ((query_instance_t *) qst, "file_rlc");
+  if (DV_TYPE_OF (fdi) != DV_FD)
+    sqlr_new_error ("22023", "SSSSS", "The argument of file_rlc must be an valid file pointer");
+  fd = (int) *(boxint *) fdi;
+  if (fd < 0)
+    sqlr_new_error ("22023", "SSSSS", "The file pointer is already closed");
+  fd_close (fd, NULL);
+  *(boxint *) fdi = (boxint) -1;
+  return box_num (1);
+}
+
 caddr_t
 bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_rlo");
   caddr_t *ret;
-  int fp;
+  volatile int fd;
 #ifdef HAVE_DIRECT_H
   char *fname_cvt, *fname_tail;
   size_t fname_cvt_len;
@@ -5627,60 +5653,112 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "Access to %s is denied due to access control in ini file", fname);
     }
 
-  fp = open (fname_cvt, OPEN_FLAGS_RO);
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO); 
   dk_free (fname_cvt, fname_cvt_len);
 #else
   if (!is_allowed (fname))
     sqlr_new_error ("42000", "FA004",
 	"Access to %s is denied due to access control in ini file", fname);
 
-  fp = open (fname, OPEN_FLAGS_RO);
+  fd = fd_open (fname, OPEN_FLAGS_RO); 
 #endif
 
-  if (fp == -1)
-    sqlr_new_error ("42000", "FA003", "Can't open file (%s)", fname);
+  if (fd == -1)
+    {
+      int errn = errno;
+      sqlr_new_error ("39000", "FA003", "Can't open file %s, error : %s",
+	  fname, virt_strerror (errn));
+    }
 
-  ret = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_NUMERIC);
-  ret[0] = (caddr_t) (ptrlong) fp;
+  ret = (caddr_t *) dk_alloc_box (sizeof (boxint), DV_FD);
+  *(boxint *) ret = (boxint) fd;
 
   return (caddr_t) ret;
 }
 
+int
+ses_read_line_unbuffered (dk_session_t * ses, char *buf, int max, char * state)
+{
+  int inx = 0;
+  buf[0] = 0;
 
-#ifndef WIN32
+  for (;;)
+    {
+      char c, pc = *state;
+      service_read (ses, &c, 1, 1);
+      if (0 == inx && pc == 13 && c == 10)
+	continue;
+      if (inx < max - 1)
+	buf[inx++] = c;
+      if (c == 10 || c == 13) 
+	{
+	  *state = c;
+	  buf[inx-1] = 0;
+	  return inx;
+	}
+    }
+}
+
 caddr_t
 bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t *fpi = (caddr_t *)bif_arg (qst, args, 0, "file_rl");
+  caddr_t fdi = bif_arg (qst, args, 0, "file_rl");
   long inx = (long) bif_long_arg (qst, args, 1, "file_rl");
-  char str [8*1024];
-  FILE * fp;
+  long max_len = BOX_ELEMENTS (args) > 2 ? (long) bif_long_arg (qst, args, 2, "file_rl") : 80*1024;
+  caddr_t str;
+  volatile int fd;
   dk_set_t line = NULL;
   caddr_t ret = NULL;
-
-  fp = (FILE *) fpi [0];
+  dk_session_t *file_in;
 
   sec_check_dba ((query_instance_t *) qst, "file_rl");
 
-  while (!feof (fp))
-    {
+  if (DV_TYPE_OF (fdi) != DV_FD)
+    sqlr_new_error ("22023", "SSSSS", "The argument of file_rl must be an valid file pointer");
+
+  fd = *(boxint *) fdi;
+  if (fd < 0)
+    sqlr_new_error ("22023", "SSSSS", "The file pointer is already closed");
+
+  if (max_len <= 0 || max_len > 1000000)
+    sqlr_new_error ("22023", "SSSSS", "The max length of line could not be less than 1 and over 1mb");
+
+  str = dk_alloc_box (max_len, DV_STRING);
       str[0]=0;
-      fgets (str, sizeof (str), fp);
+
+  file_in = dk_session_allocate (SESCLASS_TCPIP);
+  tcpses_set_fd (file_in->dks_session, fd);
+  CATCH_READ_FAIL (file_in)
+    {
+      char state = '\0';
+      OFF_T pos;
+      do 
+	{	
+	  ses_read_line_unbuffered (file_in, str, max_len, &state);
       if (str[0])
 	dk_set_push (&line, box_dv_short_string (str));
+	  str[0]=0;
       inx--;
-      if (!inx)
-	goto end;
     }
-
-end:
-
+      while (inx); 
+      if (state == 13) /* after so many reads we look for last LF, if no LF, we restore position */
+	{
+	  char c;
+          pos = LSEEK (fd, 0L, SEEK_CUR);
+	  service_read (file_in, &c, 1, 1);
+	  if (c != 10)
+	    LSEEK (fd, pos, SEEK_SET);
+	}
+    }
+  FAILED
+    {
+    }
+  END_READ_FAIL (file_in);
+  PrpcSessionFree (file_in);
+  dk_free_box (str);
   ret = list_to_array (dk_set_nreverse (line));
-
   return ret;
 }
-
-#endif
 
 void
 bif_file_init (void)
@@ -5744,10 +5822,9 @@ bif_file_init (void)
   bif_define_typed ("file_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("file_mkpath", bif_sys_mkpath, &bt_integer);
   bif_define_typed ("file_dirlist", bif_sys_dirlist, &bt_any);
-#ifndef WIN32
   bif_define_typed ("file_rl", bif_file_rl, &bt_any);
   bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
-#endif
+  bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
@@ -5765,4 +5842,5 @@ bif_file_init (void)
   init_file_acl_set ("/usr/bin/mdimport", &dba_execs_set);
 #endif
   set_ses_tmp_dir ();
+  dk_mem_hooks(DV_FD, box_non_copiable, (box_destr_f) filep_destroy, 0);
 }

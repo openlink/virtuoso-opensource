@@ -230,6 +230,7 @@ extern int bnode_iri_ids_are_huge;
 #define DV_REXEC_CURSOR 240 /* the rexec cursor */
 
 #define DV_CONNECTION 241 /* the connected TCP session  */
+#define DV_FD      249 /* the open file handle */
 #define DV_ASYNC_QUEUE 245 /* async_queue_t */
 #define DT_LENGTH 10
 #define DT_COMPARE_LENGTH 8
