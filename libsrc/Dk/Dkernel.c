@@ -2533,7 +2533,7 @@ dk_session_clear (dk_session_t * ses)
 
   dk_free_box (ses->dks_peer_name);
   dk_free_box (ses->dks_own_name);
-  dk_free_box ((box_t) ses->dks_caller_id_opts);
+  dk_free_tree ((box_t) ses->dks_caller_id_opts);
 
   memset (ses, 0, sizeof (dk_session_t));
   memset (sc, 0, sizeof (scheduler_io_data_t));
