@@ -6735,10 +6735,15 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
     tablename := '';
   if (fmtid = UNAME'literal')
     {
+      declare sqlcol any;
+      declare final_tblname, final_colname varchar;
       declare coldtp, colnullable integer;
       declare coltype varchar;
+      sqlcol := sqlcols [0];
+      final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
+      final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
       select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
-      from DB.DBA.SYS_COLS where "TABLE" = sqlcols[0][0] and "COLUMN" = sqlcols[0][2];
+      from DB.DBA.SYS_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
       coltype := case (coldtp)
         when __tag of long varchar then 'longvarchar'
         when __tag of timestamp then 'datetime' -- timestamp

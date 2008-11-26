@@ -1177,20 +1177,18 @@ spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg)
 void
 ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 {
-#if 0
-  char tmp[1000 + 1];
-
-  sprintf_escaped_id (name, tmp, NULL);
-  ssg_puts (tmp);
-#else
 #ifdef DEBUG
   if (NULL != strstr (name, "CRASH"))  
     ssg_puts ("!!!CRASH!!!");
 #endif
+  if ('\"' == name[0])
+    ssg_puts (name);
+  else
+    {   
   ssg_putchar ('"');
   ssg_puts (name);
   ssg_putchar ('"');
-#endif
+    }
 }
 
 
@@ -3700,7 +3698,13 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
           full_vname = t_box_sprintf (210, "%lx~fake", box_hash ((caddr_t)qmv));
         }
       else
-        full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash ((caddr_t)qmv), qmv->qmvColumns[col_idx]->qmvcColumnName);
+        {
+          ccaddr_t colname = qmv->qmvColumns[col_idx]->qmvcColumnName;
+          if ('\"' != colname[0])
+            full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash ((caddr_t)qmv), colname);
+          else
+            full_vname = t_box_sprintf (210, "%lx%lx", box_hash ((caddr_t)qmv), box_hash ((caddr_t)colname));
+        }
       return full_vname;
     }
   return t_box_dv_short_string (simple_vname);
