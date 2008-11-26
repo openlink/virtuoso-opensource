@@ -165,6 +165,7 @@ typedef struct sparp_env_s
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
+    caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
     dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
     struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */

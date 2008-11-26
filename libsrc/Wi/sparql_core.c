@@ -621,6 +621,11 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_default_graphs_locked = 1;
       return;
     }
+      if (!strcmp (param, "input:ifp"))
+        {
+          sparp->sparp_env->spare_use_ifp = t_box_copy_tree (value);
+          return;
+        }
   if (!strcmp (param, "input:named-graph-uri"))
     {
               sparp_push_new_graph_precode (sparp, 

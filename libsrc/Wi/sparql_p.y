@@ -154,6 +154,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
+%token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
 %token INFERENCE_L	/*:: PUNCT_SPAR_LAST("INFERENCE") ::*/
@@ -902,7 +903,8 @@ spar_triple_option_commalist
 	;
 
 spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF | SPARQL_STRING )	*/
-	: INFERENCE_L SPARQL_PLAIN_ID {
+	: IFP_L				{ $$ = (SPART **)t_list (2, (ptrlong)IFP_L, (ptrlong)1); }
+	| INFERENCE_L SPARQL_PLAIN_ID {
 		if (strcasecmp ($2, "none"))
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2);
 		else

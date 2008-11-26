@@ -5853,10 +5853,10 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
   if (1 == pass)
     {
       int has_table_options = 0;
-#define SAME_AS__VARIANT_COUNT 5
+#define SAME_AS__VARIANT_COUNT 6
       SPART **opts = NULL, *same_as__lists [SAME_AS__VARIANT_COUNT];
-static ptrlong same_as__keys [SAME_AS__VARIANT_COUNT] = {SAME_AS_L, SAME_AS_O_L, SAME_AS_P_L, SAME_AS_S_L, SAME_AS_S_O_L};
-static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"SAME_AS", "SAME_AS_O", "SAME_AS_P", "SAME_AS_S", "SAME_AS_S_O"};
+static ptrlong same_as__keys [SAME_AS__VARIANT_COUNT] = {IFP_L, SAME_AS_L, SAME_AS_O_L, SAME_AS_P_L, SAME_AS_S_L, SAME_AS_S_O_L};
+static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"IFP", "SAME_AS", "SAME_AS_O", "SAME_AS_P", "SAME_AS_S", "SAME_AS_S_O"};
       ssg_putchar (' ');
       ssg_puts (qm->qmTableName);
       ssg_qr_uses_table (ssg, qm->qmTableName);
@@ -6345,6 +6345,15 @@ retval_list_complete:
           ssg_prin_id (ssg, buf);
           goto end_of_table_list; /* see below */
         }
+      if (OPTIONAL_L == member->_.gp.members[0]->_.gp.subtype)
+        {
+          char buf[105]; /* potentialy 100 chars long see sparp_clone_id etc. */
+          ssg_newline (0);
+          snprintf (buf, sizeof (buf), "lojstub-%s", member->_.gp.selid);
+          ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
+          ssg_prin_id (ssg, buf);
+          ssg_puts (" LEFT OUTER JOIN");
+        }
       for (itm_idx = 0; itm_idx < itm_count; itm_idx++)
         {
           SPART *itm = member->_.gp.members [itm_idx];
@@ -6409,6 +6418,10 @@ retval_list_complete:
               ssg->ssg_where_l_text = save_where_l_text;
             }
           prev_itm_alias = itm_alias;
+        }
+      if (OPTIONAL_L == member->_.gp.members[0]->_.gp.subtype)
+        {
+          ssg_puts (" ON (1)");
         }
 
 end_of_table_list: ;
@@ -6830,6 +6843,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       ssg->ssg_indent -= 1;
     }
   ssg_puts ("\nOPTION (QUIETCAST");
+  if (NULL != ssg->ssg_sparp->sparp_env->spare_use_ifp)
+    ssg_puts (", IFP");
   if (NULL != ssg->ssg_sparp->sparp_env->spare_use_same_as)
     ssg_puts (", SAME_AS");
   ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
