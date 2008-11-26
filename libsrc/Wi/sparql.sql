@@ -11875,12 +11875,15 @@ create procedure rdfs_schema_boot ()
 create procedure
 DB.DBA.RDFS_INF_LOAD ()
 {
-  log_message ('Loading RDF inferences');
+  declare i int;
+  i := 0;
   for select  rs_name, rs_uri from sys_rdf_schema do
     {
+      if (i = 0) log_message ('Loading RDF inferences');
       rdfs_load_schema (rs_name, rs_uri);
+      i := i + 1;
     }
-  log_message ('Finished loading RDF inferences');
+  if (i) log_message ('Finished loading RDF inferences');
   delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'RDF Inference load';
 }
 ;
