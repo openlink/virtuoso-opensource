@@ -236,11 +236,11 @@ SQL> backup_online ('virt-inc_dump_#', 150);
   <para>The following command could be used to restore the database from the 
 	backup files created:</para>
 	  <programlisting><![CDATA[
-		virtuoso-iodbc-t +restore-backup virt-inc_dump_#
+		virtuoso-iodbc-t -c <db-ini-file> +restore-backup virt-inc_dump_#
 	]]></programlisting>
   <para>or:</para>
 	  <programlisting><![CDATA[
-		virtuoso-odbc-t.exe +restore-backup virt-inc_dump_#
+		virtuoso-odbc-t.exe -c <db-ini-file> +restore-backup virt-inc_dump_#
 	]]></programlisting>
 	
   </example>

@@ -7191,119 +7191,104 @@ END { }
 <programlisting><![CDATA[
 #!/bin/sh
 
-LOG=load_dbpedia.log
-#rm -f $LOG
+PORT=$1
+USER=$2
+PASS=$3
+file=$4
+g=$5
+LOGF=`basename $0`.log
 
-#Directory structore
-mkdir BAD   2>> /dev/null
-mkdir READY 2>> /dev/null
+if [ -z "$PORT" -o -z "$USER" -o -z "$PASS" -o -z "$file" -o -z "$g" ]
+then
+  echo "Usage: `basename $0` [DSN] [user] [password] [ttl-file] [graph-iri]"
+  exit
+fi
 
-ISQL=${ISQL-isql}
-PORT=${PORT-1118}
-DATABASE_USER=${DATABASE_USER-dba}
-DATABASE_PASS=${DATABASE_PASS-dba}
-DATABASE_INI=${DATABASE_INI-dbpedia.ini}
+if [ ! -f "$file" -a ! -d "$file" ]
+then
+    echo "$file does not exists"
+    exit 1
+fi
 
-DSN="$ISQL $PORT $DATABASE_USER $DATABASE_PASS"
-export LOG DSN DATABASE_INI
+mkdir READY 2>/dev/null
+rm -f $LOGF $LOGF.*
 
-STAR_NEW_SERVER ()
+echo "Starting..."
+echo "Logging into: $LOGF"
+
+DOSQL ()
 {
-	rm -rf core *.lck   2>> /dev/null
-	echo "Starting OpenLink Virtuoso Universal Server"
-        virtuoso-iodbc-t +wait -c $DATABASE_INI
-	sleep 5
-	echo "Starting OpenLink Virtuoso Universal Server - Done."
-	STATUS=1
+    isql $PORT $USER $PASS verbose=on banner=off prompt=off echo=ON errors=stdout exec="$1" > $LOGF
 }
 
-CHECK_LOG()
+LOAD_FILE ()
 {
-    rline=`cat temp.res | grep -i "TURTLE RDF loader"`
-    if test "x$rline" != "x"
+    f=$1
+    g=$2
+    echo "Loading $f (`cat $f | wc -l` lines) `date \"+%H:%M:%S\"`" | tee -a $LOG
+
+    DOSQL "ttlp_mt (file_to_string_output ('$f'), '', '$g', 17); checkpoint;" > $LOGF
+
+    if [ $? != 0 ]
     then
-	echo "BAD FILE. " $1 | tee -a $LOG
-	echo $bad_line
-	bad_line=`cat temp.res | grep "TURTLE RDF loader" | sed -e "s/\*\*\* Error 37000: \[Virtuoso Driver\]\[Virtuoso Server\]SP029: TURTLE RDF loader, line //g" | cut -f 1 -d :`
-	echo "Bad line:" $bad_line " from " $1
-	mv $1 BAD
+	echo "An error occured, please check $LOGF"
+	exit 1
     fi
 
-    rline=`cat temp.res | grep -i "Lost connection to server"`
-    if test "x$rline" != "x"
-    then
-	echo "GPF !!! in " $1 | tee -a $LOG
-	STAR_NEW_SERVER
-	return
-    fi
-
-    rline=`cat temp.res | grep -i "Connect failed"`
-    if test "x$rline" != "x"
-    then
-	STAR_NEW_SERVER
-	return
-    fi
-
-    sleep 1
-    STATUS=0
-}
-
-echo "======================================="
-echo "Loading dbpedia started."
-echo "======================================="
-
-LOAD_ONE ()
-{
-    FINISH=0
-    for f in `find data -name '*.nt'`
+    line_no=`grep Error $LOGF | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
+    newf=$f.part
+    inx=1
+    while [ ! -z "$line_no" ]
     do
-	du -h data READY $f
-	#   LOAD DATA
-	echo "Loading $f (`cat $f | wc -l` lines) `date \"+%H:%M:%S\"`" | tee -a $LOG
-	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout  \
-	exec="ttlp_mt (file_to_string_output ('$f'), '', 'http://dbpedia.org');" > temp.res
-	cat temp.res >> $LOG
-	CHECK_LOG $f
-	if test $STATUS -ne 0
-	then
-	    return
-	fi
+	cat $f |  awk "BEGIN { i = 1 } { if (i==$line_no) { print \$0; exit; } i = i + 1 }"  >> bad.nt
+	line_no=`expr $line_no + 1`
+	echo "Retryng from line $line_no"
+	echo "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ." > tmp.nt
+	cat $f |  awk "BEGIN { i = 1 } { if (i>=$line_no) print \$0; i = i + 1 }"  >> tmp.nt
+	mv tmp.nt $newf
+	f=$newf
+	mv $LOGF $LOGF.$inx
+	DOSQL "ttlp_mt (file_to_string_output ('$f'), '', '$g', 17); checkpoint;" > $LOGF
 
-	#   CHECKPOINT
-	echo "Checkpoint start at: `date \"+%H:%M:%S\"`" | tee -a $LOG
-	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout exec="checkpoint;" > temp.res
-	cat temp.res >> $LOG
-
-	CHECK_LOG $f
-	if test $STATUS -ne 0
-	then
-	    return
-	fi
-	$DSN verbose=on banner=off prompt=off echo=ON errors=stdout  \
-	exec="sparql select count(*) where { ?s <http://dbpedia.org/property/wordnet_type> ?o};" > temp.res
-	cat temp.res >> $LOG
-	CHECK_LOG $f
-	echo "Finish.  "
-	echo "======================================="
-	mv $f READY 2>> /dev/null
-	rm temp.res
-	return
+	if [ $? != 0 ]
+    then
+	    echo "An error occured, please check $LOGF"
+	    exit 1
+    fi
+	line_no=`grep Error $LOGF | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
+	inx=`expr $inx + 1`
     done
-
-    FINISH=1
+    rm -f $newf 2>/dev/null
+    echo "Loaded.  "
 }
 
-while true
-do
-  LOAD_ONE
-  if test $FINISH -ne 0
-  then
-      echo "If you read this you have a red letter day !!!"
-      echo "Check BAD directory for bad skiped files."
-      echo "======================================="
-      exit 0
-  fi
-done
+echo "======================================="
+echo "Loading started."
+echo "======================================="
+
+if [ -f "$file" ]
+then
+    LOAD_FILE $file $g
+    mv $file READY 2>> /dev/null
+elif [ -d "$file" ]
+then
+    for ff in `find $file -name '*.nt'`
+    do
+	LOAD_FILE $ff $g
+	mv $ff READY 2>> /dev/null
+    done
+else
+   echo "The input is not file or directory"
+fi
+echo "======================================="
+echo "Final checkpoint."
+DOSQL "checkpoint;" > temp.res
+echo "======================================="
+echo "Check bad.nt file for skipped triples."
+echo "======================================="
+
+exit 0
+
 ]]></programlisting>
        </sect3>
        <sect3 id="rdfperfloadingbio2rdf"><title>Loading Bio2RDF data</title>
