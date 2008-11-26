@@ -5,16 +5,21 @@
    declare _G, _S, odd_position any;
    declare _resource_, project_name, project_home_page any;
    declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
-   declare white_page, arr, data, meta, h1, h2, inx  any;
+   declare white_page, arr, data, meta, h1, h2, inx, gr any;
 
    -- INIT VALUES
 
-   _resource_ := get_keyword ('res', params, get_keyword ('g', params, ''));
 
    white_page := 1;
 
-   project_name := get_keyword ('g', params, '');
-   project_home_page := get_keyword ('g', params, '');
+   gr := get_keyword ('g', params, '');
+   arr := rfc1808_parse_uri (gr);
+   if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+     gr := 'http://' || gr;
+
+   _resource_ := get_keyword ('res', params, gr);
+   project_name := gr;
+   project_home_page := gr;
    page_resource_uri := _resource_;
 
    project_home_page := replace (project_home_page, '%23', '#');

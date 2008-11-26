@@ -50,7 +50,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
-            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'no', 'get-feeds', 'no'));
+            'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'yes', 'get-feeds', 'no'));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
@@ -426,22 +426,17 @@ create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
 {
   declare data, meta any;
   declare ses, cont, xt, xd, arr any;
+  --dbg_obj_print (sprintf ('text=%U', strg));
   declare exit handler for sqlstate '*'
     {
-      return;
+      return xtree_doc ('<error/>');
     };
-  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', strg));
+  cont := http_client (url=>'http://umbel.zitgist.com/ws/scones/index.php',
+  		       http_method=>'POST',
+    		       body=>sprintf ('text=%U', strg),
+    	               http_headers=>'Accept: text/xml');
   xt := xtree_doc (cont);
-  arr := xpath_eval ('//isAbout/@resource', xt, 0);
-  ses := string_output ();
-  http ('<results>', ses);
-  foreach (nvarchar url in arr) do
-    {
-      url := cast (url as varchar);
-      http (sprintf ('<result>%V</result>\n', url), ses);
-    }
-  http ('</results>', ses);
-  return xtree_doc (string_output_string (ses));
+  return xt;
 }
 ;
 
@@ -3994,7 +3989,29 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 create procedure DB.DBA.RDF_UMBEL_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
-  DB.DBA.RM_UMBEL_POST_PROCESS (new_origin_uri, coalesce (dest, graph_iri));
+  declare sc, nes, strg, xt, arr, ses any;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  --xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/tidy_html.xsl', xtree_doc (_ret_body, 2), vector ());
+  --dbg_obj_print (xt, xpath_eval ('//text()',xt, 0));
+  --strg := DB.DBA.RM_GET_LITERALS (new_origin_uri, coalesce (dest, graph_iri));
+  --if (length (strg) = 0)
+  --  return 0;
+  sc := DB.DBA.RM_UMBEL_GET (_ret_body);
+  arr := xpath_eval ('//predicate[@type="rdfs:seeAlso" or @type="umbel:isAbout"]', sc, 0);
+  ses := string_output ();
+  http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  http ('@prefix umbel: <http://umbel.org/umbel#> .\n', ses);
+  foreach (nvarchar elm in arr) do
+    {
+      declare p, o nvarchar;
+      p := cast (xpath_eval ('@type', elm) as varchar);
+      o := cast (xpath_eval ('object/@uri', elm) as varchar);
+      http (sprintf ('<%S> %s <%S> .\n', new_origin_uri, p, o), ses);
+    }
+  DB.DBA.TTLP (ses, new_origin_uri, coalesce (dest, graph_iri));
   return 0;
 }
 ;
@@ -4055,18 +4072,18 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
 }
 ;
 
-
-create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar)
+--- should be obsolete, keep for reference
+create procedure DB.DBA.RM_GET_LITERALS (in base varchar, in graph varchar)
 {
   declare data, meta any;
   declare ses, cont, xt, xd, arr any;
   ses := string_output ();
   declare exit handler for sqlstate '*'
     {
-      return;
+      return '';
     };
   exec (sprintf (
-      'sparql select ?o from <%S> where { ?s ?p ?o . filter (isLiteral (?o) and ?o != "") }', graph, base), null, null, vector (), 0, meta, data);
+      'sparql select ?o from <%S> where { ?s ?p ?o . filter (isLiteral (?o) and ?o != "" and !(str(?p) like "http://www.openlinksw.com/schema/attribution#%%")) }', graph, base), null, null, vector (), 0, meta, data);
   foreach (any str in data) do
     {
       if (isstring (str[0]))
@@ -4076,17 +4093,7 @@ create procedure DB.DBA.RM_UMBEL_POST_PROCESS (in base varchar, in graph varchar
 	}
     }
   ses := string_output_string (ses);
-  cont := http_get ('http://umbel.zitgist.com/ws/scones/index.php', null, 'POST', 'Accept: application/rdf+xml', sprintf ('text=%U', ses));
-  xt := xtree_doc (cont);
-  arr := xpath_eval ('//isAbout/@resource', xt, 0);
-  ses := string_output ();
-  foreach (nvarchar url in arr) do
-    {
-      url := cast (url as varchar);
-      http (sprintf ('<%S> <http://umbel.org/umbel#isAbout> <%S> .\n', base, url), ses);
-    }
-  DB.DBA.TTLP (ses, base, graph);
-  return;
+  return trim(ses);
 }
 ;
 

@@ -26,6 +26,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -35,6 +36,7 @@
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:sioc="&sioc;"
   xmlns:foaf="&foaf;"
+  xmlns:owl="&owl;"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:umbel="http://umbel.org/umbel#"
@@ -59,7 +61,6 @@
 	  <xsl:apply-templates select="//a[@href]"/>
 	  <xsl:apply-templates select="link[@rel='alternate']"/>
       </rdf:Description>
-      <!--xsl:apply-templates select="meta[translate (@name, $uc, $lc)='keywords']" mode="meta"/-->
   </xsl:template>
   <xsl:template match="link[@rel='alternate']">
       <rdfs:seeAlso rdf:resource="{@href}"/>
@@ -82,35 +83,27 @@
 	  <xsl:value-of select="."/>
       </dc:title>
   </xsl:template>
-  <xsl:template match="meta[@name='description']">
+  <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
       <dc:description>
 	  <xsl:value-of select="@content"/>
       </dc:description>
   </xsl:template>
-  <xsl:template match="meta[@name='copyrights']">
+  <xsl:template match="meta[translate (@name, $uc, $lc)='copyrights']">
       <dc:rights>
 	  <xsl:value-of select="@content"/>
       </dc:rights>
   </xsl:template>
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <xsl:variable name="res" select="vi:umbelGet (@content)"/>
-	  <xsl:for-each select="$res/results/result">
-	  <umbel:isAbout rdf:resource="{.}"/>
-	  <!--sioc:topic>
-	      <skos:Concept rdf:about="{.}" >
-		      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
-		  </skos:Concept>
-	  </sioc:topic-->
+      <dc:subject><xsl:value-of select="@content"/></dc:subject>
+      <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
+      <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">
+	  <umbel:isAbout rdf:resource="{@uri}"/>
 	  </xsl:for-each>
+      <xsl:variable name="nes" select="vi:umbelGetNE (@content)"/>
+      <xsl:for-each select="$nes//object[@type='owl:Thing']">
+	  <owl:sameAs rdf:resource="{@uri}"/>
+      </xsl:for-each-->
   </xsl:template>
-  <!--xsl:template match="meta[@name='keywords']" mode="meta">
-      <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
-      <xsl:for-each select="$res/results/result">
-	  <skos:Concept rdf:about="{vi:dbpIRI ($base, .)}">
-	      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
-	  </skos:Concept>
-      </xsl:for-each>
-  </xsl:template-->
   <!-- content specific rules -->
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
       <foaf:depiction>
