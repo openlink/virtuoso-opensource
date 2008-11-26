@@ -308,6 +308,8 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       delete from DB.DBA.RDF_OBJ;
       delete from DB.DBA.RDF_DATATYPE;
       delete from DB.DBA.RDF_LANGUAGE;
+      __rdf_twobyte_cache_zap();
+      log_text ('__rdf_twobyte_cache_zap()');
       delete from DB.DBA.VTLOG_DB_DBA_RDF_OBJ;
       delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
       sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
@@ -627,6 +629,7 @@ skip_acc: ;
 create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
 {
   declare res integer;
+  declare qname varchar;
   if (iid is null)
     return 257;
   if (not isiri_id (iid))
@@ -637,12 +640,10 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
         signal ('RDFXX', 'Invalid datatype IRI_ID passes as an argument to DB.DBA.RDF_TWOBYTE_OF_DATATYPE()');
       iid := new_iid;
     }
-  whenever not found goto mknew;
-  set isolation='committed';
-  select RDT_TWOBYTE into res from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
+  qname := id_to_iri (iid);
+  res := __rdf_twobyte_cache (121, qname);
+  if (res is not null)
   return res;
-
-mknew:
   set isolation='serializable';
   declare tb_cr cursor for select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
   open tb_cr (exclusive);
@@ -656,7 +657,9 @@ mknew_ser:
     res := sequence_next ('RDF_DATATYPE_TWOBYTE');
   insert into DB.DBA.RDF_DATATYPE
     (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
-  values (iid, res, id_to_iri (iid));
+  values (iid, res, qname);
+  __rdf_twobyte_cache (121, qname, res);
+  log_text ('__rdf_twobyte_cache (121, ?, ?)', qname, res);
   return res;
 }
 ;
@@ -667,12 +670,9 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   if (id is null)
     return 257;
   id := lower (id);
-  whenever not found goto mknew;
-  set isolation='committed';
-  select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
+  res := __rdf_twobyte_cache (122, id);
+  if (res is not null)
   return res;
-
-mknew:
   set isolation='serializable';
   declare tb_cr cursor for select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = id;
   open tb_cr (exclusive);
@@ -685,6 +685,8 @@ mknew_ser:
   if (0 = bit_and (res, 255))
     res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
   insert into DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
+  __rdf_twobyte_cache (122, id, res);
+  log_text ('__rdf_twobyte_cache (122, ?, ?)', id, res);
   return res;
 }
 ;
@@ -11552,6 +11554,14 @@ check_new_style:
 create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 {
   declare stat, msg varchar;
+  for (select RDT_TWOBYTE, RDT_QNAME from DB.DBA.RDF_DATATYPE) do
+    {
+      __rdf_twobyte_cache (121, RDT_QNAME, RDT_TWOBYTE);
+    }
+  for (select RL_ID, RL_TWOBYTE from DB.DBA.RDF_LANGUAGE) do
+    {
+      __rdf_twobyte_cache (122, RL_ID, RL_TWOBYTE);
+    }
   if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {
       __set_64bit_min_bnode_iri_id();

@@ -1882,7 +1882,7 @@ int
 key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret)
 {
   boxint pref_id;
-  caddr_t local, prefix, final_local;
+  caddr_t local, prefix;
   local = nic_id_name (iri_name_cache, iid);
   if (!local)
     {
@@ -1932,16 +1932,143 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
   return 1;
 }
 
+typedef struct rdf_twobytes_dict_s {
+  dk_hash_t *rtd_hash;
+  caddr_t *rdt_array;
+  dk_mutex_t *rdt_mutex;
+  } rdf_twobytes_dict_t;
+
+rdf_twobytes_dict_t rdf_dt_twobytes_dict = { NULL, NULL, NULL };
+rdf_twobytes_dict_t rdf_lang_twobytes_dict = { NULL, NULL, NULL };
+
+caddr_t
+bif_rdf_twobyte_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long mode = bif_long_arg (qst, args, 0, "__rdf_twobyte_cache");
+  dtp_t key_dtp;
+  rdf_twobytes_dict_t *dict;
+  switch (mode)
+    {
+    case 121: dict = &rdf_dt_twobytes_dict; break;
+    case 122: dict = &rdf_lang_twobytes_dict; break;
+    default: return box_dv_short_string ("Do not use it in vain!");
+    }
+  if (NULL == dict->rdt_mutex)
+    {
+      dict->rdt_mutex = mutex_allocate ();
+      dict->rdt_array = dk_alloc_box_zero (1024 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      dict->rtd_hash = hash_table_allocate (1024);
+    }
+  if (2 < BOX_ELEMENTS (args))
+    {
+      caddr_t key;
+      ptrlong val;
+      long shifted_val;
+      sec_check_dba ((query_instance_t *)qst, "__rdf_twobyte_cache (with 3 arguments)");
+      key = bif_string_or_uname_arg (qst, args, 1, "__rdf_twobyte_cache");
+      val = (ptrlong)bif_long_range_arg (qst, args, 2, "__rdf_twobyte_cache", RDF_BOX_DEFAULT_TYPE, 0xFFFF);
+      if (DV_STRING == DV_TYPE_OF (key))
+        key = box_dv_uname_nchars (key, box_length (key)-1);
+      box_dv_uname_make_immortal (key);
+      shifted_val = val - RDF_BOX_DEFAULT_TYPE;
+      mutex_enter (dict->rdt_mutex);
+      if ((shifted_val < BOX_ELEMENTS (dict->rdt_array)) && (NULL != dict->rdt_array [shifted_val]))
+        {
+          if (val != (ptrlong)gethash (key, dict->rtd_hash))
+            GPF_T1 ("Integrity error in the RDF storage (duplicate twobyte number)");
+          mutex_leave (dict->rdt_mutex);
+          return key;
+        }
+      if (NULL != gethash (key, dict->rtd_hash))
+        GPF_T1 ("Integrity error in the RDF storage (duplicate twobyted id)");
+      if (shifted_val >= BOX_ELEMENTS (dict->rdt_array))
+        {
+          caddr_t *new_array = dk_alloc_box_zero ((0x10000 - RDF_BOX_DEFAULT_TYPE) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+          memcpy (new_array, dict->rdt_array, box_length (dict->rdt_array));
+          dk_free_box (dict->rdt_array);
+          dict->rdt_array = new_array;
+          dk_rehash (dict->rtd_hash, 0x10000);
+        }
+      sethash (key, dict->rtd_hash, (void *)val);
+      dict->rdt_array [shifted_val] = key;
+      mutex_leave (dict->rdt_mutex);
+    }
+  else
+    {
+      caddr_t key;  
+      key = bif_arg (qst, args, 1, "__rdf_twobyte_cache");
+      key_dtp = DV_TYPE_OF (key);
+      if (DV_LONG_INT == key_dtp)
+        {
+          caddr_t val;
+          long shifted_key = unbox (key) - RDF_BOX_DEFAULT_TYPE;
+          mutex_enter (dict->rdt_mutex);
+          val = ((0 > shifted_key) || (box_length (dict->rdt_array) <= shifted_key)) ? NULL : dict->rdt_array[shifted_key];
+          mutex_leave (dict->rdt_mutex);
+          if (NULL == val)
+            return NEW_DB_NULL;
+          return val;
+        }
+      else if (DV_UNAME == key_dtp)
+        {
+          ptrlong val;
+          mutex_enter (dict->rdt_mutex);
+          val = (ptrlong)gethash (key, dict->rtd_hash);
+          mutex_leave (dict->rdt_mutex);
+          if (!val)
+            return NEW_DB_NULL;
+          return box_num (val);
+        }
+      else if (DV_STRING == key_dtp)
+        {
+          ptrlong val;
+          key = box_dv_uname_nchars (key, box_length (key) - 1);
+          mutex_enter (dict->rdt_mutex);
+          val = (ptrlong)gethash (key, dict->rtd_hash);
+          mutex_leave (dict->rdt_mutex);
+          dk_free_box (key);
+          if (!val)
+            return NEW_DB_NULL;
+          return box_num (val);
+        }
+    }
+  return NULL;
+}
+
+caddr_t
+bif_rdf_twobyte_cache_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  mutex_enter (rdf_dt_twobytes_dict.rdt_mutex);
+  memset (rdf_dt_twobytes_dict.rdt_array, 0, box_length (rdf_dt_twobytes_dict.rdt_array));
+  clrhash (rdf_dt_twobytes_dict.rtd_hash);
+  mutex_leave (rdf_dt_twobytes_dict.rdt_mutex);
+  mutex_enter (rdf_lang_twobytes_dict.rdt_mutex);
+  memset (rdf_lang_twobytes_dict.rdt_array, 0, box_length (rdf_lang_twobytes_dict.rdt_array));
+  clrhash (rdf_lang_twobytes_dict.rtd_hash);
+  mutex_leave (rdf_lang_twobytes_dict.rdt_mutex);
+  return NULL;
+}
+
 caddr_t
 rdf_type_twobyte_to_iri (query_instance_t * qi, short twobyte)
 {
-  return box_sprintf (30, "fake://type/twobyte%d", twobyte);
+  caddr_t val;
+  long shifted = ((long)(twobyte)) - RDF_BOX_DEFAULT_TYPE;
+  mutex_enter (rdf_dt_twobytes_dict.rdt_mutex);
+  val = ((0 > shifted) || (box_length (rdf_dt_twobytes_dict.rdt_array) <= shifted)) ? NULL : rdf_dt_twobytes_dict.rdt_array[shifted];
+  mutex_leave (rdf_dt_twobytes_dict.rdt_mutex);
+  return val;
 }
 
 caddr_t
 rdf_lang_twobyte_to_string (query_instance_t * qi, short twobyte)
 {
-  return box_sprintf (30, "fake-lang-%d", twobyte);
+  caddr_t val;
+  long shifted = ((long)(twobyte)) - RDF_BOX_DEFAULT_TYPE; /* yes, RDF_BOX_DEFAULT_TYPE, not RDF_BOX_DEFAULT_LANG */
+  mutex_enter (rdf_dt_twobytes_dict.rdt_mutex);
+  val = ((0 > shifted) || (box_length (rdf_lang_twobytes_dict.rdt_array) <= shifted)) ? NULL : rdf_lang_twobytes_dict.rdt_array[shifted];
+  mutex_leave (rdf_dt_twobytes_dict.rdt_mutex);
+  return val;
 }
 
 caddr_t
@@ -2305,6 +2432,8 @@ rdf_core_init (void)
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
   bif_define ("__id2i", bif_id_to_iri);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_define ("__rdf_twobyte_cache", bif_rdf_twobyte_cache);
+  bif_define ("__rdf_twobyte_cache_zap", bif_rdf_twobyte_cache_zap);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
