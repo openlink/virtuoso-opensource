@@ -194,8 +194,9 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
 
 typedef struct ctor_var_enumerator_s
 {
-  dk_set_t cve_vars_acc;	/*!< Accumulator of variables with distinct names used in triple patterns of constructors */
-  int cve_vars_count;		/*!< Length of cve_vars_acc */
+  dk_set_t cve_dist_vars_acc;	/*!< Accumulator of variables with distinct names used in triple patterns of constructors */
+  int cve_dist_vars_count;		/*!< Length of \c cve_dist_vars_acc */
+  int cve_total_vars_count;		/*!< Count of all occurencies of variables */
   int cve_bnodes_are_prohibited;	/*!< Bnodes are not allowed in DELETE ctor gp */
   SPART *cve_limofs_var;	/*!< Variable that is passed from limit-offset subselect */
   caddr_t cve_limofs_var_alias;	/*!< Alias used for cve_limofs_var */
@@ -205,18 +206,19 @@ ctor_var_enumerator_t;
 int
 spar_cve_find_or_add_variable (sparp_t *sparp, ctor_var_enumerator_t *haystack_cve, SPART *needle_var)
 {
-  int var_ctr = haystack_cve->cve_vars_count;
+  int var_ctr = haystack_cve->cve_dist_vars_count;
   dk_set_t var_iter;
-  for (var_iter = haystack_cve->cve_vars_acc; NULL != var_iter; var_iter = var_iter->next)
+  haystack_cve->cve_total_vars_count++;
+  for (var_iter = haystack_cve->cve_dist_vars_acc; NULL != var_iter; var_iter = var_iter->next)
     {
       SPART *v = (SPART *)(var_iter->data);
       var_ctr--;
       if (!strcmp (needle_var->_.var.vname, v->_.var.vname))
         return var_ctr;
     }
-  t_set_push (&(haystack_cve->cve_vars_acc), needle_var);
-  var_ctr = haystack_cve->cve_vars_count;
-  haystack_cve->cve_vars_count++;
+  t_set_push (&(haystack_cve->cve_dist_vars_acc), needle_var);
+  var_ctr = haystack_cve->cve_dist_vars_count;
+  haystack_cve->cve_dist_vars_count++;
   return var_ctr;
 }
 
@@ -225,13 +227,14 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
 { /* This rewrites variables that are nested into backquoted expressions in ctor template when the query has limit or offset clause */
   ctor_var_enumerator_t *cve = common_env;
   int curr_type = SPART_TYPE (curr);
+  int var_ctr;
   if (SPAR_BLANK_NODE_LABEL == curr_type)
     spar_error (sparp, "Blank nodes can not be used in backquoted expressions of constructor template, consider using variables instead");
   if (SPAR_VARIABLE != curr_type)
     return SPAR_GPT_ENV_PUSH;
+  var_ctr = spar_cve_find_or_add_variable (sparp, cve, curr);
   if (NULL != cve->cve_limofs_var_alias)
     {
-      int var_ctr = spar_cve_find_or_add_variable (sparp, cve, curr);
       SPART *limofs_aref = spar_make_funcall (sparp, 0, "bif:aref",
         (SPART **)t_list (2, cve->cve_limofs_var, t_box_num_nonull (var_ctr)) );
       sts_this->sts_curr_array [sts_this->sts_ofs_of_curr_in_array] = limofs_aref;
@@ -300,9 +303,12 @@ bnode_found_or_added:
               tvector_args [(fld_ctr-1)*2 + 1] = fld;
             default:
               {
+                int old_total_vars_count = cve->cve_total_vars_count;
                 sparp_gp_trav (sparp, fld, cve, NULL, NULL, sparp_gp_trav_ctor_var_to_limofs_aref, NULL, NULL, NULL);
                 tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
                 tvector_args [(fld_ctr-1)*2 + 1] = fld;
+                if (cve->cve_total_vars_count != old_total_vars_count)
+                  triple_is_const = 0;
               }
               break;
             }
@@ -317,7 +323,7 @@ bnode_found_or_added:
         }
     }
   var_vector_expn = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"),
-    (SPART **)t_revlist_to_array (cve->cve_vars_acc) );
+    (SPART **)t_revlist_to_array (cve->cve_dist_vars_acc) );
   if (cve->cve_limofs_var)
     var_vector_arg = cve->cve_limofs_var;
   else
