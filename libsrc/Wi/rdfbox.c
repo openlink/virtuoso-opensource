@@ -1531,7 +1531,7 @@ fail:
   dk_free_box (tii.p.uri);	dk_free_box (tii.p.ns);		dk_free_box (tii.p.loc);
   dk_free_box (tii.o.uri);	dk_free_box (tii.o.ns);		dk_free_box (tii.o.loc);
   dk_free_box (tii.dt.uri);	dk_free_box (tii.dt.ns);	dk_free_box (tii.dt.loc);
-  return (caddr_t)(status);
+  return (caddr_t)(ptrlong)(status);
 }
 
 void
