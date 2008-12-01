@@ -252,12 +252,18 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 	  <v:method name="set_raw" arglist=""><![CDATA[
 	  if (length (self.spq1.ufl_value))
 	    {
+	      declare fmt any;
 	      self.dest1.ufl_value := sprintf ('/sparql?query=%U', self.spq1.ufl_value);
               self.dest1.ufl_value := replace (self.dest1.ufl_value, '%24s', '$s');
               self.dest1.ufl_value := replace (self.dest1.ufl_value, '%24d', '$d');
               self.dest1.ufl_value := replace (self.dest1.ufl_value, '%24U', '$U');
+              self.sp_fmt.ufl_value := replace (self.sp_fmt.ufl_value, '%24accept', '$accept');
 	      self.dest1.ufl_value := replace (self.dest1.ufl_value, sprintf ('%U', '^{URIQADefaultHost}^'), '^{URIQADefaultHost}^');
-              self.dest1.ufl_value := self.dest1.ufl_value || sprintf ('&format=%U', self.sp_fmt.ufl_value);
+	      if (self.sp_fmt.ufl_value <> '$accept')
+	        fmt := sprintf ('&format=%U', self.sp_fmt.ufl_value);
+	      else
+	        fmt := sprintf ('&format=%s', self.sp_fmt.ufl_value);
+              self.dest1.ufl_value := self.dest1.ufl_value || fmt;
 	    }
 	      ]]></v:method>
 	  <v:form name="fm1" type="simple" method="POST">
