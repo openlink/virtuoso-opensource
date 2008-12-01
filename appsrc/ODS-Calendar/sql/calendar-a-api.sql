@@ -24,7 +24,7 @@ use ODS;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."setting_set" (
+create procedure ODS.ODS_API.calendar_setting_set (
   inout settings any,
   inout options any,
   in settingName varchar)
@@ -35,11 +35,38 @@ create procedure ODS.ODS_API."setting_set" (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API."setting_xml" (
+create procedure ODS.ODS_API.calendar_setting_xml (
   in settings any,
   in settingName varchar)
 {
   return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.calendar_type_check (
+  in inType varchar,
+  in inSource varchar)
+{
+  declare outType integer;
+
+  if (isnull (inType))
+    inType := case when (inSource like 'http://%') then 'url' else 'webdav' end;
+
+	if (lcase (inType) = 'webdav')
+	{
+		outType := 1;
+	}
+	else if (lcase (inType) = 'url')
+	{
+		outType := 2;
+	}
+	else
+	{
+		signal ('CAL106', 'The source type must be WebDAV or URL.');
+	}
+	return outType;
 }
 ;
 
@@ -673,7 +700,7 @@ create procedure ODS.ODS_API."calendar.publication.new" (
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in destinationType varchar := 'WebDAV',
+  in destinationType varchar := null,
   in destination varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -693,18 +720,7 @@ create procedure ODS.ODS_API."calendar.publication.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (lcase (destinationType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (destinationType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.calendar_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 0, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -781,7 +797,7 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in destinationType varchar := 'WebDAV',
+  in destinationType varchar := null,
   in destination varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -806,18 +822,7 @@ create procedure ODS.ODS_API."calendar.publication.edit" (
   if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  if (lcase (destinationType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (destinationType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.calendar_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   update CAL.WA.EXCHANGE
      set EX_NAME = name,
@@ -842,9 +847,8 @@ create procedure ODS.ODS_API."calendar.publication.sync" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc integer;
-  declare uname varchar;
   declare inst_id integer;
+  declare uname, syncLog varchar;
 
   inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = publication_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
@@ -854,6 +858,10 @@ create procedure ODS.ODS_API."calendar.publication.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   CAL.WA.exchange_exec (publication_id);
+  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  if (not DB.DBA.is_empty_or_null (syncLog))
+    return ods_serialize_sql_error ('ERROR', syncLog);
+
   return ods_serialize_int_res (1);
 }
 ;
@@ -895,7 +903,7 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in sourceType varchar := 'WebDAV',
+  in sourceType varchar := null,
   in source varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -915,18 +923,7 @@ create procedure ODS.ODS_API."calendar.subscription.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (lcase (sourceType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (sourceType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.calendar_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   insert into CAL.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 1, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -1003,7 +1000,7 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in sourceType varchar := 'WebDAV',
+  in sourceType varchar := null,
   in source varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -1028,18 +1025,7 @@ create procedure ODS.ODS_API."calendar.subscription.edit" (
   if (not exists (select 1 from CAL.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  if (lcase (sourceType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (sourceType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.calendar_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'events', events, 'tasks', tasks);
   update CAL.WA.EXCHANGE
      set EX_NAME = name,
@@ -1064,9 +1050,8 @@ create procedure ODS.ODS_API."calendar.subscription.sync" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc integer;
-  declare uname varchar;
   declare inst_id integer;
+  declare uname, syncLog varchar;
 
   inst_id := (select EX_DOMAIN_ID from CAL.WA.EXCHANGE where EX_ID = subscription_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
@@ -1076,6 +1061,9 @@ create procedure ODS.ODS_API."calendar.subscription.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   CAL.WA.exchange_exec (subscription_id);
+  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not DB.DBA.is_empty_or_null (syncLog))
+    return ods_serialize_sql_error ('ERROR', syncLog);
 
   return ods_serialize_int_res (1);
 }
@@ -1134,31 +1122,31 @@ create procedure ODS.ODS_API."calendar.options.set" (
   settings := CAL.WA.settings (inst_id);
   CAL.WA.settings_init (settings);
 
-  ODS.ODS_API.setting_set (settings, optionsParams, 'chars');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'rows');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'atomVersion');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'chars');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'atomVersion');
 
-  ODS.ODS_API.setting_set (settings, optionsParams, 'defaultView');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'weekStarts');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'timeFormat');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'dateFormat');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'timeZone');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'showTasks');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'defaultView');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'weekStarts');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'timeFormat');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'dateFormat');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'timeZone');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'showTasks');
 
-  ODS.ODS_API.setting_set (settings, optionsParams, 'conv');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'conv_init');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'conv');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'conv_init');
 
-  ODS.ODS_API.setting_set (settings, optionsParams, 'event_E_UPDATED');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'event_E_CREATED');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'event_E_LOCATION');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'event_E_UPDATED');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'event_E_CREATED');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'event_E_LOCATION');
 
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_STATUS');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_PRIORITY');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_START');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_END');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_COMPLETED');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_UPDATED');
-  ODS.ODS_API.setting_set (settings, optionsParams, 'task_E_CREATED');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_STATUS');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_PRIORITY');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_START');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_END');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_COMPLETED');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_UPDATED');
+  ODS.ODS_API.calendar_setting_set (settings, optionsParams, 'task_E_CREATED');
 
   insert replacing CAL.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
 
@@ -1189,31 +1177,31 @@ create procedure ODS.ODS_API."calendar.options.get" (
 
   http ('<settings>');
 
-  http (ODS.ODS_API.setting_xml (settings, 'chars'));
-  http (ODS.ODS_API.setting_xml (settings, 'rows'));
-  http (ODS.ODS_API.setting_xml (settings, 'atomVersion'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'chars'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'rows'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'atomVersion'));
 
-  http (ODS.ODS_API.setting_xml (settings, 'defaultView'));
-  http (ODS.ODS_API.setting_xml (settings, 'weekStarts'));
-  http (ODS.ODS_API.setting_xml (settings, 'timeFormat'));
-  http (ODS.ODS_API.setting_xml (settings, 'dateFormat'));
-  http (ODS.ODS_API.setting_xml (settings, 'timeZone'));
-  http (ODS.ODS_API.setting_xml (settings, 'showTasks'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'defaultView'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'weekStarts'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'timeFormat'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'dateFormat'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'timeZone'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'showTasks'));
 
-  http (ODS.ODS_API.setting_xml (settings, 'conv'));
-  http (ODS.ODS_API.setting_xml (settings, 'conv_init'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'conv'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'conv_init'));
 
-  http (ODS.ODS_API.setting_xml (settings, 'event_E_UPDATED'));
-  http (ODS.ODS_API.setting_xml (settings, 'event_E_CREATED'));
-  http (ODS.ODS_API.setting_xml (settings, 'event_E_LOCATION'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'event_E_UPDATED'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'event_E_CREATED'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'event_E_LOCATION'));
 
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_STATUS'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_PRIORITY'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_START'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_END'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_COMPLETED'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_UPDATED'));
-  http (ODS.ODS_API.setting_xml (settings, 'task_E_CREATED'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_STATUS'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_PRIORITY'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_START'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_END'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_COMPLETED'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_UPDATED'));
+  http (ODS.ODS_API.calendar_setting_xml (settings, 'task_E_CREATED'));
 
   http ('</settings>');
 

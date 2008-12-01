@@ -24,6 +24,54 @@ use ODS;
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API.bookmark_setting_set (
+  inout settings any,
+  inout options any,
+  in settingName varchar)
+{
+  BMK.WA.set_keyword (settingName, settings, get_keyword (settingName, options, get_keyword (settingName, settings)));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.bookmark_setting_xml (
+  in settings any,
+  in settingName varchar)
+{
+  return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.bookmark_type_check (
+  in inType varchar,
+  in inSource varchar)
+{
+  declare outType integer;
+
+  if (isnull (inType))
+    inType := case when (inSource like 'http://%') then 'url' else 'webdav' end;
+
+	if (lcase (inType) = 'webdav')
+	{
+		outType := 1;
+	}
+	else if (lcase (inType) = 'url')
+	{
+		outType := 2;
+	}
+	else
+	{
+		signal ('BMK106', 'The source type must be WebDAV or URL.');
+	}
+	return outType;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."bookmark.get" (
   in bookmark_id integer) __soap_http 'text/xml'
 {
@@ -536,7 +584,7 @@ create procedure ODS.ODS_API."bookmark.publication.new" (
   in updateType varchar := 1,
   in updatePeriod varchar := 'hourly',
   in updateFreq integr := 1,
-  in destinationType varchar := 'WebDAV',
+  in destinationType varchar := null,
   in destination varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -557,18 +605,7 @@ create procedure ODS.ODS_API."bookmark.publication.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (lcase (destinationType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (destinationType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.bookmark_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
   insert into BMK.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 0, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -580,13 +617,76 @@ create procedure ODS.ODS_API."bookmark.publication.new" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."bookmark.publication.get" (
+  in publication_id integer) __soap_http 'text/xml'
+  {
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare options any;
+
+  inst_id := (select EX_DOMAIN_ID from BMK.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  for (select * from BMK.WA.EXCHANGE where EX_ID = publication_id) do
+  {
+    options := deserialize (EX_OPTIONS);
+    http (sprintf ('<publication id="%d">\r\n', publication_id));
+
+    http (sprintf ('  <name>%V</name>\r\n', EX_NAME));
+    if (EX_UPDATE_TYPE = 0)
+    {
+      http ('  <updateType>manually</updateType>\r\n');
+  }
+    else if (EX_UPDATE_TYPE = 1)
+  {
+      http ('  <updateType>after any entry is changed</updateType>\r\n');
+  }
+  else
+  {
+      http (sprintf ('  <updatePeriod>%s</updatePeriod>\r\n', EX_UPDATE_PERIOD));
+      http (sprintf ('  <updateFreq>%s</updateFreq>\r\n', cast (EX_UPDATE_FREQ as varchar)));
+  }
+    http (sprintf ('  <destinationType>%V</destinationType>\r\n', get_keyword (get_keyword ('type', options, 1), vector (1, 'WebDAV', 2, 'URL'))));
+    http (sprintf ('  <destination>%V</destination>\r\n', get_keyword ('name', options)));
+    if (get_keyword ('user', options, '') <> '')
+    {
+      http (sprintf ('  <userName>%V</userName>\r\n', get_keyword ('user', options)));
+      http ('  <userPassword>******</userName>\r\n');
+    }
+    http ('  <options>\r\n');
+    if (get_keyword ('folderPath', options, '') <> '')
+      http (sprintf ('    <folderPath>%s</folderPath>\r\n', cast (get_keyword ('folderPath', options) as varchar)));
+    if (get_keyword ('tagsInclude', options, '') <> '')
+      http (sprintf ('    <tagsInclude>%s</tagsInclude>\r\n', cast (get_keyword ('tagsInclude', options) as varchar)));
+    if (get_keyword ('tagsExclude', options, '') <> '')
+      http (sprintf ('    <tagsExclude>%s</tagsExclude>\r\n', cast (get_keyword ('tagsExclude', options) as varchar)));
+    http ('  </options>\r\n');
+
+    http ('</publication>');
+  }
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."bookmark.publication.edit" (
   in publication_id integer,
   in name varchar,
   in updateType varchar := 1,
   in updatePeriod varchar := 'hourly',
   in updateFreq integr := 1,
-  in destinationType varchar := 'WebDAV',
+  in destinationType varchar := null,
   in destination varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -609,20 +709,10 @@ create procedure ODS.ODS_API."bookmark.publication.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (lcase (destinationType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (destinationType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+
+  _type := ODS.ODS_API.bookmark_type_check (destinationType, destination);
   options := vector ('type', _type, 'name', destination, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tagsInclude', tagsInclude, 'tagsExclude', tagsExclude);
   update BMK.WA.EXCHANGE
      set EX_NAME = name,
@@ -633,6 +723,36 @@ create procedure ODS.ODS_API."bookmark.publication.edit" (
    where EX_ID = publication_id;
 
   return ods_serialize_int_res (publication_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.publication.sync" (
+  in publication_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare uname, syncLog varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from BMK.WA.EXCHANGE where EX_ID = publication_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  BMK.WA.exchange_exec (publication_id);
+  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  if (not DB.DBA.is_empty_or_null (syncLog))
+    return ods_serialize_sql_error ('ERROR', syncLog);
+
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -655,8 +775,9 @@ create procedure ODS.ODS_API."bookmark.publication.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id))
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = publication_id and EX_TYPE = 0))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   delete from BMK.WA.EXCHANGE where EX_ID = publication_id;
   rc := row_count ();
 
@@ -672,7 +793,7 @@ create procedure ODS.ODS_API."bookmark.subscription.new" (
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in sourceType varchar := 'WebDAV',
+  in sourceType varchar := null,
   in source varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -692,18 +813,7 @@ create procedure ODS.ODS_API."bookmark.subscription.new" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (lcase (sourceType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (sourceType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+  _type := ODS.ODS_API.bookmark_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tags', tags);
   insert into BMK.WA.EXCHANGE (EX_DOMAIN_ID, EX_TYPE, EX_NAME, EX_UPDATE_TYPE, EX_UPDATE_PERIOD, EX_UPDATE_FREQ, EX_OPTIONS)
     values (inst_id, 1, name, updateType, updatePeriod, updateFreq, serialize (options));
@@ -715,13 +825,74 @@ create procedure ODS.ODS_API."bookmark.subscription.new" (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API."bookmark.subscription.get" (
+  in subscription_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare rc, inst_id integer;
+  declare uname varchar;
+  declare options any;
+
+  inst_id := (select EX_DOMAIN_ID from BMK.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  for (select * from BMK.WA.EXCHANGE where EX_ID = subscription_id) do
+  {
+    options := deserialize (EX_OPTIONS);
+    http (sprintf ('<publication id="%d">\r\n', subscription_id));
+
+    http (sprintf ('  <name>%V</name>\r\n', EX_NAME));
+    if (EX_UPDATE_TYPE = 0)
+    {
+      http ('  <updateType>manually</updateType>\r\n');
+  }
+    else if (EX_UPDATE_TYPE = 1)
+  {
+      http ('  <updateType>after any entry is changed</updateType>\r\n');
+  }
+  else
+  {
+      http (sprintf ('  <updatePeriod>%s</updatePeriod>\r\n', EX_UPDATE_PERIOD));
+      http (sprintf ('  <updateFreq>%s</updateFreq>\r\n', cast (EX_UPDATE_FREQ as varchar)));
+  }
+    http (sprintf ('  <sourceType>%V</sourceType>\r\n', get_keyword (get_keyword ('type', options, 1), vector (1, 'WebDAV', 2, 'URL'))));
+    http (sprintf ('  <source>%V</source>\r\n', get_keyword ('name', options)));
+    if (get_keyword ('user', options, '') <> '')
+    {
+      http (sprintf ('  <userName>%V</userName>\r\n', get_keyword ('user', options)));
+      http ('  <userPassword>******</userName>\r\n');
+    }
+    http ('  <options>\r\n');
+    if (get_keyword ('folderPath', options, '') <> '')
+      http (sprintf ('    <folderPath>%s</folderPath>\r\n', cast (get_keyword ('folderPath', options) as varchar)));
+    if (get_keyword ('tags', options, '') <> '')
+      http (sprintf ('    <tags>%s</tags>\r\n', cast (get_keyword ('tags', options) as varchar)));
+    http ('  </options>\r\n');
+
+    http ('</publication>');
+  }
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."bookmark.subscription.edit" (
   in subscription_id integer,
   in name varchar,
   in updateType varchar := 2,
   in updatePeriod varchar := 'daily',
   in updateFreq integr := 1,
-  in sourceType varchar := 'WebDAV',
+  in sourceType varchar := null,
   in source varchar,
   in userName varchar := null,
   in userPassword varchar := null,
@@ -743,20 +914,10 @@ create procedure ODS.ODS_API."bookmark.subscription.edit" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (lcase (sourceType) = 'webdav')
-  {
-    _type := 1;
-  }
-  else if (lcase (sourceType) = 'url')
-  {
-    _type := 2;
-  }
-  else
-  {
-	  signal ('CAL106', 'The source type must be WebDAV or URL.');
-  }
+
+  _type := ODS.ODS_API.bookmark_type_check (sourceType, source);
   options := vector ('type', _type, 'name', source, 'user', userName, 'password', userPassword, 'folderPath', folderPath, 'tags', tags);
   update BMK.WA.EXCHANGE
      set EX_NAME = name,
@@ -767,6 +928,36 @@ create procedure ODS.ODS_API."bookmark.subscription.edit" (
    where EX_ID = subscription_id;
 
   return ods_serialize_int_res (subscription_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."bookmark.subscription.sync" (
+  in subscription_id integer) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  declare uname, syncLog varchar;
+  declare inst_id integer;
+
+  inst_id := (select EX_DOMAIN_ID from BMK.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  BMK.WA.exchange_exec (subscription_id);
+  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  if (not DB.DBA.is_empty_or_null (syncLog))
+    return ods_serialize_sql_error ('ERROR', syncLog);
+
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -789,8 +980,9 @@ create procedure ODS.ODS_API."bookmark.subscription.delete" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id))
+  if (not exists (select 1 from BMK.WA.EXCHANGE where EX_ID = subscription_id and EX_TYPE = 1))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
   delete from BMK.WA.EXCHANGE where EX_ID = subscription_id;
   rc := row_count ();
 
@@ -822,14 +1014,16 @@ create procedure ODS.ODS_API."bookmark.options.set" (
 
   settings := BMK.WA.settings (inst_id);
   BMK.WA.settings_init (settings);
-  settings := BMK.WA.set_keyword ('chars', settings, get_keyword('chars', optionsParams, get_keyword('chars', settings)));
-  settings := BMK.WA.set_keyword ('rows', settings, get_keyword('rows', optionsParams, get_keyword('rows', settings)));
-  settings := BMK.WA.set_keyword ('tbLabels', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
-  settings := BMK.WA.set_keyword ('atomVersion', settings, get_keyword('tbLabels', optionsParams, get_keyword('tbLabels', settings)));
-  settings := BMK.WA.set_keyword ('conv', settings, get_keyword('conv', optionsParams, get_keyword('conv', settings)));
-  settings := BMK.WA.set_keyword ('conv_init', settings, get_keyword('conv_init', optionsParams, get_keyword('conv_init', settings)));
-  settings := BMK.WA.set_keyword ('panes', settings, get_keyword('panes', optionsParams, get_keyword('panes', settings)));
-  settings := BMK.WA.set_keyword ('bookmarkOpen', settings, get_keyword('bookmarkOpen', optionsParams, get_keyword('bookmarkOpen', settings)));
+
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'chars');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'tbLabels');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'atomVersion');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'conv');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'conv_init');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'panes');
+  ODS.ODS_API.bookmark_setting_set (settings, optionsParams, 'bookmarkOpen');
+
   insert replacing BMK.WA.SETTINGS (S_DOMAIN_ID, S_ACCOUNT_ID, S_DATA) values (inst_id, account_id, serialize (settings));
 
   return ods_serialize_int_res (1);
@@ -858,14 +1052,14 @@ create procedure ODS.ODS_API."bookmark.options.get" (
   BMK.WA.settings_init (settings);
 
   http ('<settings>');
-  http (sprintf ('<chars>%d</chars>', get_keyword ('chars', settings)));
-  http (sprintf ('<rows>%d</rows>', get_keyword ('rows', settings)));
-  http (sprintf ('<tbLabels>%d</tbLabels>', get_keyword ('tbLabels', settings)));
-  http (sprintf ('<atomVersion>%s</atomVersion>', get_keyword ('atomVersion', settings)));
-  http (sprintf ('<conv>%d</conv>', get_keyword ('conv', settings)));
-  http (sprintf ('<conv_init>%d</conv_init>', get_keyword ('conv_init', settings)));
-  http (sprintf ('<panes>%d</panes>', get_keyword ('panes', settings)));
-  http (sprintf ('<bookmarkOpen>%d</bookmarkOpen>', get_keyword ('bookmarkOpen', settings)));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'chars'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'rows'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'tbLabels'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'atomVersion'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'conv'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'conv_init'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'panes'));
+  http (ODS.ODS_API.bookmark_setting_xml (settings, 'bookmarkOpen'));
   http ('</settings>');
 
   return '';
@@ -891,10 +1085,14 @@ grant execute on ODS.ODS_API."bookmark.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.comment.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."bookmark.publication.new" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.publication.get" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.publication.edit" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.publication.sync" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.publication.delete" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.subscription.new" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.subscription.get" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.subscription.edit" to ODS_API;
+grant execute on ODS.ODS_API."bookmark.subscription.sync" to ODS_API;
 grant execute on ODS.ODS_API."bookmark.subscription.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."bookmark.options.get" to ODS_API;
