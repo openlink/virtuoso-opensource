@@ -330,7 +330,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
 ECHO "Q11";
--- Bad compilation, references limeitem 
 sparql
 define sql:signal-void-variables 1
 prefix tpcd: <http://www.openlinksw.com/schemas/tpcd#>
@@ -515,7 +514,7 @@ order by
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q16 -- invalid integer value";
+ECHO "Q16";
 
 sparql
 define sql:signal-void-variables 1
@@ -527,21 +526,20 @@ select
   ?part+>tpcd:brand,
   ?part+>tpcd:type,
   ?part+>tpcd:size,
-  (count(distinct ?ps)) as ?supplier_cnt
+  (count(distinct ?supp)) as ?supplier_cnt
 from <http://example.com/tpcd>
 where
   {
-    ?ps tpcd:has_part ?part .
-    optional {
-        ?ps tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") }
+    ?ps a tpcd:partsupp ; tpcd:has_part ?part ; tpcd:has_supplier ?supp .
     filter (
       (?part+>tpcd:brand != "Brand#45") &&
       !(?part+>tpcd:type like "MEDIUM POLISHED%") &&
       (?part+>tpcd:size in (49, 14, 23, 45, 19, 3, 36, 9)) &&
-      !bound (?badcomment) )
+      !bif:exists ((select (1) where {
+        ?supp a tpcd:supplier; tpcd:comment ?badcomment . filter (?badcomment like "%Customer%Complaints%") } ) ) )
   }
 order by
-  desc ((count(distinct ?ps)))
+  desc ((count(distinct ?supp)))
   ?part+>tpcd:brand
   ?part+>tpcd:type
   ?part+>tpcd:size
@@ -637,7 +635,7 @@ where
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q20 -- infinite run";
+ECHO "Q20";
 
 sparql
 define sql:signal-void-variables 1
@@ -717,7 +715,7 @@ order by
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 
-ECHO "Q22 -- infinite run";
+ECHO "Q22";
 
 sparql
 define sql:signal-void-variables 1
@@ -749,46 +747,6 @@ where {
 group by (bif:LEFT (?cust+>tpcd:phone, 2))
 order by (bif:LEFT (?cust+>tpcd:phone, 2))
 ;
-
-select
-  cntrycode,
-  count (*) as numcust,
-  sum (c_acctbal) as totacctbal
-from
-  (
-    select
-      {fn substring (c_phone, 1, 2)} as cntrycode,
-      c_acctbal
-    from
-      customer
-    where
-      {fn substring (c_phone, 1, 2)} in
-        ('13', '35', '31', '23', '29', '30', '17', '18') and
-      c_acctbal >
-        (
-    select
-      avg (c_acctbal)
-    from
-      customer
-    where
-      c_acctbal > 0.00 and
-      {fn substring (c_phone, 1, 2)} in
-        ('13', '35', '31', '23', '29', '30', '17', '18')
-  ) and
-      not exists
-        (
-          select
-      *
-    from
-      orders
-    where
-      o_custkey = c_custkey
-  )
-  ) as custsale
-group by
-  cntrycode
-order by
-  cntrycode;
 
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
