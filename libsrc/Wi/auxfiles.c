@@ -479,6 +479,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     file_extend = DP_INSERT_RESERVE + 5;
 
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
+  if (main_bufs < 256)
+    main_bufs = 256;
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);
   atomic_dive = (int) (ptrlong) cfg_get_parm (wholefile, "\natomic_dive:", 0);
   if (2 == atomic_dive)

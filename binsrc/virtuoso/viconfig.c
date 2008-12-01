@@ -1332,8 +1332,8 @@ cfg_setup (void)
   /*
    *  Checks
    */
-  if (c_number_of_buffers < 50)
-    c_number_of_buffers = 50;
+  if (c_number_of_buffers < 256)
+    c_number_of_buffers = 256;
 
   if (c_max_dirty_buffers > (c_number_of_buffers * 9) / 10)
     c_max_dirty_buffers = (c_number_of_buffers * 9) / 10;

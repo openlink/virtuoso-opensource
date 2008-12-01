@@ -791,7 +791,7 @@ bp_stats (buffer_pool_t * bp)
 {
   buffer_desc_t * sample[B_N_SAMPLE + 1];
   buffer_desc_t * sample_2[B_N_SAMPLE + 1];
-  int inx, fill = 0;
+  volatile int inx, fill = 0;
   for (inx = bp->bp_ts & 0xf; inx < bp->bp_n_bufs; inx += bp->bp_n_bufs / B_N_SAMPLE)
     {
       buffer_desc_t * buf = &bp->bp_bufs[inx];
@@ -801,7 +801,8 @@ bp_stats (buffer_pool_t * bp)
   buf_qsort (sample, sample_2, fill, 0, bd_age_key);
   for (inx = 0; inx < BP_N_BUCKETS - 1; inx++)
     {
-      bp->bp_bucket_limit[inx] = sample[(inx + 1) * 4]->bd_age;
+      int step = (fill < B_N_SAMPLE + 1 ? fill / BP_N_BUCKETS : 4);
+      bp->bp_bucket_limit[inx] = sample[(inx + 1) * step]->bd_age;
     }
   bp->bp_bucket_limit[BP_N_BUCKETS - 1] = sample[fill - 1]->bd_age;
   memset (&bp->bp_n_dirty, 0, sizeof (bp->bp_n_dirty));
