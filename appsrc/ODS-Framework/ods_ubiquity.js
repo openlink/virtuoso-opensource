@@ -1255,7 +1255,7 @@ CmdUtils.CreateCommand({
   author: { name: "OpenLink Software", email: "ods@openlinksw.com"},
   license: "MPL",
   help: "Type ods-get-bookmark-annotation-by-id &lt;annotation_id&gt;",
-  preview: function (annotation_id, modifiers) {
+  preview: function (previewBlock, annotation_id, modifiers) {
     try {
       checkParameter(annotation_id.text);
     var params = {annotation_id: annotation_id.text};
@@ -1454,6 +1454,43 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-get-bookmarks-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-bookmarks-publication &lt;publication_id&gt;",
+  preview: function (previewBlock, publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsPreview(previewBlock, "bookmark.publication.get", params, "bookmark");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-bookmarks-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-sync-bookmarks-publication &lt;publication_id&gt;",
+  execute: function (publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsExecute("bookmark.publication.sync", params, "bookmark");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-delete-bookmarks-publication",
   takes: {"publication_id": noun_type_id},
   homepage: "http://myopenlink.net/ods/",
@@ -1526,6 +1563,43 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "folderPath", params, "folderPath");
     addParameter(modifiers, "tags", params, "tags");
       odsExecute("bookmark.subscription.edit", params, "bookmark");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-bookmarks-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-bookmarks-subscription &lt;subscription_id&gt;",
+  preview: function (previewBlock, subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsPreview(previewBlock, "bookmark.subscription.get", params, "bookmark");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-bookmarks-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-sync-bookmarks-subscription &lt;subscription_id&gt;",
+  execute: function (subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsExecute("bookmark.subscription.sync", params, "bookmark");
     } catch (ex) {
       odsDisplayMessage(ex);
     }
@@ -1851,7 +1925,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-get-calendar-annotation-by-id &lt;annotation_id&gt;",
 
-  preview: function (annotation_id, modifiers) {
+  preview: function (previewBlock, annotation_id, modifiers) {
     try {
       checkParameter(annotation_id.text);
     var params = {annotation_id: annotation_id.text};
@@ -2050,6 +2124,43 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-get-calendar-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-calendar-publication &lt;publication_id&gt;",
+  preview: function (previewBlock, publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsPreview(previewBlock, "calendar.publication.get", params, "calendar");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-calendar-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-sync-calendar-publication &lt;publication_id&gt;",
+  execute: function (publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsExecute("calendar.publication.sync", params, "calendar");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-delete-calendar-publication",
   takes: {"publication_id": noun_type_id},
   homepage: "http://myopenlink.net/ods/",
@@ -2122,6 +2233,43 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "events", params, "events");
     addParameter(modifiers, "tasks", params, "tasks");
       odsExecute("calendar.subscription.edit", params, "calendar");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-calendar-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-calendar-subscription &lt;subscription_id&gt;",
+  preview: function (previewBlock, subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsPreview(previewBlock, "calendar.subscription.get", params, "calendar");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-calendar-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-sync-calendar-subscription &lt;subscription_id&gt;",
+  execute: function (subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsExecute("calendar.subscription.sync", params, "calendar");
     } catch (ex) {
       odsDisplayMessage(ex);
     }
@@ -2444,7 +2592,7 @@ CmdUtils.CreateCommand({
   license: "MPL",
   help: "Type ods-get-addressbook-annotation-by-id &lt;annotation_id&gt;",
 
-  preview: function (annotation_id, modifiers) {
+  preview: function (previewBlock, annotation_id, modifiers) {
     try {
       checkParameter(annotation_id.text);
     var params = {annotation_id: annotation_id.text};
@@ -2643,6 +2791,43 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-publication &lt;publication_id&gt;",
+  preview: function (previewBlock, publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsPreview(previewBlock, "addressbook.publication.get", params, "addressbook");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-addressbook-publication",
+  takes: {"publication_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-addressbook-publication &lt;publication_id&gt;",
+  execute: function (publication_id) {
+    try {
+      checkParameter(publication_id.text, "publication_id");
+      var params = {publication_id: publication_id.text};
+      odsExecute("addressbook.publication.sync", params, "addressbook");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
   name: "ods-delete-addressbook-publication",
   takes: {"publication_id": noun_type_id},
   homepage: "http://myopenlink.net/ods/",
@@ -2715,6 +2900,45 @@ CmdUtils.CreateCommand({
     addParameter(modifiers, "tagsInclude", params, "tagsInclude");
     addParameter(modifiers, "tagsExclude", params, "tagsExclude");
       odsExecute("addressbook.subscription.edit", params, "addressbook");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-addressbook-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software",
+  email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-addressbook-subscription &lt;subscription_id&gt;",
+  preview: function (previewBlock, subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsPreview(previewBlock, "addressbook.subscription.get", params, "addressbook");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-sync-addressbook-subscription",
+  takes: {"subscription_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software",
+  email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-sync-addressbook-subscription &lt;subscription_id&gt;",
+  execute: function (subscription_id) {
+    try {
+      checkParameter(subscription_id.text, "subscription_id");
+      var params = {subscription_id: subscription_id.text};
+      odsExecute("addressbook.subscription.sync", params, "addressbook");
     } catch (ex) {
       odsDisplayMessage(ex);
     }

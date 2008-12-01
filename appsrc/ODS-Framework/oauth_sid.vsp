@@ -1,7 +1,7 @@
 <html>
   <?vsp
-    declare sid, consumer, consumer_key, srv, res, ret_url, url, tmp varchar;
-    declare hostURL varchar;
+    declare sid, consumer, consumer_key, res, ret_url, url, tmp varchar;
+    declare hostUrl, oauthServerUrl, apiServerUrl varchar;
 
     declare exit handler for sqlstate '*' { goto _default; };
 
@@ -15,7 +15,8 @@
 
         hp := sys_connected_server_address ();
         hpa := split_and_decode ( hp , 0 , '\0\0:');
-        hostURL := hostURL || ':' || hpa [1];
+        if (hpa [1] <> '80')
+          hostUrl := hostUrl || ':' || hpa [1];
       }
       goto _exit;
     }
@@ -36,37 +37,42 @@
 
     consumer := {?'consumer'};
     consumer_key := {?'key'};
-    srv := sprintf ('%s/OAuth/', hostURL);
+
+    oauthServerUrl := sprintf ('%s/OAuth/', hostURL);
+    apiServerUrl := sprintf ('%s/ods/api/', hostURL);
     sid := null;
 
     if ({?'rt'} is not null)
     {
-      -- request new token for the session
-      url := srv||'request_token';
-      url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+      -- call sign_request
+      url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', '', consumer_key, sid);
+      url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
       res := http_get (url);
       sid := OAUTH..parse_response (sid, consumer_key, res);
       OAUTH..set_session_data (sid, params);
-      ret_url := sprintf ('%s/ods/oauth_sid.vsp?ready=%U&consumer=%U', hostURL, sid, {?'name'});
+      ret_url := sprintf ('%s/oauth/oauth_sid.vsp?ready=%U&consumer=%U', hostURL, sid, {?'name'});
       -- call authorize
-      url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url);
+      url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', oauthServerUrl, OAUTH..get_auth_token (sid), ret_url);
       http_status_set (301);
       http_header (sprintf ('Location: %s\r\n', url));
       return;
     }
     else if ({?'ready'} is not null) -- get access token
     {
-      -- we go here when token above is authorized
-      sid := {?'ready'};
-      url := srv||'access_token';
+      sid := get_keyword ('ready', params);
+      -- call get_consumer_key
       consumer_key := OAUTH..get_consumer_key (sid);
-      url := OAUTH..sign_request ('GET', url, '', consumer_key, sid);
+      -- call parse_response
+      url := OAUTH..sign_request ('GET', oauthServerUrl||'access_token', '', consumer_key, sid);
+      url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+      -- http get 'access_token'
       res := http_get (url);
+      -- call parse_response
       sid := OAUTH..parse_response (sid, consumer_key, res);
     }
   ?>
   <head>
-    <link rel="stylesheet" type="text/css" href="openid_login.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/openid_login.css" />
     <title>OAuth Application Key</title>
     <script type="text/javascript">
       // OAT
@@ -97,7 +103,7 @@
         <div id="login_page">
           <div id="id_col">
             <div id="site_id">
-              <p><img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" /></p>
+              <p><img class="id_logo" src="/ods/images/odslogo_200.png" alt="ods logo icon" /></p>
             </div>
           </div>
           <div id="form_col">
@@ -135,7 +141,7 @@
       </div>
       <div id="FT">
         <div id="FT_LC">
-          <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="images/virt_power_no_border.png" border="0"/>
+          <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0"/>
           </a>
         </div>
         <div id="FT_RC"><a href="/ods/faq.html">FAQ</a> |
