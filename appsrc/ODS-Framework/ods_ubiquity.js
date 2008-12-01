@@ -305,6 +305,15 @@ function xml_encode(xml)
   return xml;
 }
 
+
+/*
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
+ * in FIPS PUB 180-1
+ * Version 2.1a Copyright Paul Johnston 2000 - 2002.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * Distributed under the BSD License
+ * See http://pajhome.org.uk/crypt/md5 for details.
+ */
 function sha (input)
 {
 	var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */

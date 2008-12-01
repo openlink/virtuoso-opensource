@@ -134,6 +134,15 @@ OAT
     License v2: <http://www.gnu.org/copyleft/gpl.html>
 
 
+SHA1 Javascript
+
+    Virtuoso uses a Javsscript implementation of the Secure Hash Algoritm
+    (SHA1) as defined in FIPS PUB 180-1, written  by Paul Johnston
+
+    SHA1 is distributable under the terms of the BSD license
+    <http://pajhome.org.uk/crypt/md5>
+
+
 Optional functionality
 ======================
 
