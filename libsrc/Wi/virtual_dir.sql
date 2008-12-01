@@ -544,7 +544,7 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
              in lpath varchar,
              in del_vsps integer := 0)
 {
-  declare ssl_port, varr varchar;
+  declare ssl_port, varr, lport varchar;
   declare ppath, vsp_user, stat, msg varchar;
   declare cr cursor for select HP_PPATH, HP_RUN_VSP_AS from DB.DBA.HTTP_PATH
       where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
@@ -568,7 +568,23 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
        , 0, ':=:');
       if (__tag (varr) = 193 and length (varr) > 1)
 	vhost := varr[0];
+      if (__tag (lport) = 193 and length (lport) > 1)
+	lport := aref (lport, 1);
+      else if (lhost = '*ini*')
+	lport := server_http_port ();
+      else if (lhost = '*sslini*')
+	lport := ssl_port;
+      else if (atoi (lhost))
+	lport := lhost;
+      else
+	lport := '80';
     }
+  else
+    lport := null;
+  if (lport = server_http_port () and lhost <> '*ini*')
+    lhost := '*ini*';
+  else if (lport = ssl_port and lhost <> '*sslini*')
+    lhost := '*sslini*';
 
   whenever not found goto err_exit;
   open cr (exclusive, prefetch 1);
