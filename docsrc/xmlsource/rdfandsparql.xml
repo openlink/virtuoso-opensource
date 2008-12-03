@@ -4721,7 +4721,7 @@ where (^{products_table.}^.FREETEXT_ID = ^{products.}^.FREETEXT_ID)
 ]]></programlisting>
 </sect2>
 <sect2 id="rdfviewsrcur"><title>RDF views and recursive FK relationships</title>
-  <para>Here is sample example of a script to include an additional table alias for a table:
+  <para>Here is sample example of a script to include an additional table alias for a table:</para>
 <programlisting><![CDATA[
 alter quad storage virtrdf:DefaultQuadStorage
   :
@@ -4737,7 +4737,6 @@ virtrdf:ref-call_pk ;
 where  ( ^{Ref_Call_tbl.}^.Parent    = ^{Ref_Call_tbl_1.}^.Call_Num )   as
 virtrdf:Ref-Call_has_parent .
 ]]></programlisting>
-  </para>
   <para>This demonstrates the way to self-join the table VRef_Call with itself. Like in SQL,
 are needed two different aliases for one table if you want to join it with itself.
   </para>
@@ -5379,7 +5378,7 @@ Thus the presence of indexing data about an object does not imply that it is nec
 
 -- We load Tim Berners-Lee's FOAF file into a graph called people.
 
-DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/People/Berners-Lee/card#i'), 'no', 'people');
+DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/People/Berners-Lee/card#i'), 'no', 'http://www.w3.org/people#');
 
 -- We check how many triples we got.
 
@@ -5387,15 +5386,15 @@ select count (*) from (sparql select * from <people> where {?s ?p ?o})f;
 
 -- We specify that all string objects in the graph people should be text indexed.
 
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('people', null, 'people');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://www.w3.org/people/rules/ftindex/people#', null, 'http://www.w3.org/people#');
 
--- We update the text index. See below on how to keep the text index automatically updated.
+-- We update the text index.
 
 DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
 
--- We ask for the subjects and predicates of all triples in <people> where the object is a string which contains a word beginning with TIM.
+-- See impact of the index  by querying the subjects and predicates of all triples in the GRAPH: <http://www.w3.org/people#>,  where the object is a string which contains a word beginning with "TIM".
 
-sparql select * from <people> where { ?s ?p ?o . ?o bif:contains '"TIM*"' .};
+sparql select * from <http://www.w3.org/people#> where { ?s ?p ?o . ?o bif:contains '"TIM*"' .};
 
 s                p                o
 VARCHAR          VARCHAR          VARCHAR
