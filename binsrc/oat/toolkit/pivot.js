@@ -258,6 +258,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		document.body.appendChild(self.propPage);
 		OAT.Instant.assign(self.propPage);
 		
+		self.conditions = [];
 		for (var i=0;i<self.headerRow.length;i++) { 
 			self.initCondition(i);
 		}
