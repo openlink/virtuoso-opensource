@@ -895,7 +895,7 @@ create procedure ODS.ODS_API."addressbook.publication.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   AB.WA.exchange_exec (publication_id);
-  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  syncLog := (select EX_EXEC_LOG from AB.WA.EXCHANGE where EX_ID = publication_id);
   if (not DB.DBA.is_empty_or_null (syncLog))
     return ods_serialize_sql_error ('ERROR', syncLog);
 
@@ -1099,7 +1099,7 @@ create procedure ODS.ODS_API."addressbook.subscription.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   AB.WA.exchange_exec (subscription_id);
-  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  syncLog := (select EX_EXEC_LOG from AB.WA.EXCHANGE where EX_ID = subscription_id);
   if (not DB.DBA.is_empty_or_null (syncLog))
     return ods_serialize_sql_error ('ERROR', syncLog);
 

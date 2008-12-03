@@ -748,7 +748,7 @@ create procedure ODS.ODS_API."bookmark.publication.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   BMK.WA.exchange_exec (publication_id);
-  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = publication_id);
+  syncLog := (select EX_EXEC_LOG from BMK.WA.EXCHANGE where EX_ID = publication_id);
   if (not DB.DBA.is_empty_or_null (syncLog))
     return ods_serialize_sql_error ('ERROR', syncLog);
 
@@ -953,7 +953,7 @@ create procedure ODS.ODS_API."bookmark.subscription.sync" (
     return ods_serialize_sql_error ('37000', 'The item is not found');
 
   BMK.WA.exchange_exec (subscription_id);
-  syncLog := (select EX_EXEC_LOG from CAL.WA.EXCHANGE where EX_ID = subscription_id);
+  syncLog := (select EX_EXEC_LOG from BMK.WA.EXCHANGE where EX_ID = subscription_id);
   if (not DB.DBA.is_empty_or_null (syncLog))
     return ods_serialize_sql_error ('ERROR', syncLog);
 
