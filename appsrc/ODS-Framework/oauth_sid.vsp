@@ -50,7 +50,7 @@
       res := http_get (url);
       sid := OAUTH..parse_response (sid, consumer_key, res);
       OAUTH..set_session_data (sid, params);
-      ret_url := sprintf ('%s/oauth/oauth_sid.vsp?ready=%U&consumer=%U', hostURL, sid, {?'name'});
+      ret_url := sprintf ('%s/ods/oauth_sid.vsp?ready=%U&consumer=%U', hostURL, sid, {?'name'});
       -- call authorize
       url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', oauthServerUrl, OAUTH..get_auth_token (sid), ret_url);
       http_status_set (301);
