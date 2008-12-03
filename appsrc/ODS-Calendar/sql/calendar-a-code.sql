@@ -1553,6 +1553,74 @@ create procedure CAL.WA.stringCut (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.strDecode (
+  in S varchar)
+{
+  declare N, L integer;
+  declare T varchar;
+
+  T := '';
+  N := 0;
+  L := length (S);
+  while (N < L)
+  {
+    if ((chr (S[N]) = '\\') and (N < L-1))
+    {
+      if (chr (S[N+1]) = 'a')
+      {
+        T := T || '\a';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = 'b')
+      {
+        T := T || '\b';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = 't')
+      {
+        T := T || '\t';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = 'v')
+      {
+        T := T || '\v';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = 'f')
+      {
+        T := T || '\f';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = 'r')
+      {
+        T := T || '\r';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = '\\')
+      {
+        T := T || '\\';
+        N := N + 1;
+      }
+      else if (chr (S[N+1]) = '"')
+      {
+        T := T || '"';
+        N := N + 1;
+      }
+      else
+      {
+        T := T || chr (S[N]);
+      }
+    } else {
+      T := T || chr (S[N]);
+    }
+    N := N + 1;
+  }
+  return T;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.vector_unique(
   inout aVector any,
   in minLength integer := 0)
@@ -5255,8 +5323,8 @@ create procedure CAL.WA.import_vcal (
             if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
               goto _skip;
           }
-        subject := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
-        description := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
+          subject := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar));
+          description := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar));
         location := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/LOCATION/val', N), xmlItem, 1) as varchar);
         privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VEVENT[%d]/CLASS/val', N));
         if (isnull (privacy))
@@ -5325,8 +5393,8 @@ create procedure CAL.WA.import_vcal (
             if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_UPDATED >= updatedBefore))
               goto _skip2;
           }
-        subject := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
-        description := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
+          subject := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VTODO[%d]/SUMMARY/val', N), xmlItem, 1) as varchar));
+          description := CAL.WA.strDecode (cast (xquery_eval (sprintf ('IMC-VTODO[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar));
         privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VTODO[%d]/CLASS/val', N));
         if (isnull (privacy))
           privacy := CAL.WA.domain_is_public (domain_id);

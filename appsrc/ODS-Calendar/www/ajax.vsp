@@ -32,9 +32,12 @@
   domain_id  := cast (get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast (get_keyword('user_id', aSession, '0') as integer);
 
-  if (domain_id > 0) {
-    if (action = 'alarms') {
-      if (subAction = 'list') {
+  if (action = 'alarms')
+  {
+    if (domain_id > 0)
+    {
+      if (subAction = 'list')
+      {
         declare id integer;
         declare cTimeZone, cDateFormat, cTimeFormat varchar;
         declare cTimeNow datetime;
@@ -56,9 +59,12 @@
                     CAL.WA.EVENTS
               where A_DOMAIN_ID = domain_id
                 and A_EVENT_ID  = E_ID
-              order by A_TRIGGER) do {
-          if (datediff ('second', _trigger, cTimeNow) >= 0) {
-            if (isnull (_shown) or (datediff ('minute', _shown, cTimeNow) >= 5)) {
+              order by A_TRIGGER) do
+        {
+          if (datediff ('second', _trigger, cTimeNow) >= 0)
+          {
+            if (isnull (_shown) or (datediff ('minute', _shown, cTimeNow) >= 5))
+            {
               http (sprintf ('<tr id="reminderTR_%d">', _id), sStream);
                 http ('<td align="center" valign="top">', sStream);
                   http (sprintf ('<input type="checkbox" name="cbr_item" value="%d" onclick="selectCheck(this, \'cbr_item\')" />', _id), sStream);
@@ -76,7 +82,8 @@
         }
         http (string_output_string(sStream));
       }
-      if (subAction = 'dismiss') {
+      if (subAction = 'dismiss')
+      {
         declare N integer;
         declare reminders any;
 
@@ -86,6 +93,51 @@
 
       }
     }
+  }
+  if (action = 'about')
+  {
+    http (         '<div style="padding: 1em;">');
+    http (         '<table style="width: 100%;">');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>Server Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_dbms_ver')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>Server Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_build_date')));
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>ODS Calendar Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', registry_get('calendar_version')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '     <b>ODS Calendar Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('     %s', registry_get('calendar_build')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="center" colspan="2">');
+    http (         '      <input type="button" value="OK" onclick="javascript: aboutDialog.hide(); return false;" />');
+    http (         '    <td>');
+    http (         '  </tr>');
+    http (         '</table>');
+    http (         '</div>');
   }
 
 ?>

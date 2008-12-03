@@ -434,4 +434,49 @@
     http (BMK.WA.obj2json(returnData));
     return;
   }
+  else if (action = 'about')
+  {
+    http (         '<div style="padding: 1em;">');
+    http (         '<table style="width: 100%;">');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>Server Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_dbms_ver')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>Server Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_build_date')));
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>ODS Bookmarks Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', registry_get('_bookmark_version_')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '     <b>ODS Bookmarks Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('     %s', registry_get('_bookmark_build_')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="center" colspan="2">');
+    http (         '      <input type="button" value="OK" onclick="javascript: aboutDialog.hide(); return false;" />');
+    http (         '    <td>');
+    http (         '  </tr>');
+    http (         '</table>');
+    http (         '</div>');
+  }
 ?>

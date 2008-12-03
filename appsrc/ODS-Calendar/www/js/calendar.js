@@ -851,12 +851,10 @@ function checkReminder()
             reminderBody.innerHTML += OAT.Xml.serializeXmlDoc(tr);
           }
   		  }
-        // reminders.innerHTML = txt;
         coloriseTable('reminderTable');
     	  reminderDialog.show();
       }
     }
-    // alert ('dode');
   }
   OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list"+urlParam("sid")+urlParam("realm"), cb, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }
@@ -1006,4 +1004,27 @@ CAL.updateClaim = function (claimNo)
   {
     OAT.Dom.unlink('c_tr_'+claimNo);
   }
+}
+
+CAL.aboutDialog = function ()
+{
+  var aboutDiv = $('aboutDiv');
+  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
+  aboutDiv = OAT.Dom.create('div', {width:'400px', height:'150px'});
+  aboutDiv.id = 'aboutDiv';
+  aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width:400, buttons: 0, resize:0, modal:1});
+	aboutDialog.cancel = aboutDialog.hide;
+
+  var x = function (txt) {
+    if (txt != "")
+    {
+      var aboutDiv = $("aboutDiv");
+      if (aboutDiv)
+      {
+        aboutDiv.innerHTML = txt;
+        aboutDialog.show ();
+      }
+    }
+  }
+  OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }

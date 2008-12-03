@@ -216,7 +216,9 @@
               ]]>
             </v:on-post>
           </v:button>
+              |
         </v:template>
+            <a href="about" onclick="javascript: CAL.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>

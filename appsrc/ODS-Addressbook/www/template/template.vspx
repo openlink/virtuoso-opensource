@@ -49,7 +49,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "ws", "json", "anchor", "panelbar", "combolist", "dav"];
+        var featureList=["ajax2", "ws", "json", "anchor", "panelbar", "combolist", "dav", "dialog"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
