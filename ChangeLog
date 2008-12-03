@@ -1,3 +1,541 @@
+2008-12-03 12:27  source
+
+	* Updated version to 5.0.10-pre4
+
+2008-12-03 12:21  source
+
+	* Added about box
+
+2008-12-03 11:36  source
+
+	* Updated documentation
+
+2008-12-03 11:35  source
+
+	* Fixed escape path in output
+
+2008-12-03 11:33  source
+
+	* Merged from upstream project
+
+2008-12-01 13:07  source
+
+	* Added attribution for SHA1 algorithm
+
+2008-12-01 12:03  source
+
+	* Added new Ubiquity command
+	* Fixed oauth authorization
+
+2008-12-01 12:01  source
+
+	* Fixed API error
+
+2008-12-01 11:33  source
+
+	* Fixed problem with accept
+
+2008-12-01 11:31  source
+
+	* Merged fixes from Q_sparql_map_cmp.sql
+
+2008-12-01 11:29  source
+
+	* Fixed vhost_remove to work identical to vhost_define re lhost
+
+2008-12-01 11:28  source
+
+	* Fixed step calculation to prevent crash when number of buffers is low
+	* Fixed set minimum number of buffers to 256
+
+2008-11-27 14:20  source
+
+	* Fixed compiler warning
+
+2008-11-26 23:56  source
+
+	* Updated version to 5.0.10-pre3
+
+2008-11-26 23:55  source
+
+	* Fixed check for valid graph IRI
+
+2008-11-26 23:54  source
+
+	* Fixed CONTRUCT with expressions in triple patterns
+
+2008-11-26 23:53  source
+
+	* Fixed SPAR_CODEGEN in DEBUG mode
+
+2008-11-26 23:52  source
+
+	* Fixed double-quoted identifiers in mappings
+
+2008-11-26 23:49  source
+
+	* Added support for IFP
+
+2008-11-26 23:46  source
+
+	* Added support for cache of matches between datatype IRIs and twobyte
+	  codes
+	* Added similar support for languages
+
+2008-11-26 23:39  source
+
+	* Added support for export of ATTENDEE(s)
+
+2008-11-26 11:48  source
+
+	* Fixed disable meta on html for tests
+
+2008-11-26 11:47  source
+
+	* Fixed keep macros intact when switching between sparql and pattern view
+
+2008-11-26 11:47  source
+
+	* Fixed disable save button on results page
+
+2008-11-26 11:44  source
+
+	* Updated documentation
+
+2008-11-26 11:42  source
+
+	* Added new umbel service
+	* Fixed friendfeed
+
+2008-11-26 11:39  source
+
+	* Fixed free id opts array
+
+2008-11-26 11:38  source
+
+	* Fixed display message only when inf is actually loading
+
+2008-11-26 11:38  source
+
+	* Added support to read line from file
+
+2008-11-25 12:50  source
+
+	* Merged from upstream project
+
+2008-11-25 12:49  source
+
+	* Fixed friendfeed cardridge
+
+2008-11-25 12:35  source
+
+	* Added dbg_allow_free_nulls
+
+2008-11-25 10:43  source
+
+	* Fixed parameter name
+
+2008-11-25 10:36  source
+
+	* Fixed page title in 'most recently modified pages'
+
+2008-11-25 10:36  source
+
+	* Fixed create subscriptions from DAV source
+
+2008-11-25 10:35  source
+
+	* Updated search criteria
+
+2008-11-25 10:34  source
+
+	* Added missing images
+
+2008-11-25 08:33  source
+
+	* Added option to load inference deferred
+
+2008-11-25 08:33  source
+
+	* Fixed do not run scheduled proc when refreshing VDB stats
+
+2008-11-25 00:13  source
+
+	* Fixed typo
+
+2008-11-24 12:41  source
+
+	* Added support for JDBC 4.x provider
+
+2008-11-24 11:17  source
+
+	* Updated version to 5.0.10-pre2
+
+2008-11-24 11:17  source
+
+	* Added initial support for JDBC 4.x provider
+
+2008-11-24 11:13  source
+
+	* Regenerated driver
+
+2008-11-24 11:13  source
+
+	* Fixed timestamp
+
+2008-11-24 11:10  source
+
+	* Added default namespaces
+
+2008-11-24 11:10  source
+
+	* Added support for DV_DB_NULL in composing UTF-8 representation of box
+
+2008-11-24 11:09  source
+
+	* Fixed DEBUG assertion for invalid box lenght before conversion wchar
+	  to UTF-8
+
+2008-11-24 11:09  source
+
+	* Added bif_http_ttl_triple
+
+2008-11-24 11:08  source
+
+	* Fixed table and column name escape
+
+2008-11-24 11:07  source
+
+	* Merged from upstream project
+
+2008-11-24 10:49  source
+
+	* Added reverse links ldap enabled login in framework
+
+2008-11-24 10:47  source
+
+	* Added optimizations
+
+2008-11-24 10:45  source
+
+	* Added folder permissions inheritance parameter
+	* Fixed public UI
+
+2008-11-24 10:44  source
+
+	* Fixed public UI
+
+2008-11-24 09:42  source
+
+	* Added missing catalog
+
+2008-11-24 09:41  source
+
+	* Added owl link
+
+2008-11-20 14:48  source
+
+	* Added CURIE service
+	* Fixed delicious cardridge
+
+2008-11-20 14:48  source
+
+	* Fixed windows CRLF
+
+2008-11-20 14:47  source
+
+	* Fixed reverse links
+
+2008-11-20 14:45  source
+
+	* Fixed typo
+
+2008-11-20 14:45  source
+
+	* Fixed typo in tolower decoding
+
+2008-11-20 14:42  source
+
+	* Fixed cli_encryption_on_password statistic on 64bit
+
+2008-11-20 14:40  source
+
+	* Fixed problem with maxrows as construct and resultset are optional
+
+2008-11-19 12:26  source
+
+	* Fixed ubiquity commands
+	* Updated API command set
+	* Added custom header
+	* Fixed dav path normalize function
+
+2008-11-19 12:24  source
+
+	* Updated version
+
+2008-11-19 12:24  source
+
+	* Updated API command set
+
+2008-11-19 12:22  source
+
+	* Fixed API commands
+
+2008-11-19 12:22  source
+
+	* Updated API command set
+	* Fixed problem with subscription
+
+2008-11-19 12:21  source
+
+	* Fixed deadlock problem
+	* Fixed typo in 'delete subscription' confirmation
+	* Fixed problem with subscription/publication
+	* Fixed sync action
+
+2008-11-19 11:57  source
+
+	* Added missing files
+
+2008-11-19 11:50  source
+
+	* Added generating OWL and VDs from DB schema
+	* Added option to save as file
+
+2008-11-19 11:50  source
+
+	* Added support for user to delete assigned rules
+
+2008-11-19 11:39  source
+
+	* Merged from upstream project
+
+2008-11-19 11:38  source
+
+	* Updated documentation
+
+2008-11-19 11:29  source
+
+	* Disabled Q11, Q15 and Q18
+
+2008-11-19 11:28  source
+
+	* Added classes
+
+2008-11-19 11:26  source
+
+	* Fixed tree rewriting when filters are duplicated for branches of UNION
+	  and there are subqueries inside filters
+
+2008-11-19 11:24  source
+
+	* Fixed empty body inside procedure which breaks the awk script
+
+2008-11-19 11:24  source
+
+	* Fixed return id of message
+
+2008-11-19 11:23  source
+
+	* Fixed name of stored procedure to uppercase
+
+2008-11-19 11:23  source
+
+	* Added generation of OWL and VDs from DB schema
+
+2008-11-19 11:21  source
+
+	* Added flag to inherit permissions from parent collection
+
+2008-11-14 10:00  source
+
+	* Regenerated driver
+
+2008-11-14 10:00  source
+
+	* Fixed problem in spasql code generation
+
+2008-11-13 14:38  source
+
+	* Updated version to 5.0.10-pre1
+
+2008-11-13 14:36  source
+
+	* Fixed RFC-2922 valid Message-ID header
+
+2008-11-13 13:33  source
+
+	* Updated API command set
+
+2008-11-13 13:31  source
+
+	* Fixed spelling
+
+2008-11-13 11:59  source
+
+	* Fixed suppress sqlstate 42000 only for internal IUD operations
+
+2008-11-13 10:06  source
+
+	* Removed duplicated function
+
+2008-11-13 10:04  source
+
+	* Fixed faster location of gp of external global var
+
+2008-11-13 10:03  source
+
+	* Fixed sparp_expns_are_equal() is extended to compare (inaccurately)
+	  SPAR_GP trees
+
+2008-11-13 10:01  source
+
+	* Fixed Q7 and Q16
+
+2008-11-13 10:00  source
+
+	* Fixed codegen for cast of SSG_VALMODE_LONG to short of multipart
+	  sprintf IRI class
+
+2008-11-13 09:59  source
+
+	* Merged from upstream project
+
+2008-11-12 09:31  source
+
+	* Fixed dav path normalize function
+	* Fixed OAUTH UI page
+	* Fixed API commands
+	* Fixed Ubiquity commands
+
+2008-11-12 09:30  source
+
+	* Fixed missing procedure
+	* Fixed missing column
+	* Fixed search results
+
+2008-11-12 09:29  source
+
+	* FIxed API commands
+
+2008-11-12 09:28  source
+
+	* Fixed API commands
+
+2008-11-12 09:28  source
+
+	* Fixed subscription
+	* Fixed sharing
+	* Fixed installation issues
+	* Fixed API commands
+
+2008-11-12 09:27  source
+
+	* Fixed security UI
+
+2008-11-12 09:26  source
+
+	* Fixed subscription
+	* Fixed API commands
+
+2008-11-12 09:26  source
+
+	* Fixed calculation number of days in month
+	* Fixed ordering to most relevant first
+
+2008-11-12 09:25  source
+
+	* Fixed problem with subscription
+	* Fixed sharing
+	* Fixed API commands
+
+2008-11-12 09:11  source
+
+	* Fixed code generation of OPTIONAL clause
+
+2008-11-12 09:09  source
+
+	* Added 'find' param in /sparql
+
+2008-11-12 09:08  source
+
+	* Fixed sparql select ((select ...)), count(...) ...
+
+2008-11-12 09:07  source
+
+	* Added post-processing hook for sponger
+
+2008-11-12 09:03  source
+
+	* Fixed code generation when table or owner name contains spaces
+
+2008-11-12 08:58  source
+
+	* Added extensions for SPARQL REGEX
+
+2008-11-11 22:40  source
+
+	* Added support for multiple phrases per checksum
+
+2008-11-11 22:38  source
+
+	* Added lang and encoding arguments to vtb_match
+
+2008-11-11 22:04  source
+
+	* Fixed for loading DBpedia 3.2 (local parts of QNames)
+
+2008-11-11 22:03  source
+
+	* Fixed use int64 for bit ops
+
+2008-11-11 22:00  source
+
+	* Fixed compiler warnings
+
+2008-11-11 21:55  source
+
+	* Fixed VAD to work with resources larger than 10MB
+	* Fixed md5_update to take strsess
+	* Fixed return sql error when blob to big for string conversion
+
+2008-11-11 21:01  source
+
+	* Fixed memory leak in sparql
+
+2008-11-11 20:58  source
+
+	* Fixed memory leak
+
+2008-11-10 11:15  source
+
+	* Added x-ViAny a variant of x-any that supports -_& as part of words,
+	  to use in phrase matching apps like umbel
+
+2008-11-10 11:11  source
+
+	* Fixed should reset bytes sent for strses
+
+2008-11-10 11:10  source
+
+	* Added support for post processing rdfdata in sponger using rdf meta
+	  cardridges
+
+2008-11-10 11:04  source
+
+	* Fixed sync to ODS addressbook
+
+2008-11-10 11:03  source
+
+	* Updated documentation
+
+2008-11-10 11:02  source
+
+	* Added postprocessing hook
+	* Added video information to atom
+	* Fixed postprocessing rdf data in sponger rdf meta cardridges
+	* Fixed cardridges to work with names with spaces
+
 2008-11-05 14:58  source
 
 	* Updated version to 5.0.9 for final release
