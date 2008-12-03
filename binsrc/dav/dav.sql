@@ -1248,7 +1248,7 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 	    '<TITLE>403 Prohibited</TITLE>',
 	    '</HEAD><BODY>', '<H1>Prohibited</H1> ',
 	    'You are not permitted to view the content of this location: ',
-	    http_path (path), '.</BODY></HTML>'));
+	    sprintf ('%V', http_path ()), '.</BODY></HTML>'));
       return 0;
     }
   if ('R' = st)
@@ -1438,7 +1438,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
 	    '<HTML><HEAD>',
 	    '<TITLE>201 Created</TITLE>',
 	    '</HEAD><BODY>', '<H1>Created</H1>',
-	    'Resource ', full_path,' has been created.</BODY></HTML>'));
+	    'Resource ', sprintf ('%V', full_path),' has been created.</BODY></HTML>'));
       return;
     }
 error_ret:
@@ -1723,8 +1723,8 @@ brws_check:
 	    '<HTML><HEAD>',
 	    '<TITLE>404 Not Found</TITLE>',
 	    '</HEAD><BODY>', '<H1>Not Found</H1>',
-	    dp,
-	    http_path (path), ' not found.</BODY></HTML>'));
+	    sprintf ('%V', dp),
+	    sprintf ('%V', http_path ()), ' not found.</BODY></HTML>'));
       return null;
     }
 
@@ -1809,7 +1809,7 @@ again:
 	    '<HTML><HEAD>',
 	    '<TITLE>404 Not Found</TITLE>',
 	    '</HEAD><BODY>', '<H1>Not Found</H1>',
-	    'Resource ', http_path (path), ' not found.</BODY></HTML>'));
+	    'Resource ', sprintf ('%V', http_path ()), ' not found.</BODY></HTML>'));
       return;
     }
 
@@ -1871,7 +1871,7 @@ again:
 		'<TITLE>403 Prohibited</TITLE>',
 		'</HEAD><BODY>', '<H1>Prohibited</H1> ',
 	        'You are not permitted to view the content of this location: ',
-		http_path (path), '.</BODY></HTML>'));
+		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
 	  return 0;
 	}
       if (_col_id is null and (rc >= 0))
@@ -1920,7 +1920,7 @@ again:
 		'<TITLE>403 Prohibited</TITLE>',
 		'</HEAD><BODY>', '<H1>Prohibited</H1> ',
 	        'You are not permitted to view the directory index in this location: ',
-		http_path (path), '.</BODY></HTML>'));
+		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
 	  return;
 	}
        dir_ret := WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
@@ -1933,7 +1933,7 @@ again:
 		'<TITLE>500 Internal Server Error or Misconfiguration</TITLE>',
 		'</HEAD><BODY>', '<H1>Internal Server Error or Misconfiguration</H1> ',
 	        'Failed to return the directory index in this location: ',
-		http_path (path), '<BR>', DAV_PERROR (dir_ret), '</BODY></HTML>'));
+		sprintf ('%V', http_path ()), '<BR>', DAV_PERROR (dir_ret), '</BODY></HTML>'));
 	  return;
 	}
        return;
@@ -2041,7 +2041,7 @@ again:
 	 {
 	   exec_err:
 	   http ('<html><body>');
-	   http (concat ('<H3>Execution of "', http_path(), '" failed.</H3>'));
+	   http (concat ('<H3>Execution of "', sprintf ('%V', http_path()), '" failed.</H3>'));
 	   http (concat ('<p><b>SQL Error: ', stat, ' '));
 	   http_value (msg);
 	   http ('</b></p>');
@@ -2078,7 +2078,7 @@ again:
 		'<TITLE>500 Internal server error</TITLE>',
 		'</HEAD><BODY>', '<H1>Internal server error</H1> ',
 	        'Server is unable to compose the text of the resource in this location: ',
-		http_path (path), '.</BODY></HTML>'));
+		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
 	  return;
 	}
       -- HTTP handlers are going here
