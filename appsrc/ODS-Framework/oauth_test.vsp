@@ -240,7 +240,7 @@ _end:;
             <br/><br/>
             The ODS users generate a Consumer Key and a Consumer Secret for their application instances by ODS application UI (Setings -> OAuth Keys).
             <br/><br/>
-            To reach a specific resource on the ODS REST API, an user must also specify a API method and API parameters.
+            To reach a specific ODS  resource via the ODS REST API, a user must also specify a API method and associated API parameters.
             <br/><br/>
             ODS OAuth standards validate the credentials of an external user by means of the digital signature. If the user signs the request, and the ODS server validates the digital signature, the developer is granted access to the requested resource.
             <br/><br/>
