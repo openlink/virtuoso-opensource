@@ -1010,9 +1010,9 @@ CAL.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'400px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
   aboutDiv.id = 'aboutDiv';
-  aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width:400, buttons: 0, resize:0, modal:1});
+  aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width:430, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {

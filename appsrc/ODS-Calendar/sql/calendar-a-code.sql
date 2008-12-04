@@ -4525,7 +4525,7 @@ create procedure CAL.WA.attendees_mails ()
        '          <td>%s</td> ' ||
        '        </tr> ' ||
        '        <tr> ' ||
-       '          <td><b>Please RSWP</b></td> ' ||
+       '          <td><b>Please RSVP</b></td> ' ||
        '          <td><a href="%s" target="new"><b>Respond to Meeting Request</b></a></td> ' ||
        '        </tr> ' ||
        '      </table> ' ||
@@ -4541,10 +4541,10 @@ create procedure CAL.WA.attendees_mails ()
        '	  </td> ' ||
        '  </tr> ' ||
        '</table> ';
-  T := ' ODS Calendar: Meeteng Request\n\n\n' ||
+  T := ' ODS Calendar: Meeting Request\n\n\n' ||
        ' Subject: %s\n' ||
        ' When: %s\n' ||
-       ' Please RSWP: %s\n';
+       ' Please RSVP: %s\n';
 
   save_id := -1;
   for (select AT_ID as id, AT_UID as uid, AT_EVENT_ID as event_id, AT_MAIL as mail from CAL.WA.ATTENDEES where AT_DATE_REQUEST is null order by AT_EVENT_ID) do
@@ -4576,7 +4576,7 @@ create procedure CAL.WA.attendees_mails ()
       goto _next;
     };
 
-    url := sprintf ('http://%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
+    url := sprintf ('%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
     content_html := sprintf (H, subject, period, url, url, url);
     content_text := sprintf (T, subject, period, url);
     CAL.WA.send_mail (account_mail, mail, subject_mail, content_text, content_html);
