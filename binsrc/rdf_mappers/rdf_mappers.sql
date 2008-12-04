@@ -413,7 +413,7 @@ create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in
   for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)
     {
       http (sprintf ('<%s> a opl:DataSource .\n', nss[i+1]), ses);
-      http (sprintf ('<%s> rdfs:isDefinedBy <%s> .\n', base, nss[i+1]), ses);
+      http (sprintf ('<%s> rdfs:isDefinedBy <%s> .\n', graph, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
   --dbg_printf ('%s', string_output_string (ses));
