@@ -682,3 +682,49 @@ function checkVote (obj)
   }
   return true;
 }
+
+var POLLS = new Object();
+
+POLLS.trim = function (sString, sChar)
+{
+
+  if (sString)
+  {
+    if (sChar == null)
+    {
+      sChar = ' ';
+    }
+    while (sString.substring(0,1) == sChar)
+    {
+      sString = sString.substring(1, sString.length);
+    }
+    while (sString.substring(sString.length-1, sString.length) == sChar)
+    {
+      sString = sString.substring(0,sString.length-1);
+    }
+  }
+  return sString;
+}
+
+POLLS.aboutDialog = function ()
+{
+  var aboutDiv = $('aboutDiv');
+  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
+  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv.id = 'aboutDiv';
+  aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width:430, buttons: 0, resize:0, modal:1});
+	aboutDialog.cancel = aboutDialog.hide;
+
+  var x = function (txt) {
+    if (txt != "")
+    {
+      var aboutDiv = $("aboutDiv");
+      if (aboutDiv)
+      {
+        aboutDiv.innerHTML = txt;
+        aboutDialog.show ();
+      }
+    }
+  }
+  OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}

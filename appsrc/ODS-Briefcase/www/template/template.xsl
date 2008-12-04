@@ -153,7 +153,9 @@
           <div style="float: right; padding-right: 0.5em;">
             <v:template name="t1" type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              |
         </v:template>
+            <a href="about" onclick="javascript: ODRIVE.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>

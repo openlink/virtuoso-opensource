@@ -48,7 +48,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "xml", "anchor", "barchart", "piechart"];
+        var featureList=["ajax2", "xml", "anchor", "barchart", "piechart", "dialog"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
@@ -62,6 +62,9 @@
         function myInit() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Preferences.stylePath = '/ods/oat/styles/';
+          OAT.Preferences.showAjax = false;
+
+        	OAT.Style.include("winms.css");
 
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
