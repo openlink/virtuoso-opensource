@@ -1664,7 +1664,7 @@ read_backup_header (ol_backup_context_t* ctx, char ** header)
 
   if (!ob_just_report && strcmp (prefix, ctx->octx_file_prefix))
     {
-      if (!header) log_error ("Prefix is wrong in file %s", ctx->octx_curr_file);
+      if (!header) log_error ("Prefix [%s] is wrong, should be [%s]", ctx->octx_file_prefix, prefix);
       return 0;
     }
 
@@ -1781,7 +1781,7 @@ int restore_from_files (const char* prefix)
 
   backup_path_init ();
 
-  ctx = restore_context_allocate(prefix);
+  ctx = restore_context_allocate (prefix);
 
   if (!ctx)
     {
@@ -1803,7 +1803,12 @@ int restore_from_files (const char* prefix)
 	      page_dp = read_long (ctx->octx_file);
 	    }
 	  else
+	    {
 	    log_error ("Unable to read backup file header, %s corrupted", ctx->octx_curr_file);
+	      log_error ("Remove database file created by incompleted recovery");
+	      backup_context_free (ctx);
+	      return -1;
+	    }
 	}
       FAILED
 	{
