@@ -1878,4 +1878,107 @@ grant execute on ODS.ODS_API."briefcase.move" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.set" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.remove" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.property.get" to ODS_API;
+
+use OAUTH;
+
+create procedure OAUTH..check_authentication_safe (
+  in inparams any := null,
+  in lines any := null,
+  out uname varchar,
+  in inst_id int := null)
+{
+  if (inparams is null)
+    inparams := http_param ();
+  if (lines is null)
+    lines := http_request_header ();
+  declare exit handler for sqlstate '*' {
+    return 0;
+  };
+  return check_authentication (inparams, lines, uname, inst_id);
+}
+;
+
+create procedure OAUTH..check_authentication (in inparams any, in lines any, out uname varchar, in inst_id int := null)
+{
+  declare oauth_consumer_key varchar;
+  declare oauth_token varchar;
+  declare oauth_signature_method varchar;
+  declare oauth_signature varchar;
+  declare oauth_timestamp varchar;
+  declare oauth_nonce varchar;
+  declare oauth_version varchar;
+  declare oauth_client_ip varchar;
+
+  declare ret, tok, sec, ahead, params varchar;
+  declare sid, app_sec, url, meth, cookie, req_sec, app_name varchar;
+  declare app_id int;
+
+  ahead := http_request_header (lines, 'Authorization', null, null);
+  params := null;
+  if (ahead is not null)
+  {
+    declare tmp, newpars any;
+    tmp := split_and_decode (ahead, 0, '\0\0,');
+    newpars := vector ();
+    if (length (tmp) and trim(tmp[0]) like 'OAuth %')
+	  {
+	    for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
+	    {
+	      declare par any;
+	      par := split_and_decode (trim(tmp[0]), 0, '\0\0=');
+	      newpars := vector_concat (newpars, par);
+	    }
+	    if (length (newpars))
+	      params := newpars;
+	  }
+  }
+  if (params is null)
+    params := inparams;
+
+  oauth_consumer_key := get_keyword ('oauth_consumer_key', params);
+  oauth_token := get_keyword ('oauth_token', params);
+  oauth_signature_method := get_keyword ('oauth_signature_method', params);
+  oauth_signature := get_keyword ('oauth_signature', params);
+  oauth_timestamp := get_keyword ('oauth_timestamp', params);
+  oauth_nonce := get_keyword ('oauth_nonce', params);
+  oauth_version := get_keyword ('oauth_version', params, '1.0');
+  oauth_client_ip := get_keyword ('oauth_client_ip', params, http_client_ip ());
+
+  declare exit handler for not found {
+    signal ('22023', 'Can\'t verify request, missing oauth_consumer_key or oauth_token');
+  };
+
+  declare exit handler for sqlstate '*' {
+    resignal;
+  };
+  select a_secret, a_id, U_NAME, a_name
+    into app_sec, app_id, uname, app_name
+    from OAUTH..APP_REG, DB.DBA.SYS_USERS
+   where a_owner = U_ID and a_key = oauth_consumer_key;
+
+  if (exists (select 1 from OAUTH..SESSIONS where s_nonce = oauth_nonce))
+    signal ('42000', 'OAuth Verification Failed');
+
+  if ((inst_id is not null) and (inst_id <> -1) and not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = app_name and WAI_ID = inst_id))
+    signal ('42000', 'OAuth Verification Failed');
+
+  declare exit handler for not found {
+    signal ('42000', 'OAuth Verification Failed');
+  };
+
+  select s_access_secret into req_sec from OAUTH..SESSIONS where s_access_key = oauth_token and s_ip = oauth_client_ip and s_state = 3;
+
+  url := get_requested_url ();
+  lines := http_request_header ();
+  params := http_request_get ('QUERY_STRING');
+  meth := http_request_get ('REQUEST_METHOD');
+
+  if (not OAUTH..check_signature (oauth_signature_method, oauth_signature, meth, url, params, lines, app_sec, req_sec))
+  {
+    signal ('42000', 'OAuth Verification Failed: Bad Signature');
+  }
+  return 1;
+}
+;
+
 use DB;

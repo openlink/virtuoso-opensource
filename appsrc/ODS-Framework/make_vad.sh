@@ -250,6 +250,8 @@ directory_init() {
   mkdir vad/data/wa/rte
   mkdir vad/data/wa/rte/images
   mkdir vad/data/wa/rte/images/smileys
+  mkdir vad/data/wa/oauth
+  mkdir vad/data/wa/oauth/images
   cp *.vspx vad/data/wa
   cp *.vsp vad/data/wa
   cp *.xsl vad/data/wa
@@ -304,6 +306,8 @@ directory_init() {
   cp rte/* vad/data/wa/rte
   cp rte/images/* vad/data/wa/rte/images
   cp rte/images/smileys/* vad/data/wa/rte/images/smileys
+  cp oauth/* vad/data/wa/oauth
+  cp oauth/images/* vad/data/wa/oauth/images
 }
 
 virtuoso_shutdown() {
@@ -413,9 +417,11 @@ sticker_init() {
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/opensocial.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth/oauth.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_controllers.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
+  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

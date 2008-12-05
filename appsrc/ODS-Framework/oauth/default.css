@@ -1,0 +1,950 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+html { padding: 0;margin: 0;}
+
+body {
+  font-family: arial, helvetica, sans-serif;
+  font-size: 9pt;
+  color: #233;
+  padding: 0;
+  margin: 0}
+
+form {
+  margin: 0;
+  padding: 0}
+
+h1 { font-size: 22px}
+h2 { font-size: 18px}
+h3 { font-size: 16px}
+
+th { text-align: left}
+td { text-align: left}
+
+#page {
+  width: 100%;
+  float: left;
+  clear: both;
+  padding: 0;
+  margin: 0}
+
+/* Header */
+
+#HD {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  float: left;
+  clear: both;
+  background-color: #fff}
+
+#HD_R {
+  float: right;
+  clear: right;
+  margin-top: 20px}
+
+#HD_L {
+  float: left;
+  clear: both;
+  height: 60px}
+
+/* Middle */
+
+#MD {
+  float: left;
+  clear: both;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-color: #e3eff5}
+
+h1.page_hd {
+  clear: both;
+  margin: 0;
+  margin-right: 5px;
+  height: 60px;
+  color: #888;
+  background-repeat: no-repeat;
+  text-align: right}
+
+#LT {
+  float: left;
+  clear: left;
+  width: 450px;
+  margin: 0}
+
+#RT {
+  float: left;
+  clear: right;
+  margin: 0 5px 0 0}
+
+/* Footer */
+
+#FT {
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(images/ods_main_footer.png);}
+
+#FT_L { 
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788}
+
+#FT_R { 
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788}
+
+#FT_R a {
+  text-decoration: none;
+  color: inherit}
+
+/* Auxiliary pages with sidebar, app_my_inst, etc */
+
+#LT_SB {
+  float: left; clear: left;
+  width: 200px;
+  margin: 5px 5px 5px 2px;
+  border: 1px solid #3ae}
+
+a.ods_side_button {
+  display: block;
+  width: 200px;
+  text-decoration: none;
+  padding: 2px;
+  margin: 0;
+  color: #426275}
+
+a.ods_side_button img {
+  vertical-align: middle}
+
+ul.sb {
+  margin: 0; padding: 0;
+  list-style-type: none;
+  background-color: #ccc}
+
+ul.sb li {
+  background: #0075A8 url("images/navlv2default.png")}
+
+ul.sb li:hover {
+  background-color: #8cf}
+
+ul.sb li a {
+  color: inherit}
+
+ul.app_cmds_sb {
+  margin-bottom: 10px}
+
+#RT ul.sb {
+  margin-left: 5px}
+
+#LT ul.sb {
+  margin-right: 5px}
+
+ul.button_bar {
+  margin: 0;
+  list-style-type: none;
+  background-color: #6bc}
+
+ul.button_bar li:hover {
+  background-color: #8cf}
+
+ul.button_bar li a { }
+
+#RT ul.button_bar {
+  margin-left: 5px}
+
+
+/* Generic widget styles */
+
+div.widget {
+  margin: 3px;
+  padding: 0;
+  background-color: #fff;
+  background-image: url("images/default_widget.png");
+  background-repeat: repeat-x;
+  font-size: 9pt;
+  border: 1px solid #67a3bd;
+  width: 465px;
+  float: left}
+
+div.w_title_bar {
+  float: left;
+  clear: left;
+  width: 460px;
+  margin: 0;
+  padding-left: 5px;
+  font-size: 10pt;
+  font-weight: bold;
+  color: #0073a6}
+
+div.w_title_text_ctr {
+  float: left;
+  clear: left;
+  vertical-align: middle}
+
+div.w_title_text_ctr img {
+ margin-top: 2px}
+
+span.w_title_text {
+  margin-left: 4px;
+  vertical-align: middle}
+
+img.w_title_icon {
+  height: 16px;
+  width: 16px;
+  vertical-align: middle;
+  margin-bottom: 3px;}
+
+/* XXX widget buttons are not in use yet */
+
+div.w_title_btns_ctr {
+  display: none;
+  float: right;
+  clear: right;
+  margin: 0;
+  padding: 2px 2px 0 0}
+
+div.w_title_btns_ctr img {
+  border:0}
+
+div.w_pane {
+  float: left;
+  clear: both;
+  width: 100%}
+
+div.w_pane h3 {
+  margin-left: 3px}
+
+div.w_pane a {
+  color: #477}
+
+div.w_pane a:hover {
+  color: #255}
+
+div.error_msg
+{
+  background-color: #FFF;
+  color: red;
+  padding-left:5px;
+}
+
+
+div.w_footer {
+  float: left;
+  clear: both;
+  width: 100%;
+  margin-top: 4px;
+  border-top: 1px solid #ccc;
+  color: #666;
+  background-color: #fff;
+  background-image: url("images/footer_widget.png");
+  background-repeat: repeat-x;}
+
+div.w_footer a {
+  color: inherit;
+  text-decoration: none;
+  font-size: 8pt;
+  margin: 4px;}
+
+div.w_footer a:hover {
+  text-decoration: underline}
+
+div.w_resizer {
+  float: right;
+  clear: right;
+  height: 16px;
+  min-height: 16px;
+  width: 16px;
+  background-color: red}
+
+div.widget div.content_pane p {
+  margin: 5px;}
+
+div.widget div.settings_pane { display: none;}
+
+/* WIDGETS */
+
+/* Site front page sfront.vspx */
+
+/* Activity */
+
+div.w_activity {}
+div.w_activity h3 {
+  font-size: 10pt;
+  font-weight: normal;
+  padding: 0;
+  margin: 4px}
+div.w_activity ul {
+  list-style-type: none;
+  margin: 4px;
+  padding: 0;}
+div.w_activity ul li a {
+  color: inherit}
+
+/* Set to display: none if you don't want to display no of
+   active users */
+
+div.w_activity .usr_count {
+  display: inline}
+
+div.w_activity .content_pane { }
+div.w_activity .w_act_lst li {
+  display: inline;
+  margin-right: 0.4em}
+div.w_activity ul li a {
+  font-size: 8pt;
+  color: inherit;}
+
+
+/* welcome */
+div.w_welcome p { margin: 4px}
+div.w_welcome h3 {
+  margin: 4px}
+div.w_welcome a {
+  color: #224}
+
+/* Application summary on app tab page */
+
+/* Generic sizing overriding widget size */
+
+div.w_app_summary {
+  width: 600px;
+  margin: 5px;
+  min-height: 300px;}
+div.w_app_summary div.w_title_bar {
+  width: 595px}
+table.app_summary_listing {
+  margin: 3px;
+  font-size: 9pt}
+table.app_summary_listing th a {
+  color: inherit}
+
+/* ODS-Weblog */
+
+div.w_blog_summary ul {
+  font-size: 8pt;
+  list-style-type: none;
+  margin: 3px}
+div.w_blog_summary ul li a {
+  color: #444}
+
+/* ODS-Wiki */
+
+div.w_wiki_summary {}
+div.w_wiki_summary ul {
+  font-size: 8pt;
+  list-style-type: none}
+div.w_wiki_summary ul li a {
+  color: #444}
+
+/* ODS-Feed Reader */
+
+div.w_news_summary ul {
+  font-size: 8pt;
+  list-style-type: none;
+  margin: 0}
+div.w_news_summary ul li a {
+  color: #444}
+
+/* User home page (myhome.vspx) */
+
+/* What's New */
+
+div.w_whats_new .content_pane {
+  width: 100%;
+  background-color: #398ba8;
+  background-image: url("images/wnew_widget.png")}
+
+div.w_whats_new h3 {
+  margin: 5px;}
+
+div.w_whats_new .content_pane p {
+  margin: 5px;
+  padding: 0;}
+
+div.w_whats_new .w_title_bar {
+  display: none}
+
+/* My Blog */
+
+div.w_my_blog {}
+div.w_my_blog ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
+/* My Bookmarks */
+
+div.w_my_bookmarks {}
+div.w_my_bookmarks ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
+/* My Contacts */
+
+div.w_my_addressbook {}
+div.w_my_addressbook ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
+/* Feed reader */
+
+div.w_feed_reader {}
+div.w_feed_reader ul {
+  margin: 3px;
+  list-style-type: none}
+div.w_feed_reader ul li img {
+  border: 0}
+div.w_feed_reader div.footer {
+  background-color: #77d}
+table.feed_table { }
+
+/* Data Spaces */
+
+div.w_my_dataspaces {}
+div.w_my_dataspaces ul {
+  margin: 3px;
+  font-size: 8pt;
+  list-style-type: none}
+div.w_my_dataspaces ul li img {
+  border: 0}
+div.w_my_dataspaces div.footer {
+  background-color: #77d}
+
+/* Feed reader */
+
+div.w_my_news {}
+div.w_my_news ul {
+  margin: 3px;
+  font-size: 8pt;
+  list-style-type: none}
+div.w_my_news ul li img {
+  border: 0}
+div.w_my_news div.footer {
+  background-color: #77d}
+table.feed_table {}
+
+table.feed_table img { vertical-align: middle;
+  border: 0;
+  padding: 0 3px 0 0}
+
+table.feed_table td.time {
+  color: #8d9696}
+
+/* My Wiki */
+div.w_my_wiki { }
+
+div.w_my_wiki ul {
+  font-size: 8pt;
+  clear: both;
+  list-style-type: none;
+  padding: 3px}
+
+div.w_my_wiki .content_pane a {
+  color: #477}
+
+/* My Mail */
+div.w_my_mail {}
+div.w_my_mail ul {
+  font-size: 8pt;
+  clear: both;
+  list-style-type: none;
+  padding: 3px}
+div.w_my_mail p {
+  font-size: 8pt;
+  padding-left: 3px}
+
+/* My Profile */
+div.w_my_profile {
+  background-color: #fff}
+div.w_my_profile table {
+  border: 0;
+  margin: 8px;}
+div.w_my_profile th {
+  font-size: 8pt;
+  color: #777;
+  font-weight: normal}
+
+/* My Friends */
+div.w_my_friends {}
+div.w_my_friends ul {
+  margin: 0;
+  padding: 0 4px 0 4px}
+div.w_my_friends p.msg {
+  padding: 0 4px 0 4px;
+}
+
+/* My Communities */
+div.w_my_communities {}
+div.w_my_communities ul {
+  font-size: 8pt;
+  margin-left: 4px;
+  list-style-type: none;
+  padding: 0}
+
+/* My Photos */
+div.w_my_photos ul {
+  font-size: 8pt;
+  margin: 5px;
+  padding: 0;
+  list-style-type: none}
+
+/* My Calendar */
+
+div.w_my_calendar {}
+div.w_my_calendar ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
+/* (transient) Message widget */
+
+div.w_message .content_pane {
+  margin: 3px}
+div.w_message .content_pane h2 {
+  font-size: 12pt}
+
+/* App ads */
+
+div.app_ad {
+  width: 465px;
+  margin: 3px 3px 3px 3px;
+  float: left;
+  font-size: 8pt;
+  background-color: #333;}
+div.app_ad a {
+  color: #ddd;
+  padding: 0;
+  margin: 0 0 0 0;}
+div.app_ad a img {}
+
+/* XXX app-ad dismiss functionality not
+   implemented so footer is not displayed. */
+
+div.app_ad_ft {
+  display: none;
+  width: 100%;
+  font-size: 8pt;
+  color: #aaa;
+  text-align: right;
+  padding: 0 4px 0px 0;}
+div.app_ad_ft label {
+  margin-right: 4px;}
+
+/* error dialog */
+
+div.error_dialog {
+  margin: 10px;
+  border: 1px solid #444;}
+
+div.error_dialog h1 {
+  color: #275533}
+
+div.error_dialog h1 img {
+  padding: 0px 10px 0px 6px;
+  vertical-align: middle;}
+
+div.error_dialog .dialog_body {
+  margin: 6px}
+
+table.error_tech_info {
+  font-size: 7pt;
+  color: #777;
+  border-top: 1px solid #444;
+  margin: 5px;}
+
+table.error_tech_info th {
+  text-align: left}
+
+table.error_tech_info caption {
+  text-align: left}
+
+div.error_dialog div.dialog_buttons {
+  margin: 5px;
+  text-align: right;}
+
+/* Login */
+
+#login_page { float: left; clear: both;
+  width: 100%;
+  color: #5f6366;
+  background-color: #d9e9f2;}
+#id_col { float: left; clear: left}
+#form_col { float: left; margin-bottom: 50px;}
+#login_form_ctr {
+  margin: 20px;
+  border: 2px solid #b6d4e3;
+  background-color: #e0f0f9;
+  background-image: url(images/ods_signin_container1.png)}
+#login_form { margin: 10px;width: 300px;}
+#login_page img.id_logo {
+  margin: 50px 50px 50px 40px}
+#login_page h1 {
+  margin-left: 50px}
+#login_page h2 {
+  font-size: 10pt;
+  margin-left: 10px}
+#login_page label {
+  display: block;
+  width: 100px;
+  float: left;
+  margin-bottom: 10px;
+  margin-top: 4px}
+#login_form_username {
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#login_form_password {
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#open_id_url {
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#login_frm_cb_remember_me {
+  display: block;
+  float: left;
+  margin-left: 100px;
+  margin-bottom: 10px}
+#login_page br {
+  clear: left}
+#login_frm_b_login {
+  margin-left: 100px}
+div.login_error_ctr {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background-color: #fff}
+p.login_error {
+  padding: 0;
+  padding-top: 5px;
+  margin-top: 10px;
+  margin: 5px;
+  width: 100%}
+p.login_error img {
+  vertical-align: middle;
+  margin-right: 3px;}
+#login_form a.pwd_recovery_url {
+  font-size: 8pt;
+  display: block;
+  margin-left: 100px;
+  margin-top: 5px;
+  color: #255}
+
+div.login_tab
+{
+width:100px;
+float: left;
+cursor:pointer;
+text-align: center;
+background: #85B9D2;
+border: 1px solid;
+padding: 2px;
+margin: 2px 2px 0px 2px;
+}
+
+div.login_tabactive
+{
+width:100px;
+float: left;
+cursor:pointer;
+text-align: center;
+border: 1px solid;
+border-bottom-color:#E3EFF5;
+padding: 2px;
+margin: 2px 2px 0px 2px;
+
+}
+div.login_tabdeck
+{
+clear:both;
+float:left;
+border: 1px solid ;
+padding:10px 4px 4px 4px;
+margin: -1px 0px 0px 2px;
+width: 400px;
+height: 180px;
+}
+img.login_openid
+{
+margin-right:5px;
+vertical-align:text-bottom;
+}
+
+
+/* ugly table-based tabs deck */
+
+table.tab_deck {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #444;}
+
+td.tab_deck {
+  margin:0;padding:0;}
+
+table.navtab_tabs_ctr {
+  margin: 0;
+  padding: 0}
+
+tr.navtab_row {
+  background-color: #ddd}
+tr.navtab_row td {
+  margin:0;padding:0;
+  border-right: 1px solid #fff;}
+tr.navtab_row td a {
+  display: block;
+  margin: 0;
+  padding: 4px;
+  text-decoration: none;
+  color: #333;}
+td.navtab_sel {
+  margin: 0;
+  padding: 0;
+  background-color: #fff}
+td.navtab_sel a {}
+td.navtab:hover {
+  background-color: #adf}
+
+table.tab_page {width: 100%}
+td.tab_page {margin: 0;padding: 0;}
+
+a.tab {}
+
+/* Profile page (uhome.vspx) */
+
+#user_details { margin: 5px }
+
+a.profile_tab {
+  padding-right: 8px;
+  color: #888;
+  text-decoration: none}
+
+#u_profile_r ul { list-style-type: none; padding: 0px; }
+
+/* Contacts */
+
+div.contacts_ctr {
+  margin: 5px;}
+
+div.contacts_ctr h2 { font-size: 12pt}
+div.contacts_ctr ul {
+  list-style-type: none;
+  padding: 0;}
+
+ul.button_bar { margin: 5px; padding: 3px;}
+
+
+
+/* ODS Applications */
+
+div.app_page_hdr {
+  width: 100%;
+  float: left; clear: both}
+
+/* ODS-FeedManager */
+div.user_map
+{
+    width: 100%;
+    height: 400px;
+}
+
+div.map_user_data
+{
+  width:200px;
+  overflow:hidden;
+}
+
+div.google_map
+{
+  width: 800px;
+  height: 400px}
+
+/* Site settings pages
+
+div.settings_form {
+  margin: 5px}
+
+div.settings_form label {
+  float: left;
+  clear: left;
+  width: 20em;
+  margin: 2px}
+
+div.settings_form label.rb_cb {
+  float: none;
+  clear: none;
+  width: 20em;
+  margin: 2px}
+
+div.settings_form input[type="text"]{
+  width: 40em;
+  margin: 2px;}
+
+div.settings_form input[type="radio"]{
+  clear: left;
+  margin: 2px}
+*/
+/* =BEGIN= Listing controls colorization returned back =BEGIN= */
+
+table.listing
+{
+  width: 100%;
+  background-color: white}
+
+table.listing th
+{
+  border-color: #FFFFFF;
+  border-style: solid;
+  border-width: 0px 0px 0px 1px}
+
+
+tr.listing_header_row
+{
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x}
+
+tr.listing_header_row th
+{
+  white-space: nowrap}
+
+a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover
+{
+  white-space: nowrap;
+  color: #000000}
+
+tr.listing_row_even
+{ }
+
+tr.listing_row_odd
+{
+  background-color: #f0f0f0}
+
+tr.listing_row_selected
+{
+  background-color: gray}
+
+/* Listing controls colorization */
+
+/* ---------------- table -------------- */
+
+table.grid {
+	border-collapse: collapse;
+	font: menu;
+}
+
+/* ---------------- rows -------------- */
+
+.grid tr {
+	border-left: 1px solid #000;
+	border-right: 1px solid #000;
+}
+
+.grid tr.even {
+	background-color: #f0f0ff;
+}
+
+.grid tr.odd {
+	background-color: #f8f8ff;
+}
+
+.grid tr.hover {
+	background-color: #feb;
+/*	border: 2px solid #000; */
+}
+
+.grid tr.selected {
+	background-color: #aac;
+}
+
+/* ---------------- cols -------------- */
+
+.grid thead td {
+	background-color: #ebeadb;
+	font-weight: bold;
+	background-image: url(images/Grid_header.gif);
+	background-position: 0% 100%;
+	background-repeat: repeat-x;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+}
+
+.grid thead td.hover {
+	background-image: url(images/Grid_header_hover.gif);
+}
+
+.grid td {
+	border-bottom: 1px solid #888;
+	border-left: 1px solid #888;
+	border-right: 1px solid #888;
+	padding: 0px;
+}
+
+.grid td.index {
+	background-color: #aaa;
+}
+
+.grid .header_value {
+	padding: 2px 3px;
+}
+
+.grid .row_value {
+	padding: 2px 3px;
+}
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #0080FF;
+  color: white;
+}
+
+
+/* Profile edit page
+
+table.profile_edit { background-color: green} */

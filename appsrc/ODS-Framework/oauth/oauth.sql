@@ -24,9 +24,9 @@
 use OAUTH;
 
 -- Application registrations, via UI
-DB.DBA.wa_exec_no_error_log(
+DB.DBA.EXEC_STMT(
 'create table OAUTH..APP_REG (
-    	a_id int identity,
+ 	a_id int identity,
 	a_name varchar,
 	a_descr long varchar,
 	a_url varchar,
@@ -37,38 +37,21 @@ DB.DBA.wa_exec_no_error_log(
 	a_owner int,
 	a_status int default 0,
 	primary key (a_owner, a_name)
-	)');
-DB.DBA.wa_exec_no_error_log(
-  'alter table OAUTH..APP_REG modify primary key (a_owner, a_name)'
-);
+	)',0);
 
-DB.DBA.wa_exec_no_error_log(
+DB.DBA.EXEC_STMT(
   'create unique index APP_REG_K1 on OAUTH..APP_REG (a_key)'
-);
-
-create procedure OAUTH..app_reg_upgrade ()
-{
-  if (exists (select 1
-                from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS
-	             where KP_KEY_ID = KEY_ID and KP_COL = COL_ID and upper("COLUMN") = 'A_OWNER'
-	and KP_NTH < KEY_DECL_PARTS and KEY_IS_MAIN = 1 and KEY_TABLE = 'OAUTH.DBA.APP_REG'))
-    return;
-  DB.DBA.wa_exec_no_error_log ('alter table OAUTH.DBA.APP_REG modify primary key (a_owner, a_name)');
-}
-;
-
-DB.DBA.wa_add_col('OAUTH.DBA.APP_REG', 'a_status', 'int default 0')
-;
+, 0);
 
 -- OAuth sessions
-DB.DBA.wa_exec_no_error_log(
+DB.DBA.EXEC_STMT(
 'create table OAUTH..SESSIONS (
 	s_sid varchar,
 	s_nonce varchar,
 	s_timestamp int,
 	s_a_id int,
 	s_req_key varchar,
-        s_req_secret varchar,
+  s_req_secret varchar,
 	s_access_key varchar,
 	s_access_secret varchar,
 	s_url_cb varchar,
@@ -77,11 +60,9 @@ DB.DBA.wa_exec_no_error_log(
 	s_method varchar,
 	s_access_mode int default 1,
 	s_ip varchar,
-	primary key (s_req_key))');
+	primary key (s_req_key))', 0);
 
-db.dba.wa_add_col ('OAUTH.DBA.SESSIONS', 's_access_mode', 'int default 1');
-
-DB.DBA.wa_exec_no_error_log(
+DB.DBA.EXEC_STMT(
 'create table OAUTH..CLI_SESSIONS (
 	cs_sid varchar,
 	cs_token varchar,
@@ -89,7 +70,7 @@ DB.DBA.wa_exec_no_error_log(
 	cs_secret varchar,
 	cs_user_data any,
 	cs_ip varchar,
-	primary key (cs_sid, cs_token))');
+	primary key (cs_sid, cs_token))', 0);
 
 create procedure OAUTH..app_register (
   in aname varchar,
@@ -100,7 +81,7 @@ create procedure OAUTH..app_register (
   --k := 'key';
   --sec := 'secret';
   insert into OAUTH..APP_REG (a_name,a_key,a_secret,a_owner)
-      values (aname, k, sec, owner);
+    values (aname, k, sec, owner);
   return identity_value ();
 }
 ;
@@ -112,7 +93,6 @@ create procedure OAUTH..OAUTH_INIT ()
   DB.DBA.USER_CREATE ('OAuth', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'OAUTH'));
 }
 ;
-
 
 DB.DBA.VHOST_REMOVE (lpath=>'/OAuth');
 DB.DBA.VHOST_DEFINE (lpath=>'/OAuth', ppath=>'/SOAP/Http', soap_user=>'OAuth');
@@ -128,10 +108,10 @@ create procedure OAUTH..normalize_params (
   arr := __vector_sort (arr);
   str := '';
   foreach (any elm in arr) do
-    {
-    if ((elm not like 'oauth_signature=%') and (elm not like 'oauth_client_ip=%'))
-	str := str || '&' || elm;
-    }
+  {
+    if ((elm not like 'oauth_signature=%'))
+      str := str || '&' || elm;
+  }
   return ltrim (str, '&');
 }
 ;
@@ -167,10 +147,10 @@ create procedure OAUTH..sign_hmac_sha1 (
 {
   declare str, k, kname, ret varchar;
   str := meth || '&' || replace (sprintf ('%U', url), '/', '%2F') || '&' || sprintf ('%U', params);
---  dbg_obj_print ('str=',str);
+  -- dbg_obj_print ('str=',str);
   k := sprintf ('%U', consumer_secret) || '&' || sprintf ('%U', coalesce (token_secret, ''));
---  dbg_printf ('k=[%s]', k);
---  dbg_printf ('s=[%s]', str);
+  -- dbg_printf ('k=[%s]', k);
+  -- dbg_printf ('s=[%s]', str);
   kname := md5 (cast (now () as varchar));
   xenc_key_RAW_read (kname, encode_base64 (k));
   ret := xenc_hmac_sha1_digest (str, kname);
@@ -209,13 +189,13 @@ create procedure OAUTH..check_signature (
   else
     c_sig := OAUTH..sign_plaintext (meth, url, params, consumer_secret, token_secret);
 
---  dbg_obj_print ('sig=', sig, ' calculated=', c_sig);
+  -- dbg_obj_print ('sig=', sig, ' calculated=', c_sig);
   -- dbg_obj_print ('algo=', algo);
---  dbg_obj_print ('meth=', meth);
---  dbg_obj_print ('url=', url);
---  dbg_obj_print ('params=', params);
---  dbg_obj_print ('consumer_secret=', consumer_secret);
---  dbg_obj_print ('token_secret=', token_secret);
+  -- dbg_obj_print ('meth=', meth);
+  -- dbg_obj_print ('url=', url);
+  -- dbg_obj_print ('params=', params);
+  -- dbg_obj_print ('consumer_secret=', consumer_secret);
+  -- dbg_obj_print ('token_secret=', token_secret);
 
   if (sig = c_sig)
     return 1;
@@ -241,11 +221,11 @@ create procedure OAUTH..get_key_and_secret (
 ;
 
 create procedure OAUTH..request_token (
-    in oauth_consumer_key varchar,
-    in oauth_signature_method varchar,
-    in oauth_signature varchar,
-    in oauth_timestamp varchar,
-    in oauth_nonce varchar,
+  in oauth_consumer_key varchar,
+  in oauth_signature_method varchar,
+  in oauth_signature varchar,
+  in oauth_timestamp varchar,
+  in oauth_nonce varchar,
   in oauth_version varchar := '1.0',
   in oauth_client_ip varchar := null) __SOAP_HTTP 'text/plain'
 {
@@ -266,10 +246,10 @@ create procedure OAUTH..request_token (
   select a_secret, a_id into app_sec, app_id from OAUTH..APP_REG where a_key = oauth_consumer_key;
 
   if (exists (select 1 from OAUTH..SESSIONS where s_nonce = oauth_nonce))
-    {
-      http_header ('Content-Type: text/plain\r\n');
-      return 'OAuth Verification Failed\n';
-    }
+  {
+    http_header ('Content-Type: text/plain\r\n');
+    return 'OAuth Verification Failed\n';
+  }
 
   url := get_requested_url ();
   lines := http_request_header ();
@@ -277,10 +257,10 @@ create procedure OAUTH..request_token (
   meth := http_request_get ('REQUEST_METHOD');
 
   if (not OAUTH..check_signature (oauth_signature_method, oauth_signature, meth, url, params, lines, app_sec, ''))
-    {
-      http_header ('Content-Type: text/plain\r\n');
+  {
+    http_header ('Content-Type: text/plain\r\n');
     return 'OAuth Verification Failed: Bad Signature\n';
-    }
+  }
 
   get_key_and_secret (tok, sec);
 
@@ -296,12 +276,12 @@ create procedure OAUTH..request_token (
 ;
 
 create procedure OAUTH..access_token (
-    in oauth_consumer_key varchar,
-    in oauth_token varchar,
-    in oauth_signature_method varchar,
-    in oauth_signature varchar,
-    in oauth_timestamp varchar,
-    in oauth_nonce varchar,
+  in oauth_consumer_key varchar,
+  in oauth_token varchar,
+  in oauth_signature_method varchar,
+  in oauth_signature varchar,
+  in oauth_timestamp varchar,
+  in oauth_nonce varchar,
   in oauth_version varchar := '1.0',
   in oauth_client_ip varchar := null) __SOAP_HTTP 'text/plain'
 {
@@ -323,10 +303,10 @@ create procedure OAUTH..access_token (
   select U_NAME into owner from DB.DBA.SYS_USERS where U_ID = owner;
 
   if (exists (select 1 from OAUTH..SESSIONS where s_nonce = oauth_nonce))
-    {
-      http_header ('Content-Type: text/plain\r\n');
-      return 'OAuth Verification Failed\n';
-    }
+  {
+    http_header ('Content-Type: text/plain\r\n');
+    return 'OAuth Verification Failed\n';
+  }
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
@@ -346,10 +326,10 @@ create procedure OAUTH..access_token (
   meth := http_request_get ('REQUEST_METHOD');
 
   if (not check_signature (oauth_signature_method, oauth_signature, meth, url, params, lines, app_sec, req_sec))
-    {
-      http_header ('Content-Type: text/plain\r\n');
+  {
+    http_header ('Content-Type: text/plain\r\n');
     return 'OAuth Verification Failed: Bad Signature\n';
-    }
+  }
 
   get_key_and_secret (tok, sec);
 
@@ -363,28 +343,28 @@ create procedure OAUTH..access_token (
 ;
 
 create procedure OAUTH..authorize (
-    in oauth_token varchar,
+  in oauth_token varchar,
   in oauth_callback varchar) __SOAP_HTTP 'text/plain'
 {
   if (not exists (select 1 from OAUTH..SESSIONS where s_req_key = oauth_token and s_ip = http_client_ip () and s_state = 1))
-    {
-      http_header ('Content-Type: text/plain\r\n');
-      return 'OAuth Verification Failed\n';
-    }
+  {
+    http_header ('Content-Type: text/plain\r\n');
+    return 'OAuth Verification Failed\n';
+  }
   declare url any;
 
-  url := sprintf ('/ods/oauth_authorize.vspx?token=%U&cb=%U', oauth_token, oauth_callback);
+  url := sprintf ('/oauth/oauth_authorize.vspx?token=%U&cb=%U', oauth_token, oauth_callback);
   http_status_set (301);
   http_header (sprintf ('Location: %s\r\n', url));
   return '';
 }
 ;
 
-create procedure OAUTH..check_authentication_safe (
+create procedure OAUTH..check_authentication_by_name_safe (
   in inparams any := null,
   in lines any := null,
   out uname varchar,
-  in inst_id int := null)
+  in app_inst varchar)
 {
   if (inparams is null)
     inparams := http_param ();
@@ -393,7 +373,7 @@ create procedure OAUTH..check_authentication_safe (
   declare exit handler for sqlstate '*' {
     return 0;
   };
-  return check_authentication (inparams, lines, uname, inst_id);
+  return check_authentication_by_name (inparams, lines, uname, app_inst);
 }
 ;
 
@@ -405,22 +385,22 @@ create procedure OAUTH..get_sid (in inparams any, in lines any)
   ahead := http_request_header (lines, 'Authorization', null, null);
   params := null;
   if (ahead is not null)
-    {
-      declare tmp, newpars any;
-      tmp := split_and_decode (ahead, 0, '\0\0,');
-      newpars := vector ();
-      if (length (tmp) and trim(tmp[0]) like 'OAuth %')
-	{
-	  for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
+  {
+    declare tmp, newpars any;
+    tmp := split_and_decode (ahead, 0, '\0\0,');
+    newpars := vector ();
+    if (length (tmp) and trim(tmp[0]) like 'OAuth %')
+	  {
+	    for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
 	    {
 	      declare par any;
 	      par := split_and_decode (trim(tmp[0]), 0, '\0\0=');
 	      newpars := vector_concat (newpars, par);
 	    }
-	  if (length (newpars))
-	    params := newpars;
-	}
-    }
+	    if (length (newpars))
+	      params := newpars;
+	  }
+  }
   if (params is null)
     params := inparams;
 
@@ -429,7 +409,7 @@ create procedure OAUTH..get_sid (in inparams any, in lines any)
 }
 ;
 
-create procedure OAUTH..check_authentication (in inparams any, in lines any, out uname varchar, in inst_id int := null)
+create procedure OAUTH..check_authentication_by_name (in inparams any, in lines any, out uname varchar, in app_inst varchar)
 {
   declare oauth_consumer_key varchar;
   declare oauth_token varchar;
@@ -447,22 +427,22 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
   ahead := http_request_header (lines, 'Authorization', null, null);
   params := null;
   if (ahead is not null)
-    {
-      declare tmp, newpars any;
-      tmp := split_and_decode (ahead, 0, '\0\0,');
-      newpars := vector ();
-      if (length (tmp) and trim(tmp[0]) like 'OAuth %')
-	{
-	  for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
+  {
+    declare tmp, newpars any;
+    tmp := split_and_decode (ahead, 0, '\0\0,');
+    newpars := vector ();
+    if (length (tmp) and trim(tmp[0]) like 'OAuth %')
+	  {
+	    for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
 	    {
 	      declare par any;
 	      par := split_and_decode (trim(tmp[0]), 0, '\0\0=');
 	      newpars := vector_concat (newpars, par);
 	    }
-	  if (length (newpars))
-	    params := newpars;
-	}
-    }
+	    if (length (newpars))
+	      params := newpars;
+	  }
+  }
   if (params is null)
     params := inparams;
 
@@ -488,9 +468,9 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
    where a_owner = U_ID and a_key = oauth_consumer_key;
 
   if (exists (select 1 from OAUTH..SESSIONS where s_nonce = oauth_nonce))
-      signal ('42000', 'OAuth Verification Failed');
+    signal ('42000', 'OAuth Verification Failed');
 
-  if ((inst_id is not null) and (inst_id <> -1) and not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = app_name and WAI_ID = inst_id))
+  if (app_inst <> app_name)
     signal ('42000', 'OAuth Verification Failed');
 
   declare exit handler for not found {
@@ -505,9 +485,9 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
   meth := http_request_get ('REQUEST_METHOD');
 
   if (not OAUTH..check_signature (oauth_signature_method, oauth_signature, meth, url, params, lines, app_sec, req_sec))
-    {
+  {
     signal ('42000', 'OAuth Verification Failed: Bad Signature');
-    }
+  }
   return 1;
 }
 ;
@@ -553,22 +533,23 @@ create procedure OAUTH..session_terminate (in sid varchar) __SOAP_HTTP 'text/pla
 create procedure OAUTH..parse_response (in sid any := null, in consumer_key varchar, in ret any)  __SOAP_HTTP 'text/plain'
 {
   declare oauth_token, oauth_secret varchar;
-  declare tmp, data any;
+  declare tmp, data, client any;
 
   if (sid is not null)
-    {
+  {
     data := OAUTH..get_session_data (sid);
     delete from OAUTH..CLI_SESSIONS where cs_sid = sid;
-    }
+  }
   tmp := split_and_decode (ret);
   oauth_token := get_keyword ('oauth_token', tmp);
   oauth_secret := get_keyword ('oauth_token_secret', tmp);
   if (oauth_token is null or oauth_secret is null)
     signal ('OAUTH', ret);
+  client := coalesce (connection_get ('client_ip'), client_attr ('client_ip'));
   if (sid is null)
-    sid := md5 (concat (datestring (now ()), client_attr ('client_ip')));
+    sid := md5 (concat (datestring (now ()), client));
   insert into OAUTH..CLI_SESSIONS (cs_sid, cs_key, cs_token, cs_secret, cs_ip, cs_user_data)
-      values (sid, consumer_key, oauth_token, oauth_secret, client_attr ('client_ip'), data);
+    values (sid, consumer_key, oauth_token, oauth_secret, client, data);
   return sid;
 }
 ;
@@ -586,9 +567,9 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
 
   params := params ||
             sprintf ('oauth_consumer_key=%s&oauth_signature_method=HMAC-SHA1&oauth_timestamp=%d&oauth_nonce=%s&oauth_version=1.0',
-		consumer_key,
-		timest,
-		nonce);
+                  	 consumer_key,
+                 		 timest,
+                 		 nonce);
   oauth_token := get_auth_token (sid);
   if (length (oauth_token))
     params := params || sprintf ('&oauth_token=%s', oauth_token);
@@ -629,4 +610,32 @@ grant execute on OAUTH..parse_response to "OAuth";
 grant execute on OAUTH..sign_request to "OAuth";
 grant execute on OAUTH..keys_request to "OAuth";
 
+-- UI
+create procedure
+web_user_password_check (in name varchar, in pass varchar)
+{
+  declare rc int;
+  if (length (name))
+    {
+      declare exit handler for sqlstate '*' {
+	rollback work;
+	return 0;
+      };
+      rc := DB.DBA.LDAP_LOGIN (name, null, vector ('authtype','basic','pass',pass));
+      commit work;
+      if (rc <> -1)
+	return rc;
+    }
+  rc := 0;
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and
+        pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pass and U_ACCOUNT_DISABLED = 0))
+    {
+      update WS.WS.SYS_DAV_USER set U_LOGIN_TIME = now () where U_NAME = name
+	  and (U_LOGIN_TIME is null or U_LOGIN_TIME < dateadd ('minute', -2, now ()));
+      rc := 1;
+    }
+  commit work;
+  return rc;
+}
+;
 use DB;

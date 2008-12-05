@@ -80,8 +80,7 @@ _exit:;
   -- request new token for the session
   {
     -- call sign_request
-	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', '', consumer_key);
-    url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', sprintf ('oauth_client_ip=%U', http_client_ip ()), consumer_key);
     -- http get 'request_token'
     tmp := http_get (url);
     -- call parse_response
@@ -104,8 +103,7 @@ _exit:;
     -- call get_consumer_key
 	  consumer_key := OAUTH..get_consumer_key (sid);
     -- call parse_response
-	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'access_token', '', consumer_key, sid);
-    url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+	  url := OAUTH..sign_request ('GET', oauthServerUrl || 'access_token', sprintf ('oauth_client_ip=%U', http_client_ip ()), consumer_key, sid);
     -- http get 'access_token'
     tmp := http_get (url);
     -- call parse_response
@@ -131,11 +129,12 @@ _exit:;
 	  {
 	    params := params || sprintf ('%U=%U&', tmp[i], tmp[i+1]);
 	  }
+          params := params || sprintf ('oauth_client_ip=%U', http_client_ip ());
     -- get request URI
 	  requestURI := OAUTH..sign_request ('GET', url, params, consumer_key, sid);
     if (apiOptions = 'uriOnlyAndExec')
 	    -- call request URI
-      responseBody := http_get (requestURI || sprintf ('&oauth_client_ip=%U', http_client_ip ()));
+      responseBody := http_get (requestURI);
   }
 _end:;
 ?>

@@ -1,0 +1,288 @@
+<?vsp
+  declare debug, def_qry, ini_dflt_graph, can_sponge any;
+  declare consumer_key, consumer_secret, oauth_token, oauth_secret, signature, timest, nonce varchar;
+  declare srv, res, signature_base, ret_url, url, tmp, sid, bin varchar;
+  declare meth, pars, hdr, content_type, host any;
+  declare cookie_str, cookie_vec any;
+
+  debug := get_keyword ('debug', params, case (get_keyword ('query', params, '')) when '' then '1' else '' end);
+  def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
+  if (def_qry is null)
+    def_qry := 'SELECT * WHERE {?s ?p ?o}';
+  ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
+
+  connection_set ('client_ip', client_attr ('client_ip'));
+  consumer_key := {?'key'};
+  host := http_request_header (lines, 'Host', null, 'localhost:'||server_http_port ());
+  srv := sprintf ('http://%s/OAuth/', host);
+  sid := null;
+  res := '';
+  hdr := '';
+  content_type := '';
+
+  sid := {?'sid'};
+  cookie_str := http_request_header (lines, 'Cookie', null, null);
+  cookie_vec := split_and_decode (cookie_str, 0, '\0\0;=');
+  for (declare i, l int, i := 0, l := length (cookie_vec); i < l; i := i + 1)
+     {
+       cookie_vec [i] := trim (cookie_vec [i]);
+     }
+  if (sid is null and isarray (cookie_vec))
+    {
+      sid := get_keyword ('oauth.sid', cookie_vec, null);
+      if (consumer_key is null or consumer_key = '')
+        consumer_key := OAUTH..get_consumer_key (sid);
+    }
+  if ({?'es'} is not null and length (sid))
+    {
+       OAUTH..session_terminate (sid);
+       sid := null;
+       http_status_set (302);
+       http_header (sprintf ('Location: sparql.vsp\r\nSet-Cookie: oauth.sid=; expires=%s; path=/\r\n', date_rfc1123 (dateadd ('hour', 1, now()))));
+       return;
+    }
+  if (sid = '') 
+    sid := null;	
+  else
+    {
+      if (consumer_key <> OAUTH..get_consumer_key (sid))
+        {
+          OAUTH..session_terminate (sid);
+          sid := null;
+        }
+    }
+
+  meth := 'http://'||host||'/oauth/sparql.vsp';
+  if ({?'oauth_signature'} is not null)
+    {
+      declare uid, rc varchar;
+      uid := null;
+      rc := OAUTH..check_authentication_by_name_safe (params, lines, uid, 'SPARQL');
+      set_user_id ('SPARQL');
+      connection_set ('SPARQLUserId', uid);
+      if (rc and uid is not null)
+        return WS.WS."/!sparql/" (path, params, lines);
+      http_status_set (301);
+      http_header (sprintf ('Location: oauth_error.vspx?err=%U\r\n', 'Can not verify signature'));
+      return;
+      --signal ('42000', 'Can not verify OAuth signature');   
+    } 
+  else if ({?'rt'} is not null and sid is null) -- ask for token
+    {
+     over:
+     declare exit handler for sqlstate '*' {
+        http_status_set (301);
+        http_header (sprintf ('Location: oauth_error.vspx?err=%U\r\n', 'Invalid token supplied'));
+        return;
+     };
+      url := srv||'request_token'; 
+      url := OAUTH..sign_request ('GET', url, 'oauth_client_ip='||http_client_ip (), consumer_key, sid);
+      res := http_get (url);
+      sid := OAUTH..parse_response (sid, consumer_key, res);
+      OAUTH..set_session_data (sid, params);
+      ret_url := sprintf ('http://%s/oauth/sparql.vsp?ready=%U', host, sid);
+      url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url); 
+      http_status_set (302);
+      http_header (sprintf ('Location: %s\r\nSet-Cookie: oauth.sid=; expires=%s; path=/\r\n', 
+		url, 
+		date_rfc1123 (dateadd ('hour', 1, now()))
+		));
+      return;
+    }
+  else if ({?'ready'} is not null) -- get access token
+    {
+     declare exit handler for sqlstate '*' {
+        http_status_set (301);
+        http_header (sprintf ('Location: oauth_error.vspx?err=%U\r\n', 'Invalid token supplied'));
+        return;
+     };
+      sid := {?'ready'};
+      url := srv||'access_token'; 
+      consumer_key := OAUTH..get_consumer_key (sid);
+      url := OAUTH..sign_request ('GET', url, 'oauth_client_ip='||http_client_ip (), consumer_key, sid);
+      res := http_get (url);
+      sid := OAUTH..parse_response (sid, consumer_key, res);
+    }   
+  if (sid is not null) -- access token is ready
+    {
+      declare saved_pars, expire, cook_str varchar;
+      -- here we are ready to call service
+      tmp := null;
+      saved_pars := params;
+      if ({?'rt'} is null)
+        {
+          tmp := OAUTH..get_session_data (sid);
+        }
+      else
+        tmp := params; 
+      if (tmp is null)
+        goto skip;
+      url := meth; 
+      params := '';
+      for (declare i,l int, l:=length (tmp); i < l; i := i + 2)
+         {
+           if (tmp[i] not in  ('Content', 'ready', 'sid', 'rt', 'key', 'realm'))
+             params := params || sprintf ('%U=%U&', tmp[i], tmp[i+1]);  	
+         }
+      consumer_key := OAUTH..get_consumer_key (sid);
+      declare exit handler for sqlstate '*' {
+	 params := saved_pars;
+         consumer_key := get_keyword ('key', params);
+	 sid := null;
+         goto over; 
+      }; 
+      url := OAUTH..sign_request ('GET', url, params, consumer_key, sid);
+      http_status_set (302);
+      http_header ('Location: '||url||'\r\n');
+      expire := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, now())));
+      cook_str := sprintf ('Set-Cookie: oauth.sid=%s;%s path=/\r\n', sid, expire);
+      if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
+        {
+          cook_str := concat (http_header_get (), cook_str);
+          http_header (cook_str);
+        }
+      OAUTH..set_session_data (sid, null);
+      return;
+    }
+skip:
+      	
+?><html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Virtuoso SPARQL Query Form</title>
+		<style type="text/css">
+label
+{ display: inline; margin-top: 10pt; }
+body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }
+fieldset { border: 2px solid #86b9d9; }
+legend { font-size: 12pt; color: #86b9d9; }
+label { font-weight: bold; }
+h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }
+		</style>
+		<script language="JavaScript">
+var last_format = 1;
+function format_select(query_obg)
+{
+  var query = query_obg.value; 
+  var format = query_obg.form.format;
+
+  if (query.match(/construct/i) && last_format == 1) {
+    for(var i = format.options.length; i > 0; i--)
+      format.options[i] = null;
+    format.options[1] = new Option('N3/Turtle','text/rdf+n3');
+    format.options[2] = new Option('RDF/XML','application/rdf+xml');
+    format.selectedIndex = 1;
+    last_format = 2;
+  }
+
+  if (!query.match(/construct/i) && last_format == 2) {
+    for(var i = format.options.length; i > 0; i--)
+      format.options[i] = null;
+    format.options[1] = new Option('HTML','text/html');
+    format.options[2] = new Option('XML','application/sparql-results+xml');
+    format.options[3] = new Option('JSON','application/sparql-results+json');
+    format.options[4] = new Option('Javascript','application/javascript');
+    format.selectedIndex = 1;
+    last_format = 1;
+  }
+}
+		</script>
+	</head>
+	<body>
+		<div id="header">
+			<h1>OpenLink Virtuoso SPARQL Query</h1>
+		</div>
+		<div id="main">
+			<p>This query page is designed to help you test OpenLink Virtuoso SPARQL protocol endpoint. <br/>
+			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service 
+			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>
+			<p>There is also a rich Web based user interface with sample queries. 
+<?vsp if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null) { ?>
+  			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>
+<?vsp } else { ?>
+  			You can access it at: <a href="/isparql">/isparql</a>.</p>
+<?vsp } ?>
+			<form action="" method="GET">
+			<fieldset>
+			<legend>Query</legend>
+			  <label for="default-graph-uri">Default Graph URI</label>
+			  <br />
+			  <input type="text" name="default-graph-uri" id="default-graph-uri" value="<?V ini_dflt_graph ?>" size="80"/>
+			  <br /><br />
+<?vsp if (can_sponge)
+  {
+    declare s_param varchar;
+    s_param := get_keyword ('should-sponge', params, '');
+?>
+<select name="should-sponge" id="should-sponge">');
+  <option <?V case (s_param) when '' then ' selected="selected"' else '' end ?> value="">Use only local data (including data retrieved before), but do not retrieve more</option>
+  <option <?V case (s_param) when 'soft' then ' selected="selected"' else '' end ?> value="soft">Retrieve remote RDF data for all missing source graphs</option>
+  <option <?V case (s_param) when 'grab-all' then ' selected="selected"' else '' end ?> value="grab-all">Retrieve all missing remote RDF data that might be useful</option>
+  <option <?V case (s_param) when 'grab-seealso' then ' selected="selected"' else '' end ?> value="grab-all-seealso">Retrieve all missing remote RDF data that might be useful, including seeAlso references</option>
+  <option <?V case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ?> value="grab-everything">Try to download all referenced resources (this may be very slow and ineffecient)</option>
+</select>
+			  <br />
+<?vsp  }
+else
+  {
+declare host_ur varchar;
+      host_ur := registry_get ('URIQADefaultHost');
+?>
+			  <i>Security restrictions of this server do not allow you to retrieve remote RDF data.
+DBA may wish to grant "SPARQL_SPONGE" privilege to "SPARQL" account to remove the restriction.
+In order to do this, please perform the following steps:</i>
+<br />
+1. Go to the Virtuoso Administration Conductor i.e. 
+<?vsp
+if (not isstring (host_ur))
+  {
+    htt ('http://host:port/conductor');
+  }
+else
+  {
+    http(sprintf('http://%s/conductor',host_ur));
+  };
+?>
+<br />
+2. Login as dba user
+<br />
+3. Go to System Admin->User Accounts->Roles
+<br />
+4. Click the link "Edit" for "SPARQL_SPONGE"
+<br />
+5. Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.
+<br />
+6. Click the button "Update"
+<br />
+7. Access again the sparql endpoint in order to be able to retrieve remote data.
+<br /><br />
+<?vsp  } ?>
+			  <label for="query">Query text</label>
+			  <br />
+			  <textarea rows="10" cols="60" name="query" id="query" onchange="format_select(this)" 
+				onkeyup="format_select(this)"><?V coalesce (def_qry, '') ?></textarea>
+			  <br />
+			  <label for="query">OAuth token</label>
+			  <br />
+		          <input type="text" name="key" size="50" value="<?V coalesce (consumer_key, '') ?>" />
+			  <br /><br />
+			  <label for="format" class="n">Display Results As:</label>
+			  <select name="format">
+			    <option value="auto">Auto</option>
+			    <option value="text/html" selected="selected">HTML</option>
+			    <option value="application/vnd.ms-excel">Spreadsheet</option>
+			    <option value="application/sparql-results+xml">XML</option>
+			    <option value="application/sparql-results+json">JSON</option>
+			    <option value="application/javascript">Javascript</option>
+			  </select>
+&nbsp;&nbsp;&nbsp;
+<input name="debug" type="checkbox" <?V case (debug) when '' then '' else ' checked' end ?>/>
+			  <label for="debug" class="n">Rigorous check of the query</label>
+&nbsp;&nbsp;&nbsp;
+			  <input type="submit" value="Run Query" name="rt"/>
+			  <input type="submit" value="End session" name="es"/>
+			  <input type="reset" value="Reset"/>
+			</fieldset>
+			</form>
+		</div>
+	</body>
+</html>

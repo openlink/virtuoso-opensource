@@ -1561,6 +1561,10 @@ web_user_password_check (in name varchar, in pass varchar)
   declare rc int;
   if (length (name))
     {
+      declare exit handler for sqlstate '*' {
+	rollback work;
+	return 0;
+      };
       rc := DB.DBA.LDAP_LOGIN (name, null, vector ('authtype','basic','pass',pass));
       if (rc <> -1)
 	{

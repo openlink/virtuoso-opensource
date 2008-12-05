@@ -45,8 +45,7 @@
     if ({?'rt'} is not null)
     {
       -- call sign_request
-      url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', '', consumer_key, sid);
-      url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+      url := OAUTH..sign_request ('GET', oauthServerUrl || 'request_token', sprintf ('oauth_client_ip=%U', http_client_ip ()), consumer_key, sid);
       res := http_get (url);
       sid := OAUTH..parse_response (sid, consumer_key, res);
       OAUTH..set_session_data (sid, params);
@@ -63,8 +62,7 @@
       -- call get_consumer_key
       consumer_key := OAUTH..get_consumer_key (sid);
       -- call parse_response
-      url := OAUTH..sign_request ('GET', oauthServerUrl||'access_token', '', consumer_key, sid);
-      url := url || sprintf ('&oauth_client_ip=%U', http_client_ip ());
+      url := OAUTH..sign_request ('GET', oauthServerUrl||'access_token', sprintf ('oauth_client_ip=%U', http_client_ip ()), consumer_key, sid);
       -- http get 'access_token'
       res := http_get (url);
       -- call parse_response

@@ -1248,7 +1248,7 @@ create procedure make_exif_fld (in graph_iri any, in iri any, inout arr any, in 
     }
 };
 
--- sioc:max_results sioc:results_format sioc:service_of sioc:service_definition sioc:service_endpoint sioc:service_protocol
+-- svc:max_results svc:results_format svc:service_of svc:service_definition svc:service_endpoint svc:service_protocol
 create procedure ods_sioc_service (
     in graph_iri varchar,
     in iri varchar,
@@ -3719,9 +3719,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       maxrows := 0;
       state := '00000';
       msg := '';
---      dbg_printf ('%s', qry);
       exec (qry, state, msg, vector(), maxrows, metas, rset);
---      dbg_obj_print (msg);
       if (state = '00000')
 	{
 	  triples := rset[0][0];
