@@ -1047,3 +1047,26 @@ OMAIL.actionGetPredicate = function (rowID)
   }
   return null;
 }
+
+OMAIL.aboutDialog = function ()
+{
+  var aboutDiv = $('aboutDiv');
+  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
+  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+  aboutDiv.id = 'aboutDiv';
+  aboutDialog = new OAT.Dialog('About ODS Webmail', aboutDiv, {width:430, buttons: 0, resize:0, modal:1});
+	aboutDialog.cancel = aboutDialog.hide;
+
+  var x = function (txt) {
+    if (txt != "")
+    {
+      var aboutDiv = $("aboutDiv");
+      if (aboutDiv)
+      {
+        aboutDiv.innerHTML = txt;
+        aboutDialog.show ();
+      }
+    }
+  }
+  OAT.AJAX.GET('action.vsp?a=about'+OMAIL.sessionParams(), '', x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}

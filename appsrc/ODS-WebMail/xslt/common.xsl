@@ -253,7 +253,7 @@
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax2", "combolist", "json", "anchor", "dav"];
+      var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
@@ -354,8 +354,9 @@
           </xsl:call-template>
           |
           <xsl:call-template name="make_href">
-            <xsl:with-param name="url">box.vsp</xsl:with-param>
-            <xsl:with-param name="label">Help</xsl:with-param>
+          <xsl:with-param name="url">javascript: OMAIL.aboutDialog();</xsl:with-param>
+          <xsl:with-param name="title">About</xsl:with-param>
+          <xsl:with-param name="label">About</xsl:with-param>
           </xsl:call-template>
       </div>
       </div>

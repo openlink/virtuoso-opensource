@@ -2014,6 +2014,53 @@ create procedure OMAIL.WA.omail_action (
     http_header ('Content-Type: text/plain\r\n');
     http (OMAIL.WA.obj2json (returnData, 5));
   }
+  else if (action = 'about')
+  {
+    http_rewrite ();
+    http_header ('Content-Type: text/plain\r\n');
+    http (         '<div style="padding: 1em;">');
+    http (         '<table style="width: 100%;">');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>Server Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_dbms_ver')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>Server Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', sys_stat('st_build_date')));
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>ODS Webmail Version:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', registry_get('_oMail_version_')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '     <b>ODS Webmail Build Date:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('     %s', registry_get('_oMail_build_')));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="center" colspan="2">');
+    http (         '      <input type="button" value="OK" onclick="javascript: aboutDialog.hide(); return false;" />');
+    http (         '    <td>');
+    http (         '  </tr>');
+    http (         '</table>');
+    http (         '</div>');
+  }
   signal('90005', 'AJAX Call');
 }
 ;

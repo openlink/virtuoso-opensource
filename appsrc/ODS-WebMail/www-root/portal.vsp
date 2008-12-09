@@ -133,7 +133,9 @@ exec_start:;
                                                                'banner',        '<![CDATA[' || OMAIL.WA.banner_links (waID, sid, realm) || ']]>')));
     if (waPublic)
       params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
-  } else {
+  }
+  else
+  {
     if (get_keyword ('logout', params, ''))
     {
       OMAIL.WA.utl_redirect(wa_home_link || sprintf ('?logout=true&sid=%s&realm=%s', sid, realm));
