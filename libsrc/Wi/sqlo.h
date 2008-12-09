@@ -142,7 +142,7 @@ typedef struct df_inx_op_s
 
 
 /* markers for compile time known predicates */
-#define DFE_FALSE ((df_elt_t*) -1)
+#define DFE_FALSE ((df_elt_t*) -1L)
 #define DFE_TRUE ((df_elt_t*) NULL)
 
 #define DFE_TABLE 1
