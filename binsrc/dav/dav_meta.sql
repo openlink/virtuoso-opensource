@@ -1730,7 +1730,7 @@ create function IMC_TO_XML (in _src varchar)
 	  data := replace (data, '\\;', '\2');
 	  data := replace (data, '\\n', '\015\012');
 	  data := replace (data, '\\N', '\015\012');
-	  data := replace (data, '\\\\', '\\');
+          data := replace (data, '\\\\', '\\'); --' - this single quote in comment is to keep syntax highlight happy in MC and the like.
           -- dbg_obj_princ ('2. data=', data);
 	  if (strchr (data, ';') is not null)
 	    {
