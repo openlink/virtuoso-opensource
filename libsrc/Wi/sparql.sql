@@ -7672,7 +7672,7 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
     abs_uri := XML_URI_RESOLVE_LIKE_GET (base, rel_uri);
   dest_uri := abs_uri;
   if (abs_uri like '%/')
-    get_method := 'MGET';
+    get_method := 'GET+MGET';
   else
     get_method := 'GET';
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (', base, rel_uri, ', ...) sets ', abs_uri, dest_uri, get_method);
@@ -9189,7 +9189,7 @@ http('  <option' ||
   case (s_param) when 'grab-all' then ' selected="selected"' else '' end ||
   ' value="grab-all">Retrieve all missing remote RDF data that might be useful</option>\n');
 http('  <option' ||
-  case (s_param) when 'grab-seealso' then ' selected="selected"' else '' end ||
+  case (s_param) when 'grab-all-seealso' then ' selected="selected"' else '' end ||
   ' value="grab-all-seealso">Retrieve all missing remote RDF data that might be useful, including seeAlso references</option>\n');
 http('  <option' ||
   case (s_param) when 'grab-everything' then ' selected="selected"' else '' end ||
@@ -9482,7 +9482,7 @@ host_found:
   else if (should_sponge = 'grab-all-seealso')
     full_query := concat ('define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 200 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
   else if (should_sponge = 'grab-everything')
-    full_query := concat ('define input:grab-all "yes" define input:grab-intermediate "yes" define input:grab-depth 5 define input:grab-limit 500 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
+    full_query := concat ('define input:grab-all "yes" define input:grab-intermediate "yes" define input:grab-depth 5 define input:grab-limit 500 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
 --  full_query := concat ('define output:valmode "LONG" ', full_query);
   if (debug <> '')
     full_query := concat ('define sql:signal-void-variables 1 ', full_query);
@@ -9972,7 +9972,7 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
 
 
 --!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
-create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHNAGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
+create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
  for select
@@ -10076,7 +10076,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     old_download_size, old_download_msec_time, old_read_count
   from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser for update;
 
-  if (new_origin_uri <> old_origin_uri)
+  if ((new_origin_uri <> old_origin_uri) and (eraser is not null))
     signal ('RDFXX',
       sprintf ('Can not get-and-cache RDF graph <%.500s> from <%.500s> because is has been loaded from <%.500s>',
         local_iri, new_origin_uri, old_origin_uri) );
@@ -10091,6 +10091,11 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
 
   -- dbg_obj_princ (' old_expiration=', old_expiration, ' old_exp_is_true=', old_exp_is_true, ' old_last_load=', old_last_load);
   -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
+  if (eraser is null)
+    {
+      -- dbg_obj_princ ('will start load w/o expiration check due to NULL eraser (dependant loading)');
+      goto perform_actual_load;
+    }
   if (old_expiration is not null)
     {
       if ((old_expiration >= now() and explicit_refresh is null) or
@@ -10142,7 +10147,8 @@ perform_actual_load:
   set isolation='committed';
   commit work;
   get_method := cast (get_keyword_ucase ('get:method', options, 'GET') as varchar);
-  if (get_method in ('POST', 'GET'))
+  --!!!TBD: if (get_method in ('MGET', 'GET+MGET')) { ... }
+  if (get_method in ('POST', 'GET', 'GET+MGET'))
     {
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
@@ -10158,17 +10164,21 @@ perform_actual_load:
         || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
 	|| 'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, application/xml; q=0.2, */*; q=0.1';
 	--|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
-      -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
-      --ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
+      -- dbg_obj_princ (get_method, ' method with ', req_hdr);
       {
-        declare new_origin_uri_save varchar;
+        declare mtd, new_origin_uri_save varchar;
         declare exit handler for sqlstate '*' {
+          -- dbg_obj_princ ('Error receiving responce: ', __SQL_STATE, ': ', __SQL_MESSAGE);
 	  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
 	  resignal;
 	};
 	new_origin_uri_save := new_origin_uri;
-      ret_body := DB.DBA.RDF_HTTP_URL_GET (new_origin_uri, '', ret_hdr, get_method, req_hdr, NULL, get_proxy, 0);
+        if (get_method = 'GET+MGET')
+          mtd := 'GET';
+        else
+          mtd := get_method;
+        ret_body := DB.DBA.RDF_HTTP_URL_GET (new_origin_uri, '', ret_hdr, mtd, req_hdr, NULL, get_proxy, 0);
 	if (new_origin_uri <> new_origin_uri_save)
 	  {
 	    declare pos int;
@@ -10194,7 +10204,7 @@ perform_actual_load:
         }
       goto resp_received;
     }
---!!!TBD: if (get_method = ('MGET')) { ... }
+  if (eraser is not null)
   call (eraser) (local_iri, new_origin_uri, options);
   signal ('RDFZZ', sprintf (
       'Unable to get data from "%.1000s": This version of Virtuoso does not support OPTION (get:method "%.100s")',
@@ -10235,9 +10245,20 @@ resp_received:
   parser_rc := 0;
   req_hdr_arr := DB.DBA.RDF_HTTP_MAKE_HTTP_REQ (new_origin_uri, get_method, req_hdr);
   parser_rc := call (parser) (local_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options, req_hdr_arr);
-
-  if (parser_rc)
+  -- dbg_obj_princ (parser, ' returned ', parser_rc, ' to SYS_HTTP_SPONGE_UP()');
+  if (parser_rc is not null)
+    {
     new_last_etag := ret_etag;
+      if (__tag (parser_rc) = 193 and eraser is not null and ret_content_type like '%html')
+        {
+          declare sa any;
+          sa := get_keyword ('seeAlso', parser_rc);
+          foreach (varchar dep in sa) do
+            {
+              DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, dep, parser, NULL, options);
+            }
+        }
+    }
   else
     new_last_etag := null;
 
@@ -10660,7 +10681,9 @@ load_grddl:;
       signal ('RDFZZ', sprintf (
           'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
           graph_iri, new_origin_uri, ret_content_type, ret_hdr[0],
-          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 500) ) );
+--          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 500)
+          "LEFT" (ret_body, 500)
+ ) );
     }
   signal ('RDFZZ', sprintf (
       'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
