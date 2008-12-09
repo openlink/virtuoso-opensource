@@ -354,14 +354,14 @@ sqlo_df_virt_col (sqlo_t * so, op_virt_col_t * vc)
   return df;
 }
 
+int32 sql_const_cond_opt = 1;
 
 df_elt_t *
 sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 {
   /* if the dfe is a cond known at compile time return DFE_TRUE or DFE_FALSE and if not known return the dfe */
   df_elt_t * op, * left, * right;
-  if (DFE_FALSE == dfe || DFE_TRUE == dfe
-      || so->so_in_cond_exp)
+  if (DFE_FALSE == dfe || DFE_TRUE == dfe || so->so_in_cond_exp || 0 == sql_const_cond_opt)
     return dfe;
   switch (dfe->dfe_type)
     {

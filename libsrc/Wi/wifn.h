@@ -549,6 +549,7 @@ extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
 extern int sqlo_max_layouts;
 extern int32 sqlo_max_mp_size;
+extern int32 sql_const_cond_opt;
 extern long txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;
