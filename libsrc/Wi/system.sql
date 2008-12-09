@@ -2148,7 +2148,7 @@ returns ANY
 
   rexecute (DSN,
     'select CS_COL, CS_N_DISTINCT, encode_base64 (serialize (CS_MIN)), encode_base64 (serialize (CS_MAX)), ' ||
-    ' CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS from ALL_COL_STAT where CS_TABLE = complete_table_name (?, 1)',
+    ' CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS from DB.DBA.ALL_COL_STAT where CS_TABLE = complete_table_name (?, 1)',
     NULL, NULL, vector (RT_REMOTE_NAME),
     NULL, _meta, _res);
 
