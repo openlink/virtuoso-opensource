@@ -120,6 +120,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_GETSATISFATION', null, 'GetSatisfaction');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*salesforce.com/.*)|'||
+			'(https://.*salesforce.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_SALESFORCE', null, 'SalesForce');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://friendfeed.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_FRIENDFEED', null, 'FriendFeed');
 
@@ -249,7 +254,7 @@ create procedure RM_MAPPERS_SET_ORDER ()
 --   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
    top_arr := vector (http, html, feed);
 
-   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
+   arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
    inx := 0;
    arr := vector_concat (top_arr, arr);
    foreach (int pid in arr) do
@@ -272,10 +277,10 @@ create procedure RM_MAPPERS_SET_CONSEQ (in proc_1 varchar, in proc_2 varchar)
 
    pid_1 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_1);
    pid_2 := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = proc_2);
-   top_arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
+   top_arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS
    	where RM_HOOK in ('DB.DBA.RDF_LOAD_HTTP_SESSION','DB.DBA.RDF_LOAD_HTML_RESPONSE','DB.DBA.RDF_LOAD_FEED_RESPONSE')
 	order by RM_ID);
-   arr := (select vector_agg (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
+   arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) and RM_HOOK <> proc_2 order by RM_ID);
    inx := 0;
    do_update := 0;
    arr := vector_concat (top_arr, arr);
@@ -406,14 +411,16 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 create procedure DB.DBA.RM_RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar)
 {
   declare nss, ses any;
+  --dbg_obj_print ('base=', base, 'graph=', graph);
   nss := xmlnss_get (xtree_doc (strg));
   ses := string_output ();
   http ('@prefix opl: <http://www.openlinksw.com/schema/attribution#> .\n', ses);
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  http ('@prefix ore: <http://www.openarchives.org/ore/terms/> .\n', ses);
   for (declare i, l int, i := 0, l := length (nss); i < l; i := i + 2)
     {
       http (sprintf ('<%s> a opl:DataSource .\n', nss[i+1]), ses);
-      http (sprintf ('<%s> rdfs:isDefinedBy <%s> .\n', graph, nss[i+1]), ses);
+      http (sprintf ('<%s> ore:isDescribedBy <%s> .\n', graph, nss[i+1]), ses);
       http (sprintf ('<%s> opl:hasNamespacePrefix "%s" .\n', nss[i+1], nss[i]), ses);
     }
   --dbg_printf ('%s', string_output_string (ses));
@@ -431,10 +438,12 @@ create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
     {
       return xtree_doc ('<error/>');
     };
+  commit work;
   cont := http_client (url=>'http://umbel.zitgist.com/ws/scones/index.php',
   		       http_method=>'POST',
     		       body=>sprintf ('text=%U', strg),
     	               http_headers=>'Accept: text/xml');
+  --dbg_printf ('%s', cont);
   xt := xtree_doc (cont);
   return xt;
 }
@@ -938,6 +947,294 @@ create procedure  DB.DBA.SOCIAL_TREE_TO_XML (in tree any)
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare hdr any;
+	declare tree, xt, xd any;
+	declare res, tmp, what_, name_, username_, password_, where_, file, id, type, sessionId, serverURL, fieldList, sObjectType varchar;
+	hdr := null;
+	declare exit handler for sqlstate '*'
+	{
+		--dbg_printf ('%s', __SQL_MESSAGE);
+		return 0;
+	};
+    username_ := get_keyword ('username', opts);
+	password_ := get_keyword ('password', opts); -- password = password+secret 
+	--username_ := 'abktiev@openlinksw.com';
+	--password_ := 'Qwerty123456tsFbeZeXVoNFkYID26twZjUWq';
+	if (new_origin_uri like 'https://%.salesforce.com/%')
+	{
+		new_origin_uri := concat(new_origin_uri, '/');
+		tmp := sprintf_inverse (new_origin_uri, 'https://%s.salesforce.com/%s', 0);
+		id := trim (tmp[1], '/');
+		if (id is null)
+			return 0;
+		res := xml_tree_doc(SOAP_CLIENT (
+				url=>'https://www.salesforce.com/services/Soap/c/14.0',
+				operation=>'login',
+				parameters=>vector ('username', username_,
+							'password', password_),
+				target_namespace=>'urn:enterprise.soap.sforce.com',
+				style=>21));
+		sessionId := cast(xpath_eval('//sessionId/text()' , res ) as varchar);
+		serverURL := cast(xpath_eval('//serverUrl/text()' , res ) as varchar);
+		type := left(id, 3);
+		if (type = '001')
+		{
+			fieldList := 'AccountNumber, 
+				AnnualRevenue, 
+				BillingCity, 
+				BillingCountry, 
+				BillingPostalCode, 
+				BillingState, 
+				BillingStreet,
+				Description,
+				Fax,
+				Industry,
+				LastActivityDate,
+				Name,
+				NumberOfEmployees,
+				Ownership,
+				Phone,
+				Rating,
+				ShippingCity,
+				ShippingCountry,
+				ShippingPostalCode,
+				ShippingState,
+				ShippingStreet,
+				Sic,
+				Site,
+				TickerSymbol,
+				Type,
+				Website';
+			sObjectType := 'Account';
+		}
+		else if (type = '701')
+		{
+			fieldList := 'ActualCost,
+				AmountAllOpportunities,
+				AmountWonOpportunities,
+				BudgetedCost,
+				Description,
+				EndDate,
+				ExpectedResponse,
+				ExpectedRevenue,
+				LastActivityDate,
+				Name,
+				NumberOfContacts,
+				NumberOfConvertedLeads,
+				NumberOfLeads,
+				NumberOfOpportunities,
+				NumberOfResponses,
+				NumberOfWonOpportunities,
+				NumberSent,
+				StartDate,
+				Status,
+				Type';
+			sObjectType := 'Campaign';
+		}
+		else if (type = '00Q')
+		{
+			fieldList := 'AnnualRevenue,
+				City,
+				Company,
+				ConvertedDate,
+				Country,
+				Description,
+				Email,
+				EmailBouncedDate,
+				EmailBouncedReason,
+				Fax,
+				FirstName,
+				Industry,
+				LastActivityDate,
+				LastName,
+				LeadSource,
+				MobilePhone,
+				Name,
+				NumberOfEmployees,
+				Phone,
+				PostalCode,
+				Rating,
+				Salutation,
+				State,
+				Status,
+				Street,
+				Title,
+				Website';
+			sObjectType := 'Lead';
+		}
+		else if (type = '003')
+		{
+			fieldList := 'AssistantName,
+				AssistantPhone,
+				Birthdate,
+				Department,
+				Description,
+				Email,
+				EmailBouncedDate,
+				EmailBouncedReason,
+				Fax,
+				FirstName,
+				HomePhone,
+				LastActivityDate,
+				LastCURequestDate,
+				LastCUUpdateDate,
+				LastName,
+				LeadSource,
+				MailingCity,
+				MailingState,
+				MailingCountry,
+				MailingPostalCode,
+				MailingStreet,
+				MobilePhone,
+				Name,
+				OtherCity,
+				OtherCountry,
+				OtherPostalCode,
+				OtherState,
+				OtherPhone,
+				OtherStreet,
+				Phone,
+				Salutation,
+				Title';
+			sObjectType := 'Contact';
+		}
+		else if (type = '006')
+		{
+			fieldList := 'Amount,
+				CloseDate,
+				Description,
+				ExpectedRevenue,
+				Fiscal,
+				FiscalQuarter,
+				FiscalYear,
+				ForecastCategory,
+				ForecastCategoryName,
+				LastActivityDate,
+				LeadSource,
+				Name,
+				NextStep,
+				Probability,
+				StageName,
+				TotalOpportunityQuantity,
+				Type';
+			sObjectType := 'Opportunity';
+		}
+		else if (type = '800')
+		{
+			fieldList := 'AssistantName,
+				AssistantPhone,
+				Birthdate,
+				Department,
+				Description,
+				Email,
+				EmailBouncedDate,
+				EmailBouncedReason,
+				Fax,
+				FirstName,
+				HomePhone,
+				LastActivityDate,
+				LastCURequestDate,
+				LastCUUpdateDate,
+				LastName,
+				LeadSource,
+				MailingCity,
+				MailingState,
+				MailingCountry,
+				MailingPostalCode,
+				MailingStreet,
+				MobilePhone,
+				Name,
+				OtherCity,
+				OtherCountry,
+				OtherPostalCode,
+				OtherState,
+				OtherPhone,
+				OtherStreet,
+				Phone,
+				Salutation,
+				Title';
+			sObjectType := 'Contact';
+		}
+		else if (type = '500')
+		{
+			fieldList := 'CaseNumber,
+				ClosedDate,
+				Description,
+				Origin,
+				Priority,
+				Reason,
+				Status,
+				Subject,
+				SuppliedCompany,
+				SuppliedEmail,
+				SuppliedName,
+				SuppliedPhone,
+				Type';
+			sObjectType := 'Case';
+		}		
+		else if (type = '501')
+		{
+			fieldList := 'SolutionName,
+				SolutionNote,
+				SolutionNumber,
+				Status,
+				TimesUsed';
+			sObjectType := 'Solution';
+		}	
+		else if (type = '01t')
+		{
+			fieldList := 'Description,
+				Family,
+				Name,
+				ProductCode';
+			sObjectType := 'Product2';
+		}	
+		else if (type = '015')
+		{
+			fieldList := 'Body,
+				BodyLength,
+				ContentType,
+				Description,
+				DeveloperName,
+				Keywords,
+				Name,
+				Type,
+				URL';
+			sObjectType := 'Document';
+		}	
+		else
+			return 0;
+	}
+	else
+		return 0;
+	xd := xml_tree_doc (SOAP_CLIENT (
+		url=>serverUrl,
+		operation=>'retrieve',
+		headers=>vector (
+			vector ('SessionHeader', '__XML__', 0),
+			xtree_doc (concat (
+				'<urn:SessionHeader xmlns:urn="urn:enterprise.soap.sforce.com">
+					<urn:sessionId xmlns:urn="urn:enterprise.soap.sforce.com">', 
+						sessionId,	
+					'</urn:sessionId>
+				</urn:SessionHeader>'))),
+		parameters=>vector (
+			'fieldList', fieldList, 
+			'sObjectType', sObjectType, 
+			'ids', id),
+		target_namespace=>'urn:enterprise.soap.sforce.com',
+		style=>21));
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/sf2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -1259,7 +1556,18 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
     {
       sa := DB.DBA.RDF_MQL_GET_WIKI_URI (k);
       delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-      DB.DBA.RM_RDF_LOAD_RDFXML (cnt, new_origin_uri, coalesce (dest, graph_iri));
+      -- cb-- As was
+      --DB.DBA.RM_RDF_LOAD_RDFXML (cnt, new_origin_uri, coalesce (dest, graph_iri));
+
+      -- cb++
+      xt := xtree_doc(cnt);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mqlrdf2oplrdf.xsl', xt,
+      	vector ('baseUri', coalesce (dest, graph_iri), 'wpUri', sa));
+      sa := '';
+      xd := serialize_to_UTF8_xml (xt);
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      -- ++cb
+
       DB.DBA.RM_FREEBASE_DOC_LINK (coalesce (dest, graph_iri), new_origin_uri, sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k), sa);
       have_rdf := 1;
       goto done;
@@ -2329,16 +2637,27 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
 create procedure DB.DBA.RDF_LOAD_DAV_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
-  declare xd, groupdest any;
-
+  declare xd, localdest, groupdest, dep any;
+  localdest := coalesce (dest, graph_iri);
   groupdest := get_keyword_ucase ('get:group-destination', opts);
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_DAV_META (', graph_iri, new_origin_uri, dest, _ret_body, aq, ps, ser_key, opts, ')');
   xd := DAV_EXTRACT_META_AS_RDF_XML (new_origin_uri, _ret_body);
   if (xd is not null)
     {
-      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, localdest);
       if (groupdest is not null)
         DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
       return 1;
+    }
+  dep := (sparql define input:storage ""
+     select (sql:VECTOR_AGG (?o))
+    where { graph `iri(?:localdest)` {
+            `iri(?:localdest)` <http://www.w3.org/2000/01/rdf-schema#seeAlso> ?o .
+            filter (isIRI (?o)) } } );
+  if (length (dep) > 0)
+    {
+      -- dbg_obj_princ ('deps found are ', dep);
+      return vector ('seeAlso', dep);
     }
   return 1;
 }
@@ -2990,7 +3309,7 @@ try_grddl:
 	      mdta := mdta + 1;
 	    }
 	  xd := serialize_to_UTF8_xml (xd);
-      --dbg_obj_princ('Result: ', xd);
+      -- dbg_obj_princ('Result: ', xd);
 	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	  profs_done := vector_concat (profs_done, vector (prof));
 	}
@@ -3015,7 +3334,7 @@ try_grddl:
 	      mdta := mdta + 1;
 	      --dbg_obj_print ('plan B:', GM_XSLT, xd);
 	      xd := serialize_to_UTF8_xml (xd);
-          --dbg_obj_princ('Result2: ', xd);
+          -- dbg_obj_princ('Result2: ', xd);
 	  if (GM_FLAG = 2)
 	    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
 	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -3131,8 +3450,23 @@ ret:
       else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' and regexp_match (RM_PATTERN, mime) is not null)
         mdta := 0;
     }
-
-  return (mdta * ret_flag);
+  mdta := mdta * ret_flag;
+  if (mdta <> 0)
+    {
+      declare localdest, dep any;
+      localdest := coalesce (dest, graph_iri);
+      dep := (sparql define input:storage ""
+        select (sql:VECTOR_AGG (?o))
+        where { graph `iri(?:localdest)` {
+                `iri(?:localdest)` <http://www.w3.org/2000/01/rdf-schema#seeAlso> ?o .
+                filter (isIRI (?o)) } } );
+      if (length (dep) > 0)
+        {
+          -- dbg_obj_princ ('deps found are ', dep);
+          return vector ('seeAlso', dep);
+        }
+    }
+  return mdta;
   no_microformats:;
   return 0;
 }
@@ -3388,7 +3722,7 @@ create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri v
       if (x <> symbol and x <> 'Industry')
 	{
 	  http (sprintf ('<http://dbpedia.org/resource/%s> <http://xbrlontology.com/ontology/finance/stock_market#hasCompetitor> <http://dbpedia.org/resource/%s> .\n', symbol, x), ses);
-	  http (sprintf ('<http://dbpedia.org/resource/%s> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://finance.yahoo.com/q?s=%s> .\n', x, x), ses);
+      http (sprintf ('<http://dbpedia.org/resource/%s> <http://www.openarchives.org/ore/terms/isDescribedBy> <http://finance.yahoo.com/q?s=%s> .\n', x, x), ses);
 	}
     }
   content := string_output_string (ses);
@@ -3891,6 +4225,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('virt-xbrl', 2);
   XML_REMOVE_NS_BY_PREFIX ('opl-xbrl', 2);
   XML_REMOVE_NS_BY_PREFIX ('umbel', 2);
+  XML_REMOVE_NS_BY_PREFIX ('ore', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -3918,6 +4253,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('umbel-ac', 'http://umbel.org/umbel/ac/', 2);
   XML_SET_NS_DECL ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#', 2);
   XML_SET_NS_DECL ('fbase', 'http://rdf.freebase.com/ns/', 2);
+  XML_SET_NS_DECL ('ore', 'http://www.openarchives.org/ore/terms/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
@@ -4150,6 +4486,390 @@ DB.DBA.RM_GET_CURIES () __SOAP_HTTP 'text/json'
 ;
 
 grant execute on DB.DBA.RM_GET_CURIES to PROXY;
+
+-- New York Times: Campaign Finance Web Service
+-- See http://developer.nytimes.com/docs/campaign_finance_api
+
+-- RDF_NYTCF_LOOKUP is in effect a lightweight lookup cartridge that is used
+-- to conditionally add triples to graphs generated by the Wikipedia and
+-- Freebase cartridges. These cartridges call on RDF_NYTCF_LOOKUP when
+-- handling an entity of rdf:type yago:Congressman109955781. The NYTCF lookup
+-- cartridge (aka a metacartridge) is used to return campaign finance data
+-- for the candidate in question retrieved from the New York Times Campaign
+-- Finance web service.
+create procedure DB.DBA.RDF_NYTCF_LOOKUP(
+  in candidate_id any, 		-- id of candidate
+  in graph_iri varchar,		-- graph into which the additional campaign finance triples should be loaded
+  in api_key varchar		-- NYT finance API key
+)
+{
+  declare version, campaign_type, year any;
+  declare nyt_url, hdr, tmp any;
+  declare xt, xd any;
+
+  -- Common parameters - The NYT API only supports the following values at present:
+  version := 'v2';
+  campaign_type := 'president';
+  year := '2008';
+
+  -- Candidate summaries
+  -- nyt_url := sprintf('http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/totals.xml?api-key=%s',
+  --	version, campaign_type, year, api_key);
+
+  -- Candidate details
+  nyt_url := sprintf('http://api.nytimes.com/svc/elections/us/%s/%s/%s/finances/candidates/%s.xml?api-key=%s',
+  	version, campaign_type, year, candidate_id, api_key);
+  --dbg_printf ('%s', nyt_url);
+
+  tmp := http_get (nyt_url, hdr);
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDF_LOAD_NYTCF_LOOKUP');
+  --dbg_printf ('%s', tmp);
+  xd := xtree_doc (tmp);
+
+  -- baseUri specifies what the generated RDF description is about
+  -- <rdf:Description rdf:about="{baseUri}">
+  -- Example baseUri's:
+  -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama#this
+  -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this
+  declare path any;
+  declare lang, k, base_uri varchar;
+
+  if (graph_iri like 'http://rdf.freebase.com/ns/%.%')
+    base_uri := graph_iri;
+  else
+    {
+      path := split_and_decode (graph_iri, 0, '%\0/');
+      k := path [length(path) - 1];
+      lang := path [length(path) - 2];
+
+      base_uri := sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k);
+    }
+
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/nytcf2rdf.xsl', xd,
+      	vector ('baseUri', base_uri));
+  xd := serialize_to_UTF8_xml (xt);
+  --dbg_printf('RDF_LOAD_NYTCF_LOOKUP XSLT output');
+  --dbg_printf ('%s', xd);
+
+  DB.DBA.RDF_LOAD_RDFXML (xd, '', graph_iri);
+}
+;
+
+create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
+  in fb_graph_uri varchar	-- URI of graph containing Freebase resource
+)
+{
+  -- Check if the resource described by Freebase is a U.S. senator. Only then does it make sense to query for campaign finance
+  -- data from the NYT data space.
+  --
+  -- To test for senators, we start by looking for two statements in the Freebase cartridge output, similar to:
+  --
+  -- <rdf:Description rdf:about="http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this">
+  --   <rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+  --   <rdfs:seeAlso rdf:resource="http://en.wikipedia.org/wiki/Hillary_Rodham_Clinton"/>
+  --   ...
+  -- where the graph generated by the Sponger will be <http://www.freebase.com/view/en/hillary_rodham_clinton>
+  --
+  -- To test whether a resource is a senator:
+  -- 1) Check whether the Freebase resource is of rdf:type foaf:Person
+  -- 2) Extract the person_name from the Wikipedia URI referenced by rdfs:seeAlso
+  -- 3) Use the extracted person_name to build a URI to DBpedia's description of the person.
+  -- 4) Query the DBpedia description to see if the person is of rdf:type yago:Senator110578471
+  declare xp, xt, tmp any;
+  declare qry varchar;			-- SPARQL query
+  declare qry_uri varchar;		-- query URI
+  declare qry_res varchar;		-- query result
+  declare dbp_resource_name varchar;	-- Equivalent resource name in DBpedia
+  declare fb_resource_uri varchar; 	-- Freebase resource URI
+  declare path any;
+  declare lang, k varchar;
+
+  declare exit handler for sqlstate '*' {
+    dbg_printf ('%s', __SQL_MESSAGE);
+    return 0;
+  };
+
+  if (fb_graph_uri like 'http://rdf.freebase.com/ns/%.%')
+    fb_resource_uri := fb_graph_uri;
+  else
+    {
+      path := split_and_decode (fb_graph_uri, 0, '%\0/');
+      if (length (path) < 2)
+	return 0;
+
+      k := path [length(path) - 1];
+      lang := path [length(path) - 2];
+
+      fb_resource_uri := sprintf ('http://rdf.freebase.com/ns/%U.%U', lang, k);
+    }
+
+  -- 1) Check whether the Freebase resource is a politician from united_states
+  {
+    declare stat, msg varchar;
+    declare mdata, rset any;
+
+    qry := sprintf ('sparql ask from <%s> where { <%s> <http://rdf.freebase.com/ns/people.person.profession> <http://rdf.freebase.com/ns/en.politician> ; <http://rdf.freebase.com/ns/people.person.nationality> <http://rdf.freebase.com/ns/en.united_states> . }', fb_graph_uri, fb_resource_uri);
+    exec (qry, stat, msg, vector(), 1, mdata, rset);
+    if (length(rset) = 0 or rset[0][0] <> 1)
+      return 0;
+  }
+
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_NYTCF (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare candidate_id, candidate_name any;
+  declare api_key any;
+  declare indx, tmp any;
+  declare ord int;
+
+  declare exit handler for sqlstate '*'
+  {
+    --dbg_printf('%s', __SQL_MESSAGE);
+    return 0;
+  };
+
+  if (not DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (new_origin_uri))
+    return 0;
+
+  -- TO DO: hardcoded for now
+  -- Need a mechanism to specify API key for meta-cartridges
+  -- Could retrieve from virtuoso.ini?
+  -- api_key := '2c1d95a62e5f63b70bb69e187a827bb3:10:57181787';
+  api_key := _key;
+
+  -- NYT API supports a candidate_id in one of two forms:
+  -- candidate_id ::= {candidate_ID} | {last_name [,first_name]}
+  -- first_name is optional. If included, there should be no space after the comma.
+  --
+  -- However, because this meta cartridge supplies additional triples for the
+  -- Wikipedia or Freebase cartridges, only the second form of candidate_id is
+  -- supported. i.e. We extract the candidate name, rather than a numeric
+  -- candidate_ID (FEC committee ID) from the Wikipedia or Freebase URL.
+  --
+  -- It's assumed that the source URI includes the candidate's first name.
+  -- If it is omitted, the NYT API will return information about *all* candidates
+  -- with that last name - something we don't want.
+
+  indx := strstr(graph_iri, 'www.freebase.com/view/en/');
+  if (indx is not null)
+  {
+    -- extract candidate_id from Freebase URI
+    tmp := sprintf_inverse(subseq(graph_iri, indx), 'www.freebase.com/view/en/%s', 0);
+    if (length(tmp) <> 1)
+      return 0;
+    candidate_name := tmp[0];
+  }
+  else
+  {
+    indx := strstr(graph_iri, 'wikipedia.org/wiki/');
+    if (indx is not null)
+    {
+      -- extract candidate_id from Wikipedia URI
+      tmp := sprintf_inverse(subseq(graph_iri, indx), 'wikipedia.org/%s', 0);
+      if (length(tmp) <> 1)
+        return 0;
+      candidate_name := tmp[0];
+    }
+    else
+      {
+	tmp := sprintf_inverse(graph_iri, 'http://%s.freebase.com/ns/%s/%s', 0);
+	if (length (tmp) <> 3)
+	  tmp := sprintf_inverse(graph_iri, 'http://%s.freebase.com/ns/%s.%s', 0);
+	if (length (tmp) <> 3)
+	  return 0;
+	candidate_name := tmp[2];
+      }
+  }
+
+
+  -- split candidate_name into its component parts
+  --   candidate_name is assumed to be firstname_[middlename_]*lastname
+  --   e.g. hillary_rodham_clinton (Freebase), Hillary_clinton (Wikipedia)
+  {
+    declare i, _end, len int;
+    declare names, tmp_name varchar;
+
+    names := vector ();
+    tmp_name := candidate_name;
+    len := length (tmp_name);
+    while (1)
+    {
+      _end := strchr(tmp_name, '_');
+      if (_end is not null)
+      {
+        names := vector_concat (names, vector(subseq(tmp_name, 0, _end)));
+        tmp_name := subseq(tmp_name, _end + 1);
+      }
+      else
+      {
+        names := vector_concat(names, vector(tmp_name));
+        goto done;
+      }
+    }
+done:
+    if (length(names) < 2)
+      return 0;
+    -- candidate_id ::= lastname,firstname
+    candidate_id := sprintf('%s,%s', names[length(names)-1], names[0]);
+  }
+
+  DB.DBA.RDF_NYTCF_LOOKUP(candidate_id, coalesce (dest, graph_iri), api_key);
+  return 0;
+}
+;
+
+create procedure INSTALL_RDF_LOAD_NYTCF ()
+{
+  -- possible old behaviour
+  delete from SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_NYTCF';
+  -- register in PP chain
+  insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(http://www.freebase.com/view/.*)|(http://rdf.freebase.com/ns/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_NYTCF', null, 'Freebase NYTCF', vector ());
+}
+;
+
+INSTALL_RDF_LOAD_NYTCF ()
+;
+
+-- /* WB meta cartridge */
+create procedure DB.DBA.WBMC_RESOURCE_IS_COUNTRY  (
+  in graph_uri varchar, 	-- URI of (sub)graph containing resource
+  inout resource_uri varchar,   -- URI of resource identified as a country
+  inout country_name varchar	-- country name
+)
+{
+  -- Used by DB.DBA.RDF_WORLDBANK_META to check entity being handled is a country
+  -- It's assumed the subgraph contains only one entity which is a country
+  -- TO DO: Modify so resource_uri and country_name are vectors holding all results from SPARQL query
+
+  declare qry, stat, msg varchar;
+  declare mdata, rset any;
+
+  declare exit handler for sqlstate '*' {
+    dbg_printf ('%s', __SQL_MESSAGE);
+    return 0;
+  };
+
+  -- If the primary cartridge has detected a Country entity, this meta-cartridge requires that
+  -- the primary cartridge adds two statements to the resource description:
+  -- 1) to identify the entity instance as being of type umbel:Country
+  -- 2) to add the country's (ISO) name as the value of a dcterms:identifier property
+  qry := sprintf ('sparql select ?s, ?country from <%s> where { ', graph_uri);
+  qry := qry || '?s rdf:type <http://umbel.org/umbel/sc/Country> .';
+  qry := qry || '?s <http://purl.org/dc/terms/identifier> ?country .';
+  qry := qry || ' }';
+  exec (qry, stat, msg, vector(), 1, mdata, rset);
+  if (length(rset) = 0)
+    return 0;
+  resource_uri := cast (rset[0][0] as varchar);
+  country_name := cast (rset[0][1] as varchar);
+
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_WBMC_LOOKUP (
+  in resource_uri varchar,	-- uri of Country resource
+  in country_name varchar,	-- ISO name of country
+  in graph_iri varchar,		-- graph into which the additional World Bank triples should be loaded
+  in api_key varchar		-- World Bank API key
+)
+{
+  declare xt, xd, tmp any;
+  declare wb_url, wb_base_qry_url varchar;
+  declare wb_date_range, wb_indicators any;
+  declare hdr any;
+  declare country_id varchar;		-- 3 letter ISO country code
+  declare _cur_date, _cur_year any;
+
+  -- Get the 3 letter ISO code of the country
+  wb_url := sprintf('http://open.worldbank.org/rest.php?method=%s&name=%s&api_key=%s',
+  	'wb.countries.get', replace (country_name, ' ', '+'), api_key);
+
+  tmp := http_get (wb_url, hdr);
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDF_WBMC_LOOKUP - 1');
+
+  xt := xtree_doc (tmp);
+  country_id := cast (xpath_eval('/rsp/countries/country/@id', xt) as varchar);
+  if (country_id is null)
+    return 1;
+
+  -- Set the date range for World Bank queries to be the last 5 complete calendar years
+  _cur_date := cast(curdate() as varchar);
+  tmp := sprintf_inverse(_cur_date, '%s-%s-%s', 2);
+  _cur_year := cast(tmp[0] as int);
+  wb_date_range := sprintf('%d-%d', _cur_year - 5, _cur_year - 1);
+
+  wb_base_qry_url := sprintf('http://open.worldbank.org/rest.php?method=wb.data.get&page=1&per_page=100&country=%s&api_key=%s', country_id, api_key);
+
+  -- Currenty we only cover GDP related indicators.
+  wb_indicators := vector (
+    'NY.GDP.MKTP.CD',          -- GDP (current US$)
+    'NY.GDP.MKTP.KD.ZG',       -- GDP growth (annual %)
+    'GC.BAL.CASH.GD.ZS',       -- Cash surplus/deficit (% of GDP)
+    'NE.EXP.GNFS.ZS',          -- Exports of goods and services (% of GDP)
+    'NE.IMP.GNFS.ZS',          -- Imports of goods and services (% of GDP)
+    'NV.SRV.TETC.ZS'           -- Services, etc., value added (% of GDP)
+  );
+
+  foreach (any wb_indicator in wb_indicators) do
+  {
+    -- Sample query:
+    -- http://open.worldbank.org/rest.php?method=wb.data.get&country=GBR&indicator=NY.GDP.MKTP.CD&date=2004-2007&per_page=10&api_key=fk5jgrgh5z9cc93jrdbqa9vb
+    wb_url := '' || wb_base_qry_url;
+    wb_url := wb_url || sprintf('&date=%s', wb_date_range);
+    wb_url := wb_url || sprintf('&indicator=%s', wb_indicator);
+
+    tmp := http_get (wb_url, hdr);
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+      signal ('22023', trim(hdr[0], '\r\n'), 'RDF_WBMC_LOOKUP - 2');
+
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/worldbank2rdf.xsl', xd,
+      	  vector ('baseUri', graph_iri));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RDF_LOAD_RDFXML (xd, '', graph_iri);
+  }
+
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_WORLDBANK_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare api_key any;
+  declare country_resource_uri varchar;
+  declare country_name varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    dbg_printf('%s', __SQL_MESSAGE);
+    return 0;
+  };
+
+  -- It's assumed the subgraph contains only one entity which is a country
+  -- TO DO: Modify so resource_uri and country_name are vectors holding all results from SPARQL query
+  country_resource_uri := '';
+  country_name := '';
+  if (not DB.DBA.WBMC_RESOURCE_IS_COUNTRY (new_origin_uri, country_resource_uri, country_name))
+    return 0;
+
+  DB.DBA.RDF_WBMC_LOOKUP(country_resource_uri, country_name, coalesce (dest, graph_iri), _key);
+  return 0;
+}
+;
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(http://www.freebase.com/view/.*)|(http://rdf.freebase.com/ns/.*)',
+            'URL', 'DB.DBA.RDF_WORLDBANK_META', null, 'World Bank', vector ());
 
 DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 ;
