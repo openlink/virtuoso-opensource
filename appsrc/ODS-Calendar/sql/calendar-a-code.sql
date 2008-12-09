@@ -4551,9 +4551,12 @@ create procedure CAL.WA.attendees_mails ()
   {
     if (save_id <> event_id)
     {
-      save_id := event_id;
       for (select * from CAL.WA.EVENTS where E_ID = event_id) do
       {
+      	if ((E_EVENT_END < now ()) and (E_REPEAT = '' or E_REPEAT is null))
+      	  goto _next;
+        if (E_REPEAT_UNTIL < now ())
+      	  goto _next;
         domain_id := E_DOMAIN_ID;
         dateFormat := CAL.WA.settings_dateFormat2 (domain_id);
         timeFormat := CAL.WA.settings_timeFormat2 (domain_id);
@@ -4566,6 +4569,7 @@ create procedure CAL.WA.attendees_mails ()
           period := sprintf ('%s - %s', CAL.WA.dt_datestring (E_EVENT_START, dateFormat), CAL.WA.dt_datestring (E_EVENT_END, dateFormat));
         }
       }
+      save_id := event_id;
       account_id := CAL.WA.domain_owner_id (domain_id);
       account_mail := CAL.WA.account_mail (account_id);
     }
