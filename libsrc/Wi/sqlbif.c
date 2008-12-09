@@ -13414,6 +13414,7 @@ sql_bif_init (void)
   bif_define_typed ("dbg_printf", bif_dbg_printf, &bt_varchar);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
   bif_define ("dbg_obj_princ", bif_dbg_obj_princ);
+  bif_define ("dbg_obj_prin1", bif_dbg_obj_princ);
 
 #if 1
   bif_define ("xid_test", test_xid_encode_decode);

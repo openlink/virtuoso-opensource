@@ -7425,7 +7425,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   declare url, get_method, recov varchar;
   declare dest varchar;
   declare opts any;
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
   {
   whenever sqlstate '*' goto end_of_sponge;
   if (val is null)
@@ -7478,7 +7478,7 @@ end_of_sponge:
 
 create procedure DB.DBA.RDF_GRAB_SINGLE_ASYNC (in val any, in grabbed any, in env any, in counter_limit integer := 1)
 {
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE_ASYNC (', val, ', { dict of size ', dict_size (grabbed), ' }, ', env, counter_limit);
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE_ASYNC (', coalesce (id_to_iri_nosignal (val), val), ', { dict of size ', dict_size (grabbed), ' }, ', env, counter_limit);
   if (dict_size (grabbed) < counter_limit)
     DB.DBA.RDF_GRAB_SINGLE (val, grabbed, vector_concat (vector ('refresh_free_text', 0), env));
 }
@@ -10134,6 +10134,7 @@ add_new_origin:
   goto perform_actual_load;
 
 perform_actual_load:
+  -- dbg_obj_princ ('performing actual load...');
   new_expiration := NULL;
   new_last_etag := NULL;
   ret_304_not_modified := 0;
@@ -10509,6 +10510,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     {
       aq := async_queue (1);
     }
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE (', graph_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options, req_hdr_arr, ')');
   --!!!TBD: proper calculation of new_expiration, usingdata from HTTP header of the response
   ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (new_origin_uri, ret_content_type, ret_body);
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
@@ -10582,7 +10584,7 @@ load_grddl:;
 	val_match := null;
 
       if (registry_get ('__sparql_mappers_debug') = '1')
-	dbg_printf ('Trying %s', RM_HOOK);
+        dbg_obj_prin1 ('Trying ', RM_HOOK);
       if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
 	{
 	  if (__proc_exists (RM_HOOK) is null)
@@ -10598,7 +10600,7 @@ load_grddl:;
 	    npars := length (pcols);
 	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
           if (registry_get ('__sparql_mappers_debug') = '1')
-	    dbg_printf ('Match %s', RM_HOOK);
+            dbg_obj_prin1 ('Match ', RM_HOOK);
 	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type));
 	  if (RM_TYPE <> 'HTTP')
 	    {
@@ -10616,14 +10618,16 @@ load_grddl:;
 	    }
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
-	      dbg_printf ('Return [%d] %s', rc, RM_HOOK);
-	      if (rc < 0 or rc > 0)
-	        dbg_printf ('END of mappings');
+	      dbg_obj_prin1 ('Return ', rc, RM_HOOK);
+	      if (__tag(rc) = 193 or rc < 0 or rc > 0)
+                dbg_obj_prin1 ('END of mappings');
 	    }
-	  if (rc < 0 or rc > 0)
+	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
 	    {
 	      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
 		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+              if (__tag(rc) = 193)
+                return rc;
 	      return (case when rc < 0 then 0 else 1 end);
 	    }
 	}
@@ -10702,6 +10706,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
           res_graph_iri := local_iri;
           goto graph_is_ready;
         }
+      -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
     }
   else
     if (('replacing' = get_soft) or ('replace' = get_soft))
@@ -10725,10 +10730,12 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 	  if (imm = dest)
             {
               res_graph_iri := dest;
+              -- dbg_obj_princ ('immutable');
               goto graph_is_ready;
             }
 	}
     }
+  -- dbg_obj_princ ('will sponge...');
   if (lower (graph_iri) like 'file:%')
     {
       res_graph_iri := DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
@@ -10744,6 +10751,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
       declare sch any;
       sch := rfc1808_parse_uri (graph_iri);
       sch := upper (sch[0]);
+      -- dbg_obj_princ ('Needs DB.DBA.SYS_'||sch||'_SPONGE_UP ...');
       if (__proc_exists ('DB.DBA.SYS_'||sch||'_SPONGE_UP') is not null)
         {
 	  res_graph_iri := call ('DB.DBA.SYS_'||sch||'_SPONGE_UP') (local_iri, graph_iri, options);
@@ -10755,6 +10763,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 	}
     }
 graph_is_ready:
+  -- dbg_obj_princ (res_graph_iri, ' graph is ready, about to return from RDF_SPONGE_UP');
   if (__rdf_obj_ft_rule_check (iri_to_id (res_graph_iri), null) and
     get_keyword ('refresh_free_text', options, 0) )
     VT_INC_INDEX_DB_DBA_RDF_OBJ();
