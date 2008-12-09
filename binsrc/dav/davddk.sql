@@ -1445,6 +1445,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('image/jpeg','jpe')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('image/png','png')
 ;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('image/svg+xml','svg')
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('image/tiff','tif')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('image/tiff','tiff')
