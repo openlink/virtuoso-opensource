@@ -49,6 +49,15 @@ LOGFILE=`pwd`/thttp.output
 export LOGFILE
 . ./test_fn.sh
 
+do_mappers_only=0
+if [ $# -ge 1 ]
+then
+    if [ "$1" = 'mappers' ]
+    then
+    do_mappers_only=1
+    fi
+fi
+
 PLUGINDIR=${PLUGINDIR-$HOME/lib/}
 export PLUGINDIR
 
@@ -731,7 +740,11 @@ case $1 in
    cd ..
    CHECK_PORT $TPORT
    if [ "$MAKE_VAD" = "yes" ] ; then
-       if [ "x$HOST_OS" = "x" ]
+       if [ $do_mappers_only -eq 1 ]
+       then
+	   (cd ../../../rdf_mappers; make)
+	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
+       elif [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
 	   (cd ../../../samples/wa/; make)
@@ -799,6 +812,8 @@ case $1 in
    fi
    cd ..
 
+if [ $do_mappers_only -ne 1 ]
+then    
    DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/');"   
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"   
   if [ "x$HOST_OS" = "x" -a "x$NO_PERF" = "x" ]
@@ -1006,7 +1021,7 @@ fi
       LOG "***ABORTED: url_rewrite_test.sql"
       exit 1
    fi
-
+fi
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
    if test $STATUS -ne 0
    then
