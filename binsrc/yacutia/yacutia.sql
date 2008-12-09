@@ -2055,7 +2055,7 @@ create procedure create_table_sql( in tablename varchar, in constr int := 1) ret
         and k.KEY_MIGRATE_TO is null
         and kp.KP_KEY_ID = k.KEY_ID
         and c.COL_ID = kp.KP_COL
-	order by kp.KP_COL do {
+	order by kp.KP_NTH do {
 
 
       if (k > 0 )
