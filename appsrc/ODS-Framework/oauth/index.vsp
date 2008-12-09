@@ -1,0 +1,32 @@
+<?vsp
+?><html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Virtuoso OAuth Server</title>
+		<link rel="stylesheet" type="text/css" href="default.css" />
+	</head>
+	<body>
+		<div id="MD">
+			<h1>OpenLink Virtuoso OAuth server</h1>
+			<ul>
+				<li>
+				   <a href="oauth_apps.vspx">OAuth keys</a>
+				</li>
+				<li>
+				   <a href="sparql.vsp">Protected SPARQL endpoint</a>
+				</li>
+			</ul>
+		</div>
+<div id="FT">
+    <div id="FT_L">
+	<a href="http://www.openlinksw.com/virtuoso">
+	    <img alt="Powered by OpenLink Virtuoso Universal Server"
+		src="images/virt_power_no_border.png"
+		border="0" />
+	</a>
+    </div>
+	<div id="FT_RC">
+	  <div id="copyright_ctr">Copyright &copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+        </div> <!-- FT_R -->
+</div>
+	</body>
+</html>
