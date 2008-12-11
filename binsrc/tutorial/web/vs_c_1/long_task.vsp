@@ -27,9 +27,10 @@ http_header ('Location: vs_c_1_sample_1.vsp\r\n');
 http_flush ();
 declare i integer;
 i := 0;
-while (i < 10000000000)
+while (i < 120)
   {
      i := i + 1; 
+     delay (1);	 
      commit work;	
   }	
 ?>
