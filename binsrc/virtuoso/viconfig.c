@@ -797,6 +797,9 @@ cfg_setup (void)
   /*if (cfg_getlong (pconfig, section, "SQLOptimizer", &c_sqlo_enable) == -1)*/
 /*    c_sqlo_enable = 1;*/
 
+  if (cfg_getlong (pconfig, section, "SQLOptimizeConstantConditions", &sql_const_cond_opt) == -1)
+    sql_const_cond_opt = 1;
+
   if (cfg_getlong (pconfig, section, "AddViewColRefsQualifier", &c_sqlc_add_views_qualifiers) == -1)
     c_sqlc_add_views_qualifiers = 0;
 
