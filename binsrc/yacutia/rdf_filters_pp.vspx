@@ -66,7 +66,7 @@
 		        </td>
 			<?vsp if (check_package('rdf_mappers')) { ?>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url2" value="GRDDL Mappings" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
+                          <v:url name="url2" value="GRDDL Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
 		        </td>
                         <?vsp } ?>
                         <td class="page_tab_empty" align="center" width="100%">
