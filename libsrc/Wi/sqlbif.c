@@ -341,7 +341,7 @@ bif_string_or_wide_or_null_or_strses_arg (caddr_t * qst, state_slot_t ** args, i
       && !IS_WIDE_STRING_DTP (dtp) && dtp != DV_STRING_SESSION)
     {
       sqlr_new_error ("22023", "SR006",
-    "Function %s needs a string or string session or NULL as argument %d, "
+    "Function %s needs a string or string session or wide string or NULL as argument %d, "
     "not an arg of type %s (%d)",
     func, nth + 1, dv_type_title (dtp), dtp);
   }
