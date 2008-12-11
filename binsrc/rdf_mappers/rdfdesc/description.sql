@@ -105,7 +105,7 @@ create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int, in
    http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', url, p_prefix, p_prefix));
    if (r) http (' of');
 
-   http ('</td><td><ul>');
+   http ('</td><td><ul class="obj">');
 }
 ;
 
@@ -120,8 +120,14 @@ create procedure rdfdesc_http_print_r (in _object any)
      }
    else
      {
+       declare exit handler for sqlstate '*' {
+         lang := '';
+	 rdfs_type := 'http://www.w3.org/2001/XMLSchema#string';
+	 goto endg;
+       };
        lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object);
        rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
+       endg:;
      }
 
    http ('<li><span class="literal">');
@@ -183,6 +189,8 @@ again:
        http (_object);
        http (sprintf ('(%s)', rdfs_type));
      }
+   else if (__tag (_object) = 225)
+     http (charset_recode (_object, '_WIDE_', 'UTF-8'));
    else
      http (sprintf ('FIXME %i', __tag (_object)));
 

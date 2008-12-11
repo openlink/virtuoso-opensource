@@ -4871,8 +4871,56 @@ insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC
       values ('(http://www.freebase.com/view/.*)|(http://rdf.freebase.com/ns/.*)',
             'URL', 'DB.DBA.RDF_WORLDBANK_META', null, 'World Bank', vector ());
 
+create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare url, txt, cont, xt, xd any;
+
+  declare exit handler for sqlstate '*'
+  {
+    dbg_printf('%s', __SQL_MESSAGE);
+    return 0;
+  };
+  if (not isstring (_key) or length (_key) = 0)
+    return 0;
+  txt := sprintf ('method=zemanta.suggest&api_key=%U&text=%U&format=rdfxml&return_rdf_links=1&return_categories=dmoz',
+  		_key, subseq (_ret_body, 0, 8000));
+  cont := http_client (	url=>'http://api.zemanta.com/services/rest/0.0/',
+  			http_method=>'POST',
+			body=>txt );
+  xt := xtree_doc (cont, 0, '', 'UTF-8');
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/zemanta_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  cont := serialize_to_UTF8_xml (xd);
+  --string_to_file ('zem.rdf', cont, -2);
+  --cont := regexp_replace (cont, 'xml:base="[^"]*"','');
+  DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
+  return 0;
+}
+;
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta', vector ());
+
+create procedure RM_META_MAPPERS_SET_ORDER ()
+{
+   declare inx int;
+   declare top_arr, arr, http, html, feed, calais any;
+   arr := (select DB.DBA.VECTOR_AGG (MC_ID) from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ);
+   inx := 0;
+   foreach (int pid in arr) do
+     {
+       update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = inx where MC_ID = pid;
+       inx := inx + 1;
+     }
+   DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.RDF_META_CARTRIDGES', 'MC_SEQ', inx);
+}
+;
+
+RM_META_MAPPERS_SET_ORDER ();
+
 DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 ;
+
 drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
 ;
 
