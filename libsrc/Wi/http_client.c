@@ -561,7 +561,6 @@ char*
 http_cli_get_doc_str (http_cli_ctx * ctx)
 {
   char* s = NULL;
-  char* l;
 
   if (!strnicmp (ctx->hcctx_url, "http://", 7))
     s = ctx->hcctx_url + 7;
@@ -570,11 +569,10 @@ http_cli_get_doc_str (http_cli_ctx * ctx)
 
   if (s)
     {
-      l = ctx->hcctx_url + box_length (ctx->hcctx_url);
       s = strchr (s, '/');
-      if (!s || s == l)
+      if (!s)
 	{
-	  return ("/index.html");
+	  return ("/");
 	}
       else
 	{
@@ -1179,8 +1177,8 @@ http_cli_get_uri_from_url (char* url)
 
   while (*slash != '/' && *slash != 0)
     slash++;
-
-  return box_string (slash);
+  /* if no path at all, then we use / as it always must be a path in request */
+  return box_string ((*slash != 0 ? slash : "/"));
 }
 
 caddr_t
