@@ -1,6 +1,6 @@
 function init() {
-	init_long_literals();
 	init_long_list ();
+	init_long_literals();
 }
 
 var long_literal_counter = 0;
@@ -65,7 +65,6 @@ function expand_ul(n) {
     //alert (n + ' ' + copy.childNodes.length);
     for (i = 0; i < copy.childNodes.length; i++)
       ul.appendChild (copy.childNodes[i].cloneNode (true));
-    //alert (ul.childNodes.length);
 }
 
 function expand(i) {
