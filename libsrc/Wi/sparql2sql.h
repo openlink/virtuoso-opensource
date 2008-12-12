@@ -711,7 +711,9 @@ typedef struct spar_sqlgen_s
   int			ssg_sd_flags;		/*!< Bitmask of SPARP_SPARQLD_xxx flags, see below */
   id_hash_t		*ssg_sd_used_namespaces;	/*!< Dictionary of namespaces used for prettyprinting of IRIs */
   dk_set_t		ssg_sd_outer_gps;	/*!< Parent GP of the current tree */
+  int			ssg_sd_forgotten_graph;	/*!< Flags that a '}' is not printed after the last triple (in hope that the next member of a group is a triple with same graph so '} GRAPH ... {' is not required */
   int			ssg_sd_forgotten_dot;	/*!< Flags that a dot is not printed after the last triple (in hope that the next member of a group is a triple with same subject so ';' or ',' shorthand can be used) */
+  SPART *		ssg_sd_prev_graph;	/*!< Graph of the previous triple in a group, to make a decision about avoiding print of '} GRAPH ... {' */
   SPART *		ssg_sd_prev_subj;	/*!< Subject of the previous triple in a group, to make a decision about using ';' or ',' shorthand */
   SPART *		ssg_sd_prev_pred;	/*!< Predicate of the previous triple in a group, to make a decision about using ',' shorthand */
 } spar_sqlgen_t;
