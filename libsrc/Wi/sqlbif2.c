@@ -638,6 +638,22 @@ bif_user_has_role (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (0);
 }
 
+static caddr_t
+bif_user_is_dba (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t uname = bif_string_arg (qst, args, 0, "user_is_dba");
+  user_t **place;
+  user_t *usr;
+  int rc;
+
+  sec_check_dba ((query_instance_t *) qst, "user_is_dba");
+  place = (user_t **) id_hash_get (sec_users, (caddr_t) &uname);
+  if (!place)
+    sqlr_new_error ("22023", "SR390", "No such user %s in user_is_dba", uname);
+  usr = *place;
+  rc = sec_user_has_group (G_ID_DBA, usr->usr_id);
+  return box_num (rc);
+}
 
 static caddr_t
 bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1421,6 +1437,7 @@ sqlbif2_init (void)
   bif_define_typed ("host_id", bif_host_id, &bt_varchar);
   bif_define_typed ("os_chown", bif_os_chown, &bt_varchar);
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
+  bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);

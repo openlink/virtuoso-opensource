@@ -28,7 +28,7 @@
 --#IF VER=5
 create procedure INFORMATION_SCHEMA_UPGRADE ()
 {
-  if (registry_get ('INFORMATION_SCHEMA_VERSION') = '1')
+  if (registry_get ('INFORMATION_SCHEMA_VERSION') = '2')
     return;
   if (exists (select 1 from SYS_VIEWS where V_NAME = 'DB.INFORMATION_SCHEMA.COLUMNS'))
     {
@@ -39,7 +39,7 @@ create procedure INFORMATION_SCHEMA_UPGRADE ()
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.VIEWS', 0);
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.ROUTINES', 0);
     }
-  registry_set ('INFORMATION_SCHEMA_VERSION', '1');
+  registry_set ('INFORMATION_SCHEMA_VERSION', '2');
 }
 ;
 
@@ -526,6 +526,18 @@ order by CONSTRAINT_CATALOG, CONSTRAINT_SCHEMA, CONSTRAINT_NAME, ORDINAL_POSITIO
 grant select on INFORMATION_SCHEMA.KEY_COLUMN_USAGE to public
 ;
 
+create procedure object_definition_or_null (in obj varchar, in text any)
+{
+  declare owner varchar;
+  owner := name_part (obj, 1, NULL);
+  if (owner = user or user_is_dba (user))
+    return text;
+  return NULL;
+}
+;
+
+grant execute on DB.DBA.object_definition_or_null to public
+;
 
 create view INFORMATION_SCHEMA.ROUTINES as
 select
@@ -568,9 +580,9 @@ select
    when 1 then 'EXTERNAL'
    else 'SQL'
  end			AS ROUTINE_BODY			VARCHAR(30),
- coalesce (P_TEXT,
+ DB.DBA.object_definition_or_null (P_NAME, coalesce (P_TEXT,
   blob_to_string (
-  P_MORE)) 		AS ROUTINE_DEFINITION    	VARCHAR,
+  P_MORE))) 		AS ROUTINE_DEFINITION    	VARCHAR,
  NULL			AS EXTERNAL_NAME 		VARCHAR(128),
  NULL			AS EXTERNAL_LANGUAGE		VARCHAR(30),
  NULL			AS PARAMETER_STYLE		VARCHAR(30),
@@ -590,57 +602,7 @@ where
  __proc_exists (P_NAME, 1, 1) is not null
 ;
 
-grant select (
-	SPECIFIC_CATALOG,
-	SPECIFIC_SCHEMA,
-	SPECIFIC_NAME,
-	ROUTINE_CATALOG,
-	ROUTINE_SCHEMA,
-	ROUTINE_NAME,
-	MODULE_CATALOG,
-	MODULE_SCHEMA,
-	MODULE_NAME,
-	UDT_CATALOG,
-	UDT_SCHEMA,
-	UDT_NAME,
-	DATA_TYPE,
-	CHARACTER_MAXIMUM_LENGTH,
-	CHARACTER_OCTET_LENGTH,
-	COLLATION_CATALOG,
-	COLLATION_SCHEMA,
-	COLLATION_NAME,
-	CHARACTER_SET_CATALOG,
-	CHARACTER_SET_SCHEMA,
-	CHARACTER_SET_NAME,
-	NUMERIC_PRECISION,
-	NUMERIC_PRECISION_RADIX,
-	NUMERIC_SCALE,
-	DATETIME_PRECISION,
-	INTERVAL_TYPE,
-	INTERVAL_PRECISION,
-	TYPE_UDT_CATALOG,
-	TYPE_UDT_SCHEMA,
-	TYPE_UDT_NAME,
-	SCOPE_CATALOG,
-	SCOPE_SCHEMA,
-	SCOPE_NAME,
-	MAXIMUM_CARDINALITY,
-	DTD_IDENTIFIER,
-	ROUTINE_BODY,
-	EXTERNAL_NAME,
-	EXTERNAL_LANGUAGE,
-	PARAMETER_STYLE,
-	IS_DETERMINISTIC,
-	SQL_DATA_ACCESS,
-	IS_NULL_CALL,
-	SQL_PATH,
-	SCHEMA_LEVEL_ROUTINE,
-	MAX_DYNAMIC_RESULT_SETS,
-	IS_USER_DEFINED_CAST,
-	IS_IMPLICITLY_INVOCABLE,
-	CREATED,
-	LAST_ALTERED )
-  on INFORMATION_SCHEMA.KEY_COLUMN_USAGE to public
+grant select on INFORMATION_SCHEMA.ROUTINES to public
 ;
 
 create view INFORMATION_SCHEMA.PARAMETERS as
@@ -747,7 +709,7 @@ where
 group by FK_TABLE, FK_NAME, PK_TABLE, fk.UPDATE_RULE, fk.DELETE_RULE
 ;
 
-grant select on INFORMATION_SCHEMA.PARAMETERS to public
+grant select on INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS to public
 ;
 
 
@@ -843,10 +805,10 @@ select
  name_part(V_NAME,0) 	AS TABLE_CATALOG 	VARCHAR(128),
  name_part(V_NAME,1) 	AS TABLE_SCHEMA 	VARCHAR(128),
  name_part(V_NAME,2) 	AS TABLE_NAME 		VARCHAR(128),
- coalesce (
+ DB.DBA.object_definition_or_null (V_NAME, coalesce (
   V_TEXT,
   blob_to_string (
-   V_EXT))		AS VIEW_DEFINITION	VARCHAR,
+   V_EXT)))		AS VIEW_DEFINITION	VARCHAR,
  NULL			AS CHECK_OPTION		VARCHAR(7),
  case
    when (exists (select 1 from DB.DBA.SYS_TRIGGERS where T_TABLE = V_NAME))
@@ -858,12 +820,6 @@ where
  __any_grants (V_NAME)
 ;
 
-grant select (
- TABLE_CATALOG,
- TABLE_SCHEMA,
- TABLE_NAME,
- CHECK_OPTION,
- IS_UPDATABLE)
-  on INFORMATION_SCHEMA.VIEWS to public
+grant select on INFORMATION_SCHEMA.VIEWS to public
 ;
 
