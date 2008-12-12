@@ -616,7 +616,7 @@ extern SPART *sparp_get_option (sparp_t *sparp, SPART **options, ptrlong key);
 extern SPART **sparp_get_options_of_tree (sparp_t *sparp, SPART *tree);
 extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options);
 
-/* PART 3. OUTPUT GENERATOR */
+/* PART 3. SQL OUTPUT GENERATOR */
 
 struct spar_sqlgen_s;
 #if 0
@@ -700,12 +700,20 @@ typedef struct spar_sqlgen_s
   SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
-/* Codegen temporary values */
+/* SQL Codegen temporary values */
   dk_session_t		*ssg_out;		/*!< Output for SQL text */
   int			ssg_where_l_printed;	/*!< Flags what to print before a filter: " WHERE" if 0, " AND" otherwise */
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
   int			ssg_line_count;		/*!< Number of lines of generated SQL code */
+/* SPARQL-D Codegen temporary values */
+  const char *		ssg_sd_service_name;	/*!< Name of the destination endpoint that will receive the fragment that is printed ATM (for error reporting) */
+  int			ssg_sd_flags;		/*!< Bitmask of SPARP_SPARQLD_xxx flags, see below */
+  id_hash_t		*ssg_sd_used_namespaces;	/*!< Dictionary of namespaces used for prettyprinting of IRIs */
+  dk_set_t		ssg_sd_outer_gps;	/*!< Parent GP of the current tree */
+  int			ssg_sd_forgotten_dot;	/*!< Flags that a dot is not printed after the last triple (in hope that the next member of a group is a triple with same subject so ';' or ',' shorthand can be used) */
+  SPART *		ssg_sd_prev_subj;	/*!< Subject of the previous triple in a group, to make a decision about using ';' or ',' shorthand */
+  SPART *		ssg_sd_prev_pred;	/*!< Predicate of the previous triple in a group, to make a decision about using ',' shorthand */
 } spar_sqlgen_t;
 
 
@@ -818,5 +826,27 @@ extern int ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg);
 extern void ssg_make_qm_sql_text (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with an SQL text of arbitrary statement, by calling ssg_make_sql_query_text(), ssg_make_qm_sql_text(), or some special codegen callback */
 extern void ssg_make_whole_sql_text (spar_sqlgen_t *ssg);
+
+/* PART 4. SPARQL-D ("-DISTRIBUTED") GENERATOR */
+
+/* Flags that are responsible for various serialization features.
+Some features are labeled as "blocking", because if such a feature is required but flag is not set, an error is signaled.
+An occurence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics. */
+#define SSG_SD_QUAD_MAP		0x0001	/*!< Allows the use of QUAD MAP groups in the output */
+#define SSG_SD_OPTION		0x0002	/*!< Allows the use of OPTION keyword in the output */
+#define SSG_SD_BREAKUP		0x0004	/*!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION */
+#define SSG_SD_PKSELFJOIN	0x0008	/*!< Flags if PKSELFJOIN hint options should be printed, this has no effect w/o SSG_SD_OPTION */
+#define SSG_SD_RVR		0x0010	/*!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION */
+#define SSG_SD_BI		0x0020	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
+#define SSG_SD_VOS_509		0x00FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
+#define SSG_SD_SERVICE		0x0100	/*!< Allows the use of SERVICE extension, blocking */
+#define SSG_SD_TRANSIT		0x0200	/*!< Allows the use of SERVICE extension, blocking */
+#define SSG_SD_VOS6		0x0FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
+#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_509	/*!< Allows everything that is supported by current version of Virtuoso */
+
+extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree);
+extern void sparp_make_sparqld_text (spar_sqlgen_t *ssg);
 
 #endif

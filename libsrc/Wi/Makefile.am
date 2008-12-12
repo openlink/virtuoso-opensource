@@ -109,6 +109,7 @@ C_FILES_SPARQL	= \
 	rdfxml_parser.c \
 	sparql2sql.c \
 	sparql2sqltext.c \
+	sparqld.c \
 	sparql_core.c \
 	sparql_l.c \
 	sparql_p.c \
@@ -542,7 +543,9 @@ SQL_FILES_VDB		= \
 	$(srcdir)/vdb.sql
 
 SQL_FILES_SPARQL	= \
-	$(srcdir)/sparql.sql
+	$(srcdir)/sparql.sql \
+	$(srcdir)/sparql_io.sql \
+	$(srcdir)/rdf_sponge.sql
 
 SQL_FILES_1		= \
 	$(srcdir)/simile.sql \

@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
-
+ *  
+*/
 #ifndef __SPARQL_H
 #define __SPARQL_H
 
@@ -163,7 +163,9 @@ typedef struct sparp_env_s
     caddr_t             spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
-    caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
+    caddr_t             spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
+    caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
+    caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
     caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
@@ -520,6 +522,9 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
+#define SPART_IS_DEFAULT_GRAPH_BLANK(g) ( \
+  (SPAR_BLANK_NODE_LABEL == SPART_TYPE (g)) && \
+  !strncmp (g->_.var.vname, "_::default", 10) )
 
 #define SPART_BAD_EQUIV_IDX (ptrlong)(SMALLEST_POSSIBLE_POINTER-1)
 #define SPART_BAD_GP_SUBTYPE (ptrlong)(SMALLEST_POSSIBLE_POINTER-2)

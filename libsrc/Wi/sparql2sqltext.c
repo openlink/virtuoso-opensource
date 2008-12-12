@@ -5758,7 +5758,7 @@ from_printed:
                 {
                   int precode_len;
                   dk_set_t good_precodes = NULL;
-                  if ((SPAR_BLANK_NODE_LABEL == SPART_TYPE (g)) && !strncmp (g->_.var.vname, "_::default", 10))
+                  if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
                     {
                       if (NULL == ssg->ssg_sparp->sparp_env->spare_named_graph_precodes)
                     good_precodes = ssg->ssg_sparp->sparp_env->spare_default_graph_precodes;

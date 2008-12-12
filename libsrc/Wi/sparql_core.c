@@ -613,6 +613,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:format")) {
           sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value); return; }
+      if (!strcmp (param, "output:route")) {
+          sparp->sparp_env->spare_output_route_name = t_box_dv_uname_string (value); return; }
     }
   if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
@@ -1063,12 +1065,12 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
             if (SPAR_VARIABLE != SPART_TYPE (arg_value))
               continue;
             spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
-            opt_value = t_box_copy_tree (arg_value);
+            opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
             opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
             opt_value->_.var.tr_idx = (ptrlong)args[argctr];
             triple_with_var_obj->_.triple.options = (SPART **) t_list_concat (
               (caddr_t)(triple_with_var_obj->_.triple.options),
-              t_list (2, args[argctr], opt_value) );
+              (caddr_t)t_list (2, args[argctr], opt_value) );
           }
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         spar_tree_is_var_with_forbidden_ft_name (sparp, triple_with_var_obj->_.triple.tr_fields[fld_ctr], 1);
@@ -1459,7 +1461,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
         }
     }
   if (0 == retvalctr)
-    retvals[0] = t_box_num_nonull (1);
+    retvals[0] = (SPART *)t_box_num_nonull (1);
   t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL);
   spar_gp_init (sparp, WHERE_L);
   gp_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
@@ -1575,7 +1577,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
             }
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, spec_pred_names[0],
-              (SPART **)t_list_concat (t_list (2, subject, object), (caddr_t)options) ) );
+              (SPART **)t_list_concat ((caddr_t)t_list (2, subject, object), (caddr_t)options) ) );
 	  dk_free_tree (spec_pred_names);
           return;
         }
@@ -1952,63 +1954,57 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
 }
 
 SPART *
-spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode)
+spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART *graph_precode, SPART *aux_op)
 {
   SPART **fake_sol;
-  SPART *top;
+  SPART *call, *top;
+  caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, CLEAR_L,
-    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CLEAR",
-        (SPART **)t_list (3, graph_precode, t_box_num_nonull (0), spar_compose_report_flag (sparp)) ) ),
+  if (NULL != sparp->sparp_env->spare_output_route_name)
+    call = spar_make_funcall (sparp, 0,
+      t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
+      (SPART **)t_list (10, graph_precode,
+          t_box_dv_short_string (opname),
+          ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
+          ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
+          ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
+          aux_op,
+          t_NEW_DB_NULL,
+          t_NEW_DB_NULL,
+          log_mode, spar_compose_report_flag (sparp)) );
+  else
+    call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
+      (SPART **)t_list (3, graph_precode, aux_op, spar_compose_report_flag (sparp)) );
+  top = spar_make_top (sparp, subtype,
+    (SPART **)t_list (1, call),
     spar_selid_pop (sparp),
     fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
   return top;
+}
+
+SPART *
+spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode)
+{
+  return spar_make_sparul_mdw (sparp, CLEAR_L, "CLEAR", graph_precode, (SPART *)t_box_num_nonull (0) /* i.e. not inside sponge */);
 }
 
 SPART *
 spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode)
 {
-  SPART **fake_sol;
-  SPART *top;
-  spar_selid_push (sparp);
-  fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, LOAD_L,
-    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_LOAD",
-        (SPART **)t_list (3, graph_precode, src_precode, spar_compose_report_flag (sparp)) ) ),
-    spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
-  return top;
+  return spar_make_sparul_mdw (sparp, LOAD_L, "LOAD", graph_precode, src_precode);
 }
 
 SPART *
 spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent)
 {
-  SPART **fake_sol;
-  SPART *top;
-  spar_selid_push (sparp);
-  fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, CREATE_L,
-    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CREATE",
-        (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
-    spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
-  return top;
+  return spar_make_sparul_mdw (sparp, CREATE_L, "CREATE", graph_precode, (SPART *)t_box_num_nonull (silent));
 }
 
 SPART *
 spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent)
 {
-  SPART **fake_sol;
-  SPART *top;
-  spar_selid_push (sparp);
-  fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, DROP_L,
-    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_DROP",
-        (SPART **)t_list (3, graph_precode, t_box_num_nonull(silent), spar_compose_report_flag (sparp)) ) ),
-    spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
-  return top;
+  return spar_make_sparul_mdw (sparp, DROP_L, "DROP", graph_precode, (SPART *)t_box_num_nonull (silent));
 }
 
 SPART *
@@ -2480,6 +2476,60 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t)res;
 }
 
+void sparp_make_sparqld_text (spar_sqlgen_t *ssg);
+
+caddr_t
+bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int param_ctr = 0, flags;
+  spar_query_env_t sparqre;
+  sparp_t * sparp;
+  caddr_t str;
+  spar_sqlgen_t ssg;
+  sql_comp_t sc;
+  str = bif_string_arg (qst, args, 0, "sparql_detalize");
+  flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
+  MP_START ();
+  memset (&sparqre, 0, sizeof (spar_query_env_t));
+  sparqre.sparqre_param_ctr = &param_ctr;
+  sparqre.sparqre_qi = (query_instance_t *) qst;
+  sparp = sparp_query_parse (str, &sparqre, 1);
+  if (NULL != sparqre.sparqre_catched_error)
+    {
+      MP_DONE ();
+      sqlr_resignal (sparqre.sparqre_catched_error);
+    }
+  memset (&ssg, 0, sizeof (spar_sqlgen_t));
+  memset (&sc, 0, sizeof (sql_comp_t));
+  sc.sc_client = sparqre.sparqre_qi->qi_client;
+  ssg.ssg_out = strses_allocate ();
+  ssg.ssg_sc = &sc;
+  ssg.ssg_sparp = sparp;
+  ssg.ssg_tree = sparp->sparp_expr;
+  ssg.ssg_sd_flags = flags;
+  ssg.ssg_sd_used_namespaces = id_str_hash_create (16);
+  sparp_make_sparqld_text (&ssg);
+  if (NULL != sparqre.sparqre_catched_error)
+    {
+      id_hash_iterator_t dict_hit;
+      char **dict_key;		/* Current key to zap */
+      char **dict_val;		/* Current value to zap, unused */
+      for (id_hash_iterator (&dict_hit, ssg.ssg_sd_used_namespaces);
+          hit_next (&dict_hit, (char **) (&dict_key), (char **) (&dict_val));
+      /*no step */ )
+        {
+          dk_free_box (dict_key[0]);
+          dk_free_box (dict_val[0]);
+        }
+      id_hash_free (ssg.ssg_sd_used_namespaces);          
+      strses_free (ssg.ssg_out);
+      ssg.ssg_out = NULL;
+      MP_DONE ();
+      sqlr_resignal (sparqre.sparqre_catched_error);
+    }
+  MP_DONE ();
+  return (caddr_t)(ssg.ssg_out);
+}
 
 caddr_t
 bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -2487,10 +2537,10 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int param_ctr = 0;
   spar_query_env_t sparqre;
   sparp_t * sparp;
-  caddr_t str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
-  /*caddr_t err = NULL;*/
+  caddr_t str;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
+  str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
@@ -3011,6 +3061,7 @@ sparql_init (void)
 {
   rdf_ds_load_all();
   bif_define ("sparql_to_sql_text", bif_sparql_to_sql_text);
+  bif_define ("sparql_detalize", bif_sparql_detalize);
   bif_define ("sparql_explain", bif_sparql_explain);
   bif_define ("sparql_lex_analyze", bif_sparql_lex_analyze);
   bif_define ("sparql_quad_maps_for_quad", bif_sparql_quad_maps_for_quad);
