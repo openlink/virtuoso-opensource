@@ -1577,10 +1577,10 @@ http('</html>\n');
 	  ft := trim (DB.DBA.FTI_MAKE_SEARCH_STRING_INNER (pvalue, words), '()');
 	  vec := DB.DBA.SYS_SQL_VECTOR_PRINT (words);
 	  if (get_keyword ('format', params, '') like '%/rdf+%' or http_request_header (lines, 'Accept', null, '') like '%/rdf+%')
-	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), ?o)` } ' ||
+	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), (?o))` } ' ||
 	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
 	  else
-	    query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), ?o)) ' ||
+	    query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), str(?o))) ' ||
 	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
 	}
       else if ('default-graph-uri' = pname and length (pvalue))
