@@ -1310,7 +1310,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 				if (self.imageProperties.find(simple) != -1) {
 					for (var j=0;j<pred.length;j++) {
 						var value = pred[j];
-						self.addUriItem(value.uri,item);
+						self.addUriItem(value,item);
 					}
 				} else {
 				/* look for predicates that are/contain image links */
