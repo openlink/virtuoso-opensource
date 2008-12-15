@@ -622,9 +622,11 @@ web_user_password_check (in name varchar, in pass varchar)
 	return 0;
       };
       rc := DB.DBA.LDAP_LOGIN (name, null, vector ('authtype','basic','pass',pass));
-      commit work;
       if (rc <> -1)
+	{
+          commit work;
 	return rc;
+    }
     }
   rc := 0;
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and

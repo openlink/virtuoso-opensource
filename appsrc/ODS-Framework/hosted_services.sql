@@ -1338,6 +1338,11 @@ wa_exec_no_error(
 )
 ;
 
+wa_exec_no_error(
+  'create unique index WA_INSTANCE_WAI_ID on WA_INSTANCE (WAI_ID)'
+)
+;
+
 create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
 
 -- BEGIN Add activity

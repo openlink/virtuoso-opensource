@@ -59,6 +59,7 @@ DB.DBA.wa_exec_no_error_log(
  primary key (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_SEQ)
 )');
 
+DB.DBA.wa_exec_no_error_log('create index APP_PING_LOG_IDX1 on ODS.DBA.APP_PING_LOG (APL_STAT, APL_WAI_ID)');
 
 insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (0, '', '--', '');
 

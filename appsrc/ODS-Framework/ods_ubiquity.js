@@ -4008,3 +4008,400 @@ CmdUtils.CreateCommand({
     }
   }
 });
+
+////////////////////////////////////
+///// ods feeds ////////////////////
+////////////////////////////////////
+CmdUtils.CreateCommand({
+  name: "ods-set-feeds-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS FeedsManager OAuth. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-feeds-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
+  execute: function (oauth) {
+    try {
+      checkParameter(oauth.text, "ODS FeedsManager instance OAuth");
+      ODS.setOAuth("feeds", oauth.text);
+      displayMessage("Your ODS FeedsManager instance OAuth has been set.");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-feed-by-id",
+  takes: {"feed_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-feed-by-id &lt;feed_id&gt;",
+  preview: function (previewBlock, feed_id) {
+    try {
+      checkParameter(feed_id.text);
+      var params = {feed_id: feed_id.text};
+      odsPreview(previewBlock, "feeds.get", params, "feeds");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-subscribe-feed",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"uri": noun_arb_text, "name": noun_arb_text, "homeUri": noun_arb_text, "tags": noun_arb_text, "folder_id": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-subscribe-feed &lt;instance_id&gt; uri &lt;uri&gt; [name &lt;name&gt;] [homeUri &lt;homeUri&gt;] [tags &lt;tags&gt;] [folder_id &lt;folder_id&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "uri", params, "uri", true);
+      addParameter(modifiers, "name", params, "name");
+      addParameter(modifiers, "homeUri", params, "homeUri");
+      addParameter(modifiers, "tags", params, "tags");
+      addParameter(modifiers, "folder_id", params, "folder_id");
+      odsExecute("feeds.subscribe", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-unsubscribe-feed",
+  takes: {"feed_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-unsubscribe-feed &lt;feed_id&gt;",
+  execute: function (feed_id) {
+    try {
+      checkParameter(feed_id.text, "feed_id");
+      var params = {feed_id: feed_id.text};
+      odsExecute("feeds.unsubscribe", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-refresh-feed",
+  takes: {"feed_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-refresh-feed &lt;feed_id&gt;",
+  execute: function (feed_id) {
+    try {
+      checkParameter(feed_id.text, "feed_id");
+      var params = {feed_id: feed_id.text};
+      odsExecute("feeds.refresh", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-subscribe-feeds-blog",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"name": noun_arb_text, "api": noun_arb_text, "uri": noun_arb_text, "port": noun_arb_text, "endpoint": noun_arb_text, "user": noun_arb_text, "password": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-subscribe-feeds-blog &lt;instance_id&gt; name &lt;name&gt; api &lt;api&gt; uri &lt;uri&gt; port &lt;port&gt; endpoint &lt;endpoint&gt; user &lt;user&gt; password &lt;password&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "api", params, "api");
+      addParameter(modifiers, "uri", params, "uri", true);
+      addParameter(modifiers, "port", params, "port");
+      addParameter(modifiers, "endpoint", params, "endpoint");
+      addParameter(modifiers, "user", params, "user", true);
+      addParameter(modifiers, "password", params, "password", true);
+      odsExecute("feeds.blog.subscribe", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-unsubscribe-feeds-blog",
+  takes: {"blog_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-unsubscribe-feeds-blog &lt;blog_id&gt;",
+  execute: function (blog_id) {
+    try {
+      checkParameter(blog_id.text, "blog_id");
+      var params = {blog_id: blog_id.text};
+      odsExecute("feeds.blog.unsubscribe", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-refresh-feeds-blog",
+  takes: {"blog_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-refresh-feeds-blog &lt;blog_id&gt;",
+  execute: function (blog_id) {
+    try {
+      checkParameter(blog_id.text, "blog_id");
+      var params = {blog_id: blog_id.text};
+      odsExecute("feeds.blog.refresh", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-feeds-folder",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"path": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-feeds-folder &lt;instance_id&gt; path &lt;path&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "path", params, "path", true);
+      odsExecute("feeds.folder.new", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-feeds-folder",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"path": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-feeds-folder &lt;instance_id&gt; path &lt;path&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "path", params, "path", true);
+      odsExecute("feeds.folder.delete", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-feed-annotation-by-id",
+  takes: {"annotation_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-feed-annotation-by-id &lt;annotation_id&gt;",
+  preview: function (previewBlock, annotation_id, modifiers) {
+    try {
+      checkParameter(annotation_id.text);
+      var params = {annotation_id: annotation_id.text};
+      odsPreview(previewBlock, "feeds.annotation.get", params, "feeds");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-feed-item-annotation",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"item_id": noun_type_id, "author": noun_arb_text, "body": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-feed-item-annotation instance_id item_id &lt;item_id&gt; author &lt;author&gt; body &lt;body&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "item_id", params, "item_id", true);
+      addParameter(modifiers, "author", params, "author", true);
+      addParameter(modifiers, "body", params, "body", true);
+      odsExecute("feeds.annotation.new", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-feed-item-annotation-claim",
+  takes: {"annotation_id": noun_type_id},
+  modifiers: {"iri": noun_arb_text, "relation": noun_arb_text, "value": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-feed-item-annotation-claim &lt;annotation_id&gt; iri &lt;iri&gt; relation &lt;relation&gt; value &lt;value&gt;",
+  execute: function (annotation_id, modifiers) {
+    try {
+      checkParameter(annotation_id.text, "annotation_id");
+      var params = {annotation_id: annotation_id.text};
+      addParameter(modifiers, "iri", params, "claimIri", true);
+      addParameter(modifiers, "relation", params, "claimRelation", true);
+      addParameter(modifiers, "value", params, "claimValue", true);
+      odsExecute("feeds.annotation.claim", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-feed-item-annotation",
+  takes: {"annotation_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-feed-item-annotation &lt;annotation_id&gt;",
+  execute: function (annotation_id) {
+    try {
+      checkParameter(annotation_id.text, "annotation_id");
+      var params = {annotation_id: annotation_id.text};
+      odsExecute("feeds.annotation.delete", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-feed-item-comment-by-id",
+  takes: {"comment_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-feed-item-comment-by-id &lt;comment_id&gt;",
+  preview: function (previewBlock, comment_id) {
+    try {
+      checkParameter(comment_id.text);
+      var params = {comment_id: comment_id.text};
+      odsPreview(previewBlock, "feeds.comment.get", params, "feeds");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-feed-item-comment",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"item_id": noun_type_id, "title": noun_arb_text, "body": noun_arb_text, "author": noun_arb_text, "authorMail": noun_arb_text, "authorUrl": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-feed-item-comment instance_id item_id &lt;item_id&gt; title &lt;title&gt; body &lt;body&gt; author &lt;author&gt; authorMail &lt;authorMail&gt; authorUrl [&lt;authorUrl&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "item_id", params, "item_id", true);
+      addParameter(modifiers, "title", params, "title", true);
+      addParameter(modifiers, "body", params, "text", true);
+      addParameter(modifiers, "author", params, "name", true);
+      addParameter(modifiers, "authorMail", params, "email", true);
+      addParameter(modifiers, "authorUrl", params, "url");
+      odsExecute("feeds.comment.new", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-feed-item-comment",
+  takes: {"comment_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-feed-item-comment &lt;comment_id&gt;",
+  execute: function (comment_id) {
+    try {
+      checkParameter(comment_id.text, "comment_id");
+      var params = {comment_id: comment_id.text};
+      odsExecute("feeds.comment.delete", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-feeds-options",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"options": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-feeds-options &lt;instance_id&gt; options &lt;options&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "options", params, "options");
+      odsExecute("feeds.options.set", params, "feeds");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-feeds-options",
+  takes: {"instance_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-feeds-options &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    try {
+      checkParameter(instance_id.text);
+      var params = {inst_id: instance_id.text};
+      odsPreview(previewBlock, "feeds.options.get", params, "feeds");
+    } catch (ex) {
+    }
+  }
+});
