@@ -6308,6 +6308,120 @@ etc ...
 </rdf:RDF>
 ]]></programlisting>
 </sect2>
+<sect2 id="sparqloauthendpoint"><title>SPARQL OAuth Endpoint</title>
+<para>OAuth provides a secure data transmmission level mechanism for your SPARQL endpoint.
+It enables you to securely interact with your RDF database from a variety of locations. It also
+allows you to provide controlled access to private data to select user profiles.</para>
+<para>Virtuoso OAuth server can be installed by installing the oauth_dav.vad package and
+the OAuth UI is accessible from the URL http://cname:port/oauth</para>
+<para>The user must have SQL privileges in order to run secured SPARQL statements.</para>
+<para>Here is a sample scenario:</para>
+<orderedlist>
+<listitem>Install the conductor_dav.vad and oauth_dav.vad packages. </listitem>
+<listitem>From the Conductor UI create user test1 by setting SQL and DAV login enable. Also set SPARQL_UPDATE role to it:
+<orderedlist>
+<listitem>Go to http://cname:port/conductor </listitem>
+<listitem>Log in as dba user</listitem>
+<listitem>Go to System Admin->User Account and click the "Create New Account" link
+<figure id="sparqloauthendpoint1" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth1.png"/>
+    </figure>
+</listitem>
+<listitem>In the shown form:
+<orderedlist>
+<listitem>Enter user name for ex. test1, password and confirm password </listitem>
+<listitem>Check "Allow DAV Logins" </listitem>
+<listitem>Check "Allow SQL/ODBC Logins" </listitem>
+<listitem>Add Role "SPARQL_UPDATE" from the list of available Roles to the "Selected" box.
+<figure id="sparqloauthendpoint2" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth2.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+<listitem>Click the "Save" button. </listitem>
+<listitem>As result the user test1 will be created.
+<figure id="sparqloauthendpoint3" float="1">
+      <title>Conductor UI</title>
+      <graphic fileref="ui/SparqlOAuth3.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</listitem>
+<listitem>Go to http://cname:port/oauth/
+<figure id="sparqloauthendpoint4" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth4.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "OAuth keys" link</listitem>
+<listitem>Log in as user test1
+<figure id="sparqloauthendpoint5" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth5.png"/>
+    </figure>
+</listitem>
+<listitem>As result will be shown the OAuth application registration form.
+<figure id="sparqloauthendpoint6" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth6.png"/>
+    </figure>
+</listitem>
+<listitem>Generate key for SPARQL by selecting it from the list of "Application name" and click the "Generate Keys" button.</listitem>
+<listitem>As result for SPARQL will be generated Consumer Key for ex.:
+<programlisting><![CDATA[
+cf92411e17f59960a4189451bfb5bf6b92c856e3
+]]></programlisting>
+<figure id="sparqloauthendpoint7" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth7.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "Back to main menu" link.</listitem>
+<listitem>Click the "Protected SPARQL Endpoint" link.</listitem>
+<listitem>As result will be shown the OpenLink Virtuoso SPARQL Query form.
+<figure id="sparqloauthendpoint8" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth8.png"/>
+    </figure>
+</listitem>
+<listitem>Enter for Default Graph URI this:
+<programlisting><![CDATA[
+http://myopenlink.net/dataspace/person/kidehen#this
+]]></programlisting>
+</listitem>
+<listitem>Enter for "OAuth token" field the value:
+<programlisting><![CDATA[
+cf92411e17f59960a4189451bfb5bf6b92c856e3
+]]></programlisting>
+<figure id="sparqloauthendpoint9" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth9.png"/>
+    </figure>
+</listitem>
+<listitem>Click the "Run Query" button.</listitem>
+<listitem>In the shown OAuth Authorization Service form enter the password for user test1 and click the "Login" button.
+<figure id="sparqloauthendpoint10" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth10.png"/>
+    </figure>
+</listitem>
+<listitem>In the shown form click the "Authorize" button.
+<figure id="sparqloauthendpoint11" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth11.png"/>
+    </figure>
+</listitem>
+<listitem>As results will be shown the found results:
+<figure id="sparqloauthendpoint12" float="1">
+      <title>OAuth UI</title>
+      <graphic fileref="ui/SparqlOAuth12.png"/>
+    </figure>
+</listitem>
+</orderedlist>
+</sect2>
 </sect1>
 <sect1 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
 <para>
