@@ -853,8 +853,10 @@ create procedure ddl_pk_change_final (in tb varchar, in cols any)
   tb_esc := sprintf ('"%I"."%I"."%I"',
 		 name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));
   update DB.DBA.SYS_TRIGGERS set T_TABLE = tname where T_TABLE = tb;
+  update DB.DBA.SYS_GRANTS set G_OBJECT = tname where G_OBJECT = tb and G_OP < 16;
   exec (sprintf ('drop table %s', tb_esc), st, msg, vector ());
   update DB.DBA.SYS_TRIGGERS set T_TABLE = tb where T_TABLE = tname;
+  update DB.DBA.SYS_GRANTS set G_OBJECT = tb where G_OBJECT = tname and G_OP < 16;
   exec (sprintf ('alter table %s rename %s', tname_esc, tb_esc), st, msg, vector ());
   commit work;
   --log_enable(0);
