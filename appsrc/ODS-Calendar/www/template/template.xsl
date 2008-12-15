@@ -163,41 +163,11 @@
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
+              <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" xhtml_onkeypress="return submitEnter(event, \'F1\', \'command\', \'select\', \'search\', \'mode\', \'simple\');" />
             <xsl:call-template name="nbsp"/>
-            <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
-              <v:on-post>
-                <![CDATA[
-                  if ((trim (self.keywords.ufl_value) <> '') or (self.cScope = 'search')) {
-                    if (CAL.WA.page_name () <> 'home.vspx') {
-                      self.vc_redirect (sprintf ('home.vspx?search=%s', self.keywords.ufl_value));
-                      return;
-                    }
-                    self.cScope := 'search';
-                    self.cAction := 'browse';
-                    self.cSearch := null;
-                    CAL.WA.xml_set('keywords', self.cSearch, self.keywords.ufl_value);
-                    self.vc_data_bind (e);
-                  }
-                ]]>
-              </v:on-post>
-            </v:button>
+              <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'simple');" title="Simple Search" about="Simple Search" class="link">Search</span>
             |
-              <v:button name="tAdvanced" action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
-              <v:on-post>
-                <![CDATA[
-                  if (CAL.WA.page_name () <> 'home.vspx') {
-                    self.vc_redirect (sprintf ('home.vspx?search=%s&mode=advanced', self.keywords.ufl_value));
-                    return;
-                  }
-                  self.cScope := 'search';
-                  self.cAction := 'advanced';
-                  self.cSearch := null;
-                  CAL.WA.xml_set('mode', self.cSearch, 'advanced');
-                  self.vc_data_bind (e);
-                ]]>
-              </v:on-post>
-            </v:button>
+              <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'advanced');" title="Advanced Search" about="Advanced Search" class="link">Advanced</span>
           </div>
         </v:template>
       </div>
@@ -207,18 +177,10 @@
           </div>
           <div style="float: right; padding-right: 0.5em;">
             <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
-              <v:button name="tPreferences" action="simple" style="url" value="Preferences" xhtml_title="Preferences">
-            <v:on-post>
-              <![CDATA[
-                self.cAction := 'settings';
-                    self.cSubAction := '';
-                self.vc_data_bind (e);
-              ]]>
-            </v:on-post>
-          </v:button>
+              <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Preferences" about="Preferences" class="link">Preferences</span>
               |
         </v:template>
-            <a href="about" onclick="javascript: CAL.aboutDialog(); return false;" title="About">About</a>
+            <span onclick="javascript: CAL.aboutDialog(); return false;" title="About" class="link">About</span>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>
@@ -245,8 +207,8 @@
   <!--=========================================================================-->
   <xsl:template match="vm:event">
     <div>
-      <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 80px;"/>
-      <input type="button" value="New Task"  onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 80px;"/>
+      <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 80px; cursor: pointer;"/>
+      <input type="button" value="New Task" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 80px; cursor: pointer;"/>
       <br style="clear: both;" />
     </div>
   </xsl:template>
@@ -365,9 +327,7 @@
           <tr id="c_footer" class="C_heading">
             <td colspan="2" />
             <td class="C_onmonth C_today" colspan="3">
-              <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">
-                today
-              </span>
+              <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">today</span>
             </td>
             <td colspan="2" />
           </tr>
@@ -388,7 +348,7 @@
           {
             if (self.access_role not in ('public', 'guest'))
             {
-            http (sprintf ('<a href="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</a>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+              http (sprintf ('<span onclick="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</span>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
             } else {
               http (sprintf ('<div class="gems" style="background-color: %s;">%s</div>', S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
             }
@@ -405,17 +365,17 @@
       <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Import/Export
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
-      <a href="#" onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
-      <a href="#" onclick="javascript: cExchange('export'); return false;" title="Export" class="gems"><img src="image/dwnld_16.png" border="0" alt="Export" /> Export</a>
+        <span onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</span>
+        <span onclick="javascript: cExchange('export'); return false;" title="Export" class="gems"><img src="image/dwnld_16.png" border="0" alt="Export" /> Export</span>
       <?vsp http ('<div style="border-top: 1px solid #7f94a5;"></div>'); ?>
-      <a href="#" onclick="javascript: cExchange('subscribeBrowse'); return false;" title="Import" class="gems">Manage Subscriptions</a>
-      <a href="#" onclick="javascript: cExchange('publishBrowse'); return false;" title="Export" class="gems">Manage Publications</a>
+        <span onclick="javascript: cExchange('subscribeBrowse'); return false;" title="Import" class="gems">Manage Subscriptions</span>
+        <span onclick="javascript: cExchange('publishBrowse'); return false;" title="Export" class="gems">Manage Publications</span>
       <?vsp
       if (CAL.WA.syncml_check ())
       {
       ?>
         <?vsp http ('<div style="border-top: 1px solid #7f94a5;"></div>'); ?>
-        <a href="#" onclick="javascript: cExchange('syncmlBrowse'); return false;" title="SyncML" class="gems">Manage SyncML</a>
+          <span onclick="javascript: cExchange('syncmlBrowse'); return false;" title="SyncML" class="gems">Manage SyncML</span>
       <?vsp
       }
       ?>

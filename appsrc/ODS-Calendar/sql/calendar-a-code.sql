@@ -7122,7 +7122,7 @@ create procedure DB.DBA.CALENDAR_NEWS_MSG_U (
 create procedure DB.DBA.CALENDAR_NEWS_MSG_D (
   inout O_NM_ID any)
 {
-  signal ('CONV3', 'Delete of a Person comment is not allowed');
+  signal ('CONV3', 'Delete of a event/task comment is not allowed');
 }
 ;
 

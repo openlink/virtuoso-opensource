@@ -54,23 +54,26 @@ function toolbarPost(value)
 
 // ---------------------------------------------------------------------------
 //
-function submitEnter(myForm, myButton, e)
+function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
   var keyCode;
   
   if (window.event)
+  {
     keycode = window.event.keyCode;
-  else
-    if (e)
+  } else {
+    if (!e) {return true;}
       keycode = e.which;
-    else
-      return true;
-  if (keycode == 13) {
-    if (myButton != '') {
-      doPost (myForm, myButton);
+  }
+  if (keycode == 13)
+  {
+    if (fButton != '')
+    {
+      vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value);
       return false;
-    } else
-      document.forms[myForm].submit();
+    } else {
+      document.forms[fForm].submit();
+    }
   }
   return true;
 }

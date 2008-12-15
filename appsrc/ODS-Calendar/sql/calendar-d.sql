@@ -32,6 +32,9 @@ create procedure CAL.WA.uninstall ()
 CAL.WA.uninstall ()
 ;
 
+VHOST_REMOVE (lpath => '/calendar');
+VHOST_REMOVE (lpath => '/calendar/atom-pub');
+
 -- Triggers
 CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AI');
 CAL.WA.exec_no_error('drop trigger WS.WS.CALENDAR_SYS_DAV_RES_AU');
@@ -42,6 +45,12 @@ CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'C
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Upstream Scheduler\'');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Attendees Scheduler\'');
 CAL.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Exchange Scheduler\'');
+
+-- NNTP
+CAL.WA.exec_no_error ('DROP procedure DB.DBA.CALENDAR_NEWS_MSG_I');
+CAL.WA.exec_no_error ('DROP procedure DB.DBA.CALENDAR_NEWS_MSG_U');
+CAL.WA.exec_no_error ('DROP procedure DB.DBA.CALENDAR_NEWS_MSG_D');
+CAL.WA.exec_no_error ('DB.DBA.NNTP_NEWS_MSG_DEL (\'CALENDAR\')');
 
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');

@@ -34,7 +34,7 @@ a
   text-decoration: none;
 }
 
-a:active
+a:active, .link:active
 {
   text-decoration: none;
 }
@@ -47,6 +47,12 @@ a:visited
 a:hover
 {
   text-decoration: underline;
+}
+
+.link
+{
+  color: blue;
+	cursor: pointer;
 }
 
 #MTB
@@ -146,8 +152,10 @@ a:hover
   border-top: 0;
 }
 
-.lc a, .lc div
+.lc a, .lc div, .lc .gems
 {
+  color: blue;
+	cursor: pointer;
   display: block;
   padding: 3px;
   margin: 3px;
@@ -158,15 +166,14 @@ a:hover
   text-decoration: none;
 }
 
-.lc a:hover
+.lc a:hover, .lc .gems:hover
 {
   color: blue;
   background: #99b3c5;
 }
 
-.lc a.gems2
+.gems2
 {
-  color: black;
   font-weight: bold;
   background: #b0cde4;
 }
@@ -1001,14 +1008,15 @@ span.toolbarLabel
 }
 
 /*====== Calendar pane ======*/
-a.calendar_tab {
+.calendar_tab {
+  cursor: pointer;
   color: #000;
   font-weight: bold;
   background-color: #FFF;
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
-  margin: 0px 0px 0px 2px;
+  margin: 0px 0px -1px 2px;
   padding: 2px 10px 2px 10px;
   position: relative;
   text-decoration: none;
@@ -1016,17 +1024,18 @@ a.calendar_tab {
   z-index: 1;
 }
 
-a.calendar_tabActive {
+.calendar_tabActive {
   background-color: #EFEFEF;
 }
 
-a.calendar_button {
+.calendar_button {
+  cursor: pointer;
   color: #000;
   font-weight: bold;
   background-color: #FFF;
   border: 1px solid #000;
   border-color: #7f94a5;
-  margin: 0px 0px 2px 2px;
+  margin: 0px 0px 1px 2px;
   padding: 2px 10px 2px 10px;
   position: relative;
   text-decoration: none;
@@ -1293,6 +1302,12 @@ a.calendar_button {
 {
   font-style: italic;
   font-size: 90%;
+}
+
+.EVL_subject:hover,
+.EVL_subject:visited
+{
+  text-decoration: none;
 }
 
 .EVL_subject

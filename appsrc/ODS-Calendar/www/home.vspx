@@ -196,7 +196,7 @@
   <v:method name="showEvent" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer, in e_attendees integer, in e_continue varchar">
     <![CDATA[
       declare domain_id integer;
-      declare showDelete, showAnnotate, color, S, T varchar;
+      declare showDelete, showAnnotate, color, S, T, R varchar;
 
         S := 'null';
         if (not isnull (e_repeat_offset))
@@ -210,11 +210,12 @@
         showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', _id, self.domain_id, self.account_id);
       }
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
+      R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV %s" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_subject">%s%s%s%V</span> %s</div>', _id, S, 'app', color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
+        T := sprintf ('<div id="e_%d_%s" class="EV" %s onclick="eEdit(this)" about="%U">%s%s%s%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV %s" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%s%V</span> %s</div>', _id, S, 'app', color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
+        T := sprintf ('<div id="e_%d_%s" class="EV" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), R);
       }
       return T;
     ]]>
@@ -286,12 +287,18 @@
     ]]>
   </v:method>
 
-  <v:method name="showEventSubject" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar, in e_attendees integer">
+  <v:method name="showEventSubjectTmp" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar, in e_attendees integer">
     <![CDATA[
       declare domain_id integer;
       
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      http (sprintf ('<a id="e_%d" href="javascript: eEdit(\'e_%d\');" class="EVL EVL_subject %s" about="%U"> %s%s%s%V</a> %s', _id, _id, 'app', SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
+      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%U"> %s%s%s%V</a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject));
+    ]]>
+  </v:method>
+
+  <v:method name="showEventSubject" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar, in e_attendees integer">
+    <![CDATA[
+      http (self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees));
     ]]>
   </v:method>
 
@@ -895,7 +902,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link_ed">%s</a>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link">%s</span>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -1024,12 +1031,12 @@
             </vm:if>
             <vm:if test="self.cAction = 'settings'">
               <div class="lc lc_close">
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems2">Settings</a>
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Import" class="gems2">Upstreams</a>
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems2">Share My Calendar</a>
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems2">Accepted Calendars</a>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2" style="color: black;">Settings</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Upstreams" class="gems gems2" style="color: black;">Upstreams</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems gems2" style="color: black;">Share My Calendar</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems gems2" style="color: black;">Accepted Calendars</span>
                 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'back');" title="Back" class="gems2">Back</a>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'back');" title="Back" class="gems gems2" style="color: black;">Back</span>
               </div>
             </vm:if>
           </td>
@@ -1101,7 +1108,62 @@
                             self.on_date := cast (get_keyword ('onDate', params) as integer);
                           if (get_keyword ('onTime', params, '') <> '')
                             self.on_time := cast (get_keyword ('onTime', params) as integer);
-                  } else {
+                        }
+                        else if (cCommand = 'settings')
+                        {
+                          cMode := get_keyword ('mode', params, '');
+                          if (cMode = 'settings')
+                          {
+                            self.cAction := 'settings';
+                            self.cSubAction := '';
+                          }
+                          else if (cMode = 'upstreamBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          else if (cMode = 'sharedBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          else if (cMode = 'grantBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          else if (cMode = 'sharedUpdate')
+                          {
+                            self.cAction := cCommand;
+                            self.cSubAction := cMode;
+                            self.vs_id := cast (get_keyword ('id', params) as integer);
+                          }
+                          else if (cMode = 'back')
+                          {
+                            self.cAction := 'browse';
+                            self.cSubAction := '';
+                          }
+                        }
+                        else if (cCommand = 'search')
+                        {
+                          cMode := get_keyword ('mode', params, '');
+                          if (cMode = 'simple')
+                          {
+                            if ((trim (self.keywords.ufl_value) <> '') or (self.cScope = 'search'))
+                            {
+				                      self.cScope := 'search';
+				                      self.cAction := 'browse';
+				                      self.cSearch := null;
+				                      CAL.WA.xml_set('keywords', self.cSearch, self.keywords.ufl_value);
+				                    }
+                          }
+                          else if (cMode = 'advanced')
+                          {
+				                    self.cScope := 'search';
+				                    self.cAction := 'advanced';
+				                    self.cSearch := null;
+				                    CAL.WA.xml_set('mode', self.cSearch, 'advanced');
+                          }
+                        }
+                        else
+                        {
                     cParams := split_and_decode(cCommand, 0,'\0\0_');
                           if (length (cParams) > 2)
                           {
@@ -1147,37 +1209,6 @@
                       self.initData ();
                     }
                   }
-                        if (cCommand = 'settings')
-                        {
-                          cMode := get_keyword ('mode', params, '');
-                          if (cMode = 'settings')
-                          {
-                            self.cSubAction := '';
-                          }
-                          if (cMode = 'upstreamBrowse')
-                          {
-                            self.cSubAction := cMode;
-                          }
-                          if (cMode = 'sharedBrowse')
-                          {
-                            self.cSubAction := cMode;
-                          }
-                          if (cMode = 'grantBrowse')
-                          {
-                            self.cSubAction := cMode;
-                          }
-                          if (cMode = 'sharedUpdate')
-                          {
-                            self.cAction := cCommand;
-                            self.cSubAction := cMode;
-                            self.vs_id := cast (get_keyword ('id', params) as integer);
-                          }
-                          if (cMode = 'back')
-                          {
-                            self.cAction := 'browse';
-                            self.cSubAction := '';
-                          }
-                        }
                 }
                 
                       cCommand := get_keyword ('date', params, '');
@@ -1330,7 +1361,7 @@
         <table cellspacing="0" style="width: 100%;">
           <tr style="height: 18px;">
             <td>
-                    <v:button action="simple" name="day" style="url" value="Day" xhtml_class="-- case when (self.cScope = 'day') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Day">
+                    <v:button action="simple" name="day" value="Day" xhtml_class="-- case when (self.cScope = 'day') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Day">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'day';
@@ -1341,7 +1372,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                    <v:button action="simple" name="week" style="url" value="Week" xhtml_class="-- case when (self.cScope = 'week') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Week">
+                    <v:button action="simple" name="week" value="Week" xhtml_class="-- case when (self.cScope = 'week') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Week">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'week';
@@ -1352,7 +1383,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                    <v:button action="simple" name="month" style="url" value="Month" xhtml_class="-- case when (self.cScope = 'month') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Month">
+                    <v:button action="simple" name="month" value="Month" xhtml_class="-- case when (self.cScope = 'month') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Month">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'month';
@@ -1363,7 +1394,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                    <v:button action="simple" name="events" style="url" value="Events" xhtml_class="-- case when (self.cScope = 'events') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Event List">
+                    <v:button action="simple" name="events" value="Events" xhtml_class="-- case when (self.cScope = 'events') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Event List">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'events';
@@ -1373,7 +1404,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                    <v:button action="simple" name="tasks" style="url" value="Tasks" xhtml_class="-- case when (self.cScope = 'tasks') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Task List">
+                    <v:button action="simple" name="tasks" value="Tasks" xhtml_class="-- case when (self.cScope = 'tasks') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Task List">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'tasks';
@@ -1384,7 +1415,7 @@
                 </v:on-post>
               </v:button>
               <vm:if test="not isnull (self.cSearch)">
-                      <v:button action="simple" name="search" style="url" value="Search" xhtml_class="-- case when (self.cScope = 'search') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Search List">
+                      <v:button action="simple" name="search" value="Search" xhtml_class="-- case when (self.cScope = 'search') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Search List">
                   <v:on-post>
                     <![CDATA[
                       self.cScope := 'search';
@@ -1423,7 +1454,7 @@
 
                 ?>
               </span>
-                      <v:button action="simple" name="previous" style="url" value="--'&amp;lt;'" xhtml_class="calendar_button" xhtml_alt="Previous">
+                      <v:button action="simple" name="previous" value="--'&amp;lt;'" xhtml_class="calendar_button" xhtml_alt="Previous">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -1438,7 +1469,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                      <v:button action="simple" name="next" style="url" value="--'&amp;gt;'" xhtml_class="calendar_button" xhtml_alt="Next">
+                      <v:button action="simple" name="next" value="--'&amp;gt;'" xhtml_class="calendar_button" xhtml_alt="Next">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -1458,7 +1489,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                      <v:button action="simple" name="today" style="url" value="Today" xhtml_class="calendar_button" xhtml_alt="Today">
+                      <v:button action="simple" name="today" value="Today" xhtml_class="calendar_button" xhtml_alt="Today">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'day';
@@ -2067,7 +2098,6 @@
                         <td style="padding: 0 2px 0 2px;">
                           <?vsp
                                     self.showEventDuration (e_event, rowset[5], rowset[6]);
-                                    if (e_kind <> 2)
                               http ('&nbsp;');
                                     self.showEventSubject (e_id, e_event, e_subject, rowset[7], rowset[8], rowset[10]);
                           ?>
