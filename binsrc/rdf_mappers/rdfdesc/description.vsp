@@ -46,7 +46,7 @@
    else
      {
        -- blank node is subject 
-       exec (sprintf ('sparql select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S), 
+       exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S), 
 	  null, null, vector (), 0, meta, data);
         if (length (data))
 	  _G := data[0][0];
@@ -79,6 +79,13 @@
      { 
        exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
 	    select ?o where { graph <%S> { <%S> dc:title ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+       if (length (data)) label := data[0][0];
+     }
+
+   if (label = '')
+     { 
+       exec (sprintf ('sparql prefix fbase: <http://rdf.freebase.com/ns/>  
+	    select ?o where { graph <%S> { <%S> fbase:type.object.name ?o } }', _G, _S), null, null, vector (), 0, meta, data);
        if (length (data)) label := data[0][0];
      }
 
