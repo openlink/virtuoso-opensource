@@ -395,7 +395,7 @@ namespace OpenLink.Data.Virtuoso
 					row[baseColumnName] = columns[i].baseColumnName;
 				row[isHidden] = columns[i].IsHidden;
                 // Virtuoso returns the key as an additional column with 
-                // the IsHiddden property set to true.  However, if there
+                // the IsHidden property set to true.  However, if there
                 // are two columns with IsKey set to true I get errors saying
                 // that there is not primary key for the table.  This hack 
                 // fixes the problem...

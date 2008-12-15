@@ -52,7 +52,7 @@ namespace OpenLink.Data.Virtuoso
 	/// either side of names and values alike.</para>
 	///
 	/// <para>The name part may contain any characters including semicolons. However any number of semicolons
-	/// that go before any other legal name cheracter is treated as settings separator and therefore is
+	/// that go before any other legal name character is treated as settings separator and therefore is
 	/// ignored. Semicolons that go after non-semicolon characters are included in the name. To specify a name
 	/// containing an equal sign, the equal sign must be doubled. Names are case insensitive.</para>
 	///

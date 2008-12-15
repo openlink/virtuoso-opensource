@@ -1121,7 +1121,7 @@ namespace OpenLink.Data.Virtuoso
             return dt;
         }
 
-   private static String getWideColumsText_case0 =
+   private static String getWideColumnsText_case0 =
        "SELECT " +
          "charset_recode (name_part(k.KEY_TABLE,0), 'UTF-8', '_WIDE_') AS TABLE_CAT NVARCHAR(128), " +
 	 "charset_recode (name_part(k.KEY_TABLE,1), 'UTF-8', '_WIDE_') AS TABLE_SCHEM NVARCHAR(128), " +
@@ -1156,7 +1156,7 @@ namespace OpenLink.Data.Virtuoso
 	 "AND kp.KP_KEY_ID = k.KEY_ID " +
 	 "AND COL_ID = KP_COL " +
        "ORDER BY k.KEY_TABLE, c.COL_ID";
-   private static String getWideColumsText_case2 =
+   private static String getWideColumnsText_case2 =
        "SELECT " +
          "charset_recode (name_part(k.KEY_TABLE,0), 'UTF-8', '_WIDE_') AS TABLE_CAT NVARCHAR(128), " +
 	 "charset_recode (name_part(k.KEY_TABLE,1), 'UTF-8', '_WIDE_') AS TABLE_SCHEM NVARCHAR(128), " +
@@ -1291,8 +1291,8 @@ namespace OpenLink.Data.Virtuoso
             DataTable dtColumns = new DataTable("Columns");
             String cmdText;
             cmdText = (innerConnection.IdentCase ==
-          		CLI.IdentCase.SQL_IC_MIXED) ? getWideColumsText_case2 :
-          			getWideColumsText_case0;
+          		CLI.IdentCase.SQL_IC_MIXED) ? getWideColumnsText_case2 :
+          			getWideColumnsText_case0;
             VirtuosoCommand cmd = new VirtuosoCommand(cmdText ,this);
    
             VirtuosoParameter p1 = (VirtuosoParameter) cmd.CreateParameter();
@@ -1492,7 +1492,7 @@ namespace OpenLink.Data.Virtuoso
             DataTable dt = new DataTable("SpecialColumns");
 
 /* 
- * Comment from virtodbc implementation for SQLSpeciaColumns
+ * Comment from virtodbc implementation for SQLSpecialColumns
  */
 
 /* fColType must be one of the following values:

@@ -49,7 +49,7 @@ namespace OpenLink.Data.Virtuoso
 		private static IntPtr henv;
 
 		/// <summary>
-		/// Connecion count.
+		/// connection count.
 		/// </summary>
 		private static int connections;
 
@@ -480,7 +480,7 @@ namespace OpenLink.Data.Virtuoso
 				if (rc != CLI.ReturnCode.SQL_SUCCESS)
 				{
 					if (rc == CLI.ReturnCode.SQL_NO_DATA)
-						throw new InvalidOperationException ("The connection was cancelled by the user.");
+						throw new InvalidOperationException ("The connection was canceled by the user.");
 					HandleConnectionErrors (rc);
 				}
 

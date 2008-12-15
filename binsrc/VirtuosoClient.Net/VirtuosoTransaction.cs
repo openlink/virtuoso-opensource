@@ -121,7 +121,7 @@ namespace OpenLink.Data.Virtuoso
 			if (connection == null)
 				throw new InvalidOperationException ("The transaction is disposed.");
 			if (ended)
-				throw new InvalidOperationException ("The transaction has already been comitted or rolled back.");
+				throw new InvalidOperationException ("The transaction has already been committed or rolled back.");
 			connection.EndTransaction (commit);
 			ended = true;
 		}

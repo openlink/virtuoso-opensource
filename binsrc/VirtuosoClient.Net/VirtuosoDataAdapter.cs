@@ -77,7 +77,7 @@ namespace OpenLink.Data.Virtuoso
 #endif
     {
       internal readonly static BooleanSwitch Switch = 
-	  new BooleanSwitch ("VirtuosoClient.VirtuosoDataAdaper", "Marshaling");
+	  new BooleanSwitch ("VirtuosoClient.VirtuosoDataAdapter", "Marshaling");
 #if !ADONET2
         private VirtuosoCommand selectCommand;
         private VirtuosoCommand insertCommand;

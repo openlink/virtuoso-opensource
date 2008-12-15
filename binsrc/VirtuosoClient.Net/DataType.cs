@@ -324,7 +324,7 @@ namespace OpenLink.Data.Virtuoso
 
 	internal sealed class DataTypeInfo
 	{
-		private DataTypeInfo () {} // Prevent instantination
+		private DataTypeInfo () {} // Prevent instantiation
 
 		internal static DataTypeChar Char;
 		internal static DataTypeChar VarChar;
