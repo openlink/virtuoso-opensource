@@ -29,8 +29,8 @@
          >
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/OplLic#">
     <rdfs:label>OpenLink License</rdfs:label>
-    <rdfs:comment>Virtuoso License files.</rdfs:comment>
-    <virtrdf:catName>Virtuoso Licenses</virtrdf:catName>
+    <rdfs:comment>License files</rdfs:comment>
+    <virtrdf:catName>License File</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://www.openlinksw.com/schemas/OplLic#RegisteredTo">
