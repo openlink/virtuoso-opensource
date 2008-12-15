@@ -393,6 +393,7 @@ conductor/vdb_resources.vspx
 conductor/vdb_unlink_obj.vspx
 conductor/vdir_browser.vspx
 conductor/vdir_helper.sql
+conductor/vhost_export.vspx
 conductor/view_dav_res.vsp
 conductor/view_file.vsp
 conductor/view.vsp

@@ -5316,10 +5316,10 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
 create procedure URL_REWRITE_LIST_DUMP (in rule_list varchar)
 {
   declare U_DIR, U_CONT, U_RULE, U_RULE_TYPE, U_NICE_FORMAT, U_HM_NICE_FMT, U_NICE_MIN_PARAMS, U_TARGET_FORMAT,
-	  U_TARGET_EXPR, U_ACCEPT_PATTERN, U_NO_CONTINUATION, U_HTTP_REDIRECT, U_HTTP_HEADERS any;
+	  U_TARGET_EXPR, U_ACCEPT_PATTERN, U_NO_CONTINUATION, U_HTTP_REDIRECT, U_HTTP_HEADERS, U_IDX any;
 
   result_names (U_DIR, U_RULE, U_RULE_TYPE, U_NICE_FORMAT, U_HM_NICE_FMT, U_NICE_MIN_PARAMS, U_TARGET_FORMAT,
-      U_TARGET_EXPR, U_ACCEPT_PATTERN, U_NO_CONTINUATION, U_HTTP_REDIRECT, U_HTTP_HEADERS);
+      U_TARGET_EXPR, U_ACCEPT_PATTERN, U_NO_CONTINUATION, U_HTTP_REDIRECT, U_HTTP_HEADERS, U_IDX);
 
   URL_REWRITE_LIST_DUMP_REC (rule_list, '');
 
@@ -5328,7 +5328,7 @@ create procedure URL_REWRITE_LIST_DUMP (in rule_list varchar)
 
 create procedure URL_REWRITE_LIST_DUMP_REC (in rule_list varchar, in parent_list varchar)
 {
-  for select distinct URRL_MEMBER as cur_iri from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rule_list
+  for select distinct URRL_MEMBER as cur_iri, URRL_INX as idx from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rule_list
     order by URRL_INX
 	do
 	  {
@@ -5353,7 +5353,7 @@ create procedure URL_REWRITE_LIST_DUMP_REC (in rule_list varchar, in parent_list
 			  from DB.DBA.URL_REWRITE_RULE where URR_RULE = cur_iri
 			  do
 			    {
-			      result (rule_list, parent_list, URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, nice_fmt, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_EXPR, URR_ACCEPT_PATTERN, URR_NO_CONTINUATION, URR_HTTP_REDIRECT, URR_HTTP_HEADERS);
+			      result (rule_list, parent_list, URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, nice_fmt, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_EXPR, URR_ACCEPT_PATTERN, URR_NO_CONTINUATION, URR_HTTP_REDIRECT, URR_HTTP_HEADERS, idx);
 			    }
 
 	      }
@@ -5366,7 +5366,7 @@ create procedure view URL_REWRITE_LIST_DUMP as URL_REWRITE_LIST_DUMP (rule_list)
     	U_RULE varchar, U_RULE_TYPE int, U_NICE_FORMAT varchar,
 	U_HM_NICE_FMT varchar, U_NICE_MIN_PARAMS int, U_TARGET_FORMAT varchar,
 	U_TARGET_EXPR varchar, U_ACCEPT_PATTERN varchar,
-	U_NO_CONTINUATION int, U_HTTP_REDIRECT int, U_HTTP_HEADERS varchar);
+	U_NO_CONTINUATION int, U_HTTP_REDIRECT int, U_HTTP_HEADERS varchar, U_IDX int);
 
 create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 {

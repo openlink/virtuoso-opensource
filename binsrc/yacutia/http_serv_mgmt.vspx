@@ -487,8 +487,35 @@
 		    urw := cast (xpath_eval ('@url_rew',xt) as varchar);
 		    if (length (urw))
 		      http_value ('*', 'b');
+                    else
+		    http ('<b>&nbsp;</b>');
 		  }
 		  ?>
+		    <v:button action="simple" style="image" name="vexport" url="vhost_export.vspx"
+		      value="images/icons/go_16.png"
+		      xhtml_alt="Export"
+		      xhtml_title="Export"
+		      text="&#160;Export"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp, urw any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+
+		        control.bt_url := sprintf (
+		          'vhost_export.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+			  _host1, _httphost1, _path, urw);
+		  ]]></v:after-data-bind>
+		  </v:button>
 		</td>
 	      </tr>
             </v:leaf-template>

@@ -119,7 +119,8 @@
 		  U_HTTP_REDIRECT,
 		  U_HTTP_HEADERS,
 		  U_DIR,
-		  U_CONT
+		  U_CONT,
+		  U_IDX
 		  from URL_REWRITE_LIST_DUMP where RULE_LIST = :self.rulelist"
 		  scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind><![CDATA[
@@ -223,6 +224,40 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />
+				  &#160;
+				<v:button name="earul1" value="Up" action="simple" style="url">
+				    <v:on-post><![CDATA[
+					declare to_move, me int;
+					me := (control.vc_parent as vspx_row_template).te_rowset[13];
+					to_move :=
+					(select top 1 URRL_INX from DB.DBA.URL_REWRITE_RULE_LIST where
+						URRL_LIST = self.rulelist and URRL_INX < me order by 1 desc);
+				        if (to_move is not null)
+					{
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = -1 where URRL_LIST = self.rulelist and URRL_INX = me;
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = me where URRL_LIST = self.rulelist and URRL_INX = to_move;
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = to_move where URRL_LIST = self.rulelist and URRL_INX = -1;
+					  self.maps.vc_data_bind (e);
+					}
+				]]></v:on-post>
+				</v:button>
+				  &#160;
+				<v:button name="earul2" value="Down" action="simple" style="url">
+				    <v:on-post><![CDATA[
+					declare to_move, me int;
+					me := (control.vc_parent as vspx_row_template).te_rowset[13];
+					to_move :=
+					(select top 1 URRL_INX from DB.DBA.URL_REWRITE_RULE_LIST where
+					URRL_LIST = self.rulelist and URRL_INX > me order by 1 asc);
+				        if (to_move is not null)
+					{
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = -1 where URRL_LIST = self.rulelist and URRL_INX = me;
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = me where URRL_LIST = self.rulelist and URRL_INX = to_move;
+					  update DB.DBA.URL_REWRITE_RULE_LIST set URRL_INX = to_move where URRL_LIST = self.rulelist and URRL_INX = -1;
+					  self.maps.vc_data_bind (e);
+					}
+				]]></v:on-post>
+				</v:button>
 
 			      </td>
 			  </tr>
