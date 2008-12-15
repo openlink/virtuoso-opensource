@@ -457,7 +457,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
   returns integer
 {
 -- dbg_obj_princ('in side! ', rulelist_iri);
-  for select distinct URRL_MEMBER as cur_iri from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri do
+  for select distinct URRL_MEMBER as cur_iri from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX asc do
     {
       if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = cur_iri))
         {
