@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.8.152"
+VERSION="1.8.153"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -246,10 +246,10 @@ sticker_init() {
   echo "    \"IM ConvertImageBlob\" ();" >> $STICKER
   echo "    if (1 = 0) {" >> $STICKER
   echo "    failed:" >> $STICKER
-  echo "      VAD.DBA.VAD_FAIL_CHECK('This application require im.dll (im.so) plugin is not loaded, make sure you have something like this in ini file for loading Image Magick plugin:" >> $STICKER
+  echo "      VAD.DBA.VAD_FAIL_CHECK('This application require im.dll (ImageMagick) plugin is not loaded, make sure you have something like this in ini file for loading Image Magick plugin:" >> $STICKER
   echo "      [Plugins]" >> $STICKER
   echo "      LoadPath = ./plugin" >> $STICKER
-  echo "      Load2    = plain, image_magick" >> $STICKER
+  echo "      Load2    = plain, im ; ImageMagick DLL" >> $STICKER
   echo "      ');" >> $STICKER
   echo "    }" >> $STICKER
   echo "    passed:" >> $STICKER

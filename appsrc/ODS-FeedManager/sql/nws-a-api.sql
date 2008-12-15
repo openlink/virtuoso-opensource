@@ -34,9 +34,15 @@ use ODS;
 create procedure ODS.ODS_API."feeds_setting_set" (
   inout settings any,
   inout options any,
-  in settingName varchar)
+  in settingName varchar,
+  in settingTest any := null)
 {
-  ENEWS.WA.set_keyword (settingName, settings, get_keyword (settingName, options, get_keyword (settingName, settings)));
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  if (not isnull (settingTest))
+    ENEWS.WA.test (aValue, settingTest);
+  ENEWS.WA.set_keyword (settingName, settings, aValue);
 }
 ;
 
@@ -92,7 +98,7 @@ create procedure ODS.ODS_API."feeds.subscribe" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  declare rc, f_id, feed_id integer;
+  declare f_id, feed_id integer;
   declare uname varchar;
   declare channels any;
 
@@ -131,17 +137,17 @@ create procedure ODS.ODS_API."feeds.unsubscribe" (
   };
 
   declare inst_id integer;
-  declare rc integer;
   declare uname varchar;
 
   inst_id := (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  ENEWS.WA.channel_delete (feed_id);
-  rc := row_count ();
+  if (not exists (select 1 from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  return ods_serialize_int_res (rc);
+  ENEWS.WA.channel_delete (feed_id);
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -157,7 +163,6 @@ create procedure ODS.ODS_API."feeds.refresh" (
   };
 
   declare inst_id, f_id integer;
-  declare rc integer;
   declare uname varchar;
 
   inst_id := (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id);
@@ -165,8 +170,10 @@ create procedure ODS.ODS_API."feeds.refresh" (
     return ods_auth_failed ();
 
   f_id := (select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id);
-  ENEWS.WA.feed_refresh (f_id);
+  if (isnull (f_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
+  ENEWS.WA.feed_refresh (f_id);
   return ods_serialize_int_res (1);
 }
 ;
@@ -208,15 +215,14 @@ create procedure ODS.ODS_API."feeds.folder.delete" (
   };
 
   declare folder_id integer;
-  declare rc integer;
   declare uname varchar;
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  folder_id := ENEWS.WA.folder_id (inst_id, path);
+  folder_id := ENEWS.WA.folder_id (inst_id, path, 1);
   if (isnull (folder_id))
-    return ods_serialize_int_res (0);
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
   ENEWS.WA.folder_delete (inst_id, folder_id);
   return ods_serialize_int_res (1);
@@ -275,6 +281,9 @@ create procedure ODS.ODS_API."feeds.annotation.new" (
 
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
+
+	if (not exists (select 1 from ENEWS.WA.FEED_ITEM where EFI_ID = item_id))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
 
   insert into ENEWS.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
     values (inst_id, item_id, body, author, now (), now ());
@@ -410,9 +419,11 @@ create procedure ODS.ODS_API."feeds.comment.new" (
     return signal('API01', 'Discussions must be enabled for this instance');
 
   feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
+  if (isnull (feed_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
   feed_domain_id := (select EFD_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = inst_id and EFD_FEED_ID = feed_id);
   if (isnull (feed_domain_id))
-    signal ('FEEDS', 'No such item.');
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
   if (isnull (parent_id))
   {
@@ -468,10 +479,10 @@ create procedure ODS.ODS_API."feeds.comment.delete" (
 create procedure ODS.ODS_API."feeds.blog.subscribe" (
   in inst_id integer,
   in name varchar,
-  in api varchar,
+  in api varchar := 'Blogger',
   in uri varchar,
-  in port varchar,
-  in endpoint varchar,
+  in port varchar := '80',
+  in endpoint varchar := '/RPC2',
   in "user" varchar,
   in "password" varchar) __soap_http 'text/xml'
 {
@@ -491,7 +502,10 @@ create procedure ODS.ODS_API."feeds.blog.subscribe" (
   weblog_id := ENEWS.WA.weblog_update (-1, inst_id, 'Weblog - ' || "user", api, uri, port, endpoint, "user", "password");
   ENEWS.WA.weblog_refresh (weblog_id, name);
   rc := (select EB_ID from ENEWS.WA.BLOG where EB_WEBLOG_ID = weblog_id and EB_NAME = name);
+  if (isnull (rc))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
+  ENEWS.WA.blog_refresh (rc);
   return ods_serialize_int_res (rc);
 }
 ;
@@ -543,8 +557,10 @@ create procedure ODS.ODS_API."feeds.blog.refresh" (
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  ENEWS.WA.blog_refresh (blog_id);
+  if (not exists (select 1 from ENEWS.WA.BLOG where EB_ID = blog_id))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
 
+  ENEWS.WA.blog_refresh (blog_id);
   return ods_serialize_int_res (1);
 }
 ;
@@ -557,7 +573,7 @@ create procedure ODS.ODS_API."feeds.options.set" (
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+    return ods_serialize_sql_error (__SQL_STATE, ENEWS.WA.test_clear (__SQL_MESSAGE));
   };
 
   declare rc, account_id integer;
@@ -574,7 +590,7 @@ create procedure ODS.ODS_API."feeds.options.set" (
   ENEWS.WA.settings_init (settings);
 
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'favourites');
-  ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'rows');
+  ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'rows', vector ('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'atomVersion');
 
   ODS.ODS_API.feeds_setting_set (settings, optionsParams, 'updateFeeds');
