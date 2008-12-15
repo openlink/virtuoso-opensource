@@ -280,7 +280,7 @@ topic_search:
 	                          else '' end
                || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR, SCORE'
                || '   from WS.WS.SYS_DAV_RES'
-               || '  where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?)) order by SCORE desc';
+               || '  where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?)) ';
 
         if (self.stype > 0)
         {
@@ -340,6 +340,10 @@ topic_search:
 	  {
 	    add_cr_text := add_cr_text || ' order by RES_MOD_TIME desc';
 	  }
+	else
+	{
+          add_cr_text := add_cr_text || ' order by SCORE desc';
+	}
 
 	cr_text := cr_text || add_cr_text;
 	cr_len_text := cr_len_text || add_cr_text;	
