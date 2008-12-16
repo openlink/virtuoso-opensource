@@ -1,3 +1,238 @@
+2008-12-16 20:25  source
+
+	* Updated version to 5.0.10-pre6
+
+2008-12-16 20:25  source
+
+	* Fixed 'javascript' links
+
+2008-12-16 19:56  source
+
+	* Fixed use special function to cast
+
+2008-12-16 19:55  source
+
+	* Added RDF_VOID_STORE proc
+
+2008-12-16 19:53  source
+
+	* Fixed typo
+
+2008-12-16 19:52  source
+
+	* Fixed ODE link in footer to a relative URL to /ode
+
+2008-12-16 11:59  source
+
+	* Updated windows project files
+
+2008-12-16 11:46  source
+
+	* Added support for voID generation
+
+2008-12-15 22:07  source
+
+	* Added FeedsManager commands
+	* Fixed commit only when returning from oauth
+	* Fixed indexes on ODS tables for service pinging
+
+2008-12-15 22:05  source
+
+	* Fixed wrong query
+
+2008-12-15 22:04  source
+
+	* Fixed problem with Ubiquity
+
+2008-12-15 22:04  source
+
+	* Fixed 'javascript' links
+	* Fixed dependency problem between Calendar and Addressbook VAD packages
+
+2008-12-15 22:02  source
+
+	* Fixed MIME type to Kind mapping
+
+2008-12-15 21:05  source
+
+	* Fixed support for handling empty label
+	* Fixed limit on physical store search for blank nodes
+
+2008-12-15 21:02  source
+
+	* Fixed url rewriting
+
+2008-12-15 20:33  source
+
+	* Updated documentation
+
+2008-12-15 20:29  source
+
+	* Fixed missing order by
+
+2008-12-15 20:29  source
+
+	* Fixed when altering PK, keep grants too
+
+2008-12-15 20:28  source
+
+	* Fixed missing cast to string
+
+2008-12-15 20:18  source
+
+	* Merged from upstream project
+
+2008-12-15 10:10  source
+
+	* Fixed spelling
+
+2008-12-12 14:12  source
+
+	* Fixed order of initialization
+
+2008-12-12 14:07  source
+
+	* Fixed problem with http://dot.domain without path, must use / instead of
+	  /index.html as this may not be there on server
+
+2008-12-12 14:03  source
+
+	* Fixed missing struct members
+
+2008-12-12 13:30  source
+
+	* Added support for SPARUL to write to DAV
+	* Fixed SPARQL printer
+	* Fixed split sparql.sql into sparql.sql, sparql_io.sql and rdf_sponge.sql
+
+2008-12-12 12:50  source
+
+	* Fixed show procedure/view text only to owner or dba
+	* Fixed grants
+
+2008-12-11 14:28  source
+
+	* Fixed error message
+
+2008-12-11 14:27  source
+
+	* Fixed limit run to 2 minutes
+
+2008-12-11 14:26  source
+
+	* Added flag to enable/disable constant predicate optimization
+
+2008-12-11 14:25  source
+
+	* Fixed label from Mappings to Stylesheets
+
+2008-12-11 14:23  source
+
+	* Added Zemanda filter
+
+2008-12-11 14:22  source
+
+	* Added support to upgrade information schema views in existing database
+
+2008-12-09 15:58  source
+
+	* Updated version to 05.09.3036
+
+2008-12-09 15:51  source
+
+	* Added SalesForce cardridge
+	* Added NYT cardridge
+	* Added WB cardridge
+	* Fixed sponger issues
+
+2008-12-09 15:49  source
+
+	* Added support for GET+MGET
+	* Fixed issues with sponger
+
+2008-12-09 15:47  source
+
+	* Fixed debugging code
+
+2008-12-09 15:45  source
+
+	* Added flag to enable/disable constant predicate optimization
+
+2008-12-09 15:43  source
+
+	* Fixed missing table qualifier
+
+2008-12-09 15:41  source
+
+	* Added option to only test mappers
+
+2008-12-09 15:40  source
+
+	* Fixed comment for syntax highlighting
+
+2008-12-09 15:39  source
+
+	* Added support for MIME type image/svg+xml
+
+2008-12-09 00:55  source
+
+	* Fixed wrong order by for PK
+
+2008-12-09 00:47  source
+
+	* Added missing page
+
+2008-12-09 00:47  source
+
+	* Fixed problem with attendee mails after end of event
+
+2008-12-09 00:46  source
+
+	* Added about box
+
+2008-12-09 00:40  source
+
+	* Fixed constant to -1L for 64bit portability
+
+2008-12-05 09:44  source
+
+	* Added new oauth server, embedded in ODS
+
+2008-12-04 15:15  source
+
+	* Updated version to 5.0.10-pre5
+
+2008-12-04 13:40  source
+
+	* Fixed text message
+
+2008-12-04 13:39  source
+
+	* Fixed typo
+	* Fixed attendee mails
+
+2008-12-04 13:38  source
+
+	* Added about box
+
+2008-12-04 13:34  source
+
+	* Fixed use graph with isDefinedBy
+
+2008-12-04 13:33  source
+
+	* Fixed problem with restore when header cannot be read
+	* Fixed error messages
+
+2008-12-03 16:01  source
+
+	* Fixed references to wrong table name
+
+2008-12-03 12:38  source
+
+	* Fixed problem with oAUth
+	* Fixed commit if return
+
 2008-12-03 12:27  source
 
 	* Updated version to 5.0.10-pre4
