@@ -34,22 +34,45 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue, f2Name, f2Value)
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
+  if (fName)
   createHidden('F1', fName, fValue);
+  if (f2Name)
   createHidden('F1', f2Name, f2Value);
+  if (f3Name)
+    createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
 }
 
 // ---------------------------------------------------------------------------
-function toolbarPost(value)
+function toolbarPost(fValue)
 {
-  document.F1.tbHidden.value = value;
-  doPost ('F1', 'toolbar');
+  vspxPost('command', 'select', fValue)
 }
 
 // ---------------------------------------------------------------------------
-//
+function checkNotEnter(e)
+{
+  var key;
+
+  if (window.event)
+  {
+    key = window.event.keyCode;
+  } else {
+    if (e)
+    {
+      key = e.which;
+    } else {
+      return true;
+    }
+  }
+  if (key == 13)
+    return false;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -255,7 +278,6 @@ function sortSelect(box) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs)) {
@@ -281,7 +303,6 @@ function showTab(tabs, tabsCount, tabNo)
 }
 
 // ---------------------------------------------------------------------------
-//
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -294,7 +315,6 @@ function windowShow(sPage, width, height)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelect(obj)
 {
   var submitMode = false;
@@ -347,7 +367,6 @@ function rowSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode) {
@@ -371,7 +390,6 @@ function rowSelectValue(dstField, srcField, singleMode)
 // Hidden functions
 //
 // ---------------------------------------------------------------------------
-//
 function createHidden(frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -379,7 +397,6 @@ function createHidden(frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function createHidden2(doc, frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -397,7 +414,6 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
@@ -405,7 +421,6 @@ function changeExportName(fld_name, from, to) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function updateChecked (obj, objName)
 {
   var objForm = obj.form;
@@ -429,7 +444,6 @@ function updateChecked (obj, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addChecked (form, txt, selectionMsq)
 {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
@@ -478,7 +492,6 @@ function addChecked (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
@@ -497,7 +510,6 @@ function addTag(tag, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addCheckedTags (openerName, checkName)
 {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value]) {
@@ -525,7 +537,6 @@ function addCheckedTags (openerName, checkName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeQuestionType (obj)
 {
   var qType = obj.form['pq_type'];
@@ -555,7 +566,6 @@ function changeQuestionType (obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeAnswerChoices (obj)
 {
   var qType = obj.form['pq_type'];
@@ -580,7 +590,6 @@ function changeAnswerChoices (obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function checkChoices (obj)
 {
   if (!obj.checked)
@@ -613,7 +622,6 @@ function checkChoices (obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function checkRange (obj)
 {
   var objName = obj.name;
@@ -642,7 +650,6 @@ function checkRange (obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function checkVote (obj)
 {
   var objForm = obj.form;

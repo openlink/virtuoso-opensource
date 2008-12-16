@@ -222,21 +222,22 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
-          declare settings any;
+          declare params, settings any;
 
           self.pChars := cast(get_keyword('chars', self.settings, '60') as integer);
 
-          self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
+          params := self.vc_page.vc_event.ve_params;
+          self.v_mode := get_keyword('mode', params, self.v_mode);
 
           -- main
-          self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
-          self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
-          self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
-          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '')
+          self.v_keywords := trim (get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('keywords', params, ''))));
+          self.v_expression := trim (get_keyword('f_expression', params, get_keyword('type', params, self.v_expression)));
+          self.v_tags := trim (get_keyword('f_tags', params, get_keyword('tags', params, self.v_tags)));
+          if (get_keyword('tag', params, '') <> '')
           {
             if (is_empty_or_null(self.v_tags))
               self.v_tags := '';
-            self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
+            self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', params));
             self.v_tags := POLLS.WA.tags2vector(self.v_tags);
             self.v_tags := POLLS.WA.tags2unique(self.v_tags);
             self.v_tags := POLLS.WA.vector2tags(self.v_tags);
@@ -246,9 +247,9 @@
             self.v_own := self.f_own.ufl_selected;
           self.v_public := self.f_public.ufl_selected;
 
-          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, self.v_max));
-          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, self.v_order));
-          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, self.v_direction));
+          self.v_max := trim (get_keyword('f_max', params, self.v_max));
+          self.v_order := trim (get_keyword('f_order', params, self.v_order));
+          self.v_direction := trim (get_keyword('f_direction', params, self.v_direction));
           self.v_cloud := self.f_cloud.ufl_selected;
         ]]>
       </v:before-data-bind>

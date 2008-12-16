@@ -33,7 +33,8 @@
         self.ds.vc_reset();
       self.pTag := lcase(get_keyword ('tag', params, ''));
       self.pPoll := get_keyword ('id', params, '');
-      if (self.pPoll <> '') {
+      if (self.pPoll <> '')
+      {
         self.v_id := cast (self.pPoll as integer);
         if (POLLS.WA.poll_enable_edit (self.v_id, self.account_role))
         {
@@ -176,13 +177,20 @@
 
       retValue := vector ();
       for (N := 0; N < length (self.v_questions); N := N + 1)
-        if (N = qFrom-1) {
+      {
+        if (N = qFrom-1)
+        {
           retValue := vector_concat (retValue, vector (self.v_questions[qTo-1]));
-        } else if (N = qTo-1) {
+        }
+        else if (N = qTo-1)
+        {
           retValue := vector_concat (retValue, vector (self.v_questions[qfrom-1]));
-        } else {
+        }
+        else
+        {
           retValue := vector_concat (retValue, vector (self.v_questions[N]));
         }
+      }
       return retValue;
     ]]>
   </v:method>
@@ -194,11 +202,15 @@
 
       retValue := vector ();
       for (N := 0; N < length (self.v_questions); N := N + 1)
+       {
         if (N <> qNumber-1)
           retValue := vector_concat (retValue, vector (self.v_questions[N]));
-      if (qNumber <= length (self.v_questions)) {
+      }
+      if (qNumber <= length (self.v_questions))
+      {
         id := cast (get_keyword ('$id', self.v_questions[qNumber-1], '-1') as integer);
-        if (id <> -1) {
+        if (id <> -1)
+        {
           if (isnull (self.v_deleted))
             self.v_deleted := vector ();
           self.v_deleted := vector_concat (self.v_deleted, vector (id));
@@ -218,7 +230,7 @@
           http ('<td>');
             for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
             {
-              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+              http (sprintf ('<span onclick="javascript: addTag(\'%s\', \'%s\');" class="link">%s</span> ', T_TAG, fieldName, T_TAG));
             }
           http ('</td>');
         http ('</tr>');
@@ -269,6 +281,9 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
+          self.pLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
+          self.pChars := cast (get_keyword ('chars', self.settings, '60') as integer);
+
           self.mode_test();
         ]]>
       </v:before-data-bind>
@@ -279,59 +294,55 @@
         graphIri := SIOC..get_graph ();
         http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
       ?>
-        <?vsp http ('<input type="hidden" name="tbHidden" value="" />'); ?>
         <?vsp
           if (0)
           {
         ?>
-            <v:button name="toolbar" action="simple" style="url" value="Submit">
+          <v:button name="command" action="simple" style="url" value="Submit">
               <v:on-post>
                 <![CDATA[
-                  declare cmd any;
-                  cmd := get_keyword ('tbHidden', e.ve_params, '');
-                if (cmd = 'MyPolls')
+                declare N integer;
+                declare params, cCommand any;
+
+                params := e.ve_params;
+                cCommand := get_keyword ('select', params, '');
+                if (cCommand = 'MyPolls')
                 {
                     self.ds.vc_reset ();
-                    self.pMode := cmd;
+                  self.pMode := cCommand;
                     self.pAction := 'browse';
                     self.pTag := '';
                   }
-                if (cmd = 'PublicPolls')
+                else if (cCommand = 'PublicPolls')
                 {
                     self.ds.vc_reset ();
-                    self.pMode := cmd;
+                  self.pMode := cCommand;
                     self.pAction := 'browse';
                     self.pTag := '';
                   }
-                if (cmd = 'Poll/Create')
+                else if (cCommand = 'Poll/Create')
                 {
                     self.pAction := 'create';
                     self.v_step := '';
                     self.v_id := -1;
                     self.v_tags := '';
                   }
-                if (cmd = 'tag')
+                else if (cCommand = 'tag')
                 {
-                    declare N integer;
-
                     self.pAction := 'tag';
                     self.pSelected := vector();
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
-                      if (e.ve_params[N] = 'cb_item')
-                        self.pSelected := vector_concat(self.pSelected, vector(e.ve_params[N+1]));
+                  for (N := 0; N < length(params); N := N + 4)
+                  {
+                    if (params[N] = 'cb_item')
+                      self.pSelected := vector_concat (self.pSelected, vector(params[N+1]));
                     }
                   }
-                if (cmd = 'delete')
-                {
-                    declare N, id integer;
-
-                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                else if (cCommand = 'delete')
                   {
-                    if (e.ve_params[N] = 'cb_item')
+                  for (N := 0; N < length (params); N := N + 4)
                     {
-                        id := cast(e.ve_params[N+1] as integer);
-                      POLLS.WA.poll_delete(id);
-                      }
+                    if (params[N] = 'cb_item')
+                      POLLS.WA.poll_delete(cast (params[N+1] as integer));
                     }
                   }
                 _end:
@@ -344,10 +355,10 @@
         ?>
         <div class="toolbar">
         <span class="toolbar" style="cursor: pointer;" onclick="javascript: toolbarPost('MyPolls'); return false;" alt="My Polls">
-          <img src="image/polls_32.png" border="0" alt="My Polls" /><br /><span class="toolbarLabel">My Polls</span>
+          <img src="image/polls_32.png" border="0" alt="My Polls" /><?vsp http (self.toolbarLabel('My Polls'));?>
         </span>
         <span class="toolbar" style="cursor: pointer;" onclick="javascript: toolbarPost('PublicPolls'); return false;" alt="Public Polls">
-          <img src="image/polls_public_32.png" border="0" alt="Public Polls" /><br /><span class="toolbarLabel">Public Polls</span>
+          <img src="image/polls_public_32.png" border="0" alt="Public Polls" /><?vsp http (self.toolbarLabel('Public Polls'));?>
         </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
@@ -472,10 +483,10 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..poll_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, SIOC..poll_tag_iri (self.account_id, T_TAG), T_TAG, tClass, tStyle, T_TAG));
                 }
               }
-              if (self.pMode = 'PublicPolls')
+              else if (self.pMode = 'PublicPolls')
               {
                 select max(T_COUNT),
                        min(T_COUNT)
@@ -504,7 +515,7 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" href="#" onclick="javascript: myTags(\'%s\'); return false;" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, T_TAG, tClass, tStyle, T_TAG));
                 }
               }
             ?>
@@ -607,29 +618,29 @@
 
                           if (POLLS.WA.poll_enable_edit (id, self.account_role))
                           {
-                            http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
+                            http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\'); return false;" title="Edit %s" class="app link">%s</a></div>', id, SIOC..poll_post_iri (self.domain_id, id), id, title, POLLS.WA.stringCut(title, self.pChars)));
                           } else {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));
                           }
                             
                           actions := '';
                           if (POLLS.WA.poll_enable_vote (id))
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link">vote</span>', id, title);
 
                           if (POLLS.WA.poll_enable_clear (id, self.account_role))
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link_ed">clear</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link">clear</span>', id, title);
 
                           if (POLLS.WA.poll_enable_result (id) > 0)
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link_ed">result</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link">result</span>', id, title);
 
                           if (POLLS.WA.poll_enable_activate (id, self.account_role))
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link_ed">activate</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link">activate</span>', id, title);
 
                           if (POLLS.WA.poll_enable_close (id, self.account_role))
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link_ed">close</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link">close</span>', id, title);
 
                           if (POLLS.WA.poll_enable_edit (id, self.account_role) = 1)
-                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link">edit</span>', id, title);
 
                           if (POLLS.WA.discussion_check () and POLLS.WA.conversation_enable (self.domain_id))
                             actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', id), 'discuss', title);
@@ -644,7 +655,7 @@
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1)
                             {
-                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, POLLS.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" href="%U" name="pt_tag_%s" onclick="javascript: myTags(\'%s\'); return false;" class="app">%s</a> ', id, POLLS.WA.tag_id (tags[N]), SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N], tags[N], tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }

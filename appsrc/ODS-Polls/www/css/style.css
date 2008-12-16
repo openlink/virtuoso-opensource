@@ -49,6 +49,12 @@ a:hover
   text-decoration: underline;
 }
 
+.link
+{
+  color: blue;
+	cursor: pointer;
+}
+
 #MTB
 {
   width: 100%;
