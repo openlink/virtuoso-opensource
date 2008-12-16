@@ -1301,6 +1301,15 @@ create function DB.DBA.PARSE_SPARQL_WS_PARAMS (in lst any) returns any
 }
 ;
 
+create procedure DB.DBA.rdf_find_str (in x any)
+{
+  return cast (x as varchar);
+}
+;
+
+grant execute on DB.DBA.rdf_find_str to public
+;
+
 -- Web service endpoint.
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -1577,10 +1586,10 @@ http('</html>\n');
 	  ft := trim (DB.DBA.FTI_MAKE_SEARCH_STRING_INNER (pvalue, words), '()');
 	  vec := DB.DBA.SYS_SQL_VECTOR_PRINT (words);
 	  if (get_keyword ('format', params, '') like '%/rdf+%' or http_request_header (lines, 'Accept', null, '') like '%/rdf+%')
-	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), (?o))` } ' ||
+	    query := sprintf ('construct { ?s ?p `bif:search_excerpt (bif:vector (%s), sql:rdf_find_str(?o))` } ' ||
 	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
 	  else
-	    query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), str(?o))) ' ||
+	    query := sprintf ('select ?s ?p (bif:search_excerpt (bif:vector (%s), sql:rdf_find_str(?o))) ' ||
 	    'where { ?s ?p ?o . %s filter (bif:contains (?o, ''%s'')) } limit %d', vec, cond, ft, maxrows);
 	}
       else if ('default-graph-uri' = pname and length (pvalue))
