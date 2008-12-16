@@ -598,9 +598,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 					propc += item.preds[p].length;
 				}
 				var td1 = OAT.Dom.create("td",{},"rdf_nav_desc");
-				td1.innerHTML = predc+" predicates"
+				td1.innerHTML = predc+" properties"
 				var td2 = OAT.Dom.create("td",{},"rdf_nav_desc");
-				td2.innerHTML = propc+" property values"
+				td2.innerHTML = propc+" values"
 				OAT.Dom.append([tr,td1,td2]);
 			} else {
 				td.colSpan = 3;

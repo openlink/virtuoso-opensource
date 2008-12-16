@@ -98,7 +98,7 @@ OAT.Dereference = {
 		} else { /* relative uri */
 			var encoded = url;
 		}
-		} else {
+	} else { /* Dereference using supplied endpoint and options. Direct SPARQL queries, etc */
 		    encoded = endpoint + url;
 		}
 		OAT.AJAX.GET(encoded,false,callback,ajaxOpts); 

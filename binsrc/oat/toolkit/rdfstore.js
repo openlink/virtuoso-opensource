@@ -35,12 +35,14 @@ OAT.RDFStoreData = {
 	FILTER_ALL:-1,
 	FILTER_PROPERTY:0,
 	FILTER_URI:1
-}
+};
 
 OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	var self = this;
 	
-        this.labelProps = ["name","nick","label","title","summary","prefLabel"]; // properties used as labels
+    // properties used as labels
+	
+    this.labelProps = ["name","nick","label","title","summary","prefLabel"];
         
 	this.options = {
 		onstart:false,
@@ -71,14 +73,29 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.filtersProperty = [];
 	this.items = [];
 		
+    this.setOpts = function (optObj) {
+	for (var p in optObj)
+	    {
+		self.options[p] = optObj[p];
+	    }
+    };	
+
 	this.addURL = function(url,optObj) {
-		var opt = {};
+	
+	/* first, deep copy in defaults */
+
+	var opt = OAT.Util.clone_obj(self.options,true);
 
 		for (var p in optObj) { opt[p] = optObj[p]; } 
 
 		/* fallback to defaults */
 		if (!opt.ajaxOpts) { opt.ajaxOpts = {}; }
-		for (var p in self.options) { if (!opt.ajaxOpts[p]) { opt.ajaxOpts[p] = self.options[p]; } }
+	
+	for (var p in self.options) { 
+	    if (!opt.ajaxOpts[p]) { 
+		opt.ajaxOpts[p] = self.options[p]; 
+	    } 
+	}
 
 		var title = opt.title; delete(opt.title);
 		

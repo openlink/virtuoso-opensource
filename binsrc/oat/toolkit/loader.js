@@ -189,6 +189,21 @@ Date.prototype.toHumanString = function() {
 	return this.format("j.n.Y H:i:s");
 }
 
+OAT.Util = {
+    clone_obj:function(_o, deep) {
+	var new_o = new _o.constructor();
+	for (var p in _o)
+	    if (!deep)
+		new_o[p] = _o[p];
+	    else if (typeof _o[p] == 'object')
+		new_o[p] = OAT.Util.clone_obj(_o[p], deep);
+	    else
+		new_o[p] = _o[p];
+	return new_o;
+    }
+}
+
+
 OAT.Dom = { /* DOM common object */
 	create:function(tagName,obj,className) {	
 		var elm = document.createElement(tagName);

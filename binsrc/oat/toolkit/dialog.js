@@ -33,9 +33,17 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	if (options.close) winbuttons += "c"; 
 	if (options.resize) winbuttons += "r";
 
-	var win = new OAT.Win({visibleButtons:winbuttons,enabledButtons:winbuttons, outerWidth:options.width, outerHeight:options.height, x:0, y:0, imagePath:options.imagePath, title:title, type:options.type, stackGroupBase:false});
+	var win = new OAT.Win({visibleButtons:winbuttons,
+			       enabledButtons:winbuttons, 
+			       outerWidth:options.width, 
+			       outerHeight:options.height, 
+			       x:0, y:0, 
+			       imagePath:options.imagePath, 
+			       title:title, type:options.type, 
+			       stackGroupBase:false});
 
  	$(contentDiv).style.margin = "10px";
+
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
  	var tbody = OAT.Dom.create("tbody");
  	var row = OAT.Dom.create("tr");
