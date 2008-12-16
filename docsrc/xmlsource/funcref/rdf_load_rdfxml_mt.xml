@@ -45,23 +45,35 @@
   <refsect1 id="ret_rdf_load_rdfxml_mt"><title>Return Types</title>
     <para>The return value is not specified and may be changed in future versions.</para>
   </refsect1>
-<!--  <refsect1 id="errors_rdf_load_rdfxml_mt">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_rdf_load_rdfxml_mt">
     <title>Examples</title>
     <example id="ex_rdf_load_rdfxml_mt"><title></title>
-      <para></para>
+      <para>The following example demonstrates importing data from the rdf file resource Kingsley_Idehen.rdf which can be dowloaded from <ulink url="http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/about.rdf">here</ulink></para>
       <screen><![CDATA[
-]]>
-</screen>
-    </example>
-  </refsect1>-->
-  <refsect1 id="examples_rdf_load_rdfxml_mt">
-    <title>Examples</title>
-    <example id="ex_rdf_load_rdfxml_mt"><title></title>
+SQL> DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output ('tmp/Kingsley_Idehen.rdf'), '', 'http://mytest.com');
+Done. -- 61 msec.
+SQL>sparql
+select *
+from <http://mytest.com>
+where {?s ?p ?o};
+
+s             p                    o
+VARCHAR       VARCHAR              VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#based_near      http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://www.w3.org/2003/01/geo/wgs84_pos#Point
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#based_near      http://www.w3.org/2003/01/geo/wgs84_pos#lat       42.485836
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#based_near      http://www.w3.org/2003/01/geo/wgs84_pos#long      -71.214287
+http://www.openlinksw.com/dataspace/organization/vdb#this                         http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Organization
+http://www.openlinksw.com/dataspace/organization/vdb#this                         http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.openlinksw.com/dataspace/organization/vdb#this                         http://xmlns.com/foaf/0.1/nick                    vdb
+http://www.openlinksw.com/dataspace/organization/vdb#this                         http://xmlns.com/foaf/0.1/name                    Virtuso Data Space Bot
+http://www.openlinksw.com/dataspace/organization/dav#this                         http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Organization
+http://www.openlinksw.com/dataspace/organization/dav#this                         http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.openlinksw.com/dataspace/organization/dav#this                         http://xmlns.com/foaf/0.1/nick                    dav
+
+10 Rows. -- 30 msec.
+]]></screen>
       <para>The following example demonstrates importing data from the rdf resource with URI: http://www.w3.org/People/Berners-Lee/card</para>
       <screen><![CDATA[
 SQL>create procedure MY_LOAD_FILE (in full_uri varchar, in in_resultset integer := 0)
@@ -146,6 +158,6 @@ http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows   
     <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
     <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
     <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
   </refsect1>
 </refentry>

@@ -6422,6 +6422,33 @@ cf92411e17f59960a4189451bfb5bf6b92c856e3
 </listitem>
 </orderedlist>
 </sect2>
+<sect2 id="sparqlexcel"><title>SPARQL Endpoint with Excel mime-type output option</title>
+<para>The SPARQL Endpoint offers an Excel mime-type output option.</para>
+<para>From http://cname:host/sparql select for "Display Results As:" Spreadsheet and click the "Run Query" button.</para>
+<figure id="sparqlexcel1" float="1">
+      <title>SPARQL Endpoint with Excel mime-type output</title>
+      <graphic fileref="ui/Excel1.png"/>
+    </figure>
+<para>As result URL containg as parameter the format application/vnd.ms-excel
+for ex. <ulink url="http://demo.openlinksw.com/sparql?default-graph-uri=http%3A%2F%2Fdemo.openlinksw.com%2Fdataspace%2Fperson%2Fdemo&should-sponge=&query=select+*%0D%0Awhere+%7B%3Fs+%3Fp+%3Fo%7D%0D%0Alimit+10&format=application%2Fvnd.ms-excel&debug=on">this one</ulink> will be generated, and can be opened directly with Excel.</para>
+<figure id="sparqlexcel2" float="1">
+      <title>SPARQL Endpoint with Excel mime-type output</title>
+      <graphic fileref="ui/Excel2.png"/>
+    </figure>
+</sect2>
+<sect2 id="sparqljson"><title>SPARQL Endpoint with JSON+RDF</title>
+<para>The SPARQL Endpoint offers JSON+RDF output option.</para>
+<para>From http://cname:host/sparql select for "Display Results As:" JSON and click the "Run Query" button.</para>
+<figure id="sparqljson1" float="1">
+      <title>SPARQL Endpoint with JSON+RDF output</title>
+      <graphic fileref="ui/JSON1.png"/>
+    </figure>
+<para>As result URL containg as parameter the format application/sparql-results+json will be generated and the content should look like:</para>
+<figure id="sparqljson2" float="1">
+      <title>SPARQL Endpoint with JSON+RDF</title>
+      <graphic fileref="ui/JSON2.png"/>
+    </figure>
+</sect2>
 </sect1>
 <sect1 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
 <para>
