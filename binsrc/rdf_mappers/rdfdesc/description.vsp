@@ -193,7 +193,7 @@ skip_rev:
     <div id="footer">
       <div id="ft_t">
         Explore using:
-        <a href="http://demo.openlinksw.com/rdfbrowser2/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+        <a href="/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
         <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (proxy_iri); ?>">Zitgist Data Viewer</a> |
         <a href="http://beckr.org/marbles?uri=<?vsp http_url (proxy_iri); ?>">Marbles</a> |
         <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (proxy_iri); ?>">DISCO</a> |
