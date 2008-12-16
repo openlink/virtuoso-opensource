@@ -58,9 +58,37 @@
   <refsect1 id="examples_ttlp_mt">
     <title>Examples</title>
     <example id="ex_ttlp_mt"><title></title>
-<para></para>
+<para>Sample Example 1</para>
 <screen><![CDATA[
-create procedure SPARQL_DAWG_LOAD_REMOTE_DATFILE (in full_uri varchar, in in_resultset integer := 0)
+SQL> DB.DBA.TTLP_MT (file_to_string_output ('tmp/users.ttl'), '', 'http://mytest.com');
+
+Done. -- 381 msec.
+SQL>sparql
+select *
+from <http://mytest.com>
+where {?s ?p ?o}
+limit 10;
+s             p                   o
+VARCHAR       VARCHAR             VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-GranteeId-format          http://www.w3.org/1999/02/22-rdf-syntax-ns#type            http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-GranteeId-format          http://www.openlinksw.com/schemas/virtrdf#qmfSuperFormats  nodeID://1000272018
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-GranteeId-format          http://www.openlinksw.com/schemas/virtrdf#inheritFrom      http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri-fn
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-GranteeId-format          http://www.openlinksw.com/schemas/virtrdf#noInherit        http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-GranteeId-format          http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1 DB.DBA.RDF_DF_GRANTEE_ID_URI
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.w3.org/1999/02/22-rdf-syntax-ns#type            http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#qmfSuperFormats  nodeID://1000272019
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#inheritFrom      http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#noInherit        http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1 http://localhost/sys/user?id=%d
+
+10 Rows. -- 30 msec.
+
+]]></screen>
+<para>Sample Example 2</para>
+<screen><![CDATA[
+SQL>create procedure SPARQL_DAWG_LOAD_REMOTE_DATFILE (in full_uri varchar, in in_resultset integer := 0)
 {
   declare REPORT varchar;
   declare graph_uri, dattext varchar;
@@ -84,6 +112,16 @@ err_rep:
   return graph_uri;
 }
 ;
+Done. -- 891 msec
+SQL> select SPARQL_DAWG_LOAD_REMOTE_DATFILE('http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+Downloading http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl: 12768 bytes
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl
+
+2 Rows. -- 1382 msec.
 ]]></screen>
     </example>
   </refsect1>
