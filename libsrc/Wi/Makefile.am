@@ -545,7 +545,8 @@ SQL_FILES_VDB		= \
 SQL_FILES_SPARQL	= \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
-	$(srcdir)/rdf_sponge.sql
+	$(srcdir)/rdf_sponge.sql \
+	$(srcdir)/rdf_void.sql
 
 SQL_FILES_1		= \
 	$(srcdir)/simile.sql \
