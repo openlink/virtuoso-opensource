@@ -48,6 +48,22 @@ create procedure RDF_VOID_SPLIT_IRI (in rel varchar, out pref varchar, out name 
 }
 ;
 
+create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := null)
+{
+  declare ses any;
+  declare host varchar;
+
+  ses := RDF_VOID_GEN (graph);
+  if (to_graph_name is null)
+    {
+      host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+      to_graph_name := 'http://' || host || '/stats/void#';
+    }
+  TTLP (ses, graph, to_graph_name);
+  return;
+}
+;
+
 create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
 {
   declare ses any;
