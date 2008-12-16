@@ -379,6 +379,9 @@
 				RelativePath="..\libsrc\langfunc\language__x_ViDoc.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\langfunc\language__x_ViAny.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\langfunc\unicode3.c">
 			</File>
 			<File

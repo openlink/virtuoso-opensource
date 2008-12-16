@@ -36,7 +36,7 @@ gawk -f sql_to_c.awk -v init_name=_2pc -v pl_stats=PLDBG %SQL_FILES_2PC% > sql_c
 set SQL_FILES_VDB=vdb.sql
 gawk -f sql_to_c.awk -v init_name=_vdb -v pl_stats=PLDBG %SQL_FILES_VDB% > sql_code_vdb.c
 
-set SQL_FILES_SPARQL=sparql.sql 
+set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_void.sql
 gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=PLDBG %SQL_FILES_SPARQL% > sql_code_sparql.c
 
 gawk -f "jso_reformat.awk" -v "output_mode=h" -v "h_wrapper=__RDF_MAPPING_JSO_H" -v "init_name=rdf_mapping" rdf_mapping.jso > rdf_mapping_jso.h

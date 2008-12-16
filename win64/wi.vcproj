@@ -124,7 +124,7 @@
 				AdditionalOptions=""
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -277,7 +277,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -726,7 +726,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sparql_tree.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sparul2sql.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparqld.c"
 				>
 			</File>
 			<File

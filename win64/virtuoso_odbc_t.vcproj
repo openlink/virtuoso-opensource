@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="virtuoso_t"
 	ProjectGUID="{F4E88BFA-FC96-439D-9E67-0A92AB541EE0}"
+	RootNamespace="virtuoso_t"
 	>
 	<Platforms>
 		<Platform
@@ -141,7 +142,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -328,7 +329,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -400,6 +401,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
+			<File
+				RelativePath="..\libsrc\Wi\shcompo.c"
+				>
+			</File>
 			<File
 				RelativePath="..\binsrc\virtuoso\viconfig.c"
 				>

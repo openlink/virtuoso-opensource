@@ -388,6 +388,9 @@
 				RelativePath="..\libsrc\Wi\security.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\shcompo.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\shuric.c">
 			</File>
 			<File
@@ -418,7 +421,13 @@
 				RelativePath="..\libsrc\Wi\sparql_sff.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sparql_tree.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sparul2sql.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparqld.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql3_vc.c">

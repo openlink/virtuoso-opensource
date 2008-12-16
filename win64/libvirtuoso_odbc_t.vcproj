@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="libvirtuoso_t"
 	ProjectGUID="{FB836C59-41E1-48EA-A59B-460AB56587EE}"
+	RootNamespace="libvirtuoso_t"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -131,7 +132,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT"
+				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -306,7 +307,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG"
+				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -376,6 +377,10 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\libsrc\Wi\shcompo.c"
+				>
+			</File>
 			<File
 				RelativePath="..\binsrc\virtuoso\viconfig.c"
 				>
