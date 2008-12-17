@@ -3681,6 +3681,16 @@ extern char *build_thread_model;
 void
 PrpcInitialize (void)
 {
+#ifndef NO_THREAD
+  PrpcInitialize1 (DK_ALLOC_RESERVE_PREPARED);
+#else
+  PrpcInitialize1 (DK_ALLOC_RESERVE_DISABLED);
+#endif
+}
+
+void
+PrpcInitialize1 (int mem_mode)
+{
   USE_GLOBAL
 #if (!defined (PREEMPT) && !defined (NO_THREAD)) || (defined (PMN_THREADS) && !defined (NO_THREAD))
   int zero = 0;
@@ -3763,13 +3773,7 @@ PrpcInitialize (void)
 
 #ifndef NO_DK_ALLOC_RESERVE
   dk_alloc_reserve_maxthreads = max_future_threads;
-  dk_alloc_set_reserve_mode (
-#ifndef NO_THREAD
-      DK_ALLOC_RESERVE_PREPARED
-#else
-      DK_ALLOC_RESERVE_DISABLED
-#endif
-      );
+  dk_alloc_set_reserve_mode (mem_mode);
 #endif
 
 #ifndef NO_THREAD

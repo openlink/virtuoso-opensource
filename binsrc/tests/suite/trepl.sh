@@ -456,6 +456,7 @@ Line
 }
 
 BANNER "STARTED SERIES OF TRANSACTIONAL REPLICATION TESTS"
+NOLITE
 rm -f wierr.rep1 wierr.rep2  wierr.rep3
 if test $mixed
   then

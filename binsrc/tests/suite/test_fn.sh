@@ -45,6 +45,7 @@ HOST=${HOST-localhost}
 LOGFILE=${LOGFILE-output.output}
 SQLOPTIMIZE=${SQLOPTIMIZE-0}
 PLDBG=${PLDBG-0}
+LITEMODE=${LITEMODE-0}
 CASE_MODE=${CASE_MODE-1}
 
 DELETEMASK=${DELETEMASK-'wi.* witemp.*'}
@@ -111,6 +112,16 @@ export SERVER ISQL PORT DSN SERVICE BINDIR PATH DEBUG
 #===========================================================================
 #  Standard functions
 #===========================================================================
+NOLITE()
+{
+    grep "Lite Mode" ident.txt
+    if test $? -eq 0
+    then
+	echo "This test is not used in LITE mode"
+	exit
+    fi
+}
+
 ECHO()
 {
     echo "$*"		| tee -a $LOGFILE
@@ -467,7 +478,7 @@ MAKECFG_FILE ()
   _testcfgfile=$1
   _port=$2
   _cfgfile=$3
-  cat $_testcfgfile | sed -e "s/PORT/$_port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" > $_cfgfile
+  cat $_testcfgfile | sed -e "s/PORT/$_port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" -e "s/LITEMODE/$LITEMODE/g" > $_cfgfile
 }
 
 MAKECFG_FILE_WITH_HTTP()

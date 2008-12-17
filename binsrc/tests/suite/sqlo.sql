@@ -35,6 +35,125 @@ drop index FI3 T1;
 update T1 set FI3 = ROW_NO;
 create unique index FI3 on T1 (FI3);
 
+-- in Lite mode we create missing dav&nntp tables used in the tests bellow
+create procedure lite_init ()
+{
+    if (not sys_stat ('st_lite_mode'))
+      return;
+    exec_stmt ('create table WS.WS.SYS_DAV_RES (
+	RES_ID              integer,
+	RES_NAME            varchar (256),
+	RES_OWNER           integer,
+	RES_GROUP           integer,
+	RES_COL             integer,
+	RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
+	RES_TYPE            varchar,
+	RES_CR_TIME         datetime,
+	RES_MOD_TIME        datetime,
+	RES_PERMS           char (11),
+	RES_FULL_PATH       varchar,
+	ROWGUID             varchar,
+	RES_ACL             long varbinary,
+	RES_IID 		IRI_ID,
+	RES_STATUS 		varchar,
+	RES_VCR_ID 		integer,
+	RES_VCR_CO_VERSION 	integer,
+	RES_VCR_STATE 	integer,
+	primary key (RES_ID)
+    )
+    create unique index SYS_DAV_RES_COL on WS.WS.SYS_DAV_RES (RES_COL, RES_NAME) partition (RES_COL int)
+    create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH) partition (RES_FULL_PATH varchar (-10, 0hexffff))
+    alter index SYS_DAV_RES on WS.WS.SYS_DAV_RES partition (RES_ID int)', 1);
+
+    exec_stmt ('create procedure
+    WS.WS.SYS_DAV_RES_RES_CONTENT_INDEX_HOOK (inout vtb any, inout d_id integer)
+    {
+      return 0;
+    }', 1);
+
+
+    exec_stmt ('create procedure
+    WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK (inout vtb any, inout d_id integer)
+    {
+      return 0;
+    }', 1);
+
+    DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_RES', 'RES_CONTENT', 'RES_ID', 2, 0,
+	vector ('RES_FULL_PATH', 'RES_OWNER', 'RES_MOD_TIME', 'RES_TYPE'), 1, '*ini*', '*ini*');
+    DB.DBA.vt_create_ftt ('WS.WS.SYS_DAV_RES', 'RES_ID', 'RES_CONTENT', 2);
+
+    exec_stmt ('create table NEWS_MSG_NNTP (
+	NM_ID		varchar not null,	-- Message-ID (unique)
+	NM_REF		varchar,		-- References
+	NM_READ		integer,		-- How many times this message is read
+	NM_OWN 		varchar,		-- Local poster (if poster is non local should be null)
+	NM_REC_DATE	datetime,		-- Received date
+	NM_STAT		integer,		-- Post from user to group
+	NM_TRY_POST	integer,		-- Times to try post out
+	NM_DELETED	integer,		-- Is deleted (flag)
+	NM_HEAD		long varchar,		-- Message header (original)
+	NM_BODY		long varchar,		-- Message content
+	NM_BODY_ID	integer identity,
+	PRIMARY KEY (NM_ID))
+	create index NEWS_MSG_NNTP_NM_STAT on DB.DBA.NEWS_MSG_NNTP (NM_STAT)', 1);
+
+
+    exec_stmt ('create view NEWS_MSG
+	    (
+	    NM_TYPE		, 		-- designate storage type
+	    NM_ID		,		-- Message-ID (unique)
+	    NM_REF		,		-- References
+	    NM_READ		,		-- How many times this message is read
+	    NM_OWN 		,		-- Local poster (if poster is non local should be null)
+	    NM_REC_DATE	,		-- Received date
+	    NM_STAT		,		-- Post from user to group
+	    NM_TRY_POST	,		-- Times to try post out
+	    NM_DELETED	,		-- Is deleted (flag)
+	    NM_HEAD		,		-- Message header (original)
+	    NM_BODY		,		-- Message content
+	    NM_BODY_ID
+	    )
+
+	    as
+	    select
+	    \'NNTP\' as NM_TYPE,
+	    NM_ID,
+	    NM_REF,
+	    NM_READ,
+	    NM_OWN,
+	    NM_REC_DATE,
+	    NM_STAT,
+	    NM_TRY_POST,
+	    NM_DELETED,
+	    NM_HEAD,
+	    NM_BODY,
+	    NM_BODY_ID
+	    from NEWS_MSG_NNTP', 1);
+
+  exec_stmt ('create table NEWS_MULTI_MSG (
+	    NM_KEY_ID	varchar not null,	-- Message-ID (unique) FOREIGN KEY (NM_KEY_ID) REFERENCES DB.DBA.NEWS_MSG
+	    NM_GROUP 	integer,		-- Newsgroups ID
+	    NM_NUM_GROUP 	integer not null,	-- ID unique for group
+	    primary key (NM_GROUP, NM_KEY_ID))
+            create index "NM_NUM_GROUP" on NEWS_MULTI_MSG ("NM_NUM_GROUP")', 1);
+  exec_stmt ('create view NEWS_MESSAGES as select * from DB.DBA.NEWS_MSG, DB.DBA.NEWS_MULTI_MSG
+  where NM_ID = NM_KEY_ID', 1);
+
+  exec_stmt ('create table WS.WS.VFS_URL (
+    VU_HOST 	varchar,
+    VU_URL 	varchar,
+    VU_ROOT 	varchar,
+    VU_CHKSUM	varchar,
+    VU_ETAG	varchar,
+    VU_CPTIME	datetime,
+    VU_OTHER	varchar,
+    primary key (VU_HOST, VU_URL, VU_ROOT))
+    create index VU_HOST_ROOT on WS.WS.VFS_URL (VU_HOST, VU_ROOT)', 1);
+}
+;
+
+lite_init ();
+drop procedure lite_init;
 
 select KEY_TABLE from SYS_KEYS;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";

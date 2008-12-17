@@ -708,6 +708,7 @@ MakeIni ()
 }
 
 BANNER "STARTED SERIES OF HTTP SERVER TESTS"
+NOLITE
 ECHO "HTTP Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"
 

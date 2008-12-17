@@ -68,6 +68,9 @@ char * safe_execs = 0;
 char * dba_execs = 0;
 char * temp_dir = NULL;
 char * pl_debug_cov_file = NULL;
+int lite_mode = 0;
+extern int it_n_maps;
+extern int rdf_obj_ft_rules_size;
 
 int cp_unremap_quota;
 int correct_parent_links;
@@ -105,6 +108,7 @@ unsigned long int cfg_autocheckpoint = 0;
 int32 c_checkpoint_interval = 0;
 int32 cl_run_local_only;
 int wi_blob_page_dir_threshold;
+extern const char* recover_file_prefix;
 
 char *run_as_os_uname = NULL;
 
@@ -597,6 +601,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   init_trace = cfg_get_parm (wholefile, "\ntrace_on:", 1);
   allowed_dirs = cfg_get_parm (wholefile, "\ndirs_allowed:", 1);
   denied_dirs = cfg_get_parm (wholefile, "\ndirs_denied:", 1);
+  if (!recover_file_prefix) /* when recovering backup_dirs is from command line */
   backup_dirs = cfg_get_parm (wholefile, "\nbackup_dirs:", 1);
   safe_execs = cfg_get_parm (wholefile, "\nsafe_executables:", 1);
   dba_execs = cfg_get_parm (wholefile, "\ndba_executables:", 1);
@@ -703,6 +708,21 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   run_as_os_uname = cfg_get_parm (wholefile, "\nhttp_client_id_string:", 1);
 
   COND_PARAM_WITH_DEFAULT("\nauto_sql_stats:", dbe_auto_sql_stats, 0);
+  COND_PARAM("\nlite_mode:", lite_mode);
+
+  COND_PARAM("\nrdf_obj_ft_rules_size:", rdf_obj_ft_rules_size);
+  if (rdf_obj_ft_rules_size < 10)
+    rdf_obj_ft_rules_size = lite_mode ? 10 : 100;
+
+  COND_PARAM("\nit_n_maps:", it_n_maps);
+  if (it_n_maps < 2 || it_n_maps > 1024)
+    {
+      it_n_maps = lite_mode ? 8 : 256;
+    }
+  else if (0 != (it_n_maps % 2))
+    {
+      it_n_maps = 2 * (it_n_maps / 2);
+    }
 
   srv_plugins_init();
   srv_client_defaults_init ();

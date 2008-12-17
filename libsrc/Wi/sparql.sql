@@ -41,6 +41,27 @@ create table DB.DBA.RDF_QUAD (
 create bitmap index RDF_QUAD_OGPS on DB.DBA.RDF_QUAD (O, G, P, S)
 ;
 
+create procedure RDF_CREATE_LITE_IDX ()
+{
+  if (not sys_stat ('st_lite_mode'))
+    return;
+  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_OPGS'))
+    EXEC_STMT ('create bitmap index RDF_QUAD_OPGS on RDF_QUAD (O, P, G, S) partition (O varchar (-1, 0hexffff))', 1);
+  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_POGS'))
+    EXEC_STMT ('create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff))', 1);
+  if (not exists (select 1 from SYS_KEYS where fix_identifier_case (KEY_NAME) = 'RDF_QUAD_GPOS'))
+    EXEC_STMT ('create bitmap index RDF_QUAD_GPOS on RDF_QUAD (G, P, O, S) partition (O varchar (-1, 0hexffff))', 1);
+  if (registry_get ('LITE_RDF_RULE') = '1')
+    return;
+  RDF_OBJ_FT_RULE_ADD (null, null, 'All');
+  registry_set ('LITE_RDF_RULE', '1');
+}
+;
+
+--!AFTER
+RDF_CREATE_LITE_IDX()
+;
+
 --create trigger RDF_QUAD_O_AUDIT before insert on DB.DBA.RDF_QUAD
 --{
 --  if (not rdf_box_is_storeable (O))
@@ -265,6 +286,11 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
 }
 ;
 
+create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_ID,
+	PRIMARY KEY (RS_NAME, RS_URI))
+;
+
+
 DB.DBA.XML_LOAD_ALL_NS_DECLS ()
 ;
 
@@ -289,6 +315,7 @@ again:
 DB.DBA.RDF_LOAD_ALL_FT_RULES ()
 ;
 
+--!AFTER
 create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
 {
 --  checkpoint;
@@ -3532,6 +3559,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
 }
 ;
 
+--!AFTER
 create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer := 0, in compose_report integer := 0) returns any
 {
   commit work;
@@ -7895,6 +7923,7 @@ retry_add:
 }
 ;
 
+--!AFTER
 create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH_OLD (in graph_iid IRI_ID, inout ro_id_dict any)
 {
   declare start_vt_d_id, aligned_start_vt_d_id, uncommited_ro_id_offset, ro_id_offset, ro_ids_count integer;
@@ -8796,10 +8825,6 @@ create procedure rdfs_load_schema (in name varchar, in gn varchar)
       rdfs_closure_1 (gr, name, o, o, 0, dict_new (), supers, 0);
     }
 }
-;
-
-create table DB.DBA.SYS_RDF_SCHEMA (RS_NAME VARCHAR , RS_URI VARCHAR, RS_G IRI_ID,
-	PRIMARY KEY (RS_NAME, RS_URI))
 ;
 
 create procedure rdfs_schema_boot ()

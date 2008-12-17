@@ -2552,6 +2552,7 @@ chmod 644 bq_000000_index_vspx
 #### MAIN ####
 
 BANNER "STARTED SERIES OF VSPX TESTS"
+NOLITE
 STOP_SERVER
 rm -f $DBLOGFILE $DBFILE
 rm -rf vspx

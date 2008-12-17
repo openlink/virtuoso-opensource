@@ -42,6 +42,7 @@ FAULT1_TEST=yes
 fi
 
 BANNER "STARTED BPEL TEST (bpel.sh)"
+NOLITE
 
 HOST_OS=`uname -s | grep WIN`
 case $SERVER in

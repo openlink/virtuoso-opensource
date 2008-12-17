@@ -1497,33 +1497,6 @@ done:
 ;
 
 
--- URI parser according RFC 1808 recommendations
--- Parse URI & returns array of six elements (empty elements are empty strings)
--- 0 - schema
--- 1 - network location/login
--- 2 - path
--- 3 - parameters
--- 4 - query
--- 5 - fragment
-
---!AWK PUBLIC
-create procedure WS.WS.PARSE_URI (in uri varchar)
-{
-  return rfc1808_parse_uri (uri);
-}
-;
-
-
--- relative to absolute URI conversation (RFC 1808)
---!AWK PUBLIC
-create function WS.WS.EXPAND_URL (in base varchar, in rel varchar, in output_charset varchar := null) returns any
-{
-  -- dbg_obj_princ ('WS.WS.EXPAND_URL (', base, rel, output_charset, ') = ');
-  -- dbg_obj_princ ('  ', rfc1808_expand_uri (base, rel, output_charset));
-  return rfc1808_expand_uri (base, rel, output_charset);
-}
-;
-
 --
 -- simple wrappers for command-line run
 --

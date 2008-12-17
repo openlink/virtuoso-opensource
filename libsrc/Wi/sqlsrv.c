@@ -3269,26 +3269,31 @@ cov_load (void)
 }
 #endif
 
+#define NO_LITE(f) if (!lite_mode) f (); 
 
 void
 sql_code_global_init ()
 {
-  sqls_define_sparql ();
-  sqls_define_ddk ();
-  sqls_define_dav ();
-  cache_resources();
-  sqls_define_2pc ();
+  sqls_define_sys ();
   sqls_define ();
-  sqls_define_blog ();
+  sqls_define_sparql ();
+  NO_LITE (sqls_define_ddk);
+  NO_LITE (sqls_define_repl);
+  NO_LITE (sqls_define_ws);
+  NO_LITE (sqls_define_dav);
   sqls_define_1 ();
-  sqls_define_adm ();
+  cache_resources();
+  NO_LITE (sqls_define_2pc);
+  NO_LITE (sqls_define_blog);
+  NO_LITE (sqls_define_pldbg);
+  NO_LITE (sqls_define_adm);
 #ifdef VAD
-  sqls_define_vad ();
+  NO_LITE (sqls_define_vad);
 #endif
-  sqls_define_dbp ();
-  sqls_define_uddi ();
-  sqls_define_imsg ();
-  sqls_define_auto ();
+  NO_LITE (sqls_define_dbp);
+  NO_LITE (sqls_define_uddi);
+  NO_LITE (sqls_define_imsg);
+  NO_LITE (sqls_define_auto);
   ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_XPF_EXTENSIONS where xpf_extension (XPE_NAME, XPE_PNAME, 0)");
 #ifdef _SSL
   /* do load of the persisted encryption keys */
@@ -3305,21 +3310,25 @@ sql_code_arfw_global_init ()
 {
   ddl_scheduler_arfw_init ();
 
+  sqls_arfw_define_sys ();
   sqls_arfw_define_sparql ();
   sqls_arfw_define ();
-  sqls_arfw_define_blog ();
+  NO_LITE (sqls_arfw_define_blog);
   sqls_arfw_define_1 ();
-  sqls_arfw_define_ddk ();
-  sqls_arfw_define_dav ();
+  NO_LITE (sqls_arfw_define_ddk);
+  NO_LITE (sqls_arfw_define_repl);
+  NO_LITE (sqls_arfw_define_ws);
+  NO_LITE (sqls_arfw_define_dav);
+  NO_LITE (sqls_arfw_define_pldbg);
 
-  sqls_arfw_define_adm ();
+  NO_LITE (sqls_arfw_define_adm);
 #ifdef VAD
-  sqls_arfw_define_vad ();
+  NO_LITE (sqls_arfw_define_vad);
 #endif
-  sqls_arfw_define_dbp ();
-  sqls_arfw_define_uddi ();
-  sqls_arfw_define_imsg ();
-  sqls_arfw_define_auto ();
+  NO_LITE (sqls_arfw_define_dbp);
+  NO_LITE (sqls_arfw_define_uddi);
+  NO_LITE (sqls_arfw_define_imsg);
+  NO_LITE (sqls_arfw_define_auto);
 }
 
 
@@ -3420,6 +3429,8 @@ set_ddl_init_hook (ddl_init_hook_t new_ddl_init_hook)
 void
 srv_plugins_init (void)
 {
+  if (lite_mode)
+    return;
   langfunc_plugin_init ();
   hosting_plugin_init ();
   /* init for common type plugin */
@@ -3507,7 +3518,8 @@ srv_global_init (char *mode)
   if (probe[6][0] != '6') GPF_T1("list probe 6");
 #endif
 
-  PrpcInitialize ();
+  db_read_cfg (NULL, mode);
+  PrpcInitialize1 (lite_mode ? DK_ALLOC_RESERVE_DISABLED : DK_ALLOC_RESERVE_PREPARED);
   background_sem = semaphore_allocate (0);
 
   logins_list_initialize ();
@@ -3585,10 +3597,19 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
+#ifdef PLDBG  
+  if (lite_mode) 
+    pl_debug_all = 0;
+#endif  
   wi_open (mode);
   dbs_cpt_recov ();
   sql_bif_init ();
+
+  if (lite_mode)
+    log_info ("Entering Lite Mode");
+
 #ifdef VIRTTP
+  if (!lite_mode)
   tp_main_queue_init();
 #endif
   /*if (sqlo_enable)*/
@@ -3710,8 +3731,11 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
 #if REPLICATION_SUPPORT
+      if (!lite_mode) 
+	{
       repl_init ();
       repl_serv_init (0);
+	}
 #endif
     }
   ddl_obackup_init ();
@@ -3739,8 +3763,11 @@ srv_global_init (char *mode)
     }
   local_commit (bootstrap_cli);
 #ifdef PLDBG
+  if (!lite_mode) 
+    {
   pldbg_init ();
   cov_load ();
+    }
 #endif
   dbev_startup ();
   sqlc_hook_enable = 1;

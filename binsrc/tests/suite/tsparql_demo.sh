@@ -30,6 +30,7 @@ HTTPPORT1=`expr $HTTPPORT + 1`
 HTTPPORT2=`expr $HTTPPORT + 2`
 
 BANNER "STARTED SPARQL TESTS"
+NOLITE
 
 curl -V | grep curl
 if test $? -ne 0

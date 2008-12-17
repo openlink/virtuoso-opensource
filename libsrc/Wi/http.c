@@ -9330,6 +9330,9 @@ http_init_part_two ()
   dk_session_t *ftp_listen = NULL;
 #endif
 
+  if (lite_mode) 
+    return 1;
+
   ddl_std_proc (ws_def_expand_includes, 1);
   ddl_std_proc (ws_def_1, 1);
   ddl_std_proc (ws_get_ftext, 1);

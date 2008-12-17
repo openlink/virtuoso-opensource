@@ -20,35 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-create table DB.DBA.SYS_CACHED_RESOURCES
-(
-  CRES_URI		varchar not null,
-  CRES_PUBLIC_ID	varchar,
-  CRES_CONTENT		long varchar,
-  CRES_LOADING_DATE	datetime,
-  CRES_COMMENT		long varchar,
-  primary key (CRES_URI)
-)
-;
-
-create procedure DB.DBA.SYS_CACHED_RESOURCE_ADD (
-  in _uri varchar, in _public_id varchar,
-  in _content varchar, in _loading_date datetime, in _comment varchar)
-{
-  if (exists (
-      select top 1 1 from DB.DBA.SYS_CACHED_RESOURCES
-      where CRES_URI = _uri and CRES_PUBLIC_ID = _public_id and
-        blob_to_string (CRES_CONTENT) = _content and
-        CRES_LOADING_DATE = _loading_date and
-        blob_to_string (CRES_COMMENT) = _comment ) )
-    return;
-  insert replacing DB.DBA.SYS_CACHED_RESOURCES
-    (CRES_URI, CRES_PUBLIC_ID, CRES_CONTENT, CRES_LOADING_DATE, CRES_COMMENT)
-  values (_uri, _public_id, _content, _loading_date, _comment);
-  commit work;
-}
-;
-
 -- Cleanup WebDAV DB
 use WS
 ;

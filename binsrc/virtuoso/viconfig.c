@@ -159,6 +159,7 @@ extern char *temp_aspx_dir;
 
 extern char *java_classpath;
 extern dk_set_t old_backup_dirs;
+extern const char* recover_file_prefix;
 
 /* Do automatic checkpoint approximately every N milliseconds. */
 /* If zero, don't do it. */
@@ -1003,6 +1004,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "IriCacheSize", &c_iri_cache_size) == -1)
     c_iri_cache_size = 0;
 
+  if (cfg_getlong (pconfig, section, "LiteMode", &c_lite_mode) == -1)
+    c_lite_mode = 0;
+
   if (cfg_getlong (pconfig, section, "RdfFreeTextRulesSize", &c_rdf_obj_ft_rules_size) == -1)
     c_rdf_obj_ft_rules_size = 0;
 
@@ -1423,7 +1427,7 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "LoadPath", &c_plugin_load_path) == -1)
     c_plugin_load_path = 0;
   srv_plugins_init();
-  if (c_plugin_load_path)
+  if (!c_lite_mode && c_plugin_load_path)
     {
       int loadctr;
       for (loadctr = 1; loadctr < 100; loadctr++)
@@ -1561,6 +1565,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   init_trace = c_init_trace;
   allowed_dirs = c_allowed_dirs;
   denied_dirs = c_denied_dirs;
+  if (!recover_file_prefix) /* when recovering, we use backup_dirs passed from command line */
   backup_dirs = c_backup_dirs;
   safe_execs = c_safe_execs;
   dba_execs = c_dba_execs;

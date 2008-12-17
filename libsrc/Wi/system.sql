@@ -28,6 +28,239 @@ create table SYS_VT_INDEX (VI_TABLE varchar, VI_INDEX varchar, VI_COL varchar,
        primary key (VI_TABLE, VI_COL))
 ;
 
+create table DB.DBA.SYS_CACHED_RESOURCES
+(
+  CRES_URI              varchar not null,
+  CRES_PUBLIC_ID        varchar,
+  CRES_CONTENT          long varchar,
+  CRES_LOADING_DATE     datetime,
+  CRES_COMMENT          long varchar,
+  primary key (CRES_URI)
+)
+;
+
+create procedure DB.DBA.SYS_CACHED_RESOURCE_ADD (
+  in _uri varchar, in _public_id varchar,
+  in _content varchar, in _loading_date datetime, in _comment varchar)
+{
+  if (exists (
+      select top 1 1 from DB.DBA.SYS_CACHED_RESOURCES
+      where CRES_URI = _uri and CRES_PUBLIC_ID = _public_id and
+        blob_to_string (CRES_CONTENT) = _content and
+        CRES_LOADING_DATE = _loading_date and
+        blob_to_string (CRES_COMMENT) = _comment ) )
+    return;
+  insert replacing DB.DBA.SYS_CACHED_RESOURCES
+    (CRES_URI, CRES_PUBLIC_ID, CRES_CONTENT, CRES_LOADING_DATE, CRES_COMMENT)
+  values (_uri, _public_id, _content, _loading_date, _comment);
+  commit work;
+}
+;
+
+-- URI parser according RFC 1808 recommendations
+-- Parse URI & returns array of six elements (empty elements are empty strings)
+-- 0 - schema
+-- 1 - network location/login
+-- 2 - path
+-- 3 - parameters
+-- 4 - query
+-- 5 - fragment
+
+--!AWK PUBLIC
+create procedure WS.WS.PARSE_URI (in uri varchar)
+{
+  return rfc1808_parse_uri (uri);
+}
+;
+
+-- relative to absolute URI conversation (RFC 1808)
+--!AWK PUBLIC
+create function WS.WS.EXPAND_URL (in base varchar, in rel varchar, in output_charset varchar := null) returns any
+{
+  -- dbg_obj_princ ('WS.WS.EXPAND_URL (', base, rel, output_charset, ') = ');
+  -- dbg_obj_princ ('  ', rfc1808_expand_uri (base, rel, output_charset));
+  return rfc1808_expand_uri (base, rel, output_charset);
+}
+;
+
+create procedure repl_undot_name (in id varchar)
+{
+  declare last_dot_inx integer;
+  last_dot_inx := strrchr(id, '.');
+  if (last_dot_inx > 0)
+    return subseq(sprintf('%s', id), last_dot_inx + 1);
+  else
+    return id;
+}
+;
+
+create procedure REPL_FQNAME (in _tbl varchar)
+{
+  declare _parts any;
+  _parts := vector ('', '', '');
+  declare _ix, _len integer;
+  _ix := 0;
+  _len := length (_parts);
+  while (_ix < _len)
+    {
+      declare _p any;
+      _p := name_part (_tbl, _ix);
+      if (isstring (_p))
+        _parts[_ix] := sprintf ('"%I"', _p);
+      _ix := _ix + 1;
+    }
+  return concat (_parts[0], '.', _parts[1], '.', _parts[2]);
+}
+;
+
+create procedure REPL_COLTYPE_PS (
+    in _coltype varchar,
+    in _col_dtp integer, in _col_prec integer, in _col_scale integer)
+  returns varchar
+{
+  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
+       _col_dtp = 222 or _col_dtp = 225)
+      and _col_prec is not null and _col_prec <> 0)
+    {
+      -- (length) for char or varchar
+      declare _pos integer;
+      declare _len_spec varchar;
+      _pos := strstr (_coltype, '()');
+      _len_spec := sprintf ('(%d)', _col_prec);
+      if (_pos is null)
+        _coltype := concat (_coltype, _len_spec);
+      else
+        {
+          declare _prefix, _suffix varchar;
+          _prefix := subseq (_coltype, 0, _pos);
+          _suffix := subseq (_coltype, _pos + 2);
+          _coltype := concat (_prefix, _len_spec, _suffix);
+        }
+    }
+  else if (_col_dtp = 219)
+    {
+      -- (prec, scale) for numeric
+      if (_col_prec < _col_scale)
+        _col_scale := 0;
+      _coltype := concat (_coltype, sprintf('(%d, %d)', _col_prec, _col_scale));
+    }
+  return _coltype;
+}
+;
+
+create procedure REPL_COLTYPE (in _col any) returns varchar
+{
+  declare _col_dtp, _col_prec, _col_scale integer;
+  _col_dtp := aref (_col, 1);
+  _col_scale := aref (_col, 2);
+  _col_prec := aref (_col, 3);
+
+  if (_col_dtp = 219)
+    {
+      if (_col_scale > 15)
+	_col_scale := 15;
+      if (_col_prec > 40)
+	_col_prec := 40;
+    }
+  return REPL_COLTYPE_PS (
+      dv_type_title(_col_dtp), _col_dtp, _col_prec, _col_scale);
+}
+;
+
+create procedure WS.WS.HEX_DIGIT (in i integer)
+{
+  if ( i >= 0 and i < 10)
+    return i + ascii ('0');
+  if ( i > 9 and  i < 16 )
+    return i + ascii ('A') - 10;
+  return ascii ('0');
+}
+;
+
+-- IvAn/XmlView/000810 procedure WS.WS.STR_SQL_APOS added
+create procedure WS.WS.STR_SQL_APOS (in str varchar)
+{
+  declare tmp varchar;
+  declare inx, inx1, len integer;
+  declare c char;
+  declare cascii integer;
+  len := length (str);
+  -- This if is not only for empty string, but for NULL input, too.
+  if (len = 0)
+    return '''''';
+  tmp := space(len * 4 + 2);
+
+  aset(tmp, 0, ascii(''''));	-- Start output from apos
+
+  inx := 0;			-- Start input from leftmost position
+  inx1 := 1;			-- Continue output after starting apos
+  while (inx < len)
+    {
+      c := chr (aref (str, inx));
+      cascii := ascii(c);
+      if (cascii < 32)
+        {
+	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
+	  aset (tmp, inx1 + 1, ascii('0'));
+	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
+	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
+          inx1 := inx1 + 4;
+	}
+      else
+        {
+	  if ((c = '''') or (c = '\\')) -- the quote is to recover synt.highlight: '
+	    {
+              aset (tmp, inx1, cascii);
+              inx1 := inx1 + 1;
+	    }
+          aset (tmp, inx1, cascii);
+          inx1 := inx1 + 1;
+	}
+      inx := inx + 1;
+    }
+
+  aset(tmp, inx1, ascii(''''));	-- Finish output by apos
+
+  return trim(tmp);
+}
+;
+
+create procedure WS.WS.STR_FT_QUOT (in str varchar)
+{
+  declare tmp varchar;
+  declare inx, inx1, len integer;
+  declare c char;
+  declare cascii integer;
+  len := length (str);
+  -- This if is not only for empty string, but for NULL input, too.
+  if (len = 0)
+    return '""';
+  tmp := space(len * 4 + 2);
+
+  aset(tmp, 0, ascii('"'));
+
+  inx := 0;			-- Start input from leftmost position
+  inx1 := 1;			-- Continue output after starting apos
+  while (inx < len)
+    {
+      c := chr (aref (str, inx));
+      cascii := ascii(c);
+      if ((cascii < 32) or ('''' = c) or ('\\' = c) or ('"' = c)) -- the quote is to recover synt.highlight: "
+        {
+	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
+	  aset (tmp, inx1 + 1, ascii('0'));
+	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
+	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
+          inx1 := inx1 + 4;
+	}
+      inx := inx + 1;
+    }
+
+  aset(tmp, inx1, ascii('"'));
+  return trim(tmp);
+}
+;
+
 --!AWK PUBLIC
 create procedure SQL_PROCEDURE_COLUMNS (
     in qual varchar,
@@ -1224,6 +1457,7 @@ create procedure ddl_alter_constr (in tb varchar, in op integer, in decl any)
     {
       ddl_check_modify (tb, op, decl);
     }
+  if (not sys_stat ('st_lite_mode'))
   __REPL_DDL_FK_MODIFY_PROPAGATE (tb, op, decl, orig_pkt);
 }
 ;
@@ -2921,953 +3155,6 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
 }
 ;
 
-create procedure vsmx_user_check (in name varchar, in pass varchar)
-{
-  return 1;
-}
-;
-
---!AWK PUBLIC
-create procedure
-DB.DBA.SOAP_VSMX (in path any, in params any, in lines any)
-{ ?>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
- "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
-<HTML>
- <HEAD>
-<STYLE>
-BODY
-{
-    MARGIN-TOP: 0px;
-    FONT-SIZE: 80%;
-    MARGIN-LEFT: 0em;
-    COLOR: #000000;
-    MARGIN-RIGHT: 0em;
-    FONT-FAMILY: Verdana, 'MS Serif', Serif;
-    BACKGROUND-COLOR: #ffffff
-}
-.head1
-{
-    PADDING-BOTTOM: 5px;
-    MARGIN-LEFT: -3em;
-    COLOR: #191970;
-    LINE-HEIGHT: normal;
-    MARGIN-RIGHT: -3em;
-    PADDING-TOP: 5px;
-    BORDER-BOTTOM: navy thin solid;
-    FONT-FAMILY: Verdana, Arial, Helvetica, Lucida, Sans-Serif;
-    BACKGROUND-COLOR: skyblue;
-    TEXT-ALIGN: right
-}
-DIV.foot
-{
-    CLEAR: left;
-    BORDER-TOP: lightslategray thin solid;
-    FONT-SIZE: 10px;
-    LINE-HEIGHT: normal;
-    FONT-FAMILY: Verdana, Arial, Helvetica, Lucida, Sans-Serif;
-    TEXT-ALIGN: right
-}
-H1
-{
-    PADDING-RIGHT: 3em;
-    MARGIN-TOP: 5px;
-    FONT-SIZE: 185%;
-    MARGIN-BOTTOM: 5px;
-    MARGIN-LEFT: 0em
-}
-A
-{
-    COLOR: blue;
-    TEXT-DECORATION: none
-}
-A:hover
-{
-    TEXT-DECORATION: underline
-}
-.operation
-{
-    PADDING-RIGHT: 10px;
-    PADDING-LEFT: 30px;
-    PADDING-BOTTOM: 10px;
-    PADDING-TOP: 10px;
-    VERTICAL-ALIGN: top;
-}
-.soaplist
-{
-    VERTICAL-ALIGN: top;
-    PADDING-RIGHT: 5px;
-    PADDING-LEFT: 25px;
-    PADDING-BOTTOM: 10px;
-    MARGIN: 0px;
-    WIDTH: 225px;
-    PADDING-TOP: 10px;
-    BACKGROUND-COLOR: gainsboro
-}
-.soapdesc
-{
-    FONT-SIZE: 90%;
-    FONT-FAMILY: Tahoma
-}
-INPUT
-{
-    BORDER-RIGHT: silver 1px solid;
-    BORDER-TOP: silver 1px solid;
-    BORDER-LEFT: silver 1px solid;
-    BORDER-BOTTOM: silver 1px solid;
-    FONT-FAMILY: Tahoma
-}
-.btns
-{
-    TEXT-ALIGN: right
-}
-TABLE.service
-{
-    BORDER-RIGHT: #ebebeb 1px solid;
-    BORDER-TOP: #ebebeb 1px solid;
-    BORDER-LEFT: #ebebeb 1px solid;
-    BORDER-BOTTOM: #ebebeb 1px solid;
-    FONT-FAMILY: Tahoma
-}
-TH.service
-{
-    BACKGROUND-COLOR: silver;
-    TEXT-ALIGN: left
-}
-H2
-{
-    FONT-SIZE: 150%;
-    MARGIN-LEFT: -20px
-}
-H3
-{
-    FONT-SIZE: 120%;
-    MARGIN-BOTTOM: 0px;
-    MARGIN-LEFT: -10px
-}
-.soapli
-{
-    PADDING-BOTTOM: 5px;
-    TEXT-INDENT: -20px
-}
-TD.service
-{
-    BACKGROUND-COLOR: #f0f0f0
-}
-.response
-{
-    BORDER-RIGHT: #f0f0f0 1px solid;
-    PADDING-RIGHT: 2px;
-    BORDER-TOP: #f0f0f0 1px solid;
-    PADDING-LEFT: 2px;
-    PADDING-BOTTOM: 2px;
-    BORDER-LEFT: #f0f0f0 1px solid;
-    PADDING-TOP: 2px;
-    BORDER-BOTTOM: #f0f0f0 1px solid
-}
-.details
-{
-    PADDING-RIGHT: 2px;
-    PADDING-LEFT: 30px;
-    PADDING-BOTTOM: 2px;
-    PADDING-TOP: 10px;
-    BACKGROUND-COLOR: #f0f0f0;
-    TEXT-ALIGN: left
-}
-.level1
-{
-    COLOR: blue
-}
-.level2
-{
-    COLOR: red
-}
-.level3
-{
-    COLOR: green
-}
-.level4
-{
-    COLOR: teal
-}
-.attribname
-{
-    TEXT-ALIGN: right;
-}
-.attrib
-{
-    COLOR: #990000
-}
-</STYLE>
-<TITLE>Web Service Testing</TITLE>
- </HEAD>
- <BODY>
-<DIV class="head1"><H1>Web Services Test Page (VSMX)</H1></DIV>
-<?vsp
- declare this_page varchar;
- declare wsdl any;
- declare inx, len, _u_id integer;
- this_page := 'services.vsmx';
- set http_charset='UTF-8';
- http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 01:02:03 GMT\r\n');
-
-?>
-<DIV class="soappage">
-<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-<TR><TD class="soaplist">
-<H2>Services Available</H2>
-<?vsp
-     declare xt any;
-     wsdl := soap_wsdl();
-     if (not (registry_get ('old_vsmx') = '1') and isstring (file_stat (http_root()||'/vsmx/oper.vspx')))
-       {
-         declare sid any;
-         sid := vspx_sid_generate ();
-         insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-		values ('vsmx', sid, null,
-		serialize (vector ('wsdl', wsdl, 'loc', WS.WS.EXPAND_URL (HTTP_REQUESTED_URL(),'services.wsdl'))),
-		now ());
-         http_request_status ('HTTP/1.1 302 Found');
-         http_header (sprintf ('Location: /vsmx/oper.vspx?sid=%s&realm=vsmx\r\n', sid));
-         http_rewrite ();
-         return;
-       }
-     xt := xml_tree_doc (wsdl);
-     inx := 0;
-     _u_id := (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME = http_map_get ('soap_uid'));
-     for select 0 as TP, P_NAME as operation, coalesce (P_TEXT, blob_to_string (P_MORE)) as content
-       from DB.DBA.SYS_PROCEDURES where (name_part (P_NAME, 0) = http_map_get ('soap_qual')
-	   and name_part (P_NAME,1) = http_map_get ('soap_uid'))
-	   or exists (select 1 from DB.DBA.SYS_GRANTS where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME)
-
-	   union select 0 as TP, G_OBJECT as operation, '' as content from DB.DBA.SYS_GRANTS where
-	   G_USER = _u_id and G_OP = 32 and __proc_exists (G_OBJECT) is not null
-	   and not exists (select 1 from DB.DBA.SYS_PROCEDURES where G_OBJECT = P_NAME)
-
-           union select 1 as TP, M_NAME as operation, blob_to_string (M_TEXT) as content
-		from DB.DBA.SYS_METHODS, DB.DBA.SYS_USER_TYPES where M_ID = UT_ID and
-	   exists (select 1 from DB.DBA.SYS_GRANTS where G_USER = _u_id and G_OP = 32 and G_OBJECT = UT_NAME)
-	   do
-       {
-	 declare comments, title, elm, operation1, q, o varchar;
-
-	 q := name_part (operation, 0);
-	 o := name_part (operation, 1);
-
-         if (TP = 1)
-           operation1 := operation;
-	 else if ((length (q) + length (o) + 3) < length (operation))
-	   operation1 := substring (operation, length (q) + length (o) + 3, length (operation));
-	 else
-	   goto nxt;
-
-	 operation := operation1;
-
-         elm := xpath_eval (sprintf ('/definitions/portType/operation[@name = \'%s\']', operation), xt);
-	 if (elm is null)
-	   goto nxt;
-         title := regexp_match ('--##.*', content);
-         if (title is null)
-           title := '';
-	 else
-	   title := substring (title, 5, length (title));
-?>
-    <DIV class="soapli"><A href="<?=this_page?>?operation=<?=operation?>"><?=operation?></A><BR />
-    <SPAN class="soapdesc"><?=title?></SPAN></DIV>
-<?vsp
-        inx := inx + 1;
-nxt:;
-       }
-?>
-</TD>
-<TD class="operation">
-<?vsp
-
-   if ({?'operation'} is not null )
-   {
-     declare xe, pars any;
-     declare xps, url varchar;
-     wsdl := soap_wsdl();
-     xe := xml_tree_doc (wsdl);
-     if (xpath_eval (sprintf ('/definitions/binding/operation[@name="%s"]/operation[@style="document"]', {?'operation'}), xe) is null)
-       {
-         xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part', {?'operation'});
-       }
-     else if (xpath_eval (sprintf ('/definitions/message[@name = \'%sRequest\']/part[@name="parameters"]', {?'operation'}), xe) is not null)
-       {
-         declare elm_name any;
-         declare pos int;
-
-         xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part/@element', {?'operation'});
-         elm_name := cast (xpath_eval (xps, xe) as varchar);
-         pos := strrchr (elm_name, ':');
-         if (pos is not null)
-           {
-             elm_name := subseq (elm_name, pos + 1, length (elm_name));
-           }
-         xps := sprintf ('/definitions/types/schema/element[@name = "%s"]//element', elm_name);
-       }
-     else
-       {
-         xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part', {?'operation'});
-       }
-
-     pars := xpath_eval (xps, xe, 0);
-     url := cast (xpath_eval ('/definitions/service/port/address/@location', xe, 1) as varchar);
-     len := length (pars);
-     inx := 0;
-?>
-<H2><?={?'operation'}?></H2>
-<H3>Details</H3>
-<P>The service end point is: <?=url?></P>
-<P>The WSDL end point is: <A href="<?=url?>/services.wsdl"><?=url?>/services.wsdl</A></P>
-<H3>Test</H3>
-    <FORM method="POST" action="<?=this_page?>">
-    <INPUT type="hidden" name="operation" value="<?={?'operation'}?>" >
-    <INPUT type="hidden" name="url" value="<?=url?>" >
-<TABLE class="service" border="0" cellpadding="2" cellspacing="2">
-<TR>
-  <TH class="service">Parameter</TH>
-  <TH class="service">Value</TH>
-  <TH class="service">Type</TH>
-</TR>
-<?vsp
-     while (inx < len)
-       {
-	 declare n, t varchar;
-         n := xpath_eval ('@name', pars[inx], 1);
-         t := xpath_eval ('@type', pars[inx], 1);
-         n := cast (n as varchar); t := cast (t as varchar);
-         if (t like 'http://www.w3.org/____/XMLSchema:%')
-	   {
-	     t := substring (t, length ('http://www.w3.org/____/XMLSchema:') + 1, length (t));
-	     t := concat ('xsd:', t);
-	   }
-	 else if (strchr (t, ':') is not null and t not like 'xsd:%')
-	   {
-	     declare colon integer;
-             colon := strrchr (t, ':');
-             t := substring (t, colon + 1, length (t));
-	     t := concat ('s', t);
-	   }
-?>
-    <TR>
-      <TD class="service"><?=n?></TD>
-      <?vsp if (t like 'xsd:%') { ?>
-      <TD class="service"><input type="text" name="<?=n?>" size="40" /></TD>
-      <?vsp } else { ?>
-      <TD class="service"><textarea name="<?=n?>" rows=10 cols="40"><?vsp
-	 if (t like '_:%' and t not like '_:ArrayOf%')
-	   {
-	     declare struct, t1 any;
-	     declare i, l integer;
-             t1 := substring (t, 3, length (t));
-             xps :=
-        sprintf ('/definitions/types/schema/complexType[@name = ''%s'']/*/element/@name', t1);
-             struct := xpath_eval (xps, xe, 0);
-             i := 0; l := length (struct);
-	     while (i < l)
-	       {
-		 http (cast (struct[i] as varchar));
-		 http ('=\r\n');
-                 i := i + 1;
-	       }
-	   }
-      ?></textarea></TD>
-      <?vsp } ?>
-      <TD class="service"><SPAN class="datatype"><?=t?></SPAN>
-        <input type="hidden" name="<?=n?>_type" value="<?=t?>"></TD>
-    </TR>
-<?vsp
-         inx := inx + 1;
-       }
-     if (not inx)
-       {
-?>
-    <TR><TD class="service" colspan="2">No input parameters are required for this service.</TD></TR>
-<?vsp
-       }
-?>
-    <TR><TD class="btns" colspan="2"><input type="submit" name="callit" value="Invoke"></TD></TR>
-    </TABLE>
-    </form>
-<?vsp
-   }
-
-  if ({?'operation'} is not null and {?'callit'} is not null)
-  {
-    declare hinfo, result, ver, pars1, _url any;
-    declare xe, xps, pars any;
-    wsdl := soap_wsdl();
-    xe := xml_tree_doc (wsdl);
-    _url := {?'url'};
-    hinfo := rfc1808_parse_uri ({?'url'});
-
-    if (xpath_eval (sprintf ('/definitions/binding/operation[@name="%s"]/operation[@style="document"]', {?'operation'}), xe) is null)
-      {
-        xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part', {?'operation'});
-      }
-    else if (xpath_eval (sprintf ('/definitions/message[@name = \'%sRequest\']/part[@name="parameters"]', {?'operation'}), xe) is not null)
-      {
-        declare elm_name any;
-        declare pos int;
-
-        xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part/@element', {?'operation'});
-        elm_name := cast (xpath_eval (xps, xe) as varchar);
-        pos := strrchr (elm_name, ':');
-        if (pos is not null)
-          {
-            elm_name := subseq (elm_name, pos + 1, length (elm_name));
-          }
-        xps := sprintf ('/definitions/types/schema/element[@name = "%s"]//element', elm_name);
-      }
-    else
-      {
-        xps := sprintf ('/definitions/message[@name = \'%sRequest\']/part', {?'operation'});
-      }
-    pars := xpath_eval (xps, xe, 0);
-    len := length (pars);
-    inx := 0;
-    pars1 := vector ();
-    while (inx < len)
-      {
-      declare exit handler for sqlstate '*' {
-        result := xml_tree_doc (sprintf ('<Error>
-		      <Code>%V
-		      </Code>
-		      <Message>%V
-		      </Message>
-		      </Error>', __SQL_STATE, __SQL_MESSAGE));
-	goto err;
-      };
-	 declare n, t, v, va varchar;
-         n := xpath_eval ('@name', pars[inx], 1);
-         t := xpath_eval ('@type', pars[inx], 1);
-         n := cast (n as varchar); t := cast (t as varchar);
-         if (t like 'http://www.w3.org/____/XMLSchema:%')
-	   {
-	     t := substring (t, length ('http://www.w3.org/____/XMLSchema:') + 1, length (t));
-	     t := concat ('xsd:', t);
-	   }
-	 else if (strchr (t, ':') is not null and t not like 'xsd:%')
-	   {
-	     declare colon integer;
-             colon := strrchr (t, ':');
-             t := substring (t, colon + 1, length (t));
-	     t := concat ('s', t);
-	   }
-         v := get_keyword (n, params);
-	 if (t like '_:ArrayOf%')
-	   {
-             v := replace (v, '\r\n', '\n');
-             va := split_and_decode (v, 0, '\0\0\n');
-	     pars1 := vector_concat (pars1, vector (n, va));
-	   }
-	 else if (t like '_:%')
-	   {
-	     declare r, struct, rstr any;
-	     declare i, l integer;
-             v := replace (v, '\r\n', '\n');
-             va := coalesce (split_and_decode (v, 0, '\0\0\n='), vector ());
-             t := substring (t, 3, length (t));
-             xps :=
-        sprintf ('/definitions/types/schema/complexType[@name = ''%s'']/*/element/@name', t);
-             struct := xpath_eval (xps, xe, 0);
-             i := 0; l := length (struct);
-	     rstr := vector (composite(), '<soap_box_structure>');
-	     while (i < l)
-	       {
-		 declare part nvarchar;
-                 part := get_keyword (struct[i], va);
-                 part := charset_recode (part,'UTF-8','_WIDE_');
-                 rstr := vector_concat (rstr, vector (cast (struct[i] as varchar), part));
-                 i := i + 1;
-	       }
-	     pars1 := vector_concat (pars1, vector (n, rstr));
-	   }
-	 else if (t like '%:dateTime')
-	   {
-             v := charset_recode (v,'UTF-8','_WIDE_');
-	     v := cast (v as varchar);
-	     v := cast (v as datetime);
-	     pars1 := vector_concat (pars1, vector (n, v));
-	   }
-	 else
-	   {
-             v := charset_recode (v,'UTF-8','_WIDE_');
-	     pars1 := vector_concat (pars1, vector (n, v));
-	   }
-         inx := inx + 1;
-      }
-
-    ver := 11;
-    {
-      declare exit handler for sqlstate '*' {
-        result := xml_tree_doc (sprintf ('<Error>
-		      <Code>%V
-		      </Code>
-		      <Message>%V
-		      </Message>
-		      </Error>', __SQL_STATE, __SQL_MESSAGE));
-	goto err;
-      };
-      if (atoi (cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'ServerThreads')) < 2)
-	{
-	    result := xml_tree_doc (sprintf ('<Error>
-			  <Code>%V
-			  </Code>
-			  <Message>%V
-			  </Message>
-			  </Error>', '42000', 'At least two HTTP threads must be available'));
-	    goto err;
-	}
-      else
-	{
-          result := DB.DBA.SOAP_CLIENT (url=>_url, operation=>{?'operation'}, parameters=>pars1, version=>ver);
-	}
-    }
-
-    if (ver = 11)
-      {
-	if (result[0][0] <> ' root')
-	  result := vector (vector(' root'), result);
-        result := xml_tree_doc (result);
-      }
-    else
-      {
-        result := xml_tree_doc (sprintf ('<Error>
-		      <Code>%V
-		      </Code>
-		      <Message>%V
-		      </Message>
-		      </Error>', ver[1], ver[2]));
-      }
-err:;
-    declare ses any;
-    ses := xslt ('__soap_vsmx', result, vector ('service', {?'operation'}));
-    http_value (ses);
-  }
-
-?>
-</TD></TR></TABLE>
-</DIV>
-<DIV class="foot"><SPAN class="foot">Virtuoso Universal Server <?=sys_stat('st_dbms_ver')?> - Copyright&copy; 1999-2004 OpenLink Software.</SPAN></DIV>
- </BODY>
-</HTML>
-<?vsp
-}
-;
-
---!AFTER
-xslt_sheet ('__soap_vsmx', xml_tree_doc('<?xml version="1.0"?>
-     <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-      <xsl:output method="html" indent="yes" encoding="UTF-8" />
-      <xsl:param name="service" select="''''" />
-      <xsl:param name="ret_uri" select="''services.vsmx''" />
-      <xsl:template match="/">
-      <H3>Response</H3>
-        <BR />
-	<DIV class="response"><xsl:apply-templates select="*">
-	  <xsl:with-param name="level">1</xsl:with-param></xsl:apply-templates></DIV>
-      </xsl:template>
-
-      <xsl:template match="*"><xsl:param name="level" />
-	  <DIV class="details">
-	    <SPAN><xsl:attribute name="class">level<xsl:value-of select="$level" /></xsl:attribute>
-	      <xsl:value-of select="local-name()"/>:</SPAN>
-	    <xsl:if test="$level > 1">
-	    <SPAN class="data"><xsl:value-of select="text()"/>
-	      <xsl:if test="@*">
-	        <BR /><TABLE border="0" cellpadding="0" cellspacing="2">
-	        <xsl:for-each select="@*">
-	         <xsl:if test="(namespace-uri(.) != ''urn:schemas-microsoft-com:datatypes'')
-		   and (namespace-uri(.) != ''http://www.w3.org/2001/XMLSchema-instance'')
-		   and (namespace-uri(.) != ''http://schemas.xmlsoap.org/soap/encoding/'')
-		   and (namespace-uri(.) != ''urn:schemas-openlink-com:xml-sql'')">
-	            <TR><TD class="attribname"><xsl:value-of select="local-name()" />=</TD>
-		      <TD class="attrib">"<xsl:value-of select="." />"</TD></TR>
-	         </xsl:if>
-	        </xsl:for-each>
-	        </TABLE>
-              </xsl:if>
-	    </SPAN>
-	    </xsl:if>
-            <xsl:apply-templates select="*">
-	      <xsl:with-param name="level"><xsl:value-of select="$level+1" /></xsl:with-param>
-	    </xsl:apply-templates>
-	  </DIV>
-	</xsl:template>
-    </xsl:stylesheet>')
-)
-;
-
-create procedure WSDL_EXPAND (in _base_url any, in rsv any, inout schem any, inout defs any, inout ret any)
-{
-  declare idx, len, idx1, len1, use_cache integer;
-  declare _location, _what varchar;
-  declare _new, _import, _base, sch, t1, t2 any;
-
-  if (not isarray (schem)) schem := vector ();
-  if (not isarray (defs))  defs := vector ();
-  if (not rsv is NULL)  _base_url := WS.WS.EXPAND_URL (_base_url, rsv);
-
-  use_cache := 0;
-
-  _base := WSDL_GET (_base_url, use_cache);
-
-  if (rsv is NULL)  ret := _base;
-
-  sch := xpath_eval ('/definitions/import', _base, 0);
-
-  if (length (t1 := xpath_eval ('/definitions/types/schema', _base, 0)) > 0) schem := vector_concat (t1, schem);
-  if (length (t2 := xpath_eval ('/definitions', _base, 0)) > 0) defs := vector_concat (defs, t2);
-
-  idx := 0; len := length (sch);
-  while (idx < len)
-    {
-      _location := cast (xpath_eval ('@location', sch[idx], 1) as varchar);
-      _import := WSDL_GET (WS.WS.EXPAND_URL (_base_url, _location), use_cache);
-      _new := xpath_eval ('/definitions/import', _import, 0);
-      if (length (t1 := xpath_eval ('/definitions/types/schema', _import, 0))>0) schem := vector_concat (schem, t1);
-      if (length (t2 := xpath_eval ('/definitions', _import, 0)) > 0) defs := vector_concat (defs, t2);
-      len1 := length (_new); idx1 := 0;
-      if (length (_new) > 0)
-        {
-           while (idx1 < len1)
-             {
-		_what := cast (xpath_eval ('@location', _new[0], 1) as varchar);
-		_base_url := WS.WS.EXPAND_URL (_base_url, _location);
-		WSDL_EXPAND (_base_url, _what, schem, defs, ret);
-                idx1 := idx1 + 1;
-             }
-        }
-      idx := idx + 1;
-    }
-}
-;
-
-
---!AWK PUBLIC
-create procedure
-DB.DBA.SOAP_WSDL_IMPORT (in url varchar, in mode_wsdl integer := 1, in wire_dump integer := 0, in drop_module integer := 0)
-{
-  declare wsdl, xp, xt, uri, hinfo, sch, ret, pt any;
-  declare i, l, i1, l1, is_literal integer;
-  declare err, name, tns, mname, stmt, transport varchar;
-  declare port_name, port_name_last any;
-  declare tt, dmod varchar;
-
-  WSDL_EXPAND (url, NULL, sch, pt, wsdl);
-
-  i1 := 0; l1 := length (sch);
-  while (i1 < l1)
-    {
-      xp := xpath_eval ('complexType', sch[i1], 0);
-      tns := xpath_eval ('@targetNamespace', sch[i1], 1);
-      if (tns is not null)
-	{
-	  tns := cast (tns as varchar);
-	  tns := concat (tns, ':');
-	}
-      else
-	 tns := '';
-
-      i := 0; l := length (xp);
-      while (i < l)
-	{
-	  xt := xslt ('http://local.virt/soap_sch', xp[i]);
-	  err := xpath_eval ('string(//@error)', xt, 1);
-	  err := cast (err as varchar);
-	  if (err <> '')
-	    {
-	      rollback work;
-	      signal ('22023', err, 'SODT1');
-	    }
-	  name := cast(xpath_eval ('string(/complexType/@name)', xt, 1) as varchar);
-	  if (not exists (select 1 from DB.DBA.SYS_SOAP_DATATYPES where SDT_NAME = concat (tns, name) and SDT_TYPE = 0))
-	    {
-	      insert soft DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME,SDT_SCH,SDT_TYPE) values (concat(tns, name), xt, 0);
-	      __soap_dt_define (concat(tns, name), xt);
-	    }
-	  i := i + 1;
-	}
-      xp := xpath_eval ('element', sch[i1], 0);
-      i := 0; l := length (xp);
-      while (i < l)
-	{
-          xt := xslt ('http://local.virt/soap_sch', xp[i], vector ('target_Namespace', rtrim(tns, ':')));
-	  err := xpath_eval ('string(//@error)', xt, 1);
-	  err := cast (err as varchar);
-	  if (err <> '')
-	    {
-	      rollback work;
-	      signal ('22023', err, 'SODT1');
-	    }
-	  name := cast(xpath_eval ('string(/element/@name)', xt, 1) as varchar);
-	  if (not exists (select 1 from DB.DBA.SYS_SOAP_DATATYPES where SDT_NAME = concat (tns, name) and SDT_TYPE = 1))
-	    {
-	      insert soft DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME,SDT_SCH,SDT_TYPE) values (concat(tns, name), xt, 1);
-	      __soap_dt_define (concat(tns, name), xt, NULL, 1);
-	    }
-	  -- type of elements
-	  {
-	    declare cmpl, cname, cname2,  sch2 varchar;
-	    cmpl := xpath_eval (sprintf ('element[%d]/complexType[*]', (i+1)), sch[i1], 1);
-	    -- must test for child elements
-	    if (cmpl is not null)
-	      {
-		declare name1 varchar;
-                name1 := cast(xpath_eval (sprintf ('string(element[%d]/@name)' , (i+1)), sch[i1], 1) as varchar);
-		cname := sprintf ('elementType__%s', name1);
-		if (tns is null or tns = '')
-		  cname2 := cname;
-		else
-		  cname2 := sprintf ('%s%s', tns, cname);
-                sch2 := xslt ('http://local.virt/soap_sch', cmpl,
-			  vector ('type_name', cname, 'target_Namespace', rtrim(tns, ':')));
-		__soap_dt_define (cname2, sch2, sch2, 0);
-		insert replacing DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME,SDT_SCH, SDT_TYPE) values (cname2, sch2, 0);
-	      }
-	  }
-	  i := i + 1;
-	}
-      i1 := i1 + 1;
-    }
-  declare extens any;
-  declare ns_ext nvarchar;
-  extens := xpath_eval ('[xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"] //*[@wsdl:required = "true"]', wsdl, 0);
-  i1 := 0; l1 := length (extens);
-  while (i1 < l1)
-    {
-      ns_ext := xpath_eval ('namespace-uri(.)', extens[i1], 1);
-      if (ns_ext <> N'http://schemas.xmlsoap.org/wsdl/soap/')
-	{
-	  rollback work;
-          signal ('22023', 'Not supported extensibility element', 'SODT2');
-	}
-      i1 := i1 + 1;
-    }
-
-  -- PL module generation
-  mname := cast (xpath_eval ('/definitions/service/@name', wsdl, 1) as varchar);
-  uri := cast (xpath_eval ('[xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"] /definitions/service/port/soap:address/@location', wsdl, 1) as varchar);
-  hinfo := rfc1808_parse_uri (uri);
-
-  stmt := concat ('CREATE MODULE ', DB.DBA.SYS_ALFANUM_NAME (mname), ' {\r\n');
-  dmod := concat ('DROP MODULE ', DB.DBA.SYS_ALFANUM_NAME (mname));
-  ret := vector (mname);
-  i1 := 0; l1 := length (pt);
-  while (i1 < l1)
-    {
-      if (not port_name is NULL or port_name <> 0) port_name_last := port_name;
-      port_name := cast (xpath_eval ('/definitions/portType/@name', pt[i1], 1) as varchar);
-      if (port_name is NULL) goto new_loop;
-      if ((port_name_last <> port_name) and
-          (port_name_last <> '0') and
-          (port_name_last <> 0) and
-          (not port_name_last is NULL))
-            port_name := port_name_last;
-      tt := sprintf ('[xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"] /definitions/binding[@type like ''%s'']/soap:binding/@transport', concat ('%', port_name));
-      if (transport := FIND_WSDL (pt, tt) is NULL) goto new_loop;
-      tt := sprintf ('/definitions/portType[@name like ''%s'']/operation', port_name);
-      xp := xpath_eval (tt, pt[i1], 0);
-      i := 0; l := length (xp);
-      while (i < l)
-	{
-	  declare i_message, o_message, i_parm, o_parm any;
-	  declare o_name, o_ns, soap_action, _ins, _out varchar;
-	  declare colon, j, k integer;
-	  declare ppars, res_pars varchar;
-	  declare encoded any;
-
-	  o_name := cast (xpath_eval ('@name', xp[i], 1) as varchar);
-
-	  i_message := cast (xpath_eval ('input/@message', xp[i], 1) as varchar);
-	  o_message := cast (xpath_eval ('output/@message', xp[i], 1) as varchar);
-
-	  colon := strrchr (i_message, ':');
-	  if (colon is not null)
-	    i_message := substring (i_message, colon+2, length (i_message));
-	  colon := strrchr (o_message, ':');
-	  if (colon is not null)
-	    o_message := substring (o_message, colon+2, length (o_message));
-
-          tt := sprintf ('/definitions/message[@name like ''%s'']/part', concat ('%', i_message));
-          i_parm := FIND_WSDL(pt ,tt);
-
-          tt := sprintf ('/definitions/message[@name like ''%s'']/part', concat ('%', o_message));
-          o_parm := FIND_WSDL(pt ,tt);
-
-          ppars := ''; res_pars := vector ();
-	  _ins := ''; _out := '';
---
---        INPUTS
---
-          declare have_in_par integer;
-          j := 0; k := length (i_parm); have_in_par := 0;
-	  is_literal := 0;
-	  while (j < k)
-	    {
-	      declare par, typ varchar;
-	      par := cast (xpath_eval ('@name', i_parm[j]) as varchar);
-	      typ := cast (xpath_eval ('@type', i_parm[j]) as varchar);
-	      if (typ is NULL)
-                {
-                  typ := cast (xpath_eval ('@element', i_parm[j]) as varchar);
-	  	  --colon := strchr (typ, ':');
-	  	  --if (colon is not null) typ := substring (typ, colon+2, length (typ));
-		  --tt := sprintf ('/definitions/types/schema/element[@name = ''%s'']/@type', typ);
-                  --if (typ := FIND_WSDL(pt ,tt) is NULL)  goto new_loop;
-	          --typ := cast (typ[0] as varchar);
-		  is_literal := 1;
-	 	}
-	      if (j > 0)
-		{
-		  _ins := concat (_ins, ',');
-		  ppars := concat (ppars, ',');
-		}
-	      _ins := concat (_ins, 'IN _', par, ' any __soap_type ''',typ ,'''');
-	      ppars := concat (ppars, sprintf ('vector(''%s'', ''%s''), _', par, typ), par);
-              res_pars := vector_concat (res_pars, vector (concat ('_', par), typ));
-	      j := j + 1;
-	    }
-          have_in_par := j;
---
---        OUTPUTS
---
-	  j := 0; k := length (o_parm);
-	  while (j < k)
-	    {
-	      declare par, typ varchar;
-	      par := cast (xpath_eval ('@name', o_parm[j]) as varchar);
-	      typ := cast (xpath_eval ('@type', o_parm[j]) as varchar);
-	      if (j > 0 or have_in_par > 0)
-		{
-		  _out := concat (_out, ',');
-		}
-	      _out := concat (_out, 'OUT _', par ,' any __soap_type ''',typ ,'''');
-
-	      j := j + 1;
-	    }
-
-	  stmt := concat (stmt, '\r\n PROCEDURE ', o_name, ' (', _ins);
-
-	  ret := vector_concat (ret, vector(o_name, res_pars));
-	  o_ns := cast (xpath_eval (
-		    sprintf ('/definitions/binding/operation[@name = ''%s'']/input/body/@namespace',
-		      o_name), wsdl, 1) as varchar);
-	  soap_action :=
-		    cast (xpath_eval (
-			  sprintf ('/definitions/binding/operation[@name = ''%s'']/operation/@soapAction',
-			    o_name), wsdl, 1) as varchar);
-
-          encoded := cast (xpath_eval (
-                    sprintf ('[xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"] /definitions/binding/operation[@name = ''%s'']/input/soap:body/@use',
-                    o_name), wsdl, 1) as varchar);
-
-	  if (encoded is not null and encoded = 'literal')
-	    {
-	      encoded := 1;
-              is_literal := 1;
-	    }
-	  else
-	    encoded := 0;
-
-          if (wire_dump)
-            encoded := encoded + 2;
-
-	  if (soap_action is null or soap_action = '')
-	    {
-	      soap_action := '""';
-	    }
-	  else
-	    {
-              soap_action := concat ('"',trim (soap_action, '" '),'"');
-	    }
-
-	  if (length (o_ns))
-	    o_ns := sprintf ('''%s''', o_ns);
-	  else
-	    o_ns := 'NULL';
-
-	  soap_action := sprintf ('''%s''', soap_action);
-
-          if (not mode_wsdl)
-            stmt := concat (stmt, _out);
-
-	  if (is_literal)
-	    stmt := concat (stmt, ') \n returns any __soap_doc ''__VOID__''\n');
-	  else
-	    stmt := concat (stmt, ') \n returns any __soap_type ''__VOID__''\n');
-
-          if (mode_wsdl)
-            {
-	       stmt := concat (stmt, '{\n  declare res, ver any;\n  ver:=11;\n  ');
-	       stmt := concat (stmt,
-                   sprintf ('res := soap_call_new (''%s'',''%s'',\n    %s, ''%s'', vector (%s), ver, NULL, NULL, %s, %d);\n',
-		   hinfo[1], hinfo[2], o_ns, o_name, ppars, soap_action, encoded));
-	       stmt := concat (stmt, '  if (ver <> 11) signal (ver[1], ver[2]); \r\n return res; };  ');
-	    }
-	  else
-	    {
-              stmt := concat (stmt, '{ \n declare ret any; \n return ret; \n} ;\n');
-	    }
-
-	  i := i + 1;
-	}
-new_loop:
-       i1 := i1 + 1;
-    }
-  stmt := concat (stmt, '  \r\n} \n');
---dbg_obj_print (stmt);
-  if (length (stmt) > 7)
-    {
-      if (drop_module)
-	{
-	  declare st1, ms1 varchar;
-          st1 := '00000';
-	  exec (dmod, st1, ms1);
-	}
-      DB.DBA.EXEC_STMT (stmt, 0);
-    }
-  else
-    ret := NULL;
-  return ret;
-}
-;
-
-create procedure FIND_WSDL (in _all any, in _what varchar)
-{
-  declare idx, len integer;
-  declare ret any;
-
-  len := length (_all);
-  idx := 0;
-
-  while (idx < len)
-    {
-       ret := xpath_eval (_what, _all[idx], 0);
-       if (length (ret) > 0)
-         return ret;
-       idx := idx + 1;
-    }
-
-  return NULL;
-}
-;
-
-
-create procedure WSDL_GET (in uri varchar, in _mode integer)
-{
-  declare _hdr, _ret any;
-
---  _ret := http_get (uri, _hdr);
-  _ret := xml_uri_get (uri, '');
-  _ret := xml_tree_doc (_ret);
-  return _ret;
-}
-;
-
 
 --!AWK PUBLIC
 create procedure SQL_PROCEDURE_COLUMNSW (
@@ -4686,162 +3973,6 @@ done:
 ;
 
 
-create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar)
-{
-   declare dirarr, filearr, fsize, ret_xml any;
-   declare curdir, dirname, root, start_from, modt varchar;
-   declare ix, len, flen, rflen, mult integer;
-   fsize := vector ('b','K','M','G','T');
-   curdir := concat (http_root (), http_physical_path ());
-   start_from := http_path ();
-   root := http_root ();
-   ret_xml := string_output ();
-   dirarr := sys_dirlist (curdir, 0, null, 1);
-   filearr := sys_dirlist (curdir, 1, null, 1);
-   if (curdir <> '\\' and aref (curdir, length (curdir) - 1) <> ascii ('/'))
-     curdir := concat (curdir, '/');
-   if (start_from <> '/' and aref (start_from, length (start_from) - 1) <> ascii ('/'))
-     start_from := concat (start_from, '/');
-   http ('<?xml version="1.0" ?>', ret_xml);
-   http (sprintf ('<PATH dir_name="%V">', start_from), ret_xml);
-   if (aref (root, length (root) - 1) <> ascii ('/'))
-     root := concat (root, '/');
-   if (aref (curdir, length (curdir) - 1) <> ascii ('/'))
-     curdir := concat (curdir, '/');
-   len := length (dirarr);
-   ix := 0;
-   http ('<DIRS>', ret_xml);
-   while (ix < len)
-     {
-       declare fst varchar;
-       dirname := aref (dirarr, ix);
-       fst := file_stat (concat (curdir, dirname));
-       if (isstring (fst))
-         modt := stringdate (fst);
-       else
-         modt := now();
-       if (dirname <> '.')
-	 http (sprintf ('<SUBDIR modify="%s" name="%s" />\n',
-	       soap_print_box (modt, '', 2), dirname), ret_xml);
-       ix := ix + 1;
-     }
-   http ('</DIRS><FILES>', ret_xml);
-   len := length (filearr);
-   ix := 0;
-   while (ix < len)
-     {
-       dirname := aref (filearr, ix);
-       modt := stringdate (file_stat (concat (curdir, dirname)));
-       rflen := 0;
-       rflen := file_stat (concat (curdir, dirname), 1);
-       flen := atoi (rflen);
-       mult := 0;
-       if (lower (dirname) = 'folder.xsl')
-	_sheet := concat (curdir, dirname);
-       while ((flen / 1000) > 1)
-	 {
-	   mult := mult + 1;
-	   flen := flen / 1000;
-	 }
-       http (sprintf ('<FILE modify="%s" rs="%s" hs="%d %s" name="%s" />\n',
-	     soap_print_box (modt, '', 2), rflen, flen, aref (fsize, mult), dirname), ret_xml);
-       ix := ix + 1;
-     }
-     http ('</FILES></PATH>', ret_xml);
-
-     return string_output_string (ret_xml);
-}
-;
-
-
-xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-    <xsl:output method="text" />
-
-    <xsl:template match="PATH">
-	<xsl:variable name="path"><xsl:value-of select="@dir_name"/></xsl:variable>
-	&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;
-	&lt;HTML&gt;
-	&lt;TITLE&gt;Directory listing of <xsl:value-of select="$path"/>&lt;/TITLE&gt;
-	&lt;BODY bgcolor="#FFFFFF" fgcolor="#000000"&gt;
-	&lt;H4&gt;Index of <xsl:value-of select="$path"/>&lt;/H4&gt;
-	  &lt;TABLE&gt;
-	    &lt;tr&gt;&lt;td colspan=2 align="center"&gt;Name&lt;/td&gt;
-	    &lt;td align="center"&gt;Last modified&lt;/td&gt;&lt;td align="center"&gt;Size&lt;/td&gt;&lt;/tr&gt;
-	    &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
-
-	<xsl:apply-templates select="DIRS">
-	  <xsl:with-param name="f_path" select="$path"/>
-	</xsl:apply-templates>
-
-	<xsl:apply-templates select="FILES">
-	  <xsl:with-param name="f_path" select="$path"/>
-	</xsl:apply-templates>
-
-	     &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
-	  &lt;/TABLE&gt;
-	&lt;/BODY&gt;
-	&lt;/HTML&gt;
-    </xsl:template>
-
-    <xsl:template match="SUBDIR">
-	 <xsl:param name="f_path" />
-    	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
-	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
-	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
-	&lt;/tr&gt;
-    </xsl:template>
-
-    <xsl:template match="FILE">
-	 <xsl:param name="f_path" />
-    	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
-	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
-	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
-	&lt;/tr&gt;
-    </xsl:template>
-
-</xsl:stylesheet>'))
-;
-
-
-create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
-{
-  declare _html, _xml, _sheet varchar;
-  declare _b_opt any;
-
-  _b_opt := NULL;
-
-  if (exists (select 1 from HTTP_PATH
-	where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted')))
-     select deserialize(HP_OPTIONS) into _b_opt from HTTP_PATH
-	where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted');
-
-  _sheet := '';
-  _xml := xml_tree_doc (WS.WS.DIR_INDEX_MAKE_XML (_sheet));
-
-  if (_b_opt is not NULL)
-    _b_opt := get_keyword ('browse_sheet', _b_opt, '');
-
-  if (_sheet <> '')
-    {
-       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_sheet)));
-       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
-    }
-  else if (_b_opt <> '')
-    {
-       _b_opt := concat (http_root(), '/', _b_opt);
-       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_b_opt)));
-       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
-    }
-  else
-    _html := cast (xslt ('http://local.virt/dir_output', _xml) as varchar);
-
-  return http (_html);
-}
-;
-
 create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
 {
   declare exp1 varchar;
@@ -5640,41 +4771,6 @@ create procedure HTTP_URL_HANDLER ()
   if (not is_http_ctx())
     signal ('22023', 'http_url_handler function outside of http context', 'HT068');
   return WS.WS.EXPAND_URL(soap_current_url (), http_path());
-}
-;
-
-create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
-{
-  declare host, intf, requrl, proto, rhost varchar;
-  declare arr any;
-  host := http_map_get ('vhost');
-  intf := http_map_get ('lhost');
-  requrl := http_requested_url ();
-  arr := rfc1808_parse_uri (requrl);
-  proto := arr[0];
-  rhost := arr[1];
-
-  if (host = server_http_port () and intf = server_http_port ())
-    {
-      host := '*ini*';
-      intf := '*ini*';
-    }
-
-  http_header ('Content-Type: text/xml\r\n');
-  http('<?xml version="1.0" ?>');
-  http('<inspection xmlns="http://schemas.xmlsoap.org/ws/2001/10/inspection">');
-  for select HP_LPATH, deserialize (HP_SOAP_OPTIONS) as opts from DB.DBA.HTTP_PATH where HP_HOST = host and HP_LISTEN_HOST = intf and HP_PPATH = '/SOAP/' do
-    {
-      declare nam any;
-      nam := trim (HP_LPATH, '/ ');
-      if (isarray (opts))
-	nam := get_keyword ('ServiceName', opts, nam);
-      http ('<service>');
-      http (sprintf ('<name>%V</name>', nam));
-      http (sprintf ('<description referencedNamespace="http://schemas.xmlsoap.org/wsdl/" location="%s://%s%s/services.wsdl"/>', proto, rhost, HP_LPATH));
-      http ('</service>');
-    }
-  http('</inspection>');
 }
 ;
 

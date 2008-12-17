@@ -1652,8 +1652,11 @@ log_replay_file (int fd)
   rfwd_ctr = 0;
 
   log_info ("Roll forward started");
+  if (!lite_mode)
+    {
   dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* This is to GPF if already out of memory */
   dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_DISABLED); /* This is to GPF on out-of-memory instead of trying to recover */
+    }
   memset (&trx_ses, 0, sizeof (trx_ses));
   memset (&trx_sio, 0, sizeof (trx_sio));
   SESSION_SCH_DATA (&trx_ses) = &trx_sio;
@@ -1731,6 +1734,7 @@ read_again:
   PrpcSessionFree (file_in);
   client_connection_free (cli);
   log_info ("Roll forward complete");
+  if (!lite_mode)
   dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED);
 }
 

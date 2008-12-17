@@ -69,6 +69,7 @@ CHECK_HTTP_PORT()
 }
 
 BANNER "STARTED WebDAV TEST (tdav.sh)"
+NOLITE
 
 rm -f $DELETEMASK
 rm -rf sptmp

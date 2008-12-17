@@ -224,6 +224,7 @@ checkRes ()
 }
 
 BANNER "STARTED SERIES OF HTTP PROXY SERVER TESTS"
+NOLITE
 ECHO "HTTP Proxy Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"
 

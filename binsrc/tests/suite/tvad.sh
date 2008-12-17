@@ -240,6 +240,7 @@ END_URI
 
 
 BANNER "STARTED VAD TEST (tvad.sh)"
+NOLITE
 
 GenVAD1 t1.xml
 GenVAD2 t2.xml

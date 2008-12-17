@@ -998,6 +998,8 @@ status_report (const char * mode)
   rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n", 
       st_started_since_year, st_started_since_month, st_started_since_day, 
       st_started_since_hour, st_started_since_minute, dt_local_tz);
+  if (lite_mode)
+    rep_printf ("Lite Mode\n");
 
   process_status_report ();
   dbms_status_report ();
@@ -1082,6 +1084,7 @@ static long my_thread_sched_preempt;
 static long my_fd_setsize = FD_SETSIZE;
 static char * my_bp_prefix = bp_ctx.db_bp_prfx;
 static long my_case_mode;
+static long my_lite_mode;
 static long st_has_vdb =
   0;
 char st_os_user_name[512];
@@ -1327,6 +1330,7 @@ stat_desc_t stat_descs [] =
     {"__internal_first_id", &first_id, NULL},
     {"st_os_fd_setsize", &my_fd_setsize, NULL},
     {"st_case_mode", &my_case_mode, NULL},
+    {"st_lite_mode", &my_lite_mode, NULL},
 
     /* backup vars */
     {"backup_prefix_name", NULL, &my_bp_prefix},
@@ -1359,6 +1363,7 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   my_thread_num_dead = _thread_num_dead;
   my_thread_sched_preempt = _thread_sched_preempt;
   my_case_mode  = case_mode;
+  my_lite_mode  = lite_mode;
   if (!st_dbms_name_buffer[0])
     snprintf (st_dbms_name_buffer, sizeof (st_dbms_name_buffer),
 	  "%s %.500s Server", PRODUCT_DBMS, build_special_server_model);

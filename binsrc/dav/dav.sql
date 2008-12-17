@@ -1469,16 +1469,6 @@ create procedure WS.WS.HEX_TO_DEC (in c char)
 }
 ;
 
-create procedure WS.WS.HEX_DIGIT (in i integer)
-{
-  if ( i >= 0 and i < 10)
-    return i + ascii ('0');
-  if ( i > 9 and  i < 16 )
-    return i + ascii ('A') - 10;
-  return ascii ('0');
-}
-;
-
 create procedure WS.WS.STR_TO_URI (in str varchar)
 {
   declare tmp varchar;
@@ -1508,90 +1498,6 @@ create procedure WS.WS.STR_TO_URI (in str varchar)
       inx1 := inx1 + 1;
       inx := inx + 1;
     }
-  return trim(tmp);
-}
-;
-
--- IvAn/XmlView/000810 procedure WS.WS.STR_SQL_APOS added
-create procedure WS.WS.STR_SQL_APOS (in str varchar)
-{
-  declare tmp varchar;
-  declare inx, inx1, len integer;
-  declare c char;
-  declare cascii integer;
-  len := length (str);
-  -- This if is not only for empty string, but for NULL input, too.
-  if (len = 0)
-    return '''''';
-  tmp := space(len * 4 + 2);
-
-  aset(tmp, 0, ascii(''''));	-- Start output from apos
-
-  inx := 0;			-- Start input from leftmost position
-  inx1 := 1;			-- Continue output after starting apos
-  while (inx < len)
-    {
-      c := chr (aref (str, inx));
-      cascii := ascii(c);
-      if (cascii < 32)
-        {
-	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
-	  aset (tmp, inx1 + 1, ascii('0'));
-	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
-	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
-          inx1 := inx1 + 4;
-	}
-      else
-        {
-	  if ((c = '''') or (c = '\\')) -- the quote is to recover synt.highlight: '
-	    {
-              aset (tmp, inx1, cascii);
-              inx1 := inx1 + 1;
-	    }
-          aset (tmp, inx1, cascii);
-          inx1 := inx1 + 1;
-	}
-      inx := inx + 1;
-    }
-
-  aset(tmp, inx1, ascii(''''));	-- Finish output by apos
-
-  return trim(tmp);
-}
-;
-
-create procedure WS.WS.STR_FT_QUOT (in str varchar)
-{
-  declare tmp varchar;
-  declare inx, inx1, len integer;
-  declare c char;
-  declare cascii integer;
-  len := length (str);
-  -- This if is not only for empty string, but for NULL input, too.
-  if (len = 0)
-    return '""';
-  tmp := space(len * 4 + 2);
-
-  aset(tmp, 0, ascii('"'));
-
-  inx := 0;			-- Start input from leftmost position
-  inx1 := 1;			-- Continue output after starting apos
-  while (inx < len)
-    {
-      c := chr (aref (str, inx));
-      cascii := ascii(c);
-      if ((cascii < 32) or ('''' = c) or ('\\' = c) or ('"' = c)) -- the quote is to recover synt.highlight: "
-        {
-	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
-	  aset (tmp, inx1 + 1, ascii('0'));
-	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
-	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
-          inx1 := inx1 + 4;
-	}
-      inx := inx + 1;
-    }
-
-  aset(tmp, inx1, ascii('"'));
   return trim(tmp);
 }
 ;

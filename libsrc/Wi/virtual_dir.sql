@@ -1311,3 +1311,195 @@ create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar
   return 0;
 }
 ;
+
+create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar)
+{
+   declare dirarr, filearr, fsize, ret_xml any;
+   declare curdir, dirname, root, start_from, modt varchar;
+   declare ix, len, flen, rflen, mult integer;
+   fsize := vector ('b','K','M','G','T');
+   curdir := concat (http_root (), http_physical_path ());
+   start_from := http_path ();
+   root := http_root ();
+   ret_xml := string_output ();
+   dirarr := sys_dirlist (curdir, 0, null, 1);
+   filearr := sys_dirlist (curdir, 1, null, 1);
+   if (curdir <> '\\' and aref (curdir, length (curdir) - 1) <> ascii ('/'))
+     curdir := concat (curdir, '/');
+   if (start_from <> '/' and aref (start_from, length (start_from) - 1) <> ascii ('/'))
+     start_from := concat (start_from, '/');
+   http ('<?xml version="1.0" ?>', ret_xml);
+   http (sprintf ('<PATH dir_name="%V">', start_from), ret_xml);
+   if (aref (root, length (root) - 1) <> ascii ('/'))
+     root := concat (root, '/');
+   if (aref (curdir, length (curdir) - 1) <> ascii ('/'))
+     curdir := concat (curdir, '/');
+   len := length (dirarr);
+   ix := 0;
+   http ('<DIRS>', ret_xml);
+   while (ix < len)
+     {
+       declare fst varchar;
+       dirname := aref (dirarr, ix);
+       fst := file_stat (concat (curdir, dirname));
+       if (isstring (fst))
+         modt := stringdate (fst);
+       else
+         modt := now();
+       if (dirname <> '.')
+	 http (sprintf ('<SUBDIR modify="%s" name="%s" />\n',
+	       soap_print_box (modt, '', 2), dirname), ret_xml);
+       ix := ix + 1;
+     }
+   http ('</DIRS><FILES>', ret_xml);
+   len := length (filearr);
+   ix := 0;
+   while (ix < len)
+     {
+       dirname := aref (filearr, ix);
+       modt := stringdate (file_stat (concat (curdir, dirname)));
+       rflen := 0;
+       rflen := file_stat (concat (curdir, dirname), 1);
+       flen := atoi (rflen);
+       mult := 0;
+       if (lower (dirname) = 'folder.xsl')
+	_sheet := concat (curdir, dirname);
+       while ((flen / 1000) > 1)
+	 {
+	   mult := mult + 1;
+	   flen := flen / 1000;
+	 }
+       http (sprintf ('<FILE modify="%s" rs="%s" hs="%d %s" name="%s" />\n',
+	     soap_print_box (modt, '', 2), rflen, flen, aref (fsize, mult), dirname), ret_xml);
+       ix := ix + 1;
+     }
+     http ('</FILES></PATH>', ret_xml);
+
+     return string_output_string (ret_xml);
+}
+;
+
+
+xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+    <xsl:output method="text" />
+
+    <xsl:template match="PATH">
+	<xsl:variable name="path"><xsl:value-of select="@dir_name"/></xsl:variable>
+	&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;
+	&lt;HTML&gt;
+	&lt;TITLE&gt;Directory listing of <xsl:value-of select="$path"/>&lt;/TITLE&gt;
+	&lt;BODY bgcolor="#FFFFFF" fgcolor="#000000"&gt;
+	&lt;H4&gt;Index of <xsl:value-of select="$path"/>&lt;/H4&gt;
+	  &lt;TABLE&gt;
+	    &lt;tr&gt;&lt;td colspan=2 align="center"&gt;Name&lt;/td&gt;
+	    &lt;td align="center"&gt;Last modified&lt;/td&gt;&lt;td align="center"&gt;Size&lt;/td&gt;&lt;/tr&gt;
+	    &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+
+	<xsl:apply-templates select="DIRS">
+	  <xsl:with-param name="f_path" select="$path"/>
+	</xsl:apply-templates>
+
+	<xsl:apply-templates select="FILES">
+	  <xsl:with-param name="f_path" select="$path"/>
+	</xsl:apply-templates>
+
+	     &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+	  &lt;/TABLE&gt;
+	&lt;/BODY&gt;
+	&lt;/HTML&gt;
+    </xsl:template>
+
+    <xsl:template match="SUBDIR">
+	 <xsl:param name="f_path" />
+    	&lt;tr&gt;
+	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
+	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
+	&lt;/tr&gt;
+    </xsl:template>
+
+    <xsl:template match="FILE">
+	 <xsl:param name="f_path" />
+    	&lt;tr&gt;
+	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
+	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
+	&lt;/tr&gt;
+    </xsl:template>
+
+</xsl:stylesheet>'))
+;
+
+
+create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
+{
+  declare _html, _xml, _sheet varchar;
+  declare _b_opt any;
+
+  _b_opt := NULL;
+
+  if (exists (select 1 from HTTP_PATH
+	where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted')))
+     select deserialize(HP_OPTIONS) into _b_opt from HTTP_PATH
+	where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted');
+
+  _sheet := '';
+  _xml := xml_tree_doc (WS.WS.DIR_INDEX_MAKE_XML (_sheet));
+
+  if (_b_opt is not NULL)
+    _b_opt := get_keyword ('browse_sheet', _b_opt, '');
+
+  if (_sheet <> '')
+    {
+       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_sheet)));
+       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+    }
+  else if (_b_opt <> '')
+    {
+       _b_opt := concat (http_root(), '/', _b_opt);
+       xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (file_to_string (_b_opt)));
+       _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+    }
+  else
+    _html := cast (xslt ('http://local.virt/dir_output', _xml) as varchar);
+
+  return http (_html);
+}
+;
+
+create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
+{
+  declare host, intf, requrl, proto, rhost varchar;
+  declare arr any;
+  host := http_map_get ('vhost');
+  intf := http_map_get ('lhost');
+  requrl := http_requested_url ();
+  arr := rfc1808_parse_uri (requrl);
+  proto := arr[0];
+  rhost := arr[1];
+
+  if (host = server_http_port () and intf = server_http_port ())
+    {
+      host := '*ini*';
+      intf := '*ini*';
+    }
+
+  http_header ('Content-Type: text/xml\r\n');
+  http('<?xml version="1.0" ?>');
+  http('<inspection xmlns="http://schemas.xmlsoap.org/ws/2001/10/inspection">');
+  for select HP_LPATH, deserialize (HP_SOAP_OPTIONS) as opts from DB.DBA.HTTP_PATH where HP_HOST = host and HP_LISTEN_HOST = intf and HP_PPATH = '/SOAP/' do
+    {
+      declare nam any;
+      nam := trim (HP_LPATH, '/ ');
+      if (isarray (opts))
+	nam := get_keyword ('ServiceName', opts, nam);
+      http ('<service>');
+      http (sprintf ('<name>%V</name>', nam));
+      http (sprintf ('<description referencedNamespace="http://schemas.xmlsoap.org/wsdl/" location="%s://%s%s/services.wsdl"/>', proto, rhost, HP_LPATH));
+      http ('</service>');
+    }
+  http('</inspection>');
+}
+;
+

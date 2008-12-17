@@ -1327,3 +1327,14 @@ LDAP_VALIDATION_FAILURE:
 }
 ;
 
+create procedure
+USERS_GET_DEF_QUAL (in dta varchar)
+{
+  if (not length (dta))
+    {
+      return ('DB');
+    }
+  dta := split_and_decode (dta, 0, '   ');
+  return (get_keyword ('Q', dta, ''));
+}
+;

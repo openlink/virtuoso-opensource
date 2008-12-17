@@ -5637,8 +5637,10 @@ const char *proc_drop_col =
 "  ddl_drop_col_recursive (tb, c_id);"
 "  update DB.DBA.SYS_KEYS set KEY_MIGRATE_TO = NULL where KEY_MIGRATE_TO = -1;"
 "  ddl_read_table_tree (tb);"
+"  if (not sys_stat ('st_lite_mode')) { \n"
 "  DB.DBA.__INT_REPL_ALTER_DROP_COL (tb, col, _col_dtp, _col_scale, _col_prec, c_check, 'DROP');\n"
 "  DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb);\n"
+"  } \n"
 "  for select distinct PK_TABLE from DB.DBA.SYS_FOREIGN_KEYS where 0 = casemode_strcmp (FK_TABLE, tb)"
 /*"      and (UPDATE_RULE > 0 or DELETE_RULE > 0)"*/
 "      do {"

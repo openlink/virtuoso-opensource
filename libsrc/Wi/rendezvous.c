@@ -100,6 +100,7 @@ typedef struct rv_ctx_s
 
 /* global list of publications */
 dk_set_t zeroconfig_entries = NULL;
+extern int lite_mode;
 
 /* global rendezvous context */
 static rv_ctx *_rv = NULL;
@@ -562,7 +563,7 @@ start_rendezvous (void)
    * do not start the zc thread if there are no entries.
    * If future plans dictate to use reinit_rendezvous, remove this test
    */
-  if (!zeroconfig_entries)
+  if (!zeroconfig_entries || lite_mode)
     return 0;
 
   ctx = (rv_ctx *) dk_alloc (sizeof (rv_ctx));

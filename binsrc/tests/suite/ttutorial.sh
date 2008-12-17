@@ -32,6 +32,7 @@ BOX_NAME=localhost
 export BOX_NAME
 
 BANNER "STARTED TUTORIAL TESTS (ttutorial.sh)"
+NOLITE
 
 HOST_OS=`uname -s | grep WIN`
 

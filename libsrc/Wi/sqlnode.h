@@ -1223,6 +1223,7 @@ struct user_aggregate_s
   };
 
 
+extern int lite_mode;
 extern client_connection_t *bootstrap_cli;
 extern void sqls_define (void); /* generated from sql_code.c */
 extern void sqls_define_adm (void);
@@ -1234,6 +1235,10 @@ extern void sqls_define_uddi (void);
 extern void sqls_define_imsg (void);
 extern void sqls_define_auto (void);
 extern void sqls_define_sparql (void);
+extern void sqls_define_sys (void); 
+extern void sqls_define_repl (void); 
+extern void sqls_define_ws (void); 
+extern void sqls_define_pldbg (void); 
 extern void sqls_arfw_define (void);
 extern void sqls_arfw_define_adm (void);
 extern void sqls_arfw_define_ddk (void);
@@ -1244,6 +1249,10 @@ extern void sqls_arfw_define_uddi (void);
 extern void sqls_arfw_define_imsg (void);
 extern void sqls_arfw_define_auto (void);
 extern void sqls_arfw_define_sparql (void);
+extern void sqls_arfw_define_sys (void);
+extern void sqls_arfw_define_repl (void);
+extern void sqls_arfw_define_ws (void);
+extern void sqls_arfw_define_pldbg (void);
 extern void cache_resources(void);
 void sqls_bif_init (void);
 

@@ -858,6 +858,7 @@ int PrpcIsListen (dk_session_t * ses);
 char *PrpcIAm (char *name);
 void timeout_round_loop (void);
 void PrpcInitialize (void);
+void PrpcInitialize1 (int mem_mode);
 void PrpcStatus (char *out, int max);
 future_t *PrpcFuture (dk_session_t *server, service_desc_t *service, ...);
 void PrpcFutureFree (future_t *future);
@@ -939,14 +940,16 @@ int dk_report_error (const char *format, ...);
 #define NO_DK_ALLOC_RESERVE
 #endif
 
+#define DK_ALLOC_RESERVE_DISABLED	0
+#define DK_ALLOC_RESERVE_PREPARED	1
+#define DK_ALLOC_RESERVE_IN_USE		2
+
 #ifndef NO_DK_ALLOC_RESERVE
 extern dk_mutex_t *dk_alloc_reserve_mutex;
 extern volatile void *dk_alloc_reserve; /* Don't access it directly. */
 extern int dk_alloc_reserve_maxthreads;
-#define DK_ALLOC_ON_RESERVE (NULL == dk_alloc_reserve)
-#define DK_ALLOC_RESERVE_DISABLED	0
-#define DK_ALLOC_RESERVE_PREPARED	1
-#define DK_ALLOC_RESERVE_IN_USE		2
+extern volatile int dk_alloc_reserve_mode;
+#define DK_ALLOC_ON_RESERVE (dk_alloc_reserve_mode != DK_ALLOC_RESERVE_DISABLED && NULL == dk_alloc_reserve)
 void dk_alloc_set_reserve_mode (int mode);
 #else
 #define DK_ALLOC_ON_RESERVE 0
