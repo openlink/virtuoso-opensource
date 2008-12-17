@@ -75,6 +75,7 @@
 
 	  if (self.body_v is NULL)
 	    {
+	      declare tbls any;
               declare exit handler for sqlstate '*'
 	      {
 	        self.vc_is_valid := 0;
@@ -82,7 +83,17 @@
 		self.body_v := '';
 		return;
 	      };
-	      self.body_v := DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process);
+	      tbls := self.db_object_to_process;
+
+	      self.body_v := '';
+	      foreach (any tb in tbls) do
+	        {
+		  self.body_v := self.body_v ||
+		  	sprintf ('grant select on "%I"."%I"."%I" to SPARQL_SELECT;\n',
+		  	name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));
+		}
+	      self.body_v := self.body_v || '\n\n';
+	      self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process);
 	      self.body_v := self.body_v || '\n\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
 	    }
 
