@@ -170,4 +170,6 @@ typedef void * SQLHANDLE;
 #define SQL_DESC_COL_DT_DT_TYPE        1058L
 #define SQL_DESC_COL_LITERAL_ATTR      1059L
 #define SQL_DESC_COL_BOX_FLAGS         1060L
+#define SQL_DESC_COL_LITERAL_LANG      1061L
+#define SQL_DESC_COL_LITERAL_TYPE      1062L
 #endif

@@ -1359,6 +1359,75 @@ SQLGetConnectAttr (SQLHDBC connectionHandle,
     }
 }
 
+static caddr_t
+get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
+{
+  dk_hash_t * ht;
+  caddr_t ret = NULL;
+
+  /* the defaults (most often cases probably) have no records in tables */
+  if ((ftype == SQL_DESC_COL_LITERAL_LANG && key == RDF_BOX_DEFAULT_LANG) ||
+      (ftype == SQL_DESC_COL_LITERAL_TYPE && key == RDF_BOX_DEFAULT_TYPE))
+    return NULL;
+
+  IN_CON (con);
+  if (ftype == SQL_DESC_COL_LITERAL_LANG)
+    ht = con->con_rdf_langs;
+  else
+    ht = con->con_rdf_types;
+
+  if (!ht) /* no cache used yet */
+    {
+      ht = hash_table_allocate (31);
+      if (ftype == SQL_DESC_COL_LITERAL_LANG)
+	con->con_rdf_langs = ht;
+      else
+	con->con_rdf_types = ht;
+    }
+  else 
+    ret = gethash ((void *)(ptrlong) key, ht);
+
+  if (!ret) /* not in cache */
+    {
+      static char * qr_lang = "select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = ?";
+      static char * qr_type = "select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = ?";
+      char * qr = ((ftype == SQL_DESC_COL_LITERAL_LANG) ? qr_lang : qr_type);
+      char buf[1000];
+      SQLHSTMT hstmt;
+      SQLINTEGER m_ind = 0;
+      SDWORD flag;
+      int rc;
+
+      rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, con, &hstmt);
+      if (rc != SQL_SUCCESS)
+	{
+	  LEAVE_CON (con);
+	  return NULL;
+	}
+      rc = virtodbc__SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_C_SSHORT, 
+	  SQL_SMALLINT, 0, 0, &key, 0, &m_ind);
+      rc = virtodbc__SQLExecDirect(hstmt, (UCHAR *) qr, SQL_NTS);
+      if (rc != SQL_SUCCESS)
+	{
+	  virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) hstmt);
+	  goto err_cleanup;
+	}
+
+      rc = virtodbc__SQLFetch (hstmt, 0);
+      if (SQL_SUCCESS != rc)
+	goto err_cleanup;
+      rc = virtodbc__SQLGetData (hstmt, 1, SQL_C_CHAR, buf, sizeof (buf), &flag);
+      if (SQL_SUCCESS != rc)
+	goto err_cleanup;
+      ret = box_dv_short_string (buf);
+      sethash ((void*)(ptrlong)key, ht, (void*) ret);
+err_cleanup:      
+      virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);
+      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) hstmt);
+    }
+  LEAVE_CON (con);
+  return ret;
+}
 
 /**** SQLGetDescField ****/
 
@@ -2449,6 +2518,34 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	return (SQL_ERROR);
       break;
 
+    case SQL_DESC_COL_LITERAL_LANG:
+    case SQL_DESC_COL_LITERAL_TYPE:
+	{
+	  cli_connection_t  * con = desc->d_stmt->stmt_connection;
+	  if (RecNumber > desc_count || RecNumber == 0)
+	    return (SQL_NO_DATA_FOUND);
+	  if (!bAppDesc && bRowDesc)
+	    {
+	      caddr_t *row;
+	      caddr_t col;
+	      caddr_t val = NULL;
+
+	      row = desc->d_stmt->stmt_current_row;
+	      if (!row)  /* "Statement not fetched in SQLGetData."); */
+		return SQL_ERROR;
+
+	      col = row[RecNumber];
+	      if (DV_TYPE_OF(col) == DV_RDF)
+		{
+		  rdf_box_t * rb = (rdf_box_t *) col;
+		  val = get_rdf_literal_prop (con, FieldIdentifier, (FieldIdentifier == SQL_DESC_COL_LITERAL_LANG ? rb->rb_lang : rb->rb_type));
+		}
+	      V_SET_ODBC_STR (val, ValuePtr, BufferLength, StringLengthPtr, &desc->d_stmt->stmt_error);
+	    }
+	  else
+	    return (SQL_ERROR);
+	}
+      break;   
     
     case SQL_DESC_COL_BOX_FLAGS:
       if (StringLengthPtr)
