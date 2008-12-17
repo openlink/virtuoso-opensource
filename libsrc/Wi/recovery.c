@@ -121,10 +121,10 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
 	  walk_page_transit (it, leaf, buf_ret);
 	  if ((uint32) (LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT)) != dp_from)
 	    {
-	      log_error ("Bad parent link in %ld coming from %ld link %ld",
+	      log_error ("Bad parent link in %ld coming from %ld link %ld. Crash recovery recommended.",
 		  leaf, buf_from->bd_page, LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT));
 	      if (!correct_parent_links)
-		GPF_T1 ("Bad parent link in backup");
+		GPF_T1 ("Bad parent link in backup. Crash recovery recommended.");
 	    }
 	  walk_dbtree (it, buf_ret, level + 1, func, ctx);
 	  up = dp_from;

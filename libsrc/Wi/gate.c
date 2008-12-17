@@ -1275,7 +1275,7 @@ itc_reset (it_cursor_t * it)
       TC (tc_root_cache_miss);
       page_wait_access (it, dp, NULL, &buf, it->itc_dive_mode, RWG_WAIT_KEY);
       if (buf == PF_OF_DELETED)
-	GPF_T1 ("The root page of an index is free do a crash dump for recovery.");
+	GPF_T1 ("The root page of an index is free. Crash recovery recommended.");
       if (it->itc_to_reset > RWG_WAIT_KEY)
 	continue;
       tree->it_root_buf = buf;
@@ -1291,7 +1291,7 @@ itc_reset (it_cursor_t * it)
   if (back_link)
     {
       log_error ("Bad parent link in the tree start page %ld, parent link=%ld."
-		 " Please do a dump and restore.",
+		 " Crash recovery recommended.",
 		 dp, back_link);
     }
   it->itc_page = dp;

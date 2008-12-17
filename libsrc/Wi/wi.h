@@ -1416,7 +1416,7 @@ extern int assertion_on_read_fail;
 #define STRUCTURE_FAULT \
 { \
   if (assertion_on_read_fail) \
-    GPF_T1 ("structure fault"); \
+    GPF_T1 ("Structure fault. Crash recovery recommended."); \
   else \
     longjmp_splice (&structure_fault_ctx, 1); \
 }
