@@ -86,7 +86,7 @@ DB.DBA.RDF_LOAD_RDFXML (file_to_string ('MatInf-for-Alan/Reactome_109581.owl'), 
     <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
     <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
     <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_ttlp_nt"><function>DB.DBA.TTLP_MT</function></link></para>
   </refsect1>
 </refentry>
