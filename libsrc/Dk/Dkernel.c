@@ -3223,6 +3223,7 @@ PrpcProtocolInitialize (int sesclass)
 
 static long dks_n_housekeeping_sessions = 0;
 int disable_listen_on_unix_sock = 0;
+int disable_listen_on_tcp_sock = 0;
 
 dk_session_t *
 PrpcListen (char *addr, int sesclass)
@@ -3233,6 +3234,8 @@ PrpcListen (char *addr, int sesclass)
   dks_n_housekeeping_sessions++;
   dk_set_resource_usage ();
   PrpcProtocolInitialize (sesclass);
+  if (!disable_listen_on_tcp_sock)
+    {
   listening_session = dk_session_allocate (sesclass);
 #ifdef COM_UDPIP
   if (sesclass == SESCLASS_UDPIP)
@@ -3268,6 +3271,11 @@ PrpcListen (char *addr, int sesclass)
     }
 
   add_to_served_sessions (listening_session);
+    }
+  else
+    {
+      disable_listen_on_unix_sock = 0; /* if tcp listen is off, we make sure we have unix socket  */
+    }
 /*  if (! listening_address)
    listening_address = box_string (addr);
  */
@@ -3294,6 +3302,8 @@ PrpcListen (char *addr, int sesclass)
 	    }
 
 	  add_to_served_sessions (unix_listening_session);
+	  if (disable_listen_on_tcp_sock)
+	    listening_session = unix_listening_session;
 	}
     }
 

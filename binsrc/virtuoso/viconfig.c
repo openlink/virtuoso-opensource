@@ -222,10 +222,12 @@ int32 c_vdb_client_fixed_thread;
 int32 c_prpc_burst_timeout_msecs;
 int32 c_vdb_serialize_connect;
 int32 c_disable_listen_on_unix_sock;
+int32 c_disable_listen_on_tcp_sock;
 int32 c_default_txn_isolation;
 int32 c_c_use_aio;
 
 extern int disable_listen_on_unix_sock;
+extern int disable_listen_on_tcp_sock;
 
 extern long prpc_burst_timeout_msecs;
 
@@ -617,6 +619,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "DisableUnixSocket", &c_disable_listen_on_unix_sock) == -1)
     c_disable_listen_on_unix_sock = 0;
+
+  if (cfg_getlong (pconfig, section, "DisableTcpSocket", &c_disable_listen_on_tcp_sock) == -1)
+    c_disable_listen_on_tcp_sock = 0;
 
 #ifdef _SSL
   if (cfg_getstring (pconfig, section, "SSLServerPort", &c_ssl_server_port) == -1)
@@ -1504,6 +1509,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   cp_unremap_quota = c_unremap_quota;
   correct_parent_links = c_bad_parent_links;
   disable_listen_on_unix_sock = c_disable_listen_on_unix_sock;
+  disable_listen_on_tcp_sock = c_disable_listen_on_tcp_sock;
 #if 0/*obsoleted*/
   null_bad_dtp = c_bad_dtp;
   atomic_dive = c_atomic_dive;

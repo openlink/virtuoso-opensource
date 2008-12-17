@@ -553,6 +553,7 @@ extern int32 sql_const_cond_opt;
 extern long txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;
+extern int disable_listen_on_tcp_sock;
 extern unsigned long cfg_resources_clear_interval;
 extern int sql_proc_use_recompile; /* from sqlcomp2.c */
 extern int recursive_ft_usage; /* from meta.c */
