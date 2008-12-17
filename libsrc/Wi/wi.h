@@ -96,9 +96,9 @@ typedef int (*key_cmp_t) (buffer_desc_t * buf, int pos, it_cursor_t * itc);
 #include "wifn.h"
 #include "bitmap.h"
 
-
-#define IT_N_MAPS 256
-#define IT_N_MAPS_MASK 255
+extern int it_n_maps;
+#define IT_N_MAPS it_n_maps
+#define IT_N_MAPS_MASK (it_n_maps - 1)
 
 struct it_map_s
 {
@@ -379,7 +379,7 @@ struct index_tree_s
     index_tree_t *	it_hic_prev;
     int			it_hi_reuses; /* if hash inx, count of reuses */
     long		it_last_used;
-    it_map_t		it_maps[IT_N_MAPS];
+    it_map_t *		it_maps;
 };
 
 

@@ -169,6 +169,9 @@ extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
 extern long iri_cache_size;
 extern int uriqa_dynamic_local;
+extern int lite_mode;
+extern int rdf_obj_ft_rules_size;
+extern int it_n_maps;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -317,7 +320,10 @@ char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
 int32 c_http_check_rdf_accept = 0;
 int32 c_iri_cache_size = 0;
-int c_uriqa_dynamic_local = 0;
+int32 c_lite_mode = 0;
+int32 c_uriqa_dynamic_local = 0;
+int32 c_rdf_obj_ft_rules_size = 0;
+int32 c_it_n_maps = 0;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -992,6 +998,12 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "IriCacheSize", &c_iri_cache_size) == -1)
     c_iri_cache_size = 0;
 
+  if (cfg_getlong (pconfig, section, "RdfFreeTextRulesSize", &c_rdf_obj_ft_rules_size) == -1)
+    c_rdf_obj_ft_rules_size = 0;
+
+  if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
+    c_it_n_maps = 0;
+
 
   section = "HTTPServer";
 
@@ -1628,6 +1640,19 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   temp_db_size = c_temp_db_size;
   dbev_enable = c_dbev_enable;
   iri_cache_size = c_iri_cache_size;
+  lite_mode = c_lite_mode;
+  rdf_obj_ft_rules_size = c_rdf_obj_ft_rules_size;
+  if (rdf_obj_ft_rules_size < 10)
+    rdf_obj_ft_rules_size = lite_mode ? 10 : 100;
+  it_n_maps = c_it_n_maps;
+  if (it_n_maps < 2 || it_n_maps > 1024)
+    {
+      it_n_maps = lite_mode ? 8 : 256;
+    }
+  else if (0 != (it_n_maps % 2))
+    {
+      it_n_maps = 2 * (it_n_maps / 2);
+    }
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
   cli_encryption_on_password = c_cli_encryption_on_password;

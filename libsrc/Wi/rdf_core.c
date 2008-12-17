@@ -2397,6 +2397,7 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
 void rdf_inf_init ();
 
 int iri_cache_size = 0;
+int rdf_obj_ft_rules_size = 100;
 
 void
 rdf_core_init (void)
@@ -2444,7 +2445,7 @@ rdf_core_init (void)
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();
-  rdf_obj_ft_rules = id_hash_allocate (10000,
+  rdf_obj_ft_rules = id_hash_allocate (rdf_obj_ft_rules_size,
     sizeof (rdf_obj_ft_rule_hkey_t), sizeof (dk_set_t),
     rdf_obj_ft_rule_hkey_hash, rdf_obj_ft_rule_hkey_cmp );
   rdf_obj_ft_graph_rule_counts = id_hash_allocate (100,

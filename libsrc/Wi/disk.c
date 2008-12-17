@@ -55,6 +55,7 @@
 #endif
 
 static void dbs_extend_pagesets (dbe_storage_t * dbs);
+int it_n_maps = 256;
 
 #ifdef BYTE_ORDER_REV_SUPPORT
 
@@ -355,6 +356,8 @@ it_allocate (dbe_storage_t * dbs)
 {
   int inx;
   NEW_VARZ (index_tree_t, tree);
+  tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
+  memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
 
   tree->it_lock_release_mtx = mutex_allocate ();
   for (inx = 0; inx < IT_N_MAPS; inx++)
@@ -467,6 +470,8 @@ it_temp_allocate (dbe_storage_t * dbs)
     {
       int inx;
       NEW_VARZ (index_tree_t, tree);
+      tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
+      memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
       for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
 	  it_map_t * itm = &tree->it_maps[inx];
@@ -508,6 +513,7 @@ it_free (index_tree_t * it)
     }
   if (it->it_lock_release_mtx)
     mutex_free (it->it_lock_release_mtx);
+  dk_free ((void*) it->it_maps, sizeof (it_map_t) * IT_N_MAPS);
   dk_free ((void*) it, sizeof (index_tree_t));
 }
 
