@@ -49,7 +49,7 @@
     <title>Examples</title>
     <example id="ex_rdf_load_rdfxml_mt"><title></title>
       <para>The following example demonstrates importing data from the rdf file resource Kingsley_Idehen.rdf which can be dowloaded from <ulink url="http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/about.rdf">here</ulink></para>
-      <screen><![CDATA[
+<screen><![CDATA[
 SQL> DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output ('tmp/Kingsley_Idehen.rdf'), '', 'http://mytest.com');
 Done. -- 61 msec.
 SQL>sparql
