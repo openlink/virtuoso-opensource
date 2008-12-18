@@ -1652,10 +1652,19 @@ strses_fake_copy (caddr_t orig)
   return orig;
 }
 
+caddr_t
+strses_mp_copy (mem_pool_t * mp, caddr_t box)
+{
+  strses_fake_copy (box);
+  dk_set_push (&mp->mp_trash, (void*)box);
+  return box;
+}
+
+
 void
 strses_mem_initalize (void)
 {
-  dk_mem_hooks (DV_STRING_SESSION, strses_fake_copy, (box_destr_f) strses_destroy, 1);
+  dk_mem_hooks_2 (DV_STRING_SESSION, strses_fake_copy, (box_destr_f) strses_destroy, 1, strses_mp_copy);
 }
 
 
