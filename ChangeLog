@@ -1,3 +1,47 @@
+2008-12-18 13:35  source
+
+	* Updated version to 5.0.10-rc1
+
+2008-12-18 13:34  source
+
+	* Fixed missing casts/conversions
+
+2008-12-18 09:36  source
+
+	* Fixed wrong localization of glued filters
+	* Fixed wrong placing of glued filters with restrictions on equiv
+	* Improved SPARQL-D printer
+
+2008-12-17 16:55  source
+
+	* Added new LiteMode setting so virtuoso can run in restricted mode
+
+2008-12-17 16:49  source
+
+	* Fixed error messages
+
+2008-12-17 16:47  source
+
+	* Added SQL_DESC_COL_LITERAL_LANG and SQL_DESC_COL_LITERAL_TYPE to
+	  translate RDF metadata
+
+2008-12-17 16:43  source
+
+	* Added option DisableTcpSocket
+
+2008-12-17 16:39  source
+
+	* Added options RdfFreeTextRulesSize and IndexTreeMaps to better control
+	  memory consumption for small installations
+
+2008-12-17 09:36  source
+
+	* Added grants to tables in rdfview
+
+2008-12-16 23:38  source
+
+	* Updated documentation
+
 2008-12-16 20:25  source
 
 	* Updated version to 5.0.10-pre6
