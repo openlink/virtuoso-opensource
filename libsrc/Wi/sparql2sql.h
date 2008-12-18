@@ -716,6 +716,8 @@ typedef struct spar_sqlgen_s
   SPART *		ssg_sd_prev_graph;	/*!< Graph of the previous triple in a group, to make a decision about avoiding print of '} GRAPH ... {' */
   SPART *		ssg_sd_prev_subj;	/*!< Subject of the previous triple in a group, to make a decision about using ';' or ',' shorthand */
   SPART *		ssg_sd_prev_pred;	/*!< Predicate of the previous triple in a group, to make a decision about using ',' shorthand */
+  SPART *		ssg_sd_single_from;	/*!< The IRI in FROM clause, if there's only one FROM clause, NULL otherwise */
+  int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
 } spar_sqlgen_t;
 
 
@@ -738,14 +740,12 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
 #define ssg_newline(back) \
   do { \
     int ind = ssg->ssg_indent; \
-    if (ind) \
+    if (0 < ind) \
       ind = 1 + ind * SSG_INDENT_FACTOR - (back); \
     else \
-      { \
       ind = 1; \
         if (SSG_MAX_ALLOWED_LINE_COUNT == ssg->ssg_line_count++) \
           spar_sqlprint_error_impl (ssg, "The length of generated SQL text has exceeded 10000 lines of code"); \
-      } \
     session_buffered_write (ssg->ssg_out, "\n                              ", (ind > 31) ? 31 : ind); \
     } while (0)
 
@@ -839,7 +839,9 @@ An occurence of a non-blocking feature provides some hint to the optimizer of th
 #define SSG_SD_BREAKUP		0x0004	/*!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION */
 #define SSG_SD_PKSELFJOIN	0x0008	/*!< Flags if PKSELFJOIN hint options should be printed, this has no effect w/o SSG_SD_OPTION */
 #define SSG_SD_RVR		0x0010	/*!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION */
-#define SSG_SD_BI		0x0020	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
+#define SSG_SD_IN		0x0020	/*!< Allows the use of IN operator, non-blocking because can be replaced with '=' */
+#define SSG_SD_LIKE		0x0040	/*!< Allows the use of LIKE operator, blocking */
+#define SSG_SD_BI		0x0080	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
 #define SSG_SD_VOS_509		0x00FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
 #define SSG_SD_SERVICE		0x0100	/*!< Allows the use of SERVICE extension, blocking */
 #define SSG_SD_TRANSIT		0x0200	/*!< Allows the use of SERVICE extension, blocking */
@@ -849,6 +851,8 @@ An occurence of a non-blocking feature provides some hint to the optimizer of th
 extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname);
+extern void ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq);
 extern void sparp_make_sparqld_text (spar_sqlgen_t *ssg);
 
 #endif

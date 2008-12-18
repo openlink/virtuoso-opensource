@@ -1121,7 +1121,12 @@ sparp_gp_trav_restrict_by_simple_filters_gp_in (sparp_t *sparp, SPART *curr, spa
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-  for (fctr = BOX_ELEMENTS (curr->_.gp.filters); fctr--; /* no step */)
+/* Note that glued filters do not participate in this optimization, otherwise
+select * where { graph <g1> { ?s1 ?p1 ?o1 } optional { graph <g2> { ?s2 ?p2 ?o2 } filter (?o1 = <const>) }}
+become an equivalent of
+select * where { graph <g1> { ?s1 ?p1 ?o1 . filter (?o1 = <const>) } optional { graph <g2> { ?s2 ?p2 ?o2 } filter (?o1 = <const>) }}
+*/
+  for (fctr = BOX_ELEMENTS (curr->_.gp.filters) - curr->_.gp.glued_filters_count; fctr--; /* no step */)
     { /* The descending order of fctr values is important -- note possible sparp_gp_detach_filter () */
       SPART *filt = curr->_.gp.filters[fctr];
       int ret;
@@ -3347,13 +3352,13 @@ int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_thi
 
 int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  int filt_ctr;
+  int filt_ctr, filt_count;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
     return 0;
-  if (0 == BOX_ELEMENTS_0 (curr->_.gp.filters)) /* No filters -- nothing to do */
-    return 0;
-  DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
+  filt_count = BOX_ELEMENTS_0 (curr->_.gp.filters) - curr->_.gp.glued_filters_count; /* Glued filters should not be localized, that's what they're glued for */
+  for (filt_ctr = filt_count; filt_ctr--; /* no step */)
     {
+      SPART *filt = curr->_.gp.filters[filt_ctr];
       SPART *single_var = NULL;
       sparp_equiv_t *sv_eq;
       int filt_is_detached = 0;
@@ -3401,7 +3406,6 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
         }
       END_DO_BOX_FAST_REV;
     }
-  END_DO_BOX_FAST_REV;
   return 0;
 }
 
@@ -4625,7 +4629,7 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
   sparp_equiv_t **equivs /* do not set here */;
   int equiv_ctr, equiv_count;
   if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
-    GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
+    GPF_T1 ("sparp_" "rewrite_qm_preopt () for CODEGEN");
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
     GPF_T1 ("sparp_" "rewrite_qm_preopt () for SQL_FUNCALL");
 
