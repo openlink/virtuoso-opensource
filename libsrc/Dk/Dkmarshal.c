@@ -86,6 +86,12 @@ ptrlong
 read_long (dk_session_t *session)
 {
   uint32 res;
+  if (session->dks_in_fill - session->dks_in_read >=4)
+    {
+      res = LONG_REF_NA (session->dks_in_buffer + session->dks_in_read);
+      session->dks_in_read += 4;
+      return (int32)res;
+    }
   session_buffered_read (session, (caddr_t) &res, sizeof (res));
 #ifdef WORDS_BIGENDIAN
   return (long) (int32) res;
