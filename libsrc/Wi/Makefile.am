@@ -73,20 +73,24 @@ generated_code = \
 	sparql_p.c \
 	sparql_p.h \
 	sql3.c \
+	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
+	sql_code_pldbg.c \
+	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
+	sql_code_ws.c \
 	sqlwords.h \
 	turtle_l.c \
 	turtle_p.c \
@@ -176,20 +180,25 @@ libwi_la_SOURCES = \
 	sql3.c \
 	sqlbif2.c \
 	sqlbif.c \
+	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
 	sql_code_blog.c \
-	sql_code.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
+	sql_code_pldbg.c \
+	sql_code_repl.c \
+	sql_code_sparql.c \
+	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
+	sql_code_ws.c \
 	sqlcomp2.c \
 	sqlcomp.c \
 	sqlcost.c \
@@ -283,20 +292,25 @@ libwi_odbc_la_SOURCES = \
 	sql3.c \
 	sqlbif2.c \
 	sqlbif.c \
+	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
 	sql_code_blog.c \
-	sql_code.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
+	sql_code_pldbg.c \
+	sql_code_repl.c \
+	sql_code_sparql.c \
+	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
+	sql_code_ws.c \
 	sqlcomp2.c \
 	sqlcomp.c \
 	sqlcost.c \
@@ -502,13 +516,113 @@ libwic_la_LDLAGS  = -static
 
 ###################################################################
 #generated stuff
+
 SQL_FILES		= \
-	$(top_srcdir)/binsrc/vsp/vsp_auth.sql \
-	$(srcdir)/snapshot_repl.sql \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
-	$(srcdir)/rdf_net.sql \
+	$(srcdir)/odbccat.sql \
+	$(srcdir)/useraggr.sql \
+	$(srcdir)/vt_text.sql \
+	$(srcdir)/phrasematch.sql \
+	$(srcdir)/hosting.sql 
+
+SQL_FILES_1		= \
+	$(srcdir)/oledb.sql \
+	$(srcdir)/information_schema.sql
+
+SQL_FILES_2PC		= \
+	$(srcdir)/2pc.sql
+
+SQL_FILES_ADM		= \
+	$(top_srcdir)/binsrc/vsp/admin/admin.sql \
+	$(top_srcdir)/binsrc/vspx/browser/admin_dav_browser.sql
+
+SQL_FILES_AUTO		= \
+	$(srcdir)/autoexec.sql
+
+SQL_FILES_BLOG		= \
+	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl 
+
+SQL_FILES_DAV		= \
+	$(top_srcdir)/binsrc/dav/dav.sql \
+	$(top_srcdir)/binsrc/dav/dav_api.sql \
+	$(top_srcdir)/binsrc/dav/dav_meta.sql \
+	$(top_srcdir)/binsrc/dav/dav_acct.sql \
+	$(top_srcdir)/binsrc/dav/dav_rdf_quad.sql \
+	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
+	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
+	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
+	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
+	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
+	$(top_srcdir)/binsrc/dav/uriqa.sql \
+	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
+	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
+	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
+	$(srcdir)/xml_view.sql
+
+SQL_FILES_DBP		= \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/dbpump_root.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/oper_pars.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/components.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_html.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_misc.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_rpath.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_tables.sql \
+	$(top_srcdir)/binsrc/vsp/admin/dbpump/pars_init.sql
+
+SQL_FILES_DDK		= \
+	$(srcdir)/replddk.sql \
+	$(top_srcdir)/binsrc/dav/davddk.sql \
+	$(srcdir)/mail_cli.sql \
+	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
+	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
+	$(srcdir)/virtual_dir.sql \
+	$(srcdir)/url_rewrite.sql
+
+if WITH_IMSG
+SQL_FILES_IMSG		 = \
+	$(srcdir)/pop3_svr.sql \
+	$(srcdir)/ftp.sql \
+	$(srcdir)/nn_svr.sql \
+	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
+endif
+
+SQL_FILES_PLDBG		= \
+	$(srcdir)/cov_report.xsl \
+	$(srcdir)/cov_time.xsl
+
+SQL_FILES_REPL		= \
+	$(srcdir)/snapshot_repl.sql \
+	$(srcdir)/repl.sql
+
+SQL_FILES_SPARQL	= \
+	$(srcdir)/sparql.sql \
+	$(srcdir)/sparql_io.sql \
+	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
+	$(srcdir)/rdf_void.sql 
+
+SQL_FILES_SYS 		= \
+	$(srcdir)/users.sql 
+
+SQL_FILES_UDDI		= \
+	$(srcdir)/uddi.sql
+
+SQL_FILES_VAD		= \
+	$(top_srcdir)/binsrc/vad/vad_root.sql \
+	$(top_srcdir)/binsrc/vad/vad_misc.sql \
+	$(top_srcdir)/binsrc/vad/oper_pars.sql \
+	$(top_srcdir)/binsrc/vad/pars_init.sql \
+	$(top_srcdir)/binsrc/vad/vad_make.sql
+
+SQL_FILES_VDB		= \
+	$(srcdir)/vdb.sql
+
+SQL_FILES_WS		= \
+	$(top_srcdir)/binsrc/vsp/vsp_auth.sql \
 	$(srcdir)/soap.sql \
 	$(srcdir)/wsrp_ultim.xsl \
 	$(srcdir)/wsrp_resp.xsl \
@@ -516,8 +630,6 @@ SQL_FILES		= \
 	$(srcdir)/wsrp_error.xsl \
 	$(srcdir)/soap_sch.xsl \
 	$(srcdir)/soap_import_sch.xsl \
-	$(srcdir)/odbccat.sql \
-	$(srcdir)/useraggr.sql \
 	$(srcdir)/wsdl_expand.xsl \
 	$(srcdir)/wsdl_parts.xsl \
 	$(srcdir)/wsdl_import.xsl \
@@ -533,54 +645,10 @@ SQL_FILES		= \
 	$(top_srcdir)/binsrc/ws/wstr/wstrcli.sql \
 	$(top_srcdir)/binsrc/ws/wstr/wstrsrv.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcall.xsl \
-	$(srcdir)/cov_report.xsl \
-	$(srcdir)/cov_time.xsl
-
-#SQL_FILES_BLOG		= \
-#	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
-
-SQL_FILES_VDB		= \
-	$(srcdir)/vdb.sql
-
-SQL_FILES_SPARQL	= \
-	$(srcdir)/sparql.sql \
-	$(srcdir)/sparql_io.sql \
-	$(srcdir)/rdf_sponge.sql \
-	$(srcdir)/rdf_void.sql
-
-SQL_FILES_1		= \
+	$(srcdir)/rdf_net.sql \
 	$(srcdir)/simile.sql \
-	$(srcdir)/oledb.sql \
-	$(srcdir)/information_schema.sql
-
-SQL_FILES_DDK		= \
-	$(srcdir)/users.sql \
-	$(srcdir)/replddk.sql \
-	$(top_srcdir)/binsrc/dav/davddk.sql \
-	$(srcdir)/mail_cli.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
-	$(srcdir)/virtual_dir.sql \
-	$(srcdir)/url_rewrite.sql
-
-SQL_FILES_DBP		= \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/dbpump_root.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/oper_pars.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/components.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_html.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_misc.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_rpath.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_tables.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/pars_init.sql
-
-SQL_FILES_2PC		= \
-	$(srcdir)/2pc.sql
-
-SQL_FILES_1		+= \
 	$(srcdir)/http_auth.sql \
 	$(srcdir)/xmla.sql \
-	$(srcdir)/vt_text.sql \
-	$(srcdir)/xml_view.sql \
 	$(srcdir)/openxml.sql \
 	$(top_srcdir)/binsrc/vspx/vspx.sql \
 	$(top_srcdir)/binsrc/vspx/vspx_add_locations.xsl \
@@ -589,58 +657,7 @@ SQL_FILES_1		+= \
 	$(top_srcdir)/binsrc/vspx/vspx_pre_sql.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
-	$(top_srcdir)/binsrc/vspx/vspx.xsl \
-	$(srcdir)/phrasematch.sql \
-	$(srcdir)/hosting.sql
-
-
-SQL_FILES_AUTO		= \
-	$(srcdir)/autoexec.sql
-
-SQL_FILES_ADM		= \
-	$(top_srcdir)/binsrc/vsp/admin/admin.sql \
-	$(top_srcdir)/binsrc/vspx/browser/admin_dav_browser.sql
-
-SQL_FILES_DAV		= \
-	$(top_srcdir)/binsrc/dav/dav_acct.sql \
-	$(top_srcdir)/binsrc/dav/dav_api.sql \
-	$(top_srcdir)/binsrc/dav/dav_meta.sql \
-	$(top_srcdir)/binsrc/dav/dav_rdf_quad.sql \
-	$(top_srcdir)/binsrc/dav/dav.sql \
-	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
-	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
-	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
-	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
-	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
-	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
-	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
-	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
-	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
-	$(top_srcdir)/binsrc/dav/uriqa.sql \
-	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql
-
-SQL_FILES_VAD		= \
-	$(top_srcdir)/binsrc/vad/vad_root.sql \
-	$(top_srcdir)/binsrc/vad/vad_misc.sql \
-	$(top_srcdir)/binsrc/vad/oper_pars.sql \
-	$(top_srcdir)/binsrc/vad/pars_init.sql \
-	$(top_srcdir)/binsrc/vad/vad_make.sql
-
-SQL_FILES_UDDI		= \
-	$(srcdir)/uddi.sql
-
-SQL_FILES_ADM		+= \
-	$(srcdir)/repl.sql
-
-if WITH_IMSG
-SQL_FILES_IMSG		 = \
-	$(srcdir)/pop3_svr.sql \
-	$(srcdir)/ftp.sql \
-	$(srcdir)/nn_svr.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
-endif
-
+	$(top_srcdir)/binsrc/vspx/vspx.xsl
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
@@ -833,6 +850,38 @@ sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_SPARQL)
 
+sql_code_sys.c: $(SQL_FILES_SYS) $(SQL_AWK_DEPS) Makefile.am
+	@$(GEN) $(GAWK) \
+		-o sql_code_sys.c  \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_sys \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_SYS)
+
+sql_code_ws.c: $(SQL_FILES_WS) $(SQL_AWK_DEPS) Makefile.am
+	@$(GEN) $(GAWK) \
+		-o $@  \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_ws \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_WS)
+
+sql_code_repl.c: $(SQL_FILES_REPL) $(SQL_AWK_DEPS) Makefile.am
+	@$(GEN) $(GAWK) \
+		-o $@  \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_repl \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_REPL)
+
+sql_code_pldbg.c: $(SQL_FILES_PLDBG) $(SQL_AWK_DEPS) Makefile.am
+	@$(GEN) $(GAWK) \
+		-o $@  \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_pldbg \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_PLDBG)
+
 
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
@@ -884,20 +933,24 @@ generated: \
 	sparql_p.c \
 	sparql_p.h \
 	sql3.c \
+	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
+	sql_code_pldbg.c \
+	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
+	sql_code_ws.c \
 	sqlwords.h \
 	turtle_l.c \
 	turtle_p.c \
