@@ -594,7 +594,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetChar()");
-			return (char) GetColumnData (i);
+			return Convert.ToChar(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -648,7 +648,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetInt16()");
-			return (Int16) GetColumnData (i);
+			return Convert.ToInt16(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -662,7 +662,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetInt32()");
-			return (Int32) GetColumnData (i);
+			return Convert.ToInt32(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -676,7 +676,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetInt64()");
-			return (Int64) GetColumnData (i);
+			return Convert.ToInt64(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -736,7 +736,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetDecimal()");
-			return (Decimal) GetColumnData (i);
+			return Convert.ToDecimal(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -750,7 +750,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetDateTime()");
-			return (DateTime) GetColumnData (i);
+			return Convert.ToDateTime(GetColumnData (i));
 		}
 
 		public SqlXml GetSqlXml (int i)
