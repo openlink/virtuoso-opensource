@@ -79,6 +79,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*meetup.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_MEETUP', null, 'Meetup');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*discogs.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_DISCOGS', null, 'Discogs');
 
@@ -2174,6 +2178,110 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/isbn2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
+  declare pos, len int;
+  declare xsl2 varchar;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+
+  api_key := _key;
+  --api_key := '18457b204b33412a764070755820814';
+  
+  if (new_origin_uri like 'http://%.meetup.com/%')
+  {
+    tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
+    if (tmp is null)
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s', 0);
+	len := length(tmp);
+	if (len > 5)
+		id5 := tmp[5];
+	if (len > 4)
+		id4 := tmp[4];
+	if (len > 3)
+		id3 := tmp[3];
+	if (len > 2)
+		id2 := tmp[2];
+	if (len > 1)
+		id1 := tmp[1];
+	if (len > 0)
+		id0 := tmp[0];
+    if (id0 is null or (id0 = 'www' and id1 is null))
+        return 0;
+	if (id0 = 'www')
+	{
+		if (id1 = 'cities')
+		{
+			if (id2 is not null)
+			{
+				url := concat('http://api.meetup.com/groups.xml/?country=', id2);
+				if (id3 is not null and id4 is not null)
+				{
+					url := concat(url, '&state=', id3);
+					if (id4 is not null and id4 <> 'groups')
+					{
+						url := concat(url, '&city=', id4);
+					}
+				}
+				else if (id3 is not null and (id4 is null or id4 = 'groups'))
+				{
+					url := concat(url, '&city=', id3);
+				}
+			}
+			else
+				return 0;
+			url := concat(url, '&key=', api_key );
+		}
+		else
+			url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
+	}
+	else
+	{
+		if (id1 = 'cities')
+		{
+			if (id2 is not null)
+			{
+				url := concat('http://api.meetup.com/groups.xml/?topic=%s&country=', id0, id2);
+				if (id3 is not null and id4 is not null)
+				{
+					url := concat(url, '&state=', id3);
+					if (id4 is not null and id4 <> 'groups')
+					{
+						url := concat(url, '&city=', id4);
+					}
+				}
+				else if (id3 is not null and (id4 is null or id4 = 'groups'))
+				{
+					url := concat(url, '&city=', id3);
+				}
+			}
+			else
+				return 0;
+			url := concat(url, '&key=', api_key );
+		}
+		else
+			url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
+	}
+  }
+  tmp := http_get (url, hdr);
+  xd := xtree_doc (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'groups' ));
+  xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
