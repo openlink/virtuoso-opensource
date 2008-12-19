@@ -176,7 +176,40 @@ dk_alloc_box (size_t bytes, dtp_t tag)
 #ifdef _DEBUG
   box_types_alloc[(unsigned)tag]++;
 #endif
+  WRITE_BOX_HEADER(ptr, bytes, tag);
+  return (box_t) ptr;
+}
 
+#undef dk_alloc_box_long
+box_t
+dk_alloc_box_long (size_t bytes, dtp_t tag)
+{
+  unsigned char *ptr;
+  size_t align_bytes;
+#ifdef MALLOC_DEBUG
+  if (bytes & ~0xffffff)
+    GPF_T1 ("box to allocate is too large");
+#endif
+  /* This assumes dk_alloc aligns at least at 4 */
+#ifdef DOUBLE_ALIGN
+  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes);
+#else
+  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+#endif
+
+#ifdef DOUBLE_ALIGN
+  align_bytes += 8;
+  ptr = (unsigned char *) dk_alloc (align_bytes) + 4;
+#else
+#error boxes must be aligned at 8
+  align_bytes += 4;
+  ptr = (unsigned char *) dk_alloc (align_bytes);
+#endif
+#ifdef _DEBUG
+  box_types_alloc[(unsigned)tag]++;
+#endif
+  if (bytes > 0xffffff)
+    bytes = 0xffffff; /* safety.  If overflowed, large box would be confused with small, now only the length is off, which is OK if length known elsewhere.  Like in cluster message serialization  */
   WRITE_BOX_HEADER(ptr, bytes, tag);
   return (box_t) ptr;
 }
@@ -271,6 +304,34 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   return (box_t) ptr;
 }
 
+
+box_t
+dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
+{
+  unsigned char *ptr;
+  uint32 align_bytes;
+
+  /* This assumes dk_alloc aligns at least at 4 */
+  align_bytes = IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes);
+
+#ifdef DOUBLE_ALIGN
+  align_bytes += 8;
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes) + 4;
+#else
+  align_bytes += 4;
+  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+#endif
+#ifdef _DEBUG
+  box_types_alloc[tag]++;
+#endif
+  if (bytes > 0xffffff)
+    bytes = 0xffffff; /* safety.  If overflowed, large box would be confused with small, now only the length is off, which is OK if length known elsewhere.  Like in cluster message serialization  */
+
+  WRITE_BOX_HEADER(ptr, bytes, tag);
+  /* memset (ptr, 0x00, bytes); */
+
+  return (box_t) ptr;
+}
 
 box_t
 dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
@@ -562,10 +623,10 @@ dk_free_tree (box_t box)
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
       {
-        uint32 count = len / sizeof(box_t);
+        uint32 count = len / sizeof(box_t), inx;
         box_t *obj = (box_t *) box;
-        while (count--)
-	  dk_free_tree (*obj++);
+	for (inx = 0; inx < count; inx++)
+	  dk_free_tree (obj[inx]);
 #ifdef MALLOC_DEBUG
 	if (len != ALIGN_4 (len))
 	  GPF_T;

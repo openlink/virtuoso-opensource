@@ -620,6 +620,7 @@ typedef struct rdf_bigbox_s
 /* see blobio.h for the rest of rdf_box things. */
 
 EXE_EXPORT (box_t, dk_alloc_box, (size_t bytes, dtp_t tag));
+EXE_EXPORT (box_t, dk_alloc_box_long, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_try_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 
@@ -700,6 +701,7 @@ void box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp);
 
 #ifdef MALLOC_DEBUG
 box_t dbg_dk_alloc_box (const char *file, int line, size_t bytes, dtp_t tag);
+box_t dbg_dk_alloc_box_long (const char *file, int line, size_t bytes, dtp_t tag);
 box_t dbg_dk_try_alloc_box (const char *file, int line, size_t bytes, dtp_t tag);
 box_t dbg_dk_alloc_box_zero (const char *file, int line, size_t bytes, dtp_t tag);
 box_t dbg_box_string (const char *file, int line, const char *str);
