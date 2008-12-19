@@ -49,6 +49,12 @@ a:hover
   text-decoration: underline;
 }
 
+.link
+{
+  color: blue;
+	cursor: pointer;
+}
+
 #MTB
 {
   width: 100%;
@@ -146,29 +152,25 @@ a:hover
   border-top: 0;
 }
 
-.lc a.gems2, .lc div
+.lc span.gems2, .lc div
 {
+  color: blue;
+	cursor: pointer;
   display: block;
   padding: 3px;
   margin: 3px;
 }
 
-.lc a.gems2
+.gems2
 {
-  text-decoration: none;
+  font-weight: bold;
+  background: #b0cde4;
 }
 
-.lc a:hover
+.lc a:hover, .lc .gems:hover
 {
   color: blue;
   background: #99b3c5;
-}
-
-.lc a.gems2
-{
-  color: black;
-  font-weight: bold;
-  background: #b0cde4;
 }
 
 .lc_head

@@ -135,6 +135,7 @@
       declare nodeID, nodeType any;
       declare itemID, itemType, itemLabel, itemPath, itemImage, itemSelected, itemDraggable any;
 
+      returnData := vector ();
       if ((nodePath = '') and (_domain_id < 0))
       {
         node := 'r#0';
@@ -146,12 +147,9 @@
       else
       {
         parts := split_and_decode (nodePath, 0, '\0\0/');
-        node := '';
-        if (length (parts))
-          node := parts[length (parts)-1];
+        node := case when length (parts) then parts[length (parts)-1] else '' end;
       }
       nodes := BMK.WA.bmk_tree2 (_domain_id, _account_id, node, nodePath);
-      returnData := vector ();
       for (N := 0; N < length (nodes); N := N + 3)
       {
         nodeID := BMK.WA.node_id (nodes [N+1]);
@@ -180,7 +178,6 @@
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
     http (BMK.WA.obj2json(returnData, 3));
-    return;
   }
   else if (action = 'tags')
   {
@@ -200,7 +197,6 @@
       tagStyle := ODS.WA.tag_style (T_COUNT, tagsMin, tagsMax) || 'padding-left: 3px;';
       http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: BMK.selectTag(\'%s\'); return false;" style="%s">%s</a> ', BMK.WA.tag_id (T_TAG), SIOC..bmk_tag_iri (_account_id, T_TAG), T_TAG, tagStyle, T_TAG));
     }
-    return;
   }
   else if (action = 'form')
   {
@@ -432,7 +428,6 @@
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
     http (BMK.WA.obj2json(returnData));
-    return;
   }
   else if (action = 'about')
   {

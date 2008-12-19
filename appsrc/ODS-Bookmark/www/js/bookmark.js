@@ -234,7 +234,6 @@ function changeState (obj, fld_name) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function updateGrants(objName)
 {
   var frm = document.forms['F1'];
@@ -346,11 +345,9 @@ function showTag(tag) {
 }
 
 // ---------------------------------------------------------------------------
-//
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
-//
 // ---------------------------------------------------------------------------
 function sortSelect(box) {
 	var o = new Array();
@@ -372,7 +369,6 @@ function sortSelect(box) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs)) {
@@ -398,7 +394,6 @@ function showTab(tabs, tabsCount, tabNo)
 }
 
 // ---------------------------------------------------------------------------
-//
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -411,7 +406,6 @@ function windowShow(sPage, width, height)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelect(obj)
 {
   var submitMode = false;
@@ -464,7 +458,6 @@ function rowSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode)
@@ -487,11 +480,8 @@ function rowSelectValue(dstField, srcField, singleMode)
 }
 
 // ---------------------------------------------------------------------------
-//
 // Hiddens functions
-//
 // ---------------------------------------------------------------------------
-//
 function createHidden(frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -499,7 +489,6 @@ function createHidden(frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function createHidden2(doc, frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -517,7 +506,6 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
@@ -525,7 +513,6 @@ function changeExportName(fld_name, from, to) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function updateChecked (obj, objName)
 {
   var objForm = obj.form;
@@ -552,7 +539,6 @@ function updateChecked (obj, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addChecked (form, txt, selectionMsq)
 {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
@@ -601,7 +587,6 @@ function addChecked (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
@@ -620,7 +605,6 @@ function addTag(tag, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addCheckedTags (openerName, checkName)
 {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value])
@@ -652,7 +636,6 @@ function addCheckedTags (openerName, checkName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function openBookmark (id)
 {
   var c = $('bookmark_'+id);
@@ -665,7 +648,6 @@ function openBookmark (id)
 }
 
 // ---------------------------------------------------------------------------
-//
 function openIFrame (id, accountID, uri)
 {
   if (accountID > 0)
@@ -682,7 +664,6 @@ function openIFrame (id, accountID, uri)
 }
 
 // ---------------------------------------------------------------------------
-//
 function urlParam (fldName)
 {
   var S = '';
@@ -693,7 +674,6 @@ function urlParam (fldName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function showObject(id)
 {
   var o = document.getElementById(id);
@@ -705,7 +685,6 @@ function showObject(id)
 }
 
 // ---------------------------------------------------------------------------
-//
 function hideObject(id)
 {
   var o = document.getElementById(id);
@@ -717,7 +696,6 @@ function hideObject(id)
 }
 
 // ---------------------------------------------------------------------------
-//
 function initRequest ()
 {
   var xmlhttp = null;
@@ -739,7 +717,6 @@ function initRequest ()
 }
 
 // ---------------------------------------------------------------------------
-//
 var timer = null;
 var progressID = null;
 var progressMax = null;
@@ -758,7 +735,6 @@ function resetState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function stopState()
 {
   timer = null;
@@ -771,7 +747,6 @@ function stopState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function initState ()
 {
   // reset state first
@@ -792,7 +767,6 @@ function initState ()
 }
 
 // ---------------------------------------------------------------------------
-//
 function checkState()
 {
   var xmlhttp = initRequest();
@@ -826,9 +800,7 @@ var size = 40;
 var increment = 100 / size;
 
 // ---------------------------------------------------------------------------
-//
 // create the progress bar
-//
 function createProgressBar()
 {
   progressMax = getObject('progressMax').innerHTML;
@@ -853,9 +825,7 @@ function createProgressBar()
 }
 
 // ---------------------------------------------------------------------------
-//
 // show the current percentage
-//
 function showProgress (progressIndex)
 {
   if (!progressMax)
@@ -891,7 +861,6 @@ function showProgress (progressIndex)
 }
 
 // ---------------------------------------------------------------------------
-//
 function readBookmark (id)
 {
   var sid = '';
@@ -1080,15 +1049,15 @@ BMK.initLeftPane = function ()
     BMK.saveState();
   }
   BMK.forms = new Object();
-  BMK.forms['import'] = {height: '400', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['import'] = {height: '400', postActions:['BMK.loadTree(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['export'] = {height: '160'};
-  BMK.forms['bookmark'] = {height: '380', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['folder'] = {height: '180', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['smart folder'] = {height: '320', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['move'] = {params: {items: true}, height: '100', postActions:['BMK.loadTree()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['bookmark'] = {height: '380', postActions:['BMK.loadTags(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['folder'] = {height: '180', postActions:['BMK.loadTree(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['smart folder'] = {height: '320', postActions:['BMK.loadTree(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['move'] = {params: {items: true}, height: '100', postActions:['BMK.loadTree(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['share'] = {params: {items: true}, height: '130', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['tags'] = {params: {items: true}, height: '130', postActions:['BMK.loadTags()', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
-  BMK.forms['delete'] = {params: {items: true}, postActions:['BMK.loadTree()', 'BMK.loadTags()', 'BMK.resetToolbars()']};
+  BMK.forms['tags'] = {params: {items: true}, height: '130', postActions:['BMK.loadTags(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
+  BMK.forms['delete'] = {params: {items: true}, postActions:['BMK.loadTree(true)', 'BMK.loadTags(true)', 'BMK.resetToolbars()']};
 
   BMK.initTabs()
 }
@@ -1120,11 +1089,13 @@ BMK.initTags = function ()
   BMK.loadTags();
 }
 
-BMK.loadTags = function ()
+BMK.loadTags = function (mode)
 {
   var div = $('pane_left_tags');
-  div.innerHTML = '';
+  if (!div) {return;}
+  if (mode && (div.innerHTML == '...')) {return;}
 
+  div.innerHTML = '';
   var x = function(data) {
     div.innerHTML = data;
     var selected = BMK.state.selected;
@@ -1164,8 +1135,7 @@ BMK.selectTag = function (tag)
 BMK.initTree = function ()
 {
   var div = $('pane_left_tree');
-  if (!div)
-    return;
+  if (!div) {return;}
 
   if (BMK.state.tab != 'tree')
   {
@@ -1183,11 +1153,13 @@ BMK.initTree = function ()
   BMK.loadTree();
 }
 
-BMK.loadTree = function ()
+BMK.loadTree = function (mode)
 {
   var div = $('pane_left_tree');
-  div.innerHTML = '';
+  if (!div) {return;}
+  if (mode && (div.innerHTML == '...')) {return;}
 
+  div.innerHTML = '';
   BMK.tree = new OAT.Tree();
   var ul = OAT.Dom.create("ul",{whiteSpace:"nowrap"});
   BMK.tree.assign(ul, true);

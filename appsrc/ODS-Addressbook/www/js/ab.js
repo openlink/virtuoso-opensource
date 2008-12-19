@@ -29,6 +29,7 @@ function myPost(frm_name, fld_name, fld_value)
 // ---------------------------------------------------------------------------
 function myTags(fValue)
 {
+  createHidden('F1', 'tag', fValue);
   vspxPost('pt_browse', 'pt_action', 'tags', 'pt_value', fValue);
 }
 
@@ -51,10 +52,30 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 }
 
 // ---------------------------------------------------------------------------
-function toolbarPost(value)
+function toolbarPost(fValue)
 {
-  document.F1.tbHidden.value = value;
-  doPost ('F1', 'toolbar');
+  vspxPost('command', 'select', fValue);
+}
+
+// ---------------------------------------------------------------------------
+function checkNotEnter(e)
+{
+  var key;
+
+  if (window.event)
+  {
+    key = window.event.keyCode;
+  } else {
+    if (e)
+    {
+      key = e.which;
+    } else {
+      return true;
+    }
+  }
+  if (key == 13)
+    return false;
+  return true;
 }
 
 // ---------------------------------------------------------------------------

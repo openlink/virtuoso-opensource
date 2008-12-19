@@ -90,7 +90,7 @@
           http ('<td>');
             for (select T_TAG from BMK.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
             {
-              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\'); return false;">%s</a> ', T_TAG, fieldName, T_TAG));
             }
           http ('</td>');
         http ('</tr>');
@@ -144,12 +144,12 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'bookmarks_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link_ed">%s</a>', BMK.WA.url_fix (sprintf ('%s%s', BMK.WA.bookmarks_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return sprintf ('<span onclick="javascript: window.open (\'%s\', \'bookmarks_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link">%s</span>', BMK.WA.url_fix (sprintf ('%s%s', BMK.WA.bookmarks_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
   <vm:pagetitle>Forms</vm:pagetitle>
-  <vm:popup_pagewrapper clean="yes" login="yes">
+  <vm:popup_pagewrapper clean="yes">
     <vm:variables>
       <v:variable name="v_form" param-name="sa" type="varchar" default="''"/>
 
@@ -206,6 +206,7 @@
             if (length (tmp))
               self.bNode := tmp [length(tmp)-1];
           }
+          connection_set ('vspx_user', BMK.WA.account_name (self.account_id));
         ]]>
       </v:before-data-bind>
       <?vsp
@@ -685,23 +686,19 @@
                         title := '\'' || (control as vspx_row_template).te_column_value('_NAME') || '\'';
 
                         actions := '';
-                        if (node_type = 'b')
-                        {
-                          if (cast (get_keyword ('panes', self.settings, '0') as integer) = 1)
-                          {
-                            onclick := '';
-                            if (self.account_id > 0)
-                              onclick := sprintf ('onclick="javascript: openBookmark (\'%d\');"', node_id);
-                            target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
-                            actions := sprintf('<a href="%s" target="%s" %s title="Full window view of %s" class="link_ed">show</a>', uri, target, onclick, title);
-                          }
-                        }
 
                         if ((node_type = 'b') and ((self.account_role in ('public', 'guest')) or (self.bNodePath like '/u#-1%')))
-                          actions := actions || either (equ (actions, ''), '', ' | ') || sprintf('<a href="#" onclick="javascript: parent.BMK.formShow(\'%s/View\', \'%d\'); return false;" title="View %s" class="link_ed">view</a>', actionPrefix, node_id, title);
+                          actions := actions || either (equ (actions, ''), '', ' | ') || sprintf('<span onclick="javascript: parent.BMK.formShow(\'%s/View\', \'%d\'); return false;" title="View %s" class="link">view</span>', actionPrefix, node_id, title);
 
                         if (not ((self.account_role in ('public', 'guest')) or (self.bNodePath like '/u#-1%')))
-                          actions := actions || either (equ (actions, ''), '', ' | ') || sprintf('<a href="#" onclick="javascript: parent.BMK.formShow(\'%s/Edit\', \'%d\'); return false;" title="Edit %s" class="link_ed">edit</a>', actionPrefix, node_id, title);
+                          actions := actions || either (equ (actions, ''), '', ' | ') || sprintf('<span onclick="javascript: parent.BMK.formShow(\'%s/Edit\', \'%d\'); return false;" title="Edit %s" class="link">edit</span>', actionPrefix, node_id, title);
+
+                        if ((node_type = 'b') and (cast (get_keyword ('panes', self.settings, '0') as integer) = 1))
+                        {
+                          onclick := case when (self.account_id > 0) then sprintf ('onclick="javascript: openBookmark (\'%d\');"', node_id) else '' end;
+                          target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
+                          actions := actions || either (equ (actions, ''), '', ' | ') || sprintf('<a href="%s" target="%s" %s title="Full window view of %s" class="link">show</a>', uri, target, onclick, title);
+                        }
 
                         if ((node_type = 'b') and (self.account_role not in ('public', 'guest')) and (self.bNodePath not like '/u#-1%'))
                           actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('annotea.vspx?oid=%d', node_id), 'annotate', title);

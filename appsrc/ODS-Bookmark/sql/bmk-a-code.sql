@@ -4846,7 +4846,7 @@ create procedure BMK.WA.obj2json (
   in o any,
   in d integer := 2)
 {
-  declare N, M integer;
+  declare N, Nn, M, Mm integer;
   declare R, T any;
   declare retValue any;
 
@@ -4861,10 +4861,12 @@ create procedure BMK.WA.obj2json (
 	}
 	else if (isstring (o))
 	{
-		for (N := 0; N < length(o); N := N + 1)
+		Nn := length(o);
+		for (N := 0; N < Nn; N := N + 1)
 		{
 			R := chr (o[N]);
-		  for (M := 0; M < length(T); M := M + 2)
+		  Mm := length(T);
+		  for (M := 0; M < Mm; M := M + 2)
 		  {
 				if (R = T[M])
 				  R := T[M+1];
@@ -4876,11 +4878,12 @@ create procedure BMK.WA.obj2json (
 	else if (isarray (o))
 	{
 		retValue := '[';
-		for (N := 0; N < length(o); N := N + 1)
+		Nn := length(o);
+		for (N := 0; N < Nn; N := N + 1)
 		{
 		  retValue := retValue || BMK.WA.obj2json (o[N], d-1);
 		  if (N <> length(o)-1)
-			  retValue := retValue || ',\n';
+			  retValue := retValue || ',';
 		}
 		retValue := retValue || ']';
 	}

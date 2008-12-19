@@ -353,7 +353,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<a href="#" onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link_ed">%s</a>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'addressbook_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link">%s</span>', AB.WA.url_fix (sprintf ('%s%s', AB.WA.ab_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -509,13 +509,14 @@
           if (0)
           {
         ?>
-            <v:button name="toolbar" action="simple" style="url" value="Submit">
+          <v:button name="command" action="simple" style="url" value="Submit">
               <v:on-post>
                 <![CDATA[
                   declare N integer;
-                  declare cmd any;
+                declare params, cmd, mode any;
 
-                  cmd := get_keyword ('tbHidden', e.ve_params, '');
+                params := e.ve_params;
+                cmd := get_keyword ('select', params, '');
                 if (cmd = 'MyContacts')
                 {
                     self.abScope := cmd;
@@ -523,14 +524,14 @@
                   self.abSubAction := '';
                   self.abValue := '';
                   }
-                if (cmd = 'MySharedContacts')
+                else if (cmd = 'MySharedContacts')
                 {
                     self.abScope := cmd;
                     self.abAction := 'browse';
                   self.abSubAction := '';
                   self.abValue := '';
                   }
-                if (cmd = 'create')
+                else if (cmd = 'create')
                 {
                     self.abAction := cmd;
 
@@ -595,41 +596,41 @@
                   self.v_category_id := null;
                   self.v_category_name := null;
                 }
-                if (cmd = 'tag')
+                else if (cmd = 'tag')
                 {
                     self.abAction := cmd;
                     self.abSelected := vector();
-                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  for (N := 0; N < length(params); N := N + 4)
                   {
-                      if (e.ve_params[N] = 'cb_item')
-                        self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
+                    if (params[N] = 'cb_item')
+                      self.abSelected := vector_concat(self.abSelected, vector(params[N+1]));
                     }
                   }
-                if (cmd = 'grants')
+                else if (cmd = 'grants')
                 {
                     self.v_grants := '';
                     self.abAction := cmd;
                     self.abSelected := vector();
-                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  for (N := 0; N < length(params); N := N + 4)
                   {
-                      if (e.ve_params[N] = 'cb_item')
-                        self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
+                    if (params[N] = 'cb_item')
+                      self.abSelected := vector_concat(self.abSelected, vector(params[N+1]));
                     }
                   }
-                if (cmd = 'delete')
+                else if (cmd = 'delete')
                 {
                     declare id integer;
 
-                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  for (N := 0; N < length(params); N := N + 4)
                   {
-                    if (e.ve_params[N] = 'cb_item')
+                    if (params[N] = 'cb_item')
                     {
-                        id := cast(e.ve_params[N+1] as integer);
+                      id := cast(params[N+1] as integer);
                       AB.WA.contact_delete (id);
                       }
                     }
                   }
-                if (cmd = 'import')
+                else if (cmd = 'import')
                 {
                   self.resetImport ();
                     self.abAction := cmd;
@@ -637,16 +638,26 @@
                   self.abSteps  := vector ();
                     self.v_tag := '';
                   }
-                if (cmd = 'export')
+                else if (cmd = 'export')
                 {
                     self.abAction := cmd;
                     self.abSelected := vector();
-                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  for (N := 0; N < length(params); N := N + 4)
                   {
-                      if (e.ve_params[N] = 'cb_item')
-                        self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
+                    if (params[N] = 'cb_item')
+                      self.abSelected := vector_concat (self.abSelected, vector(params[N+1]));
                     }
                   }
+                else if (cmd = 'settings')
+                {
+                  self.abAction := cmd;
+                  self.abSubAction := get_keyword ('mode', params, '');
+                }
+                else if (cmd = 'back')
+                {
+                  self.abAction := 'browse';
+                  self.abSubAction := '';
+                }
 
                 _end:
                   self.vc_data_bind(e);
@@ -871,7 +882,7 @@
                   tClass := '';
                     if ((self.abSubaction = 'tags') and (self.abValue = T_TAG))
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
+                    http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, SIOC..addressbook_tag_iri (self.account_id, T_TAG), T_TAG, tClass, tStyle, T_TAG));
                 }
               }
               if (self.abScope = 'MySharedContacts')
@@ -1058,10 +1069,8 @@
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
                               permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
 
-                              tmp := 'view';
-                              if (permissions = 'W')
-                                tmp := 'edit';
-                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'%s\', \'pt_value\', \'%d\');" title="%s \'%s\'" class="%s link_ed" about="%U">%s</a></div>', id, tmp, id, initcap (tmp), title, 'app', SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
+                              tmp := case when (permissions = 'W') then 'edit' else 'view' end;
+                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'%s\', \'pt_value\', \'%d\'); return false;" title="%s \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), tmp, id, initcap (tmp), title, AB.WA.stringCut(title, self.abChars)));
                           
                           actions := '';
                               if (permissions = 'W')
@@ -1081,7 +1090,7 @@
                             tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1)
                               {
-                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
+                                  http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="%s" onclick="javascript: myTags(\'%s\'); return false;" class="app">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N], tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }
@@ -1166,7 +1175,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="t_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button name="t_cancel" action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.v_tag := '';
@@ -1228,7 +1237,7 @@
               </table>
             </div>
             <div class="new-form-footer">
-                <v:button action="simple" name="s_save" value="Share" xhtml_class="form-button">
+                <v:button name="s_save" action="simple" value="Share" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     declare N integer;
@@ -1244,7 +1253,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button name="s_cancel" action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -2204,7 +2213,7 @@
               </div>
             </div>
             <div class="new-form-footer">
-                <v:button action="simple" name="ab_save" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
+                <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     declare tmp any;
@@ -2372,7 +2381,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="ab_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button name="ab_cancel" action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -2456,7 +2465,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-                  <v:button action="simple" name="i1_next" value="Next" xhtml_class="form-button">
+                  <v:button name="i1_next" action="simple" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    declare tmp any;
@@ -3257,7 +3266,7 @@
                 </v:button>
               </div>
 	            <div class="new-form-footer">
-	              <v:button action="simple" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3265,7 +3274,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-                <v:button action="simple" value="Next" xhtml_class="form-button">
+                  <v:button action="simple" name="i5_next" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3357,7 +3366,7 @@
 	            </div>
 
 	            <div class="new-form-footer">
-	              <v:button action="simple" value="Back" xhtml_class="form-button">
+                  <v:button action="simple" name="i6_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := AB.WA.pop (self.abSteps);
@@ -3365,7 +3374,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Import" xhtml_class="form-button">
+                  <v:button action="simple" name="i6_import" value="Import" xhtml_class="form-button">
 			            <v:on-post>
 			              <![CDATA[
                       declare N integer;
@@ -3469,7 +3478,7 @@
             </div>
 
             <div class="new-form-footer">
-              <v:button action="simple" value="Export" xhtml_class="form-button">
+                <v:button action="simple" name="e_export" value="Export" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                       declare params, entries any;
@@ -3521,56 +3530,15 @@
           <tr>
             <td id="LC">
               <div class="lc lc_close">
-                <v:button action="simple" style="url" value="Settings" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.abSubAction := '';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-                <v:button action="simple" style="url" value="Categories" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                      self.abSubAction := 'categoryBrowse';
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
-                <v:button action="simple" style="url" value="Publications" xhtml_class="gems2">
-                  <v:on-post>
-                    <![CDATA[
-                      self.abSubAction := 'publishBrowse';
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
-                <v:button action="simple" style="url" value="Subscriptions" xhtml_class="gems2">
-                  <v:on-post>
-                    <![CDATA[
-                      self.abSubAction := 'subscribeBrowse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-                <v:button action="simple" style="url" value="SyncML" xhtml_class="gems2" enabled="--AB.WA.syncml_check();">
-                  <v:on-post>
-                    <![CDATA[
-                      self.abSubAction := 'syncmlBrowse';
-                      self.vc_data_bind(e);
-                    ]]>
-                  </v:on-post>
-                </v:button>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2" style="color: black;">Settings</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'categoryBrowse');" title="Categories" class="gems gems2" style="color: black;">Categories</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems gems2" style="color: black;">Publications</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems gems2" style="color: black;">Subscriptions</span>
+                <?vsp if (AB.WA.syncml_check()) { ?>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'syncmlBrowse');" title="SyncML" class="gems gems2" style="color: black;">SyncML</span>
+                <?vsp } ?>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-                <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.abAction := 'browse';
-                    self.abSubAction := '';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
+                <span onclick="javascript: vspxPost('command', 'select', 'back');" title="Back" class="gems gems2" style="color: black;">Back</span>
               </div>
             </td>
             <td id="RC">

@@ -76,10 +76,13 @@
                 params := e.ve_params;
 
                 action := get_keyword ('action', params);
-                if (action = 'search')
+                if (action = 'settings')
                 {
-                  self.vc_redirect (sprintf ('search.vspx?keywords=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
-                  return;
+                  self.bSubAction := get_keyword ('mode', params, '');
+                }
+                else if (action = 'back')
+                {
+                  self.vc_redirect('bookmarks.vspx');
                 }
                 self.vc_data_bind(e);
                ]]>
@@ -92,46 +95,12 @@
         <tr>
           <td id="LC">
             <div class="lc lc_close">
-              <v:button action="simple" style="url" value="Settings" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.bSubAction := '';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" style="url" value="Bookmarklet" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.bSubAction := 'bookmarklet';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" style="url" value="Publications" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.bSubAction := 'publishBrowse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" style="url" value="Subscriptions" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.bSubAction := 'subscribeBrowse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems2">Publications</span>
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems2">Subscriptions</span>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-              <v:button action="simple" style="url" value="Back" xhtml_class="gems2">
-                <v:on-post>
-                  <![CDATA[
-                    self.vc_redirect('bookmarks.vspx');
-                  ]]>
-                </v:on-post>
-              </v:button>
+              <span onclick="javascript: vspxPost('command', 'action', 'back');" title="Back" class="gems2">Back</span>
             </div>
           </td>
           <td id="RC">

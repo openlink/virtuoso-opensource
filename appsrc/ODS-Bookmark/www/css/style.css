@@ -44,9 +44,20 @@ a:visited
   text-decoration: none;
 }
 
-a:hover
+a:hover, .link:hover
 {
   text-decoration: underline;
+}
+
+.link
+{
+  color: blue;
+	cursor: pointer;
+}
+
+.link:hover
+{
+  text-decoration: none;
 }
 
 #MTB
@@ -146,26 +157,27 @@ a:hover
   border-top: 0;
 }
 
-.lc a.gems, .lc a.gems2, .lc div
+.lc a.gems, .lc span.gems2, .lc div
 {
   display: block;
   padding: 3px;
 	margin: 3px;
 }
 
-.lc a.gems, .lc a.gems2
+.lc a.gems, .lc span.gems2
 {
   text-decoration: none;
 }
 
-.lc a.gems:hover, .lc a.gems2:hover
+.lc a.gems:hover, .lc span.gems2:hover
 {
   color: blue;
   background: #99b3c5;
 }
 
-.lc a.gems2
+.lc span.gems2
 {
+  cursor: pointer;
   color: black;
   font-weight: bold;
   background: #b0cde4;
