@@ -379,9 +379,11 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		elm.appendChild(arrow);
 		setTimeout( function() {
 				if (arrow) elm.removeChild(arrow);
+				arrow = null;
 			}, 30000);
 		OAT.Dom.attach(elm,"click",function(event) {
-			elm.removeChild(arrow);
+			if (arrow) elm.removeChild(arrow);
+			arrow = null;
 			/* disable default onclick event for anchor */
 			OAT.Dom.prevent(event);
 			self.history.splice(self.historyIndex+1,self.history.length-self.history.index+1); /* clear forward history */

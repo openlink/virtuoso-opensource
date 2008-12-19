@@ -264,7 +264,7 @@ OAT.AJAX = {
 				OAT.AJAX.dialog.show();
 			}
 		}
-		if (showType == 2) { // show throbber
+		if (showType == AJAX.SHOW_THROBBER) { // show throbber
 			if ($('oat_ajax_throbber')) {
 				OAT.Dom.show($('oat_ajax_throbber'));	
 			} else {
