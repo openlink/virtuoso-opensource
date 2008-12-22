@@ -443,6 +443,7 @@ case when 0 and check_package('rdf_mappers') then
      <node name="RDF Meta-Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="GRDDL Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
+   '<node name="RDF Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
    '<node name="List of Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
      <node name="List of Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>',

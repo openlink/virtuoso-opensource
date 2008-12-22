@@ -322,6 +322,7 @@ conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
 conductor/rdf_filters_pp.vspx
 conductor/rdf_filters.vspx
+conductor/rdf_void.vspx
 conductor/robot_control.vspx
 conductor/robot_edit.vspx
 conductor/robot_export.vspx
