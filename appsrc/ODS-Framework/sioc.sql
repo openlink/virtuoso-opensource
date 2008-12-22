@@ -627,6 +627,7 @@ create procedure sioc_user_info (
     in org_page varchar := null,
     in resume varchar := null,
     in interests any := null,
+    in interestTopics any := null,
     in hcity varchar := null,
     in hstate varchar := null,
     in hcountry varchar := null,
@@ -741,6 +742,21 @@ create procedure sioc_user_info (
 		}
 	    }
 	}
+    }
+
+  if (is_person and length (interestTopics))
+    {
+      for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interestTopics) do
+  	  {
+  	    if (length (interest))
+  	    {
+  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('topic_interest'), interest);
+  	      if (length (label))
+  		    {
+  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		    }
+  	    }
+  	  }
     }
 
   if (wa_pub_info (hcountry, flags, 15))
@@ -1452,9 +1468,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY,
 		    WAUI_BORG, WAUI_HPHONE, WAUI_HMOBILE, WAUI_BPHONE, WAUI_LAT,
 		    WAUI_LNG, WAUI_WEBPAGE, WAUI_SITE_NAME,
-		    WAUI_PHOTO_URL, WAUI_BORG_HOMEPAGE, WAUI_RESUME, WAUI_INTERESTS, WAUI_HCITY, WAUI_HSTATE, WAUI_HCOUNTRY,
+            		   WAUI_PHOTO_URL, WAUI_BORG_HOMEPAGE, WAUI_RESUME, WAUI_INTERESTS, WAUI_INTEREST_TOPICS, WAUI_HCITY, WAUI_HSTATE, WAUI_HCOUNTRY,
 		    WAUI_FOAF, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF, WAUI_SKYPE
-		from DB.DBA.WA_USER_INFO where WAUI_U_ID = u_id do
+		          from DB.DBA.WA_USER_INFO
+		         where WAUI_U_ID = u_id do
 		{
                   declare kwd any;
 		  declare lat, lng real;
@@ -1473,10 +1490,21 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  if (WAUI_SITE_NAME is not null)
 		    DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), WAUI_SITE_NAME);
 
-		  sioc_user_info (graph_iri, iri, WAUI_VISIBLE, WAUI_FIRST_NAME, WAUI_LAST_NAME,
-		      WAUI_TITLE, U_FULL_NAME, WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY, WAUI_BORG,
-	              	case when length (WAUI_HPHONE) then WAUI_HPHONE
-		      	when length (WAUI_HMOBILE) then WAUI_HMOBILE else  WAUI_BPHONE end,
+		  sioc_user_info (graph_iri,
+		                  iri,
+		                  WAUI_VISIBLE,
+		                  WAUI_FIRST_NAME,
+		                  WAUI_LAST_NAME,
+		                  WAUI_TITLE,
+		                  U_FULL_NAME,
+		                  WAUI_GENDER,
+		                  WAUI_ICQ,
+		                  WAUI_MSN,
+		                  WAUI_AIM,
+		                  WAUI_YAHOO,
+		                  WAUI_BIRTHDAY,
+		                  WAUI_BORG,
+	              	    case when length (WAUI_HPHONE) then WAUI_HPHONE when length (WAUI_HMOBILE) then WAUI_HMOBILE else WAUI_BPHONE end,
 			lat,
 			lng,
 			WAUI_WEBPAGE,
@@ -1484,6 +1512,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 			WAUI_BORG_HOMEPAGE,
 			WAUI_RESUME,
 			WAUI_INTERESTS,
+                			WAUI_INTEREST_TOPICS,
 			WAUI_HCITY,
 			WAUI_HSTATE,
 			WAUI_HCOUNTRY,
@@ -2029,11 +2058,21 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 	    and O = iri_to_id (foaf_iri ('Organization'));
 	}
     }
-  sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME,
-		      N.WAUI_TITLE, null, N.WAUI_GENDER, N.WAUI_ICQ, N.WAUI_MSN, N.WAUI_AIM, N.WAUI_YAHOO,
-		      N.WAUI_BIRTHDAY, N.WAUI_BORG,
-	              	case when length (N.WAUI_HPHONE) then N.WAUI_HPHONE
-		      	when length (N.WAUI_HMOBILE) then N.WAUI_HMOBILE else  N.WAUI_BPHONE end,
+  sioc_user_info (graph_iri,
+                  iri,
+                  N.WAUI_VISIBLE,
+                  N.WAUI_FIRST_NAME,
+                  N.WAUI_LAST_NAME,
+        		      N.WAUI_TITLE,
+        		      null,
+        		      N.WAUI_GENDER,
+        		      N.WAUI_ICQ,
+        		      N.WAUI_MSN,
+        		      N.WAUI_AIM,
+        		      N.WAUI_YAHOO,
+        		      N.WAUI_BIRTHDAY,
+        		      N.WAUI_BORG,
+        	        case when length (N.WAUI_HPHONE) then N.WAUI_HPHONE when length (N.WAUI_HMOBILE) then N.WAUI_HMOBILE else N.WAUI_BPHONE end,
 			lat,
 			lng,
 			N.WAUI_WEBPAGE,
@@ -2041,6 +2080,7 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_BORG_HOMEPAGE,
 			N.WAUI_RESUME,
 			N.WAUI_INTERESTS,
+            			N.WAUI_INTEREST_TOPICS,
 			N.WAUI_HCITY,
 			N.WAUI_HSTATE,
 			N.WAUI_HCOUNTRY,

@@ -3079,6 +3079,7 @@ wa_exec_no_error_log(
     WAUI_LATLNG_HBDEF SMALLINT default 0,
     WAUI_SITE_NAME long varchar,
     WAUI_INTERESTS long varchar,  -- 48
+    WAUI_INTEREST_TOPICS long varchar,  -- 49
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
     WAUI_OPENID_SERVER varchar,
@@ -3114,6 +3115,7 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_JOIN_DATE', 'DATETIME', 'UPDATE DB.DBA.
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SITE_NAME', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTERESTS', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTEREST_TOPICS', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BORG_HOMEPAGE', 'LONG VARCHAR');
 
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
@@ -3418,6 +3420,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE DB.DBA.SYS_USERS SET U_E_MAIL = _data WHERE U_ID = _uid;
   else if (_key = 'WAUI_INTERESTS')
     UPDATE WA_USER_INFO SET WAUI_INTERESTS = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_INTEREST_TOPICS')
+    UPDATE WA_USER_INFO SET WAUI_INTEREST_TOPICS = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_BORG_HOMEPAGE')
     UPDATE WA_USER_INFO SET WAUI_BORG_HOMEPAGE = _data WHERE WAUI_U_ID = _uid;
 --home tab
@@ -3985,7 +3989,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
   declare _bindustr, _borg, _bjob, _baddress1, _baddress2, _bcode, _bcity, _bstate, _bcountry, _btzone,
           _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork varchar;
   declare _bresume, _audio, _fav_books, _fav_music, _fav_movie long varchar;
-  declare _WAUI_PHOTO_URL, _interests, _org_page varchar;
+  declare _WAUI_PHOTO_URL, _interests, _interest_topics, _org_page varchar;
   declare _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG real;
   declare _WAUI_LATLNG_HBDEF, _is_org integer;
   declare _arr15, _arr16, _arr18, _arr22, _arr23, _arr25, _arr any;
@@ -4013,7 +4017,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          WAUI_BCAREER, WAUI_BEMPTOTAL, WAUI_BVENDOR, WAUI_BSERVICE, WAUI_BOTHER, WAUI_BNETWORK, WAUI_RESUME,
          U_E_MAIL, WAUI_PHOTO_URL, WAUI_LAT, WAUI_LNG, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF,
 	 WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	 WAUI_SEARCHABLE, WAUI_INTERESTS, WAUI_BORG_HOMEPAGE, WAUI_IS_ORG
+	       WAUI_SEARCHABLE, WAUI_INTERESTS, WAUI_INTEREST_TOPICS, WAUI_BORG_HOMEPAGE, WAUI_IS_ORG
     INTO _utitle, _fname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
          _uicq, _uskype, _uaim, _uyahoo, _umsn,
          _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile,
@@ -4021,7 +4025,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork, _bresume,
          _email, _WAUI_PHOTO_URL, _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG, _WAUI_LATLNG_HBDEF,
          _audio, _fav_books, _fav_music, _fav_movie,
-	 is_search, _interests, _org_page, _is_org
+	       is_search, _interests,  _interest_topics, _org_page, _is_org
     FROM WA_USER_INFO, DB.DBA.SYS_USERS  where WAUI_U_ID = U_ID  and  U_ID = ufid;
 
   declare is_friend integer;

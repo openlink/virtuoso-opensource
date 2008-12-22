@@ -52,6 +52,7 @@
   <v:variable persist="0" name="issearch" type="int" default="1"/>
   <v:variable persist="0" name="showactive" type="int" default="1"/>
   <v:variable persist="0" name="interests" type="varchar" default="''"/>
+  <v:variable persist="0" name="interestTopics" type="varchar" default="''"/>
   <v:variable persist="0" name="appEnable" type="integer" default="0"/>
 
   <v:variable name="sav0" type="varchar" default="'1'" />
@@ -72,43 +73,63 @@
   <v:variable name="sav45" type="varchar" default="'1'" />
   <v:variable name="sav46" type="varchar" default="'1'" />
   <v:variable name="sav48" type="varchar" default="'1'" />
+  <v:variable name="sav49" type="varchar" default="'1'" />
 
   <v:variable name="previe_path" type="varchar" default="''" />
 
   <v:before-data-bind>
     <![CDATA[
-      declare _utitle, _ftname, _lname, _fullname, _gender,_wpage,_efoaf, _email varchar;
-      declare _bdate datetime;
-      declare _msign, _sum long varchar;
-
-      declare _bresume long varchar;
-
-      SELECT WAUI_TITLE, WAUI_FIRST_NAME, WAUI_LAST_NAME,
-             WAUI_FULL_NAME, WAUI_GENDER, WAUI_BIRTHDAY,
-             WAUI_WEBPAGE, WAUI_FOAF,
-             WAUI_MSIGNATURE, WAUI_SUMMARY,
-             U_E_MAIL, WAUI_PHOTO_URL,
-             WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-             WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE, WAUI_NICK
-        INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum, _email, self.photo,
-	     self.audio, self.books, self.music, self.movie, self.issearch,self.showactive, self.interests, self.is_org,
-	     self.appEnable, self.nick
+      SELECT WAUI_TITLE,
+             wa_utf8_to_wide (WAUI_FIRST_NAME),
+             wa_utf8_to_wide (WAUI_LAST_NAME),
+             wa_utf8_to_wide (WAUI_FULL_NAME),
+             WAUI_GENDER,
+             WAUI_BIRTHDAY,
+             WAUI_WEBPAGE,
+             WAUI_FOAF,
+             wa_utf8_to_wide (WAUI_MSIGNATURE),
+             wa_utf8_to_wide (WAUI_SUMMARY),
+             WAUI_PHOTO_URL,
+             WAUI_AUDIO_CLIP,
+             WAUI_FAVORITE_BOOKS,
+             WAUI_FAVORITE_MUSIC,
+             WAUI_FAVORITE_MOVIES,
+             WAUI_SEARCHABLE,
+             WAUI_SHOWACTIVE,
+             WAUI_INTERESTS,
+             WAUI_INTEREST_TOPICS,
+             WAUI_IS_ORG,
+             WAUI_APP_ENABLE,
+             WAUI_NICK,
+             U_E_MAIL
+        INTO self.utitle,
+             self.ftname,
+             self.lname,
+             self.fullname,
+             self.gender,
+             self.bdate,
+             self.wpage,
+             self.efoaf,
+             self.msign,
+             self.summ,
+             self.photo,
+             self.audio,
+             self.books,
+             self.music,
+             self.movie,
+             self.issearch,
+             self.showactive,
+             self.interests,
+             self.interestTopics,
+             self.is_org,
+             self.appEnable,
+             self.nick,
+             self.email
         FROM WA_USER_INFO, DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
-      self.utitle := _utitle;
-      self.email := _email;
-      self.ftname := wa_utf8_to_wide (_ftname);
-      self.lname := wa_utf8_to_wide (_lname);
-      self.fullname := wa_utf8_to_wide (_fullname);
-      self.gender := _gender;
-      self.bdate := _bdate;
-      self.wpage := _wpage;
-      self.efoaf := _efoaf;
-      self.msign := wa_utf8_to_wide (_msign);
-      self.summ := wa_utf8_to_wide (_sum);
-
       declare tmp any;
+
       tmp := WA_USER_VISIBILITY(self.u_name);
       if (tmp is not null and length (tmp) >= 46 )
       {
@@ -130,6 +151,7 @@
         self.sav45 := tmp[45];
         self.sav46 := tmp[46];
         self.sav48 := tmp[48];
+        self.sav49 := tmp[49];
       }
     ]]>
   </v:before-data-bind>
@@ -165,8 +187,7 @@
           <th><label for="labelwwn">Nick name</label></th>
           <td class="listing_col" nowrap="1">
 	      <v:text name="nickn" value="--self.nick" format="%s">
-		  <v:validator test="length" min="3" max="100" name="vv_nickn"
-		      message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
+             <v:validator test="length" min="3" max="100" name="vv_nickn" message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
 	      </v:text>
           </td>
         </tr>
@@ -204,9 +225,7 @@
       <tr id="pers_3" class="initial_hidden">
         <th><label for="f_name">First Name</label></th>
         <td class="listing_col" nowrap="1">
-          <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide"
-            xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
-          >
+           <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
             <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
             <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
           </v:text>
@@ -217,14 +236,9 @@
       <tr id="pers_4" class="initial_hidden">
         <th><label for="l_name">Last Name</label></th>
         <td class="listing_col" nowrap="1">
-          <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="3" fmt-function="wa_utf8_to_wide"
-            xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
-          >
-          <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars"
-        empty-allowed="1" name="vv_lname1"/>
-          <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2"
-        message="Last name cannot be longer then 50 chars"
-        empty-allowed="1"/>
+           <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="3" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
+             <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars" empty-allowed="1" name="vv_lname1"/>
+             <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2" message="Last name cannot be longer then 50 chars" empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="l_name" /></div>
       <vm:u-prop-select name="sel_2" value="self.sav2" />
@@ -233,22 +247,17 @@
               <tr>
                 <th><label for="full_name">Full Name</label></th>
                 <td class="listing_col" nowrap="1">
-        <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" xhtml_tabindex="4" fmt-function="wa_utf8_to_wide"
-      xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)"
-      >
-          <v:validator test="length" min="0" max="100" name="vv_fulname1"
-        message="Full name cannot be longer then 100 chars"
-        empty-allowed="1" />
-          <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2"
-        message="Full name cannot be longer then 100 chars"
-        empty-allowed="1"/>
+           <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" xhtml_tabindex="4" fmt-function="wa_utf8_to_wide" xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)">
+             <v:validator test="length" min="0" max="100" name="vv_fulname1" message="Full name cannot be longer then 100 chars" empty-allowed="1" />
+             <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2" message="Full name cannot be longer then 100 chars" mpty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="full_name" /></div>
       <vm:u-prop-select name="sel_3" value="self.sav3" />
                 </td>
               </tr>
               <tr>
-      <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+         <th>
+           <label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
           <span class="explain"> (mandatory field)</span>
       </th>
                 <td class="listing_col" nowrap="nowrap">
@@ -415,48 +424,156 @@
                </td>
         </tr>
         <tr>
-      <th><label for="e_int" title="Free text">Interests</label>
-          <span class="explain"> (one URL per line)</span>
+         <script type="text/javascript">
+           <![CDATA[
+             function updateRow (prefix, No)
+             {
+              if (No != null)
+              {
+                OAT.Dom.unlink(prefix+'_tr_'+No);
+              }
+              else
+              {
+                var No = $v(prefix+'_seqNo');
+                var tbl = $(prefix+'_tbl');
+                if (tbl)
+                {
+                  var tr = OAT.Dom.create('tr');
+                  tr.id = prefix+'_tr_' + No;
+                  tbl.appendChild(tr);
+
+                  var td = OAT.Dom.create('td');
+                  tr.appendChild(td);
+              		var fld = OAT.Dom.create("input");
+              		fld.type = 'text';
+                  fld.id = prefix+'_fld_1_' + No;
+                  fld.name = fld.id;
+                  fld.style.width = '95%';
+                  td.appendChild(fld);
+
+                  var td = OAT.Dom.create('td');
+                  tr.appendChild(td);
+              		var fld = OAT.Dom.create("input");
+              		fld.type = 'text';
+                  fld.id = prefix+'_fld_2_' + No;
+                  fld.name = fld.id;
+                  fld.style.width = '95%';
+                  td.appendChild(fld);
+
+                  var td = OAT.Dom.create('td');
+                  tr.appendChild(td);
+              		var fld = OAT.Dom.create("input");
+              		fld.type = 'button';
+              		fld.value = 'Remove';
+                  fld.onclick = function (){updateRow(prefix, No);};
+                  td.appendChild(fld);
+                }
+              }
+             }
+           ]]>
+         </script>
+         <th>
+           <label for="e_int" title="Free text">Web page URL indicating a topic of interest</label>
+           <span class="explain"> (one per line)</span>
       </th>
     <td class="listing_col" nowrap="1">
         <table>
       <tr>
-          <td>
-        <v:text type="hidden" name="e_int" xhtml_id="e_int"
-      value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
-        <div id="interests_div">
-        </div>
-        <script type="text/javascript"><![CDATA[
-      ODSInitArray.push(interestsPrepare);
-      function interestsPrepare ()
-      {
+               <td width="600px">
+                 <table id="a_tbl" class="listing">
+                   <tr class="listing_header_row">
+                     <th>
+                       URL
+                     </th>
+                     <th>
+                       Label
+                     </th>
+                     <th width="10%">
+                       Action
+                     </th>
+                   </tr>
+                   <?vsp
+                     declare N integer;
 
-          OAT.Loader.loadFeatures(["grid"], function(){setTimeout(interestsPrepare1,60)});
-      }
-      function interestsPrepare1 ()
+                     N := 0;
+                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
       {
-          OAT.Dom.clear($('interests_div'));
+                   ?>
+                   <tr id="a_tr_<?V N ?>">
+                     <th>
+                       <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" />
+                     </th>
+                     <th>
+                       <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
+                     </th>
+                     <th>
+                       <input type="button" value="Remove" onclick="javascript: updateRow('a', <?V N ?>);" />
+                     </th>
+                   </tr>
+                   <?vsp
+                       N := N + 1;
+                     }
+                   ?>
+                 </table>
+                 <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
+               </td>
+               <td valign="top" nowrap="1">
+                 <input type="button" value="Add" onclick="javascript: updateRow('a');" />
+                 <vm:u-prop-select name="sel_48" value="self.sav48" />
+               </td>
+             </tr>
+           </table>
+         </td>
+       </tr>
+       <tr>
+         <th>
+           <label for="e_int2" title="Free text">Resource URI indicating thing of interest</label>
+           <span class="explain"> (one per line)</span>
+         </th>
+         <td class="listing_col" nowrap="1">
+           <table>
+             <tr>
+               <td width="600px">
+                 <table id="b_tbl" class="listing">
+                   <tr class="listing_header_row">
+                     <th>
+                       URI
+                     </th>
+                     <th>
+                       Label
+                     </th>
+                     <th width="10%">
+                       Action
+                     </th>
+                   </tr>
+                   <?vsp
+                     declare N integer;
 
-          var grid = new OAT.Grid("interests_div",0,0);
-                            var txt = document.getElementById ("e_int");
-                            var arr = txt.value.split ("\n");
-          grid.createHeader (["URI", "Label"]);
-          for (i = 0; i < arr.length; i++)
+                     N := 0;
+                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
             {
-                                var row = arr[i].split(";");
-        if (row.length > 0 && row[0].length > 0)
-          grid.createRow (row);
-            }
+                   ?>
+                   <tr id="b_tr_<?V N ?>">
+                     <th>
+                       <input type="text" id="b_fld_1_<?V N ?>" name="b_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" />
+                     </th>
+                     <th>
+                       <input type="text" id="b_fld_2_<?V N ?>" name="b_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
+                     </th>
+                     <th>
+                       <input type="button" value="Remove" onclick="javascript: updateRow('b', <?V N ?>);" />
+                     </th>
+                   </tr>
+                   <?vsp
+                       N := N + 1;
       }
-      ]]></script>
+                   ?>
+                 </table>
+                 <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
     </td>
-    <td nowrap="1">
-          <v:button action="browse" name="interbt" value="Edit..." selector="edit_interests_popup.vspx"
-        child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
-      >
-        <v:field name="e_int"/>
-      </v:button>
-        <vm:u-prop-select name="sel_48" value="self.sav48" />
+               <td valign="top" nowrap="1">
+                 <input type="button" value="Add" onclick="javascript: updateRow('b');" />
+                 <vm:u-prop-select name="sel_49" value="self.sav49" />
     </td>
       </tr>
   </table>
@@ -527,9 +644,9 @@
               ]]>
               </v:on-post>
               </v:button>
-                <script type="text/javascript"><![CDATA[
+           <script type="text/javascript">
+             <![CDATA[
                 var previeImgPath='<?Vself.previe_path?>';
-
                 function dimmerPreviewInit()
                 {
                   if(previeImgPath.length>0)
@@ -557,18 +674,12 @@
                     {
                       OAT.Dom.center(div,1,1);
                       clearTimeout(centerImgE);
-
                     }
                   }
-
                   var centerImgE=setInterval(centerImg,50);
-
-
-//                  setTimeout(function(){;OAT.Dom.center(div,1,1)},200);
-
-                };
-
-                ]]></script>
+               }
+             ]]>
+           </script>
                 </td>
               </tr>
               <tr>
@@ -594,8 +705,7 @@
               <tr>
       <th><label for="set_all">Set access for all fields as </label></th>
       <td class="ctrl">
-          <v:select-list name="set_all4" value="0"
-        xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+           <v:select-list name="set_all4" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
         <v:item name="*no change*"  value="0" />
         <v:item name="public"  value="1" />
         <v:item name="friends" value="2" />
@@ -687,11 +797,13 @@
                     self.vc_is_valid := 0;
                     self.vc_error_message := 'The Tags expression is not valid.';
                     return;
-                  };
+                 }
                   -- public tags
                   WA_USER_TAG_SET(http_nobody_uid(), self.u_id, tag);
 
                   declare dt datetime;
+
+                 dt := null;
                   if (self.regbyear.ufl_value is not null and
                     self.regbmonth.ufl_value is not null and
                     self.regbday.ufl_value is not null and
@@ -702,15 +814,11 @@
                     declare exit handler for sqlstate '*'
                     {
                       self.vc_is_valid := 0;
-                      self.vc_error_message :=
-                      sprintf ('An invalid date (%s-%s-%s) is specified',
-	      self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value);
+                     self.vc_error_message := sprintf ('An invalid date (%s-%s-%s) is specified', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value);
                       return;
                     };
                      dt := stringdate(sprintf('%s-%s-%s', self.regbyear.ufl_value, self.regbmonth.ufl_value, self.regbday.ufl_value));
                   }
-                  else
-                    dt := null;
 
   -- before to edit rest of fields, set the org(anization) flag
                   self.is_org := self.cb_org.ufl_selected;
@@ -772,10 +880,10 @@
               self.vc_is_valid := 0;
               self.vc_error_message := DAV_PERROR (rc);
             }
-
           if (rc > 0 or rc_org >0)
           {
-              declare exit handler for sqlstate '*' {
+                     declare exit handler for sqlstate '*'
+                     {
                   sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
         };
               declare img,thumb,thumb_size2 any;
@@ -790,10 +898,8 @@
 	    DAV_RES_UPLOAD (p_path, thumb, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
 	  if (thumb_size2 is not null)
-	    {
 		DAV_RES_UPLOAD (p_path_size2, thumb_size2, '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
             }
-        }
 	  if (p_path like '/DAV/%')
 	    p_path := subseq (p_path, 4);
           WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
@@ -859,7 +965,33 @@
 
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
-                        WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
+
+                 declare N integer;
+                 declare suffix, tmp varchar;
+                 tmp := '';
+                 for (N := 0; N < length (e.ve_params); N := N + 4)
+                 {
+                   if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                   {
+                     suffix := replace (e.ve_params [N], 'a_fld_1_', '');
+                     tmp := tmp || e.ve_params [N+1] || ';' || get_keyword ('a_fld_2_'||suffix, e.ve_params, '') || '\n';
+                   }
+                 }
+                 self.interests := tmp;
+                 WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp);
+
+                 tmp := '';
+                 for (N := 0; N < length (e.ve_params); N := N + 4)
+                 {
+                   if ((e.ve_params [N] like 'b_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                   {
+                     suffix := replace (e.ve_params [N], 'b_fld_1_', '');
+                     tmp := tmp || e.ve_params [N+1] || ';' || get_keyword ('b_fld_2_'||suffix, e.ve_params, '') || '\n';
+                   }
+                 }
+                 self.interestTopics := tmp;
+                 WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp);
+
 			WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
 			update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;
 
@@ -871,8 +1003,8 @@
                       ]]>
                     </v:on-post>
     </v:button>
-   <script type="text/javascript"><![CDATA[
-
+           <script type="text/javascript">
+             <![CDATA[
     function mailIsValid()
     {
       var regmail=$('regmail');
@@ -885,7 +1017,8 @@
         OAT.Dom.show($('page_error_msg'));
         regmail.focus();
         return false;
-      }else if(!regex.test(regmail.value))
+                 }
+                 if(!regex.test(regmail.value))
       {
         $('page_error_msg').innerHTML=' Invalid E-mail address';
 
@@ -895,8 +1028,8 @@
       }
       return true;
     }
-   ]]></script>
-
+             ]]>
+            </script>
       </span>
                 </td>
               </tr>

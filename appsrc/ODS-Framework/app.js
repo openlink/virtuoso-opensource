@@ -211,6 +211,7 @@ function gererateAPP(appArea, optObj)
 
 function generateAPP(appArea, optObj)
 {
+  if (!$(appArea)) {return;}
   var options = {
     title: "URL",
     width: 300,
