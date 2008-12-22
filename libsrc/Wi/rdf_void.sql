@@ -48,17 +48,22 @@ create procedure RDF_VOID_SPLIT_IRI (in rel varchar, out pref varchar, out name 
 }
 ;
 
-create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := null)
+create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := null, in src varchar := null)
 {
   declare ses any;
   declare host varchar;
 
+  if (src is null)
   ses := RDF_VOID_GEN (graph);
+  else
+    ses := src;
   if (to_graph_name is null)
     {
       host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
       to_graph_name := 'http://' || host || '/stats/void#';
     }
+  exec (sprintf ('sparql delete from <%s> { ?s1 ?p1 ?s2 } from <%s> where { <%s#Dataset> void:statItem ?s1 . ?s1 ?p1 ?s2 }',
+	to_graph_name, to_graph_name, graph));
   TTLP (ses, graph, to_graph_name);
   return;
 }
@@ -104,7 +109,8 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
       RDF_VOID_SPLIT_IRI (rel, pref, name);
       pred := __xml_get_ns_uri (pref, 2) || name;
 
-      cnt := (sparql define input:storage "" select count(*) where { graph `iri (?:graph)` { ?s `iri (?:pred)` ?o . } });
+      cnt := (sparql define input:storage "" select count(*)
+      	where { graph `iri (?:graph)` { ?s `iri (?:pred)` ?o . filter (?o != iri (?:graph)) } });
       if (cnt)
 	{
 	  nam := name;
@@ -135,6 +141,9 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   for select class, cnt from (sparql define input:storage "" select distinct ?class (count(*)) as ?cnt
     where { graph `iri (?:graph)` { [] a ?class . } } order by desc 2) s do
     {
+      if (class like 'http://rdfs.org/ns/void#%' or class like 'http://purl.org/NET/scovo#%'
+	  or class = graph || '#TypeOfLink' or class like graph || '#%Links')
+	goto skip;
       RDF_VOID_SPLIT_IRI (class, pref, name);
       nam := name;
       inx := 1;
@@ -151,6 +160,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
       http (sprintf (' scovo:dimension <%s> ; \n', class), ses);
       http (sprintf (' scovo:dimension void:numberOfResources . \n'), ses);
       http (sprintf ('\n'), ses);
+      skip:;
     }
 
   if (has_links)
