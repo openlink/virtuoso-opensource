@@ -37,6 +37,7 @@
   <vm:variables>
       <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
       <v:variable persist="0" name="base_url" type="any" default="null"/>
+      <v:variable persist="0" name="voidst" type="int" default="0" param-name="st"/>
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
       <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
@@ -93,7 +94,7 @@
 		  	name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));
 		}
 	      self.body_v := self.body_v || '\n\n';
-	      self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process);
+	      self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process, self.voidst);
 	      self.body_v := self.body_v || '\n\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
 	    }
 

@@ -80,6 +80,11 @@
 		  <input type="text" name="base_start" value="<?V self.base_start ?>"/></td>
 	  </tr>
       <tr>
+	      <td>Generate Statistics</td>
+	      <td>
+		  <input type="checkbox" name="cb1" value="1"/></td>
+      </tr>
+      <tr>
 	  <td colspan="2">
 	  <div class="scroll_area">
           <v:data-set name="ds_tables"
@@ -148,7 +153,7 @@
 			  declare cb vspx_check_box;
 			  declare tb varchar;
 			  declare ds vspx_data_set;
-			  declare host varchar;
+			  declare host, st varchar;
 
 			  ds := self."ds_tables";
 			  i := 0;
@@ -162,12 +167,13 @@
 			    }
 
 			  host := get_keyword ('base_start', e.ve_params, '');
+			  st := get_keyword ('cb1', e.ve_params, '0');
 
 			  if (length (arr) > 0)
 			   {
 			     arr := encode_base64 (serialize (arr));
 			     self.db_object_to_process := arr;
-			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%U&host=%U', arr, host));
+			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%U&host=%U&st=%s', arr, host, st));
 			   }
 			 else
 			   {
