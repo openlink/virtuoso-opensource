@@ -4334,6 +4334,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('opl-xbrl', 2);
   XML_REMOVE_NS_BY_PREFIX ('umbel', 2);
   XML_REMOVE_NS_BY_PREFIX ('ore', 2);
+  XML_REMOVE_NS_BY_PREFIX ('dbpedia-owl', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -4362,6 +4363,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#', 2);
   XML_SET_NS_DECL ('fbase', 'http://rdf.freebase.com/ns/', 2);
   XML_SET_NS_DECL ('ore', 'http://www.openarchives.org/ore/terms/', 2);
+  XML_SET_NS_DECL ('dbpedia-owl', 'http://dbpedia.org/ontology/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();
@@ -5104,6 +5106,23 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta', vector ());
+
+create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare exit handler for sqlstate '*'
+  {
+    dbg_printf('%s', __SQL_MESSAGE);
+    return 0;
+  };
+  DB.DBA.RDF_VOID_STORE (graph_iri, graph_iri);
+  return 0;
+}
+;
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS, MC_ENABLED)
+      values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_VOID', null, 'voID Statistics', vector (), 0);
+
 
 create procedure RM_META_MAPPERS_SET_ORDER ()
 {

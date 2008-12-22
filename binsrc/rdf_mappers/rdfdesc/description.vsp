@@ -5,13 +5,12 @@
    declare _G, _S, odd_position any;
    declare _resource_, project_name, project_home_page any;
    declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
-   declare white_page, arr, data, meta, h1, h2, inx, gr any;
+   declare white_page, arr, data, meta, h1, h2, inx, gr, host any;
 
    -- INIT VALUES
 
-
    white_page := 1;
-
+   host := http_request_header (http_request_header (), 'Host');  
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
@@ -97,6 +96,8 @@
 
   declare __res_desc varchar;
   __res_desc := rdfdesc_uri_curie(page_resource_uri);
+  if (not length (label))
+    label := page_resource_uri;
 ?>
 
 <!-- header -->
@@ -111,13 +112,13 @@
   <body onLoad="init();">
     <div id="header">
       <div id="hd_l">
-        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
-          <?vsp if (white_page = 0) http ('at <a href="http://dbpedia.org/">DBpedia.org</a>'); ?>
         </div>
         <div class="page-resource-uri">
-	  <label for="page_res_uri">About Resource:</label> 
-		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', __res_desc)); ?></a>
+	  <!--label for="page_res_uri">About Resource:</label> 
+		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', __res_desc)); ?></a-->
+	   An Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
