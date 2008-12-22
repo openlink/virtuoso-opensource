@@ -65,7 +65,7 @@
     </vm:variables>
     <vm:pagebody>
           <div style="padding: 0 0 0.5em 0;">
-            <v:button action="simple" style="url" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
+        <v:button action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
               <v:on-post>
                 <![CDATA[
                   self.vc_redirect('channels_create.vspx');

@@ -142,20 +142,42 @@
             ?>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
-          <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
-            <xsl:call-template name="nbsp"/>
-            <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
+            <?vsp
+              if (0)
+              {
+            ?>
+                <v:button name="searchHead" action="simple" style="url" value="Submit">
             	<v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=simple&amp;step=1', self.keywords.ufl_value));
+                    <![CDATA[
+                      declare S, keywords, params, cCommand any;
+
+                      params := e.ve_params;
+                      S := '';
+                      keywords := trim (get_keyword ('keywords', params, ''));
+                      if (keywords <> '')
+                        S := sprintf ('&keywords=%U&step=1', keywords);
+                      cCommand := get_keyword ('select', params, '');
+                      if (cCommand = 'simple')
+                      {
+                        self.vc_redirect ('search.vspx?mode=simple' || S);
+                      }
+                      else if (cCommand = 'advanced')
+                      {
+                        self.vc_redirect ('search.vspx?mode=advanced' || S);
+                      }
+                      self.vc_data_bind(e);
+                     ]]>
             	</v:on-post>
   	        </v:button>
+            <?vsp
+              }
+            ?>
+            <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
+              <v:text name="keywords" value="" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
+              <xsl:call-template name="nbsp"/>
+              <v:url url="search.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
             |
-            <v:button action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
-            	<v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=advanced', self.keywords.ufl_value));
-            	</v:on-post>
-  	        </v:button>
+              <v:url url="search.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
           </div>
         </v:template>
       </div>

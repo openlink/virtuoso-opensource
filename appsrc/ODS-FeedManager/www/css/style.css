@@ -49,8 +49,13 @@ a:hover
   text-decoration: underline;
 }
 
-/* Header */
+.link
+{
+  color: blue;
+	cursor: pointer;
+}
 
+/* Header */
 #HD
 {
   width: 100%;

@@ -208,6 +208,7 @@ Feeds.loadTags = function ()
 
 Feeds.selectTag = function (tag)
 {
+  Feeds.toggleLeftPane('tags');
   var newTag = tag.replace('t#', '');
   if (tag.indexOf('t#') != 0)
     tag = 't#'+tag;
@@ -625,7 +626,6 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
   if (fName)
@@ -635,6 +635,27 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   if (f3Name)
     createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
+}
+
+// ---------------------------------------------------------------------------
+function checkNotEnter(e)
+{
+  var key;
+
+  if (window.event)
+  {
+    key = window.event.keyCode;
+  } else {
+    if (e)
+    {
+      key = e.which;
+    } else {
+      return true;
+    }
+  }
+  if (key == 13)
+    return false;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -880,17 +901,13 @@ function composeOptions (form, box_name, text_name)
 // ---------------------------------------------------------------------------
 function showTag(tag)
 {
-  var doc = parent.document;
-  createHidden2(doc, 'F1', 'tag', tag);
-  doc.forms[0].submit();
+  parent.Feeds.selectTag(tag);
 }
 
 // ---------------------------------------------------------------------------
-//
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
-//
 // ---------------------------------------------------------------------------
 function sortSelect(box)
 {
@@ -913,7 +930,6 @@ function sortSelect(box)
 }
 
 // ---------------------------------------------------------------------------
-//
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs))
@@ -946,7 +962,6 @@ function showTab(tabs, tabsCount, tabNo)
 }
 
 // ---------------------------------------------------------------------------
-//
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -1011,7 +1026,6 @@ function rowSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode)
@@ -1031,9 +1045,7 @@ function rowSelectValue(dstField, srcField, singleMode)
 }
 
 // ---------------------------------------------------------------------------
-//
 // Hidden functions
-//
 // ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value)
 {
@@ -1041,7 +1053,6 @@ function createHidden(frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-//
 function createHidden2(doc, frm_name, fld_name, fld_value)
 {
   var hidden;
@@ -1062,9 +1073,7 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-//
 // Menu functions
-//
 // ---------------------------------------------------------------------------
 function menuMouseIn(a, b)
 {
@@ -1081,7 +1090,6 @@ function menuMouseIn(a, b)
 }
 
 // ---------------------------------------------------------------------------
-//
 function menuMouseOut(event)
 {
   var current, related;
@@ -1100,7 +1108,6 @@ function menuMouseOut(event)
 }
 
 // ---------------------------------------------------------------------------
-//
 function menuPopup(button, menuID)
 {
   if (document.getElementsByTagName && !document.all)
@@ -1134,7 +1141,6 @@ function menuPopup(button, menuID)
 }
 
 // ---------------------------------------------------------------------------
-//
 function urlParams(mask)
 {
   var S = '';
@@ -1150,7 +1156,6 @@ function urlParams(mask)
 }
 
 // ---------------------------------------------------------------------------
-//
 function showObject(id)
 {
   var obj = document.getElementById(id);
@@ -1162,7 +1167,6 @@ function showObject(id)
 }
 
 // ---------------------------------------------------------------------------
-//
 function hideObject(id)
 {
   var obj = document.getElementById(id);
@@ -1174,7 +1178,6 @@ function hideObject(id)
 }
 
 // ---------------------------------------------------------------------------
-//
 function initRequest()
 {
 	var xmlhttp = null;
@@ -1197,7 +1200,6 @@ function initRequest()
 }
 
 // ---------------------------------------------------------------------------
-//
 var timer = null;
 var progressID = null;
 var progressMax = null;
@@ -1214,7 +1216,6 @@ function resetState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function stopState()
 {
   timer = null;
@@ -1228,7 +1229,6 @@ function stopState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function initState()
 {
   hideObject('btn_Back');
@@ -1263,7 +1263,6 @@ function initState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function checkState()
 {
 	var xmlhttp = initRequest();
@@ -1296,7 +1295,6 @@ function checkState()
 }
 
 // ---------------------------------------------------------------------------
-//
 function progressText(txt)
 {
   getObject('progressText').innerHTML = txt;
@@ -1315,9 +1313,8 @@ var size = 40;
 var increment = 100 / size;
 
 // ---------------------------------------------------------------------------
-//
 // create the progress bar
-//
+// ---------------------------------------------------------------------------
 function createProgressBar()
 {
   progressMax = getObject('progressMax').innerHTML;
@@ -1349,9 +1346,8 @@ function createProgressBar()
 }
 
 // ---------------------------------------------------------------------------
-//
 // show the current percentage
-//
+// ---------------------------------------------------------------------------
 function showProgress(progressIndex)
 {
   if (progressIndex == null)

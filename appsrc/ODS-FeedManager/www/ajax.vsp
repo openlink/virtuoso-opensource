@@ -54,9 +54,7 @@
       else
       {
         parts := split_and_decode (nodePath, 0, '\0\0/');
-        node := '';
-        if (length (parts))
-          node := parts[length (parts)-1];
+        node := case when length (parts) then parts[length (parts)-1] else '' end;
       }
       nodes := ENEWS.WA.enews_tree2 (_domain_id, node, nodePath);
       returnData := vector ();
@@ -110,7 +108,6 @@
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
     http (ENEWS.WA.obj2json(returnData, 3));
-    return;
   }
   else if (action = 'tags')
   {
@@ -136,7 +133,6 @@
       tagStyle := ODS.WA.tag_style (TS_COUNT, tagsMin, tagsMax) || 'padding-left: 3px;';
       http (sprintf ('<a id="t_tag_%s" href="%s" onclick="javascript: Feeds.selectTag(\'%s\'); return false;" style="%s">%s</a> ', ENEWS.WA.tag_id(TS_TAG), SIOC..feeds_tag_iri (_account_id, TS_TAG), TS_TAG, tagStyle, TS_TAG));
     }
-    return;
   }
   else if (action = 'favourites')
   {

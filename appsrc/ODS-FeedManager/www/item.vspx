@@ -108,7 +108,7 @@
 
               ct := '';
               if (not isnull(EFI_COMMENT_API))
-                ct := sprintf('<a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">| %s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment This');
+              ct := sprintf('<span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">| %s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment This');
 
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags2vector (tags);
@@ -223,7 +223,7 @@
               if (mail_domain_id)
               {
                 mt := sprintf('subject=%U&body=%U', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nFeed: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
-                mt := sprintf(' | <a href="#" onclick="javascript: window.open(\'../../oMail/%d/write.vsp?sid=%s&realm=%s&return=F1&html=0&%s\', \'\', \'width=800,height=500\'); return false;" title="%s">%s</a>', mail_domain_id, sid, realm, mt, 'Mail This', 'Mail');
+              mt := sprintf(' | <span onclick="javascript: window.open(\'../../oMail/%d/write.vsp?sid=%s&realm=%s&return=F1&html=0&%s\', \'\', \'width=800,height=500\'); return false;" title="%s" class="link">%s</span>', mail_domain_id, sid, realm, mt, 'Mail This', 'Mail');
               } else {
                 mt := sprintf('subject=%s&body=%s', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nChannel: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
                 mt := sprintf(' | <a href="mailto:?%s" title="%s">%s</a>', mt, 'Mail This', 'Mail');
@@ -231,48 +231,48 @@
 
               -- Comment this
               if (not isnull(EFI_COMMENT_API))
-                ct := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment');
+              ct := sprintf(' | <span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment');
 
               -- Annotation
               if (account_id >= 0)
-              an := sprintf(' | <a href="#" onclick="javascript: window.open(\'annotea.vspx?sid=%s&realm=%s&did=%d&aid=%d&oid=%d\', \'\', \'width=700,height=500,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Annotate', 'Annotate');
+              an := sprintf(' | <span onclick="javascript: window.open(\'annotea.vspx?sid=%s&realm=%s&did=%d&aid=%d&oid=%d\', \'\', \'width=700,height=500,scrollbars=yes\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Annotate', 'Annotate');
 
             -- Discussion
             if ((ENEWS.WA.discussion_check ()) and (ENEWS.WA.conversation_enable(domain_id)))
-              cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, EFI_ID, 'Discussion', 'Discuss');
+              cv := sprintf(' | <span onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s" class="link">%s</span>', sid, realm, EFI_ID, 'Discussion', 'Discuss');
 
               if (account_id >= 0)
               {
                 if (coalesce(EFID_READ_FLAG, 0) = 1)
                 {
-                  rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'r0', mode, 'Mark unread', 'Unread');
+                rt := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'r0', mode, 'Mark unread', 'Unread');
                 } else {
-                  rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'r1', mode, 'Mark read', 'Read');
+                rt := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'r1', mode, 'Mark read', 'Read');
                 }
                 if (coalesce(EFID_KEEP_FLAG, 0) = 1)
                 {
-                  ft := sprintf(' |  <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'f0', mode, 'Unflag This', 'Unflag');
+                ft := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'f0', mode, 'Unflag This', 'Unflag');
                 } else {
-                  ft := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, 'f1', mode, 'Flag This', 'Flag');
+                ft := sprintf(' | <span onclick="javascript: loadFromIFrame(\'%d\', \'%s\', \'%s\');" title="%s" class="link">%s</span>', EFI_ID, 'f1', mode, 'Flag This', 'Flag');
                 }
 
                 -- Blog this
                 if (ENEWS.WA.blog_check(domain_id))
-                  bt := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Blog This', 'Blog');
+                bt := sprintf(' | <span onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s" class="link">%s</span>', sid, realm, domain_id, account_id, EFI_ID, 'Blog This', 'Blog');
 
                 -- Tags
               }
               tt := '';
               if (account_id >= 0)
-                tt := tt || sprintf('<a href="#" onclick="javascript: window.open(\'tags.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" class="nolink4" title="Revise tags">(Revise)</a>: <input type="text" name="tag"/>%s <a href="#" onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); parent.Feeds.loadTags(); return false"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></a>', sid, realm, domain_id, account_id, EFI_ID, tagError);
+              tt := tt || sprintf('<span onclick="javascript: window.open(\'tags.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" class="link" title="Revise tags">(Revise)</span>: <input type="text" name="tag"/>%s <span onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); parent.Feeds.loadTags(); return false" class="link"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></span>', sid, realm, domain_id, account_id, EFI_ID, tagError);
 
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags2vector (tags);
               for (i := 0; i < length(tags); i := i + 1)
               {
-                tt := tt || sprintf(', <a id="v_tag_%s" href="#" onclick="javascript: showTag(\'%s\');" title="Show items with tag %s" class="%s" about="%U"><b>%s</b></a>', tags[i], tags[i], tags[i], 'app', SIOC..feeds_tag_iri (account_id, tags[i]), tags[i]);
+              tt := tt || sprintf(', <a id="v_tag_%s" href="%s" onclick="javascript: parent.Feeds.selectTag(\'%s\'); return false;" title="Show items with tag %s" class="app"><b>%s</b></a>', tags[i], SIOC..feeds_tag_iri (account_id, tags[i]), tags[i], tags[i], tags[i]);
                 if (account_id >= 0)
-                  tt := tt || sprintf(' <a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\');  parent.Feeds.loadTags(); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i);
+                tt := tt || sprintf(' <span onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); parent.Feeds.loadTags(); return false" class="link"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></span>', i);
               }
               tt := trim(tt, '|');
               tt := trim(tt, ',');

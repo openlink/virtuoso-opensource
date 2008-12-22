@@ -110,10 +110,9 @@
                       }
                     ?>
                     <![CDATA[
-                      <script language="JavaScript" type="text/javascript" src="rte/js/richtext.js"></script>
-                      <script language="JavaScript" type="text/javascript" src="rte/js/html2xhtml.js"></script>
+                  <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
                       <script language="JavaScript" type="text/javascript">
-                        initRTE("rte/images/", "rte/js/", "", true);
+                    initRTE("/ods/rte/images/", "/ods/rte/", "", false);
                       </script>
                       <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
                       <script language="JavaScript" type="text/javascript">

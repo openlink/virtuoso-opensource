@@ -156,16 +156,20 @@ create procedure feeds_foaf_maker (inout graph_iri varchar, inout feed_id intege
     goto _end;
 
   a_name := null;
-  if (xpath_eval ('/item', content) is not null) {
+  if (xpath_eval ('/item', content) is not null)
+  {
     -- RSS
     ENEWS.WA.mail_address_split (author, a_name, a_email);
-  } else if (xpath_eval ('/entry', content) is not null) {
+  }
+  else if (xpath_eval ('/entry', content) is not null)
+  {
     -- Atom
     a_uri := cast(xpath_eval ('/entry/author/uri', content, 1) as varchar);
     a_name := cast(xpath_eval ('/entry/author/name', content, 1) as varchar);
     a_email := cast(xpath_eval ('/entry/author/email', content, 1) as varchar);
   }
-  if (isnull(a_uri) and not isnull(a_name)) {
+  if (isnull(a_uri) and not isnull(a_name))
+  {
     f_uri := (select EF_URI from ENEWS.WA.FEED where EF_ID = feed_id);
     a_uri := f_uri || '#' || replace (sprintf ('%U', a_name), '+', '%2B');
   }
@@ -296,8 +300,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
                ENEWS.WA.FEED
          where EFI_FEED_ID = EF_ID
            and EFI_ID > id
-	 order by 2 option (order, loop)
-    do {
+	       order by 2 option (order, loop) do
+    {
       f_iri := feed_iri (EFI_FEED_ID);
       iri := feed_item_iri (EFI_FEED_ID, EFI_ID);
       u_iri := feeds_foaf_maker (graph_iri, EFI_FEED_ID, EFI_AUTHOR, EFI_DATA);
@@ -312,7 +316,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     for (select EFIC_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = EFI_ID and EFIC_PARENT_ID is not null) do
     {
       c_iri := feed_comment_iri (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer), EFIC_ID);
-      if (not isnull (c_iri)) {
+        if (not isnull (c_iri))
+        {
       foaf_maker (graph_iri, EFIC_U_URL, EFIC_U_NAME, EFIC_U_MAIL);
         ods_sioc_post (graph_iri, c_iri, f_iri, null, EFIC_TITLE, EFIC_LAST_UPDATE, EFIC_LAST_UPDATE, feed_item_url (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer)), EFIC_COMMENT, null, null, EFIC_U_URL);
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), c_iri);
@@ -343,7 +348,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
                                  A_UPDATED);
       }
     cnt := cnt + 1;
-      if (mod (cnt, 500) = 0) {
+      if (mod (cnt, 500) = 0)
+      {
 	commit work;
 	      id := EFI_ID;
       }
