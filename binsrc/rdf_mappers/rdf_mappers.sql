@@ -4975,6 +4975,102 @@ create procedure DB.DBA.RDF_WORLDBANK_META (in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.HOOVERS_RESOURCE_IS_COMPANY  (
+  in graph_uri varchar, 	-- URI of (sub)graph containing resource
+  inout resource_uri varchar,   -- URI of resource identified as a country
+  inout company_name varchar,	-- country name
+  inout hoovers_company_id varchar	-- country name
+)
+{
+  declare qry, stat, msg varchar;
+  declare mdata, rset any;
+  declare exit handler for sqlstate '*' {
+    dbg_printf ('%s', __SQL_MESSAGE);
+    return 0;
+  };
+  qry := sprintf ('sparql select ?s, ?company, ?company_id from <%s> where { ', graph_uri);
+  qry := qry || ' ?s rdf:type <http://dbpedia.org/class/yago/Company108058098> . ';
+  qry := qry || ' ?s <http://dbpedia.org/property/companyName> ?company . ';
+  qry := qry || ' optional { ?s  <http://dbpedia.org/property/hoovers> ?company_id } . ';
+  qry := qry || ' }';
+  exec (qry, stat, msg, vector(), 1, mdata, rset);
+  if (length(rset) = 0)
+    return 0;
+  resource_uri := cast (rset[0][0] as varchar);
+  company_name := cast (rset[0][1] as varchar);
+  hoovers_company_id := cast (rset[0][2] as varchar);
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_HOOVERS_LOOKUP (
+  in resource_uri varchar,	-- uri of Country resource
+  in company_name varchar,	-- ISO name of country
+  in hoovers_company_id varchar,	-- ISO name of country
+  in graph_iri varchar,		-- graph into which the additional World Bank triples should be loaded
+  in api_key varchar		-- World Bank API key
+)
+{
+  declare xt, xd, tmp any;
+  declare wb_url, wb_base_qry_url varchar;
+  declare wb_date_range, wb_indicators any;
+  declare hdr any;
+  declare country_id varchar;		-- 3 letter ISO country code
+  declare _cur_date, _cur_year any;
+
+  wb_indicators := vector (
+    'GetCompanyDetailRequest',
+    'GetFamilyTreeRequest',
+    'FindCompetitorsByCompanyIDRequest'
+  );
+
+  foreach (any wb_indicator in wb_indicators) do
+  {
+	xd := xml_tree_doc(SOAP_CLIENT (
+		url=>'http://hapi-dev.hoovers.com/axis2/services/AccessHoovers',
+		operation=>wb_indicator,
+		headers=>vector(
+			vector('Header', '__XML__', 0),
+			xtree_doc (concat (
+			'<web:API-KEY xmlns:web="http://webservice.hoovers.com">', 
+				api_key,	
+			'</web:API-KEY>'				
+					))),
+		parameters=>vector ('uniqueId', hoovers_company_id),
+		target_namespace=>'http://webservice.hoovers.com',
+		style=>21));
+		
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/hoovers2rdf.xsl', xd, 
+		vector ('baseUri', graph_iri));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RDF_LOAD_RDFXML (xd, '', graph_iri);
+  }
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_HOOVERS_META (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare api_key any;
+  declare company_resource_uri varchar;
+  declare hoovers_company_id, company_name varchar;
+  declare exit handler for sqlstate '*'
+  {
+    --dbg_printf('%s', __SQL_MESSAGE);
+    return 0;
+  };
+  -- It's assumed the subgraph contains only one entity which is a country
+  -- TO DO: Modify so resource_uri and country_name are vectors holding all results from SPARQL query
+  company_resource_uri := '';
+  hoovers_company_id := '';
+  if (not DB.DBA.HOOVERS_RESOURCE_IS_COMPANY (new_origin_uri, company_resource_uri, company_name, hoovers_company_id))
+    return 0;
+  DB.DBA.RDF_HOOVERS_LOOKUP(company_resource_uri, company_name, hoovers_company_id, coalesce (dest, graph_iri), _key);
+  return 0;
+}
+;
+
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(http://www.freebase.com/view/.*)|(http://rdf.freebase.com/ns/.*)',
             'URL', 'DB.DBA.RDF_WORLDBANK_META', null, 'World Bank', vector ());
