@@ -81,11 +81,11 @@ select top -1,1 word from words;
 echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
 echo both ": negative skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select top 1,-1 word from words;
+select top 1,-2 word from words;
 echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
 echo both ": negative top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select top (-1) word from words;
+select top (-2) word from words;
 echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
 echo both ": negative calc top yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -93,7 +93,7 @@ select top (-1,1) word from words;
 echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
 echo both ": negative calc skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select top (1,-1) word from words;
+select top (1,-2) word from words;
 echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
 echo both ": negative calc top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
