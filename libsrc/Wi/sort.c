@@ -142,7 +142,16 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
   ptrlong skip = setp->setp_top_skip ? unbox (qst_get (qst, setp->setp_top_skip)) : 0;
   ptrlong fill = unbox (qst_get (qst, setp->setp_row_ctr));
   ptrlong rc, guess, at_or_above = 0, below = fill;
+  int skip_only = (top == -1 && skip >= 0 ? 1 : 0);
 
+  if (skip < 0)
+    sqlr_new_error ("22023", "SR351", "SKIP parameter < 0");
+  if (skip_only)
+    top = setp_top_row_limit - skip;
+  if (top < 0)
+    sqlr_new_error ("22023", "SR352", "TOP parameter < 0");
+  if (top + skip == 0)
+    return;
   if (!arr)
     {
       if ((setp_top_row_limit < top) || (setp_top_row_limit < skip) || (setp_top_row_limit < top + skip))
@@ -155,12 +164,6 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
       memset (arr, 0, (top + skip) * sizeof (caddr_t));
       qst_set (qst, setp->setp_sorted, (caddr_t) arr);
     }
-  if (skip < 0)
-    sqlr_new_error ("22023", "SR351", "SKIP parameter < 0");
-  if (top < 0)
-    sqlr_new_error ("22023", "SR352", "TOP parameter < 0");
-  if (top + skip == 0)
-    return;
   if (fill == (top + skip) && DVC_GREATER != setp_comp_array (setp, qst, arr[fill - 1], setp->setp_keys_box))
     return;
   if (!fill || DVC_GREATER == setp_comp_array (setp, qst, arr[0], setp->setp_keys_box))

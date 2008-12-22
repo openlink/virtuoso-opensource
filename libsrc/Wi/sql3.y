@@ -1761,6 +1761,8 @@ opt_top
 		{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $5, $3, /*$6, $7*/ 0, (ptrlong) $6); }
 	| opt_all_distinct TOP '(' scalar_exp ',' scalar_exp ')' /*opt_percent*/ opt_ties
 	   	{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, $6, $4, /*$8, $9*/ 0, (ptrlong) $8); }
+	| opt_all_distinct TOP INTNUM ',' '-' INTNUM opt_ties
+		{ $$ = (ST*) t_list (6, SELECT_TOP, (ptrlong) $1, t_box_num_and_zero (-1 * unbox($6)), $3, /*$6, $7*/ 0, (ptrlong) $7); }
 	;
 
 

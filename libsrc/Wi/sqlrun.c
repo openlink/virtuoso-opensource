@@ -2178,11 +2178,12 @@ sel_top_count (select_node_t * sel, caddr_t * qst)
       int64 rows = unbox (QST_GET_V (qst, sel->sel_row_ctr));
       int64 skip = sel->sel_top_skip ? (int64) unbox (QST_GET (qst, sel->sel_top_skip)) : 0;
       int64 top = unbox (QST_GET (qst, sel->sel_top));
+      int skip_only = (top == -1 && skip >= 0 ? 1 : 0);
       if (skip < 0)
 	sqlr_new_error ("22023", "SR349", "SKIP parameter < 0");
-      if (top < 0)
+      if (top < 0 && !skip_only)
 	sqlr_new_error ("22023", "SR350", "TOP parameter < 0");
-      if (rows - skip >= top)
+      if (top >= 0 && rows - skip >= top)
 	{
 	  query_instance_t * qi = (query_instance_t *) qst;
 	  subq_init (sel->src_gen.src_query, qst);
