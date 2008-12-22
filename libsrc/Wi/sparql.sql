@@ -149,6 +149,21 @@ create table DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH
 )
 ;
 
+create table DB.DBA.SYS_FAKE_0
+(
+  ID integer not null primary key
+)
+;
+
+create table DB.DBA.SYS_FAKE_1
+(
+  ID integer not null primary key
+)
+;
+
+insert soft DB.DBA.SYS_FAKE_1 (ID) values (0)
+;
+
 sequence_set ('RDF_URL_IID_NAMED', 1000000, 1)
 ;
 
@@ -7070,7 +7085,11 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
     {
       qm_empty := NULL;
       if (tablename is null)
-        signal ('22023', 'At least one field of a quad map should be map value, not a constant');
+        {
+          tablename := 'DB.DBA.SYS_FAKE_1';
+          if (0 < length (conds))
+            signal ('22023', 'Quad Mapping <' || qmid || '> has four constants and no one quad map value; it do not access tables so it can not have WHERE conditions');
+        }
     }
   if ('' = tablename)
     tablename := NULL;

@@ -5661,6 +5661,13 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
             &ata_aliases, &ata_tables, &queued_row_filters );
         }
     }
+  if (NULL == colcodes)
+    { /* This is a special case of quad map with four constants and no one quad map value. */
+      ssg_puts (" DB.DBA.SYS_FAKE_1 AS ");
+      ssg_prin_id (ssg, tabid);
+      ssg->ssg_indent--;
+      return;
+    }
   ssg_puts (" FROM ");
   ata_tables_tail = ata_tables;
   if (NULL == ata_aliases)
