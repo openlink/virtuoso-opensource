@@ -245,7 +245,7 @@ OAT.AJAX = {
 			OAT.AJAX.startRef(); 
 			return; 
 		}
-		if (showType == 1) { // show dialog
+		if (showType == OAT.AJAX.SHOW_POPUP) { // show dialog
 			if (OAT.Loader.loadedLibs.find("dialog") != -1) {
 				if (!OAT.AJAX.dialog) {
 					// create an AJAX window
@@ -264,7 +264,7 @@ OAT.AJAX = {
 				OAT.AJAX.dialog.show();
 			}
 		}
-		if (showType == AJAX.SHOW_THROBBER) { // show throbber
+		if (showType == OAT.AJAX.SHOW_THROBBER) { // show throbber
 			if ($('oat_ajax_throbber')) {
 				OAT.Dom.show($('oat_ajax_throbber'));	
 			} else {
@@ -286,12 +286,12 @@ OAT.AJAX = {
 	
 	endNotify:function(showType) {
 		if (OAT.AJAX.endRef) { OAT.AJAX.endRef(); return; }
-		if (showType == 1) {
+		if (showType == OAT.AJAX.SHOW_POPUP) {
 			if (OAT.Loader.loadedLibs.find("dialog") != -1 && OAT.AJAX.dialog) {
 				OAT.AJAX.dialog.hide();
 			}
 		}
-		if (showType == 2) {
+		if (showType == OAT.AJAX.SHOW_THROBBER) {
 			OAT.Dom.hide($('oat_ajax_throbber'));
 		}
 	},
