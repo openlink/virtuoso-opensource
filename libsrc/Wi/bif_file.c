@@ -4063,12 +4063,15 @@ bif_gz_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+extern int http_ses_size;
+
 static caddr_t
 bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char *szMe = "gzip_uncompress";
   caddr_t src = bif_string_arg (qst, args, 0, szMe);
   dk_session_t *out = strses_allocate ();
+  strses_enable_paging (out, http_ses_size);
 
   zlib_box_gzip_uncompress (src, out, err_ret);
   return (caddr_t) out;
