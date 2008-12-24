@@ -82,7 +82,7 @@
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
-  <dc:source><xsl:value-of select="@href" /></dc:source>
+    <dc:source rdf:resource="{@href}" />
 </xsl:template>
 
 <xsl:template match="a:author">
