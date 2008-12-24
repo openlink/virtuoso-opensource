@@ -1638,6 +1638,8 @@ create procedure DB.DBA.ddl_fk_rules (in pktb varchar, in drop_tb varchar, in dr
   -- XXX: first build check input triggers
   DB.DBA.ddl_pk_check_input (pktb, drop_tb, drop_col);
   pktb := complete_table_name (pktb, 1);
+  if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = pktb))
+    return;
   -- the table is dropped
   if (drop_tb is not null)
     drop_tb := complete_table_name (drop_tb, 1);
@@ -1845,6 +1847,8 @@ create procedure DB.DBA.ddl_pk_check_input (in pktb varchar, in drop_tb varchar,
 
 vars := ''; whe := ''; uwhe := ''; ins := ''; upd := ''; pku := '';
   pktb := complete_table_name (pktb, 1);
+  if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = pktb))
+    return;
   trig_pref := DB.DBA.SYS_ALFANUM_NAME (pktb);
   -- the table is dropped
   if (drop_tb is not null)
@@ -1975,6 +1979,8 @@ create procedure DB.DBA.ddl_fk_check_input (in fktb varchar, in to_drop integer)
 
   vars := ''; whe := ''; uwhe := ''; ins := ''; upd := '';
   fktb := complete_table_name (fktb, 1);
+  if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = fktb))
+    return;
   trig_pref := SYS_ALFANUM_NAME (fktb);
 
   if (to_drop = 1)

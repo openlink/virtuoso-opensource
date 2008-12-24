@@ -1759,6 +1759,8 @@ const char *ddl_fk_check_text =
 "  declare _datacheck_stmt, non_null varchar; \n"
 "  declare inx, n_pc integer; \n"
 "\n"
+"  if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME in (fk_tb, _pk_table))) \n"
+"    return; \n"
 "  n_pc := length (aref (decl, 3)); \n"
 "  non_null := ''; \n"
 "  while (inx < n_pc) \n"
