@@ -103,7 +103,7 @@
 <!-- header -->
 <head>
     <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/">
-    <title><?=__res_desc?> | <?=project_name?></title>
+    <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
