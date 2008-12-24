@@ -16,7 +16,7 @@ create procedure ISPARQL_GEN_LDR_CONTENT (inout content any)
 
     xt := xtree_doc(cast(content as varchar));
     _query := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:ISparqlDynamicPage/i:query)', xt), '_WIDE_', 'UTF-8');
-    _user_service := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:service)', xt), '_WIDE_', 'UTF-8');
+    _user_service := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:endpoint)', xt), '_WIDE_', 'UTF-8');
 
     if (_user_service <> '/sparql')
       return null;
@@ -30,7 +30,7 @@ create trigger ISPARQL_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES referenci
     log_message (__SQL_MESSAGE);
     return;
   };
-  if (N.RES_FULL_PATH like '%.isparql')
+  if (N.RES_NAME like '%.isparql')
   {
     declare perms, path, content varchar;
     declare rc int;
@@ -39,7 +39,7 @@ create trigger ISPARQL_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES referenci
     perms[5] := ascii('1');
     perms[6] := ascii('1');
     perms[8] := ascii('1');
-    UPDATE WS.WS.SYS_DAV_RES SET RES_PERMS = perms WHERE RES_FULL_PATH = N.RES_FULL_PATH;
+    UPDATE WS.WS.SYS_DAV_RES SET RES_PERMS = perms WHERE RES_NAME = N.RES_NAME and RES_COL = N.RES_COL;
     content := ISPARQL_GEN_LDR_CONTENT (N.RES_CONTENT);
     --dbg_obj_print (content);
     if (content is not null)
@@ -142,7 +142,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
     declare full_query varchar;
 
     _query := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:ISparqlDynamicPage/i:query)', xt), '_WIDE_', 'UTF-8');
-    _user_service := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:service)', xt), '_WIDE_', 'UTF-8');
+    _user_service := charset_recode (xpath_eval ('[ xmlns:i="urn:schemas-openlink-com:isparql"] string (/i:iSPARQL/i:endpoint)', xt), '_WIDE_', 'UTF-8');
     _default_graph_uri := '';
 
     declare _rq_expn, _rq_state, _rq_msg varchar;

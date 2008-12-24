@@ -34,9 +34,9 @@
 				p.sponge = "<xsl:value-of select="../i:should_sponge" />";
 				</xsl:if>
 				
-				p.endpoint = "<xsl:value-of select="i:service" />";
-				<xsl:if test="../i:service">
-				p.endpoint = "<xsl:value-of select="../i:service" />";
+				p.endpoint = "<xsl:value-of select="i:endpoint" />";
+				<xsl:if test="../i:endpoint">
+				p.endpoint = "<xsl:value-of select="../i:endpoint" />";
 				</xsl:if>
 
 				p.defaultGraph = "<xsl:value-of select="i:graph" />";

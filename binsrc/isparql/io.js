@@ -122,7 +122,7 @@ iSPARQL.IO = {
 			}
 		}
 
-		if(dataObj.service) { addNode(isparql,"service",dataObj.service); }
+		if(dataObj.endpoint) { addNode(isparql,"endpoint",dataObj.endpoint); }
   		if(dataObj.canvas) { addNode(isparql,"canvas",dataObj.canvas); }
 	
 		return OAT.Xml.serializeXmlDoc(xml);
@@ -244,11 +244,13 @@ iSPARQL.IO = {
 	unserializeLdr:function(str) {
 		var dataObj = {
 			defaultGraph:"",
+			graph:false,
 			schemas:[],
-			prefixes:[],
 			pragmas:[],
+			prefixes:[],
 			namedGraphs:[],
-			query:"",
+                        endpoint:"/sparql",
+                        query:false,
 			proxy:""
 		};
 
@@ -260,6 +262,9 @@ iSPARQL.IO = {
 		var xml = OAT.Xml.createXmlDoc(str);
 
 		dataObj.defaultGraph = getNodeValue(xml,"graph");
+		if (!dataObj.defaultGraph) dataObj.defaultGraph = '';
+		dataObj.endpoint = getNodeValue(xml,"endpoint");
+		if (!dataObj.endpoint) dataObj.endpoint = "/sparql";
 		dataObj.proxy = getNodeValue(xml,"proxy");
 		dataObj.query = getNodeValue(xml,"query");
 
