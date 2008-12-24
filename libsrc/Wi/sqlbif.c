@@ -6154,6 +6154,8 @@ GENERAL_DOUBLE_FUNC (bif_log, "log", log (x))
 GENERAL_DOUBLE_FUNC (bif_log10, "log10", log10 (x))
 GENERAL_DOUBLE_FUNC (bif_sqrt, "sqrt", sqrt (x))
 
+GENERAL_DOUBLE_FUNC (bif_round, "round", (((x-floor(x))>0.5 ? ceil(x):floor(x))))
+
 #define GENERAL_DOUBLE2_FUNC(BIF_NAME, NAMESTR, OPERATION)\
 caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 {\
@@ -13578,6 +13580,7 @@ sql_bif_init (void)
   bif_define_typed ("ceiling", bif_ceiling, &bt_integer);
   bif_define_typed ("floor", bif_floor, &bt_integer);
   bif_define_typed ("pi", bif_pi, &bt_double);
+  bif_define_typed ("round", bif_round, &bt_double);
 
   bif_define_typed ("rnd", bif_rnd, &bt_integer);
   bif_define_typed ("rand", bif_rnd, &bt_integer); /* SQL 92 standard function */
