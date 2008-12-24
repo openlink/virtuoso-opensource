@@ -1513,10 +1513,11 @@ create procedure DB.DBA.RM_FREEBASE_DOC_LINK (in graph varchar, in doc varchar, 
   ses := string_output ();
   http ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n', ses);
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
   -- we classify source as document and set primary topic
   http (sprintf ('<%s> a foaf:Document .\n', doc), ses);
-  http (sprintf ('<%s> foaf:primaryTopic <%s> .\n', doc, iri), ses);
-  http (sprintf ('<%s> rdfs:seeAlso <%s> .\n', iri, sa), ses);
+  --http (sprintf ('<%s> foaf:primaryTopic <%s> .\n', doc, iri), ses);
+  http (sprintf ('<%s> owl:sameAs <%s> .\n', iri, sa), ses);
   state := '00000';
   -- if object is a person we also classify him as foaf:Person
   exec (sprintf ('sparql ask from <%s> where { <%s> a <http://rdf.freebase.com/ns/people.person> }', graph, iri),
