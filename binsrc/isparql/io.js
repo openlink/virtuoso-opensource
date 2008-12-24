@@ -44,7 +44,7 @@ iSPARQL.IO = {
  	 * # graph
  	 * query text
  	 */
-	serializeRq:function(dataObj) {//{{{
+	serializeRq:function(dataObj) {
 		var str = "";
 		
 		/* serialize pragmas, inserted as sparql comments */
@@ -57,12 +57,20 @@ iSPARQL.IO = {
 
 		/* endpoint */
 		if (dataObj.endpoint) {	str += '# {endpoint} {'+dataObj.endpoint+'}\n';	}
+
+		/* graph */
 		if (dataObj.defaultGraph) { str += '# {graph} {'+dataObj.defaultGraph+'}\n'; }
+
+		/* named graph */
+		for (var i=0;i<dataObj.namedGraphs.length;i++) {
+			str += '# {named graph} {' + dataObj.namedGraphs[i] + '}\n';
+		}
+
 		str += dataObj.query;
 		return str;
-	},//}}}
+	},
 
-	serializeLdr:function(dataObj) {//{{{
+	serializeLdr:function(dataObj) {
 		var xslt = iSPARQL.Preferences.xslt + 'dynamic-page.xsl';
     	var xmlTemplate  =  '<?xml version="1.0" encoding="UTF-8"?>\n'+
         					'<?xml-stylesheet type="text/xsl" href="' + xslt + '"?>\n'+
@@ -94,6 +102,14 @@ iSPARQL.IO = {
 			} 
 		}
 
+		if(dataObj.namedGraphs) {
+			var namedgraphs = addNode(page,"namedgraphs");
+			for(var i=0;i<dataObj.prefixes.length;i++) {
+				var graphNode = dataObj.namedGraphs[i];
+				addNode(namedgraphs,"namedgraph",graphNode);
+			}
+		}
+
 		if(dataObj.pragmas) {
 			var pragmas = addNode(isparql,"pragmas");
 			for(var i=0;i<dataObj.pragmas.length;i++) {
@@ -110,9 +126,9 @@ iSPARQL.IO = {
   		if(dataObj.canvas) { addNode(isparql,"canvas",dataObj.canvas); }
 	
 		return OAT.Xml.serializeXmlDoc(xml);
-	},//}}}
+	},
 
-	serializeXml:function(dataObj) {//{{{
+	serializeXml:function(dataObj) {
 		var xmlTemplate = '<?xml version="1.0" encoding="UTF-8"?>\n'+
 						  '<root xmlns:sql="urn:schemas-openlink-com:xml-sql">\n'+
 						  '<sql:sparql></sql:sparql>\n'+
@@ -126,16 +142,17 @@ iSPARQL.IO = {
 		sql.textContent = OAT.Dom.toSafeXML(dataObj.query);
 
 		return OAT.Xml.serializeXmlDoc(xml);
-	},//}}}
+	},
 
-	serializeRdf:function(dataObj) {//{{{
+	serializeRdf:function(dataObj) {
 		return OAT.Xml.serializeXmlDoc(dataObj.data);	
-	},//}}}
+	},
 
-	unserializeRq:function(str) {//{{{
+	unserializeRq:function(str) {
 		var dataObj = {
-			endpoint:false,
-			graph:false,
+			endpoint:"",
+			defaultGraph:"",
+			namedGraphs:[],
 			query:"",
 			pragmas:[]
 		};
@@ -147,11 +164,16 @@ iSPARQL.IO = {
 
 		var getPragma = function(str) {
 			var m = str.match(/^\s*#\s*{pragma}\s*{(.*?)}\s*=\s*{(.*?)}/);
-			return m || [];
+			return (m) ? m : false;
 		}
 		
 		var getGraph = function(str) {
 			var m = str.match(/^\s*#\s*{graph}\s*{(.*?)}/);
+			return (m)? m[1] : false;
+		}
+
+		var getNamedGraph = function(str) {
+			var m = str.match(/^\s*#\s*{named graph}\s*{(.*?)}/);
 			return (m)? m[1] : false;
 		}
 
@@ -164,30 +186,48 @@ iSPARQL.IO = {
 		}
 
 		var lines = str.split(/\n/);
-		var pragmas = [];
 		for (var i=0;i<lines.length;i++) {
 			var line = lines[i];
 
 			var p = getPragma(line);
 			if(p) { 
 				var index = -1;
-				for(var j=0;j<pragmas.length;j++) {
-					if(pragmas[j][0] == p[0]) { index = j; break; }
+				for(var j=0;j<dataObj.pragmas.length;j++) {
+					if(dataObj.pragmas[j][0] == p[0]) { index = j; break; }
 				}
 				if (index == -1) { dataObj.pragmas.push(p); }
 				else { dataObj.pragmas[index][1].push(p[1]); }
+				continue;
 			}
-			dataObj.endpoint = getEndpoint(line);
-			dataObj.defaultGraph = getGraph(line);
 
-			if(!isBlank(line) && !isComment(line)) { dataObj.query += line + '\n';	}
+			p = getEndpoint(line);
+			if (p) {
+				dataObj.endpoint = p;
+				continue;
+			}
+
+			p = getGraph(line);
+			if (p) {
+				dataObj.defaultGraph = p;
+				continue;
+			}
+
+			p = getNamedGraph(line);
+			if (p) {
+				dataObj.namedGraphs.push(p);
+				continue;
+			}
+
+			if(!isBlank(line) && !isComment(line)) {
+				dataObj.query += line + '\n';
+			}
 		}
 		return dataObj;
-	},//}}}
+	},
 
-	unserializeXml:function(str) {//{{{
+	unserializeXml:function(str) {
 		var dataObj = {
-			graph:false,
+			defaultGraph:"",
 			query:"",
 		};
 
@@ -196,23 +236,25 @@ iSPARQL.IO = {
 		var r = xml.getElementsByTagName("root")[0];
 
 		if(q) { dataObj.query = OAT.Dom.fromSafeXML(q.textContent) || ""; }
-		if(r) { dataObj.graph = r.getAttribute('sql:default-graph-uri') || false; }
+		if(r) { dataObj.defaultGraph = r.getAttribute('sql:default-graph-uri') || false; }
 
 		return dataObj;
-	},//}}}
+	},
 
-	unserializeLdr:function(str) {//{{{
+	unserializeLdr:function(str) {
 		var dataObj = {
-			graph:false,
+			defaultGraph:"",
 			schemas:[],
+			prefixes:[],
 			pragmas:[],
-			query:false,
-			proxy:false
+			namedGraphs:[],
+			query:"",
+			proxy:""
 		};
 
 		var getNodeValue = function(node,name) {
 			var n = node.getElementsByTagName(name)[0];
-			return (n)? OAT.Dom.fromSafeXML(n.textContent) : false;
+			return (n)? OAT.Dom.fromSafeXML(n.textContent) : "";
 		}
 
 		var xml = OAT.Xml.createXmlDoc(str);
@@ -225,6 +267,12 @@ iSPARQL.IO = {
 		for (var i=0;i<schemas.length;i++) {
 			var schema = OAT.Dom.fromSafeXML(schemas[i]);
 			dataObj.prefixes.push(schema);
+		}
+
+		var namedgraphs = xml.getElementsByTagName("namedgraphs");
+		for (var i=0;i<namedgraphs.length;i++) {
+			var graphnode = OAT.Dom.fromSafeXML(namedgraphs[i]);
+			dataObj.namedGraph.push(graphnode);
 		}
 
 		var pragmas = xml.getElementsByTagName("pragma");
@@ -243,9 +291,9 @@ iSPARQL.IO = {
 		}
 
 		return dataObj;
-	},//}}}
+	},
 
-	serialize:function(dataObj,type) {//{{{
+	serialize:function(dataObj,type) {
 		switch(type) {
 			default:
 			case "rq":
@@ -265,9 +313,9 @@ iSPARQL.IO = {
 				return this.serializeRdf(dataObj);
 			break;
 		}
-	},//}}}
+	},
 
-	unserialize:function(str,type) {//{{{
+	unserialize:function(str,type) {
 		switch(type) {
 			default:
 			case "rq":
@@ -283,9 +331,9 @@ iSPARQL.IO = {
 				return this.unserializeLdr(str);
 			break;
 		}
-	},//}}}
+	},
 
-	save:function(dataObj) {//{{{
+	save:function(dataObj) {
 		var options = {
 			extensionFilters:[
 				['rq','rq','SPARQL Definitions','text/plain'],
@@ -301,9 +349,9 @@ iSPARQL.IO = {
 		}
 
 		OAT.WebDav.saveDialog(options);
-	},//}}}
+	},
 
-	load:function(callback) {//{{{
+	load:function(callback) {
 		var options = {
 			extensionFilters:[
 				['rq','rq','SPARQL Definitions','text/plain'],
@@ -322,7 +370,5 @@ iSPARQL.IO = {
 		}
 
 		OAT.WebDav.openDialog(options);
-	}//}}}
 }
-
-/* vim:set foldmethod=marker: */
+}
