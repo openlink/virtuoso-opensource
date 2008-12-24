@@ -116,6 +116,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_ISBN', null, 'ISBN');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.librarything.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_LIBRARYTHING', null, 'LibraryThing');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://www.theyworkforyou.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_TWFY', null, 'TWFY');
 
@@ -2071,6 +2075,51 @@ create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, id any;
+	id := null;
+	declare exit handler for sqlstate '*'
+	{
+		dbg_printf ('%s', __SQL_MESSAGE);
+		return 0;
+	};
+	--api_key := _key;
+	api_key := '37f0563777cc930074fdc0044b6baae2';
+	if (not isstring (api_key))
+		return 0;
+	if (new_origin_uri like 'http://www.librarything.com/author/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.librarything.com/author/%s', 0);
+		id := trim (tmp[0], '/');
+		if (id is null)
+			return 0;
+		if (atoi(id) > 0)
+			url := sprintf ('http://www.librarything.com/services/rest/1.0/?method=librarything.ck.getauthor&id=%s&apikey=%s', id, api_key);
+		else
+			url := sprintf ('http://www.librarything.com/services/rest/1.0/?method=librarything.ck.getauthor&authorcode=%s&apikey=%s', id, api_key);
+	}
+	else if (new_origin_uri like 'http://www.librarything.com/work/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.librarything.com/work/%s', 0);
+		id := trim (tmp[0], '/');
+		if (id is null)
+			return 0;
+		url := sprintf ('http://www.librarything.com/services/rest/1.0/?method=librarything.ck.getwork&id=%s&apikey=%s', id, api_key);
+	}
+	else
+	{
+		return 0;
+	}
+	tmp := http_get (url);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lt2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xd, xt, url, tmp, api_key, asin, hdr, exif, books any;
@@ -2081,8 +2130,8 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
     {
       return 0;
     };
-	--api_key := _key;
-	api_key := '6GP9NBME';
+	api_key := _key;
+	--api_key := '6GP9NBME';
 	if (not isstring (api_key))
 		return 0;
 	if (new_origin_uri like 'http%://%isbndb.com/d/subject/index.html?kw=%')
