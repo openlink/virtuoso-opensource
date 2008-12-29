@@ -91,6 +91,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_DISQUS', null, 'Disqus');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.radiopop.co.uk/users/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_RADIOPOP', null, 'Radio Pop');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*slideshare.net/.*)',
             'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare');
 
@@ -1969,11 +1973,9 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	else
 		return 0;
 	tmp := http_get (url);
-	string_to_file('tmp.xml', tmp, 0);
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/slideshare2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
-	string_to_file('tmp.rdf', xd, 0);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
@@ -2024,13 +2026,71 @@ create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_RADIOPOP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xd, xt, url, tmp, id, id2, indicators any;
+    declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.radiopop.co.uk/users/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.radiopop.co.uk/users/%s', 0);
+		id := trim (tmp[0], '/');
+		id2 := null;
+		if (id is null)
+			return 0;
+		pos := strchr(id, '/');
+		if (pos is not null)
+		{
+			id2 := subseq(id, pos + 1);
+			id := left(id, pos);
+		}
+		if (id2 is not null)
+		{
+			pos := strchr(id2, '/');
+			if (pos is not null)
+			{
+				id2 := left(id2, pos);
+			}
+		}
+		if (id2 is null or id2 = '')
+		{
+			url := sprintf ('http://www.radiopop.co.uk/users/%s.xml', id);
+		}
+		else if (id2 = 'friends')
+		{
+			url := sprintf ('http://www.radiopop.co.uk/users/%s/friends.xml', id);
+		}
+		else if (id2 = 'listens')
+		{
+			url := sprintf ('http://www.radiopop.co.uk/users/%s/listens.xml', id);
+		}
+		else if (id2 = 'pops')
+		{
+			url := sprintf ('http://www.radiopop.co.uk/users/%s/pops.xml', id);
+		}
+		else
+			return 0;
+		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+		tmp := http_get (url);
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/radiopop2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'user', id ));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+		return 1;
+	}
+	return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_DISCOGS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
 	asin := null;
 	declare exit handler for sqlstate '*'
 	{
-		--dbg_printf ('%s', __SQL_MESSAGE);
 		return 0;
 	};
 	
