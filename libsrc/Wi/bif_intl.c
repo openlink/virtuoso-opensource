@@ -937,6 +937,29 @@ bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (box);
 }
 
+wcharset_t *
+wcharset_by_name_or_dflt (ccaddr_t cs_name, caddr_t *qi)
+{
+  wcharset_t * charset = NULL;
+  if (NULL != cs_name)
+    {
+      if (!stricmp (cs_name, "UTF-8"))
+	return CHARSET_UTF8;
+      if (!stricmp (cs_name, "_WIDE_"))
+	return CHARSET_WIDE;
+      else
+	charset = sch_name_to_charset (cs_name);
+    }
+  if (NULL != charset)
+    return charset;
+  if (NULL == qi)
+    return default_charset;
+  charset = QST_CHARSET (qi);
+  if (NULL == charset)
+    return default_charset;
+  return charset;
+}
+
 void
 bif_intl_init (void)
 {

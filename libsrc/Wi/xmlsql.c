@@ -5178,22 +5178,8 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   old_enc = xte->xe_doc.xd->xout_encoding;
   if (!xte->xe_doc.xd->xout_encoding && qi->qi_client->cli_ws)
-    {
       xte->xe_doc.xd->xout_encoding = CHARSET_NAME (WS_CHARSET (qi->qi_client->cli_ws, NULL), NULL);
-    }
-  if (xte->xe_doc.xd->xout_encoding)
-    {
-      if (!stricmp (xte->xe_doc.xd->xout_encoding, "UTF-8"))
-	xsst.xsst_charset = CHARSET_UTF8;
-      else
-	xsst.xsst_charset = sch_name_to_charset (xte->xe_doc.xd->xout_encoding);
-    }
-  if (NULL == xsst.xsst_charset)
-    {
-      xsst.xsst_charset = QST_CHARSET ((caddr_t *) xte->xe_doc.xd->xd_qi);
-      if (NULL == xsst.xsst_charset)
-	xsst.xsst_charset = default_charset;
-    }
+  xsst.xsst_charset = wcharset_by_name_or_dflt (xte->xe_doc.xd->xout_encoding, xte->xe_doc.xd->xd_qi);
   xsst.xsst_charset_meta = xte->xe_doc.xd->xout_encoding_meta;
   if (!xte->xe_doc.xd->xout_omit_xml_declaration)
     {

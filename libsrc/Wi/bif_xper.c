@@ -4805,19 +4805,7 @@ xp_serialize (xml_entity_t * xe, dk_session_t * ses)
   dk_set_t dict = NULL;
   long pos = xpe->xper_pos;
   xper_dbg_print ("xp_serialize\n");
-  if (xe->xe_doc.xtd->xout_encoding)
-    {
-      if (!stricmp (xe->xe_doc.xtd->xout_encoding, "UTF-8"))
-	charset = CHARSET_UTF8;
-      else
-	charset = sch_name_to_charset (xe->xe_doc.xtd->xout_encoding);
-    }
-  if (NULL == charset)
-    {
-      charset = QST_CHARSET ((caddr_t *) xe->xe_doc.xd->xd_qi);
-      if (NULL == charset)
-	charset = default_charset;
-    }
+  charset = wcharset_by_name_or_dflt (xe->xe_doc.xtd->xout_encoding, xe->xe_doc.xd->xd_qi);
   if (XML_MKUP_STAG != xpe->xper_type)
     {
       pos = xp_serialize_element (xpe, pos, ses, &dict, charset);

@@ -57,7 +57,8 @@ caddr_t complete_charset_name (caddr_t qi, char *cs_name);
 
 int compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2);
 
-wcharset_t *sch_name_to_charset (const char *name);
+extern wcharset_t *sch_name_to_charset (const char *name);
+extern wcharset_t * wcharset_by_name_or_dflt (ccaddr_t cs_name, caddr_t *qi);
 
 wchar_t * reverse_wide_string (wchar_t * str);
 caddr_t strstr_utf8_with_collation (caddr_t dv1, long n1,

@@ -5693,19 +5693,7 @@ xte_serialize (xml_entity_t * xe, dk_session_t * ses)
       break;
     }
 
-  if (xte->xe_doc.xtd->xout_encoding)
-    {
-      if (!stricmp (xte->xe_doc.xtd->xout_encoding, "UTF-8"))
-	xsst.xsst_charset = CHARSET_UTF8;
-      else
-	xsst.xsst_charset = sch_name_to_charset (xte->xe_doc.xtd->xout_encoding);
-    }
-  if (NULL == xsst.xsst_charset)
-    {
-      xsst.xsst_charset = QST_CHARSET ((caddr_t *) xte->xe_doc.xd->xd_qi);
-      if (NULL == xsst.xsst_charset)
-	xsst.xsst_charset = default_charset;
-    }
+  xsst.xsst_charset = wcharset_by_name_or_dflt (xte->xe_doc.xd->xout_encoding, xte->xe_doc.xd->xd_qi);
   xsst.xsst_charset_meta = xte->xe_doc.xtd->xout_encoding_meta;
   if (XTE_IS_XSLT_OUTPUT (xte))
     {

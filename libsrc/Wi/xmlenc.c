@@ -796,20 +796,7 @@ caddr_t xml_doc_subst (xml_doc_subst_t * xs)
 	dk_free_tree ((box_t) xs->xs_new_child_tags);
     }
 
-
-  if (xte->xe_doc.xtd->xout_encoding)
-    {
-      if (!stricmp (xte->xe_doc.xtd->xout_encoding, "UTF-8"))
-	xsst.xsst_charset = CHARSET_UTF8;
-      else
-	xsst.xsst_charset = (wcharset_t *) sch_name_to_charset (xte->xe_doc.xtd->xout_encoding);
-    }
-
-  if (NULL == xsst.xsst_charset)
-    {
-      xsst.xsst_charset =  (struct wcharset_s *)default_charset;
-    }
-
+  xsst.xsst_charset = wcharset_by_name_or_dflt (xte->xe_doc.xtd->xout_encoding, NULL);
   ses = strses_allocate ();
   {
     caddr_t * nss = xenc_get_namespaces (xte->xte_current, xs->xs_namespaces);
