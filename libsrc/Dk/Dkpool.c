@@ -968,6 +968,9 @@ ap_alloc_box (auto_pool_t * ap, int len, dtp_t dtp)
   caddr_t ptr = ap->ap_area + ap->ap_fill + 4;
   WRITE_BOX_HEADER(ptr, len, dtp);
   ap->ap_fill += ALIGN_8(len) + 8;
+#ifndef NDEBUG
+  if (ap->ap_fill > ap->ap_size) GPF_T1 ("exceed size of auto_pool_t");
+#endif
   return ptr;
 }
 
