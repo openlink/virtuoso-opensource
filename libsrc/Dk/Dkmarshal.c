@@ -536,6 +536,15 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
     {
       rb = (rdf_box_t *) rbb_allocate ();
       rb->rb_chksum_tail = 1;
+      if (RBS_SKIP_DTP & flags)
+	{
+	  rdf_bigbox_t * rbb = (rdf_bigbox_t*)rb;
+	  dtp_t len = session_buffered_read_char (ses);
+	  rbb->rbb_chksum = dk_alloc_box (len + 1, DV_STRING);
+	  session_buffered_read (ses, rbb->rbb_chksum, len);
+	  rbb->rbb_chksum[len] = 0;
+	}
+      else 
       ((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
     }
   else
