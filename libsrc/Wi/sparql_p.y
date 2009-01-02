@@ -453,7 +453,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %left _COLON
 %left _BAR_BAR
 %left _AMP_AMP
-%nonassoc _BANG
+%nonassoc _BANG NOT_L
 %nonassoc _EQ _NOT_EQ
 %nonassoc IN_L LIKE_L
 %nonassoc _LT _LE _GT _GE 
@@ -626,17 +626,29 @@ spar_dataset_clauses_opt
 	| spar_dataset_clauses_opt spar_dataset_clause	{ }
 	;
 
-spar_dataset_clause	/* [9]  	DatasetClause	  ::=  	'FROM' ( DefaultGraphClause | NamedGraphClause )	*/
-	: FROM_L spar_iriref spar_sponge_optionlist_opt {			/* [10]*	DefaultGraphClause	 ::=  SourceSelector SpongeOptionList?	*/
+spar_dataset_clause	/* [9]*	DatasetClause	 ::=   |	*/
+			/*... ( 'FROM' ( DefaultGraphClause | NamedGraphClause ) SpongeOptionList? )	*/
+			/*... | ( 'NOT' 'FROM' ( DefaultGraphClause | NamedGraphClause ) )	*/
+	: FROM_L spar_iriref spar_sponge_optionlist_opt {			/* [10]	DefaultGraphClause	 ::=  SourceSelector	*/
+                sparp_env()->spare_default_graphs_listed++;
                 if (0 == sparp_env()->spare_default_graphs_locked)
-                  sparp_push_new_graph_precode (sparp_arg, 
-                    &(sparp_env()->spare_default_graph_precodes),
-                    sparp_make_graph_precode (sparp_arg, $2, $3) ); }
-	| FROM_L NAMED_L spar_iriref spar_sponge_optionlist_opt {		/* [11]*	NamedGraphClause	 ::=  'NAMED' SourceSelector SpongeOptionList?	*/
+                  sparp_push_new_graph_source (sparp_arg, 
+                    &(sparp_env()->spare_default_graphs),
+                    sparp_make_graph_precode (sparp_arg, SPART_GRAPH_FROM, $2, $3) ); }
+	| FROM_L NAMED_L spar_iriref spar_sponge_optionlist_opt {		/* [11]	NamedGraphClause	 ::=  'NAMED' SourceSelector	*/
+                sparp_env()->spare_named_graphs_listed++;
                 if (0 == sparp_env()->spare_named_graphs_locked)
-                  sparp_push_new_graph_precode (sparp_arg, 
-                    &(sparp_env()->spare_named_graph_precodes),
-                    sparp_make_graph_precode (sparp_arg, $3, $4) ); }
+                  sparp_push_new_graph_source (sparp_arg, 
+                    &(sparp_env()->spare_named_graphs),
+                    sparp_make_graph_precode (sparp_arg, SPART_GRAPH_NAMED, $3, $4) ); }
+	| NOT_L FROM_L spar_iriref			 {
+                sparp_push_new_graph_source (sparp_arg, 
+                  &(sparp_env()->spare_default_graphs),
+                    sparp_make_graph_precode (sparp_arg, SPART_GRAPH_NOT_FROM, $3, NULL) ); }
+	| NOT_L FROM_L NAMED_L spar_iriref {
+                sparp_push_new_graph_source (sparp_arg, 
+                  &(sparp_env()->spare_named_graphs),
+                  sparp_make_graph_precode (sparp_arg, SPART_GRAPH_NOT_NAMED, $4, NULL) ); }
 	;
 
 spar_sponge_optionlist_opt	/* [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'	*/
@@ -809,7 +821,7 @@ spar_graph_gp		/* [23]  	GraphGraphPattern	  ::=  	'GRAPH' VarOrBlankNodeOrIRIre
 	    spar_var_or_blank_node_or_iriref_or_backquoted { t_set_push (&(sparp_env()->spare_context_graphs), $2); }
 	    _LBRA {
 		spar_gp_init (sparp_arg, 0);
-		spar_gp_add_filter_for_named_graph (sparp_arg); }
+		spar_gp_add_filters_for_named_graph (sparp_arg); }
 	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_graphs)); $$ = $6; }
 	;
 
@@ -1143,7 +1155,9 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 	| spar_expn _STAR spar_expn {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_TIMES, $1, $3); }
 	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
-	| _BANG spar_expn {		/* [51]	UnaryExpn	 ::=   ('!'|'+'|'-')? PrimaryExpn */
+	| _BANG spar_expn {		/* [51]*	UnaryExpn	 ::=   ('!'|'NOT'|'+'|'-')? PrimaryExpn */
+		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
+	| NOT_L spar_expn {
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec UPLUS	{
 		SPAR_BIN_OP ($$, BOP_PLUS,
@@ -1445,10 +1459,10 @@ spar_action_solution
 
 spar_in_graph_precode_opt
 	: /* empty */	{
-		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
-		if (NULL == dflt_graphs)
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graphs;
+		if ((NULL == dflt_graphs) || (SPART_GRAPH_FROM != ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'INTO GRAPH expression' clause and no default graph specified in the preamble");
-		if (NULL != dflt_graphs->next)
+		if ((NULL != dflt_graphs->next) && (SPART_GRAPH_FROM == ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'INTO GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
 	| spar_in_or_into spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
@@ -1456,10 +1470,10 @@ spar_in_graph_precode_opt
 
 spar_from_graph_precode_opt
 	: /* empty */	{
-		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
-		if (NULL == dflt_graphs)
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graphs;
+		if ((NULL == dflt_graphs) || (SPART_GRAPH_FROM != ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'FROM GRAPH expression' clause and no default graph specified in the preamble");
-		if (NULL != dflt_graphs->next)
+		if ((NULL != dflt_graphs->next) && (SPART_GRAPH_FROM == ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'FROM GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
 	| FROM_L spar_graph_identified_by_opt spar_precode_expn	{ $$ = $3; }
@@ -1467,10 +1481,10 @@ spar_from_graph_precode_opt
 
 spar_graph_precode_opt
 	: /* empty */	{
-		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
-		if (NULL == dflt_graphs)
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graphs;
+		if ((NULL == dflt_graphs) || (SPART_GRAPH_FROM != ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'GRAPH expression' clause and no default graph specified in the preamble");
-		if (NULL != dflt_graphs->next)
+		if ((NULL != dflt_graphs->next) && (SPART_GRAPH_FROM == ((SPART *)(dflt_graphs->data))->_.graph.subtype))
 		  spar_error (sparp_arg, "No 'GRAPH expression' clause and more than one default graph specified in the preamble");
 		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
 	| spar_graph_identified_by_opt spar_precode_expn	{ $$ = $2; }

@@ -41,6 +41,7 @@ extern "C" {
 }
 #endif
 #include "http.h"
+#include "date.h"
 /*#include "xml_ecm.h"*/
 
 void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
@@ -72,6 +73,24 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
     case DV_UNAME:
       ssg_sdprin_qname (ssg, tree);
       return;
+    case DV_DATE: case DV_TIME: case DV_DATETIME:
+      {
+        char temp[40];
+        caddr_t type_uri;
+        dt_to_iso8601_string (tree, temp, sizeof (temp));
+        switch (DT_DT_TYPE(tree))
+          {
+          case DT_TYPE_DATE: type_uri = uname_xmlschema_ns_uri_hash_date; break;
+          case DT_TYPE_TIME: type_uri = uname_xmlschema_ns_uri_hash_time; break;
+          default : type_uri = uname_xmlschema_ns_uri_hash_dateTime;
+          }
+        ssg_putchar ('"');
+        ssg_puts (temp);
+        ssg_puts ("\"^^<");
+        ssg_puts (type_uri);
+        ssg_putchar ('>');
+        return;
+      }
     default:
       ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, 0);
       return;
@@ -152,7 +171,7 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case DISTINCT_L: return "SELECT DISTINCT";
     case false_L: return "false";
     case FILTER_L: return "FILTER";
-    case FROM_L: return "FROM";
+    /* case FROM_L: return "FROM"; */
     /* case GRAPH_L: return "GRAPH"; */
     case IRI_L: return "IRI";
     case IN_L: return "IN";
@@ -164,7 +183,7 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case LANGMATCHES_L: return "LANGMATCHES";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
-    case NAMED_L: return "FROM NAMED";
+    /* case NAMED_L: return "FROM NAMED"; */
     case NIL_L: return "NIL";
     /* case OBJECT_L: return "OBJECT"; */
     case OFFBAND_L: return "OFFBAND";
@@ -203,8 +222,11 @@ ssg_sd_opname (ptrlong opname, int is_op)
 int
 ssg_fields_are_equal (SPART *tree1, SPART *tree2)
 {
-  int type1 = SPART_TYPE (tree1);
-  int type2 = SPART_TYPE (tree2);
+  int type1, type2;
+  if (tree1 == tree2)
+    return 1;
+  type1 = SPART_TYPE (tree1);
+  type2 = SPART_TYPE (tree2);
   if (type1 != type2)
     return 0;
   switch (type1)
@@ -230,11 +252,23 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
     }
   if ((':' == vname[0]) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external paremeters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-  if (strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':'))
+  if ((strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
   ssg_putchar ('?');
   ssg_puts (vname);
   return;
+}
+
+int ssg_filter_is_default_graph_condition (SPART *filt)
+{
+  switch (SPART_TYPE (filt))
+    {
+    case SPAR_BUILT_IN_CALL:
+      return ((IN_L == filt->_.builtin.btype) && SPART_IS_DEFAULT_GRAPH_BLANK (filt->_.builtin.args[0]));
+    case BOP_EQ:
+      return SPART_IS_DEFAULT_GRAPH_BLANK (filt->_.bin_exp.left);
+    }
+  return 0;
 }
 
 void
@@ -556,6 +590,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         for (ctr = 0; ctr < count; ctr++)
           {
             SPART * filt = tree->_.gp.filters [ctr];
+            if (ssg_filter_is_default_graph_condition (filt))
+              continue;
             ssg_newline (0);
             ssg_puts ("FILTER (");
             ssg->ssg_indent++;
@@ -609,10 +645,18 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         int from_count = 0;
         ssg->ssg_sd_single_from = NULL;
         ssg->ssg_sd_graph_gp_nesting = 0;
-        if (ASK_L == tree->_.req_top.subtype)
-          ssg_puts ("ASK ");
-        else
-        ssg_puts ("SELECT ");
+        if (NULL != tree->_.req_top.storage_name)
+          {
+            ssg_puts ("define input:storage <");
+            ssg_puts (tree->_.req_top.storage_name);
+            ssg_puts ("> ");
+          }
+        switch (tree->_.req_top.subtype)
+          {
+          case ASK_L: ssg_puts ("ASK "); break;
+          case DISTINCT_L: ssg_puts ("SELECT DISTINCT "); break;
+          default: ssg_puts ("SELECT "); break;
+          }
         DO_BOX_FAST (SPART *, arg, retctr, tree->_.req_top.retvals)
           {
             ptrlong arg_type = SPART_TYPE (arg);
@@ -643,12 +687,14 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         for (srcctr = 0; srcctr < srccount; srcctr++)
           {
             SPART *src = tree->_.req_top.sources[srcctr];
-            if (NAMED_L == src->type)
+            if (SPART_GRAPH_NAMED != src->_.graph.subtype)
               continue;
             ssg_newline (0);
             ssg_sdprint_tree (ssg, src);
+            if (SPART_GRAPH_FROM != src->_.graph.subtype)
+              continue;
             if (0 == from_count++)
-              ssg->ssg_sd_single_from = src->_.lit.val; 
+              ssg->ssg_sd_single_from = src->_.graph.iri;
             else
               ssg->ssg_sd_single_from = NULL;
           }
@@ -699,7 +745,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                   new_g_is_dflt = 1;
                 break;
               case SPAR_QNAME:
-                if ((NULL != ssg->ssg_sd_single_from) && ssg_fields_are_equal (ssg->ssg_sd_single_from, curr_graph))
+                if ((NULL != ssg->ssg_sd_single_from) && !strcmp (ssg->ssg_sd_single_from, curr_graph->_.qname.val))
                   new_g_is_dflt = 1;
                 break;
               }
@@ -767,7 +813,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         if (place_qm)
           {
             quad_map_t *qm = tree->_.triple.tc_list[0]->tc_qm;
-            jso_rtti_t *qm_rtti = gethash (qm, jso_rttis_of_names);
+            jso_rtti_t *qm_rtti = gethash (qm, jso_rttis_of_structs);
             if (NULL == qm_rtti)
               spar_internal_error (ssg->ssg_sparp, "bad quad map JSO instance");
             ssg_puts (" QUAD MAP ");
@@ -877,16 +923,17 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         ssg->ssg_indent--;
         return;
       }
-    case FROM_L:
+    case SPAR_GRAPH:
       {
-        ssg_puts (" FROM ");
-        ssg_sdprin_qname (ssg, tree->_.lit.val);
-        return;
-      }
-    case NAMED_L:
+        switch (tree->_.graph.subtype)
       {
-        ssg_puts (" FROM NAMED ");
-        ssg_sdprin_qname (ssg, tree->_.lit.val);
+          case SPART_GRAPH_FROM: ssg_puts (" FROM "); break;
+          case SPART_GRAPH_NAMED: ssg_puts (" FROM NAMED "); break;
+          case SPART_GRAPH_NOT_FROM: ssg_puts (" NOT FROM "); break;
+          case SPART_GRAPH_NOT_NAMED: ssg_puts (" NOT FROM NAMED "); break;
+          default: spar_internal_error (ssg->ssg_sparp, "Bad tree->_.graph.subtype"); break;
+          }
+        ssg_sdprin_qname (ssg, (SPART *)(tree->_.graph.iri));
         return;
       }
 #if 0

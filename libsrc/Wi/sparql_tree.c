@@ -1446,6 +1446,10 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t
     GOTO_RVR_ERR("nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
   if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (0 != rvr->rvrSprintffCount))
     GOTO_RVR_ERR("nonzero rvrSprintffCount when SPART_VARR_FIXED");
+  if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (NULL == rvr->rvrFixedValue))
+    GOTO_RVR_ERR("NULL rvrFixedValue when SPART_VARR_FIXED");
+  if (!(rvr->rvrRestrictions & SPART_VARR_FIXED) && (NULL != rvr->rvrFixedValue))
+    GOTO_RVR_ERR("non-NULL rvrFixedValue when not SPART_VARR_FIXED");
   if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (rvr->rvrRestrictions & SPART_VARR_SPRINTFF))
     GOTO_RVR_ERR("SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
   if (rvr->rvrRestrictions & SPART_VARR_SPRINTFF)
@@ -1505,12 +1509,12 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             GPF_T1 ("sparp_" "rvr_set_by_constant(): bad QNAME");
 #endif
           dest->rvrFixedValue = value->_.lit.val;
-          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
         }
       else if (DV_UNAME == DV_TYPE_OF (value))
         {
           dest->rvrFixedValue = (ccaddr_t)value;
-          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
         }
       else
         {
@@ -1519,7 +1523,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
                 GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
 #endif
           dest->rvrFixedValue = (ccaddr_t)value;
-          dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED);
+          dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
         }
     }
 }
@@ -1662,6 +1666,15 @@ end_of_sff_processing:
 conflict:
   new_restr |= SPART_VARR_CONFLICT;
   dest->rvrRestrictions = new_restr;
+  /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
+  return;
+
+always_null:
+  new_restr = SPART_VARR_ALWAYS_NULL | (dest->rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+  memset (dest, 0, sizeof (rdf_val_range_t));
+  dest->rvrRestrictions = new_restr;
+  sparp_rvr_audit (sparp, dest);
+  return;
 }
 
 void
@@ -1722,9 +1735,11 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
               sparp_rvr_add_sprintffs (sparp, dest, &fv_fmt, 1);
               dest->rvrRestrictions |= SPART_VARR_SPRINTFF;
               new_restr |= SPART_VARR_SPRINTFF;
+              dest->rvrFixedValue = NULL;
               goto end_of_sff_processing; /* see below */
             }
         }
+      dest->rvrFixedValue = NULL;
     }
   if (new_restr & changeable_flags & SPART_VARR_SPRINTFF)
     sparp_rvr_add_sprintffs (sparp, dest, addon->rvrSprintffs, addon->rvrSprintffCount);
@@ -2218,13 +2233,17 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.var.vname = t_box_copy (orig->_.var.vname);
       sparp_rvr_copy (sparp, &(tgt->_.var.rvr), &(orig->_.var.rvr));
       return tgt;
+    case SPAR_GRAPH:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.graph.expn = sparp_tree_full_copy (sparp, orig->_.graph.expn, parent_gp);
+      return tgt;
     case SPAR_GP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.gp.members = sparp_treelist_full_copy (sparp, orig->_.gp.members, orig);
       tgt->_.gp.filters = sparp_treelist_full_copy (sparp, orig->_.gp.filters, orig);
       tgt->_.gp.equiv_indexes = (ptrlong *)t_box_copy ((caddr_t)(orig->_.gp.equiv_indexes));
       return tgt;
-    case FROM_L: case NAMED_L: case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
+    case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
       return (SPART *)t_full_box_copy_tree ((caddr_t)orig);
     case ORDER_L:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -3256,7 +3275,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case DISTINCT_L: return "SELECT DISTINCT result-mode";
     case false_L: return "false boolean";
     case FILTER_L: return "FILTER";
-    case FROM_L: return "FROM";
+    /* case FROM_L: return "FROM"; */
     case GRAPH_L: return "GRAPH gp";
     case IRI_L: return "IRI builtin";
     case IN_L: return "IN";
@@ -3268,7 +3287,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case LANGMATCHES_L: return "LANGMATCHES builtin";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
-    case NAMED_L: return "NAMED";
+    /* case NAMED_L: return "NAMED"; */
     case NIL_L: return "NIL";
     case OBJECT_L: return "OBJECT";
     case OFFBAND_L: return "OFFBAND";
@@ -3709,11 +3728,21 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.oby.expn, ses, indent+2, "CRITERION", -1);
 	      break;
             }
-	  case FROM_L:
+	  case SPAR_GRAPH:
 	    {
-	      sprintf (buf, "FROM (default):");
+	      sprintf (buf, "DATA SOURCE: ");
+              switch (tree->_.graph.subtype)
+                {
+                case SPART_GRAPH_FROM: strcat (buf, "FROM (default)"); break;
+                case SPART_GRAPH_NAMED: strcat (buf, "FROM NAMED"); break;
+                case SPART_GRAPH_NOT_FROM: strcat (buf, "NOT FROM"); break;
+                case SPART_GRAPH_NOT_NAMED: strcat (buf, "NOT NAMED"); break;
+                default: GPF_T;
+                }
 	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.lit.val, ses, indent+2, "IRI", 0);
+	      spart_dump (tree->_.graph.iri, ses, indent+2, "IRI", 0);
+              if (NULL != tree->_.graph.expn)
+	        spart_dump (tree->_.graph.expn, ses, indent+2, "EXPN", 0);
 	      break;
 	    }
 	  case NAMED_L:

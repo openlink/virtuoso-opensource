@@ -3953,10 +3953,10 @@ create aggregate DB.DBA.SPARQL_DESC_AGG (in vars any) returns any
 from DB.DBA.SPARQL_DESC_AGG_INIT, DB.DBA.SPARQL_DESC_AGG_ACC, DB.DBA.SPARQL_DESC_AGG_FIN
 ;
 
-create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in graphs any, in storage_name any, in options any)
+create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
-  declare all_subj_descs, phys_subjects, sorted_graphs, res any;
-  declare g_ctr, g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
+  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
@@ -3972,14 +3972,30 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
   if (0 = all_s_count)
     return res;
   gvector_sort (all_subj_descs, 1, 0, 0);
-  vectorbld_init (sorted_graphs);
-  foreach (any g in graphs) do
+  if (__tag of integer = __tag (good_graphs))
+    graphs_listed := 0;
+  else
     {
-      if (isiri_id (g))
-        vectorbld_acc (sorted_graphs, __min (g, min_bnode_iri_id ()));
+      vectorbld_init (sorted_good_graphs);
+      foreach (any g in good_graphs) do
+    {
+          if (isiri_id (g) and g < min_bnode_iri_id ())
+            vectorbld_acc (sorted_good_graphs, g);
     }
-  vectorbld_final (sorted_graphs);
-  g_count := length (sorted_graphs);
+      vectorbld_final (sorted_good_graphs);
+      good_g_count := length (sorted_good_graphs);
+      if (0 = good_g_count)
+        return res;
+      graphs_listed := 1;
+    }
+  vectorbld_init (sorted_bad_graphs);
+  foreach (any g in bad_graphs) do
+    {
+      if (isiri_id (g) and g < min_bnode_iri_id ())
+        vectorbld_acc (sorted_bad_graphs, g);
+    }
+  vectorbld_final (sorted_bad_graphs);
+  bad_g_count := length (sorted_bad_graphs);
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
@@ -4001,13 +4017,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
       vectorbld_final (phys_subjects);
       goto describe_physical_subjects;
     }
-  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_graphs=', sorted_graphs);
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_good_graphs=', sorted_good_graphs, ' sorted_bad_graphs=', sorted_bad_graphs);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
     {
       declare s, phys_s, maps any;
       declare maps_len integer;
       s := all_subj_descs [s_ctr];
-      maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, sorted_graphs);
+      maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
       if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
@@ -4045,23 +4061,34 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || md5_box (maps)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any)\n', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          if (graphs_listed)
+            http (', inout sorted_good_graphs any', ses);
+          http (')\n', ses);
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> select ?p1 ?o1\n', ses);
-          http ('      where { graph ?g {\n', ses);
+          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+          foreach (any g in sorted_bad_graphs) do
+            {
+              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+            }
+          http ('select ?g1 ?p1 ?o1\n', ses);
+          http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
             {
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
+          http ('            } } ) do { ', ses);
+          if (graphs_listed)
+            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+          http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
 	  saved_user := user;
@@ -4069,8 +4096,16 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
           exec (txt);
 	  set_user_id (saved_user);
         }
+      if (graphs_listed)
+        {
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, sorted_good_graphs, ')');
+          call ('DB.DBA.' || fname)(s, res, sorted_good_graphs);
+        }
+      else
+        {
       -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
       call ('DB.DBA.' || fname)(s, res);
+        }
 end_of_s: ;
     }
 
@@ -4080,49 +4115,66 @@ describe_physical_subjects:
   -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
   if (0 = phys_s_count)
     return res;
-  if (0 = length (sorted_graphs))
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  if (graphs_listed)
     {
-      declare g_dict any;
+      gvector_sort (sorted_good_graphs, 1, 0, 0);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+    {
+          declare graph any;
+          graph := sorted_good_graphs [g_ctr];
+          for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+    {
+              declare subj any;
+              subj := phys_subjects [s_ctr];
+              for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+                {
+                  -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
+                  dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
+                }
+            }
+        }
+      return res;
+    }
       g_dict := dict_new ();
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj));
+      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
-      sorted_graphs := dict_list_keys (g_dict, 1);
-    }
-  if (0 = length (sorted_graphs))
+  sorted_good_graphs := dict_list_keys (g_dict, 1);
+  if (0 = length (sorted_good_graphs))
     {
-      declare g_dict any;
       g_dict := dict_new ();
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid));
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
-      sorted_graphs := dict_list_keys (g_dict, 1);
+      sorted_good_graphs := dict_list_keys (g_dict, 1);
     }
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  gvector_sort (sorted_graphs, 1, 0, 0);
-  g_count := length (sorted_graphs);
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+  -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+  gvector_sort (sorted_good_graphs, 1, 0, 0);
+  good_g_count := length (sorted_good_graphs);
+  -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+  for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
     {
       declare graph any;
-      graph := sorted_graphs [g_ctr];
+      graph := sorted_good_graphs [g_ctr];
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj any;
           subj := phys_subjects [s_ctr];
           for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
             {
-              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
+              -- dbg_obj_princ ('found1 ', subj, p1, ' in ', graph);
               dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
 --              if (isiri_id (obj1))
 --                {
@@ -4138,19 +4190,20 @@ describe_physical_subjects:
             where G = graph and O = subj and P <> rdf_type_iid
             option (QUIETCAST)) do
             {
-              -- dbg_obj_princ ('found ', s1, p1, subj, ' in ', graph);
+              -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
               dict_put (res, vector (s1, p1, subj), 1);
             }
         }
     }
+  -- dbg_obj_princ ('final resuit is ', res);
   return res;
 }
 ;
 
-create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, in graphs any, in storage_name any, in options any)
+create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
-  declare all_subj_descs, phys_subjects, sorted_graphs, res any;
-  declare g_ctr, g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, res any;
+  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
@@ -4166,14 +4219,30 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
   if (0 = all_s_count)
     return res;
   gvector_sort (all_subj_descs, 1, 0, 0);
-  vectorbld_init (sorted_graphs);
-  foreach (any g in graphs) do
+  if (__tag of integer = __tag (good_graphs))
+    graphs_listed := 0;
+  else
     {
-      if (isiri_id (g))
-        vectorbld_acc (sorted_graphs, __min (g, min_bnode_iri_id ()));
+      vectorbld_init (sorted_good_graphs);
+      foreach (any g in good_graphs) do
+    {
+          if (isiri_id (g) and g < min_bnode_iri_id ())
+            vectorbld_acc (sorted_good_graphs, g);
     }
-  vectorbld_final (sorted_graphs);
-  g_count := length (sorted_graphs);
+      vectorbld_final (sorted_good_graphs);
+      good_g_count := length (sorted_good_graphs);
+      if (0 = good_g_count)
+        return res;
+      graphs_listed := 1;
+    }
+  vectorbld_init (sorted_bad_graphs);
+  foreach (any g in bad_graphs) do
+    {
+      if (isiri_id (g) and g < min_bnode_iri_id ())
+        vectorbld_acc (sorted_bad_graphs, g);
+    }
+  vectorbld_final (sorted_bad_graphs);
+  bad_g_count := length (sorted_bad_graphs);
   vectorbld_init (phys_subjects);
   if (isinteger (storage_name))
     storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
@@ -4195,13 +4264,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       vectorbld_final (phys_subjects);
       goto describe_physical_subjects;
     }
-  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_graphs=', sorted_graphs);
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_good_graphs=', sorted_good_graphs, ' sorted_bad_graphs=', sorted_bad_graphs);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
     {
       declare s, phys_s, maps any;
       declare maps_len integer;
       s := all_subj_descs [s_ctr];
-      maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, sorted_graphs);
+      maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
       -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
       maps_len := length (maps);
       if ((maps_len > 0) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
@@ -4239,23 +4308,34 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
       s := s_desc[0];
       maps := s_desc[1];
       maps_len := length (maps);
-      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || md5_box (maps)));
+      fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
           declare ses, txt, saved_user any;
           ses := string_output ();
-          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any)\n', ses);
+          http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any', ses);
+          if (graphs_listed)
+            http (', inout sorted_good_graphs any', ses);
+          http (')\n', ses);
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> select ?p1 ?o1\n', ses);
-          http ('      where { graph ?g {\n', ses);
+          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+          foreach (any g in sorted_bad_graphs) do
+            {
+              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+            }
+          http ('select ?g1 ?p1 ?o1\n', ses);
+          http ('      where { graph ?g1 {\n', ses);
           for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
             {
               if (map_ctr > 0) http ('              union\n', ses);
               http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
             }
-          http ('            } } ) do { dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
+          http ('            } } ) do { ', ses);
+          if (graphs_listed)
+            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+          http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
 	  saved_user := user;
@@ -4263,8 +4343,16 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
           exec (txt);
 	  set_user_id (saved_user);
         }
+      if (graphs_listed)
+        {
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, sorted_good_graphs, ')');
+          call ('DB.DBA.' || fname)(s, res, sorted_good_graphs);
+        }
+      else
+        {
       -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
       call ('DB.DBA.' || fname)(s, res);
+        }
 end_of_s: ;
     }
 
@@ -4274,21 +4362,36 @@ describe_physical_subjects:
   -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
   if (0 = phys_s_count)
     return res;
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  gvector_sort (sorted_graphs, 1, 0, 0);
-  g_count := length (sorted_graphs);
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  if (graphs_listed)
+    {
+      gvector_sort (sorted_good_graphs, 1, 0, 0);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
     {
       declare graph any;
-      graph := sorted_graphs [g_ctr];
+          graph := sorted_good_graphs [g_ctr];
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj any;
           subj := phys_subjects [s_ctr];
           for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
             {
-              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
+                  -- dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
+                  dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
+                }
+            }
+        }
+    }
+  else
+    {
+      for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+        {
+          declare subj any;
+          subj := phys_subjects [s_ctr];
+          for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where 0 = position (G, sorted_bad_graphs) and S = subj) do
+            {
+              -- dbg_obj_princ ('found4 ', subj, p1);
               dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
             }
         }
@@ -4297,10 +4400,10 @@ describe_physical_subjects:
 }
 ;
 
-create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in consts any, in graphs any, in storage_name any, in options any)
+create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
-  declare all_subj_descs, phys_subjects, sorted_graphs, res any;
-  declare g_ctr, g_count, s_ctr, all_s_count, phys_s_count integer;
+  declare all_subj_descs, phys_subjects, sorted_good_graphs, sorted_bad_graphs, g_dict, res any;
+  declare graphs_listed, g_ctr, good_g_count, bad_g_count, s_ctr, all_s_count, phys_s_count integer;
   declare rdf_type_iid IRI_ID;
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
   res := dict_new ();
@@ -4316,14 +4419,30 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
   if (0 = all_s_count)
     return res;
   gvector_sort (all_subj_descs, 1, 0, 0);
-  vectorbld_init (sorted_graphs);
-  foreach (any g in graphs) do
+  if (__tag of integer = __tag (good_graphs))
+    graphs_listed := 0;
+  else
     {
-      if (isiri_id (g))
-        vectorbld_acc (sorted_graphs, __min (g, min_bnode_iri_id ()));
+      vectorbld_init (sorted_good_graphs);
+      foreach (any g in good_graphs) do
+        {
+          if (isiri_id (g) and g < min_bnode_iri_id ())
+            vectorbld_acc (sorted_good_graphs, g);
     }
-  vectorbld_final (sorted_graphs);
-  g_count := length (sorted_graphs);
+      vectorbld_final (sorted_good_graphs);
+      good_g_count := length (sorted_good_graphs);
+      if (0 = good_g_count)
+        return res;
+      graphs_listed := 1;
+    }
+  vectorbld_init (sorted_bad_graphs);
+  foreach (any g in bad_graphs) do
+    {
+      if (isiri_id (g) and g < min_bnode_iri_id ())
+        vectorbld_acc (sorted_bad_graphs, g);
+    }
+  vectorbld_final (sorted_bad_graphs);
+  bad_g_count := length (sorted_bad_graphs);
   vectorbld_init (phys_subjects);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
     {
@@ -4344,49 +4463,66 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
   -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
   if (0 = phys_s_count)
     return res;
-  if (0 = length (sorted_graphs))
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  if (graphs_listed)
     {
-      declare g_dict any;
+      gvector_sort (sorted_good_graphs, 1, 0, 0);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+        {
+          declare graph any;
+          graph := sorted_good_graphs [g_ctr];
+          for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
+            {
+              declare subj any;
+              subj := phys_subjects [s_ctr];
+              for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
+    {
+                  -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
+                  dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
+                }
+            }
+        }
+      return res;
+    }
       g_dict := dict_new ();
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj));
+      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and 0 = position (G, sorted_bad_graphs)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
-      sorted_graphs := dict_list_keys (g_dict, 1);
-    }
-  if (0 = length (sorted_graphs))
+  sorted_good_graphs := dict_list_keys (g_dict, 1);
+  if (0 = length (sorted_good_graphs))
     {
-      declare g_dict any;
       g_dict := dict_new ();
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid));
+          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and 0 = position (G, sorted_bad_graphs)));
           if (graph is not null)
             dict_put (g_dict, graph, 0);
         }
-      sorted_graphs := dict_list_keys (g_dict, 1);
+      sorted_good_graphs := dict_list_keys (g_dict, 1);
     }
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  gvector_sort (sorted_graphs, 1, 0, 0);
-  g_count := length (sorted_graphs);
-  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
-  for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+  -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+  gvector_sort (sorted_good_graphs, 1, 0, 0);
+  good_g_count := length (sorted_good_graphs);
+  -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+  for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
     {
       declare graph any;
-      graph := sorted_graphs [g_ctr];
+      graph := sorted_good_graphs [g_ctr];
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
           declare subj any;
           subj := phys_subjects [s_ctr];
           for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
             {
-              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
+              -- dbg_obj_princ ('found6 ', subj, p1, ' in ', graph);
               dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
 --              if (isiri_id (obj1))
 --                {
@@ -4402,11 +4538,12 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
             where G = graph and O = subj and P <> rdf_type_iid
             option (QUIETCAST)) do
             {
-              -- dbg_obj_princ ('found ', s1, p1, subj, ' in ', graph);
+              -- dbg_obj_princ ('found7 ', s1, p1, subj, ' in ', graph);
               dict_put (res, vector (s1, p1, subj), 1);
             }
         }
     }
+  -- dbg_obj_princ ('final resuit is ', res);
   return res;
 }
 ;

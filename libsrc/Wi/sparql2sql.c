@@ -361,11 +361,14 @@ sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals)
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
   if (DESCRIBE_L == root->_.req_top.subtype)
+    {
+      sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_expr->_.req_top.storage_name);
     root->_.req_top.retvals = 
       spar_retvals_of_describe (sparp,
         root->_.req_top.retvals,
         root->_.req_top.limit,
         root->_.req_top.offset );
+    }
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_preopt_in_gp, NULL,
     NULL, NULL, sparp_gp_trav_preopt_expn_subq,
@@ -2223,9 +2226,16 @@ sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
   DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
     {
       int chk_res;
+      if ((SPART_GRAPH_NOT_FROM == source->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == source->_.graph.subtype))
+        {
+          if ((SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions) &&
+            sparp_fixedvalues_equal (sparp, (SPART *)(source->_.graph.iri), (SPART *)(qmv_or_fmt_rvr->rvrFixedValue)))
+            return SSG_QM_NO_MATCH;
+          continue;
+        }
       if (tcc->tcc_source_invalidation_masks[source_ctr])
         continue;
-      chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(source->_.alias.arg->_.lit.val), qmv_or_fmt_rvr, rvr);
+      chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(source->_.graph.iri), qmv_or_fmt_rvr, rvr);
       if (SSG_QM_NO_MATCH != chk_res)
         {
           if (chk_res < min_match)
@@ -2670,12 +2680,13 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
   DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
     {
-      if ((0 == required_source_type) || (SPART_TYPE(source) == required_source_type))
+      if ((0 == required_source_type) || (source->_.graph.subtype == required_source_type))
         {
           tmp_tcc.tcc_check_source_graphs++;
           tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;
         }
-      else
+      else if (!((SPART_GRAPH_NOT_FROM == source->_.graph.subtype) ||
+          (SPART_GRAPH_NOT_NAMED != source->_.graph.subtype) ) )
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
@@ -2761,7 +2772,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
     return;
   graph = triple->_.triple.tr_graph;
   graph_type = SPART_TYPE(graph);
-  required_source_type = ((SPAR_VARIABLE == graph_type) ? NAMED_L : ((SPAR_BLANK_NODE_LABEL == graph_type) ? FROM_L : 0));
+  required_source_type = ((SPAR_VARIABLE == graph_type) ? SPART_GRAPH_NAMED : ((SPAR_BLANK_NODE_LABEL == graph_type) ? SPART_GRAPH_FROM : 0));
   new_cases = sparp_find_triple_cases (sparp, triple, sources, required_source_type);
   new_cases_count = BOX_ELEMENTS (new_cases);
   if ((NULL == triple->_.triple.tc_list) &&

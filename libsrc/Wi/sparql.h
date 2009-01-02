@@ -65,6 +65,7 @@ extern "C" {
 #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
 #define SPAR_CODEGEN		(ptrlong)1016
 #define SPAR_LIST		(ptrlong)1017
+#define SPAR_GRAPH		(ptrlong)1018
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -178,10 +179,12 @@ typedef struct sparp_env_s
 #endif
     rdf_grab_config_t	spare_grab;			/*!< Grabber configuration */
     dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
-    dk_set_t		spare_default_graph_precodes;	/*!< Default graphs as set by protocol or FROM graph-uri-precode */
-    int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten */
-    dk_set_t		spare_named_graph_precodes;		/*!< Named graphs as set by protocol or FROM NAMED graph-uri-precode */
-    int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten */
+    dk_set_t		spare_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
+    dk_set_t		spare_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
+    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty */
+    int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exaustive even if empty or consists of solely NOT FROM NAMED */
+    int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
+    int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
     dk_set_t		spare_groupings;		/*!< Variabes that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
@@ -306,6 +309,12 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 #define tr_object	tr_fields[3]
 #define SPART_TRIPLE_FIELDS_COUNT 4
 
+/* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
+#define SPART_GRAPH_FROM	201
+#define SPART_GRAPH_NAMED	202
+#define SPART_GRAPH_NOT_FROM	203
+#define SPART_GRAPH_NOT_NAMED	204
+
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_equivs[(idx)])
 
 #define SPARP_FOREACH_GP_EQUIV(sparp,groupp,inx,eq) \
@@ -393,6 +402,12 @@ typedef struct spar_tree_s
         ptrlong glued_filters_count;	/*!< Last \c glued_filters_count members of \c filters are expressions for ON statement of LEFT OUTER JOIN. They can not be moved to some other GP because they were moved already and next move will break semantics. */
         SPART **options;
       } gp;
+    struct {
+	/* #define SPAR_GRAPH		(ptrlong)1018 */
+        ptrlong subtype;
+        caddr_t iri;
+        SPART *expn;
+      } graph;
     struct {
         /* #define SPAR_LIT		(ptrlong)1009 */
       caddr_t val;
@@ -574,8 +589,8 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
-extern void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
-extern void spar_gp_add_filter_for_named_graph (sparp_t *sparp);
+extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
+extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter);
@@ -594,8 +609,8 @@ extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in real parse trees! */
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
-extern void sparp_push_new_graph_precode (sparp_t *sparp, dk_set_t *set_ptr, SPART *precode);
-extern SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options);
+extern void sparp_push_new_graph_source (sparp_t *sparp, dk_set_t *set_ptr, SPART *src);
+extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);

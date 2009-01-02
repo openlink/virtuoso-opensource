@@ -5763,23 +5763,35 @@ from_printed:
                 }
               else if (SPAR_IS_BLANK_OR_VAR (g))
                 {
-                  int precode_len;
-                  dk_set_t good_precodes = NULL;
+                  dk_set_t chk_graphs = NULL;
+                  dk_set_t good_expns = NULL;
+                  /* dk_set_t bad_expns = NULL; */
+                  int good_len /*, bad_len*/;
                   if (SPART_IS_DEFAULT_GRAPH_BLANK(g))
                     {
-                      if (NULL == ssg->ssg_sparp->sparp_env->spare_named_graph_precodes)
-                    good_precodes = ssg->ssg_sparp->sparp_env->spare_default_graph_precodes;
-                      else good_precodes = NULL;
+                      dk_set_t named = ssg->ssg_sparp->sparp_env->spare_named_graphs;
+                      if (ssg->ssg_sparp->sparp_env->spare_named_graphs_listed)
+                        chk_graphs = ssg->ssg_sparp->sparp_env->spare_default_graphs;
+                      else chk_graphs = NULL;
                     }
                   else
-                    good_precodes = ssg->ssg_sparp->sparp_env->spare_named_graph_precodes;
-                  precode_len = dk_set_length (good_precodes);
-                  if ((0 < precode_len) && (16 > precode_len))
+                    chk_graphs = ssg->ssg_sparp->sparp_env->spare_named_graphs;
+                  DO_SET (SPART *,src, &(chk_graphs))
+                    {
+                      if (!((SPART_GRAPH_NOT_FROM == src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == src->_.graph.subtype)))
+                        t_set_push (&good_expns, src->_.graph.expn);
+                      /* else
+                        t_set_push (&bad_expns, src->_.graph.expn); */
+                    }
+                  END_DO_SET()
+                  good_len = dk_set_length (good_expns);
+                  /*bad_len = dk_set_length (bad_expns);*/
+                  if ((0 < good_len) && (16 > good_len) /*&& (4 < bad_len)*/)
                     {
                       ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS",
                         (SPART **)t_list (2, ft_arg1,
                         spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector",
-                          (SPART **)t_list_to_array (good_precodes) ) ) );
+                          (SPART **)t_list_to_array (good_expns) ) ) );
                       goto ft_arg1_is_patched; /* see below */
                     }
                 }
