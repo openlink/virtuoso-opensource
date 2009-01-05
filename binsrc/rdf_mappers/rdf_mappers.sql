@@ -95,6 +95,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_RADIOPOP', null, 'Radio Pop');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.rhapsody.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_RHAPSODY', null, 'Rhapsody');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*slideshare.net/.*)',
             'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare');
 
@@ -1977,6 +1981,88 @@ create procedure DB.DBA.RDF_LOAD_DISQUS (in graph_iri varchar, in new_origin_uri
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure get_url2(in url varchar) returns varchar
+{
+  declare hdr any;
+  declare olduri any;
+  declare redirects, i, l int;
+
+  hdr := null;
+  redirects := 15;
+
+  again:
+  olduri := url;
+  if (redirects <= 0)
+    return '';
+
+  http_client_ext (url=>url, headers=>hdr, http_method=>'HEAD');
+  redirects := redirects - 1;
+
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    {
+      if (hdr[0] like 'HTTP/1._ 30_ %')
+	{
+		dbg_obj_princ('hdr: ', hdr);
+	  url := http_request_header (hdr, 'Location');
+	  dbg_obj_princ('cur: ', url);
+	  if (isstring (url))
+	    {
+	      url := WS.WS.EXPAND_URL (olduri, url);
+	      goto again;
+	    }
+	}
+      return '';
+    }
+  return url;
+}
+;  
+
+create procedure DB.DBA.RDF_LOAD_RHAPSODY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xd, xt, url, tmp, id, id2, indicators any;
+    declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://www.rhapsody.com/goto?%&variant=data')
+	{
+		url := new_origin_uri;
+	}
+	else if (new_origin_uri like 'http://www.rhapsody.com/goto?rcid=%')
+	{
+		if (new_origin_uri like 'http://www.rhapsody.com/goto?rcid=%&%')
+		{
+			tmp := sprintf_inverse (new_origin_uri, 'http://www.rhapsody.com/goto?rcid=%s&%s', 0);
+			id := trim (tmp[0], '/');
+			url := get_url2(sprintf('http://www.rhapsody.com/goto?rcid=%s', id)) || '/data.xml';
+		}
+		else
+		{	
+			tmp := sprintf_inverse (new_origin_uri, 'http://www.rhapsody.com/goto?rcid=%s', 0);
+			id := trim (tmp[0], '/');
+			if (left(id, 3) = 'tra')
+				url := 'http://feeds.rhapsody.com/track-data.xml?trackId=' || id;
+			else
+				url := get_url2(new_origin_uri) || '/data.xml';
+		}
+	}
+	else if (new_origin_uri like 'http://www.rhapsody.com/%')
+	{
+		url := get_url2(new_origin_uri) || '/data.xml';
+	}
+	else
+		return 0;		
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	tmp := http_get (url);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rhapsody2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
