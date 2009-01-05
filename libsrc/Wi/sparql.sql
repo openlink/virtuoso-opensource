@@ -8482,6 +8482,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant all on DB.DBA.SYS_SPARQL_HOST to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH to SPARQL_UPDATE',
+    'grant select on DB.DBA.SYS_FAKE_0 to SPARQL_SELECT',
+    'grant select on DB.DBA.SYS_FAKE_1 to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_GLOBAL_RESET to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to SPARQL_SELECT',
