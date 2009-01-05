@@ -1,3 +1,160 @@
+2009-01-05 15:01  source
+
+	* Added ubiquity commands for ODS Gallery
+
+2009-01-05 15:00  source
+
+	* Added Ubiquity commands for ODS-Gallery
+	* Removed deprecated files
+
+2009-01-05 13:52  source
+
+	* Added Rhapsody cartridge
+
+2009-01-02 12:46  source
+
+	* Added SPAR_GRAPH (with SPART_GRAPH_FROM ... and SPART_GRAPH_NOT_NAMED
+	  subtypes)
+
+2009-01-02 12:45  source
+
+	* Fixed SPAR_NCNAME_X to accept dot right after QName
+
+2009-01-02 12:44  source
+
+	* Added wcharset_by_name_or_dftl()
+
+2009-01-02 12:42  source
+
+	* Fixed skip DTP part of rdf boxes with xml checksum for deserialize
+
+2009-01-02 12:41  source
+
+	* Added check for running past size of auto_pool_t
+
+2008-12-29 15:24  source
+
+	* Removed old debugging code
+
+2008-12-29 15:23  source
+
+	* Added RadioPop cartridge
+
+2008-12-24 00:12  source
+
+	* Added oat tree into vad_version calculation
+
+2008-12-24 00:12  source
+
+	* Fixed save/load problems
+
+2008-12-24 00:10  source
+
+	* Fixed no fk trigger on remote table
+
+2008-12-24 00:09  source
+
+	* Added support for ROUND function
+
+2008-12-24 00:07  source
+
+	* Added LibraryThing cartridge
+
+2008-12-24 00:06  source
+
+	* Fixed use sameAs instead of seeAlso
+
+2008-12-24 00:05  source
+
+	* Fixed links
+
+2008-12-24 00:05  source
+
+	* Added about
+
+2008-12-23 17:22  source
+
+	* Merged from upstream project
+
+2008-12-23 10:05  source
+
+	* Fixed enabled output buffering
+
+2008-12-22 23:47  source
+
+	* Added interest topics to profile page
+	* Fixed problem with app links when pane does not exist
+
+2008-12-22 23:46  source
+
+	* Fixed 'javascript' links
+
+2008-12-22 23:33  source
+
+	* Fixed support for TOP (n, -1) testing
+
+2008-12-22 23:31  source
+
+	* Fixed shor IRI when no label
+	* Fixed description page
+
+2008-12-22 16:20  source
+
+	* Added TOP (N, -1) to skip N rows and then return rest of result set
+
+2008-12-22 16:14  source
+
+	* Added support for voID to RDF views
+
+2008-12-22 16:09  source
+
+	* Added optional support for voID to RDF views
+
+2008-12-22 11:36  source
+
+	* Added hoovers cartridge
+
+2008-12-22 11:33  source
+
+	* Added page to manage physical rdf store
+
+2008-12-22 11:30  source
+
+	* Added partial (and bad) support for quad maps with 4 constants and no
+	  quad map values
+
+2008-12-22 11:29  source
+
+	* Fixed problem with rdf_void_store
+
+2008-12-19 11:49  source
+
+	* Fixed 'javascript' links
+
+2008-12-19 10:41  source
+
+	* Merged from upstream project
+
+2008-12-19 10:39  source
+
+	* Added MeetUp cardridge
+
+2008-12-19 10:37  source
+
+	* Added support for box over 16M
+
+2008-12-18 20:51  source
+
+	* Fixed faster read on read_long
+
+2008-12-18 20:50  source
+
+	* Fixed allow mem pool copy of a string session
+
+2008-12-18 13:45  source
+
+	* Updated version to 3037
+
 2008-12-18 13:35  source
 
 	* Updated version to 5.0.10-rc1
