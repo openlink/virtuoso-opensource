@@ -152,10 +152,15 @@ function odsDisplayMessage(ex)
   }
 }
 
-function odsPreview(previewBlock, cmdName, cmdParams, cmdApplication)
+function odsPreview(previewBlock, cmdName, cmdParams, cmdApplication, previewMode)
 {
   var res = odsExecute(cmdName, cmdParams, cmdApplication, "preview");
+  if (previewMode == 'image')
+  {
+    previewBlock.innerHTML = '<img src="' + res + '" />';
+  } else {
   previewBlock.innerHTML = "<pre>" + xml_encode(res) + "</pre>";
+}
 }
 
 function odsExecuteError (XMLHttpRequest, textStatus, errorThrown, cmdName, showMode, logMode)
@@ -4401,6 +4406,277 @@ CmdUtils.CreateCommand({
       checkParameter(instance_id.text);
       var params = {inst_id: instance_id.text};
       odsPreview(previewBlock, "feeds.options.get", params, "feeds");
+    } catch (ex) {
+    }
+  }
+});
+
+////////////////////////////////////
+///// ods photo ////////////////////
+////////////////////////////////////
+CmdUtils.CreateCommand({
+  name: "ods-set-photo-oauth",
+  takes: {"oauth": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  description: "Set your ODS Gallery OAuth. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
+  help: "Type ods-set-photo-oauth &lt;oauth&gt;. Get your oauth at " + ODS.getServer() + "/oauth_sid.vsp",
+  execute: function (oauth) {
+    try {
+      checkParameter(oauth.text, "ODS Gallery instance OAuth");
+      ODS.setOAuth("photo", oauth.text);
+      displayMessage("Your ODS Gallery instance OAuth has been set.");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-photo-album",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"name": noun_arb_text, "description": noun_arb_text, "startDate": noun_arb_text, "endDate": noun_arb_text, "visibility": noun_arb_text, "geoLocation": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-photo-album instance_id name &lt;name&gt; [description &lt;description&gt;] [startDate &lt;startDate&gt;] [endDate &lt;endDate&gt;] [visibility &lt;visibility&gt;] [geoLocation &lt;geoLocation&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "description", params, "description");
+      addParameter(modifiers, "startDate", params, "startDate");
+      addParameter(modifiers, "endDate", params, "endDate");
+      addParameter(modifiers, "visibility", params, "visibility");
+      addParameter(modifiers, "geoLocation", params, "geoLocation");
+      odsExecute("photo.album.new", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-photo-album",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"name": noun_arb_text, "new_name": noun_arb_text, "description": noun_arb_text, "startDate": noun_arb_text, "endDate": noun_arb_text, "visibility": noun_arb_text, "geoLocation": noun_arb_text, "obsolete": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-photo-album instance_id name &lt;name&gt; [new_name &lt;new_name&gt;] [description &lt;description&gt;] [startDate &lt;startDate&gt;] [endDate &lt;endDate&gt;] [visibility &lt;visibility&gt;] [geoLocation &lt;geoLocation&gt;] [obsolete &lt;obsolete&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "new_name", params, "new_name");
+      addParameter(modifiers, "description", params, "description");
+      addParameter(modifiers, "startDate", params, "startDate");
+      addParameter(modifiers, "endDate", params, "endDate");
+      addParameter(modifiers, "visibility", params, "visibility");
+      addParameter(modifiers, "geoLocation", params, "geoLocation");
+      addParameter(modifiers, "obsolete", params, "obsolete");
+      odsExecute("photo.album.update", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-photo-album",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"name": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-photo-album instance_id name &lt;name&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "name", params, "name", true);
+      odsExecute("photo.album.delete", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-photo-image",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"album": noun_arb_text, "name": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-photo-image instance_id album &lt;album&gt; name &lt;name&gt;",
+  preview: function (previewBlock, instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "album", params, "album", true);
+      addParameter(modifiers, "name", params, "name", true);
+      params["outputFormat"] = "base64";
+      odsPreview(previewBlock, "photo.image.get", params, "photo", "image");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-update-photo-image",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"album": noun_arb_text, "name": noun_arb_text, "new_name": noun_arb_text, "description": noun_arb_text, "visibility": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-update-photo-image instance_id album &lt;album&gt; name &lt;name&gt; [new_name &lt;new_name&gt;] [description &lt;description&gt;] [visibility &lt;visibility&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "album", params, "album", true);
+      addParameter(modifiers, "name", params, "name", true);
+      addParameter(modifiers, "new_name", params, "new_name");
+      addParameter(modifiers, "description", params, "description");
+      addParameter(modifiers, "visibility", params, "visibility");
+      odsExecute("photo.image.update", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-photo-image",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"album": noun_arb_text, "name": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-photo-image instance_id album &lt;album&gt; name &lt;name&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "album", params, "album", true);
+      addParameter(modifiers, "name", params, "name", true);
+      odsExecute("photo.image.delete", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-photo-image-comment-by-id",
+  takes: {"comment_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-photo-image-comment-by-id &lt;comment_id&gt;",
+  preview: function (previewBlock, comment_id) {
+    try {
+      checkParameter(comment_id.text);
+      var params = {comment_id: comment_id.text};
+      odsPreview(previewBlock, "photo.comment.get", params, "photo");
+    } catch (ex) {
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-create-photo-image-comment",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"album": noun_arb_text, "image": noun_arb_text, "text": noun_arb_text},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-create-photo-image-comment instance_id album &lt;album&gt; image &lt;image&gt; text &lt;text&gt;",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "album", params, "album", true);
+      addParameter(modifiers, "image", params, "image", true);
+      addParameter(modifiers, "text", params, "text", true);
+      odsExecute("photo.comment.new", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-delete-photo-image-comment",
+  takes: {"comment_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-delete-photo-image-comment &lt;comment_id&gt;",
+  execute: function (comment_id) {
+    try {
+      checkParameter(comment_id.text, "comment_id");
+      var params = {comment_id: comment_id.text};
+      odsExecute("photo.comment.delete", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-set-photo-options",
+  takes: {"instance_id": noun_type_id},
+  modifiers: {"ahow_map": noun_type_integer, "show_timeline": noun_type_integer, "discussion_enable": noun_type_integer, "discussion_init": noun_type_integer, "albums_per_page": noun_type_integer},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-set-photo-options &lt;instance_id&gt; [show_map &lt;show_map&gt;] [show_timeline &lt;show_timeline&gt;] [discussion_enable &lt;discussion_enable&gt;] [discussion_init &lt;discussion_init&gt;] [albums_per_page &lt;albums_per_page&gt;]",
+  execute: function (instance_id, modifiers) {
+    try {
+      checkParameter(instance_id.text, "instance_id");
+      var params = {inst_id: instance_id.text};
+      addParameter(modifiers, "show_map", params, "show_map");
+      addParameter(modifiers, "show_timeline", params, "show_timeline");
+      addParameter(modifiers, "discussion_enable", params, "discussion_enable");
+      addParameter(modifiers, "discussion_init", params, "discussion_init");
+      addParameter(modifiers, "albums_per_page", params, "albums_per_page");
+      odsExecute("photo.options.set", params, "photo");
+    } catch (ex) {
+      odsDisplayMessage(ex);
+    }
+  }
+});
+
+CmdUtils.CreateCommand({
+  name: "ods-get-photo-options",
+  takes: {"instance_id": noun_type_id},
+  homepage: "http://myopenlink.net/ods/",
+  icon: "http://www.openlinksw.com/favicon.ico",
+  author: {name: "OpenLink Software", email: "ods@openlinksw.com"},
+  license: "MPL",
+  help: "Type ods-get-photo-options &lt;instance_id&gt;",
+
+  preview: function (previewBlock, instance_id) {
+    try {
+      checkParameter(instance_id.text);
+      var params = {inst_id: instance_id.text};
+      odsPreview(previewBlock, "photo.options.get", params, "photo");
     } catch (ex) {
     }
   }
