@@ -257,11 +257,11 @@ create procedure PHOTO.WA.create_new_album(
   if (owner_id <> current_user.user_id)
     current_user := new photo_user (owner_id);
 
-  if(auth_uid = ''){
+  if(auth_uid = '')
     return vector();
-  }
 
-  if(visibility = 1){
+  if (visibility = 1)
+  {
     rights := '110100100R';
   }else{
     rights := '110000000R';
@@ -269,9 +269,8 @@ create procedure PHOTO.WA.create_new_album(
 
   col_id := PHOTO.WA.DAV_COL_CREATE(current_user, concat(home_path,name,'/'),rights);
 
-  if(col_id > 0){
-
---    DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+  if (col_id > 0)
+  {
     DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'start_date',cast(start_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'end_date',cast(end_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     DB.DBA.DAV_PROP_SET (DB.DBA.DAV_SEARCH_PATH (col_id,'C'),'description',description,current_user.auth_uid,current_user.auth_pwd);
@@ -361,7 +360,6 @@ create procedure PHOTO.WA.edit_album_settings(
   } else {
     goto _err;
   }
-   
    return 'true';
 
 _err:
@@ -381,22 +379,18 @@ create procedure PHOTO.WA.edit_album(
   in end_date datetime,
   in description varchar,
   in geolocation varchar,
-  in obsolete integer
-  )
-  returns SOAP_album
+  in obsolete integer) returns SOAP_album
   {
-
   declare current_user photo_user;
   declare auth_uid,rights varchar;
   declare result SOAP_album;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
-
-  if(auth_uid = ''){
+  if (auth_uid = '')
     return vector();
-  }
 
-  if(visibility = 1){
+  if (visibility = 1)
+  {
     rights := '110100100R';
   }else{
     rights := '110000000R';
@@ -405,7 +399,8 @@ create procedure PHOTO.WA.edit_album(
 
   declare col_id integer;
 
-  if(old_name <> new_name){
+  if (old_name <> new_name)
+  {
     col_id := PHOTO.WA.DAV_MOVE(current_user, concat(home_path,old_name,'/'),concat(home_path,new_name,'/'));
   }else{
     col_id := DAV_SEARCH_ID(concat(home_path,old_name,'/'),'C');
@@ -465,17 +460,14 @@ create procedure PHOTO.WA.thumbnail_album(
   in home_path varchar,
   in gallery_name varchar,
   in visibility integer,
-  in thumb_id integer)
-  returns integer
+  in thumb_id integer) returns integer
   {
   declare current_user photo_user;
   declare auth_uid,rights varchar;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
   if(auth_uid = '')
-  {
     return 0;
-  }
 
   if (visibility = 1)
   {
@@ -506,8 +498,7 @@ create procedure PHOTO.WA.thumbnail_album(
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.dav_upload(
   in params any,
-  in current_user photo_user)
-  returns integer
+  in current_user photo_user) returns integer
 {
   declare gallery_id integer;
   gallery_id := cast (get_keyword('gallery_id', params) as integer);
@@ -528,7 +519,8 @@ create procedure PHOTO.WA.dav_upload(
 
   i := 1;
   image_cnt := 0;
-  while(i <= 20){
+  while (i <= 20)
+  {
     if(get_keyword (concat('my_image_',cast(i as varchar)), params,'') <> '')
     {
       PHOTO.WA.dav_upload_file (params,current_user,i,'file');
@@ -551,8 +543,7 @@ create procedure PHOTO.WA.dav_upload_file(
   in params any,
   in current_user photo_user,
   in image_index integer,
-  in source varchar)
-  returns integer
+  in source varchar) returns integer
 {
   declare path,album,home_path varchar;
   declare image,image_attrs,image_fname,image_name,image_type any;
@@ -611,10 +602,8 @@ create procedure PHOTO.WA.dav_upload_file(
     PHOTO.WA.sioc_content(current_user,path,description);
 
     return new_id;
-
-  }else{
-    return null;
   }
+  return null;
 }
 ;
 
@@ -823,8 +812,7 @@ create procedure PHOTO.WA.tag_image(
   in p_gallery_id integer,
   in home_url varchar,
   in id integer,
-  in tag varchar)
-returns  varchar array
+  in tag varchar) returns  varchar array
 {
   declare allTags any;
   declare path varchar;

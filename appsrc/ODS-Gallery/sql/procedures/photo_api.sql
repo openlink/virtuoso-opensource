@@ -1,175 +1,217 @@
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2008 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+-----------------------------------------------------------------------------------------
+
 use ODS;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API.photo_setting_xml (
+  in settings any,
+  in settingName varchar)
+{
+  return sprintf ('  <%s>%s</%s>\n', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."photo.album.new" (
-    		in inst_id int,
+  in inst_id integer,
     		in name varchar,
-		in startdate datetime := null,
-		in enddate datetime := null,
-    		in description varchar,
-		in visibility int := 1,
-		in geolocation varchar := ''
-		) __soap_http 'text/xml'
+  in description varchar := null,
+  in startDate datetime := null,
+  in endDate datetime := null,
+  in visibility integer := 1,
+  in geoLocation varchar := '') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare res DB.DBA.SOAP_album;
   declare sid, path varchar;
-  declare g_id int;
+  declare g_id integer;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  sid := get_ses (uname);
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  if (startdate is null)
-    startdate := now ();
-  if (enddate is null)
-    enddate := now ();
-  res := PHOTO.WA.create_new_album (sid, g_id, path, name, visibility, startdate, enddate, description, geolocation);
-  if (not isarray (res))
-    rc := res.id;
-  else
-    rc := -1;
+  if (startDate is null)
+    startDate := now ();
+  if (endDate is null)
+    endDate := now ();
+  sid := get_ses (uname);
+  res := PHOTO.WA.create_new_album (sid, g_id, path, name, visibility, startDate, endDate, description, geolocation);
   close_ses (sid);
+  rc := case when (not isarray (res)) then res.id else -1 end;
   return ods_serialize_int_res (rc, 'Created');
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."photo.album.update" (
-    		in inst_id int,
-		in old_name varchar,
-    		in new_name varchar,
-		in startdate datetime := null,
-		in enddate datetime := null,
-    		in description varchar,
-		in visibility int := 1,
+  in inst_id integer,
+  in name varchar,
+  in new_name varchar := null,
+  in description varchar := null,
+  in startDate datetime := null,
+  in endDate datetime := null,
+  in visibility integer := 1,
 		in geolocation varchar := '',
-		in obsolete int := 0
-    ) __soap_http 'text/xml'
+  in obsolete integer := 0) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare res DB.DBA.SOAP_album;
   declare sid, path varchar;
-  declare g_id int;
+  declare g_id integer;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  sid := get_ses (uname);
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  if (startdate is null)
-    startdate := now ();
-  if (enddate is null)
-    enddate := now ();
-
-  res := PHOTO.WA.edit_album (sid, g_id, path, old_name, new_name, visibility, startdate, enddate, description, geolocation, obsolete);
-
-  if (not isarray (res))
-    rc := res.id;
-  else
-    rc := -1;
+  if (new_name is null)
+    new_name := name;
+  if (startDate is null)
+    startDate := now ();
+  if (endDate is null)
+    endDate := now ();
+  sid := get_ses (uname);
+  res := PHOTO.WA.edit_album (sid, g_id, path, name, new_name, visibility, startDate, endDate, description, geolocation, obsolete);
   close_ses (sid);
+  rc := case when (not isarray (res)) then res.id else -1 end;
   return ods_serialize_int_res (rc, 'Created');
 }
 ;
 
-create procedure ODS.ODS_API."photo.album.delete" (in inst_id int, in name varchar) __soap_http 'text/xml'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.album.delete" (
+  in inst_id integer,
+  in name varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare path varchar;
-  declare g_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
-  select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
+  select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || name || '/';
   rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null, 0);
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."photo.album.set_thumbnail" (in inst_id int, in name varchar, in thumbnail_id int) __soap_http 'text/xml'
-{
-  ;
-}
-;
-
-create procedure ODS.ODS_API."photo.album.set_options" (in inst_id int, in name varchar, in show_map int, in show_timeline int, in enable_discussion int, in init_discussion int, in settings any) __soap_http 'text/xml'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.image.get" (
+  in inst_id integer,
+  in album varchar,
+  in name varchar,
+  in outputFormat varchar := '') __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare res DB.DBA.SOAP_album;
+  declare rc integer;
+  declare content, tp any;
   declare sid, path varchar;
-  declare settings_array any;
-  declare g_id int;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  if (not ods_check_auth (uname, inst_id, 'author'))
+  if (not ods_check_auth (uname, inst_id, 'viewer'))
     return ods_auth_failed ();
 
-  sid := get_ses (uname);
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
-  select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || name;
-  settings_array := split_and_decode (settings);
-  res := PHOTO.WA.edit_album_settings (sid, g_id, path, show_map, show_timeline, enable_discussion, init_discussion, settings_array);
+  select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
+  path := path || album || '/' || name;
+  rc := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (path, 'R'), content, tp, 0, 0, uname, null);
+  if (rc < 0)
+    return ods_serialize_int_res (rc);
 
-  if (res = 'true')
-    rc := 1;
-  else
-    rc := -1;
-  close_ses (sid);
-  return ods_serialize_int_res (rc, 'Updated');
+  if (outputFormat = 'base64')
+  {
+    http_header ('Content-Type: text/plain\r\n');
+    http (sprintf ('data:%s;base64,%s', tp, encode_base64 (blob_to_string (content))));
+  } else {
+    http_header (sprintf ('Content-Type: %s\r\n', tp));
+    http (content);
+  }
+  return '';
 }
 ;
 
-create procedure ODS.ODS_API."photo.image.add" (
-    in inst_id int,
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.image.new" (
+  in inst_id integer,
     in album varchar,
-    in description varchar,
-    in file_name varchar,
-    in visibility int := 1
-    )
-__soap_http 'text/xml'
+  in name varchar,
+  in description varchar := null,
+  in visibility integer := 1) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare path, permissions varchar;
-  declare g_id, gid, uid int;
+  declare g_id, gid, uid integer;
   declare image varbinary;
 
   image := http_body_read ();
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -179,7 +221,8 @@ __soap_http 'text/xml'
   if (not length (image))
     return ods_serialize_int_res (-1, 'Invalid image data');
 
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
 
@@ -188,152 +231,298 @@ __soap_http 'text/xml'
   "IM GetImageBlobFormat" (image, length (image));
   rc := -1;
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || album || '/' || file_name;
+  path := path || album || '/' || name;
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
-  if (visibility)
-    permissions := '110100100RM';
-  else
-    permissions := '110100000RM';
+  permissions :=  case when (visibility) then '110100100RM' else '110100000RM' end;
   rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, image, '', permissions, uid, gid, uname, null, 0, null, null, null, null, null, 1);
-  if (rc > 0)
+  if ((rc > 0) and (description is not null))
     DB.DBA.DAV_PROP_SET_INT (path, 'description', description, uname, null, 0, 1, 0);
 ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."photo.image.delete" (in inst_id int, in album varchar, in file_name varchar) __soap_http 'text/xml'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.image.update" (
+  in inst_id integer,
+  in album varchar,
+  in name varchar,
+  in new_name varchar := null,
+  in description varchar := null,
+  in visibility integer := 1) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
-  declare path varchar;
-  declare g_id int;
+  declare rc integer;
+  declare res DB.DBA.SOAP_album;
+  declare sid, path varchar;
+  declare g_id integer;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || album || '/' || file_name;
+  path := path || album || '/';
+  if (new_name is null)
+    new_name := name;
+  sid := get_ses (uname);
+  res := PHOTO.WA.edit_image (sid, g_id, path, name, new_name, description, visibility);
+  close_ses (sid);
+  rc := case when (not isinteger (res)) then res.id else -1 end;
+  return ods_serialize_int_res (rc, 'Updated');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.image.delete" (
+  in inst_id integer,
+	in album varchar,
+  in name varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare path varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname, inst_id, 'author'))
+    return ods_auth_failed ();
+
+  declare exit handler for not found
+  {
+    return ods_serialize_int_res (-1, 'The home folder does not exists');
+  };
+  select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
+  path := path || album || '/' || name;
   rc := DB.DBA.DAV_DELETE_INT (path, 0, uname, null, 0);
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."photo.image.set_properties" (
-    	in inst_id int,
-	in album varchar,
-	in old_name varchar,
-	in new_name varchar,
-	in description varchar,
-	in visibility int := 1
-	)
-__soap_http 'text/xml'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.comment.get" (
+	in comment_id integer) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare uname varchar;
+	declare inst_id, image_id, id integer;
+	declare q, post_iri, iri varchar;
+
+	whenever not found goto _exit;
+
+  id := comment_id;
+	select GALLERY_ID, RES_ID into inst_id, image_id from PHOTO.WA.COMMENTS where COMMENT_ID = id;
+
+	if (not ods_check_auth (uname, inst_id, 'reader'))
+		return ods_auth_failed ();
+
+	if (not (PHOTO.WA.discussion_check () and PHOTO.WA.conversation_enable (inst_id)))
+		return signal('PH001', 'Discussions must be enabled for this instance');
+
+  post_iri := SIOC..post_iri_ex (SIOC..photo_iri (PHOTO.WA.domain_name ( inst_id)), image_id);
+  iri := SIOC..gallery_comment_iri (post_iri, comment_id);
+	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
+	exec_sparql (q);
+
+_exit:
+	return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.comment.new" (
+  in inst_id integer,
+  in album varchar,
+  in image varchar,
+	in text varchar) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+  declare sid, path varchar;
+	declare rc integer;
+	declare uname varchar;
+  declare comment DB.DBA.photo_comment;
+
+	rc := -1;
+	if (not ods_check_auth (uname, inst_id, 'reader'))
+		return ods_auth_failed ();
+
+	if (not (PHOTO.WA.discussion_check () and PHOTO.WA.conversation_enable (inst_id)))
+		return signal('PH001', 'Discussions must be enabled for this instance');
+
+  declare exit handler for not found
+  {
+    return ods_serialize_int_res (-1, 'The home folder does not exists');
+  };
+  select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
+  path := path || album || '/' || image;
+  sid := get_ses (uname);
+	comment := PHOTO.WA.add_comment (sid, inst_id, DB.DBA.DAV_SEARCH_ID (path, 'R'), text);
+	rc := comment.comment_id;
+  close_ses (sid);
+	return ods_serialize_int_res (rc);
+}
+  ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.comment.delete" (
+	in comment_id integer) __soap_http 'text/xml'
+{
+	declare exit handler for sqlstate '*'
+	{
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
+
+	declare rc, id integer;
+	declare uname varchar;
+	declare inst_id integer;
+
+	rc := -1;
+	inst_id := (select GALLERY_ID from PHOTO.WA.COMMENTS where COMMENT_ID = comment_id);
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
+
+	if (not (PHOTO.WA.discussion_check () and PHOTO.WA.conversation_enable (inst_id)))
+		return signal('PH001', 'Discussions must be enabled for this instance');
+
+  id := comment_id;
+	if (not exists (select 1 from PHOTO.WA.COMMENTS where COMMENT_ID = id))
+		return ods_serialize_sql_error ('37000', 'The item is not found');
+	delete from PHOTO.WA.COMMENTS where COMMENT_ID = id;
+	rc := row_count ();
+
+	return ods_serialize_int_res (rc);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.options.set" (
+  in inst_id integer,
+  in show_map integer := null,
+  in show_timeline integer := null,
+  in discussion_enable integer := null,
+  in discussion_init integer := null,
+  in albums_per_page integer := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc int;
+  declare rc integer;
   declare res DB.DBA.SOAP_album;
   declare sid, path varchar;
-  declare g_id int;
+	declare settings, settings_array any;
+  declare g_id integer;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
-  sid := get_ses (uname);
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     return ods_serialize_int_res (-1, 'The home folder does not exists');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || album;
-  res := PHOTO.WA.edit_image (sid, g_id, path, old_name, new_name, description, visibility);
-  if (not isinteger (res))
-    rc := res.id;
-  else
-    rc := -1;
+  sid := get_ses (uname);
+  settings := PHOTO.WA.load_settings (sid, inst_id);
+  if (show_map is null)
+    show_map := get_keyword ('show_map', settings);
+  if (show_timeline is null)
+    show_timeline := get_keyword ('show_timeline', settings);
+  if (discussion_enable is null)
+    discussion_enable := get_keyword ('nntp', settings);
+  if (discussion_init is null)
+    discussion_init := get_keyword ('nntp_init', settings);
+  if (albums_per_page is null)
+  {
+    settings_array := vector ('albums_per_page', get_keyword ('albums_per_page', settings));
+  } else {
+    settings_array := vector ('albums_per_page', albums_per_page);
+    }
+  res := PHOTO.WA.edit_album_settings (sid, g_id, path, show_map, show_timeline, discussion_enable, discussion_init, settings_array);
   close_ses (sid);
+  rc := case when (res = 'true') then 1 else -1 end;
   return ods_serialize_int_res (rc, 'Updated');
 }
 ;
 
-create procedure ODS.ODS_API."photo.image.get_properties" (in inst_id int, in album varchar, in file_name varchar) __soap_http 'text/xml'
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."photo.options.get" (
+  in inst_id int) __soap_http 'text/xml'
 {
-  ;
-}
-;
-
-create procedure ODS.ODS_API."photo.album.get" (in inst_id int, in album varchar) __soap_http 'text/xml'
+	declare exit handler for sqlstate '*'
 {
-  ;
-}
-;
+		rollback work;
+		return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+	};
 
-create procedure ODS.ODS_API."photo.image.get" (in inst_id int, in album varchar, in file_name varchar) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc int;
-  declare content, tp any;
-  declare sid, path varchar;
-  declare g_id int;
+	declare rc integer;
+	declare uname, sid varchar;
+	declare settings any;
 
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname, inst_id, 'viewer'))
-    return ods_auth_failed ();
+	if (not ods_check_auth (uname, inst_id, 'author'))
+		return ods_auth_failed ();
 
-  declare exit handler for not found {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
-  };
-  select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
-  path := path || album || '/' || file_name;
-  rc := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (path, 'R'), content, tp, 0, 0, uname, null);
-  if (rc < 0)
-    return ods_serialize_int_res (rc);
-  else
-    {
-      http_header (sprintf ('Content-Type: %s\r\n', tp));
-      http (content);
-    }
-  return '';
-}
-;
+  sid := get_ses (uname);
+  settings := PHOTO.WA.load_settings (sid, inst_id);
+  close_ses (sid);
 
-create procedure ODS.ODS_API."photo.album.import" (in inst_id int, in album varchar) __soap_http 'text/xml'
-{
-  ;
-}
-;
+	http ('<settings>\n');
+  http (ODS.ODS_API.photo_setting_xml (settings, 'show_map'));
+  http (ODS.ODS_API.photo_setting_xml (settings, 'show_timeline'));
+  http (ODS.ODS_API.photo_setting_xml (settings, 'nntp'));
+  http (ODS.ODS_API.photo_setting_xml (settings, 'nntp_init'));
+  http (ODS.ODS_API.photo_setting_xml (settings, 'albums_per_page'));
+	http ('</settings>');
 
-create procedure ODS.ODS_API."photo.album.export" (in inst_id int, in album varchar) __soap_http 'text/xml'
-{
-  ;
+	return '';
 }
 ;
 
 grant execute on ODS.ODS_API."photo.album.new" to ODS_API;
 grant execute on ODS.ODS_API."photo.album.update" to ODS_API;
 grant execute on ODS.ODS_API."photo.album.delete" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.set_thumbnail" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.set_options" to ODS_API;
-grant execute on ODS.ODS_API."photo.image.add" to ODS_API;
-grant execute on ODS.ODS_API."photo.image.delete" to ODS_API;
-grant execute on ODS.ODS_API."photo.image.set_properties" to ODS_API;
-grant execute on ODS.ODS_API."photo.image.get_properties" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.get" to ODS_API;
+
 grant execute on ODS.ODS_API."photo.image.get" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.import" to ODS_API;
-grant execute on ODS.ODS_API."photo.album.export" to ODS_API;
+grant execute on ODS.ODS_API."photo.image.new" to ODS_API;
+grant execute on ODS.ODS_API."photo.image.delete" to ODS_API;
+grant execute on ODS.ODS_API."photo.image.update" to ODS_API;
+
+grant execute on ODS.ODS_API."photo.comment.get" to ODS_API;
+grant execute on ODS.ODS_API."photo.comment.new" to ODS_API;
+grant execute on ODS.ODS_API."photo.comment.delete" to ODS_API;
+
+grant execute on ODS.ODS_API."photo.options.set" to ODS_API;
+grant execute on ODS.ODS_API."photo.options.get" to ODS_API;
 
 use DB;

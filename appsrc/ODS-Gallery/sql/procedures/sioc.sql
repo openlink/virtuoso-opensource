@@ -373,7 +373,6 @@ create procedure gallery_comment_url(in iri varchar, in comment_id int)
 ;
 
 use DB;
-use DB;
 -- PHOTO
 
 create procedure sioc.DBA.gallery_prop_get (in path varchar, in uid varchar, in pwd varchar, in def varchar)
@@ -382,7 +381,7 @@ create procedure sioc.DBA.gallery_prop_get (in path varchar, in uid varchar, in 
   rc := DB.DBA.DAV_PROP_GET (path, 'description', uid, pwd_magic_calc (uid, pwd, 1));
   if (rc = -12)
     return null;
-  else if (not isstring (rc))
+  if (not isstring (rc))
     return def;
 
   return rc;

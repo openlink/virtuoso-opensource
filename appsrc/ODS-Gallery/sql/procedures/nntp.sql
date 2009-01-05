@@ -29,6 +29,15 @@ create procedure PHOTO.WA.discussion_check ()
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.conversation_enable(
+  in domain_id integer)
+{
+  return coalesce ((select coalesce (NNTP, 0) from PHOTO.WA.SYS_INFO where GALLERY_ID = domain_id), 0);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure PHOTO.WA.make_rfc_id (
@@ -278,10 +287,12 @@ create procedure PHOTO.WA.nntp_process_parts (
   is_allowed := 0;
   i1 := 0;
   l1 := length (amime);
-  while (i1 < l1) {
+  while (i1 < l1)
+  {
     declare elm any;
     elm := trim(amime[i1]);
-    if (mime1 like elm) {
+    if (mime1 like elm)
+    {
       is_allowed := 1;
       i1 := l1;
     }

@@ -363,10 +363,9 @@
             <div id="comment_block">
               <h2 id="comment_header">New comment</h2>
               <div id="rte">
-                <script type="text/javascript" src="/photos/res/rte/js/richtext.js"></script>
-                <!-- <script type="text/javascript" src="/photos/res/rte/js/lang/en.js"></script> -->
-                <script type="text/javascript">
-                  initRTE("/photos/res/rte/images/", "/photos/res/rte/js/", "/photos/res/rte/css/rte.css", false);
+                <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
+                <script language="JavaScript" type="text/javascript">
+                  initRTE("/ods/rte/images/", "/ods/rte/", "", false);
                 </script>
                 <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
                 <script type="text/javascript">
