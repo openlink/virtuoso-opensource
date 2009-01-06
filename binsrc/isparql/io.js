@@ -190,7 +190,7 @@ iSPARQL.IO = {
 			var line = lines[i];
 
 			var p = getPragma(line);
-			if(p) { 
+			if (p) {
 				var index = -1;
 				for(var j=0;j<dataObj.pragmas.length;j++) {
 					if(dataObj.pragmas[j][0] == p[0]) { index = j; break; }
@@ -375,5 +375,5 @@ iSPARQL.IO = {
 		}
 
 		OAT.WebDav.openDialog(options);
-}
+	}
 }

@@ -429,11 +429,12 @@ function init() {
 	    	goptions.initial_screen = false;
 	  	  dialogs.goptions.hide();
 	  	} else {
-			if (auth == false) alert('Unauthorized');
-			else alert(auth);
+	  	  if (auth == false)
+	  	    alert('Unauthorized');
+	  	  else 
+	  	    alert(auth);
 	  	}
 	}
-
   OAT.Keyboard.add('esc',function(){dialogs.goptions.cancel();},null,'goptions');
   OAT.Keyboard.add('return',function(){dialogs.goptions.ok();},null,'goptions');
 
