@@ -48,8 +48,9 @@
   <script type="text/javascript"><![CDATA[
     function saveFile ()
     {
+      var lf = document.forms ['admin_login'];
       var f = document.forms['account_form'];
-      var w = window.open (f.fsave.value+'&cnt='+escape(f.cr_view.value),
+      var w = window.open (f.fsave.value+'&sid='+lf.sid.value,
       'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
       return false;
     }
@@ -59,7 +60,7 @@
     <v:text type="hidden"
       name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
       <v:before-data-bind><![CDATA[
-	  declare _base_url, _db_object_to_process, e_array any;
+	  declare _base_url, _db_object_to_process, e_array, path any;
 
 	  if (self.db_object_to_process is NULL)
 	    {
@@ -74,6 +75,8 @@
           if (_base_url is null)
 	    _base_url := name_part (get_keyword('name', self.vc_event.ve_params), 0);
 
+	  path := concat('/DAV/temp/', self.sid, '.sql');
+          DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	  if (self.body_v is NULL)
 	    {
 	      declare tbls any;
@@ -96,6 +99,8 @@
 	      self.body_v := self.body_v || '\n\n';
 	      self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process, self.voidst);
 	      self.body_v := self.body_v || '\n\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
+	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 	    }
 
 	    ]]>

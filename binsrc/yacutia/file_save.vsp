@@ -24,6 +24,16 @@
 
   http_header ('Content-Type: application/octet-stream\r\n');
   http_rewrite ();
+  if ({?'cnt'} is not null)
   http ({?'cnt'});
+  else if ({?'sid'} is not null)
+    {
+       declare path, cnt any;
+       path := concat('/DAV/temp/', {?'sid'}, '.sql');
+       whenever not found goto ret;
+       select RES_CONTENT into cnt from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;	 
+       http (cnt);
+    }
+ret:
   return;
 ?>
