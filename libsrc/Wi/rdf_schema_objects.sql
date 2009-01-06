@@ -32,7 +32,7 @@ create procedure
 RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
-   declare total_select, total_tb, total any;
+   declare total_select, total_tb, total, qual any;
    declare vname varchar;
    ret := make_array (2, 'any');
    sparql_pref := 'SPARQL\n';
@@ -84,16 +84,17 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0)
      {
        declare own any;
        own := name_part (_tbls[0], 1);
-       vname := qualifier||'.'||own||'.'||qualifier||'Total';
+       qual := name_part (_tbls[0], 0);
+       vname := qual||'.'||own||'.'||qualifier||'__Total';
        total_select := rtrim (total_select, '+') || ' AS cnt';
        total_tb := rtrim (total_tb, ',');
-       total := sprintf ('drop view "%I"."%I"."%ITotal"; \n', qualifier, own, qualifier);
+       total := sprintf ('drop view "%I"."%I"."%I__Total"; \n', qual, own, qualifier);
 
-       total := total || sprintf ('create view "%I"."%I"."%ITotal" as select ' || total_select || ' from ' || total_tb || '\n',
-		  qualifier, own, qualifier);
+       total := total || sprintf ('create view "%I"."%I"."%I__Total" as select ' || total_select || ' from ' || total_tb || '\n',
+		  qual, own, qualifier);
        create_count_count := create_count_count || total || '; \n';
-       create_count_count := create_count_count || sprintf ('grant select on "%I"."%I"."%ITotal" to SPARQL_SELECT; \n',
-		      qualifier, own, qualifier);
+       create_count_count := create_count_count || sprintf ('grant select on "%I"."%I"."%I__Total" to SPARQL_SELECT; \n',
+		      qual, own, qualifier);
 
      }
 
@@ -159,11 +160,13 @@ create procedure
 rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 {
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
-   declare suffix, tname, tbl, own any;
+   declare suffix, tname, tbl, own, pref_l any;
 
    uriqa_str := '^{URIQADefaultHost}^';
    qual := name_part (_tbls[0], 0);
+   own := name_part (_tbls[0], 1);
    qual_l := lcase (qual);
+   pref_l := lcase (qualifier);
 
    ret := 'alter quad storage virtrdf:DefaultQuadStorage \n';
    suffix := '_s';
@@ -176,18 +179,17 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 	 {
            ret := ret || ' from ' || rdf_view_sql_tb (_tbls[xx]||'Count') || ' as ' || rdf_view_tb (name_part (_tbls[xx]||'Count', 3) || suffix) || '\n';
          }
-       own := name_part (_tbls[xx], 1);
      }
    -- ## voID
    if (gen_stat)
      {
-       ret := ret || ' from ' || rdf_view_sql_tb (qualifier||'.'||own||'.'||qualifier||'Total') || ' as ' || rdf_view_tb (qualifier||'Total'||suffix) || '\n';
+       ret := ret || ' from ' || rdf_view_sql_tb (qual||'.'||own||'.'||qualifier||'__Total') || ' as ' || rdf_view_tb (qualifier||'__Total'||suffix) || '\n';
      }
 
    ret := ret || rdf_view_get_relations (_tbls, suffix);
 
    ret := ret || ' { \n   create virtrdf:' || qual ||
-   ' as graph iri ("http://' || uriqa_str || '/' || qual_l || '#") option (exclusive) \n    { \n';
+   ' as graph iri ("http://' || uriqa_str || '/' || qualifier || '#") option (exclusive) \n    { \n';
 
    for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
       {
@@ -220,13 +222,13 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
    if (gen_stat)
      {
        ret := ret || rdf_view_sp (6) || '# voID Statistics \n';
-       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as virtrdf:dataset-%s ; \n', qual_l, qual_l);
+       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: a void:Dataset as virtrdf:dataset-%s ; \n', pref_l, qual_l);
        ret := ret || rdf_view_sp (6) || sprintf (' void:sparqlEndpoint <http://%s/sparql> as virtrdf:dataset-sparql-%s ; \n',
        			cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qual_l);
 
-       ret := ret || rdf_view_sp (6) ||	sprintf ('void:statItem %s-stat:Stat . \n', qual_l);
-       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:Stat a scovo:Item ; \n', qual_l);
-       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as virtrdf:stat-decl ; \n', rdf_view_tb (qualifier||'Total'||suffix));
+       ret := ret || rdf_view_sp (6) ||	sprintf ('void:statItem %s-stat:Stat . \n', pref_l);
+       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:Stat a scovo:Item ; \n', pref_l);
+       ret := ret || rdf_view_sp (6) || sprintf (' rdf:value %s.cnt as virtrdf:stat-decl ; \n', rdf_view_tb (qualifier||'__Total'||suffix));
        ret := ret || rdf_view_sp (6) || sprintf (' scovo:dimension void:numOfTriples . \n\n');
 
        for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
@@ -236,8 +238,8 @@ rdf_view_create_view (in qualifier varchar, in _tbls any, in gen_stat int := 0)
 	       tbl_name_l := rdf_view_tb (tbl_name);
 	       tname := tbl_name_l || suffix;
 	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat: void:statItem %s-stat:%sStat as virtrdf:statitem-%s . \n',
-	       				qual_l, qual_l, tbl_name, tbl_name_l);
-	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as virtrdf:statitem-decl-%s ; \n', qual_l, tbl_name, tbl_name_l);
+	       				pref_l, pref_l, tbl_name, tbl_name_l);
+	       ret := ret || rdf_view_sp (6) || sprintf ('%s-stat:%sStat a scovo:Item as virtrdf:statitem-decl-%s ; \n', pref_l, tbl_name, tbl_name_l);
 	       ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as virtrdf:statitem-cnt-%s ; \n',
 	       						rdf_view_tb (tbl_name||'Count') || suffix, tbl_name_l);
 	       ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as virtrdf:statitem-type-1-%s ; \n', tbl_name_l);
