@@ -940,7 +940,7 @@ create procedure up_isparql (in q_num integer, in q_text any)
 
    q_text := replace (q_text, '__URIQA__', uriqa_str);
 
-   xml_query := sprintf ('<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/isparql/xslt/dynamic-page.xsl"?><iSPARQL xmlns="urn:schemas-openlink-com:isparql"><ISparqlDynamicPage><proxy>true</proxy><query><![CDATA[#service:/sparql\r\n#should-sponge:soft\r\n%s]]></query><graph>http://%s/tpch</graph></ISparqlDynamicPage><should_sponge>soft</should_sponge><service>/sparql</service></iSPARQL>',
+   xml_query := sprintf ('<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/isparql/xslt/dynamic-page.xsl"?><iSPARQL xmlns="urn:schemas-openlink-com:isparql"><ISparqlDynamicPage><proxy>true</proxy><query><![CDATA[#service:/sparql\r\n#should-sponge:soft\r\n%s]]></query><graph>http://%s/tpch</graph></ISparqlDynamicPage><should_sponge>soft</should_sponge><endpoint>/sparql</endpoint></iSPARQL>',
   q_text, uriqa_str);
 
   dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
