@@ -96,7 +96,7 @@ GenVAD1 ()
 	  <name package="rdf_lib">
 		<prop name="Title" value="RDF Support Library" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 2001 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1999-2009 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
