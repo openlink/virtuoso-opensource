@@ -44,9 +44,7 @@ clean-local:
 EXTRA_DIST = \
 	make_vad.sh \
 	sql/*.sql \
-	sql/install.bat \
 	sql/procedures/*.sql \
-	sql/uninstall.bat \
 	www-root/*.vsp \
 	www-root/*.vspx \
 	www-root/css/*.css \
@@ -55,8 +53,4 @@ EXTRA_DIST = \
 	www-root/i/*.png \
 	www-root/js/*.js \
 	www-root/portal/*.vsp \
-	www-root/rte/css/*.css \
-	www-root/rte/images/*.gif \
-	www-root/rte/js/*.htm \
-	www-root/rte/js/*.js \
 	xslt/*.xsl
