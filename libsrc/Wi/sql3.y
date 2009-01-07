@@ -592,7 +592,7 @@
 /* procedures */
 %token AGGREGATE FUNCTION OUT_L HANDLER IF THEN ELSE ELSEIF WHILE
 %token BEGINX ENDX RETURN CALL RETURNS DO EXCLUSIVE PREFETCH
-%token SQLSTATE SQLWARNING SQLEXCEPTION EXIT RESIGNAL
+%token SQLSTATE_L SQLWARNING SQLEXCEPTION EXIT RESIGNAL
 %token REVOKE PASSWORD OFF LOGX TIMESTAMP DATE_L DATETIME TIME EXECUTE REXECUTE
 %token MODULE
 
@@ -3370,8 +3370,8 @@ variable_list
 
 condition
 	: NOT FOUND		{ $$ = (caddr_t) SQL_NO_DATA_FOUND; }
-	| SQLSTATE STRING	{ $$ = (caddr_t) t_list (2, $2, sqlp_handler_star_pos ($2)); }
-	| SQLSTATE VALUE STRING
+	| SQLSTATE_L STRING	{ $$ = (caddr_t) t_list (2, $2, sqlp_handler_star_pos ($2)); }
+	| SQLSTATE_L VALUE STRING
 		{
 		  $$ = t_listbox (2, $3, sqlp_handler_star_pos ($3));
 		}
