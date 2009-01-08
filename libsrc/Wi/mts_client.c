@@ -31,6 +31,11 @@
 #include "sql.h"
 #include <plugin/dlf.h>
 
+/* bug in xoleHlp.h */
+#ifndef __cplusplus
+typedef enum APPLICATIONTYPE APPLICATIONTYPE;
+#endif
+
 #include <initguid.h>
 #include <txcoord.h>
 #include <xolehlp.h>

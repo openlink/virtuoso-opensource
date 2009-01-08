@@ -44,6 +44,7 @@
 
 #define UUID_BY_PORT
 
+#ifndef WIN32
 #ifndef HRESULT
 #define HRESULT long
 #define S_OK                                   ((HRESULT)0x00000000L)
@@ -57,6 +58,8 @@
 #ifndef DWORD
 #define DWORD uint32
 #endif
+#endif
+
     /* message identities for main queue */
 #define TP_PREPARE	1
 #define TP_COMMIT	2
