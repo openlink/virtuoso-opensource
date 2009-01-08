@@ -110,7 +110,7 @@ extern int plugin_load (
   const char *plugin_type, const char *plugin_dll_name, const char *plugin_load_path,
   int loadctr, plugin_log_callback *info_logger, plugin_log_callback *error_logger );
 
-#ifndef CALLBACK
+#if !defined(CALLBACK) && !defined(WIN32)
 #define CALLBACK
 #endif
 
