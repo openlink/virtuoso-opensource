@@ -530,7 +530,7 @@ int n_conv_types = 0;		/* This indexes the "table" conv_types_table above, is al
 typedef struct _out
 {
   char *o_buffer;		/* Buffer for SQLBindCol */
-  SDWORD o_col_len;		/* The length of the column on current row */
+  SQLLEN o_col_len;		/* The length of the column on current row */
 } stmt_out_t;
 
 
@@ -584,7 +584,7 @@ struct coldeflist
   struct coldeflist *next;
   char *col_name;
   int col_type;
-  unsigned long int col_precision;
+  SQLULEN col_precision;
   int col_scale;
   int col_nullable;
   int col_unquoted;
@@ -614,13 +614,13 @@ struct tabledeflist *all_tables_list;	/* Initialized in main. */
 char *
 my_strncat (char *string1, const char *string2, size_t count)
 {
-  int str1len = strlen (string1);
+  size_t str1len = strlen (string1);
   return (strncat (string1, string2, (count - str1len)));
 }
 
 
 char *
-chemalloc (int size, char *where)	/* where can be NULL or empty */
+chemalloc (size_t size, char *where)	/* where can be NULL or empty */
 {
   FILE *error_stream;
   int i = 0;
@@ -757,11 +757,11 @@ chestrdup (char *str, char *where)	/* where can be NULL or empty */
 #define strncasestr dbdump_strncasestr
 
 unsigned char *
-strncasestr (unsigned char *string1, unsigned char *string2, int maxbytes)
+strncasestr (unsigned char *string1, unsigned char *string2, size_t maxbytes)
 {
   unsigned char first, d, e;
   unsigned char *s1, *s2;
-  unsigned str2len = strlen ((char *) string2);
+  size_t str2len = strlen ((char *) string2);
 
 
   if (!str2len)
@@ -843,8 +843,8 @@ str_replace (unsigned char *src_str, unsigned char *from_str, unsigned char *to_
 {
   char *me = "str_replace";
   int only_n_flag = (only_n);
-  int src_len, from_len, to_len, difference, occurrences = 0;
-  int res_len, non_changed_len, n_changes;
+  size_t src_len, from_len, to_len, difference, occurrences = 0;
+  size_t res_len, non_changed_len, n_changes;
   unsigned char *ptr, *prevptr, *res_ptr;
   unsigned char *res;
 
@@ -1234,11 +1234,11 @@ reorder_subtables (struct tabledeflist *tl)
 }
 
 
-int
+size_t
 construct_where_clause_aux (char *resbuf, char *father, char *child, char *primcols, char *termstr,	/* A right parenthesis */
-    int maxlength)
+    size_t maxlength)
 {
-  int tmplen;
+  size_t tmplen;
   char *ptr, *oldptr, *endptr;
   char tmpbuf[5 * CHARCOL_LEN + 2];
   char temp1[CHARCOL_LEN + 10], temp2[CHARCOL_LEN + 10];
@@ -1280,11 +1280,11 @@ construct_where_clause_aux (char *resbuf, char *father, char *child, char *primc
 }
 
 
-int
+size_t
 construct_where_clause_for_a_subtable (char *resbuf,
-    struct tabledeflist *father, struct tabledeflist *child, char *primcols, int maxlength)
+    struct tabledeflist *father, struct tabledeflist *child, char *primcols, size_t maxlength)
 {
-  int tmplen;
+  size_t tmplen;
   char *endptr = resbuf;
   char tmpbuf[15 * CHARCOL_LEN + 2];
   char temp[CHARCOL_LEN + 10];
@@ -1316,12 +1316,12 @@ construct_where_clause_for_a_subtable (char *resbuf,
 #define WHERE_WHERE " WHERE"
 #define WHERE_AND   " AND"
 
-int
-make_where_clause_for_table_with_children (char *text, struct tabledeflist *tl, int maxlength)
+size_t
+make_where_clause_for_table_with_children (char *text, struct tabledeflist *tl, size_t maxlength)
 {
   struct subtablelist *sl;
   char *endptr;
-  int tmplen;
+  size_t tmplen;
   char *primcols = get_ancestor (tl)->primary_key_def;
 
   endptr = (text + strlen (text));
@@ -1529,7 +1529,7 @@ get_sql_type_title (int type)
 /* Makes a new, safe copy of the stuff it returns as a result,
    if it is necessary. */
 char *
-get_sql_col_type_def (int type, unsigned long int precision, int scale, int nullable)
+get_sql_col_type_def (int type, SQLULEN precision, int scale, int nullable)
 {
   char result[181], more[181];
   char *type_string;
@@ -1747,7 +1747,7 @@ char *
 compose_whole_tablename (struct tabledeflist *tl, char *dest_buf, int dest_size)
 {
   static int SQLGetInfo_called = 0;
-  static UDWORD owner_usage, qualifier_usage;
+  static SQLULEN owner_usage, qualifier_usage;
   static UWORD qualifier_location;
   static char *owner_term, *qualifier_term, *qualifier_name_separator;
   static char sp_owner_term[257], sp_qualifier_term[257], sp_qualifier_name_separator[257];
@@ -1928,7 +1928,7 @@ UCHAR *
 new_whole_tablename (UCHAR * tablequalifier, UCHAR * tableowner, UCHAR * tablename, char *where)
 {
   UCHAR *wholetablename;
-  int whole_len, qual_len, own_len, tab_len;
+  size_t whole_len, qual_len, own_len, tab_len;
 
   if (NULL == tablequalifier)
     {
@@ -2178,7 +2178,7 @@ get_all_tables (char *global_tablequalifier, char *global_tableowner, char *tabl
   UCHAR szTableQualifier[CHARCOL_LEN + 2], szTableOwner[CHARCOL_LEN + 2],
       szTableName[CHARCOL_LEN + 2], szTableType[CHARCOL_LEN + 2];
   char *where = "get_all_tables";
-  SDWORD cbTableQualifier, cbTableOwner, cbTableName, cbTableType;
+  SQLLEN cbTableQualifier, cbTableOwner, cbTableName, cbTableType;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
   UCHAR *wholetablename;	/* Concatenated from the three above elements. */
   int rc;
@@ -2387,10 +2387,10 @@ get_table_columns (struct tabledeflist *tl, int n_cols_with_describe_col)
   UCHAR *tablequalifier, *tableowner, *tablename;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
   SWORD s_cbColumnName;		/* To avoid warnings, we must use 2 different */
-  SDWORD l_cbColumnName;	/* variants for SQLBindCol and SQLDescribeCol */
+  SQLLEN l_cbColumnName;	/* variants for SQLBindCol and SQLDescribeCol */
   SWORD Type, Scale, Nullable;
-  UDWORD Precision;
-  SDWORD cbType, cbPrecision, cbScale, cbNullable;
+  SQLULEN Precision;
+  SQLLEN cbType, cbPrecision, cbScale, cbNullable;
   int rc;
   UWORD inx = 0;
   struct coldeflist *cl = NULL;
@@ -2690,10 +2690,10 @@ get_table_bestrow_columns (struct tabledeflist *tl, UWORD scope_specified, UWORD
   UCHAR *tablequalifier, *tableowner, *tablename;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
   SWORD SCOPE, PSEUDO_COLUMN;
-  SDWORD cbSCOPE, cbPSEUDO_COLUMN;
+  SQLLEN cbSCOPE, cbPSEUDO_COLUMN;
   int rc, count = 0;
   UCHAR Column_Name[CHARCOL_LEN + 2];
-  SDWORD cbColumnName;
+  SQLLEN cbColumnName;
   char temp[CHARCOL_LEN + 10], where[CHARCOL_LEN + 80];
 
   sprintf (where, "get_table_bestrow_columns(\"%s\",%d,%d)", (tl->name ? tl->name : "NULL"), scope_specified, nullability);
@@ -2790,12 +2790,12 @@ get_table_primarykey (struct tabledeflist *tl)
 {
   UCHAR *tablequalifier, *tableowner, *tablename;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
-  SDWORD cbTabQual, cbTabOwn, cbTabName;
-  SDWORD cbSuperTabQual, cbSuperTabOwn, cbSuperTabName;
-  SDWORD cbColumnName;
-  SDWORD cbIndexName;
+  SQLLEN cbTabQual, cbTabOwn, cbTabName;
+  SQLLEN cbSuperTabQual, cbSuperTabOwn, cbSuperTabName;
+  SQLLEN cbColumnName;
+  SQLLEN cbIndexName;
   SWORD Seq_In_Index;
-  SDWORD cbSeq_In_Index;
+  SQLLEN cbSeq_In_Index;
   int rc, count = 0;
 /* These are for Bind: */
   UCHAR Column_Name[CHARCOL_LEN + 2];
@@ -2946,7 +2946,7 @@ get_real_supertables (struct tabledeflist *tl)
 {
   UCHAR *tablequalifier, *tableowner, *tablename;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
-  SDWORD cbSuperTabName, cbTableName = SQL_NTS;
+  SQLLEN cbSuperTabName, cbTableName = SQL_NTS;
   UCHAR *SuperTabNamePtr;	/* Usually points to the start of SuperTabName */
   int rc, count = 0;
   struct tabledeflist *supertl;
@@ -3135,9 +3135,9 @@ get_table_indices (struct tabledeflist *tl)
 {
   UCHAR *tablequalifier, *tableowner, *tablename;
   SWORD scbTableQualifier = SQL_NTS, scbTableOwner = SQL_NTS, scbTableName = SQL_NTS;
-  SDWORD cbIndexName, cbColumnName;
+  SQLLEN cbIndexName, cbColumnName;
   SWORD Non_Unique = 555, Seq_In_Index = 666, Type = 777;
-  SDWORD cbNon_Unique, cbSeq_In_Index, cbType;
+  SQLLEN cbNon_Unique, cbSeq_In_Index, cbType;
   int rc;
   int count = 0;
   int this_one_is_primary_key = 0;
@@ -3394,7 +3394,7 @@ error:;
 /* ================================================================== */
 
 void
-print_datetime_col (char *timebinstr, int collen, int type)
+print_datetime_col (char *timebinstr, SQLLEN collen, int type)
 {
   char temp[121];
 
@@ -3431,11 +3431,13 @@ print_datetime_col (char *timebinstr, int collen, int type)
     {
       struct tm *tm;
       struct timeval tv;
+      time_t now;
 
       memcpy (&tv, timebinstr, sizeof (struct timeval));
       TV_TO_STRING (&tv);
 
-      tm = localtime (&tv.tv_sec);
+      tm = localtime (&now);
+      tv.tv_sec = (long) now;
       if (tm)
 	{
 	  sprintf (temp, "%04d.%02d.%02d %02d:%02d.%02d %06ld",
@@ -3485,7 +3487,7 @@ print_datetime_col (char *timebinstr, int collen, int type)
    The corresponding unescaping function is unescape_string in isql.c
  */
 long
-print_string_col_aux (UCHAR * s, int length, int use_backslash_escapes,
+print_string_col_aux (UCHAR * s, size_t length, int use_backslash_escapes,
     int is_foreach_blob, long chars_since_newline, char *end_token, char *blob_token)
 {
   for (; length--; s++)
@@ -3616,8 +3618,8 @@ print_blob_col (UWORD n_col, struct coldeflist *cl, int really_do_it)
 {
   UCHAR last_character = '\0';
   UCHAR blob_buffer[BLOB_BUFFER_SIZE + 3];
-  int got_n_bytes;
-  long total = 0;
+  size_t got_n_bytes;
+  size_t total = 0;
   long chars_since_newline = -1;
   int rc;
   int type = cl->col_type;
@@ -3639,8 +3641,8 @@ print_blob_col (UWORD n_col, struct coldeflist *cl, int really_do_it)
 
   for (;;)
     {
-      SDWORD n_recv;
-      rc = SQLGetData (stmt, n_col, SQL_C_CHAR, blob_buffer, ((SDWORD) BLOB_BUFFER_SIZE), &n_recv);
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col, SQL_C_CHAR, blob_buffer, ((SQLLEN) BLOB_BUFFER_SIZE), &n_recv);
 
 /* Here we got either SQL_NO_DATA or an error. */
       if (((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) || (n_recv == SQL_NULL_DATA))
@@ -3852,7 +3854,7 @@ print_table_row (struct tabledeflist *tl)
 	    default:
 	      {			/* It's SQL_CHAR, SQL_VARCHAR, SQL_BINARY, SQL_VARBINARY
 				   or something which needs to be surrounded with quotes. */
-		int real_len = out_cols[inx].o_col_len;
+		SQLLEN real_len = out_cols[inx].o_col_len;
 
 #ifdef SQL_VARCHAR
 /* With SQL_VARCHARs the column length returned by the driver/API function
@@ -4001,7 +4003,7 @@ link_generic_operation (HSTMT * ptr_to_link_stmt, HDBC hdbc,	/* Datadest (Kubl) 
   static char *last_output_template = NULL;
 				/* RETCODE */ int rc;
 				/* Return Code for SQL operations, signed short */
-  SDWORD cb_datasource = SQL_NTS, cb_second_arg = SQL_NTS, cb_third_arg = SQL_NTS;
+  SQLLEN cb_datasource = SQL_NTS, cb_second_arg = SQL_NTS, cb_third_arg = SQL_NTS;
   char tmp1buf[2501], tmp2buf[2501];	/* Enough is enough. */
 
   tmp1buf[0] = tmp2buf[0] = '\0';
@@ -4045,7 +4047,7 @@ link_generic_operation (HSTMT * ptr_to_link_stmt, HDBC hdbc,	/* Datadest (Kubl) 
   rc = SQLBindParameter (*ptr_to_link_stmt,
       ((UWORD) 1), ((SWORD) SQL_PARAM_INPUT),
       ((SWORD) SQL_C_CHAR), ((SWORD) SQL_CHAR),
-      ((UDWORD) 0), ((SWORD) 0), ((PTR) datasource), ((SDWORD) 0), ((SDWORD *) & cb_datasource));
+      ((SQLULEN) 0), ((SWORD) 0), ((PTR) datasource), ((SQLLEN) 0), ((SQLLEN *) & cb_datasource));
   IF_ERR_GO (*ptr_to_link_stmt, error, rc);
 
   if (NULL == second_arg)
@@ -4055,7 +4057,7 @@ link_generic_operation (HSTMT * ptr_to_link_stmt, HDBC hdbc,	/* Datadest (Kubl) 
   rc = SQLBindParameter (*ptr_to_link_stmt,
       ((UWORD) 2), ((SWORD) SQL_PARAM_INPUT),
       ((SWORD) SQL_C_CHAR), ((SWORD) SQL_CHAR),
-      ((UDWORD) 0), ((SWORD) 0), ((PTR) second_arg), ((SDWORD) 0), ((SDWORD *) & cb_second_arg));
+      ((SQLULEN) 0), ((SWORD) 0), ((PTR) second_arg), ((SQLLEN) 0), ((SQLLEN *) & cb_second_arg));
   IF_ERR_GO (*ptr_to_link_stmt, error, rc);
 
   if (NULL == third_arg)
@@ -4065,7 +4067,7 @@ link_generic_operation (HSTMT * ptr_to_link_stmt, HDBC hdbc,	/* Datadest (Kubl) 
   rc = SQLBindParameter (*ptr_to_link_stmt,
       ((UWORD) 3), ((SWORD) SQL_PARAM_INPUT),
       ((SWORD) SQL_C_CHAR), ((SWORD) SQL_CHAR),
-      ((UDWORD) 0), ((SWORD) 0), ((PTR) third_arg), ((SDWORD) 0), ((SDWORD *) & cb_third_arg));
+      ((SQLULEN) 0), ((SWORD) 0), ((PTR) third_arg), ((SQLLEN) 0), ((SQLLEN *) & cb_third_arg));
   IF_ERR_GO (*ptr_to_link_stmt, error, rc);
 
 /* Okay, first time or not, now the parameters should have been bound. */
@@ -4155,7 +4157,7 @@ print_table_definition_banner (struct tabledeflist *tl)
 
   statement_ptr = statement_text;
   sprintf (statement_ptr, "CREATE TABLE %s(", table_destname);
-  indentation_length = strlen (statement_text);
+  indentation_length = (int) strlen (statement_text);
   statement_ptr += indentation_length;
 
 
@@ -4327,8 +4329,8 @@ do_select_for_table (struct tabledeflist *tl, int for_contents_flag)
     {
       if (tl->sub_tables)
 	{
-	  int length_before = strlen (tmp1);
-	  int enough_space = make_where_clause_for_table_with_children (tmp1, tl,
+	  size_t length_before = strlen (tmp1);
+	  size_t enough_space = make_where_clause_for_table_with_children (tmp1, tl,
 	      sizeof (tmp1) - 10);
 	  if (NOT enough_space)
 	    {
@@ -4498,7 +4500,7 @@ print_table_contents (struct tabledeflist *tl)
 
       if (bind_blobs_flag || ((SQL_LONGVARCHAR != cl->col_type) && (SQL_LONGVARBINARY != cl->col_type)))
 	{
-	  rc = SQLBindCol (stmt, inx, btype, out->o_buffer, ((SDWORD) maxcolumn_width), &out->o_col_len);
+	  rc = SQLBindCol (stmt, inx, btype, out->o_buffer, ((SQLLEN) maxcolumn_width), &out->o_col_len);
 	  IF_ERR_GO (stmt, error, rc);
 	}
     }				/* for loop over column list tl->col_defs. */
@@ -4659,7 +4661,7 @@ output_one_table_as_option (struct tabledeflist *this_table, int sublevel)
   for (i = 0; (i < sublevel) && (i < (sizeof (few_spaces) - 1)); i++)
     {
       strcpy (&few_spaces[i], one_space);
-      i += (strlen (one_space));
+      i += (int) (strlen (one_space));
     }
   few_spaces[i] = '\0';
 
