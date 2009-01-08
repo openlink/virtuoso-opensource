@@ -42,9 +42,11 @@ extern CComModule _Module;
 #define SMTPINITGUID
 #include <smtpguid.h>
 
-/* Nasty - workaround for buggy studio 6 compiler */
+#if _MSC_VER < 1400
+/* Nasty - workaround for buggy vc7 */
 typedef enum __MIDL___MIDL_itf_msado15_0000_0013 PositionEnum;
 #import "msado15.tlb" raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#endif
 #import "CDOSys.Tlb" raw_interfaces_only, raw_native_types, no_namespace, named_guids
 
 #include "sysexits.h"
@@ -247,7 +249,7 @@ EnvSorter (const void *p1, const void *p2)
 {
   char **s1 = (char **) p1;
   char **s2 = (char **) p2;
-  return stricmp (*s1, *s2);
+  return _stricmp (*s1, *s2);
 }
 
 
@@ -275,7 +277,7 @@ DeliverPipe (
   BOOL bFailed;
   BOOL bKillIt;
   void *envbuf;
-  int envlen;
+  size_t envlen;
   int envcnt;
   char **saveenv;
   char **env;
@@ -429,25 +431,25 @@ DeliverPipe (
       char mbstr[2 * (BLKSIZE + 1)];
       BSTR bData;
       DWORD dwWritten;
-      LONG nBytes;
-      LONG nRemain;
+      ADO_LONGPTR nBytes;
+      ADO_LONGPTR nRemain;
       HRESULT hr;
 
       nRemain = 0;
       hr = pStream->get_Size (&nRemain);
-      DEBUG1 ("SIZE %d\n", nRemain);
+      DEBUG1 ("SIZE %d\n", (int) nRemain);
       pStream->put_Position (0);
       while (nRemain > 0)
 	{
 	  nBytes = nRemain > BLKSIZE ? BLKSIZE : nRemain;
-	  hr = pStream->ReadText (nBytes, &bData);
+	  hr = pStream->ReadText ((long) nBytes, &bData);
 	  if (FAILED (hr))
 	    break;
 
 	  /* Ok, this MIGHT fail when IETF adopts unicode mail :-) */
 	  bData[nBytes] = 0;
 	  WideCharToMultiByte (CP_ACP, 0,
-	      bData, nBytes + 1,
+	      bData, (int) (nBytes + 1),
 	      mbstr, sizeof (mbstr),
 	      NULL, NULL);
 	  SysFreeString (bData);
@@ -1004,7 +1006,7 @@ CMailDrop::OnArrival (
     }
 
   /* Now modify the list to reflect the remaining recipients */
-  szNewRecipients = ps = strdup (szRecipients);
+  szNewRecipients = ps = _strdup (szRecipients);
   for (i = 0; i < nRecipients; i++)
     {
       if (!pRecipients[i].bDelivered)
