@@ -22,6 +22,7 @@
 #pragma warning (disable:4201) // non-std ext used - nameless struct/union
 #pragma warning (disable:4214) // non-std ext used - bit fields other than int
 #pragma warning (disable:4514) // unreferenced inline function has been removed
+#pragma warning (disable:4996) // The POSIX name for this item is deprecated
 #endif
 
 #define MAXPATHLEN 1024
@@ -30,6 +31,7 @@
 /* GK: hack that is placed here for compatibility with the WIN2003 Platform SDK */
 #define _WSPIAPI_H_
 
+#include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -37,6 +39,8 @@
 #include <process.h>
 #include <io.h>
 
+/* defined in wincrypt, conflicts with openssl */
+#undef OCSP_RESPONSE
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 /* #undef gid_t */
