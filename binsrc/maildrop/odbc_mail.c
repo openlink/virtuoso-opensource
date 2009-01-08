@@ -43,10 +43,6 @@
 # endif
 #endif
 
-#ifndef SQLLEN
-# define SQLLEN SQLINTEGER	/* only in newer 64 bit SDKs */
-#endif
-
 /* qmail exit codes */
 #define QM_ERR_SUCCESS	99	/* mail delivery done */
 #define QM_ERR_HARD	100	/* permanent - mail delivery cannot be done */
@@ -1183,10 +1179,11 @@ main (int argc, char **argv)
   for (;;)
     {
       char buffer[8192];
-      int32 len;
+      size_t len;
 
+      errno = 0;
       len = fread (buffer, 1, sizeof (buffer), stdin);
-      if (len == -1)
+      if (errno)
 	{
 	  Error ("Read failure");
 	  BounceText ("InternalError");
@@ -1195,7 +1192,7 @@ main (int argc, char **argv)
       if (len == 0)
 	break;
       mpl_grow (&mailPool, (memptr_t) buffer, (memsz_t) len);
-      mailSize += len;
+      mailSize += (int32) len;
       if (mailSizeMax && mailSize > mailSizeMax)
 	{
 	  Debug ("Message is too long (%ld)", (long) mailSize);
