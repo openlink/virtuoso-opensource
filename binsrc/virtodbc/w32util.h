@@ -45,6 +45,12 @@
 #pragma warning(disable: 4711) // function selected for inline expansion
 #endif //!_NO_PRAGMA_WARNINGS
 
+/* Microsoft has, in their infinite wisdom, decided to make swprintf
+ * secure: it now requires a size parameter at pos 2. To avoid crashes, and
+ * make the code portable with different SDKs, we add this macro to
+ * disable this new behavior for now. */
+#define _CRT_NON_CONFORMING_SWPRINTFS
+
 #include <windows.h>
 #include <commctrl.h>
 #include <string.h>
