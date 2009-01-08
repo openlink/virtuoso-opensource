@@ -1084,19 +1084,12 @@ static void
 ws_req_expect100 (ws_connection_t * ws)
 {
   char *expect100;
-  char *content_type = ws_header_field (ws->ws_lines, "Content-type:", "application/octet-stream");
+
   expect100 = ws_header_field (ws->ws_lines, "Expect:", NULL);
   if (!expect100)
     return;
   while (isspace (*expect100))
     expect100++;
-
-  while (isspace(*content_type))
-    content_type++;
-
-  if (!IS_DAV_DOMAIN (ws, "") && 0 != strnicmp (content_type, "multipart", 9) &&
-      0 != strnicmp (content_type, "application/x-www-form-urlencoded", 33))
-    return;
 
   if (0 == strnicmp (expect100, "100-continue", 12))
     {
