@@ -137,7 +137,6 @@ extern int ftp_server_timeout;
 #endif
 extern int enable_gzip;
 extern int http_ses_size;
-char *service_name = "unset";
 extern long vt_batch_size_limit;
 extern long rds_disconnect_timeout; /* from sqlrrun.c */
 extern long vdb_use_global_pool; /* from sqlrrun.c */

@@ -38,13 +38,11 @@
 # include "rendezvous.h"
 #endif
 
-
-extern char *	service_name;	/* from viconfig.c */
 /*
  *  Service parameters
  */
 #define SERVICE_NAME	"Virtuoso"
-#define DISPLAY_NAME	service_name /* DBMS_SRV_NAME */
+#define DISPLAY_NAME	"OpenLink Virtuoso Server"
 #define SERVICE_TYPE	SERVICE_WIN32_OWN_PROCESS
 
 /*
@@ -92,69 +90,50 @@ struct service_command
   char *	cmdHelp;
 };
 
-
-/*
- *  Externals from libutil
- */
-extern int	progmanLaunched;	/* set if started by progman/explorer */
-
 /*
  *  Externals from libWi
  */
-extern du_thread_t *the_main_thread;	/* server thread */
 extern semaphore_t *background_sem;
 extern int main_thread_ready;
 extern void (*db_exit_hook) (void);	/* called on shutdown */
-
-extern void (*cfg_replace_log)(char *str);
-extern void (*cfg_set_checkpoint_interval)(int32 f);
-extern void (*db_read_cfg)(caddr_t *it, char *mode);
-
 extern void (*process_exit_hook) (int state);
 
 /* externals from sqlsrv.c */
-extern caddr_t sf_make_new_main_log_name(void);
+extern caddr_t sf_make_new_main_log_name (void);
 extern unsigned long autocheckpoint_log_size;
 
 /*
  *  Externals from viconfig.c
  */
 extern char *c_serverport;		/* port to use */
-extern char *c_database_file;
-extern char *c_txfile;
 extern unsigned long cfg_autocheckpoint;
 
 extern int in_crash_dump;
-extern LOG *startup_log;
-LOG *cfg_open_syslog (int level);
 
 void new_cfg_replace_log (char *new_log);
 void new_cfg_set_checkpoint_interval (int32 f);
 void new_db_read_cfg (caddr_t *it, char *mode);
 void new_dbs_read_cfg (caddr_t *it, char *mode);
 dk_set_t new_cfg_read_storages (caddr_t **temp_storage);
-void sf_make_auto_cp(void);
-void srv_set_cfg(void (*replace_log)(char *str), void (*set_checkpoint_interval)(int32 f),
+void sf_make_auto_cp (void);
+void srv_set_cfg (void (*replace_log)(char *str), void (*set_checkpoint_interval)(int32 f),
       		 void (*read_cfg)(caddr_t * it, char *mode), void (*s_read_cfg)(caddr_t * it, char *mode),
     		 dk_set_t (*read_storages)(caddr_t **temp_file));
 
 void srv_global_init (char *mode);
 void db_to_log (void);
-void db_recover_key (int k_id, int n_id);
 void db_crash_to_log (char *mode);
 void repl_read_db_levels (void);
 void db_not_in_use (void);
 int http_init_part_two ();
-#ifndef NO_THREAD
 void ssl_server_listen ();
-#endif
 
 /*
  *  Command line globals
  */
 int	f_foreground;			/* foreground mode */
 int	f_debug;			/* debug mode */
-char *f_config_file;			/* config file to use */
+char *	f_config_file;			/* config file to use */
 extern char *f_old_dba_pass;
 extern char *f_new_dba_pass;
 extern char *f_new_dav_pass;
@@ -179,7 +158,6 @@ extern int ob_just_report;
  *  Globals for virtuoso
  */
 PCONFIG	pconfig;			/* configuration file */
-BOOL	bWin95;				/* Used to detect Win95 */
 
 /*
  *  Module locals
@@ -208,10 +186,6 @@ static int sigh_mode;
 
 /* Global instance */
 static HINSTANCE hInstance;
-
-/* Win95 splash screen */
-static HBITMAP hBmpSplash;
-static HWND hWndSplash;
 
 
 /*
@@ -279,7 +253,7 @@ struct pgm_option options[] =
     "specify a service instance to start/stop/create/delete"},
 
   {"manual", 'm', ARG_NONE, &f_service_manual,
-    "specify when create a service to make it for manual startup"},
+    "when creating a service, disable automatic startup"},
 
   {0}
 };
@@ -330,24 +304,6 @@ f_service (struct pgm_option *opt)
     }
   if (f_cmd == CMD_NONE)
     usage ();
-}
-
-
-static int
-read_service_name_from_ini ()
-{
-  if (f_config_file == NULL)
-    f_config_file = "virtuoso.ini";
-  f_config_file = s_strdup (setext (f_config_file, "ini", EXT_ADDIFNONE));
-
-  if (cfg_init (&pconfig, f_config_file) == -1)
-    {
-      log (L_ERR, "There is no configuration file %s", f_config_file);
-      return -1;
-    }
-  if (cfg_getstring (pconfig, "Parameters", "Win32ServiceName", &service_name) == -1)
-    service_name = "OpenLink Virtuoso Server";
-  return 0;
 }
 
 
@@ -759,9 +715,6 @@ ServiceCtrlMain (int cmd)
       return -1;
     }
 
-  /* parse configuration file */
-  read_service_name_from_ini ();
-
   sts = service_action (hSCManager, cmd);
 
   CloseServiceHandle (hSCManager);
@@ -773,29 +726,12 @@ ServiceCtrlMain (int cmd)
 /*
  *  Creates a console for the debugging output of the service.
  *  Reroutes the standard file descriptors to the new console.
- *
- *  NOTE: This code is Borland C specific.
  */
 DWORD
 CreateApplicationConsole (void)
 {
-  /*
-   *  First, associate invalid handles with the standard
-   *  C library file descriptors
-   */
-  fclose (stderr);
-  fclose (stdin);
-  fclose (stdout);
-
-  stdout->_file = stderr->_file = stdin->_file = _open_osfhandle (
-      (intptr_t) INVALID_HANDLE_VALUE, _O_TEXT);
-
-  /*
-   *  If we will need an extra console for debugging, allocate one
-   */
   if (debugFlag && AllocConsole ())
     {
-      ShowWindow (GetForegroundWindow (), SW_MINIMIZE);
       SetConsoleTitle (DISPLAY_NAME);
 
       fclose (stderr);
@@ -809,178 +745,6 @@ CreateApplicationConsole (void)
     }
 
   return NO_ERROR;
-}
-
-
-LRESULT APIENTRY
-Win95ServiceWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-  switch (uMsg)
-    {
-    case WM_PAINT:
-      if (hBmpSplash != NULL)
-	{
-	  PAINTSTRUCT ps;
-	  HDC hDC, hDC2;
-	  RECT rc;
-
-	  hDC = BeginPaint (hWnd, &ps);
-	  hDC2 = CreateCompatibleDC (hDC);
-	  SelectObject (hDC2, hBmpSplash);
-	  GetClientRect (hWnd, &rc);
-	  BitBlt (hDC, 0, 0, rc.right, rc.bottom, hDC2, 0, 0, SRCCOPY);
-	  DeleteDC (hDC2);
-	  EndPaint (hWnd, &ps);
-	  return TRUE;
-	}
-      return DefWindowProc (hWnd, uMsg, wParam, lParam);
-
-    case WM_KILLFOCUS:
-      ShowWindow (hWnd, SW_MINIMIZE);
-      break;
-
-    case WM_QUERYENDSESSION:
-      if (!lParam)
-	DestroyWindow (hWnd);
-      return TRUE;
-
-    case WM_ENDSESSION:
-      while (!lParam)
-	Sleep (10000);
-      return TRUE;
-
-    case WM_CLOSE:
-      if (IDOK == MessageBox (hWnd,
-	  "Closing this window will shut down the server.", DISPLAY_NAME,
-	  MB_ICONEXCLAMATION | MB_SETFOREGROUND | MB_OKCANCEL))
-        {
-	  DestroyWindow (hWnd);
-	}
-      return TRUE;
-
-    case WM_DESTROY:
-      PostQuitMessage (0);
-      return TRUE;
-
-    default:
-      return DefWindowProc (hWnd, uMsg, wParam, lParam);
-    }
-
-  return FALSE;
-}
-
-
-DWORD WINAPI
-Win95ForegroundWindow (void *dummy)
-{
-  WNDCLASS wc;
-  HWND hParent;
-  HWND hWnd;
-  BITMAP bm;
-  RECT rcParent;
-  int x, y, cx, cy;
-  MSG msg;
-
-  wc.style = CS_VREDRAW | CS_HREDRAW;
-  wc.lpfnWndProc = Win95ServiceWndProc;
-  wc.cbClsExtra = 0;
-  wc.cbWndExtra = 0;
-  wc.hInstance = hInstance;
-  wc.hIcon = LoadIcon (hInstance, "APP_ICON");
-  wc.hCursor = LoadCursor (NULL, IDC_ARROW);
-  wc.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
-  wc.lpszMenuName = NULL;
-  wc.lpszClassName = SERVICE_NAME;
-
-  RegisterClass (&wc);
-
-  hBmpSplash = LoadBitmap (hInstance, "APP_SPLASH");
-
-  if (hBmpSplash == NULL ||
-      GetObject (hBmpSplash, sizeof (bm), &bm) == 0)
-    {
-      cx = cy = x = y = CW_USEDEFAULT;
-      hBmpSplash = NULL;
-    }
-  else
-    {
-      cx = bm.bmWidth;
-      cy = bm.bmHeight;
-      hParent = GetDesktopWindow ();
-      GetWindowRect (hParent, &rcParent);
-      x = rcParent.left + (((rcParent.right  - rcParent.left) - cx ) / 2);
-      y = rcParent.top  + (((rcParent.bottom - rcParent.top ) - cy) / 2);
-      if (x < 0) x = 0;
-      if (y < 0) y = 0;
-      cy += GetSystemMetrics (SM_CYCAPTION);
-    }
-
-  hWnd = CreateWindowEx (
-      WS_EX_DLGMODALFRAME,
-      SERVICE_NAME, DISPLAY_NAME,
-      WS_POPUP | WS_CAPTION | WS_SYSMENU,
-      x, y, cx, cy, NULL, NULL, hInstance, NULL);
-
-  if (hWnd == NULL)
-    return FALSE;
-
-  hWndSplash = hWnd;
-
-  if (hBmpSplash)
-    {
-      ShowWindow (hWnd, SW_SHOWNORMAL);
-      UpdateWindow (hWnd);
-    }
-
-  while (GetMessage (&msg, NULL, 0, 0))
-    {
-      TranslateMessage (&msg);
-      DispatchMessage (&msg);
-    }
-
-  sigh_pending_signal = CTRL_SHUTDOWN_EVENT;
-  sigh_do_action (1);
-
-  return (DWORD) msg.wParam;
-}
-
-
-BOOL
-Win95Service (BOOL doRegister)
-{
-  typedef BOOL (WINAPI *funRegisterServiceProcess) ();
-  static funRegisterServiceProcess pfRegisterServiceProcess;
-  HMODULE hKernel32;
-  BOOL rc;
-
-  if ((hKernel32 = LoadLibrary ("KERNEL32.DLL")) == NULL)
-    return FALSE;
-
-  pfRegisterServiceProcess = (funRegisterServiceProcess)
-      GetProcAddress (hKernel32, "RegisterServiceProcess");
-
-  if (pfRegisterServiceProcess)
-    {
-      (*pfRegisterServiceProcess) (GetCurrentProcessId (),
-          doRegister ? RSP_SIMPLE_SERVICE : RSP_UNREGISTER_SERVICE);
-      rc = TRUE;
-    }
-  else
-    {
-      rc = FALSE;
-    }
-
-  FreeLibrary (hKernel32);
-
-  if (rc && doRegister)
-    {
-      HANDLE hThr;
-      DWORD thrId;
-      hThr = CreateThread (NULL, 50000, Win95ForegroundWindow, NULL, 0, &thrId);
-      CloseHandle (hThr);
-    }
-
-  return rc;
 }
 
 
@@ -1190,9 +954,6 @@ ServiceMain (void)
 {
   SERVICE_TABLE_ENTRY dispatchTable[2];
 
-  if (!startup_log)
-    startup_log = cfg_open_syslog (LOG_DEBUG);
-  read_service_name_from_ini ();
   memset (dispatchTable, 0, sizeof (dispatchTable));
   dispatchTable[0].lpServiceName = f_instance;
   dispatchTable[0].lpServiceProc = ServiceStartupProc;
@@ -1208,55 +969,8 @@ ServiceMain (void)
 }
 
 
-static HWND console_hWnd;
-
-static BOOL CALLBACK
-enum_thr (HWND hWnd, LPARAM arg)
-{
-  char buffer[300];
-
-  if (GetWindowText (hWnd, buffer, sizeof (buffer)) == 0 ||
-      strcmp ((char *) arg, buffer))
-    return TRUE;
-
-  console_hWnd = hWnd;
-
-  return FALSE;
-}
-
-
-static void
-set_icon (void)
-{
-  CONSOLE_SCREEN_BUFFER_INFO info;
-
-  if (GetConsoleScreenBufferInfo (GetStdHandle (STD_OUTPUT_HANDLE), &info))
-    {
-      char newTitle[50];
-
-      if (console_hWnd == NULL)
-        {
-	  sprintf (newTitle, "%s %u", DISPLAY_NAME, GetCurrentProcessId ());
-	  if (SetConsoleTitle (newTitle))
-	    {
-	      Sleep (100);
-	      EnumWindows (enum_thr, (LPARAM) newTitle);
-	    }
-	  SetConsoleTitle (DISPLAY_NAME);
-	}
-      if (console_hWnd != NULL)
-        {
-	  HICON hIcon;
-
-	  hIcon = LoadIcon (hInstance, "APP_ICON");
-	  SendMessage (console_hWnd, WM_SETICON, (WPARAM) TRUE, (LPARAM) hIcon);
-	  FreeLibrary (hInstance);
-	}
-    }
-}
-
-
 #ifdef SHARED_OBJECT
+
 
 void (*so_initf) (void) = NULL;
 typedef void (*exit_hook_t) (void);
@@ -1289,55 +1003,24 @@ main (int argc, char **argv)
   dbg_malloc_enable();
 #endif
 
-  if (!startup_log)
-    startup_log = cfg_open_syslog (LOG_DEBUG);
-
   process_exit_hook = terminate;
 
-  srv_set_cfg(new_cfg_replace_log, new_cfg_set_checkpoint_interval, new_db_read_cfg, new_dbs_read_cfg, new_cfg_read_storages);
+  srv_set_cfg (new_cfg_replace_log, new_cfg_set_checkpoint_interval, new_db_read_cfg, new_dbs_read_cfg, new_cfg_read_storages);
 
   vInfo.dwOSVersionInfoSize = sizeof (vInfo);
   if (!GetVersionEx (&vInfo))
     vInfo.dwPlatformId = VER_PLATFORM_WIN32s; // surely fails
 
-  if (vInfo.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    bWin95 = FALSE;
-  else if (vInfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-    bWin95 = TRUE;
-  else
-    {
-      log (L_ERR, "this version of windows is not supported");
-      return 1;
-    }
-
-  if (bWin95)
-    {
-      extern struct pgm_option options[];
-      struct pgm_option *p;
-
-      /*
-       *  Kludge: remove the +service option from the possible
-       *  options for Windows 95
-       *  This assumes that +service is the last option
-       */
-      for (p = options; p->long_opt; p++)
-	if (!strcmp (p->long_opt, "service"))
-	  p->long_opt = NULL;
-    }
-
   /*
    *  Parse the commandline
    */
   initialize_program (&argc, &argv);
-#ifdef HAVE_SYSLOG
-  if (!is_default_instance ())
-    syslog_instance_name = f_instance;
-#endif
+
 
   /*
    *  Is this process started as a service?
    */
-  if (!bWin95 && FILE_TYPE_UNKNOWN == GetFileType (GetStdHandle (STD_ERROR_HANDLE)))
+  if (FILE_TYPE_UNKNOWN == GetFileType (GetStdHandle (STD_ERROR_HANDLE)))
     {
       ServiceMain ();
       return 0;
@@ -1362,7 +1045,7 @@ main (int argc, char **argv)
       /*
        *  No +service command
        */
-      if (bWin95 || f_foreground)
+      if (f_foreground)
 	{
           /* Directly execute the code */
 	  sts = ApplicationMain (argc, argv);
@@ -1495,13 +1178,14 @@ terminate (int n)
       else
 	log (L_INFO, "Server exiting");
 
+      fflush (stderr);
       db_not_in_use ();
     }
 
   if (serviceFlag)
     UpdateRunningServiceStatus (SERVICE_STOPPED, 0);
 
-  else if (bWin95 || (n && (f_foreground || f_debug)))
+  else if (n && (f_foreground || f_debug))
     EndNTApplication ();
 
   exit (n);
@@ -1587,29 +1271,20 @@ usage (void)
   program_info.program_version = version;
   default_usage ();
 
-  if (!bWin95)
-    {
-      fprintf (stderr,
-         "\nThe argument to the +service option can be one of the following"
-	 " options\n");
+  fprintf (stderr, "\n"
+    "The argument to the +service option can be one of the following options:\n");
 
       for (pCmd = service_commands; pCmd->cmdName; pCmd++)
 	fprintf (stderr, "  %-14.14s%s\n", pCmd->cmdName, pCmd->cmdHelp);
 
-      fprintf (stderr, 
-	  "\n\nTo create a windows service called \"MyService\" using the configuration "
-	  "file at c:\\database\\virtuoso.ini execute:\n" 
+  fprintf (stderr, "\n"
+    "To create a windows service 'MyService' using the configuration file "
+    "c:\\database\\virtuoso.ini:\n"
 	  "  %s +service create +instance MyService +configfile c:\\database\\virtuoso.ini\n"
-	  "\nTo start the service use:\n"
-	  "  %s +service start +instance MyService\n"
-	  "\nThe service will start to server working directory set to c:\\database, the directory of the INI file. "
-	  "To create a service, only a server executable and INI file are needed, "
-	  "to create and operate a service only a server exe.",
-	  program_info.program_name,
-	  program_info.program_name
-	  );
-
-    }
+    "\n"
+    "To start this service, use 'sc start MyService' or:\n"
+    "  %s +service start +instance MyService\n",
+    program_info.program_name, program_info.program_name);
 
   terminate (1);
 }
@@ -1736,10 +1411,8 @@ ApplicationMain (int argc, char **argv)
 
   /*
    *  Windows NT (running as a service) already has allocated a console
-   *  at this point (Windows 95 has not)
    */
-  if (debugFlag		/* only set if WinNT-service && console */
-      || (!bWin95 && f_foreground))
+  if (debugFlag || f_foreground)
     {
       console_handlers_set = 1;
       SetConsoleCtrlHandler (NULL, FALSE);
@@ -1825,43 +1498,6 @@ ApplicationMain (int argc, char **argv)
     }
 
   /* begin normal server operation */
-
-  if (bWin95)
-    {
-      if (!f_foreground)
-	{
-	  if (f_debug)
-	    {
-	      /*
-	       *  If debugging, detach old console and create a new one
-	       */
-	      if (!progmanLaunched)
-		{
-		  FreeConsole ();
-		  debugFlag = 1;
-		  CreateApplicationConsole ();
-		}
-	    }
-	  else /* background operation */
-	    {
-	      if (stderr_log)
-		log_close (stderr_log);
-	      FreeConsole ();
-	      Win95Service (1);
-	    }
-	}
-
-      if (f_foreground || f_debug)
-        {
-	  SetConsoleTitle (DISPLAY_NAME);
-	  SetConsoleCtrlHandler (NULL, FALSE);
-	  SetConsoleCtrlHandler (CtrlEventHandler, TRUE);
-	}
-      if (f_debug && !f_foreground)
-	set_icon ();
-    }
-  else
-    {
       if (!f_foreground && !f_debug)
 	{
 	  if (stderr_log)
@@ -1869,9 +1505,6 @@ ApplicationMain (int argc, char **argv)
 	  FreeConsole ();
 	  debugFlag = 0;
 	}
-      else if (debugFlag)
-	set_icon ();
-    }
 
 
   /* open database, do roll forward */
@@ -1928,9 +1561,6 @@ ApplicationMain (int argc, char **argv)
 
   if (serviceFlag)
     UpdateRunningServiceStatus (SERVICE_RUNNING, 0);
-
-  if (hBmpSplash)
-    ShowWindow (hWndSplash, SW_MINIMIZE);
 
   log (L_INFO, "Server online at %s (pid %d)", c_serverport, getpid ());
 
