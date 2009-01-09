@@ -166,7 +166,7 @@ OAT.AJAX = {
 		function go() {
 			xhr.send(data);
 			try {
-				if (OAT.Browser.isGecko && !xhr.options.async && xhr.obj.onreadystatechange == null) {
+				if (OAT.Browser.isGecko && !xhr.options.async) {
 					OAT.AJAX.response(xhr);
 				}	
 			} catch (e) {}
@@ -357,13 +357,22 @@ OAT.AJAX = {
 			if (self.obj.abort) { self.obj.abort(); } /* abort the xmlhttp */
 		}
 		
-		if (window.XMLHttpRequest) {
-			self.obj = new XMLHttpRequest(); /* gecko */
+
+		//
+		//  Constructor
+		//
+		var oXMLHttpRequest = window.XMLHttpRequest;
+		if (oXMLHttpRequest) {
+			self.obj = new oXMLHttpRequest(); /* gecko */
 		} else if (window.ActiveXObject) {
 			self.obj = new ActiveXObject("Microsoft.XMLHTTP"); /* ie */
 		} else {
 			alert("XMLHTTPRequest not available!");
 		}
+
+		// Fix problem with some versions of FireBug
+		if (OAT.Browser.isGecko && oXMLHttpRequest.wrapped)
+			self.obj.wrapped = oXMLHttpRequest.wrapped;
 	}
 } /* OAT.AJAX */
 OAT.AJAX.cancelAll = OAT.AJAX.abortAll;
