@@ -324,13 +324,13 @@ create procedure
 rdf_view_dv_to_printf_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188) return '%d';
-   else if (_dv = 182) return '%U';
+   else if (_dv = 182 or _dv = 225) return '%U';
    else if (__tag of float = _dv) return '%f';
    else if (__tag of real = _dv) return '%f';
    else if (__tag of numeric = _dv) return '%f';
    else if (__tag of date = _dv) return '%1D';
    else if (__tag of time = _dv) return '%1D';
-   else if (__tag of datetime = _dv) return '%1D';
+   else if (__tag of datetime = _dv or __tag of timestamp = _dv) return '%1D';
    signal ('42000', sprintf ('The current implementation do no supports data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
@@ -346,6 +346,8 @@ rdf_view_dv_to_sql_str_type (in _dv varchar)
    else if (__tag of date = _dv) return 'date';
    else if (__tag of time = _dv) return 'time';
    else if (__tag of datetime = _dv) return 'datetime';
+   else if (__tag of timestamp = _dv) return 'timestamp';
+   else if (__tag of nvarchar = _dv) return 'nvarchar';
    signal ('42000', sprintf ('The current implementation do no supports data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
