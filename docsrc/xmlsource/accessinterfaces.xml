@@ -24,10 +24,9 @@
 <chapter label="accessinterfaces.xml" id="accessinterfaces">
   <title>Data Access Interfaces</title>
   <abstract>
-    <para>ISQL is an interactive utility to Virtuoso that allows the user to execute queries
-    and scripts from a command line interface.</para>
-    <para>This chapter provides and explanation of the ODBC, JDBC, OLEDB and 
-    .Net driver implementations in Virtuoso.  
+    <para>This chapter covers installation, configuration, and utilization of the data
+access drivers / providers (ODBC, JDBC, OLE-DB, and ADO.NET ) that comprise the Virtuoso
+Client Connectivity kit.
     </para>
   </abstract>
 

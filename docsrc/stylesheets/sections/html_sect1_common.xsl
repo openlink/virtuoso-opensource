@@ -273,13 +273,13 @@
 
 <xsl:template match="figure">
 <table class="figure" border="0" cellpadding="0" cellspacing="0">
-<caption>Figure: <xsl:call-template name="pos" /> <xsl:value-of select="./title"/></caption>
 <tr><td><img>
   <xsl:attribute name="alt"><xsl:value-of select="title" /></xsl:attribute>
   <xsl:attribute name="src"><xsl:value-of select="$imgroot"/><xsl:value-of select="graphic/@fileref"/></xsl:attribute>
   <!-- xsl:attribute name="width"><xsl:value-of select="graphic/@width" /></xsl:attribute>
   <xsl:attribute name="height"><xsl:value-of select="graphic/@depth" /></xsl:attribute -->
 </img></td></tr>
+<tr><td>Figure: <xsl:call-template name="pos" /> <xsl:value-of select="./title"/></td></tr>
 </table>
 </xsl:template>
 

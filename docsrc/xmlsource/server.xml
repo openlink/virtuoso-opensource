@@ -1344,7 +1344,7 @@ This section should stay commented out as long as URIQA is not in use.
 The SPARQL section sets parameters and limits for SPARQL query protocol web service service.
 This section should stay commented out as long as SPARQL is not in use.
 </para>
-Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains detailed description of this functionality.
+Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> contains detailed description of this functionality.
 			<itemizedlist mark="dash">
 <listitem id="ini_SPARQL_ExternalQuerySource">
     <formalpara>
