@@ -203,10 +203,14 @@ namespace OpenLink.Data.Virtuoso
 			Future future = new Future (Service.Execute, GetId (), marshaledQuery, GetId (), parameterRows, null, GetOptions ());
 			SendRequest (future);
 			CLI.ReturnCode rc = ProcessResult (true);
+
 			if (rc != CLI.ReturnCode.SQL_SUCCESS && rc != CLI.ReturnCode.SQL_NO_DATA)
 			{
+				if (rc != CLI.ReturnCode.SQL_SUCCESS_WITH_INFO)
+				{
 				pendingFuture = null;
-				connection.futures.Remove (future);
+					connection.futures.Remove(future);
+				}
 				Diagnostics.HandleResult (rc, this, connection.OuterConnection);
 			}
 		}
@@ -223,8 +227,11 @@ namespace OpenLink.Data.Virtuoso
 			CLI.ReturnCode rc = ProcessResult (false);
 			if (rc != CLI.ReturnCode.SQL_SUCCESS && rc != CLI.ReturnCode.SQL_NO_DATA)
 			{
+                		if (rc != CLI.ReturnCode.SQL_SUCCESS_WITH_INFO)
+                		{
 				pendingFuture = null;
-				connection.futures.Remove (future);
+                    				connection.futures.Remove(future);
+                		}
 				Diagnostics.HandleResult (rc, this, connection.OuterConnection);
 			}
 		}
@@ -298,7 +305,7 @@ namespace OpenLink.Data.Virtuoso
 			CLI.ReturnCode rc = ProcessResult (true);
 			if (rc != CLI.ReturnCode.SQL_SUCCESS && rc != CLI.ReturnCode.SQL_NO_DATA)
 				Diagnostics.HandleResult (rc, this, connection.OuterConnection);
-			return (rc == CLI.ReturnCode.SQL_SUCCESS);
+			return (rc == CLI.ReturnCode.SQL_SUCCESS || rc == CLI.ReturnCode.SQL_SUCCESS_WITH_INFO);
 		}
 
 		public void CloseCursor (bool isExecuted)
@@ -620,6 +627,7 @@ namespace OpenLink.Data.Virtuoso
 		private CLI.ReturnCode ProcessResult (bool needEvl)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.ProcessResult (" + needEvl + ")");
+			bool warningPending = false;
 			for (;;)
 			{
 				object result = pendingFuture.GetNextResult (connection.Session, connection.futures);
@@ -640,7 +648,7 @@ namespace OpenLink.Data.Virtuoso
 						queryType = (QueryType) compilation[1];
 						SetColumnMetaData (compilation[0], (int) compilation[4]);
 						if (!needEvl)
-							return CLI.ReturnCode.SQL_SUCCESS;
+							return (warningPending ? CLI.ReturnCode.SQL_SUCCESS_WITH_INFO : CLI.ReturnCode.SQL_SUCCESS);
 						break;
 					}
 
@@ -652,7 +660,7 @@ namespace OpenLink.Data.Virtuoso
 						isLastResult = true;
 						if (queryType == QueryType.QT_SELECT)
 							return CLI.ReturnCode.SQL_NO_DATA;
-						return CLI.ReturnCode.SQL_SUCCESS;
+						return (warningPending ? CLI.ReturnCode.SQL_SUCCESS_WITH_INFO : CLI.ReturnCode.SQL_SUCCESS);
 
 					case AnswerTag.QA_ROW_LAST_IN_BATCH:
 						isLastInBatch = true;
@@ -661,12 +669,12 @@ namespace OpenLink.Data.Virtuoso
 					case AnswerTag.QA_ROW:
 						prefetchRow = results;
 						isLastRow = false;
-						return CLI.ReturnCode.SQL_SUCCESS;
+						return (warningPending ? CLI.ReturnCode.SQL_SUCCESS_WITH_INFO : CLI.ReturnCode.SQL_SUCCESS);
 
 					case AnswerTag.QA_PROC_RETURN:
 						SetParameterValues (results);
 						isLastResult = isLastRow = true;
-						return CLI.ReturnCode.SQL_SUCCESS;
+						return (warningPending ? CLI.ReturnCode.SQL_SUCCESS_WITH_INFO : CLI.ReturnCode.SQL_SUCCESS);
 
 					case AnswerTag.QA_NEED_DATA:
 						needDataParameter = (int) results[1];
@@ -676,9 +684,11 @@ namespace OpenLink.Data.Virtuoso
 						isLastResult = isLastRow = true;
 						errors.AddServerError ((string) results[1], null, (string) results[2]);
 						return CLI.ReturnCode.SQL_ERROR;
+
 					case AnswerTag.QA_WARNING:
-						errors.AddServerError ((string) results[1], null, (string) results[2]);
-						return CLI.ReturnCode.SQL_SUCCESS_WITH_INFO;
+                        			errors.AddServerWarning((string)results[1], null, (string)results[2]);
+                        			warningPending = true;
+                        			break;
 					}
 				}
 				else
