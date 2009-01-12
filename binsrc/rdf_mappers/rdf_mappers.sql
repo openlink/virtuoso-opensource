@@ -2424,8 +2424,13 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 			url := concat(url, '&key=', api_key );
 		}
 		else
+		{
+			if (id1 is null or id1 = '')
+				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&key=%s', id0, api_key);
+			else
 			url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
 	}
+  }
   }
   tmp := http_get (url, hdr);
   xd := xtree_doc (tmp);

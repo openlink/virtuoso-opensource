@@ -203,6 +203,13 @@
 						</xsl:with-param>
 					</xsl:call-template>
 				</xsl:when>
+		    <xsl:when test="*[@about]">
+			<xsl:call-template name="uri-or-curie">
+			    <xsl:with-param name="uri">
+				<xsl:value-of select="*/@about" />
+			    </xsl:with-param>
+			</xsl:call-template>
+		    </xsl:when>
 			</xsl:choose>
 		</xsl:variable>
 	    <xsl:for-each select="$rels/results/result">
@@ -292,6 +299,25 @@
 			    </rdf:Description>
 		</xsl:if>
 		<xsl:apply-templates />
+	</xsl:template>
+
+	<xsl:template match="*[@about and @typeof and not (@rev) and not (@rel) and not (@property)]">
+	    <xsl:variable name="about">
+		<xsl:call-template name="about-ancestor-or-self" />
+	    </xsl:variable>
+	    <xsl:variable name="typeof" select="vi:split-and-decode(@typeof, 0, ' ')"/>
+	    <rdf:Description rdf:about="{$about}">
+		<xsl:for-each select="$typeof/results/result">
+		    <rdf:type>
+			<xsl:attribute name="rdf:resource">
+			    <xsl:call-template name="uri-or-curie">
+				<xsl:with-param name="uri"><xsl:value-of select="."/></xsl:with-param>
+			    </xsl:call-template>
+			</xsl:attribute>
+		    </rdf:type>
+		</xsl:for-each>
+	    </rdf:Description>
+	    <xsl:apply-templates />
 	</xsl:template>
 
 	<xsl:template name="elem-cont">
