@@ -1988,9 +1988,15 @@ XPF_ROUND (xpf_ceiling, ceil)
 XPF_ROUND (xpf_floor, floor)
 
 
+#define XPF_IMPL_DOC		0
+#define XPF_IMPL_DOCUMENT	1
+#define XPF_IMPL_DOCUMENT_LAZY	2
+#define XPF_IMPL_DOCUMENT_LAZY_IN_COLL	3
+
 void
-xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int custom_xpf)
+xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int call_mode)
 {
+  static const char *fnames[] = {"doc", "document", "document-lazy", "collection"};
   query_instance_t * qi = xqi->xqi_qi;
   const char *uri = ctx_xe->xe_doc.xd->xd_uri;
   caddr_t rel_uri, abs_uri = NULL;
@@ -2008,12 +2014,12 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int cu
   cache_key->xdcs_lang_ptr = (lang_handler_t **) box_num ((ptrlong)(server_default_lh));
   cache_key->xdcs_dtd_cfg = default_doc_dtd_config;
   doc_arg = xpf_arg_tree (tree, 0);
-  if (custom_xpf)
+  if (XPF_IMPL_DOC != call_mode)
     {
       switch (tree->_.xp_func.argcount)
 	{
 	default:
-	  sqlr_new_error_xqi_xdl ("XP001", "XPF09", xqi, "Too many arguments passed to XPATH function document()");
+	  sqlr_new_error_xqi_xdl ("XP001", "XPF09", xqi, "Too many arguments passed to XPATH function %s()", fnames[call_mode]);
 	case 6:
 	  cache_key->xdcs_dtd_cfg = xpf_arg (xqi, tree, ctx_xe, DV_SHORT_STRING, 5);
 	case 5:
@@ -2036,7 +2042,7 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int cu
 		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0, DV_WIDE);
 		break;
 	      default:
-		sqlr_new_error_xqi_xdl ("XP001", "XPF10", xqi, "XML entity or a string expected as \"base_uri\" argument of XPATH function document()");
+		sqlr_new_error_xqi_xdl ("XP001", "XPF10", xqi, "XML entity or a string expected as \"base_uri\" argument of XPATH function %s()", fnames[call_mode]);
 	      }
 	  }
 	case 1: ;
@@ -2066,6 +2072,15 @@ load_next_rel_uri:
 	  dk_set_push (&documents, (void*)(cached));
 	  goto loading_complete;
 	}
+      if ((XPF_IMPL_DOCUMENT_LAZY == call_mode) || (XPF_IMPL_DOCUMENT_LAZY_IN_COLL == call_mode))
+        {
+	  xml_entity_t * document = (xml_entity_t *)xlazye_from_cache_key (box_copy_tree (cache_key), qi);
+          dk_free_tree (cache_key->xdcs_abs_uri);
+          cache_key->xdcs_abs_uri = NULL;
+	  dk_set_push (&documents, (void*) (document));
+          goto loading_complete;
+        }
+/* Plain loading starts here */
       {
         xml_ns_2dict_t ns_2dict;
 	xml_entity_t * document;
@@ -2104,7 +2119,7 @@ document_is_ready:
       }
 /* The loading itself -- end; */
 loading_complete:
-      if (custom_xpf && xqi_is_next_value (xqi, doc_arg))
+      if ((XPF_IMPL_DOC != call_mode) && xqi_is_next_value (xqi, doc_arg))
 	{
 	  rel_uri = xqi_value (xqi, doc_arg, DV_SHORT_STRING);
 	  goto load_next_rel_uri;
@@ -2133,14 +2148,27 @@ loading_error:
 void
 xpf_doc (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  xpf_document_impl (xqi, tree, ctx_xe, 0);
+  xpf_document_impl (xqi, tree, ctx_xe, XPF_IMPL_DOC);
 }
 
 
 void
 xpf_document (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  xpf_document_impl (xqi, tree, ctx_xe, 1);
+  xpf_document_impl (xqi, tree, ctx_xe, XPF_IMPL_DOCUMENT);
+}
+
+
+void
+xpf_document_lazy (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  xpf_document_impl (xqi, tree, ctx_xe, XPF_IMPL_DOCUMENT_LAZY);
+}
+
+void
+xpf_document_lazy_in_coll (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  xpf_document_impl (xqi, tree, ctx_xe, XPF_IMPL_DOCUMENT_LAZY_IN_COLL);
 }
 
 
@@ -5536,6 +5564,8 @@ void xpf_init(void)
   xpf_define_builtin ("distinct-values"		, xpf_distinct_values		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("doc"			, xpf_doc			/* XPath 1.0 */	, XPDV_NODESET	, 0	, xpfmalist(1, xpfma("uri",DV_STRING,0)), NULL);
   xpf_define_builtin ("document"		, xpf_document			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  xpf_define_builtin ("document-lazy"		, xpf_document_lazy		/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  xpf_define_builtin ("document-lazy-in-coll"	, xpf_document_lazy_in_coll	/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
   xpf_define_builtin ("document-get-uri"	, xpf_document_get_uri		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("ent",DV_XML_ENTITY,0))	, NULL	);
   xpf_define_builtin ("document-literal"	, xpf_document_literal		/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_alias   ("document-uri", NULL, "document-get-uri", NULL);

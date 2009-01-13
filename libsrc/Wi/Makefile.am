@@ -391,6 +391,7 @@ libwi_la_SOURCES += \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
+	xmllazy.c \
 	xmltree.c \
 	xpath.c \
 	xpf.c \
@@ -422,6 +423,7 @@ libwi_odbc_la_SOURCES += \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
+	xmllazy.c \
 	xmltree.c \
 	xpath.c \
 	xpathp.c \

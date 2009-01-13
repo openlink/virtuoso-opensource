@@ -64,6 +64,7 @@ void bx_out_value (caddr_t * qst, dk_session_t * out, db_buf_t val, wcharset_t *
 
 typedef struct xml_entity_s xml_entity_t;
 typedef struct xml_tree_doc_s xml_tree_doc_t;
+typedef struct xml_lazy_doc_s xml_lazy_doc_t;
 typedef struct xper_doc_s xper_doc_t;
 typedef struct xml_doc_s xml_doc_t;
 
@@ -235,6 +236,8 @@ extern xml_entity_t * dbg_xp_copy(DBG_PARAMS xml_entity_t * xe);
 #else
 extern xml_entity_t * xte_copy(xml_entity_t * xe);
 #define XE_IS_TREE(xe) (xte_copy == ((xml_entity_t *)(xe))->_->xe_copy)
+extern xml_entity_t * xlazye_copy(xml_entity_t * xe);
+#define XE_IS_LAZY(xe) (xlazye_copy == ((xml_entity_t *)(xe))->_->xe_copy)
 extern xml_entity_t * xp_copy(xml_entity_t * xe);
 #define XE_IS_PERSISTENT(xe) (xp_copy == ((xml_entity_t *)(xe))->_->xe_copy)
 #endif
@@ -253,6 +256,7 @@ extern xml_entity_t * xp_copy(xml_entity_t * xe);
     union { \
       xml_doc_t *	xd; \
       xml_tree_doc_t *  xtd; \
+      xml_lazy_doc_t *  xlazyd; \
       xper_doc_t *	xpd; \
     } xe_doc; \
     xml_entity_t *	xe_referer;
@@ -380,24 +384,41 @@ struct xe_word_ranges_s
 
 typedef struct xe_word_ranges_s xe_word_ranges_t;
 
+#define XTD_MEMBERS \
+  caddr_t *	xtd_tree; \
+  id_hash_t *	xtd_wrs; \
+  dk_set_t 	xtd_garbage_boxes; \
+  dk_set_t 	xtd_garbage_trees;
+
 struct xml_tree_doc_s
-  {
+{
     XD_MEMBERS
-    caddr_t *	xtd_tree;
-    id_hash_t *	xtd_wrs;
-    dk_set_t 	xtd_garbage_boxes;
-    dk_set_t 	xtd_garbage_trees;
-  };
+  XTD_MEMBERS
+};
+
+typedef struct xml_doc_cache_stdkey_s xml_doc_cache_stdkey_t;
+
+#define XPER_MEMBERS \
+  blob_handle_t	*	xpd_bh; \
+  int			xpd_state; \
+  id_hash_t *		xpd_wrs;
 
 struct xper_doc_s
 {
   XD_MEMBERS
-  int			xpd_ref_count;
-  blob_handle_t	*	xpd_bh;
-  int			xpd_state;
-  id_hash_t *		xpd_wrs;
+  XPER_MEMBERS
 };
 
+struct xml_lazy_doc_s
+{
+  XD_MEMBERS
+  union {
+    struct { XTD_MEMBERS } xtd_stub;
+    struct { XPER_MEMBERS } xper_stub;
+    } stub;
+  dk_set_t xlazyd_entities;
+  xml_doc_cache_stdkey_t *xlazyd_cache_key;
+};
 
 typedef struct xte_bmk_s
 {
@@ -413,6 +434,11 @@ typedef struct xml_tree_ent_s
   xte_bmk_t *		xte_stack_top; /*!< Pointer to the top element of the stack (i.e. to info about current subtree */
   xte_bmk_t *		xte_stack_max; /*!< Pointer to the past-the-buffer-end of the stack */
 } xml_tree_ent_t;
+
+typedef struct xml_lazy_ent_s
+{
+  XE_MEMBERS
+} xml_lazy_ent_t;
 
 #define xte_current	xte_stack_top->xteb_current
 #define xte_child_no	xte_stack_top->xteb_child_no
@@ -470,6 +496,7 @@ typedef struct xml_ent_un_s
      * an entity may transition between instances of different subclasses when traversing a reference */
     union {
       xml_tree_ent_t	xte;
+      xml_lazy_ent_t	xlazye;
       xper_entity_t	xper;
     } _;
   } xml_entity_un_t;
@@ -857,7 +884,6 @@ extern int xe_destroy (caddr_t box);
 extern void xe_sqlnarrow_string_value (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 
 extern int xe_down_transit (xml_entity_t * xe);
-extern int xe_destroy (caddr_t box);
 extern const char * xe_get_sysid (xml_entity_t *xe, const char *ref_name);
 extern const char * xe_get_sysid_base_uri(xml_entity_t *xe);
 
@@ -1000,6 +1026,7 @@ extern int txs_is_hit_in (text_node_t * txs, caddr_t * qst, xml_entity_t * xe);
 extern void bif_text_init (void);
 extern void bif_ap_init (void);
 extern void xml_tree_init (void);
+extern void xml_lazy_init (void);
 
 extern void xn_free (xpath_node_t * xn);
 extern void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
@@ -1181,7 +1208,7 @@ extern int xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_
 #define XDC_DOCUMENT 0		/*!< Storage type of dependant documents that are not external resources */
 #define XDC_COLLECTION 1	/*!< Storage type of lists of resources in collections */
 
-typedef struct xml_doc_cache_stdkey_s
+struct xml_doc_cache_stdkey_s
 {
   ptrlong xdcs_type;
   caddr_t xdcs_abs_uri;
@@ -1189,8 +1216,7 @@ typedef struct xml_doc_cache_stdkey_s
   caddr_t xdcs_enc_name;
   lang_handler_t **xdcs_lang_ptr;
   caddr_t xdcs_dtd_cfg;
-}
-xml_doc_cache_stdkey_t;
+};
 
 /* This is a collection of XML document cache */
 typedef struct xml_doc_cache_s
@@ -1209,5 +1235,11 @@ void xml_doc_cache_add_copy (xml_doc_cache_t **xdc_ptr, ccaddr_t key, caddr_t do
 void xml_doc_cache_shrink (xml_doc_cache_t *xdc, size_t weight_limit);
 
 #define XE_IS_VALID_VALUE_FOR_XML_COL(val) (DV_BLOB_XPER_HANDLE != DV_TYPE_OF (val) && (DV_XML_ENTITY != DV_TYPE_OF (val) || (XE_IS_TREE (val))))
+
+extern xml_lazy_ent_t *DBG_NAME(xlazye_from_cache_key) (DBG_PARAMS xml_doc_cache_stdkey_t *cache_key, query_instance_t *qi);
+#ifdef MALLOC_DEBUG
+#define xlazye_from_cache_key(key,qi) dbg_xlazye_from_cache_key(__FILE__, __LINE__, (key), (qi))
+#endif
+
 #endif /* _XMLTREE_H */
 

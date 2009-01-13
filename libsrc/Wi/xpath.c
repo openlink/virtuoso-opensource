@@ -4420,7 +4420,7 @@ substitute_with_undefined:
 	    list (3,
 	      xp_make_literal_tree (xpp, box_dv_short_string ("reslist$"), 0),
 	      xp_make_call_or_funcall (xpp, "collection-dir-list", list_to_array (dirlist_args)),
-	      xp_make_call_or_funcall (xpp, "document",	list_to_array (doc_args))
+	      xp_make_call_or_funcall (xpp, "document-lazy-in-coll",	list_to_array (doc_args))
 	      ) );
 	}
       sprintf (buf, "XPATH function '%s' is not yet supported", name);

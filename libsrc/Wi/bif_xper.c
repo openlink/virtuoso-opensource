@@ -242,7 +242,7 @@ static long xper_entity_free_ctr = 0;
 	dtd_release ((xpd)->xd_dtd); \
       dk_free_box ((caddr_t)(xpd->xd_id_dict)); \
       dk_free_box (xpd->xd_id_scan); \
-      dk_free ((xpd), sizeof (xper_doc_t)); \
+      dk_free ((xpd), -1 /* not sizeof (xper_doc_t) because it may be doc made by lazy loader */); \
     } while (0)
 
 

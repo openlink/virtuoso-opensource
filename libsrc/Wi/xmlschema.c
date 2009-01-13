@@ -194,6 +194,7 @@ xmls_init (void)
   xp_comp_init ();
 #endif
   xml_tree_init ();
+  xml_lazy_init ();
 }
 
 

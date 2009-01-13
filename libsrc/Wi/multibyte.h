@@ -71,6 +71,8 @@ int virt_wcscasecmp(const wchar_t *s1, const wchar_t *s2);
 /* long blob_fill_buffer_from_wide_string (caddr_t bh, caddr_t buf, int *at_end, long *char_len); moved to blob.c as static and excluded */
 size_t wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length);
 
+extern wcharset_t *wcharset_by_name_or_dflt (ccaddr_t cs_name, caddr_t *qi);
+
 wcharset_t * wide_charset_create (char *name, wchar_t *table, int nelems, caddr_t *chrs_aliases);
 void wide_charset_free (wcharset_t *charset);
 
