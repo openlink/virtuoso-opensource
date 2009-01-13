@@ -251,9 +251,9 @@ rnd (void)
 
   if (!rnd_seed || rnd_seed == RNG_M)
 #ifdef WIN32
-    rnd_seed = ((long) GetTickCount () << 16) ^ time (NULL);
+    rnd_seed = ((long) GetTickCount () << 16) ^ (long) time (NULL);
 #else
-    rnd_seed = ((long) getpid () << 16) ^ time (NULL);
+    rnd_seed = ((long) getpid () << 16) ^ (long) time (NULL);
 #endif
 
   hi = rnd_seed / RNG_Q;
