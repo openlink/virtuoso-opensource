@@ -98,9 +98,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(http://www.rhapsody.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_RHAPSODY', null, 'Rhapsody');
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
     values ('(http://.*slideshare.net/.*)',
-            'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare');
+            'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare', vector ('SharedSecret', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://bugs.*)|'||
@@ -263,7 +263,19 @@ MIGRATE_CALAIS ();
 create procedure RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
-   declare top_arr, arr, http, html, feed, calais any;
+   declare top_arr, arr, http, html, feed, calais, num any;
+
+   if (exists (select RM_PID, count(*) from SYS_RDF_MAPPERS group by RM_PID having count(*) > 1))
+     {
+       num := (select count(*) from DB.DBA.SYS_RDF_MAPPERS);
+       inx := 1;
+       for select RM_HOOK as hook from DB.DBA.SYS_RDF_MAPPERS do
+	 {
+	   update DB.DBA.SYS_RDF_MAPPERS set RM_PID = inx where RM_HOOK = hook;
+	   inx := inx + 1;
+	 }
+     }
+
    http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
    html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
    feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
@@ -271,7 +283,7 @@ create procedure RM_MAPPERS_SET_ORDER ()
    top_arr := vector (http, html, feed);
 
    arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
-   inx := 0;
+   inx := 1;
    arr := vector_concat (top_arr, arr);
    foreach (int pid in arr) do
      {
@@ -1876,8 +1888,14 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	declare base, cnt, url, suffix, tmp, asin, SharedSecret, ApiKey, username, itemname  varchar;
 	declare ts, query varchar;
 	hdr := null;
-	ApiKey := 'lyWPSMr6';
-	SharedSecret := 'vqOBAQzX';
+	ApiKey := _key;
+	SharedSecret := null;
+	if (isarray (opts) and 0 = mod (length(opts), 2))
+	  {
+	    SharedSecret := get_keyword ('SharedSecret', opts);
+	  }
+	if ((0 = length (ApiKey)) or (0 = length (SharedSecret)))
+	  return 0;
 	declare exit handler for sqlstate '*'
 	{
 		return 0;

@@ -69,24 +69,7 @@
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    --http_header (sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 1, now ()))));
    label := ''; _subject := '';
-
-   exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
-	select ?o where { graph <%S> { <%S> rdfs:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-   if (length (data)) label := data[0][0];
-
-   if (label = '')
-     { 
-       exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
-	    select ?o where { graph <%S> { <%S> dc:title ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-       if (length (data)) label := data[0][0];
-     }
-
-   if (label = '')
-     { 
-       exec (sprintf ('sparql prefix fbase: <http://rdf.freebase.com/ns/>  
-	    select ?o where { graph <%S> { <%S> fbase:type.object.name ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-       if (length (data)) label := data[0][0];
-     }
+   label := rdfdesc_label (_S, _G);
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
 	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);

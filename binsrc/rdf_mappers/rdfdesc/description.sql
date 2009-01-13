@@ -1,5 +1,40 @@
 
+TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/>
+@prefix dc: <http://purl.org/dc/elements/1.1/>
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+@prefix fbase: <http://rdf.freebase.com/ns/>
+rdfs:label rdfs:subPropertyOf virtrdf:label .
+dc:title rdfs:subPropertyOf virtrdf:label .
+fbase:type.object.name rdfs:subPropertyOf virtrdf:label .
+foaf:name rdfs:subPropertyOf virtrdf:label .
+foaf:nick rdfs:subPropertyOf virtrdf:label .', '', 'virtrdf-label');
 
+rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
+
+create procedure rdfdesc_label (in _S any, in _G varchar)
+{
+  declare best_str, meta, data any;
+  declare best_l, len int;
+  exec (sprintf ('sparql define input:inference "virtrdf-label" '||
+  'select ?o where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  best_str := '';
+  best_l := 0;
+  if (length (data))
+    {
+      for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
+	{
+	  len := length (data[i][0]);
+          if (len > best_l)
+	    {
+	      best_str := data[i][0];
+	      best_l := len;
+	    }
+	}
+    }
+  return best_str;
+}
+;
 
 create procedure rdfdesc_page_get_type (in val any)
 {
