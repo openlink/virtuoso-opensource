@@ -1189,7 +1189,7 @@ function add_named_graph(graph) {
     	return false;
 	}
 
-	if (iSPARQL.dataObj.namedGraphs.find(named_graph) != -1) {
+	if (!graph && iSPARQL.dataObj.namedGraphs.find(named_graph) != -1) {
 		alert('Graph already present.');
 		return false;
 	}
@@ -1211,7 +1211,7 @@ function add_named_graph(graph) {
 	boxCheck.checked = "checked";
 
 	var graphCell = OAT.Dom.create("td");
-	graphCell.innerHTML = '<input type="text" style="width: 440px;" value="'+named_graph+'"/>';
+	graphCell.innerHTML = '<input type="text" readonly style="width: 440px;" value="'+named_graph+'"/>';
 
 	var delCell = OAT.Dom.create("td");
 	delCell.style.textAlign = "center";
@@ -1236,6 +1236,7 @@ function add_named_graph(graph) {
 		}
 	});
 		
+	if (!graph)
 	iSPARQL.Common.addNamedGraph(named_graph);  
   
 	$('named_graphs_cnt').innerHTML++;

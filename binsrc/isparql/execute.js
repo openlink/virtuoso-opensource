@@ -216,8 +216,10 @@ var QueryExec = function(optObj) {
 		for (var p in paramsObj) {
 			arr.push(p+"="+encodeURIComponent(paramsObj[p]));
 		}
+		if (opts.namedGraphs) {
 		for (var i=0;i<opts.namedGraphs.length;i++) {
 			arr.push("named-graph-uri="+encodeURIComponent(opts.namedGraphs[i]));
+		}
 		}
 		return arr.join("&");
 	}
@@ -510,7 +512,7 @@ var QueryExec = function(optObj) {
 		a.title = "Open Web Page";
 		a.appendChild(img2);
 		a.target = "_blank";
-		a.href = href;
+		a.href = "/about/html/" + href;
 		
 		domNode.parentNode.appendChild(img1);
 		domNode.parentNode.appendChild(a);

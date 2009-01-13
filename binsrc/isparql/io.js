@@ -104,7 +104,7 @@ iSPARQL.IO = {
 
 		if(dataObj.namedGraphs) {
 			var namedgraphs = addNode(page,"namedgraphs");
-			for(var i=0;i<dataObj.prefixes.length;i++) {
+			for(var i=0;i<dataObj.namedGraphs.length;i++) {
 				var graphNode = dataObj.namedGraphs[i];
 				addNode(namedgraphs,"namedgraph",graphNode);
 			}
@@ -274,10 +274,10 @@ iSPARQL.IO = {
 			dataObj.prefixes.push(schema);
 		}
 
-		var namedgraphs = xml.getElementsByTagName("namedgraphs");
+		var namedgraphs = xml.getElementsByTagName("namedgraph");
 		for (var i=0;i<namedgraphs.length;i++) {
-			var graphnode = OAT.Dom.fromSafeXML(namedgraphs[i]);
-			dataObj.namedGraph.push(graphnode);
+			var graphnode = OAT.Dom.fromSafeXML(namedgraphs[i].firstChild.nodeValue);
+			dataObj.namedGraphs.push(graphnode);
 		}
 
 		var pragmas = xml.getElementsByTagName("pragma");
