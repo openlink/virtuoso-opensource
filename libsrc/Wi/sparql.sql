@@ -1720,6 +1720,68 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
 }
 ;
 
+create function DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (in longobj any)
+{
+  declare t, len integer;
+  if (__tag of rdf_box = __tag (longobj))
+    {
+      if (rdf_box_is_complete (longobj))
+        {
+          if (__tag of varchar = rdf_box_data_tag (longobj))
+            return charset_recode (rdf_box_data (longobj), 'UTF-8', '_WIDE_');
+          if (__tag of datetime = rdf_box_data_tag (longobj))
+            {
+              declare vc varchar;
+              vc := cast (rdf_box_data (longobj) as varchar); --!!!TBD: replace with proper serialization
+              return cast (replace (vc, ' ', 'T') as nvarchar);
+            }
+          if (__tag of XML = rdf_box_data_tag (longobj))
+            {
+              return charset_recode (serialize_to_UTF8_xml (rdf_box_data (longobj)), 'UTF-8', '_WIDE_');
+            }
+          return cast (rdf_box_data (longobj) as nvarchar);
+        }
+      declare id integer;
+      declare v2 any;
+      id := rdf_box_ro_id (longobj);
+      if (__tag of XML = rdf_box_data_tag (longobj))
+        {
+          v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
+          rdf_box_set_data (longobj, v2, 1);
+          return charset_recode (serialize_to_UTF8_xml (v2), 'UTF-8', '_WIDE_');
+        }
+      else
+        v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
+      if (v2 is null)
+        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_LONG, bad id %d', id));
+      rdf_box_set_data (longobj, v2, 1);
+      return charset_recode (v2, 'UTF-8', '_WIDE_');
+    }
+  if (isiri_id (longobj))
+    {
+      declare res varchar;
+      res := id_to_iri (longobj);
+--      res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = longobj));
+      if (res is null)
+        signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_LONG()');
+      return charset_recode (res, 'UTF-8', '_WIDE_');
+    }
+  if (__tag of datetime = __tag (longobj))
+    {
+      declare vc varchar;
+      vc := cast (longobj as varchar); --!!!TBD: replace with proper serialization
+      return cast (replace (vc, ' ', 'T') as nvarchar);
+    }
+  if (__tag of nvarchar = __tag (longobj))
+    return longobj);
+  if (__tag of XML = __tag (longobj))
+    {
+      return charset_recode (serialize_to_UTF8_xml (longobj), 'UTF-8', '_WIDE_');
+    }
+  return cast (longobj as nvarchar);
+}
+;
+
 --!AWK PUBLIC
 create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any,
   in strg_datatype any := UNAME'http://www.w3.org/2001/XMLSchema#string',
@@ -6953,17 +7015,19 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when 192 then 'varchar' -- actually character
         when __tag of datetime then 'datetime'
         when __tag of numeric then 'numeric'
+        when __tag of nvarchar then 'nvarchar'
+        when __tag of long nvarchar then 'longnvarchar'
         else NULL end;
       if (coltype is null)
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
           ') can not be mapped to an RDF literal in current version of Virtuoso' );
-      if (o_lang is not null and coltype <> 'varchar' and coltype <> 'longvarchar')
+      if (o_lang is not null and not (coltype in ('varchar', 'longvarchar', 'nvarchar', 'longnvarchar')))
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
           ') conflicts with LANG clause, only strings may have language' );
-      if (o_dt is not null and coltype <> 'varchar' and coltype <> 'longvarchar')
-        signal ('22023', 'Current version of Virtuoso does not support DATATYPE clause for columns other than varchar; the column "' || sqlcols[0][2] ||
+      if (o_dt is not null and not (coltype in ('varchar', 'longvarchar', 'nvarchar', 'longnvarchar')))
+        signal ('22023', 'Current version of Virtuoso does not support DATATYPE clause for columns other than varchar/nvarchar; the column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" has COL_DTP=' || cast (coldtp as varchar) );
       fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#sql-' || coltype;
       if (o_dt is not null)
@@ -8403,7 +8467,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-11-12 0001'
+                virtrdf:version '2009-01-14 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -8523,6 +8587,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_DATATYPE_IRI_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LANGUAGE_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_LONG to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LONG_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QUAD_URI to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_QUAD_URI_L to SPARQL_UPDATE',
