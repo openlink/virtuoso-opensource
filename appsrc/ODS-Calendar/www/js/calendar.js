@@ -46,13 +46,6 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 }
 
 // ---------------------------------------------------------------------------
-function toolbarPost(value)
-{
-  document.F1.tbHidden.value = value;
-  doPost ('F1', 'toolbar');
-}
-
-// ---------------------------------------------------------------------------
 //
 function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {

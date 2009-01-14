@@ -3530,15 +3530,15 @@
           <tr>
             <td id="LC">
               <div class="lc lc_close">
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2" style="color: black;">Settings</span>
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'categoryBrowse');" title="Categories" class="gems gems2" style="color: black;">Categories</span>
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems gems2" style="color: black;">Publications</span>
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems gems2" style="color: black;">Subscriptions</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2">Settings</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'categoryBrowse');" title="Categories" class="gems gems2">Categories</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems gems2">Publications</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems gems2">Subscriptions</span>
                 <?vsp if (AB.WA.syncml_check()) { ?>
-                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'syncmlBrowse');" title="SyncML" class="gems gems2" style="color: black;">SyncML</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'syncmlBrowse');" title="SyncML" class="gems gems2">SyncML</span>
                 <?vsp } ?>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-                <span onclick="javascript: vspxPost('command', 'select', 'back');" title="Back" class="gems gems2" style="color: black;">Back</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'back');" title="Back" class="gems gems2">Back</span>
               </div>
             </td>
             <td id="RC">

@@ -152,7 +152,7 @@ a:hover
   border-top: 0;
 }
 
-.lc span.gems2, .lc div
+.lc div
 {
   color: blue;
 	cursor: pointer;
@@ -163,11 +163,16 @@ a:hover
 
 .gems2
 {
+  color: black;
+	cursor: pointer;
+  display: block;
+  padding: 3px;
+  margin: 3px;
   font-weight: bold;
   background: #b0cde4;
 }
 
-.lc a:hover, .lc .gems:hover
+.lc a:hover, .lc .gems:hover, .lc .gems2:hover
 {
   color: blue;
   background: #99b3c5;

@@ -1219,7 +1219,6 @@ grant execute on ODS.ODS_API."addressbook.annotation.claim" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.annotation.delete" to ODS_API;
 
 grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
-grant execute on ODS.ODS_API."addressbook.comment.get" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.new" to ODS_API;
 grant execute on ODS.ODS_API."addressbook.comment.delete" to ODS_API;
 
