@@ -1826,12 +1826,12 @@ create procedure INIT_SERVER_SETTINGS ()
 	     'Enter your Member ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 2000-2008 OpenLink Software',
+	     'Copyright &copy; 2000-2009 OpenLink Software',
 	     '',
 	     sys_stat ('st_host_name')
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 2000-2008 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 2000-2009 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
@@ -3803,12 +3803,12 @@ create procedure WA_USER_INTERESTS (in txt any)
       if (length (i))
 	{
 	  declare u, l, tmp any;
+
 	  tmp := split_and_decode (i, 0, '\0\0;');
 	  u := tmp[0];
+	    l := '';
 	  if (length (tmp) > 1)
 	    l := tmp[1];
-	  else
-	    l := '';
 	  result (u, l);
 	}
     }

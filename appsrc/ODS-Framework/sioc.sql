@@ -678,6 +678,7 @@ create procedure sioc_user_info (
   delete_quad_sp (graph_iri, iri, foaf_iri ('homepage'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('depiction'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('interest'));
+  delete_quad_sp (graph_iri, iri, foaf_iri ('topic_interest'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('workplaceHomepage'));
   delete_quad_sp (graph_iri, iri, bio_iri ('olb'));
   delete_quad_sp (graph_iri, iri, owl_iri ('sameAs'));
@@ -750,7 +751,6 @@ create procedure sioc_user_info (
   	  {
   	    if (length (interest))
   	    {
-  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('topic_interest'), interest);
   	      if (length (label))
   		    {
   		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
@@ -1464,12 +1464,37 @@ create procedure fill_ods_sioc (in doall int := 0)
 	      person_iri := person_iri (iri);
 	      u_site_iri := user_space_iri (U_NAME);
 	      -- it should be one row.
-	      for select WAUI_VISIBLE, WAUI_FIRST_NAME, WAUI_LAST_NAME, WAUI_TITLE,
-		WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY,
-		    WAUI_BORG, WAUI_HPHONE, WAUI_HMOBILE, WAUI_BPHONE, WAUI_LAT,
-		    WAUI_LNG, WAUI_WEBPAGE, WAUI_SITE_NAME,
-            		   WAUI_PHOTO_URL, WAUI_BORG_HOMEPAGE, WAUI_RESUME, WAUI_INTERESTS, WAUI_INTEREST_TOPICS, WAUI_HCITY, WAUI_HSTATE, WAUI_HCOUNTRY,
-		    WAUI_FOAF, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF, WAUI_SKYPE
+	      for select WAUI_VISIBLE,
+	                 WAUI_FIRST_NAME,
+	                 WAUI_LAST_NAME,
+	                 WAUI_TITLE,
+           		     WAUI_GENDER,
+           		     WAUI_ICQ,
+           		     WAUI_MSN,
+           		     WAUI_AIM,
+           		     WAUI_YAHOO,
+           		     WAUI_BIRTHDAY,
+            		   WAUI_BORG,
+            		   WAUI_HPHONE,
+            		   WAUI_HMOBILE,
+            		   WAUI_BPHONE,
+            		   WAUI_LAT,
+            		   WAUI_LNG,
+            		   WAUI_WEBPAGE,
+            		   WAUI_SITE_NAME,
+            		   WAUI_PHOTO_URL,
+            		   WAUI_BORG_HOMEPAGE,
+            		   WAUI_RESUME,
+            		   WAUI_INTERESTS,
+            		   WAUI_INTEREST_TOPICS,
+            		   WAUI_HCITY,
+            		   WAUI_HSTATE,
+            		   WAUI_HCOUNTRY,
+            		   WAUI_FOAF,
+            		   WAUI_BLAT,
+            		   WAUI_BLNG,
+            		   WAUI_LATLNG_HBDEF,
+            		   WAUI_SKYPE
 		          from DB.DBA.WA_USER_INFO
 		         where WAUI_U_ID = u_id do
 		{
@@ -3069,7 +3094,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event rdf:type bio:Birth .
 	    ?event dc:date ?bdate .
 	    ?person foaf:interest ?interest .
-	    ?interest rdfs:label ?int_lab .
+	    ?interest rdfs:label ?interest_label .
+	    ?person foaf:topic_interest ?topic_interest .
+	    ?topic_interest rdfs:label ?topic_interest_label .
 	    ?person bio:keywords ?keywords .
 	    ?person owl:sameAs ?same_as .
 	    ?person foaf:holdsAccount ?oa .
@@ -3097,7 +3124,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 			optional { ?adr vcard:Region ?state } .
 	      	       } .
 	      optional { ?person foaf:interest ?interest } .
-	      optional { ?interest rdfs:label ?int_lab  } .
+	      optional { ?interest rdfs:label ?interest_label  } .
+	      optional { ?person foaf:topic_interest ?topic_interest } .
+	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
 			 ?person foaf:holdsAccount ?oa .
