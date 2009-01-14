@@ -1540,95 +1540,26 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
 {
   ptrlong new_restr;
   new_restr = (dest->rvrRestrictions | (addon->rvrRestrictions & changeable_flags));
-  if (addon->rvrRestrictions & dest->rvrRestrictions & SPART_VARR_NOT_NULL)
-    { /* Check for conflicts between two NOT_NULLs */
   if (new_restr & SPART_VARR_CONFLICT)
     goto conflict; /* see below */
   sparp_rvr_audit (sparp, dest);
   sparp_rvr_audit (sparp, addon);
   if (dest->rvrDatatype != addon->rvrDatatype)
     {
-          ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
-          if ((dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED) && (NULL == sparp_largest_intersect_superdatatype))
+      if (dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED)
             goto conflict; /* see below */
           else
-            dest->rvrDatatype = isect_dt;
-        }
-      if (addon->rvrRestrictions & changeable_flags & SPART_VARR_FIXED)
-        {
-          if (dest->rvrRestrictions & SPART_VARR_FIXED)
-            {
-              if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
-        goto conflict; /* see below */
-            }
-      else
-        {
-#ifdef DEBUG
-              if (SPAR_LIT != SPART_TYPE ((SPART *)(addon->rvrFixedValue)))
-                GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
-#endif
-              dest->rvrFixedValue = addon->rvrFixedValue;
-            }
-        }
-    }
-  else if (addon->rvrRestrictions & SPART_VARR_NOT_NULL)
-    { /* NOT_NULL overwrites any nulalble */
-      ptrlong flags_to_overwrite = (
-        SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
-        SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
-        SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL |
-        SPART_VARR_FIXED |
-        SPART_VARR_SPRINTFF | SPART_VARR_CONFLICT);
-      if (SPART_VARR_CONFLICT & addon->rvrRestrictions)
-        goto conflict;
-      if (!(SPART_VARR_CONFLICT & dest->rvrRestrictions) && (SPART_VARR_ALWAYS_NULL & dest->rvrRestrictions))
-        goto conflict;
-      if (!(SPART_VARR_CONFLICT & dest->rvrRestrictions))
-        sparp_rvr_audit (sparp, dest);
-      sparp_rvr_audit (sparp, addon);
-      dest->rvrRestrictions &= ~flags_to_overwrite;
-      dest->rvrRestrictions |= (addon->rvrRestrictions & changeable_flags);
-      dest->rvrFixedValue = addon->rvrFixedValue;
-      dest->rvrSprintffs = (ccaddr_t *)t_box_copy ((caddr_t)(addon->rvrSprintffs));
-      dest->rvrSprintffCount = addon->rvrSprintffCount;
-      dest->rvrIriClasses = (ccaddr_t *)t_box_copy ((caddr_t)(addon->rvrIriClasses));
-      dest->rvrIriClassCount = addon->rvrIriClassCount;
-      dest->rvrRedCuts = (ccaddr_t *)t_box_copy ((caddr_t)(addon->rvrRedCuts));
-      dest->rvrRedCutCount = addon->rvrRedCutCount;
-      return;
-    }
-  else if (dest->rvrRestrictions & SPART_VARR_NOT_NULL)
-    { /* NOT_NULL can not be altered by a nullalble, simply nothing to do, except adding usage flags */
-      dest->rvrRestrictions |= (addon->rvrRestrictions & changeable_flags & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
-      if (SPART_VARR_CONFLICT & dest->rvrRestrictions)
-        goto conflict;
-      if (!(SPART_VARR_CONFLICT & addon->rvrRestrictions) && (SPART_VARR_ALWAYS_NULL & addon->rvrRestrictions))
-        goto conflict;
-      if (!(SPART_VARR_CONFLICT & addon->rvrRestrictions))
-        sparp_rvr_audit (sparp, addon);
-      sparp_rvr_audit (sparp, dest);
-      return;
-    }
-  else
-    { /* Two NULLables can */
-      if (new_restr & SPART_VARR_CONFLICT)
-        goto conflict; /* see below */
-      sparp_rvr_audit (sparp, dest);
-      sparp_rvr_audit (sparp, addon);
-      if (dest->rvrDatatype != addon->rvrDatatype)
         {
           ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
-          if ((dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED) && (NULL == sparp_largest_intersect_superdatatype))
-            goto always_null; /* see below */
-          else
           dest->rvrDatatype = isect_dt;
         }
+    }
   if (addon->rvrRestrictions & changeable_flags & SPART_VARR_FIXED)
     {
       if (dest->rvrRestrictions & SPART_VARR_FIXED)
         {
           if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
-                goto always_null; /* see below */
+            goto conflict; /* see below */
         }
       else
         {
@@ -1638,7 +1569,6 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
 #endif
           dest->rvrFixedValue = addon->rvrFixedValue;
         }
-    }
     }
   if (new_restr & SPART_VARR_FIXED)
     {
