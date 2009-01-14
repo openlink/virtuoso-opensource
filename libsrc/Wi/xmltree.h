@@ -286,7 +286,7 @@ struct xml_entity_s
 See where the document is created and put an appropriate breakpoint */
 #ifdef MALLOC_DEBUG
 #define XD_DBG_MEMBERS \
-  char *	xd_dbg_file; \
+  const char *	xd_dbg_file; \
   int		xd_dbg_line;
 #else
 #define XD_DBG_MEMBERS
