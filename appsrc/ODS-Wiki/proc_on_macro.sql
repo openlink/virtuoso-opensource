@@ -1606,3 +1606,51 @@ use DB
 ;
 create function WV.WIKI.MACRO_VOSCOPY (inout _data varchar, inout _context any, inout _env any) { return ''; };
 create function WV.WIKI.MACRO_META_TOPICMOVED (inout _data varchar, inout _context any, inout _env any) { return ''; };
+
+create function WV.WIKI.MACRO_DOCINCLUDE (inout _data varchar, inout _context any, inout _env any)
+{
+  -- embeds the contents of another wiki page at the current point
+  declare d varchar;
+  declare ret varchar;
+
+  d := _data;
+  d := regexp_replace (d, '^param="', '');
+  d := regexp_replace(d, '"\$', '');
+
+  for (select top 1 blob_to_string (RES_CONTENT) as c from WS.WS.SYS_DAV_RES where RES_FULL_PATH like ('/DAV/%/' || d || '.txt')) do
+    {
+      ret := wv..render (c, 'owiki');
+    }
+  ret := tidy_html (ret, 'output-xml: yes\r\n');
+
+  return xmlelement ('div',
+                   xmlattributes ('included' as class, d as sourcepage),
+                   xpath_eval ('//body', xtree_doc (ret), 0)[0]);
+}
+;
+
+create function WV.WIKI.MACRO_FORTUNE (inout _data varchar, inout _context any, inout _env any)
+{
+  -- insert a random list item from another page at current point
+  declare d, ret varchar;
+  declare ls any;
+  declare len integer;
+
+  d := _data;
+  d := regexp_replace(d, '^param="', '');
+  d := regexp_replace(d, '"\$', '');
+
+ for (select top 1 blob_to_string (RES_CONTENT) as c from WS.WS.SYS_DAV_RES where RES_FULL_PATH like ('/DAV/%/' || d || '.txt')) do
+   {
+     ret := wv..render (c, 'owiki');
+   }
+  ret := xtree_doc (tidy_html (ret, 'output-xml: yes\r\n'));
+
+  ls := xpath_eval ('//ul[1]/li', ret, 0);
+  len := length (ls);
+
+ return xmlelement ('div',
+                   xmlattributes ('fortune' as class, d as sourcepage),
+                   ls[rnd (len)]);
+}
+;
