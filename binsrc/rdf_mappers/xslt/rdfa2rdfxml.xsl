@@ -221,10 +221,15 @@
 				    </xsl:call-template>
 			</xsl:for-each>
 
+	    <xsl:variable name="a-prop-value">
+		<xsl:call-template name="a-prop"/>
+	    </xsl:variable>
+	    <xsl:if test="$a-prop-value">
 	    <rdf:Description rdf:about="{$about}">
 			<!-- property -->
-			<xsl:call-template name="a-prop"/>
+		    <xsl:copy-of select="$a-prop-value"/>
 		    </rdf:Description>
+	    </xsl:if>
 
 		    <xsl:apply-templates />
 	    <!-- reverse properties -->
