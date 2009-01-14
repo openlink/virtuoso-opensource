@@ -1,3 +1,156 @@
+2009-01-14 11:01  source
+
+	* Fixed sparp_rvr_tighten to finally pass SparqlQmPure.sql
+
+2009-01-14 11:01  source
+
+	* Fixed compiler warning
+
+2009-01-14 11:00  source
+
+	* Fixed do not output empty declarations
+
+2009-01-14 10:58  source
+
+	* Updated documentation
+
+2009-01-14 10:19  source
+
+	* Updated versions
+
+2009-01-14 10:18  source
+
+	* Added new macros
+
+2009-01-14 10:16  source
+
+	* Fixed import fileds
+
+2009-01-14 10:15  source
+
+	* Minor fixes
+
+2009-01-13 10:18  source
+
+	* Added support for lazy xml entities
+
+2009-01-13 10:13  source
+
+	* Fixed small inference to get labels
+	* Fixed use of non-hardcoded keys
+
+2009-01-13 10:11  source
+
+	* Fixed compiler warnings
+
+2009-01-13 10:10  source
+
+	* Merged from upstream project
+
+2009-01-12 10:36  source
+
+	* Updated documentation
+
+2009-01-12 10:33  source
+
+	* Fixed handling of SQL_SUCCESS_WITH INFO
+	* Fixed retrieve of column metadata following a SQL compiler warning
+
+2009-01-12 10:30  source
+
+	* Fixed rdfa to handle <body @rel=> and <div about= >
+	* Removed dos line terminators
+
+2009-01-09 11:20  source
+
+	* Added support of timestamp and nvarchar in rdf schema generation
+
+2009-01-09 11:05  source
+
+	* Merged from upstream project
+
+2009-01-08 14:59  source
+
+	* Updated version to 5.0.10-rc2
+
+2009-01-08 14:52  source
+
+	* Update documentation
+
+2009-01-08 14:32  source
+
+	* Fixed broken define for CALLBACK on windows
+
+2009-01-08 14:32  source
+
+	* Fixed handeling of 100-continue was only activated on certain content
+	  types
+
+2009-01-08 14:31  source
+
+	* Fixed compiler error
+
+2009-01-08 14:29  source
+
+	* Disable warnings on POSIX names
+	* Fixed compiler warnings
+	* Undefine OCSP_RESPONSE to fix namespace clash with openssl
+
+2009-01-08 14:28  source
+
+	* Fixed 64bit issues
+	* Fixed compiler warnings
+
+2009-01-08 14:27  source
+
+	* Removed run from tray support
+	* Removed event logging
+	* Removed unused prototypes
+	* Removed old servicename code
+	* Fixed usage description
+
+2009-01-08 14:26  source
+
+	* Disable recent swprintf prototype change on windows
+
+2009-01-08 14:25  source
+
+	* Fixed support for recent compilers on windows
+
+2009-01-08 14:25  source
+
+	* Fixed compiler warnings
+
+2009-01-07 19:55  source
+
+	* Renamed SQLSTATE token to SQLSTATE_L to avoid namespace clash
+
+2009-01-06 23:10  source
+
+	* Fixed dependencies
+
+2009-01-06 22:31  source
+
+	* Fixed use of endpoint tag
+
+2009-01-06 22:15  source
+
+	* Merged from upstream project
+
+2009-01-06 10:32  source
+
+	* Updated copyright year to 2009
+
+2009-01-06 10:18  source
+
+	* Fixed use temp directory for larger script otherwise url param may not fit
+	* Fixed use of IRI in the rdf view definition
+
+2009-01-05 21:20  source
+
+	* Fixed voID in RDF views
+	* Fixed URL deref
+
 2009-01-05 15:01  source
 
 	* Added ubiquity commands for ODS Gallery
