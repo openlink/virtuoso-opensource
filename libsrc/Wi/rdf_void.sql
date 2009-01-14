@@ -93,7 +93,7 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   http (sprintf ('\n'), ses);
 
   http (sprintf (':Dataset a void:Dataset ; \n'), ses);
-  http (sprintf (' owl:sameAs <%s> ; \n', graph), ses);
+  http (sprintf (' rdfs:seeAlso <%s> ; \n', graph), ses);
   if (gr_name is not null)
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
   http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
