@@ -1570,6 +1570,10 @@ again:
           sparp_equiv_disconnect (sparp, SPARP_EQUIV (sparp, recv_idx), eq);
         }
       END_DO_BOX_FAST_REV;
+      if (WHERE_L != eq->e_gp->_.gp.subtype)
+        eq->e_rvr.rvrRestrictions &= ~SPART_VARR_EXPORTED;
+      else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
+        continue;
       sparp_equiv_remove (sparp, eq);
       dirty = 1;
     }
