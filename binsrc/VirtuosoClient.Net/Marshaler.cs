@@ -600,6 +600,7 @@ namespace OpenLink.Data.Virtuoso
 
 		internal static object UnmarshalNumeric (Stream stream)
 		{
+			char[] chars;
 			int byte_length = ReadByte (stream);
 			NumericFlags flags = (NumericFlags) ReadByte (stream);
 			int byte_integer_length = ReadByte (stream);
@@ -607,58 +608,67 @@ namespace OpenLink.Data.Virtuoso
 
 			int length = byte_length * 2;
 			int integer_length = byte_integer_length * 2;
-			if ((flags & NumericFlags.NDF_LEAD0) != 0)
+			if (length == 0 && integer_length == 0 
+				&& flags == 0)
 			{
-				length--;
-				integer_length--;
+				chars = new char[1];
+				chars[0] = '0';
 			}
-			if ((flags & NumericFlags.NDF_TRAIL0) != 0)
+			else
 			{
-				length--;
-			}
-
-			int fraction_length = length - integer_length;
-			if (fraction_length != 0)
-				length++; // for decimal point
-
-			char[] chars = new char[length];
-
-			int i = 0;
-			byte read;
-			if ((flags & NumericFlags.NDF_LEAD0) != 0)
-			{
-				read = ReadByte (stream);
-				chars[i++] = (char) ((read & 0x0f) + '0');
-			}
-			while (i < integer_length)
-			{
-				read = ReadByte (stream);
-				chars[i++] = (char) (((read >> 4) & 0x0f) + '0');
-				chars[i++] = (char) ((read & 0x0f) + '0');
-			}
-			if (fraction_length != 0)
-			{
-				chars[i++] = '.';
-				int even_fraction_length = ((flags & NumericFlags.NDF_TRAIL0) != 0
-					? length - 1 : length);
-				while (i < even_fraction_length)
+				if ((flags & NumericFlags.NDF_LEAD0) != 0)
+				{
+					length--;
+					integer_length--;
+				}
+				if ((flags & NumericFlags.NDF_TRAIL0) != 0)
+				{
+					length--;
+				}
+        
+				int fraction_length = length - integer_length;
+				if (fraction_length != 0)
+					length++; // for decimal point
+        
+				chars = new char[length];
+        
+				int i = 0;
+				byte read;
+				if ((flags & NumericFlags.NDF_LEAD0) != 0)
+				{
+					read = ReadByte (stream);
+					chars[i++] = (char) ((read & 0x0f) + '0');
+				}
+				while (i < integer_length)
 				{
 					read = ReadByte (stream);
 					chars[i++] = (char) (((read >> 4) & 0x0f) + '0');
 					chars[i++] = (char) ((read & 0x0f) + '0');
 				}
-				if (i < length)
+				if (fraction_length != 0)
 				{
-					read = (byte) ReadByte (stream);
-					chars[i++] = (char) (((read >> 4) & 0x0f) + '0');
+					chars[i++] = '.';
+					int even_fraction_length = ((flags & NumericFlags.NDF_TRAIL0) != 0
+						? length - 1 : length);
+					while (i < even_fraction_length)
+					{
+						read = ReadByte (stream);
+						chars[i++] = (char) (((read >> 4) & 0x0f) + '0');
+						chars[i++] = (char) ((read & 0x0f) + '0');
+					}
+					if (i < length)
+					{
+						read = (byte) ReadByte (stream);
+						chars[i++] = (char) (((read >> 4) & 0x0f) + '0');
+					}
 				}
+        
+				if ((flags & NumericFlags.NDF_NAN) != 0)
+					throw new InvalidCastException ("Cannot convert a NAN value to Decimal.");
+				if ((flags & NumericFlags.NDF_INF) != 0)
+					throw new InvalidCastException ("Cannot convert an INF value to Decimal.");
 			}
-
-			if ((flags & NumericFlags.NDF_NAN) != 0)
-				throw new InvalidCastException ("Cannot convert a NAN value to Decimal.");
-			if ((flags & NumericFlags.NDF_INF) != 0)
-				throw new InvalidCastException ("Cannot convert an INF value to Decimal.");
-
+        
 			String s = new String (chars);
 			Decimal value = Decimal.Parse (s, NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo);
 			if ((flags & NumericFlags.NDF_NEG) != 0)
