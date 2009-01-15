@@ -22,10 +22,11 @@
  -  
 -->
 
-<chapter id="adminui" label="adminui.xml">
-<title>Conductor Administration Interface</title>
+<!--chapter id="adminui" label="adminui.xml">
+<title>HTML based Administration Console (Conductor) Guide</title>-->
+<sect1 id="htmlconductorbar"><title>HTML based Administration Console (Conductor) Guide</title>
 <abstract>
-    <para>This chapter describes how to administer the Virtuoso server from 
+    <para>This section describes how to administer the Virtuoso server from
     the Conductor interface. It primarily allow users to administer the server while giving access
     to many of the features that Virtuoso has to offer providing many conceptual
     demonstrations and introductions.</para>
@@ -33,7 +34,7 @@
     help administrators quickly and easily tune the Virtuoso server or navigate 
     the various interfaces and features that Virtuoso has to offer.</para>
 </abstract>
-	<sect1 id="conductorbar">
+	<sect2 id="conductorbar">
 		<title>Virtuoso Conductor Administration</title>
 <para>The Main Navigation Bar provides different tabs that allow you to administrate
 your Virtuoso server or use one of the provided samples.
@@ -98,7 +99,7 @@ perform WSDL Import/Export, manage your BPEL processes.
 		<graphic fileref="nntp.png"/>
 	</figure>
 
-	</sect1>
+	</sect2>
 
 &adminui.runtimehosting;
 &adminui.webservices;
@@ -111,7 +112,9 @@ perform WSDL Import/Export, manage your BPEL processes.
 <!--&adminui.mailsrvadm;-->
 &adminui.newssrvadm;
 
-</chapter>
+</sect1>
+
+<!--</chapter>-->
 
 
 

@@ -22,9 +22,9 @@
  -  
 -->
 
-<sect1 id="newssrvadm"><title>Conductor News Server Administration</title>
+<sect2 id="newssrvadm"><title>Conductor News Server Administration</title>
 
-  <sect2 id="newsgrpsadm"><title>Conductor Newsgroups Administration</title>
+  <sect3 id="newsgrpsadm"><title>Conductor Newsgroups Administration</title>
 	<para>
 	From Conductor the NNTP tab allows you to view and configure Newsgroups associated with the
 	Virtuoso News Server.  Like Virtuoso's virtual database, Virtuoso can &quot;link&quot; in
@@ -61,7 +61,7 @@ the list of available newsgroups.</para>
         <figure float="1"><title>Manage subscribed for Newsgroup</title>
           <graphic fileref="ui/news_adm_01c.png"/></figure>
 
-    <sect3 id="newsaddgrp"><title>Add Newsgroup</title>
+    <sect4 id="newsaddgrp"><title>Add Newsgroup</title>
 		  <para>
 	From the "NNTP Servers" tab click on the "Edit Groups" link for a registered News Server.
         Then click the <emphasis>Subscribe to newsgroups</emphasis> link to subscribe to newsgroups
@@ -74,9 +74,9 @@ the list of available newsgroups.</para>
 		  </para>
 		  <para>Use the <emphasis>Back to servers list</emphasis> link to return to the News Servers
 		  List page.</para>
-    </sect3>
+    </sect4>
 
-    <sect3 id="newssrvadd"><title>Adding New News Server</title>
+    <sect4 id="newssrvadd"><title>Adding New News Server</title>
 		<para>
 		From Conductor NNTP/NNTP Servers you can add remote servers. The values you need to provide in
                 the form are as follows:</para>
@@ -88,9 +88,9 @@ the list of available newsgroups.</para>
 		allow you to provide login credentials if the server requires them.</para>
       <figure float="1"><title>News Server Administration</title>
         <graphic fileref="ui/news_add_01.png"/></figure>
-    </sect3>
+    </sect4>
 
-	<sect3 id="newscliui"><title>Viewing Newsgroups</title>
+	<sect4 id="newscliui"><title>Viewing Newsgroups</title>
         <para>
         You can view the messages of a newsgroup either using the Conductor UI going to
 NNTP/NNTP Servers/News Server/News Group, or using the ODS Framework UI. In the second case you need to
@@ -100,12 +100,12 @@ link its name, which leads to page where are listed its messages.
         </para>
       <figure float="1"><title>View of messages in a newsgroup in ODS Discussions.</title>
         <graphic fileref="ui/news_lclsrvr_01.png"/></figure>
+	</sect4>
+
 	</sect3>
 
-	</sect2>
-
-	<sect2 id="newsmsgft"><title>News Message Free Text Search</title>
+	<sect3 id="newsmsgft"><title>News Message Free Text Search</title>
         <para>You can perform Free Text Search using the ODS search option.</para>
- </sect2>
+ </sect3>
 
-</sect1>
+</sect2>

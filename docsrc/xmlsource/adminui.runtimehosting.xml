@@ -22,30 +22,30 @@
  -  
 -->
 
-<sect1 id="admui.runtimehosting"><title>Runtime Hosting</title>
+<sect2 id="admui.runtimehosting"><title>Runtime Hosting</title>
  <para>The runtime hosting interfaces require Mono/CLR and Java extension servers.</para>
-  <sect2 id="admui.loadedmodules"><title>Loaded Modules</title>
+  <sect3 id="admui.loadedmodules"><title>Loaded Modules</title>
     <para>You can view Loaded Modules list and each Module you can "Unload". Also you can browse for Module
 and examine its content.
     </para>
     <figure float="1" id="rth001"><title>Loaded Modules</title>
       <graphic fileref="ui/rth001.png"/>
     </figure>
-  </sect2>
-  <sect2 id="admui.importfiles"><title>Import Files</title>
+  </sect3>
+  <sect3 id="admui.importfiles"><title>Import Files</title>
     <para>To import files click the "Browse" button and select the class you want to import.
 Then click the "Add to list" button.
     </para>
     <figure float="1" id="rth002"><title>Import Files</title>
       <graphic fileref="ui/rth002.png"/>
     </figure>
-  </sect2>
-  <sect2 id="admui.loadodules"><title>Modules Grants</title>
+  </sect3>
+  <sect3 id="admui.loadodules"><title>Modules Grants</title>
     <para>In order to change grants to a particular Module, select the desired
 grant value from the "Grant to" list and click the "Add" button.
     </para>
     <figure float="1" id="rth003"><title>Modules Grants</title>
       <graphic fileref="ui/rth003.png"/>
     </figure>
+  </sect3>
   </sect2>
-</sect1>

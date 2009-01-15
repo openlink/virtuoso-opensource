@@ -22,10 +22,10 @@
  -  
 -->
 
-<sect1 id="vdbconcepts"><title>Virtual Database</title>
+<sect2 id="vdbconcepts"><title>Virtual Database</title>
 
 	<!-- ======================================== -->
-	<sect2 id="linkrmttableauto">
+	<sect3 id="linkrmttableauto">
 		<title>Linking Remote Tables &amp; Views</title>
 
     <para>The Virtuoso Server supports linking in of tables, views, procedures and
@@ -39,7 +39,7 @@
     Setting Up A Remote Data Source</link> which is useful for connections to 
     less-capable ODBC data-sources.</para>
 
-    <sect3 id="ATTACH">
+    <sect4 id="ATTACH">
 			<title>ATTACH TABLE Statement</title>
   <programlisting><![CDATA[
 ATTACH TABLE <table> [PRIMARY KEY '(' <column> [, ...] ')']
@@ -102,8 +102,8 @@ TABLE, the USER and PASSWORD clauses have to be given.
   <para>The <emphasis>REMOTE AS</emphasis> option allows you to provide a
 	string literal for referencing the remote table.  This is useful when linking
 	tables from sources that do not support three-part qualification correctly.</para>
-		</sect3>
-		<sect3 id="attachview">
+		</sect4>
+		<sect4 id="attachview">
 			<title>Attaching views</title>
 			<para>
 A view can be attached as a table if a set of uniquely identifying
@@ -119,12 +119,12 @@ attach table T1_VIEW primary key (ROW_NO) from &apos;somedsn&apos;;
 				<title>Note:</title>
 				<para>Views cannot be attached unless the PRIMARY KEY options is used.</para>
 			</note>
+		</sect4>
 		</sect3>
-  </sect2>
 	<!-- ======================================== -->
-	<sect2 id="linkrmtprocauto">
+	<sect3 id="linkrmtprocauto">
 		<title>Linking Remote Procedures</title>
-		<sect3 id="ATTACHPROC">
+		<sect4 id="ATTACHPROC">
 			<title>ATTACH PROCEDURE Statement</title>
 			<programlisting><![CDATA[
 ATTACH (PROCEDURE|FUNCTION) <proc_name> ([<parameter1>[,<parameter2>[...]]])
@@ -223,14 +223,14 @@ MIXED CASE
 1 rows
 </programlisting>
 		</example>
-    </sect3>
+    </sect4>
     <tip><title>See Also:</title>
     <para>The Virtuoso Visual Server Administration Interface provides a 
     graphical user interface for 
     <link linkend="remoteprocedures">linking remote stored procedures</link>.</para></tip>
-  </sect2>
+  </sect3>
 	<!-- ======================================== -->
-	<sect2 id="TYPEMAPPING">
+	<sect3 id="TYPEMAPPING">
 		<title>Data Type Mappings</title>
 		<para>
 If a statement is passed through to a remote data source, the types
@@ -351,9 +351,9 @@ DBMS&apos;s vary, the following logic is used to map ODBC types to Virtuoso type
 			<para>The general case of decimal and numeric both revert to the Virtuoso
       decimal type, which is a variable precision decimal floating point.</para>
 		</note>
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-	<sect2 id="TRANSMODEL">
+	<sect3 id="TRANSMODEL">
 		<title>Transaction Model</title>
 		<para>
 One transaction on the Virtuoso VDBMS server may contain operations
@@ -384,9 +384,9 @@ remote connections are in manual commit mode.
   <para>Virtuoso supports 2PC - Two Phase Commit.  See the 
   <link linkend="twopcimplementation">Distributed Transaction &amp; Two Phase 
   Commit</link> section for more information.</para>
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-        <sect2 id="VDB_SQLFUNCTIONS">
+        <sect3 id="VDB_SQLFUNCTIONS">
 		<title>Virtual Database and SQL Functions</title>
 		<para>
 Different DBMS's support slightly different sets of SQL built-in functions
@@ -419,9 +419,9 @@ The declarations are persistent and can be dropped by using a last argument of N
 for a given function. The declarations are kept at the level of a DSN and not at the level
 of the type of DBMS because different instances can have different user defined functions defined.
 </para>
-	</sect2>
+	</sect3>
         <!-- ======================================== -->
-        <sect2 id="VDB_SQLOPTSTATISTICS">
+        <sect3 id="VDB_SQLOPTSTATISTICS">
 		<title>Virtual Database and SQL Optimizer Statistics</title>
 		<para>
 If a query can be executed in its entirety on a single remote database, then optimizing this query
@@ -472,9 +472,9 @@ Presently Oracle, Informix and Virtuoso are supported for direct access to the r
 statistics system tables.  It is possible to define hook functions for accessing this same information
 from any other type of DBMS. Please contact support for instructions on this.
 </para>
-	</sect2>
+	</sect3>
         <!-- ======================================== -->
-        <sect2 id="VDB_DISTRQUERYOPTM">
+        <sect3 id="VDB_DISTRQUERYOPTM">
 		<title>Distributed Query Optimization</title>
 		<para>
 When a query contains mixes of tables from different sources, the compiler must decide on an efficient
@@ -537,9 +537,9 @@ select * from r1..t1 a, t1 b, r1..t1 c where c.string1 = '111' and b.row_no = c.
 the compiler could not merge the two tablesfrom r1 into a single query because the order were given and there is
 an intervening table not located on r1.
 </para>
-	</sect2>
+	</sect3>
         <!-- ======================================== -->
-        <sect2 id="VDB_ARRAYPARAMETERS">
+        <sect3 id="VDB_ARRAYPARAMETERS">
 		<title>Use of Array Parameters</title>
 		<para>
 ODBC and other data access API's usually offer a mechanism for executing  a single parametrized
@@ -568,9 +568,9 @@ Some ODBC drivers also support array parameters for select statements. To enable
 ArrayOptimization setting to 2.  This may however not work with some drivers even if DML (insert/update/delete)
 statements do work with array parameters.
 </para>
-	</sect2>
+	</sect3>
         <!-- ======================================== -->
-	<sect2 id="TIMESTAMP_AUTOINCREMENT">
+	<sect3 id="TIMESTAMP_AUTOINCREMENT">
 		<title>Timestamps &amp; Autoincrement</title>
 		<para>
 A transaction timestamp is not the same across the transaction
@@ -600,9 +600,9 @@ catalog and meta data calls.  Thus remote SQL Server or Virtuoso timestamps will
 In the case of a Virtuoso remote database the binary timestamp can be cast into a DATETIME data type
 and it will appear as a meaningful datetime.
 </para>
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-	<sect2 id="vdbSTOREDPROCS">
+	<sect3 id="vdbSTOREDPROCS">
 		<title>VDB Stored Procedures &amp; Functions</title>
 		<para>These procedures allow you to manually manage remote data sources and their tables.</para>
 
@@ -649,9 +649,9 @@ REVOKE REXECUTE ON '<attached_dsn_name>' FROM <user_name>
   <listitem><link linkend="fn_sql_primary_keys">sql_primary_keys()</link></listitem>
 </itemizedlist>
 
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-	<sect2 id="MANSETRDS">
+	<sect3 id="MANSETRDS">
 		<title>Manually Setting Up A Remote Data Source</title>
 		<para>
 Defining a remote table involves declaring the table as a local table
@@ -709,9 +709,9 @@ not affect the operation of the SQL compiler. The remote data source
 makes the choice of index based on the order by clause in the statement
 passed through.
 </para>
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-	<sect2 id="BUGSlimits">
+	<sect3 id="BUGSlimits">
 		<title>Caveats</title>
 		<itemizedlist mark="bullet">
 			<listitem>
@@ -753,5 +753,5 @@ vd_attach_table ('text', 'datafile\x0Atxt', 'test', 'a', 'b');
   further indicies or primary key information, as a last resort Virtuoso will
   use SQLColAttribute() to determine which columns are SQL_DESC_SEARCHABLE.  
   </para>
+	</sect3>
 	</sect2>
-</sect1>

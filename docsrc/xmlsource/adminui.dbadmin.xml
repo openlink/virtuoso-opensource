@@ -22,9 +22,9 @@
  -  
 -->
 
-	<sect1 id="dbadmin">
+	<sect2 id="dbadmin">
 		<title>Database Administration</title>
-      	<sect2 id="dbusersandgroups">
+      	<sect3 id="dbusersandgroups">
       		<title>Users &amp; Group Accounts</title>
 		<para>
 From System Admin / user Accounts you can alter the users that can access the Virtuoso database. You may
@@ -49,9 +49,9 @@ which LDAP server the import should be done. </para>
     <figure float="1"><title>Users Accounts</title>
       <graphic fileref="ui/admtables_01a.png"/></figure>
 
-      	</sect2>
+      	</sect3>
 
-      	<sect2 id="databases">
+      	<sect3 id="databases">
       		<title>Databases</title>
     <para>
 Each catalog (database) within Virtuoso will be listed under the Databases /Schema Objects. For each
@@ -63,7 +63,7 @@ and store procedures stored within that catalog.</para>
 
     <figure float="1"><title>Viewing Views details for the Demo catalogue in the Demo Database</title>
       <graphic fileref="ui/admviews_01.png"/></figure>
-    	<sect3 id="demodbinstallsteps">
+    	<sect4 id="demodbinstallsteps">
 	  <title>Demo Database Installation</title>
           <para>The Virtuoso Demonstration database can be installed with the Conductor by navigating to
 the "System Admin" -> "Packages" tab where a list of available Virtuoso applications are
@@ -86,8 +86,8 @@ application package:
           </para>
           <figure float="1"><title>Install Demo db: view schema objects</title>
             <graphic fileref="ui/demodbinstall_04.png"/></figure>
-    	</sect3>
-     	<sect3 id="triggers">
+    	</sect4>
+     	<sect4 id="triggers">
 	      		<title>Editing Triggers</title>
 	<para>
 	For each table, Virtuoso gives you the ability to edit the
@@ -105,9 +105,9 @@ need a screenshot  here
   from the text of the trigger, and permits you to edit or drop the
   triggers. In the last column of the shown form there is a "New Trigger" link for creation of a new trigger.
   </para>
- </sect3>
+ </sect4>
 
-	<sect3 id="storedprocedures">
+	<sect4 id="storedprocedures">
 	<title>Editing Stored Procedures</title>
 	<para>
 	The stored procedures link shows a page of information about
@@ -128,16 +128,16 @@ need a screenshot  here
 <!--
 need a screenshot here of Edit Procedure DB.DBA.AmazonSearchService
 -->
+			</sect4>
 			</sect3>
-		</sect2>
-      	<sect2 id="externaldatabases">
+      	<sect3 id="externaldatabases">
       		<title>External Data Sources</title>
 		<para>
 		From Database / External Data Sources you will be able to manage the Virtual Database
                 feature of Virtuoso. You are able to administer ODBC Data Sources, how to link remote
                 tables and view, and already linked remote connections.</para>
 
-   	<sect3 id="connecteddsns">
+   	<sect4 id="connecteddsns">
 	      		<title>Data Sources</title>
 			<para>
 			This tab shows you the available Data Sources. For these one, to which there is no
@@ -150,8 +150,8 @@ connection, will be shown the links "Link objects", "Change Credentials" and "Di
 			If you need to alter the authentication details of a particular Data
 			Source then select the "Change Credentials" link. If you want to link new objects,
 select the "Link objects" link.</para>
-		</sect3>
-   	<sect3 id="configureddsns"><title>Configure Data Sources</title>
+		</sect4>
+   	<sect4 id="configureddsns"><title>Configure Data Sources</title>
 			<para>
 			This section will allow you to configure the data sources themselves on
 			the remote machine.  The table that will be presented to you will
@@ -187,9 +187,9 @@ select the "Link objects" link.</para>
       possible.</para></note>
 
 
-		</sect3>
+		</sect4>
 
-   	<sect3 id="remotetables"><title>External Linked Objects</title>
+   	<sect4 id="remotetables"><title>External Linked Objects</title>
 			<para>
 			This page will allow you to manage the remote objects that are linked
 			into Virtuoso. You can unlink objects by selecting them and pressing the
@@ -229,9 +229,9 @@ select the "Link objects" link.</para>
 			<para>
 			As result the selected tables will be linked and
 			listed in the first list as Currently Linked.</para>
-		</sect3>
+		</sect4>
 
-     	<sect3 id="remoteprocedures"><title>Remote Procedures</title>
+     	<sect4 id="remoteprocedures"><title>Remote Procedures</title>
 			<para>
 			In order to view the list of remote procedures, you should check the "Stored Procedures" check-box and click the button "Apply".
                         As result the procedures that are already connected to
@@ -298,10 +298,10 @@ select the "Link objects" link.</para>
       procedures that are linked using a PL Wrapper, and is only directly 
       applicable for PL Wrappers for SOAP execution.</para>
 
+		</sect4>
 		</sect3>
-</sect2>
 
- 	<sect2 id="eventscheduler"><title>Event Scheduler</title>
+ 	<sect3 id="eventscheduler"><title>Event Scheduler</title>
 		<para>
 		The System Admin / Scheduler tab allows you to view, edit and remove events that
 		can be scheduled to run from a particular time at a defined interval.</para>
@@ -319,7 +319,7 @@ select the "Link objects" link.</para>
       <graphic fileref="ui/admevt_01a.png"/></figure>
 		<para>
 		Events write possible error messages into the Virtuoso log file.</para>
-  </sect2>
+  </sect3>
 
 <!-- ################## dbpump ################ -->
 
@@ -582,7 +582,7 @@ The value of this field will be changed with every click in 'Directory Listing'<
   </sect3>
 </sect2 -->
 
-    <sect2 id="virtiniadm"><title>Virtuoso Configuration Editor</title>
+    <sect3 id="virtiniadm"><title>Virtuoso Configuration Editor</title>
      <para>From System Admin/Parameters you can change the Virtuoso Configuration settings:
      </para>
         <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
@@ -606,9 +606,9 @@ The value of this field will be changed with every click in 'Directory Listing'<
         <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
           <graphic fileref="ui/db_strtp_07.png"/></figure>
 
-   </sect2>
+   </sect3>
 
-      	<sect2 id="statistics"><title>Dashboard and Monitor</title>
+      	<sect3 id="statistics"><title>Dashboard and Monitor</title>
 <para>The System Admin/Dashboard consists of a collection of statistical information about
 your Virtuoso server. This includes general licensing information, locking, webserver hits statistics and more.
      </para>
@@ -629,6 +629,6 @@ your Virtuoso server. This includes general licensing information, locking, webs
         <figure float="1"><title>Monitor - Profiling</title>
           <graphic fileref="ui/sts_profile_01.png"/></figure>
 
-		</sect2>
+		</sect3>
 
-</sect1>
+</sect2>

@@ -21,7 +21,7 @@
  -  
  -  
 -->
-<sect2 id="rendezvous"><title>ZeroConfig ("Zero Configuration") Support</title>
+<sect3 id="rendezvous"><title>ZeroConfig ("Zero Configuration") Support</title>
 
 <para>The "ZeroConfig" protocol, also known as "Zeroconf" or 
 "Zero Configuration" is a protocol that allows discovery of services on the 
@@ -58,7 +58,7 @@ the IP address/port of a host of the chosen service during DSN configuration.
 This is used when existing DSN using a ZeroConfig name is used to connect,
 it will map name with IP address and port before making a connection.</para>
 
- <sect3 id="rendezvousserverside"><title>Setting-up the Server for Service Advertising</title>
+ <sect4 id="rendezvousserverside"><title>Setting-up the Server for Service Advertising</title>
 
   <para>The Virtuoso server is configured to advertise itself based on the 
   details specified in the <computeroutput>[Zero Config]</computeroutput> 
@@ -94,9 +94,9 @@ SSLServerDSN  = UID=dba;PWD=;ENCRYPT=1
   <para>ZeroConfig service advertising is multicast, hence it is advertised 
   on all available network interfaces.</para>
 
-  </sect3>
+  </sect4>
 
-  <sect3 id="rendezvous"><title>Using the Windows ODBC Driver with ZeroConfig</title>
+  <sect4 id="rendezvous"><title>Using the Windows ODBC Driver with ZeroConfig</title>
 
   <para>Upon DSN set-up the ODBC driver listens for advertising servers, and 
   compiles a roster.  This is displayed for the user to choose the desired 
@@ -112,8 +112,8 @@ SSLServerDSN  = UID=dba;PWD=;ENCRYPT=1
   the client DSNs associated with it do not all have to reconfigured; they will 
   resolve to the new address automatically on next use.</para>
 
+  </sect4>
   </sect3>
- </sect2>
   
   
 

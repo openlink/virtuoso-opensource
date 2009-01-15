@@ -22,11 +22,11 @@
  -  
 -->
 
-<sect1 id="ptune"><title>Performance Tuning</title>
+<sect2 id="ptune"><title>Performance Tuning</title>
 	<!-- ======================================== -->
-	<sect2 id="IO">
+	<sect3 id="IO">
 		<title>I/O</title>
-		<sect3 id="DISKIO">
+		<sect4 id="DISKIO">
 			<title>Optimizing Disk I/O</title>
 			<para>
 Virtuoso allows splitting a database over several files that
@@ -61,8 +61,8 @@ devices holding stripes of a segment.
 The random access advantages of striping are available without any specific configuring
 besides that of the stripes themselves.
 </para>
-		</sect3>
-		<sect3 id="IOQS">
+		</sect4>
+		<sect4 id="IOQS">
 			<title>Configuring I/O queues</title>
 			<para>
 Striping is also useful for a single client doing long sequential
@@ -109,19 +109,19 @@ equal to the number of independent disks.  On the other hand assigning stripes o
 to different queues can have a very detrimental effect. The rule is that all that is physically
 accessed sequentially will be on the same queue.
 </para>
+		</sect4>
 		</sect3>
-	</sect2>
 	<!-- ======================================== -->
-	<sect2 id="SCHEMAS">
+	<sect3 id="SCHEMAS">
 		<title>Schema Design Considerations</title>
-		<sect3 id="DataOrg">
+		<sect4 id="DataOrg">
 			<title>Data Organization</title>
 			<para>
 One should keep the following in mind when designing a schema for
 maximum efficiency.
 </para>
-		</sect3>
-		<sect3 id="IndexUsage">
+		</sect4>
+		<sect4 id="IndexUsage">
 			<title>Index Usage</title>
 			<para>
 A select from a table using a non-primary key will need to retrieve the
@@ -142,8 +142,8 @@ search with few hits can be faster on a secondary key if the criterion
 can be evaluated without reference to the main row. This is because a
 short key can have more entries per page.
 </para>
-		</sect3>
-		<sect3 id="SpaceConsump">
+		</sect4>
+		<sect4 id="SpaceConsump">
 			<title>Space Consumption</title>
 			<para>
 Each column takes the space &apos;naturally&apos; required by its value. No field
@@ -214,18 +214,18 @@ key are summed.  The maximum length of a row is 4076 bytes.
 			<para>
 In light of these points primary keys should generally be short.
 </para>
-		</sect3>
-		<sect3 id="PageAlloc">
+		</sect4>
+		<sect4 id="PageAlloc">
 			<title>Page Allocation</title>
 			<para>
 For data inserted in random order pages tend to be 3/4 full. For data
 inserted in ascending order pages will be about 90% full due to a
 different splitting point for a history of rising inserts.
 </para>
+		</sect4>
 		</sect3>
-	</sect2>
 	<!-- ======================================== -->
-	<sect2 id="EfficientSQL">
+	<sect3 id="EfficientSQL">
 		<title>Efficient Use of SQL - SQL Execution profiling</title>
 		<para>
 Virtuoso offers an execution profiling mechanism that keeps track of the
@@ -344,11 +344,11 @@ Also the cumulative compilation time may be substantially off, since the compila
 less than 1 ms at a time.  Also note that the precision may also vary between platforms.
 </para>
 		</note>
-	</sect2>
+	</sect3>
 	<!-- ======================================== -->
-	<sect2 id="METERS_SYSVIEWS">
+	<sect3 id="METERS_SYSVIEWS">
 		<title>Meters &amp; System Views</title>
-		<sect3 id="kdlstat">
+		<sect4 id="kdlstat">
 			<title>DB.DBA.SYS_K_STAT, DB.DBA.SYS_D_STAT, DB.DBA.SYS_L_STAT view</title>
 			<para>
 These views provide statistics on the database engine
@@ -386,8 +386,8 @@ create view sys_d_stat as
 These views offer detailed statistics on index access locality, lock contention and
 disk usage.
 </para>
-		</sect3>
-		<sect3 id="keystats">
+		</sect4>
+		<sect4 id="keystats">
 			<title>SYS_K_STAT - Key statistics</title>
 			<itemizedlist mark="bullet">
 				<listitem>
@@ -412,8 +412,8 @@ disk usage.
 					<para>LOCK_ESC	The count of lock escalations, see SYS_L_STAT.</para>
 				</listitem>
 			</itemizedlist>
-		</sect3>
-		<sect3 id="lstats">
+		</sect4>
+		<sect4 id="lstats">
 			<title>SYS_L_STAT</title>
 			<itemizedlist mark="bullet">
 				<listitem>
@@ -445,8 +445,8 @@ disk usage.
 		locks, i.e. the lock can be set over the entire page.</para>
 				</listitem>
 			</itemizedlist>
-		</sect3>
-		<sect3 id="dstats">
+		</sect4>
+		<sect4 id="dstats">
 			<title>SYS_D_STAT</title>
 			<itemizedlist mark="bullet">
 				<listitem>
@@ -488,8 +488,8 @@ select index_name, (consec * 100) / (landed + 1)
 			<para>Get the percentage of consecutive page access on indices with over 1000 accesses so far,
 most randomly accessed first.
 </para>
-		</sect3>
-		<sect3 id="statusfunc">
+		</sect4>
+		<sect4 id="statusfunc">
 			<title>status SQL function - status ();</title>
 			<para>This function returns a summary of the database
 status as a result set. The result set has one varchar column,
@@ -498,9 +498,9 @@ characters.
 </para>
 			<para>The contents of the status summary are described in
       the <link linkend="DBSTAT">Administrator&apos;s Guide</link>.</para>
-		</sect3>
+		</sect4>
 
-		<sect3 id="statusfunc">
+		<sect4 id="statusfunc">
 			<title>Virtuoso db file usage detailed info</title>
 
 <para>All data in a virtuoso database are logically stored as database key rows.
@@ -535,10 +535,10 @@ DB.DBA.SYS_INDEX_SPACE_STATS
 <para>Each select on that view causes the server to go over all the db pages in the db file
 (similarly to how the crash dump operates) and collect the statistics above. The pages are
 traversed 1 time per select, but still on large database files that may take some time.	</para>
-</sect3>
+</sect4>
 
-	</sect2>
-<sect2 id="TRANSACTION_ISOLATION_LEVELS"><title>Transaction Metrics, Diagnostics and Optimization</title><ulink url="">Transaction-Isolation
+	</sect3>
+<sect3 id="TRANSACTION_ISOLATION_LEVELS"><title>Transaction Metrics, Diagnostics and Optimization</title><ulink url="">Transaction-Isolation
     Levels in Virtuoso</ulink>
 
     <bridgehead class="h1"><ulink url="">Metrics, Diagnostics
@@ -965,9 +965,5 @@ select s_quantity from stock where s_i_id = 111 for update;
     <para>Single stepping is not generally useful for debugging
     locking since locking issues are timing sensitive.</para>
 
+  </sect3>
   </sect2>
-
-</sect1>
-
-
-

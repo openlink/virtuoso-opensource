@@ -22,7 +22,7 @@
  -
 -->
 
-<sect1 id="perfdiag"><title>Performance diagnostics</title>
+<sect2 id="perfdiag"><title>Performance diagnostics</title>
   <para>This section provides a checklist for improving performance of a Virtuoso server.</para>
   <para>If something does not work fast, this is mostly for the following reasons:</para>
   <itemizedlist>
@@ -35,7 +35,7 @@
 of the information. Do this twice with some 10 seconds between the samples and see the second
 result set.
   </para>
-  <sect2 id="perfdiagmemory">
+  <sect3 id="perfdiagmemory">
     <title>Memory</title>
     <para>If there is not enough memory, there will be frequent disk access. This is
 seen from the buffers and disk usage lines.
@@ -70,8 +70,8 @@ faster than random ones and can efficiently use striped disks.
 that one might not have the required indices, thereby causing full table scans.
 More on this in the query plans section below.
     </para>
-  </sect2>
-  <sect2 id="perfdiagswapping">
+  </sect3>
+  <sect3 id="perfdiagswapping">
     <title>Swapping</title>
     <para>Swapping is always bad. If swapping occurs, then one has too many buffers and
 should decrease the number of buffers. Use an OS tool like top to see the size of the
@@ -99,8 +99,8 @@ ThreadCleanupInterval or ResourcesCleanupInterval ini parameters have an effect.
 spite of all the process grows there can be a genuine leak. It is normal for the size to
 fluctuate somewhat due to varying amounts of uncommitted data, threads, connections and the like.
     </para>
-  </sect2>
-  <sect2 id="perfdiaglocking">
+  </sect3>
+  <sect3 id="perfdiaglocking">
     <title>Locking</title>
     <para>The lock status section indicates the count of deadlocks and waits. If the 2r1w
 number is high then it means that the application should read for update. It gets shared
@@ -147,8 +147,8 @@ performance penalty of maybe 10%.
 parameters do not usually help. If there is disk access, having more memory always helps
 because then locks will be in effect for less time.
     </para>
-  </sect2>
-  <sect2 id="perfdiagqueryplans">
+  </sect3>
+  <sect3 id="perfdiagqueryplans">
     <title>Query Plans</title>
     <para>To know if there is a bad query plan, see the explain output of the query.</para>
     <para>Unless a full table scan is intended, a full table scan is pretty much always bad.</para>
@@ -282,8 +282,8 @@ select as seen above. A hash join is very bad if a whole table is read for filli
 hash and then only a small number of entries are fetched from the hash. However, if
 there is no index, then even this is better than a loop join.
     </para>
-  </sect2>
-  <sect2 id="perfdiagcheckpointduration">
+  </sect3>
+  <sect3 id="perfdiagcheckpointduration">
     <title>Checkpoint Duration</title>
     <para>A checkpoint can take a very long time in certain special conditions. Normally a
 log checkpoint is about a minute if flushing several G worth of buffers to disk. The flushing
@@ -315,5 +315,5 @@ of used pages by the value of this parameter but will make for faster checkpoint
 to up to 25% of the database page count.
   </listitem>
 </itemizedlist>
+</sect3>
 </sect2>
-</sect1>

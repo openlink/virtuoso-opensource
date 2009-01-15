@@ -22,7 +22,7 @@
  -  
 -->
 
-<sect1 id="usermodel"><title>Virtuoso User Model</title>
+<sect2 id="usermodel"><title>Virtuoso User Model</title>
 
 <para>The Virtuoso User Model is designed to support:</para>
 
@@ -74,7 +74,7 @@ applicable virtual directory specifies on behalf of which SQL account the SQL is
 executed.  A role cannot be the owner of procedures, views or other executable 
 SQL entities.</para>
 
-<sect2 id="vumsecobjects"><title>Security Objects Management</title>
+<sect3 id="vumsecobjects"><title>Security Objects Management</title>
 
 <para>The following functions allow for creation and deletion of security objects 
 and roles, and for assigning or removing roles from security objects:</para>
@@ -96,9 +96,9 @@ and roles, and for assigning or removing roles from security objects:</para>
 described in the <link linkend="UserSysTables">User System Tables</link> Section 
 of the Appendix</para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vumuseroptions"><title>User Options</title>
+<sect3 id="vumuseroptions"><title>User Options</title>
 
 <itemizedlist>
  <listitem><formalpara><title>PASSWORD_MODE</title>
@@ -169,10 +169,10 @@ of the Appendix</para>
 
 <para>The functions for setting/getting these options will accept any 
 other named values, the above list only being those reserved for Virtuoso so far.</para>
-</sect2>
+</sect3>
 
 
-<sect2 id="vumloginexthook"><title>Login Extension PL Hook</title>
+<sect3 id="vumloginexthook"><title>Login Extension PL Hook</title>
     
 <para><function>DB.DBA.USER_FIND
     <paramdef>in <parameter>name</parameter> varchar</paramdef>
@@ -188,7 +188,7 @@ purely for pre-processing.</para>
 <tip><title>See Also:</title>
 <para>The <link linkend="hooks">Database Event Hooks</link> chapter.</para></tip>
 
-<sect3 id="vumplhooksxmpls"><title>PL Hooks Examples</title>
+<sect4 id="vumplhooksxmpls"><title>PL Hooks Examples</title>
 
 <example id="vumqryldap"><title>Querying an LDAP Server</title>
 
@@ -256,10 +256,10 @@ DB.DBA.USER_FIND (in name varchar)
     }
 };]]></programlisting>
 </example>
+</sect4>
 </sect3>
-</sect2>
 
-<sect2 id="vumrolesemantics"><title>SQL Role Semantics</title>
+<sect3 id="vumrolesemantics"><title>SQL Role Semantics</title>
 
 <para>The terms user group and role are used interchangeably.  Roles can be 
 nested.  There is a many to many relationship between users and roles.  There 
@@ -326,9 +326,9 @@ will give the grantee full dba privileges, or in other words, add to the dba gro
 One cannot log in or perform any operations as a role.  Roles are exclusively 
 shorthand for specific sets of permissions which are changed together and
 are needed for multiple users. </para>
-</sect2>
+</sect3>
 
-</sect1>
+</sect2>
 
 
 

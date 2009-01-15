@@ -22,9 +22,9 @@
  -  
 -->
 
-<sect1 id="admui.internetdomains"><title>Internet Domains</title>
+<sect2 id="admui.internetdomains"><title>Internet Domains</title>
 
-	<sect2 id="httpvirtualdirs">
+	<sect3 id="httpvirtualdirs">
 		<title>HTTP Virtual Directories</title>
 	<para>From Virtual Domains &amp; Directories you can define Virtual HTTP directories. Virtual Directories
   let you define multiple HTTP server listeners in Virtuoso for either the same 
@@ -176,5 +176,5 @@ Enter for the field "Default page": index.html; Check the check-box "Allow Direc
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir014.png"/></figure>
 
+</sect3>
 </sect2>
-</sect1>

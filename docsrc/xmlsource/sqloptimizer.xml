@@ -429,7 +429,6 @@ select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2 optio
   </example>
 
   </sect2>
-
   <sect2 id="vdbcoststats"><title>VDB Statistics for the SQL Compiler Collection</title>
 
 <para>In order to correctly estimate the cost of the VDB operations overhead the optimized SQL

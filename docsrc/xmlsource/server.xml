@@ -22,18 +22,21 @@
  -  
 -->
 <chapter label="server.xml" id="server">
-	<title>Server Administration</title>
+	<title>Administration</title>
+	<!-- ======================================== -->
+<sect1 id="databaseadmsrv"><title>Database Server Administration</title>
   <abstract>
     <para>
-
-This chapter explains the use of the server executables, configuration files and general administration procedures.
-These include backup, server tuning and profiling, installing extension packages etc.  See the Access Interfaces chapter for a discussion of the command line SQL interface.  
+This section explains the use of the server executables, configuration files
+and general administration procedures. These include backup, server tuning and profiling,
+installing extension packages etc. See the Access Interfaces chapter for a discussion of the
+command line SQL interface.
 </para>
   </abstract>
-	<!-- ======================================== -->
-<sect1 id="dbadm"><title>Database</title>
 
-  <sect2 id="srvadminstallreqt"><title>Installation Requirements</title>
+<sect2 id="dbadm"><title>Database</title>
+
+  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
     <para>A typical installation will require a minimum of 400Mb of hard disk
     space to install the code, samples, documentation and sample database.
 The database will need additional space for data inserted, backups,
@@ -42,9 +45,9 @@ The database will need additional space for data inserted, backups,
 </para>
     <para>The size of the database .db file will not reduce when data is
     removed. The spare space will however be reclaimed for later use.</para>
-  </sect2>
+  </sect3>
 
-  <sect2 id="srvadmopreq"><title>Operational Requirements</title>
+  <sect3 id="srvadmopreq"><title>Operational Requirements</title>
     <para>The Virtuoso database requires a minimum of 64Mb of system memory
     for each instance to operate in. Each connection will take between 70kb
     and 130kb of memory.</para>
@@ -59,9 +62,9 @@ The database will need additional space for data inserted, backups,
     </simplelist>
     <para>See the following <link linkend="parameters">Parameter section</link>
     for more details.</para>
-  </sect2>
+  </sect3>
 
-  <sect2 id="srvadmossupport"><title>Operating System Support</title>
+  <sect3 id="srvadmossupport"><title>Operating System Support</title>
     <para>Virtuoso runs on the following operating systems:</para>
     <simplelist>
       <member>Windows 2000,XP,ME,98,95</member>
@@ -69,10 +72,10 @@ The database will need additional space for data inserted, backups,
       <member>Unix</member>
       <member>Mac OS X</member>
     </simplelist>
-  </sect2>
+  </sect3>
 
 
-<sect2 id="limitsandparameters">
+<sect3 id="limitsandparameters">
 <title>Limits</title>
 
 <para>
@@ -107,11 +110,11 @@ The below table lists the most important parameters and limits for a database or
 </tbody>
 </table>
 
-</sect2>
+</sect3>
 
 
 
-  <sect2 id="srvadmsrvinst"><title>Server Instance Creation</title>
+  <sect3 id="srvadmsrvinst"><title>Server Instance Creation</title>
     <para>Multiple Virtuoso server instances  may coexist on a single machine. Each
     database will need to be assigned a unique TCP port number.
     On the windows platforms (except 95,98,ME) the Virtuoso can
@@ -122,10 +125,10 @@ The below table lists the most important parameters and limits for a database or
 
 <para>To run Virtuoso on a machine, only the  Virtuoso server executable and a valid virtuoso.ini file are needed.  An empty database file will be created automatically at first startup.  None of the other files in the installation are needed for basic operation.  Client interfaces may additionally need ODBC drivers or the like to be set up in system configuration files or the Windows registry but the server itself does not depend on these. 
 </para>
-  </sect2>
+  </sect3>
 
 
-  <sect2 id="srvextinst"><title>Installing Application Packages</title>
+  <sect3 id="srvextinst"><title>Installing Application Packages</title>
     <para>
 Virtuoso comes with optionally installable SQL application packages (VAD packages) for web based admin, on-line documentation, programming tutorials and a BPEL processor.
 The installer typically asks whether to install these into the demo or the default empty database.
@@ -163,9 +166,9 @@ file.
 
 </para>
 
-</sect2>
+</sect3>
 
-  <sect2 id="srvadmlicensing"><title>Server Licensing</title>
+  <sect3 id="srvadmlicensing"><title>Server Licensing</title>
     <para>The Virtuoso server requires a valid license file before it will
     successfully start.  The license file is a file always called
     <emphasis>virtuoso.lic</emphasis> and must reside in the working directory
@@ -174,9 +177,9 @@ file.
     <para>Evaluations versions of Virtuoso come without a license file, however
     the registration procedure takes your email address, which will be used to
     email a new license file for you evaluation.</para>
-  </sect2>
+  </sect3>
 
-  <sect2 id="srvadmlogging"><title>Server Logging - Detecting Errors</title>
+  <sect3 id="srvadmlogging"><title>Server Logging - Detecting Errors</title>
     <para>Virtuoso provides extensive log information for resolving problems.
     Should any problems arise Virtuoso logs should always be consulted.</para>
     <para>The Virtuoso server by default will send log information to two
@@ -191,13 +194,13 @@ file.
     <para>The system log feature can be disabled using the "Syslog" parameter
     in the [Database] section.  This is described in more detail in the following
     section.</para>
-  </sect2>
+  </sect3>
 
 <!-- ======================================== -->
 
-<sect2 id="configsrvstupfiles"><title>Configuring Server Startup Files</title>
+<sect3 id="configsrvstupfiles"><title>Configuring Server Startup Files</title>
 
-	<sect3 id="VIRTINI">
+	<sect4 id="VIRTINI">
 		<title>Virtuoso Configuration File</title>
 		<para>The virtuoso.ini file is read from the directory that is current at
 server startup.  This file contains an entry for all user settable options in the server.
@@ -234,7 +237,7 @@ It is divided into the following sections:
 			</listitem>
 		</itemizedlist>
 		<para>Below are the descriptions for each parameter</para>
-		<sect4 id="ini_Database">
+		<sect5 id="ini_Database">
 			<title>[Database]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Database_DatabaseFile">
@@ -352,8 +355,8 @@ In this case it is important to rename the already produced crash dump or change
             <para>On Windows messages are written in the Application event log.</para>
 				</listitem>
 			</itemizedlist>
-		</sect4>
-    <sect4 id="ini_TempDatabase"><title>[&lt;TempDatabase_Name&gt;]</title>
+		</sect5>
+    <sect5 id="ini_TempDatabase"><title>[&lt;TempDatabase_Name&gt;]</title>
      <para>This section name must match the TempStorage parameter in the
      Database section of the Virtuoso INI file to be of any use.  Otherwise this
      section will be ignored.</para>
@@ -379,8 +382,8 @@ In this case it is important to rename the already produced crash dump or change
 					</formalpara>
 				</listitem>
        </itemizedlist>
-    </sect4>
-		<sect4 id="ini_Parameters">
+    </sect5>
+		<sect5 id="ini_Parameters">
 			<title>[Parameters]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Parameters_SingleCPU">
@@ -968,8 +971,8 @@ LIMIT 1000
 	</listitem>
 
           </itemizedlist>
-		</sect4>
-  <sect4 id="ini_HTTPServer">
+		</sect5>
+  <sect5 id="ini_HTTPServer">
 			<title>[HTTPServer]</title>
 			<para>Settings in this section control the web server component of the
       Virtuoso Server.</para>
@@ -1295,8 +1298,8 @@ from the HTTP threads after each request.  The default setting is "0".</para>
     </formalpara>
 </listitem>
       </itemizedlist>
-		</sect4>
-		<sect4 id="ini_URIQA">
+		</sect5>
+		<sect5 id="ini_URIQA">
 			<title>[URIQA]</title>
 			<para>
 The URIQA section sets parameters of both URIQA HTTP extension and URIQA web service.
@@ -1336,9 +1339,9 @@ This section should stay commented out as long as URIQA is not in use.
     </formalpara>
 </listitem>
 			</itemizedlist>
-		</sect4>
+		</sect5>
 		
-		<sect4 id="ini_SPARQL">
+		<sect5 id="ini_SPARQL">
 			<title>[SPARQL]</title>
 			<para>
 The SPARQL section sets parameters and limits for SPARQL query protocol web service service.
@@ -1417,9 +1420,9 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 			</itemizedlist>
 <para>The SPARQL INI can be get as RDF via http://cname/sparql?ini service.</para>
 
-		</sect4>
+		</sect5>
 		
-		<sect4 id="ini_Replication">
+		<sect5 id="ini_Replication">
 			<title>[Replication]</title>
 			<para>
 The replication section sets the transactional replication parameters
@@ -1465,8 +1468,8 @@ being buffered.  The actual memory usage is somewhat greater.
 					</formalpara>
 				</listitem>
 			</itemizedlist>
-		</sect4>
-		<sect4 id="ini_Mono">
+		</sect5>
+		<sect5 id="ini_Mono">
 			<title>[Mono]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Mono_MONO_ROOT">
@@ -1510,8 +1513,8 @@ This ini setting overrides the Mono environment variable of the same name.</para
 					</formalpara>
 				</listitem>
       </itemizedlist>
-    </sect4>
-		<sect4 id="ini_Client">
+    </sect5>
+		<sect5 id="ini_Client">
 			<title>[Client]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Client_SQL_QUERY_TIMEOUT">
@@ -1584,8 +1587,8 @@ from being returned from SQLTables.  The client can also issue a
 					</formalpara>
 				</listitem>
 			</itemizedlist>
-		</sect4>
-		<sect4 id="ini_AutoRepair">
+		</sect5>
+		<sect5 id="ini_AutoRepair">
 			<title>[AutoRepair]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_AutoRepair_BadParentLinks">
@@ -1603,8 +1606,8 @@ having to go through a crash dump plus restore.  A value of 0 should be normally
 					</formalpara>
 				</listitem -->
 			</itemizedlist>
-		</sect4>
-		<sect4 id="ini_VDB">
+		</sect5>
+		<sect5 id="ini_VDB">
 			<title>[VDB]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_VDB_ArrayOptimization">
@@ -1774,8 +1777,8 @@ exits when there are a large number of connection requests to the VDB.  Certain 
 					</formalpara>
 				</listitem>
       </itemizedlist>
-  </sect4>
-		<sect4 id="ini_Ucms">
+  </sect5>
+		<sect5 id="ini_Ucms">
 			<title>[Ucms]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Ucms_UcmPath">
@@ -1806,8 +1809,8 @@ Encodings</link> for more details.</para>
 					</formalpara>
 				</listitem>
 			</itemizedlist>
-  </sect4>
-		<sect4 id="ini_ZeroConfig">
+  </sect5>
+		<sect5 id="ini_ZeroConfig">
 			<title>[Zero Config]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_ZeroConfig_ServerName">
@@ -1844,9 +1847,9 @@ Encodings</link> for more details.</para>
 			</itemizedlist>
       <tip><title>See Also:</title>
       <para>The <link linkend="rendezvous">Zero Config</link> section.</para></tip>
-  </sect4>
+  </sect5>
 
-		<sect4 id="ini_Plugins">
+		<sect5 id="ini_Plugins">
 			<title>[Plugins]</title>
 			<itemizedlist mark="dash">
 				<listitem id="ini_Plugins_LoadPath">
@@ -1879,9 +1882,9 @@ Encodings</link> for more details.</para>
 			</itemizedlist>
 			<tip><title>See Also:</title>
 			  <para><link linkend="vseiplugins">VSEI Plugins</link></para></tip>
-  </sect4>
+  </sect5>
 
-		<sect4 id="ini_Striping">
+		<sect5 id="ini_Striping">
 			<title>[Striping]</title>
 
 			<itemizedlist mark="dash">
@@ -1949,10 +1952,10 @@ The stripes will be declared in the TempStriping section.
       <tip><title>See Also:</title>
       <para><link linkend="dbrebuild">Rebuilding A Database</link> in the Backup section.</para></tip>
 
+    </sect5>
     </sect4>
-</sect3>
 
-<sect3 id="sampleinifile">
+<sect4 id="sampleinifile">
 <title>Sample Configuration File (&quot;virtuoso.ini&quot;)</title>
 		<para>Following is the text of the sample virtuoso.ini file that comes with the distribution.
 </para>
@@ -2057,8 +2060,8 @@ BadDTP			        = 0
 Segment1	= 100M, db-seg1-1.db, db-seg1-2.db
 Segment2	= 100M, db-seg2-1.db
 </programlisting>
-</sect3>
-               <sect3 id="indexdefragm">
+</sect4>
+               <sect4 id="indexdefragm">
                <title>Index Defragmentation</title>
                <para>
 When data is inserted into tables, database pages are split and typically pages end up not being fully utilized.
@@ -2126,12 +2129,12 @@ DB..VACUUM ('DB.DBA.RDF_QUAD', 'RDF_QUAD_PGOS');
                <para>
 Virtuoso has an autocompact feature.
 </para>
+</sect4>
 </sect3>
-</sect2>
 
-	<sect2 id="COMMANDLINE">
+	<sect3 id="COMMANDLINE">
 		<title>Server Startup Command Line Options</title>
-		<sect3 id="SERVER">
+		<sect4 id="SERVER">
 			<title>Virtuoso Server</title>
 			<para>
 This section presents the command line switches of the Virtuoso
@@ -2292,8 +2295,8 @@ automatically at system startup.
   <note><title>Note:</title>
   <para>Make sure the Services Control Panel is closed, before attempting to
   modify services from the command line, otherwise locking may occur.</para></note>
+		</sect4>
 		</sect3>
-	</sect2>
 
 <!-- ======================================== -->
 
@@ -2301,7 +2304,7 @@ automatically at system startup.
 
 <!-- ======================================== -->
 
-<sect2 id="DBSTAT">
+<sect3 id="DBSTAT">
 		<title>Server Status Monitoring</title>
 		<para>The database status report is divided into 6 sections:</para>
 		<simplelist>
@@ -2312,7 +2315,7 @@ automatically at system startup.
 			<member>Replication</member>
 			<member>Index Usage</member>
 		</simplelist>
-		<sect3 id="Server">
+		<sect4 id="Server">
 			<title>Server</title>
 			<para>
 This section shows how many connections are open and how many threads
@@ -2320,8 +2323,8 @@ the process has and how many are running at the present time. This also
 displays the number of requests that have been received but are not yet
 running on any thread.
 </para>
-		</sect3>
-		<sect3 id="Database">
+		</sect4>
+		<sect4 id="Database">
 			<title>Database</title>
 			<screen>
 
@@ -2388,8 +2391,8 @@ The page count is the total size, the free count is the count of free pages, the
 				<title>See:</title>
 				<para>The Disk Configuration section for a discussion of checkpoint remapping.</para>
 			</tip>
-		</sect3>
-		<sect3 id="Locks">
+		</sect4>
+		<sect4 id="Locks">
 			<title>Locks</title>
 			<para>
 The lock section shows various locking statistics accumulated since the
@@ -2413,8 +2416,8 @@ All locks currently in effect are listed with the owners (a) and possibly
 waiting transactions. The transactions are named after their client. A
 log or replication replay transaction is here named &apos;INTERNAL&apos;.
 </para>
-		</sect3>
-		<sect3 id="Clients">
+		</sect4>
+		<sect4 id="Clients">
 			<title>Clients</title>
 			<para>
 Each connected client is listed with the number of bytes sent and received
@@ -2423,8 +2426,8 @@ BLOWN OFF or DELTA ROLLED BACK for a transaction killed by deadlock or
 timeout. The locks owned by the transaction are listed following the
 status. IE means exclusive and IS shared lock.
 </para>
-		</sect3>
-		<sect3 id="Replication">
+		</sect4>
+		<sect4 id="Replication">
 			<title>Replication</title>
 			<para>
 This section shows the server in question and a list of replication
@@ -2439,8 +2442,8 @@ where the remote is not available. It is SYNCING if a resync is in
 progress, IN SYNC if the account is up to date or REMOTE DISCONNECTED if
 there was a connection to a remote party which subsequently disconnected.
 </para>
-		</sect3>
-		<sect3 id="indexusage">
+		</sect4>
+		<sect4 id="indexusage">
 			<title>Index Usage</title>
 			<para>
 This part of the report summarizes the database&apos;s access statistics.
@@ -2470,10 +2473,10 @@ In interactive SQL
 SQL&gt; status();
 </screen>
 			<para>Will print out the report.</para>
+		</sect4>
 		</sect3>
-	</sect2>
 	<!-- ======================================== -->
-	<sect2 id="oemrelabeling">
+	<sect3 id="oemrelabeling">
 	<title>Re-labeling Server Executable on Win32 Platforms</title>
 	<para>
 The Virtuoso Service name can be altered using the key <emphasis>Win32ServiceName</emphasis> in the
@@ -2500,9 +2503,9 @@ The name displayed in the ODBC Administrator, Setup and Configuration dialogs is
 This can be directly edited in the registry using the regedt32 Windows utility, or a registry import file can be created which can be
 applied by simply double-clicking the .reg file.  Always exercise extreme caution when making changes to the registry.
 </para>
-</sect2>
+</sect3>
 
-<sect2 id="dbsrcsecurity">
+<sect3 id="dbsrcsecurity">
 <title>Transport Level Security</title>
 
 <!--
@@ -2510,7 +2513,7 @@ applied by simply double-clicking the .reg file.  Always exercise extreme cautio
   </sect3>
 -->
 
-  <sect3 id="srvadmencryption"><title>Encryption</title>
+  <sect4 id="srvadmencryption"><title>Encryption</title>
 
     <para>
 Virtuoso has the ability to encrypt it's CLI network connections using SSL.
@@ -2518,7 +2521,7 @@ The server listens on a separate port for SSL CLI connections and handles them j
 the normal CLI connections, vut now providing transport level security.
     </para>
 
-  <sect4 id="srvsidesupport"><title>Server-side Support</title>
+  <sect5 id="srvsidesupport"><title>Server-side Support</title>
 
     <para>
 Server side secure connections utilizes three parameters in the [Parameters] section of the virtuoso.ini:
@@ -2541,16 +2544,16 @@ SSL CLI connections.
 If a non-SSL connection is attempted to the SSL server port, the server rejects the connection.
 If an SSL connection is attempted against the non-SSL port the server rejects the connection.
   </para>
-  </sect4>
+  </sect5>
 
-  <sect4 id="clisidesupport"><title>Client-side Support</title>
+  <sect5 id="clisidesupport"><title>Client-side Support</title>
 
     <para>
 The client does not require any SSL-specific files (like Certificates or Private keys)
 in the SSL connection process.
   </para>
 
-    <sect5 id="sslnativecli"><title>Native Clients (e.g. ISQL)</title>
+    <formalpara><title>Native Clients (e.g. ISQL)</title></formalpara>
       <para>
 There is an custom ODBC connect option SQL_ENCRYPT_CONNECTION (=5004) supported by the Virtuoso CLI.
 It should be set before issuing the SQLConnect call.  Values are 'NULL' (no encryption - default), '1'
@@ -2561,9 +2564,8 @@ managers don't cache or pass through the custom ConnectOptions set before connec
 The ISQL has an additional option (-E) to do encrypted connects using the encryption option '1')
 and -X &lt;file&gt; to set the above option to the file supplied.
     </para>
-    </sect5>
 
-    <sect5 id="sslodbcidbcdrv"><title>ODBC &amp; iODBC Driver</title>
+<formalpara><title>ODBC &amp; iODBC Driver</title></formalpara>
       <para>
 The drivers support an additional DSN attribute:
   </para>
@@ -2590,13 +2592,12 @@ The corresponding iODBC odbc.ini &amp; ODBC Registry DSN attribute name is:
 The Windows Connect &amp; Setup dialogs have an additional wizard page to configure encryption.
     </para>
     </sect5>
-  </sect4>
-  <sect4 id="x509certsupport"><title>X509 Certificate Support</title>
+  <sect5 id="x509certsupport"><title>X509 Certificate Support</title>
   <para>
 Virtuoso supports X509 certificate validation: server side for both ODBC and HTTPS
 connections, and client side for the ODBC connections.
 </para>
-  <sect5 id="x509serv"><title>Server Side</title>
+ <formalpara><title>Server Side</title></formalpara>
     <para>
 To enable this option there are three new INI file parameters added the HTTPServer section for the HTTPS,
 and the Parameters section for ODBC):
@@ -2620,9 +2621,9 @@ client's client certificate.  A list of these will be sent to the client as a pa
 SSL handshake so the client will know which certificate to send.
 </member>
 </simplelist>
-</sect5>
 
-  <sect5 id="x509odbcclient"><title>ODBC Client Side</title>
+
+ <formalpara><title>ODBC Client Side</title></formalpara>
     <para>
 In order for verification of the server certificate to take place a PKCS#12 file
 should be supplied to the ODBC client.  It will use the CA list in this PKCS#12 to
@@ -2654,9 +2655,8 @@ certificate validation process.
 
       </sect5>
     </sect4>
-  </sect3>
 
-<sect3 id="acl"><title>File System Access Control Lists</title>
+<sect4 id="acl"><title>File System Access Control Lists</title>
 	<para>
 Access Control Lists (ACL) are used to restrict file system access.
 </para>
@@ -2725,14 +2725,14 @@ The following functions are restricted by file Access Control Lists (ACL) in the
 <para>the cfg_write function has restrictions against changing file access control lists in ini file</para>
 </note>
 
+</sect4>
 </sect3>
-</sect2>
 
 <!-- ########################################### -->
 
 <!-- &dbpump; -->
 
-</sect1>
+</sect2>
 
 <!-- ########################################### -->
 
@@ -2750,5 +2750,8 @@ The following functions are restricted by file Access Control Lists (ACL) in the
 
 
 <!-- ########################################### -->
+</sect1>
+
+&adminui;
 
 </chapter>

@@ -22,8 +22,8 @@
  -  
 -->
 
-<sect1 id="querytools"><title>Query Tools</title>
-	<sect2 id="sqlqueries"><title>Relational Data using SQL</title>
+<sect2 id="querytools"><title>Query Tools</title>
+	<sect3 id="sqlqueries"><title>Relational Data using SQL</title>
 	<para>
 Conductor Interactive SQL allows you to quickly and directly query Virtuoso using SQL.
 It offers <emphasis>Save</emphasis> and <emphasis>Load</emphasis>
@@ -48,8 +48,8 @@ check-box. </para>
 where you should define the XML template based on the SQL Query. Specify a
 <emphasis>Root Element</emphasis> that will contain the resulting XML tree.
 Specify the file name and location of the XML Template. </para>
-  </sect2>
-<sect2 id="xqueryqueries"><title>XML Data Using XQuery</title>
+  </sect3>
+<sect3 id="xqueryqueries"><title>XML Data Using XQuery</title>
 <para>
 The Conductor Interactive XQuery facility allows you to create,
 execute, save and reload queries using the evolving <ulink
@@ -123,5 +123,5 @@ value &quot;xqdemo/bib.xml&quot; in their Name column.</para>
 </example>
           <figure float="1"><title>XQuery Test File Results</title>
           <graphic fileref="ui/qry_sql_02a.png"/></figure>
+</sect3>
 </sect2>
-</sect1>

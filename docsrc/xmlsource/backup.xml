@@ -21,7 +21,7 @@
  -  
  -  
 -->
-<sect1 id="backup"><title>Data Backup &amp; Recovery</title>
+<sect2 id="backup"><title>Data Backup &amp; Recovery</title>
 
   <para>Administering a database involves taking backups and having a readiness
   to recover from backups and subsequent transaction logs.</para>
@@ -56,7 +56,7 @@
 
 
   <!-- ======================================== -->
-	<sect2 id="BACKUP_AUDIT">
+	<sect3 id="BACKUP_AUDIT">
 		<title>Log Audit Trail</title>
 
     <para>Virtuoso can maintain a transaction audit trail.  This is enabled using
@@ -91,11 +91,11 @@
     You can then use the <link linkend="fn_replay">replay()</link> function to
     replay the transaction files up to the required point.  It is vital that
     these files are replayed in the correct order.</para>
-  </sect2>
+  </sect3>
 
-  <sect2 id="onlinebackups"><title>On-Line Backups</title>
+  <sect3 id="onlinebackups"><title>On-Line Backups</title>
 
-  <sect3 id="usingbackuponline"><title>Backup Using Backup_Online()</title>
+  <sect4 id="usingbackuponline"><title>Backup Using Backup_Online()</title>
 
   <para>Virtuoso is capable of performing online backups so that normal database
   operation does not have to be disrupted in order to take backups.
@@ -165,9 +165,9 @@ SQL> backup_online ('virt-inc_dump_#', 150);
   backup files must be stored. See <function>backup_online()</function> description
   for details. </para>
 
-  </sect3>
+  </sect4>
 
-  <sect3 id="rstrfrmbckuponline"><title>Restoring From an Online Backup Series</title>
+  <sect4 id="rstrfrmbckuponline"><title>Restoring From an Online Backup Series</title>
 
   <para>To restore from a backup series the administrator must first shutdown
   the Virtuoso database server and move all database files (e.g. virtuoso.db
@@ -245,10 +245,10 @@ SQL> backup_online ('virt-inc_dump_#', 150);
 	
   </example>
 
+  </sect4>
   </sect3>
-  </sect2>
 
-    <sect2 id="otherbackupmethods"><title>Other Backup Methods</title>
+    <sect3 id="otherbackupmethods"><title>Other Backup Methods</title>
 			<para>
 A possible  way of making a full backup of a large databases is first to
 turn off any automatic checkpoints and make a compressed copy of the
@@ -257,7 +257,7 @@ files should be compressed to make efficient use of space, and should be copied
 to a disk separate from  the location of the database, and preferably to an external
 backup medium such as tape.
 </para>
-<sect3 id="manualbackup"><title>Manual Backup</title>
+<sect4 id="manualbackup"><title>Manual Backup</title>
 			<para>
 For a large database it is best to turn off any automatic checkpoints and copy the
 database files to external storage.  Checkpoints should be turned off by
@@ -291,9 +291,9 @@ or shutdown statements while a backup is in progress.
 			<para>The presence or absence of checkpoints at a given point in time can be
 ascertained from the virtuoso.log event log file.
 </para>
+		</sect4>
 		</sect3>
-		</sect2>
-		<sect2 id="offlinebackups">
+		<sect3 id="offlinebackups">
 			<title>Off-Line Backups</title>
 			<para>
 When Virtuoso is not running a complete and clean backup can be taken by making
@@ -308,12 +308,12 @@ TransactionFile in the database&apos;s configuration file.  When started, the lo
 will roll forward and restore the database to the state following the
 last logged transaction.
 </para>
-	</sect2>
+	</sect3>
 
 	<!-- ======================================== -->
-	<sect2 id="vdbrecovery">
+	<sect3 id="vdbrecovery">
 		<title>Database Recovery</title>
-		<sect3 id="dbrebuild">
+		<sect4 id="dbrebuild">
 			<title>Rebuilding A Database</title>
 			<para>
 The process of rebuilding a database consists of dumping its contents
@@ -356,8 +356,8 @@ following roll forward and delete the log used for the rebuild.</para></listitem
 	available from a deletion of records.  The steps above will build a new
 	compact database file.  You would ordinarily not have to worry about this.
 	</para>
-		</sect3>
-		<sect3 id="diagnosingrepairing">
+		</sect4>
+		<sect4 id="diagnosingrepairing">
 			<title>Diagnosing and Recovering a Damaged Database File</title>
 			<para>
 It is possible to recover data from a damaged Virtuoso database by
@@ -437,9 +437,9 @@ made during the recovery.  Note that a mid recovery checkpoint may take a very l
 previous recovery checkpoint comprise almost all the database.
 </para>
 			</note>
-		</sect3>
+		</sect4>
 
-		<sect3 id="Xcrashrecovery">
+		<sect4 id="Xcrashrecovery">
 			<title>Crash Recovery When The Normal Crash Recovery Fails</title>
 			<para>
 			    When the schema tables (e.g. DB.DBA.SYS_COLS, DB.DBA.SYS_KEYS) have corrupt rows
@@ -563,9 +563,9 @@ mv new.trx virtuoso.trx
 
 virtuoso-iodbc-t -R -f
 ]]></programlisting>
-		</sect3>
+		</sect4>
 
-		<sect3 id="XversionRecovery">
+		<sect4 id="XversionRecovery">
 			<title>Crash Recovery Across Virtuoso VDBMS Server Versions</title>
 			<para>
 If the database was created with a version prior to the one being used for
@@ -583,6 +583,6 @@ will in no case be damaged after the initial step of the roll forward.
 After this initial step the system tables will be compatible and the
 dba can proceed to replay the remaining recovery logs with the replay function.
 </para>
+		</sect4>
 		</sect3>
 	</sect2>
-</sect1>

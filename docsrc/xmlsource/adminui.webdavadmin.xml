@@ -22,7 +22,7 @@
  -  
 -->
 
-<sect1 id="webdavadmin">
+<sect2 id="webdavadmin">
   <title>WebDAV Administration</title>
   <para>DAV, or WebDAV, is a protocol for Web-based Distributed Authoring and Versioning. The location
 where content items are placed is called the <emphasis>repository</emphasis>. Content elements are called
@@ -33,7 +33,7 @@ corresponding to directories. Collectively these documents and folders (collecti
   <para>Virtuoso implements the DAV protocol, allowing you to create and manage resources either directly
 through repository manipulations or indirectly, through a variety of WebDAV services.
   </para>
-    <sect2 id="resourcetypes">
+  <sect3 id="resourcetypes">
 			<title>DAV Resource Types</title>
     <para>To make sure that when Virtuoso serves files to client user agents the type of file is
 conveyed properly so that the right application can be used with that file a list or file
@@ -50,10 +50,10 @@ action links on the right most column of the list next to the type applicable.
 		<para>
 Add new types by typing the details into the fields provided and pressing the <emphasis>Save</emphasis> button.
 </para>
-		</sect2>
+		</sect3>
 
 
-    <sect2 id="contentmanagement"><title>Content Management</title>
+    <sect3 id="contentmanagement"><title>Content Management</title>
   <para>The content management page gives you an interface to the WebDAV
   repository resources. From here you can navigate or create directories, 
   commonly refered to as collections or folders in DAV, alter properties, 
@@ -66,16 +66,16 @@ Add new types by typing the details into the fields provided and pressing the <e
         <figure float="1"><title>Content Management</title>
           <graphic fileref="webdav.png"/></figure>
 
-  <sect3 id="davcontresnames"><title>Resource Names</title>
+  <sect4 id="davcontresnames"><title>Resource Names</title>
   <para>Resource names are given with collection (folder) names listed first, 
   then individual documents.  Permissions on resources are presented in a 
   style similar to Unix, with (r)ead, (w)rite, and e(x)ecute permissions 
   listed for the resource owner (the user), the resource's group, and 
   for the general public.  If a permission is present, the letter is 
   shown; if not, it is replaced with a dash.</para>
-  </sect3>
+  </sect4>
 
-  <sect3 id="davcontresperm"><title>Resource Permissions</title>
+  <sect4 id="davcontresperm"><title>Resource Permissions</title>
   <para>Unlike Unix, the Repository does not use the designation 'd' for 
   directories, which in DAV are more commonly referred to as collections.  
   Collections are distinguished by a different icon &mdash; a folder-like icon 
@@ -84,32 +84,32 @@ Add new types by typing the details into the fields provided and pressing the <e
   <para>In addition, the permissions string has a trailing letter designating
   the indexing status of the resource.  This letter is 'n' to designate 
   that indexing is off, 'r' for recursive indexing, and 't' for direct indexing.</para>
-  </sect3>
+  </sect4>
 
-  <sect3 id="davcontresug"><title>Resource User and Group</title>
+  <sect4 id="davcontresug"><title>Resource User and Group</title>
   <para>By default, the user and group of a DAV resource are those set by the 
   service that created the resource, or they are the ID and primary group of 
   the user who was logged in when the resource was created.</para>
-  </sect3>
+  </sect4>
 
-  <sect3 id="davconterssize"><title>Resource Size</title>
+  <sect4 id="davconterssize"><title>Resource Size</title>
   <para>The size of a document resource is its size in disk bytes.  Note that 
   this does not necessarily correspond to characters displayed on the 
   screen because of encodings.  For example, the HTML token 
   &amp;-a-m-p-semicolon is five bytes on disk but displays as a single 
   screen character.</para>
-  </sect3>
+  </sect4>
 
-  <sect3 id="davcontrestype"><title>Resource Type</title>
+  <sect4 id="davcontrestype"><title>Resource Type</title>
   <para>The type of a resource is always &quot;collection&quot; for 
   collections (folder).  For documents it can be any of the known resource 
   types (see Resource Types below).  The resource type is usually based on the 
   resource's extension; for example, .xml files are usually assumed to 
   be <code>text/xml</code>.  If Virtuoso does not recognize the extension of a 
   resource, it assigns the default type of <code>application/octet-stream</code>.</para>
-  </sect3>
+  </sect4>
 
-  <sect3 id="davcontpropedt"><title>Editing Properties</title>
+  <sect4 id="davcontpropedt"><title>Editing Properties</title>
   <para>Within the Content Management screen, you can change any of the 
   properties of a resource, other than its name, by selecting the 
   resource via the checkbox to the left of the icon, and pressing the 
@@ -119,7 +119,7 @@ Add new types by typing the details into the fields provided and pressing the <e
   specifically.  This can be done on any document of type text/xml by 
   clicking on the icon for the document.</para>
 
-    <sect4 id="davcontresprops"><title>Properties</title>
+    <sect5 id="davcontresprops"><title>Properties</title>
     <para>When clicked this button from the bottom of the page, you can edit the properties
 for one or a group of resources which should be selected. The name of a resource cannot be changed.</para>
 
@@ -130,9 +130,9 @@ for one or a group of resources which should be selected. The name of a resource
     <para>The &quot;Property&quot; control permits you to change or add
     additional properties.  There is a pulldown of predefined XML-related 
     properties, or you may create your own property.</para>
-    </sect4>
+    </sect5>
 
-    <sect4 id="davcontdavprop"><title>WebDAV Properties</title>
+    <sect5 id="davcontdavprop"><title>WebDAV Properties</title>
     <para>This control permits you to manipulate the specific properties of XML
     documents.  Existing properties are shown with their values, and can 
     be removed.  New properties can be added.</para>
@@ -143,10 +143,10 @@ for one or a group of resources which should be selected. The name of a resource
     change without re-running the entire service.  For example, you 
     can change the <parameter>xml-sql-root</parameter> property, which 
     controls the name of the root XML element for the document.</para>
+    </sect5>
     </sect4>
-  </sect3>
 
-  <sect3 id="davaddnewres"><title>Adding New Resources</title>
+  <sect4 id="davaddnewres"><title>Adding New Resources</title>
   <para>Resources may be added to the repository in two ways: by uploading 
   files or by creating new collections (folders).  Buttons for both these methods 
   are on the page.</para>
@@ -161,7 +161,7 @@ for one or a group of resources which should be selected. The name of a resource
   the resource in the repository and give it a type.  You can also set 
   the basic repository properties here.</para>
 
-  <sect4 id="davadsymlink"><title>WebDAV Symbolic Linking</title>
+  <sect5 id="davadsymlink"><title>WebDAV Symbolic Linking</title>
 
 <para>WebDAV symbolic linking, also known as <emphasis>DAV
 redirection</emphasis>, is another method for accessing content from
@@ -213,14 +213,14 @@ feature, we are able to map the actual documents imported to a common
 location without encountering problems related to component
 references, embedded links, etc.</para>
 </example>
+</sect5>
+
 </sect4>
-
 </sect3>
-</sect2>
 
-    <sect2 id="freetext"><title>Free Text</title>
+    <sect3 id="freetext"><title>Free Text</title>
 
-		<sect3 id="contentidxmode">
+		<sect4 id="contentidxmode">
 			<title>Indexing Mode</title>
 		<para>
 When files are inserted into Virtuoso's WebDAV repository, if their type is a type of text file such
@@ -237,6 +237,6 @@ this reason Virtuoso can be set to index in batch mode at a particular interval 
 To change the free-text index mode to batch mode check the check-box and provide a non-zero time interval (in minutes).
 Press the <emphasis>Accept</emphasis> button to save the changes into the server.
 </para>
+		</sect4>
 		</sect3>
 		</sect2>
-</sect1>

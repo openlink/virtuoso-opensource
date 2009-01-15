@@ -3258,7 +3258,6 @@ The default value comes from the ArrayParameters configuration parameter.
 </para>
 		</sect2>
 	</sect1>
-
 <sect1 id="besteffortunion">
 	<title>Best Effort Union</title>
 	<para>

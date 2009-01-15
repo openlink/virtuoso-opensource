@@ -21,7 +21,7 @@
  -  
  -  
 -->
-<sect1 id="VAD"><title>VAD - Virtuoso Application Distribution</title>
+<sect2 id="VAD"><title>VAD - Virtuoso Application Distribution</title>
 
 <para>VAD provides a package distribution framework for installation, management, 
 dependency checking and un-installation of Virtuoso applications.  A VAD package 
@@ -41,7 +41,7 @@ shared objects, installers or settings.  </para>
   <member>Uninstall a VAD package.</member>
 </simplelist>
 
-<sect2 id="vadsummary">
+<sect3 id="vadsummary">
 <title>Summary of VAD Operations</title>
 <para>
 The following is what the dba needs to know about VAD packages.</para>
@@ -70,10 +70,10 @@ place in the replay sequence.  In practice it is simplest to make an incremental
 
 <para>For any further information, including how to make VAD packages, see the rest of this chapter.
 </para>
-</sect2>
+</sect3>
 
 
-<sect2 id="vadpackcomposition"><title>VAD Package Composition</title>
+<sect3 id="vadpackcomposition"><title>VAD Package Composition</title>
 
 <para>A VAD package has no developer tie-ins; it is built in a development environment 
 from source code that can be managed and versioned in the developers system of preference. </para>
@@ -121,9 +121,9 @@ of the following: </para>
   </listitem>
 </itemizedlist>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadpackversion"><title>Package Versioning</title>
+<sect3 id="vadpackversion"><title>Package Versioning</title>
 
 <para>All required packages should be listed in the VAD sticker.  Known conflict 
 may be listed in either of the conflicting VAD packages stickers, hence VAD stickers 
@@ -143,9 +143,9 @@ various localizations of the package, or divide it into kernel package for any
 language-independent parts and set of language-specific packages, with some 
 dependency between them.  </para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadprocessres"><title>Processing of Resources</title>
+<sect3 id="vadprocessres"><title>Processing of Resources</title>
 
 <para>During creation of a VAD package, the "location" mentioned above may be 
 name of a file in file system or URI or DAV path.  Upon package-time, URIs will be
@@ -155,9 +155,9 @@ itself, and the target location. </para>
 <para>All SQL files have a specific order of loading.  Tables, views etc. must be 
 defined before being referenced.  </para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadunsupportfeat"><title>Unsupported Features of VAD</title>
+<sect3 id="vadunsupportfeat"><title>Unsupported Features of VAD</title>
 
 <para>The VAD specification explicitly does not define the following: </para>
 
@@ -207,9 +207,9 @@ package on a single server</title>
   cluster manager about this event. </para>
   </formalpara>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadsecurity"><title>Security</title>
+<sect3 id="vadsecurity"><title>Security</title>
 
 <para>Since VAD packages are run by an administrator as the database DBA user, 
 care must be taken to ensure the package comes from a safe source.  Any new package 
@@ -225,9 +225,9 @@ modifications.  Although ever VAD package contains a checksum, its purpose
 is to guard against data transfer errors, it may not be sufficient to detect 
 unwanted modification.</para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadbuildingvadpacks"><title>Building VAD Packages</title>
+<sect3 id="vadbuildingvadpacks"><title>Building VAD Packages</title>
 
 <para>Initially, the VAD sticker and resources may reside in the file system, 
 DAV directory and or other locations available through the 
@@ -251,9 +251,9 @@ returns a human readable log of error and warning messages, it will signal
 errors if any resource or database objects are unavailable at build time.</para>
 <para>By convention, VAD package files have the extension <computeroutput>'.vad'</computeroutput>. </para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadutils"><title>VAD Utilities</title>
+<sect3 id="vadutils"><title>VAD Utilities</title>
 
 <para>An optional VAD package named VADutils provides various tools for capturing 
 changes made in the database after some point in time.  The result of a capture consists of:</para>
@@ -283,9 +283,9 @@ the underlying VAD package is updated the local customizations will be overwritt
 Being saved in a VAD package, customizations can be reapplied over the 
 updated base package. </para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadadminrspnslts"><title>VAD Administrator Responsibilities</title>
+<sect3 id="vadadminrspnslts"><title>VAD Administrator Responsibilities</title>
 
 <para>VAD package installation, upgrade and uninstallation requires a 
 temporary break of service.  The package checks may be performed on the 
@@ -432,9 +432,9 @@ elements may not be part of some other package, hence no package uninstall
 would be available leading the DBA to drop them with the appropriate 
 SQL commands.</para>
 
-</sect2>
+</sect3>
 
-<sect2 id="vadpackageoverlap"><title>Package Overlap</title>
+<sect3 id="vadpackageoverlap"><title>Package Overlap</title>
 
 <para>Each package contains full definitions of all tables and indices.  
 Upon installing the following outcomes can occur: </para>
@@ -465,15 +465,15 @@ columns by another package installed later.  These elements will only be
 dropped when the owner package is dropped.  Tables created ad-hoc from 
 interactive SQL do not have any owner package.  </para>
 
-</sect2>
-<sect2 id="vadsticker"><title>VAD Sticker</title>
+</sect3>
+<sect3 id="vadsticker"><title>VAD Sticker</title>
 
 <para>The VAD Sticker contains meta-data and descriptions of resources contained, 
 or to be contained, within a VAD package.  Like any XML documents, the target 
 VAD package sticker can be sourced from more than one source file, which can 
 aid maintenance and development.</para>
 
-<sect3 id="vadstickerdtd"><title>VAD Sticker DTD</title>
+<sect4 id="vadstickerdtd"><title>VAD Sticker DTD</title>
 
 <para>The namespace vad, used below, represents the URI 
 <computeroutput>http://www.openlinksw.com/urn/vad</computeroutput>. </para>
@@ -798,6 +798,6 @@ from 1.00 to 2.17, inclusive -->
 </sticker>
 ]]></programlisting>
 </example>
+</sect4>
 </sect3>
 </sect2>
-</sect1>

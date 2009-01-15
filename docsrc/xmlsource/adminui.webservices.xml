@@ -22,8 +22,8 @@
  -  
 -->
 
-<sect1 id="admui.webservices"><title>Web Services</title>
-		<sect2 id="importtargets">
+<sect2 id="admui.webservices"><title>Web Services</title>
+  <sect3 id="importtargets">
 			<title>Import Targets</title>
     <para>Virtuoso can be set up to retrieve content from external web sites and host it in its own
 WebDAV repository via this page.
@@ -82,8 +82,8 @@ metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is 
 When all details have been completed press the <emphasis>Add</emphasis> (or
 Update if updating) button to submit the web robot task to the queue.
     </para>
-		</sect2>
-		<sect2 id="importqueues">
+  </sect3>
+  <sect3 id="importqueues">
 			<title>Import Queues</title>
     <para>The "Imported Queues" page shows you a list of web copy targets that have been enlisted with the
 Virtuoso Server, and a list of web robot update schedules. Several options are available for
@@ -96,8 +96,8 @@ the details of the web copy item press the Reset link.
         <figure float="1"><title>Web Robot - Queues</title>
       <graphic fileref="ui/dav_rbt_que_01.png"/>
     </figure>
-		</sect2>
-		<sect2 id="retrievedsites">
+  </sect3>
+  <sect3 id="retrievedsites">
 			<title>Retrieved Sites</title>
     <para>You can view a list of the links retrieved from the web copy from this page. You are also
 able to remove some of the content from this page by following the Edit link.
@@ -105,8 +105,8 @@ able to remove some of the content from this page by following the Edit link.
         <figure float="1"><title>Web Robot - Retrieved Links</title>
       <graphic fileref="ui/dav_rbt_rtrd_01.png"/>
     </figure>
-		</sect2>
-    <sect2 id="exportlocalcontent">
+  </sect3>
+  <sect3 id="exportlocalcontent">
 			<title>Export</title>
     <para>You can export content from the WebDAV repository. Note that you can only export content
 that has been retrieved using Virtuoso's Web Robot.
@@ -128,8 +128,8 @@ filesystem method, then you are restricted to Virtuoso targets. However WebDAV m
 to any WebDAV server. WebDAV methods assume that the target is publically available for writing.
       </para>
     </note>
-	</sect2>
-  <sect2 id="admiui.accesscontrol"><title>Access Control</title>
+  </sect3>
+  <sect3 id="admiui.accesscontrol"><title>Access Control</title>
     <para>From "System Admin"/"Access Controls" you can manage Rules and ACL respectively for HTTP, News and Proxy.
     </para>
           <figure float="1" id="acl001"><title>Access Control Lists</title>
@@ -146,8 +146,8 @@ Filter, Access, Destination, Object, Mode, Rate values. You can also add/delete 
           <figure float="1" id="acl003"><title>Access Control Lists</title>
       <graphic fileref="ui/acl003.png"/>
     </figure>
-  </sect2>
-  <sect2 id="admiui.wsdl"><title>Import WSDL</title>
+  </sect3>
+  <sect3 id="admiui.wsdl"><title>Import WSDL</title>
     <para>From "Web Services" / "WSDL Import/Export" you can provide a URL to a WSDL description.
 In return Virtuoso will automatically provide a wrapper for the services available, hence stored
 procedures and user-defined types that are callable within Virtuoso while the processing and mechanics of
@@ -169,5 +169,5 @@ work, or execute it in Virtuoso to create the procedures and types.
     <para>If you wish to save the file the appropriate file system ACLs must be in place for
 the destination.
     </para>
+  </sect3>
   </sect2>
-</sect1>

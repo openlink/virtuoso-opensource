@@ -22,10 +22,10 @@
  -  
 -->
 
-<sect1 id="replicationandsynchronization">
+<sect2 id="replicationandsynchronization">
 	<title>Replication &amp; Synchronization</title>
 
-	<sect2 id="snapshotreplication">
+	<sect3 id="snapshotreplication">
 		<title>Snapshot Replication</title>
 <para>Conductor "Replication" offers manage Virtuoso Replication. You are offered with "Basic",
 "Incremental", "Bidirectional Snapshot" and "Transactional" sub-tabs-
@@ -69,11 +69,11 @@ To remove scheduled update select the replications enter 0 in "Scheduled Interva
         <figure float="1"><title>Snapshot Replication</title>
           <graphic fileref="ui/replt_ss_add_06.png"/></figure>
 
-	</sect2>
+	</sect3>
 
-	<sect2 id="transactionalreplication">
+	<sect3 id="transactionalreplication">
 		<title>Transactional Replication</title>
-		<sect3 id="publications">
+		<sect4 id="publications">
 			<title>Publications</title>
 <para>The Transaction Publication screen lists publications.  You can add, edit or 
 remove publications as necessary, each time using the guide-lines of the wizard.</para>
@@ -167,8 +167,8 @@ following details to contend with:</para>
 		<figure float="1"><title>Transaction Replication - Advanced</title>
           <graphic fileref="ui/repltranspub005.png"/></figure>
 
-		</sect3>
-		<sect3 id="subscriptions">
+		</sect4>
+		<sect4 id="subscriptions">
 			<title>Subscriptions</title>
 		<para>
 To add new subscription click at New Subscription and follow the wizard.
@@ -193,6 +193,6 @@ To load image file click at Load image button and follow the wizard
         <figure float="1"><title>Transaction Replication - Subscription</title>
           <graphic fileref="ui/replt_trans_sub_02.png"/></figure>
 
+		</sect4>
 		</sect3>
 	</sect2>
-</sect1>
