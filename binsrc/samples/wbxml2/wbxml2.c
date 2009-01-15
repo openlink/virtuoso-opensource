@@ -53,6 +53,7 @@ bif_wbxml2xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   WBXMLError ret = WBXML_OK;
   WB_UTINY *wbxml = NULL, *xml = NULL;
   WB_LONG wbxml_len = 0;
+  WB_ULONG  xml_len;
   WBXMLGenXMLParams params;
   long box_in_len = box_length (in);
 
@@ -66,7 +67,7 @@ bif_wbxml2xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   wbxml = wbxml_realloc(wbxml, wbxml_len);
   memcpy(wbxml, in, wbxml_len);
 
-  ret = wbxml_conv_wbxml2xml (wbxml, wbxml_len, &xml, &params);
+  ret = wbxml_conv_wbxml2xml_withlen (wbxml, wbxml_len, &xml, &xml_len, &params);
 
   if (ret != WBXML_OK)
     {
