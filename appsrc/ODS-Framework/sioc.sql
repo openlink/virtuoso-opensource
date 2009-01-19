@@ -168,6 +168,11 @@ create procedure an_iri (in s varchar)
   return concat ('http://www.w3.org/2000/10/annotation-ns#', s);
 };
 
+create procedure ore_iri (in s varchar)
+{
+  return concat ('http://www.openarchives.org/ore/terms/', s);
+};
+
 create procedure make_href (in u varchar)
 {
   return WS.WS.EXPAND_URL (sprintf ('http://%s/', get_cname ()), u);
@@ -444,7 +449,7 @@ create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
     df_uri := tmp || '/about.rdf';
   else
     df_uri := tmp || '/sioc.rdf';
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('isDefinedBy'), df_uri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, ore_iri ('isDescribedBy'), df_uri);
 };
 
 create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name varchar, in u_e_mail varchar)

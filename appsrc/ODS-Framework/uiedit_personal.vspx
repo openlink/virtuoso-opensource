@@ -473,7 +473,7 @@
            ]]>
          </script>
          <th>
-           <label for="e_int" title="Free text">Resource URI indicating thing of interest</label>
+           <label for="e_int">Web page URL indicating a topic of interest</label>
            <span class="explain"> (one per line)</span>
       </th>
     <td class="listing_col" nowrap="1">
@@ -527,7 +527,7 @@
        </tr>
        <tr>
          <th>
-           <label for="e_int2" title="Free text">Web page URL indicating a topic of interest</label>
+           <label for="e_int2">Resource URI indicating thing of interest</label>
            <span class="explain"> (one per line)</span>
          </th>
          <td class="listing_col" nowrap="1">

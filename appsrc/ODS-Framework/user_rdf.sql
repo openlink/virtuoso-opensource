@@ -62,6 +62,7 @@ create procedure ODS_RDF_USER_VIEW_NS ()
     prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
     prefix calendar: <http://www.w3.org/2002/12/cal#>
     prefix ods: <http://www.openlinksw.com/virtuoso/ods/>
+    prefix ore: <http://www.openarchives.org/ore/terms/>
     ';
 };
 
@@ -245,7 +246,7 @@ ODS_SPARQL_QM_RUN (
         sioc:name users.U_FULL_NAME ;
         sioc:email ods:mbox (users.E_MAIL) ;
         sioc:email_sha1 users.E_MAIL_SHA1 ;
-	rdfs:isDefinedBy ods:defined_by (users.U_NAME, users.CLS, users.U_NAME, users.OBJ_IRI) ;
+	ore:isDescribedBy ods:defined_by (users.U_NAME, users.CLS, users.U_NAME, users.OBJ_IRI) ;
         sioc:account_of ods:person (users.U_NAME) .
 
 	ods:person (person.U_NAME) a foaf:Person ;
@@ -266,7 +267,7 @@ ODS_SPARQL_QM_RUN (
 	    foaf:organization person.ORG ;
 	    foaf:phone ods:phone (person.PHONE) ;
 	    foaf:based_near ods:geo_point (person.U_NAME) ;
- 	    rdfs:isDefinedBy ods:defined_by (person.U_NAME, person.CLS, person.U_FULL_NAME, person.OBJ_IRI)
+ 	    ore:isDescribedBy ods:defined_by (person.U_NAME, person.CLS, person.U_FULL_NAME, person.OBJ_IRI)
 	    .
 
 	    ods:geo_point (person.U_NAME) a geo:Point ;
@@ -312,7 +313,7 @@ ODS_SPARQL_QM_RUN (
         sioc:description forums.WAI_DESCRIPTION ;
         sioc:link ods:proxy (forums.LINK) ;
         sioc:has_space ods:site (forums.U_NAME) ;
-	rdfs:isDefinedBy ods:defined_by (forums.U_NAME, forums.CLS, forums.WAM_INST, forums.OBJ_IRI) .
+	ore:isDescribedBy ods:defined_by (forums.U_NAME, forums.CLS, forums.WAM_INST, forums.OBJ_IRI) .
 
       } .
 
