@@ -708,7 +708,7 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 	  ctx->hcctx_err = srv_make_new_error ("42000", "HC002", "Invalid content length in reply");
 	  return (HC_RET_ERR_ABORT);
 	}
-      if (ctx->hcctx_resp_content_length > 1000000)
+      if (ctx->hcctx_resp_content_length > 10000000)
 	{
 	  ctx->hcctx_err = srv_make_new_error ("42000", "HC003", "Reply content too large");
 	  return (HC_RET_ERR_ABORT);
