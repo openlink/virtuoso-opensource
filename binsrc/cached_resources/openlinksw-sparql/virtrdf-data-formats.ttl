@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2009-01-14 0001' ;
+  virtrdf:version '2009-01-17 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -261,7 +261,7 @@ rdfdf:sql-varchar
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
-  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (^{datatype-of-tree}^)) when 'http://www.w3.org/2001/XMLSchema#string' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (coalesce (^{datatype-of-tree}^, 'http://www.w3.org/2001/XMLSchema#string')) when 'http://www.w3.org/2001/XMLSchema#string' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
   virtrdf:qmfShortOfSqlvalTmpl " (case (isstring (^{tree}^)) when 0 then NULL else (^{tree}^) end)";	# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
   virtrdf:qmfShortOfLongTmpl " DB.DBA.RDF_STRSQLVAL_OF_LONG (^{tree}^)" ;	# STRING REQUIRED ... makes short by long
   virtrdf:qmfShortOfUriTmpl " NULL" ;						# STRING REQUIRED ... makes short by uri
@@ -534,7 +534,7 @@ rdfdf:sql-nvarchar
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
-  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (^{datatype-of-tree}^)) when 'http://www.w3.org/2001/XMLSchema#string' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (coalesce (^{datatype-of-tree}^, 'http://www.w3.org/2001/XMLSchema#string')) when 'http://www.w3.org/2001/XMLSchema#string' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
   virtrdf:qmfShortOfSqlvalTmpl " (case (isstring (^{tree}^)) when 0 then NULL else (^{tree}^) end)";	# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
   virtrdf:qmfShortOfLongTmpl " DB.DBA.RDF_WIDESTRSQLVAL_OF_LONG (^{tree}^)" ;	# STRING REQUIRED ... makes short by long
   virtrdf:qmfShortOfUriTmpl " NULL" ;						# STRING REQUIRED ... makes short by uri

@@ -208,6 +208,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
+%token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
 %token T_DIRECTION_L	/*:: PUNCT_SPAR_LAST("T_DIRECTION") ::*/
 %token T_DISTINCT_L	/*:: PUNCT_SPAR_LAST("T_DISTINCT") ::*/
@@ -927,6 +928,7 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
 	| OFFBAND_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)OFFBAND_L, $2); }
 	| SCORE_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
+	| TABLE_OPTION_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
 	| T_CYCLES_ONLY_L		{ $$ = (SPART **)t_list (2, (ptrlong)T_CYCLES_ONLY_L, (ptrlong)1); }
 	| T_DIRECTION_L	SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, (ptrlong)T_DIRECTION_L, $2); }
 	| T_DISTINCT_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_DISTINCT_L, (ptrlong)1); }

@@ -498,6 +498,7 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 <SPARQL>{S}{U}{B}{C}{L}{A}{S}{S}	{ return SUBCLASS_L	; }
 <SPARQL>{S}{U}{B}{J}{E}{C}{T}		{ return SUBJECT_L	; }
 <SPARQL>{S}{U}{M}			{ return SUM_L		; }
+<SPARQL>{T}{A}{B}{L}{E}_{O}{P}{T}{I}{O}{N}	{ return TABLE_OPTION_L	; }
 <SPARQL>{T}_{C}{Y}{C}{L}{E}{S}_{O}{N}{L}{Y}	{ return T_CYCLES_ONLY_L	; }
 <SPARQL>{T}_{D}{I}{R}{E}{C}{T}{I}{O}{N}	{ return T_DIRECTION_L	; }
 <SPARQL>{T}_{D}{I}{S}{T}{I}{N}{C}{T}	{ return T_DISTINCT_L	; }

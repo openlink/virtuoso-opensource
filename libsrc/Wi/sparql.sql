@@ -8467,7 +8467,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-01-14 0001'
+                virtrdf:version '2009-01-17 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

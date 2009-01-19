@@ -1895,10 +1895,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #else
   if ((NULL != type) || (NULL != lang))
     {
-      if ((NULL == lang) && (
+      if (((NULL == lang) && (
         ((uname_xmlschema_ns_uri_hash_string == type) && (DV_STRING == DV_TYPE_OF (value))) ||
         ((uname_xmlschema_ns_uri_hash_integer == type) && (DV_LONG_INT == DV_TYPE_OF (value))) ||
-        ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) )
+          ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) ) ||
+        ((NULL != lang) && (NULL == type) && (DV_STRING == DV_TYPE_OF (value))) )
         {
           ssg_print_box_as_sql_atom (ssg, value, 0);
           return;
@@ -3954,6 +3955,9 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             ssg_print_literal_as_sqlval (ssg, NULL, tree);
             goto print_asname;
           }
+        if (IS_BOX_POINTER (needed))
+          ssg_print_tmpl (ssg, needed, needed->qmfShortOfTypedsqlvalTmpl, NULL, NULL, tree, asname);
+        else
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
         return;
       }
@@ -5651,7 +5655,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
               qm_atable_t *aux_atable = (qm_atable_t *)t_alloc_box (sizeof (qm_atable_t), DV_ARRAY_OF_POINTER);
               aux_atable->qmvaAlias = qmft->qmvftAuxAlias;
               aux_atable->qmvaTableName = qmft->qmvftAuxTableName;
-              ft_atables = (qm_atable_t **)t_list (2, ft_atable, aux_atable);
+              ft_atables = (qm_atable_t **)t_list (2, aux_atable, ft_atable);
             }
           else
             ft_atables = (qm_atable_t **)t_list (1, ft_atable);
@@ -5696,6 +5700,20 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
         qr_uses_table (ssg->ssg_sc->sc_cc->cc_super_cc->cc_query, atable);
       ssg_puts (" AS ");
       ssg_prin_id (ssg, full_alias);
+      if (NULL == ata_tables_tail)
+        { /* Last item of ata_tables corresponds to the first table of the first tree */
+          SPART **opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree_sets[0][0]);
+          if (NULL != opts)
+            {
+              SPART *val = sparp_get_option (ssg->ssg_sparp, opts, TABLE_OPTION_L);
+              if (NULL != val)
+                {
+                  ssg_puts (" TABLE OPTION (");
+                  ssg_puts (val);
+                  ssg_puts (")");
+                }
+            }
+        }
     }
   END_DO_SET()
 
@@ -5889,16 +5907,20 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"IFP", "SAME_AS", 
       opts = sparp_get_options_of_tree (ssg->ssg_sparp, tree);
       if (NULL != opts)
         {
+          SPART *val;
           int sav_ctr;
           caddr_t local_inference = (caddr_t)sparp_get_option (ssg->ssg_sparp, opts, INFERENCE_L);
           if (NULL != local_inference)
             active_inference = local_inference;
           for (sav_ctr = SAME_AS__VARIANT_COUNT; sav_ctr--; /* no step */)
             {
-              SPART *val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, opts, same_as__keys[sav_ctr]);
+              val = same_as__lists [sav_ctr] = sparp_get_option (ssg->ssg_sparp, opts, same_as__keys[sav_ctr]);
               if (NULL != val)
                 has_table_options = 1;
             }
+          val = sparp_get_option (ssg->ssg_sparp, opts, TABLE_OPTION_L);
+          if (NULL != val)
+            t_set_push (&tblopts, val);
         }
       if (NULL != active_inference)
         t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
