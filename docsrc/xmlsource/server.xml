@@ -1953,7 +1953,7 @@ The stripes will be declared in the TempStriping section.
       <para><link linkend="dbrebuild">Rebuilding A Database</link> in the Backup section.</para></tip>
 
     </sect5>
-    </sect4>
+</sect4>
 
 <sect4 id="sampleinifile">
 <title>Sample Configuration File (&quot;virtuoso.ini&quot;)</title>

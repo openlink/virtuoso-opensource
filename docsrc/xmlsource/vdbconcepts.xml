@@ -754,4 +754,4 @@ vd_attach_table ('text', 'datafile\x0Atxt', 'test', 'a', 'b');
   use SQLColAttribute() to determine which columns are SQL_DESC_SEARCHABLE.  
   </para>
 	</sect3>
-	</sect2>
+</sect2>
