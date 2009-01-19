@@ -136,6 +136,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_GETSATISFATION', null, 'GetSatisfaction');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://twitter.com/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_TWITTER', null, 'Twitter');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*salesforce.com/.*)|'||
 			'(https://.*salesforce.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_SALESFORCE', null, 'SalesForce');
@@ -1250,6 +1254,88 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/sf2rdf.xsl', xd, vector ('baseUri', new_origin_uri));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xt, xd any;
+	declare url, tmp varchar;
+	declare what_, id, post varchar;
+	declare pos integer;
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	if (new_origin_uri like 'http://twitter.com/%/status/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
+		id := tmp[0];
+		post := trim(tmp[1], '/');
+		if (id is null or post is null)
+			return 0;
+		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
+		what_ := 'post';
+	}
+	else if (new_origin_uri like 'http://twitter.com/%/friends')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/friends', 0);
+		id := tmp[0];
+		if (id is null)
+			return 0;
+		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
+		what_ := 'friends';
+	}
+	else if (new_origin_uri like 'http://twitter.com/%/favourites')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/favourites', 0);
+		id := tmp[0];
+		if (id is null)
+			return 0;
+		url := sprintf('http://twitter.com/favorites.xml?id=%s', id);
+		what_ := 'favorites';
+	}
+	else if (new_origin_uri like 'http://twitter.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s', 0);
+		id := trim(tmp[0], '/');
+		if (id is null)
+			return 0;
+		pos := strchr(id, '/');
+		if (pos is not null)
+		{
+			id := left(id, pos);
+		}	
+		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s', id);
+		what_ := 'statuses';
+	}
+	else
+		return 0;
+	tmp := http_get(url);
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', concat('http://twitter.com/', id)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	if (what_ = 'statuses')
+	{
+		--url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
+		--dbg_obj_princ('url: ', url);
+		--tmp := http_get(url);
+		--xd := xtree_doc (tmp);
+		--xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', concat('http://twitter.com/', id)));
+		--xd := serialize_to_UTF8_xml (xt);
+		--DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+		url := sprintf('http://twitter.com/users/show/%s.xml', id);
+		tmp := http_get(url);
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', concat('http://twitter.com/', id)));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	}
 	return 1;
 }
 ;
