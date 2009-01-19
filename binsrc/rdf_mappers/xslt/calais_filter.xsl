@@ -34,6 +34,8 @@
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+    xmlns:calais="http://s.opencalais.com/1/pred/"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
@@ -46,91 +48,12 @@
     <xsl:template match="rdf:RDF">
 	<xsl:copy>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&foaf;Document"/>
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
-		<xsl:for-each select="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
-		    <xsl:variable name="frag">
-			<xsl:call-template name="substring-after-last">
-			    <xsl:with-param name="string" select="@rdf:about"/>
-			    <xsl:with-param name="character" select="'/'"/>
-			</xsl:call-template>
-		    </xsl:variable>
-		    <xsl:variable name="res">
-			<xsl:value-of select="vi:proxyIRI($baseUri,'', $frag)"/>
-		    </xsl:variable>
-		    <sioc:container_of rdf:resource="{$res}"/>
-		    <foaf:topic rdf:resource="{$res}"/>
-		    <dcterms:subject rdf:resource="{$res}"/>
+		<xsl:for-each select="rdf:Description[calais:docId and calais:name]">
+		    <rdfs:seeAlso rdf:resource="{@about}"/>
 		</xsl:for-each>
 	    </rdf:Description>
-	    <xsl:apply-templates />
 	</xsl:copy>
     </xsl:template>
-
-    <xsl:template match="rdf:Description[rdf:type[starts-with (@rdf:resource, 'http://s.opencalais.com/1/type/em/')]]">
-	<rdf:Description>
-	    <sioc:has_container rdf:resource="{$baseUri}"/>
-	    <opl:hasDataProvider>
-		<opl:DataSource rdf:about="{@rdf:about}"/>
-	    </opl:hasDataProvider>
-	    <opl:providedBy>
-		<foaf:Organization rdf:about="http://dbpedia.org/resource/Reuters">
-		    <foaf:name>OpenCalais</foaf:name>
-		    <foaf:homepage rdf:resource="http://www.opencalais.com/"/>
-		</foaf:Organization>
-	    </opl:providedBy>
-	    <xsl:attribute name="rdf:about">
-		<xsl:variable name="frag">
-		    <xsl:call-template name="substring-after-last">
-			<xsl:with-param name="string" select="@rdf:about"/>
-			<xsl:with-param name="character" select="'/'"/>
-		    </xsl:call-template>
-		</xsl:variable>
-		<xsl:value-of select="vi:proxyIRI($baseUri,'', $frag)"/>
-	    </xsl:attribute>
-	    <!--xsl:copy-of select="*"/-->
-	    <xsl:apply-templates mode="cp"/>
-	</rdf:Description>
-    </xsl:template>
-
-    <xsl:template match="rdf:type" mode="cp">
-	<xsl:copy-of select="."/>
-    </xsl:template>
-
-    <xsl:template match="*" mode="cp">
-	<xsl:copy>
-	    <xsl:copy-of select="@*[local-name () != 'resource']"/>
-	    <xsl:if test="@rdf:resource">
-		<xsl:attribute name="rdf:resource">
-		    <xsl:variable name="frag">
-			<xsl:call-template name="substring-after-last">
-			    <xsl:with-param name="string" select="@rdf:resource"/>
-			    <xsl:with-param name="character" select="'/'"/>
-			</xsl:call-template>
-		    </xsl:variable>
-		    <xsl:value-of select="vi:proxyIRI($baseUri, '', $frag)"/>
-		</xsl:attribute>
-	    </xsl:if>
-	    <xsl:apply-templates mode="cp"/>
-	</xsl:copy>
-    </xsl:template>
-
-  <xsl:template name="substring-after-last">
-    <xsl:param name="string"/>
-    <xsl:param name="character"/>
-    <xsl:choose>
-      <xsl:when test="contains($string,$character)">
-          <xsl:call-template name="substring-after-last">
-            <xsl:with-param name="string" select="substring-after($string, $character)"/>
-            <xsl:with-param name="character" select="$character"/>
-          </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$string"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
 
     <xsl:template match="*|text()"/>
 
