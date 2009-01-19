@@ -34,6 +34,8 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+    xmlns:dcterms="http://purl.org/dc/terms/" 
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -93,6 +95,22 @@
 	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
 	    <mo:release_type rdf:resource="&mo;{translate (substring-before (@type, ' '), $uc, $lc)}"/>
 	    <mo:release_status rdf:resource="&mo;{translate (substring-after (@type, ' '), $uc, $lc)}"/>
+	    <dcterms:created rdf:datatype="&xsd;dateTime">
+			<xsl:value-of select="mmd:release-event-list/mmd:event/@date"/>
+		</dcterms:created>
+   		<vcard:Country>
+		    <xsl:value-of select="mmd:release-event-list/mmd:event/@country"/>
+		</vcard:Country>
+		<mmd:barcode>
+			<xsl:value-of select="mmd:release-event-list/mmd:event/@barcode"/>
+		</mmd:barcode>
+		<mmd:format>
+			<xsl:value-of select="mmd:release-event-list/mmd:event/@format"/>
+		</mmd:format>
+		<mmd:catalog-number>
+			<xsl:value-of select="mmd:release-event-list/mmd:event/@catalog-number"/>
+		</mmd:catalog-number>
+		<foaf:maker rdf:resource="{vi:proxyIRI (concat($base, 'artist/', mmd:artist/@id, '.html'))}"/>	    
 	    <xsl:for-each select="mmd:track-list/mmd:track">
 		<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/',@id,'.html'))}"/>
 	    </xsl:for-each>
@@ -106,8 +124,9 @@
 	    <mo:track_number><xsl:value-of select="position()"/></mo:track_number>
 	    <mo:duration rdf:datatype="&xsd;integer"><xsl:value-of select="mmd:duration"/></mo:duration>
 	    <xsl:if test="artist[@id]">
-		<foaf:maker rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', artist/@id, '.html'))}"/>
+			<foaf:maker rdf:resource="{vi:proxyIRI (concat ($base, 'artist/', mmd:artist/@id, '.html'))}"/>
 	    </xsl:if>
+		<mo:published_as rdf:resource="{vi:proxyIRI (concat($base,'release/', mmd:release-list/mmd:release/@id,'.html'))}" />
 	    <mo:musicbrainz rdf:resource="{vi:proxyIRI (concat ($base, 'track/', @id, '.html'))}"/>
 	</mo:Track>
     </xsl:template>

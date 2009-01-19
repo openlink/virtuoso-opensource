@@ -2737,7 +2737,6 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
     return 0; 
   url := concat('http://openlibrary.org/api/get?key=/b/', img_id);
   url := concat(url, '&prettyprint=true&text=true');
-  --XXX:url:= 'http://openlibrary.org/api/get?key=/b/OL7668717M&prettyprint=true&text=true';
   cnt := http_get (url, hdr);
   tree := json_parse (cnt);
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
