@@ -8,6 +8,7 @@ rdfs:label rdfs:subPropertyOf virtrdf:label .
 dc:title rdfs:subPropertyOf virtrdf:label .
 fbase:type.object.name rdfs:subPropertyOf virtrdf:label .
 foaf:name rdfs:subPropertyOf virtrdf:label .
+<http://s.opencalais.com/1/pred/name> rdfs:subPropertyOf virtrdf:label .
 foaf:nick rdfs:subPropertyOf virtrdf:label .', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');

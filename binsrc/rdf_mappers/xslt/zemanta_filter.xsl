@@ -35,6 +35,7 @@
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
@@ -50,9 +51,6 @@
     <xsl:template match="rdf:RDF">
 	<xsl:copy>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<rdf:type rdf:resource="&foaf;Document"/>
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<rdf:type rdf:resource="&sioc;Container"/>
 		<xsl:for-each select="rdf:Description[rdf:type[starts-with (@rdf:resource, $target)]]">
 		    <xsl:variable name="frag">
 			<xsl:call-template name="substring-after-last">
@@ -63,9 +61,7 @@
 		    <xsl:variable name="res">
 			<xsl:value-of select="concat($baseUri,'#', $frag)"/>
 		    </xsl:variable>
-		    <sioc:container_of rdf:resource="{$res}"/>
-		    <foaf:topic rdf:resource="{$res}"/>
-		    <dcterms:subject rdf:resource="{$res}"/>
+		    <rdfs:seeAlso rdf:resource="{$res}"/>
 		</xsl:for-each>
 	    </rdf:Description>
 	    <xsl:apply-templates />
@@ -74,10 +70,9 @@
 
     <xsl:template match="rdf:Description[rdf:type[starts-with (@rdf:resource, $target)]]">
 	<rdf:Description>
-	    <sioc:has_container rdf:resource="{$baseUri}"/>
-	    <opl:hasDataProvider>
+	    <!--opl:hasDataProvider>
 		<opl:DataSource rdf:about="{@rdf:about}"/>
-	    </opl:hasDataProvider>
+	    </opl:hasDataProvider-->
 	    <opl:providedBy>
 		<foaf:Organization rdf:about="http://www.crunchbase.com/company/zemanta">
 		    <foaf:name>Zemanta</foaf:name>
