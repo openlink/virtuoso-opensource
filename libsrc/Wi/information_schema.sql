@@ -28,18 +28,19 @@
 --#IF VER=5
 create procedure INFORMATION_SCHEMA_UPGRADE ()
 {
-  if (registry_get ('INFORMATION_SCHEMA_VERSION') = '2')
+  if (registry_get ('INFORMATION_SCHEMA_VERSION') = '3')
     return;
   if (exists (select 1 from SYS_VIEWS where V_NAME = 'DB.INFORMATION_SCHEMA.COLUMNS'))
     {
       log_message ('Upgrading INFORMATION SCHEMA');
+      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.COLUMNS', 0);
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.KEY_COLUMN_USAGE', 0);
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.PARAMETERS', 0);
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.VIEWS', 0);
       EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.ROUTINES', 0);
+      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.VIEWS', 0);
     }
-  registry_set ('INFORMATION_SCHEMA_VERSION', '2');
+  registry_set ('INFORMATION_SCHEMA_VERSION', '3');
 }
 ;
 
@@ -164,7 +165,7 @@ select
 
  case
    when strchr (coalesce (COL_CHECK, ''), 'I') is not null
-     then 'ALLWAYS'
+     then 'ALWAYS'
    else NULL
  end				AS IDENTITY_GENERATION		VARCHAR(10),
 
