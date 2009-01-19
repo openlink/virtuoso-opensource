@@ -1,3 +1,68 @@
+2009-01-19 10:18  source
+
+	* Updated version to 5.0.10-rc3
+
+2009-01-19 10:16  source
+
+	* Fixed select * where { ?s ?p ?o filter (?o = 'something'@lang) }
+
+2009-01-19 10:15  source
+
+	* Fixed check for content lenght limit
+
+2009-01-19 09:23  source
+
+	* Fixed help messages
+
+2009-01-19 09:12  source
+
+	* Fixed musicbrainz support
+
+2009-01-19 09:11  source
+
+	* Fixed use of seeAlso
+
+2009-01-19 09:11  source
+
+	* Fixed use of SeeAlso
+	* Fixed use calais linkes sata IRIs
+
+2009-01-19 09:10  source
+
+	* Added Twitter cardridge
+
+2009-01-19 09:02  source
+
+	* Fixed typo in columns view
+
+2009-01-19 09:01  source
+
+	* Updated documentation
+
+2009-01-15 16:02  source
+
+	* Updated documentation
+
+2009-01-15 11:25  source
+
+	* Fixed use newer api call wbxml_conv_wbxml2xml_withlen from wbxml2
+
+2009-01-15 11:18  source
+
+	* Fixes bug when fetching decimal value of exactly 0
+
+2009-01-14 15:57  source
+
+	* Added support for nvarchar / long nvarchar fields in RDF views
+
+2009-01-14 15:57  source
+
+	* Fixed partial rollback of patch
+
+2009-01-14 15:56  source
+
+	* Fixed use seeAlso as it seems sameAs is wrong
+
 2009-01-14 11:01  source
 
 	* Fixed sparp_rvr_tighten to finally pass SparqlQmPure.sql
