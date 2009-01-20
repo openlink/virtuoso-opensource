@@ -1263,12 +1263,15 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 {
 	declare xt, xd any;
 	declare url, tmp varchar;
-	declare what_, id, post varchar;
+	declare what_, id, post, username_, password_ varchar;
 	declare pos integer;
 	declare exit handler for sqlstate '*'
 	{
 		return 0;
 	};
+    username_ := get_keyword ('username', opts);
+	password_ := get_keyword ('password', opts);
+	dbg_obj_princ('user: ', username_, password_);
 	if (new_origin_uri like 'http://twitter.com/%/status/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
@@ -1287,6 +1290,15 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 			return 0;
 		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
 		what_ := 'friends';
+	}
+	else if (new_origin_uri like 'http://twitter.com/%/followers')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/followers', 0);
+		id := tmp[0];
+		if (id is null)
+			return 0;
+		url := sprintf('http://twitter.com/statuses/followers.xml?id=%s', id);
+		what_ := 'followers';
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/favourites')
 	{
@@ -1313,7 +1325,9 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	}
 	else
 		return 0;
-	tmp := http_get(url);
+	tmp := http_client(url, username_, password_, 'GET');
+	
+	--tmp := http_get(url);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', concat('http://twitter.com/', id)));

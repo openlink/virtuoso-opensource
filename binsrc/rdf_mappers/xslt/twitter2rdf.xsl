@@ -65,17 +65,23 @@
 	</xsl:template>
 	
 	<xsl:template match="users">
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<xsl:for-each select="user">
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 				<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
-			</xsl:for-each>
 		</rdf:Description>
+			</xsl:for-each>
 		<xsl:for-each select="user">
 			<xsl:call-template name="user"/>
 		</xsl:for-each>
 	</xsl:template>
 	
 	<xsl:template match="statuses">
+		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
+		<foaf:Document rdf:about="{$baseUri}">
+			<foaf:primaryTopic>
+				<foaf:Person rdf:about="{$about}" />
+			</foaf:primaryTopic>
+		</foaf:Document>
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&sioct;MessageBoard"/>
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -166,6 +172,7 @@
 			</foaf:title>
 			<foaf:knows rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/friends')}" />
+			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/followers')}" />
 		</foaf:Person>
 	</xsl:template>
 	
