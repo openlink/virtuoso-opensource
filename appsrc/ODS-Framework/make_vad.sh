@@ -238,6 +238,7 @@ directory_init() {
   mkdir vad/data/wa/images/buttons
   mkdir vad/data/wa/images/oat
   mkdir vad/data/wa/images/oat/markers
+  mkdir vad/data/wa/images/services
   mkdir vad/data/wa/images/skin
   mkdir vad/data/wa/images/skin/default
   mkdir vad/data/wa/images/skin/pager
@@ -290,7 +291,8 @@ directory_init() {
   cp icons/*.gif vad/data/wa/images/icons
 # cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons
-# cp images/skin/default/*.jpg vad/data/wa/images/skin/default
+  cp images/services/*.jpg vad/data/wa/images/services
+#  cp images/skin/default/*.jpg vad/data/wa/images/skin/default
   cp images/skin/default/*.png vad/data/wa/images/skin/default
   cp images/skin/pager/*.png vad/data/wa/images/skin/pager
 # cp buttons/*.gif vad/data/wa/images/buttons

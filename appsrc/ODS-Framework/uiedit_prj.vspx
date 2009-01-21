@@ -30,8 +30,7 @@
 	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 	<v:variable name="edit_prj" type="int" default="null" param-name="edit" />
 	<v:variable name="del_prj" type="int" default="null" param-name="del" />
-	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=9">
-	    <input type="hidden" name="page" value="9"/>
+	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=5">
 	  <table class="listing" rules="groups">
 	      <colgroup>
 		  <col/>
@@ -43,8 +42,11 @@
 		  <th>Description</th>
 		  <th>Action</th>
 	      </tr>
-	      <v:data-set name="prj" sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
-		  scrollable="1" editable="1" nrows="1000">
+	    <v:data-set name="prj"
+	                sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
+		              scrollable="1"
+		              editable="1"
+		              nrows="0">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_prj is not null)
 {
@@ -67,20 +69,23 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 				  <v:url name="ur1"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[1])'
 				      format="%s"
-				      url="--sprintf ('uiedit.vspx?page=9&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				               url="--sprintf ('uiedit.vspx?page=5&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Edit"
 				      xhtml_alt="Edit"
 				      />
 			      </td>
 			      <td>
-				  <v:label name="la1" value="--subseq ((control.vc_parent as vspx_row_template).te_rowset[3], 0, 200)"
-				      format="%120.120s" render-only="1"/>
+				        <v:label name="la1"
+				                 value="--subseq ((control.vc_parent as vspx_row_template).te_rowset[3], 0, 200)"
+				                 format="%120.120s"
+				                 render-only="1"/>
 
 			      </td>
 			      <td>
-				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+				        <v:url name="ur2"
+				               value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
-				      url="--sprintf ('uiedit.vspx?page=9&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				               url="--sprintf ('uiedit.vspx?page=5&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />
@@ -101,17 +106,21 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 	  <div class="fm">
 	      <fieldset>
 		  <label for="prj_url">URI</label>
+		    <br />
 		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
 		  <br />
 		  <label for="prj_name">Made*</label>
+		    <br />
 		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
 		      <!--v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Made name can not be empty"/-->
 		  </v:text>
 		  <br/>
 		  <label for="prj_desc">Description*</label>
+		    <br />
 		  <v:textarea name="prj_desc" value="" xhtml_id="prj_desc" xhtml_rows="5" xhtml_cols="50"/>
 		  <br />
 		  <label>Note: The fields designated with '*' will be fetched from the source document if empty</label>
+		    <br />
 	      <span class="fm_ctl_btn">
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_prj),0)">
 		      <v:on-post>
@@ -153,7 +162,8 @@ tmp := uuid ();
   qrs[2] := sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       			     prefix dc: <http://purl.org/dc/elements/1.1/>
 			     prefix foaf: <http://xmlns.com/foaf/0.1/>
-			     select ?P ?N ?D ?TI from <%s> where { ?P a ?TP .
+                                			     select ?P ?N ?D ?TI from <%s>
+                                			      where { ?P a ?TP .
 			     	optional { ?P foaf:name ?N } .
 				optional { ?P rdfs:label ?D . } .
 				optional { ?P dc:title ?TI }

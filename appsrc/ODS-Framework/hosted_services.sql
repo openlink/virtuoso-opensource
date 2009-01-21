@@ -3015,7 +3015,7 @@ wa_exec_no_error_log(
   'CREATE TABLE WA_USER_INFO
   (
     WAUI_U_ID int,
-    WAUI_VISIBLE VARCHAR(50),-- concatenation of all fields flags. (be default each is 1: 11111111...) -1: public, -- 2: friend, --3: private
+    WAUI_VISIBLE VARCHAR(55),           -- concatenation of all fields flags. (be default each is 1: 11111111...) -- 1: public, -- 2: friend, -- 3: private
     WAUI_TITLE VARCHAR(3),         -- 0
     WAUI_FIRST_NAME VARCHAR(50),   -- 1
     WAUI_LAST_NAME VARCHAR(50),    -- 2
@@ -3087,10 +3087,18 @@ wa_exec_no_error_log(
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
     WAUI_NICK		varchar,
+    WAUI_BICQ VARCHAR,                  -- 50
+    WAUI_BSKYPE VARCHAR,                -- 51
+    WAUI_BAIM VARCHAR,                  -- 52
+    WAUI_BYAHOO VARCHAR,                -- 53
+    WAUI_BMSN VARCHAR,                  -- 54
+
     primary key (WAUI_U_ID)
   )'
 )
 ;
+
+wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(55)');
 
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_TEMPLATE', 'VARCHAR(20)');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_PHOTO_URL', 'LONG VARCHAR');
@@ -3117,6 +3125,12 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SITE_NAME', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTERESTS', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTEREST_TOPICS', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BORG_HOMEPAGE', 'LONG VARCHAR');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BICQ', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BSKYPE', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BAIM', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BYAHOO', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMSN', 'VARCHAR');
 
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
@@ -3165,8 +3179,8 @@ create procedure WA_MAKE_NICK (in nick varchar)
 }
 ;
 
-create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N {
-
+create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N
+{
   if (N.WAUI_JOIN_DATE is null)
   {
     set triggers off;
@@ -3200,7 +3214,8 @@ create procedure WA_USER_INFO_NICK_UPGRADE ()
   if (registry_get ('__WA_USER_INFO_NICK_UPGRADE') = 'done-1')
     return;
   for select U_ID, U_NAME, WAUI_FIRST_NAME as fn, WAUI_LAST_NAME as ln, WAUI_NICK as _WAUI_NICK
-    from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and (WAUI_NICK is null or WAUI_NICK like '%-nick-%') do
+        from SYS_USERS, WA_USER_INFO
+      where WAUI_U_ID = U_ID and (WAUI_NICK is null or WAUI_NICK like '%-nick-%') do
     {
       declare nick any;
       nick := null;
@@ -3284,14 +3299,27 @@ wa_add_col ('DB.DBA.WA_USER_PROJECTS', 'WUP_IRI', 'varchar');
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_OL_ACCOUNTS (
       WUO_ID int identity,
-      WUO_U_ID int,
+      WUO_U_ID integer,
+      WUO_TYPE varchar,
       WUO_NAME varchar,
       WUO_URL varchar,
-      WUO_PUBLIC int default 0,
+      WUO_PUBLIC integer default 0,
       primary key (WUO_U_ID, WUO_ID)
       )'
 )
 ;
+
+wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_TYPE', 'varchar');
+
+create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
+{
+  if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP') = 'done')
+    return;
+  update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
+  registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP', 'done');
+};
+
+WA_USER_OL_ACCOUNTS_SET_UP ();
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_RELATED_RES (
@@ -3353,13 +3381,11 @@ create procedure WA_USER_SET_INFO (in _name varchar,in _fname varchar,in _lname 
   whenever not found goto nf;
   SELECT U_ID, U_NAME INTO _uid, _uname FROM SYS_USERS WHERE U_NAME = _name;
 
-  i := 1;
   _visb := '1';
-  while (i < 50)
+  for (i := 1; i < 55; i := i + 1)
   {
     _visb := concat(_visb,'1');
-    i := i + 1 ;
-  };
+  }
 
   INSERT REPLACING WA_USER_INFO (WAUI_U_ID,WAUI_VISIBLE,WAUI_FIRST_NAME, WAUI_LAST_NAME, WAUI_FULL_NAME )
     VALUES(_uid, _visb, _fname, _lname, _uname  );
@@ -3393,6 +3419,18 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_YAHOO = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_MSN')
     UPDATE WA_USER_INFO SET WAUI_MSN = _data WHERE WAUI_U_ID = _uid;
+
+  else if (_key = 'WAUI_BICQ')
+    UPDATE WA_USER_INFO SET WAUI_BICQ = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BSKYPE')
+    UPDATE WA_USER_INFO SET WAUI_BSKYPE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BAIM')
+    UPDATE WA_USER_INFO SET WAUI_BAIM = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BYAHOO')
+    UPDATE WA_USER_INFO SET WAUI_BYAHOO = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BMSN')
+    UPDATE WA_USER_INFO SET WAUI_BMSN = _data WHERE WAUI_U_ID = _uid;
+
   else if (_key = 'WAUI_BIRTHDAY' and (__tag (_data) = 211 or _data is null))
     UPDATE WA_USER_INFO SET WAUI_BIRTHDAY = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_TITLE')
@@ -3529,7 +3567,6 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
   declare i, j integer;
   whenever not found goto nf;
 
-  --dbg_obj_print(_name);
   _visb := '';
   SELECT U_ID INTO _uid FROM SYS_USERS WHERE U_NAME = _name;
 
@@ -3542,7 +3579,7 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
   _visb := trim(_visb, ',');
   _visb:= split_and_decode (_visb,0,'\0\0,');
 
-  if (length (_visb) < 50)
+  if (length (_visb) < 55)
     {
       declare part, inx any;
       part := make_array (50-length (_visb), 'any');

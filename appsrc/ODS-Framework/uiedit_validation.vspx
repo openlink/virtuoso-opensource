@@ -29,9 +29,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <input type="hidden" name="page" value="10"/>
-
-  <div><v:label value="Fields for validation" /></div>
+  <h3>Fields for validation</h3>
   <div style="height: 400px; overflow: auto;">
     <table id="lvalidation" class="listing" cellspacing="0">
       <tr class="listing_header_row">
@@ -46,7 +44,8 @@
 
         fields := LDAP..contact_fields ();
         data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.u_id), vector());
-        for (N := 0; N < length (fields); N := N + 2) {
+        for (N := 0; N < length (fields); N := N + 2)
+        {
   	  ?>
   	  <tr>
   	    <td width="1%">
@@ -77,7 +76,8 @@
           params := e.ve_params;
 
           data := vector ();
-          for (N := 0; N < length (params); N := N + 4) {
+          for (N := 0; N < length (params); N := N + 4)
+          {
             if (params[N] = 'cb_item')
               data := vector_concat (data, vector (params[N+1],'1'));
           }

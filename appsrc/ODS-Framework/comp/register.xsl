@@ -73,9 +73,7 @@
          self.reg_number := rand (999999);
          self.reg_number := cast (self.reg_number as varchar);
        }
-     self.reg_number_img := "IM AnnotateImageBlob" (
-      "IM CreateImageBlob" (60, 25, 'white', 'jpg'),
-      10, 15, self.reg_number);
+            self.reg_number_img := "IM AnnotateImageBlob" ("IM CreateImageBlob" (60, 25, 'white', 'jpg'), 10, 15, self.reg_number);
      self.reg_number_img := encode_base64 (cast (self.reg_number_img as varchar));
          }
        else if (not self.vc_event.ve_is_post)
@@ -111,8 +109,8 @@
         declare cnt, pref, ix int;
         ix := 1;
         pref := self.oid_nickname;
-try_next:
 
+        try_next:
         cnt := (select count(*) from DB.DBA.SYS_USERS where U_NAME = self.oid_nickname);
         if (cnt > 0)
         {
@@ -129,9 +127,7 @@ try_next:
           self.regpwd1.ufl_value := self.regpwd.ufl_value;
           self.is_agreed.ufl_selected := 1;
 
-          if(self.oid_nickname is not null and length(self.oid_nickname)>0
-             and
-             self.oid_email is not null and length(self.oid_email)>0)
+            if (self.oid_nickname is not null and length(self.oid_nickname) > 0 and self.oid_email is not null and length(self.oid_email) > 0)
           {
           self.registration.vc_focus := 1;
           self.vc_event.ve_is_post := 1;
@@ -140,9 +136,7 @@ try_next:
           control.vc_enabled := 0;
           self.registration.vc_focus := 0;
           self.vc_event.ve_is_post := 0;
-          }else
-          {
-
+            } else {
             self.vc_is_valid := 0;
             if(self.oid_nickname is null or length(self.oid_nickname)<1)
             self.vc_error_message := 'Your openID provider has not supplied your nickname.';
@@ -150,9 +144,7 @@ try_next:
             if(self.oid_email is null or length(self.oid_email)<1)
             self.vc_error_message := 'Your openID provider has not supplied your e-mail address.';
 
-            if( (self.oid_nickname is null or length(self.oid_nickname)<1)
-                and
-                (self.oid_email is null or length(self.oid_email)<1) )
+              if ((self.oid_nickname is null or length(self.oid_nickname)<1) and (self.oid_email is null or length(self.oid_email) < 1))
             self.vc_error_message := 'Your openID provider has not supplied your nickname and e-mail address.';
 
             declare _location varchar;
@@ -229,9 +221,6 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
         <v:text xhtml_tabindex="11" xhtml_id="oid_reguid" xhtml_style="width:270px" name="oid_reguid" value="--get_keyword('oid_reguid', params)"
            default_value="--self.oid_nickname" xhtml_onblur="document.getElementById(''reguid'').value=this.value;">
        </v:text>
-<!--
-       <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
--->
      </td>
    </tr>
    </v:template>
@@ -258,8 +247,7 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
         <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
         <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
       message="Login name cannot be empty or longer then 20 chars" />
-        <v:validator test="regexp" regexp="^[A-Za-z0-9_.@-]+$"
-      message="The login name contains invalid characters" name="vv_reguid3">
+                  <v:validator test="regexp" regexp="^[A-Za-z0-9_.@-]+$" message="The login name contains invalid characters" name="vv_reguid3">
         </v:validator>
             </v:text>
             <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
@@ -267,31 +255,13 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
           </td>
           <td>
     </td>
-<!--
-    <td rowspan="5">
-      <?vsp
-        {
-            ;
---          declare exit handler for sqlstate '*';
---          http_value (http_client (sprintf ('http://api.hostip.info/get_html.php?ip=%s&position=true', http_client_ip ())), 'pre');
-        }
-      ?>
-      <a href="http://www.hostip.info">
-        <img src="http://api.hostip.info/flag.php" border="0" alt="IP Address Lookup" />
-      </a>
-    </td>
- -->
         </tr>
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-        <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--get_keyword ('regmail', params)"
-        default_value="--self.oid_email">
+                <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--get_keyword ('regmail', params)" default_value="--self.oid_email">
               <v:validator test="sql" expression="length(trim(self.regmail.ufl_value)) < 1 or length(trim(self.regmail.ufl_value)) > 40" name="vv_regmail1"
                     message="E-mail address cannot be empty or longer then 40 chars" />
-<!--
-              <v:validator name="vv_regmail1" test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars"/>
--->
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
             </v:text>
           </td>
@@ -348,7 +318,8 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
       <table>
         <tr>
           <td></td>
-          <td><v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
+           <td>
+             <v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
         <label for="is_agreed">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>.</label>
     </td>
         </tr>
@@ -394,8 +365,7 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
        {
           OAT.Dom.hide ('login_info');
           OAT.Dom.hide ('signup_span');
-       }else
-       {
+              } else {
           OAT.Dom.show ('login_info');
           OAT.Dom.show ('signup_span');
        }
@@ -411,8 +381,7 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
            OAT.Dom.hide($('login_info'));
            OAT.Dom.show($('login_openid'));
            $('uoid').value=1;
-        }else
-        {
+              } else {
            $('uoid').value=0;
 
            $('tabOpenID').className='login_tab';
@@ -430,19 +399,13 @@ if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
          loginTabToggle($('tabOpenID'));
       else
          loginTabToggle($('tabODS'));
-
             // -->
-
           ]]>
         </script>
-
       <v:on-post>
    <![CDATA[
-if(self.use_oid_url=0
-   or  (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url)
-  )
+           if (self.use_oid_url = 0 or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url))
 {
-
    declare u_name1, dom_reg,u_mail1 varchar;
    declare country, city, lat, lng, xt, xp, uoid, is_agr any;
 
@@ -478,7 +441,9 @@ if(self.use_oid_url=0
        self.regpwd1.ufl_failed := 0;
      }
 
-         if (self.vc_is_valid = 0) return;
+             if (self.vc_is_valid = 0)
+               return;
+
          declare uid int;
          declare sid any;
          declare exit handler for sqlstate '*'
@@ -502,25 +467,20 @@ if(self.use_oid_url=0
            self.vc_error_message := 'E-mail address cannot be empty or longer then 40 chars';
            self.vc_is_valid := 0;
            return;
-         };
-
+             }
          if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+',u_mail1) is null)
          {
            self.vc_error_message := 'Invalid E-mail address';
            self.vc_is_valid := 0;
            return;
-         };
-
-
+             }
          is_agr := self.is_agreed.ufl_selected;
          if (not(is_agr))
          {
            self.vc_error_message := 'You have not agreed to the Terms of Service.';
            self.vc_is_valid := 0;
            return;
-         };
-
-
+             }
          if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
            {
                    if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
@@ -602,11 +562,10 @@ no_date:
           {
             update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity, WAUI_OPENID_SERVER = self.oid_srv where WAUI_U_ID = uid;
      }
-     }
-   else
-   {
+             } else {
      declare coords any;
      declare exit handler for sqlstate '*';
+
            xt := http_client (sprintf ('http://api.hostip.info/?ip=%s', http_client_ip ()));
      xt := xtree_doc (xt);
      country := cast (xpath_eval ('string (//countryName)', xt) as varchar);
@@ -654,17 +613,20 @@ no_date:
          -- create session
          declare _expire any;
          _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
-         if(_mail_verify_on = 0) _expire := 1;
-         insert into
-           VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-         values
-           ('wa', sid, u_name1,
+             if(_mail_verify_on = 0)
+               _expire := 1;
+             insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
+               values ('wa', sid, u_name1,
        serialize (vector ('vspx_user', u_name1)), dateadd ('hour', _expire, now()));
 
    if (length (self.ods_returnurl)) -- URL given by GET
+             {
      self.ret_page := self.ods_returnurl;
+             }
    else if (get_keyword_ucase ('ret', params, '') <> '')
+             {
      self.ret_page := get_keyword_ucase ('ret', params);
+             }
    else if (self.wa_nameR is not null)
    {
       self.ret_page := 'new_inst.vspx';
@@ -672,10 +634,15 @@ no_date:
          self.ret_page := 'new_inst.vspx?l=1';
    }
    else if (length (self.url))
+             {
      self.ret_page := self.url;
+               if (self.ret_page like '%myhome.vspx%')
+                 self.ret_page := 'uiedit.vspx';
+             }
    else
-     self.ret_page := 'uhome.vspx';
-
+             {
+               self.ret_page := 'uiedit.vspx';
+             }
          if (_mail_verify_on)
          {
            -- determine existing default mail server
@@ -757,7 +724,8 @@ no_date:
            -- update list of users
            declare ds vspx_data_set;
            ds := self.vc_find_descendant_control('ds_users');
-           if(ds is not null) ds.vc_data_bind(e);
+               if (ds is not null)
+                 ds.vc_data_bind(e);
          }
 }
 else
@@ -834,14 +802,10 @@ else
      oi_srv, oi_ident, this_page, trust_root);
   }
 
-check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
-  'fullname,nickname,dob,gender,postcode,country,timezone');
+           check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U','fullname,nickname,dob,gender,postcode,country,timezone');
 check_immediate := check_immediate || sprintf ('&openid.sreg.required=%U','email,nickname');
-
 self.vc_redirect (check_immediate);
-
 }
-
       ]]>
       </v:on-post>
      </v:template>

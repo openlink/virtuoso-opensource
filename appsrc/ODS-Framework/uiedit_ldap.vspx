@@ -117,7 +117,6 @@
   <v:variable persist="0" name="v_maps" type="any" default="null"/>
   <v:variable persist="0" name="v_data" type="any" default="null"/>
 
-  <input type="hidden" name="page" value="7"/>
   <vm:if test="self.v_mode = 'LDAP/browse'">
     <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
       <v:before-data-bind>

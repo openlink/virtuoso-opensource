@@ -35,13 +35,22 @@
     <v:variable persist="0" name="oid_urlv" type="varchar" default="''"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
-
     <v:before-data-bind>
       <![CDATA[
-        declare _secretq, _secreta, pwd, node_id, tmp varchar;
-        SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER, pwd_magic_calc (U_NAME, U_PASSWORD, 1), WAUI_OPENID_URL
-          INTO _secretq, _secreta, pwd, self.oid_urlv
-	  FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+      declare pwd, node_id, tmp varchar;
+
+      SELECT WAUI_SEC_QUESTION,
+             WAUI_SEC_ANSWER,
+             pwd_magic_calc (U_NAME, U_PASSWORD, 1),
+             WAUI_OPENID_URL
+        INTO self.secretq,
+             self.secreta,
+             pwd,
+             self.oid_urlv
+        FROM WA_USER_INFO,
+             DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID
+         and U_NAME = self.u_name;
 	self.sioc_limit := coalesce (USER_GET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
 
 	tmp := uuid ();
@@ -50,13 +59,10 @@
 	  self.no_pwd := 1;
         else
 	  self.no_pwd := 0;
-         self.secretq := _secretq;
-         self.secreta := _secreta;
       ]]>
     </v:before-data-bind>
 
-    <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=5">
-	<v:text type="hidden" name="page" value="5"/>
+  <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=3">
     <table  class="ctl_grp">
               <tr>
                 <td colspan="2" align="left">
@@ -91,7 +97,8 @@
 			<![CDATA[
 			declare pwd_match int;
 
-			if (self.vc_is_valid = 0) return;
+                  if (self.vc_is_valid = 0)
+                    return;
 
 			declare exit handler for not found
 			{
@@ -99,13 +106,12 @@
 			};
 
 			select equ (pwd_magic_calc (U_NAME, U_PASSWORD, 1), self.opwd1.ufl_value) into pwd_match
-				from SYS_USERS where U_NAME = self.u_name and U_IS_ROLE = 0;
-
+                    from SYS_USERS
+                   where U_NAME = self.u_name and U_IS_ROLE = 0;
 
 			if (not pwd_match and not self.no_pwd)
 			  {
-			    self.opwd1.vc_error_message :=
-			      sprintf ('The old password for "%s" was not correct.', self.u_name);
+                    self.opwd1.vc_error_message := sprintf ('The old password for "%s" was not correct.', self.u_name);
 			    self.opwd1.ufl_failed := 1;
 			    self.npwd1.ufl_failed := 1;
 			    self.npwd2.ufl_failed := 1;
@@ -121,8 +127,7 @@
                           self.npwd1.vc_error_message := 'The password value cannot be empty or to be longer than 255 chars';
                           self.vc_is_valid := 0;
                           return;
-                        };
-
+                  }
                         if (self.npwd1.ufl_value = self.npwd2.ufl_value and length (self.npwd1.ufl_value))
                         {
 			  if (self.no_pwd)
@@ -137,8 +142,7 @@
                         }
                         else
                         {
-			  self.npwd2.vc_error_message :=
-			    'The new values for the password did not match.  Please re-enter all fields.';
+                    self.npwd2.vc_error_message := 'The new values for the password did not match.  Please re-enter all fields.';
                           self.vc_is_valid := 0;
 			  self.npwd2.ufl_failed := 1;
 			  self.opwd1.ufl_failed := 1;
@@ -171,9 +175,10 @@
 		<td colspan="2" class="ctrl">
 		  <span class="fm_ctl_btn">
                   <v:button name="bt_set6" value="Save OpenID" action="simple">
-                    <v:on-post><![CDATA[
-
-			if (self.vc_is_valid = 0) return;
+              <v:on-post>
+                <![CDATA[
+                  if (self.vc_is_valid = 0)
+                    return;
 
 			declare err any;
 			err := ODS..openid_url_set (self.u_id, self.oid_url1.ufl_value);
@@ -184,8 +189,7 @@
 			    self.vc_error_message := err;
 			    return;
 			  }
-
-			self.vc_redirect ('uiedit.vspx?page=5');
+                  self.vc_redirect ('uiedit.vspx?page=3');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -203,9 +207,7 @@
                 <td nowrap="nowrap">
                   <v:text error-glyph="*" name="sec_question" xhtml_id="sec_qst" value="--self.secretq">
                     <v:validator test="length" min="0" max="800" message="Security question cannot be longer then 800 chars" empty-allowed="1" name="vv_secq1"/>
-		    <v:validator test="sql" expression="length(trim(self.sec_question.ufl_value)) > 800"
-		      name="vv_secq2"
-                      message="Security question cannot be longer then 800 chars"/>
+            <v:validator test="sql" expression="length(trim(self.sec_question.ufl_value)) > 800" name="vv_secq2" message="Security question cannot be longer then 800 chars"/>
                   </v:text>
                   <script type="text/javascript">
                       function setSecQuestion()
@@ -230,9 +232,7 @@
                 <th><label for="sec_answer">Secret answer</label></th>
                 <td nowrap="nowrap">
                   <v:text error-glyph="*" xhtml_id="sec_answer" name="sec_answer" value="--self.secreta">
-		    <v:validator test="length" min="0" max="800" message="Security answer cannot be longer then 800 chars"
-		      name="vv_seca1"
-		      empty-allowed="1"/>
+            <v:validator test="length" min="0" max="800" message="Security answer cannot be longer then 800 chars" name="vv_seca1" empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="sec_answer" /></div>
                 </td>
@@ -243,11 +243,12 @@
                   <v:button name="user_sset" value="Save" action="simple">
                     <v:on-post>
                       <![CDATA[
-                        if(self.vc_is_valid = 0) return;
+                  if(self.vc_is_valid = 0)
+                    return;
 
                         WA_USER_EDIT (self.u_name, 'SEC_QUESTION', self.sec_question.ufl_value);
                         WA_USER_EDIT (self.u_name, 'SEC_ANSWER', self.sec_answer.ufl_value);
-			self.vc_redirect ('uiedit.vspx?page=5');
+                  self.vc_redirect ('uiedit.vspx?page=3');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -263,9 +264,7 @@
                 <th><label for="sioc_limit1">SIOC query result limit</label></th>
                 <td nowrap="nowrap">
                   <v:text error-glyph="*" xhtml_id="sioc_limit1" name="sioc_limit1" value="--self.sioc_limit" >
-		    <v:validator test="value" min="1" max="1000" message="Positive number between 1 and 1000 is required"
-		      name="vv_sioca1"
-		      empty-allowed="0"/>
+            <v:validator test="value" min="1" max="1000" message="Positive number between 1 and 1000 is required" name="vv_sioca1" empty-allowed="0"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="sioc_limit" /></div>
                 </td>
@@ -281,9 +280,11 @@
                   <v:button name="bt_set1" value="Save Restrictions" action="simple">
                     <v:on-post>
                       <![CDATA[
-		        if(self.vc_is_valid = 0) return;
+                  if(self.vc_is_valid = 0)
+                    return;
+
                         USER_SET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT', atoi (self.sioc_limit1.ufl_value));
-			self.vc_redirect ('uiedit.vspx?page=5');
+                  self.vc_redirect ('uiedit.vspx?page=3');
                       ]]>
                     </v:on-post>
 		</v:button>

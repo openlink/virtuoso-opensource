@@ -112,8 +112,6 @@
     <v:before-data-bind>
       self.ab_domain := (select top 1 WAI_ID from WA_MEMBER, WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = self.u_id and WAM_APP_TYPE = 'AddressBook' and WAM_MEMBER_TYPE = 1);
     </v:before-data-bind>
-    <input type="hidden" name="page" value="8"/>
-
     <div>
       <fieldset>
         <table cellspacing="0">

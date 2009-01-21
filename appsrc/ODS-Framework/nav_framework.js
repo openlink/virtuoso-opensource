@@ -65,8 +65,7 @@ function append_elem (_src, _dst)
 {
   for (var i = 0; i < _src.childNodes.length; i++)
     _dst.appendChild (_src.childNodes[i].cloneNode (true));
-};
-
+}
 
 function tpl_elem_repl (_src, _dst)
 {  
@@ -87,8 +86,7 @@ function ODSDOMSwapElem (old_elem, new_elem, tmp)
 
 function dd (txt)
 {
-    if (typeof console == 'object' &&
-	typeof console.debug == 'function')
+  if (typeof console == 'object' && typeof console.debug == 'function')
 	{
 	    console.debug(txt);
 	}
@@ -118,10 +116,10 @@ function eTarget (e)
 
 function onEnterDown (e)
 {
-    if (!e) return;
+  if (!e)
+    return;
 
     var keycode = (window.event) ? window.event.keyCode : e.which;
-
     if (keycode == 13)
 	{
 	    var t = eTarget (e);
@@ -129,7 +127,6 @@ function onEnterDown (e)
 		t.callback (e);
 	    return false;
 	}
-    else
         return true;
 }
 
@@ -141,7 +138,7 @@ function buildObjByAttributes (elm)
 	   obj[elm.attributes[i].nodeName] = OAT.Xml.textValue (elm.attributes[i]);
        }
    return obj;
-};
+}
 
 function buildObjByChildNodes (elm)
 {
@@ -916,8 +913,7 @@ ODS.Nav = function (navOptions)
     this.ods           = ODS.Preferences.odsHome;
     this.dataspace     = ODS.Preferences.dataspacePath;
 //  this.uriqaDefaultHost=false;
-    this.serverOptions = {uriqaDefaultHost:false,
-			  useRDFB:0};
+  this.serverOptions = {uriqaDefaultHost:false, useRDFB:0};
     this.leftbar       = $(navOptions.leftbar);
     this.rightbar      = $(navOptions.rightbar);
     this.appmenu       = $(navOptions.appmenu);
@@ -949,15 +945,11 @@ ODS.Nav = function (navOptions)
 							        this.userId   = profileId;
 							        userFullName  = false;
 							        this.connections = new Array();}
-
     };
 
-    this.connections = { userId : false,
-		       show   : false };
+  this.connections = { userId: false, show: false };
 
-    this.searchObj = {qStr : false,
-		      map  : false,
-		     tab  : false };
+  this.searchObj = { qStr: false, map: false, tab: false };
 
     function preValidate()
     {
@@ -972,28 +964,23 @@ ODS.Nav = function (navOptions)
 	self.session.validate ();
     }
 
-    OAT.MSG.attach (self.session,
-		    OAT.MSG.SES_TOKEN_RECEIVED,
-		    function () {
+  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
+	  function ()
+	  {
 			OAT.Event.detach ('loginBtn', 'click', preValidate);
 			OAT.Event.attach ('loginBtn','click',preValidate);
 			$('loginUserPass').tokenReceived = true;
 			$('loginOpenIdUrl').tokenReceived = true;
-		    });
+	  }
+	);
 
     OAT.MSG.attach (self.session, OAT.MSG.SES_VALIDBIND,
-		    function () {
+	  function ()
+	  {
 			self.createCookie ('sid', self.session.sid, 1);
 			self.userLogged = 1;
-			self.session.usersGetInfo (self.session.userId, 'fullName',
-						   function (xmlDoc) {
-						       self.setLoggedUserInfo (xmlDoc);
-						   });
-			self.connectionsGet (self.session.userId, 'fullName,photo,homeLocation,dataspace',
-					     function (xmlDocRet) {
-						 self.updateConnectionsSession (xmlDocRet);
-					     });
-//                   self.initProfile();
+	    self.session.usersGetInfo (self.session.userId, 'fullName', function (xmlDoc) {self.setLoggedUserInfo (xmlDoc);});
+	    self.connectionsGet (self.session.userId, 'fullName,photo,homeLocation,dataspace', function (xmlDocRet) {self.updateConnectionsSession (xmlDocRet);});
 			self.initLeftBar ();
 			self.initRightBar ();
 			self.initAppMenu ();
@@ -1001,12 +988,13 @@ ODS.Nav = function (navOptions)
 			self.connections.userId = self.session.userId;
 
 			OAT.Dimmer.hide();
-			OAT.MSG.send (self.session,
-				      OAT.MSG.SES_VALIDATION_END, {sessionValid:1});
-		    });
+	    OAT.MSG.send (self.session, OAT.MSG.SES_VALIDATION_END, {sessionValid:1});
+	  }
+	);
 
     OAT.MSG.attach (self.session, OAT.MSG.SES_INVALID,
-		    function (src, msg, event) {
+	  function (src, msg, event)
+	  {
 			self.showLoginThrobber ('hide');
 			if ($('loginBtn'))
 			    $('loginBtn').disabled = false;
@@ -1017,8 +1005,7 @@ ODS.Nav = function (navOptions)
 
 			self.createCookie ('sid', '', 1);
 
-			if (typeof (event.retryLogIn) != 'undefined' &&
-			    event.retryLogIn == true)
+	    if (typeof (event.retryLogIn) != 'undefined' && event.retryLogIn == true)
 			    {
 				self.wait('hide');
 
@@ -1033,20 +1020,23 @@ ODS.Nav = function (navOptions)
 				return;
 			    }
 			else
-			    if (typeof (event.sessionEnd) != 'undefined' &&
-				event.sessionEnd == true)
+	    {
+		    if (typeof (event.sessionEnd) != 'undefined' && event.sessionEnd == true)
 			       {
 				   document.location.hash = '';
 				   document.location.href = 'index.html';
-
 			       }
 			    else
+	      {
 				OAT.MSG.send (self.session, OAT.MSG.SES_VALIDATION_END, {sessionValid:0});
-
-		    });
+			  }
+			}
+    }
+  );
 
     OAT.MSG.attach (self.session, OAT.MSG.SES_VALIDATION_END,
-		    function (src, msg, event) {
+	  function (src, msg, event)
+	  {
 			self.showLoginThrobber ('hide');
 			if (typeof (self.defaultAction) == 'function')
 			    {
@@ -1071,11 +1061,7 @@ ODS.Nav = function (navOptions)
 				profileId = profileId.split ('#')[0];
 
 				var profileType = profileId.split ('/')[4];
-
 				self.profile.show = true;
-
-//                    if (!self.session.sid ||
-//                       (self.session.sid && self.session.userName!=profileId))
 
 				if (self.session.sid &&
 				    self.session.userName == self.profile.userName &&
@@ -1089,7 +1075,9 @@ ODS.Nav = function (navOptions)
 					var metaProfileId = getMetaContents ('dataspaceid');
 
 					if (!metaProfileId)
+  		    {
 					    self.profile.set ('/' + profileId);
+  		    }
 					else
 					    {
 						self.profile.set (metaProfileId);
@@ -1114,11 +1102,11 @@ ODS.Nav = function (navOptions)
 						document.location.href = document.location.href.split ('#')[0]+'#';
 					    }
 					else
+  			  {
 					    self.logIn ();
-
 				    }
-				else if (defaultAction.indexOf ('#/person/') >- 1 ||
-					 defaultAction.indexOf ('#/organization/') >- 1)
+  	    }
+  			else if (defaultAction.indexOf ('#/person/') >- 1 || defaultAction.indexOf ('#/organization/') >- 1)
 				    {
 					var profileId = document.location.href.split ('#')[1];
 					document.location.href = document.location.href.split ('#')[0]+'#';
@@ -1127,16 +1115,14 @@ ODS.Nav = function (navOptions)
 					profileId = profileId.split ('/')[2];
 
 					self.profile.show = true;
-
-					if (!self.session.sid ||
-					    (self.session.sid && self.session.userName != profileId))
+  		    if (!self.session.sid || (self.session.sid && self.session.userName != profileId))
 					    {
 						self.profile.set ('/' + profileId);
 						self.initProfile();
 					    }
-
 				    }
 				else
+  			{
 				    if (defaultAction.indexOf ('#msg') >- 1)
 					{
 					    var msg = defaultAction.replace('#msg=','');
@@ -1152,12 +1138,17 @@ ODS.Nav = function (navOptions)
 					    document.location.href = document.location.href.split ('#')[0]+'#';
 					}
 				    else
+  			  {
 					self.loadVspx (self.expandURL (self.ods + 'sfront.vspx'));
 			    }
+  			}
+      }
 			else
+  		{
 			    self.loadVspx (self.expandURL (self.ods + 'sfront.vspx'));
-
-		    });
+  		}
+    }
+  );
 
     OAT.MSG.attach (self, OAT.MSG.PROFILE_UPDATED,
 		    function () {
@@ -2262,8 +2253,8 @@ ODS.Nav = function (navOptions)
 	OAT.Event.attach (aSignUp, "click",
 			  function () {
 			      self.loadVspx (self.ods + 'register.vspx?RETURL=index.html');
-			  });
-
+		  }
+		);
 	aSignUp.innerHTML = 'Sign Up';
 
 	var aHelp = OAT.Dom.create ("a");
@@ -2272,11 +2263,9 @@ ODS.Nav = function (navOptions)
 	aHelp.href = self.expandURL (self.ods + 'help.vspx');
 	aHelp.innerHTML = 'Help';
 
-
 	if (self.userLogged && self.session.userIsDba == 1)
 	    {
-		OAT.Dom.append ([rootDiv,loginfoDiv],
-				[loginfoDiv,aSettings,aSiteSettings,aUserProfile,aLogout,aHelp]);
+	    OAT.Dom.append ([rootDiv,loginfoDiv], [loginfoDiv,aSettings,aSiteSettings,aUserProfile,aLogout,aHelp]);
 	    }
 	else
 	    if (self.userLogged && self.session.userIsDba == 0)
@@ -3154,7 +3143,8 @@ ODS.Nav = function (navOptions)
 				      self.session.sid = false;
 				      OAT.Dimmer.hide;
 				      self.loadVspx (self.expandURL (self.ods + 'register.vspx'));
-				  });
+	  }
+	);
 
 		OAT.Dom.append ([document.body,loginDiv],
 				[loginDiv,titleDiv,errDiv,ctrlDiv],
