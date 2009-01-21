@@ -47,8 +47,14 @@
 	version="1.0">
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
+	<xsl:param name="id" />
 	<xsl:template match="/">
 		<rdf:RDF>
+		    <foaf:Document rdf:about="{$baseUri}">
+			<foaf:primaryTopic>
+			    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+			</foaf:primaryTopic>
+		    </foaf:Document>
 			<xsl:apply-templates select="statuses" />
 			<xsl:apply-templates select="status" />
 			<xsl:apply-templates select="user" />
@@ -66,7 +72,7 @@
 	
 	<xsl:template match="users">
 			<xsl:for-each select="user">
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
 				<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
 		</rdf:Description>
 			</xsl:for-each>
@@ -77,11 +83,6 @@
 	
 	<xsl:template match="statuses">
 		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
-		<foaf:Document rdf:about="{$baseUri}">
-			<foaf:primaryTopic>
-				<foaf:Person rdf:about="{$about}" />
-			</foaf:primaryTopic>
-		</foaf:Document>
 		<rdf:Description rdf:about="{$baseUri}">
 			<rdf:type rdf:resource="&sioct;MessageBoard"/>
 			<rdf:type rdf:resource="&foaf;Document"/>
@@ -170,8 +171,7 @@
 			<foaf:title>
 				<xsl:value-of select="description" />
 			</foaf:title>
-			<foaf:knows rdf:resource="{vi:proxyIRI($baseUri)}"/>
-			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/friends')}" />
+			<!--rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/friends')}" /-->
 			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/followers')}" />
 		</foaf:Person>
 	</xsl:template>
