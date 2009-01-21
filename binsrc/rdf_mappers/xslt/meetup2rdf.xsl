@@ -25,6 +25,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -32,12 +33,14 @@
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/" 
 	xmlns:foaf="&foaf;" 
+    xmlns:sioc="&sioc;"	
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
 	xmlns:opl-meetup="http://www.openlinksw.com/schemas/meetup/"
+    xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"	
 	version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -49,9 +52,70 @@
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="results/items">
+		<xsl:if test="$what = 'events'">
+			<foaf:Document rdf:about="{$baseUri}">
+				<foaf:primaryTopic>
+					<foaf:Organization rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+				</foaf:primaryTopic>
 		<xsl:for-each select="item">
+					<foaf:topic rdf:resource="{event_url}"/>
+				</xsl:for-each>
+			</foaf:Document>
+		</xsl:if>					
+		<xsl:if test="$what = 'members'">
+			<foaf:Document rdf:about="{$baseUri}">
+				<foaf:primaryTopic>
+					<foaf:Organization rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}" />
+				</foaf:primaryTopic>
+				<xsl:for-each select="item">
+					<foaf:topic rdf:resource="{link}"/>
+				</xsl:for-each>
+			</foaf:Document>
+		</xsl:if>
+		<xsl:for-each select="item">
+			<xsl:if test="$what = 'events'">
+				<foaf:Document rdf:about="{event_url}">
+					<foaf:primaryTopic>
+						<c:Vevent rdf:about="{vi:proxyIRI(event_url)}">
+							<c:dtstart>
+								<xsl:value-of select="time"/>
+							</c:dtstart>
+							<dcterms:modified rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="updated"/>
+							</dcterms:modified>
+							<c:summary>
+								<xsl:value-of select="name"/>
+							</c:summary>
+							<c:description>
+								<xsl:value-of select="description"/>
+							</c:description>
+							<c:location>
+								<xsl:value-of select="venue_name"/>
+							</c:location>
+							<geo:lng rdf:datatype="&xsd;float">
+								<xsl:value-of select="venue_lon"/>
+							</geo:lng>
+							<geo:lat rdf:datatype="&xsd;float">
+								<xsl:value-of select="venue_lat"/>
+							</geo:lat>
+							<opl-meetup:id>
+								<xsl:value-of select="id" />
+							</opl-meetup:id>
+							<xsl:if test="photo_url != ''">
+								<foaf:depiction rdf:resource="{photo_url}" />
+							</xsl:if>
+							<opl-meetup:group_name>
+								<xsl:value-of select="group_name" />
+							</opl-meetup:group_name>
+							<sioc:has_creator rdf:resource="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+						</c:Vevent>
+					</foaf:primaryTopic>
+				</foaf:Document>
+			</xsl:if>
 			<xsl:if test="$what = 'groups'">
-				<foaf:Organization rdf:about="{link}">
+				<foaf:Document rdf:about="{link}">
+					<foaf:primaryTopic>
+						<foaf:Organization rdf:about="{vi:proxyIRI(link)}">
 					<foaf:name>
 						<xsl:value-of select="name" />
 					</foaf:name>
@@ -77,7 +141,9 @@
 					<vcard:Country>
 						<xsl:value-of select="country" />
 					</vcard:Country>
+							<xsl:if test="photo_url != ''">
 					<foaf:depiction rdf:resource="{photo_url}" />
+							</xsl:if>
 					<dcterms:created rdf:datatype="&xsd;dateTime">
 						<xsl:value-of select="created"/>
 					</dcterms:created>
@@ -91,7 +157,57 @@
 						<xsl:value-of select="updated"/>
 					</dcterms:modified>
 					<rdfs:seeAlso rdf:resource="{organizerProfileURL}" />
+							<rdfs:seeAlso rdf:resource="{concat(link, 'members')}" />
+							<rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" />
 				</foaf:Organization>
+					</foaf:primaryTopic>
+				</foaf:Document>
+			</xsl:if>
+			<xsl:if test="$what = 'members'">
+				<foaf:Document rdf:about="{link}">
+					<foaf:primaryTopic>				
+						<foaf:Person rdf:about="{vi:proxyIRI(link)}">
+							<foaf:name>
+								<xsl:value-of select="name" />
+							</foaf:name>
+							<geo:lng rdf:datatype="&xsd;float">
+								<xsl:value-of select="lon"/>
+							</geo:lng>
+							<geo:lat rdf:datatype="&xsd;float">
+								<xsl:value-of select="lat"/>
+							</geo:lat>
+							<dc:description>
+								<xsl:value-of select="bio" />
+							</dc:description>
+							<vcard:Region>
+								<xsl:value-of select="state" />
+							</vcard:Region>
+							<vcard:Pcode>
+								<xsl:value-of select="zip" />
+							</vcard:Pcode>
+							<opl-meetup:id>
+								<xsl:value-of select="id" />
+							</opl-meetup:id>
+							<foaf:homepage rdf:resource="{link}" />
+							<vcard:Country>
+								<xsl:value-of select="country" />
+							</vcard:Country>
+							<xsl:if test="photo_url != ''">
+								<foaf:depiction rdf:resource="{photo_url}" />
+							</xsl:if>
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="joined"/>
+							</dcterms:created>
+							<vcard:Locality>
+								<xsl:value-of select="city" />
+							</vcard:Locality>
+							<dcterms:modified rdf:datatype="&xsd;dateTime">
+								<xsl:value-of select="visited"/>
+							</dcterms:modified>
+							<foaf:topic_interest rdf:resource="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-7))}" />
+						</foaf:Person>
+					</foaf:primaryTopic>
+				</foaf:Document>
 			</xsl:if>
 		</xsl:for-each>
 	</xsl:template>

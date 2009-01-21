@@ -1324,8 +1324,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	else
 		return 0;
 	tmp := http_client (url, username_, password_, 'GET');
-
-	--tmp := http_get(url);
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
@@ -1335,7 +1333,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	if (what_ <> 'friends')
 	  {
 	    url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
-	    --dbg_obj_princ('url: ', url);
 	    tmp := http_get(url);
 	    xd := xtree_doc (tmp);
 	    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
@@ -2124,9 +2121,7 @@ create procedure get_url2(in url varchar) returns varchar
     {
       if (hdr[0] like 'HTTP/1._ 30_ %')
 	{
-		dbg_obj_princ('hdr: ', hdr);
 	  url := http_request_header (hdr, 'Location');
-	  dbg_obj_princ('cur: ', url);
 	  if (isstring (url))
 	    {
 	      url := WS.WS.EXPAND_URL (olduri, url);
@@ -2454,7 +2449,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 {
   declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
   declare pos, len int;
-  declare xsl2 varchar;
+  declare xsl2, what_ varchar;
   declare exit handler for sqlstate '*'
     {
       return 0;
@@ -2508,13 +2503,37 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				{
 					url := concat(url, '&city=', id3);
 				}
+				what_ := 'groups';
 			}
 			else
 				return 0;
 			url := concat(url, '&key=', api_key );
 		}
+		if (id1 = 'members' and id2 is not null)
+		{
+			url := concat('http://api.meetup.com/groups.xml/?member_id=', id2, '&key=', api_key);
+			what_ := 'groups';
+		}
+		else if (id1 is not null and id2 = 'members')
+		{
+			url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+			what_ := 'members';
+		}
+		else if (id1 is not null and id2 = 'calendar')
+		{
+			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+			what_ := 'events';
+		}
+		else if (id1 is not null and id2 = 'photos')
+		{
+			url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
+			what_ := 'photos';
+		}
 		else
+		{
 			url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
+			what_ := 'groups';
+		}
 	}
 	else
 	{
@@ -2535,6 +2554,7 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 				{
 					url := concat(url, '&city=', id3);
 				}
+				what_ := 'groups';
 			}
 			else
 				return 0;
@@ -2542,16 +2562,37 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		}
 		else
 		{
-			if (id1 is null or id1 = '')
+			if (id1 is not null and id2 = 'members')
+			{
+				url := concat('http://api.meetup.com/members.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'members';
+			}
+			if (id1 is not null and id2 = 'photos')
+			{
+				url := concat('http://api.meetup.com/photos.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'photos';
+			}
+			if (id1 is not null and id2 = 'calendar')
+			{
+				url := concat('http://api.meetup.com/events.xml/?topic=', id0, '&groupnum=', id1, '&key=', api_key);
+				what_ := 'events';
+			}
+			else if (id1 is null or id1 = '')
+			{
 				url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&key=%s', id0, api_key);
+				what_ := 'groups';
+			}
 			else
+			{
 			url := sprintf('http://api.meetup.com/groups.xml/?topic=%s&groupnum=%s&key=%s', id0, id1, api_key);
+				what_ := 'groups';
+			}
 	}
   }
   }
   tmp := http_get (url, hdr);
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', 'groups' ));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/meetup2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what_ ));
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -5232,6 +5273,10 @@ create procedure DB.DBA.RDF_HOOVERS_META (in graph_iri varchar, in new_origin_ur
   return 0;
 }
 ;
+
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+      values ('(http://dbpedia.org/resource/.*)',
+            'URL', 'DB.DBA.RDF_HOOVERS_META', null, 'Hoovers', vector ());
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
       values ('(http://www.freebase.com/view/.*)|(http://rdf.freebase.com/ns/.*)',
