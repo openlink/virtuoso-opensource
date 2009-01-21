@@ -4596,13 +4596,13 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL (in subj_dict any, in cons
 --                    }
 --                }
             }
-          for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
-            where G = graph and O = subj and P <> rdf_type_iid
-            option (QUIETCAST)) do
-            {
+--          for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
+--            where G = graph and O = subj and P <> rdf_type_iid
+--            option (QUIETCAST)) do
+--            {
               -- dbg_obj_princ ('found7 ', s1, p1, subj, ' in ', graph);
-              dict_put (res, vector (s1, p1, subj), 1);
-            }
+--              dict_put (res, vector (s1, p1, subj), 1);
+--            }
         }
     }
   -- dbg_obj_princ ('final resuit is ', res);
