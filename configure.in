@@ -68,7 +68,7 @@ AC_SUBST(host_os)
 ##									##
 ##########################################################################
 echo creating config.nice
-rm -f config.nice 
+rm -f config.nice
 cat >config.nice<<CONFIG_NICE_EOF
 #! /bin/sh
 #
@@ -115,7 +115,7 @@ AC_HELP_STRING([--with-layout=LAYOUT], [Choose installation layout])dnl
     yes|no)	VIRTUOSO_LAYOUT=unset ;;
     *)		VIRTUOSO_LAYOUT=${withval} ;;
   esac
-], [VIRTUOSO_LAYOUT=unset]) 
+], [VIRTUOSO_LAYOUT=unset])
 
 
 #
@@ -123,7 +123,7 @@ AC_HELP_STRING([--with-layout=LAYOUT], [Choose installation layout])dnl
 #
 
 case ${VIRTUOSO_LAYOUT} in
-  unset)					# No Layout set
+  unset)						# No Layout set
 	virtuoso_layout="default"
 	vaddir=$datadir/virtuoso/vad
 	docdir=$datadir/virtuoso/doc
@@ -135,7 +135,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Gg]][[Nn]][[Uu]])				# GNU
+  [[Gg]][[Nn]][[Uu]])					# GNU
 	virtuoso_layout="GNU"
 	test "x$prefix" = xNONE && prefix=/usr/local
 	vaddir=$datadir/virtuoso/vad
@@ -148,7 +148,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])		# Debian
+  [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])			# Debian
 	virtuoso_layout="Debian"
 	if test "x$prefix" = "xNONE"
 	then
@@ -165,7 +165,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])		# Gentoo
+  [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])			# Gentoo
 	virtuoso_layout="Gentoo"
 	if test "x$prefix" = "xNONE"
 	then
@@ -182,7 +182,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])		# RedHat
+  [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])			# RedHat
 	virtuoso_layout=RedHat
 	if test "x$prefix" = "xNONE"
 	then
@@ -199,7 +199,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])	# FreeBSD
+  [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])		# FreeBSD
 	virtuoso_layout=FreeBSD
 	if test "x$prefix" = "xNONE"
 	then
@@ -216,7 +216,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
-  [[Oo]][[Pp]][[Tt]])				# /opt
+  [[Oo]][[Pp]][[Tt]])					# /opt
 	virtuoso_layout=opt
 	test "x$prefix" = xNONE && prefix=/opt/virtuoso-opensource
 	vaddir='${prefix}/vad'
@@ -242,7 +242,7 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir='${prefix}/hosting'
 	;;
 
-  *)						# UNKNOWN
+  *)							# UNKNOWN
   	AC_MSG_RESULT(unknown)
 	echo ""
 	echo "AC_HELP_STRING([Supported layouts:], [Debian FreeBSD GNU OpenLink opt RedHat])"
@@ -533,9 +533,9 @@ AC_TRY_LINK([
 #include <stdio.h>
 #include <errno.h>
 ], [
- void *err = (void *) sys_errlist; 
-], [ 
- AC_DEFINE([HAVE_SYS_ERRLIST], 1, [if having SYS_ERRLIST]) 
+ void *err = (void *) sys_errlist;
+], [
+ AC_DEFINE([HAVE_SYS_ERRLIST], 1, [if having SYS_ERRLIST])
  AC_MSG_RESULT(yes)
 ], [
  AC_MSG_RESULT(no)
@@ -574,10 +574,10 @@ fi
 ##########################################################################
 
 AC_MSG_CHECKING(for flock in <sys/file.h>)
-AC_TRY_LINK([ 
-#include <sys/file.h> 
-], [ 
-return (flock (0, LOCK_EX) || flock (0, LOCK_UN)); 
+AC_TRY_LINK([
+#include <sys/file.h>
+], [
+return (flock (0, LOCK_EX) || flock (0, LOCK_UN));
 ], [
 AC_DEFINE(HAVE_FLOCK_IN_SYS_FILE, 1, [Define to 1 if you have flock defined into <sys/file.h> header file])
 AC_MSG_RESULT(yes)], AC_MSG_RESULT(no))
@@ -641,7 +641,7 @@ AC_TRY_COMPILE(
 [
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
-#endif 
+#endif
 ],
 [
  uuid_t x;
@@ -670,14 +670,14 @@ AC_HELP_STRING([--enable-xml], [enable XML extension (default)])
 AC_HELP_STRING([--disable-xml], [disable XML extension])dnl
 ], [
      case "${enableval}" in
-       yes)      
-	 with_xml="yes";;
-       no)       ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-xml) ;;
+       yes)	with_xml="yes";;
+       no)	with_xml="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-xml) ;;
      esac
   ],
   [ with_xml="yes" ]
 )
+
 if test "$with_xml" = "yes"; then
     BUILD_OPTS="$BUILD_OPTS xml"
     AC_DEFINE(BIF_XML, 1, [XML support])
@@ -699,21 +699,22 @@ AC_HELP_STRING([--enable-krb(=DIR)], [enable Kerberos extension])
 AC_HELP_STRING([--disable-krb], [disable Kerberos extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_krb="yes";;
-       /*)       with_krb="${enableval}";;
-       no)       ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-krb) ;;
+       yes)	with_krb="yes";;
+       no)	with_krb="no";;
+       /*)	with_krb="${enableval}";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-krb) ;;
      esac
   ],
   [ with_krb="no" ]
 )
+
 if test "$with_krb" != "no"; then
     libkrb="-lkrb5 -lcom_err -lgssapi_krb5 -lk5crypto -lkrb5"
     krbinc=""
     if test "$with_krb" != "yes"; then
       libkrb="-L$with_krb/lib $libkrb"
       krbinc="-I$with_krb/include"
-    fi  
+    fi
     AC_CHECK_LIB(krb5,krb5_init_context,
 		 [
 		  with_krb="yes"
@@ -755,13 +756,14 @@ AC_HELP_STRING([--enable-openssl(=DIR)], [enable OpenSSL support (default)])
 AC_HELP_STRING([--disable-openssl], [disable OpenSSL support])dnl
 ], [
      case "${enableval}" in
-       yes)      openssl_dir="/usr" ;;
-       no)       AC_MSG_ERROR(OpenSSL required for Virtuoso) ;;
-       /*)       openssl_dir="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
+       yes)	openssl_dir="/usr" ;;
+       no)	AC_MSG_ERROR(OpenSSL required for Virtuoso) ;;
+       /*)	openssl_dir="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
      esac
   ],
-  [ openssl_dir="/usr" ])
+  [ openssl_dir="/usr" ]
+)
 
 if test "x$openssl_dir" = "x/usr"
 then
@@ -771,7 +773,6 @@ else
     openssl_CFLAGS="-I$openssl_dir/include"
     openssl_LDFLAGS="-L$openssl_dir/lib -lssl -lcrypto"
 fi
-
 
 if test "$with_krb" = "no"
 then
@@ -811,7 +812,7 @@ AC_TRY_COMPILE([
     SSL_METHOD *ssl_server_method = NULL;
     SSL_CTX *ssl_server_ctx = NULL;
     unsigned char tmp[1024];
-   
+
     SSL_load_error_strings();
     ERR_load_X509_strings();
     ERR_load_PKCS12_strings();
@@ -858,13 +859,13 @@ AC_TRY_RUN([
 #include <openssl/rand.h>
 #include <stdio.h>
 #include <string.h>
-int 
+int
 main ()
 {
     SSL_METHOD *ssl_server_method = NULL;
     SSL_CTX *ssl_server_ctx = NULL;
     unsigned char tmp[1024];
-   
+
     SSL_load_error_strings();
     ERR_load_X509_strings();
     ERR_load_PKCS12_strings();
@@ -889,7 +890,7 @@ main ()
 	fprintf (stderr, "Wrong SSL version number\n");
 	return (-1);
     }
-  return 0;  
+  return 0;
 }],
 [
  AC_MSG_RESULT(good)
@@ -918,13 +919,14 @@ AC_HELP_STRING([--enable-openldap(=DIR)], [enable OpenLDAP support (default)])
 AC_HELP_STRING([--disable-openldap], [disable OpenLDAP support])dnl
 ], [
      case "${enableval}" in
-       yes)      with_ldap="yes" ;;
-       no)       with_ldap="no" ;;
-       /*)       with_ldap="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-openldap) ;;
+       yes)	with_ldap="yes" ;;
+       no)	with_ldap="no" ;;
+       /*)	with_ldap="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-openldap) ;;
      esac
   ],
-  [ with_ldap="yes" ])
+  [ with_ldap="yes" ]
+)
 
 if test "x$with_ldap" != "xno"
 then
@@ -933,24 +935,24 @@ then
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_ldap" in
-	yes) 
+	yes)
 	   openldap_CFLAGS=""
 	   openldap_LDFLAGS="-lldap -llber"
 	   ;;
-	*) 
+	*)
 	   openldap_CFLAGS="-I$with_ldap/include"
 	   openldap_LDFLAGS="-L$with_ldap/lib -lldap -llber"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib"
-	   export LD_LIBRARY_PATH 
+	   export LD_LIBRARY_PATH
 	   ;;
     esac
-    CPPFLAGS="$CPPFLAGS $openldap_CFLAGS" 
+    CPPFLAGS="$CPPFLAGS $openldap_CFLAGS"
     LIBS="$LIBS $openldap_LDFLAGS"
     AC_TRY_RUN([
-#include <ldap.h>  
+#include <ldap.h>
 #include <stdio.h>
 #include <string.h>
-int 
+int
 main ()
 {
   LDAP *ld = ldap_init ("localhost", LDAP_PORT);
@@ -958,8 +960,8 @@ main ()
     {
        fprintf (stderr, "Can't initialize the LDAP lib");
        return 1;
-    }       
-  return 0;  
+    }
+  return 0;
 }],
 [
  AC_MSG_RESULT(good)
@@ -990,13 +992,14 @@ AC_HELP_STRING([--enable-imsg], [enable POP3 and NNTP extension (default)])
 AC_HELP_STRING([--disable-imsg], [disable POP3 and NNTP extension])dnl
 ], [
      case "${enableval}" in
-       yes)      with_imsg="yes" ;;
-       no)       ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-imsg) ;;
+       yes)	with_imsg="yes";;
+       no)	with_imsg="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-imsg) ;;
      esac
   ],
   [ with_imsg="yes" ]
 )
+
 if test "$with_imsg" = "yes"; then
     BUILD_OPTS="$BUILD_OPTS imsg"
     AC_DEFINE(_IMSG, 1, [POP3 and NNTP extension])
@@ -1014,9 +1017,9 @@ AC_HELP_STRING([--enable-pldebug], [enable Virtuoso/PL debugger support (default
 AC_HELP_STRING([--disable-pldebug], [disable Virtuoso/PL debugger support])dnl
 ], [
      case "${enableval}" in
-       yes)      with_pldebug="yes"      ;;
-       no)       ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-pldebug) ;;
+       yes)	with_pldebug="yes" ;;
+       no)	with_pldebug="no" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-pldebug) ;;
      esac
   ],
   [ with_pldebug="yes" ]
@@ -1027,7 +1030,7 @@ if test "$with_pldebug" = "yes"; then
     AC_DEFINE(PLDBG, 1, [Virtuoso/PL debugger])
     PLSTATS=PLDBG
     AC_SUBST(PLSTATS)
-fi    
+fi
 
 
 ##########################################################################
@@ -1037,13 +1040,14 @@ fi
 ##########################################################################
 with_rvous_dir=""
 AC_ARG_ENABLE(rendezvous, [dnl
-AC_HELP_STRING([--enable-rendezvous], [enable rendezvous extension])
+AC_HELP_STRING([--enable-rendezvous(=DIR)], [enable rendezvous extension])
 AC_HELP_STRING([--disable-rendezvous], [disable rendezvous extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_rvous="yes" ;;
-       no)       ;;
-       *)        with_rvous="yes"; with_rvous_dir="${enableval}" ;;
+       yes)	with_rvous="yes" ;;
+       no)	with_rvous="no" ;;
+       /*)	with_rvous="yes"; with_rvous_dir="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-rendezvous) ;;
      esac
   ],
   [ with_rvous="no" ]
@@ -1060,7 +1064,7 @@ if test "$with_rvous" = "yes"; then
 	    ccincl="$ccincl -I${with_rvous_dir}/build/tmp -I${with_rvous_dir}/mDNSCore -I${with_rvous_dir}/mDNSPosix"
     fi
     srvrlibs="$srvrlibs $librv"
-fi    
+fi
 
 
 ##########################################################################
@@ -1075,43 +1079,44 @@ AC_HELP_STRING([--enable-php4(=DIR)], [enable PHP 4.x extension])
 AC_HELP_STRING([--disable-php4], [disable PHP 4.x extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_php4="yes" ;;
-       no)       with_php4="no" ;;
-       /*)       with_php4="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php4) ;;
+       yes)	with_php4="yes" ;;
+       no)	with_php4="no" ;;
+       /*)	with_php4="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-php4) ;;
      esac
   ],
-  [ with_php4="no" ])
+  [ with_php4="no" ]
+)
 
-if test "x$with_php4" != "xno" 
+if test "x$with_php4" != "xno"
 then
     AC_MSG_CHECKING([libphp4 library usability])
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_php4" in
-	yes) 
+	yes)
 	   php4_CFLAGS=""
 	   php4_LDFLAGS="-lphp4"
 	   ;;
-	*) 
+	*)
 	   php4_CFLAGS="-I$with_php4/include/php/main -I$with_php4/include/php/Zend -I$with_php4/include/php/TSRM -I$with_php4/include/php"
 	   php4_LDFLAGS="-L$with_php4/lib -lphp4"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php4/lib" 
-	   export LD_LIBRARY_PATH 
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php4/lib"
+	   export LD_LIBRARY_PATH
 	   ;;
     esac
-    CPPFLAGS="$CPPFLAGS $php4_CFLAGS" 
+    CPPFLAGS="$CPPFLAGS $php4_CFLAGS"
     LIBS="$LIBS $php4_LDFLAGS"
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <php.h>  
-int 
+#include <php.h>
+int
 main ()
 {
-  return 0;  
+  return 0;
 }],
 [
  AC_MSG_RESULT(good)
@@ -1145,43 +1150,44 @@ AC_HELP_STRING([--enable-php5(=DIR)], [enable PHP 5.x extension])
 AC_HELP_STRING([--disable-php5], [disable PHP 5.x extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_php5="yes" ;;
-       no)       with_php5="no" ;;
-       /*)       with_php5="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php5) ;;
+       yes)	with_php5="yes" ;;
+       no)	with_php5="no" ;;
+       /*)	with_php5="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-php5) ;;
      esac
   ],
-  [ with_php5="no" ])
+  [ with_php5="no" ]
+)
 
-if test "x$with_php5" != "xno" 
+if test "x$with_php5" != "xno"
 then
     AC_MSG_CHECKING([libphp5 library usability])
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_php5" in
-	yes) 
+	yes)
 	   php5_CFLAGS="-lphp5"
 	   php5_LDFLAGS="-lphp5"
 	   ;;
-	*) 
+	*)
 	   php5_CFLAGS="-I$with_php5/include/php/main -I$with_php5/include/php/Zend -I$with_php5/include/php/TSRM -I$with_php5/include/php"
 	   php5_LDFLAGS="-L$with_php5/lib -lphp5"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php5/lib" 
-	   export LD_LIBRARY_PATH 
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php5/lib"
+	   export LD_LIBRARY_PATH
 	   ;;
     esac
     LIBS="$LIBS $php5_LDFLAGS"
-    CPPFLAGS="$CPPFLAGS $php5_CFLAGS" 
+    CPPFLAGS="$CPPFLAGS $php5_CFLAGS"
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <php.h>  
-int 
+#include <php.h>
+int
 main ()
 {
-  return 0;  
+  return 0;
 }],
 [
  AC_MSG_RESULT(good)
@@ -1217,22 +1223,25 @@ AM_PATH_XML2(2.4.0)
 # Mono .NET Hosting                                                      #
 #                                                                        #
 ##########################################################################
-have_mono="no"
 AC_ARG_ENABLE(mono, [dnl
 AC_HELP_STRING([--enable-mono], [enable Mono extension])
 AC_HELP_STRING([--disable-mono], [disable Mono extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      BUILD_OPTS="$BUILD_OPTS mono" 
-		 AC_PATH_PROG(WGET,wget)
-                 have_mono="yes"
-		 ;;
-       no)       ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-mono) ;;
+       yes)	have_mono="yes" ;;
+       no)	have_mono="no" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-mono) ;;
      esac
   ],
-  [ BUILD_OPTS="$BUILD_OPTS" ]
+  [ have_mono="no" ]
 )
+
+if test "x$have_mono" = "xyes"
+then
+    BUILD_OPTS="$BUILD_OPTS mono"
+    AC_PATH_PROG(WGET,wget)
+fi
+
 AM_CONDITIONAL(HAVE_MONO, test "x$have_mono" = "xyes")
 
 
@@ -1242,19 +1251,20 @@ AM_CONDITIONAL(HAVE_MONO, test "x$have_mono" = "xyes")
 #                                                                        #
 ##########################################################################
 AC_ARG_ENABLE(bpel-vad,
-AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
-AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
+AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad (default)])
+AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad])dnl
 ], [
      case "${enableval}" in
-       yes)      with_bpelvad="yes";;
-       no)      with_bpelvad="no";;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
+       yes)	with_bpelvad="yes";;
+       no)	with_bpelvad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
      esac
   ],
-  [
-   with_bpelvad="yes"
-  ])
+  [ with_bpelvad="yes" ]
+)
+
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpelvad" = "xyes")
+
 
 ##########################################################################
 #                                                                        #
@@ -1266,13 +1276,14 @@ AC_HELP_STRING([--enable-hslookup(=DIR)], [enable the hslookup plugin (default)]
 AC_HELP_STRING([--disable-hslookup], [disable the hslookup plugin])dnl
 ], [
      case "${enableval}" in
-       yes)      with_hsl="yes" ;;
-       no)       with_hsl="no" ;;
-       /*)       with_hsl="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-hslookup) ;;
+       yes)	with_hsl="yes" ;;
+       no)	with_hsl="no" ;;
+       /*)	with_hsl="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-hslookup) ;;
      esac
   ],
-  [ with_hsl="yes" ])
+  [ with_hsl="yes" ]
+)
 
 if test "x$with_hsl" != "xno"
 then
@@ -1303,21 +1314,21 @@ then
     fi
     HSL_LIBS="-lhdl"
 
-    CPPFLAGS="$CPPFLAGS $HSL_CPPFLAGS" 
+    CPPFLAGS="$CPPFLAGS $HSL_CPPFLAGS"
     LIBS="$LIBS $HSL_LDFLAGS $HSL_LIBS"
 
-    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_hsl/lib" 
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_hsl/lib"
     export LD_LIBRARY_PATH
 
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
 #include <hdl/hdl.h>
-int 
+int
 main ()
 {
   HDLContext *ctx;
-  ctx = HDLInitResolver();  
+  ctx = HDLInitResolver();
   if (ctx)
     exit (0);
 
@@ -1353,13 +1364,14 @@ AC_HELP_STRING([--enable-imagemagick(=DIR)], [enable the ImageMagick plugin (def
 AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
 ], [
      case "${enableval}" in
-       yes)      with_im="yes" ;;
-       no)       with_im="no" ;;
-       /*)       with_im="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
+       yes)	with_im="yes" ;;
+       no)	with_im="no" ;;
+       /*)	with_im="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
      esac
   ],
-  [ with_im="yes" ])
+  [ with_im="yes" ]
+)
 
 if test "x$with_im" != "xno"
 then
@@ -1384,10 +1396,10 @@ then
     IM_LDFLAGS=`"$IM_CONFIG" --ldflags`
     IM_LIBS=`"$IM_CONFIG" --libs`
 
-    CPPFLAGS="$CPPFLAGS $IM_CPPFLAGS" 
+    CPPFLAGS="$CPPFLAGS $IM_CPPFLAGS"
     LIBS="$LIBS $IM_LDFLAGS $IM_LIBS"
 
-    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib" 
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
 
     AC_TRY_RUN([
@@ -1397,11 +1409,11 @@ then
 #include <time.h>
 #include <wand/magick-wand.h>
 MagickWand *magick_wand;
-int 
+int
 main ()
 {
-  MagickWandGenesis();  
-  return 0;  
+  MagickWandGenesis();
+  return 0;
 }],
 [
   AC_MSG_RESULT(good)
@@ -1433,13 +1445,14 @@ AC_HELP_STRING([--enable-wbxml2(=DIR)], [enable the WBXML2 plugin (default)])
 AC_HELP_STRING([--disable-wbxml2], [disable the WBXML2 plugin])dnl
 ], [
      case "${enableval}" in
-       yes)      with_wbxml2="yes" ;;
-       no)       with_wbxml2="no" ;;
-       /*)       with_wbxml2="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-wbxml2) ;;
+       yes)	with_wbxml2="yes" ;;
+       no)	with_wbxml2="no" ;;
+       /*)	with_wbxml2="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-wbxml2) ;;
      esac
   ],
-  [ with_wbxml2="yes" ])
+  [ with_wbxml2="yes" ]
+)
 
 if test "x$with_wbxml2" != "xno"
 then
@@ -1448,19 +1461,19 @@ then
     save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_wbxml2" in
-	yes) 
+	yes)
 	   WBXML2_CFLAGS=""
 	   WBXML2_LDFLAGS="-lwbxml2"
 	   ;;
-	*) 
+	*)
 	   WBXML2_CFLAGS="-I$with_wbxml2/include"
 	   WBXML2_LDFLAGS="-L$with_wbxml2/lib -lwbxml2"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_wbxml2/lib" 
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_wbxml2/lib"
 	   export LD_LIBRARY_PATH
 	   ;;
     esac
 
-    CFLAGS="$CFLAGS $WBXML2_CFLAGS" 
+    CFLAGS="$CFLAGS $WBXML2_CFLAGS"
     LIBS="$LIBS $WBXML2_LDFLAGS"
 
     AC_TRY_RUN([
@@ -1468,7 +1481,7 @@ then
 #include <stdlib.h>
 #include <string.h>
 #include <wbxml.h>
-int 
+int
 main ()
 {
   WBXMLParser *wbxml_parser = wbxml_parser_create();
@@ -1503,14 +1516,13 @@ AC_HELP_STRING([--enable-perl], [enable PERL hosting])
 AC_HELP_STRING([--disable-perl], [disable PERL hosting (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_perl="yes";;
-       no)      with_perl="no";;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-perl) ;;
+       yes)	with_perl="yes" ;;
+       no)	with_perl="no" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-perl) ;;
      esac
   ],
-  [
-   with_perl="no"
-  ])
+  [ with_perl="no" ]
+)
 
 AM_CONDITIONAL(WITH_PERL, test "x$PERL" != "x" -a "x$with_perl" != "xno")
 if test "x$PERL" != "x" -a "x$with_perl" != "xno" ; then
@@ -1532,14 +1544,13 @@ AC_HELP_STRING([--enable-python], [enable PYTHON hosting])
 AC_HELP_STRING([--disable-python], [disable PYTHON hosting (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_python="yes";;
-       no)      with_python="no";;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-python) ;;
+       yes)	with_python="yes";;
+       no)	with_python="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-python) ;;
      esac
   ],
-  [
-   with_python="no"
-  ])
+  [ with_python="no" ]
+)
 
 AM_CONDITIONAL(WITH_PYTHON, test "x$PYTHON" != "x" -a "x$with_python" != "xno")
 if test "x$PYTHON" != "x"  -a "x$with_python" != "xno" ; then
@@ -1570,14 +1581,13 @@ AC_HELP_STRING([--enable-ruby], [enable RUBY hosting])
 AC_HELP_STRING([--disable-ruby], [disable RUBY hosting (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_ruby="yes";;
-       no)      with_ruby="no";;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-ruby) ;;
+       yes)	with_ruby="yes";;
+       no)	with_ruby="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-ruby) ;;
      esac
   ],
-  [
-   with_ruby="no"
-  ])
+  [ with_ruby="no" ]
+)
 
 if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
     RUBY_ARCHDIR=`$RUBY -e 'require "rbconfig.rb"; puts Config::expand("\$(archdir)")'`
@@ -1585,7 +1595,7 @@ if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
     RUBY_LDFLAGS="-lruby"
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
-    CPPFLAGS="$CPPFLAGS $RUBY_CFLAGS" 
+    CPPFLAGS="$CPPFLAGS $RUBY_CFLAGS"
     LIBS="$LIBS $RUBY_LDFLAGS"
 
     AC_MSG_CHECKING([Ruby library usability])
@@ -1593,11 +1603,11 @@ if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
 #include <stdio.h>
 #include <stdlib.h>
 #include "ruby.h"
-int 
+int
 main ()
 {
   ruby_init ();
-  return 0;  
+  return 0;
 }],
 [
  AC_MSG_RESULT(good)
@@ -1627,7 +1637,9 @@ dnl PUT OTHER EXTENSIONS HERE
 AC_ARG_WITH(malloc-debug, [dnl
 AC_HELP_STRING([--with-malloc-debug], [extra malloc debugging code])],
     [ with_malloc_debug="$withval" ],
-    [ with_malloc_debug="no" ])
+    [ with_malloc_debug="no" ]
+)
+
 if test "x$with_malloc_debug" = "xyes"; then
     BUILD_OPTS="$BUILD_OPTS malloc_debug"
     CCDEBUG="$CCDEBUG -DMTX_DEBUG -DMALLOC_DEBUG"
@@ -1645,7 +1657,9 @@ fi
 AC_ARG_WITH(pthreads, [dnl
 AC_HELP_STRING([--with-pthreads], [build pthread implementation if possible])],
     [ with_pthreads="$withval" ],
-    [ with_pthreads="yes" ])
+    [ with_pthreads="yes" ]
+)
+
 if test $with_pthreads = "yes"; then
     AC_CHECK_LIB(pthreads, pthread_create,
        [BUILD_OPTS="$BUILD_OPTS pthreads"
@@ -1821,28 +1835,22 @@ virt_iodbc_dir="libsrc/odbcsdk"
 virt_do_iodbc="no"
 AC_ARG_WITH(iodbc, [dnl
 AC_HELP_STRING([--with-iodbc(=DIR)], [build with iODBC implementation if possible])dnl
-], [ 
+], [
       case "${withval}" in
-	  yes) 	virt_do_iodbc="yes" ;;
+	  yes)	virt_do_iodbc="yes" ;;
 	  no)	virt_do_iodbc="no"  ;;
-
-	  /*)   virt_iodbc_dir="${withval}" 
-		virt_do_iodbc="yes"
-		;;
-
-	  *)    AC_MSG_ERROR("Invalid value for the --with-iodbc : must be an absolute path") ;;
-      esac	  
+	  /*)	virt_do_iodbc="yes" virt_iodbc_dir="${withval}" ;;
+	  *)	AC_MSG_ERROR("Invalid value for the --with-iodbc : must be an absolute path") ;;
+      esac
     ],
-    [ 
-     virt_do_iodbc="no" 
-    ])
+    [ virt_do_iodbc="no" ])
 
-AC_MSG_RESULT($virt_iodbc_dir) 
+AC_MSG_RESULT($virt_iodbc_dir)
 AC_DEFINE(NO_UDBC_SDK,1, [Define if using the new iODBC API])
 
 
 #
-#  Only add path when using iODBC, otherwise the makefiles will 
+#  Only add path when using iODBC, otherwise the makefiles will
 #  get the headers from libsrc/odbcsdk/include automatically
 #
 if test "x$virt_do_iodbc" = "xyes"
@@ -1856,7 +1864,7 @@ then
 
     ccincl="$iodbc_CPPFLAGS $ccincl"
 
-    iodbc_LDFLAGS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst $LIBDL" 
+    iodbc_LDFLAGS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst $LIBDL"
     AC_CHECK_LIB(iodbc, SQLTables,
 		 [
 		  virt_do_iodbc="yes"
@@ -1864,7 +1872,7 @@ then
 		 [
 		  virt_do_iodbc="no"
 		  iodbc_LDFLAGS=""
-		 ], 
+		 ],
 		 [$iodbc_LDFLAGS])
 
 else
@@ -1880,7 +1888,7 @@ fi
 
 if test "x$virt_do_iodbc" = "xyes"; then
   BUILD_OPTS="$BUILD_OPTS odbc"
-  AC_MSG_RESULT(Will build the iODBC binaries) 
+  AC_MSG_RESULT(Will build the iODBC binaries)
 fi
 AC_SUBST(iodbc_LDFLAGS)
 AM_CONDITIONAL(WITH_IODBC, test "x$virt_do_iodbc" = "xyes" )
@@ -1896,20 +1904,20 @@ AC_MSG_CHECKING(for Java options)
 ac_jdk1_path="none"
 AC_ARG_WITH(jdk1, [dnl
 AC_HELP_STRING([--with-jdk1=DIR], [use the Sun JDK 1.1.x at the specified location])dnl
-], [ 
+], [
     case "${withval}" in
-      yes) 	
+      yes)
           AC_MSG_ERROR("You need to specify a directory")
 	  ;;
 
-      no)	
-	  ac_jdk1_path="none"  
+      no)
+	  ac_jdk1_path="none"
 	  ;;
-    
-      *)	
+
+      *)
 	  if test -d "${withval}" ; then
 	      ac_jdk1_path="${withval}"
-	  else	
+	  else
 	      AC_MSG_ERROR("Directory specified with --enable-jdk1 does not exist")
 	  fi
 	  ;;
@@ -1919,20 +1927,20 @@ AC_HELP_STRING([--with-jdk1=DIR], [use the Sun JDK 1.1.x at the specified locati
 ac_jdk2_path="none"
 AC_ARG_WITH(jdk2, [dnl
 AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.2.x or 1.3.x at the specified location])
-], [ 
+], [
     case "${withval}" in
-      yes) 	
+      yes)
           AC_MSG_ERROR("You need to specify a directory")
 	  ;;
 
-      no)	
-	  ac_jdk2_path="none"  
+      no)
+	  ac_jdk2_path="none"
 	  ;;
-    
-      *)	
+
+      *)
 	  if test -d "${withval}" ; then
 	      ac_jdk2_path="${withval}"
-	  else	
+	  else
 	      AC_MSG_ERROR("Directory specified with --with-jdk2 does not exist")
 	  fi
 	  ;;
@@ -1942,20 +1950,20 @@ AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.2.x or 1.3.x at the specifi
 ac_jdk3_path="none"
 AC_ARG_WITH(jdk3, [dnl
 AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x, 1.5.x or 1.6.x at the specified location])dnl
-], [ 
+], [
     case "${withval}" in
-      yes) 	
+      yes)
           AC_MSG_ERROR("You need to specify a directory")
 	  ;;
 
-      no)	
-	  ac_jdk3_path="none"  
+      no)
+	  ac_jdk3_path="none"
 	  ;;
-    
-      *)	
+
+      *)
 	  if test -d "${withval}" ; then
 	      ac_jdk3_path="${withval}"
-	  else	
+	  else
 	      AC_MSG_ERROR("Directory specified with --with-jdk3 does not exist")
 	  fi
 	  ;;
@@ -1967,20 +1975,20 @@ AC_MSG_RESULT(done)
 ac_jdk4_path="none"
 AC_ARG_WITH(jdk4, [dnl
 AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified location])dnl
-], [ 
+], [
     case "${withval}" in
-      yes) 	
+      yes)
           AC_MSG_ERROR("You need to specify a directory")
 	  ;;
 
-      no)	
-	  ac_jdk4_path="none"  
+      no)
+	  ac_jdk4_path="none"
 	  ;;
-    
-      *)	
+
+      *)
 	  if test -d "${withval}" ; then
 	      ac_jdk4_path="${withval}"
-	  else	
+	  else
 	      AC_MSG_ERROR("Directory specified with --with-jdk4 does not exist")
 	  fi
 	  ;;
@@ -2006,7 +2014,7 @@ if test "x$ac_jw_jdk" != "xnone" ; then
   ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
   #echo ac_java_ver_major="$ac_java_ver_major"
   #echo ac_java_ver_minor="$ac_java_ver_minor"
-  if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then 
+  if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then
       AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
   fi
   JAVAC=$ac_jw_jdk/bin/javac
@@ -2039,7 +2047,7 @@ EOF
   fi
   rm -fr $JAVA_TEST $CLASS_TEST Test.uue
   AC_MSG_RESULT(found)
-fi  
+fi
 ])
 
 AC_PROG_JAVA_WORKS($ac_jdk1_path, 1, 1)
@@ -2080,7 +2088,7 @@ if test "x$ac_integ_jdk" != "x" ; then
 	i?86-*-linux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
         	AC_CHECK_HEADERS(jni.h,
-			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ], 
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
 			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/i386/server -ljvm" ],
@@ -2090,7 +2098,7 @@ if test "x$ac_integ_jdk" != "x" ; then
 	sparc-*-solaris*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/solaris"
         	AC_CHECK_HEADERS(jni.h,
-			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/solaris" ], 
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/solaris" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
 			[ java_LDFLAGS="-L$ac_integ_jdk/lib/jre/sparc/server -ljvm" ],
@@ -2100,7 +2108,7 @@ if test "x$ac_integ_jdk" != "x" ; then
 	hppa-*-hpux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux"
         	AC_CHECK_HEADERS(jni.h,
-			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ], 
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
 			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/PA_RISC/server -ljvm" ],
@@ -2110,7 +2118,7 @@ if test "x$ac_integ_jdk" != "x" ; then
 	hppa2.0-*-hpux*)
                 CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux"
         	AC_CHECK_HEADERS(jni.h,
-			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ], 
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ],
 			[ ac_integ_jdk="" ])
 		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
 			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/PA_RISC2.0/server -ljvm" ],
@@ -2120,10 +2128,10 @@ if test "x$ac_integ_jdk" != "x" ; then
 	*-darwin*)
                 CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/JavaVM.framework/Headers"
         	AC_CHECK_HEADERS(jni.h,
-			[ 
+			[
 			 java_CPPFLAGS="-I/System/Library/Frameworks/JavaVM.framework/Headers"
 			 java_LDFLAGS="-framework JavaVM"
-			], 
+			],
 			[ ac_integ_jdk="" ])
 		;;
 		*)
@@ -2136,7 +2144,7 @@ fi
 if test "x$ac_integ_jdk" != "x" ; then
   AC_MSG_RESULT([Java JNI C flags="$java_CPPFLAGS"])
   AC_MSG_RESULT([Java JNI LD flags="$java_LDFLAGS"])
-fi  
+fi
 AC_SUBST(java_CPPFLAGS)
 AC_SUBST(java_LDFLAGS)
 AM_CONDITIONAL(INTEG_JDK, test "x$ac_integ_jdk" != "x")
@@ -2339,8 +2347,6 @@ AC_SUBST(srvrlibs)
 AC_SUBST(clntlibs)
 
 
-
-
 ##########################################################################
 ##									##
 ##  Flags formerly in Makeconfig					##
@@ -2474,7 +2480,6 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Wiki/plugin/Makefile
 ])
 
-
 AC_CONFIG_COMMANDS([default], [
 	chmod 755 bin/makever
 ])
@@ -2482,7 +2487,7 @@ AC_CONFIG_COMMANDS([default], [
 AC_OUTPUT
 
 
-########################################################################## 
+##########################################################################
 ##									##
 ##  Display configuration information					##
 ##									##
@@ -2512,3 +2517,5 @@ echo
 echo "${B}Options${N}"
 echo "AC_HELP_STRING(BUILD_OPTS,	[${BUILD_OPTS}])"
 echo ""
+
+exit 0
