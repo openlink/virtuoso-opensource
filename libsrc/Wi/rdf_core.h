@@ -81,6 +81,8 @@ extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_
 #define TTLP_ACCEPT_VARIABLES		0x0004
 #define TTLP_SKIP_LITERAL_SUBJECTS	0x0008
 #define TTLP_NAME_MAY_CONTAIN_PATH	0x0010
+#define TTLP_ACCEPT_DIRTY_NAMES		0x0020
+#define TTLP_QUIET_RECOVERY		0x0080
 #define TTLP_ALLOW_TRIG			0x0100
 
 #define TTLP_ALLOW_QNAME_A		0x01

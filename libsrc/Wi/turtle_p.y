@@ -25,7 +25,7 @@
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
 %lex-param {yyscan_t yyscanner}
-%expect 2
+%expect 3
 
 %{
 
@@ -115,6 +115,8 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token <box> BLANK_NODE_LABEL /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2") ::*/
 %token <box> Q_IRI_REF	/*:: LITERAL("%s"), TTL, LAST("<something>"), LAST("<http://www.example.com/sample#frag>") ::*/
 
+%token _GARBAGE_BEFORE_DOT_WS	/* Syntax error that may be (inaccurately) recovered by skipping to dot and space */
+%token TTL_RECOVERABLE_ERROR	/* Token that marks error so the triple should be discarded */
 %token __TTL_NONPUNCT_END	/* Delimiting value for syntax highlighting */
 
 %type<box> blank
@@ -125,6 +127,12 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %type<box> verb
 %type<box> rev_verb
 %type<token_type> keyword
+
+%left _GARBAGE_BEFORE_DOT_WS _DOT_WS
+%left _SEMI
+%left _COMMA
+%left _LPAR _RPAR _LBRA _RBRA _LSQBRA _RSQBRA
+
 %%
 
 turtledoc
@@ -160,7 +168,7 @@ trig_group_end
 	;
 
 trig_block_or_predicate_object_list
-	: predicate_object_list semicolon_opt _DOT_WS
+	: predicate_object_list_or_garbage _DOT_WS
 	| opt_eq_lbra { 
                 tf_commit (ttlp_arg->ttlp_tf);
 		if (!(TTLP_ALLOW_TRIG & ttlp_arg->ttlp_flags))
@@ -196,15 +204,19 @@ inner_triple_clause
 triple_clause_with_nonq_subj
 	: VARIABLE { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = $1; }
-		predicate_object_list semicolon_opt
+	    predicate_object_list_or_garbage
 	| blank { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = $1; }
-		predicate_object_list semicolon_opt
+	    predicate_object_list_or_garbage
 	| literal_subject {
 		if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
 		    ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");
 		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
-		predicate_object_list semicolon_opt
+	    predicate_object_list_or_garbage
+        | TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = NULL; }
+	    predicate_object_list_or_garbage
+	| _GARBAGE_BEFORE_DOT_WS {}
 	;
 
 keyword_list
@@ -235,29 +247,49 @@ inner_predicate_object_list
 		blank_block_formula
 	;
 
+predicate_object_list_or_garbage
+	: predicate_object_list semicolon_opt
+	| predicate_object_list semicolon_opt _GARBAGE_BEFORE_DOT_WS
+	| _GARBAGE_BEFORE_DOT_WS
+	;
+
 predicate_object_list
 	: verb_and_object_list
-	| predicate_object_list _SEMI verb_and_object_list
+	| predicate_object_list _SEMI verb_and_object_list_or_garbage
         | _COMMA { ttlyyerror_action ("Missing object before comma"); }
         | _SEMI { ttlyyerror_action ("Missing predicate and object before semicolon"); }
         | _DOT_WS { ttlyyerror_action ("Missing predicate and object before dot"); }
         | error { ttlyyerror_action ("Predicate expected"); }
 	;
 
+verb_and_object_list_or_garbage
+	: verb_and_object_list
+	| verb_and_object_list _GARBAGE_BEFORE_DOT_WS
+	| _GARBAGE_BEFORE_DOT_WS
+	;
+
 verb_and_object_list
 	: verb
 		{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $1; }
-		object_list
+	    object_list_or_garbage
 	| rev_verb
 		{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $1;
 		  ttlp_arg->ttlp_pred_is_reverse = 1; }
-		object_list	{ ttlp_arg->ttlp_pred_is_reverse = 0; }
+	    object_list_or_garbage	{ ttlp_arg->ttlp_pred_is_reverse = 0; }
+        | TTL_RECOVERABLE_ERROR {
+		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		  ttlp_arg->ttlp_pred_uri = NULL; }
+	    object_list_or_garbage
 	;
 
+object_list_or_garbage 
+	: object_list
+	| _GARBAGE_BEFORE_DOT_WS
+	;
 
 object_list
 	: object	{; /* triple is made by object */ }
-	| object_list _COMMA object		{; /* triple is made by object */ }
+	| object_list _COMMA object_or_garbage	{; /* triple is made by object */ }
         | _COMMA { ttlyyerror_action ("Missing object before comma"); }
         | _SEMI { ttlyyerror_action ("Missing object before semicolon"); }
         | _DOT_WS { ttlyyerror_action ("Missing object before dot"); }
@@ -315,6 +347,10 @@ literal_subject
 			ttlp_arg->ttlp_last_complete_uri = NULL; }
 	;
 
+object_or_garbage
+	: object
+	| _GARBAGE_BEFORE_DOT_WS
+	;
 
 object
 	: q_complete {
@@ -363,6 +399,10 @@ object
 		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL;
 		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
+        | TTL_RECOVERABLE_ERROR { }
+	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR { }
+        | TTL_RECOVERABLE_ERROR _CARET_CARET q_complete { }
+        | TTL_RECOVERABLE_ERROR _CARET_CARET TTL_RECOVERABLE_ERROR { }
 	;
 
 blank

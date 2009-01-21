@@ -41,6 +41,11 @@
 
 #define ttlyyerror(strg) ttlyyerror_impl(ttlp_arg, yytext, (strg))
 
+#define TTLYYERROR_OR_RECOVER(strg) do { \
+  if (!(ttlp_arg[0].ttlp_flags & TTLP_QUIET_RECOVERY)) \
+    ttlyyerror (strg); \
+  return TTL_RECOVERABLE_ERROR; } while (0)
+
 #define ttlyylval (((YYSTYPE *)(yylval_param))[0])
 
 #undef YY_INPUT
@@ -71,16 +76,16 @@ int ttl_yy_null = YY_NULL;
 
 struct yyguts_t;
 
-extern void ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg);
+extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg);
 
-#define TTL_TOKBOX_Q_FINAL(name,lex_type_descr) \
+#define TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) \
     if (box_length (ttlyylval.box) > MAX_XML_LNAME_LENGTH) \
-      ttlyyerror_if_long_qname (ttlp_arg, ttlyylval.box, lex_type_descr , yyg); \
-    return (name);
+      return ttlyyerror_if_long_qname (ttlp_arg, (lexcode), ttlyylval.box, lex_type_descr , yyg); \
+    return (lexcode);
 
-#define TTL_TOKBOX_Q(n,name,lex_type_descr) { \
+#define TTL_TOKBOX_Q(n,lexcode,lex_type_descr) { \
     ttlyylval.box = box_dv_short_string (yytext+(n)); \
-    TTL_TOKBOX_Q_FINAL(name,lex_type_descr) }
+    TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
 
 #define TTL_SPECIAL_QNAME(bit,id) \
  if (!(ttlp_arg[0].ttlp_special_qnames & bit)) \
@@ -95,6 +100,8 @@ extern int ttlp_NUMBER_double (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct y
 extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 #define YY_DECL int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner)
 
+extern int ttlyydebug;
+
 %}
 
 	/* Top-level INITIAL state */
@@ -106,6 +113,12 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 	/* Internals of double-quoted INITIAL string lit */
 %x TURTLE_DQ
 
+	/* Internals of invalid single-quoted INITIAL string lit */
+%x TURTLE_BAD_SQ
+
+	/* Internals of invalid double-quoted INITIAL string lit */
+%x TURTLE_BAD_DQ
+
 	/* Internals of triple-single-quoted INITIAL string lit */
 %x TURTLE_SSSQ
 
@@ -113,7 +126,10 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 %x TURTLE_DDDQ
 
 	/* State after '@' right after quoted string */
-%x AT_AFTER_QUOTED
+%x TURTLE_AT_AFTER_QUOTED
+
+	/* State after _really_ unexpected character, to skip to the dot and whitespace */
+%x TURTLE_SKIP_TO_DOT_WS
 
 	/* Special unreacheable state to fill the first item of ttlp_arg[0].ttlp_lexstates */
 %x UNREACHEABLE
@@ -125,6 +141,7 @@ DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 SPAR_SQ_PLAIN	([^\\''\r\n])
 SPAR_DQ_PLAIN	([^\\""\r\n])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
+SPAR_LANGTAG	([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)
 S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX		([0-9A-Fa-f])
 
@@ -145,7 +162,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>","		{ return _COMMA; }
 <INITIAL>"."[ \t]	{ return _DOT_WS; }
 <INITIAL>"."{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; return _DOT_WS; }
-<INITIAL>"."[^0-9]	{ ttlyyerror ("Whitespace is required after dot if dot is not inside decimal number, string or IRI"); }
+<INITIAL>"."[^0-9]	{ TTLYYERROR_OR_RECOVER ("Whitespace is required after dot if dot is not inside decimal number, string or IRI"); }
 <INITIAL>"."		{ return _DOT_WS; }
 <INITIAL>":"		{ return _COLON; }
 <INITIAL>";"		{ return _SEMI; }
@@ -192,10 +209,30 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
     return Q_IRI_REF;
   }
 
+<INITIAL>"<"([^<>\001-\037]|"\t")*">"	{
+    if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
+      TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
+    ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
+    return Q_IRI_REF;
+  }
+
+<INITIAL>"<"([^<>\001-\037]|"\t")+{S_NL}([^<>.;,\[\]{}\'\"\\\001-\037]|"\t")*">"	{
+    if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
+      TTLYYERROR_OR_RECOVER ("Line break in angle-bracketed name; this error can be suppressed by parser flags");
+    ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
+    ttlp_arg[0].ttlp_lexlineno++;
+    return Q_IRI_REF;
+  }
+
+<INITIAL>"<"([^<>\001-\037]|"\t")*	{
+    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
+      ttlyyerror ("Invalid characters in angle-bracketed name");
+    BEGIN (TURTLE_SKIP_TO_DOT_WS); yymore (); }
+
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{ 
     if (!(ttlp_arg[0].ttlp_flags & TTLP_NAME_MAY_CONTAIN_PATH))
-      ttlyyerror ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
+      TTLYYERROR_OR_RECOVER ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
@@ -203,7 +240,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
-      ttlyyerror ("Full N3 syntax allow variables, TURTLE does not; this error can be suppressed by parser flags");
+      TTLYYERROR_OR_RECOVER ("Full N3 syntax allow variables, TURTLE does not; this error can be suppressed by parser flags");
     TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
@@ -211,15 +248,15 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
     return KEYWORD;
   }
 
-<AT_AFTER_QUOTED>([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
+<TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}	{
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     BEGIN INITIAL;
     return LANGTAG;
   }
 
-<AT_AFTER_QUOTED>([a-zA-Z0-9-]+)	{ ttlyyerror ("The identifier after '@' at the end of quoted literal is not a valid language id"); }
-<AT_AFTER_QUOTED><<EOF>>		{ ttlyyerror ("Missing language id after '@' at the end of quoted literal"); }
-<AT_AFTER_QUOTED>.			{ ttlyyerror ("Bad character instead of language id after '@' at the end of quoted literal"); }
+<TURTLE_AT_AFTER_QUOTED>([a-zA-Z0-9-]+)	{ TTLYYERROR_OR_RECOVER ("The identifier after '@' at the end of quoted literal is not a valid language id"); }
+<TURTLE_AT_AFTER_QUOTED><<EOF>>		{ TTLYYERROR_OR_RECOVER ("Missing language id after '@' at the end of quoted literal"); }
+<TURTLE_AT_AFTER_QUOTED>.		{ TTLYYERROR_OR_RECOVER ("Bad character instead of language id after '@' at the end of quoted literal"); }
 
 
 <INITIAL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
@@ -229,7 +266,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 
 <INITIAL>(([""][^""\\\n]*[""])|([''][^''\\\n]*['']))"@" {
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 3);
-    BEGIN AT_AFTER_QUOTED;
+    BEGIN TURTLE_AT_AFTER_QUOTED;
     return TURTLE_STRING;
   }
 
@@ -237,8 +274,8 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
 <TURTLE_SSSQ>['']['']['']	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_DDDQ>[""][""][""]	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -255,22 +292,47 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
 <TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      {
+        if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
       ttlyyerror ("End-of-line in a short single-quoted string; this error can be suppressed by parser flags");
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+        BEGIN TURTLE_BAD_SQ;
+      }
+    else
+      { ttlp_arg[0].ttlp_lexlineno++; yymore(); } }
 <TURTLE_DQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
+      {
+        if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
       ttlyyerror ("End-of-line in a short double-quoted string; this error can be suppressed by parser flags");
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+        BEGIN TURTLE_BAD_DQ;
+      }
+    else
+      { ttlp_arg[0].ttlp_lexlineno++; yymore(); } }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
-<TURTLE_SQ>[\\]		{ ttlyyerror ("Bad escape sequence in a short single-quoted string"); }
-<TURTLE_DQ>[\\]		{ ttlyyerror ("Bad escape sequence in a short double-quoted string"); }
-<TURTLE_SQ><<EOF>>		{ ttlyyerror ("Unterminated short single-quoted string"); }
-<TURTLE_DQ><<EOF>>		{ ttlyyerror ("Unterminated short double-quoted string"); }
+<TURTLE_SQ>[\\]		{
+    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
+      ttlyyerror ("Bad escape sequence in a short single-quoted string");
+    BEGIN (TURTLE_BAD_SQ); }
+<TURTLE_DQ>[\\]		{
+    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
+      ttlyyerror ("Bad escape sequence in a short double-quoted string");
+    BEGIN (TURTLE_BAD_DQ); }
+<TURTLE_BAD_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+) {}
+<TURTLE_BAD_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+) {}
+<TURTLE_BAD_SQ>{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_BAD_DQ>{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_BAD_SQ>[^''] {}
+<TURTLE_BAD_DQ>[^""] {}
+<TURTLE_BAD_SQ>['']("@"{SPAR_LANGTAG})? { BEGIN INITIAL; return TTL_RECOVERABLE_ERROR; }
+<TURTLE_BAD_DQ>[""]("@"{SPAR_LANGTAG})? { BEGIN INITIAL; return TTL_RECOVERABLE_ERROR; }
+
+<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlyyerror ("Unterminated short single-quoted string"); }
+<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
@@ -279,7 +341,16 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>("#"(.*))?{S_NL}		{ ttlp_arg[0].ttlp_lexlineno++; }
 <INITIAL>"#"(.*)				{ }
 <INITIAL>[ \t]+				{ }
-<INITIAL>.		{ ttlyyerror ("Invalid character in INITIAL expression"); }
+<INITIAL>.		{
+    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
+      { char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]); ttlyyerror (buf); }
+    BEGIN TURTLE_SKIP_TO_DOT_WS; yymore(); }
+<TURTLE_SKIP_TO_DOT_WS>"."[ \t]		{ BEGIN INITIAL; yyless (yyleng-2); return _GARBAGE_BEFORE_DOT_WS; }
+<TURTLE_SKIP_TO_DOT_WS>"."{S_NL}	{ BEGIN INITIAL; yyless (('.' == yytext[yyleng-2]) ? yyleng-2 : yyleng-3); ttlp_arg[0].ttlp_lexlineno++; return _GARBAGE_BEFORE_DOT_WS; }
+<TURTLE_SKIP_TO_DOT_WS>.	{
+    if (yyleng > 8000)
+      { char buf[100]; sprintf (buf, "Failed to recover syntax error at \"%.50s...\"", yytext); ttlyyerror (buf); }
+    yymore(); }
 
 %%
 
@@ -289,8 +360,8 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
   BEGIN INITIAL;
 }*/
 
-void
-ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
+int
+ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
 {
   size_t boxlen = box_length (box);
   char buf[100];
@@ -298,7 +369,7 @@ ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, caddr_t box, const char *lex_type_de
   if (boxlen > MAX_XML_QNAME_LENGTH)
     {
       snprintf (buf, sizeof (buf), "%.90s is too long", lex_type_descr);
-      ttlyyerror (buf);
+      goto err; /* see below */
     }
   colon = strrchr (box, ':');
   if (NULL == colon)
@@ -306,20 +377,25 @@ ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, caddr_t box, const char *lex_type_de
       if (boxlen > MAX_XML_LNAME_LENGTH)
 	{
 	  snprintf (buf, sizeof (buf), "%.90s is too long", lex_type_descr);
-	  ttlyyerror (buf);
+          goto err; /* see below */
 	}
-      return;
+      return lexcode;
     }
   if (colon+1-box > MAX_XML_LNAME_LENGTH)
     {
       snprintf (buf, sizeof (buf), "%.90s contains abnormally long namespace prefix", lex_type_descr);
-      ttlyyerror (buf);
+      goto err; /* see below */
     }
   if (boxlen-(colon-box) > MAX_XML_LNAME_LENGTH)
     {
       snprintf (buf, sizeof (buf), "%.90s contains abnormally long 'local part' after the colon", lex_type_descr);
-      ttlyyerror (buf);
+      goto err; /* see below */
     }
+  return lexcode;
+
+err:
+  TTLYYERROR_OR_RECOVER (buf);
+  return 0; /* Never reached */
 }
 
 int
@@ -344,7 +420,7 @@ ttlp_NUMBER_int (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg)
       if (NULL == ttlyylval.box)
 	ttlyylval.box = box_num_nonull (0);
       if(rc != NUMERIC_STS_SUCCESS)
-	ttlyyerror ("The absolute value of numeric constant is too large");
+	TTLYYERROR_OR_RECOVER ("The absolute value of numeric constant is too large");
       return TURTLE_INTEGER;
     }
 }
