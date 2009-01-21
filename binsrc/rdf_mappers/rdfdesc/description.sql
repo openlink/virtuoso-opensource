@@ -111,7 +111,7 @@ create procedure rdfdesc_uri_curie (in uri varchar)
 	} else {
 		return nsPrefix || ':' || rhs;
 	}
-  } 
+  }
   return uri;
 }
 ;

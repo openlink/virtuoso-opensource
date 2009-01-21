@@ -32,57 +32,57 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
-	xmlns:v="http://www.openlinksw.com/xsltext/"
-	xmlns:sioct="&sioct;"
-	xmlns:sioc="&sioc;"
-	xmlns:foaf="&foaf;"
-	xmlns:bibo="&bibo;"
-	xmlns:dcterms="&dcterms;"
-	version="1.0">
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
+    xmlns:v="http://www.openlinksw.com/xsltext/"
+    xmlns:sioct="&sioct;"
+    xmlns:sioc="&sioc;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:dcterms="&dcterms;"
+    version="1.0">
 
-	<xsl:output method="xml" indent="yes" />
-	<xsl:param name="baseUri" />
-	<xsl:template match="/">
-		<rdf:RDF>
-			<xsl:if test="//html/head/script[contains(@src, 'slidy.js')]">
-				<xsl:apply-templates select="html" />
-			</xsl:if>
-		</rdf:RDF>
-	</xsl:template>
+    <xsl:output method="xml" indent="yes" />
+    <xsl:param name="baseUri" />
+    <xsl:template match="/">
+        <rdf:RDF>
+            <xsl:if test="//html/head/script[contains(@src, 'slidy.js')]">
+                <xsl:apply-templates select="html" />
+            </xsl:if>
+        </rdf:RDF>
+    </xsl:template>
 
-	<xsl:template match="html">
-			<rdf:Description rdf:about="{$baseUri}">
-				<rdfs:label>
-					<xsl:value-of select="//html/head/title"/>
-				</rdfs:label>
-				<rdf:type rdf:resource="&bibo;Slideshow"/>
-			</rdf:Description>
-			<xsl:apply-templates select="body"/>
-	</xsl:template>
+    <xsl:template match="html">
+            <rdf:Description rdf:about="{$baseUri}">
+                <rdfs:label>
+                    <xsl:value-of select="//html/head/title"/>
+                </rdfs:label>
+                <rdf:type rdf:resource="&bibo;Slideshow"/>
+            </rdf:Description>
+            <xsl:apply-templates select="body"/>
+    </xsl:template>
 
-	<xsl:template match="body">
-		<xsl:for-each select="//div[contains(@class, 'slide')]">
-			<xsl:variable name="pos" select="position()"/>
-			<rdf:Description rdf:about="{$baseUri}">
-				<xsl:attribute name="rdf:about">#(<xsl:value-of select="$pos"/>)</xsl:attribute>
-				<rdf:type rdf:resource="&bibo;Slide"/>
-				<dcterms:isPartOf rdf:resource="{$baseUri}"/>
-				<bibo:uri>
-					<xsl:attribute name="rdf:resource"><xsl:value-of select="$baseUri"/>#(<xsl:value-of select="$pos"/>)</xsl:attribute>
-				</bibo:uri>
-				<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
-				<bibo:content><xsl:value-of select="."/></bibo:content>
-				<xsl:for-each select=".//img[@src]">
-				    <foaf:depiction rdf:resource="{@src}"/>
-				</xsl:for-each>
-			</rdf:Description>
-		</xsl:for-each>
-	</xsl:template>
+    <xsl:template match="body">
+        <xsl:for-each select="//div[contains(@class, 'slide')]">
+            <xsl:variable name="pos" select="position()"/>
+            <rdf:Description rdf:about="{$baseUri}">
+                <xsl:attribute name="rdf:about">#(<xsl:value-of select="$pos"/>)</xsl:attribute>
+                <rdf:type rdf:resource="&bibo;Slide"/>
+                <dcterms:isPartOf rdf:resource="{$baseUri}"/>
+                <bibo:uri>
+                    <xsl:attribute name="rdf:resource"><xsl:value-of select="$baseUri"/>#(<xsl:value-of select="$pos"/>)</xsl:attribute>
+                </bibo:uri>
+                <rdfs:label><xsl:value-of select="h1"/></rdfs:label>
+                <bibo:content><xsl:value-of select="."/></bibo:content>
+                <xsl:for-each select=".//img[@src]">
+                    <foaf:depiction rdf:resource="{@src}"/>
+                </xsl:for-each>
+            </rdf:Description>
+        </xsl:for-each>
+    </xsl:template>
 
-	<xsl:template match="*|text()"/>
+    <xsl:template match="*|text()"/>
 
 </xsl:stylesheet>

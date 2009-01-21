@@ -182,27 +182,27 @@
 
 	<xsl:template name="a-rel">
 	    <xsl:variable name="rels" select="vi:split-and-decode(@rel, 0, ' ')"/>
-		<xsl:variable name="about">
-			<xsl:call-template name="about-ancestor-or-self" />
-		</xsl:variable>
+	    <xsl:variable name="about">
+		<xsl:call-template name="about-ancestor-or-self" />
+	    </xsl:variable>
 	    <xsl:variable name="types" select="@typeof"/>
-		<xsl:variable name="obj">
-			<xsl:choose>
-				<xsl:when test="@href">
-					<xsl:call-template name="uri-or-curie">
-						<xsl:with-param name="uri">
-							<xsl:value-of select="@href" />
-						</xsl:with-param>
-					</xsl:call-template>
-				</xsl:when>
-				<xsl:when test="@id">#<xsl:value-of select="@id" /></xsl:when>
-				<xsl:when test="@resource">
-					<xsl:call-template name="uri-or-curie">
-						<xsl:with-param name="uri">
-							<xsl:value-of select="@resource" />
-						</xsl:with-param>
-					</xsl:call-template>
-				</xsl:when>
+	    <xsl:variable name="obj">
+		<xsl:choose>
+		    <xsl:when test="@href">
+			<xsl:call-template name="uri-or-curie">
+			    <xsl:with-param name="uri">
+				<xsl:value-of select="@href" />
+			    </xsl:with-param>
+			</xsl:call-template>
+		    </xsl:when>
+		    <xsl:when test="@id">#<xsl:value-of select="@id" /></xsl:when>
+		    <xsl:when test="@resource">
+			<xsl:call-template name="uri-or-curie">
+			    <xsl:with-param name="uri">
+				<xsl:value-of select="@resource" />
+			    </xsl:with-param>
+			</xsl:call-template>
+		    </xsl:when>
 		    <xsl:when test="*[@about]">
 			<xsl:call-template name="uri-or-curie">
 			    <xsl:with-param name="uri">
@@ -210,30 +210,30 @@
 			    </xsl:with-param>
 			</xsl:call-template>
 		    </xsl:when>
-			</xsl:choose>
-		</xsl:variable>
+		</xsl:choose>
+	    </xsl:variable>
 	    <xsl:for-each select="$rels/results/result">
 		<xsl:call-template name="a-rel-single">
 		    <xsl:with-param name="rel"><xsl:value-of select="."/></xsl:with-param>
 		    <xsl:with-param name="obj"><xsl:value-of select="$obj"/></xsl:with-param>
 		    <xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
 		    <xsl:with-param name="types"><xsl:value-of select="$types"/></xsl:with-param>
-				    </xsl:call-template>
-			</xsl:for-each>
+		</xsl:call-template>
+	    </xsl:for-each>
 
 	    <xsl:variable name="a-prop-value">
 		<xsl:call-template name="a-prop"/>
 	    </xsl:variable>
 	    <xsl:if test="$a-prop-value">
-	    <rdf:Description rdf:about="{$about}">
-			<!-- property -->
+		<rdf:Description rdf:about="{$about}">
+		    <!-- property -->
 		    <xsl:copy-of select="$a-prop-value"/>
-		    </rdf:Description>
+		</rdf:Description>
 	    </xsl:if>
 
-		    <xsl:apply-templates />
+	    <xsl:apply-templates />
 	    <!-- reverse properties -->
-		    <xsl:if test="@rev">
+	    <xsl:if test="@rev">
 		<xsl:variable name="revs" select="vi:split-and-decode(@rev, 0, ' ')"/>
 		<xsl:for-each select="$revs/results/result">
 		    <xsl:call-template name="a-rev-single">
@@ -242,7 +242,7 @@
 			<xsl:with-param name="about"><xsl:value-of select="$about"/></xsl:with-param>
 		    </xsl:call-template>
 		</xsl:for-each>
-		    </xsl:if>
+	    </xsl:if>
 	</xsl:template>
 
 	<xsl:template match="*[@rev and not(@rel)]">
@@ -382,8 +382,8 @@
 
 	<xsl:template name="nss-uri">
 	    <xsl:param name="qname"/>
-		<xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
-		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
+	    <xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
+	    <xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
 	</xsl:template>
 
 	<xsl:template name="prop-uri">
@@ -396,8 +396,8 @@
 
 	<xsl:template name="rev-uri">
 	    <xsl:param name="qname"/>
-		<xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
-		<xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
+	    <xsl:variable name="elem-ns" select="substring-before ($qname, ':')" />
+	    <xsl:value-of select="string ($nss//namespace[@prefix = $elem-ns])" />
 	</xsl:template>
 
 	<xsl:template name="about-ancestor-or-self">

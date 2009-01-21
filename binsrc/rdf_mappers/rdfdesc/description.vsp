@@ -39,8 +39,8 @@
 
    if (_G not like 'nodeID://%')
      {
-   DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z }', _G), 'SPARQL');
-   commit work;
+       DB.DBA.EXEC_AS (sprintf ('sparql define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z }', _G), 'SPARQL');
+       commit work;
      }
    else
      {

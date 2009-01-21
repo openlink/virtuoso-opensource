@@ -72,8 +72,8 @@
 			<dc:title>
 				<xsl:value-of select="short_desc"/>			
 			</dc:title>
-		    <xsl:for-each select="long_desc">
-			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
+			<xsl:for-each select="long_desc">
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
 				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', issue_when)}" />
 		    </xsl:for-each>
 		</rdf:Description>
@@ -110,8 +110,8 @@
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="creation_ts"/>
 			</dcterms:created>
-		    <xsl:for-each select="long_desc">
-			<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
+			<xsl:for-each select="long_desc">
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
 				<sioc:has_reply rdf:resource="{vi:proxyIRI($baseUri, '', bug_when)}" />
 		    </xsl:for-each>
 		</rdf:Description>

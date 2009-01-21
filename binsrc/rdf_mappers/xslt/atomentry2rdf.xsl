@@ -111,7 +111,7 @@
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<nfo:frameCount>
 			<xsl:value-of select="./@viewCount"/>
-		</nfo:frameCount>	
+		</nfo:frameCount>
 	</rdf:Description>
 </xsl:template>
 
@@ -120,7 +120,7 @@
 		<rdf:type rdf:resource="&nfo;Video"/>
 		<nfo:duration>
 			<xsl:value-of select="yt:duration/@seconds"/>
-		</nfo:duration>	
+		</nfo:duration>
 	</rdf:Description>
 </xsl:template>
 

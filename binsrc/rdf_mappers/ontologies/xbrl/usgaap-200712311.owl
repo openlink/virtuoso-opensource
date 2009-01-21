@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE rdf:RDF [
-	<!ENTITY xsd 'http://www.w3.org/2001/XMLSchema#'>
-	<!ENTITY xs 'http://www.w3.org/2001/XMLSchema#'>
-	<!ENTITY us-gaap '#'>
-	<!ENTITY link 'http://www.xbrl.org/2003/linkbase#'>
-	<!ENTITY us-types 'http://xbrl.us/us-types/2007-12-31#'>
-	<!ENTITY xbrldt 'http://xbrl.org/2005/xbrldt#'>
-	<!ENTITY xbrli 'http://www.xbrl.org/2003/instance#'>
-	<!ENTITY xlink 'http://www.w3.org/1999/xlink#'>
-	<!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
+    <!ENTITY xsd 'http://www.w3.org/2001/XMLSchema#'>
+    <!ENTITY xs 'http://www.w3.org/2001/XMLSchema#'>
+    <!ENTITY us-gaap '#'>
+    <!ENTITY link 'http://www.xbrl.org/2003/linkbase#'>
+    <!ENTITY us-types 'http://xbrl.us/us-types/2007-12-31#'>
+    <!ENTITY xbrldt 'http://xbrl.org/2005/xbrldt#'>
+    <!ENTITY xbrli 'http://www.xbrl.org/2003/instance#'>
+    <!ENTITY xlink 'http://www.w3.org/1999/xlink#'>
+    <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
     <!ENTITY virt 'http://www.openlinksw.com/schemas/xbrl/'>
 ]>
 <rdf:RDF xmlns:xo="http://rhizomik.upf.edu/redefer/xsl/xsd2owl-functions.xsl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:xs="http://www.w3.org/2001/XMLSchema#" xmlns:us-gaap="#" xmlns:link="http://www.xbrl.org/2003/linkbase#" xmlns:us-types="http://xbrl.us/us-types/2007-12-31#" xmlns:xbrldt="http://xbrl.org/2005/xbrldt#" xmlns:xbrli="http://www.xbrl.org/2003/instance#" xmlns:xlink="http://www.w3.org/1999/xlink#">

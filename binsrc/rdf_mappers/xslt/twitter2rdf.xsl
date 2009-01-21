@@ -29,14 +29,14 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/" 
-	xmlns:foaf="&foaf;" 
+	xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:foaf="&foaf;"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:v="http://www.w3.org/2006/vcard/ns#"
 	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
@@ -55,13 +55,13 @@
 			    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
 			</foaf:primaryTopic>
 		    </foaf:Document>
-			<xsl:apply-templates select="statuses" />
-			<xsl:apply-templates select="status" />
-			<xsl:apply-templates select="user" />
-			<xsl:apply-templates select="users" />
+		    <xsl:apply-templates select="statuses" />
+		    <xsl:apply-templates select="status" />
+		    <xsl:apply-templates select="user" />
+		    <xsl:apply-templates select="users" />
 		</rdf:RDF>
 	</xsl:template>
-	
+
 	<xsl:template match="status">
 		<xsl:call-template name="status"/>
 	</xsl:template>
@@ -69,18 +69,18 @@
 	<xsl:template match="user">
 		<xsl:call-template name="user"/>
 	</xsl:template>
-	
+
 	<xsl:template match="users">
-			<xsl:for-each select="user">
+	    <xsl:for-each select="user">
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
-				<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
+		    <foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
 		</rdf:Description>
-			</xsl:for-each>
-		<xsl:for-each select="user">
-			<xsl:call-template name="user"/>
-		</xsl:for-each>
+	    </xsl:for-each>
+	    <xsl:for-each select="user">
+		<xsl:call-template name="user"/>
+	    </xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template match="statuses">
 		<xsl:variable name="about" select="vi:proxyIRI($baseUri)" />
 		<rdf:Description rdf:about="{$baseUri}">
@@ -99,7 +99,7 @@
 			<xsl:call-template name="status"/>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template name="status">
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}">
 			<rdf:type rdf:resource="&sioct;BoardPost"/>
@@ -122,10 +122,10 @@
 			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 		</rdf:Description>
 		<xsl:for-each select="user">
-			<xsl:call-template name="user"/>
+		    <xsl:call-template name="user"/>
 		</xsl:for-each>
 	</xsl:template>
-	
+
 	<xsl:template name="user">
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}">
 			<foaf:name>
@@ -175,5 +175,5 @@
 			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/followers')}" />
 		</foaf:Person>
 	</xsl:template>
-	
+
 </xsl:stylesheet>

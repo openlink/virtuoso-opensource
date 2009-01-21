@@ -76,12 +76,12 @@
 
 <xsl:template match="a:feed">
     <channel rdf:about="{a:link[@rel='self']/@href}">
-	<xsl:apply-templates/>
-	<items>
-	    <rdf:Seq>
-		<xsl:apply-templates select="a:entry" mode="li" />
-	    </rdf:Seq>
-	</items>
+		<xsl:apply-templates/>
+		<items>
+			<rdf:Seq>
+				<xsl:apply-templates select="a:entry" mode="li" />
+			</rdf:Seq>
+		</items>
     </channel>
 	<rdf:Description rdf:about="{a:link[@rel='self']/@href}">
 		<rdf:type rdf:resource="&sioc;Thread"/>
@@ -144,16 +144,16 @@
 		</rdf:Description>
     </xsl:if>
     <item rdf:about="{a:link[@href]/@href}">
-	<xsl:apply-templates/>
-	<xsl:if test="a:category[@term]">
-	    <xsl:for-each select="a:category[@term]">
-		<sioc:topic>
-		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-			<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
-		    </skos:Concept>
-		</sioc:topic>
-	    </xsl:for-each>
-	</xsl:if>
+		<xsl:apply-templates/>
+		<xsl:if test="a:category[@term]">
+			<xsl:for-each select="a:category[@term]">
+			<sioc:topic>
+				<skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
+				<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
+				</skos:Concept>
+			</sioc:topic>
+			</xsl:for-each>
+		</xsl:if>
 		<xsl:apply-templates select="g:*|gd:*|ff:*|media:*" mode="rdfitem"/>
     </item>
 </xsl:template>

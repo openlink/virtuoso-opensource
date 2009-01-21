@@ -236,7 +236,7 @@
 		<xsl:variable name="space" select="type_of_entity"/>
 	    </xsl:when>
 	    <xsl:otherwise>
-	<xsl:variable name="space" select="name()"/>
+		<xsl:variable name="space" select="name()"/>
 	    </xsl:otherwise>
 	</xsl:choose>
 	<xsl:variable name="type">

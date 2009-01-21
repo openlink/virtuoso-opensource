@@ -58,7 +58,7 @@
 	<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',name))}">
 	    <foaf:name><xsl:value-of select="name"/></foaf:name>
 	    <xsl:for-each select="releases/release">
-			<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
+				<foaf:made rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 	    </xsl:for-each>
 	</mo:MusicArtist>
 	<xsl:apply-templates select="releases/release"/>
@@ -67,16 +67,16 @@
     <xsl:template match="resp[@stat='ok']/release|release">
 	<mo:Record rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
 		<xsl:if test="artists/artist/name">
-		<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
+			<foaf:maker rdf:resource="{vi:proxyIRI (concat($base,'artist/', artists/artist/name))}"/>	    
 		</xsl:if>
 		<xsl:if test="title">
-	    <dc:title><xsl:value-of select="title"/></dc:title>
+			<dc:title><xsl:value-of select="title"/></dc:title>
 	    </xsl:if>
 	    <xsl:if test="format">
-		<dc:format><xsl:value-of select="format"/></dc:format>
+			<dc:format><xsl:value-of select="format"/></dc:format>
 		</xsl:if>
 		<xsl:if test="year">
-		<dc:date><xsl:value-of select="year"/></dc:date>
+			<dc:date><xsl:value-of select="year"/></dc:date>
 		</xsl:if>
 	    <xsl:for-each select="tracklist/track">
 			<mo:track rdf:resource="{vi:proxyIRI (concat($base,'track/', ../../@id, '/', position))}"/>

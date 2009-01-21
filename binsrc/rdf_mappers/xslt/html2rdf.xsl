@@ -98,7 +98,7 @@
       <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
       <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">
 	  <umbel:isAbout rdf:resource="{@uri}"/>
-	  </xsl:for-each>
+      </xsl:for-each>
       <xsl:variable name="nes" select="vi:umbelGetNE (@content)"/>
       <xsl:for-each select="$nes//object[@type='owl:Thing']">
 	  <owl:sameAs rdf:resource="{@uri}"/>
