@@ -1031,6 +1031,7 @@ if test "$with_pldebug" = "yes"; then
     PLSTATS=PLDBG
     AC_SUBST(PLSTATS)
 fi
+AM_CONDITIONAL(WITH_PLDEBUG, test "x$with_pldebug" = "xyes")
 
 
 ##########################################################################

@@ -1016,7 +1016,8 @@ caddr_t _br_cstm (caddr_t stmt);
 #define BR_PUSH
 #define BR_POP
 #define BR_SET
-#define BR_GET
+#define BR_GET		0
+#define BR_LGET		0
 #define BR_CSTM(stmt) (stmt)
 #endif
 

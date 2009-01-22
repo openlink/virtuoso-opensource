@@ -35,6 +35,11 @@ if WITH_IMSG
     IMSG_BIF= bif_pop3.c bif_nntp.c
 endif
 
+if WITH_PLDEBUG
+    PLDEBUG_FILES	= pldebug.c
+    PLDEBUG_CLI_FILES	= pldbgcli.c
+endif
+
 
 GEN=$(SHELL) ${top_srcdir}/bin/generate
 
@@ -83,7 +88,7 @@ generated_code = \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
-	sql_code_pldbg.c \
+	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
 	sql_code_sys.c \
@@ -191,7 +196,7 @@ libwi_la_SOURCES = \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
-	sql_code_pldbg.c \
+	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
 	sql_code_sys.c \
@@ -303,7 +308,7 @@ libwi_odbc_la_SOURCES = \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
-	sql_code_pldbg.c \
+	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
 	sql_code_sys.c \
@@ -363,12 +368,11 @@ libwi_odbc_la_SOURCES += \
 	replsub.c \
 	replpush.c
 
-#PLDEBUG_FILES
 libwi_la_SOURCES += \
-	pldebug.c
+	$(PLDEBUG_FILES)
 
 libwi_odbc_la_SOURCES += \
-	pldebug.c
+	$(PLDEBUG_FILES)
 
 #BIF_FILES
 libwi_la_SOURCES += \
@@ -504,9 +508,8 @@ libwic_la_SOURCES = \
 	wirpc.c \
 	wi_xid.c
 
-#PLDEBUG_CLI_FILES
 libwic_la_SOURCES += \
-	pldbgcli.c
+	$(PLDEBUG_CLI_FILES)
 
 libwic_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc
