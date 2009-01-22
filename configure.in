@@ -671,7 +671,7 @@ AC_HELP_STRING([--disable-xml], [disable XML extension])dnl
 ], [
      case "${enableval}" in
        yes)	with_xml="yes";;
-       no)	with_xml="no";;
+       no)	AC_MSG_ERROR(Xml extension required for Virtuoso) ;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-xml) ;;
      esac
   ],
