@@ -61,6 +61,8 @@ namespace OpenLink.Data.Virtuoso
 
 		IInnerCommand CreateInnerCommand (VirtuosoCommand outerCommand);
 
+		void RemoveCommand (VirtuosoCommand outerCommand);
+
 		void BeginTransaction (CLI.IsolationLevel level);
 
 		void EndTransaction (bool commit);

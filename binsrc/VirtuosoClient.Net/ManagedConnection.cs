@@ -67,6 +67,8 @@ namespace OpenLink.Data.Virtuoso
 		private string commandIdPrefix = null;
 		private int nextCommandId = 0;
 
+		private ArrayList commands = null;
+
 		internal ManagedConnection ()
 		{
 			futures = new FutureList ();
@@ -211,11 +213,44 @@ namespace OpenLink.Data.Virtuoso
 				futures.Clear ();
 				futures = null;
 			}
+
+			if (commands != null)
+			{
+				for (int i = 0; i < commands.Count; i++)	
+                                {
+					WeakReference weak = (WeakReference) commands[i];
+					VirtuosoCommand target = (VirtuosoCommand) weak.Target;
+					if (target != null)
+					{
+						target.OnConnectionClose();
+						weak.Target = null;
+					}
+				}
+			}
 		}
 
 		public override IInnerCommand CreateInnerCommand (VirtuosoCommand outerCommand)
 		{
+			if (commands == null)
+				commands = new ArrayList();
+
+			commands.Add (new WeakReference (outerCommand));
+
 			return new ManagedCommand (this);
+		}
+
+		public override void RemoveCommand (VirtuosoCommand outerCommand)
+		{
+			int i = 0;
+			while (i < commands.Count)
+			{
+				WeakReference weak = (WeakReference) commands[i];
+				VirtuosoCommand target = (VirtuosoCommand) weak.Target;
+				if (target == null || target == outerCommand)
+					commands.RemoveAt(i);
+				else
+					i++;
+			}
 		}
 
 		public override void BeginTransaction (CLI.IsolationLevel level)

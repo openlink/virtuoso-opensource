@@ -542,6 +542,9 @@ namespace OpenLink.Data.Virtuoso
 				DisposeStatement ();
 			}
 			base.Dispose (disposing);
+			if (connection != null && 
+			    connection.innerConnection != null)
+				connection.innerConnection.RemoveCommand (this);
 			connection = null;
 			transaction = null;
 		}

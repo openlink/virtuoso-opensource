@@ -709,6 +709,40 @@ namespace OpenLink.Data.Virtuoso
             if (restrictionValues != null)
                 restrictionValues.CopyTo(parms, 0);
 
+            // bug 13648
+            // Virtuoso DBA userid is "dba", but the corresponding schema qualifier is "DBA"
+            // Convert any schema qualifier restrictions for this user to uppercase.
+            if (restrictionValues != null)
+            {
+                switch (collectionName.ToUpper())
+                {
+                    case "COLUMNPRIVILEGES":
+                    case "COLUMNS":
+                    case "INDEXES":
+                    case "PRIMARY KEYS":
+                    case "PROCEDURES":
+                    case "PROCEDURECOLUMNS":
+                    case "PROCEDUREPARAMETERS":
+                    case "TABLEPRIVILEGES":
+                    case "TABLES":
+                    case "VIEWS":
+                        if (parms[1] != null && parms[1].Equals("dba"))
+                            parms[1] = parms[1].ToUpper();
+                        break;
+                    case "SPECIALCOLUMNS":
+                        if (parms[2] != null && parms[2].Equals("dba"))
+                            parms[2] = parms[2].ToUpper();
+                        break;
+                    case "FOREIGNKEYS":
+                        if (parms[1] != null && parms[1].Equals("dba"))
+                            parms[1] = parms[1].ToUpper();
+                        if (parms[4] != null && parms[4].Equals("dba"))
+                            parms[4] = parms[4].ToUpper();
+                        break;
+                }
+            }
+            // bug 13648
+
             DataTable dt = null;
             switch (collectionName.ToUpper())
             {

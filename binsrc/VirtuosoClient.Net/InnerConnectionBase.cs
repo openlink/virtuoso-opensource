@@ -105,6 +105,7 @@ namespace OpenLink.Data.Virtuoso
 		public abstract void Open (ConnectionOptions options);
 		public abstract void Close ();
 		public abstract IInnerCommand CreateInnerCommand (VirtuosoCommand outerCommand);
+		public abstract void RemoveCommand (VirtuosoCommand outerCommand);
 		public abstract void BeginTransaction (CLI.IsolationLevel level);
 		public abstract void EndTransaction (bool commit);
 		public abstract void Enlist (object transaction);
