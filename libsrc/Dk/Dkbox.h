@@ -584,15 +584,15 @@ typedef struct uname_blk_s
 #define DV_UNAME_BOX_HASH(hash,box) (hash) = UNAME_TO_UNAME_BLK(box)->unb_hdr[UNB_HDR_HASH]
 #endif
 
-#define RDF_BOX_DEFAULT_TYPE 257
-#define RDF_BOX_DEFAULT_LANG 257
+#define RDF_BOX_DEFAULT_TYPE 0x101
+#define RDF_BOX_DEFAULT_LANG 0x101
 
 
 typedef struct rdf_box_s
 {
   int32		rb_ref_count;
-  short		rb_type;
-  short		rb_lang;
+  unsigned short	rb_type;
+  unsigned short	rb_lang;
   unsigned	rb_is_complete:1;
   unsigned	rb_is_outlined:1;
   unsigned	rb_chksum_tail:1;
@@ -806,7 +806,8 @@ extern void dkbox_terminate_module (void);
 #define DV_IRI_TAG_WORD 0xf3000008
 #endif
 /* values for box_flaggs */
-#define BF_IRI 1
+#define BF_IRI 0x1
+#define BF_UTF8 0x2
 
 double buf_to_double (char * buf);
 float buf_to_float (char * buf);

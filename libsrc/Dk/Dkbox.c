@@ -1390,7 +1390,8 @@ box_equal (cbox_t b1, cbox_t b2)
       if (b2_tag == DV_LONG_INT)
 	b2_long_val = *(boxint *) b2;
     }
-
+  if ((b1_tag == DV_RDF || b2_tag == DV_RDF) && dtp_cmp_func[DV_RDF])
+    return dtp_cmp_func[DV_RDF](b1, b2);
   if (b1_tag == DV_LONG_INT || b2_tag == DV_LONG_INT)
     {
       if (b1_tag != b2_tag)
