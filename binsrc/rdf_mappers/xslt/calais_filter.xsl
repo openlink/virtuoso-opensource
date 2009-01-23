@@ -44,12 +44,20 @@
 
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />
+    <xsl:param name="min-score" />
+    <xsl:param name="max-results" />
 
     <xsl:template match="rdf:RDF">
 	<xsl:copy>
 	    <rdf:Description rdf:about="{$baseUri}">
-		<xsl:for-each select="rdf:Description[calais:docId and calais:name]">
+		<xsl:for-each select="rdf:Description[calais:docId and calais:name
+		    	and number (calais:score) > $min-score]">
+		    <xsl:sort select="calais:score" data-type="number" order="descending"/>
+		    <!--xsl:message terminate="no"><xsl:value-of select="calais:score"/></xsl:message>
+		    <xsl:message terminate="no"><xsl:value-of select="position()"/></xsl:message-->
+		    <xsl:if test="position () <= $max-results">
 		    <rdfs:seeAlso rdf:resource="{@about}"/>
+		    </xsl:if>
 		</xsl:for-each>
 	    </rdf:Description>
 	</xsl:copy>

@@ -51,6 +51,9 @@
 	<xsl:template match="/">
 		<rdf:RDF>
 		    <foaf:Document rdf:about="{$baseUri}">
+				<dc:subject>
+					<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
+				</dc:subject>
 			<foaf:primaryTopic>
 			    <foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}" />
 			</foaf:primaryTopic>
@@ -105,7 +108,7 @@
 			<rdf:type rdf:resource="&sioct;BoardPost"/>
 			<sioc:has_container rdf:resource="{$baseUri}"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="created_at"/>
+				<xsl:value-of select="vi:string2date(created_at)"/>
 			</dcterms:created>
 			<dc:title>
 				<xsl:value-of select="text"/>
@@ -121,12 +124,15 @@
 			</xsl:if>
 			<foaf:maker rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name))}"/>
 		</rdf:Description>
-		<xsl:for-each select="user">
+		<!--xsl:for-each select="user">
 		    <xsl:call-template name="user"/>
-		</xsl:for-each>
+		</xsl:for-each-->
 	</xsl:template>
 
 	<xsl:template name="user">
+		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}">
+			<rdf:type rdf:resource="&foaf;PersonalProfileDocument"/>
+		</rdf:Description>
 		<foaf:Person rdf:about="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}">
 			<foaf:name>
 				<xsl:value-of select="name" />
@@ -160,7 +166,7 @@
 				</twitter:statuses_count>
 			</xsl:if>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="created_at"/>
+				<xsl:value-of select="vi:string2date(created_at)"/>
 			</dcterms:created>
 			<xsl:for-each select="//statuses/status">
 				<foaf:made rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', user/screen_name, '/status/', id))}"/>
@@ -171,8 +177,7 @@
 			<foaf:title>
 				<xsl:value-of select="description" />
 			</foaf:title>
-			<!--rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/friends')}" /-->
-			<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', screen_name, '/followers')}" />
+			<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
 		</foaf:Person>
 	</xsl:template>
 

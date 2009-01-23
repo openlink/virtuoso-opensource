@@ -514,6 +514,24 @@ create procedure DB.DBA.XSLT_UNIX2ISO_DATE (in val int)
 }
 ;
 
+create procedure DB.DBA.XSLT_STRING2ISO_DATE (in val varchar)
+{
+  declare ret, tmp any;
+  if (val is null)
+    return null;
+  tmp := sprintf_inverse (val, '%s %s %s %s %s %s', 0);
+  if (length(tmp) > 5)
+  {
+	ret := http_string_date(sprintf('%s, %s %s %s %s %s', tmp[0], tmp[2], tmp[1], tmp[5], tmp[3], tmp[4]));
+	ret := dt_set_tz (ret, 0);
+    ret := date_iso8601 (ret);
+    if (ret is not null)
+		return ret;
+  }
+  return null;
+}
+;
+
 create procedure DB.DBA.XSLT_SHA1_HEX (in val varchar)
 {
   return tree_sha1 (val, 1);
@@ -659,6 +677,7 @@ grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
+grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
 grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
 grant execute on DB.DBA.RDF_SPONGE_DBP_IRI to public;
 
@@ -667,6 +686,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpIRI', 'DB.DBA.RDF_SPONGE_DBP_IRI');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:umbelGet', 'DB.DBA.RM_UMBEL_GET');
@@ -1257,13 +1277,32 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar) returns integer
+{
+	declare xt, xd any;
+	declare tmp, test1, test2 varchar;
+	tmp := http_client (url, username_, password_, 'GET');
+	if (length(tmp) < 300)
+		return 0;
+	xd := xtree_doc (tmp);
+	test1 := cast(xpath_eval('//user', xd) as varchar);
+	test2 := cast(xpath_eval('//status', xd) as varchar);
+	if (not (length(test1) or length(test1)))
+		return 0;
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
 	declare xt, xd any;
 	declare url, tmp varchar;
-	declare what_, id, post, username_, password_ varchar;
-	declare pos integer;
+	declare id, post, username_, password_ varchar;
+	declare pos, page integer;
 	declare exit handler for sqlstate '*'
 	{
 		return 0;
@@ -1278,7 +1317,9 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		if (id is null or post is null)
 			return 0;
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
-		what_ := 'post';
+		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_);
+		return 1;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/friends')
 	{
@@ -1286,8 +1327,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		id := tmp[0];
 		if (id is null)
 		  return 0;
-		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
-		what_ := 'friends';
+		goto friends_and_followers;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/followers')
 	{
@@ -1295,8 +1335,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		id := tmp[0];
 		if (id is null)
 			return 0;
-		url := sprintf('http://twitter.com/statuses/followers.xml?id=%s', id);
-		what_ := 'followers';
+		goto friends_and_followers;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/favourites')
 	{
@@ -1304,8 +1343,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		id := tmp[0];
 		if (id is null)
 			return 0;
-		url := sprintf('http://twitter.com/favorites.xml?id=%s', id);
-		what_ := 'favorites';
+		goto friends_and_followers;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%')
 	{
@@ -1318,34 +1356,56 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 		{
 			id := left(id, pos);
 		}
-		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s', id);
-		what_ := 'statuses';
+		goto friends_and_followers;
 	}
 	else
 		return 0;
-	tmp := http_client (url, username_, password_, 'GET');
+		
+	friends_and_followers: ;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
-	xd := serialize_to_UTF8_xml (xt);
-	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
-	if (what_ <> 'friends')
+	page := 1;
+	while (page > 0 and page < 10)
 	  {
-	    url := sprintf('http://twitter.com/statuses/friends.xml?id=%s', id);
-	    tmp := http_get(url);
-	    xd := xtree_doc (tmp);
-	    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
-	    xd := serialize_to_UTF8_xml (xt);
-	    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s&page=%d', id, page);
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+			goto statuses_out;
+		page := page + 1;			
+	}
+	statuses_out: ;
+
+	page := 1;
+	while (page > 0 and page < 10)
+	{
+		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s&page=%d', id, page);
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+			goto friends_out;
+		page := page + 1;
+	}
+	friends_out: ;
+	
+	page := 1;
+	while (page > 0 and page < 10)
+	{
+		url := sprintf('http://twitter.com/favorites.xml?id=%s&page=%d', id, page);
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+			goto favorites_out;
+		page := page + 1;			
 	  }
+	favorites_out: ;
+	
+	page := 1;
+	while (page > 0 and page < 10)
+	{
+		url := sprintf('http://twitter.com/statuses/followers.xml?id=%s&page=%d', id, page);
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+			goto followers_out;
+		page := page + 1;
+	}
+	followers_out: ;
 
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
-	tmp := http_get(url);
-	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
-	xd := serialize_to_UTF8_xml (xt);
-	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_);
 	return 1;
 }
 ;
@@ -4295,6 +4355,8 @@ create procedure DB.DBA.SYS_OAI_SPONGE_UP (in local_iri varchar, in get_uri varc
 create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 {
   declare urihost varchar;
+  if (registry_get ('RDF_MAPPER_XBRL_ONTOLOGIES') = '1')
+    return;
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   for select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
   {
@@ -4303,6 +4365,7 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
 	http(RES_CONTENT, str_out);
     DB.DBA.RDF_LOAD_RDFXML (str_out, 'http://www.openlinksw.com/schemas/xbrl/', 'http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
   }
+  registry_set ('RDF_MAPPER_XBRL_ONTOLOGIES','1');
 }
 ;
 
@@ -4597,11 +4660,13 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
 DB.DBA.RM_LOAD_PREFIXES ();
 
 
-insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED)
-    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1);
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED, MC_OPTIONS)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 1,
+		vector ('min-score', '0.5', 'max-results', '10'));
 
-insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED)
-    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_UMBEL_POST_PROCESS', null, 'UMBEL', 1);
+insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_ENABLED, MC_OPTIONS)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_UMBEL_POST_PROCESS', null, 'UMBEL', 1,
+	   vector ('min-score', '0.5', 'max-results', '10'));
 
 
 create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
@@ -4664,21 +4729,32 @@ create procedure DB.DBA.RDF_UMBEL_POST_PROCESS (in graph_iri varchar, in new_ori
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
   declare sc, nes, strg, xt, arr, ses any;
+  declare sc_min float;
+  declare max_res, inx int;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
+  sc_min := atof (get_keyword ('min-score', opts, '0.5'));
+  max_res := atoi (get_keyword ('max-results', opts, '10'));
   sc := DB.DBA.RM_UMBEL_GET (_ret_body);
   arr := xpath_eval ('//predicate[@type="rdfs:seeAlso" or @type="umbel:isAbout"]', sc, 0);
   ses := string_output ();
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   http ('@prefix umbel: <http://umbel.org/umbel#> .\n', ses);
+  inx := 0;
   foreach (nvarchar elm in arr) do
     {
-      declare p, o nvarchar;
+      declare p, o, this_sc nvarchar;
       p := cast (xpath_eval ('@type', elm) as varchar);
       o := cast (xpath_eval ('object/@uri', elm) as varchar);
+      this_sc := cast (xpath_eval ('object/reify/@value', elm) as float);
+      if (this_sc is null or this_sc > sc_min)
+	{
+	  if (inx < max_res)
       http (sprintf ('<%S> %s <%S> .\n', new_origin_uri, p, o), ses);
+	  inx := inx + 1;
+	}
     }
   DB.DBA.TTLP (ses, new_origin_uri, coalesce (dest, graph_iri));
   return 0;
@@ -4689,7 +4765,8 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
   declare cnt, xt, xp, xd, mime, html_start, paras, doc_tree, frag any;
-  declare flag int;
+  declare flag, max_res int;
+  declare sc_min float;
 
   flag := 0;
 
@@ -4702,6 +4779,8 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
     return 0;
 
   mime := get_keyword ('content-type', opts);
+  sc_min := atof (get_keyword ('min-score', opts, '0.5'));
+  max_res := atoi (get_keyword ('max-results', opts, '10'));
   if (mime is null)
     return 0;
   frag := _ret_body;
@@ -4712,7 +4791,8 @@ create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri
   xp := xpath_eval('string(//text())', xt);
   xd := charset_recode (xp, '_WIDE_', 'UTF-8');
   xt := xtree_doc (xd, 0, '', 'UTF-8');
-  xp := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/calais_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xp := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/calais_filter.xsl', xt,
+  	vector ('baseUri', coalesce (dest, graph_iri), 'min-score', sc_min, 'max-results', max_res));
   xd := serialize_to_UTF8_xml (xp);
   if (xd is not null)
     {
@@ -5286,6 +5366,8 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare url, txt, cont, xt, xd any;
+  declare sc_min float;
+  declare max_res int;
 
   declare exit handler for sqlstate '*'
   {
@@ -5293,13 +5375,17 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
   };
   if (not isstring (_key) or length (_key) = 0)
     return 0;
+  sc_min := atof (get_keyword ('min-score', opts, '0.5'));
+  max_res := atoi (get_keyword ('max-results', opts, '10'));
   txt := sprintf ('method=zemanta.suggest&api_key=%U&text=%U&format=rdfxml&return_rdf_links=1&return_categories=dmoz',
   		_key, subseq (_ret_body, 0, 8000));
   cont := http_client (	url=>'http://api.zemanta.com/services/rest/0.0/',
   			http_method=>'POST',
 			body=>txt );
+  --string_to_file ('rdf.rdf', serialize_to_UTF8_xml (cont), -2);
   xt := xtree_doc (cont, 0, '', 'UTF-8');
-  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/zemanta_filter.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/zemanta_filter.xsl', xt,
+  	vector ('baseUri', coalesce (dest, graph_iri), 'min-score', sc_min, 'max-results', max_res));
   cont := serialize_to_UTF8_xml (xd);
   DB.DBA.RDF_LOAD_RDFXML (cont, new_origin_uri, coalesce (dest, graph_iri));
   return 0;
@@ -5307,7 +5393,8 @@ create procedure DB.DBA.RDF_LOAD_ZEMANTA (in graph_iri varchar, in new_origin_ur
 ;
 
 insert soft DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
-      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta', vector ());
+      values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_ZEMANTA', null, 'Zemanta',
+	  vector ('min-score', '0.5', 'max-results', '10'));
 
 create procedure DB.DBA.RDF_LOAD_VOID (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
