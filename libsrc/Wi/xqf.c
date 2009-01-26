@@ -517,7 +517,7 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #define DTFLAG_ZM	0x100
 
 static int
-__get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
+__get_iso_date ( const char *str, char *dt, int dtflags, int dt_type, const char *ctor_name )
 {
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
   const char *tail, *group_end;
@@ -667,6 +667,9 @@ field_delim_checked:
     fld_values[0], fld_values[1], fld_values[2],
     fld_values[3], fld_values[4], fld_values[5],
     fld_values[6], tzmin );
+  if (DT_TYPE_TIME == dt_type)
+    DT_SET_DAY (dt, DAY_ZERO);
+  DT_SET_DT_TYPE (dt, dt_type);
   return res_flags;
 }
 
@@ -698,10 +701,8 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
   };
   assert (do_what >0 && do_what <= XQ_DTLAST);
   *n = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  if (__get_iso_date (str, *n, flags[do_what - 1], names[do_what - 1]) < 0)
+  if (__get_iso_date (str, *n, flags[do_what - 1], types[do_what - 1], names[do_what - 1]) < 0)
     sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
-  DT_SET_DT_TYPE (*n, types[do_what - 1]);
-
 }
 
 static void

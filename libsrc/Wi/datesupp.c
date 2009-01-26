@@ -1241,3 +1241,37 @@ dt_make_day_zero (char *dt)
   DT_SET_TZ (dt, 0);
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
+
+#ifdef DEBUG
+void
+dt_audit_fields (char *dt)
+{
+  int arg_dt_type = DT_DT_TYPE (dt);
+  int d = DT_DAY(dt);
+  int h = DT_HOUR(dt);
+  int m,s,f;
+  if (0 == d) GPF_T1 ("Zero day in dt_audit_fields()");
+  if (h >= 24) GPF_T1 ("bad hour in DT_TYPE_DATE dt_audit_fields()");
+  switch (arg_dt_type)
+    {
+    case DT_TYPE_DATETIME:
+      if (DAY_ZERO == d) GPF_T1 ("DAY_ZERO in DT_TYPE_DATETIME dt_audit_fields()");
+      break;
+    case DT_TYPE_DATE:
+      if (DAY_ZERO == d) GPF_T1 ("DAY_ZERO in DT_TYPE_DATE dt_audit_fields()");
+      m = DT_MINUTE(dt);
+      s = DT_SECOND(dt);
+      f = DT_FRACTION(dt);
+      if (m % 15) GPF_T1 ("Bad timezone diff applied to minutes in DT_TYPE_DATE dt_audit_fields()");
+      if (0 != s) GPF_T1 ("nonzero second in DT_TYPE_DATE dt_audit_fields()");
+      if (0 != f) GPF_T1 ("nonzero fraction in DT_TYPE_DATE dt_audit_fields()");
+      break;
+    case DT_TYPE_TIME:
+      if (DAY_ZERO != d) GPF_T1 ("DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
+      break;
+    default:
+        GPF_T1 ("Wrong DT_DT_TYPE in dt_audit_fields()");
+  }
+}
+#endif
+

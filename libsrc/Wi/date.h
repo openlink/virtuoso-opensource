@@ -53,6 +53,12 @@ typedef unsigned char  datetime_t[DT_LENGTH];
 #define SIGNC(p, n)	((signed char *)p)[n]
 #define _SIGNC(p)	((signed char)(p))
 
+#ifdef DEBUG
+extern void dt_audit_fields (char *dt);
+#define DT_AUDIT_FIELDS(dt) dt_audit_fields(dt)
+#else
+#define DT_AUDIT_FIELDS(dt)
+#endif
 
 #define DT_DAY(dt) \
   ((CUC (dt, 0) << 16) | \
@@ -130,10 +136,10 @@ typedef unsigned char  datetime_t[DT_LENGTH];
     (UC (dt, 8) = (_UC (_UC (UC (dt, 8) >> 3) << 3) | (_UC (tz >> 8) & 0x07)), \
      UC (dt, 9) = _UC (tz & 0xFF))
 
-#define DT_SET_DT_TYPE(dt, type) \
-    ( \
-      UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC (type << 5)) \
-    )
+#define DT_SET_DT_TYPE(dt, type) do { \
+  UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC (type << 5)); \
+  DT_AUDIT_FIELDS(dt); } while (0)
+
 #define DT_SET_COMPAT_TZ(dt, tz) \
   (SIGNC (dt, 8) = _SIGNC (tz >> 8), \
    SIGNC (dt, 9) = _SIGNC (tz & 0xFF))
@@ -141,7 +147,11 @@ typedef unsigned char  datetime_t[DT_LENGTH];
 
 
 /* arbitrary day component of time-only DV_DATETIME */
+#ifdef DEBUG
+#define DAY_ZERO 0xfffefd
+#else
 #define DAY_ZERO (1999 * 365)
+#endif
 
 #define DT_TYPE_COMPAT_POSITIVE_TZ  0
 #define DT_TYPE_DATETIME 1
