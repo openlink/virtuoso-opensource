@@ -117,7 +117,7 @@ create procedure ODS.ODS_API."photo.album.update" (
   res := PHOTO.WA.edit_album (sid, g_id, path, name, new_name, visibility, startDate, endDate, description, geolocation, obsolete);
   close_ses (sid);
   rc := case when (not isarray (res)) then res.id else -1 end;
-  return ods_serialize_int_res (rc, 'Created');
+  return ods_serialize_int_res (rc, 'Updated');
 }
 ;
 
@@ -275,6 +275,8 @@ create procedure ODS.ODS_API."photo.image.update" (
   path := path || album || '/';
   if (new_name is null)
     new_name := name;
+  if (description is null)
+    description := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path || name, 'R'), 'R', 'description', 0);
   sid := get_ses (uname);
   res := PHOTO.WA.edit_image (sid, g_id, path, name, new_name, description, visibility);
   close_ses (sid);
@@ -442,7 +444,7 @@ create procedure ODS.ODS_API."photo.options.set" (
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+    return ods_serialize_sql_error (__SQL_STATE, PHOTO.WA.test_clear (__SQL_MESSAGE));
   };
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
@@ -466,6 +468,7 @@ create procedure ODS.ODS_API."photo.options.set" (
   {
     settings_array := vector ('albums_per_page', get_keyword ('albums_per_page', settings));
   } else {
+    PHOTO.WA.test (cast (albums_per_page as varchar), vector ('name', 'Albums per page', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
     settings_array := vector ('albums_per_page', albums_per_page);
     }
   res := PHOTO.WA.edit_album_settings (sid, g_id, path, show_map, show_timeline, discussion_enable, discussion_init, settings_array);

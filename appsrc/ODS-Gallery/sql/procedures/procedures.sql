@@ -766,6 +766,221 @@ create procedure PHOTO.WA.tags2unique(
 
 -----------------------------------------------------------------------------------------
 --
+create procedure PHOTO.WA.test_clear (
+  in S any)
+{
+  declare N integer;
+
+  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.test (
+  in value any,
+  in params any := null)
+{
+  declare valueType, valueClass, valueName, valueMessage, tmp any;
+
+  declare exit handler for SQLSTATE '*'
+  {
+    if (not is_empty_or_null(valueMessage))
+      signal ('TEST', valueMessage);
+    if (__SQL_STATE = 'EMPTY')
+      signal ('TEST', sprintf ('Field ''%s'' cannot be empty!<>', valueName));
+    if (__SQL_STATE = 'CLASS')
+    {
+      if (valueType in ('free-text', 'tags'))
+      {
+        signal ('TEST', sprintf ('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
+        signal ('TEST', sprintf ('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
+    if (__SQL_STATE = 'TYPE')
+      signal ('TEST', sprintf ('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
+    if (__SQL_STATE = 'MIN')
+      signal ('TEST', sprintf ('''%s'' value should be greater then %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAX')
+      signal ('TEST', sprintf ('''%s'' value should be less then %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MINLENGTH')
+      signal ('TEST', sprintf ('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAXLENGTH')
+      signal ('TEST', sprintf ('The length of field ''%s'' should be less then %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'SPECIAL')
+      signal ('TEST', __SQL_MESSAGE || '<>');
+    signal ('TEST', 'Unknown validation error!<>');
+    --resignal;
+  };
+
+  value := trim(value);
+  if (is_empty_or_null(params))
+    return value;
+
+  valueClass := coalesce(get_keyword ('class', params), get_keyword ('type', params));
+  valueType := coalesce(get_keyword ('type', params), get_keyword ('class', params));
+  valueName := get_keyword ('name', params, 'Field');
+  valueMessage := get_keyword ('message', params, '');
+  tmp := get_keyword ('canEmpty', params);
+  if (isnull (tmp))
+  {
+    if (not isnull (get_keyword ('minValue', params))) {
+      tmp := 0;
+    } else if (get_keyword ('minLength', params, 0) <> 0) {
+      tmp := 0;
+    }
+  }
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null (value))
+  {
+    signal('EMPTY', '');
+  }
+  else if (is_empty_or_null(value))
+  {
+    return value;
+  }
+
+  value := PHOTO.WA.validate2 (valueClass, value);
+
+  if (valueType = 'integer')
+  {
+    tmp := get_keyword ('minValue', params);
+    if ((not isnull (tmp)) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+
+  }
+  else if (valueType = 'float')
+  {
+    tmp := get_keyword ('minValue', params);
+    if (not isnull (tmp) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+  }
+  else if (valueType = 'varchar')
+  {
+    tmp := get_keyword ('minLength', params);
+    if (not isnull (tmp) and (length(PHOTO.WA.utf2wide(value)) < tmp))
+      signal('MINLENGTH', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxLength', params);
+    if (not isnull (tmp) and (length(PHOTO.WA.utf2wide(value)) > tmp))
+      signal('MAXLENGTH', cast (tmp as varchar));
+  }
+  return value;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.validate2 (
+  in propertyType varchar,
+  in propertyValue varchar)
+{
+  declare exit handler for SQLSTATE '*'
+  {
+    if (__SQL_STATE = 'CLASS')
+      resignal;
+    if (__SQL_STATE = 'SPECIAL')
+      resignal;
+    signal('TYPE', propertyType);
+    return;
+  };
+
+  if (propertyType = 'boolean')
+  {
+    if (propertyValue not in ('Yes', 'No'))
+      goto _error;
+  }
+  else if (propertyType = 'integer')
+  {
+    if (isnull (regexp_match('^[0-9]+\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as integer);
+  }
+  else if (propertyType = 'float')
+  {
+    if (isnull (regexp_match('^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as float);
+  }
+  else if (propertyType = 'dateTime')
+  {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  }
+  else if (propertyType = 'dateTime2')
+  {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  }
+  else if (propertyType = 'date')
+  {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  }
+  else if (propertyType = 'date2')
+  {
+    if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+      goto _error;
+    return stringdate(PHOTO.WA.dt_reformat(propertyValue, 'd.m.Y', 'Y-M-D'));
+  }
+  else if (propertyType = 'time')
+  {
+    if (isnull (regexp_match('^([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as time);
+  }
+  else if (propertyType = 'folder')
+  {
+    if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
+      goto _error;
+  }
+  else if ((propertyType = 'uri') or (propertyType = 'anyuri'))
+  {
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+      goto _error;
+  }
+  else if (propertyType = 'email')
+  {
+    if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
+      goto _error;
+  }
+  else if (propertyType = 'free-text')
+  {
+    if (length(propertyValue))
+      if (not PHOTO.WA.validate_freeTexts(propertyValue))
+        goto _error;
+  }
+  else if (propertyType = 'free-text-expression')
+  {
+    if (length(propertyValue))
+      if (not PHOTO.WA.validate_freeText(propertyValue))
+        goto _error;
+  }
+  else if (propertyType = 'tags')
+  {
+    if (not PHOTO.WA.validate_tags(propertyValue))
+      goto _error;
+  }
+  return propertyValue;
+
+_error:
+  signal('CLASS', propertyType);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure PHOTO.WA.validate_freeText (
   in S varchar)
 {
@@ -838,7 +1053,8 @@ create procedure PHOTO.WA.tag_delete(
   new_tags := PHOTO.WA.tags2vector (tags);
   tags := '';
   N := 0;
-  foreach (any new_tag in new_tags) do {
+  foreach (any new_tag in new_tags) do
+  {
     if (isstring(T) and (new_tag <> T))
       tags := concat(tags, ',', new_tag);
     if (isinteger(T) and (N <> T))
@@ -850,14 +1066,12 @@ create procedure PHOTO.WA.tag_delete(
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.isDav(){
-  declare
-    iIsDav integer;
-  declare
-    sHost varchar;
+create procedure PHOTO.WA.isDav()
+{
+  declare iIsDav integer;
+  declare sHost varchar;
 
   sHost := registry_get('_oGallery_path_');
-
   if (cast(sHost as varchar) = '0')
     sHost := '/apps/oGallery/';
 
