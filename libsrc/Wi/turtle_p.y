@@ -44,7 +44,16 @@
 #define ttlyyerror_action(strg) ttlyyerror_impl(ttlp_arg, NULL, (strg))
 #endif
 
+#define TTLYYERROR_ACTION_COND(flag,strg) do { \
+    if (!((flag) & ttlp_arg->ttlp_flags)) \
+      ttlyyerror_action(strg); \
+    else \
+      tf_report (ttlp_arg->ttlp_tf, 'W', NULL, NULL, (strg)); \
+  } while (0)
+
+
 extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
+
 
 #ifdef TTLDEBUG
 #define YYDEBUG 1
@@ -52,7 +61,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
 #define TTLP_URI_RESOLVE_IF_NEEDED(rel) \
   do { \
-    if ((NULL != ttlp_arg->ttlp_base_uri) && strncmp ((rel), "http://", 7)) \
+    if ((NULL != ttlp_arg->ttlp_tf->tf_base_uri) && strncmp ((rel), "http://", 7)) \
       (rel) = ttlp_uri_resolve (ttlp_arg, (rel)); \
     } while (0)
 
@@ -142,7 +151,7 @@ turtledoc
 
 clause
         : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
-	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_base_uri); ttlp_arg->ttlp_base_uri = $2; }
+	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_tf->tf_base_uri); ttlp_arg->ttlp_tf->tf_base_uri = $2; }
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		dk_set_push (&(ttlp_arg->ttlp_namespaces), $3);
 		dk_set_push (&(ttlp_arg->ttlp_namespaces), $2); }
@@ -171,8 +180,7 @@ trig_block_or_predicate_object_list
 	: predicate_object_list_or_garbage _DOT_WS
 	| opt_eq_lbra { 
                 tf_commit (ttlp_arg->ttlp_tf);
-		if (!(TTLP_ALLOW_TRIG & ttlp_arg->ttlp_flags))
-		  ttlyyerror_action ("Left curly brace can appear here only if the source text is TriG");
+		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
                 ttlp_arg->ttlp_trig_graph_uri = ttlp_arg->ttlp_subj_uri; ttlp_arg->ttlp_subj_uri = NULL;
                 dk_free_tree (ttlp_arg->ttlp_tf->tf_graph_iid);
                 ttlp_arg->ttlp_tf->tf_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */
@@ -209,8 +217,7 @@ triple_clause_with_nonq_subj
 		ttlp_arg->ttlp_subj_uri = $1; }
 	    predicate_object_list_or_garbage
 	| literal_subject {
-		if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
-		    ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");
+		TTLYYERROR_ACTION_COND (TTLP_SKIP_LITERAL_SUBJECTS, "Virtuoso does not support literal subjects");
 		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
 	    predicate_object_list_or_garbage
         | TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
@@ -242,8 +249,7 @@ inner_predicate_object_list
 	: predicate_object_list
         | _LBRA
 		{
-		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
-		    ttlyyerror_action ("Sequence blank node (written as '{...}' formula) can not be used as a predicate"); }
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Sequence blank node (written as '{...}' formula) can not be used as a predicate"); }
 		blank_block_formula
 	;
 
@@ -304,13 +310,11 @@ verb
         | _EQ_GT	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
 	| _LSQBRA_RSQBRA
 		{
-		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
-		    ttlyyerror_action ("Blank node (written as '[]') can not be used as a predicate");
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
 		  $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
 	| BLANK_NODE_LABEL
 		{
-		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
-		    ttlyyerror_action ("Blank node (written as '_:...' label) can not be used as a predicate");
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
                   if (ttlp_arg->ttlp_formula_iid)
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
                   else
@@ -318,13 +322,11 @@ verb
 		}
         | _LSQBRA
 		{
-		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
-		    ttlyyerror_action ("Blank node (written as '[...]' block) can not be used as a predicate"); }
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[...]' block) can not be used as a predicate"); }
 		blank_block_subj { $$ = $3; }
         | _LPAR
 		{
-		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
-		    ttlyyerror_action ("Sequence blank node (written as list in parenthesis) can not be used as a predicate"); }
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Sequence blank node (written as list in parenthesis) can not be used as a predicate"); }
 		blank_block_seq { $$ = $3; }
 	;
 

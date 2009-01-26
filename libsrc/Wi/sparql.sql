@@ -1168,7 +1168,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1182,7 +1182,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1210,7 +1210,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
   declare t, dt_twobyte, lang_twobyte int;
 retry_unrdf:
   t := __tag (v);
-  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1241,7 +1241,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
   declare t, dt_twobyte, lang_twobyte int;
 retry_unrdf:
   t := __tag (v);
-  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1454,7 +1454,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (__tag of varchar, 126, 217, __tag of nvarchar))
+  if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1474,8 +1474,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
---  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
-  if (0 = position (t, vector (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1494,7 +1493,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
   t := __tag (v);
---  if (not t in (__tag of varchar, 217, __tag of nvarchar, __tag of XML))
+--  if (not (t in (__tag of varchar, 217, __tag of nvarchar, __tag of XML)))
 --    signal ('RDFXX', 'DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL() accepts only string representations of typed values');
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1809,7 +1808,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, __tag of varchar, 217, __tag of nvarchar))
+  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1859,7 +1858,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any, in dflt varchar := '') 
   declare t int;
   return case (isiri_id (v)) when 0 then dflt else null end;
 --  t := __tag (v);
---  if (not t in (__tag of varchar, 217, __tag of nvarchar))
+--  if (not (t in (__tag of varchar, 217, __tag of nvarchar)))
 --    return NULL;
 --  return NULL; -- !!!TBD: uncomment this and make a support for UTF8 'language name' codepoint plane
 }
@@ -2191,6 +2190,17 @@ create procedure DB.DBA.TTLP_EV_COMMIT (inout g varchar, inout app_env any) {
 }
 ;
 
+create procedure DB.DBA.TTLP_EV_REPORT_DEFAULT (
+  inout msg_no integer, inout msg_type varchar,
+  inout src varchar, inout base varchar, inout graph varchar,
+  inout line_no integer, inout triple_no integer,
+  inout sstate varchar, inout smore varchar, inout descr varchar,
+  inout env any )
+{
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_REPORT_DEFAULT (', msg_no, msg_type, src, base, graph, line_no, triple_no, sstate, smore, descr, env, ')');
+  ;
+}
+;
 
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
@@ -2213,7 +2223,8 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       'DB.DBA.TTLP_EV_GET_IID',
       'DB.DBA.TTLP_EV_TRIPLE',
       'DB.DBA.TTLP_EV_TRIPLE_L',
-      'DB.DBA.TTLP_EV_COMMIT' ),
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
 }
 ;
@@ -2282,7 +2293,8 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
       'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
       'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
       'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
-      '' ),
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     res);
   return res;
 }
@@ -2343,7 +2355,8 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
       'DB.DBA.RDF_TTL2SQLHASH_EXEC_GET_IID',
       'DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE',
       'DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE_L',
-      '' ),
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     res);
   return res;
 }
@@ -2369,7 +2382,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
       'DB.DBA.TTLP_EV_GET_IID',
       'DB.DBA.TTLP_EV_TRIPLE',
       'DB.DBA.TTLP_EV_TRIPLE_L',
-      'DB.DBA.TTLP_EV_COMMIT' ),
+      'DB.DBA.TTLP_EV_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
   return graph;
@@ -2388,7 +2402,8 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
       'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
       'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
       'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
-      '' ),
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     res,
     base );
   return res;
@@ -2535,7 +2550,8 @@ create procedure DB.DBA.RDF_CONVERT_RDFXML_TO_TTL (in strg varchar, in base varc
       'DB.DBA.TTLP_EV_GET_IID',
       'DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE',
       'DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE_L',
-      '' ),
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     ttl_ses,
     base );
 }
@@ -2647,7 +2663,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
 ;
 
 
-create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL (inout triples any, inout ses any)
 {
   declare tcount, tctr integer;
   declare prev_s, prev_p IRI_ID;
@@ -2656,7 +2672,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
   string_subjs_found := 0;
   string_preds_found := 0;
   tcount := length (triples);
-  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_VERBOSE_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   if (0 = tcount)
     {
       http ('# Empty TURTLE\n', ses);
@@ -2775,6 +2791,28 @@ print_o:
       DB.DBA.RDF_LONG_TO_TTL (obj, ses);
     }
   http ('.\n', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('# Empty TURTLE\n', ses);
+      return;
+    }
+  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0);
+  rowvector_digit_sort (triples, 1, 1);
+  rowvector_digit_sort (triples, 0, 1);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    }
+  http (' .', ses);
 }
 ;
 
@@ -7867,7 +7905,8 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
       '!iri_to_id',
       'DB.DBA.TTLP_EV_TRIPLE_A',
       'DB.DBA.TTLP_EV_TRIPLE_L_A',
-      'DB.DBA.TTLP_EV_COMMIT_A' ),
+      'DB.DBA.TTLP_EV_COMMIT_A',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
   return graph;
 }
@@ -7893,7 +7932,8 @@ create function DB.DBA.TTLP_MT_LOCAL_FILE (in filename varchar, in base varchar,
       '!iri_to_id',
       'DB.DBA.TTLP_EV_TRIPLE_A',
       'DB.DBA.TTLP_EV_TRIPLE_L_A',
-      'DB.DBA.TTLP_EV_COMMIT_A' ),
+      'DB.DBA.TTLP_EV_COMMIT_A',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
   return graph;
 }
@@ -7924,7 +7964,8 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
       '!iri_to_id',
       'DB.DBA.TTLP_EV_TRIPLE_A',
       'DB.DBA.TTLP_EV_TRIPLE_L_A',
-      'DB.DBA.TTLP_EV_COMMIT_A' ),
+      'DB.DBA.TTLP_EV_COMMIT_A',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env,
     base );
   return graph;

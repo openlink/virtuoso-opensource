@@ -805,8 +805,16 @@ rdf_box_hash (caddr_t box)
 {
   rdf_box_t *rb = (rdf_box_t *)box;
   rdf_box_audit (rb);
-  if ((0 != rb->rb_ro_id) && !rb->rb_is_complete)
+  if (rb->rb_is_complete)
+    {
+      if ((RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
+        return box_hash (rb->rb_box);
+    }
+  else
+    {
+      if (0 != rb->rb_ro_id)
     return rb->rb_ro_id + (rb->rb_ro_id << 16);
+    }
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +
     (rb->rb_chksum_tail ?
       (box_hash (((rdf_bigbox_t *)rb)->rbb_chksum) + 113) :
@@ -1247,6 +1255,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
       return 1;
     case DV_IRI_ID: case DV_IRI_ID_8:
       {
+        int res;
         iri_id_t iid = unbox_iri_id (iri);
         if (0L == iid)
           return 0;
@@ -1263,7 +1272,37 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
             local_ret[0] = key_id_to_iri (qi, iid);
             return 1;
           }
-        return key_id_to_namespace_and_local (qi, iid, ns_prefix_ret, local_ret);
+        res = key_id_to_namespace_and_local (qi, iid, ns_prefix_ret, local_ret);
+        if (res)
+          {
+            caddr_t local = local_ret[0];
+            char *tail;
+            int local_len = strlen (local);
+            for (tail = local + local_len; tail > local; tail--)
+              {
+                char c = tail[-1];
+                if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+                  break;
+              }
+            if (isdigit (tail[0]))
+              tail = local + local_len;
+            if (tail != local)
+              {
+                caddr_t old_ns = ns_prefix_ret[0];
+                int old_ns_boxlen = box_length (old_ns);
+                caddr_t new_ns = dk_alloc_box (old_ns_boxlen + (tail - local), DV_STRING);
+                caddr_t new_local;
+                memcpy (new_ns, old_ns, old_ns_boxlen - 1);
+                memcpy (new_ns + old_ns_boxlen - 1, local, tail - local);
+                new_ns [old_ns_boxlen + (tail - local) - 1] = '\0';
+                new_local = box_dv_short_nchars (tail, (local + local_len) - tail);
+                dk_free_box (old_ns);
+                dk_free_box (local);
+                ns_prefix_ret[0] = new_ns;
+                local_ret[0] = new_local;
+              }
+          }
+        return res;
       }
     }
   return 0;
@@ -1397,6 +1436,8 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (DV_RDF == obj_dtp)
         {
           rdf_box_t *rb = (rdf_box_t *)obj;
+          if (!rb->rb_is_complete)
+            rb_complete (rb, qi->qi_trx, qi);
           if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
             {
               tii.dt.uri = rdf_type_twobyte_to_iri (qi, rb->rb_type);
@@ -1537,7 +1578,7 @@ fail:
 void
 rdf_box_init ()
 {
-  dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 0);
+  dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 1);
   PrpcSetWriter (DV_RDF, (ses_write_func) rb_serialize);
   dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
   bif_define ("rdf_box", bif_rdf_box);

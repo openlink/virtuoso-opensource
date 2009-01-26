@@ -224,7 +224,9 @@ static const char *tf_cbk_param_types[COUNTOF__TRIPLE_FEED] = {
   "RRRR",	/* e.g., DB.DBA.TTLP_EV_GET_IID(?,?,?, ?); there was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)'  */
   "RRRRR",	/* e.g., DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?) */
   "RRRRRRR",	/* e.g., DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?) */
-  "RR" };	/* e.g., DB.DBA.TTLP_EV_COMMIT(?,?) ) */
+  "RR",		/* e.g., DB.DBA.TTLP_EV_COMMIT(?,?) */
+  "RRRRRRRRRRR" }; /* e.g., DB.DBA.TTLP_EV_REPORT_DEFAULT(?,?,?,?,?,?,?,?,?,?,?) */
+
 
 void
 tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names)
@@ -329,6 +331,72 @@ tf_commit (triple_feed_t *tf)
     sqlr_resignal (err);
 }
 
+void
+tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr)
+{
+  /* caddr_t res; */
+  caddr_t err = NULL;
+  query_t *cbk_qr;
+  char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 11];
+  void **params;
+  caddr_t msg_no_box, msg_type_box, inp_name_box, line_no_box, triple_no_box, sqlstate_box, sqlmore_box, descr_box;
+  cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_MESSAGE];
+  if (NULL == cbk_qr)
+    return;
+  BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 11, DV_ARRAY_OF_POINTER);
+  msg_no_box = box_num (tf->tf_message_count++);
+  msg_type_box = box_dv_short_nchars (&msg_type, 1);
+  inp_name_box = box_dv_short_string (tf->tf_input_name);
+  line_no_box = ((NULL != tf->tf_line_no_ptr) ? box_num (tf->tf_line_no_ptr[0]) : NULL);
+  triple_no_box = box_num (tf->tf_triple_count);
+  sqlstate_box = box_dv_short_string (sqlstate);
+  sqlmore_box = box_dv_short_string (sqlmore);
+  descr_box = box_dv_short_string (descr);
+  /* res = NULL; */
+  params[0] = &msg_no_box;
+  params[1] = &msg_type_box;
+  params[2] = &inp_name_box;
+  params[3] = &(tf->tf_base_uri);
+  params[4] = &(tf->tf_graph_uri);
+  params[5] = &line_no_box;
+  params[6] = &triple_no_box;
+  params[7] = &sqlstate_box;
+  params[8] = &sqlmore_box;
+  params[9] = &descr_box;
+  params[10] = &(tf->tf_app_env);
+  /*params[11] = &res;*/
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_MESSAGE], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+#ifdef DEBUG
+  if (NULL != err)
+    {
+      printf ("tf_report callback error ");
+      dbg_print_box (err, stdout);
+      printf (" for arguments ");
+      dbg_print_box ((caddr_t)params, stdout);
+      printf ("\n");
+    }
+#endif
+  dk_free_tree (msg_no_box);
+  dk_free_tree (msg_type_box);
+  dk_free_tree (inp_name_box);
+  dk_free_tree (line_no_box);
+  dk_free_tree (triple_no_box);
+  dk_free_tree (sqlstate_box);
+  dk_free_tree (sqlmore_box);
+  dk_free_tree (descr_box);
+  BOX_DONE (params, params_buf);
+  if (NULL != err)
+    sqlr_resignal (err);
+#if 0
+  if (NULL != res)
+    {
+      printf ("tf_report callback returns ");
+      dbg_print_box (res, stdout);
+      printf ("\n");
+      dk_free_tree (res);
+    }
+#endif
+}
 
 caddr_t
 bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -455,7 +523,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  ;
     }
   rdfxml_parse ((query_instance_t *) qst, text_arg, (caddr_t *)&err, omit_top_rdf,
-    base_uri, graph_uri, cbk_names, app_env, enc, lh
+    NULL /* source name is unknown */, base_uri, graph_uri, cbk_names, app_env, enc, lh
     /*, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, &ns2dict*/ );
   if (NULL != err)
     sqlr_resignal (err);
@@ -479,13 +547,11 @@ void
 ttlp_free (ttlp_t *ttlp)
 {
   dk_free_tree (ttlp->ttlp_tf->tf_graph_uri);
-  tf_free (ttlp->ttlp_tf);
   dk_free_box (ttlp->ttlp_default_ns_uri);
   while (NULL != ttlp->ttlp_namespaces)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
-  dk_free_tree (ttlp->ttlp_base_uri);
   dk_free_tree (ttlp->ttlp_last_complete_uri);
   dk_free_tree (ttlp->ttlp_subj_uri);
   dk_free_tree (ttlp->ttlp_pred_uri);
@@ -493,6 +559,8 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_obj_type);
   dk_free_tree (ttlp->ttlp_obj_lang);
   dk_free_tree (ttlp->ttlp_formula_iid);
+  dk_free_tree (ttlp->ttlp_tf->tf_base_uri);
+  tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
 
@@ -502,6 +570,7 @@ ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg)
   int lineno = ttlp_arg[0].ttlp_lexlineno;
   if (NULL == raw_text)
     raw_text = ttlp_arg[0].ttlp_raw_text;
+  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
   sqlr_new_error ("37000", "SP029",
       "%.400s, line %d: %.500s%.5s%.1000s",
       ttlp_arg[0].ttlp_err_hdr,
@@ -519,6 +588,7 @@ ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *y
   int lineno = ttlp_arg[0].ttlp_lexlineno;
   if (NULL == raw_text)
     raw_text = ttlp_arg[0].ttlp_raw_text;
+  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
   sp1 = yyssp[1];
   sm1 = yyssp[-1];
   sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
@@ -723,12 +793,12 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
   query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;
   caddr_t res, err = NULL;
-  res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_arg[0].ttlp_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
+  res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
   if (NULL != err)
     sqlr_resignal (err);
-  if (res == ttlp_arg[0].ttlp_base_uri)
+  if (res == ttlp_arg[0].ttlp_tf->tf_base_uri)
     return box_copy (res);
   return res;
 }
@@ -740,7 +810,7 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
   caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   caddr_t o = o_uri;
-  if (NULL == s)
+  if ((NULL == s) || (NULL == p))
     return;
   if (ttlp_arg[0].ttlp_pred_is_reverse)
     {
@@ -766,7 +836,7 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
   caddr_t p = ttlp_arg[0].ttlp_pred_uri;
-  if (NULL == s)
+  if ((NULL == s) || (NULL == p))
     return;
   if (ttlp_arg[0].ttlp_pred_is_reverse)
     {
@@ -795,6 +865,11 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
   tf_triple_l (ttlp_arg[0].ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
 }
 
+#ifdef DEBUG
+#define TF_TRIPLE_PROGRESS_MESSAGE_MOD 25
+#else
+#define TF_TRIPLE_PROGRESS_MESSAGE_MOD 10000000
+#endif
 
 void
 tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
@@ -819,6 +894,9 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   params[4] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
+  tf->tf_triple_count++;
+  if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
+    tf_report (tf, 'P', NULL, NULL, "Loading is in progress");
   if (NULL != err)
     sqlr_resignal (err);
 }
@@ -847,6 +925,9 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   params[6] = &(tf->tf_app_env);
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE_L], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
+  tf->tf_triple_count++;
+  if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
+    tf_report (tf, 'P', NULL, NULL, "Loading is in progress");
   if (NULL != err)
     sqlr_resignal (err);
 }

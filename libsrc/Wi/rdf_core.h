@@ -54,17 +54,23 @@ extern caddr_t rdf_lang_twobyte_to_string (query_instance_t * qi, short twobyte)
 #define TRIPLE_FEED_TRIPLE	3
 #define TRIPLE_FEED_TRIPLE_L	4
 #define TRIPLE_FEED_COMMIT	5
-#define COUNTOF__TRIPLE_FEED	6
+#define TRIPLE_FEED_MESSAGE	6
+#define COUNTOF__TRIPLE_FEED	7
 
 typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
   caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
+  const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
   caddr_t tf_graph_uri;		/*!< Graph uri, owned by caller */
+  caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, owned by caller  */
   caddr_t tf_graph_iid;		/*!< Graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
-  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];
+  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];	/*!< Callback names, owned by caller */
   query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];
+  ptrlong tf_triple_count;	/*!< Number of triples that are sent to callbacks already, must be boxed before sending to SQL callbacks! */
+  ptrlong tf_message_count;	/*!< Number of messages that are reported already, must be boxed before sending to SQL callbacks! */
+  int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
 } triple_feed_t;
 
 extern triple_feed_t *tf_alloc (void);
@@ -75,6 +81,8 @@ extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
+extern void tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *sqlmore, const char *descr);
+
 
 #define TTLP_STRING_MAY_CONTAIN_CRLF	0x0001
 #define TTLP_VERB_MAY_BE_BLANK		0x0002
@@ -82,7 +90,7 @@ extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_
 #define TTLP_SKIP_LITERAL_SUBJECTS	0x0008
 #define TTLP_NAME_MAY_CONTAIN_PATH	0x0010
 #define TTLP_ACCEPT_DIRTY_NAMES		0x0020
-#define TTLP_QUIET_RECOVERY		0x0080
+#define TTLP_ERROR_RECOVERY		0x0080
 #define TTLP_ALLOW_TRIG			0x0100
 
 #define TTLP_ALLOW_QNAME_A		0x01
@@ -100,7 +108,6 @@ typedef struct ttlp_s
   xml_read_func_t ttlp_iter;
   xml_read_abend_func_t ttlp_iter_abend;
   void *ttlp_iter_data;
-  const char *ttlp_input_name;	/*!< URI or file name or other name of source */
   encoding_handler_t *ttlp_enc;	/*!< Encoding of the source */
   long ttlp_flags;		/*!< Flags for dirty load */
   /* lexer */
@@ -114,7 +121,7 @@ typedef struct ttlp_s
   caddr_t ttlp_default_ns_uri;	/*!< IRI associated with ':' prefix */
   dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
-  caddr_t ttlp_base_uri;	/*!< Base URI to resolve relative URIs */
+  caddr_t ttlp_graph_uri;	/*!< Graph URI that may be used in error reporting if \c ttlp_trig_graph_uri does not override it. */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
@@ -170,7 +177,7 @@ extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o
 
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
-  int omit_top_rdf, caddr_t base_uri, caddr_t graph_uri,
+  int omit_top_rdf, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
   ccaddr_t *stmt_texts, caddr_t app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,

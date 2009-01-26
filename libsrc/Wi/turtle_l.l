@@ -41,9 +41,13 @@
 
 #define ttlyyerror(strg) ttlyyerror_impl(ttlp_arg, yytext, (strg))
 
-#define TTLYYERROR_OR_RECOVER(strg) do { \
-  if (!(ttlp_arg[0].ttlp_flags & TTLP_QUIET_RECOVERY)) \
+#define TTLYYERROR_OR_REPORT(strg) do { \
+  if (!(ttlp_arg[0].ttlp_flags & TTLP_ERROR_RECOVERY)) \
     ttlyyerror (strg); \
+  else tf_report (ttlp_arg[0].ttlp_tf, 'E', NULL, NULL, (strg)); } while (0)
+
+#define TTLYYERROR_OR_RECOVER(strg) do { \
+  TTLYYERROR_OR_REPORT(strg); \
   return TTL_RECOVERABLE_ERROR; } while (0)
 
 #define ttlyylval (((YYSTYPE *)(yylval_param))[0])
@@ -212,6 +216,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>"<"([^<>\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     return Q_IRI_REF;
   }
@@ -219,20 +224,21 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>"<"([^<>\001-\037]|"\t")+{S_NL}([^<>.;,\[\]{}\'\"\\\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Line break in angle-bracketed name; this error can be suppressed by parser flags");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Line break in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     ttlp_arg[0].ttlp_lexlineno++;
     return Q_IRI_REF;
   }
 
 <INITIAL>"<"([^<>\001-\037]|"\t")*	{
-    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      ttlyyerror ("Invalid characters in angle-bracketed name");
+    TTLYYERROR_OR_REPORT ("Invalid characters in angle-bracketed name");
     BEGIN (TURTLE_SKIP_TO_DOT_WS); yymore (); }
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{ 
     if (!(ttlp_arg[0].ttlp_flags & TTLP_NAME_MAY_CONTAIN_PATH))
       TTLYYERROR_OR_RECOVER ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
@@ -241,6 +247,7 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
       TTLYYERROR_OR_RECOVER ("Full N3 syntax allow variables, TURTLE does not; this error can be suppressed by parser flags");
+    tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Full N3 syntax allow variables, TURTLE does not");
     TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
@@ -297,30 +304,32 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <TURTLE_SQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
-        if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      ttlyyerror ("End-of-line in a short single-quoted string; this error can be suppressed by parser flags");
+        TTLYYERROR_OR_REPORT ("End-of-line in a short single-quoted string; this error can be suppressed by parser flags");
         BEGIN TURTLE_BAD_SQ;
       }
     else
-      { ttlp_arg[0].ttlp_lexlineno++; yymore(); } }
+      {
+        tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short single-quoted string");
+        ttlp_arg[0].ttlp_lexlineno++; yymore();
+      } }
 <TURTLE_DQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
-        if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      ttlyyerror ("End-of-line in a short double-quoted string; this error can be suppressed by parser flags");
+        TTLYYERROR_OR_REPORT ("End-of-line in a short double-quoted string; this error can be suppressed by parser flags");
         BEGIN TURTLE_BAD_DQ;
       }
     else
-      { ttlp_arg[0].ttlp_lexlineno++; yymore(); } }
+      {
+        tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short double-quoted string");
+        ttlp_arg[0].ttlp_lexlineno++; yymore();
+      } }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_SQ>[\\]		{
-    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      ttlyyerror ("Bad escape sequence in a short single-quoted string");
+    TTLYYERROR_OR_REPORT ("Bad escape sequence in a short single-quoted string");
     BEGIN (TURTLE_BAD_SQ); }
 <TURTLE_DQ>[\\]		{
-    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      ttlyyerror ("Bad escape sequence in a short double-quoted string");
+    TTLYYERROR_OR_REPORT ("Bad escape sequence in a short double-quoted string");
     BEGIN (TURTLE_BAD_DQ); }
 <TURTLE_BAD_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+) {}
 <TURTLE_BAD_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+) {}
@@ -342,8 +351,8 @@ SPAR_NCNAME_X		([A-Za-z0-9_./#%+\x7f-\xfe-]*[A-Za-z0-9_/#%+\x7f-\xfe-])
 <INITIAL>"#"(.*)				{ }
 <INITIAL>[ \t]+				{ }
 <INITIAL>.		{
-    if (!(TTLP_QUIET_RECOVERY & ttlp_arg[0].ttlp_flags))
-      { char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]); ttlyyerror (buf); }
+    char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]);
+    TTLYYERROR_OR_REPORT (buf);
     BEGIN TURTLE_SKIP_TO_DOT_WS; yymore(); }
 <TURTLE_SKIP_TO_DOT_WS>"."[ \t]		{ BEGIN INITIAL; yyless (yyleng-2); return _GARBAGE_BEFORE_DOT_WS; }
 <TURTLE_SKIP_TO_DOT_WS>"."{S_NL}	{ BEGIN INITIAL; yyless (('.' == yytext[yyleng-2]) ? yyleng-2 : yyleng-3); ttlp_arg[0].ttlp_lexlineno++; return _GARBAGE_BEFORE_DOT_WS; }
@@ -570,6 +579,7 @@ rdf_load_turtle (
           ttlp_free (ttlp);
 	  sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", fname);
         }
+      tf->tf_input_name = fname;
       ttlp->ttlp_iter = file_read;
       ttlp->ttlp_iter_data = srcfile;
       goto iter_is_set;
@@ -633,7 +643,8 @@ iter_is_set:
         ttlp->ttlp_enc = &eh__ISO8859_1;
     }
   if (box_length (base_uri) > 1)
-    ttlp->ttlp_base_uri = box_copy (base_uri);
+    tf->tf_base_uri = box_copy (base_uri);
+  tf->tf_line_no_ptr = &(ttlp->ttlp_lexlineno);
   QR_RESET_CTX
     {
       ttlyylex_init (&scanner);

@@ -779,7 +779,7 @@ caddr_t default_rdf_dtd_config = NULL;
 
 void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
-  int omit_top_rdf, caddr_t base_uri, caddr_t graph_uri,
+  int omit_top_rdf, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
   ccaddr_t *cbk_names, caddr_t app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
@@ -855,6 +855,8 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   tf->tf_graph_uri = graph_uri;
   tf->tf_app_env = app_env;
   tf->tf_creator = "rdf_load_rdfxml";
+  tf->tf_input_name = source_name;
+  tf->tf_line_no_ptr = &(parser->curr_pos.line_num);
   context.xp_tf = tf;
   QR_RESET_CTX
     {
