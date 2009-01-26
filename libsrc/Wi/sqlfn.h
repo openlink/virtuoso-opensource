@@ -1113,7 +1113,7 @@ const char *ssl_type_to_name (char ssl_type);
 
 extern void bpel_init (void);
 
-caddr_t file_stat (char *fname, int what);
+extern caddr_t file_stat (const char *fname, int what);
 
 void itc_delete_blobs (it_cursor_t * itc, db_buf_t page);
 

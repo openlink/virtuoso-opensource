@@ -141,6 +141,7 @@ extern sql_tree_tmp * st_varchar;
 extern sql_tree_tmp * st_nvarchar;
 
 int is_allowed (char * path);
+extern void file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt);
 int mime_get_attr (char *szMessage, long Offset, char szDelim, int *rfc822mode,
     int *override_to_mime, char *_szName, int max_name, char *_szValue, int max_value);
 void dime_compose (dk_session_t * ses, caddr_t *input, caddr_t * err);
@@ -216,7 +217,7 @@ caddr_t os_get_gname_by_fname (char *fname);
 caddr_t os_get_uname_by_uid (long uid);
 caddr_t os_get_gname_by_gid (long gid);
 
-char *file_canonical_name (char *fname, int *is_allocated);
+extern caddr_t file_native_name (caddr_t server_encoded_fname);
 caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);

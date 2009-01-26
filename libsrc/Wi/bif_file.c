@@ -80,6 +80,12 @@
 #endif
 
 #include "datesupp.h"
+#include "langfunc.h"
+
+int i18n_wide_file_names = 0;
+encoding_handler_t *i18n_volume_encoding = NULL;
+encoding_handler_t *i18n_volume_emergency_encoding = NULL;
+
 
 extern dk_session_t *http_session_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
@@ -447,44 +453,41 @@ ret:
 }
 
 
+void
+file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+{
+  caddr_t err = NULL;
+  if (PATH_MAX < (box_length (fname_cvt) - 1))
+    err = srv_make_new_error ("42000", "FA117",
+      "File path '%.200s...' is too long (%ld chars), OS limit is %ld chars",
+      fname_cvt, (long)(box_length (fname_cvt) - 1), (long)PATH_MAX);
+  else if (!is_allowed (fname_cvt))
+    err = srv_make_new_error ("42000", "FA003",
+      "Access to '%.1000s' is denied due to access control in ini file",
+    fname_cvt );
+  if (NULL != err_ret)
+    err_ret [0] = err;
+  if (NULL == err)
+    return;
+  if (free_fname_cvt)
+    dk_free_box (fname_cvt);
+  if (NULL == err_ret)
+    sqlr_resignal (err);
+}
+
+
 static caddr_t
 bif_sys_unlink (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname;
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
+  caddr_t fname, fname_cvt;
+  caddr_t err = NULL;
   int retcode, errcode;
 
   sec_check_dba ((query_instance_t *) qst, "sys_unlink");
-
-  fname = bif_string_arg (qst, args, 0, "sys_unlink");
-
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA003",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_unlink");
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
   retcode = unlink (fname_cvt);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA004",
-	"Access to %s is denied due to access control in ini file", fname);
-
-  retcode = unlink (fname);
-#endif
   if (-1 == retcode)
     {
       errcode = errno;
@@ -492,137 +495,112 @@ bif_sys_unlink (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 #ifdef EACCES
 	case EACCES:
-	  sqlr_new_error ("42000", "SR426",
-	      "Permission is denied for the file '%s' in sys_unlink()",
-	      fname);
+	  err = srv_make_new_error ("42000", "SR426",
+	      "Permission is denied for the file '%.1000s' in sys_unlink()",
+	      fname_cvt );
+          break;
 #endif
 #ifdef ENAMETOOLONG
 	case ENAMETOOLONG:
-	  sqlr_new_error ("42000", "SR427",
-	      "Path name '%s' too long in sys_unlink()", fname);
+	  err = srv_make_new_error ("42000", "SR427",
+	      "Path name '%.1000s' too long in sys_unlink()", fname_cvt );
+          break;
 #endif
 #ifdef ENOENT
 	case ENOENT:
-	  sqlr_new_error ("42000", "SR428",
-	      "A directory component in '%s' does not exist or is a dangling symbolic link in sys_unlink()",
-	      fname);
+	  err = srv_make_new_error ("42000", "SR428",
+	      "A directory component in '%.1000s' does not exist or is a dangling symbolic link in sys_unlink()",
+	      fname_cvt );
+          break;
 #endif
 #ifdef ENOTDIR
 	case ENOTDIR:
-	  sqlr_new_error ("42000", "SR429",
-	      "A component used as a directory in '%s' is not, in fact, a directory in sys_unlink()",
-	      fname);
+	  err = srv_make_new_error ("42000", "SR429",
+	      "A component used as a directory in '%.1000s' is not, in fact, a directory in sys_unlink()",
+	      fname_cvt );
+          break;
 #endif
 #ifdef EISDIR
 	case EISDIR:
-	  sqlr_new_error ("42000", "SR430",
-	      "'%s' refers to a directory in sys_unlink()", fname);
+	  err = srv_make_new_error ("42000", "SR430",
+	      "'%.1000s' refers to a directory in sys_unlink()", fname_cvt );
+          break;
 #endif
 #ifdef ENOMEM
 	case ENOMEM:
-	  sqlr_new_error ("42000", "SR431",
-	      "Insufficient kernel memory was available in sys_unlink() to process '%s'", fname);
+	  err = srv_make_new_error ("42000", "SR431",
+	      "Insufficient kernel memory was available in sys_unlink() to process '%.1000s'", fname_cvt );
+          break;
 #endif
 #ifdef EROFS
 	case EROFS:
-	  sqlr_new_error ("42000", "SR432",
-	      "'%s' refers to a file on a read-only filesystem in sys_unlink()",
-	      fname);
+	  err = srv_make_new_error ("42000", "SR432",
+	      "'%.1000s' refers to a file on a read-only filesystem in sys_unlink()",
+	      fname_cvt );
+          break;
 #endif
 #ifdef ELOOP
 	case ELOOP:
-	  sqlr_new_error ("42000", "SR433",
-	      "Too many symbolic links were encountered in translating '%s' in sys_unlink()",
-	      fname);
+	  err = srv_make_new_error ("42000", "SR433",
+	      "Too many symbolic links were encountered in translating '%.1000s' in sys_unlink()",
+	      fname_cvt);
+          break;
 #endif
 #ifdef EIO
 	case EIO:
-	  sqlr_new_error ("42000", "SR434",
-	      " An I/O error occurred in sys_unlink(), resource '%s'", fname);
+	  err = srv_make_new_error ("42000", "SR434",
+	      " An I/O error occurred in sys_unlink(), resource '%.1000s'", fname_cvt);
+          break;
 #endif
 	}
+      goto signal_error;
     }
+  dk_free_box (fname_cvt);
   return box_num (retcode);
+
+signal_error:
+  dk_free_box (fname_cvt);
+  sqlr_resignal (err);
+  return NULL;
 }
 
-/* IvAn/WinFileNames/000815
-   1. File descriptor's leaks has removed.
-   2. Error handling extended by the case of "failed lseek".
-   3. Conversion added for slashes, to make applications more portable.
-	  (The OS itself is usually OK but some drivers may be stymied.)
- */
 static caddr_t
 bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t res;
+  caddr_t fname_cvt, res;
   OFF_T off, start_pos = 0;
   OFF_T bytes;
   caddr_t fname;
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
-  int fd;
-  int saved_errno;
-
+  int fd = -1;
+  caddr_t err = NULL;
   sec_check_dba ((query_instance_t *) qst, "file_to_string");
-
-  fname = bif_string_arg (qst, args, 0, "file_to_string");
-
-  if (strlen (fname) >= PATH_MAX)
-    {
-      char buf[PATH_MAX + 4];
-      memcpy (buf, fname, PATH_MAX);
-      buf[PATH_MAX] = '\0';
-      sqlr_new_error ("39000", "FA040",
-	  "File name argument of file_to_string is too long: %s...", buf);
-    }
-
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA003",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
-
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "file_to_string");
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
   fd = open (fname_cvt, OPEN_FLAGS_RO);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA004",
-	"Access to %s is denied due to access control in ini file", fname);
-
-  fd = open (fname, OPEN_FLAGS_RO);
-#endif
-  if (fd == -1)
-    sqlr_new_error ("39000", "FA005", "Can't open file %s, error %d", fname,
+  if (-1 == fd)
+    {
+      err = srv_make_new_error ("39000", "FA005", "Can't open file '%.1000s', error %d", fname_cvt,
 	errno);
+      goto signal_error;
+    }
 
   off = LSEEK (fd, 0, SEEK_END);
   bytes = off;
   if (off == -1)
     {
-      saved_errno = errno;
-      close (fd);
-      sqlr_new_error ("39000", "FA007", "Seek error in file %s, error %d",
-	  fname, saved_errno);
+      err = srv_make_new_error ("39000", "FA007", "Seek error in file '%.1000s', error %d",
+	  fname_cvt, errno );
+      goto signal_error;
     }
   if (BOX_ELEMENTS (args) > 1)
     {
       start_pos = (OFF_T) bif_long_arg (qst, args, 1, "file_to_string");
       if (start_pos > off)
 	{
-	  close (fd);
-	  sqlr_new_error ("39000", "FA008", "Start offset is out of range");
+	  err = srv_make_new_error ("39000", "FA008", "Start offset %ld is out of range in file '%.1000s' of actual length %ld",
+            (long)start_pos, fname_cvt, (long)off );
+          goto signal_error;
 	}
     }
 
@@ -637,30 +615,34 @@ bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (bytes > FS_MAX_STRING)
     {
-      close (fd);
-      sqlr_new_error ("39000", "FA008", "File %s too long", fname);
+      err = srv_make_new_error ("39000", "FA008",
+        "File '%.1000s' too long, cannot return string content %ld chars long", fname_cvt, (long)bytes );
+      goto signal_error;
     }
-
 
   LSEEK (fd, start_pos, SEEK_SET);
 
   if (NULL == (res = dk_try_alloc_box (bytes + 1, DV_LONG_STRING)))
     {
       close(fd);
+      dk_free_box (fname_cvt);
       qi_signal_if_trx_error ((query_instance_t *)qst);
     }
   if (read (fd, res, bytes) != bytes)
     {
-      saved_errno = errno;
-      close (fd);
       dk_free_box (res);
-      sqlr_new_error ("39000", "FA009", "Read from %s failed (%d)", fname,
-	  saved_errno);
+      err = srv_make_new_error ("39000", "FA009",
+        "Read from file '%.1000s' failed (%d)", fname_cvt, errno );
+      goto signal_error;
     }
   res[bytes] = 0;
 
+signal_error:
+  if (-1 != fd)
   close (fd);
-
+  dk_free_box (fname_cvt);
+  if (NULL != err)
+    sqlr_resignal (err);
   return res;
 }
 
@@ -696,20 +678,17 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args, int is_utf8, int ses_exists, const char *func_name)
 {
   dk_session_t *res = NULL;
-  caddr_t fname;
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
-  int fd, argctr, from_is_set = 0, to_is_set = 0, argcount = BOX_ELEMENTS (args);
+  caddr_t fname, fname_cvt, err = NULL;
+  int fd = -1, argctr, from_is_set = 0, to_is_set = 0, argcount = BOX_ELEMENTS (args);
   int saved_errno;
   char buffer[0x8000];
   volatile OFF_T from, to, total = 0, need = 0, readed, next;
   STAT_T st;
 
   sec_check_dba ((query_instance_t *) qst, func_name);
-
-  fname = bif_string_arg (qst, args, 0, func_name);
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, func_name);
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
   argctr = 1;
   if (ses_exists)
     res = http_session_no_catch_arg (qst, args, argctr++, func_name);
@@ -723,58 +702,23 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
       to = bif_long_arg (qst, args, argctr++, func_name);
       to_is_set = 1;
     }
-
-  if (strlen (fname) >= PATH_MAX)
-    {
-      char buf[PATH_MAX + 4];
-      memcpy (buf, fname, PATH_MAX);
-      buf[PATH_MAX] = '\0';
-      sqlr_new_error ("39000", "FA041",
-	  "File name argument of %s() is too long: %s...", func_name, buf );
-    }
-
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA010",
-	  "Access to %s is denied in %s() due to access control in ini file", fname, func_name);
-    }
-
   if (-1 == V_STAT (fname_cvt, &st))
     {
       int eno = errno;
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA112", "Can't stat file %s, error (%d) : %s", fname,
-	  eno, strerror (eno));
+      err = srv_make_new_error ("42000", "FA112", "Can't stat file '%.1000s', error (%d) : %s",
+        fname_cvt, eno, strerror (eno) );
+      goto signal_error;
     }
-#else
-  if (-1 == V_STAT (fname, &st))
-    {
-      int eno = errno;
-      sqlr_new_error ("42000", "FA112", "Can't stat file %s, error (%d) : %s", fname,
-	  eno, strerror (eno));
-    }
-#endif
+
   if (from_is_set)
     {
       if (from > st.st_size || from < 0)
 	{
-#ifdef HAVE_DIRECT_H
-	  dk_free (fname_cvt, fname_cvt_len);
-#endif
-	  sqlr_new_error ("42000", "FA113",
-	      "Invalid starting offset passed to %s('%s'," OFF_T_PRINTF_FMT ",...),"
+	  err = srv_make_new_error ("42000", "FA113",
+	      "Invalid starting offset passed to %s('%.1000s'," OFF_T_PRINTF_FMT ",...),"
 	      " file size is " OFF_T_PRINTF_FMT,
-	      func_name, fname, (OFF_T_PRINTF_DTP) from, (OFF_T_PRINTF_DTP) st.st_size);
+	      func_name, fname_cvt, (OFF_T_PRINTF_DTP) from, (OFF_T_PRINTF_DTP) st.st_size );
+          goto signal_error;
 	}
     }
   else
@@ -783,32 +727,23 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     {
       if (to > st.st_size || to < from)
 	{
-#ifdef HAVE_DIRECT_H
-	  dk_free (fname_cvt, fname_cvt_len);
-#endif
-	  sqlr_new_error ("42000", "FA114",
-	      "Invalid ending offset passed to %s('%s',"
+	  err = srv_make_new_error ("42000", "FA114",
+	      "Invalid ending offset passed to %s('%.1000s',"
 	      OFF_T_PRINTF_FMT "," OFF_T_PRINTF_FMT "), "
 	      "file size is " OFF_T_PRINTF_FMT,
-	      func_name, fname, (OFF_T_PRINTF_DTP) from, (OFF_T_PRINTF_DTP) to, (OFF_T_PRINTF_DTP) st.st_size);
+	      func_name, fname_cvt, (OFF_T_PRINTF_DTP) from, (OFF_T_PRINTF_DTP) to, (OFF_T_PRINTF_DTP) st.st_size );
+          goto signal_error;
 	}
     }
   else
     to = st.st_size;
-#ifdef HAVE_DIRECT_H
-  fd = open (fname_cvt, OPEN_FLAGS_RO);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA011",
-	"Access to %s is denied due to access control in ini file", fname);
   fd = open (fname, OPEN_FLAGS_RO);
-#endif
   if (fd == -1)
     {
       int eno = errno;
-      sqlr_new_error ("42000", "FA012", "Can't open file %.1000s, error (%d) : %s", fname,
-	  eno, strerror (eno));
+      err = srv_make_new_error ("42000", "FA012", "Can't open file '%.1000s', error (%d) : %s", fname_cvt,
+	  eno, strerror (eno) );
+      goto signal_error;
     }
 
   if (!ses_exists)
@@ -820,11 +755,11 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   if ((0 != from) && (((OFF_T)-1) == LSEEK (fd, from, SEEK_SET)))
     {
       int eno = errno;
-      close (fd);
       strses_free (res);
-      sqlr_new_error ("42000", "FA113",
-	  "Can't seek to in file %.1000s seek to " OFF_T_PRINTF_FMT ", error (%d) : %s",
-	  fname, (OFF_T_PRINTF_DTP)from, eno, strerror (eno));
+      err = srv_make_new_error ("42000", "FA113",
+	  "Can't seek to in file '%.1000s' seek to " OFF_T_PRINTF_FMT ", error (%d) : %s",
+	  fname_cvt, (OFF_T_PRINTF_DTP)from, eno, strerror (eno) );
+      goto signal_error;
     }
   need = to - from;
   for (;;)
@@ -851,19 +786,20 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   if (readed == -1)
     {
       saved_errno = errno;
-      close (fd);
       strses_free (res);
-      sqlr_new_error ("39000", "FA013", "Read from %.1000s failed (%d) : %s", fname,
-	  saved_errno, strerror (saved_errno));
+      err = srv_make_new_error ("39000", "FA013", "Read from '%.1000s' failed (%d) : %s", fname_cvt,
+	  saved_errno, strerror (saved_errno) );
+      goto signal_error;
     }
   if (total != need)
     {
       close (fd);
       strses_free (res);
-      sqlr_new_error ("39000", "FA115",
+      err = srv_make_new_error ("39000", "FA115",
 	  "Read " OFF_T_PRINTF_FMT
-	  " instead of " OFF_T_PRINTF_FMT " bytes from file %.1000s",
-	  (OFF_T_PRINTF_DTP)total, (OFF_T_PRINTF_DTP)need, fname);
+	  " instead of " OFF_T_PRINTF_FMT " bytes from file '%.1000s'",
+	  (OFF_T_PRINTF_DTP)total, (OFF_T_PRINTF_DTP)need, fname_cvt );
+      goto signal_error;
     }
   close (fd);
   if (is_utf8)
@@ -872,6 +808,13 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     return box_num (total);
   else
     return (caddr_t) res;
+
+signal_error:
+  if (-1 != fd)
+    close (fd);
+  dk_free_box (fname_cvt);
+  sqlr_resignal (err);
+  return NULL;
 }
 
 
@@ -906,44 +849,22 @@ bif_file_append_to_string_session_utf8 (caddr_t * qst, caddr_t * err_ret,
   return bif_file_to_string_session_impl (qst, err_ret, args, 1, 1, "file_append_to_string_session_utf8");
 }
 
-
 caddr_t
-file_stat (char *fname, int what)
+file_stat_int (caddr_t fname, int what)
 {
   char dt[DT_LENGTH];
   char szTemp[100];
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
+  caddr_t fname_cvt;
   int stat_res;
   STAT_T st;
 
   memset (dt, 0, sizeof (dt));
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if ((fname_tail - 1) >= fname_cvt && *(fname_tail - 1) == '\\')
-    *(fname_tail - 1) = 0;
-  stat_res = V_STAT (fname_cvt, &st);
-#if ! (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
-  dk_free (fname_cvt, fname_cvt_len);
-#endif
-#else
+  fname_cvt = file_native_name (fname);
   stat_res = V_STAT (fname, &st);
-#endif
 
   if (-1 == stat_res)
     {
-#if (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
-      dk_free (fname_cvt, fname_cvt_len);
-#endif
+      dk_free_box (fname_cvt);
       return NULL;
     }
 
@@ -952,10 +873,10 @@ file_stat (char *fname, int what)
 #if defined (HAVE_DIRECT_H) && (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
       if (!file_mtime_to_dt (fname_cvt, dt))
 	{
-	  dk_free (fname_cvt, fname_cvt_len);
+          dk_free_box (fname_cvt);
 	  return NULL;
 	}
-      dk_free (fname_cvt, fname_cvt_len);
+      dk_free_box (fname_cvt);
 #else
       if (st.st_mtime < 0)
 	return NULL;
@@ -993,6 +914,15 @@ file_stat (char *fname, int what)
   return box_dv_short_string (szTemp);
 }
 
+caddr_t
+file_stat (const char *fname, int what)
+{
+  caddr_t boxed_fname = box_dv_short_string (fname);
+  caddr_t res = file_stat_int (boxed_fname, what);
+  dk_free_box (boxed_fname);
+  return res;
+}	
+
 
 static caddr_t
 bif_file_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1001,7 +931,7 @@ bif_file_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res;
   int what = 0;
 
-  fname = bif_string_arg (qst, args, 0, "file_stat");
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "file_stat");
   if (BOX_ELEMENTS (args) > 1)
     what = (int) bif_long_arg (qst, args, 1, "file_stat");
   res = file_stat (fname, what);
@@ -1014,48 +944,13 @@ bif_sys_mkdir (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname;
   long rc = -1, errn = 0;
-#if defined (HAVE_DIRECT_H) || defined (__APPLE__)
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
+  caddr_t fname_cvt;
   sec_check_dba ((query_instance_t *) qst, "sys_mkdir");
-  fname = bif_string_arg (qst, args, 0, "sys_mkdir");
-#if defined (HAVE_DIRECT_H)
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA014",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_mkdir");
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
   rc = mkdir (fname_cvt, FS_DIR_MODE);
-  dk_free (fname_cvt, fname_cvt_len);
-#elif defined (__APPLE__)
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  memcpy (fname_cvt, fname, fname_cvt_len - 1);
-  fname_cvt[fname_cvt_len - 1] = 0;
-  if (!is_allowed (fname))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA015",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
-  rc = mkdir (fname_cvt, FS_DIR_MODE);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA015",
-	"Access to %s is denied due to access control in ini file", fname);
-  rc = mkdir (fname, FS_DIR_MODE);
-#endif
+  dk_free_box (fname_cvt);
   if (rc != 0)
     {
       errn = errno;
@@ -1113,43 +1008,19 @@ make_path (const char *path, int istest)
 static caddr_t
 bif_sys_mkpath (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname;
+  caddr_t fname, fname_cvt;
   long istest = 0;
   long rc = -1, errn = 0;
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
   sec_check_dba ((query_instance_t *) qst, "sys_mkpath");
-  fname = bif_string_arg (qst, args, 0, "sys_mkpath");
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_mkpath");
   if (BOX_ELEMENTS (args) > 1)
     istest = (long) bif_long_arg (qst, args, 1, "sys_mkpath");
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  if (0x1000 < fname_cvt_len)
+  if (0x1000 < box_length (fname))
     sqlr_new_error ("42000", "FA116",
-      "Abnormally long path is passed as argument to sys_mkpath()", fname);
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA014",
-	  "Access to %.1000s is denied due to access control in ini file", fname);
-    }
-  rc = make_path (fname, istest);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA015",
-	"Access to %.1000s is denied due to access control in ini file", fname);
-  rc = make_path (fname, istest);
-#endif
+      "Abnormally long path is passed as argument to sys_mkpath()" );
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  rc = make_path (fname_cvt, istest);
   if (rc != 0)
     {
       errn = errno;
@@ -1159,8 +1030,9 @@ bif_sys_mkpath (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    qst_set (qst, args[1],
 		(caddr_t) box_dv_short_string (virt_strerror (errn)));
 	}
-      return box_num (errn);
+      rc = errn;
     }
+  dk_free_box (fname_cvt);
   return box_num (rc);
 }
 
@@ -1192,7 +1064,7 @@ str_compare (const void *s1, const void *s2)
 caddr_t
 bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname;
+  caddr_t fname, fname_cvt;
   long files = 0, errn = 0;
   dk_set_t dir_list = NULL;
 #ifndef WIN32
@@ -1200,41 +1072,22 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   struct dirent *de;
   struct stat st;
 #else
-  char *fname_tail;
   ptrlong rc = 0;
   WIN32_FIND_DATA fd, *de;
   HANDLE df;
 #endif
-  char path[PATH_MAX + 1];
   caddr_t lst;
 
   sec_check_dba ((query_instance_t *) qst, "sys_dirlist");
-  fname = bif_string_arg (qst, args, 0, "sys_dirlist");
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_dirlist");
   if (BOX_ELEMENTS (args) > 1)
     files = (long) bif_long_arg (qst, args, 1, "sys_dirlist");
-
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
 #ifndef WIN32
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA016",
-	"Access to %s is denied due to access control in ini file", fname);
-  df = opendir (fname);
+  df = opendir (fname_cvt);
 #else
-  if ((strlen (fname) + 3) >= PATH_MAX)
-    sqlr_new_error ("39000", "FA017", "Path string is too long.");
-  strcpy_ck (path, fname);
-  for (fname_tail = path; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (fname_tail > path && fname_tail[-1] != '\\')
-    *(fname_tail++) = '\\';
-  *(fname_tail++) = '*';
-  fname_tail[0] = '\0';
-  if (!is_allowed (path))
-    sqlr_new_error ("42000", "FA018",
-	"Access to %s is denied due to access control in ini file", path);
-  df = FindFirstFile (path, &fd);
+  df = FindFirstFile (fname_cvt, &fd);
 #endif
   if (CHECKFH (df))
     {
@@ -1249,34 +1102,75 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
 	  if (de)
 	    {
-	      if (strlen (fname) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
+	      if (strlen (fname_cvt) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
 		{
+                  int hit = 0;
+                  caddr_t raw_name;
+                  int make_wide_name;
 #ifndef WIN32
-		  snprintf (path, sizeof (path), "%s/%s", fname, DIRNAME (de));
+                  char path [PATH_MAX];
+		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
 		  stat (path, &st);
 		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 1; /* Different values of \c hit are solely for debugging purposes */
 		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 2;
 		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 3;
 		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 4;
 #else
                   if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 5;
                   else if (files == 1 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) == 0)
-		    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+		    hit = 6;
                   else if (files == 3)
-                    dk_set_push (&dir_list,
-			box_dv_short_string (DIRNAME (de)));
+                    hit = 7;
 #endif
+                  if (!hit)
+                    goto next_file;
+                  raw_name = box_dv_short_string (DIRNAME (de));
+                  make_wide_name = 0;
+                  if (i18n_wide_file_names)
+                    {
+                      char *tail;
+                      for (tail = raw_name; '\0' != tail[0]; tail++)
+                        {
+                          if ((tail[0] >= ' ') && (tail[0] < 0x7f))
+                            continue;
+                          make_wide_name = 1;
+                          break;
+                        }
+                    }
+                  if (make_wide_name)
+                    {
+                      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
+                      int state = 0;
+                      wchar_t *buf = dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
+                      wchar_t *wide_name;
+                      const char *raw_tail = raw_name;
+                      int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
+                        buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
+                        i18n_volume_encoding, state );
+                      if (res < 0)
+                        {
+                          dk_free_box (raw_name);
+                          goto next_file; /*!!! TBD Emergency encoding */
+                        }
+                      if (res < buflen-1)
+                        {
+                          wide_name = dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
+                          memcpy (wide_name, buf, res * sizeof (wchar_t));
+                          dk_free_box (buf);
+                        }
+                      else
+                        wide_name = buf;
+                      wide_name [res] = 0;
+                      dk_set_push (&dir_list, wide_name);
+                      dk_free_box (raw_name);
+                    }
+                  else
+                    dk_set_push (&dir_list, raw_name);
 		}
 	      else
 		{
@@ -1291,6 +1185,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      "Path string is too long.");
 		}
 	    }
+next_file: ;
 #ifdef WIN32
           rc = FindNextFile (df, &fd) ? 0 : 1;
 #endif
@@ -1329,7 +1224,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		(caddr_t) box_dv_short_string (err_msg));
 	}
       else
-	sqlr_new_error ("39000", "FA020", "Unable to list files in '%s': %s", fname, err_msg);
+	sqlr_new_error ("39000", "FA020", "Unable to list files in '%.1000s': %s", fname_cvt, err_msg);
     }
   lst = list_to_array (dk_set_nreverse (dir_list));
   if (BOX_ELEMENTS (args) > 3 && bif_long_arg (qst, args, 3, "sys_dirlist") &&
@@ -1339,26 +1234,81 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-char *
-file_canonical_name (char *fname, int *is_allocated)
+caddr_t
+file_native_name (caddr_t se_name)
 {
+  caddr_t volume_fname;
 #ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
+  char *fname_tail;
+#endif
+  switch (DV_TYPE_OF (se_name))
+    {
+    case DV_WIDE:
+      {
+        int wchars;
+        int bufsize;
+        caddr_t buf;
+        char *buf_end, *end_of_dat;
+        wchars = box_length (se_name) / sizeof (wchar_t) - 1;
+        if (wchars > (PATH_MAX * 10))
+          wchars = PATH_MAX * 10;
+        bufsize = wchars * i18n_volume_encoding->eh_maxsize;
+        buf = dk_alloc_box (bufsize + 1, DV_STRING);
+        buf_end = buf + bufsize;
+        end_of_dat = i18n_volume_encoding->eh_encode_wchar_buffer (
+          ((const wchar_t *)se_name), ((const wchar_t *)se_name) + wchars, buf, buf_end,
+          i18n_volume_encoding );
+        if (end_of_dat == buf_end)
+          {
+            buf_end[0] = '\0';
+            volume_fname = buf;
+          }
+        else
+          {
+            volume_fname = box_dv_short_nchars (buf, end_of_dat - buf);
+            dk_free_box (buf);
+          }
+        break;
+      }
+    case DV_STRING:
+      {
+        long len = box_length (se_name) - 1;
+        if (len > PATH_MAX * 30)
+          len = PATH_MAX * 30;
+        volume_fname = box_dv_short_nchars (se_name, len);
+        break;
+      }
+    case DV_UNAME:
+      if (&eh__UTF8 == i18n_volume_encoding)
+        {
+          long len = box_length (se_name) - 1;
+          if (len > PATH_MAX * 30)
+            len = PATH_MAX * 30;
+          volume_fname = box_dv_short_nchars (se_name, len);
+        }
+      else
+        {
+          caddr_t se1, res;
+          long len = box_length (se_name) - 1;
+          if (len > PATH_MAX * 30)
+            len = PATH_MAX * 30;
+          se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
+          res = file_native_name (se1);
+          dk_free_box (se1);
+          return res;
+        }
+      break;
+    default:
+      GPF_T1 ("Bad box type for file name");
+    }
+#ifdef HAVE_DIRECT_H
+  for (fname_tail = volume_fname; fname_tail[0]; fname_tail++)
     {
       if ('/' == fname_tail[0])
 	fname_tail[0] = '\\';
     }
-  *is_allocated = 1;
-  return fname_cvt;
-#else
-  *is_allocated = 0;
-  return fname;
 #endif
+  return volume_fname;
 }
 
 /* IvAn/WinFileNames/000815
@@ -1372,18 +1322,19 @@ static caddr_t
 bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   OFF_T rc;
-  int len, is_allocated = 0;
+  int len;
   char *fname, *fname_cvt;
   char *string;
   ptrlong place;
   volatile int fd;
   int saved_errno;
   dtp_t string_dtp;
+  caddr_t err = NULL;
   query_instance_t *qi = (query_instance_t *) qst;
 
   sec_check_dba ((query_instance_t *) qst, "string_to_file");
 
-  fname = bif_string_arg (qst, args, 0, "string_to_file");
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "string_to_file");
   string = bif_arg (qst, args, 1, "string_to_file");
   string_dtp = DV_TYPE_OF (string);
   place = bif_long_arg (qst, args, 2, "string_to_file");
@@ -1398,23 +1349,18 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	"Function string_to_file needs a string or blob or string_output as argument 2,"
 	"not an arg of type %s (%d)", dv_type_title (string_dtp), string_dtp);
 
-  if (strlen (fname) >= PATH_MAX)
+  if (box_length (fname) >= PATH_MAX * sizeof (wchar_t))
     {
       char buf[PATH_MAX + 4];
       memcpy (buf, fname, PATH_MAX);
       buf[PATH_MAX] = '\0';
       sqlr_new_error ("39000", "FA039",
-	  "File name argument of string_to_file is too long: %s...", buf);
+	  "File name argument of string_to_file is too long (wrong argument order?): %s...", buf);
     }
-
-  fname_cvt = file_canonical_name (fname, &is_allocated);
-  if (!is_allowed (fname_cvt))
-    {
-      if (is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA024",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 0);
+  if (NULL != err)
+    goto signal_error;
   if (place == -2)
     {
       fd = fd_open (fname_cvt, OPEN_FLAGS | O_TRUNC);
@@ -1422,14 +1368,13 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     fd = fd_open (fname_cvt, OPEN_FLAGS);
-  if (is_allocated)
-    dk_free (fname_cvt, -1);
 
   if (fd == -1)
     {
       int errn = errno;
-      sqlr_new_error ("39000", "FA006", "Can't open file %s, error : %s",
-	  fname, virt_strerror (errn));
+      err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
+	  fname_cvt, virt_strerror (errn));
+      goto signal_error;
     }
 
   if (place == -1)
@@ -1441,8 +1386,9 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       saved_errno = errno;
       fd_close (fd, fname);
-      sqlr_new_error ("39000", "FA025",
-	  "Seek error in file %s, error : %s", fname, virt_strerror (saved_errno));
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
     }
 
   if (string_dtp == DV_STRING_SESSION)
@@ -1450,7 +1396,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char buffer[64000];
       int to_read;
       dk_session_t *ses = (dk_session_t *) string;
-      long len = strses_length (ses), ofs = 0;
+      int64 len = strses_length (ses), ofs = 0;
       while (ofs < len)
 	{
 	  int readed;
@@ -1461,8 +1407,9 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      saved_errno = errno;
 	      fd_close (fd, fname);
-	      sqlr_new_error ("39000", "FA026", "Write to %s failed (%s)",
-		  fname, virt_strerror (saved_errno));
+	      err = srv_make_new_error ("39000", "FA026", "Write to '%.1000s' failed (%s)",
+		  fname_cvt, virt_strerror (saved_errno) );
+              goto signal_error;
 	    }
 	  ofs += to_read;
 	}
@@ -1486,7 +1433,8 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (failed || SER_SUCC != session_flush (ses))
 	{
 	  PrpcSessionFree (ses);
-	  sqlr_new_error ("39000", "FA027", "Write to %s failed", fname);
+	  err = srv_make_new_error ("39000", "FA027", "Write to '%.1000s' failed", fname_cvt);
+          goto signal_error;
 	}
       else
 	PrpcSessionFree (ses);
@@ -1502,8 +1450,9 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  saved_errno = errno;
 	  dk_free_box (utf8);
 	  fd_close (fd, fname);
-	  sqlr_new_error ("39000", "FA028", "Write to %s failed (%s)", fname,
-	      virt_strerror (saved_errno));
+	  err = srv_make_new_error ("39000", "FA028", "Write to '%.1000s' failed (%s)", fname_cvt,
+	      virt_strerror (saved_errno) );
+          goto signal_error;
 	}
       dk_free_box (utf8);
     }
@@ -1517,85 +1466,54 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  saved_errno = errno;
 	  fd_close (fd, fname);
-	  sqlr_new_error ("39000", "FA029", "Write to %s failed (%s)", fname,
-	      virt_strerror (saved_errno));
+	  err = srv_make_new_error ("39000", "FA029", "Write to '%.1000s' failed (%s)", fname_cvt,
+	      virt_strerror (saved_errno) );
+          goto signal_error;
 	}
     }
-
   fd_close (fd, fname);
+  dk_free_box (fname_cvt);
   return 0;
+
+signal_error:
+  dk_free_box (fname_cvt);
+  sqlr_resignal (err);
+  return NULL;
 }
 
 caddr_t
 bif_sys_dir_is_allowed (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args)
 {
-  caddr_t fname = bif_string_arg (qst, args, 0, "sys_dir_is_allowed");
-  int res;
-#ifdef HAVE_DIRECT_H
-  size_t fname_cvt_len = strlen (fname) + 1;
-  caddr_t fname_cvt = dk_alloc (fname_cvt_len);
-  char *fname_tail;
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  res = is_allowed (fname_cvt);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  res = is_allowed (fname);
-#endif
+  caddr_t fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "sys_dir_is_allowed");
+  caddr_t fname_cvt = file_native_name (fname);
+  int res = ((PATH_MAX >= (box_length (fname_cvt) - 1)) ? is_allowed (fname_cvt) : 0);
+  dk_free_box (fname_cvt);
   return box_num (res);
 }
 
 static caddr_t
 bif_file_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname;
-#ifdef HAVE_DIRECT_H
-  char *fname_cvt, *fname_tail;
-  size_t fname_cvt_len;
-#endif
   int rc = 0, silent;
-
+  caddr_t fname, fname_cvt;
   sec_check_dba ((query_instance_t *) qst, "file_delete");
-  fname = bif_string_arg (qst, args, 0, "file_delete");
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "file_delete");
   silent =
       BOX_ELEMENTS (args) > 1 ? (int) bif_long_arg (qst, args, 1,
       "file_delete") : 0;
-
-#ifdef HAVE_DIRECT_H
-  fname_cvt_len = strlen (fname) + 1;
-  fname_cvt = dk_alloc (fname_cvt_len);
-  strcpy_size_ck (fname_cvt, fname, fname_cvt_len);
-  for (fname_tail = fname_cvt; fname_tail[0]; fname_tail++)
-    {
-      if ('/' == fname_tail[0])
-	fname_tail[0] = '\\';
-    }
-  if (!is_allowed (fname_cvt))
-    {
-      dk_free (fname_cvt, fname_cvt_len);
-      sqlr_new_error ("42000", "FA043",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
-  rc = _unlink (fname_cvt);
-  dk_free (fname_cvt, fname_cvt_len);
-#else
-  if (!is_allowed (fname))
-    sqlr_new_error ("42000", "FA044",
-	"Access to %s is denied due to access control in ini file", fname);
-  rc = unlink (fname);
-#endif
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  rc = unlink (fname_cvt);
   if (rc == -1 && !silent)
     {
       int saved_errno = errno;
-      sqlr_new_error ("39000", "FA045", "Unlink of %s failed (%s)", fname,
-	  virt_strerror (saved_errno));
+      caddr_t err = srv_make_new_error ("39000", "FA045", "Unlink of '%.1000s' failed (%s)",
+        fname_cvt, virt_strerror (saved_errno) );
+      dk_free_box (fname_cvt);
+      sqlr_resignal (err);
     }
-
+  dk_free_box (fname_cvt);
   return box_num (rc);
 }
 
@@ -2112,8 +2030,9 @@ uuid_set (uuid_t * u)
 	{
 	  ustate->cs = true_random ();
 	  get_pseudo_node_identifier (&ustate->node);
-
+#ifdef VALGRIND
 	  memset (node, 0, sizeof (node));
+#endif
 	  memcpy (node, &ustate->node, sizeof (uuid_node_t));
 	  snprintf (p, sizeof (p), "%d %02X%02X%02X%02X%02X%02X", ustate->cs,
 	      (unsigned)(node[0]), (unsigned)(node[1]), (unsigned)(node[2]),
@@ -4085,40 +4004,29 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t dname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
   int fd = 0;
-  int f_is_allocated = 0, d_is_allocated = 0;
-  char *fname_cvt, *dname_cvt;
+  caddr_t fname_cvt, dname_cvt;
   int readed = 0;
   char buffer [0x8000];
+  caddr_t err = NULL;
 
   sec_check_dba ((query_instance_t *) qst, szMe);
 
-  fname_cvt = file_canonical_name (fname, &f_is_allocated);
-  if (!is_allowed (fname_cvt))
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  dname_cvt = file_native_name (dname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
     {
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA047",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
-  dname_cvt = file_canonical_name (dname, &d_is_allocated);
-  if (!is_allowed (dname_cvt))
-    {
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA048",
-	  "Access to %s is denied due to access control in ini file", dname);
+      dk_free_box (dname_cvt);
+      sqlr_resignal (err);
     }
 
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
   if (fd == -1)
     {
       int errn = errno;
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
+      dk_free_box (dname_cvt);
+      dk_free_box (fname_cvt);
       sqlr_new_error ("39000", "FA049", "Can't open file %s, error : %s",
 	  fname, virt_strerror (errn));
     }
@@ -4126,10 +4034,8 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   gz_fd = gzopen (dname_cvt, "w");
   if (!gz_fd)
     {
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
+      dk_free_box (dname_cvt);
+      dk_free_box (fname_cvt);
       sqlr_new_error ("39000", "FA050", "Can't open compressed file %s", dname);
     }
 
@@ -4145,11 +4051,8 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   gzclose (gz_fd);
   close(fd);
 
-  if (d_is_allocated)
-    dk_free (dname_cvt, -1);
-  if (f_is_allocated)
-    dk_free (fname_cvt, -1);
-
+  dk_free_box (dname_cvt);
+  dk_free_box (fname_cvt);
   return NULL;
 }
 
@@ -4161,50 +4064,36 @@ bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t fname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
   int fd = 0;
-  int f_is_allocated = 0, d_is_allocated = 0;
-  char *fname_cvt, *dname_cvt;
+  caddr_t fname_cvt, dname_cvt;
   int readed = 0;
   char buffer [0x8000];
+  caddr_t err = NULL;
 
   sec_check_dba ((query_instance_t *) qst, szMe);
 
-  fname_cvt = file_canonical_name (fname, &f_is_allocated);
-  if (!is_allowed (fname_cvt))
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  dname_cvt = file_native_name (dname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
     {
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA051",
-	  "Access to %s is denied due to access control in ini file", fname);
+      dk_free_box (dname_cvt);
+      sqlr_resignal (err);
     }
-  dname_cvt = file_canonical_name (dname, &d_is_allocated);
-  if (!is_allowed (dname_cvt))
-    {
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA052",
-	  "Access to %s is denied due to access control in ini file", dname);
-    }
-
   fd = fd_open (fname_cvt, OPEN_FLAGS | O_TRUNC);
   if (fd == -1)
     {
       int errn = errno;
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
+      dk_free_box (dname_cvt);
+      dk_free_box (fname_cvt);
       sqlr_new_error ("39000", "FA053", "Can't open file %s, error : %s",
 	  fname, virt_strerror (errn));
     }
   gz_fd = gzopen (dname_cvt, "r");
   if (!gz_fd)
     {
-      if (d_is_allocated)
-	dk_free (dname_cvt, -1);
-      if (f_is_allocated)
-	dk_free (fname_cvt, -1);
+      dk_free_box (dname_cvt);
+      dk_free_box (fname_cvt);
       sqlr_new_error ("39000", "FA054", "Can't open compressed file %s", dname);
     }
 
@@ -4220,10 +4109,8 @@ bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   gzclose (gz_fd);
   close(fd);
 
-  if (d_is_allocated)
-    dk_free (dname_cvt, -1);
-  if (f_is_allocated)
-    dk_free (fname_cvt, -1);
+  dk_free_box (dname_cvt);
+  dk_free_box (fname_cvt);
 
   return NULL;
 }

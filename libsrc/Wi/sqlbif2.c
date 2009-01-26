@@ -339,23 +339,15 @@ bif_type_t bt_blob_handle = {NULL, DV_BLOB_HANDLE, 0, 0};
 static caddr_t
 bif_os_chmod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname = bif_string_arg (qst, args, 0, "os_chmod");
+  caddr_t fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "os_chmod");
   long mod  = (long) bif_long_arg (qst, args, 1, "os_chmod");
   char *fname_cvt = NULL;
-  int is_allocated = 0;
   caddr_t res;
 
   sec_check_dba ((query_instance_t *) qst, "os_chmod");
 #if defined (HAVE_CHMOD)
-  fname_cvt = file_canonical_name (fname, &is_allocated);
-  if (!is_allowed (fname_cvt))
-    {
-      if (is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA023",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
-
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
   if (0 != chmod (fname_cvt, mod))
     {
       int eno = errno;
@@ -364,11 +356,10 @@ bif_os_chmod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     res = NEW_DB_NULL;
 #else
-  res = box_dv_short_string ("Feature not available in the host OS");
+  res = box_dv_short_string ("CHMOD feature not available in the host OS");
 #endif
 
-  if (is_allocated)
-    dk_free (fname_cvt, -1);
+  dk_free_box (fname_cvt);
   return res;
 }
 
@@ -457,23 +448,16 @@ os_get_gname_by_fname (char *fname)
 static caddr_t
 bif_os_chown (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname = bif_string_arg (qst, args, 0, "os_chown");
+  caddr_t fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "os_chown");
   caddr_t user  = bif_string_arg (qst, args, 1, "os_chown");
   caddr_t group = bif_string_arg (qst, args, 2, "os_chown");
   char *fname_cvt = NULL;
-  int is_allocated = 0;
   caddr_t res = NULL;
 
   sec_check_dba ((query_instance_t *) qst, "os_chown");
 
-  fname_cvt = file_canonical_name (fname, &is_allocated);
-  if (!is_allowed (fname_cvt))
-    {
-      if (is_allocated)
-	dk_free (fname_cvt, -1);
-      sqlr_new_error ("42000", "FA023",
-	  "Access to %s is denied due to access control in ini file", fname);
-    }
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
 
 #if defined (HAVE_CHOWN) && defined (HAVE_GETPWNAM) && defined (HAVE_GETGRNAM)
     {
@@ -550,11 +534,10 @@ bif_os_chown (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
 #else
-  res = box_dv_short_string ("Feature not available in the host OS");
+  res = box_dv_short_string ("CHOWN feature not available in the host OS");
 #endif
 
-  if (is_allocated)
-    dk_free (fname_cvt, -1);
+  dk_free_box (fname_cvt);
   return res;
 }
 

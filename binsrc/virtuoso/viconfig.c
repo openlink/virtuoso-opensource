@@ -318,6 +318,13 @@ int32 c_http_thread_sz = 140000;
 int32 c_http_keep_hosting = 0;
 extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
+int32 c_i18n_wide_file_names = 0;
+char *c_i18n_volume_encoding = NULL;
+char *c_i18n_volume_emergency_encoding = NULL;
+extern int i18n_wide_file_names;
+extern struct encoding_handler_s *i18n_volume_encoding;
+extern struct encoding_handler_s *i18n_volume_emergency_encoding;
+
 char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
 int32 c_http_check_rdf_accept = 0;
@@ -1420,6 +1427,17 @@ cfg_setup (void)
   }
     }
 
+  /* Initialization of national filesystems */
+  
+  section = "I18N";
+  if (cfg_getlong (pconfig, section, "WideFileNames", &c_i18n_wide_file_names) == -1)
+    c_i18n_wide_file_names = 0;
+  if (cfg_getstring (pconfig, section, "VolumeEncoding", &c_i18n_volume_encoding) == -1)
+    c_i18n_volume_encoding = NULL;
+  if (cfg_getstring (pconfig, section, "VolumeEmergencyEncoding", &c_i18n_volume_emergency_encoding) == -1)
+    c_i18n_volume_emergency_encoding = NULL;
+
+
   /* Initialization of plugins */
 
   section = "Plugins";
@@ -1666,6 +1684,30 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
   cli_encryption_on_password = c_cli_encryption_on_password;
+
+  i18n_wide_file_names = c_i18n_wide_file_names;
+  if (NULL != c_i18n_volume_encoding)
+    {
+      i18n_volume_encoding = eh_get_handler (c_i18n_volume_encoding);
+      if (NULL == i18n_volume_encoding)
+        {
+          log_error ("The value of VolumeEncoding parameter is not a valid encoding name");
+          return;
+        }
+    }
+  else
+    i18n_volume_emergency_encoding = &eh__ISO8859_1;
+  if (NULL != c_i18n_volume_emergency_encoding)
+    {
+      i18n_volume_emergency_encoding = eh_get_handler (c_i18n_volume_emergency_encoding);
+      if (NULL == i18n_volume_emergency_encoding)
+        {
+          log_error ("The value of VolumeEmergencyEncoding parameter is not a valid encoding name");
+          return;
+        }
+    }
+  else
+    i18n_volume_emergency_encoding = &eh__ISO8859_1;
 }
 
 

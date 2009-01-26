@@ -6635,11 +6635,13 @@ bif_connection_vars_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_backup (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t file = bif_string_arg (qst, args, 0, "backup");
+  caddr_t fname, fname_cvt;
   sec_check_dba ((query_instance_t *) qst, "backup");
-  if (!is_allowed (file))
-  sqlr_new_error ("42000", "FA001", "Access to %s is denied", file);
-  db_backup ((query_instance_t *) QST_INSTANCE (qst), file);
+  fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "backup");
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  db_backup ((query_instance_t *) QST_INSTANCE (qst), fname_cvt);
+  dk_free_box (fname_cvt);
   return 0;
 }
 
