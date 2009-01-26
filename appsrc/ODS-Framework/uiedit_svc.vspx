@@ -152,7 +152,7 @@ control.vs_set_selected ();
 		  <br/>
 		  <label for="svc_url">URL</label>
         <br />
-		  <v:text name="svc_url" value="" xhtml_id="svc_url" xhtml_size="50"/>
+        <v:text name="svc_url" value="" xhtml_id="svc_url" xhtml_size="50" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
 		  <br />
 		  <label for="svc_keys">Keys</label>
         <br />
@@ -177,7 +177,7 @@ self.save2.vc_data_bind (e);
 control.vc_enabled := 0;
 		      </v:on-post>
 		  </v:button>
-		  <v:button name="save2" value="--case when self.edit_svc is null then 'Add' else 'Update' end" action="simple">
+          <v:button name="save2" value="--case when self.edit_svc is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
             <v:on-post>
               <![CDATA[
 declare v any;

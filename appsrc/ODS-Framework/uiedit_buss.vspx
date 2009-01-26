@@ -590,7 +590,7 @@
                     {
                   ?>
                   <tr id="d_tr_<?V N ?>">
-                    <th id="d_th_<?V N ?>">
+                    <td id="d_th_<?V N ?>">
                       <input type="hidden" id="d_fld_0_<?V N ?>" name="d_fld_0_<?V N ?>" value="<?V WUO_ID ?>" />
                 		  <![CDATA[
                 		    <script type="text/javascript">
@@ -599,13 +599,13 @@
                 		    ?>
                 		    </script>
                 		  ]]>
-                    </th>
-                    <th>
+                    </td>
+                    <td>
                       <input type="text" id="d_fld_2_<?V N ?>" name="d_fld_2_<?V N ?>" value="<?V WUO_URL ?>" style="width: 95%;" class= "_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                    </th>
-                    <th>
+                    </td>
+                    <td>
                       <input type="button" value="Remove" onclick="javascript: updateRow('d', <?V N ?>);" />
-                    </th>
+                    </td>
               </tr>
                   <?vsp
                       N := N + 1;
@@ -696,7 +696,7 @@
 			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
 			  </v:on-post>
 			</v:button>
-      <v:button name="user_sset_buss" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs();">
+      <v:button name="user_sset_buss" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
                     <v:on-post>
                       <![CDATA[
             if (self.vc_is_valid = 0)

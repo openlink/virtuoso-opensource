@@ -164,6 +164,7 @@ function selectAllCheckboxes (form, btn)
                		  fld.type = 'text';
                     fld.id = prefix+'_fld_1_' + No;
                     fld.name = fld.id;
+                    if (options.fld1)
                     fld.value = options.fld1;
                     fld.className = options.fld1Class;
                     fld.onblur = options.fld1Onblur;
@@ -177,6 +178,7 @@ function selectAllCheckboxes (form, btn)
              		  fld.type = 'text';
                   fld.id = prefix+'_fld_2_' + No;
                   fld.name = fld.id;
+                  if (options.fld2)
                   fld.value = options.fld2;
                   fld.className = options.fld2Class;
                   fld.onblur = options.fld2Onblur;
@@ -195,8 +197,18 @@ function selectAllCheckboxes (form, btn)
                 }
               }
             }
-        	  var setServiceUrl = function(cc) {
-        	    urlName = cc.input.name.replace(/fld_1_/, 'fld_2_');
+        	  var setServiceUrl = function(cc)
+          	  {
+          	    if ((cc.value == 'Google'    ) ||
+                    (cc.value == 'Yahoo'     ) ||
+                    (cc.value == 'Flickr'    ) ||
+                    (cc.value == 'Picasa'    ) ||
+                    (cc.value == 'MySpace'   ) ||
+                    (cc.value == 'FriendFeed') ||
+                    (cc.value == 'Digg'      ) ||
+                    (cc.value == 'Amazon'    )
+                   )
+          	      var urlName = cc.input.name.replace(/fld_1_/, 'fld_2_');
         	    $(urlName).value = 'http://'+cc.value.toLowerCase()+'.com';
         		}
   	        function updateRowCombo (elm, fldName, fldValue)
@@ -281,20 +293,21 @@ function selectAllCheckboxes (form, btn)
                 return validateURL(fld);
               return true;
   			    }
-            function validateInputs()
+            function validateInputs(fld)
             {
-              var redValue = true;
-              var inputs = document.getElementsByTagName('input');
-              for (var i = 0; i < inputs.length; i++)
+              var retValue = true;
+              var form = fld.form;
+              for (i = 0; i < form.elements.length; i++)
               {
-                var fld = inputs[i];
+                var fld = form.elements[i];
                 if (OAT.Dom.isClass(fld, '_validate_'))
                 {
                   retValue = validateField(fld);
-                  if (!redValue)
-                    return redValue;
+                  if (!retValue)
+                    return retValue;
                 }
               }
+              return retValue;
   			    }
           ]]>
         </script>

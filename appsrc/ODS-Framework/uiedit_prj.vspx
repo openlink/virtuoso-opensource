@@ -107,13 +107,11 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 	      <fieldset>
 		  <label for="prj_url">URI</label>
 		    <br />
-		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
+        <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
 		  <br />
 		  <label for="prj_name">Made*</label>
 		    <br />
-		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
-		      <!--v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Made name can not be empty"/-->
-		  </v:text>
+		    <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*" />
 		  <br/>
 		  <label for="prj_desc">Description*</label>
 		    <br />
@@ -132,7 +130,7 @@ self.save1.vc_data_bind (e);
 control.vc_enabled := 0;
 		      </v:on-post>
 		  </v:button>
-		  <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple">
+		      <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		      <v:on-post><![CDATA[
 declare xt, xp, tmp, descr, iri, name, url varchar;
 declare stat, msg, dta, mdta, qrs any;

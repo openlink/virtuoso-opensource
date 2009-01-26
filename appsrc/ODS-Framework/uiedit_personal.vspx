@@ -261,7 +261,7 @@
     <div id="p" class="c1">
       <div class="tabs">
         <div onclick="javascript: showTab('p', 4, 0);" class="tab activeTab" id="p_tab_0">Main</div>
-        <div onclick="javascript: showTab('p', 4, 1);" class="tab" id="p_tab_1">Home</div>
+        <div onclick="javascript: showTab('p', 4, 1);" class="tab" id="p_tab_1">Address</div>
         <div onclick="javascript: showTab('p', 4, 2);" class="tab" id="p_tab_2">Online Accounts</div>
         <div onclick="javascript: showTab('p', 4, 3);" class="tab" id="p_tab_3">Messaging Services</div>
       </div>
@@ -530,15 +530,15 @@
       {
                    ?>
                    <tr id="a_tr_<?V N ?>">
-                     <th>
+                           <td>
                              <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                     </th>
-                     <th>
+                           </td>
+                           <td>
                        <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                     </th>
-                     <th>
+                           </td>
+                           <td>
                        <input type="button" value="Remove" onclick="javascript: updateRow('a', <?V N ?>);" />
-                     </th>
+                           </td>
                    </tr>
                    <?vsp
                        N := N + 1;
@@ -584,15 +584,15 @@
             {
                    ?>
                    <tr id="b_tr_<?V N ?>">
-                     <th>
+                           <td>
                              <input type="text" id="b_fld_1_<?V N ?>" name="b_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                     </th>
-                     <th>
+                           </td>
+                           <td>
                        <input type="text" id="b_fld_2_<?V N ?>" name="b_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                     </th>
-                     <th>
+                           </td>
+                           <td>
                        <input type="button" value="Remove" onclick="javascript: updateRow('b', <?V N ?>);" />
-                     </th>
+                           </td>
                    </tr>
                    <?vsp
                        N := N + 1;
@@ -1002,7 +1002,7 @@
                     {
                   ?>
                   <tr id="c_tr_<?V N ?>">
-                    <th id="c_th_<?V N ?>">
+                    <td id="c_th_<?V N ?>">
                       <input type="hidden" id="c_fld_0_<?V N ?>" name="c_fld_0_<?V N ?>" value="<?V WUO_ID ?>" />
                 		  <![CDATA[
                 		    <script type="text/javascript">
@@ -1011,13 +1011,13 @@
                 		    ?>
                 		    </script>
                 		  ]]>
-                    </th>
-                    <th>
+                    </td>
+                    <td>
                       <input type="text" id="c_fld_2_<?V N ?>" name="c_fld_2_<?V N ?>" value="<?V WUO_URL ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                    </th>
-                    <th>
+                    </td>
+                    <td>
                       <input type="button" value="Remove" onclick="javascript: updateRow('c', <?V N ?>);" />
-                    </th>
+                    </td>
                   </tr>
                   <?vsp
                       N := N + 1;
@@ -1108,7 +1108,7 @@
                 self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
               </v:on-post>
             </v:button>
-      <v:button name="user_sset_personal" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs();">
+      <v:button name="user_sset_personal" value="Next" action="simple" xhtml_tabindex="21" xhtml_onclick="return validateInputs(this);">
               <v:on-post>
                 <![CDATA[
 		  if (exists(select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))

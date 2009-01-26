@@ -166,23 +166,22 @@
               <tr>
                 <th><label for="oid_url1">OpenID URL</label></th>
                 <td nowrap="nowrap">
-                  <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100">
-                  </v:text>
+          <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
                   <div style="display:inline; color:red;"><v:error-summary match="oid_url1" /></div>
                 </td>
               </tr>
               <tr>
 		<td colspan="2" class="ctrl">
 		  <span class="fm_ctl_btn">
-                  <v:button name="bt_set6" value="Save OpenID" action="simple">
+            <v:button name="bt_set6" value="Save OpenID" action="simple" xhtml_onclick="return validateInputs(this);">
               <v:on-post>
                 <![CDATA[
                   if (self.vc_is_valid = 0)
                     return;
 
 			declare err any;
-			err := ODS..openid_url_set (self.u_id, self.oid_url1.ufl_value);
 
+                  err := ODS..openid_url_set (self.u_id, self.oid_url1.ufl_value);
 			if (err is not null)
 			  {
                             self.vc_is_valid := 0;

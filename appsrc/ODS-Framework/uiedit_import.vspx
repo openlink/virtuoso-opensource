@@ -265,7 +265,7 @@
                 }
                 if (interest is not null)
                 {
-                  self.iInterests := self.iInterests || interest || ';' || interest_label || '\n';;
+                  self.iInterests := self.iInterests || interest || ';' || interest_label || '\n';
                 }
                 if (topic_interest is not null)
                 {
