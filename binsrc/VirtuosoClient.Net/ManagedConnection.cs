@@ -236,11 +236,14 @@ namespace OpenLink.Data.Virtuoso
 
 			commands.Add (new WeakReference (outerCommand));
 
-			return new ManagedCommand (this);
+			return new ManagedCommand(this);
 		}
 
 		public override void RemoveCommand (VirtuosoCommand outerCommand)
 		{
+                        if (commands == null)
+                          return;
+
 			int i = 0;
 			while (i < commands.Count)
 			{
