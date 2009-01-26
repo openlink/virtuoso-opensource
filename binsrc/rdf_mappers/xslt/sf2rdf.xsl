@@ -49,7 +49,6 @@
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:wf="&wf;"
   xmlns:dcterms="http://purl.org/dc/terms/"
-  xmlns:bugzilla="http://www.openlinksw.com/schemas/bugzilla#"
   xmlns:sioct="&sioct;"
   xmlns:sioc="&sioc;"
   xmlns:xsd="&xsd;"
@@ -59,12 +58,18 @@
     <xsl:param name="baseUri" />
     <xsl:template match="/">
 		<rdf:RDF>
+			<rdf:Description rdf:about="{$baseUri}">
+				<rdf:type rdf:resource="&foaf;Document"/>
+				<rdf:type rdf:resource="&sioc;Container"/>
+				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}" />
+			</rdf:Description>
 			<xsl:apply-templates select="retrieveResponse/result"/>
 		</rdf:RDF>
     </xsl:template>
     
     <xsl:template match="sf:*">
-		<rdf:Description rdf:about="{$baseUri}">
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+			<rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:element name="{local-name()}" namespace="http://www.openlinksw.com/schemas/ecrm#">
 				<xsl:apply-templates select="*|text()" />
 			</xsl:element>

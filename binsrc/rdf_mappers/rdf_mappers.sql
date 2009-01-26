@@ -1005,12 +1005,24 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	password_ := get_keyword ('password', opts); -- password = password+secret
 	--username_ := 'abktiev@openlinksw.com';
 	--password_ := 'Qwerty123456tsFbeZeXVoNFkYID26twZjUWq';
-	if (new_origin_uri like 'https://%.salesforce.com/%')
+	if (new_origin_uri like 'https://%.salesforce.com/%' or new_origin_uri like 'http://%.salesforce.com/%')
 	{
+		id := '';
 		tmp := sprintf_inverse (new_origin_uri, 'https://%s.salesforce.com/%s', 0);
+		if (length(tmp) > 1)
 		id := trim (tmp[1], '/');
+		if (id is null or id = '')
+		{
+			tmp := sprintf_inverse (new_origin_uri, 'http://%s.salesforce.com/%s', 0);
+			if (length(tmp) > 1)
+				id := trim (tmp[1], '/');
+			else
+				return 0;
 		if (id is null)
+			{
 			return 0;
+			}
+		}
 		res := xml_tree_doc(SOAP_CLIENT (
 				url=>'https://www.salesforce.com/services/Soap/c/14.0',
 				operation=>'login',
