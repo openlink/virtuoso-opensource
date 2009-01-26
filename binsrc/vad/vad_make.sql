@@ -1137,7 +1137,10 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   declare SQL_STATE, SQL_MESSAGE varchar;
 
   commit work;
-  exec ('checkpoint');
+  if (sys_stat ('cl_run_local_only') = 1)
+    exec ('checkpoint');
+  else
+    cl_exec ('checkpoint');
 
   qual := dbname ();
   parr := null;
@@ -1152,7 +1155,6 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   registry_set ('VAD_is_run', '1');
   connection_set ('vad_pkg_fullname', null);
 
-
   result_names (SQL_STATE, SQL_MESSAGE);
   {
     declare exit handler for sqlstate '*'
@@ -1161,38 +1163,42 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
       SQL_MESSAGE := __SQL_MESSAGE;
       if ('' <> SQL_MESSAGE);
       {
-        log_message (sprintf ('VAD_INSTALL: %s (%s)', SQL_MESSAGE, SQL_STATE));
-        result (SQL_STATE, SQL_MESSAGE);
+	log_message (sprintf ('VAD_INSTALL: %s (%s)', SQL_MESSAGE, SQL_STATE));
+	result (SQL_STATE, SQL_MESSAGE);
       }
       goto failure;
     };
+
     "VAD"."DBA"."VAD_READ" (parr, fname, is_dav);
     if ('0' = registry_get ('VAD_errcount'))
-      {
-  "VAD"."DBA"."VAD_ATOMIC" (0);
+    {
+      "VAD"."DBA"."VAD_ATOMIC" (0);
 
       result ('00000', 'No errors detected');
       result ('00000', sprintf ('Installation of "%s" is complete.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
-  result ('00000', 'Now making a final checkpoint.');
+      result ('00000', 'Now making a final checkpoint.');
 
-  exec ('checkpoint');
+      if (sys_stat ('cl_run_local_only') = 1)
+	exec ('checkpoint');
+      else
+	cl_exec ('checkpoint');
 
-  result ('00000', 'Final checkpoint is made.');
-  result ('00000', 'SUCCESS');
-  result ('', '');
-  registry_set ('VAD_is_run', '0');
-  set_qualifier (qual);
-  return 'OK';
-      }
+      result ('00000', 'Final checkpoint is made.');
+      result ('00000', 'SUCCESS');
+      result ('', '');
+      registry_set ('VAD_is_run', '0');
+      set_qualifier (qual);
+      return 'OK';
+    }
   }
 
-failure:;
+  failure:;
   result ('00000', 'Errors detected');
   result ('00000', sprintf ('Installation of "%s" was unsuccessful.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
   log_message (sprintf ('Errors where detected during installation of "%s".',
-      coalesce (connection_get ('vad_pkg_fullname'), fname)));
+  coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
   if (registry_get ('VAD_wet_run') = '0')
   {
