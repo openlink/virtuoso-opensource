@@ -540,7 +540,7 @@ namespace OpenLink.Data.Virtuoso
 			 * Force the cast to return the type. InvalidCastException
 			 * should be thrown if the data is not already of the correct type.
 			 */
-			return (bool) GetColumnData (i);
+            return Convert.ToBoolean(GetColumnData(i));
 		}
 
 #if ADONET2
@@ -554,7 +554,7 @@ namespace OpenLink.Data.Virtuoso
 			 * Force the cast to return the type. InvalidCastException
 			 * should be thrown if the data is not already of the correct type.
 			 */
-			return (byte) GetColumnData (i);
+            return Convert.ToByte(GetColumnData(i));
 		}
 
 #if ADONET2
@@ -690,7 +690,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetFloat()");
-			return (float) GetColumnData (i);
+			return Convert.ToSingle(GetColumnData (i));
 		}
 
 #if ADONET2
@@ -704,7 +704,7 @@ namespace OpenLink.Data.Virtuoso
 			 * should be thrown if the data is not already of the correct type.
 			 */
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoDataReader.GetDouble()");
-			return (double) GetColumnData (i);
+            return Convert.ToDouble(GetColumnData(i));
 		}
 
 #if ADONET2
