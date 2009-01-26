@@ -2785,6 +2785,19 @@ rendering through the foaf:primaryTopic property.)</para>
       <listitem>http://demo.openlinksw.com/about/rdf/http://musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
       <listitem>http://demo.openlinksw.com/about/html/http://musicbrainz.org/artist/72c090b6-a68e-4cb9-b330-85278681a714.html</listitem>
     </itemizedlist>
+    <sect4 id="virtuosospongeroverviewxmlset">
+      <title>Configuration of CURIEs used by the sponger</title>
+      <para>For configuring CURIEs used by the Sponger which is exposed via sponger
+clients such as "description.vsp" - the VSP based information resource description utility,
+you can use the <link linkend="fn_xml_set_ns_decl"><function>xml_set_ns_decl</function></link> function.</para>
+      <para>Here is sample example to add curie pattern:</para>
+<programlisting><![CDATA[
+-- Example link: http://linkeddata.uriburner.com/about/rdf/http://twitter.com/guykawasaki/status/1144945513#this
+XML_SET_NS_DECL ('uriburner',
+                 'http://linkeddata.uriburner.com/about/rdf/http://',
+                 2);
+]]></programlisting>
+    </sect4>
     <sect4 id="virtuosospongeroverviewcartarch">
       <title>Cartridge Architecture</title>
       <para>The Sponger is comprised of cartridges which are themselves comprised of an entity extractor
