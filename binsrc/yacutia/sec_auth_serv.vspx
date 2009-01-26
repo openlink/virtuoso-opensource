@@ -88,8 +88,8 @@
     return i;
   </v:method>
   <v:method name="fmt_rate" arglist="in i any">
-    if (self.acl_name in ('HTTP', 'PROXY'))
-      return 'N/A';
+    --if (self.acl_name in ('HTTP', 'PROXY'))
+    --  return 'N/A';
     return i;
   </v:method>
   <v:on-init>
@@ -458,15 +458,15 @@
 				<?vsp }?>
 			      </td>
 			    </tr>
+			    <?vsp } ?>
 			    <tr>
 			      <td>Rate</td><td>
-				<v:text name="rat1" value="--self.rat" enabled="--case when self.acl_name not in ('HTTP', 'PROXY') then 1 else 0 end" error-glyph="*">
+				<v:text name="rat1" value="--self.rat" default_value="0" error-glyph="*">
 				  <v:validator test="regexp" regexp="^[\-+]?[0-9]+(\.[0-9]+)?$" message="Decimal number is expected"
 				    runat='server'/>
 				</v:text>
 			      </td>
 			    </tr>
-			    <?vsp } ?>
 			    <tr>
 			      <td colspan="2">
 				<v:button name="cancel1" value="Cancel" action="simple">
@@ -492,7 +492,7 @@
 				    dest := '*';
 				    obj := -1;
                                     mod := -1;
-                                    rat := 1;
+                                    rat := 0;
 
 				    if (self.acl_name <> 'HTTP')
 				      dest := self.dest1.ufl_value;
@@ -509,8 +509,8 @@
 					    obj := atoi(self.obj1.ufl_value);
 				            mod := atoi(self.mod1.ufl_value);
 					  }
-				        rat := atof (self.rat1.ufl_value);
 				      }
+				    rat := atod (self.rat1.ufl_value);
 
 				    self.ch := 1;
 				    self.edit := 0;
@@ -563,9 +563,7 @@
 				arr := self.acl_list;
 				foreach (any elm in arr) do
 				  {
-				    insert into HTTP_ACL
-				    (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP,
-				    HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE)
+				    insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE)
 				    values (self.acl_name, i, elm[1], elm[2], elm[3], elm[4], elm[5], elm[6]);
 				    i := i + 1;
 				  }
