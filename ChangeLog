@@ -1,3 +1,113 @@
+2009-01-26 11:03  source
+
+	* Fixed type casts
+
+2009-01-26 11:02  source
+
+	* Fixed use cl_exec on cluster
+
+2009-01-26 10:23  source
+
+	* Added error/warning/info reporting callback to triple feeder
+	* Added printer of human-readable turtle files
+	* Fixed hash of RDF boxes
+
+2009-01-26 10:18  source
+
+	* Added HTTP ACL to support hit rate limit
+
+2009-01-26 10:17  source
+
+	* Added dt_audit_fields and fixes related bugs
+
+2009-01-26 10:15  source
+
+	* Added support for filesystems with non-latin1 charsets for filenames
+
+2009-01-26 10:09  source
+
+	* Fixed twitter
+
+2009-01-23 14:11  source
+
+	* Fixed umbel, zemanta and callais to limit results by score
+	* Fixed twitter pages
+
+2009-01-23 14:08  source
+
+	* Fixed box_hash and box comparison of RDF boxes so they are now
+	  correctly handled as parts of keys of dictionaries
+
+2009-01-22 23:00  source
+
+	* Fixed deref of innerCommands when the innerConnection is closed
+
+2009-01-22 22:56  source
+
+	* Fixed CSS for /sparql interface
+
+2009-01-22 22:52  source
+
+	* Disabled --disable-xml argument
+
+2009-01-22 22:49  source
+
+	* Added more files to ignore
+
+2009-01-22 22:48  source
+
+	* Fixed use of --disable-pldebug
+
+2009-01-21 13:31  source
+
+	* Fixed meetup
+
+2009-01-21 13:28  source
+
+	* Fixed wrong graph in VD rule
+
+2009-01-21 13:22  source
+
+	* Reverted patch
+
+2009-01-21 12:28  source
+
+	* Fixed --disable-xxx should really disable feature
+	* Indentation
+
+2009-01-21 12:24  source
+
+	* Added Service Tab in users profile
+
+2009-01-21 11:55  source
+
+	* Fixed indentation
+
+2009-01-21 11:54  source
+
+	* Fixed delicious
+
+2009-01-21 11:50  source
+
+	* Fixed twitter support
+
+2009-01-21 11:08  source
+
+	* Fixed extended error recovery to allow for wierd relative URIs and
+	  can skip severe syntax errors upto dot with whitespace
+
+2009-01-21 11:02  source
+
+	* Fixed define sql:describe-mode "SPO"
+
+2009-01-20 18:49  source
+
+	* Added followers to twitter
+
+2009-01-19 11:22  source
+
+	* Added support for ore:isDescribedBy
+
 2009-01-19 10:18  source
 
 	* Updated version to 5.0.10-rc3
