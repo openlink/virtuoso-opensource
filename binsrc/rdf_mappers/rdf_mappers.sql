@@ -1007,7 +1007,6 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	--password_ := 'Qwerty123456tsFbeZeXVoNFkYID26twZjUWq';
 	if (new_origin_uri like 'https://%.salesforce.com/%')
 	{
-		new_origin_uri := concat(new_origin_uri, '/');
 		tmp := sprintf_inverse (new_origin_uri, 'https://%s.salesforce.com/%s', 0);
 		id := trim (tmp[1], '/');
 		if (id is null)
@@ -1277,7 +1276,7 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar) returns integer
+create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in username_ varchar, in password_ varchar, in what_ varchar) returns integer
 {
 	declare xt, xd any;
 	declare tmp, test1, test2 varchar;
@@ -1289,7 +1288,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_
 	test2 := cast(xpath_eval('//status', xd) as varchar);
 	if (not (length(test1) or length(test1)))
 		return 0;
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id));
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/twitter2rdf.xsl', xd, vector ('baseUri', new_origin_uri, 'id', id, 'what', what_));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
@@ -1301,14 +1300,19 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 {
 	declare xt, xd any;
 	declare url, tmp varchar;
-	declare id, post, username_, password_ varchar;
-	declare pos, page integer;
+	declare id, post, username_, password_, what_ varchar;
+	declare pos, page, res_count integer;
 	declare exit handler for sqlstate '*'
 	{
 		return 0;
 	};
+	what_ := '';
     username_ := get_keyword ('username', opts);
 	password_ := get_keyword ('password', opts);
+	res_count := atoi(get_keyword ('result_count', opts));
+	if (res_count is null or res_count < 0 or res_count = 0)
+		res_count := 5;
+	
 	if (new_origin_uri like 'http://twitter.com/%/status/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://twitter.com/%s/status/%s', 0);
@@ -1318,7 +1322,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 			return 0;
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
 		return 1;
 	}
 	else if (new_origin_uri like 'http://twitter.com/%/friends')
@@ -1361,51 +1365,53 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	else
 		return 0;
 		
+	--dbg_obj_princ('start');
 	friends_and_followers: ;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
-
 	page := 1;
-	while (page > 0 and page < 10)
+	while (page > 0 and page < res_count)
 	  {
 		url := sprintf('http://twitter.com/statuses/user_timeline.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto statuses_out;
 		page := page + 1;			
 	}
 	statuses_out: ;
 
 	page := 1;
-	while (page > 0 and page < 10)
+	while (page > 0 and page < res_count)
 	{
+		what_ := 'friends';
 		url := sprintf('http://twitter.com/statuses/friends.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto friends_out;
 		page := page + 1;
 	}
 	friends_out: ;
 	
 	page := 1;
-	while (page > 0 and page < 10)
+	while (page > 0 and page < res_count)
 	{
 		url := sprintf('http://twitter.com/favorites.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto favorites_out;
 		page := page + 1;			
 	  }
 	favorites_out: ;
 	
 	page := 1;
-	while (page > 0 and page < 10)
+	while (page > 0 and page < res_count)
 	{
+		what_ := 'followers';
 		url := sprintf('http://twitter.com/statuses/followers.xml?id=%s&page=%d', id, page);
-		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_) = 0)
+		if (DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_) = 0)
 			goto followers_out;
 		page := page + 1;
 	}
 	followers_out: ;
 
 	url := sprintf('http://twitter.com/users/show/%s.xml', id);
-	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_);
+	DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_);
 	return 1;
 }
 ;
@@ -1423,6 +1429,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 	hdr := null;
 	declare exit handler for sqlstate '*'
 	{
+		
 		return 0;
 	};
 	if (new_origin_uri like 'http://getsatisfaction.com/%')

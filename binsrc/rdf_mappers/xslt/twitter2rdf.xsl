@@ -48,6 +48,7 @@
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />
 	<xsl:param name="id" />
+	<xsl:param name="what" />
 	<xsl:template match="/">
 		<rdf:RDF>
 		    <foaf:Document rdf:about="{$baseUri}">
@@ -75,9 +76,11 @@
 
 	<xsl:template match="users">
 	    <xsl:for-each select="user">
+			<xsl:if test="$what != 'followers'">
 		<rdf:Description rdf:about="{vi:proxyIRI(concat('http://twitter.com/', $id))}">
 		    <foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', screen_name))}"/>
 		</rdf:Description>
+			</xsl:if>
 	    </xsl:for-each>
 	    <xsl:for-each select="user">
 		<xsl:call-template name="user"/>
@@ -177,7 +180,9 @@
 			<foaf:title>
 				<xsl:value-of select="description" />
 			</foaf:title>
+			<xsl:if test="$what = 'followers'">
 			<foaf:knows rdf:resource="{vi:proxyIRI(concat('http://twitter.com/', $id))}"/>
+			</xsl:if>
 		</foaf:Person>
 	</xsl:template>
 
