@@ -272,14 +272,74 @@ ws_gethostbyaddr (const char * ip)
   return box_dv_short_string (host->h_name);
 }
 
-static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate,int rw_flag)
+#define ACL_HIT_RESTORE(hit) \
+      if (hit) \
+	{ \
+	  hit->ah_count--; \
+	  hit->ah_avg = hit->ah_last_avg; \
+	}
+
+#define ACL_CHECK_MPS	1
+#define ACL_CHECK_HITS	2
+
+static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, int rw_flag, acl_hit_t ** hit_ret)
 {
   int res;
   id_hash_t *loc_hash;
 
   if (!elm->ha_rate || !check_rate)
     return elm->ha_flag;
+  else if (check_rate == ACL_CHECK_HITS)
+    {
+      acl_hit_t * hit, **place;
+      int64 now;
+      timeout_t tv;
+
+      res = elm->ha_flag;
+      get_real_time (&tv); 
+      now = ((int64)tv.to_sec * 1000000) + (int64) tv.to_usec;
+      /*now = get_msec_real_time ();*/
+      loc_hash = elm->ha_hits;
+#ifdef DEBUG      
+      if (!loc_hash)
+	GPF_T;
+#endif
+      place = (acl_hit_t **) id_hash_get (loc_hash, (caddr_t)&name);
+      if (place)
+	{ 
+	  float rate;
+	  float delta;
+	 
+	  hit = *place;
+	  delta = (float) (now - hit->ah_last);
+	  if (delta < 1.0) delta = 0.5;
+	  rate = (float)(1 / (delta/1000000));
+	  hit->ah_last_avg = hit->ah_avg;
+	  if (hit->ah_count == 1)
+	    hit->ah_avg = rate;
+	  else
+  	    hit->ah_avg = ((hit->ah_avg * hit->ah_count) + rate) / (hit->ah_count + 1);
+#ifdef DEBUG  
+	  fprintf (stderr, "http acl rate-limit delta: %f, count: %ld, rate: %f, avg: %f\n", delta, hit->ah_count, rate, hit->ah_avg);
+#endif
+	  if (hit->ah_avg > elm->ha_rate)
+	    res = 1; /* deny */
+	  else if (((now - hit->ah_initial)/1000000) > 86400) /* reset stats once per 24h, but only when not denied */
+	    memset (hit, 0, sizeof (acl_hit_t));
+	}
   else
+    {
+	  caddr_t new_name = box_copy (name);
+	  hit = (acl_hit_t *) dk_alloc (sizeof (acl_hit_t));
+	  memset (hit, 0, sizeof (acl_hit_t));
+	  id_hash_set (loc_hash, (caddr_t) &new_name, (caddr_t) &hit);
+	}
+      if (!hit->ah_initial) hit->ah_initial = now;
+      hit->ah_last = now;
+      hit->ah_count ++;
+      if (hit_ret) *hit_ret = hit;
+    }
+  else /* ACL_CHECK_MPS */
     {
       struct tm *tm;
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
@@ -310,7 +370,7 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate,int
       if (last && (now-*last) > rate)
 	res = 1;
       else
-	res = -2; /* Rate is hight */
+	res = -2; /* hit rate limit is reached */
 
       if (!last)
 	{
@@ -322,18 +382,16 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate,int
 	}
       else
 	*last = now;
-    }
-
    if (rw_flag)
      elm->ha_cli_ip_r = loc_hash;
    else
      elm->ha_cli_ip_w = loc_hash;
-
+    }
    return res;
 }
 
 static int
-http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate)
+http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit)
 {
   int inx;
   DO_BOX (ws_acl_t *, elm, inx, alist)
@@ -341,11 +399,11 @@ http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_fl
       if (name && DVC_MATCH == cmp_like (name, elm->ha_mask, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  if (dst == NULL && obj_id < 0 && rw_flag < 0)
-	    return http_acl_check_rate (elm, name, check_rate, rw_flag);
+	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
-	    return http_acl_check_rate (elm, name, check_rate, rw_flag);
+	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	  else if (dst == NULL && elm->ha_obj == obj_id && rw_flag == elm->ha_rw)
-	    return http_acl_check_rate (elm, name, check_rate, rw_flag);
+	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	}
     }
   END_DO_BOX;
@@ -353,7 +411,7 @@ http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_fl
 }
 
 static int
-ws_check_acl (ws_connection_t * ws)
+ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 {
   static char * szHttpAclName = "HTTP";
   caddr_t *list, **plist;
@@ -364,7 +422,7 @@ ws_check_acl (ws_connection_t * ws)
 
   if (list)
     {
-      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, 0) > 0)
+      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, ACL_CHECK_HITS, hit) > 0) /* 1:deny */
 	rc = 0;
     }
   return rc;
@@ -3421,7 +3479,7 @@ ws_read_req (ws_connection_t * ws)
 {
   char line [10000];
   timeout_t timeout;
-
+  acl_hit_t * hit = NULL;
   dk_session_t * ses = ws->ws_session;
   ws_clear (ws, 0);
   ws->ws_client_ip = http_client_ip (ws->ws_session->dks_session);
@@ -3430,10 +3488,10 @@ ws_read_req (ws_connection_t * ws)
       (!pop3_port || ws->ws_port != pop3_port)
       && (!nntp_port || ws->ws_port != nntp_port)
       && (!ftp_port || ws->ws_port != ftp_port)
-      && 0 == ws_check_acl (ws)
+      && 0 == ws_check_acl (ws, &hit)
      )
 #else
-  if (0 == ws_check_acl (ws))
+  if (0 == ws_check_acl (ws, &hit))
 #endif
     {
       ws->ws_try_pipeline = 0;
@@ -3521,6 +3579,7 @@ ws_read_req (ws_connection_t * ws)
     }
   FAILED
     {
+      ACL_HIT_RESTORE (hit);
     }
   END_READ_FAIL (ws->ws_session);
 end_req:
@@ -8246,24 +8305,26 @@ FILE *debug_log = NULL;
 static caddr_t
 bif_http_debug_log (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
-  caddr_t f = bif_string_or_null_arg (qst, args, 0, "http_debug_log");
-
-  if (debug_log && f)
+  caddr_t fname, fname_cvt;
+  fname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "http_debug_log");
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, NULL, 1);
+  if (debug_log && fname_cvt)
     {
       sqlr_new_error ("42000", "FA041", "HTTP debug log is already being generated");
     }
-  else if (!debug_log && f)
+  else if (!debug_log && fname_cvt)
     {
-      if (!is_allowed (f))
-	sqlr_new_error ("42000", "FA040", "Access to %s is denied due to access control in ini file", f);
-      debug_log = fopen (f, "a");
+      debug_log = fopen (fname_cvt, "a");
       if (!debug_log)
 	{
 	  int errn = errno;
-	  sqlr_new_error ("39000", "FA042", "Can't open debug log file %s, error : %s", f, strerror (errn));
+          caddr_t err = srv_make_new_error ("39000", "FA042", "Can't open debug log file '%.1000s', error : %s", fname_cvt, strerror (errn));
+          dk_free_box (fname_cvt);
+          sqlr_resignal (err);
 	}
     }
-  else if (debug_log && !f)
+  else if (debug_log && !fname_cvt)
     {
       mutex_enter (ws_http_log_mtx);
       fflush (debug_log);
@@ -8271,7 +8332,7 @@ bif_http_debug_log (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       debug_log = NULL;
       mutex_leave (ws_http_log_mtx);
     }
-
+  dk_free_box (fname_cvt);
   return box_num(0);
 }
 
@@ -8349,9 +8410,27 @@ ws_acl_t * elm = (ws_acl_t *) dk_alloc (sizeof (ws_acl_t)); \
   elm->ha_obj = (obj); \
   elm->ha_rw = (frw); \
   elm->ha_rate = (rate); \
-  elm->ha_cli_ip_r = NULL; \
   elm->ha_cli_ip_w = NULL; \
+  elm->ha_cli_ip_r = NULL; \
+  elm->ha_hits = NULL; \
+  if (rate) { \
+    elm->ha_hits = id_str_hash_create (101); \
+    id_hash_set_rehash_pct (elm->ha_hits, 200); \
+  } \
 }
+
+#define ACL_HT_FREE(ht) \
+    if (ht) { \
+      ptrlong *v; \
+      caddr_t *k; \
+      id_hash_iterator_t it; \
+      id_hash_iterator (&it, ht); \
+      while (hit_next (&it, (char **) &k, (char **) &v)) \
+	{ \
+	  dk_free_box (*k); \
+	} \
+      id_hash_free (ht); \
+    } \
 
 /*TODO: serialize a add/del */
 static caddr_t
@@ -8422,10 +8501,9 @@ http_acl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int action, ch
 		  else
 		    {
 		      list[inx] = NULL;
-		      if (elm->ha_cli_ip_r)
-		        id_hash_free (elm->ha_cli_ip_r);
-		      if (elm->ha_cli_ip_w)
-		        id_hash_free (elm->ha_cli_ip_w);
+		      ACL_HT_FREE (elm->ha_cli_ip_r);
+		      ACL_HT_FREE (elm->ha_cli_ip_w);
+		      ACL_HT_FREE (elm->ha_hits);
 		      dk_free (elm, sizeof (ws_acl_t));
 		    }
 		}
@@ -8446,8 +8524,9 @@ http_acl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int action, ch
 	      int rw_flag = nargs > 4 ? (int) bif_long_arg (qst, args, 4, szMe) : -1;
 	      int check_rate = nargs > 5 ? (int) bif_long_arg (qst, args, 5, szMe) : 0;
 
-	      rc =  http_acl_match (list, name, dst, obj_id, rw_flag, check_rate);
-
+	      if (check_rate && check_rate != ACL_CHECK_MPS && check_rate != ACL_CHECK_HITS)
+		sqlr_new_error ("22023", "HT080", "Check rate flag must be 0, 1 or 2");
+	      rc =  http_acl_match (list, name, dst, obj_id, rw_flag, check_rate, NULL);
 	      break;
 	    }
       default:

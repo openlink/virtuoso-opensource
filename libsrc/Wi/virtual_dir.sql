@@ -89,7 +89,12 @@ alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
-  http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, coalesce (HA_RATE, 1));
+  declare def_rate int;
+  if (HA_LIST <> 'NEWS')
+    def_rate := 0;
+  else
+    def_rate := 1;
+  http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, coalesce (HA_RATE, def_rate));
 }
 ;
 

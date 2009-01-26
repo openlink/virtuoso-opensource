@@ -152,7 +152,17 @@ typedef struct ws_acl_s
     float 	ha_rate;		/* rate speed */
     id_hash_t *	ha_cli_ip_r;		/* hash client IP'S reads*/
     id_hash_t *	ha_cli_ip_w;		/* hash client IP'S writes */
+    id_hash_t * ha_hits;
   } ws_acl_t;
+
+typedef struct acl_hit_s
+  {
+    int64 ah_initial; /* inital time */
+    int64 ah_last;
+    long ah_count;
+    float ah_avg;
+    float ah_last_avg;
+  } acl_hit_t;
 
 extern long tws_cached_connection_hits;
 extern long tws_cached_connection_miss;
