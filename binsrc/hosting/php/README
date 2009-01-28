@@ -1,64 +1,72 @@
 PHP SAPI module for Virtuoso
 ============================
 
-This is a SAPI module for PHP 4.x and 5.x,
-implemented as a Virtuoso loadable module.
-
+This is a SAPI module for PHP 5.x, implemented as a Virtuoso loadable
+module.
 
 Building:
 
-  To build the plugin, you need to build a static libphpX.a,
+  To build the plugin, you first need to build a libphp5.so,
   configured with ZTS.
 
-  In the php source directory, execute something similar to
+    Package	Version		From
+    -------	-------		-----------------------------
+    php		5.2.8		http://www.php.net/downloads/
 
-  [PHP 5]
+
+  In the php source directory, execute something similar to:
+
 	./configure \
 		--prefix=/where/to/put/it \
 		--enable-maintainer-zts \
 		--with-tsrm-pthreads \
+		--enable-embed=shared \
+		--disable-static \
 		--with-config-file-path=. \
-		--enable-static \
-		--disable-shared \
+		--disable-cgi \
+		--disable-cli \
 		--disable-ipv6 \
-		--enable-embed=static \
-		--with-iodbc=/usr \
-		--with-zlib \
+		--disable-pdo \
 		--without-mysql \
 		--without-pear \
-		--disable-cli \
-		--disable-cgi
+		--with-zlib \
+		--with-iodbc=/usr
+		.....
 
-  [PHP 4]
-	./configure \
-		--prefix=/where/to/put/it \
-		--enable-experimental-zts \
-		--with-tsrm-pthreads \
-		--with-config-file-path=. \
-		--enable-static \
-		--disable-shared \
-		--disable-ipv6 \
-		--enable-embed=static \
-		--with-iodbc=/usr \
-		--with-zlib \
-		--without-mysql \
-		--without-pear \
-		--disable-cli \
-		--disable-cgi
+	make
+
+	make install
+
+
+  In the Virtuoso Open Source directory, execute the following command:
+
+	./config.nice --enable-php5=/where/to/put/it
+
+  or
+
+	./configure --enable-php5=/where/to/put/it .......
+
+  so the build process knows where to find the necessary PHP header files.
+
 
 
 Installation:
 
-1. Register the plugin in your virtuoso.ini:
+1. Copy the libphp5.so into same directory where virtuoso installs the
+   hosting_php5.so plugin e.g. PREFIX/hosting/libphp5.so. If you
+   have build PHP with shared extensions, you can put them in
+   PREFIX/hosting/php/extensions
+
+2. Copy the php.ini-recommended from the php distro to the same directory
+   as your virtuoso.ini. Edit your php.ini to change the extensions_dir
+   setting to the directory where you put your extensions
+
+3. Register the plugin in your virtuoso.ini:
 
     [Plugins]
     ..
-    Load10 = Hosting, hosting_php.so
+    Load7 = attach, libphp5.so
+    Load8 = Hosting, hosting_php.so
 
-2. Copy the php.ini-recommended from the php distro to the same directory
-   as your virtuoso.ini.
-   Alternatively, you can set the PHP_INI_PATH environment variable to the
-   full path of the php.ini file to use.
-
-
-[Code by Paul Nieuwdorp, Oct 2007]
+  This will enable the hosting_php plugin to dynamically hook into the 
+  PHP library.
