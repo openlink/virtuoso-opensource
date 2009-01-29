@@ -2604,8 +2604,17 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
 		}
 		else if (id1 is not null and id2 = 'calendar')
 		{
+			if (id3 is null or id3 = '')
+			{
 			url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
 			what_ := 'events';
+		}
+			else
+			{
+				--dbg_obj_princ('test_event');
+				url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
+				what_ := 'event';
+			}
 		}
 		else if (id1 is not null and id2 = 'photos')
 		{

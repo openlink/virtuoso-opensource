@@ -52,10 +52,15 @@
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="results/items">
-		<xsl:if test="$what = 'events'">
+		<xsl:if test="$what = 'events' or $what = 'event'">
 			<foaf:Document rdf:about="{$baseUri}">
 				<foaf:primaryTopic>
+					<xsl:if test="$what = 'events'">
 					<foaf:Organization rdf:about="{vi:proxyIRI(substring($baseUri, 1, string-length($baseUri)-8))}" />
+					</xsl:if>
+					<xsl:if test="$what = 'event'">
+						<c:Vevent rdf:about="{vi:proxyIRI(item/event_url)}"/>
+					</xsl:if>
 				</foaf:primaryTopic>
 		<xsl:for-each select="item">
 					<foaf:topic rdf:resource="{event_url}"/>
@@ -73,7 +78,7 @@
 			</foaf:Document>
 		</xsl:if>
 		<xsl:for-each select="item">
-			<xsl:if test="$what = 'events'">
+			<xsl:if test="$what = 'events' or $what = 'event'">
 				<foaf:Document rdf:about="{event_url}">
 					<foaf:primaryTopic>
 						<c:Vevent rdf:about="{vi:proxyIRI(event_url)}">
