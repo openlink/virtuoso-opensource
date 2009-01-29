@@ -102,7 +102,7 @@ insert into idt (k1, k2, k3, d) values (1, 4, 3, 'd1');
 insert into idt (k1, k2, k3, d) values (4, 2, 3, 'd1');
 
 create unique index d on idt (d);
-echo both $if $equ $state 23000 "PASSED" "***FAILED";
+echo both $if $neq $state OK "PASSED" "***FAILED";
 echo both ": make unique index on non unique column, state " $state "\n";
 
 select * from idt order by d;
