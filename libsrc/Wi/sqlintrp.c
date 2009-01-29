@@ -1491,7 +1491,7 @@ vdb_leave (query_instance_t * qi)
 
 
 void
-qi_check_trx_error (query_instance_t * qi, int only_terminate)
+qi_check_trx_error (query_instance_t * qi, int flags)
 {
   caddr_t err = NULL;
   client_connection_t * cli = qi->qi_client;
@@ -1511,6 +1511,8 @@ qi_check_trx_error (query_instance_t * qi, int only_terminate)
 	}
       lt_rollback (lt, TRX_CONT);
       LEAVE_TXN;
+      if (NO_TRX_SIGNAL & flags)
+	return;
       MAKE_TRX_ERROR (lt_err, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
@@ -1773,7 +1775,7 @@ again:
 	      case IN_PRED:
 		    {
 		      int flag;
-		      qi_check_trx_error (qi, 1);
+		      qi_check_trx_error (qi, 0);
 		      flag = ins->_.pred.func (qst, ins->_.pred.cmp);
 		      if (flag == DVC_UNKNOWN)
 			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
@@ -1898,7 +1900,7 @@ again:
 		  return ((caddr_t) (ptrlong) ins->_.bret.bool_value);
 
 	      case IN_JUMP:
-		  qi_check_trx_error (qi, 1);
+		  qi_check_trx_error (qi, 0);
 		  nesting_level = ins->_.label.nesting_level;
 		  ins = INSTR_ADD_OFS (code_vec, ins->_.label.label);
 		  break;
@@ -1916,9 +1918,10 @@ again:
     {
       int new_nesting_level = nesting_level;
       POP_QR_RESET;
-      if (reset_code == RST_ERROR)
+      if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
-	  caddr_t err = thr_get_error_code (qi->qi_thread);
+	  caddr_t err = RST_ERROR == reset_code ? thr_get_error_code (qi->qi_thread)
+	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.");
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
 	  CHECK_SESSION_DEAD(qi->qi_trx);
 	  if (qi->qi_trx->lt_status != LT_PENDING && (
@@ -1927,6 +1930,7 @@ again:
 	    {
 	      sqlr_resignal (err);
 	    }
+	  qi_check_trx_error (qi, NO_TRX_SIGNAL);
 	  if (ins->ins_type == INS_CALL_BIF)
 	    {
 	      err_append_callstack_procname (err, ins->_.bif.proc, NULL, -1);

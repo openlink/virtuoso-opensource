@@ -1262,7 +1262,8 @@ void srv_calculate_sqlo_unit_msec (void);
 
 
 
-void qi_check_trx_error (query_instance_t * qi, int only_termiante);
+void qi_check_trx_error (query_instance_t * qi, int flags);
+#define NO_TRX_SIGNAL 1 /*in above, just freze or reset but no signal for trx err */
 void qi_signal_if_trx_error (query_instance_t * qi);
 
 void hosting_clear_cli_attachments (client_connection_t *cli, int free_it);
