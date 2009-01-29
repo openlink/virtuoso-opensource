@@ -130,5 +130,6 @@ rm -rf vad
 rm -rf vspx
 rm -rf wcopy
 rm -rf xslt
+rm -rf tpcdremote[12]
 
 exit 0
