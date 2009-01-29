@@ -700,9 +700,13 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
 				"gDay",
   };
   assert (do_what >0 && do_what <= XQ_DTLAST);
-  *n = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
+  n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
   if (__get_iso_date (str, *n, flags[do_what - 1], types[do_what - 1], names[do_what - 1]) < 0)
+    {
+      dk_free_box (n[0]);
+      n[0] = NULL;
     sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
+    }
 }
 
 static void

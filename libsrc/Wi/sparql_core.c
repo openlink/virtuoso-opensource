@@ -2608,6 +2608,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
+  id_hash_free (ssg.ssg_sd_used_namespaces);
   MP_DONE ();
   return (caddr_t)(ssg.ssg_out);
 }
