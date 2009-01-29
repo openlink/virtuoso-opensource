@@ -56,10 +56,10 @@ public class TestCallableExecute
             System.exit(-1);
          }
          System.out.print("Execute CREATE TABLE");
-         if(stmt.executeUpdate("CREATE TABLE tpca..branches (Bid integer,Bbalance integer,filler character(92),primary key (Bid))") == 0)
-            if(stmt.executeUpdate("CREATE TABLE tpca..tellers (Tid integer,Bid integer,Tbalance integer,filler character(88),primary key (Tid),foreign key (Bid) references tpca..branches)") == 0)
-               if(stmt.executeUpdate("CREATE TABLE tpca..accounts (Aid integer,Bid integer,Abalance integer,filler character(88),primary key (Aid),foreign key (Bid) references tpca..branches)") == 0)
-                  if(stmt.executeUpdate("CREATE TABLE tpca..history (Tid integer,Bid integer,Aid integer,delta integer,ti timestamp,filler character(24),foreign key (Tid) references tpca..tellers,foreign key (Bid) references tpca..branches,foreign key (Aid) references tpca..accounts)") == 0)
+         if(stmt.executeUpdate("CREATE TABLE ex..branches (Bid integer,Bbalance integer,filler character(92),primary key (Bid))") == 0)
+            if(stmt.executeUpdate("CREATE TABLE ex..tellers (Tid integer,Bid integer,Tbalance integer,filler character(88),primary key (Tid),foreign key (Bid) references ex..branches)") == 0)
+               if(stmt.executeUpdate("CREATE TABLE ex..accounts (Aid integer,Bid integer,Abalance integer,filler character(88),primary key (Aid),foreign key (Bid) references ex..branches)") == 0)
+                  if(stmt.executeUpdate("CREATE TABLE ex..history (Tid integer,Bid integer,Aid integer,delta integer,ti timestamp,filler character(24),foreign key (Tid) references ex..tellers,foreign key (Bid) references ex..branches,foreign key (Aid) references ex..accounts)") == 0)
                      System.out.println("    PASSED");
                   else
                   {
@@ -81,9 +81,9 @@ public class TestCallableExecute
             System.out.println("    FAILED");
             System.exit(-1);
          }
-         stmt.execute("create procedure ODBC_BENCHMARK(IN br integer,IN delta integer,OUT Bbalance integer) { declare cr cursor for select Bbalance from tpca..branches where Bid=br; update tpca..branches set Bbalance = Bbalance + delta where Bid = br; open cr; fetch cr into Bbalance;  close cr; }");
+         stmt.execute("create procedure VJDBC_BENCHMARK(IN br integer,IN delta integer,OUT Bbalance integer) { declare cr cursor for select Bbalance from ex..branches where Bid=br; update ex..branches set Bbalance = Bbalance + delta where Bid = br; open cr; fetch cr into Bbalance;  close cr; }");
          System.out.print("Execute INSERT INTO");
-         if(stmt.executeUpdate("INSERT INTO tpca..branches(Bid,Bbalance) VALUES (0,0)") == 1)
+         if(stmt.executeUpdate("INSERT INTO ex..branches(Bid,Bbalance) VALUES (0,0)") == 1)
             System.out.println("    PASSED");
          else
          {
@@ -91,7 +91,7 @@ public class TestCallableExecute
             System.exit(-1);
          }
          System.out.print("Create a CallableStatement class attached to this connection");
-         CallableStatement stmtc = connection.prepareCall("{fn ODBC_BENCHMARK(?,?,?) }");
+         CallableStatement stmtc = connection.prepareCall("{fn VJDBC_BENCHMARK(?,?,?) }");
          if(stmtc instanceof virtuoso.jdbc3.VirtuosoCallableStatement)
             System.out.println("    PASSED");
          else
@@ -117,11 +117,11 @@ public class TestCallableExecute
             System.exit(-1);
          }
          System.out.print("Execute cleanup");
-         stmt.executeUpdate("DELETE FROM sys_procedures");
-         if(stmt.executeUpdate("DROP TABLE tpca..history") == 0)
-            if(stmt.executeUpdate("DROP TABLE tpca..accounts") == 0)
-               if(stmt.executeUpdate("DROP TABLE tpca..tellers") == 0)
-                  if(stmt.executeUpdate("DROP TABLE tpca..branches") == 0)
+         stmt.executeUpdate("DROP PROCEDURE VJDBC_BENCHMARK");
+         if(stmt.executeUpdate("DROP TABLE ex..history") == 0)
+            if(stmt.executeUpdate("DROP TABLE ex..accounts") == 0)
+               if(stmt.executeUpdate("DROP TABLE ex..tellers") == 0)
+                  if(stmt.executeUpdate("DROP TABLE ex..branches") == 0)
                      System.out.println("    PASSED");
                   else
                   {

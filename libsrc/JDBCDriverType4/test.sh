@@ -1,19 +1,29 @@
-# Copyright (c) Openlink , 1999 . All rights reserved.
+#!/bin/sh
 #
-# This software is the confidential and proprietary information of Openlink.
-# ("Confidential Information").  You shall not disclose such Confidential Information
-# and shall use it only in accordance with the terms of the license agreement you
-# entered into with Openlink.
+#  $Id$
 #
-# Openlink MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE
-# SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-# PURPOSE, OR NON-INFRINGEMENT. Openlink SHALL NOT BE LIABLE FOR ANY DAMAGES
-# SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR DISTRIBUTING
-# THIS SOFTWARE OR ITS DERIVATIVES.
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#
+#  Copyright (C) 1998-2009 OpenLink Software
+#
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
 
-export JAVA_HOME=$JDK1
-export CLASSPATH=$JAVA_HOME/lib/classes.zip:./security/jnet.jar:./security/jsse.jar:./security/jcert.jar
+JAVA_HOME=$JDK1
+CLASSPATH=$JAVA_HOME/lib/classes.zip:./security/jnet.jar:./security/jsse.jar:./security/jcert.jar
+export JAVA_HOME CLASSPATH
 
 echo "............. Test the JDBC 1.2 driver"
 $JAVA_HOME/bin/java -classpath $CLASSPATH:virtjdbc.jar:testsuite.jar testsuite.TestClean

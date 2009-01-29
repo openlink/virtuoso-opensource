@@ -1,3 +1,4 @@
+// Copyright © 1998-2000 Enterworks, Inc., All rights reserved
 package testsuite;
 
 import java.util.*;

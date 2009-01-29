@@ -101,14 +101,14 @@ public class TestBlob
             Statement stmt = conn.createStatement();
 	    try
 	      {
-		stmt.executeUpdate ("drop table BUG1129..TESTBLOB");
+		stmt.executeUpdate ("drop table EX..TESTBLOB");
 	      }
 	    catch (Exception e)
 	      {
 	      }
-	    stmt.executeUpdate ("create table BUG1129..TESTBLOB ( BLOB_COL LONG VARBINARY )");
-            // create table BUG1129..TESTBLOB ( BLOB_COL LONG VARBINARY );
-            PreparedStatement ps = conn.prepareStatement("insert into BUG1129..TESTBLOB (BLOB_COL) values(?)");
+	    stmt.executeUpdate ("create table EX..TESTBLOB ( BLOB_COL LONG VARBINARY )");
+            // create table EX..TESTBLOB ( BLOB_COL LONG VARBINARY );
+            PreparedStatement ps = conn.prepareStatement("insert into EX..TESTBLOB (BLOB_COL) values(?)");
 
             /*
             String data = new String("113066");
@@ -134,7 +134,7 @@ public class TestBlob
 
 
             System.out.println("********* SELECT *****************************");
-            ps = conn.prepareStatement("SELECT BLOB_COL FROM BUG1129..TESTBLOB");
+            ps = conn.prepareStatement("SELECT BLOB_COL FROM EX..TESTBLOB");
             System.out.println("select execute");
             ResultSet rs = ps.executeQuery();
             while ( rs.next() )
@@ -203,6 +203,13 @@ public class TestBlob
             rs.close();
             ps.close();
 
+	    try
+	      {
+		stmt.executeUpdate ("drop table EX..TESTBLOB");
+	      }
+	    catch (Exception e)
+	      {
+	      }
      }
      catch ( SQLException e )
      {

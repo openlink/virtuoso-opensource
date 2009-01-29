@@ -135,6 +135,14 @@ public class TestNumeric
             System.out.println("    FAILED");
             System.exit(-1);
          }
+         System.out.print("Execute DROP PROCEDURE");
+         if(stmt.executeUpdate("DROP PROCEDURE test_int") == 0)
+            System.out.println("    PASSED");
+         else
+         {
+            System.out.println("    FAILED");
+            System.exit(-1);
+         }
 	 
 	 
          System.out.print("Execute CREATE TABLE");
