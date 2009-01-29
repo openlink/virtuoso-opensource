@@ -4,7 +4,7 @@
 
    declare _G, _S, odd_position any;
    declare _resource_, project_name, project_home_page any;
-   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
+   declare page_resource_uri, proxy_iri, rdf_link, label, true_label, _subject any;
    declare white_page, arr, data, meta, h1, h2, inx, gr, host any;
 
    -- INIT VALUES
@@ -69,7 +69,8 @@
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    --http_header (sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 1, now ()))));
    label := ''; _subject := '';
-   label := rdfdesc_label (_S, _G);
+   label := rdfdesc_label (_S, _G, lines);
+   true_label := label;
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 
 	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
@@ -131,7 +132,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label);
 	      }
 	   exec_close (h2);
 
@@ -158,7 +159,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label);
 	      }
 	   exec_close (h2);
 

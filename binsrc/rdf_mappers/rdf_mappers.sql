@@ -4658,6 +4658,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_REMOVE_NS_BY_PREFIX ('umbel', 2);
   XML_REMOVE_NS_BY_PREFIX ('ore', 2);
   XML_REMOVE_NS_BY_PREFIX ('dbpedia-owl', 2);
+  XML_REMOVE_NS_BY_PREFIX ('opencyc', 2);
   for select RES_CONTENT, RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/xslt/%.xsl' do
     {
       nss := xmlnss_get (xtree_doc (RES_CONTENT));
@@ -4687,6 +4688,7 @@ create procedure DB.DBA.RM_LOAD_PREFIXES ()
   XML_SET_NS_DECL ('fbase', 'http://rdf.freebase.com/ns/', 2);
   XML_SET_NS_DECL ('ore', 'http://www.openarchives.org/ore/terms/', 2);
   XML_SET_NS_DECL ('dbpedia-owl', 'http://dbpedia.org/ontology/', 2);
+  XML_SET_NS_DECL ('opencyc', 'http://sw.opencyc.org/2008/06/10/concept/', 2);
 };
 
 DB.DBA.RM_LOAD_PREFIXES ();

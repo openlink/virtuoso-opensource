@@ -13,23 +13,70 @@ foaf:nick rdfs:subPropertyOf virtrdf:label .', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
 
-create procedure rdfdesc_label (in _S any, in _G varchar)
+create procedure rdfdesc_get_lang_by_q (in accept varchar, in lang varchar)
+{
+  declare format, itm, q varchar;
+  declare arr any;
+  declare i, l int;
+
+  arr := split_and_decode (accept, 0, '\0\0,;');
+  q := 0;
+  l := length (arr);
+  format := null;
+  for (i := 0; i < l; i := i + 2)
+    {
+      declare tmp any;
+      itm := trim(arr[i]);
+      if (itm = lang)
+	{
+	  q := arr[i+1];
+	  if (q is null)
+	    q := 1.0;
+	  else
+	    {
+	      tmp := split_and_decode (q, 0, '\0\0=');
+	      if (length (tmp) = 2)
+		q := atof (tmp[1]);
+	      else
+		q := 1.0;
+	    }
+	  goto ret;
+	}
+    }
+  ret:
+  if (q = 0 and lang = 'en')
+    q := 0.002;
+  if (q = 0 and not length (lang))
+    q := 0.001;
+  return q;
+}
+;
+
+create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 {
   declare best_str, meta, data any;
-  declare best_l, len int;
+  declare best_q, q float;
+  declare lang, langs varchar;
+
+  langs := 'en';
+  if (lines is not null)
+    {
+      langs := http_request_header_full (lines, 'Accept-Language', 'en');
+    }
   exec (sprintf ('sparql define input:inference "virtrdf-label" '||
-  'select ?o where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
   best_str := '';
-  best_l := 0;
+  best_q := 0;
   if (length (data))
     {
       for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
 	{
-	  len := length (data[i][0]);
-          if (len > best_l)
+	  q := rdfdesc_get_lang_by_q (langs, data[i][1]);
+	  --dbg_obj_print (data[i][0], langs, data[i][1], q);
+          if (q > best_q)
 	    {
 	      best_str := data[i][0];
-	      best_l := len;
+	      best_q := q;
 	    }
 	}
     }
@@ -82,35 +129,34 @@ create procedure rdfdesc_page_get_type (in val any)
 }
 ;
 
-
-create procedure rdfdesc_uri_curie (in uri varchar)
+--! used to return curie or prefix:label for sameAs properties
+create procedure rdfdesc_uri_curie (in uri varchar, in label varchar := null)
 {
   declare delim integer;
   declare uriSearch, nsPrefix varchar;
 
   delim := -1;
-
   uriSearch := uri;
   nsPrefix := null;
-  while (nsPrefix is null and delim <> 0) {
-
+  if (not length (label))
+    label := null;
+  while (nsPrefix is null and delim <> 0)
+    {
     delim := coalesce (strrchr (uriSearch, '/'), 0);
     delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
     delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
-
-    nsPrefix := coalesce(__xml_get_ns_prefix(subseq(uriSearch, 0, delim + 1),2), __xml_get_ns_prefix(subseq(uriSearch, 0, delim),2));
-    uriSearch := subseq(uriSearch, 0, delim);
---    dbg_obj_print(uriSearch);
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim);
   }
-
-  if (nsPrefix is not null) {
+  if (nsPrefix is not null)
+    {
 	declare rhs varchar;
-	rhs := subseq(uri, length(uriSearch) + 1, null);
-	if (length(rhs) = 0) {
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
 		return uri;
-	} else {
-		return nsPrefix || ':' || rhs;
-	}
+      else
+	return nsPrefix || ':' || coalesce (label, rhs);
   }
   return uri;
 }
@@ -145,7 +191,7 @@ create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int, in
 }
 ;
 
-create procedure rdfdesc_http_print_r (in _object any)
+create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any)
 {
    declare lang, rdfs_type any;
 
@@ -177,14 +223,19 @@ again:
      }
    else if (__tag (_object) = 243 or (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%')))
      {
-       declare _url, p_t any;
+       declare _url, _label any;
 
        if (__tag of IRI_ID = __tag (_object))
 	 _url := id_to_iri (_object);
        else
 	 _url := _object;
 
-	   http (sprintf ('<a class="uri" href="%s">%s</a>', rdfdesc_http_url (_url), rdfdesc_uri_curie(_url)));
+       if (prop = __id2in (rdf_sas_iri ()))
+	 _label := label;
+       else
+	 _label := null;
+
+       http (sprintf ('<a class="uri" href="%s">%s</a>', rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 
      }
    else if (__tag (_object) = 189)
