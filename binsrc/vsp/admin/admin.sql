@@ -401,7 +401,7 @@ adm_check_auth (in lines any)
     into _u_name, _u_password, _u_group, _u_id from DB.DBA.SYS_USERS
     where U_NAME = _user;
 
-      if (rc = 1) /* PLLH_VALID, authentication is alredy done */
+      if (rc = 1) /* PLLH_VALID, authentication is already done */
     {
       return 1;
     }
@@ -1430,7 +1430,7 @@ adm_lt_init (inout params any, out step any, out dsn varchar, out _user varchar,
     {
       declare arri, elm any;
       declare fnd, ix, ln integer;
-      -- XXX: we can't know what of the dsn is choosed
+      -- XXX: we can't know what of the dsn is chosen
           arri := sql_get_private_profile_string (dsns, 'user');
           if (length (arri) < 1)
         arri := sql_get_private_profile_string (dsns, 'system');

@@ -44,7 +44,7 @@
 		</sequence>
 	</complexType>
 
-	<!-- alredy defined in the simple-rpc-encoded.xsd
+	<!-- already defined in the simple-rpc-encoded.xsd
 	<simpleType name="Enum">
 		<restriction base="xsd:int">
 			<enumeration value="1"/>

@@ -1627,7 +1627,7 @@ Warning: <small>Some template(s) published as Web Services need to have DBA priv
       x := 0; z := length (pdup);
 ?>
   <P style="color: red">
-Error: <small>The following procedures can't be published as they have the same name as alredy published as a Web Services.</small>
+Error: <small>The following procedures can't be published as they have the same name as already published as a Web Services.</small>
   </P>
   <table CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
 

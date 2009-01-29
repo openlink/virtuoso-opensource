@@ -199,7 +199,7 @@ endf:;
 	 ?></textarea>
 	</td>
       <tr>
-	<td class="genlisthead">Disable HTML formating</td>
+	<td class="genlisthead">Disable HTML formatting</td>
         <td class="geninput" COLSPAN="1">
 	<input type="checkbox" name="disable_html" <?V check_if (disable_html, 1) ?> value="1" />
 	</td>

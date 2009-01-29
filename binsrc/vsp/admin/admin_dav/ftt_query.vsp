@@ -116,7 +116,7 @@ else if ('' <> get_keyword ('add', params, ''))
       WS.WS."TT_QUERY_SYS_DAV_RES" (_query, _u_id, _comment, _email);
     else
       WS.WS."TT_XPATH_QUERY_SYS_DAV_RES" (_query, _u_id, _comment, _email);
-    if (get_keyword ('rebuld', params, '') = 'yes')
+    if (get_keyword ('rebuild', params, '') = 'yes')
       {
 	declare _qt_id integer;
         _qt_id := coalesce ((select top 1 TTU_T_ID from WS.WS.SYS_DAV_RES_RES_CONTENT_USER where TTU_U_ID = _u_id order by TTU_T_ID desc), 1);
@@ -251,8 +251,8 @@ function queryTest()
 <tr><td CLASS="genlisthead">Notify by e-mail</td><td CLASS="geninput"><input type="text" name="email" size="50" value="<?=_email?>"> </td><td>&nbsp;</td></tr>
 <tr><td CLASS="genlisthead">Initialize hits</td>
 <!--<td CLASS="geninput"><input type="checkbox" name="init_hits" size="60"> </td>  -->
-  <td CLASS="geninput"><input type="radio" value="yes" name="rebuld">Yes
-      <input type="radio" value="no" name="rebuld">No</td>
+  <td CLASS="geninput"><input type="radio" value="yes" name="rebuild">Yes
+      <input type="radio" value="no" name="rebuild">No</td>
   <td>&nbsp;</td></tr>
 <tr>
 	<td align="center" colspan="2">

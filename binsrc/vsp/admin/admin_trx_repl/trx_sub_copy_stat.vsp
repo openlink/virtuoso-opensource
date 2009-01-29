@@ -68,7 +68,7 @@
 <?vsp } ?>
 <title>Initial copy status</title>
 </head>
-<?vsp adm_page_header('Intial Copy Status', ''); ?>
+<?vsp adm_page_header('Initial Copy Status', ''); ?>
 
 <?vsp
    if (refr)
@@ -77,7 +77,7 @@
    if (not st)
      {
 ?>
-<h4>Inital copy in progress, please wait ...</h4>
+<h4>Initial copy in progress, please wait ...</h4>
 <p>Copy of "<?V stat[1] ?>"</p>
    <p><?V stat[0] ?> of <?V cnt ?> copied</p>
 <?vsp

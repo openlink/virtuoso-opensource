@@ -77,7 +77,7 @@
   <LI><A href="interop_main.vsp?START=1">Start all tests on Background</A>
 <?vsp } ?>
   <P><H3>Support:</H3>
-  <LI><A href="interop_main.vsp?REBUILD=1">Rebuld service table</A>
+  <LI><A href="interop_main.vsp?REBUILD=1">Rebuild service table</A>
   <LI><A href="interop_main.vsp?CLEAR=1">Clear result table</A>
   <P><H3>Results:</H3>
   <LI><A href="interop_results.vsp">View results by servers</A>

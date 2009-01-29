@@ -172,7 +172,7 @@ proc_check_done:;
       <input type="submit" name="OK" value="OK">
   </form>
 <?vsp } else if (fits_for_proc_view = 0) { ?>
-  <p>The procedure <?= _proc?> cannot be used for a procedure view by this wizzard, because <?= fits_for_proc_view_reason ?>.<p>
+  <p>The procedure <?= _proc?> cannot be used for a procedure view by this wizard, because <?= fits_for_proc_view_reason ?>.<p>
   <p>Try writing the CREATE PROCEDURE VIEW STATEMENT manually</p>
   <form method="POST" action="admin_procs.vsp">
       <input type="hidden" name="q" value="<?=_q?>">

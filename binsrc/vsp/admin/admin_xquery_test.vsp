@@ -37,7 +37,7 @@
 <center>
 <table width="60%">
 <tr><td>
-<P>This page checks your database for existance of XQDemo tables.
+<P>This page checks your database for exsistence of XQDemo tables.
 It should automatically direct your browser to the real demo top page within a few seconds.</P>
 <P>If it fails to do so, please check if you are using demo base indeed.</P>
 </td></tr></table>

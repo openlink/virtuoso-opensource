@@ -54,7 +54,7 @@
   ?>
   <P><B>Request:</B>
   <P><TEXTAREA name=request rows=15 cols=100><?=_req?></TEXTAREA>
-  <P><B>Responce:</B>
+  <P><B>Response:</B>
   <P><TEXTAREA name=responce rows=15 cols=100><?=_resp?></TEXTAREA>
 
   </BODY>

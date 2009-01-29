@@ -65,7 +65,7 @@ do
         if (aref (_rkey_path, 0) <> _old_top_level)
           http ('</vad:registry><vad:registry>');
         _old_top_level := aref (_rkey_path, 0);
-        http (concat ('<vad:branch key="', _r_key, '" type="', _r_type, '" owerwrite="equal" >'));
+        http (concat ('<vad:branch key="', _r_key, '" type="', _r_type, '" overwrite="equal" >'));
         http (_r_value);
         http ('</vad:branch>');
       }

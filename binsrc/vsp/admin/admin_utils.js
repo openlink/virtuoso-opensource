@@ -22,7 +22,7 @@
 */
 function confirm_a_drop (btn)
 {
-  return confirm ('Are you sure you want to drop the subsciption and the local data');
+  return confirm ('Are you sure you want to drop the subscription and the local data');
 }
 
 function selectAllCheckboxes (form, btn)

@@ -118,7 +118,7 @@
      <TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 	<TR>
 	   <TD CLASS="genlistheadt">Group name</TD>
-	   <TD CLASS="genlistheadt">Clien IP</TD>
+	   <TD CLASS="genlistheadt">Client IP</TD>
 	   <TD CLASS="genlistheadt">Access</TD>
 	   <TD CLASS="genlistheadt">Mode</TD>
 	   <TD CLASS="genlistheadt" COLSPAN="2">Action</TD>

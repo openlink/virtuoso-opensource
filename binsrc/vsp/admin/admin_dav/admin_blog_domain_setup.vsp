@@ -144,7 +144,7 @@ function getFileName()
       <tr><td class="geninput">Owner</td> <td class="geninput"><input type="text" name="own" value="<?=own?>" disabled size="70%"/></td></tr>
       <tr><td class="geninput">Home page URL</td> <td class="geninput"><input type="text" name="hpage" value="<?=hpage?>" size="70%"/></td></tr>
       <tr><td class="geninput">Copyrights</td> <td class="geninput"><input type="text" name="copy" value="<?=copy?>"  size="70%"/></td></tr>
-      <tr><td class="geninput">Disclamer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Disclaimer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
       <tr><td class="geninput">Keywords</td> <td class="geninput"><input type="text" name="kwd" value="<?=kwd?>" size="70%"/></td></tr>
       <tr><td class="geninput">Upload Photo Image</td> <td class="geninput"><input type="file" name="uphoto" size="60%" onBlur="javascript: getFileName();"/></td></tr>
       <tr><td class="geninput">Photo</td> <td class="geninput"><input type="text" name="photo" value="<?=photo?>" size="70%"/></td></tr>

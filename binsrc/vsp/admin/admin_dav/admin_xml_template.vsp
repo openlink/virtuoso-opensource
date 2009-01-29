@@ -248,7 +248,7 @@
 	    else
 	      {
 		-- update XXX: must ask
---		 err := 'The target file alredy exists, drop it first';
+--		 err := 'The target file already exists, drop it first';
 		 if ( {?'Del2'} is NULL)
 		   {
 		     do_replace := 1;

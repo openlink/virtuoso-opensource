@@ -62,7 +62,7 @@ function returnres( inres )
 
 
 <!--?vsp
- we cannot use this functio because we need to set up the ONLOAD event in BODY
+ we cannot use this function because we need to set up the ONLOAD event in BODY
 adm_page_header('Web Server Virtual Directories: choose a PL function hook', ''); ?-->
 
 <?vsp if (_step = 1) { ?>

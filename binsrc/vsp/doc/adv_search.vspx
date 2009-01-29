@@ -450,7 +450,7 @@
                           <v:item value="//i" name="text in italic"/>
                           <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
                           <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
-                          <v:item value="//*[@class]" name="css formated sections"/>
+                          <v:item value="//*[@class]" name="css formatted sections"/>
                           <v:item value="//table[.//tr/td]" name="tables"/>
                           <v:item value="//img[@src]" name="images"/>
                           <v:item value="//p[img[@src]]" name="sections with images"/>

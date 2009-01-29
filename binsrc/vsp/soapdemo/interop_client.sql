@@ -653,7 +653,7 @@ create procedure string_if (in val1 any, in val2 any)
 }
 ;
 
-create procedure remove_ns (in _element varchary)
+create procedure remove_ns (in _element varchar)
 {
   declare pos integer;
 
@@ -670,7 +670,7 @@ create procedure remove_ns (in _element varchary)
 }
 ;
 
-create procedure trim_all (in in_string varchary)
+create procedure trim_all (in in_string varchar)
 {
   in_string := replace (in_string, '\r', '');
   in_string := replace (in_string, '\n', '');

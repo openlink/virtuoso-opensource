@@ -584,7 +584,7 @@ function selectAllCheckboxes (form, btn)
 <div style="width: 80%; text-align: left;">
 <small><b>Note:</b> The procedures listed with an asterisk (*) are already published.
 These can be un-published using the UnPublish button from Virtual directory definition
-wizard.<br />The procedures listed with two asterisks (**) can't be published as there is alredy published procedure with the same name.</small></div>
+wizard.<br />The procedures listed with two asterisks (**) can't be published as there is already published procedure with the same name.</small></div>
 
 <?vsp
 if (not saved)

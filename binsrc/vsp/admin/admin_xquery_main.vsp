@@ -231,7 +231,7 @@ function tbls_get ()
 <?vsp
         for select distinct COL_CHECK from SYS_COLS where \TABLE = tbls and COL_CHECK like '% U %' do
 	   {
-             kcol := get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '), '** NO AVALABLE *');
+             kcol := get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '), '** NOT AVAILABLE *');
 ?>
 	     <option><?=kcol?></option>
 

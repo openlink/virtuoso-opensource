@@ -79,12 +79,12 @@
 
       if (res>0)
 	{
-	  dirname := 'New package was succesfully created';
+	  dirname := 'New package was successfully created';
 	}
       else
 	{ 
 error_makepkg:
-	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	  dirname := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 	}
       "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
     }
@@ -101,7 +101,7 @@ error_makepkg:
       res :=  "VAD"."DBA"."VAD_READ" (oper_vector, dirname);
       if (res>0)
 	{
-	  dirname := 'New package was succesfully installed';
+	  dirname := 'New package was successfully installed';
 	}
       else
 	{ 
@@ -109,7 +109,7 @@ error_instpkg:;
 	  declare exit handler for sqlstate '*' { goto error_instpkg2; };
 	  "VAD"."DBA"."VAD_TEST_PACKAGE_AND_REMOVE" (oper_vector, pkg_name, pkg_vers);
 error_instpkg2:
-	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	  dirname := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 	}
       "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
     }
@@ -126,12 +126,12 @@ error_instpkg2:
 
       if (res>0)
 	{
-	  dirname := 'Package was succesfully uninstalled';
+	  dirname := 'Package was successfully uninstalled';
 	}
       else
 	{ 
 error_delpkg:
-	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	  dirname := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 	}
       "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
     }
@@ -224,7 +224,7 @@ error_delpkg:
 error_rmval2:
 	    if (_err_code is not null and length (_err_code))
 	      {
-		s := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+		s := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 		"PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', s);
 		"PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'Internal error:\n', NULL, NULL, '  width=50% ');
 	      }
@@ -240,7 +240,7 @@ error_rmval2:
 	  }
 	else if (equ (act, 'delpkg_result'))
 	  {
-	    "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'The result of pakage deleting is:\n', NULL, NULL, '  width=50% ');
+	    "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'The result of package deleting is:\n', NULL, NULL, '  width=50% ');
 	  }
 	http ('<script>document.forms[0].reg_action.value="";</script>');
     }

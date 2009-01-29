@@ -268,7 +268,7 @@ _disp_result := 'yes';
 
     if ('xmlt' = get_keyword ('imd', params, '') and _own_id <> http_dav_uid () and {?'execute'} is not null)
       {
-        _err_txt := concat ('The owner for XML tempalte must be WebDAV admin.');
+        _err_txt := concat ('The owner of XML template must be WebDAV admin.');
         goto err_ret;
       }
 

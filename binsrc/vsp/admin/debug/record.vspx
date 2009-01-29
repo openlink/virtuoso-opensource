@@ -131,7 +131,7 @@ else {
                   <table width="100%" border="1" cellspacing="0" cellpadding="0">
                     <tr>
                       <td align="center" colspan="2">
-                        <b>No one extenstion to disabling registered</b>
+                        <b>No one extension to disabling registered</b>
                       </td>
                     </tr>
                   </table>
@@ -216,8 +216,8 @@ delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/sys_http_recording/
 -- fill in comments line
 self.command_lines.ufl_value := concat(
 '# RUN - what recorded request to run\n',
-'# CHECK_EXISTS - the following expresion should be founded in HTTP resulting page\n',
-'# CHECK_NOTEXISTS - the following expresion should not be founded in HTTP resulting page\n',
+'# CHECK_EXISTS - the following expression should be founded in HTTP resulting page\n',
+'# CHECK_NOTEXISTS - the following expression should not be founded in HTTP resulting page\n',
 '# XPATH_EXISTS - evaluate given XPATH expression against result\n',
 '# XPATH_NOTEXISTS - evaluate given XPATH expression against result\n',
 '# SQL - execute expression containing in file\n\n');
@@ -234,7 +234,7 @@ self.command_lines.ufl_value := concat(
         <tr>
           <td>
             <h4>
-              Unuque recording session name:
+              Unique recording session name:
             </h4>
           </td>
         </tr>

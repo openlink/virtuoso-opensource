@@ -252,7 +252,7 @@ function getFileName()
       <!--tr><td class="geninput">Home folder</td> <td class="geninput"><input type="text" name="home" value="<?=home?>" disabled size="70%"/></td></tr-->
       <tr><td class="geninput">Home page URL</td> <td class="geninput"><input type="text" name="hpage" value="<?=hpage?>" size="70%"/></td></tr>
       <tr><td class="geninput">Copyrights</td> <td class="geninput"><input type="text" name="copy" value="<?=copy?>"  size="70%"/></td></tr>
-      <tr><td class="geninput">Disclamer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Disclaimer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
 
       <tr><td class="geninput">OCS Links Title</td><td class="geninput"><input type="text" name="oclt" value="<?=oclt?>" size="70%"/></td></tr>
       <tr><td class="geninput">OPML Links Title</td><td class="geninput"><input type="text" name="oplt" value="<?=oplt?>" size="70%"/></td></tr>

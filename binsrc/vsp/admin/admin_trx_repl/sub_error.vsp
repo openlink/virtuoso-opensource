@@ -59,7 +59,7 @@
 
 <div>
 <br>
-<div><b>This error(s) may caused by data dependancy</b></div>
+<div><b>This error(s) may caused by data dependency</b></div>
 <ul>
   <li>If the item is a procedures, ask publisher to add the referenced tables/views to the publication</li>
   <li>If the target collection already exists rename it or delete</li>

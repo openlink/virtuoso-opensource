@@ -53,7 +53,7 @@
 	      </v:text>
 	    </td>
 	    <td>
-	      <v:button action="simple" name="wget" value="Retreive">
+	      <v:button action="simple" name="wget" value="Retrieve">
 		<v:on-post>
 		  if (not self.vc_is_valid)
 		    return;
