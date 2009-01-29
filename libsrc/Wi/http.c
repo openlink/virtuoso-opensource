@@ -276,7 +276,6 @@ ws_gethostbyaddr (const char * ip)
       if (hit) \
 	{ \
 	  hit->ah_count--; \
-	  hit->ah_avg = hit->ah_last_avg; \
 	}
 
 #define ACL_CHECK_MPS	1
@@ -308,24 +307,22 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
       if (place)
 	{ 
 	  float rate;
-	  float delta;
+	  float elapsed;
 	 
 	  hit = *place;
-	  delta = (float) (now - hit->ah_last);
-	  if (delta < 1.0) delta = 0.5;
-	  rate = (float)(1 / (delta/1000000));
-	  hit->ah_last_avg = hit->ah_avg;
-	  if (hit->ah_count == 1)
+
+	  elapsed = (float) (now - hit->ah_initial) / 1000000;
+	  if (elapsed < 1) elapsed = 0.5;
+	  rate = (float)((hit->ah_count + 1) / elapsed);
 	    hit->ah_avg = rate;
-	  else
-  	    hit->ah_avg = ((hit->ah_avg * hit->ah_count) + rate) / (hit->ah_count + 1);
-#ifdef DEBUG  
-	  fprintf (stderr, "http acl rate-limit delta: %f, count: %ld, rate: %f, avg: %f\n", delta, hit->ah_count, rate, hit->ah_avg);
-#endif
-	  if (hit->ah_avg > elm->ha_rate)
+
+	  if ((elapsed > 1) && rate > elm->ha_rate) 
 	    res = 1; /* deny */
-	  else if (((now - hit->ah_initial)/1000000) > 86400) /* reset stats once per 24h, but only when not denied */
+	  else if (elapsed > 86400) /* reset stats once per 24h, but only when not denied */
 	    memset (hit, 0, sizeof (acl_hit_t));
+#ifdef DEBUG 
+	  fprintf (stderr, "http acl rate-limit elapsed: %f, count: %ld, rate: %f, avg: %f, rc=%d\n", elapsed, hit->ah_count, rate, hit->ah_avg, res);
+#endif
 	}
   else
     {
@@ -335,7 +332,6 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	  id_hash_set (loc_hash, (caddr_t) &new_name, (caddr_t) &hit);
 	}
       if (!hit->ah_initial) hit->ah_initial = now;
-      hit->ah_last = now;
       hit->ah_count ++;
       if (hit_ret) *hit_ret = hit;
     }
@@ -8554,6 +8550,50 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return http_acl (qst, err_ret, args, ACL_DEL, "http_acl_remove");
 }
 
+/* sqlprt.c */
+void trset_start (caddr_t *qst);
+void trset_printf (const char *str, ...);
+void trset_end (void);
+
+static void
+http_acl_stats ()
+{
+  static char * szHttpAclName = "HTTP";
+  caddr_t *alist, **plist;
+
+  plist = (caddr_t **) id_hash_get (http_acls, (caddr_t) &szHttpAclName);
+  alist = plist ? *plist : NULL;
+  if (alist)
+    {
+      int inx;
+      acl_hit_t * hit, **place;
+      caddr_t *ip;
+      id_hash_iterator_t it;
+
+      DO_BOX (ws_acl_t *, elm, inx, alist)
+	{
+	  if (!elm->ha_rate || !elm->ha_hits)
+	    continue;
+	  id_hash_iterator (&it, elm->ha_hits);
+	  while (hit_next (&it, (caddr_t *) &ip, (caddr_t *) &place))
+	    {
+	      hit = *place;
+	      trset_printf ("%s : %f hits/sec.\n", *ip, hit->ah_avg);
+	    }
+	}
+      END_DO_BOX;
+    }
+}
+
+static caddr_t
+bif_http_acl_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  trset_start (qst);
+  http_acl_stats ();
+  trset_end ();
+  return NULL;
+}
+
 /*
    Caching of the dynamic resources
 */
@@ -9294,6 +9334,7 @@ http_init_part_one ()
   bif_define_typed ("http_acl_set", bif_http_acl_set, &bt_any);
   bif_define_typed ("http_acl_get", bif_http_acl_get, &bt_any);
   bif_define_typed ("http_acl_remove", bif_http_acl_remove, &bt_any);
+  bif_define_typed ("http_acl_stats", bif_http_acl_stats, &bt_any);
 
   bif_define ("http_url_cache_set", bif_http_url_cache_set);
   bif_define ("http_url_cache_get", bif_http_url_cache_get);
