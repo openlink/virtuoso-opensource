@@ -337,7 +337,7 @@ function updateLabel(value)
     showLabel(4, 4);
   if (value == 'PropFilter')
     showLabel(5, 5);
-  if (value == 'HostFs')
+  if (value == 'S3')
     showLabel(6, 6);
   if (value == 'ResFilter')
     showLabel(7, 7);
@@ -353,7 +353,7 @@ function showLabel(from, to)
   for (var i = from; i <= to; i++)
   {
     var div = document.getElementById('tab_'+i);
-    if (div != null)
+    if (div)
     {
       div.style.visibility = 'visible';
       div.style.display = 'inline';
@@ -1055,7 +1055,7 @@ ODRIVE.propertyUpdate = function (claimNo)
   {
     if (($v('c_property_xxx') == '') || ($v('c_value_xxx') == ''))
     {
-      alert ('The property and value filelds can not be empty|');
+      alert ('The property and value fields can not be empty|');
     }
     else
     {
@@ -1123,7 +1123,7 @@ ODRIVE.aclUpdate = function (claimNo)
   {
     if ($v('acl_user_xxx') == '')
     {
-      alert ('The users/groups filelds can not be empty|');
+      alert ('The users/groups fields can not be empty|');
     }
     else
     {

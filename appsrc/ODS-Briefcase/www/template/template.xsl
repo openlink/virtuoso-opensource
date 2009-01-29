@@ -460,7 +460,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="search-dc-template4">
+  <xsl:template match="vm:search-dc-template4">
     <div id="4" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
     <tr>
@@ -513,7 +513,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="search-dc-template5">
+  <xsl:template match="vm:search-dc-template5">
     <div id="5" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
         <tr>
@@ -525,7 +525,7 @@
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := get_keyword('dav_oMail_SearchPath', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.path_show(self.dir_path)));
+                  control.ufl_value := get_keyword ('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET (self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.path_show(self.dir_path)));
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -565,6 +565,59 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template6">
+    <div id="6" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th>
+            <v:label for="dav_S3_BucketName" value="Bucket Name" />
+          </th>
+          <td>
+            <v:text name="dav_S3_BucketName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := get_keyword ('dav_S3_BucketName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-BucketName', ''));
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_S3_AccessKey" value="Access Key ID" />
+          </th>
+          <td>
+            <v:text name="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := get_keyword ('dav_S3_AccessKeyID', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-AccessKeyID', ''));
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_S3_SecretKey" value="Secret Key" />
+          </th>
+          <td>
+            <v:text name="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := get_keyword ('dav_S3_SecretKey', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:S3-SecretKey', ''));
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template match="vm:search-dc-template7">
     <div id="7" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
@@ -592,7 +645,7 @@
         <thead>
           <tr>
             <th id="search_th_0" width="20%">Field</th>
-            <th id="search_th_1" width="20%" style="display: none;">Schena</th>
+            <th id="search_th_1" width="20%" style="display: none;">Schema</th>
             <th id="search_th_2" width="20%" style="display: none;">Property</th>
             <th id="search_th_3" width="20%">Condition</th>
             <th id="search_th_4" width="20%">Value</th>
@@ -679,7 +732,7 @@
           <td>
             <?vsp
               http (sprintf ('Lock is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'lockState')));
-              http (sprintf ('Version Conrol is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'vc')));
+              http (sprintf ('Version Control is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'vc')));
               http (sprintf ('Auto Versioning is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'avcState')));
               http (sprintf ('Version State is <b>%s</b>', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'vcState')));
             ?>
@@ -688,7 +741,7 @@
         <v:template name="t3" type="simple" enabled="-- case when (equ(self.command_mode, 10)) then 1 else 0 end">
           <tr>
             <th >
-              <v:label value="--sprintf ('Content is %s in Version Conrol', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
+              <v:label value="--sprintf ('Content is %s in Version Control', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
             <td valign="center">
               <v:button name="template_vc" action="simple" value="--sprintf ('%s VC', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_disabled="disabled">

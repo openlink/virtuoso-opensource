@@ -470,11 +470,11 @@
           -- validate tags
           self.dav_tags_public := trim (get_keyword ('f_tags_public', params, ''));
           if (not ODRIVE.WA.validate_tags (self.dav_tags_public))
-            signal('TEST', 'The expression contans not valid tag(s)!<>');
+            signal('TEST', 'The expression contains no valid tag(s)!<>');
 
           self.dav_tags_private := trim (get_keyword ('f_tags_private', params, ''));
           if (not ODRIVE.WA.validate_tags (self.dav_tags_private))
-            signal('TEST', 'The expression contans not valid tag(s)!<>');
+            signal('TEST', 'The expression contains no valid tag(s)!<>');
 
           -- validate metadata
             if ((self.command_mode = 10) and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path))
@@ -711,11 +711,17 @@
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:oMail-FolderName', get_keyword('dav_oMail_FolderName', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:oMail-NameFormat', get_keyword('dav_oMail_NameFormat', params));
               }
-                if (dav_detType = 'PropFilter')
+              else if (dav_detType = 'PropFilter')
                 {
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', params, '/DAV/')));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropName', get_keyword('dav_PropFilter_PropName', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropValue', get_keyword('dav_PropFilter_PropValue', params));
+              }
+              else if (dav_detType = 'S3')
+              {
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-BucketName', get_keyword ('dav_S3_BucketName', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-AccessKeyID', get_keyword ('dav_S3_AccessKeyID', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-SecretKey', get_keyword ('dav_S3_SecretKey', params));
               }
                 }
             }
@@ -1385,7 +1391,7 @@
             <v:template name="tform_8" type="simple" enabled="-- equ(self.dav_type, 'C')">
             <vm:tabCaption tab="4" tabs="10" caption="WebMail" />
             <vm:tabCaption tab="5"  tabs="10" caption="Filter" />
-            <vm:tabCaption tab="6"  tabs="10" caption="FS Link" />
+            <vm:tabCaption tab="6"   tabs="10" caption="S3 Properties" />
             <vm:tabCaption tab="7"  tabs="10" caption="Criteria" />
             <vm:tabCaption tab="8"  tabs="10" caption="RDF Upload" />
             </v:template>
@@ -1499,6 +1505,7 @@
                             http (self.option_prepare('News3',            'OFM Subscriptions',             self.dav_detType));
                             http (self.option_prepare('rdfSink',          'RDF Upload Folder',             self.dav_detType));
                             http (self.option_prepare('RDFData',          'RDF Data',                      self.dav_detType));
+                            -- http (self.option_prepare('S3',               'S3',                            self.dav_detType));
                           }
                         ?>
                       </select>
@@ -1726,7 +1733,7 @@
                             </td>
                             <vm:if test="self.dav_propEnable">
                               <td nowrap="nowrap">
-                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Proporty" title="Delete Proporty" /> Delete</span>
+                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Property" title="Delete Property" /> Delete</span>
                               </td>
                             </vm:if>
                           </tr>
@@ -1752,7 +1759,7 @@
                             </td>
                             <vm:if test="self.dav_propEnable">
                               <td nowrap="nowrap">
-                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Proporty" title="Add Proporty"/> Add</span>
+                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property"/> Add</span>
                               </td>
                             </vm:if>
                           </tr>
@@ -2194,7 +2201,8 @@
                                   if (isstring(tags))
                                   {
                                     tags := split_and_decode (tags, 0, '\0\0,');
-                                    foreach (any tag in tags) do {
+                                    foreach (any tag in tags) do
+                                    {
                                       N := N + length(tag);
                                       if (N < 20)
                                         http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag, tag));
@@ -2202,9 +2210,11 @@
                                     }
                                   }
                                   tags := coalesce(ODRIVE.WA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags'), '');
-                                  if (isstring(tags)) {
+                                  if (isstring(tags))
+                                  {
                                     tags := split_and_decode (tags, 0, '\0\0,');
-                                    foreach (any tag in tags) do {
+                                    foreach (any tag in tags) do
+                                    {
                                       N := N + length(tag);
                                       if (N < 20)
                                         http (sprintf ('<a  id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag, tag));

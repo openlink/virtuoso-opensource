@@ -307,12 +307,12 @@
         tagsPublic := trim (self.f_tags_public.ufl_value);
         if (not ODRIVE.WA.validate_tags (tagsPublic))
         {
-          signal ('TEST', 'The expression contans not valid tag(s)!<>');
+          signal ('TEST', 'The expression contains no valid tag(s)!<>');
         }
         tagsPrivate := trim (self.f_tags_private.ufl_value);
         if (not ODRIVE.WA.validate_tags (tagsPrivate))
         {
-          signal ('TEST', 'The expression contans not valid tag(s)!<>');
+          signal ('TEST', 'The expression contains no valid tag(s)!<>');
         }
         if ((tagsPublic <> '') or (tagsPrivate <> ''))
         {
@@ -558,7 +558,7 @@
                             </select>
                           </td>
                           <td nowrap="nowrap">
-                            <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Proporty" title="Add Proporty"/> Add</span>
+                            <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property"/> Add</span>
                           </td>
                         </tr>
                       </table>

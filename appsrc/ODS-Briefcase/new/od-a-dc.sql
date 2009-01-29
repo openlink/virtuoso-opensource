@@ -218,17 +218,17 @@ create procedure ODRIVE.WA.dc_subfilter (
 
   fField := cast (xpath_eval ('@field', criteria) as varchar);
   if (is_empty_or_null (fField))
-    signal ('TEST', 'Field can not be empry!<>');
+    signal ('TEST', 'Field can not be empty!<>');
 
   fCriteria := cast (xpath_eval ('@criteria', criteria) as varchar);
   if (is_empty_or_null (fCriteria))
   {
-    signal ('TEST', 'Condition can not be empry!<>');
+    signal ('TEST', 'Condition can not be empty!<>');
   }
   fValue := cast (xpath_eval ('.', criteria) as varchar);
   if (is_empty_or_null (fCriteria))
   {
-    signal ('TEST', 'Value can not be empry!<>');
+    signal ('TEST', 'Value can not be empty!<>');
   }
   fValueType := ODRIVE.WA.dc_valueType (fField);
   fValue := ODRIVE.WA.dc_cast (fValue, fValueType);

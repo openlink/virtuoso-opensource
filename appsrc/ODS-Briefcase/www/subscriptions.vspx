@@ -777,7 +777,7 @@
                           self.vs_interval := 10;
                           self.vs_sql := concat ('WS.WS.SERV_QUEUE_TOP(\'', self.v_host, '\', \'', self.v_root, '\', 1, 0, null, null)');
 
-                          self.v_mode := 'sheduleCreate';
+                          self.v_mode := 'scheduleCreate';
 
                           self.vc_data_bind(e);
                         ]]>
@@ -884,7 +884,7 @@
                           self.vs_start := (control.vc_parent as vspx_row_template).te_rowset[1];
                           self.vs_interval := (control.vc_parent as vspx_row_template).te_rowset[2];
 
-                          self.v_mode := 'sheduleEdit';
+                          self.v_mode := 'scheduleEdit';
 
                           self.vc_data_bind(e);
                         ]]>
@@ -1078,7 +1078,7 @@
         </div>
       </vm:if>
 
-      <vm:if test="self.v_mode in ('sheduleCreate', 'sheduleEdit')">
+      <vm:if test="self.v_mode in ('scheduleCreate', 'scheduleEdit')">
         <div class="new-form-header">
           Scheduled Event
         </div>

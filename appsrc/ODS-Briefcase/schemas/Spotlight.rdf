@@ -540,7 +540,7 @@
     <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
   </rdf:Property>
   <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAperture">
-    <rdfs:comment>Aperture setting used to aqure the document contents. This unit is the APEX value.</rdfs:comment>
+    <rdfs:comment>Aperture setting used to aquire the document contents. This unit is the APEX value.</rdfs:comment>
     <virtrdf:label>Cam APEX</virtrdf:label>
     <virtrdf:catName>Cam APEX</virtrdf:catName>
     <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
