@@ -346,6 +346,7 @@
 <xsl:template match="vm:header">
   <head>
     <base href="<?V http_s()||self.st_host ?>/ods/"/><![CDATA[<!--[if IE]></base><![endif]-->]]>
+    <link rel="commands" href="ods_ubiquity.js" name="describe-resource"/>
     <?vsp
       {
         declare style varchar;

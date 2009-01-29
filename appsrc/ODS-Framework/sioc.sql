@@ -3098,10 +3098,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person bio:event ?event .
 	    ?event rdf:type bio:Birth .
 	    ?event dc:date ?bdate .
-	    ?person foaf:interest ?interest .
-	    ?interest rdfs:label ?interest_label .
-	    ?person foaf:topic_interest ?topic_interest .
-	    ?topic_interest rdfs:label ?topic_interest_label .
 	    ?person bio:keywords ?keywords .
 	    ?person owl:sameAs ?same_as .
 	    ?person foaf:holdsAccount ?oa .
@@ -3128,10 +3124,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	        	optional { ?adr vcard:Locality ?city } .
 			optional { ?adr vcard:Region ?state } .
 	      	       } .
-	      optional { ?person foaf:interest ?interest } .
-	      optional { ?interest rdfs:label ?interest_label  } .
-	      optional { ?person foaf:topic_interest ?topic_interest } .
-	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
 			 ?person foaf:holdsAccount ?oa .
@@ -3156,6 +3148,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?made foaf:maker ?person .
 	    ?made dc:title ?made_title .
 	    ?made a ?made_type .
+	    ?person foaf:interest ?interest .
+	    ?interest rdfs:label ?interest_label .
+	    ?person foaf:topic_interest ?topic_interest .
+	    ?topic_interest rdfs:label ?topic_interest_label .
 
 	  }
 	  WHERE
@@ -3165,6 +3161,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      {
 	      ?person foaf:holdsAccount <%s/%s#this> .
 	      ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } .
+	      optional { ?person foaf:interest ?interest } .
+	      optional { ?interest rdfs:label ?interest_label  } .
+	      optional { ?person foaf:topic_interest ?topic_interest } .
+	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
 	      }
 	    }
 	  }', graph, graph, u_name);

@@ -952,16 +952,28 @@ create procedure ODS.ODS_API.appendProperty (
 }
 ;
 
-create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
-{
-  declare V any;
-  declare data, meta any;
-  foafIRI := trim (foafIRI);
-  exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', foafIRI), null, null, vector (), 0);
+grant execute on DB.DBA.RDF_GRAB to SPARQL_SELECT;
+grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
+create procedure ODS.ODS_API.get_foaf_data_array (
+  in foafIRI varchar)
+{
+  declare N, step integer;
+  declare foafGraph varchar;
+  declare V, st, msg, data, meta any;
+  declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
+  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationHomepage", "organizationTitle", "keywords", "depiction", "interest" any;
+
+  foafIRI := trim (foafIRI);
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  exec (sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%S> where { ?s ?p ?o }', foafGraph, foafIRI), st, msg, vector (), 0);
   exec (sprintf ('sparql
+                  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                  prefix dc: <http://purl.org/dc/elements/1.1/>
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                  prefix bio: <http://vocab.org/bio/0.1/>
                   select ?title
                          ?name
                          ?nick
@@ -980,6 +992,12 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
                          ?workplaceHomepage
                          ?homepage
                          ?phone
+                         ?organizationHomepage
+                         ?organizationTitle
+                         ?keywords
+                         ?depiction
+                         ?interest
+                         ?interest_label
                    where {
 		           graph <%S>
                            {
@@ -1002,33 +1020,43 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
                              optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
                              optional { ?person foaf:homepage ?homepage } .
                              optional { ?person foaf:phone ?phone } .
+                             optional { ?person foaf:depiction ?depiction } .
+                             optional { ?person bio:keywords ?keywords } .
+                             optional { ?organization a foaf:Organization }.
+                             optional { ?organization foaf:homepage ?organizationHomepage }.
+                             optional { ?organization dc:title ?organizationTitle }.
+                             optional { ?person foaf:interest ?interest .
+                                        ?interest rdfs:label ?interest_label. } .
                            }
-                         }', foafIRI), null, null, vector (), 0, meta, data);
-
+                         }', foafGraph), st, msg, vector (), 0, meta, data);
     V := vector ();
- if (length (data))
+  "interest" := '';
+  for (N := 0; N < length (data); N := N + 1)
   {
-    declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng", "icqChatID",
-    "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone" any;
-
-    "title" := data[0][0];
-    "name" := data[0][1];
-    "nick" := data[0][2];
-    "firstName" := data[0][3];
-    "givenname" := data[0][4];
-    "family_name" := data[0][5];
-    "mbox" := data[0][6];
-    "gender" := data[0][7];
-    "birthday" := data[0][8];
-    "lat" := data[0][9];
-    "lng" := data[0][10];
-    "icqChatID" := data[0][11];
-    "msnChatID" := data[0][12];
-    "aimChatID" := data[0][13];
-    "yahooChatID" := data[0][14];
-    "workplaceHomepage" := data[0][15];
-    "homepage" := data[0][16];
-    "phone" := data[0][17];
+    if (N = 0)
+    {
+      "title" := data[N][0];
+      "name" := data[N][1];
+      "nick" := data[N][2];
+      "firstName" := data[N][3];
+      "givenname" := data[N][4];
+      "family_name" := data[N][5];
+      "mbox" := data[N][6];
+      "gender" := lcase (data[N][7]);
+      "birthday" := data[N][8];
+      "lat" := data[N][9];
+      "lng" := data[N][10];
+      "icqChatID" := data[N][11];
+      "msnChatID" := data[N][12];
+      "aimChatID" := data[N][13];
+      "yahooChatID" := data[N][14];
+      "workplaceHomepage" := data[N][15];
+      "homepage" := data[N][16];
+      "phone" := data[N][17];
+      "organizationHomepage" := data[N][18];
+      "organizationTitle" := data[N][19];
+      "keywords" := data[N][20];
+      "depiction" := data[N][21];
 
     appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
@@ -1047,20 +1075,30 @@ create procedure ODS.ODS_API.get_foaf_data_array (in foafIRI varchar)
     appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
     appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
     appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
+      appendProperty (V, 'organizationHomepage', "organizationHomepage");   -- WAUI_BORG_HOMEPAGE
+      appendProperty (V, 'organizationTitle', "organizationTitle");         -- WAUI_
+      appendProperty (V, 'tags', "keywords");                               -- WAUI_
+      appendProperty (V, 'depiction', "depiction");                         -- WAUI_
+    }
+    if (data[N][22] is not null)
+    {
+      "interest" := "interest" || data[N][22] || ';' || data[N][23] || '\n';
   }
+  }
+  if ("interest" <> '')
+    appendProperty (V, 'interest', "interest");
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
  return V;
   }
 ;
 
 create procedure ODS.ODS_API."user.getFOAFData" (in foafIRI varchar) __soap_http 'application/json'
 {
-  declare ret any;
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
   return obj2json (null);
   };
-
-  ret := params2json (ODS.ODS_API.get_foaf_data_array (foafIRI));
-  return ret;
+  return params2json (ODS.ODS_API.get_foaf_data_array (foafIRI));
 }
 ;
 

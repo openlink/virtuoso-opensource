@@ -1248,13 +1248,16 @@ ODS.Nav = function (navOptions)
 		    appMenuItemA.id = packageName + '_menuItem';
 
 		    if (resXmlNodes[i].getAttribute ('instcount') == 0)
-			OAT.Event.attach (appMenuItemA, "click",
+	    OAT.Event.attach (
+	      appMenuItemA,
+	      "click",
 			      function (e)
 					  {
 				var t = eTarget (e);
 				self.show_app_throbber (t.parentNode);
-					      self.createApplication (this.packageName, self.appCreate);
-					  });
+				  self.createApplication (t.packageName, self.appCreate);
+			  }
+		  );
 		    else
 			{
 			    appMenuItemA.defaultUrl = false;
@@ -1266,7 +1269,6 @@ ODS.Nav = function (navOptions)
 					      function(e)
 					      {
 						  var t = eTarget (e);
-				  
 						  if (t.defaultUrl)
 				    {
 				      self.show_app_throbber (t.parentNode);
@@ -4891,8 +4893,7 @@ ODS.Nav = function (navOptions)
 		       data, callback, ajaxOptions);
     };
 
-  this.createApplication = 
-  function (applicationType, callbackFunction) 
+  this.createApplication = function (applicationType, callbackFunction)
     {
 	if (applicationType == 'FeedManager')
 	    applicationType = 'Feed Manager';
@@ -4901,14 +4902,12 @@ ODS.Nav = function (navOptions)
 	    applicationType = 'Instant Messenger';
 
 	var data = 'sid=' + self.session.sid + '&application=' + encodeURIComponent (applicationType);
-
-	var callback =
-	function (xmlString)
+    var callback = function (xmlString)
 	{
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
-
 	    if (!self.session.isErr (xmlDoc))
 		{
+
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 		}
