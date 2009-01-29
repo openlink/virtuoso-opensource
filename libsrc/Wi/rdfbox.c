@@ -1341,7 +1341,11 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
     }
   ns_counter_val = unbox_inline (ns_counter_ptr[0]);
   if ((8000 <= ns_counter_val) || ((3 * ns2pref->ht_buckets) <= ns_counter_val))
+    {
+      if (NULL == ti->uri)
+        ti->uri = box_dv_short_concat (ti->ns, ti->loc);
     return 0;
+    }
   ti->prefix = xml_get_cli_or_global_ns_prefix (qst, ti->ns, ~0);
   if (NULL == ti->prefix)
     ti->prefix = box_sprintf (20, "ns%d", ns2pref->ht_count);
