@@ -2784,6 +2784,8 @@ create procedure AB.WA.contact_update (
   in birthday datetime,
   in iri varchar,
   in foaf varchar,
+  in photo varchar,
+  in interests varchar,
   in mail varchar,
   in web varchar,
   in icq varchar,
@@ -2844,6 +2846,8 @@ create procedure AB.WA.contact_update (
         P_BIRTHDAY,
         P_IRI,
         P_FOAF,
+        P_PHOTO,
+        P_INTERESTS,
         P_MAIL,
         P_WEB,
         P_ICQ,
@@ -2902,6 +2906,8 @@ create procedure AB.WA.contact_update (
         birthday,
         iri,
         foaf,
+        photo,
+        interests,
         mail,
         web,
         icq,
@@ -2959,6 +2965,8 @@ create procedure AB.WA.contact_update (
            P_BIRTHDAY = birthday,
            P_IRI = iri,
            P_FOAF = foaf,
+           P_PHOTO = photo,
+           P_INTERESTS = interests,
            P_MAIL = mail,
            P_WEB = web,
            P_ICQ = icq,
@@ -3177,6 +3185,10 @@ create procedure AB.WA.contact_field (
     return (select P_BIRTHDAY from AB.WA.PERSONS where P_ID = id);
   if (pName = 'P_FOAF')
     return (select P_FOAF from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_PHOTO')
+    return (select P_PHOTO from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_INTERESTS')
+    return (select P_INTERESTS from AB.WA.PERSONS where P_ID = id);
 
   if (pName = 'P_MAIL')
     return (select P_MAIL from AB.WA.PERSONS where P_ID = id);
@@ -3504,7 +3516,7 @@ create procedure AB.WA.import_foaf (
   in contentFollow any := 'foaf:knows')
 {
   declare N, M, pLength, mLength, iLength, id integer;
-  declare tmp, tmp2, data, pFields, pValues any;
+  declare tmp, tmp2, tmpTags, data, pFields, pValues any;
   declare Meta, Persons, Person, Items any;
   declare S, T, P, name, fullName varchar;
 
@@ -3534,7 +3546,13 @@ create procedure AB.WA.import_foaf (
       'P_AIM',
       'P_YAHOO',
       'P_TITLE',
-      'P_H_PHONE'
+      'P_H_PHONE',
+      'P_H_WEB',
+      'P_B_WEB',
+      'P_H_LAT',
+      'P_H_LNG',
+      'P_TAGS',
+      'P_PHOTO'
     );
   mLength := length (Meta);
 
@@ -3578,7 +3596,9 @@ create procedure AB.WA.import_foaf (
          ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
          ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
          ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-       ' SELECT ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE' ||
+       ' PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> ' ||
+       ' PREFIX bio: <http://vocab.org/bio/0.1/> ' ||
+       ' SELECT ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE, ?P_H_WEB, ?P_B_WEB, ?P_H_LAT, ?P_H_LNG, ?P_TAGS, ?P_PHOTO' ||
          ' FROM <%s> ' ||
          ' WHERE { ' ||
        '         {?P_ID a foaf:Person } UNION {?P_ID a foaf:Organization } . ' ||
@@ -3590,12 +3610,22 @@ create procedure AB.WA.import_foaf (
        '         OPTIONAL{ ?P_ID  foaf:family_name ?P_LAST_NAME} . ' ||
        '         OPTIONAL{ ?P_ID  foaf:dateOfBirth ?P_BIRTHDAY} . ' ||
        '         OPTIONAL{ ?P_ID  foaf:mbox ?P_MAIL} . ' ||
-       '         OPTIONAL{ ?P_ID  foaf:homepage ?P_WEB} . ' ||
+       '         OPTIONAL{ ?P_ID foaf:workplaceHomepage ?P_WEB} . '            ||
        '         OPTIONAL{ ?P_ID  foaf:icqChatID ?P_ICQ } .' ||
        '         OPTIONAL{ ?P_ID  foaf:msnChatID ?P_MSN } .' ||
        '         OPTIONAL{ ?P_ID  foaf:aimChatID ?P_AIM } .' ||
        '         OPTIONAL{ ?P_ID  foaf:yahooChatID ?P_YAHOO } .' ||
        '         OPTIONAL{ ?P_ID  foaf:phone ?P_H_PHONE } .' ||
+       '         OPTIONAL{ ?P_ID foaf:homepage ?P_H_WEB} . '                   ||
+       '         optional{ ?P_ID foaf:workplaceHomepage ?P_B_WEB } .'          ||
+       '         optional{ ?P_ID foaf:depiction ?P_PHOTO } .'                  ||
+       '         optional{ ?P_ID foaf:based_near ?based_near .'                ||
+       '                   ?based_near geo:lat ?P_H_LAT ;'                     ||
+       '                               geo:long ?P_H_LNG .'                    ||
+       '                 } .'                                                  ||
+       '         optional{ ?P_ID bio:keywords ?P_TAGS } .'                     ||
+       '         optional{ ?P_ID foaf:interest ?interest .'                    ||
+       '                   ?interest rdfs:label ?interest_label. } .'          ||
          '       }';
   Persons := AB.WA.ab_sparql (sprintf (S, contentIRI));
   pLength := length (Persons);
@@ -3646,6 +3676,7 @@ create procedure AB.WA.import_foaf (
       {
             tmp := Meta[M];
         tmp2 := Person[M];
+        tmpTags := tags;
             if (tmp = 'P_BIRTHDAY')
             {
               {
@@ -3664,9 +3695,18 @@ create procedure AB.WA.import_foaf (
             {
               tmp2 := replace (tmp2, 'mailto:', '');
             }
+        if (tmp = 'P_PHONE')
+        {
+          tmp2 := replace (tmp2, 'tel:', '');
+        }
         if (tmp = 'P_TITLE')
         {
           tmp2 := AB.WA.import_title (tmp2);
+        }
+        if (tmp = 'P_TAGS')
+        {
+          tmpTags := AB.WA.tags_join (tmpTags, tmp2);
+          tmp := '';
         }
             if (tmp <> '')
             {
@@ -3676,7 +3716,7 @@ create procedure AB.WA.import_foaf (
           }
       commit work;
       connection_set ('__addressbook_import', '1');
-        AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
+      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tmpTags, validation);
       connection_set ('__addressbook_import', '0');
       }
   _next:;

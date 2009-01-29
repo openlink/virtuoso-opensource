@@ -142,6 +142,18 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="viewImage" arglist="inout fValue any">
+    <![CDATA[
+       if (self.abAction = 'view')
+         if (is_empty_or_null (fValue))
+         {
+           http ('&nbsp;');
+         } else {
+           http (sprintf ('<img src="%s"/>', fValue));
+         }
+    ]]>
+  </v:method>
+
   <v:method name="viewTags" arglist="inout fValue any">
     <![CDATA[
       if (self.abAction = 'view')
@@ -395,6 +407,9 @@
       <v:variable name="v_iri" type="varchar" default="''" />
       <v:variable name="v_foaf" type="varchar" default="''" />
 
+      <v:variable name="v_photo" type="varchar" default="''" />
+      <v:variable name="v_interests" type="varchar" default="''" />
+
       <v:variable name="v_mail" type="varchar" default="''" />
       <v:variable name="v_web" type="varchar" default="''" />
       <v:variable name="v_icq" type="varchar" default="''" />
@@ -476,6 +491,8 @@
       <v:variable name="ve_update_freq" type="integer" default="0" />
       <v:variable name="ve_options" type="any" default="null" />
       <v:variable name="ve_result" type="any" default="null" />
+
+      <v:variable name="v_photo_preview_path" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -548,6 +565,9 @@
                     self.v_birthday := null;
                   self.v_iri := '';
                     self.v_foaf := '';
+                  self.v_photo := '';
+                  self.v_interests := '';
+                  self.v_photo_preview_path := '';
 
                     self.v_mail := '';
                     self.v_web := '';
@@ -1069,10 +1089,11 @@
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
                               permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
 
-                              tmp := case when (permissions = 'W') then 'edit' else 'view' end;
-                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'%s\', \'pt_value\', \'%d\'); return false;" title="%s \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), tmp, id, initcap (tmp), title, AB.WA.stringCut(title, self.abChars)));
+                              http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, initcap ('view'), title, AB.WA.stringCut(title, self.abChars)));
                           
                           actions := '';
+                              if (permissions = 'W')
+                                actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\'); return false;" class="link">edit</span>', id);
                               if (permissions = 'W')
                                 actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('annotea.vspx?oid=%d', id), 'annotate', title);
                               if (AB.WA.discussion_check () and AB.WA.conversation_enable (self.domain_id))
@@ -1287,6 +1308,8 @@
                          P_BIRTHDAY,
                          P_IRI,
                          P_FOAF,
+                           P_PHOTO,
+                           P_INTERESTS,
                          P_MAIL,
                          P_WEB,
                          P_ICQ,
@@ -1340,6 +1363,8 @@
                          self.v_birthday,
                          self.v_iri,
                          self.v_foaf,
+                           self.v_photo,
+                           self.v_interests,
                          self.v_mail,
                          self.v_web,
                          self.v_icq,
@@ -1386,6 +1411,7 @@
                              left join AB.WA.CATEGORIES on C_ID = P_CATEGORY_ID
                    where P_ID = self.v_id;
                   self.v_grants := self.shareSelect (self.v_id);
+                    self.v_photo_preview_path := '';
                 }
                 _end:;
               ]]>
@@ -1433,7 +1459,9 @@
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_onblur="javascript: AB.getFOAFData(this.value);" xhtml_size="60" />
+                            <v:text name="ab_iri" xhtml_id="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_iri')); return false;" class="button" />
+                            <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
                           </vm:if>
                           <?vsp self.viewField (self.v_iri); ?>
                         </td>
@@ -1540,7 +1568,7 @@
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="regbday" value="Birthday" />
+                          <v:label for="ab_birthday" value="Birthday" />
                       </th>
                       <td nowrap="1">
                         <vm:if test="self.abAction <> 'view'">
@@ -1553,6 +1581,192 @@
                       </td>
                     </tr>
                     <tr>
+                        <th valign="top">
+                          <label for="ab_interests">Topic of interest</label>
+                        </th>
+                        <td>
+                          <table>
+                            <tr>
+                              <td style="width: 40em; background-color: white;">
+                                <table id="a_tbl" width="100%" cellspacing="0">
+                                  <thead class="sortHeader">
+                                    <tr>
+                                      <th>
+                                        URL
+                                      </th>
+                                      <th>
+                                        Label
+                                      </th>
+                                      <vm:if test="self.abAction <> 'view'">
+                                        <th width="70px">
+                                          Action
+                                        </th>
+                                      </vm:if>
+                                    </tr>
+                                  </thead>
+                                  <?vsp
+                                    declare N integer;
+
+                                    N := 0;
+                                    for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.v_interests) do
+                                    {
+                                  ?>
+                                  <tr id="a_tr_<?V N ?>">
+                                    <td>
+                                      <vm:if test="self.abAction <> 'view'">
+                                        <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: AB.validateField(this);" />
+                                      </vm:if>
+                                      <?vsp self.viewField (interest); ?>
+                                    </td>
+                                    <td>
+                                      <vm:if test="self.abAction <> 'view'">
+                                        <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
+                                      </vm:if>
+                                      <?vsp self.viewField (label); ?>
+                                    </td>
+                                    <vm:if test="self.abAction <> 'view'">
+                                      <td>
+                                        <input type="button" value="Remove" onclick="javascript: AB.updateRow('a', <?V N ?>);" class="button" />
+                                      </td>
+                                    </vm:if>
+                                  </tr>
+                                  <?vsp
+                                      N := N + 1;
+                                    }
+                                  ?>
+                                </table>
+                                <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
+                              </td>
+                              <vm:if test="self.abAction <> 'view'">
+                                <td valign="top" nowrap="1">
+                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}});" class="button" />
+                                </td>
+                              </vm:if>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th valign="top">
+                          <label for="ab_photo">Photo</label>
+                        </th>
+                        <td class="listing_col" nowrap="1">
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:text name="ab_photo" value="--self.v_photo" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:button name="ab_photo_preview" value="Preview" action="simple" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  declare photo_content any;
+
+                                  photo_content := null;
+                                  if ((get_keyword ('ab_photo_source', e.ve_params) = '0') and (get_keyword ('ab_photo_file', e.ve_params, '') <> ''))
+                                  {
+                                    photo_content := get_keyword ('ab_photo_file', e.ve_params);
+                                  }
+                                  else if ((get_keyword ('ab_photo_source', e.ve_params) = '1') and (get_keyword ('ab_photo_url', e.ve_params, '') <> ''))
+                                  {
+                                    photo_content := AB.WA.dav_content (get_keyword ('ab_photo_url', e.ve_params));
+                                  }
+                                  if (photo_content is not null)
+                                  {
+                                    declare p_ext any;
+
+                                    p_ext := split_and_decode (self.ab_photo.ufl_value, 0, '\0\0.');
+                                    if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg', 'png', 'gif'))
+                                    {
+                                      self.vc_error_message := 'Invalid image type. Please use jpg, png or gif for browser compatibility.';
+                                      self.vc_is_valid := 0;
+                                      self.v_photo_preview_path := '';
+                                      return;
+                                    }
+                                    declare rc, dir, p_path, pwd1 any;
+
+                                    dir := rtrim (DB.DBA.DAV_HOME_DIR (AB.WA.account_name (self.account_id)), '/') || '/Images/';
+                                    p_path := dir || '__preview__.' || p_ext[length (p_ext)-1];
+
+                                    pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+                                    rc := DB.DBA.DAV_MAKE_DIR (dir, self.account_id, http_admin_gid (), '110100100N');
+                                    rc := DB.DBA.DAV_RES_UPLOAD (p_path, photo_content, '', '110100100RR', self.account_id, http_nogroup_gid(), 'dav', pwd1);
+                                    if (rc < 0)
+                                    {
+                                      self.vc_error_message := DB.DBA.DAV_PERROR (rc);
+                                      self.vc_is_valid := 0;
+                                    } else {
+                                      self.v_photo_preview_path := p_path;
+                                    }
+                                  }
+                                  else
+                                  {
+                                    self.v_photo_preview_path := DB.DBA.WA_LINK (1, get_keyword ('ab_photo', e.ve_params));
+                                    photo_content := AB.WA.dav_content (self.v_photo_preview_path);
+                                    if (photo_content is null)
+                                      self.v_photo_preview_path := '';
+                                  }
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <script type="text/javascript">
+                              <![CDATA[
+                                var previeImgPath = '<?Vself.v_photo_preview_path?>';
+                                function dimmerPreviewInit()
+                                {
+                                  if (previeImgPath.length>0)
+                                  {
+                                    OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
+                                  }
+                                }
+                                ODSInitArray.push(dimmerPreviewInit);
+
+                                function showPrevieImg()
+                                {
+                                  var div = OAT.Dom.create('div', {position: 'relative', textAlign: 'center'});
+
+                                  OAT.Event.attach(div, "click", OAT.Dimmer.hide);
+
+                                  var img=OAT.Dom.create('img', {display:'block'});
+                                  img.src = previeImgPath;
+                                  OAT.Event.attach(div, "load", function(){OAT.Dom.center(div,1,1);});
+                                  OAT.Dom.append([div, img]);
+                                  OAT.Dimmer.show(div, {popup:true});
+                                  function centerImg()
+                                  {
+                                    if(img.complete)
+                                    {
+                                      OAT.Dom.center(div, 1, 1);
+                                      clearTimeout(centerImgE);
+                                    }
+                                  }
+                                  var centerImgE = setInterval(centerImg, 50);
+                                }
+                              ]]>
+                            </script>
+                            <v:button name="ab_photo_upload" xhtml_id="ab_photo_upload" value="Upload" action="simple" xhtml_onclick="javascript: OAT.Dom.show(\'tr_photo\'); return false;" xhtml_class="button" />
+                          </vm:if>
+                          <?vsp self.viewImage (self.v_photo); ?>
+                        </td>
+                      </tr>
+                      <vm:if test="self.abAction <> 'view'">
+                        <tr id="tr_photo" style="display: none;">
+                          <th valign="top">
+                            <label for="ab_photo_file">Photo Source</label>
+                          </th>
+                          <td>
+                            <label>
+                              <input type="radio" onchange="javascript: destinationChange(this, {show: ['ab_photo_file'], hide: ['ab_photo_url']});" id="ab_photo_source_0" checked="checked" value="0" name="ab_photo_source"/>
+                              File
+                            </label>
+                            <br />
+                            <label>
+                              <input type="radio" onchange="javascript: destinationChange(this, {show: ['ab_photo_url'], hide: ['ab_photo_file']});" id="ab_photo_source_1" value="1" name="ab_photo_source"/>
+                              Url
+                            </label>
+                            <br />
+                            <input name="ab_photo_file" id="ab_photo_file" type="file" value="" size="60" onchange="AB.getFileName(this, this.form.ab_photo);" />
+                            <input name="ab_photo_url" id="ab_photo_url" type="text" value="" size="60" onchange="AB.getFileName(this, this.form.ab_photo);" style="display: none;" />
+                          </td>
+                        </tr>
+                      </vm:if>
+                      <tr>
                       <th>
                           <v:label for="ab_foaf" value="Person Entity URI" />
                       </th>
@@ -2216,10 +2430,12 @@
                 <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
-                    declare tmp any;
+                      declare N, suffix, tmp any;
 
-                    declare exit handler for SQLSTATE '*' {
-                      if (__SQL_STATE = 'TEST') {
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
                         self.vc_error_message := AB.WA.test_clear (__SQL_MESSAGE);
                         self.vc_is_valid := 0;
                         return;
@@ -2269,6 +2485,97 @@
           			      self.v_bLat := atof (self.ab_bLat.ufl_value);
           			      self.v_bLng := atof (self.ab_bLng.ufl_value);
 			              }
+
+                      declare p_ext any;
+
+                      p_ext := split_and_decode (self.ab_photo.ufl_value, 0, '\0\0.');
+                      if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg', 'png', 'gif'))
+                      {
+                        self.vc_error_message := 'Invalid image type. Please use jpg, png or gif for browser compatibility.';
+                        self.vc_is_valid := 0;
+                        self.v_photo_preview_path := '';
+                        return;
+                      }
+                      if ((get_keyword ('ab_photo_file', e.ve_params, '') <> '') or
+                          (get_keyword ('ab_photo_url', e.ve_params, '') <> '') or
+                          ((self.v_photo_preview_path <> '') and (self.ab_photo.ufl_value <> ''))
+                         )
+                      {
+                        declare rc, rc_org, pwd1 any;
+                        declare dir, p_path, p_path_org, dotpos, up_cont any;
+                        declare img, thumb any;
+
+                        pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+                        dir := rtrim (DB.DBA.DAV_HOME_DIR (AB.WA.account_name (self.account_id)), '/') || '/Images/';
+                        up_cont := '';
+                        if ((get_keyword ('ab_photo_source', e.ve_params) = '0') and (get_keyword ('ab_photo_file', e.ve_params, '') <> ''))
+                        {
+                          up_cont := get_keyword ('ab_photo_file', e.ve_params);
+                        }
+                        else if ((get_keyword ('ab_photo_source', e.ve_params) = '1') and (get_keyword ('ab_photo_url', e.ve_params, '') <> ''))
+                        {
+                          up_cont := AB.WA.dav_content (get_keyword ('ab_photo_url', e.ve_params));
+                        }
+                        p_path := self.ab_photo.ufl_value;
+                        if (self.ab_photo.ufl_value not like '/%')
+                          p_path := dir || p_path;
+
+                        dotpos := REGEXP_INSTR (self.ab_photo.ufl_value, '\..{3}\$') - 1;
+                        p_path_org := subseq (self.ab_photo.ufl_value, 0, dotpos) || '_org' || subseq (self.ab_photo.ufl_value, dotpos);
+                        if (self.ab_photo.ufl_value not like '/%')
+                          p_path_org := dir || p_path_org;
+
+                        rc := DB.DBA.DAV_MAKE_DIR (dir, self.account_id, http_admin_gid (), '110100100N');
+                        if (up_cont <> '')
+                        {
+                          rc_org := DB.DBA.DAV_RES_UPLOAD (p_path_org, up_cont, '', '110100100RR', self.account_id, http_nogroup_gid(), 'dav', pwd1);
+                        }
+                        else if (self.v_photo_preview_path <> '' and self.ab_photo.ufl_value <> '')
+                        {
+                          rc_org := DB.DBA.DAV_MOVE (self.v_photo_preview_path, p_path_org, 1, 'dav', pwd1);
+                          self.v_photo_preview_path := '';
+                        }
+                        if (rc_org < 0)
+                        {
+                          self.vc_error_message := DAV_PERROR (rc_org);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        if (rc_org > 0)
+                        {
+                          declare exit handler for sqlstate '*'
+                          {
+                            sql_warning (__SQL_STATE, 'UIEP1', __SQL_MESSAGE);
+                          };
+                          img := null;
+                          select blob_to_string (RES_CONTENT) into img from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_SEARCH_ID (p_path_org, 'R');
+                          if (img is not null)
+                          {
+                            thumb := DB.DBA.WA_MAKE_THUMBNAIL_1 (img);
+                            if (thumb is not null)
+                              DAV_RES_UPLOAD (p_path, thumb, '', '110100100RR', self.account_id, http_nogroup_gid(), 'dav', pwd1);
+                          }
+                        }
+                        if (p_path like '/DAV/%')
+                          p_path := subseq (p_path, 4);
+                        self.v_photo := p_path;
+                      }
+                      else
+                      {
+                        if (get_keyword ('ab_photo', e.ve_params, '') = '')
+                          self.v_photo := '';
+                      }
+
+                      -- interests
+                      self.v_interests := '';
+                      for (N := 0; N < length (e.ve_params); N := N + 4)
+                      {
+                        if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
+                        {
+                          suffix := replace (e.ve_params [N], 'a_fld_1_', '');
+                          self.v_interests := self.v_interests || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, e.ve_params, '')) || '\n';
+                        }
+                      }
                     self.v_title         := trim (self.ab_title.ufl_value);
                     self.v_fName         := case when self.v_kind then '' else trim (self.ab_fName.ufl_value) end;
                     self.v_mName         := case when self.v_kind then '' else trim (self.ab_mName.ufl_value) end;
@@ -2332,6 +2639,8 @@
                       self.v_birthday,
                       self.v_iri,
                       self.v_foaf,
+                        self.v_photo,
+                        self.v_interests,
                       self.v_mail,
                       self.v_web,
                       self.v_icq,

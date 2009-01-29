@@ -143,6 +143,8 @@ create procedure fill_ods_addressbook_sioc (
 								P_FULL_NAME,
                 P_GENDER,
                 P_BIRTHDAY,
+                P_PHOTO,
+                P_INTERESTS,
                 P_MAIL,
                 P_ICQ,
                 P_SKYPE,
@@ -171,6 +173,7 @@ create procedure fill_ods_addressbook_sioc (
 								P_B_PHONE,
 								P_B_MAIL,
 								P_B_WEB,
+                P_B_ORGANIZATION,
                 P_CREATED,
                 P_UPDATED,
 								P_TAGS,
@@ -205,6 +208,8 @@ create procedure fill_ods_addressbook_sioc (
 											P_FULL_NAME,
                     P_GENDER,
                     P_BIRTHDAY,
+                      P_PHOTO,
+                      P_INTERESTS,
                       P_MAIL,
                     P_ICQ,
                     P_SKYPE,
@@ -233,6 +238,7 @@ create procedure fill_ods_addressbook_sioc (
 											P_B_PHONE,
 											P_B_MAIL,
 											P_B_WEB,
+                      P_B_ORGANIZATION,
                     P_CREATED,
                     P_UPDATED,
 											P_TAGS,
@@ -348,6 +354,8 @@ create procedure contact_insert (
 	inout fullName varchar,
   inout gender varchar,
   inout birthday datetime,
+  inout photo varchar,
+  inout interests varchar,
   inout mail varchar,
   inout icq varchar,
   inout skype varchar,
@@ -376,6 +384,7 @@ create procedure contact_insert (
 	inout bPhone varchar,
 	inout bMail varchar,
 	inout bWeb varchar,
+  inout bOrganization varchar,
   inout created datetime,
   inout updated datetime,
 	inout tags varchar,
@@ -455,7 +464,9 @@ create procedure contact_insert (
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (bLat, 0)));
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (bLng, 0)));
   		}
-		} else {
+    }
+    else
+    {
 		  -- Person
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
 
@@ -497,6 +508,30 @@ create procedure contact_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (hLat, 0)));
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (hLng, 0)));
     }
+      if (length (bOrganization) and length (bWeb))
+      {
+        temp_iri := iri || '#org';
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), bWeb);
+        DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type') , foaf_iri ('Organization'));
+        DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, foaf_iri ('homepage'), bWeb);
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, dc_iri ('title'), bOrganization);
+      }
+      if (not DB.DBA.is_empty_or_null (photo))
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
+      if (not DB.DBA.is_empty_or_null (interests))
+      {
+        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interests) do
+    	  {
+    	    if (length (interest))
+    	    {
+    	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+    	      if (length (label))
+    		    {
+    		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+    		    }
+    	    }
+    	  }
+      }
   	}
 
     -- AddressBook
@@ -626,6 +661,8 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
 									N.P_FULL_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
+                  N.P_PHOTO,
+                  N.P_INTERESTS,
                   N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,
@@ -654,6 +691,7 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
 									N.P_B_PHONE,
 									N.P_B_MAIL,
 									N.P_B_WEB,
+                  N.P_B_ORGANIZATION,
                   N.P_CREATED,
                   N.P_UPDATED,
 									N.P_TAGS,
@@ -683,6 +721,8 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
 									N.P_FULL_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
+                  N.P_PHOTO,
+                  N.P_INTERESTS,
                   N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,
@@ -711,6 +751,7 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
 									N.P_B_PHONE,
 									N.P_B_MAIL,
 									N.P_B_WEB,
+                  N.P_B_ORGANIZATION,
                   N.P_CREATED,
                   N.P_UPDATED,
 									N.P_TAGS,

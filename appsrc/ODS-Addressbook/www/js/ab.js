@@ -753,11 +753,11 @@ AB.getFOAFData = function (iri)
 {
   var S = '/ods/api/user.getFOAFData?foafIRI='+encodeURIComponent(iri);
   var x = function(data) {
-    var o;
+    var o = null;
     try {
       o = OAT.JSON.parse(data);
     } catch (e) { o = null; }
-    if (o)
+    if (o && (data != '{}'))
     {
       if (confirm('New data for \''+iri+'\' is founded. Do you like to fill in the corresponding fields?'))
       {
@@ -773,21 +773,66 @@ AB.getFOAFData = function (iri)
         AB.setFOAFValue(o.msnChatID, 'ab_msn');
         AB.setFOAFValue(o.aimChatID, 'ab_aim');
         AB.setFOAFValue(o.yahooChatID, 'ab_yahoo');
-        AB.setFOAFValue(o.homepage, 'ab_web');
+        AB.setFOAFValue(o.workplaceHomepage, 'ab_web');
+        AB.setFOAFValue(o.homepage, 'ab_hWeb');
         AB.setFOAFValue(o.lat, 'ab_hLat');
         AB.setFOAFValue(o.lng, 'ab_hLng');
         AB.setFOAFValue(o.phone, 'ab_hPhone');
-        AB.setFOAFValue(o.workplaceHomepage, 'ab_wWeb');
+        AB.setFOAFValue(o.organizationHomepage, 'ab_bWeb');
+        AB.setFOAFValue(o.organizationTitle, 'ab_bOrganization');
+        AB.setFOAFValue(o.tags, 'ab_tags');
+        // photo
+        if (o.depiction)
+        {
+          AB.setFOAFValue(o.depiction, 'ab_photo_url');
+          $('ab_photo_url').onchange();
+          $('ab_photo_upload').onclick();
+          $('ab_photo_source_1').checked = true;
+          $('ab_photo_source_1').onchange();
+        }
+        // intersts
+        if (o.interest)
+        {
+          var S = o.interest.split ("\n");
+          for (var i = 0; i < S.length; i++)
+          {
+            var T = S[i].split(";");
+            if (T.length > 0 && T[0].length > 0)
+            {
+              if (T.length == 1)
+                T.push('');
+              AB.updateRow('a', null, {fld1: T[0], fld1Class: '_validate_ _url_ _canEmpty_', fld1Onblur: function(){validateField(this);}, fld2: T[1]});
       }
     }
   }
-  OAT.AJAX.GET(S, '', x);
+      }
+    } else {
+      alert('No data founded for \''+iri+'\'');
+    }
+  }
+  OAT.AJAX.GET(S, '', x, {onstart: function(){OAT.Dom.show('ab_import_image')}, onend: function(){OAT.Dom.hide('ab_import_image')}});
 }
 
 AB.setFOAFValue = function (fValue, fName)
 {
-  if (fValue && document.forms[0].elements[fName])
-    document.forms[0].elements[fName].value = fValue;
+  var fElement = document.forms[0].elements[fName];
+  if (fValue && fElement)
+  {
+    if (fElement.type == 'select-one')
+    {
+      var o = fElement.options;
+    	for (var i=0; i< o.length; i++)
+    	{
+    		if (o[i].value == fValue)
+    		{
+    		  o[i].selected = true;
+    		  o[i].defaultSelected = true;
+    		}
+    	}
+    } else {
+      fElement.value = fValue;
+    }
+  }
 }
 
 AB.updateClaim = function (claimNo)
@@ -865,4 +910,143 @@ AB.aboutDialog = function ()
     }
   }
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}
+
+AB.getFileName = function (from, to)
+{
+  var S = from.value;
+  var N;
+  if (S.lastIndexOf('\\') > 0)
+  {
+    N = S.lastIndexOf('\\') + 1;
+  } else {
+    N = S.lastIndexOf('/') + 1;
+  }
+  var S = S.substr(N, S.length);
+  if (S.indexOf('?') > 0)
+  {
+    N = S.indexOf('?');
+    S = S.substr(0, N);
+  }
+  if (S.indexOf('#') > 0)
+  {
+    N = S.indexOf('#');
+    S = S.substr(0, N);
+  }
+  to.value = S;
+}
+
+AB.updateRow = function (prefix, No, optionObject)
+{
+  if (No != null)
+  {
+    OAT.Dom.unlink(prefix+'_tr_'+No);
+  }
+  else
+  {
+    var No = $v(prefix+'_no');
+    var tbl = $(prefix+'_tbl');
+    if (tbl)
+    {
+      options = {};
+      for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      var tr = OAT.Dom.create('tr');
+      tr.id = prefix+'_tr_' + No;
+      tbl.appendChild(tr);
+
+      var td = OAT.Dom.create('td');
+      tr.appendChild(td);
+ 		  var fld = OAT.Dom.create("input");
+ 		  fld.type = 'text';
+      fld.id = prefix+'_fld_1_' + No;
+      fld.name = fld.id;
+      if (options.fld1)
+        fld.value = options.fld1;
+      fld.className = options.fld1Class;
+      fld.onblur = options.fld1Onblur;
+      fld.style.width = '95%';
+      td.appendChild(fld);
+
+      var td = OAT.Dom.create('td');
+      tr.appendChild(td);
+ 		  var fld = OAT.Dom.create("input");
+ 		  fld.type = 'text';
+      fld.id = prefix+'_fld_2_' + No;
+      fld.name = fld.id;
+      if (options.fld2)
+        fld.value = options.fld2;
+      fld.className = options.fld2Class;
+      fld.onblur = options.fld2Onblur;
+      fld.style.width = '95%';
+      td.appendChild(fld);
+
+      var td = OAT.Dom.create('td');
+      tr.appendChild(td);
+ 		  var fld = OAT.Dom.create("input");
+ 		  fld.type = 'button';
+ 		  fld.value = 'Remove';
+      fld.className = 'button';
+      fld.onclick = function (){AB.updateRow(prefix, No);};
+      td.appendChild(fld);
+
+      $(prefix+'_no').value = No + 1;
+    }
+  }
+}
+
+AB.validateError = function (fld, msg)
+{
+  alert(msg);
+  setTimeout(function(){fld.focus();}, 1);
+  return false;
+}
+
+AB.validateMail = function (fld)
+{
+  if ((fld.value.length == 0) || (fld.value.length > 40))
+    return AB.validateError(fld, 'E-mail address cannot be empty or longer then 40 chars');
+
+  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  if (!regex.test(fld.value))
+    return AB.validateError(fld, 'Invalid E-mail address');
+
+  return true;
+}
+
+AB.validateURL = function (fld)
+{
+  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  if (!regex.test(fld.value))
+    return AB.validateError(fld, 'Invalid URL address');
+
+  return true;
+}
+
+AB.validateField = function (fld)
+{
+  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
+    return true;
+  if (OAT.Dom.isClass(fld, '_mail_'))
+    return AB.validateMail(fld);
+  if (OAT.Dom.isClass(fld, '_url_'))
+    return AB.validateURL(fld);
+  return true;
+}
+
+AB.validateInputs = function (fld)
+{
+  var retValue = true;
+  var form = fld.form;
+  for (i = 0; i < form.elements.length; i++)
+  {
+    var fld = form.elements[i];
+    if (OAT.Dom.isClass(fld, '_validate_'))
+    {
+      retValue = AB.validateField(fld);
+      if (!retValue)
+        return retValue;
+    }
+  }
+  return retValue;
 }

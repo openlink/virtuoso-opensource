@@ -83,6 +83,8 @@ AB.WA.exec_no_error('
     P_BIRTHDAY datetime,
     P_IRI varchar,
     P_FOAF varchar,
+    P_PHOTO long varchar,
+    P_INTERESTS long varchar,
     P_MAIL varchar,
     P_WEB varchar,
     P_ICQ varchar,
@@ -160,6 +162,14 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_B_DEPARTMENT varchar', 'C', 'AB.WA.PERSONS', 'P_B_DEPARTMENT'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_PHOTO long varchar', 'C', 'AB.WA.PERSONS', 'P_PHOTO'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_INTERESTS long varchar', 'C', 'AB.WA.PERSONS', 'P_INTERESTS'
 );
 
 AB.WA.exec_no_error (
