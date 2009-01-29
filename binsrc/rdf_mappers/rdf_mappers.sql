@@ -379,6 +379,10 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('AB Meta', 'http://abmeta.org/#spec', registry_get ('_rdf_mappers_path_') || 'xslt/abmeta2rdfxml.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('hCard', 'http://www.w3.org/2006/03/hcard', registry_get ('_rdf_mappers_path_') || 'xslt/hcard2rdf.xsl')
 ;
 
