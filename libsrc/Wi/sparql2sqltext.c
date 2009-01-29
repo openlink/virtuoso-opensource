@@ -1684,7 +1684,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
   caddr_t tmpbuf;
   int buffill = 0;
   dtp_t dtp = DV_TYPE_OF (box);
-  buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 3 : 25);
+  buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 5 : 25);
   BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
   ssg_putchar (' ');
   switch (dtp)
@@ -1696,19 +1696,19 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int allow_uname)
       strcpy (tmpbuf, "NULL"); buffill = 4;
       break;
     case DV_STRING:
-      sqlc_string_literal (tmpbuf, buflen, &buffill, box);
+      sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
       break;
     case DV_UNAME:
       if (allow_uname)
         {
           ssg_puts ("UNAME");
-          sqlc_string_literal (tmpbuf, buflen, &buffill, box);
+          sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
         }
       else
         {
           caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
 	  if (strg)
-	    sqlc_string_literal (tmpbuf, buflen, &buffill, strg);
+	    sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
 	  else
 	    spar_error (ssg->ssg_sparp, "A literal contains bad UTF-8 sequence.");
           dk_free_box (strg);

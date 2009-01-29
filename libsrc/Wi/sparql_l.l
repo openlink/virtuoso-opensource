@@ -684,7 +684,7 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 <SPARQL_SQL_SQSTRING>{S_NL}     { sparp->sparp_lexlineno++; yymore(); }
 <SPARQL_SQL_SQSTRING>\\{S_NL}[^''\\\r\n]*  { sparp->sparp_lexlineno++; yymore(); }
 <SPARQL_SQL_SQSTRING>\\.[^''\\\r\n]*	{ yymore(); }
-<SPARQL_SQL_SQSTRING>''[^''\\\r\n]*  { yymore(); }
+<SPARQL_SQL_SQSTRING>[''][''][^''\\\r\n]*  { yymore(); }
 <SPARQL_SQL_SQSTRING>[^''\\\r\n]+ { yymore(); }
 <SPARQL_SQL_SQSTRING><<EOF>>	{ sparyyerror ("Unterminated single-quoted string in SQL fragment after WHERE keyword"); }
 

@@ -694,6 +694,35 @@ dk_set_append_1 (dk_set_t * res, void *item)
 
 
 void
+sqlc_string_virtuoso_literal (char *text, size_t tlen, int *fill, const char *exp)
+{
+  int inx, len = box_length (exp) - 1;
+  sprintf_more (text, tlen, fill, "\'");
+  for (inx = 0; inx < len; inx++)
+    {
+      unsigned char c = exp[inx];
+      if (c == '\'')
+	sprintf_more (text, tlen, fill, "\\\'");
+      else if (c == '\\')
+	sprintf_more (text, tlen, fill, "\\\\");
+      else if (c < (unsigned)' ')
+        {
+          char buf[5];
+          buf[0] = '\\';
+          buf[1] = '0';
+          buf[2] = '0' | (c >> 3);
+          buf[3] = '0' | (c & 0x7);
+          buf[4] = '\0';
+	  sprintf_more (text, tlen, fill, buf);
+        }
+      else
+	sprintf_more (text, tlen, fill, "%c", c);
+    }
+  sprintf_more (text, tlen, fill, "\' ");
+}
+
+
+void
 sqlc_string_literal (char *text, size_t tlen, int *fill, const char *exp)
 {
   int inx, len = box_length (exp) - 1;

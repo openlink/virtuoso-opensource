@@ -992,10 +992,13 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP; }
 <SPARQL_SQ_SKIP>['']		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
 <SPARQL_DQ_SKIP>[""]		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
-<SPARQL_SQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short single-quoted string"); }
+<SPARQL_SQ_SKIP>{S_NL}		{ TOK_NL_SKIP; }
 <SPARQL_DQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short double-quoted string"); }
 <SPARQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
 <SPARQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
+<SPARQL_SQ_SKIP>['']['']	TOK_SKIP;
+<SPARQL_SQ_SKIP>[\\]{S_NL}	{ TOK_NL_SKIP; }
+<SPARQL_SQ_SKIP>\\.		TOK_SKIP;
 <SPARQL_SQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short double-quoted string"); }
 <SPARQL_SQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short single-quoted string"); }
