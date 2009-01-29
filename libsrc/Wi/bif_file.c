@@ -793,7 +793,6 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     }
   if (total != need)
     {
-      close (fd);
       strses_free (res);
       err = srv_make_new_error ("39000", "FA115",
 	  "Read " OFF_T_PRINTF_FMT
