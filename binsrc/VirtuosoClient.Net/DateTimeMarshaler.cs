@@ -39,7 +39,7 @@ namespace OpenLink.Data.Virtuoso
 		private static int[] to_month_days =
 			new int[] { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		private static int[] to_month_days_leap =
-			new int[] { 0, 31, 60, 91, 121, 152, 182, 213, 244, 275, 305, 335 };
+			new int[] { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 };
 
 		private const int NicaeaShift =
 			((Values.GREG_YEAR / 100 - Values.GREG_YEAR / 400)
