@@ -7044,6 +7044,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of long varchar then 'longvarchar'
         when __tag of timestamp then 'datetime' -- timestamp
         when __tag of date then 'date'
+        when __tag of time then 'time'
         when __tag of long varbinary then 'longvarbinary'
         when 188 then 'integer'
         when __tag of integer then 'integer'
@@ -8508,7 +8509,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-01-17 0001'
+                virtrdf:version '2009-01-26 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
