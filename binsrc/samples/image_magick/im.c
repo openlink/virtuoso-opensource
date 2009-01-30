@@ -39,7 +39,7 @@
 
 #include <wand/magick-wand.h>
 
-#define IM_VERSION "0.4"
+#define IM_VERSION "0.5"
 
 static dk_mutex_t *im_mutex = NULL;
 static caddr_t im_IMVERSION = NULL;
@@ -48,7 +48,6 @@ static caddr_t *im_env = NULL;
 #define WandExitMacro(wand) \
 { \
   DestroyMagickWand(wand);\
-  MagickWandTerminus();\
   mutex_leave (im_mutex); \
 }
 
@@ -59,7 +58,6 @@ static caddr_t *im_env = NULL;
     DestroyDrawingWand (draw); \
   if (NULL != pixel) \
     DestroyPixelWand(pixel); \
-  MagickWandTerminus();\
   mutex_leave (im_mutex); \
 }
 
@@ -80,7 +78,6 @@ caddr_t bif_im_CropImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** args
   else
     new_file_name = bif_string_arg (qst, args, 0, "IM CropImageFile");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -103,7 +100,6 @@ caddr_t bif_im_CropImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** args
     sqlr_new_error ("22023", "IM001", "bif_im_CropImageFile cannot write image into file");
   }
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return (0);
 }
@@ -118,7 +114,6 @@ caddr_t bif_im_CropImageFileToBlob(caddr_t * qst, caddr_t * err, state_slot_t **
   long x = bif_long_arg (qst, args, 3, "IM CropImageFileToBlob");
   long y = bif_long_arg (qst, args, 4, "IM CropImageFileToBlob");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -141,7 +136,6 @@ caddr_t bif_im_CropImageFileToBlob(caddr_t * qst, caddr_t * err, state_slot_t **
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -152,7 +146,6 @@ caddr_t bif_im_GetImageFileAttribute(caddr_t * qst, caddr_t * err, state_slot_t 
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileAttribute");
   caddr_t key = bif_string_arg (qst, args, 1, "IM GetImageFileAttribute");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -173,7 +166,6 @@ caddr_t bif_im_GetImageFileAttribute(caddr_t * qst, caddr_t * err, state_slot_t 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -183,7 +175,6 @@ caddr_t bif_im_GetImageFileFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
   caddr_t res, key_value;
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileFormat");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -201,7 +192,6 @@ caddr_t bif_im_GetImageFileFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -211,7 +201,6 @@ caddr_t bif_im_GetImageFileIdentify(caddr_t * qst, caddr_t * err, state_slot_t *
   caddr_t res, key_value;
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileIdentify");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -229,7 +218,6 @@ caddr_t bif_im_GetImageFileIdentify(caddr_t * qst, caddr_t * err, state_slot_t *
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -244,7 +232,6 @@ caddr_t bif_im_GetImageBlobIdentify(caddr_t * qst, caddr_t * err, state_slot_t *
   char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobIdentify") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
         if (in_format != NULL)
         {
@@ -271,7 +258,6 @@ caddr_t bif_im_GetImageBlobIdentify(caddr_t * qst, caddr_t * err, state_slot_t *
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -283,7 +269,6 @@ caddr_t bif_im_GetImageFileWidth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileWidth");
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -301,7 +286,6 @@ caddr_t bif_im_GetImageFileWidth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -313,7 +297,6 @@ caddr_t bif_im_GetImageFileDepth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileDepth");
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -331,7 +314,6 @@ caddr_t bif_im_GetImageFileDepth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -343,7 +325,6 @@ caddr_t bif_im_GetImageFileHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
   caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileHeight");
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -361,7 +342,6 @@ caddr_t bif_im_GetImageFileHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -377,7 +357,6 @@ caddr_t bif_im_GetImageBlobWidth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobWidth") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -404,7 +383,6 @@ caddr_t bif_im_GetImageBlobWidth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -420,7 +398,6 @@ caddr_t bif_im_GetImageBlobDepth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobDepth") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -447,7 +424,6 @@ caddr_t bif_im_GetImageBlobDepth(caddr_t * qst, caddr_t * err, state_slot_t ** a
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -463,7 +439,6 @@ caddr_t bif_im_GetImageBlobHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
   char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobHeight") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -490,7 +465,6 @@ caddr_t bif_im_GetImageBlobHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -504,7 +478,6 @@ caddr_t bif_im_GetImageBlobFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
 	int n_args = BOX_ELEMENTS(args);
   char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobFormat") : NULL;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -531,7 +504,6 @@ caddr_t bif_im_GetImageBlobFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -546,7 +518,6 @@ caddr_t bif_im_GetImageBlobAttribute(caddr_t * qst, caddr_t * err, state_slot_t 
   int n_args = BOX_ELEMENTS(args);
   char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM GetImageBlobAttribute") : NULL;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -576,7 +547,6 @@ caddr_t bif_im_GetImageBlobAttribute(caddr_t * qst, caddr_t * err, state_slot_t 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -595,7 +565,6 @@ caddr_t bif_im_CropImageBlob(caddr_t * qst, caddr_t * err, state_slot_t ** args)
 	int n_args = BOX_ELEMENTS(args);
   char* in_format = n_args > 6 ? bif_string_arg (qst, args, 6, "IM CropImageBlob") : NULL;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -627,7 +596,6 @@ caddr_t bif_im_CropImageBlob(caddr_t * qst, caddr_t * err, state_slot_t ** args)
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -644,7 +612,6 @@ caddr_t bif_im_RotateImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   else
     new_file_name = bif_string_arg (qst, args, 0, "IM RotateImageFile");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -677,7 +644,6 @@ caddr_t bif_im_RotateImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   }
   magick_wand=DestroyMagickWand(magick_wand);
   background=DestroyPixelWand(background);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return (0);
 }
@@ -691,7 +657,6 @@ caddr_t bif_im_RotateImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot_t
   int n_args = BOX_ELEMENTS(args);
   PixelWand *background;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -723,7 +688,6 @@ caddr_t bif_im_RotateImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot_t
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
   background=DestroyPixelWand(background);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -740,7 +704,6 @@ caddr_t bif_im_RotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM RotateImageBlob") : NULL;
   PixelWand *background;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -781,7 +744,6 @@ caddr_t bif_im_RotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
   background=DestroyPixelWand(background);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -802,7 +764,6 @@ caddr_t bif_im_ResampleImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     new_file_name = bif_string_arg (qst, args, 0, "IM ResampleImageFile");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -825,7 +786,6 @@ caddr_t bif_im_ResampleImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** 
     sqlr_new_error ("22023", "IM001", "bif_im_ResampleImageFile cannot write image into file");
   }
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return(0);
 }
@@ -842,7 +802,6 @@ caddr_t bif_im_ResampleImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -865,7 +824,6 @@ caddr_t bif_im_ResampleImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -884,7 +842,6 @@ caddr_t bif_im_ResampleImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** 
 	int n_args = BOX_ELEMENTS(args);
   char* in_format = n_args > 6 ? bif_string_arg (qst, args, 6, "IM ResampleImageBlob") : NULL;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -916,7 +873,6 @@ caddr_t bif_im_ResampleImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** 
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -938,7 +894,6 @@ caddr_t bif_im_ResizeImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -961,7 +916,6 @@ caddr_t bif_im_ResizeImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** ar
     sqlr_new_error ("22023", "IM001", "bif_im_ResizeImageFile cannot write image into file");
   }
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return(0);
 }
@@ -978,7 +932,6 @@ caddr_t bif_im_ResizeImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot_t
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -1001,7 +954,6 @@ caddr_t bif_im_ResizeImageFileToBlob (caddr_t * qst, caddr_t * err, state_slot_t
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1022,7 +974,6 @@ caddr_t bif_im_ResizeImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -1054,7 +1005,6 @@ caddr_t bif_im_ResizeImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1072,7 +1022,6 @@ caddr_t bif_im_ThumbnailImageFile (caddr_t * qst, caddr_t * err, state_slot_t **
   else
     new_file_name = bif_string_arg (qst, args, 0, "IM ThumbnailImageFile");
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -1096,7 +1045,6 @@ caddr_t bif_im_ThumbnailImageFile (caddr_t * qst, caddr_t * err, state_slot_t **
     sqlr_new_error ("22023", "IM001", "bif_im_ThumbnailImageFile cannot write image into file");
   }
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return(0);
 }
@@ -1113,7 +1061,6 @@ caddr_t bif_im_ThumbnailImageFileToBlob (caddr_t * qst, caddr_t * err, state_slo
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -1137,7 +1084,6 @@ caddr_t bif_im_ThumbnailImageFileToBlob (caddr_t * qst, caddr_t * err, state_slo
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1157,7 +1103,6 @@ caddr_t bif_im_ThumbnailImageBlob (caddr_t * qst, caddr_t * err, state_slot_t **
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -1190,7 +1135,6 @@ caddr_t bif_im_ThumbnailImageBlob (caddr_t * qst, caddr_t * err, state_slot_t **
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1225,9 +1169,7 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
     {
       sqlr_new_error ("22023", "IM001", "AnnotateImageBlob needs string or binary as 1-st argument");
     }
-
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   drawing_wand = NewDrawingWand ();
   pixel_wand = NewPixelWand();
@@ -1276,7 +1218,6 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   magick_wand=DestroyMagickWand(magick_wand);
   drawing_wand = DestroyDrawingWand (drawing_wand);
   pixel_wand = DestroyPixelWand(pixel_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1304,7 +1245,6 @@ bif_im_CreateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
     sqlr_new_error ("22023", "IM001", "Too large image image size requested");
 
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   pixel_wand = NewPixelWand();
 
@@ -1337,7 +1277,6 @@ bif_im_CreateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
     res = NEW_DB_NULL;
   magick_wand = DestroyMagickWand (magick_wand);
   pixel_wand = DestroyPixelWand (pixel_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1354,7 +1293,6 @@ caddr_t bif_im_ConvertImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** a
 	int n_args = BOX_ELEMENTS(args);
   char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM ConvertImageBlob") : NULL;
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
 	if (in_format != NULL)
 	{
@@ -1402,7 +1340,6 @@ caddr_t bif_im_ConvertImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** a
   else
     res = NEW_DB_NULL;
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return res;
 }
@@ -1421,7 +1358,6 @@ caddr_t bif_im_ConvertImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** a
     return 0;
   }
   mutex_enter (im_mutex);
-  MagickWandGenesis();
   magick_wand=NewMagickWand();
   status=MagickReadImage(magick_wand, file_name);
   if (status == MagickFalse)
@@ -1437,7 +1373,6 @@ caddr_t bif_im_ConvertImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** a
     sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageFile cannot write image into file");
   }
   magick_wand=DestroyMagickWand(magick_wand);
-  MagickWandTerminus();
   mutex_leave (im_mutex);
   return(0);
 }
@@ -1483,6 +1418,8 @@ void im_connect (void *appdata)
   bif_define ("IM AnnotateImageBlob", bif_im_AnnotateImageBlob);
 #endif
   bif_define ("IM CreateImageBlob", bif_im_CreateImageBlob);
+
+  MagickWandGenesis();
 }
 
 #ifdef _USRDLL
