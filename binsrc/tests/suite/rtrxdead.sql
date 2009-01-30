@@ -36,14 +36,18 @@ create procedure deadlock_test (in with_commit integer)
   fetch cr into _row_no;
   while (1)
     {
+      declare exit handler for sqlstate '40001'
+	{
+	  signal ('12345', 'got txn error');
+	};
       fetch cr into _row_no;
-      whenever sqlstate '40001' goto cont;
+      --whenever sqlstate '40001' goto cont;
       rexecute (_remote_dsn, 'txn_error (2)');
-cont:
+--cont:
       _row_no := 0;
       if (with_commit)
         commit work;
-      whenever sqlstate '40001' default;
+--      whenever sqlstate '40001' default;
     }
 };
 
@@ -71,7 +75,7 @@ cont:
 
 set autocommit off;
 deadlock_test (0);
-ECHO BOTH $IF $EQU $STATE 40001 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE 12345 "PASSED" "***FAILED";
 ECHO BOTH ": Remote deadlocking with an opened cursor : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 lock_test (0);
