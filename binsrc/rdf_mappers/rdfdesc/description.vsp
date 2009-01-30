@@ -70,6 +70,7 @@
    --http_header (sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 1, now ()))));
    label := ''; _subject := '';
    label := rdfdesc_label (_S, _G, lines);
+   label := cast (label as varchar);
    true_label := label;
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> 

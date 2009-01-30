@@ -274,6 +274,7 @@ again:
        _object := replace (_object, '<xhtml:', '<');
        _object := replace (_object, '</xhtml:', '</');
        http (_object);
+       if (length (rdfs_type))
        http (sprintf ('(%s)', rdfs_type));
      }
    else if (__tag (_object) = 225)
@@ -281,7 +282,7 @@ again:
    else
      http (sprintf ('FIXME %i', __tag (_object)));
 
-   if (lang is not NULL and lang <> '')
+   if (length (lang))
      {
        http (sprintf ('(%s)', lang));
      }

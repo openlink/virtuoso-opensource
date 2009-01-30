@@ -4951,7 +4951,7 @@ create procedure DB.DBA.RDF_UMBEL_POST_PROCESS (in graph_iri varchar, in new_ori
       p := cast (xpath_eval ('@type', elm) as varchar);
       o := cast (xpath_eval ('object/@uri', elm) as varchar);
       this_sc := cast (xpath_eval ('object/reify/@value', elm) as float);
-      if (this_sc is null or this_sc > sc_min)
+      if (this_sc is null or cast(this_sc as float) > sc_min)
 	{
 	  if (inx < max_res)
       http (sprintf ('<%S> %s <%S> .\n', new_origin_uri, p, o), ses);
