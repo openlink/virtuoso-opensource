@@ -79,6 +79,11 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://.*last.fm/.*)|'||
+			'(http://.*lastfm.*/.*)',
+            'URL', 'DB.DBA.RDF_LOAD_LASTFM', null, 'LastFM');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*meetup.com/.*)',
             'URL', 'DB.DBA.RDF_LOAD_MEETUP', null, 'Meetup');
 
@@ -1381,7 +1386,6 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 	else
 		return 0;
 		
-	--dbg_obj_princ('start');
 	friends_and_followers: ;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	page := 1;
@@ -2696,6 +2700,163 @@ create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LASTFM2(in url varchar, in new_origin_uri varchar,  in dest varchar, in graph_iri varchar, in what_ varchar) returns integer
+{
+	declare xt, xd any;
+	declare tmp varchar;
+	tmp := http_get (url);
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/lastfm2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'what', what_ ));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, tmp1, server, api_key, hdr any;
+	declare pos, len int;
+	declare xsl2, what_, origin_uri, id0, id1, id2, id3, id4 varchar;
+	id0 := '';
+	id1 := '';
+	id2 := '';
+	id3 := '';
+	id4 := '';
+	declare exit handler for sqlstate '*'
+	{
+		return 0;
+	};
+	api_key := _key;
+	tmp1 := sprintf_inverse (new_origin_uri, 'http://%s/%s', 0);
+	server := tmp1[0];
+	if (server is null or server = '')
+		return 0;
+	origin_uri := trim(tmp1[1], '/');
+	if (origin_uri is null or origin_uri = '')
+		return 0;
+	tmp := sprintf_inverse (origin_uri, '%s/%s/%s/%s/%s', 0);
+    if (tmp is null)
+		tmp := sprintf_inverse (origin_uri, '%s/%s/%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (origin_uri, '%s/%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (origin_uri, '%s/%s', 0);
+	if (tmp is null)
+		tmp := sprintf_inverse (origin_uri, '%s', 0);
+	len := length(tmp);
+	if (len > 4)
+		id4 := tmp[4];
+	if (len > 3)
+		id3 := tmp[3];
+	if (len > 2)
+		id2 := tmp[2];
+	if (len > 1)
+		id1 := tmp[1];
+	if (len > 0)
+		id0 := tmp[0];
+	else
+		return 0;
+	delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+	if (id0 = 'music')
+	{
+		if (id1 is not null and id1 <> '')
+		{
+			if (id2 is not null and id2 <> '')
+			{
+				if (id3 is not null and id3 <> '')
+				{
+					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&artist=%s&track=%s', api_key, id1, id3);
+					DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+					url := sprintf('http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=%s&track=%s&api_key=%s', id1, id3, api_key);
+					return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+				}
+				else
+				{
+					if (id2[0] = '+')  -- todo: perhaps it needs some processing?
+					{
+						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
+						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
+						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+					}
+					else
+					{
+						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=%s&artist=%s&album=%s', api_key, id1, id2);
+						return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+					}
+				}
+			}
+			else
+			{
+				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
+				DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+				url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
+				return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+			}
+		}
+		else
+			return 0;
+	}
+	else if (id0 = 'listen')
+	{
+		if (id1 is not null and id1 <> '')
+		{
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getevents&artist=%s&api_key=%s', id1, api_key);
+			DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=%s&api_key=%s', id1, api_key);
+			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+		}
+		else
+			return 0;
+	}
+	else if (id0 = 'event')
+	{
+		if (id1 is not null and id1 <> '')
+		{
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=event.getinfo&event=%s&api_key=%s', id1, api_key);
+			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+		}
+		else
+			return 0;
+	}
+	else if (id0 = 'user')
+	{
+		if (id1 is not null and id1 <> '')
+		{
+			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=%s&api_key=%s', id1, api_key);
+			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_);
+		}
+		else
+			return 0;
+	}
+	else
+		return 0;
+	return 1;
 }
 ;
 
