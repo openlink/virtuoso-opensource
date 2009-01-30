@@ -264,6 +264,9 @@ create procedure ODS.ODS_API."poll.activate" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  if (POLLS.WA.poll_is_activated (poll_id))
+    signal ('POLLS', 'The poll is activated yet');
   if (not POLLS.WA.poll_enable_activate (poll_id))
     signal ('POLLS', 'The activation is not allowed');
 
@@ -293,10 +296,10 @@ create procedure ODS.ODS_API."poll.close" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+  if (POLLS.WA.poll_is_closed (poll_id))
+    signal ('POLLS', 'The poll is closed yet');
   if (not POLLS.WA.poll_enable_close (poll_id))
-  {
     signal ('POLLS', 'The close is not allowed');
-  }
   POLLS.WA.poll_close (poll_id);
   return ods_serialize_int_res (1);
 }
@@ -325,9 +328,7 @@ create procedure ODS.ODS_API."poll.clear" (
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
   if (not POLLS.WA.poll_enable_clear (poll_id))
-  {
     signal ('POLLS', 'The clear is not allowed');
-  }
   POLLS.WA.poll_clear (poll_id);
   return ods_serialize_int_res (1);
 }

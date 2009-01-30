@@ -2590,9 +2590,7 @@ create procedure POLLS.WA.poll_is_close (
 create procedure POLLS.WA.poll_is_voted (
   in votes any)
 {
-  if (is_empty_or_null (votes))
-    return 0;
-  return 1;
+  return case when (is_empty_or_null (votes)) then 0 else 1 end;
 }
 ;
 
@@ -2606,8 +2604,7 @@ create procedure POLLS.WA.poll_enable_edit (
     return 0;
 
   for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
-    if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, now ()))
-      return 1;
+    return POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, now ());
 
   return 0;
 }
@@ -2639,8 +2636,23 @@ create procedure POLLS.WA.poll_enable_activate (
     return 0;
 
   for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
-    if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START))
-      return 1;
+    return POLLS.WA.poll_is_draft (P_STATE, P_DATE_START);
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.poll_is_activated (
+  in poll_id integer,
+  in user_role varchar := 'owner')
+{
+  if (user_role in ('public', 'guest'))
+    return 0;
+
+  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+    return POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END);
 
   return 0;
 }
@@ -2656,8 +2668,23 @@ create procedure POLLS.WA.poll_enable_close (
     return 0;
 
   for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
-    if (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END))
-      return 1;
+    return POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END);
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.poll_is_closed (
+  in poll_id integer,
+  in user_role varchar := 'owner')
+{
+  if (user_role in ('public', 'guest'))
+    return 0;
+
+  for (select P_STATE, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+    return POLLS.WA.poll_is_close (P_STATE, P_DATE_END);
 
   return 0;
 }
