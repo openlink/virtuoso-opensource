@@ -1,3 +1,126 @@
+2009-01-30 16:48  source
+
+	* Fixed API controler
+
+2009-01-30 16:47  source
+
+	* Fixed use of optional
+
+2009-01-30 15:45  source
+
+	* Moved initialization of ImageMagick library to plugin initialization
+
+2009-01-30 15:41  source
+
+	* Fixed minor problem
+
+2009-01-30 15:40  source
+
+	* Added Last.FM cardridge
+
+2009-01-30 15:36  source
+
+	* Fixed deadlock test
+
+2009-01-29 23:30  source
+
+	* Added Ubiquity commands in ODS pages
+	* Extended FOAF import API
+	* Fixed ODS application icons fail to load application instance with IE
+	* Fixed faster FOAF generateion
+
+2009-01-29 23:28  source
+
+	* Fixed DET folder properties
+	* Fixed spelling
+
+2009-01-29 23:27  source
+
+	* Added new contact fields
+	* Extended FOAF import
+
+2009-01-29 22:02  source
+
+	* Fixed quotes
+
+2009-01-29 22:01  source
+
+	* Fixed test for deadlocks handler
+
+2009-01-29 22:01  source
+
+	* Fixed cleanup of testsuite
+
+2009-01-29 22:00  source
+
+	* Fixed deadlock handler as remove need to do rb before first goto.
+	  Also the explicit rb is now optional
+
+2009-01-29 21:58  source
+
+	* Fixed memory leaks
+
+2009-01-29 21:56  source
+
+	* Fixed spelling
+
+2009-01-29 13:17  source
+
+	* Fixed use pref:label for same-as
+	* Fixed get accept language to hangle proper labeling
+
+2009-01-29 13:16  source
+
+	* Fixed meetup
+
+2009-01-29 13:11  source
+
+	* Added AB-meta cardridge
+
+2009-01-29 13:03  source
+
+	* Fixed bug in date calculation for leap years
+
+2009-01-29 13:02  source
+
+	* Added support for testing jdbc 4.0
+
+2009-01-29 13:01  source
+
+	* Added support for time literals
+
+2009-01-29 13:00  source
+
+	* Fixed support for SPARQL expressions with weird strings in WHERE (...)
+	  SQL fragments
+
+2009-01-29 12:52  source
+
+	* Fixed TURLE initialization after running out of limit for namespace
+	  prefixes in a hugh output
+
+2009-01-29 12:51  source
+
+	* Fixed double close of file descriptor after interrupted file read
+
+2009-01-29 12:49  source
+
+	* Fixed rate limit to take samples within 1 second before comparing
+	* Fixed precision as hits/count/elapsed time gives better results
+
+2009-01-29 12:47  source
+
+	* Added support for mapping of TIME columns to xsd:time literals
+
+2009-01-29 12:45  source
+
+	* Fixed JDBC testsuite
+
+2009-01-28 11:46  source
+
+	* Fixed php plugin building to use dynamic loading using attach
+	* Fixed documentation
+
 2009-01-26 13:32  source
 
 	* Updated documentation
