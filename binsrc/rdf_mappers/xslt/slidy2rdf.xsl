@@ -30,6 +30,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -42,6 +43,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:dcterms="&dcterms;"
+    xmlns:dc="&dc;"
     version="1.0">
 
     <xsl:output method="xml" indent="yes" />
@@ -76,6 +78,8 @@
                 </bibo:uri>
                 <rdfs:label><xsl:value-of select="h1"/></rdfs:label>
                 <bibo:content><xsl:value-of select="."/></bibo:content>
+		<dc:content><xsl:value-of select="."/></dc:content>
+		<sioc:content><xsl:value-of select="."/></sioc:content>
                 <xsl:for-each select=".//img[@src]">
                     <foaf:depiction rdf:resource="{@src}"/>
                 </xsl:for-each>

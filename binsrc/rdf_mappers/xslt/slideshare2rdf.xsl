@@ -27,6 +27,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -109,6 +110,27 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:content>
+			<dc:content>
+				<xsl:choose>
+					<xsl:when test="Embed">
+						<xsl:value-of select="Embed" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="EmbedCode" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</dc:content>
+			<sioc:content>
+				<xsl:choose>
+					<xsl:when test="Embed">
+						<xsl:value-of select="Embed" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="EmbedCode" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</sioc:content>
+
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="Created" />
 			</dcterms:created>
