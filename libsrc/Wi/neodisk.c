@@ -1478,6 +1478,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
     mcp_itc = itc_create (NULL, NULL);
       wi_write_dirty ();
       dbs_sync_disks (dbs);
+      cpt_dbs = dbs;
       dbs_cpt_backup ();
       if (dbs_stop_cp == 1)
 	{
@@ -1492,7 +1493,6 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
     DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
       {
 	index_tree_t *del_it;
-	cpt_dbs = dbs;
 	remap = dbs->dbs_cpt_remap;
 	cpt_uncommitted_remap = hash_table_allocate (101);
 	cpt_uncommitted_lt = hash_table_allocate (11);
