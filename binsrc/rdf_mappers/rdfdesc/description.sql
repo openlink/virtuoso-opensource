@@ -84,48 +84,31 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 }
 ;
 
-create procedure rdfdesc_page_get_type (in val any)
+create procedure rdfdesc_rel_print (in val any, in rel any, in flag int := 0)
 {
-
   declare delim, delim1, delim2, delim3 integer;
-  declare pref, res varchar;
+  declare inx int;
+  declare nss, loc varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
   delim2 := coalesce (strrchr (val, '#'), -1);
   delim3 := coalesce (strrchr (val, ':'), -1);
   delim := __max (delim1, delim2, delim3);
-
-  if (delim < 0)
-    return val;
-
-  pref := subseq (val, 0, delim+1);
-
-  if (pref = val)
-    return val;
-
-  if (strstr (val, 'http://dbpedia.org/resource/') = 0 ) return 'dbpedia';
-  if (strstr (val, 'http://dbpedia.org/property/') = 0 ) return 'p';
-  if (strstr (val, 'http://dbpedia.openlinksw.com/wikicompany/') = 0 ) return 'wikicompany';
-  if (strstr (val, 'http://dbpedia.org/class/yago/') = 0 ) return 'yago';
-  if (strstr (val, 'http://www.w3.org/2003/01/geo/wgs84_pos#') = 0 ) return 'geo';
-  if (strstr (val, 'http://www.geonames.org/ontology#') = 0 ) return 'geonames';
-  if (strstr (val, 'http://xmlns.com/foaf/0.1/') = 0 ) return 'foaf';
-  if (strstr (val, 'http://www.w3.org/2004/02/skos/core#') = 0 ) return 'skos';
-  if (strstr (val, 'http://www.w3.org/2002/07/owl#') = 0 ) return 'owl';
-  if (strstr (val, 'http://www.w3.org/2000/01/rdf-schema#') = 0 ) return 'rdfs';
-  if (strstr (val, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#') = 0 ) return 'rdf';
-  if (strstr (val, 'http://www.w3.org/2001/XMLSchema#') = 0 ) return 'xsd';
-  if (strstr (val, 'http://purl.org/dc/elements/1.1/') = 0 ) return 'dc';
-  if (strstr (val, 'http://purl.org/dc/terms/') = 0 ) return 'dcterms';
-  if (strstr (val, 'http://dbpedia.org/units/') = 0 ) return 'units';
-  if (strstr (val, 'http://www.w3.org/1999/xhtml/vocab#') = 0 ) return 'xhv';
-  if (strstr (val, 'http://rdfs.org/sioc/ns#') = 0 ) return 'sioc';
-  if (strstr (val, 'http://purl.org/ontology/bibo/') = 0 ) return 'bibo';
-
-  res := __xml_get_ns_prefix (pref, 2);
-  if (res is null)
-    return val;
-  return res;
+  nss := null;
+  loc := val;
+  if (delim < 0) return;
+  inx := connection_get ('ns_ctr');
+  connection_set ('ns_ctr', inx + 1);
+  nss := subseq (val, 0, delim + 1);
+  loc := subseq (val, delim + 1);
+  nss := sprintf ('xmlns:ns%d="%s"', inx, nss);
+  if (flag)
+    loc := sprintf ('property="ns%d:%s"', inx, loc);
+  else if (rel)
+    loc := sprintf ('rel="ns%d:%s"', inx, loc);
+  else
+    loc := sprintf ('rev="ns%d:%s"', inx, loc);
+  return concat (loc, ' ', nss);
 }
 ;
 
@@ -191,9 +174,9 @@ create procedure rdfdesc_http_print_l (in p_text any, inout odd_position int, in
 }
 ;
 
-create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any)
+create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any, in rel int := 1)
 {
-   declare lang, rdfs_type any;
+   declare lang, rdfs_type, rdfa, prop_l, prop_n  any;
 
    if (__tag (_object) = 230)
      {
@@ -211,8 +194,8 @@ create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any
        rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
        endg:;
      }
-
-   http ('<li><span class="literal">');
+   rdfa := rdfdesc_rel_print (prop, rel, 1);
+   http ('\t<li><span class="literal">');
 again:
    if (__tag (_object) = 246)
      {
@@ -235,37 +218,40 @@ again:
        else
 	 _label := null;
 
-       http (sprintf ('<a class="uri" href="%s">%s</a>', rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
+       rdfa := rdfdesc_rel_print (prop, rel, 0);
+       http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 
      }
    else if (__tag (_object) = 189)
      {
-       http (sprintf ('%d', _object));
+       http (sprintf ('<span %s>%d</span>', rdfa, _object));
        lang := 'xsd:integer';
      }
    else if (__tag (_object) = 190)
      {
-       http (sprintf ('%f', _object));
+       http (sprintf ('<span %s>%f</span>', rdfa, _object));
        lang := 'xsd:float';
      }
    else if (__tag (_object) = 191)
      {
-       http (sprintf ('%d', _object));
+       http (sprintf ('<span %s>%d</span>', rdfa, _object));
        lang := 'xsd:double';
      }
    else if (__tag (_object) = 219)
      {
-       http (sprintf ('%s', cast (_object as varchar)));
+       http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
        lang := 'xsd:double';
      }
    else if (__tag (_object) = 182)
      {
+       http (sprintf ('<span %s>', rdfa));
        http (_object);
+       http ('</span>');
        lang := '';
      }
    else if (__tag (_object) = 211)
      {
-       http (sprintf ('%s', datestring (_object)));
+       http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
        lang := 'xsd:date';
      }
    else if (__tag (_object) = 230)
@@ -273,12 +259,18 @@ again:
        _object := serialize_to_UTF8_xml (_object);
        _object := replace (_object, '<xhtml:', '<');
        _object := replace (_object, '</xhtml:', '</');
+       http (sprintf ('<span %s>', rdfa));
        http (_object);
+       http ('</span>');
        if (length (rdfs_type))
        http (sprintf ('(%s)', rdfs_type));
      }
    else if (__tag (_object) = 225)
+     {
+       http (sprintf ('<span %s>', rdfa));
      http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http ('</span>');
+     }
    else
      http (sprintf ('FIXME %i', __tag (_object)));
 
@@ -287,7 +279,7 @@ again:
        http (sprintf ('(%s)', lang));
      }
 
-   http ('</span></li>');
+   http ('</span></li>\n');
 }
 ;
 

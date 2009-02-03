@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
 
@@ -10,6 +10,7 @@
    -- INIT VALUES
 
    white_page := 1;
+   connection_set ('ns_ctr', 1);
    host := http_request_header (http_request_header (), 'Host');  
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
@@ -86,30 +87,26 @@
 ?>
 
 <!-- header -->
-<head>
-    <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/">
+<head profile="http://www.w3.org/1999/xhtml/vocab">
+    <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <script type="text/javascript" src="statics/script.js"></script>
 </head>
-  <body onLoad="init();">
+<body onLoad="init();" about="<?V page_resource_uri ?>">
     <div id="header">
       <div id="hd_l">
 	  <h1 id="title">About: <a href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
-	  <!--label for="page_res_uri">About Resource:</label> 
-		<a id="page_res_uri" href="<?= case when page_resource_uri like 'nodeID://%' then rdfdesc_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', __res_desc)); ?></a-->
 	   An Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
-        <a href="<?=rdf_link?>" title="RDF data">
-	  <img src="statics/sw-cube.png" alt="[RDF Data]">
-        </a>
+        <a href="<?=rdf_link?>" title="RDF data"><img src="statics/sw-cube.png" alt="[RDF Data]" /></a>
       </div> <!-- hd_r -->
     </div> <!-- header -->
     <div id="content">
@@ -133,7 +130,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT, PRED, true_label);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label, 1);
 	      }
 	   exec_close (h2);
 
@@ -148,10 +145,6 @@
 	{
            declare PRED any;
 	   pred := data[0];  
-	   --if (inx = 0)
-	   --  {
-	   --    http ('<tr><th width="25%">Reverse links</th><th>&nbsp;</th></tr>');
-	   --  }
 	   inx := inx + 1;
 	   rdfdesc_http_print_l (PRED, odd_position, 1);
 	   exec (sprintf ('sparql select ?s where { graph <%S> { ?s <%S> <%S> } } limit 300', _G, PRED, _S),
@@ -160,7 +153,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT, PRED, true_label);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label, 0);
 	      }
 	   exec_close (h2);
 
@@ -190,10 +183,10 @@ skip_rev:
         &nbsp; &nbsp;<a href="http://ode.openlinksw.com/">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
-        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
-        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" border="0"></a> &nbsp;
-        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
-        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" border="0"></a>
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso" /></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" border="0" /></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" border="0" /></a> &nbsp;  &nbsp;
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="statics/od_80x15_red_green.png" border="0" /></a>
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/80x15.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
