@@ -1368,7 +1368,7 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
   session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
   session_buffered_write (ses, ":\t<", 3);
   dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
-  session_buffered_write (ses, ">\n", 2);
+  session_buffered_write (ses, "> .\n", 4);
   return 1;
 }
 
