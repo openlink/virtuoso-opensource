@@ -57,8 +57,8 @@ create procedure ODS.ODS_API."poll.new" (
   in vote_result integer := 1,
   in vote_result_before integer := 0,
   in vote_result_opened integer := 1,
-  in date_start any := null,
-  in date_end any := null,
+  in date_start datetime := null,
+  in date_end datetime := null,
   in mode varchar := 'S') __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
@@ -72,6 +72,11 @@ create procedure ODS.ODS_API."poll.new" (
 
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
+
+  if (date_start is null)
+    date_start := curdate ();
+  if (date_end is null)
+    date_end := dateadd ('month', 1, date_start);
 
   rc := POLLS.WA.poll_update (
     -1,
@@ -102,8 +107,8 @@ create procedure ODS.ODS_API."poll.edit" (
   in vote_result integer := 1,
   in vote_result_before integer := 0,
   in vote_result_opened integer := 1,
-  in date_start any := null,
-  in date_end any := null,
+  in date_start datetime := null,
+  in date_end datetime := null,
   in mode varchar := 'S') __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
@@ -122,6 +127,12 @@ create procedure ODS.ODS_API."poll.edit" (
 
   if (not exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  if (date_start is null)
+    date_start := curdate ();
+  if (date_end is null)
+    date_end := dateadd ('month', 1, date_start);
+
   rc := POLLS.WA.poll_update (
     poll_id,
     inst_id,
@@ -377,9 +388,6 @@ create procedure ODS.ODS_API."poll.vote.answer" (
   poll_id := (select V_POLL_ID from POLLS.WA.VOTE where V_ID = vote_id);
   if (isnull (poll_id))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-
-  if (not POLLS.WA.poll_enable_vote (poll_id))
-    signal ('POLLS', 'The vote is not allowed');
 
   for (select * from POLLS.WA.QUESTION where Q_POLL_ID = poll_id and Q_NUMBER = questionNo) do
   {
