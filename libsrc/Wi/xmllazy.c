@@ -311,7 +311,7 @@ xlazye_ent_node_test (xml_entity_t *xe, XT *node)
 
 int
 xlazye_is_same_as (const xml_entity_t *this_xe, const xml_entity_t *that_xe)
-{ xlazye_make_actual_load (this_xe); return this_xe->_->xe_is_same_as (this_xe, that_xe); }
+{ xlazye_make_actual_load ((xml_entity_t *)this_xe); return this_xe->_->xe_is_same_as (this_xe, that_xe); }
 
 xml_entity_t *
 xlazye_deref_id (xml_entity_t *xe, const char * idbegin, size_t idlength)

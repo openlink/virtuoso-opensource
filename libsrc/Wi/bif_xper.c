@@ -810,9 +810,9 @@ cb_trace_start_tag (xper_ctx_t * ctx, xper_stag_t * data)
   ctx->xpc_tn_length1 = (int) dv_string_size (data->name);
 
   if (pos < 0)
-    ctx->xpc_poss->data = (void *) ctx_bh->bh_length;
+    ctx->xpc_poss->data = (void *)((ptrlong)(ctx_bh->bh_length));
   else
-    dk_set_push (&ctx->xpc_poss, (void *) ctx_bh->bh_length);
+    dk_set_push (&ctx->xpc_poss, (void *)((ptrlong)(ctx_bh->bh_length)));
 }
 
 void
@@ -2682,7 +2682,7 @@ parse_source:
    VXmlSetDtdHandler (context.xpc_parser, (VXmlDtdHandler) cb_dtd);
  */
 	/* start root tag */
-	dk_set_push (&context.xpc_poss, (void *) xpd->xpd_bh->bh_length);
+	dk_set_push (&context.xpc_poss, (void *)((ptrlong)(xpd->xpd_bh->bh_length)));
 	tmp_box = start_tag_record (&root_data);
 	xper_blob_append_box (&context, tmp_box);
 	dk_free_box (tmp_box);

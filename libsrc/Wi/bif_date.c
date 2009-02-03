@@ -119,7 +119,7 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
 int /* Returns number of chars parsed. */
 dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret)
 {
-  char *tail = buf;
+  const char *tail = buf;
   int fld_len, acc, ymd_found = 0, hms_found = 0;
   TIMESTAMP_STRUCT ts;
   memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));

@@ -567,7 +567,7 @@ signal_error:
 static caddr_t
 bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fname_cvt, res;
+  caddr_t fname_cvt, res = NULL;
   OFF_T off, start_pos = 0;
   OFF_T bytes;
   caddr_t fname;
@@ -1298,7 +1298,10 @@ file_native_name (caddr_t se_name)
         }
       break;
     default:
+      {
       GPF_T1 ("Bad box type for file name");
+        volume_fname = NULL; /* to keep the compiler happy */
+      }
     }
 #ifdef HAVE_DIRECT_H
   for (fname_tail = volume_fname; fname_tail[0]; fname_tail++)

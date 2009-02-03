@@ -1406,8 +1406,8 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ttl_triple");
   int status = 0;
   int obj_is_iri = 0;
-  caddr_t obj_box_value;
-  dtp_t obj_dtp;
+  caddr_t obj_box_value = NULL;
+  dtp_t obj_dtp = 0;
   dtp_t obj_box_value_dtp;
   ttl_iriref_items_t tii;
   memset (&tii,0, sizeof (ttl_iriref_items_t));

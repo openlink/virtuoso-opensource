@@ -938,7 +938,7 @@ bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 wcharset_t *
-wcharset_by_name_or_dflt (ccaddr_t cs_name, caddr_t *qi)
+wcharset_by_name_or_dflt (ccaddr_t cs_name, query_instance_t *qi)
 {
   wcharset_t * charset = NULL;
   if (NULL != cs_name)

@@ -318,6 +318,7 @@ extern eh_charset_t eh_generic_chardefs[];
 extern int eh_generic_chardefs_length;
 extern void connect__enUS (void *appdata);
 extern void connect__xViDoc (void *appdata);
+extern void connect__xViAny (void *appdata);
 
 void langfunc_kernel_init (void)
 {

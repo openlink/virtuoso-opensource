@@ -2891,6 +2891,7 @@ xre_attrs (local_cursor_t * lc, xr_element_t * elt, dk_session_t * stream, caddr
 void
 xre_attr_elts (local_cursor_t * lc, xr_element_t * elt, dk_session_t * stream, caddr_t * prev)
 {
+  wcharset_t *lc_charset = QST_CHARSET(lc->lc_inst);
   int inx;
   DO_BOX (xre_col_t *, col, inx, elt->xre_cols)
     {
@@ -2903,7 +2904,7 @@ xre_attr_elts (local_cursor_t * lc, xr_element_t * elt, dk_session_t * stream, c
 	      SES_PRINT (stream, "<");
 	      SES_PRINT (stream, col->xrc_name);
 	      SES_PRINT (stream, ">");
-	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, QST_CHARSET(lc->lc_inst), default_charset, DKS_ESC_PTEXT);
+	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, lc_charset, default_charset, DKS_ESC_PTEXT);
 	      SES_PRINT (stream, "</");
 	      SES_PRINT (stream, col->xrc_name);
 	      SES_PRINT (stream, ">");
@@ -2914,13 +2915,13 @@ xre_attr_elts (local_cursor_t * lc, xr_element_t * elt, dk_session_t * stream, c
 	      SES_PRINT (stream, "<");
 	      SES_PRINT (stream, col->xrc_name);
 	      SES_PRINT (stream, ">");
-	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, QST_CHARSET(lc->lc_inst), default_charset, DKS_ESC_NONE);
+	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, lc_charset, default_charset, DKS_ESC_NONE);
 	      SES_PRINT (stream, "</");
 	      SES_PRINT (stream, col->xrc_name);
 	      SES_PRINT (stream, ">");
 	      break;
 	    case XML_COL_XMLTEXT:
-	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, QST_CHARSET(lc->lc_inst), default_charset, DKS_ESC_NONE);
+	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, lc_charset, default_charset, DKS_ESC_NONE);
 	      break;
 	    case XML_COL_CDATA:
 	      if ('\0' != col->xrc_name[0])
@@ -2930,7 +2931,7 @@ xre_attr_elts (local_cursor_t * lc, xr_element_t * elt, dk_session_t * stream, c
 		  SES_PRINT (stream, ">");
 		}
 	      SES_PRINT (stream, "<![CDATA[");
-	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, QST_CHARSET(lc->lc_inst), default_charset, DKS_ESC_CDATA);
+	      bx_out_value (lc->lc_inst, stream, (db_buf_t) val, lc_charset, default_charset, DKS_ESC_CDATA);
 	      SES_PRINT (stream, "]]>");
 	      if ('\0' != col->xrc_name[0])
 		{

@@ -362,7 +362,7 @@ typedef struct query_instance_s
         (GET_IMMEDIATE_CLIENT_OR_NULL ? ((client_connection_t *)(GET_IMMEDIATE_CLIENT_OR_NULL))->cli_charset : \
 	(!qi ? (((wcharset_t *) NULL) + GPF_T1 ("no QI")) : \
 	(((query_instance_t *) qi)->qi_client ? \
-	 ((query_instance_t *) qi)->qi_client->cli_charset : NULL)))
+	 ((query_instance_t *) qi)->qi_client->cli_charset : ((wcharset_t *) NULL))))
 
 
 typedef struct hash_area_s
